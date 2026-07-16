@@ -55,6 +55,11 @@ describe("cli schema", () => {
     expect(["ok", "incomplete"]).toContain(payload.status);
     expect(Array.isArray(payload.commands)).toBe(true);
     expect(payload.routine_state_commands).toContain("plan");
+    const prime = (payload.commands as Array<{ name: string; description: string }>).find(
+      (command) => command.name === "prime",
+    );
+    expect(prime?.description).toContain("12000 UTF-8 bytes");
+    expect(prime?.description).toContain("status startup at most 25000");
     expect(payload.state_backfill).toMatchObject({
       authority: "references/artifacts/state-storage-authority.yaml",
       command: expect.stringContaining("agentera state backfill"),

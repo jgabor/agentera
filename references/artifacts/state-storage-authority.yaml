@@ -1507,7 +1507,11 @@ budgets:
         max_latency_ms: 15000
         max_heap_delta_bytes: 268435456
       serialized_output:
-        prime_capability_context_max_utf8_bytes: 50000
+        # Generic prime capability capsules retain the full instructions body.
+        # The status capability is a separate one-call surface with a stricter
+        # bound declared below and in the JSON surface manifest.
+        prime_capability_context_max_utf8_bytes: 55000
+        prime_status_context_max_utf8_bytes: 25000
     surfaces:
       prime_briefing:
         manifest_id: prime-briefing

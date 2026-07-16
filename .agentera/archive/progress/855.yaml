@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 855
+record:
+  number: 855
+  timestamp: 2026-07-16 15:47
+  type: fix
+  phase: build
+  what: "Synchronized Plan Task 5 startup contracts and final verification: current English capability budget rows now match CAPABILITY_NAMES, generic capability capsules use a 55000-byte ceiling, status keeps its dedicated 25000-byte one-call budget, and schema/help/package guidance name the 12000-byte bare brief, status_context.instructions payload, compatibility boundary, and recovery behavior. Added manifest/authority parity checks and preserved prior evaluation history."
+  inspiration: Plan Task 5 acceptance criteria and the cumulative Task 1-4 contract repairs.
+  discovered: The published capability budget map still named removed v2 aliases and retained limits below current v3 instruction capsules; the live status surface already had the correct one-call shape, while help and package guidance still described the old lifecycle payload.
+  verified: "Live pretty UTF-8 JSON measurements: bare prime 11191/12000 bytes; status context 24204/25000; current capability contexts status 24204, vision 31705, discuss 26708, research 25056, plan 44784, build 47665, optimize 44945, audit 51757, document 38855, profile 32348, design 30551, orchestrate 48223, all within the reconciled manifest limits. Representative accumulated-state fixture measured bare prime 11384/12000 and status context 24242/25000. Full CLI Vitest passed 198 files/2324 tests; typecheck, build, bundle-data/source parity, status and plan capability validation, capability-contract validation 2/2, and check compact passed with over_limit=0 and errors=0."
+  next: Record the final Task 5 pass evaluation, mark Task 5 complete through the typed plan writer, rerun compact/state checks after the state write, and commit locally. Keep deferred recommendations 4-7 open.
+  context:
+    intent: Synchronize all current prime startup contracts and verify accumulated-state bounds before closing the compact-prime plan.
+    constraints: No vision or objective changes, no deferred recommendation implementation, no push or publication; preserve prior evaluation-history caveats and use capability_context.instructions vocabulary.
+    unknowns: none
+    scope: scripts/json_output_surface_manifest.yaml; references/artifacts/state-storage-authority.yaml; references/cli/prime-consumer-compatibility.yaml; packages/cli/src/cli/help.ts; packages/cli/src/cli/commands/schema.ts; packages/cli/README.md; focused contract/budget tests
+record_sha256: 34ca66eedc4e101c2027ce493fae135a50c9378904828eb4fc09908e091e323e

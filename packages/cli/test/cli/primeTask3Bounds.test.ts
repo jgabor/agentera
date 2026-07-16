@@ -16,6 +16,7 @@ import { boundStartupValue, startupHistorySummary } from "../../src/state/startu
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
+const BUDGET_MANIFEST_PATH = path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml");
 
 let tmp: string;
 let project: string;
@@ -25,6 +26,14 @@ let previousEnv: Record<string, string | undefined>;
 
 function authority(): Record<string, any> {
   return YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
+}
+
+function capabilityBudgets(): Record<string, { byte_budget: number; token_budget: number }> {
+  const manifest = YAML.parse(fs.readFileSync(BUDGET_MANIFEST_PATH, "utf8")) as Record<string, any>;
+  const surface = (manifest.surfaces as Array<Record<string, any>>).find(
+    (entry) => entry.id === "prime-capability-context",
+  );
+  return surface?.budget_by_capability as Record<string, { byte_budget: number; token_budget: number }>;
 }
 
 function writeArtifact(name: string, content: string): void {
@@ -141,6 +150,13 @@ describe("prime Task3 bounded source projections", () => {
     largeFixture();
     const limits = authority().budgets.startup;
     const sourceLimits = limits.source_work.large;
+    const budgets = capabilityBudgets();
+    expect(Object.keys(budgets).sort()).toEqual([...CAPABILITY_NAMES].sort());
+    expect(
+      Object.values(budgets).every(
+        (budget) => budget.byte_budget <= limits.source_work.serialized_output.prime_capability_context_max_utf8_bytes,
+      ),
+    ).toBe(true);
     const start = performance.now();
     const beforeHeap = process.memoryUsage().heapUsed;
     const state = collectOrientationState({ home, env: process.env });
@@ -176,14 +192,13 @@ describe("prime Task3 bounded source projections", () => {
     expect(sparse.rc).toBe(0);
     expect(Buffer.byteLength(sparse.out, "utf8")).toBeLessThanOrEqual(limits.surfaces.prime_sparse.max_utf8_bytes);
 
-    const capabilityBudget = limits.source_work.serialized_output.prime_capability_context_max_utf8_bytes;
-    for (const capability of CAPABILITY_NAMES) {
-      const payload = buildPrimeCapabilityContextPayload(state, capability);
-      const selected = capture((out, err) => emitPrime("prime", payload, "json", "capability_context", out, err));
-      expect(selected.rc, capability).toBe(0);
-      const capabilityBytes = Buffer.byteLength(selected.out, "utf8");
-      expect(capabilityBytes, capability).toBeLessThanOrEqual(capabilityBudget);
-    }
+     for (const capability of CAPABILITY_NAMES) {
+       const payload = buildPrimeCapabilityContextPayload(state, capability);
+       const selected = capture((out, err) => emitPrime("prime", payload, "json", "capability_context", out, err));
+       expect(selected.rc, capability).toBe(0);
+       const capabilityBytes = Buffer.byteLength(selected.out, "utf8");
+       expect(capabilityBytes, capability).toBeLessThanOrEqual(budgets[capability]?.byte_budget ?? 0);
+     }
   }, 30_000);
 
   it("reports omitted, unaddressable, ambiguous, and corrupt history with valid routes", () => {

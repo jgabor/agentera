@@ -12,9 +12,13 @@ npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 
-`prime` returns a bounded project and four-runtime lifecycle summary. `doctor`
-returns detailed read-only evidence and exact user actions. The status and
-project-integration projections consume the same lifecycle snapshot.
+`prime --format json` returns a bounded decision brief (at most 12000 UTF-8
+bytes); use `prime --dashboard --format json` for the full orientation payload.
+Status startup is one call: `prime --context status --format json` returns
+`capability_context.instructions` and bounded
+`capability_context.context.status_context` together (at most 25000 UTF-8
+bytes). Omitted detail names its authoritative recovery command. `doctor`
+returns detailed read-only evidence and exact user actions.
 
 ## Runtime lifecycle
 

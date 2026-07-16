@@ -1,7 +1,7 @@
 header:
   level: full
   created: 2026-07-16
-  status: open
+  status: complete
   reviewed: 2026-07-16
   critic_issues: 7 found, 7 addressed, 0 dismissed
   title: "Plan: Make prime startup compact and self-contained"
@@ -123,12 +123,22 @@ tasks:
       - "2"
       - "3"
       - "4"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN the changed startup surfaces WHEN schema, help, capability contracts, bundled data, and user guidance are compared THEN they agree on fields, bounds, compatibility, and recovery commands.
       - GIVEN live repository state and representative accumulated-state fixtures WHEN budget checks run THEN bare prime and status context satisfy their 12000-byte and 25000-byte limits.
       - GIVEN capability contexts changed by this plan WHEN their existing declared budgets are checked THEN none regress beyond its authoritative limit.
       - GIVEN the completed change WHEN full CLI tests, typecheck, build, capability-contract validation, and compact validation run THEN all pass.
       - GIVEN recommendations outside this plan WHEN project state is reviewed THEN recommendations 4 through 7 remain discoverable as open TODO items.
+    evaluation:
+      attempt_count: 1
+      failure_count: 0
+      last_verdict: pass
+      last_failure_evidence: null
+      provenance:
+        attempt_id: task-5-final-20260716
+        source: "Final contract synchronization verification: full CLI tests, typecheck, build, bundle-data parity, capability validation, capability-contract validation, compact validation, live and accumulated-state byte measurements"
+        recorded_at: 2026-07-16 15:47
+        writer_command: agentera state plan record-evaluation
 surprises:
   []

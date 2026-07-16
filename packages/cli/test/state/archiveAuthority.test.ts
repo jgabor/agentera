@@ -268,6 +268,7 @@ describe("state storage authority", () => {
     expect(authority.budgets.projection.max_utf8_bytes).toBe(32768);
     expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).toBe(surfaces["prime-briefing"]);
     expect(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes).toBe(surfaces["prime-dashboard"]);
+    expect(authority.budgets.startup.surfaces.prime_status_context.max_utf8_bytes).toBe(surfaces["prime-status-context"]);
     expect(authority.budgets.startup.surfaces.prime_sparse.max_utf8_bytes).toBe(surfaces["prime-fields-sparse"]);
     expect(authority.budgets.projection.omission_semantics).toContain("Never split UTF-8");
     expect(authority.budgets.projection.omission_semantics).toContain("measured minimal degraded envelope");
@@ -290,7 +291,10 @@ describe("state storage authority", () => {
       schema_version: "agentera.startupSourceWorkBudget.v1",
       small: { max_current_entries: 100, max_archive_files: 100, max_latency_ms: 5000 },
       large: { max_current_entries: 1000, max_archive_files: 1000, max_latency_ms: 15000 },
-      serialized_output: { prime_capability_context_max_utf8_bytes: 50000 },
+      serialized_output: {
+        prime_capability_context_max_utf8_bytes: 55000,
+        prime_status_context_max_utf8_bytes: 25000,
+      },
     });
   });
 

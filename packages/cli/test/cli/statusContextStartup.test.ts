@@ -10,6 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
@@ -17,6 +18,7 @@ import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prim
 import { runState } from "../../src/cli/dispatch/state.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+const BUDGET_MANIFEST_PATH = path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml");
 
 let tempRoot: string;
 let project: string;
@@ -99,6 +101,15 @@ function renderStatusDashboard(statusContext: Record<string, any>): Record<strin
 }
 
 describe("status capability self-contained startup", () => {
+  it("uses the manifest's dedicated one-call status budget", () => {
+    const manifest = YAML.parse(fs.readFileSync(BUDGET_MANIFEST_PATH, "utf8")) as {
+      surfaces: Array<{ id: string; byte_budget: number }>;
+    };
+    const surface = manifest.surfaces.find((entry) => entry.id === "prime-status-context");
+    expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(surface?.byte_budget);
+    expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(25000);
+  });
+
   it.each([
     ["fresh", () => undefined],
     ["returning", () => writeProjectFile(".agentera/progress.yaml", "cycles: []\n")],

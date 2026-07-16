@@ -117,10 +117,13 @@ consumers:
     evidence: scripts/json_output_surface_manifest.yaml:47-161
     consumed_fields: declared_surfaces
     notes: >-
-      Measurement/budget authority, not a runtime consumer. Declares four prime
-      surfaces: prime-dashboard, prime-briefing, prime-fields-sparse, and
-      prime-capability-context. Owns byte/token budgets; Task 3 (<=12000) and
-      Task 4 (<=25000) budgets are reconciled against it.
+       Measurement/budget authority, not a runtime consumer. Declares five prime
+       surfaces: prime-dashboard, prime-status-context, prime-briefing,
+       prime-fields-sparse, and prime-capability-context. The capability surface expands over the current
+       English CAPABILITY_NAMES set; generic capsules use the 55000-byte ceiling,
+       while status uses its dedicated 25000-byte one-call budget. It owns the
+       byte/token budgets; Task 3 (<=12000) and Task 4 (<=25000) budgets are
+       reconciled against it.
   - id: vocabulary_capability_context_guide
     startup_command: agentera prime --context <capability> --format json
     evidence: references/cli/vocabulary.md:90-113
@@ -259,21 +262,20 @@ field_classification:
     status: required
     rationale: Owns missing-versus-empty semantics; must not be omitted.
   - field: project_integration
-    status: conditional
+    status: required
     rationale: >-
-      Default-only when no recommendation. Status briefing prints it
-      unconditionally today; Task 2 may gate emission on a non-default
-      recommendation. NOTE: schema.ts omits this field (drift); Task 2 must add
-      it to the schema-advertised set.
+      Status routing consumes the recommendation and aggregate lifecycle state;
+      the bounded brief retains the routing projection even when no upgrade
+      recommendation is active.
   - field: attention
     status: required
     rationale: Bounded; opencode and status dashboard consume it.
   - field: history
     status: diagnostic
     rationale: >-
-      Startup history. Omitted from default startup unless status declares it
-      necessary (Task 4). NOTE: schema.ts omits this field (drift); Task 2 must
-      add it to the schema-advertised set or remove it from emission.
+      Startup history. The bounded brief retains counts and named retrieval
+      pointers while omitting entry detail; explicit state list/get commands
+      recover the current history.
   - field: runtime_lifecycle
     status: conditional
     rationale: >-
@@ -288,21 +290,21 @@ field_classification:
   - field: orchestration_context
     status: conditional
     rationale: >-
-      Always null in bare prime; meaningful only in --context orkestrera. Task 2
+      Always null in bare prime; meaningful only in --context orchestrate. Task 2
       may omit null bespoke contexts from the bare briefing without breaking
       documented consumers.
   - field: closeout_context
     status: conditional
-    rationale: Always null in bare prime; meaningful only in --context dokumentera.
+    rationale: Always null in bare prime; meaningful only in --context document.
   - field: evidence_context
     status: conditional
-    rationale: Always null in bare prime; meaningful only in --context inspektera.
+    rationale: Always null in bare prime; meaningful only in --context audit.
   - field: benchmark_context
     status: conditional
-    rationale: Always null in bare prime; meaningful only in --context optimera.
+    rationale: Always null in bare prime; meaningful only in --context optimize.
   - field: execution_context
     status: conditional
-    rationale: Always null in bare prime; meaningful only in --context realisera.
+    rationale: Always null in bare prime; meaningful only in --context build.
   - field: source
     status: required
     rationale: Provenance; artifacts_present drives fresh-vs-returning dashboard.

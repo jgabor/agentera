@@ -1,4 +1,75 @@
 cycles:
+  - number: 856
+    timestamp: 2026-07-16 15:48
+    type: fix
+    phase: build
+    what: "Closed the compact-prime plan through the typed state writers after final
+      verification: Task 5 evaluation recorded pass, Task 5 marked complete, and
+      the plan lifecycle marked complete. Recommendations 4 through 7 remain
+      open in TODO.md."
+    inspiration: Final Plan Task 5 state synchronization.
+    discovered: The post-write plan catalog reports five complete tasks and no
+      pending task; progress compaction continues to preserve the known missing
+      progress:793 archive caveat instead of summarizing it away.
+    verified: Typed plan evaluation and status writes returned pass; post-write
+      check compact returned status=pass with over_limit=0, formatting=0,
+      protected_overflow=0, errors=0; state plan reports complete=5 and no
+      pending task; state todo reports the four requested recommendation entries
+      open.
+    next: Commit the verified implementation and state changes locally; no push or
+      publication. Future work remains limited to the open TODO items and the
+      preserved progress archive recovery caveat.
+    context:
+      intent: Persist the verified Task 5 closeout without erasing earlier evaluation
+        failures or recovery caveats.
+      constraints: Do not implement deferred recommendations, modify vision/objective,
+        erase prior progress/evaluation history, or push.
+      unknowns: none
+      scope: .agentera/plan.yaml; .agentera/progress.yaml;
+        .agentera/archive/progress/856.yaml; TODO.md state read
+  - number: 855
+    timestamp: 2026-07-16 15:47
+    type: fix
+    phase: build
+    what: "Synchronized Plan Task 5 startup contracts and final verification:
+      current English capability budget rows now match CAPABILITY_NAMES, generic
+      capability capsules use a 55000-byte ceiling, status keeps its dedicated
+      25000-byte one-call budget, and schema/help/package guidance name the
+      12000-byte bare brief, status_context.instructions payload, compatibility
+      boundary, and recovery behavior. Added manifest/authority parity checks
+      and preserved prior evaluation history."
+    inspiration: Plan Task 5 acceptance criteria and the cumulative Task 1-4
+      contract repairs.
+    discovered: The published capability budget map still named removed v2 aliases
+      and retained limits below current v3 instruction capsules; the live status
+      surface already had the correct one-call shape, while help and package
+      guidance still described the old lifecycle payload.
+    verified: "Live pretty UTF-8 JSON measurements: bare prime 11191/12000 bytes;
+      status context 24204/25000; current capability contexts status 24204,
+      vision 31705, discuss 26708, research 25056, plan 44784, build 47665,
+      optimize 44945, audit 51757, document 38855, profile 32348, design 30551,
+      orchestrate 48223, all within the reconciled manifest limits.
+      Representative accumulated-state fixture measured bare prime 11384/12000
+      and status context 24242/25000. Full CLI Vitest passed 198 files/2324
+      tests; typecheck, build, bundle-data/source parity, status and plan
+      capability validation, capability-contract validation 2/2, and check
+      compact passed with over_limit=0 and errors=0."
+    next: Record the final Task 5 pass evaluation, mark Task 5 complete through the
+      typed plan writer, rerun compact/state checks after the state write, and
+      commit locally. Keep deferred recommendations 4-7 open.
+    context:
+      intent: Synchronize all current prime startup contracts and verify
+        accumulated-state bounds before closing the compact-prime plan.
+      constraints: No vision or objective changes, no deferred recommendation
+        implementation, no push or publication; preserve prior
+        evaluation-history caveats and use capability_context.instructions
+        vocabulary.
+      unknowns: none
+      scope: scripts/json_output_surface_manifest.yaml;
+        references/artifacts/state-storage-authority.yaml;
+        references/cli/prime-consumer-compatibility.yaml;
+        packages/cli/src/cli/help.ts; packages/cli/src/cli/commands/schema.ts;
+        packages/cli/README.md; focused contract/budget tests
   - number: 854
     timestamp: 2026-07-16 15:19
     type: fix
@@ -264,100 +335,6 @@ cycles:
         references/cli/prime-consumer-compatibility.yaml,
         packages/cli/test/cli/primeCompatibilityBoundary.test.ts, TODO.md,
         .agentera/plan.yaml
-  - number: 846
-    timestamp: 2026-07-16 10:51
-    type: fix
-    phase: plan
-    what: "Retried plan Task 1 after independent evaluation failed commit 798820a2.
-      Reconciled the documented/runtime capability-context contract: runtime
-      emits capability_context.instructions (capabilityContext/startup.ts:250),
-      never prose; updated .opencode/agents and .cursor/agents (plus bundle
-      copies) and the policy consumed_fields from the stale prose to
-      capability_context.instructions. Added the omitted
-      packaging_distribution_gate consumer
-      (docs/packaging/v3-packaging.md:130-139). Added the missing
-      capability_context field_classification entry (conditional,
-      --context-only). Replaced YAML-vs-YAML-only positive fixtures with
-      executable consumer-contract assertions against real prime payloads,
-      including nested capability_context.instructions presence, prose absence,
-      app_home.source, and missing-vs-empty conditional fields; kept the genuine
-      retired bundle fail-visible test. Fixed test env isolation to restore
-      prior HOME/AGENTERA_HOME/bootstrap values instead of deleting them."
-    inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1 (evaluation
-      attempt 1 = fail; retry)
-    discovered: The bare-agentera route and status_dashboard_renderer depend on
-      source_contract.capability_context (a pointer), not a top-level
-      capability_context field; capability_context is emitted only on the
-      --context surface. Fresh-project prime payloads legitimately omit
-      health.grade, plan.first_pending.name, and progress.latest
-      (missing-vs-empty), so executable assertions must distinguish
-      always-present structural nested fields from data-dependent ones.
-    verified: "vitest primeCompatibilityBoundary: 14 tests pass (8 to 14; 5
-      executable consumer-contract assertions plus reconciliation plus bundle
-      fail-visible). Full suite pnpm -C packages/cli test: 196 files / 2280
-      tests pass. typecheck pass. build pass. check compact: over_limit=0
-      errors=0. Runtime reconciliation: prime --context build --format json
-      emits capability_context.instructions (non-empty) and no prose; bare prime
-      omits top-level capability_context and carries
-      source_contract.capability_context pointer."
-    next: "Task 2: publish one non-redundant prime contract; reconcile schema.ts
-      STATUS_STRUCTURED_FIELDS, the text-briefing hardcoded list, and
-      agent-ready-state-contract.yaml hej.fields to the emitted authority per
-      the approved public_output_policy; preserve the issues deprecated
-      transition alias and the fail-visible --fields contract; honor the new
-      packaging_distribution_gate stability requirement."
-    context:
-      intent: "Plan Task 1 retry: give Tasks 2-4 an unambiguous, runtime-verified
-        compatibility boundary correcting all five evaluation findings before
-        any prime payload change."
-      constraints: "Plan exclusions preserved: no structured attention records, no
-        stable artifact identities or reference routing, no
-        summary-vs-diagnostic projection modes, no compiled or cached capability
-        instructions, no broad payload changes (deferred to Task 2). Did not
-        modify vision. No remote push, release, tag, or publication."
-      unknowns: Whether the independent evaluator agrees the prose-to-instructions
-        reconciliation and executable assertions satisfy the contract; the
-        complete task is ready for reevaluation.
-      scope: references/cli/prime-consumer-compatibility.yaml,
-        packages/cli/test/cli/primeCompatibilityBoundary.test.ts,
-        .opencode/agents/agentera.md, .cursor/agents/agentera.md,
-        packages/cli/bundle/.opencode/agents/agentera.md,
-        packages/cli/bundle/.cursor/agents/agentera.md, .agentera/plan.yaml
-        (task 1 to complete), .agentera/progress.yaml (cycle 846).
-  - number: 845
-    timestamp: 2026-07-16 10:27
-    type: test
-    phase: plan
-    what: "Established the prime consumer compatibility boundary: inventoried every
-      documented prime consumer with field-level evidence, classified each field
-      proposed for omission as
-      required/conditional/diagnostic/deprecated-transition/retired with
-      rationale, recorded an approved public-output policy for Tasks 2-4, and
-      added a policy-verified pass/fail fixture test."
-    inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1
-    verified: "vitest: packages/cli/test/cli/primeCompatibilityBoundary.test.ts (8
-      tests, pass) — every documented consumer fixture's fields are a subset of
-      declared_available_fields; retired field 'bundle' fails visibly via
-      --fields (rc=1 + 'Available fields:' correction listing app_home/app);
-      policy declared_available_fields reconciled against emitPrime selector and
-      default bare-prime emission. Full suite pnpm -C packages/cli test: 196
-      files / 2274 tests pass. typecheck pass. build pass. check compact:
-      status=pass over_limit=0 errors=0."
-    next: "Task 2: publish one non-redundant prime contract — reconcile schema.ts
-      STATUS_STRUCTURED_FIELDS, the text-briefing hardcoded list, and
-      agent-ready-state-contract.yaml hej.fields to the emitted authority per
-      the approved public_output_policy; preserve the 'issues' deprecated
-      transition alias and the fail-visible --fields contract."
-    context:
-      intent: "Plan Task 1: give Tasks 2-4 an unambiguous compatibility boundary
-        before any prime payload change."
-      constraints: "Plan exclusions preserved: no structured attention records, no
-        stable artifact identities/reference routing, no summary-vs-diagnostic
-        projection modes, no compiled/cached capability instructions. Did not
-        perform broad payload changes (deferred to Task 2)."
-      scope: references/cli/prime-consumer-compatibility.yaml (new),
-        packages/cli/test/cli/primeCompatibilityBoundary.test.ts (new),
-        .agentera/plan.yaml (task 1 -> complete)
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -427,6 +404,12 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 846 (2026-07-16): Retried plan Task 1 after independent
+      evaluation failed commit 798820a2. Reconciled the documented/runtime
+      capability-context contract:..."
+  - summary: "Cycle 845 (2026-07-16): Established the prime consumer compatibility
+      boundary: inventoried every documented prime consumer with field-level
+      evidence, classified..."
   - summary: "Cycle 844 (2026-07-16): Close decision amend review gaps: dead-Set
       removal, byte-equality and corrupt-revision degradation coverage,
       transaction module headroom..."
@@ -517,19 +500,23 @@ archive:
   - summary: "Cycle 807 (2026-07-15): Added objective-scoped immutable full-detail
       experiment archives before projection replacement, preserving 10/40/50
       compaction and byte-equivalent retry..."
-  - summary: "Cycle 806 (2026-07-15): Fixed packages/cli/src/state/write/explain.ts
-      so generic experiments writer discovery selects publish, and added a
-      schema test that..."
-  - summary: "Cycle 805 (2026-07-15): Added agentera state experiments publish in
-      packages/cli/src/state/write/experimentPublication.ts with
-      objective-scoped identity and schema preflight, atomic replacement,..."
 omitted: true
-omitted_count: 90
+omitted_count: 92
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

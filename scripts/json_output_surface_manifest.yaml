@@ -143,43 +143,48 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
+  # Current v3 capability names are the published expansion set. Generic
+  # capability capsules retain the full instructions body and use the 55000
+  # byte ceiling declared by state-storage-authority; status has its dedicated
+  # 25000-byte one-call capsule above. The retired v2 aliases remain listed only
+  # by the removed_3_0 row above.
   budget_by_capability:
-    hej:
-      byte_budget: 8000
-      token_budget: 2000
-    visionera:
-      byte_budget: 8000
-      token_budget: 2000
-    resonera:
-      byte_budget: 8000
-      token_budget: 2000
-    inspirera:
-      byte_budget: 8000
-      token_budget: 2000
-    profilera:
-      byte_budget: 8000
-      token_budget: 2000
-    visualisera:
-      byte_budget: 8000
-      token_budget: 2000
-    planera:
-      byte_budget: 12000
-      token_budget: 3000
-    orkestrera:
-      byte_budget: 16000
-      token_budget: 4000
-    optimera:
-      byte_budget: 20000
-      token_budget: 5000
-    dokumentera:
-      byte_budget: 20000
-      token_budget: 5000
-    realisera:
-      byte_budget: 20000
-      token_budget: 5000
-    inspektera:
-      byte_budget: 28000
-      token_budget: 7000
+    status:
+      byte_budget: 25000
+      token_budget: 6500
+    vision:
+      byte_budget: 55000
+      token_budget: 14000
+    discuss:
+      byte_budget: 55000
+      token_budget: 14000
+    research:
+      byte_budget: 55000
+      token_budget: 14000
+    plan:
+      byte_budget: 55000
+      token_budget: 14000
+    build:
+      byte_budget: 55000
+      token_budget: 14000
+    optimize:
+      byte_budget: 55000
+      token_budget: 14000
+    audit:
+      byte_budget: 55000
+      token_budget: 14000
+    document:
+      byte_budget: 55000
+      token_budget: 14000
+    profile:
+      byte_budget: 55000
+      token_budget: 14000
+    design:
+      byte_budget: 55000
+      token_budget: 14000
+    orchestrate:
+      byte_budget: 55000
+      token_budget: 14000
 - id: state-plan
   command: agentera state plan
   selector: --format json
