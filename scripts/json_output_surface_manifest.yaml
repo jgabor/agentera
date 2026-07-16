@@ -59,6 +59,22 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 35000
   token_budget: 8000
+- id: prime-status-context
+  command: agentera prime --context status
+  selector: --context status --format json
+  argv:
+  - prime
+  - --context
+  - status
+  - --format
+  - json
+  inventory_classification: change
+  budget_classification: bounded_status_startup
+  measurement_scope: primary
+  fixture: repo_root
+  enforcement_tier: enforce
+  byte_budget: 25000
+  token_budget: 6500
 - id: prime-briefing
   command: agentera prime
   selector: --format json (default briefing)

@@ -99,7 +99,7 @@ tasks:
     name: Make status startup self-contained
     depends_on:
       - "3"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN a status-capability invocation WHEN status context is requested THEN one response contains both status instructions and the bounded state needed by every dashboard field and routing rule.
       - GIVEN that response WHEN the dashboard is rendered THEN no separate bare-prime call or raw artifact read is required.

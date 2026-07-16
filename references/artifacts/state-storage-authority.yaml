@@ -1521,6 +1521,11 @@ budgets:
       prime_dashboard:
         manifest_id: prime-dashboard
         max_utf8_bytes: 35000
+      prime_status_context:
+        manifest_id: prime-status-context
+        # Status startup includes the full instructions capsule as well as the
+        # bounded Task 3 decision brief. Diagnostics remain on stderr.
+        max_utf8_bytes: 25000
       prime_sparse:
         manifest_id: prime-fields-sparse
         max_utf8_bytes: 28000

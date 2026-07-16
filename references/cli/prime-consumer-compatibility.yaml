@@ -51,27 +51,28 @@ consumers:
       This is the only documented runtime consumer of the deprecated alias, so
       `issues` is transition-required until the stable cut.
   - id: status_dashboard_renderer
-    startup_command: agentera prime --format json
-    secondary_command: agentera prime --context status --format json
+    startup_command: agentera prime --context status --format json
     evidence: skills/agentera/SKILL.md:68
     dashboard_evidence: packages/cli/src/capabilities/status/instructions.ts
-    fetch_command_evidence: packages/cli/src/cli/commands/prime/orientationOutput.ts:78
+    state_evidence: packages/cli/src/cli/commands/prime/orientationOutput.ts:206
     consumed_fields:
-      - health
-      - todo
-      - plan
-      - objective
-      - profile
-      - next_action
-      - attention
-      - state_presence
-      - source_contract
-      - source_contract.capability_context
+      - capability_context.instructions
+      - capability_context.context.status_context.health
+      - capability_context.context.status_context.todo
+      - capability_context.context.status_context.plan
+      - capability_context.context.status_context.objective
+      - capability_context.context.status_context.profile
+      - capability_context.context.status_context.next_action
+      - capability_context.context.status_context.attention
+      - capability_context.context.status_context.state_presence
+      - capability_context.context.status_context.source_contract
     notes: >-
-      Bare `/agentera` route runs `prime --format json` for state, then follows
-      `source_contract.capability_context.fetch_command` for rendering
-      instructions. The dashboard glyphs (health/todo/plan/objective/profile/
-      next_action/attention) define the minimum required state families.
+      Bare `/agentera` and natural-language routing run one status-context call.
+      The response contains the full `capability_context.instructions` body and
+      the bounded `capability_context.context.status_context` projection. The
+      dashboard glyphs (health/todo/plan/objective/profile/next_action/attention)
+      define the minimum required state families; omitted rich detail is recovered
+      through the named command in the status context, never by raw artifact read.
   - id: capability_context_dispatcher
     startup_command: agentera prime --context <capability> --format json
     evidence: .opencode/agents/agentera.md:12
@@ -364,7 +365,28 @@ public_output_policy:
     Task 4 folds the bounded state into one `agentera prime --context status
     --format json` response (<=25000 bytes) so the status dashboard needs no
     separate bare-prime call or raw artifact read. The `--context` capsule
-    contract (command/status/capability_context) is unchanged.
+    contract (command/status/capability_context) is unchanged. The status
+    capsule puts the canonical Task 3 projection at
+    `capability_context.context.status_context`; unrelated per-runtime
+    lifecycle diagnostics are omitted while aggregate release-blocking state
+    remains available for routing.
+  status_context_contract:
+    startup_command: agentera prime --context status --format json
+    state_path: capability_context.context.status_context
+    instructions_path: capability_context.instructions
+    max_utf8_bytes: 25000
+    measurement: Buffer.byteLength(JSON.stringify(payload, null, 2) + "\n", "utf8")
+    required_state:
+      - health
+      - todo
+      - plan
+      - profile
+      - next_action
+      - attention
+      - state_presence
+      - source_contract
+    omitted_detail_recovery: capability_context.context.status_context.brief.omitted_rich_state
+    raw_artifact_reads_required: false
   fail_visible_rule: >-
     Undeclared or retired field dependencies must fail visibly: selecting an
     undeclared field via `--fields` returns nonzero exit code 1 and a correction
@@ -564,29 +586,27 @@ fixtures:
         - path: progress.latest.next
           present_when: progress.latest
     - consumer: status_dashboard_renderer
-      executable_command: agentera prime --format json
+      executable_command: agentera prime --context status --format json
       depends_on:
-        - health
-        - todo
-        - plan
-        - profile
-        - next_action
-        - attention
-        - state_presence
-        - source_contract
+        - capability_context
       nested_fields:
-        - source_contract.capability_context
-        - source_contract.capability_context.fetch_command
-        - profile.status
-        - next_action.object
+        - capability_context.instructions
+        - capability_context.context.status_context.health
+        - capability_context.context.status_context.todo
+        - capability_context.context.status_context.plan
+        - capability_context.context.status_context.profile.status
+        - capability_context.context.status_context.next_action.object
+        - capability_context.context.status_context.attention
+        - capability_context.context.status_context.state_presence
+        - capability_context.context.status_context.source_contract
       conditional_nested_fields:
         # objective is a conditional top-level field (see
         # default_emission_omission_contract): emitted when an objective is
         # active, omitted (and rendered "none active") otherwise. The dashboard
         # derives the active/none-active signal from state_presence, so it does
         # not declare objective as an always-present dependency.
-        - path: objective
-          present_when: state_presence.active.objective
+        - path: capability_context.context.status_context.objective
+          present_when: capability_context.context.status_context.state_presence.active.objective
     - consumer: capability_context_dispatcher
       executable_command: agentera prime --context build --format json
       depends_on:

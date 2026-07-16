@@ -65,10 +65,10 @@ The CLI routes. The host agent follows.
 
 | Request shape | Route |
 |---|---|
-| Bare `/agentera` | 1. Run `agentera prime --format json` for state data. 2. Run the `fetch_command` from `source_contract.capability_context` to get rendering instructions. 3. Follow `capability_context.instructions` for dashboard template, field rules, and exit marker. 4. Render the dashboard from the state data per the instructions. 5. Follow `next_action` to suggest the next capability. |
+| Bare `/agentera` | 1. Run `agentera prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
 | `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Natural language | Run `agentera prime --format json`. Run the `fetch_command` from `source_contract.capability_context` for rendering instructions. Use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
+| Natural language | Run `agentera prime --context status --format json` once. Read `capability_context.instructions` and `capability_context.context.status_context`; use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
 
 Capability names are the routing identity: `status`, `vision`, `discuss`,
 `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`,
@@ -98,10 +98,11 @@ Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`)
 
 The prime dashboard rendering contract — template, field-by-field rules, output
 budget, attention-item ordering, exit marker — is owned by the status capability
-instructions. Bare `agentera prime --format json` returns a pointer at
-`source_contract.capability_context` with a `fetch_command` to retrieve them;
-run it, then follow `capability_context.instructions` for layout,
-inclusion/exclusion rules, and the mandatory `⌂ status · <status>` exit marker.
+instructions. `agentera prime --context status --format json` returns the full
+`capability_context.instructions` body and the bounded
+`capability_context.context.status_context` state in one response. Render from
+that capsule without a separate bare-prime call or raw artifact read; use the
+named recovery command when the capsule marks detail as omitted.
 Ask for confirmation before invoking a state-changing downstream capability.
 
 The first response in a fresh interaction delivers the brief and a free-form

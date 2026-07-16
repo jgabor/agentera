@@ -8,6 +8,7 @@ import {
   CAPABILITY_INSTRUCTIONS,
   capabilityInstructionModulePath,
 } from "../../src/capabilities/index.js";
+import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
 import { loadRegistry as loadPackageRegistry } from "../../src/registries/packageRegistry.js";
 import { loadRegistry as loadRuntimeAdapterRegistry } from "../../src/registries/runtimeAdapterRegistry.js";
 
@@ -158,7 +159,11 @@ describe("retired runtime current-surface policy", () => {
     for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
       const modulePath = capabilityInstructionModulePath(capability);
       const raw = decodeRawCapabilityModule(modulePath);
-      expect(raw, `${capability} raw instructions`).toBe(served);
+      // Status keeps one canonical instruction vocabulary but publishes its
+      // one-call startup wording through the same deterministic adapter used
+      // by the runtime. Other capabilities remain raw and unchanged.
+      const expected = capability === "status" ? statusStartupInstructions(raw) : raw;
+      expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
       expect(currentSupportViolations(served), `${capability} served instructions`).toEqual([]);
     }

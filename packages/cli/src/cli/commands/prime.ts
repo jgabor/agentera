@@ -1,7 +1,13 @@
 import { PRIME_BLOB } from "../prime-blob.js";
 import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
-import { buildOrientationJsonPayload, emitPrime, printOrientationTextBriefing } from "./prime/orientationOutput.js";
+import {
+  buildOrientationJsonPayload,
+  buildStatusContextState,
+  emitPrime,
+  PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
+  printOrientationTextBriefing,
+} from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
@@ -53,7 +59,30 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     }
     const state = collectOrientationState(collectOpts);
     const payload = buildPrimeCapabilityContextPayload(state, capability, command);
-    return emitPrime(command, payload, format, args.fields, out, err);
+    if (capability === "status") {
+      const capabilityContext = payload.capability_context as Record<string, unknown>;
+      const context = capabilityContext.context as Record<string, unknown>;
+      // Status is the one capability whose startup state is the bounded prime
+      // decision brief itself. Do not carry the unrelated full lifecycle
+      // diagnostic projection alongside it; the brief retains the aggregate
+      // routing signal and names upgrade --dry-run for detail.
+      delete payload.runtime_lifecycle;
+      // The status projection already carries the dashboard's app/profile
+      // state. Keep the capsule's routing metadata and fallback pointers, but
+      // do not serialize the generic capability retrieval/write contracts that
+      // belong to mutating capabilities.
+      delete capabilityContext.app;
+      delete capabilityContext.profile;
+      const startupState = capabilityContext.state as Record<string, unknown>;
+      delete startupState.write_contract;
+      delete startupState.retrieval_contract;
+      delete context.first_invocation_read;
+      delete context.history;
+      context.status_context = buildStatusContextState(state, command);
+    }
+    return emitPrime(command, payload, format, args.fields, out, err, {
+      maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
+    });
   }
   if (dashboard) {
     if (format === "text") {

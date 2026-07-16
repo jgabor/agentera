@@ -4,6 +4,7 @@
 // imports this barrel from `../capabilities/index.js` so source-mode (vitest)
 // and dist-mode (npm install) resolve the same path.
 import { instructions as statusInstructions } from "./status/instructions.js";
+import { statusStartupInstructions } from "./status/startupInstructions.js";
 import { instructions as visionInstructions } from "./vision/instructions.js";
 import { instructions as discussInstructions } from "./discuss/instructions.js";
 import { instructions as researchInstructions } from "./research/instructions.js";
@@ -17,7 +18,7 @@ import { instructions as designInstructions } from "./design/instructions.js";
 import { instructions as orchestrateInstructions } from "./orchestrate/instructions.js";
 
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
-  status: statusInstructions,
+  status: statusStartupInstructions(statusInstructions),
   vision: visionInstructions,
   discuss: discussInstructions,
   research: researchInstructions,

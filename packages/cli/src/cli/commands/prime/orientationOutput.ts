@@ -8,10 +8,13 @@ import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
 import { startupCompletenessContract } from "../../startupCompletenessContract.js";
 import { stateWriterContract } from "../../../state/write/operations.js";
-import { briefOrientationPayload } from "./briefOrientation.js";
+import { briefOrientationPayload, briefUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
 
 export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 export { briefOrientationPayload, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
+
+/** Authority for the complete status startup capsule, including instructions. */
+export const PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES = 25000;
 
 /** Project a single {@link NextAction} to its JSON record shape. */
 function nextActionEntry(action: NextAction): Record<string, string> {
@@ -119,18 +122,21 @@ function orientationAppHome(bundle: BundleStatus): JsonObject {
   };
 }
 
-function capabilityContextPointer(): JsonObject {
+function capabilityContextPointer(requiredBeforeRendering = true): JsonObject {
   return {
     capability: "status",
     fetch_command: "agentera prime --context status --format json",
-    required_before_rendering: true,
-    note: "Dashboard rendering instructions (template, field rules, exit marker) are owned by the status capability. Run the fetch_command before rendering.",
+    required_before_rendering: requiredBeforeRendering,
+    note: requiredBeforeRendering
+      ? "Dashboard rendering instructions (template, field rules, exit marker) are owned by the status capability. Run the fetch_command before rendering."
+      : "The status-context response includes dashboard instructions and bounded state; no second prime call is required before rendering.",
   };
 }
 
 export function buildOrientationJsonPayload(
   state: OrientationState,
   command: string,
+  options: { capabilityContextRequiredBeforeRendering?: boolean } = {},
 ): Record<string, unknown> {
   const bundle = state.app;
   const schemasDir = state.schemas_dir;
@@ -189,10 +195,44 @@ export function buildOrientationJsonPayload(
       access,
       empty_state: "fresh mode with missing artifact summaries and zero issue counts",
       capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
-      capability_context: capabilityContextPointer(),
+       capability_context: capabilityContextPointer(options.capabilityContextRequiredBeforeRendering ?? true),
       artifact_writes: stateWriterContract(),
     },
   };
+}
+
+/**
+ * The status capability consumes the same bounded decision-brief projection as
+ * bare prime. Keeping the projection here prevents a second status summary
+ * implementation from drifting from the public prime contract.
+ */
+export function buildStatusContextState(state: OrientationState, command = "prime"): Record<string, unknown> {
+  const projected = briefOrientationPayload(
+    omitInactiveConditionalDefaults(
+      buildOrientationJsonPayload(state, command, { capabilityContextRequiredBeforeRendering: false }),
+    ),
+    { budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES },
+  );
+  // The canonical brief contains compatibility and source metadata useful to
+  // bare-prime consumers. Status already has its mode in the capsule envelope;
+  // history/source and null bespoke pointers are not dashboard or routing
+  // inputs. Omit only those redundant leaves after applying the shared brief
+  // projection, leaving its recovery catalog and all dashboard fields intact.
+  for (const field of [
+    "app_home",
+    "mode",
+    "history",
+    "issues",
+    "source",
+    "orchestration_context",
+    "closeout_context",
+    "evidence_context",
+    "benchmark_context",
+    "execution_context",
+  ]) {
+    delete projected[field];
+  }
+  return projected;
 }
 
 export function emitPrime(
@@ -202,7 +242,7 @@ export function emitPrime(
   fieldsArg: string | null | undefined,
   out: (t: string) => void,
   err: (t: string) => void,
-  options: { bareBrief?: boolean; briefBudgetBytes?: number } = {},
+  options: { bareBrief?: boolean; briefBudgetBytes?: number; maxUtf8Bytes?: number } = {},
 ): number {
   const requested = requestedFields(fieldsArg);
   // The default bare briefing first omits inactive conditional top-level fields
@@ -217,6 +257,16 @@ export function emitPrime(
     requested.length === 0 && options.bareBrief
       ? briefOrientationPayload(conditional, { budgetBytes: options.briefBudgetBytes })
       : conditional;
+  if (format === "json" && requested.length === 0 && options.maxUtf8Bytes !== undefined) {
+    const bytes = briefUtf8Bytes(effectivePayload);
+    if (bytes > options.maxUtf8Bytes) {
+      err(
+        `Error: ${command} JSON output is ${bytes} UTF-8 bytes, over the ${options.maxUtf8Bytes}-byte startup budget; ` +
+          "use the named recovery commands in capability_context.context.status_context.brief.\n",
+      );
+      return 1;
+    }
+  }
   emitIssuesFieldDeprecationWarning(requested, effectivePayload, err);
   if (requested.length === 0) {
     emitStructured(effectivePayload, format, out);

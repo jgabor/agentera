@@ -432,6 +432,13 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
   it.each(NON_BESPOKE_CAPABILITIES)("prime --context %s (non-bespoke) does not emit a per-capability source_contract", (capability) => {
     const { rc, payload } = capturePrimeContext(capability);
     expect(rc, `prime --context ${capability} rc`).toBe(0);
+    if (capability === "status") {
+      // Status is self-contained: its canonical bounded dashboard projection
+      // carries the source/recovery contract consumed by the renderer.
+      const statusContext = (payload.capability_context as Record<string, any>).context.status_context;
+      expect(statusContext.source_contract).toBeTypeOf("object");
+      return;
+    }
     // Non-bespoke capabilities (hej, planera, resonera, inspirera, visionera, visualisera, profilera)
     // share the bare capability_context.context.{capability, schema_error, first_invocation_read}
     // shape and have no bespoke source_contract under context.<bespoke>.source_contract.
