@@ -11,6 +11,7 @@ import {
   cmdValidateCapabilityContract,
   cmdValidateArtifact,
   cmdValidateDescriptors,
+  cmdValidateState,
   isDelegatedValidateFamily,
 } from "../../src/cli/commands/validate.js";
 import { main } from "../../src/cli/dispatch.js";
@@ -104,6 +105,31 @@ describe("cli dispatch: validate routing", () => {
     const { rc, err } = capture((io) => main(["node", "agentera", "check", "validate"], io));
     expect(rc).toBe(2);
     expect(err).toContain("validate_family");
+  });
+});
+
+describe("cli validate state", () => {
+  it("emits a successful whole-state JSON envelope", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "validate-state-"));
+    fixtureRoots.push(root);
+    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"], io));
+    expect(rc).toBe(0);
+    expect(JSON.parse(out)).toMatchObject({ command: "check validate state", target_family: "state", status: "pass", valid: true, issues: [] });
+  });
+
+  it("exits nonzero with bounded actionable diagnostics", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "validate-state-"));
+    fixtureRoots.push(root);
+    const target = path.join(root, ".agentera/entities/unknown/decision/aaaaaaaaaa.yaml");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, "id: aaaaaaaaaa\nartifact: unknown\nrecord: {}\n");
+    const { rc, out } = capture((io) => cmdValidateState({ cwd: root, format: "json" }, io));
+    const payload = JSON.parse(out);
+    expect(rc).toBe(1);
+    expect(payload).toMatchObject({ command: "check validate state", status: "fail", valid: false });
+    expect(payload.issues[0]).toMatchObject({ code: "invalid_artifact", artifact: "unknown" });
+    expect(payload.issues[0].recovery).toContain("valid artifact values:");
+    expect(payload.issues[0].recovery).toContain("agentera check validate state --cwd");
   });
 });
 
@@ -211,4 +237,3 @@ describe("cli validate artifact", () => {
     expect(() => cmdValidateArtifact({ artifact: "BOGUS.md" }, {})).toThrow(/unsupported artifact/);
   });
 });
-

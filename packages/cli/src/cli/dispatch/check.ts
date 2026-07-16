@@ -7,6 +7,7 @@ import {
   cmdValidateCapabilityContract,
   cmdValidateArtifact,
   cmdValidateDescriptors,
+  cmdValidateState,
   isDelegatedValidateFamily,
 } from "../commands/validate.js";
 import { LEGACY_PYTHON_PARITY_FLAG } from "../../validate/lifecycleAdapters.js";
@@ -278,6 +279,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
           "capability-contract",
           "descriptors",
           "artifact",
+          "state",
         ],
         example: "agentera check validate cross-capability",
       },
@@ -316,6 +318,9 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       }
       return cmdValidateArtifact({ artifact: artifactFlag, file: fileFlag, cwd: cwdFlag, format }, io);
     }
+    if (family === "state") {
+      return cmdValidateState({ cwd: cwdFlag, format }, io);
+    }
     if (isDelegatedValidateFamily(family)) {
       return cmdValidate(family, { format, legacyPythonParity }, io);
     }
@@ -335,6 +340,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
           "capability-contract",
           "descriptors",
           "artifact",
+          "state",
         ],
       },
     });

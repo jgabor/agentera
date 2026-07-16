@@ -20,6 +20,7 @@ import {
 } from "../../registries/artifactProtocolIds.js";
 import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
+import { validateEntityState } from "../../state/entityStorage.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
 
@@ -525,4 +526,33 @@ export function cmdValidateArtifact(
   // cast: payload.violations come from the artifact-validation hook (subprocess IO boundary)
   for (const violation of payload.violations as string[]) err(`${violation}\n`);
   return rc;
+}
+
+export function cmdValidateState(
+  args: { cwd?: string | null; format?: string },
+  io: Io,
+): number {
+  const out = io.out ?? ((text: string) => process.stdout.write(text));
+  const err = io.err ?? ((text: string) => process.stderr.write(text));
+  const projectRoot = resolvePath(args.cwd ?? process.cwd());
+  const result = validateEntityState(projectRoot);
+  const payload: JsonObject = {
+    command: "check validate state",
+    target_family: "state",
+    status: result.valid ? "pass" : "fail",
+    valid: result.valid,
+    project_root: projectRoot,
+    entity_count: result.entityCount,
+    issue_count: result.issues.length + result.omittedIssueCount,
+    omitted_issue_count: result.omittedIssueCount,
+    valid_artifact_values: result.validArtifactValues,
+    issues: result.issues as unknown as JsonValue,
+  };
+  if ((args.format ?? "text") === "json") emitStructured(payload, "json", out);
+  else {
+    out(`status=${payload.status} | entities=${result.entityCount} | issues=${payload.issue_count} | project_root=${projectRoot}\n`);
+    for (const issue of result.issues) err(`${issue.code}: ${issue.message}\nrecovery: ${issue.recovery}\n`);
+    if (result.omittedIssueCount > 0) err(`omitted ${result.omittedIssueCount} additional issues; repair listed issues and rerun agentera check validate state --cwd ${JSON.stringify(projectRoot)}\n`);
+  }
+  return result.valid ? 0 : 1;
 }

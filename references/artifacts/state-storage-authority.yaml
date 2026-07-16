@@ -64,6 +64,20 @@ entity_target:
   storage_boundary:
     rule: one independently mutable entity per writer-owned canonical file
     aggregate_authority: forbidden
+    shared_primitives:
+      status: implemented
+      canonical_root: .agentera/entities
+      canonical_path_template: .agentera/entities/<artifact>/<boundary>/<id>.yaml
+      path_components: [artifact, boundary, id]
+      extension: .yaml
+      publication: exclusive_immutable_file
+      identical_replay: idempotent
+      divergent_same_id: reject_without_overwrite
+      state_validation:
+        canonical_command: agentera check validate state
+        mutates: false
+        failure_exit: nonzero
+        diagnostics: bounded_structured_with_exact_recovery
     same_entity_conflict: >-
       Concurrent divergent edits to one entity remain an ordinary explicit file
       conflict or validation conflict; no runtime silently selects a winner.

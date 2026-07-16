@@ -51,6 +51,19 @@ describe("Decision 94 entity authority", () => {
       storage_boundary: {
         rule: "one independently mutable entity per writer-owned canonical file",
         aggregate_authority: "forbidden",
+        shared_primitives: {
+          status: "implemented",
+          canonical_root: ".agentera/entities",
+          canonical_path_template: ".agentera/entities/<artifact>/<boundary>/<id>.yaml",
+          publication: "exclusive_immutable_file",
+          identical_replay: "idempotent",
+          divergent_same_id: "reject_without_overwrite",
+          state_validation: {
+            canonical_command: "agentera check validate state",
+            mutates: false,
+            failure_exit: "nonzero",
+          },
+        },
       },
       views: {
         authority: "non_authoritative_cli_rendering",

@@ -42,7 +42,7 @@ tasks:
     name: Deliver shared entity storage and validation
     depends_on:
       - "1"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN an entity write WHEN its ID is allocated THEN it is ten lowercase letters and unique across project state.
       - GIVEN valid, duplicate, malformed, or unsafe entities WHEN discovered THEN reads classify them deterministically without escaping the project boundary.
