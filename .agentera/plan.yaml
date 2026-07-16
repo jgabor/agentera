@@ -86,14 +86,14 @@ tasks:
       - GIVEN omitted rich state WHEN an agent follows the named recovery command THEN the current authoritative detail is available without raw artifact access.
       - GIVEN one passing and one over-budget fixture per bounded unit WHEN focused tests run THEN the byte gate accepts the former and rejects the latter.
     evaluation:
-      attempt_count: 3
-      failure_count: 1
+      attempt_count: 1
+      failure_count: 0
       last_verdict: pass
-      last_failure_evidence: Degraded brief envelope retains unbounded state_presence/source_contract data and has no final byte gate; a 20KB state_presence produces a 22,150-byte degraded response. Integrated over-budget test checks against 12KB rather than the configured gate.
+      last_failure_evidence: null
       provenance:
-        attempt_id: task-3-retry-1-20260716
-        source: "Task 3 retry verification: bounded adversarial degraded envelopes and configured-gate regression suite"
-        recorded_at: 2026-07-16 13:42
+        attempt_id: task-3-repair-dashboard-20260716
+        source: User-authorized reopen; Task 3 dashboard repair verified by focused and full repository gates
+        recorded_at: 2026-07-16 14:18
         writer_command: agentera state plan record-evaluation
   - number: 4
     name: Make status startup self-contained

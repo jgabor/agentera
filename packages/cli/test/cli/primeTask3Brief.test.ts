@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
+import { collectOrientationState } from "../../src/cli/commands/prime/collectOrientationState.js";
 import {
   BriefBudgetError,
   briefByteGate,
@@ -29,7 +30,7 @@ import {
   briefUtf8Bytes,
   PRIME_BRIEF_MAX_UTF8_BYTES,
 } from "../../src/cli/commands/prime/briefOrientation.js";
-import { emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
+import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -78,6 +79,17 @@ function capturePrime(): { rc: number; out: string; err: string; payload: Record
     { out: (t: string) => (out += t), err: (t: string) => (err += t) },
   );
   expect(rc, "bare prime --format json must exit 0").toBe(0);
+  return { rc, out, err, payload: JSON.parse(out) };
+}
+
+function capturePrimeDashboard(): { rc: number; out: string; err: string; payload: Record<string, unknown> } {
+  let out = "";
+  let err = "";
+  const rc = cmdPrime(
+    { command: "prime", format: "json", dashboard: true, home, installRoot: appHome },
+    { out: (t: string) => (out += t), err: (t: string) => (err += t) },
+  );
+  expect(rc, "prime --dashboard --format json must exit 0").toBe(0);
   return { rc, out, err, payload: JSON.parse(out) };
 }
 
@@ -296,6 +308,26 @@ describe("Task 3 AC4: omitted rich state has named recovery without raw artifact
     const sc = dashboard.source_contract as Record<string, unknown>;
     const aw = sc.artifact_writes as Record<string, unknown>;
     expect(aw.artifacts, "--dashboard keeps full artifact_writes.artifacts").toBeDefined();
+  });
+
+  it("--dashboard preserves every input field and value, including inactive defaults", () => {
+    returningFixture();
+    const input = buildOrientationJsonPayload(
+      collectOrientationState({ home, installRoot: appHome }),
+      "prime",
+    );
+    const result = capturePrimeDashboard();
+    const dashboard = result.payload;
+    const inputFields = Object.keys(input).sort();
+    const outputFields = Object.keys(dashboard).sort();
+
+    expect(outputFields, "dashboard preserves the complete top-level field set").toEqual(inputFields);
+    for (const field of inputFields) {
+      expect(dashboard[field], `dashboard preserves ${field}`).toEqual(input[field]);
+    }
+    expect(dashboard.v1_migration).toEqual(input.v1_migration);
+    expect(dashboard.docs).toEqual(input.docs);
+    expect(dashboard.objective).toEqual(input.objective);
   });
 });
 

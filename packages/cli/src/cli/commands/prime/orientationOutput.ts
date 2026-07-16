@@ -209,10 +209,10 @@ export function emitPrime(
   // (v1_migration/docs/objective when default) so startup does not carry
   // default-only payload, then — for the bare default only — projects the full
   // payload to a bounded decision brief (Plan Task 3). Explicit `--fields`
-  // selection and `--dashboard` keep the full payload so a consumer recovering
-  // a named field or rendering the full dashboard is never confused by omission
-  // (see default_emission_omission_contract + brief_omission_contract).
-  const conditional = requested.length === 0 ? omitInactiveConditionalDefaults(payload) : payload;
+  // selection, `--dashboard`, and `--context` keep the full payload so a consumer
+  // recovering a named field or rendering a full surface is never confused by
+  // omission (see default_emission_omission_contract + brief_omission_contract).
+  const conditional = requested.length === 0 && options.bareBrief ? omitInactiveConditionalDefaults(payload) : payload;
   const effectivePayload =
     requested.length === 0 && options.bareBrief
       ? briefOrientationPayload(conditional, { budgetBytes: options.briefBudgetBytes })
