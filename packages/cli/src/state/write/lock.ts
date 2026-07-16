@@ -8,11 +8,15 @@ import { reject } from "./errors.js";
 const sleepArray = new Int32Array(new SharedArrayBuffer(4));
 const INITIALIZATION_GRACE_MS = 250;
 const OWNER_NAME = "owner.json";
+const CLAIM_NAME = ".reclaim.json";
 const MAX_OWNER_BYTES = 8 * 1024;
+const MAX_RECOVERY_ENTRIES = 128;
 const DIRECTORY_FLAGS = fs.constants.O_RDONLY
   | (fs.constants.O_DIRECTORY ?? 0)
   | (fs.constants.O_NOFOLLOW ?? 0);
 const FILE_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
+const PRIVATE_NAME = /^\.writer\.(?:(\d+)\.)?([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.tmp$/;
+const LEGACY_CLAIM_NAME = /^\.writer\.[0-9a-f-]{36}\.claim$/;
 
 interface LockRecord {
   pid: number;
@@ -25,7 +29,7 @@ interface FileIdentity {
   ino: bigint;
 }
 
-interface OwnerInspection {
+interface RecordInspection {
   state: "valid" | "malformed";
   stale: boolean;
   fd?: number;
@@ -36,7 +40,7 @@ interface OwnerInspection {
 interface DirectoryInspection {
   state: "directory";
   fd: number;
-  owner: OwnerInspection;
+  owner: RecordInspection;
 }
 
 type LockInspection =
@@ -50,6 +54,10 @@ interface PreparedLock {
   dirFd: number;
   ownerFd: number;
   record: LockRecord;
+}
+
+interface ReclaimClaim {
+  fd: number;
 }
 
 function lockRecord(value: unknown): LockRecord | null {
@@ -96,6 +104,15 @@ function pathMatches(pathname: string, expectedFd: number, flags: number): boole
   }
 }
 
+function entryAbsent(directoryFd: number, name: string): boolean {
+  try {
+    fs.lstatSync(fdPath(directoryFd, name));
+    return false;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ENOENT";
+  }
+}
+
 function readRecord(fd: number): LockRecord | null {
   try {
     const stat = fs.fstatSync(fd, { bigint: true });
@@ -115,29 +132,27 @@ function readRecord(fd: number): LockRecord | null {
   }
 }
 
-function inspectOwner(lockFd: number): OwnerInspection {
-  const ownerPath = fdPath(lockFd, OWNER_NAME);
-  let ownerFd: number | undefined;
+function inspectRecord(directoryFd: number, name: string): RecordInspection {
+  let fd: number | undefined;
   try {
-    ownerFd = fs.openSync(ownerPath, FILE_FLAGS);
-    const stat = fs.fstatSync(ownerFd, { bigint: true });
+    fd = fs.openSync(fdPath(directoryFd, name), FILE_FLAGS);
+    const stat = fs.fstatSync(fd, { bigint: true });
     const file = stat.isFile();
-    const record = file ? readRecord(ownerFd) : null;
+    const record = file ? readRecord(fd) : null;
     return record
-      ? { state: "valid", stale: false, fd: ownerFd, file, record }
+      ? { state: "valid", stale: false, fd, file, record }
       : {
           state: "malformed",
           stale: Date.now() - Number(stat.mtimeMs) >= INITIALIZATION_GRACE_MS,
-          fd: ownerFd,
+          fd,
           file,
         };
   } catch (error) {
-    if (ownerFd !== undefined) fs.closeSync(ownerFd);
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code !== "ENOENT") {
+    if (fd !== undefined) fs.closeSync(fd);
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       return { state: "malformed", stale: false, file: false };
     }
-    const stat = fs.fstatSync(lockFd, { bigint: true });
+    const stat = fs.fstatSync(directoryFd, { bigint: true });
     return {
       state: "malformed",
       stale: Date.now() - Number(stat.mtimeMs) >= INITIALIZATION_GRACE_MS,
@@ -150,7 +165,7 @@ function inspectLock(lockPath: string): LockInspection {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const fd = fs.openSync(lockPath, DIRECTORY_FLAGS);
-      return { state: "directory", fd, owner: inspectOwner(fd) };
+      return { state: "directory", fd, owner: inspectRecord(fd, OWNER_NAME) };
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code === "ENOENT") return { state: "absent" };
@@ -182,23 +197,31 @@ function inspectLock(lockPath: string): LockInspection {
   return { state: "unsupported", kind: "entry changing during inspection" };
 }
 
+function closeRecord(inspection: RecordInspection): void {
+  if (inspection.fd !== undefined) fs.closeSync(inspection.fd);
+}
+
 function closeInspection(inspection: LockInspection): void {
   if (inspection.state === "directory") {
-    if (inspection.owner.fd !== undefined) fs.closeSync(inspection.owner.fd);
+    closeRecord(inspection.owner);
     fs.closeSync(inspection.fd);
   } else if (inspection.state === "legacy_file") {
     fs.closeSync(inspection.fd);
   }
 }
 
-function ownerIsDead(record: LockRecord): boolean {
-  if (record.pid === process.pid) return false;
+function pidIsDead(pid: number): boolean {
+  if (pid === process.pid) return false;
   try {
-    process.kill(record.pid, 0);
+    process.kill(pid, 0);
     return false;
   } catch (error) {
     return (error as NodeJS.ErrnoException).code === "ESRCH";
   }
+}
+
+function ownerIsDead(record: LockRecord): boolean {
+  return pidIsDead(record.pid);
 }
 
 function syncDirectory(directory: string | number): void {
@@ -210,57 +233,138 @@ function syncDirectory(directory: string | number): void {
   }
 }
 
-function unlinkExactFile(
-  directoryFd: number,
-  name: string,
-  expectedFd: number,
-  expectedLinksAfterClaim: bigint,
-): boolean {
+function unlinkPinnedFile(directoryFd: number, name: string, expectedFd: number): boolean {
   if (!fs.fstatSync(expectedFd).isFile()) return false;
-  const entryPath = fdPath(directoryFd, name);
-  const claimName = `.writer.${randomUUID()}.claim`;
-  const claimPath = fdPath(directoryFd, claimName);
-  let claimFd: number | undefined;
-  let removed = false;
+  const target = fdPath(directoryFd, name);
+  if (!pathMatches(target, expectedFd, FILE_FLAGS)) return false;
   try {
-    fs.linkSync(entryPath, claimPath);
+    fs.unlinkSync(target);
+    syncDirectory(directoryFd);
+    return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
     throw error;
   }
-  let failure: unknown;
+}
+
+function removePinnedDirectory(parentFd: number, name: string, directoryFd: number): boolean {
+  const target = fdPath(parentFd, name);
+  if (!pathMatches(target, directoryFd, DIRECTORY_FLAGS)) return false;
   try {
-    claimFd = fs.openSync(claimPath, FILE_FLAGS);
+    fs.rmdirSync(target);
+    syncDirectory(parentFd);
+    return true;
+  } catch (error) {
+    if (["ENOENT", "ENOTEMPTY", "EEXIST"].includes((error as NodeJS.ErrnoException).code ?? "")) return false;
+    throw error;
+  }
+}
+
+function recordCanBeRecovered(inspection: RecordInspection, token?: string): boolean {
+  if (!inspection.file || inspection.fd === undefined) return false;
+  if (inspection.state === "malformed") return inspection.stale;
+  return (token === undefined || inspection.record!.token === token) && ownerIsDead(inspection.record!);
+}
+
+function recoverPrivateDirectory(
+  parentFd: number,
+  name: string,
+  token: string,
+  pid: number | undefined,
+  transitionedTokens: ReadonlySet<string>,
+): void {
+  const privatePath = fdPath(parentFd, name);
+  let directoryFd: number | undefined;
+  try {
+    directoryFd = fs.openSync(privatePath, DIRECTORY_FLAGS);
+    const names = fs.readdirSync(fdPath(directoryFd));
+    if (names.length === 0) {
+      const stat = fs.fstatSync(directoryFd, { bigint: true });
+      if (
+        transitionedTokens.has(token)
+        || (pid !== undefined && pidIsDead(pid))
+        || Date.now() - Number(stat.mtimeMs) >= INITIALIZATION_GRACE_MS
+      ) {
+        removePinnedDirectory(parentFd, name, directoryFd);
+      }
+      return;
+    }
     if (
-      sameIdentity(identity(claimFd), identity(expectedFd))
-      && fs.fstatSync(claimFd, { bigint: true }).nlink === expectedLinksAfterClaim
-      && pathMatches(entryPath, expectedFd, FILE_FLAGS)
-    ) {
-      fs.unlinkSync(entryPath);
-      removed = true;
+      names.length > MAX_RECOVERY_ENTRIES
+      || names.some((entry) => entry !== OWNER_NAME && !LEGACY_CLAIM_NAME.test(entry))
+    ) return;
+
+    const records = names.map((entry) => ({ entry, inspection: inspectRecord(directoryFd!, entry) }));
+    try {
+      if (records.some(({ inspection }) => !inspection.file || inspection.fd === undefined)) return;
+      if (records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.token !== token)) {
+        return;
+      }
+      if (
+        pid !== undefined
+        && records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.pid !== pid)
+      ) return;
+      if (records.some(({ inspection }) => inspection.state === "valid" && !ownerIsDead(inspection.record!))) {
+        return;
+      }
+      if (
+        !transitionedTokens.has(token)
+        && (pid === undefined || !pidIsDead(pid))
+        && records.some(({ inspection }) => inspection.state === "malformed" && !inspection.stale)
+      ) return;
+      for (const { entry, inspection } of records) {
+        unlinkPinnedFile(directoryFd, entry, inspection.fd!);
+      }
+      removePinnedDirectory(parentFd, name, directoryFd);
+    } finally {
+      for (const { inspection } of records) closeRecord(inspection);
     }
   } catch (error) {
-    failure = error;
+    if (!["ENOENT", "ENOTDIR", "ELOOP"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
   } finally {
-    if (claimFd !== undefined) {
-      const removeClaim = pathMatches(claimPath, claimFd, FILE_FLAGS);
-      fs.closeSync(claimFd);
-      if (removeClaim) {
-        try {
-          fs.unlinkSync(claimPath);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT" && failure === undefined) failure = error;
-        }
+    if (directoryFd !== undefined) fs.closeSync(directoryFd);
+  }
+}
+
+function staleTransitionTokens(parentFd: number): Set<string> {
+  const tokens = new Set<string>();
+  let lockFd: number | undefined;
+  try {
+    lockFd = fs.openSync(fdPath(parentFd, ".writer.lock"), DIRECTORY_FLAGS);
+    for (const name of [OWNER_NAME, CLAIM_NAME]) {
+      const record = inspectRecord(lockFd, name);
+      try {
+        if (record.state === "valid" && ownerIsDead(record.record!)) tokens.add(record.record!.token);
+      } finally {
+        closeRecord(record);
       }
     }
-  }
-  try {
-    syncDirectory(directoryFd);
   } catch (error) {
-    if (failure === undefined) failure = error;
+    if (!["ENOENT", "ENOTDIR", "ELOOP"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
+  } finally {
+    if (lockFd !== undefined) fs.closeSync(lockFd);
   }
-  if (failure !== undefined) throw failure;
-  return removed;
+  return tokens;
+}
+
+function recoverPreparedLocks(parentFd: number, lockPath: string): void {
+  const candidates = fs.readdirSync(fdPath(parentFd), { withFileTypes: true })
+    .map((entry) => ({ entry, match: PRIVATE_NAME.exec(entry.name) }))
+    .filter(({ match }) => match !== null);
+  if (candidates.length > MAX_RECOVERY_ENTRIES) {
+    unsupportedLock(lockPath, `${candidates.length} private preparation entries`);
+  }
+  const transitionedTokens = staleTransitionTokens(parentFd);
+  for (const { entry, match } of candidates) {
+    if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
+    recoverPrivateDirectory(
+      parentFd,
+      entry.name,
+      match![2]!,
+      match![1] === undefined ? undefined : Number(match![1]),
+      transitionedTokens,
+    );
+  }
 }
 
 function prepareLock(parentFd: number): PreparedLock {
@@ -269,7 +373,7 @@ function prepareLock(parentFd: number): PreparedLock {
     token: randomUUID(),
     created_at: new Date().toISOString(),
   };
-  const name = `.writer.${record.token}.tmp`;
+  const name = `.writer.${record.pid}.${record.token}.tmp`;
   const preparedPath = fdPath(parentFd, name);
   let dirFd: number | undefined;
   let ownerFd: number | undefined;
@@ -288,9 +392,9 @@ function prepareLock(parentFd: number): PreparedLock {
   } catch (error) {
     if (dirFd !== undefined && ownerFd !== undefined) {
       try {
-        unlinkExactFile(dirFd, OWNER_NAME, ownerFd, 2n);
+        unlinkPinnedFile(dirFd, OWNER_NAME, ownerFd);
       } catch {
-        /* preserve the acquisition error */
+        // Preserve the acquisition error.
       }
     }
     if (ownerFd !== undefined) fs.closeSync(ownerFd);
@@ -299,7 +403,7 @@ function prepareLock(parentFd: number): PreparedLock {
       fs.rmdirSync(preparedPath);
       syncDirectory(parentFd);
     } catch {
-      /* preserve the acquisition error */
+      // Preserve the acquisition error.
     }
     throw error;
   }
@@ -308,10 +412,9 @@ function prepareLock(parentFd: number): PreparedLock {
 function disposePrepared(prepared: PreparedLock, parentFd: number): void {
   if (prepared.ownerFd >= 0 && prepared.dirFd >= 0) {
     try {
-      const links = fs.fstatSync(prepared.ownerFd, { bigint: true }).nlink;
-      unlinkExactFile(prepared.dirFd, OWNER_NAME, prepared.ownerFd, links + 1n);
+      unlinkPinnedFile(prepared.dirFd, OWNER_NAME, prepared.ownerFd);
     } catch {
-      /* the exact prepared owner was already removed */
+      // The owner was moved or the private directory changed identity.
     }
   }
   if (prepared.ownerFd >= 0) {
@@ -329,7 +432,7 @@ function disposePrepared(prepared: PreparedLock, parentFd: number): void {
       fs.rmdirSync(prepared.path);
       syncDirectory(parentFd);
     } catch {
-      /* a non-empty replacement is not this attempt's directory */
+      // A non-empty replacement is not this attempt's directory.
     }
   }
 }
@@ -361,19 +464,8 @@ function verifyCanonicalLock(
 }
 
 function removeOwnedDirectory(parentFd: number, lockName: string, lockFd: number, ownerFd: number): boolean {
-  const removedOwner = unlinkExactFile(lockFd, OWNER_NAME, ownerFd, 2n);
-  if (!removedOwner) return false;
-  const lockPath = fdPath(parentFd, lockName);
-  if (!pathMatches(lockPath, lockFd, DIRECTORY_FLAGS)) return false;
-  try {
-    fs.rmdirSync(lockPath);
-    syncDirectory(parentFd);
-    return true;
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === "ENOENT" || code === "ENOTEMPTY" || code === "EEXIST") return false;
-    throw error;
-  }
+  if (!unlinkPinnedFile(lockFd, OWNER_NAME, ownerFd)) return false;
+  return removePinnedDirectory(parentFd, lockName, lockFd);
 }
 
 function writerLock(
@@ -397,7 +489,7 @@ function writerLock(
           removeOwnedDirectory(parentFd, lockName, lockFd, ownerFd);
         }
       } catch {
-        /* a missing or replaced lock is not this owner's to remove */
+        // A missing or replaced lock is not this owner's to remove.
       }
       fs.closeSync(ownerFd);
       const exactDirectory = pathMatches(projectDirectory, parentFd, DIRECTORY_FLAGS);
@@ -407,7 +499,7 @@ function writerLock(
         try {
           fs.rmdirSync(projectDirectory);
         } catch {
-          /* a published artifact or peer now owns the directory */
+          // A published artifact or peer now owns the directory.
         }
       }
     },
@@ -422,7 +514,12 @@ function publishPrepared(
   lockName: string,
   createdDirectory: boolean,
 ): WriterLock | null {
-  fs.renameSync(prepared.path, fdPath(parentFd, lockName));
+  try {
+    fs.renameSync(prepared.path, fdPath(parentFd, lockName));
+  } catch (error) {
+    if (renameConflict(error)) return null;
+    throw error;
+  }
   syncDirectory(parentFd);
   if (verifyCanonicalLock(projectDirectory, parentFd, lockPath, prepared.dirFd, prepared.ownerFd, prepared.record)) {
     return writerLock(
@@ -439,13 +536,100 @@ function publishPrepared(
   try {
     removeOwnedDirectory(parentFd, lockName, prepared.dirFd, prepared.ownerFd);
   } catch {
-    /* only the exact prepared instance may be cleaned */
+    // Only the exact prepared instance may be cleaned.
   }
   fs.closeSync(prepared.ownerFd);
   prepared.ownerFd = -1;
   fs.closeSync(prepared.dirFd);
   prepared.dirFd = -1;
   return null;
+}
+
+function inspectedOwnerMatches(inspection: DirectoryInspection): boolean {
+  return inspection.owner.fd === undefined
+    ? entryAbsent(inspection.fd, OWNER_NAME)
+    : pathMatches(fdPath(inspection.fd, OWNER_NAME), inspection.owner.fd, FILE_FLAGS);
+}
+
+function recoverLegacyClaims(inspection: DirectoryInspection): boolean {
+  const names = fs.readdirSync(fdPath(inspection.fd));
+  if (names.length > MAX_RECOVERY_ENTRIES) return false;
+  for (const name of names.filter((entry) => LEGACY_CLAIM_NAME.test(entry))) {
+    const claim = inspectRecord(inspection.fd, name);
+    try {
+      if (!recordCanBeRecovered(claim)) return false;
+      unlinkPinnedFile(inspection.fd, name, claim.fd!);
+    } finally {
+      closeRecord(claim);
+    }
+  }
+  return fs.readdirSync(fdPath(inspection.fd)).every((name) => name === OWNER_NAME || name === CLAIM_NAME);
+}
+
+function removeClaim(inspection: DirectoryInspection, claim: ReclaimClaim): boolean {
+  const removed = unlinkPinnedFile(inspection.fd, CLAIM_NAME, claim.fd);
+  fs.closeSync(claim.fd);
+  claim.fd = -1;
+  return removed;
+}
+
+function claimInspectedDirectory(
+  inspection: DirectoryInspection,
+  prepared: PreparedLock,
+  parentFd: number,
+  lockName: string,
+): ReclaimClaim | null {
+  const canonicalPath = fdPath(parentFd, lockName);
+  if (
+    !pathMatches(canonicalPath, inspection.fd, DIRECTORY_FLAGS)
+    || !inspectedOwnerMatches(inspection)
+    || !recoverLegacyClaims(inspection)
+  ) return null;
+
+  const claimPath = fdPath(inspection.fd, CLAIM_NAME);
+  try {
+    // One fixed O_EXCL entry elects one reclaimer inside the exact directory inspected above.
+    fs.linkSync(fdPath(prepared.dirFd, OWNER_NAME), claimPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    const existing = inspectRecord(inspection.fd, CLAIM_NAME);
+    try {
+      if (recordCanBeRecovered(existing)) unlinkPinnedFile(inspection.fd, CLAIM_NAME, existing.fd!);
+    } finally {
+      closeRecord(existing);
+    }
+    return null;
+  }
+
+  let claimFd: number | undefined;
+  try {
+    claimFd = fs.openSync(claimPath, FILE_FLAGS);
+    if (
+      !sameIdentity(identity(claimFd), identity(prepared.ownerFd))
+      || fs.fstatSync(claimFd, { bigint: true }).nlink !== 2n
+    ) {
+      fs.closeSync(claimFd);
+      unlinkPinnedFile(inspection.fd, CLAIM_NAME, prepared.ownerFd);
+      return null;
+    }
+    const claim = { fd: claimFd };
+    syncDirectory(inspection.fd);
+    if (
+      pathMatches(canonicalPath, inspection.fd, DIRECTORY_FLAGS)
+      && pathMatches(claimPath, claimFd, FILE_FLAGS)
+      && inspectedOwnerMatches(inspection)
+    ) return claim;
+    removeClaim(inspection, claim);
+    return null;
+  } catch (error) {
+    if (claimFd !== undefined) fs.closeSync(claimFd);
+    try {
+      unlinkPinnedFile(inspection.fd, CLAIM_NAME, prepared.ownerFd);
+    } catch {
+      // Preserve the claim-publication error.
+    }
+    throw error;
+  }
 }
 
 function adoptInspectedDirectory(
@@ -457,55 +641,71 @@ function adoptInspectedDirectory(
   lockName: string,
   createdDirectory: boolean,
 ): WriterLock | null {
-  const previousOwnerFd = inspection.owner.fd;
-  if (previousOwnerFd !== undefined) {
-    if (!inspection.owner.file || !unlinkExactFile(inspection.fd, OWNER_NAME, previousOwnerFd, 2n)) {
+  const claim = claimInspectedDirectory(inspection, prepared, parentFd, lockName);
+  if (!claim) return null;
+
+  let transitioned = false;
+  try {
+    if (!inspectedOwnerMatches(inspection)) {
+      removeClaim(inspection, claim);
       return null;
     }
-    fs.closeSync(previousOwnerFd);
-    inspection.owner.fd = undefined;
-  }
+    fs.renameSync(fdPath(prepared.dirFd, OWNER_NAME), fdPath(inspection.fd, OWNER_NAME));
+    transitioned = true;
+    syncDirectory(inspection.fd);
+    syncDirectory(parentFd);
+    if (!verifyCanonicalLock(projectDirectory, parentFd, lockPath, inspection.fd, prepared.ownerFd, prepared.record)) {
+      unlinkPinnedFile(inspection.fd, OWNER_NAME, prepared.ownerFd);
+      removeClaim(inspection, claim);
+      return null;
+    }
 
-  try {
-    fs.linkSync(fdPath(prepared.dirFd, OWNER_NAME), fdPath(inspection.fd, OWNER_NAME));
+    closeRecord(inspection.owner);
+    inspection.owner.fd = undefined;
+    const exactPrivateDirectory = pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS);
+    if (!exactPrivateDirectory || !removePinnedDirectory(parentFd, path.basename(prepared.path), prepared.dirFd)) {
+      unlinkPinnedFile(inspection.fd, OWNER_NAME, prepared.ownerFd);
+      removeClaim(inspection, claim);
+      return null;
+    }
+    fs.closeSync(prepared.dirFd);
+    prepared.dirFd = -1;
+
+    if (!removeClaim(inspection, claim)) {
+      unlinkPinnedFile(inspection.fd, OWNER_NAME, prepared.ownerFd);
+      return null;
+    }
+    if (!verifyCanonicalLock(projectDirectory, parentFd, lockPath, inspection.fd, prepared.ownerFd, prepared.record)) {
+      unlinkPinnedFile(inspection.fd, OWNER_NAME, prepared.ownerFd);
+      return null;
+    }
+    return writerLock(
+      projectDirectory,
+      lockPath,
+      lockName,
+      parentFd,
+      inspection.fd,
+      prepared.ownerFd,
+      prepared.record,
+      createdDirectory,
+    );
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") return null;
+    if (transitioned) {
+      try {
+        unlinkPinnedFile(inspection.fd, OWNER_NAME, prepared.ownerFd);
+      } catch {
+        // The exact transitioned owner is already absent.
+      }
+    }
+    if (claim.fd >= 0) {
+      try {
+        removeClaim(inspection, claim);
+      } catch {
+        if (claim.fd >= 0) fs.closeSync(claim.fd);
+      }
+    }
     throw error;
   }
-  syncDirectory(inspection.fd);
-  syncDirectory(parentFd);
-  if (!verifyCanonicalLock(projectDirectory, parentFd, lockPath, inspection.fd, prepared.ownerFd, prepared.record)) {
-    unlinkExactFile(inspection.fd, OWNER_NAME, prepared.ownerFd, 3n);
-    return null;
-  }
-
-  if (!unlinkExactFile(prepared.dirFd, OWNER_NAME, prepared.ownerFd, 3n)) {
-    unlinkExactFile(inspection.fd, OWNER_NAME, prepared.ownerFd, 3n);
-    return null;
-  }
-  const exactPreparedDirectory = pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS);
-  if (!exactPreparedDirectory) {
-    unlinkExactFile(inspection.fd, OWNER_NAME, prepared.ownerFd, 2n);
-    return null;
-  }
-  fs.rmdirSync(prepared.path);
-  syncDirectory(parentFd);
-  if (!verifyCanonicalLock(projectDirectory, parentFd, lockPath, inspection.fd, prepared.ownerFd, prepared.record)) {
-    unlinkExactFile(inspection.fd, OWNER_NAME, prepared.ownerFd, 2n);
-    return null;
-  }
-  fs.closeSync(prepared.dirFd);
-  prepared.dirFd = -1;
-  return writerLock(
-    projectDirectory,
-    lockPath,
-    lockName,
-    parentFd,
-    inspection.fd,
-    prepared.ownerFd,
-    prepared.record,
-    createdDirectory,
-  );
 }
 
 function renameConflict(error: unknown): boolean {
@@ -531,6 +731,15 @@ function unsupportedLock(lockPath: string, kind: string): never {
   });
 }
 
+function cleanupCreatedDirectory(projectDirectory: string, createdDirectory: boolean): void {
+  if (!createdDirectory) return;
+  try {
+    fs.rmdirSync(projectDirectory);
+  } catch {
+    // A peer or project artifact now owns the directory.
+  }
+}
+
 export interface WriterLock {
   path: string;
   release: () => void;
@@ -546,85 +755,57 @@ export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): Writer
   const lockPath = path.join(projectDirectory, lockName);
   const anchoredLockPath = fdPath(parentFd, lockName);
   const deadline = Date.now() + timeoutMs;
+  let prepared: PreparedLock | undefined;
 
-  while (true) {
-    let prepared: PreparedLock;
-    try {
-      prepared = prepareLock(parentFd);
-    } catch (error) {
-      fs.closeSync(parentFd);
-      if (createdDirectory) {
-        try {
-          fs.rmdirSync(projectDirectory);
-        } catch {
-          /* a peer or project artifact now owns the directory */
-        }
-      }
-      throw error;
-    }
-    try {
-      try {
-        const lock = publishPrepared(
-          prepared,
-          projectDirectory,
-          parentFd,
-          lockPath,
-          lockName,
-          createdDirectory,
-        );
-        if (lock) return lock;
-        if (Date.now() >= deadline) timeout(lockPath);
-        continue;
-      } catch (error) {
-        if (!renameConflict(error)) throw error;
+  try {
+    recoverPreparedLocks(parentFd, lockPath);
+    prepared = prepareLock(parentFd);
+    while (true) {
+      const published = publishPrepared(
+        prepared,
+        projectDirectory,
+        parentFd,
+        lockPath,
+        lockName,
+        createdDirectory,
+      );
+      if (published) return published;
+      if (prepared.dirFd < 0 || prepared.ownerFd < 0) {
+        prepared = prepareLock(parentFd);
       }
 
       const existing = inspectLock(anchoredLockPath);
       if (existing.state === "legacy_file") {
         closeInspection(existing);
-        disposePrepared(prepared, parentFd);
         unsupportedLock(lockPath, "legacy file");
       }
-      if (existing.state === "unsupported") {
-        const kind = existing.kind;
-        disposePrepared(prepared, parentFd);
-        unsupportedLock(lockPath, kind);
-      }
-      if (existing.state === "absent") {
-        disposePrepared(prepared, parentFd);
-        continue;
-      }
-
-      const reclaimable = existing.owner.state === "valid"
-        ? ownerIsDead(existing.owner.record!)
-        : existing.owner.stale;
-      if (reclaimable) {
-        const lock = adoptInspectedDirectory(
-          existing,
-          prepared,
-          projectDirectory,
-          parentFd,
-          lockPath,
-          lockName,
-          createdDirectory,
-        );
-        if (lock) {
-          if (existing.owner.fd !== undefined) fs.closeSync(existing.owner.fd);
-          return lock;
+      if (existing.state === "unsupported") unsupportedLock(lockPath, existing.kind);
+      if (existing.state === "directory") {
+        const reclaimable = existing.owner.state === "valid"
+          ? ownerIsDead(existing.owner.record!)
+          : existing.owner.stale;
+        if (reclaimable) {
+          const lock = adoptInspectedDirectory(
+            existing,
+            prepared,
+            projectDirectory,
+            parentFd,
+            lockPath,
+            lockName,
+            createdDirectory,
+          );
+          if (lock) return lock;
         }
       }
       closeInspection(existing);
-      disposePrepared(prepared, parentFd);
-    } catch (error) {
-      disposePrepared(prepared, parentFd);
-      fs.closeSync(parentFd);
-      throw error;
-    }
 
-    if (Date.now() >= deadline) {
-      fs.closeSync(parentFd);
-      timeout(lockPath);
+      if (Date.now() >= deadline) timeout(lockPath);
+      Atomics.wait(sleepArray, 0, 0, Math.min(25, Math.max(0, deadline - Date.now())));
     }
-    Atomics.wait(sleepArray, 0, 0, Math.min(25, Math.max(0, deadline - Date.now())));
+  } catch (error) {
+    if (prepared !== undefined) disposePrepared(prepared, parentFd);
+    fs.closeSync(parentFd);
+    cleanupCreatedDirectory(projectDirectory, createdDirectory);
+    throw error;
   }
 }

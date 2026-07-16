@@ -1,4 +1,47 @@
 cycles:
+  - number: 867
+    timestamp: 2026-07-16 21:25
+    type: fix
+    phase: build
+    what: Replaced link-count stale-lock election with an exclusive
+      descriptor-pinned claim and recoverable owner transition, then added
+      bounded private-residue recovery.
+    inspiration: Replanned Task 17 retry 1 after independent audit identified
+      all-loser claim contention, an unrecoverable two-link adoption state, and
+      abandoned private directories.
+    discovered: The first full-suite run exposed the crash fixture's nested Vitest
+      global setup racing the parent build; the fixture now runs as a plain Node
+      child against the global-setup build, and the full suite passed on retry.
+    verified: "pnpm exec vp test run test/state/write/lock.test.ts
+      test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts
+      test/cli/validate.test.ts test/cli/validateParity.test.ts
+      test/cli/validateVerifyOracles.test.ts --reporter=dot: 6 files, 160 tests
+      passed. pnpm exec vp test run test/state/write/lock.test.ts
+      --reporter=dot: 1 file, 16 tests passed. pnpm test: 202 files and 2354
+      tests passed, 1 file/test skipped. pnpm run typecheck: passed. pnpm run
+      build: passed. check validate state --format json: pass, 0 issues. check
+      validate capability-contract --format json: pass, 2/2 checks. check
+      compact: pass, 0 over-limit and 0 errors. Three synchronized stale-lock
+      publisher repeats each yielded one entity, one explicit duplicate-ID
+      loser, and no residue; five injected claim/adoption crash points recovered
+      in a fresh process; known empty, malformed, dead, old hard-link, and
+      legacy-claim residue was removed while live/unknown private state was
+      preserved."
+    next: Keep Task 17 complete and Task 3 pending; do not begin migration-family
+      cutover in this cycle.
+    context:
+      intent: "Close Task 17 retry-1 audit failures: deterministic one-winner
+        reclamation, recovery from every Agentera-owned claim/adoption crash
+        state, and safe abandoned-private cleanup."
+      constraints: Preserved the public writer-lock API, atomic initialized
+        publication, token/instance verification, fsync durability,
+        project/symlink boundaries, bounded timeout, idempotent release, and
+        structured legacy-file correction. No vision, release, publication, or
+        Task 3 work.
+      unknowns: None within Task 17 acceptance; every enumerated claim/adoption crash
+        transition is covered by deterministic recovery tests.
+      scope: packages/cli/src/state/write/lock.ts; writer-lock crash fixture and
+        lock/entity concurrency tests; progress cycle only.
   - number: 866
     timestamp: 2026-07-16 20:49
     type: fix
@@ -270,50 +313,6 @@ cycles:
       scope: references/cli/agent-ready-state-contract.yaml;
         references/cli/vocabulary-index.yaml; .agentera/plan.yaml;
         .agentera/progress.yaml; .agentera/archive/progress/858.yaml
-  - number: 857
-    timestamp: 2026-07-16 16:14
-    type: fix
-    phase: build
-    what: "Retried Plan Task 5 final synchronization: canonicalized all shipped
-      capability descriptors and current startup guidance, replaced retired
-      plan/docs fallback commands, and prepared authoritative evidence pointers
-      for Tasks 1-5 without rewriting immutable Cycle 855."
-    inspiration: Plan Task 5 final retry after independent evaluation task-5-audit-1.
-    discovered: The source tree has twelve shipped capability descriptors; eleven
-      used prose and the research descriptor used an unqualified instructions
-      label. The generated bundle is ignored source output, so bundle:data must
-      regenerate it and parity must be regression-tested. Cycle 855 remains
-      immutable; its current wording is superseded by this retry and the
-      corrected current contract guidance.
-    verified: "Descriptor vocabulary and source/bundle parity regression: 2 tests
-      passed. Startup fallback executability regression: all three advertised
-      commands returned structured JSON with rc=0 and no stderr. Full CLI
-      Vitest: 200 files and 2326 tests passed. Typecheck and build passed.
-      bundle:data passed with extract-corpus parity. Capability validation
-      status and plan passed; capability-contract validation passed 2/2. Live
-      pretty UTF-8 JSON: bare prime 11187/12000 bytes and status context
-      24176/25000 bytes. check compact passed with over_limit=0, formatting=0,
-      protected_overflow=0, and errors=0; the known progress:793 archive
-      recovery refusal remains preserved."
-    next: Attach progress cycle pointers to plan Tasks 1-5 through the typed plan
-      writer, record the final Task 5 pass, mark Task 5 and the plan complete,
-      rerun state and compact checks, and commit locally without push or
-      publication.
-    context:
-      intent: Resolve every finding from the independent final evaluation before
-        closing the compact-prime plan.
-      constraints: Do not modify vision or objective state, implement deferred
-        recommendations 4 through 7, rewrite immutable Cycle 855, erase prior
-        evaluation failures, or push and publish.
-      unknowns: none
-      scope: skills/agentera/agents/*.toml;
-        packages/cli/src/cli/startupCompletenessContract.ts;
-        packages/cli/src/cli/capabilityContext;
-        packages/cli/src/cli/commands/state/plan.ts;
-        packages/cli/src/cli/orientation.ts;
-        references/cli/agent-ready-state-contract.yaml;
-        packages/cli/test/cli/agentDescriptorVocabulary.test.ts;
-        packages/cli/test/cli/startupCompletenessContract.test.ts
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -383,6 +382,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 857 (2026-07-16): Retried Plan Task 5 final synchronization:
+      canonicalized all shipped capability descriptors and current startup
+      guidance,..."
   - summary: "Cycle 856 (2026-07-16): Closed the compact-prime plan through the
       typed state writers after final verification: Task 5 evaluation..."
   - summary: "Cycle 855 (2026-07-16): Synchronized Plan Task 5 startup contracts and
@@ -478,15 +480,18 @@ archive:
       and made release validation enforce governed package-tree equivalence."
   - summary: "Cycle 818 (2026-07-15): Verified npm development metadata and package
       contents for the next available prerelease without publication."
-  - summary: "Cycle 817 (2026-07-15): Retried Task 12 after audit attempt 1. Removed
-      Build's remaining retired gate command expectation, made..."
 omitted: true
-omitted_count: 102
+omitted_count: 103
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
