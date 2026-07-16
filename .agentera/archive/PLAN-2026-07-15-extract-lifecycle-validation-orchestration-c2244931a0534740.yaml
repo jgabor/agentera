@@ -1,7 +1,7 @@
 header:
   level: light
   created: 2026-07-15
-  status: open
+  status: complete
   title: "Plan: Extract lifecycle validation orchestration"
   id: plan:c2ac07d2-f3eb-4ea8-bfb7-2017b31b57b6
 what: Separate lifecycle-validation orchestration and parity checks from the public validation facade while preserving existing CLI behavior, imports, output, exit codes, and validation semantics.
@@ -22,7 +22,7 @@ tasks:
     name: Extract and verify lifecycle orchestration
     depends_on:
       []
-    status: pending
+    status: complete
     acceptance:
       - GIVEN existing consumers import lifecycle validation symbols from the public surface WHEN the refactor is complete THEN those imports remain available with the same behavior.
       - GIVEN lifecycle validation runs against the repository WHEN the command completes THEN its exit code and success output match the current behavior.

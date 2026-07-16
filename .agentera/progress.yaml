@@ -1,4 +1,36 @@
 cycles:
+  - number: 838
+    timestamp: 2026-07-16 02:16
+    type: refactor
+    phase: build
+    what: Moved lifecycle validation orchestration and parity checks out of the
+      public lifecycleAdapters.ts barrel into a dedicated lifecycleMain module,
+      preserved the historical export surface, and removed three obsolete
+      lint-baseline entries.
+    inspiration: "Plan Task 1: Extract and verify lifecycle orchestration; Audit 24
+      structural-debt finding."
+    discovered: The TODO's historical 107-line and line 61-107 references were
+      stale; the current validation barrel had grown to 237 lines and included
+      additional parity logic.
+    verified: "pnpm -C packages/cli test passed: 191 files and 2183 tests; pnpm -C
+      packages/cli run typecheck passed; pnpm -C packages/cli build passed; node
+      packages/cli/dist/bin/agentera.js check compact passed with over_limit=0,
+      formatting=0, errors=0; node packages/cli/dist/bin/agentera.js check
+      validate lifecycle-adapters --format json passed with exit_code=0 and
+      lifecycle adapter metadata ok; pnpm -C packages/cli lint passed with 0
+      errors and 113 pre-existing warnings."
+    next: Plan Task 1 is complete; archive the completed plan, then select the next
+      independent TODO item in a later build cycle.
+    context:
+      intent: Complete Plan Task 1 with a behavior-preserving separation of lifecycle
+        validation orchestration from its public re-export facade.
+      constraints: No runtime adapter-matrix changes, new validation behavior, schema
+        changes, version bump, push, tag, or publication.
+      unknowns: none
+      scope: packages/cli/src/validate/lifecycleAdapters.ts;
+        packages/cli/src/validate/lifecycleAdapters/lifecycleMain.ts;
+        packages/cli/.lint-baseline.txt; TODO.md; CHANGELOG.md;
+        .agentera/plan.yaml; .agentera/progress.yaml
   - number: 837
     timestamp: 2026-07-15 22:18
     type: feat
@@ -272,36 +304,6 @@ cycles:
         archive recovery remains degraded.
       scope: Lint command exit selection, focused CLI regressions, changelog, TODO,
         progress, and Task 3 plan status.
-  - number: 828
-    timestamp: 2026-07-15 17:57
-    type: fix
-    phase: build
-    what: Made lint consume owning schema verbosity declarations without runtime
-      tables or fallback constants.
-    inspiration: Active authoritative lint budgets and advisory exits Plan Task 2;
-      Task 1 contract commit e3d11738.
-    discovered: The existing per-entry checker invented full-file/5 and 500-word
-      fallbacks, while full-file lint assigned word budgets to decisions,
-      design, changelog, and todo contrary to their declarations.
-    verified: Focused pnpm test targets passed 38/38 across 3 files; broad CLI suite
-      passed 2079/2079 across 186 files; pnpm typecheck and pnpm build passed;
-      capability-contract validation passed 2/2; compiled CLI observed progress
-      501/500 and 3001/3000 failures, decisions/design 5001-word passes, and
-      actionable unsupported-authority failure; vp lint exited 0 with 112
-      pre-existing warnings and 0 errors; git diff --check passed.
-    next: Stop after Task 2. Task 3 remains pending and exclusively owns
-      advisory/strict interactive exit semantics.
-    context:
-      intent: Complete Plan Task 2 by enforcing only authoritative numeric word limits
-        while preserving no-limit, token-only, non-verbosity, and strict
-        publication behavior.
-      constraints: Preserved cmdLint exit behavior, strict publication linting,
-        uniform_10_40_50 compaction, vision/objective/profile/decision state,
-        and all unrelated lint classifications.
-      unknowns: None for Task 2. Decision 93 remains review-needed and historical plan
-        lifecycle/profile caveats remain unchanged.
-      scope: packages/cli lint authority consumption and focused tests, plus Task 2
-        plan/progress/TODO/changelog closeout.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -371,6 +373,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 828 (2026-07-15): Made lint consume owning schema verbosity
+      declarations without runtime tables or fallback constants."
   - summary: "Cycle 827 (2026-07-15): Defined schema-owned verbosity authority in
       references/artifacts/verbosity-budget-authority.yaml with fail-closed
       classification."
@@ -462,15 +466,18 @@ archive:
   - summary: "Cycle 788 (2026-07-14): Removed speculative preview receipt security
       from optional Git enrichment: --dry-run remains read-only and optional,
       while..."
-  - summary: "Cycle 787 (2026-07-14): Closed the optional Git handoff and guard gaps
-      from the Task 3 audit: generated commands..."
 omitted: true
-omitted_count: 73
+omitted_count: 74
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

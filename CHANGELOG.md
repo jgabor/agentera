@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Split lifecycle validation orchestration from the public validation facade while preserving its import surface and validation behavior.
 - Eliminated the monolithic `corpus.json` publication output from the extract CLI; report dry-run diagnostics now reference tier files and the `privacy.corpus_write` field is renamed to `privacy.tier_write`.
 - Changed `agentera check lint` verbosity checks to consume schema-owned full-file and per-entry word limits, skip no-limit and token-only dimensions, and report authority failures without fallback budgets.
 - Corrected packaged experiment-publication authority to declare validated objective-scoped archive-before-projection ownership and reject contradictory structured scope metadata.

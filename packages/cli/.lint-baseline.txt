@@ -150,36 +150,6 @@ VITE+ - The Unified Toolchain for the Web
    `----
   help: Consider removing this import.
 
-  ! eslint(no-unused-vars): Identifier 'LEGACY_PYTHON_PARITY_FLAG' is imported but never used.
-    ,-[src/validate/lifecycleAdapters.ts:11:3]
- 10 |   type LegacyPythonParityOptions,
- 11 |   LEGACY_PYTHON_PARITY_FLAG,
-    :   ^^^^^^^^^^^^|^^^^^^^^^^^^
-    :               `-- 'LEGACY_PYTHON_PARITY_FLAG' is imported here
- 12 |   legacyPythonParityEnabled,
-    `----
-  help: Consider removing this import.
-
-  ! eslint(no-unused-vars): Identifier 'validatePackagedPythonScripts' is imported but never used.
-    ,-[src/validate/lifecycleAdapters.ts:14:3]
- 13 |   runLegacyPythonParityChecks,
- 14 |   validatePackagedPythonScripts,
-    :   ^^^^^^^^^^^^^^|^^^^^^^^^^^^^^
-    :                 `-- 'validatePackagedPythonScripts' is imported here
- 15 |   validateUvRuntime,
-    `----
-  help: Consider removing this import.
-
-  ! eslint(no-unused-vars): Identifier 'validateUvRuntime' is imported but never used.
-    ,-[src/validate/lifecycleAdapters.ts:15:3]
- 14 |   validatePackagedPythonScripts,
- 15 |   validateUvRuntime,
-    :   ^^^^^^^^|^^^^^^^^
-    :           `-- 'validateUvRuntime' is imported here
- 16 | } from "./lifecycleAdapters/legacyPythonParity.js";
-    `----
-  help: Consider removing this import.
-
   ! eslint(no-useless-escape): Unnecessary escape character '"'
     ,-[src/upgrade/upgradeCommands.ts:19:36]
  18 |   }
