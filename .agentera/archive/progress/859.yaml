@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 859
+record:
+  number: 859
+  timestamp: 2026-07-16 17:18
+  type: fix
+  phase: build
+  what: "Corrected the reopened Plan Task 5 evidence mapping: Task 5 now points to substantive Cycle 857, while immutable Cycle 858 remains unchanged. Cycle 859 records this correction only; it is not Task 5's substantive evidence pointer."
+  inspiration: User-authorized narrow repair after task-5-audit-2 identified Task 5 pointing to Cycle 858 while immutable Cycle 858 named Cycle 857 as the canonical endpoint.
+  discovered: The reopened plan's two prior failures require blocked status in the live schema; the fresh pass preserves failure_count 2 and prior failure evidence while the typed writer updates the substantive pointer.
+  verified: Typed state plan update passed with evidence agentera state progress get --number 857 --format json; Cycle 858 was read as immutable archive evidence and was not rewritten.
+  next: Complete Task 5 and the plan through the typed plan writer after focused state and contract verification; keep deferred recommendations 4 through 7 open.
+  context:
+    intent: Repair the internally inconsistent Task 5 evidence chain without rewriting immutable progress history or starting deferred work.
+    constraints: Do not rewrite Cycle 858 or prior failure history, modify product behavior, implement deferred recommendations 4 through 7, or push and publish.
+    unknowns: none
+    scope: .agentera/plan.yaml; .agentera/progress.yaml; .agentera/archive/progress/859.yaml; TODO.md
+record_sha256: 17f4c8449a21e242b9c5f889142288a65e24153389cfcbccf529b05b6b23c1c3

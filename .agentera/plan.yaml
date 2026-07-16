@@ -135,15 +135,15 @@ tasks:
       - GIVEN the completed change WHEN full CLI tests, typecheck, build, capability-contract validation, and compact validation run THEN all pass.
       - GIVEN recommendations outside this plan WHEN project state is reviewed THEN recommendations 4 through 7 remain discoverable as open TODO items.
     evaluation:
-      attempt_count: 3
-      failure_count: 1
+      attempt_count: 2
+      failure_count: 0
       last_verdict: pass
-      last_failure_evidence: Shipped skills/agentera/agents descriptors still name nonexistent prose; startup fallbacks advertise retired agentera plan/docs commands; completed tasks lack authoritative evidence pointers so canonical plan retrieval is incomplete. Cycle 855 also misnames status_context.instructions.
+      last_failure_evidence: null
       provenance:
-        attempt_id: task-5-final-retry-20260716
-        source: "Independent final retry verification recorded in progress cycle 857: descriptors, fallback recovery, current guidance, bytes, tests, typecheck, build, capability validation, bundle parity, and compact gates passed."
-        recorded_at: 2026-07-16 16:16
+        attempt_id: task-5-evidence-repair-verified-20260716
+        source: "Focused state/contract verification after the user-authorized evidence repair: canonical plan reports five complete tasks with present evidence and Task 5 points to Cycle 857; immutable Cycle 858 and correction Cycle 859 are consistent; artifact and capability validation, full CLI tests, typecheck, build, bundle parity, Python/TypeScript parity, and compact checks passed."
+        recorded_at: 2026-07-16 17:24
         writer_command: agentera state plan record-evaluation
-    evidence: agentera state progress get --number 858 --format json
+    evidence: agentera state progress get --number 857 --format json
 surprises:
   []
