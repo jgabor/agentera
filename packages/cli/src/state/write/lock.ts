@@ -8,6 +8,7 @@ import { reject } from "./errors.js";
 const sleepArray = new Int32Array(new SharedArrayBuffer(4));
 const INITIALIZATION_GRACE_MS = 250;
 const OWNER_NAME = "owner.json";
+const OWNER_PREPARATION_NAME = ".owner.json.tmp";
 const CLAIM_NAME = ".reclaim.json";
 const MAX_OWNER_BYTES = 8 * 1024;
 const MAX_RECOVERY_ENTRIES = 128;
@@ -281,51 +282,83 @@ function recoverPrivateDirectory(
   let directoryFd: number | undefined;
   try {
     directoryFd = fs.openSync(privatePath, DIRECTORY_FLAGS);
-    const names = fs.readdirSync(fdPath(directoryFd));
     const transitioned = transitionedTokens.has(token);
     const namedPidState = pid === undefined ? undefined : pidState(pid);
-    if (names.length === 0) {
-      if (namedPidState === "live") return "live";
-      if (!transitioned && namedPidState !== "dead") return "unknown";
-      return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
-        ? "recovered"
-        : "unknown";
-    }
-    if (
-      names.length > MAX_RECOVERY_ENTRIES
-      || names.some((entry) => entry !== OWNER_NAME && !LEGACY_CLAIM_NAME.test(entry))
-    ) return "unknown";
-
-    const records = names.map((entry) => ({ entry, inspection: inspectRecord(directoryFd!, entry) }));
-    try {
-      if (records.some(({ inspection }) => !inspection.file || inspection.fd === undefined)) return "unknown";
-      if (records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.token !== token)) {
-        return "unknown";
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const names = fs.readdirSync(fdPath(directoryFd));
+      if (!pathMatches(privatePath, directoryFd, DIRECTORY_FLAGS)) {
+        return entryAbsent(parentFd, name) ? "recovered" : "unknown";
+      }
+      if (names.length === 0) {
+        if (namedPidState === "live") return "live";
+        if (!transitioned && namedPidState !== "dead") return "unknown";
+        return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
+          ? "recovered"
+          : "unknown";
+      }
+      if (names.includes(OWNER_PREPARATION_NAME)) {
+        if (names.length !== 1) return "unknown";
+        const preparation = inspectRecord(directoryFd, OWNER_PREPARATION_NAME);
+        try {
+          if (!preparation.file || preparation.fd === undefined) {
+            if (entryAbsent(directoryFd, OWNER_PREPARATION_NAME)) continue;
+            return "unknown";
+          }
+          if (
+            preparation.state === "valid"
+            && (preparation.record!.token !== token || preparation.record!.pid !== pid)
+          ) return "unknown";
+          if (namedPidState === "live") return "live";
+          if (namedPidState !== "dead") return "unknown";
+          unlinkPinnedFile(directoryFd, OWNER_PREPARATION_NAME, preparation.fd);
+          return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
+            ? "recovered"
+            : "unknown";
+        } finally {
+          closeRecord(preparation);
+        }
       }
       if (
-        pid !== undefined
-        && records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.pid !== pid)
+        names.length > MAX_RECOVERY_ENTRIES
+        || names.some((entry) => entry !== OWNER_NAME && !LEGACY_CLAIM_NAME.test(entry))
       ) return "unknown";
-      const validRecords = records.filter(({ inspection }) => inspection.state === "valid");
-      const recordPidStates = validRecords.map(({ inspection }) => pidState(inspection.record!.pid));
-      if (namedPidState === "indeterminate" || recordPidStates.includes("indeterminate")) return "unknown";
-      const fullyInitializedLivePreparation = pid !== undefined
-        && namedPidState === "live"
-        && records.every(({ inspection }) => inspection.state === "valid")
-        && records.some(({ entry }) => entry === OWNER_NAME)
-        && recordPidStates.every((state) => state === "live");
-      if (fullyInitializedLivePreparation) return "live";
-      if (namedPidState === "live" || recordPidStates.includes("live")) return "unknown";
-      if (!transitioned && (pid === undefined || namedPidState !== "dead")) return "unknown";
-      for (const { entry, inspection } of records) {
-        unlinkPinnedFile(directoryFd, entry, inspection.fd!);
+
+      const records = names.map((entry) => ({ entry, inspection: inspectRecord(directoryFd!, entry) }));
+      try {
+        const missing = records.filter(({ inspection }) => !inspection.file || inspection.fd === undefined);
+        if (missing.length > 0) {
+          if (missing.every(({ entry }) => entryAbsent(directoryFd!, entry))) continue;
+          return "unknown";
+        }
+        if (records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.token !== token)) {
+          return "unknown";
+        }
+        if (
+          pid !== undefined
+          && records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.pid !== pid)
+        ) return "unknown";
+        const validRecords = records.filter(({ inspection }) => inspection.state === "valid");
+        const recordPidStates = validRecords.map(({ inspection }) => pidState(inspection.record!.pid));
+        if (namedPidState === "indeterminate" || recordPidStates.includes("indeterminate")) return "unknown";
+        const fullyInitializedLivePreparation = pid !== undefined
+          && namedPidState === "live"
+          && records.every(({ inspection }) => inspection.state === "valid")
+          && records.some(({ entry }) => entry === OWNER_NAME)
+          && recordPidStates.every((state) => state === "live");
+        if (fullyInitializedLivePreparation) return "live";
+        if (namedPidState === "live" || recordPidStates.includes("live")) return "unknown";
+        if (!transitioned && (pid === undefined || namedPidState !== "dead")) return "unknown";
+        for (const { entry, inspection } of records) {
+          unlinkPinnedFile(directoryFd, entry, inspection.fd!);
+        }
+        return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
+          ? "recovered"
+          : "unknown";
+      } finally {
+        for (const { inspection } of records) closeRecord(inspection);
       }
-      return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
-        ? "recovered"
-        : "unknown";
-    } finally {
-      for (const { inspection } of records) closeRecord(inspection);
     }
+    return "unknown";
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "ENOENT") return "recovered";
@@ -396,22 +429,29 @@ function prepareLock(parentFd: number): PreparedLock {
   const preparedPath = fdPath(parentFd, name);
   let dirFd: number | undefined;
   let ownerFd: number | undefined;
+  let ownerName = OWNER_PREPARATION_NAME;
   try {
     fs.mkdirSync(preparedPath, { mode: 0o700 });
     dirFd = fs.openSync(preparedPath, DIRECTORY_FLAGS);
     ownerFd = fs.openSync(
-      fdPath(dirFd, OWNER_NAME),
+      fdPath(dirFd, ownerName),
       fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0),
       0o600,
     );
     fs.writeFileSync(ownerFd, `${JSON.stringify(record)}\n`);
     fs.fsyncSync(ownerFd);
+    const validated = readRecord(ownerFd);
+    if (validated === null || !sameRecord(validated, record)) {
+      throw new Error("writer owner metadata validation failed before publication");
+    }
+    fs.renameSync(fdPath(dirFd, ownerName), fdPath(dirFd, OWNER_NAME));
+    ownerName = OWNER_NAME;
     syncDirectory(dirFd);
     return { path: preparedPath, dirFd, ownerFd, record };
   } catch (error) {
     if (dirFd !== undefined && ownerFd !== undefined) {
       try {
-        unlinkPinnedFile(dirFd, OWNER_NAME, ownerFd);
+        unlinkPinnedFile(dirFd, ownerName, ownerFd);
       } catch {
         // Preserve the acquisition error.
       }

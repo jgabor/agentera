@@ -29,7 +29,7 @@ function publicationProcess(
   resultPath: string,
   readyPath: string,
   startPath: string,
-  controls: { preparedPath?: string; continuePath?: string; waitingPath?: string } = {},
+  controls: { ownerOpenedPath?: string; continuePath?: string; waitingPath?: string } = {},
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [publicationWorker], {
@@ -42,7 +42,7 @@ function publicationProcess(
         AGENTERA_ENTITY_TEST_RESULT: resultPath,
         AGENTERA_ENTITY_TEST_READY: readyPath,
         AGENTERA_ENTITY_TEST_START: startPath,
-        AGENTERA_ENTITY_TEST_PREPARED: controls.preparedPath,
+        AGENTERA_ENTITY_TEST_OWNER_OPENED: controls.ownerOpenedPath,
         AGENTERA_ENTITY_TEST_CONTINUE: controls.continuePath,
         AGENTERA_ENTITY_TEST_WAITING: controls.waitingPath,
       },
@@ -193,12 +193,12 @@ describe("entity discovery and publication", () => {
     expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
   }, 30_000);
 
-  it("waits on a live preparation through canonical publication and reports the duplicate-ID loser", async () => {
+  it("waits across atomic owner publication and reports the canonical duplicate-ID loser", async () => {
     const root = project();
     const healthResult = path.join(root, "health-live-result.json");
     const healthReady = path.join(root, "health-live.ready");
     const healthStart = path.join(root, "health-live.start");
-    const preparedPath = path.join(root, "health-live.prepared");
+    const ownerOpenedPath = path.join(root, "health-live.owner-opened");
     const continuePath = path.join(root, "health-live.continue");
     const first = publicationProcess(
       root,
@@ -207,11 +207,15 @@ describe("entity discovery and publication", () => {
       healthResult,
       healthReady,
       healthStart,
-      { preparedPath, continuePath },
+      { ownerOpenedPath, continuePath },
     );
     await waitForFiles([healthReady]);
     fs.writeFileSync(healthStart, "start\n");
-    await waitForFiles([preparedPath]);
+    await waitForFiles([ownerOpenedPath]);
+    const privateDirectory = fs.readdirSync(path.join(root, ".agentera"))
+      .find((name) => name.startsWith(".writer.") && name.endsWith(".tmp"));
+    expect(privateDirectory).toBeDefined();
+    expect(fs.readdirSync(path.join(root, ".agentera", privateDirectory!))).toEqual([".owner.json.tmp"]);
 
     const decisionsResult = path.join(root, "decisions-live-result.json");
     const decisionsReady = path.join(root, "decisions-live.ready");
@@ -246,7 +250,7 @@ describe("entity discovery and publication", () => {
   }, 30_000);
 
   it("repeatedly gives simultaneous stale-lock reclaimers one publisher and one explicit loser", async () => {
-    for (const repeat of Array.from({ length: 12 }, (_, index) => index + 1)) {
+    for (const repeat of Array.from({ length: 100 }, (_, index) => index + 1)) {
       const root = project();
       const lockPath = path.join(root, ".agentera/.writer.lock");
       fs.mkdirSync(lockPath, { recursive: true });
@@ -267,7 +271,7 @@ describe("entity discovery and publication", () => {
         `repeat ${repeat}`,
       ).toEqual([]);
     }
-  }, 60_000);
+  }, 180_000);
 
   it("cleans the project-wide claim after publication fails and permits recovery", () => {
     const root = project();

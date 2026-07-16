@@ -259,19 +259,28 @@ describe("project writer lock", () => {
     fs.rmSync(parked, { recursive: true });
   });
 
-  it("fails closed on a creator paused with stale malformed metadata and gives it sole ownership", () => {
+  it("keeps partial owner metadata private and treats live initialization as bounded contention", () => {
     const project = root();
     const originalWrite = fs.writeFileSync;
-    let contenderFailure: StateWriteInputError | undefined;
+    let contenderTimedOut = false;
     const write = vi.spyOn(fs, "writeFileSync");
     write.mockImplementationOnce(((...args: unknown[]) => {
       const agenteraDir = path.join(project, ".agentera");
       const privateName = fs.readdirSync(agenteraDir).find((name) => name.endsWith(".tmp"));
       expect(privateName).toMatch(new RegExp(`^\\.writer\\.${process.pid}\\.`));
       expect(fs.existsSync(path.join(agenteraDir, ".writer.lock"))).toBe(false);
+      expect(fs.readdirSync(path.join(agenteraDir, privateName!))).toEqual([".owner.json.tmp"]);
+      expect(fs.statSync(path.join(agenteraDir, privateName!, ".owner.json.tmp")).size).toBe(0);
+      expect(fs.existsSync(path.join(agenteraDir, privateName!, "owner.json"))).toBe(false);
 
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
-      contenderFailure = expectPrivateResidueFailure(project);
+      try {
+        acquireWriterLock(project, 50);
+      } catch (error) {
+        expect(error).toBeInstanceOf(StateWriteInputError);
+        expect((error as Error).message).toMatch(/writer lock timeout.*retry/i);
+        expect((error as Error).message).not.toMatch(/private writer preparation residue/i);
+        contenderTimedOut = true;
+      }
       expect(fs.existsSync(path.join(agenteraDir, privateName!))).toBe(true);
       return Reflect.apply(originalWrite, fs, args);
     }) as typeof fs.writeFileSync);
@@ -279,16 +288,54 @@ describe("project writer lock", () => {
     let creator: ReturnType<typeof acquireWriterLock> | undefined;
     try {
       creator = acquireWriterLock(project, 500);
-      expect(contenderFailure).toBeInstanceOf(StateWriteInputError);
+      expect(contenderTimedOut).toBe(true);
       expect(JSON.parse(fs.readFileSync(path.join(creator.path, "owner.json"), "utf8"))).toMatchObject({
         pid: process.pid,
       });
+      expect(fs.readdirSync(creator.path)).toEqual(["owner.json"]);
       expect(fs.readdirSync(path.join(project, ".agentera")).filter((name) => name.startsWith(".writer.") && name !== ".writer.lock")).toEqual([]);
     } finally {
       write.mockRestore();
       creator?.release();
     }
     expect(fs.existsSync(path.join(project, ".agentera/.writer.lock"))).toBe(false);
+  });
+
+  it("rejects invalid temporary owner bytes before canonical publication", () => {
+    const project = root();
+    const originalWrite = fs.writeFileSync;
+    const write = vi.spyOn(fs, "writeFileSync").mockImplementationOnce(((fd: number) => {
+      originalWrite(fd, "{\n");
+    }) as typeof fs.writeFileSync);
+
+    try {
+      expect(() => acquireWriterLock(project, 100)).toThrow(/owner metadata validation failed/i);
+    } finally {
+      write.mockRestore();
+    }
+    const agenteraDirectory = path.join(project, ".agentera");
+    expect(fs.existsSync(agenteraDirectory)
+      ? fs.readdirSync(agenteraDirectory).filter((name) => name.startsWith(".writer."))
+      : []).toEqual([]);
+  });
+
+  it("times out on paused owner initialization without deleting private state", async () => {
+    const project = root();
+    const readyPath = path.join(project, "paused-initialization.ready");
+    const removePath = path.join(project, "paused-initialization.remove");
+    const worker = removableLivePreparation(project, readyPath, removePath);
+    await waitForFile(readyPath);
+
+    try {
+      expect(() => acquireWriterLock(project, 75)).toThrow(/writer lock timeout.*retry/i);
+      const privateName = fs.readdirSync(path.join(project, ".agentera"))
+        .find((name) => name.startsWith(".writer.") && name.endsWith(".tmp"));
+      expect(privateName).toBeDefined();
+      expect(fs.readdirSync(path.join(project, ".agentera", privateName!))).toEqual([".owner.json.tmp"]);
+    } finally {
+      fs.writeFileSync(removePath, "remove\n");
+      await worker;
+    }
   });
 
   it("retries and acquires when a positively live preparation disappears without publication", async () => {

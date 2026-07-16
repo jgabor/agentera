@@ -1,4 +1,45 @@
 cycles:
+  - number: 870
+    timestamp: 2026-07-16 22:59
+    type: fix
+    phase: build
+    what: Published private writer owner metadata atomically from a validated,
+      fsynced temporary file and boundedly resampled transient private-directory
+      snapshots during owner publication, disappearance, and claim/adoption
+      transitions; retained fail-closed handling for persistent malformed or
+      foreign state.
+    inspiration: Agentera PLAN Task 18 retry 1 after audit reproduced 2 residue
+      failures in 168 same-ID stale-lock repetitions.
+    discovered: The old rename-paused test missed initialization. Pre-fix stress
+      reproduced residue at repetition 26; the atomic-publication-only attempt
+      then reproduced residue at repetition 74 when a fully written owner moved
+      during adoption, requiring bounded same-directory resampling for vanished
+      inspected entries.
+    verified: "pnpm -C packages/cli test test/state/entityStorage.test.ts ran 3
+      times: each run passed 1 file and 13 tests with 100 same-ID stale-lock
+      repetitions. pnpm -C packages/cli test test/state/write/lock.test.ts
+      test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts
+      test/state/write/concurrency.test.ts: 4 files, 102 tests passed. pnpm -C
+      packages/cli test: 202 files, 2,364 tests passed. These five post-fix
+      stress executions covered 500 repetitions with zero residue/timeout
+      outcomes. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli
+      build: passed. node packages/cli/dist/bin/agentera.js check validate state
+      --format json: passed, 0 issues. node packages/cli/dist/bin/agentera.js
+      check validate capability-contract --format json: passed, 2/2 checks. node
+      packages/cli/dist/bin/agentera.js check compact --format json: passed, 10
+      artifacts, 0 over-limit, 0 errors, 0 changes."
+    next: Keep Task 18 complete. Task 3 remains pending and gated; do not begin
+      family cutover in this cycle.
+    context:
+      intent: Close the Task 18 audit defect where a contender could mistake partially
+        written or transitioning owner metadata for unknown private residue.
+      constraints: Only the transient private-owner initialization/publication race,
+        proportional tests, and this progress cycle; no Task 3 work, family
+        cutover, vision change, publish, or push.
+      unknowns: None after deterministic initialization-window coverage and 500
+        post-fix stress repetitions.
+      scope: packages/cli/src/state/write/lock.ts; lock/entity test workers and
+        suites; progress state.
   - number: 869
     timestamp: 2026-07-16 22:23
     type: fix
@@ -296,41 +337,6 @@ cycles:
       scope: .agentera/health.yaml; .agentera/archive/health/37.yaml;
         .agentera/progress.yaml; .agentera/archive/progress/861.yaml;
         .agentera/plan.yaml archive transition
-  - number: 860
-    timestamp: 2026-07-16 17:33
-    type: fix
-    phase: audit
-    what: "Append immutable Cycle 860 to correct Cycle 859: Cycle 859 inaccurately
-      claimed prior failure_count 2 was retained; the user-authorized reopen
-      reset live history, and the subsequent independent audit failure is now
-      truthfully retained in live Task 5 state. Before the final pass, live Task
-      5 counters are attempt_count 3 and failure_count 1, with last failure
-      evidence accurately recording Cycle 859's false claim. Cycle 860 is
-      correction/audit evidence only; Task 5 substantive evidence remains Cycle
-      857."
-    inspiration: User-authorized repair of the remaining Task 5 audit-trail
-      inconsistency after Cycle 859's inaccurate counter-retention claim.
-    discovered: The user-authorized reopen reset live evaluation history; the later
-      independent audit failure is therefore the single retained failure in the
-      live Task 5 evaluation.
-    verified: Before the final pass, typed Task 5 state reports attempt_count 3,
-      failure_count 1, last_verdict fail, and last_failure_evidence describing
-      Cycle 859's false claim; the substantive evidence pointer remains progress
-      Cycle 857.
-    next: Record the typed passing evaluation, verify attempt_count 4 and
-      failure_count 1 with retained failure evidence, complete Task 5 and the
-      plan, and rerun focused state/artifact gates.
-    context:
-      intent: Correct the remaining Task 5 audit-trail inconsistency without rewriting
-        immutable history, then preserve the truthful failure history through
-        the typed passing evaluation.
-      constraints: Do not rewrite Cycles 858 or 859, reset evaluation history,
-        hand-edit counters, move the Task 5 evidence pointer from Cycle 857,
-        implement deferred recommendations 4 through 7, modify product behavior,
-        or push and publish.
-      unknowns: none
-      scope: .agentera/plan.yaml; .agentera/progress.yaml;
-        .agentera/archive/progress/860.yaml
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -400,6 +406,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 860 (2026-07-16): Append immutable Cycle 860 to correct Cycle
+      859: Cycle 859 inaccurately claimed prior failure_count 2..."
   - summary: "Cycle 859 (2026-07-16): Corrected the reopened Plan Task 5 evidence
       mapping: Task 5 now points to substantive Cycle..."
   - summary: "Cycle 858 (2026-07-16): Completed the Plan Task 5 retry closeout:
@@ -496,15 +504,18 @@ archive:
   - summary: "Cycle 821 (2026-07-15): Closed bounded-retrieval state after
       independent verification while leaving the completed active plan available
       for Task..."
-  - summary: "Cycle 820 (2026-07-15): Verified bounded plan and experiment retrieval
-      end to end without changing product behavior."
 omitted: true
-omitted_count: 105
+omitted_count: 106
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

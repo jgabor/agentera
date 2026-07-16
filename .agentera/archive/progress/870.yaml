@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 870
+record:
+  number: 870
+  timestamp: 2026-07-16 22:59
+  type: fix
+  phase: build
+  what: Published private writer owner metadata atomically from a validated, fsynced temporary file and boundedly resampled transient private-directory snapshots during owner publication, disappearance, and claim/adoption transitions; retained fail-closed handling for persistent malformed or foreign state.
+  inspiration: Agentera PLAN Task 18 retry 1 after audit reproduced 2 residue failures in 168 same-ID stale-lock repetitions.
+  discovered: The old rename-paused test missed initialization. Pre-fix stress reproduced residue at repetition 26; the atomic-publication-only attempt then reproduced residue at repetition 74 when a fully written owner moved during adoption, requiring bounded same-directory resampling for vanished inspected entries.
+  verified: "pnpm -C packages/cli test test/state/entityStorage.test.ts ran 3 times: each run passed 1 file and 13 tests with 100 same-ID stale-lock repetitions. pnpm -C packages/cli test test/state/write/lock.test.ts test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts test/state/write/concurrency.test.ts: 4 files, 102 tests passed. pnpm -C packages/cli test: 202 files, 2,364 tests passed. These five post-fix stress executions covered 500 repetitions with zero residue/timeout outcomes. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli build: passed. node packages/cli/dist/bin/agentera.js check validate state --format json: passed, 0 issues. node packages/cli/dist/bin/agentera.js check validate capability-contract --format json: passed, 2/2 checks. node packages/cli/dist/bin/agentera.js check compact --format json: passed, 10 artifacts, 0 over-limit, 0 errors, 0 changes."
+  next: Keep Task 18 complete. Task 3 remains pending and gated; do not begin family cutover in this cycle.
+  context:
+    intent: Close the Task 18 audit defect where a contender could mistake partially written or transitioning owner metadata for unknown private residue.
+    constraints: Only the transient private-owner initialization/publication race, proportional tests, and this progress cycle; no Task 3 work, family cutover, vision change, publish, or push.
+    unknowns: None after deterministic initialization-window coverage and 500 post-fix stress repetitions.
+    scope: packages/cli/src/state/write/lock.ts; lock/entity test workers and suites; progress state.
+record_sha256: adee8d0f88eb3d47f393977ed379b7920b964ac9f9437148ccb59802b9c7f26e

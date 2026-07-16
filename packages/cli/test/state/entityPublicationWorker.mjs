@@ -8,30 +8,33 @@ const boundary = process.env.AGENTERA_ENTITY_TEST_BOUNDARY;
 const resultPath = process.env.AGENTERA_ENTITY_TEST_RESULT;
 const readyPath = process.env.AGENTERA_ENTITY_TEST_READY;
 const startPath = process.env.AGENTERA_ENTITY_TEST_START;
-const preparedPath = process.env.AGENTERA_ENTITY_TEST_PREPARED;
+const ownerOpenedPath = process.env.AGENTERA_ENTITY_TEST_OWNER_OPENED;
 const continuePath = process.env.AGENTERA_ENTITY_TEST_CONTINUE;
 const waitingPath = process.env.AGENTERA_ENTITY_TEST_WAITING;
 if (!root || !artifact || !boundary || !resultPath || !readyPath || !startPath) {
   throw new Error("entity publication worker requires complete publication input");
 }
-if ((preparedPath === undefined) !== (continuePath === undefined)) {
-  throw new Error("controlled publication requires both prepared and continue paths");
+if ((ownerOpenedPath === undefined) !== (continuePath === undefined)) {
+  throw new Error("controlled publication requires both owner-opened and continue paths");
 }
 
 fs.writeFileSync(readyPath, "ready\n");
 while (!fs.existsSync(startPath)) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
 }
-if (preparedPath && continuePath) {
-  const originalRename = fs.renameSync;
-  fs.renameSync = (source, destination) => {
-    if (String(source).includes("/.writer.") && String(source).endsWith(".tmp") && String(destination).endsWith("/.writer.lock")) {
-      fs.writeFileSync(preparedPath, "prepared\n");
+if (ownerOpenedPath && continuePath) {
+  const originalOpen = fs.openSync;
+  let paused = false;
+  fs.openSync = (...args) => {
+    const fd = Reflect.apply(originalOpen, fs, args);
+    if (!paused && String(args[0]).endsWith("/.owner.json.tmp")) {
+      paused = true;
+      fs.writeFileSync(ownerOpenedPath, "owner opened\n");
       while (!fs.existsSync(continuePath)) {
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
       }
     }
-    return originalRename(source, destination);
+    return fd;
   };
 }
 if (waitingPath) {
