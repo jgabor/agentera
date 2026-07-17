@@ -421,7 +421,13 @@ export function executeStateWrite(
     ? detectStateModeBinding(req.projectRoot)
     : null;
   if (progressMode?.mode === "entities") {
-    return appendProgressEntity(req, { validatedRoot: progressMode.root });
+    try {
+      return appendProgressEntity(req, {
+        publicationContext: progressMode.publicationContext,
+      });
+    } finally {
+      progressMode.publicationContext.close();
+    }
   }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
     return dispatchDecisionAmendment(req, options);

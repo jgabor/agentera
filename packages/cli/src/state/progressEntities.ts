@@ -16,7 +16,7 @@ import {
   publishEntity,
   type DiscoveredEntity,
 } from "./entityStorage.js";
-import type { ValidatedProjectRoot } from "./projectRoot.js";
+import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { localTimestamp } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 
@@ -51,7 +51,7 @@ export interface AppendProgressEntityOptions {
   sourceRoot?: string;
   id?: string;
   candidate?: () => string;
-  validatedRoot?: ValidatedProjectRoot;
+  publicationContext?: EntityPublicationContext;
 }
 
 function mapping(value: unknown): value is Record<string, unknown> {
@@ -168,7 +168,9 @@ export function appendProgressEntity(
   const contract = progressContract(sourceRoot);
   const record = progressRecord(req.values);
   if (req.dryRun) {
-    const id = options.id ?? allocateEntityId(req.projectRoot, options.candidate, sourceRoot);
+    options.publicationContext?.assertValid();
+    const allocationRoot = options.publicationContext?.pinnedPath() ?? req.projectRoot;
+    const id = options.id ?? allocateEntityId(allocationRoot, options.candidate, sourceRoot);
     const target = path.join(
       path.resolve(req.projectRoot),
       contract.entityRoot,
@@ -176,6 +178,7 @@ export function appendProgressEntity(
       BOUNDARY,
       `${id}.yaml`,
     );
+    options.publicationContext?.assertValid();
     return {
       schemaVersion: "agentera.stateWrite.v1",
       command: "state progress append",
@@ -192,7 +195,7 @@ export function appendProgressEntity(
     ? publishEntity({
         projectRoot: req.projectRoot,
         sourceRoot,
-        validatedRoot: options.validatedRoot,
+        publicationContext: options.publicationContext,
         artifact: ARTIFACT,
         boundary: BOUNDARY,
         id: options.id,
@@ -202,7 +205,7 @@ export function appendProgressEntity(
         {
           projectRoot: req.projectRoot,
           sourceRoot,
-          validatedRoot: options.validatedRoot,
+          publicationContext: options.publicationContext,
           artifact: ARTIFACT,
           boundary: BOUNDARY,
           record,

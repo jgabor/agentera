@@ -1,4 +1,36 @@
 cycles:
+  - number: 880
+    timestamp: 2026-07-17 04:42
+    type: fix
+    phase: build
+    what: Bound all entity-family publication to one pinned project-root and exact
+      state-mode marker context, with identity-checked rollback at directory,
+      stage, link, and final durability boundaries.
+    inspiration: Replanned Agentera PLAN Task 20 and the final Task 4 retry audit.
+    discovered: Node cannot make pathname validation and mutation one kernel
+      operation; descriptor-rooted publication plus before-and-after validation
+      and exact owned rollback provides the required observable failure
+      contract.
+    verified: "Focused lock/entity/progress/state-mode/authority tests passed: 6
+      files, 75 tests. Full CLI passed: 206 files, 2,471 tests. Typecheck and
+      build passed. State validation passed with 0 issues. Capability contract
+      passed 2/2. Compact passed for 10 artifacts with 0 over-limit, formatting,
+      protected-overflow, projection, error, or changed findings."
+    next: Task 20 is complete. Keep Tasks 5-9 pending; do not begin another entity
+      family in this cycle.
+    context:
+      intent: Complete escalated plan Task 20 after Task 4 exhausted two retries by
+        closing the remaining pathname substitution window.
+      constraints: Task 20 only; preserve legacy writes, immutable replay/conflict
+        semantics, durability, merge/pagination, public APIs, and successor
+        data. No apply, other family, unrelated repair, push, publish, or vision
+        changes.
+      unknowns: No acceptance blocker remains. Node pathname operations still require
+        the documented pinned publication and rollback protocol rather than
+        pre-write rename exclusion.
+      scope: Shared entity publication context and boundary, progress handoff,
+        authority contract, race regressions, replan, progress evidence, and
+        Task 20 status.
   - number: 879
     timestamp: 2026-07-17 04:10
     type: fix
@@ -291,47 +323,6 @@ cycles:
       scope: State-storage authority; state migrate entities CLI/help; pure entity
         migration preview and binding; focused tests; plan lifecycle inventory;
         progress and Task 3 status.
-  - number: 870
-    timestamp: 2026-07-16 22:59
-    type: fix
-    phase: build
-    what: Published private writer owner metadata atomically from a validated,
-      fsynced temporary file and boundedly resampled transient private-directory
-      snapshots during owner publication, disappearance, and claim/adoption
-      transitions; retained fail-closed handling for persistent malformed or
-      foreign state.
-    inspiration: Agentera PLAN Task 18 retry 1 after audit reproduced 2 residue
-      failures in 168 same-ID stale-lock repetitions.
-    discovered: The old rename-paused test missed initialization. Pre-fix stress
-      reproduced residue at repetition 26; the atomic-publication-only attempt
-      then reproduced residue at repetition 74 when a fully written owner moved
-      during adoption, requiring bounded same-directory resampling for vanished
-      inspected entries.
-    verified: "pnpm -C packages/cli test test/state/entityStorage.test.ts ran 3
-      times: each run passed 1 file and 13 tests with 100 same-ID stale-lock
-      repetitions. pnpm -C packages/cli test test/state/write/lock.test.ts
-      test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts
-      test/state/write/concurrency.test.ts: 4 files, 102 tests passed. pnpm -C
-      packages/cli test: 202 files, 2,364 tests passed. These five post-fix
-      stress executions covered 500 repetitions with zero residue/timeout
-      outcomes. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli
-      build: passed. node packages/cli/dist/bin/agentera.js check validate state
-      --format json: passed, 0 issues. node packages/cli/dist/bin/agentera.js
-      check validate capability-contract --format json: passed, 2/2 checks. node
-      packages/cli/dist/bin/agentera.js check compact --format json: passed, 10
-      artifacts, 0 over-limit, 0 errors, 0 changes."
-    next: Keep Task 18 complete. Task 3 remains pending and gated; do not begin
-      family cutover in this cycle.
-    context:
-      intent: Close the Task 18 audit defect where a contender could mistake partially
-        written or transitioning owner metadata for unknown private residue.
-      constraints: Only the transient private-owner initialization/publication race,
-        proportional tests, and this progress cycle; no Task 3 work, family
-        cutover, vision change, publish, or push.
-      unknowns: None after deterministic initialization-window coverage and 500
-        post-fix stress repetitions.
-      scope: packages/cli/src/state/write/lock.ts; lock/entity test workers and
-        suites; progress state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -401,6 +392,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 870 (2026-07-16): Published private writer owner metadata
+      atomically from a validated, fsynced temporary file and boundedly
+      resampled..."
   - summary: "Cycle 869 (2026-07-16): Treated positively live private writer
       preparations as bounded contention while preserving fail-closed recovery
       for unknown..."
@@ -502,15 +496,18 @@ archive:
       evidence-tier contract"
   - summary: "Cycle 831 (2026-07-15): Diagnosed unavailable AGENTERA_HOME managed
       scripts before fallback."
-  - summary: "Cycle 830 (2026-07-15): Verified authoritative verbosity budgets and
-      advisory lint exits."
 omitted: true
-omitted_count: 115
+omitted_count: 116
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

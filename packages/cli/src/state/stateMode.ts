@@ -3,10 +3,19 @@ import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
+import { EntityPublicationContext } from "./entityPublicationContext.js";
 import { validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 export type StateMode = "legacy" | "entities";
+
+export type StateModeBinding =
+  | { mode: "legacy"; root: ValidatedProjectRoot }
+  | {
+      mode: "entities";
+      root: ValidatedProjectRoot;
+      publicationContext: EntityPublicationContext;
+    };
 
 interface StateModeContract {
   markerPath: string;
@@ -73,7 +82,7 @@ function readStableMarker(root: ValidatedProjectRoot, markerPath: string): Buffe
 export function detectStateModeBinding(
   projectRoot: string,
   sourceRoot = resolveSourceRoot(),
-): { mode: StateMode; root: ValidatedProjectRoot } {
+): StateModeBinding {
   const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);
   const bytes = readStableMarker(root, declared.markerPath);
@@ -91,9 +100,15 @@ export function detectStateModeBinding(
       `state mode marker '${declared.markerPath}' must declare schemaVersion '${declared.schemaVersion}' and mode '${declared.mode}'; restore the durable migration marker before retrying`,
     );
   }
-  return { mode: "entities", root };
+  return {
+    mode: "entities",
+    root,
+    publicationContext: EntityPublicationContext.open(root, declared.markerPath, bytes),
+  };
 }
 
 export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceRoot()): StateMode {
-  return detectStateModeBinding(projectRoot, sourceRoot).mode;
+  const binding = detectStateModeBinding(projectRoot, sourceRoot);
+  if (binding.mode === "entities") binding.publicationContext.close();
+  return binding.mode;
 }

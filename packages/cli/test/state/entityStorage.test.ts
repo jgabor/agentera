@@ -19,6 +19,11 @@ const publicationWorker = fileURLToPath(new URL("./entityPublicationWorker.mjs",
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entities-"));
   roots.push(root);
+  fs.mkdirSync(path.join(root, ".agentera"));
+  fs.writeFileSync(
+    path.join(root, ".agentera/state-mode.yaml"),
+    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
+  );
   return root;
 }
 
@@ -125,7 +130,7 @@ describe("entity discovery and publication", () => {
   it("does not traverse a symlinked entity root", () => {
     const root = project();
     const outside = project();
-    fs.mkdirSync(path.join(root, ".agentera"));
+    fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(outside, "escape.yaml"), "id: aaaaaaaaaa\nartifact: progress\nrecord: {}\n");
     fs.symlinkSync(outside, path.join(root, ".agentera/entities"));
 

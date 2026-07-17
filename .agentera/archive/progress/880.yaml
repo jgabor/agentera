@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 880
+record:
+  number: 880
+  timestamp: 2026-07-17 04:42
+  type: fix
+  phase: build
+  what: Bound all entity-family publication to one pinned project-root and exact state-mode marker context, with identity-checked rollback at directory, stage, link, and final durability boundaries.
+  inspiration: Replanned Agentera PLAN Task 20 and the final Task 4 retry audit.
+  discovered: Node cannot make pathname validation and mutation one kernel operation; descriptor-rooted publication plus before-and-after validation and exact owned rollback provides the required observable failure contract.
+  verified: "Focused lock/entity/progress/state-mode/authority tests passed: 6 files, 75 tests. Full CLI passed: 206 files, 2,471 tests. Typecheck and build passed. State validation passed with 0 issues. Capability contract passed 2/2. Compact passed for 10 artifacts with 0 over-limit, formatting, protected-overflow, projection, error, or changed findings."
+  next: Task 20 is complete. Keep Tasks 5-9 pending; do not begin another entity family in this cycle.
+  context:
+    intent: Complete escalated plan Task 20 after Task 4 exhausted two retries by closing the remaining pathname substitution window.
+    constraints: Task 20 only; preserve legacy writes, immutable replay/conflict semantics, durability, merge/pagination, public APIs, and successor data. No apply, other family, unrelated repair, push, publish, or vision changes.
+    unknowns: No acceptance blocker remains. Node pathname operations still require the documented pinned publication and rollback protocol rather than pre-write rename exclusion.
+    scope: Shared entity publication context and boundary, progress handoff, authority contract, race regressions, replan, progress evidence, and Task 20 status.
+record_sha256: 950840fb48088aa474a7594e57beb26cdc3ede38cbb51a72c73f7afe87ecdcd1

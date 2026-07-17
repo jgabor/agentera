@@ -6,8 +6,8 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
-import { publishImmutableFile } from "./archivePublication.js";
-import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
+import type { EntityPublicationContext } from "./entityPublicationContext.js";
+import { detectStateModeBinding } from "./stateMode.js";
 import { acquireWriterLock } from "./write/lock.js";
 
 const MAX_DIAGNOSTICS = 100;
@@ -426,7 +426,7 @@ export interface PublishEntityRequest {
   id: string;
   record: JsonObject;
   sourceRoot?: string;
-  validatedRoot?: ValidatedProjectRoot;
+  publicationContext?: EntityPublicationContext;
 }
 
 export interface PublishEntityResult {
@@ -437,48 +437,92 @@ export interface PublishEntityResult {
   replay: boolean;
 }
 
-function publishEntityLocked(request: PublishEntityRequest, model: EntityAuthority): PublishEntityResult {
-  if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
+function publishEntityLocked(
+  request: PublishEntityRequest,
+  model: EntityAuthority,
+  context: EntityPublicationContext,
+): PublishEntityResult {
+  context.assertValid();
   if (!model.pattern.test(request.id)) throw new Error(`entity ID '${request.id}' must match ${model.pattern.source}`);
   const owner = model.byBoundary.get(request.boundary);
   if (!owner) throw new Error(`unknown entity boundary '${request.boundary}'`);
   if (owner.artifact !== request.artifact) throw new Error(`boundary '${request.boundary}' is owned by artifact '${owner.artifact}', not '${request.artifact}'`);
   if (!mapping(request.record)) throw new Error("entity record must be a mapping");
-  const root = path.resolve(request.projectRoot);
-    const target = path.join(root, model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
-    const symlink = noSymlinkPrefix(root, target);
-    if (symlink) throw new Error(`entity path contains symbolic link '${relative(root, symlink)}'; remove the symbolic link and retry`);
-    const envelope = { id: request.id, artifact: request.artifact, record: request.record };
-    const logicalContent = canonicalRecordJson(envelope);
-    const bytes = dumpYamlMapping(envelope);
-    const matches = discoverEntities(root, request.sourceRoot).entities.filter(({ id }) => id === request.id);
-    const exact = matches.find(({ path: existing }) => existing === target);
-    if (exact && matches.length === 1) {
-      if (exact.record !== null && canonicalRecordJson({ id: exact.id, artifact: exact.artifact, record: exact.record }) === logicalContent) {
-        return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: true };
-      }
-      throw new Error(`divergent content for existing entity ID '${request.id}' at '${exact.relativePath}'; keep the existing ID unchanged or allocate a new ID`);
+  const root = context.pinnedPath();
+  const relativeTarget = path.join(
+    model.entityRoot,
+    request.artifact,
+    request.boundary,
+    `${request.id}.yaml`,
+  );
+  const target = path.join(root, relativeTarget);
+  const publicTarget = path.join(path.resolve(request.projectRoot), relativeTarget);
+  const symlink = noSymlinkPrefix(root, target);
+  if (symlink) throw new Error(`entity path contains symbolic link '${relative(root, symlink)}'; remove the symbolic link and retry`);
+  const envelope = { id: request.id, artifact: request.artifact, record: request.record };
+  const logicalContent = canonicalRecordJson(envelope);
+  const bytes = dumpYamlMapping(envelope);
+  const matches = discoverEntities(root, request.sourceRoot).entities.filter(({ id }) => id === request.id);
+  const exact = matches.find(({ path: existing }) => existing === target);
+  if (exact && matches.length === 1) {
+    if (exact.record !== null && canonicalRecordJson({ id: exact.id, artifact: exact.artifact, record: exact.record }) === logicalContent) {
+      context.assertValid();
+      return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: true };
     }
-    if (matches.length > 0) throw new Error(`entity ID '${request.id}' already exists at '${matches[0].relativePath}' owned by boundary '${matches[0].boundary}'; allocate a new project-wide ID`);
-    if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
-    const created = publishImmutableFile(target, bytes, { directoryDurabilityRoot: root });
-    if (!created) {
-      const existing = loadYamlMapping(fs.readFileSync(target, "utf8"));
-      if (canonicalRecordJson(existing) === logicalContent) return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: true };
-      throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
+    throw new Error(`divergent content for existing entity ID '${request.id}' at '${exact.relativePath}'; keep the existing ID unchanged or allocate a new ID`);
+  }
+  if (matches.length > 0) throw new Error(`entity ID '${request.id}' already exists at '${matches[0].relativePath}' owned by boundary '${matches[0].boundary}'; allocate a new project-wide ID`);
+  const created = context.publishImmutable(relativeTarget, bytes);
+  if (!created) {
+    const existing = loadYamlMapping(fs.readFileSync(target, "utf8"));
+    context.assertValid();
+    if (canonicalRecordJson(existing) === logicalContent) {
+      return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: true };
     }
-    return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: false };
+    throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
+  }
+  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: false };
+}
+
+function withPublicationContext<T>(
+  request: Pick<PublishEntityRequest, "projectRoot" | "sourceRoot" | "publicationContext">,
+  run: (context: EntityPublicationContext) => T,
+): T {
+  if (request.publicationContext) {
+    if (request.publicationContext.projectRoot !== path.resolve(request.projectRoot)) {
+      throw new Error("entity publication context belongs to a different project root");
+    }
+    return run(request.publicationContext);
+  }
+  const binding = detectStateModeBinding(request.projectRoot, request.sourceRoot);
+  if (binding.mode !== "entities") {
+    throw new Error("entity publication requires the durable entity-mode marker; legacy mode remains authoritative");
+  }
+  try {
+    return run(binding.publicationContext);
+  } finally {
+    binding.publicationContext.close();
+  }
+}
+
+function publishWithContext(
+  request: PublishEntityRequest,
+  model: EntityAuthority,
+  context: EntityPublicationContext,
+): PublishEntityResult {
+  context.assertValid();
+  const lock = acquireWriterLock(context.pinnedPath(), 2000);
+  try {
+    context.assertValid();
+    return publishEntityLocked(request, model, context);
+  } finally {
+    lock.release();
+  }
 }
 
 export function publishEntity(request: PublishEntityRequest): PublishEntityResult {
   const model = authority(request.sourceRoot);
-  const lock = acquireWriterLock(path.resolve(request.projectRoot), 2000, request.validatedRoot);
-  try {
-    if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
-    return publishEntityLocked(request, model);
-  } finally {
-    lock.release();
-  }
+  return withPublicationContext(request, (context) => publishWithContext(request, model, context));
 }
 
 export function allocateAndPublishEntity(
@@ -486,19 +530,21 @@ export function allocateAndPublishEntity(
   candidate?: () => string,
 ): PublishEntityResult {
   const model = authority(request.sourceRoot);
-  const root = path.resolve(request.projectRoot);
-  const lock = acquireWriterLock(root, 2000, request.validatedRoot);
-  try {
-    if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
-    const existing = new Set(discoverEntities(root, request.sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
-    for (let attempt = 0; attempt < 1024; attempt += 1) {
-      const id = candidate ? candidate() : generatedId(model);
-      if (!model.pattern.test(id)) throw new Error(`entity ID candidate '${id}' must match ${model.pattern.source}`);
-      if (existing.has(id)) continue;
-      return publishEntityLocked({ ...request, id }, model);
+  return withPublicationContext(request, (context) => {
+    context.assertValid();
+    const lock = acquireWriterLock(context.pinnedPath(), 2000);
+    try {
+      context.assertValid();
+      const existing = new Set(discoverEntities(context.pinnedPath(), request.sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
+      for (let attempt = 0; attempt < 1024; attempt += 1) {
+        const id = candidate ? candidate() : generatedId(model);
+        if (!model.pattern.test(id)) throw new Error(`entity ID candidate '${id}' must match ${model.pattern.source}`);
+        if (existing.has(id)) continue;
+        return publishEntityLocked({ ...request, id }, model, context);
+      }
+      throw new Error("could not allocate a unique entity ID after 1024 attempts; run agentera check validate state and retry");
+    } finally {
+      lock.release();
     }
-    throw new Error("could not allocate a unique entity ID after 1024 attempts; run agentera check validate state and retry");
-  } finally {
-    lock.release();
-  }
+  });
 }

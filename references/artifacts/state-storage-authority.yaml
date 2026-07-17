@@ -79,6 +79,20 @@ entity_target:
       path_components: [artifact, boundary, id]
       extension: .yaml
       publication: exclusive_immutable_file
+      publication_context:
+        scope: shared_by_all_entity_families
+        binding: validated_project_root_and_exact_cutover_marker_snapshot
+        lifetime: mode_detection_through_writer_lock_and_final_publication_validation
+        pathname_race_contract: >-
+          Entity publication is rooted through held directory descriptors. The
+          root and exact valid marker identity and bytes are revalidated before
+          each directory, stage, and immutable-link boundary and after durable
+          publication before success. Because Node cannot make pathname
+          validation and mutation one kernel operation, a detected substitution
+          rolls back only attempt-owned links, stages, and empty directories by
+          pinned identity; final failure retains no attempt-owned entity state.
+        marker_change_after_detection: conflict_without_legacy_fallback
+        successor_preservation: never_remove_unmatched_or_unrelated_identity
       allocation: provisional_candidate_until_publication
       project_wide_id_claim:
         synchronization: .agentera/.writer.lock

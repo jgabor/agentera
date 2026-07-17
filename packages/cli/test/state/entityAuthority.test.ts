@@ -54,9 +54,16 @@ describe("Decision 94 entity authority", () => {
         shared_primitives: {
           status: "implemented",
           canonical_root: ".agentera/entities",
-          canonical_path_template: ".agentera/entities/<artifact>/<boundary>/<id>.yaml",
-          publication: "exclusive_immutable_file",
-          identical_replay: "idempotent",
+           canonical_path_template: ".agentera/entities/<artifact>/<boundary>/<id>.yaml",
+           publication: "exclusive_immutable_file",
+           publication_context: {
+             scope: "shared_by_all_entity_families",
+             binding: "validated_project_root_and_exact_cutover_marker_snapshot",
+             lifetime: "mode_detection_through_writer_lock_and_final_publication_validation",
+             marker_change_after_detection: "conflict_without_legacy_fallback",
+             successor_preservation: "never_remove_unmatched_or_unrelated_identity",
+           },
+           identical_replay: "idempotent",
           divergent_same_id: "reject_without_overwrite",
           state_validation: {
             canonical_command: "agentera check validate state",
