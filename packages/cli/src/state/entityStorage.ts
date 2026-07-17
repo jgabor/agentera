@@ -44,6 +44,7 @@ interface EntityAuthority {
   relationships: RelationshipDefinition[];
   artifacts: string[];
   byBoundary: Map<string, EntityDefinition>;
+  forbiddenAliases: string[];
 }
 
 export type EntityClassification = "valid" | "duplicate" | "malformed" | "unsafe";
@@ -86,11 +87,15 @@ function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function strings(value: unknown): string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
+}
+
 function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   const authorityPath = path.join(sourceRoot, "references", "artifacts", "state-storage-authority.yaml");
   const document = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
   const target = document.entity_target;
-  if (!mapping(target) || !mapping(target.identity) || !mapping(target.storage_boundary) || !Array.isArray(target.entities) || !mapping(target.relationships)) {
+  if (!mapping(target) || !mapping(target.identity) || !mapping(target.storage_boundary) || !mapping(target.public_schema) || !Array.isArray(target.entities) || !mapping(target.relationships)) {
     throw new Error(`invalid entity authority '${authorityPath}'`);
   }
   const entities = target.entities.map((value): EntityDefinition => {
@@ -98,7 +103,6 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
       throw new Error(`invalid entity declaration in '${authorityPath}'`);
     }
     const record = mapping(value.record) ? value.record : null;
-    const strings = (field: unknown): string[] => Array.isArray(field) && field.every((item) => typeof item === "string") ? field : [];
     const ownership = mapping(value.ownership) ? value.ownership : null;
     const baseline = mapping(value.baseline) ? value.baseline : null;
     return {
@@ -149,7 +153,31 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     relationships,
     artifacts: [...new Set(entities.map(({ artifact }) => artifact))].sort(),
     byBoundary: new Map(entities.map((entity) => [entity.boundary, entity])),
+    forbiddenAliases: strings(target.public_schema.forbidden_canonical_aliases),
   };
+}
+
+export function canonicalEntityRecordViolations(
+  boundary: string,
+  record: JsonObject,
+  sourceRoot?: string,
+): string[] {
+  const model = authority(sourceRoot);
+  const definition = model.byBoundary.get(boundary);
+  if (!definition?.record) throw new Error(`unknown entity record boundary '${boundary}'`);
+  const missing = definition.record.requiredFields.filter((field) => record[field] === undefined);
+  const missingPaths = definition.record.requiredPaths.filter((field) => {
+    let current: unknown = record;
+    for (const part of field.split(".")) current = mapping(current) ? current[part] : undefined;
+    return typeof current !== "string" || current.length === 0;
+  });
+  const forbidden = [...new Set([...definition.record.forbiddenFields, ...model.forbiddenAliases])]
+    .filter((field) => record[field] !== undefined);
+  return [
+    ...missing.map((field) => `${field} is required by the canonical ${boundary} record contract`),
+    ...missingPaths.map((field) => `${field} is required by the canonical ${boundary} record contract`),
+    ...forbidden.map((field) => `${field} is forbidden by the canonical entity authority`),
+  ];
 }
 
 function relative(projectRoot: string, candidate: string): string {
@@ -629,6 +657,40 @@ function publishEntityLocked(
   return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: false, publishedIdentity };
 }
 
+export function withEntityWriterLock<T>(context: EntityPublicationContext, run: () => T): T {
+  context.assertValid();
+  const lock = acquireWriterLock(context.pinnedPath(), 2000);
+  try {
+    context.assertValid();
+    return run();
+  } finally {
+    lock.release();
+  }
+}
+
+export function publishEntityUnderLock(request: PublishEntityRequest): PublishEntityResult {
+  if (!request.publicationContext) throw new Error("locked entity publication requires a publication context");
+  return publishEntityLocked(request, authority(request.sourceRoot), request.publicationContext);
+}
+
+export function replaceEntityUnderLock(request: ReplaceEntityRequest): PublishEntityResult {
+  const context = request.publicationContext;
+  if (!context) throw new Error("locked entity replacement requires a publication context");
+  const model = authority(request.sourceRoot);
+  context.assertValid();
+  const owner = model.byBoundary.get(request.boundary);
+  if (!owner || owner.artifact !== request.artifact) throw new Error(`unknown '${request.artifact}' entity boundary '${request.boundary}'`);
+  const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
+  if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record))
+    return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
+  context.replaceExisting(
+    relativeTarget,
+    dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.expectedRecord }),
+    dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.record }),
+  );
+  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false };
+}
+
 function withPublicationContext<T>(
   request: Pick<PublishEntityRequest, "projectRoot" | "sourceRoot" | "publicationContext">,
   run: (context: EntityPublicationContext) => T,
@@ -655,14 +717,7 @@ function publishWithContext(
   model: EntityAuthority,
   context: EntityPublicationContext,
 ): PublishEntityResult {
-  context.assertValid();
-  const lock = acquireWriterLock(context.pinnedPath(), 2000);
-  try {
-    context.assertValid();
-    return publishEntityLocked(request, model, context);
-  } finally {
-    lock.release();
-  }
+  return withEntityWriterLock(context, () => publishEntityLocked(request, model, context));
 }
 
 export function publishEntity(request: PublishEntityRequest): PublishEntityResult {
@@ -671,23 +726,8 @@ export function publishEntity(request: PublishEntityRequest): PublishEntityResul
 }
 
 export function replaceEntity(request: ReplaceEntityRequest): PublishEntityResult {
-  const model = authority(request.sourceRoot);
   return withPublicationContext(request, (context) => {
-    context.assertValid();
-    const lock = acquireWriterLock(context.pinnedPath(), 2000);
-    try {
-      const owner = model.byBoundary.get(request.boundary);
-      if (!owner || owner.artifact !== request.artifact) throw new Error(`unknown '${request.artifact}' entity boundary '${request.boundary}'`);
-      const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
-      const before = dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.expectedRecord });
-      const after = dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.record });
-      if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record))
-        return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
-      context.replaceExisting(relativeTarget, before, after);
-      return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false };
-    } finally {
-      lock.release();
-    }
+    return withEntityWriterLock(context, () => replaceEntityUnderLock({ ...request, publicationContext: context }));
   });
 }
 

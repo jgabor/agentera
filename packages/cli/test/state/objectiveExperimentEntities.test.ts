@@ -1,7 +1,8 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,11 +10,12 @@ import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
-import { publishExperimentEntity } from "../../src/state/objectiveExperimentEntities.js";
+import { mutateObjectiveEntity, publishExperimentEntity } from "../../src/state/objectiveExperimentEntities.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 
 const roots: string[] = [];
 const MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
+const baselineWorker = fileURLToPath(new URL("./objectiveExperimentWorker.mjs", import.meta.url));
 
 function project(entity = true): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-objective-entities-")); roots.push(root);
@@ -46,6 +48,17 @@ function git(root: string, ...args: string[]): string {
   const env = { ...process.env }; delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE;
   return execFileSync("git", ["-c", "commit.gpgsign=false", ...args], { cwd: root, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 }
+async function concurrentBaselines(root: string, objectiveId: string): Promise<Array<{ ok: boolean; error?: string }>> {
+  const start = path.join(root, "baseline.start");
+  const ready = ["a", "b"].map((name) => path.join(root, `${name}.ready`));
+  const results = ["a", "b"].map((name) => path.join(root, `${name}.json`));
+  const children = results.map((result, index) => new Promise<void>((resolve, reject) => {
+    const child = spawn(process.execPath, [baselineWorker], { cwd: path.resolve(import.meta.dirname, "../.."), env: { ...process.env, AGENTERA_BASELINE_ROOT: root, AGENTERA_BASELINE_OBJECTIVE: objectiveId, AGENTERA_BASELINE_READY: ready[index], AGENTERA_BASELINE_START: start, AGENTERA_BASELINE_RESULT: result }, stdio: "pipe" });
+    let stderr = ""; child.stderr.setEncoding("utf8"); child.stderr.on("data", (chunk) => { stderr += chunk; }); child.on("error", reject); child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`baseline worker exited ${code}: ${stderr}`)));
+  }));
+  const deadline = Date.now() + 10_000; while (!ready.every((file) => fs.existsSync(file))) { if (Date.now() > deadline) throw new Error("baseline workers did not become ready"); await new Promise((resolve) => setTimeout(resolve, 10)); }
+  fs.writeFileSync(start, "start\n"); await Promise.all(children); return results.map((file) => JSON.parse(fs.readFileSync(file, "utf8")));
+}
 
 afterEach(() => { vi.restoreAllMocks(); while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true }); });
 
@@ -59,6 +72,18 @@ describe("objective and experiment entity authority", () => {
     const result = capture(root, ["state", "objective", "update", "--id", created.id, "--input", "-", "--format", "json"], updated);
     expect(result.rc, result.err).toBe(0); expect(result.json).toMatchObject({ id: created.id, record: { header: { title: "latency v2" } } });
     expect(fs.existsSync(path.join(root, ".agentera/objective.yaml"))).toBe(false);
+  });
+
+  it("rejects every canonical identity alias on objective create and update before effects", () => {
+    const root = project(); const owner = createObjective(root, "latency"); const file = path.join(root, `.agentera/entities/objective/objective/${owner.id}.yaml`); const before = fs.readFileSync(file);
+    for (const alias of ["stable_id", "artifact_id", "entry_number", "number", "task_number", "experiment_number", "plan_id", "objective_id", "type_prefixed_id", "id", "artifact"]) {
+      const input = { ...objective("invalid"), [alias]: "forbidden" };
+      for (const [verb, selector] of [["create", []], ["update", ["--id", owner.id]]] as const) {
+        const result = capture(root, ["state", "objective", verb, ...selector, "--input", "-", "--format", "json"], input); expect(result.rc, alias).toBe(2); expect(result.json.error.class).toBe("schema_violation"); expect(result.json.error.violations.join(" ")).toContain(alias); expect(fs.readFileSync(file)).toEqual(before);
+      }
+    }
+    const nested = objective("invalid"); (nested.header as Record<string, unknown>).id = "forbidden";
+    expect(capture(root, ["state", "objective", "create", "--input", "-", "--format", "json"], nested).rc).toBe(2); expect(fs.readdirSync(path.dirname(file))).toHaveLength(1);
   });
 
   it("publishes immutable full experiments related to exactly one objective and replays only exact content", () => {
@@ -88,6 +113,12 @@ describe("objective and experiment entity authority", () => {
     expect(blocked.rc).not.toBe(0); expect(blocked.json.error.class).toBe("conflict"); expect(fs.readdirSync(path.join(root, ".agentera/entities/experiments/experiment"))).toEqual(before);
   });
 
+  it("serializes concurrent baseline publication so one process wins without residue", async () => {
+    const root = project(); const owner = createObjective(root, "latency"); const results = await concurrentBaselines(root, owner.id);
+    expect(results.filter(({ ok }) => ok)).toHaveLength(1); expect(results.filter(({ ok }) => !ok)).toEqual([expect.objectContaining({ error: expect.stringMatching(/exactly one|baseline|conflict/i) })]);
+    const directory = path.join(root, ".agentera/entities/experiments/experiment"); expect(fs.readdirSync(directory).filter((name) => name.endsWith(".yaml"))).toHaveLength(1); expect(validateEntityState(root).valid).toBe(true); expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
+  });
+
   it("gets and lists full records in declared temporal order with bounded exact recovery and snapshot cursors", () => {
     const root = project(); const owner = createObjective(root, "latency"); const baseline = publish(root, owner.id, experiment("baseline", "baseline", "2026-07-16 09:00")); const candidate = publish(root, owner.id, experiment("candidate", "kept", "2026-07-17 09:00"));
     const exact = capture(root, ["state", "experiments", "get", "--id", baseline.id, "--objective", owner.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(exact.json.entry.record).toEqual(baseline.record); expect(exact.json.entry.provenance.path).toContain(baseline.id);
@@ -115,6 +146,12 @@ describe("objective and experiment entity authority", () => {
     const entity = project(); const owner = createObjective(entity, "entity"); expect(capture(entity, ["state", "experiments", "publish", "--objective", owner.id, "--number", "0", "--input", "-", "--format", "json"], experiment("baseline", "baseline")).rc).toBe(2); expect(fs.existsSync(path.join(entity, ".agentera/optimize"))).toBe(false);
   });
 
+  it("renders final entity explain contracts while leaving marker-absent legacy explain unchanged", () => {
+    const entity = project(); const objectiveCreate = capture(entity, ["state", "objective", "explain", "--format", "json"]); const objectiveUpdate = capture(entity, ["state", "objective", "explain", "--verb", "update", "--format", "json"]); const experiments = capture(entity, ["state", "experiments", "explain", "--format", "json"]); const rendered = JSON.stringify([objectiveCreate.json, objectiveUpdate.json, experiments.json]);
+    expect(objectiveCreate.json.fields).toEqual([]); expect(objectiveCreate.json.example).toBe("agentera state objective create --input objective.yaml --format json"); expect(objectiveUpdate.json.fields).toEqual([expect.objectContaining({ flag: "--id", field: "id", description: expect.stringContaining("Bare ten-letter") })]); expect(objectiveUpdate.json.example).toContain("objective update --id qjtrmnpvka"); expect(experiments.json.fields.map((field: any) => field.flag)).toEqual(["--objective", "--id"]); expect(experiments.json.input_schema.cli_owned_fields).toEqual(["id", "artifact", "objective"]); expect(experiments.json.example).toContain("--objective qjtrmnpvka"); expect(rendered).not.toMatch(/--number|OBJECTIVE_ID|objective:123e|RFC 9562|state plan|number is assigned by the CLI/i);
+    const legacy = project(false); const legacyExperiment = capture(legacy, ["state", "experiments", "explain", "--format", "json"]); const legacyObjective = capture(legacy, ["state", "objective", "explain", "--verb", "update", "--format", "json"]); expect(legacyExperiment.json.example).toBe("agentera state experiments publish --objective OBJECTIVE_ID --number 0 --input experiment.yaml --format json"); expect(legacyExperiment.json.fields.map((field: any) => field.flag)).toEqual(["--objective", "--number", "--id"]); expect(legacyObjective.json.example).toBe('agentera state plan update --task 1 --name "..." --format json');
+  });
+
   it("lets Git merge unrelated entities, conflicts on one objective update, and validates distinct-path duplicate ownership", () => {
     const root = project(); const first = createObjective(root, "first"); const second = createObjective(root, "second"); git(root, "init", "-b", "main"); git(root, "config", "user.name", "Fixture"); git(root, "config", "user.email", "fixture@example.test"); git(root, "add", ".agentera"); git(root, "commit", "-m", "base");
     const left = `${root}-left`, right = `${root}-right`; roots.push(left, right); git(root, "worktree", "add", "-b", "left", left, "main"); git(root, "worktree", "add", "-b", "right", right, "main"); createObjective(left, "left"); publish(left, first.id, experiment("left baseline", "baseline")); createObjective(right, "right"); publish(right, second.id, experiment("right baseline", "baseline")); git(left, "add", ".agentera/entities"); git(left, "commit", "-m", "left"); git(right, "add", ".agentera/entities"); git(right, "commit", "-m", "right"); git(root, "merge", "--ff-only", "left"); git(root, "merge", "--no-edit", "right"); expect(validateEntityState(root).valid).toBe(true);
@@ -129,6 +166,18 @@ describe("objective and experiment entity authority", () => {
       const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((relative, bytes) => { const result = original(relative, bytes); if (invalidation === "marker") fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER + "# changed\n"); else { const held = `${root}-held`; roots.push(held); fs.renameSync(root, held); fs.mkdirSync(root); } return result; });
       expect(() => publishExperimentEntity(req, { publicationContext: binding.publicationContext, candidate: () => "aaaaaaaaaa" })).toThrow(/changed|conflict/i); binding.publicationContext.close();
       const inspected = invalidation === "root" ? `${root}-held` : root; expect(fs.existsSync(path.join(inspected, ".agentera/entities/experiments/experiment/aaaaaaaaaa.yaml"))).toBe(false);
+    }
+  });
+
+  it("restores exact objective bytes when whole-state postvalidation unexpectedly fails", () => {
+    for (const verb of ["create", "update"] as const) {
+      const root = project(); const owner = createObjective(root, verb); const ownerPath = path.join(root, `.agentera/entities/objective/objective/${owner.id}.yaml`); const before = fs.readFileSync(ownerPath); const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      let injected = false; const inject = () => { if (injected) return; injected = true; const bad = path.join(root, ".agentera/entities/experiments/experiment/bbbbbbbbbb.yaml"); fs.mkdirSync(path.dirname(bad), { recursive: true }); fs.writeFileSync(bad, "id: bbbbbbbbbb\nartifact: experiments\nrecord: {}\n"); };
+      if (verb === "create") { const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((...args) => { const result = original(...args); if (String(args[0]).includes("/objective/")) inject(); return result; }); }
+      else { const original = binding.publicationContext.replaceExisting.bind(binding.publicationContext); vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => { const result = original(...args); if (String(args[0]).includes("/objective/")) inject(); return result; }); }
+      const spec = operationSpec("objective", verb)!; const req: StateWriteRequest = { artifact: "objective", spec, projectRoot: root, dryRun: false, force: false, values: verb === "update" ? { id: owner.id } : {}, callerPayload: objective("changed"), input: objective("changed") };
+      expect(() => mutateObjectiveEntity(req, { publicationContext: binding.publicationContext })).toThrow(/invalid|conflict/i); binding.publicationContext.close();
+      expect(fs.readFileSync(ownerPath)).toEqual(before); if (verb === "create") expect(fs.readdirSync(path.dirname(ownerPath)).filter((name) => name.endsWith(".yaml"))).toHaveLength(1);
     }
   });
 });

@@ -9,7 +9,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateEntityId, discoverEntities, publishEntity, replaceEntity, validateEntityState, type DiscoveredEntity } from "./entityStorage.js";
+import { allocateEntityId, canonicalEntityRecordViolations, discoverEntities, publishEntityUnderLock, replaceEntityUnderLock, validateEntityState, withEntityWriterLock, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { reject } from "./write/errors.js";
@@ -65,15 +65,15 @@ function experimentById(entities: DiscoveredEntity[], id: string, objective?: st
   if (objective && matches[0].record?.objective !== objective) throw failure("not_found", EXPERIMENT_ARTIFACT, `experiment ID '${id}' does not belong to objective '${objective}'`, "List experiments for the selected objective and retry.", id);
   return matches[0];
 }
-function objectiveViolations(record: JsonObject): string[] {
+function objectiveViolations(record: JsonObject, sourceRoot?: string): string[] {
   const header = mapping(record.header) ? record.header : {}; const objective = mapping(record.objective) ? record.objective : {}; const metric = mapping(record.metric) ? record.metric : {}; const baseline = mapping(record.baseline) ? record.baseline : {}; const scope = mapping(record.scope) ? record.scope : {};
-  const violations: string[] = [];
+  const violations = canonicalEntityRecordViolations(OBJECTIVE, record, sourceRoot);
   if (typeof header.title !== "string" || !header.title.trim()) violations.push("header.title is required");
   if (!ACTIVE.has(String(header["status"])) && header["status"] !== "closed") violations.push("objective lifecycle must be open, active, or closed");
   for (const [name, value] of [["objective.description", objective.description], ["objective.measurement", objective.measurement], ["metric.description", metric.description], ["metric.direction", metric.direction], ["metric.unit", metric.unit], ["baseline.description", baseline.description]]) if (typeof value !== "string" || !value.trim()) violations.push(`${name} is required`);
   if (!Array.isArray(scope.included) || !scope.included.length || !Array.isArray(scope.excluded)) violations.push("scope.included and scope.excluded are required");
-  if (record.id !== undefined || record.artifact !== undefined || (mapping(record.header) && record.header.id !== undefined)) violations.push("entity identity fields are CLI-owned");
-  return violations;
+  if (mapping(record.header) && record.header.id !== undefined) violations.push("header.id is forbidden in a canonical objective record");
+  return [...new Set(violations)];
 }
 function experimentViolations(record: JsonObject): string[] {
   const candidate = structuredClone(record); delete candidate.objective;
@@ -94,24 +94,39 @@ function envelope(command: string, entity: { id: string; path: string; replay: b
 function entityPath(root: string, sourceRoot: string, artifact: string, boundary: string, id: string): string { return path.join(root, contract(boundary, sourceRoot).entityRoot, artifact, boundary, `${id}.yaml`); }
 
 export function mutateObjectiveEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
-  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); assertValidState(req.projectRoot, sourceRoot); const input = structuredClone(req.input ?? {}) as JsonObject; const violations = objectiveViolations(input); if (violations.length) reject({ class: "schema_violation", message: "objective entity input is invalid", violations });
-  const entities = relevant(req.projectRoot, sourceRoot);
-  if (req.spec.verb === "create") { const id = allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot); if (req.dryRun) return envelope("state objective create", { id, path: entityPath(req.projectRoot, sourceRoot, OBJECTIVE_ARTIFACT, OBJECTIVE, id), replay: false }, OBJECTIVE_ARTIFACT, input, true); const result = publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id, record: input }); return envelope("state objective create", result, OBJECTIVE_ARTIFACT, input, false); }
-  const objective = selectObjective(entities, String(req.values.id ?? ""));
-  if (canonicalRecordJson(input) === canonicalRecordJson(objective.record)) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: true }, OBJECTIVE_ARTIFACT, input, req.dryRun);
-  if (req.dryRun) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: false }, OBJECTIVE_ARTIFACT, input, true);
-  const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id: objective.id!, expectedRecord: objective.record!, record: input }); return envelope("state objective update", result, OBJECTIVE_ARTIFACT, input, false);
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const input = structuredClone(req.input ?? {}) as JsonObject; const violations = objectiveViolations(input, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: "objective entity input is invalid", violations });
+  if (!options.publicationContext) { const binding = detectStateModeBinding(req.projectRoot, sourceRoot); if (binding.mode !== "entities") throw new Error("objective entity mutation requires the durable entity-mode marker"); try { return mutateObjectiveEntity(req, { ...options, publicationContext: binding.publicationContext }); } finally { binding.publicationContext.close(); } }
+  const context = options.publicationContext;
+  return withEntityWriterLock(context, () => {
+    assertValidState(context.pinnedPath(), sourceRoot); const entities = relevant(context.pinnedPath(), sourceRoot);
+    if (req.spec.verb === "create") {
+      const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope("state objective create", { id, path: entityPath(req.projectRoot, sourceRoot, OBJECTIVE_ARTIFACT, OBJECTIVE, id), replay: false }, OBJECTIVE_ARTIFACT, input, true);
+      let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
+      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id, record: input }); published = result; assertValidState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope("state objective create", result, OBJECTIVE_ARTIFACT, input, false); }
+      catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
+    }
+    const objective = selectObjective(entities, String(req.values.id ?? ""));
+    if (canonicalRecordJson(input) === canonicalRecordJson(objective.record)) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: true }, OBJECTIVE_ARTIFACT, input, req.dryRun);
+    if (req.dryRun) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: false }, OBJECTIVE_ARTIFACT, input, true);
+    const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id: objective.id!, expectedRecord: objective.record!, record: input };
+    let replaced = false;
+    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertValidState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope("state objective update", result, OBJECTIVE_ARTIFACT, input, false); }
+    catch (error) { if (replaced) replaceEntityUnderLock({ ...request, expectedRecord: input, record: objective.record! }); throw error; }
+  });
 }
 
 export function publishExperimentEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
-  if (!options.publicationContext) { const binding = detectStateModeBinding(req.projectRoot, options.sourceRoot); if (binding.mode !== "entities") throw new Error("experiment entity publication requires the durable entity-mode marker"); try { return publishExperimentEntity(req, { ...options, publicationContext: binding.publicationContext }); } finally { binding.publicationContext.close(); } }
-  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); assertValidState(req.projectRoot, sourceRoot); const entities = relevant(req.projectRoot, sourceRoot); const objective = selectObjective(entities, String(req.values.objective ?? ""));
-  const record = { ...(structuredClone(req.input ?? {}) as JsonObject), objective: objective.id! }; const violations = experimentViolations(record); if (violations.length) reject({ class: "schema_violation", message: "experiment entity input is invalid", violations });
-  const requested = req.values.id === undefined ? undefined : String(req.values.id); if (requested) { const existing = experimentById(entities, requested, objective.id!); if (canonicalRecordJson(existing.record) !== canonicalRecordJson(record)) reject({ class: "conflict", message: `divergent content for immutable experiment ID '${requested}'; no state was changed` }); return envelope("state experiments publish", { id: requested, path: existing.path, replay: true }, EXPERIMENT_ARTIFACT, record, req.dryRun); }
-  assertBaseline(entities, objective.id!, record); const id = allocateEntityId(options.publicationContext.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope("state experiments publish", { id, path: entityPath(req.projectRoot, sourceRoot, EXPERIMENT_ARTIFACT, EXPERIMENT, id), replay: false }, EXPERIMENT_ARTIFACT, record, true);
-  let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
-  try { const result = publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: EXPERIMENT_ARTIFACT, boundary: EXPERIMENT, id, record }); published = result; options.publicationContext.assertValid(); assertValidState(options.publicationContext.pinnedPath(), sourceRoot); assertBaseline(relevant(options.publicationContext.pinnedPath(), sourceRoot), objective.id!); options.publicationContext.assertValid(); return envelope("state experiments publish", result, EXPERIMENT_ARTIFACT, record, false); }
-  catch (error) { if (published?.publishedIdentity) options.publicationContext.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const raw = structuredClone(req.input ?? {}) as JsonObject; const inputViolations = experimentViolations({ ...raw, objective: "qjtrmnpvka" }); if (inputViolations.length) reject({ class: "schema_violation", message: "experiment entity input is invalid", violations: inputViolations });
+  if (!options.publicationContext) { const binding = detectStateModeBinding(req.projectRoot, sourceRoot); if (binding.mode !== "entities") throw new Error("experiment entity publication requires the durable entity-mode marker"); try { return publishExperimentEntity(req, { ...options, publicationContext: binding.publicationContext }); } finally { binding.publicationContext.close(); } }
+  const context = options.publicationContext;
+  return withEntityWriterLock(context, () => {
+    assertValidState(context.pinnedPath(), sourceRoot); const entities = relevant(context.pinnedPath(), sourceRoot); const objective = selectObjective(entities, String(req.values.objective ?? ""));
+    const record = { ...raw, objective: objective.id! }; const requested = req.values.id === undefined ? undefined : String(req.values.id); if (requested) { const existing = experimentById(entities, requested, objective.id!); if (canonicalRecordJson(existing.record) !== canonicalRecordJson(record)) reject({ class: "conflict", message: `divergent content for immutable experiment ID '${requested}'; no state was changed` }); return envelope("state experiments publish", { id: requested, path: existing.path, replay: true }, EXPERIMENT_ARTIFACT, record, req.dryRun); }
+    assertBaseline(entities, objective.id!, record); const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope("state experiments publish", { id, path: entityPath(req.projectRoot, sourceRoot, EXPERIMENT_ARTIFACT, EXPERIMENT, id), replay: false }, EXPERIMENT_ARTIFACT, record, true);
+    let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
+    try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: EXPERIMENT_ARTIFACT, boundary: EXPERIMENT, id, record }); published = result; assertValidState(context.pinnedPath(), sourceRoot); assertBaseline(relevant(context.pinnedPath(), sourceRoot), objective.id!); context.assertValid(); return envelope("state experiments publish", result, EXPERIMENT_ARTIFACT, record, false); }
+    catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
+  });
 }
 
 function entry(root: string, entity: DiscoveredEntity): JsonObject { return { id: entity.id!, artifact: entity.artifact!, record: entity.record!, provenance: { storage: "canonical_entity_file", path: relative(root, entity.path), immutable: entity.boundary === EXPERIMENT } }; }

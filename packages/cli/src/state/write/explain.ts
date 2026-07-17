@@ -63,6 +63,7 @@ export function buildExplain(
   const fields = projectedFields(spec, validator)
     .filter(() => !(entityArtifact && artifact === "health" && verb === "repair"))
     .filter((field) => artifact !== "decisions" || !["update", "amend"].includes(verb) || (entityArtifact ? field.flag !== "--number" : !["--id", "--base-sha256"].includes(field.flag)))
+    .filter((field) => !(entityArtifact && artifact === "experiments" && field.flag === "--number"))
     .map((field) => ({
     flag: field.flag,
     field: field.field,
@@ -70,7 +71,14 @@ export function buildExplain(
     type: field.kind,
     ...(field.validValues ? { valid_values: field.validValues } : {}),
     ...(field.repeatable ? { repeatable: true } : {}),
-    ...(field.description ? { description: field.description } : {}),
+    ...(field.description ? { description:
+      entityArtifact && artifact === "objective" && field.flag === "--id"
+        ? "Bare ten-letter objective ID returned by objective create or list."
+        : entityArtifact && artifact === "experiments" && field.flag === "--objective"
+          ? "Bare ten-letter objective ID owning the experiment."
+          : entityArtifact && artifact === "experiments" && field.flag === "--id"
+            ? "Existing bare ten-letter experiment ID for exact immutable replay."
+            : field.description } : {}),
     ...(field.kind === "date" ? { format: "YYYY-MM-DD" } : {}),
     ...(field.kind === "datetime" ? { format: "YYYY-MM-DD HH:MM" } : {}),
     ...(field.flag === "--timestamp" ? { default: "now" } : {}),
@@ -101,7 +109,11 @@ export function buildExplain(
       parser: "yaml",
       accepts_json: true,
       root: spec.inputRoot,
-      cli_owned_fields: entityArtifact && artifact === "health" ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
+      cli_owned_fields: entityArtifact && artifact === "experiments"
+        ? ["id", "artifact", "objective"]
+        : entityArtifact && artifact === "objective"
+          ? ["id", "artifact"]
+          : entityArtifact && artifact === "health" ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
         artifact === "health"
@@ -111,14 +123,14 @@ export function buildExplain(
             : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
   }
-  result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "decisions", entityArtifact && artifact === "health");
+  result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "decisions", entityArtifact && artifact === "health", entityArtifact);
   result.example = entityArtifact && artifact === "health" && verb === "repair"
     ? "agentera check validate state --format json"
-    : exampleFor(artifact, verb, entityArtifact && artifact === "decisions");
+    : exampleFor(artifact, verb, entityArtifact && artifact === "decisions", entityArtifact);
   return result;
 }
 
-function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecisions = false, entityHealth = false): string[] {
+function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecisions = false, entityHealth = false, entityArtifact = false): string[] {
   const base = [
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
@@ -134,8 +146,14 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     return ["canonical health audit entities are immutable; validate malformed or duplicate ownership with agentera check validate state", ...base];
   if (artifact === "health" && verb === "repair")
     return ["repair is a destructive projection edit; select an existing duplicate audit and pass --force", ...base];
+  if (entityArtifact && artifact === "experiments")
+    return ["select the owner with its bare ten-letter --objective ID; numeric and composite selectors are unavailable", "omit --id for a new immutable experiment; pass an existing bare --id only for exact replay", ...base];
   if (artifact === "experiments")
     return ["pass the intended non-negative --number; the CLI validates and assigns it to the entry", ...base];
+  if (entityArtifact && artifact === "objective" && verb === "update")
+    return ["select one objective with its bare ten-letter --id; numeric and composite selectors are unavailable", "the CLI preserves that ID while replacing the validated objective record", ...base];
+  if (entityArtifact && artifact === "objective")
+    return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
   if (entityDecisions && verb === "update") return [
     "select one base decision with its bare --id; numeric selectors are unavailable",
     "update replaces only that decision's authority-owned satisfaction entity after transition validation",
@@ -166,7 +184,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
   return [entityDecisions || entityHealth ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
 }
 
-export function exampleFor(artifact: WritableArtifact, verb: string, entityDecisions = false): string {
+export function exampleFor(artifact: WritableArtifact, verb: string, entityDecisions = false, entityArtifact = false): string {
   if (artifact === "progress")
     return 'agentera state progress append --type fix --phase build --what "..." --intent "..." --format json';
   if (artifact === "decisions" && verb === "update")
@@ -181,6 +199,8 @@ export function exampleFor(artifact: WritableArtifact, verb: string, entityDecis
     return 'agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm';
   if (artifact === "health" && verb === "repair") return "agentera state health repair --number 14 --keep first --force --format json";
   if (artifact === "health") return "agentera state health append --input audit.yaml --format json";
+  if (entityArtifact && artifact === "objective" && verb === "create") return "agentera state objective create --input objective.yaml --format json";
+  if (entityArtifact && artifact === "objective" && verb === "update") return "agentera state objective update --id qjtrmnpvka --input objective.yaml --format json";
   if (verb === "create") return "agentera state plan create --input plan.yaml --format json";
   if (verb === "archive") return "agentera state plan archive --dry-run";
   if (verb === "update") return 'agentera state plan update --task 1 --name "..." --format json';
@@ -190,6 +210,8 @@ export function exampleFor(artifact: WritableArtifact, verb: string, entityDecis
     return "agentera state plan set-plan-status --status complete --format json";
   if (verb === "record-evaluation")
     return 'agentera state plan record-evaluation --task 1 --attempt-id audit-1 --verdict pass --provenance "audit report" --format json';
+  if (entityArtifact && verb === "publish")
+    return "agentera state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json";
   if (verb === "publish")
     return "agentera state experiments publish --objective OBJECTIVE_ID --number 0 --input experiment.yaml --format json";
   return `agentera state plan ${verb} --name "..."`;
