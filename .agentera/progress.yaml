@@ -1,4 +1,26 @@
 cycles:
+  - number: 891
+    timestamp: 2026-07-17 12:17
+    type: fix
+    phase: build
+    what: Fixed entity migration preview to inventory the canonical docs-mapped TODO
+      source.
+    inspiration: Task 9 audit retry 1/2 and the existing artifact registry resolver.
+    discovered: Migration preview alone had hardcoded root TODO.md while normal
+      state reads already honored docs mapping.
+    verified: entityMigrationPreview.test.ts passed 81 tests; full CLI passed 211
+      files and 2,538 tests; typecheck, build, state validation, document
+      capability, capability contract 2/2, and compact passed.
+    next: "Task 10 remains pending: durable migration apply, resume, and rollback
+      were not changed."
+    context:
+      intent: Close the Task 9 audit defect without changing migration apply or Task
+        10 behavior.
+      constraints: Reuse canonical mapping semantics; preserve docs.yaml singleton
+        authority and zero-write preview; no apply work.
+      unknowns: None for this audit fix.
+      scope: packages/cli/src/state/entityMigrationPreview.ts and focused migration
+        preview regressions.
   - number: 890
     timestamp: 2026-07-17 11:53
     type: feat
@@ -196,33 +218,6 @@ cycles:
       unknowns: None.
       scope: Decision entity retrieval and validation, shared entity replacement, and
         proportional regression tests.
-  - number: 881
-    timestamp: 2026-07-17 05:07
-    type: feat
-    phase: build
-    what: Cut decisions over to canonical entity authority
-    inspiration: PLAN Task 5 and Decision 94
-    discovered: Satisfaction needs one replaceable owner per decision while
-      revisions need immutable decision-plus-base-hash ownership; generic
-      ownership validation makes branch divergence explicit without
-      family-specific race logic.
-    verified: "Focused decision/entity suites: 138/138 passed. Full CLI suite:
-      2480/2480 passed. Typecheck and build passed. State validation passed with
-      0 issues. Capability discuss and capability-contract validation passed.
-      Compaction passed with 0 over-limit artifacts and 0 errors."
-    next: Proceed to Task 6 only; health, plans, objectives, TODO, docs inventory,
-      durable apply, and global consumer cutover remain pending.
-    context:
-      intent: Execute PLAN Task 5 with isolated decision bases, satisfaction
-        ownership, immutable revisions, and bare-ID effective reads while
-        preserving marker-absent legacy behavior
-      constraints: Decisions family only; no migration marker, dual write, durable
-        apply, other family cutover, TODO/docs inventory, publish, push, or
-        vision changes.
-      unknowns: None for Task 5; later family and global consumer tasks remain pending.
-      scope: Decision entity writer/read/list, satisfaction and revision authority,
-        shared ownership validation and exact replacement, tests, changelog,
-        authority, plan, and progress state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -292,6 +287,7 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 881 (2026-07-17): Cut decisions over to canonical entity authority"
   - summary: "Cycle 880 (2026-07-17): Bound all entity-family publication to one
       pinned project-root and exact state-mode marker context, with
       identity-checked..."
@@ -391,16 +387,18 @@ archive:
       no..."
   - summary: "Cycle 842 (2026-07-16): Published record-local decision amendments
       with recovery (plan task 3). Wired amend publication through the typed..."
-  - summary: "Cycle 841 (2026-07-16): Ran orchestrator presence verification for
-      Task 2 (revision-backed effective decision reads) after cycle 840
-      reported..."
 omitted: true
-omitted_count: 126
+omitted_count: 127
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

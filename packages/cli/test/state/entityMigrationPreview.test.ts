@@ -265,6 +265,93 @@ describe("entity migration read-only preview", () => {
     ]));
   });
 
+  it("inventories the docs-mapped TODO authority when the root default is absent", () => {
+    const root = project();
+    write(root, ".agentera/docs.yaml", "mapping:\n  - artifact: TODO.md\n    path: project/TASKS.md\n");
+    write(root, "project/TASKS.md", "# TODO\n\n## → Normal\n- [ ] Read the mapped authority.\n");
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const todo = preview.entries.filter((entry) => entry.boundary === "todo_item");
+
+    expect(todo).toHaveLength(1);
+    expect(todo[0]).toMatchObject({
+      source_identity: "project/TASKS.md:line:4",
+      source_paths: ["project/TASKS.md"],
+      provenance: ["current_canonical"],
+    });
+  });
+
+  it("gives the docs-mapped TODO authority precedence over root TODO.md", () => {
+    const root = project();
+    write(root, ".agentera/docs.yaml", "mapping:\n  - artifact: TODO.md\n    path: project/TASKS.md\n");
+    write(root, "TODO.md", "# TODO\n- [ ] Root item must be ignored.\n");
+    write(root, "project/TASKS.md", "# TODO\n- [ ] Mapped item wins.\n");
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const todo = preview.entries.filter((entry) => entry.boundary === "todo_item");
+
+    expect(todo).toHaveLength(1);
+    expect(todo[0].source_identity).toBe("project/TASKS.md:line:2");
+    expect(todo[0].source_paths).toEqual(["project/TASKS.md"]);
+    expect(preview.entries.some((entry) => entry.source_paths.includes("TODO.md"))).toBe(false);
+  });
+
+  it.each([
+    ["traversal", "../outside/TODO.md"],
+    ["absolute external path", path.join(os.tmpdir(), "external-TODO.md")],
+  ])("rejects a mapped TODO %s before inventory effects", (_kind, mappedPath) => {
+    const root = project();
+    write(root, ".agentera/docs.yaml", `mapping:\n  - artifact: TODO.md\n    path: ${mappedPath}\n`);
+    const before = tree(root);
+    let out = "";
+
+    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined }, process.cwd(), REPO_ROOT);
+
+    expect(rc).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed", message: expect.stringMatching(/artifact 'todo' path (contains traversal segments|escapes the project boundary)/) } });
+    expect(tree(root)).toEqual(before);
+  });
+
+  it("rejects a mapped TODO path that escapes through a symlink before inventory effects", () => {
+    const root = project();
+    const external = project();
+    write(root, ".agentera/docs.yaml", "mapping:\n  - artifact: TODO.md\n    path: linked/TODO.md\n");
+    write(external, "TODO.md", "# TODO\n- [ ] External item must not be read.\n");
+    fs.symlinkSync(external, path.join(root, "linked"), "dir");
+    const beforeRoot = tree(root);
+    const beforeExternal = tree(external);
+    let out = "";
+
+    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined }, process.cwd(), REPO_ROOT);
+
+    expect(rc).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed", message: "artifact 'todo' path escapes the project boundary" } });
+    expect(out).not.toContain("External item must not be read");
+    expect(tree(root)).toEqual(beforeRoot);
+    expect(tree(external)).toEqual(beforeExternal);
+  });
+
+  it("binds mapped TODO drift, fingerprints, and pagination to the mapped source", () => {
+    const root = project();
+    write(root, ".agentera/docs.yaml", "mapping:\n  - artifact: TODO.md\n    path: project/TASKS.md\n");
+    write(root, "TODO.md", "# TODO\n- [ ] Ignored root item.\n");
+    write(root, "project/TASKS.md", "# TODO\n- [ ] Mapped one.\n- [ ] Mapped two.\n");
+    const first = previewEntityMigration(root, REPO_ROOT, { limit: 1 });
+    expect(first.next_after).toMatch(/^project\/TASKS\.md:line:/);
+
+    write(root, "TODO.md", "# TODO\n- [ ] Changed ignored root item.\n");
+    const rootChanged = previewEntityMigration(root, REPO_ROOT, { limit: 1 });
+    expect(rootChanged.source_fingerprint).toBe(first.source_fingerprint);
+    expect(rootChanged.preview_digest).toBe(first.preview_digest);
+
+    write(root, "project/TASKS.md", "# TODO\n- [ ] Changed mapped one.\n- [ ] Mapped two.\n");
+    const mappedChanged = previewEntityMigration(root, REPO_ROOT, { limit: 1 });
+    const effect = vi.fn();
+    expect(mappedChanged.source_fingerprint).not.toBe(first.source_fingerprint);
+    expect(() => assertEntityMigrationBinding(first.source_fingerprint, first.preview_digest, mappedChanged, effect)).toThrow(/source or migration authority changed/);
+    expect(effect).not.toHaveBeenCalled();
+  });
+
   it("retains safe source parity when descriptor path resolution is unavailable", () => {
     const root = project();
     write(root, ".agentera/plan.yaml", VALID_PLAN);

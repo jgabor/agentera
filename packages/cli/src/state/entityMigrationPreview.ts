@@ -8,6 +8,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
 import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
+import { assertRealpathBoundary, loadArtifactRecord, loadDocsPathOverrides, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
@@ -174,9 +175,9 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
   return enumeration.changed ? [{ relative: enumeration.changed, bytes: null, kind: "unsafe" }] : enumeration.files;
 }
 
-function collectSources(root: string, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
+function collectSources(root: string, todoPath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const exact = [
-    "TODO.md", "CHANGELOG.md", "DESIGN.md", ".agentera/vision.yaml", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
+    todoPath, "CHANGELOG.md", "DESIGN.md", ".agentera/vision.yaml", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
     ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml",
   ].map((candidate) => readMigrationSource(root, candidate, descriptorPathResolver));
   const archives = directoryFiles(root, ".agentera/archive", (candidate) =>
@@ -441,8 +442,8 @@ function objectiveObservations(root: string, files: SourceFile[], observations: 
   }
 }
 
-function todoAndDocs(root: string, files: SourceFile[], observations: Observation[]): void {
-  const todo = files.find((source) => source.relative === "TODO.md");
+function todoAndDocs(root: string, todoPath: string, files: SourceFile[], observations: Observation[]): void {
+  const todo = files.find((source) => source.relative === todoPath);
   if (todo?.kind === "file" && todo.bytes) {
     let section = "normal";
     todo.bytes.toString("utf8").split(/\r?\n/).forEach((line, index) => {
@@ -453,10 +454,10 @@ function todoAndDocs(root: string, files: SourceFile[], observations: Observatio
       const severity = section === "resolved" ? "normal" : section;
       const record = { severity, status: item.status, description: item.description };
       const violations = todoDocsRecordViolations("todo_item", record);
-      observations.push({ key: `TODO.md:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
+      observations.push({ key: `${todoPath}:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
     });
   } else if (todo?.kind === "unsafe") {
-    observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage("TODO.md") });
+    observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(todoPath) });
   }
   const docs = files.find((source) => source.relative === ".agentera/docs.yaml");
   if (docs?.kind === "file") {
@@ -566,7 +567,16 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   const project = path.resolve(projectRoot);
   validateRealProjectRoot(project);
   const authority = authorityBinding(sourceRoot);
-  const files = collectSources(project, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
+  const todoRecord = loadArtifactRecord("todo");
+  if (!todoRecord) throw new Error("artifact registry is missing the canonical 'todo' record");
+  const docsSnapshot = readMigrationSource(project, ".agentera/docs.yaml", options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
+  const overrides = docsSnapshot.kind === "unsafe" ? {} : loadDocsPathOverrides(project);
+  const todoAbsolute = todoRecord.displayName in overrides
+    ? resolveArtifactPath(todoRecord, project)
+    : path.join(project, todoRecord.defaultPath);
+  const todoPath = relative(project, todoAbsolute);
+  if (todoPath !== todoRecord.defaultPath) assertRealpathBoundary(project, todoAbsolute, todoRecord.artifactId);
+  const files = collectSources(project, todoPath, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
   const fingerprint = sourceFingerprint(files);
   const observations: Observation[] = [];
   inventoryFailureObservations(files, observations);
@@ -574,7 +584,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   decisionEvidence(sourceRoot, files, observations);
   planObservations(project, files, observations);
   objectiveObservations(project, files, observations);
-  todoAndDocs(project, files, observations);
+  todoAndDocs(project, todoPath, files, observations);
   const preserved = preservedSingletons(files);
   const completeEntries = buildEntries(project, fingerprint, observations);
   const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"];
