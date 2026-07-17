@@ -1,4 +1,26 @@
 cycles:
+  - number: 887
+    timestamp: 2026-07-17 07:30
+    type: fix
+    phase: build
+    what: Preserved same-path successors during plan graph rollback by retaining
+      exact published inode identities in
+      packages/cli/src/state/entityPublicationContext.ts.
+    inspiration: Task 7 final retry 2/2.
+    discovered: Equal bytes do not establish rollback ownership; inode identity must
+      distinguish an attempt-owned file from its successor.
+    verified: 13 focused tests and 2,512 full tests passed; typecheck, build, state
+      validation, plan capability validation, capability-contract validation,
+      and compact check passed.
+    next: Keep Task 7 complete and proceed to pending Task 8 only in a later cycle.
+    context:
+      intent: Close the Task 7 rollback gap without changing stable create or replay
+        behavior.
+      constraints: Only same-path equal-byte successor rollback, proportional tests,
+        and required state evidence were in scope.
+      unknowns: None.
+      scope: Entity publication identity, plan multi-file rollback, and plan rollback
+        regression tests.
   - number: 886
     timestamp: 2026-07-17 07:10
     type: fix
@@ -214,35 +236,6 @@ cycles:
         activate entity mode.
       scope: packages/cli state-mode detection, shared project-file snapshot logic,
         entity migration reuse, focused tests, and progress state.
-  - number: 877
-    timestamp: 2026-07-17 03:22
-    type: feat
-    phase: build
-    what: Cut progress over to canonical entity authority after explicit state-mode
-      activation.
-    inspiration: Decision 94 storage authority and Plan Task 4 acceptance.
-    discovered: The authority needed a family-neutral read-only state-mode detector
-      and an explicit progress record/retrieval contract; no mixed-authority
-      compatibility layer was needed.
-    verified: "pnpm test: 204 files and 2,444 tests passed; pnpm run typecheck
-      passed; pnpm build passed; check validate state passed with zero issues;
-      capability-contract validation passed 2/2; check compact passed with zero
-      over-limit/errors; entity-mode CLI append/get/list smoke returned one bare
-      ID and no legacy projection; focused test creates two Git worktrees from
-      one base, merges both append commits, retrieves both cycles, and passes
-      state validation."
-    next: Keep Task 5 and later families pending. Do not apply durable migration,
-      activate this checkout, or cut decisions, health, plans, objectives, TODO,
-      docs, or global consumers in this cycle.
-    context:
-      intent: Complete Plan Task 4 without migrating this legacy checkout or cutting
-        over any other state family.
-      constraints: Progress family only; preserve marker-absent legacy writes and
-        existing tests; no implicit migration, dual write, merge driver, push,
-        publish, or vision edit.
-      unknowns: None for Task 4; durable marker publication remains owned by Task 10.
-      scope: Progress entity writer, exact and bounded reads, read-only mode
-        detection, shared entity validation, authority, tests, and changelog.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -312,6 +305,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 877 (2026-07-17): Cut progress over to canonical entity
+      authority after explicit state-mode activation."
   - summary: "Cycle 876 (2026-07-17): Revalidated descriptor metadata and recursive
       path identities so migration snapshots reject hard-link mutations and
       directory..."
@@ -413,16 +408,18 @@ archive:
       verb..."
   - summary: "Cycle 838 (2026-07-16): Moved lifecycle validation orchestration and
       parity checks out of the public lifecycleAdapters.ts barrel into a..."
-  - summary: "Cycle 837 (2026-07-15): Synchronized contracts and verified v3
-      closeout: cleaned vestigial --output/corpus_path surfaces in
-      report/usageStats/extractCorpus (tier-output flag, tier_path..."
 omitted: true
-omitted_count: 122
+omitted_count: 123
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

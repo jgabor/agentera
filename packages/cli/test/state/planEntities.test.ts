@@ -192,6 +192,36 @@ describe("plan and task entity authority", () => {
     }
   });
 
+  it("preserves identical and divergent same-path successors during invalidated create rollback", () => {
+    for (const invalidation of ["marker", "root"] as const) for (const content of ["identical", "divergent"] as const) {
+      const container = project(false); const root = path.join(container, "project"); fs.mkdirSync(root); fs.mkdirSync(path.join(root, ".agentera")); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER);
+      const held = path.join(container, "held"); const successorRoot = path.join(container, "successor");
+      if (invalidation === "root") { fs.mkdirSync(successorRoot); fs.mkdirSync(path.join(successorRoot, ".agentera")); fs.writeFileSync(path.join(successorRoot, ".agentera/state-mode.yaml"), VALID_MARKER); }
+      const preserved = unrelated(invalidation === "root" ? successorRoot : root);
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let calls = 0; let firstBytes = "";
+      vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+        const result = original(target, bytes); calls += 1;
+        if (calls === 1) firstBytes = bytes;
+        if (calls === 2) {
+          const first = path.join(root, ".agentera/entities/plan/plan/aaaaaaaaaa.yaml");
+          fs.unlinkSync(first); fs.writeFileSync(first, content === "identical" ? firstBytes : "successor bytes\n");
+          if (invalidation === "root") { fs.renameSync(root, held); fs.renameSync(successorRoot, root); }
+          else fs.unlinkSync(path.join(root, ".agentera/state-mode.yaml"));
+        }
+        return result;
+      });
+      const ids = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"];
+      expect(() => createPlanEntities(request(root, "create", {}, plan("successor", true)), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/changed|conflict/i);
+      binding.publicationContext.close(); vi.restoreAllMocks();
+      const attemptedRoot = invalidation === "root" ? held : root;
+      expect(fs.readFileSync(path.join(attemptedRoot, ".agentera/entities/plan/plan/aaaaaaaaaa.yaml"), "utf8")).toBe(content === "identical" ? firstBytes : "successor bytes\n");
+      expect(fs.existsSync(path.join(attemptedRoot, ".agentera/entities/plan/plan_task/bbbbbbbbbb.yaml"))).toBe(false);
+      expect(entityNames(attemptedRoot).filter((name) => name.includes(".tmp") || name.includes(".rollback"))).toEqual([]);
+      expect(fs.readFileSync(invalidation === "root" ? path.join(root, path.relative(successorRoot, preserved.file)) : preserved.file, "utf8")).toBe(preserved.bytes);
+    }
+  });
+
   it("rejects malformed entity evaluation metadata in whole-state validation", () => {
     const root = project(); const created = create(root, "validation"); const target = path.join(root, `.agentera/entities/plan/plan_task/${created.tasks[0].id}.yaml`);
     const entity = loadYamlMapping(fs.readFileSync(target, "utf8")); const record = entity.record as Record<string, unknown>;

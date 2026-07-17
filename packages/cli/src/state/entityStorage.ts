@@ -7,7 +7,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { decisionRevisionContract, decisionRevisionEntityViolations } from "./decisionRevision.js";
-import type { EntityPublicationContext } from "./entityPublicationContext.js";
+import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { healthEntityViolations } from "./healthEntityValidation.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { acquireWriterLock } from "./write/lock.js";
@@ -545,6 +545,7 @@ export interface PublishEntityResult {
   boundary: string;
   path: string;
   replay: boolean;
+  publishedIdentity?: PublishedTargetIdentity;
 }
 
 export interface ReplaceEntityRequest extends PublishEntityRequest {
@@ -586,8 +587,8 @@ function publishEntityLocked(
     throw new Error(`divergent content for existing entity ID '${request.id}' at '${exact.relativePath}'; keep the existing ID unchanged or allocate a new ID`);
   }
   if (matches.length > 0) throw new Error(`entity ID '${request.id}' already exists at '${matches[0].relativePath}' owned by boundary '${matches[0].boundary}'; allocate a new project-wide ID`);
-  const created = context.publishImmutable(relativeTarget, bytes);
-  if (!created) {
+  const publishedIdentity = context.publishImmutable(relativeTarget, bytes);
+  if (!publishedIdentity) {
     const existing = loadYamlMapping(fs.readFileSync(target, "utf8"));
     context.assertValid();
     if (canonicalRecordJson(existing) === logicalContent) {
@@ -595,7 +596,7 @@ function publishEntityLocked(
     }
     throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
   }
-  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: false };
+  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: false, publishedIdentity };
 }
 
 function withPublicationContext<T>(

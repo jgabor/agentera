@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -17,6 +17,14 @@ interface FileIdentity {
   mtimeNs: bigint;
   ctimeNs: bigint;
   nlink: bigint;
+}
+
+export interface PublishedTargetIdentity {
+  dev: bigint;
+  ino: bigint;
+  type: bigint;
+  size: bigint;
+  sha256: string;
 }
 
 interface DirectoryEntry {
@@ -68,6 +76,29 @@ function readDescriptor(fd: number): Buffer {
   }
   if (offset !== bytes.length) throw new Error("state mode marker changed while its exact bytes were read");
   return bytes;
+}
+
+function publishedIdentity(fd: number): PublishedTargetIdentity {
+  const stat = fs.fstatSync(fd, { bigint: true });
+  const bytes = readDescriptor(fd);
+  return {
+    dev: stat.dev,
+    ino: stat.ino,
+    type: stat.mode & BigInt(fs.constants.S_IFMT),
+    size: stat.size,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+  };
+}
+
+function matchesPublished(fd: number, expected: PublishedTargetIdentity): boolean {
+  const stat = fs.fstatSync(fd, { bigint: true });
+  if (
+    stat.dev !== expected.dev
+    || stat.ino !== expected.ino
+    || (stat.mode & BigInt(fs.constants.S_IFMT)) !== expected.type
+    || stat.size !== expected.size
+  ) return false;
+  return createHash("sha256").update(readDescriptor(fd)).digest("hex") === expected.sha256;
 }
 
 function openMatches(parentFd: number, name: string, expectedFd: number, flags: number): boolean {
@@ -198,7 +229,7 @@ export class EntityPublicationContext {
     ) publicationConflict(this.markerPath);
   }
 
-  publishImmutable(relativeTarget: string, bytes: string): boolean {
+  publishImmutable(relativeTarget: string, bytes: string): PublishedTargetIdentity | null {
     const normalized = relativeTarget.split(path.sep).join("/");
     const segments = normalized.split("/").filter(Boolean);
     if (
@@ -263,7 +294,7 @@ export class EntityPublicationContext {
         syncDirectory(directoryFd);
         this.assertBoundary(directories);
         this.removeCreatedDirectories(directories);
-        return false;
+        return null;
       }
 
       syncDirectory(directoryFd);
@@ -278,7 +309,7 @@ export class EntityPublicationContext {
       this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd });
       for (const createdPath of createdPaths)
         this.createdDirectories.set(createdPath.relativePath, identity(fs.fstatSync(createdPath.fd, { bigint: true })));
-      return true;
+      return publishedIdentity(stageFd);
     } catch (error) {
       const directoryFd = directories.at(-1)?.fd;
       const targetName = segments.at(-1)!;
@@ -306,7 +337,7 @@ export class EntityPublicationContext {
     }
   }
 
-  removeExact(relativeTarget: string, expectedBytes: string): void {
+  removeExact(relativeTarget: string, expected: PublishedTargetIdentity): void {
     const segments = relativeTarget.split(path.sep).filter(Boolean);
     if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
       throw new Error(`unsafe entity rollback target '${relativeTarget}'`);
@@ -325,8 +356,19 @@ export class EntityPublicationContext {
       const targetName = segments.at(-1)!;
       try { targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS); }
       catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
-      if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes))) return;
-      this.removeOwnedFile(directoryFd, targetName, targetFd);
+      if (!matchesPublished(targetFd, expected)) return;
+      const rollbackName = `.${targetName}.${process.pid}.${randomUUID()}.rollback`;
+      fs.renameSync(fdPath(directoryFd, targetName), fdPath(directoryFd, rollbackName));
+      if (openMatches(directoryFd, rollbackName, targetFd, FILE_FLAGS)) {
+        this.removeOwnedFile(directoryFd, rollbackName, targetFd);
+      } else {
+        try {
+          fs.linkSync(fdPath(directoryFd, rollbackName), fdPath(directoryFd, targetName));
+          fs.unlinkSync(fdPath(directoryFd, rollbackName));
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        }
+      }
       syncDirectory(directoryFd);
     } finally {
       if (targetFd !== undefined) fs.closeSync(targetFd);

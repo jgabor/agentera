@@ -11,6 +11,7 @@ import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { allocateEntityId, discoverEntities, publishEntity, replaceEntity, validateEntityState, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
+import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { validatePlanCreateInput, validatePlanPublicationCandidate } from "./write/planPublication.js";
 import { reject } from "./write/errors.js";
@@ -127,18 +128,21 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
   });
   const publications = [{ boundary: PLAN, id: planId, record: planRecord }, ...taskRecords.map((record, index) => ({ boundary: TASK, id: taskIds[index], record }))];
   if (req.dryRun) return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })) });
-  const published: Array<{ relative: string; bytes: string }> = [];
+  const published: Array<{ relative: string; identity: PublishedTargetIdentity }> = [];
   try {
     for (const item of publications) {
       const result = publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, ...item });
-      if (!result.replay) published.push({ relative: relative(req.projectRoot, result.path), bytes: dumpYamlMapping({ id: item.id, artifact: ARTIFACT, record: item.record }) });
+      if (!result.replay) {
+        if (!result.publishedIdentity) throw new Error(`entity '${item.id}' publication did not return its exact target identity`);
+        published.push({ relative: relative(req.projectRoot, result.path), identity: result.publishedIdentity });
+      }
     }
     options.publicationContext.assertValid();
     const validation = validateEntityState(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot);
     if (!validation.valid) throw new Error(`created plan graph failed state validation: ${validation.issues.map(({ message }) => message).join("; ")}`);
     options.publicationContext.assertValid();
   } catch (error) {
-    for (const item of published.reverse()) options.publicationContext?.removeExact(item.relative, item.bytes);
+    for (const item of published.reverse()) options.publicationContext?.removeExact(item.relative, item.identity);
     throw error;
   }
   return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })) });
