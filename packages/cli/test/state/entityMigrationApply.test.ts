@@ -51,6 +51,19 @@ describe("durable entity migration", () => {
     expect(result.rc).toBe(1); expect(JSON.parse(result.out).issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "missing_migrated_entity", path: entry.proposed_target.path })]));
     expect(files(root, ".agentera").map((file) => [file, fs.readFileSync(file, "utf8")])).toEqual(before);
   });
+  it("rejects an atomic same-ID marker replacement with fabricated completed binding", () => {
+    const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 }); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    const marker = path.join(root, ".agentera/state-mode.yaml");
+    fs.renameSync(marker, `${marker}.original`); fs.writeFileSync(marker, `schemaVersion: agentera.stateMode.v1\nmode: entities\nmigration_id: ${applied.migration_id}\nsource_fingerprint: ${"0".repeat(64)}\npreview_digest: ${"1".repeat(64)}\n`);
+    const result = capture(["check", "validate", "state", "--cwd", root, "--format", "json"]);
+    expect(result.rc).toBe(1); expect(JSON.parse(result.out).issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "invalid_state_marker_or_manifest", message: expect.stringMatching(/marker does not match immutable evidence/) })]));
+  });
+  it("accepts byte-identical marker and canonical entity inode replacements", () => {
+    const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 }); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    const manifest = loadYamlMapping(fs.readFileSync(path.join(root, applied.evidence.manifest), "utf8")); const target = path.join(root, (manifest.entries as Array<Record<string, any>>)[0].proposed_target.path);
+    for (const file of [path.join(root, ".agentera/state-mode.yaml"), target]) { const bytes = fs.readFileSync(file); const old = `${file}.old`; fs.renameSync(file, old); fs.writeFileSync(file, bytes); fs.rmSync(old); }
+    const result = capture(["check", "validate", "state", "--cwd", root, "--format", "json"]); expect(result.rc, result.out).toBe(0); expect(JSON.parse(result.out).valid).toBe(true);
+  });
   it("publishes apply, resume, rollback, JSON, help, and schema as one headless contract", () => {
     const help = entityMigrateHelp(); expect(help).toContain("--resume ID --force"); expect(help).toContain("--rollback ID --force"); expect(help).toContain("without prompting"); expect(help).toContain("mode, type, and file-identity");
     const schema = buildSchemaPayload(); expect(schema.entity_migration).toMatchObject({ status: "durable_apply_resume_rollback_implemented", invocation: { resume_command: expect.stringContaining("--resume MIGRATION_ID"), rollback_command: expect.stringContaining("--rollback MIGRATION_ID") } });

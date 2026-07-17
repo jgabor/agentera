@@ -57,6 +57,13 @@ const STATE_COMMAND_NAMES = new Set([
   "progress",
   "todo",
 ]);
+const ROUTINE_QUERY_ALIASES: Record<string, string> = {
+  decision: "decisions", decisions: "decisions",
+  experiment: "experiments", experiments: "experiments",
+  health: "health", healths: "health",
+  plan: "plan", plans: "plan",
+  progress: "progress", progresses: "progress",
+};
 
 export interface QueryArgs {
   query?: string | null;
@@ -380,8 +387,11 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
   if (query.includes("/") || query.includes("\\") || query === "." || query === ".." || ENCODED_TRAVERSAL_RE.test(query)) {
     throw new Error(`unsupported artifact/query name ${pyRepr(query)}; path-like values are not artifact names`);
   }
-  if (STATE_COMMAND_NAMES.has(query)) {
-    e(`Unsupported routine query: ${query}. Use \`agentera ${query}\` instead.\n`);
+  const routine = ROUTINE_QUERY_ALIASES[query];
+  if (routine) {
+    const command = `agentera state ${routine} --format ${format}`;
+    if (format !== "text") emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_target", message: `routine artifact alias '${query}' is not available through state query`, syntax: command, example: command, recovery: `Use the canonical entity-aware command: ${command}` } }, format as "json" | "yaml", o);
+    else e(`Unsupported routine query: ${query}. Use \`${command}\` instead.\n`);
     return 1;
   }
   const schemas = loadSchemas(discoverSchemasDir());

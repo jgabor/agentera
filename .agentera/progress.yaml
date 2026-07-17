@@ -1,4 +1,25 @@
 cycles:
+  - number: 896
+    timestamp: 2026-07-17 15:31
+    type: fix
+    phase: build
+    what: Corrected audited Task11 entity query, durability, migration binding,
+      pagination, error, and identity boundaries.
+    discovered: Decision and plan entity lists measured compact JSON instead of the
+      exact emitted pretty JSON; the current plan view also added its plan
+      envelope after pagination.
+    verified: "Focused: 5 files, 79 tests passed. Full: 213 files, 2576 tests
+      passed. Typecheck, build, state validation, build capability, capability
+      contract, and compact gates passed."
+    next: Task 12 remains pending; do not begin it in this cycle.
+    context:
+      intent: Close only the audited Task11 boundary defects without entering Task12,
+        applying live migration, or changing legacy authority where intended.
+      constraints: No Task12/13 work, live apply, manual YAML edits, amend, push,
+        publish, or vision changes.
+      unknowns: none
+      scope: Task11 query aliases, canonical entity durability, migration marker
+        validation, entity pagination/errors/identity, and proportional tests.
   - number: 895
     timestamp: 2026-07-17 14:57
     type: feat
@@ -215,22 +236,6 @@ cycles:
       unknowns: None.
       scope: Entity publication identity, plan multi-file rollback, and plan rollback
         regression tests.
-  - number: 886
-    timestamp: 2026-07-17 07:10
-    type: fix
-    phase: build
-    what: Fixed audited Task 7 plan entity rollback and evaluation defects.
-    verified: 12 focused and 2,511 full tests passed; typecheck, build, state
-      validation, plan capability validation, capability-contract validation,
-      and compact passed.
-    next: "Task 8 remains pending: cut objectives and experiments over to entities."
-    context:
-      intent: Make multi-file plan creation recover exactly after authority
-        invalidation and preserve the legacy evaluation contract in entity mode.
-      constraints: Only audited Task 7 defects, proportional tests, and required
-        project-state updates.
-      unknowns: None.
-      scope: packages/cli plan entity publication, evaluation validation, and tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -300,6 +305,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 886 (2026-07-17): Fixed audited Task 7 plan entity rollback and
+      evaluation defects."
   - summary: "Cycle 885 (2026-07-17): Added plans/tasks entity mode in
       packages/cli/src/state/planEntities.ts with independent bare-ID files,
       dependency validation, bounded retrieval, rollback-safe..."
@@ -395,16 +402,18 @@ archive:
       (PRIME_STRUCTURED_FIELDS..."
   - summary: "Cycle 847 (2026-07-16): Closed compact-prime Plan Task 1 after its
       third repair attempt. Reconciled the one remaining live..."
-  - summary: "Cycle 846 (2026-07-16): Retried plan Task 1 after independent
-      evaluation failed commit 798820a2. Reconciled the documented/runtime
-      capability-context contract:..."
 omitted: true
-omitted_count: 131
+omitted_count: 132
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

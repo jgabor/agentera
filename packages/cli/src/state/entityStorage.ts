@@ -88,6 +88,47 @@ export function entityArtifactValues(sourceRoot?: string): string[] {
   return [...authority(sourceRoot).artifacts];
 }
 
+export function entityBoundariesForArtifact(artifact: string, sourceRoot?: string): string[] {
+  return authority(sourceRoot).entities
+    .filter((definition) => definition.artifact === artifact)
+    .map((definition) => definition.boundary)
+    .sort();
+}
+
+/** Validate bytes independently of a working-tree path, for committed recovery evidence. */
+export function canonicalEntityEnvelope(
+  bytes: string,
+  expected: { artifact: string; boundary: string; id: string },
+  sourceRoot?: string,
+): { id: string; artifact: string; record: JsonObject } {
+  const model = authority(sourceRoot);
+  const owner = model.byBoundary.get(expected.boundary);
+  if (!owner || owner.artifact !== expected.artifact || !model.pattern.test(expected.id)) {
+    throw new Error("the requested artifact, boundary, or ID is not authority-declared");
+  }
+  const document = loadYamlMapping(bytes);
+  if (Object.keys(document).some((key) => !["id", "artifact", "record"].includes(key))) {
+    throw new Error("entity envelope may contain only id, artifact, and record");
+  }
+  if (document.id !== expected.id || document.artifact !== expected.artifact || !mapping(document.record)) {
+    throw new Error("entity envelope does not match the requested artifact and ID");
+  }
+  const record = document.record as JsonObject;
+  const violations = canonicalEntityRecordViolations(expected.boundary, record, sourceRoot);
+  if (owner.record?.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""))) violations.push("timestamp must use YYYY-MM-DD HH:MM");
+  if (expected.boundary === "decision_revision") violations.push(...decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot)));
+  if (expected.boundary === "health_audit") violations.push(...healthEntityViolations(record));
+  if (expected.boundary === "plan") {
+    const header = mapping(record.header) ? record.header : {};
+    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete"].includes(String(header.status))) violations.push("invalid plan lifecycle fields");
+  }
+  if (expected.boundary === "plan_task") violations.push(...planTaskRecordViolations(record));
+  if (expected.boundary === "experiment" && (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status)))) violations.push("invalid experiment date or status");
+  if (expected.boundary === "todo_item" || expected.boundary === "documentation_inventory_entry") violations.push(...todoDocsRecordViolations(expected.boundary, record));
+  if (violations.length) throw new Error(`entity record violates the '${expected.boundary}' boundary contract: ${violations.join("; ")}`);
+  return { id: expected.id, artifact: expected.artifact, record };
+}
+
 function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }

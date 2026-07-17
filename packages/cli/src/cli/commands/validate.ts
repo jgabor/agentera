@@ -22,7 +22,7 @@ import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
 import { detectStateModeBinding } from "../../state/stateMode.js";
-import { loadCompletedEntityMigrationManifest } from "../../state/entityMigrationApply.js";
+import { loadCompletedEntityMigrationForMarker } from "../../state/entityMigrationApply.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
 
@@ -549,7 +549,7 @@ export function cmdValidateState(
       if (markerSnapshot.kind !== "file") throw new Error("entity-mode marker became unavailable during maintenance validation");
       const marker = loadYamlMapping(markerSnapshot.bytes.toString("utf8"));
       if (typeof marker.migration_id === "string") {
-        const entries = loadCompletedEntityMigrationManifest(projectRoot, marker.migration_id);
+        const entries = loadCompletedEntityMigrationForMarker(projectRoot, markerSnapshot.bytes);
         const byPath = new Map(result.entities.map((entity) => [entity.relativePath, entity]));
         for (const expected of entries) {
           const target = expected.proposed_target;

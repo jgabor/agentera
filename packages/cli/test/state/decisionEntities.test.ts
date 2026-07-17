@@ -49,7 +49,7 @@ describe("decision entity authority", () => {
     const first = getDecisionEntity(root, "aaaaaaaaaa") as any;
     amendDecisionEntity(request(root, "amend", { id: "aaaaaaaaaa", base_sha256: first.entry.effective_sha256, choice: "Canonical entities" }), { id: "cccccccccc" });
     const result = getDecisionEntity(root, "aaaaaaaaaa") as any;
-    expect(result.entry).toMatchObject({ id: "aaaaaaaaaa", artifact: "decisions", record: { choice: "Canonical entities", satisfaction: { state: "provisionally_satisfied", evidence: "tests pass" } }, provenance: { base: { id: "aaaaaaaaaa" }, revisions: [{ id: "cccccccccc" }], satisfaction: { id: "bbbbbbbbbb" } } });
+    expect(result.entry).toMatchObject({ id: "aaaaaaaaaa", artifact: "decisions", record: { choice: "Canonical entities", satisfaction: { state: "provisionally_satisfied", evidence: "tests pass" } }, provenance: { base: { id: "aaaaaaaaaa", artifact: "decisions" }, revisions: [{ id: "cccccccccc", artifact: "decisions" }], satisfaction: { id: "bbbbbbbbbb", artifact: "decisions" } } });
     expect(JSON.stringify(result)).not.toMatch(/stable_id|artifact_id|entry_number|"number"/);
   });
 

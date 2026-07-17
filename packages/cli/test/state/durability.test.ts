@@ -358,6 +358,42 @@ describe("read-only archive and Git durability", () => {
     expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ local: { status: "unavailable" }, git: { status: "verified", reason: "reachable_head", reachable_recovery: true } }] });
   });
 
+  it("never accepts a committed entity from an authority-undeclared boundary", () => {
+    const root = project(); initGit(root); fs.mkdirSync(path.join(root, ".agentera/entities/progress/wrong_boundary"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.writeFileSync(path.join(root, ".agentera/entities/progress/wrong_boundary/aaaaaaaaaa.yaml"), dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "progress", record: { timestamp: "2026-07-17 12:00", type: "test", phase: "build", what: "wrong boundary", context: { intent: "test" } } }));
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "wrong boundary"]); fs.rmSync(path.join(root, ".agentera/entities"), { recursive: true });
+    const result = inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot });
+    expect(result).toMatchObject({ status: "unavailable", entries: [{ local: { status: "unavailable" }, git: { status: "unavailable", reachable_recovery: false } }] });
+  });
+
+  it.each([
+    ["malformed envelope", "not: [yaml\n"],
+    ["wrong artifact", dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "health", record: { timestamp: "2026-07-17 12:00", type: "test", phase: "build", what: "wrong", context: { intent: "test" } } })],
+    ["wrong id", dumpYamlMapping({ id: "bbbbbbbbbb", artifact: "progress", record: { timestamp: "2026-07-17 12:00", type: "test", phase: "build", what: "wrong", context: { intent: "test" } } })],
+  ])("does not claim committed recovery for a canonical-path %s", (_label, bytes) => {
+    const root = project(); initGit(root); const directory = path.join(root, ".agentera/entities/progress/progress_cycle"); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n"); fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), bytes);
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "invalid entity"]); fs.rmSync(path.join(root, ".agentera/entities"), { recursive: true });
+    const result = inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot });
+    expect(result).toMatchObject({ entries: [{ git: { status: "unavailable", reason: "committed_entity_invalid", reachable_recovery: false } }] });
+  });
+
+  it.each([
+    ["decisions", [
+      ["decision", { date: "2026-07-17", question: "Q", context: "C", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "R", confidence: "firm" }],
+      ["decision_satisfaction", { decision: "bbbbbbbbbb", state: "open" }],
+    ]],
+    ["plan", [
+      ["plan", { header: { level: "light", created: "2026-07-17", status: "open", title: "P" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } }],
+      ["plan_task", { plan: "bbbbbbbbbb", name: "T", status: "pending", depends_on: [], acceptance: ["pass"] }],
+    ]],
+  ] as const)("reports conflicting committed recovery across every multi-boundary %s artifact", (artifact, candidates) => {
+    const root = project(); initGit(root); fs.mkdirSync(path.join(root, ".agentera"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (const [boundary, record] of candidates) { const directory = path.join(root, ".agentera/entities", artifact, boundary); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), dumpYamlMapping({ id: "aaaaaaaaaa", artifact, record })); }
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", `${artifact} duplicate`]); fs.rmSync(path.join(root, ".agentera/entities"), { recursive: true });
+    const result = inspectDurability(root, { artifact, id: "aaaaaaaaaa" }, { sourceRoot });
+    expect(result).toMatchObject({ entries: [{ git: { status: "unavailable", reason: "committed_entity_conflict", reachable_recovery: false } }] });
+  });
+
   it.each([
     {
       args: ["--artifact", "bogus", "--format", "json"],

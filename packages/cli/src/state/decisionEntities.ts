@@ -7,6 +7,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson, decisionOverlayContract } from "./archiveDiscovery.js";
+import { serializedProjectionBytes } from "./projectionPolicy.js";
 import { requestedSatisfaction, validateTransition } from "./decisionOverlay.js";
 import { decisionRevisionContract } from "./decisionRevision.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
@@ -124,7 +125,7 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[]):
     if (!mapping(revision.record!.changes)) throw failure("corrupt", `decision revision '${revision.id}' has invalid changes`, "Repair the canonical revision entity.", base.id!);
     effective = applyChanges(effective, revision.record!.changes as JsonObject);
     hash = createHash("sha256").update(canonicalRecordJson(effective)).digest("hex");
-    revisions.push({ id: revision.id!, base_sha256: revision.record!.base_sha256 as string, effective_sha256: hash, fields: Object.keys(revision.record!.changes as JsonObject), path: relative(root, revision.path) });
+    revisions.push({ id: revision.id!, artifact: ARTIFACT, base_sha256: revision.record!.base_sha256 as string, effective_sha256: hash, fields: Object.keys(revision.record!.changes as JsonObject), path: relative(root, revision.path) });
   }
   if (unused.size) throw failure("ambiguous", `decision '${base.id}' has stale or disconnected revision ownership`, "Preserve every revision and repair the revision chain explicitly.", base.id!);
   const satisfactions = all.filter((entity) => entity.boundary === SATISFACTION && entity.record?.decision === base.id);
@@ -133,9 +134,9 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[]):
   if (satisfactions[0]) {
     const { decision: _decision, ...satisfaction } = satisfactions[0].record!;
     effective.satisfaction = satisfaction;
-    satisfactionProvenance = { id: satisfactions[0].id!, path: relative(root, satisfactions[0].path) };
+    satisfactionProvenance = { id: satisfactions[0].id!, artifact: ARTIFACT, path: relative(root, satisfactions[0].path) };
   }
-  return { id: base.id!, artifact: ARTIFACT, record: effective, effective_sha256: hash, provenance: { base: { id: base.id!, path: relative(root, base.path) }, revisions, satisfaction: satisfactionProvenance }, retrieval: { get: `agentera state decisions get --id ${base.id} --format json` } };
+  return { id: base.id!, artifact: ARTIFACT, record: effective, effective_sha256: hash, provenance: { base: { id: base.id!, artifact: ARTIFACT, path: relative(root, base.path) }, revisions, satisfaction: satisfactionProvenance }, retrieval: { get: `agentera state decisions get --id ${base.id} --format json` } };
 }
 export function getDecisionEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject {
   const { base, all } = baseFor(root, id, sourceRoot);
@@ -219,7 +220,7 @@ export function listDecisionEntities(root: string, limit?: number, topic?: strin
   if (cursor) { const value = decode(cursor, root, declared.authorityPath); if (value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null)) throw failure("cursor_snapshot_unavailable", "decisions changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot."); const found = bases.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1; }
   let selected = bases.slice(start, start + effectiveLimit); let trimmed = false;
   const response = (): JsonObject => { const remaining = bases.length - start - selected.length; const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, topic: topic ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined; return { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining ? "degraded" : "ok", entries: selected.map((base) => compose(root, base, all)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next, retrieval: { continue: `agentera state decisions list --limit ${effectiveLimit} --cursor ${next} --format json`, get: "agentera state decisions get --id ID --format json" } } : {}) }; };
-  let result = response(); const bytes = (): number => Buffer.byteLength(options.format === "yaml" || options.format === "text" ? YAML.stringify(result) : JSON.stringify(result));
+  let result = response(); const bytes = (): number => serializedProjectionBytes(result, options.format === "text" ? "yaml" : options.format ?? "json");
   while (bytes() > declared.maxUtf8Bytes && selected.length) { selected = selected.slice(0, -1); trimmed = true; result = response(); }
   if (!selected.length && bases.length > start) throw failure("unsupported_state", `one full decision cannot fit the ${declared.maxUtf8Bytes}-byte list budget`, "Use exact get by ID.");
   return result;

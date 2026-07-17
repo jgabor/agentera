@@ -87,6 +87,7 @@
 
 ### Fixed
 
+- Fixed post-cutover routine query aliases, canonical-boundary Git recovery, migration-marker evidence binding, entity page byte caps, plan recovery guidance, and nested entity identity metadata.
 - Fixed the npm shim to diagnose a configured `AGENTERA_HOME` whose managed script is missing or not runnable before continuing through repository and `uvx` fallback resolution.
 - Fixed `agentera check lint` to report findings without failing by default, fail the same findings with `--strict`, and keep invalid input, authority failures, and validated plan publication nonzero.
 - Fixed schema/runtime alias parity: introspection now advertises exactly the six Phase 3 transitional aliases, Build startup and compaction guidance use canonical `agentera check compact`, check/fix output reports `command: "check compact"`, top-level `compact` remains behavior-compatible, and removed names such as `gate` return structured runnable corrections.

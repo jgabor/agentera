@@ -13,7 +13,7 @@ import {
   type StateDurabilityContract,
 } from "./archiveDiscovery.js";
 import { detectStateMode } from "./stateMode.js";
-import { discoverEntities } from "./entityStorage.js";
+import { canonicalEntityEnvelope, discoverEntities, entityBoundariesForArtifact } from "./entityStorage.js";
 
 const GIT_TIMEOUT_MS = 1_000;
 const GIT_MAX_BUFFER = 2 * 1024 * 1024;
@@ -481,7 +481,10 @@ function inspectEntityDurability(
   const entityCommand = "agentera check durability --project PATH --artifact ARTIFACT --id ID --format json";
   const git = gitContext(projectRoot, run);
   const discovery = discoverEntities(projectRoot, sourceRoot);
-  const matches = discovery.entities.filter((entity) => entity.id === id && entity.artifact === artifact);
+  const boundaries = entityBoundariesForArtifact(artifact, sourceRoot);
+  const relativeTargets = boundaries.map((boundary) => `.agentera/entities/${artifact}/${boundary}/${id}.yaml`);
+  const targetPaths = new Set(relativeTargets.map((relative) => path.join(projectRoot, ...relative.split("/"))));
+  const matches = discovery.entities.filter((entity) => targetPaths.has(entity.path));
   const canonical = matches.length === 1 && matches[0].classification === "valid" ? matches[0] : undefined;
   let local: LocalDurabilityStatus = canonical ? "verified" : matches.length ? "corrupt" : "unavailable";
   let bytes: string | undefined;
@@ -492,18 +495,27 @@ function inspectEntityDurability(
   } else if (matches.length > 1) localMessage = `entity ID '${id}' has conflicting ownership for artifact '${artifact}'`;
   else if (matches.length === 1) localMessage = `entity '${matches[0].relativePath}' is not canonical`;
   let committedPath: string | undefined;
-  if (!matches.length && git.available && git.root && git.before) {
+  let committedFailure: string | undefined;
+  if (git.available && git.root && git.before) {
     const projectPrefix = path.relative(git.root, projectRoot).split(path.sep).join("/");
-    const entityPrefix = `${projectPrefix ? `${projectPrefix}/` : ""}.agentera/entities/${artifact}`;
-    const tree = run(["ls-tree", "-r", "--name-only", git.before, "--", entityPrefix], git.root);
-    if (successful(tree)) {
-      const candidates = tree.stdout.split(/\r?\n/).filter((value) => value.endsWith(`/${id}.yaml`));
-      if (candidates.length === 1) committedPath = path.join(git.root, ...candidates[0].split("/"));
+    const valid: string[] = [];
+    let invalid = 0;
+    for (let index = 0; index < relativeTargets.length; index += 1) {
+      const relative = `${projectPrefix ? `${projectPrefix}/` : ""}${relativeTargets[index]}`;
+      const committed = blobAtHead(git, relative, git.before);
+      if (committed === undefined) continue;
+      try { canonicalEntityEnvelope(committed, { artifact, boundary: boundaries[index], id }, sourceRoot); valid.push(relative); }
+      catch { invalid += 1; }
     }
+    if (valid.length === 1 && invalid === 0) committedPath = path.join(git.root, ...valid[0].split("/"));
+    else if (valid.length > 1) committedFailure = "committed_entity_conflict";
+    else if (invalid > 0) committedFailure = "committed_entity_invalid";
   }
-  const target = canonical?.path ?? matches[0]?.path ?? committedPath ?? path.join(projectRoot, ".agentera", "entities", artifact, `${id}.yaml`);
+  const target = canonical?.path ?? matches[0]?.path ?? committedPath ?? [...targetPaths][0] ?? path.join(projectRoot, ".agentera", "entities", artifact, `${id}.yaml`);
   const candidate: Candidate = { path: target, stableId: id, artifactId: artifact, entryNumber: 0, local, ...(bytes !== undefined ? { bytes } : {}), ...(localMessage ? { localMessage } : {}) };
-  let evidence = buildGitEvidence(candidate, git, git.before, false);
+  let evidence = committedFailure
+    ? { status: "unavailable" as const, reason: committedFailure, reachableRecovery: false }
+    : buildGitEvidence(candidate, git, git.before, false);
   const ending = git.available && git.root ? readHead(run, git.root) : undefined;
   const after = ending?.value;
   const changed = Boolean(git.before && after && git.before !== after);

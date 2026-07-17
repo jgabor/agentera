@@ -219,6 +219,18 @@ export function loadCompletedEntityMigrationManifest(project: string, id: string
   if (journal.phase !== "cutover_complete") throw new EntityMigrationOperationError("migration_incomplete", `migration '${id}' is in phase '${journal.phase}', not cutover_complete`, "Resume or roll back the owning migration before validating entity-mode state.");
   return loadEvidence(project, journal).entries;
 }
+
+/** Bind a current marker's exact bytes and logical fields to completed immutable evidence. */
+export function loadCompletedEntityMigrationForMarker(project: string, markerBytes: Buffer): DurableEntityMigrationEntry[] {
+  const marker = loadYamlMapping(markerBytes.toString("utf8"));
+  if (marker.schemaVersion !== "agentera.stateMode.v1" || marker.mode !== "entities" || typeof marker.migration_id !== "string") throw new EntityMigrationOperationError("marker_invalid", "entity-mode marker has no completed migration binding", "Restore the exact marker owned by completed migration evidence.");
+  const { journal } = loadJournal(project, marker.migration_id);
+  if (journal.phase !== "cutover_complete") throw new EntityMigrationOperationError("migration_incomplete", `migration '${journal.migration_id}' is in phase '${journal.phase}', not cutover_complete`, "Resume or roll back the owning migration before validating entity-mode state.");
+  const evidence = loadEvidence(project, journal);
+  const receipt = evidence.receipts[MARKER];
+  if (marker.source_fingerprint !== journal.source_fingerprint || marker.preview_digest !== journal.preview_digest || hash(markerBytes) !== receipt.sha256) throw new EntityMigrationOperationError("marker_diverged", `completed migration marker does not match immutable evidence for '${journal.migration_id}'`, "Restore the exact canonical marker bytes from the validated migration receipt.");
+  return evidence.entries;
+}
 function assertCurrentSource(project: string, sourceRoot: string, journal: Journal): void {
   const current = planEntityMigration(project, sourceRoot);
   const snapshot = loadYamlMapping(readRegular(project, `${ROOT}/${journal.migration_id}/snapshot.yaml`, "migration snapshot").toString("utf8"));

@@ -7,8 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { loadYamlMapping } from "../../src/core/yaml.js";
 
 const roots: string[] = [];
+const storageAuthority = loadYamlMapping(fs.readFileSync(path.resolve(import.meta.dirname, "../../../..", "references/artifacts/state-storage-authority.yaml"), "utf8"));
+const forbiddenAliases = new Set((storageAuthority.entity_target as any).public_schema.forbidden_canonical_aliases as string[]);
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entity-maintenance-"));
@@ -53,7 +56,17 @@ function digest(root: string): string {
 
 function forbiddenIdentityKeys(value: unknown, found: string[] = []): string[] {
   if (Array.isArray(value)) for (const item of value) forbiddenIdentityKeys(item, found);
-  else if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) { if (["stable_id", "artifact_id", "entry_number", "number", "plan_id", "task_number", "experiment_number"].includes(key)) found.push(key); forbiddenIdentityKeys(child, found); }
+  else if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) { if (forbiddenAliases.has(key)) found.push(key); forbiddenIdentityKeys(child, found); }
+  return found;
+}
+
+function identityObjectsWithoutArtifact(value: unknown, found: string[] = [], location = "$."): string[] {
+  if (Array.isArray(value)) value.forEach((item, index) => identityObjectsWithoutArtifact(item, found, `${location}[${index}]`));
+  else if (value && typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    if (typeof object.id === "string" && /^[a-z]{10}$/.test(object.id) && typeof object.artifact !== "string") found.push(location);
+    for (const [key, child] of Object.entries(object)) identityObjectsWithoutArtifact(child, found, `${location}${key}.`);
+  }
   return found;
 }
 
@@ -72,6 +85,7 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     for (const args of commands) {
       const result = capture(root, args); expect(result.rc, `${args.join(" ")}: ${result.err || result.out}`).toBe(0);
       expect(forbiddenIdentityKeys(result.json)).toEqual([]);
+      expect(identityObjectsWithoutArtifact(result.json)).toEqual([]);
       expect(JSON.stringify(result.json)).toContain('"id"'); expect(JSON.stringify(result.json)).toContain('"artifact"');
     }
     const first = capture(root, commands[0]); expect(first.json.omitted).toBe(true); expect(first.json.next_cursor).toBeTruthy();
@@ -80,6 +94,27 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     const changed = path.join(root, ".agentera/entities/progress/progress_cycle/bbbbbbbbbb.yaml"); fs.writeFileSync(changed, fs.readFileSync(changed, "utf8").replace("what: old", "what: changed"));
     const stale = capture(root, ["state", "progress", "--limit", "1", "--cursor", first.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
     const phase = capture(root, ["state", "query", "last-phase", "--format", "json"]); expect(phase.json).toMatchObject({ phase: "build", id: "aaaaaaaaaa", artifact: "progress" });
+  });
+
+  it("rejects every singular and plural routine query alias before generic aggregate dispatch in JSON and text", () => {
+    const root = seeded();
+    for (const [alias, canonical] of [["decision", "decisions"], ["decisions", "decisions"], ["experiment", "experiments"], ["experiments", "experiments"], ["health", "health"], ["healths", "health"], ["plan", "plan"], ["plans", "plan"], ["progress", "progress"], ["progresses", "progress"]]) {
+      const json = capture(root, ["state", "query", alias, "--format", "json"]);
+      expect(json.rc, alias).toBe(1); expect(json.err).toBe("");
+      expect(json.json.error).toMatchObject({ class: "unsupported_target", recovery: expect.stringContaining(`agentera state ${canonical}`) });
+      expect(JSON.stringify(json.json)).not.toContain("legacy_summary");
+      const text = capture(root, ["state", "query", alias]); expect(text.rc).toBe(1); expect(text.out).toBe(""); expect(text.err).toContain("agentera state ");
+    }
+  });
+
+  it("bounds exact pretty JSON stdout for decision and plan entity views including envelope overhead", () => {
+    const decisions = project();
+    for (const [id, date] of [["aaaaaaaaaa", "2026-07-17"], ["bbbbbbbbbb", "2026-07-16"]]) entity(decisions, "decisions", "decision", id, { date, question: "Q", context: "C", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "x".repeat(15_700), confidence: "firm" });
+    const decisionView = capture(decisions, ["state", "decisions", "--limit", "2", "--format", "json"]); expect(decisionView.rc, decisionView.err).toBe(0); expect(Buffer.byteLength(decisionView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(decisionView.json.omitted).toBe(true);
+
+    const plans = project(); entity(plans, "plan", "plan", "cccccccccc", { header: { level: "light", created: "2026-07-17", status: "open", title: "Bounded" }, what: "x".repeat(20_000), why: "Y", scope: { included: ["state"], excluded: [] } });
+    for (const id of ["dddddddddd", "eeeeeeeeee"]) entity(plans, "plan", "plan_task", id, { plan: "cccccccccc", name: "Task", status: "pending", depends_on: [], acceptance: ["x".repeat(6_000)] });
+    const planView = capture(plans, ["state", "plan", "--limit", "2", "--format", "json"]); expect(planView.rc, planView.err).toBe(0); expect(Buffer.byteLength(planView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(planView.json.omitted).toBe(true); expect(planView.json.plan.id).toBe("cccccccccc");
   });
 
   it("rejects every legacy selector and reports exact missing IDs", () => {
@@ -91,6 +126,13 @@ describe("entity-mode retrieval and maintenance APIs", () => {
       ["state", "plan", "tasks", "list", "--plan", "eeeeeeeeee", "--format", "json"],
     ]) { const result = capture(root, args); expect(result.rc).toBe(2); expect(result.json.error.syntax).toMatch(/--(?:plan-)?id/); expect(forbiddenIdentityKeys(result.json)).toEqual([]); }
     const missing = capture(root, ["state", "progress", "get", "--id", "zzzzzzzzzz", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.json.error).toMatchObject({ class: "not_found", id: "zzzzzzzzzz", artifact: "progress" });
+  });
+
+  it("keeps entity plan-selection recovery on bare IDs and canonical commands", () => {
+    const none = project(); entity(none, "plan", "plan", "aaaaaaaaaa", { header: { level: "light", created: "2026-07-17", status: "complete", title: "Done" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
+    const missing = capture(none, ["state", "plan", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.json.error.recovery).toContain("state plan get --id ID"); expect(missing.json.error.recovery).not.toMatch(/--plan(?:\s|$)/);
+    const many = seeded(); entity(many, "plan", "plan", "iiiiiiiiii", { header: { level: "light", created: "2026-07-16", status: "open", title: "Other" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
+    const ambiguous = capture(many, ["state", "plan", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(ambiguous.json.error.recovery).toContain("state plan get --id ID"); expect(ambiguous.json.error.recovery).not.toMatch(/--plan(?:\s|$)/);
   });
 
   it("validates complete and empty graphs without mutating files", () => {
