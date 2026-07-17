@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
+import { validateRealProjectRoot } from "./projectRoot.js";
+import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 export type StateMode = "legacy" | "entities";
 
@@ -44,40 +46,38 @@ function contract(sourceRoot = resolveSourceRoot()): StateModeContract {
   return { markerPath: marker.path, schemaVersion: marker.schema_version, mode: entityMode.mode };
 }
 
-function symbolicLinkPrefix(projectRoot: string, candidate: string): string | null {
-  const root = path.resolve(projectRoot);
-  let cursor = root;
-  for (const segment of path.relative(root, candidate).split(path.sep).filter(Boolean)) {
-    cursor = path.join(cursor, segment);
-    try {
-      if (fs.lstatSync(cursor).isSymbolicLink()) return cursor;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+function readStableMarker(root: string, markerPath: string): Buffer | null {
+  const snapshot = readProjectFileSnapshot(root, markerPath);
+  if (snapshot.kind === "missing") {
+    if (path.resolve(snapshot.absolute) === root) {
+      throw new Error(
+        `project root '${root}' changed while the state mode marker was inspected; restore the real directory and retry`,
+      );
     }
+    return null;
   }
-  return null;
+  if (snapshot.kind === "unsafe") {
+    const detail = snapshot.reason === "type"
+      ? "is not a regular file"
+      : snapshot.reason === "symlink"
+        ? "has an unsafe path"
+        : "changed or became unsafe while being read";
+    throw new Error(
+      `state mode marker '${markerPath}' ${detail}; restore a stable project-local marker and retry`,
+    );
+  }
+  return snapshot.bytes;
 }
 
 /** Read the authority-owned cutover marker without creating or repairing state. */
 export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceRoot()): StateMode {
-  const root = path.resolve(projectRoot);
+  const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);
-  const markerPath = path.join(root, declared.markerPath);
-  const symlink = symbolicLinkPrefix(root, markerPath);
-  if (symlink) {
-    throw new Error(
-      `state mode marker path contains symbolic link '${path.relative(root, symlink)}'; restore a project-local marker path before retrying`,
-    );
-  }
-  if (!fs.existsSync(markerPath)) return "legacy";
-  if (!fs.statSync(markerPath).isFile()) {
-    throw new Error(
-      `state mode marker '${declared.markerPath}' is not a file; restore the durable migration marker before retrying`,
-    );
-  }
+  const bytes = readStableMarker(root, declared.markerPath);
+  if (bytes === null) return "legacy";
   let document: Record<string, unknown>;
   try {
-    document = loadYamlMapping(fs.readFileSync(markerPath, "utf8"));
+    document = loadYamlMapping(bytes.toString("utf8"));
   } catch (error) {
     throw new Error(
       `state mode marker '${declared.markerPath}' is corrupt: ${(error as Error).message}; restore the durable migration marker before retrying`,

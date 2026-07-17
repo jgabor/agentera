@@ -1,4 +1,34 @@
 cycles:
+  - number: 878
+    timestamp: 2026-07-17 03:51
+    type: fix
+    phase: build
+    what: "Closed the Task 4 state-mode marker boundary: project selectors are
+      validated before lookup, marker bytes come from one no-follow descriptor
+      snapshot, and marker or ancestor races fail closed without activating
+      entity mode."
+    inspiration: Task 4 retry blocking defect and the existing entity-migration
+      safe-read proof.
+    discovered: The migration reader's path snapshot and descriptor verification
+      could be extracted directly, avoiding a second filesystem safety
+      implementation.
+    verified: "Focused state-mode, progress, migration, and entity tests: 4 files,
+      104 tests passed. Full CLI: 205 files, 2,455 tests passed. Typecheck
+      passed. Build passed. State validation passed with 0 issues. Capability
+      contract passed 2/2. Compact passed with 0 over-limit, formatting,
+      protected-overflow, or error findings."
+    next: Keep Task 4 complete and Task 5 pending; do not begin decisions, apply,
+      global, or another family cutover.
+    context:
+      intent: Fix only the reopened Task 4 state-mode boundary defect while preserving
+        progress entity and legacy authority behavior.
+      constraints: State-mode marker boundary, proportional tests, migration safe-read
+        extraction, and progress evidence only; no vision, apply, global
+        consumer, other family, publish, or push changes.
+      unknowns: None; deterministic race tests prove outside marker bytes cannot
+        activate entity mode.
+      scope: packages/cli state-mode detection, shared project-file snapshot logic,
+        entity migration reuse, focused tests, and progress state.
   - number: 877
     timestamp: 2026-07-17 03:22
     type: feat
@@ -317,53 +347,6 @@ cycles:
       scope: Writer-lock preparation classification/acquisition plus lock and entity
         publication workers/tests; pre-existing Task 18 replanning; progress and
         Task 18 status only.
-  - number: 868
-    timestamp: 2026-07-16 21:59
-    type: fix
-    phase: build
-    what: "Made private writer-preparation reclamation proof-based: only a
-      demonstrably dead PID, matching dead owner, or verified dead transition
-      token authorizes deletion; live, indeterminate, PID-less, and unknown
-      residue is preserved with bounded structured recovery."
-    inspiration: Final retry 2 followed audit evidence that an acquisition deleted
-      aged empty and malformed private directories whose embedded PID was still
-      live.
-    discovered: The private cleanup path treated the 250 ms initialization grace as
-      abandonment proof. PID liveness errors other than ESRCH are not positive
-      death evidence and must fail closed.
-    verified: "pnpm exec vp test run test/state/write/lock.test.ts
-      test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts
-      test/cli/validate.test.ts test/cli/validateParity.test.ts
-      test/cli/validateVerifyOracles.test.ts --reporter=dot: 6 files, 165 tests
-      passed. Its lock suite exercised all six injected crash points:
-      private-created, claim-created, claim-published, owner-transitioned,
-      private-removed, and claim-removed. pnpm exec vp test run
-      test/state/entityStorage.test.ts --reporter=dot: 1 file, 12 tests passed;
-      its stale-reclaimer case completed three repeats with one publisher, one
-      explicit loser, and no lock residue per repeat. pnpm test: 202 files, 2359
-      tests passed. pnpm run typecheck && pnpm run build: both passed. node
-      packages/cli/dist/bin/agentera.js check validate state --format json:
-      pass, 0 issues. node packages/cli/dist/bin/agentera.js check validate
-      capability-contract --format json: pass, 2/2 checks. node
-      packages/cli/dist/bin/agentera.js check compact: status pass, 10
-      artifacts, 0 over limit, 0 errors, 0 changed; progress, decisions, and
-      health retained projections because verified archive recovery is
-      required."
-    next: Keep Task 17 complete and Task 3 pending; do not start family cutover in
-      this cycle.
-    context:
-      intent: Close the final Task 17 audit defect so age alone can never delete a
-        live or unknown private preparation and a paused creator resumes without
-        raw ENOENT or overlapping ownership.
-      constraints: Preserved deterministic stale claims, six crash transitions, old
-        hard-link recovery, structured legacy-file failure, successor/token
-        checks, fsync durability, project boundaries, bounded timeout,
-        idempotent release, entity uniqueness, and state-writer behavior. No
-        vision, release, publication, Task 3, or family-cutover work.
-      unknowns: None within the remaining private-preparation defect; live and
-        indeterminate PID-qualified state now fails closed regardless of age.
-      scope: packages/cli/src/state/write/lock.ts;
-        packages/cli/test/state/write/lock.test.ts; progress Cycle 868 only.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -433,6 +416,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 868 (2026-07-16): Made private writer-preparation reclamation
+      proof-based: only a demonstrably dead PID, matching dead owner, or
+      verified..."
   - summary: "Cycle 867 (2026-07-16): Replaced link-count stale-lock election with
       an exclusive descriptor-pinned claim and recoverable owner transition,
       then added..."
@@ -532,15 +518,18 @@ archive:
       advisory lint exits."
   - summary: "Cycle 829 (2026-07-15): Corrected advisory lint exits while preserving
       strict operational and publication failures."
-  - summary: "Cycle 828 (2026-07-15): Made lint consume owning schema verbosity
-      declarations without runtime tables or fallback constants."
 omitted: true
-omitted_count: 113
+omitted_count: 114
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

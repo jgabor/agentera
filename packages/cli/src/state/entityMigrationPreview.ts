@@ -11,6 +11,14 @@ import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
+import { validateRealProjectRoot } from "./projectRoot.js";
+import {
+  projectPathIsStable as migrationPathIsStable,
+  readProjectFileSnapshot,
+  resolveProjectDescriptorPath,
+  snapshotProjectPath as snapshotMigrationPath,
+  type ProjectDescriptorPathResolver as DescriptorPathResolver,
+} from "./safeProjectFile.js";
 
 export type EntityMigrationClassification =
   | "verified_full"
@@ -118,138 +126,9 @@ function relative(root: string, target: string): string {
   return path.relative(root, target).replaceAll(path.sep, "/");
 }
 
-type MigrationPathType = "file" | "directory" | "symlink" | "other";
-type DescriptorPathResolver = (descriptor: number) => string | null;
-
-interface MigrationPathIdentity {
-  absolute: string;
-  dev: bigint;
-  ino: bigint;
-  type: MigrationPathType;
-}
-
-type MigrationPathSnapshot =
-  | { kind: "stable"; absolute: string; identities: MigrationPathIdentity[]; leaf: fs.BigIntStats }
-  | { kind: "missing" | "unsafe"; absolute: string; reason: "missing" | "symlink" | "type" | "unreadable" };
-
-function migrationPathType(stat: fs.BigIntStats): MigrationPathType {
-  if (stat.isFile()) return "file";
-  if (stat.isDirectory()) return "directory";
-  if (stat.isSymbolicLink()) return "symlink";
-  return "other";
-}
-
-function samePathIdentity(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
-  return left.dev === right.dev && left.ino === right.ino && migrationPathType(left) === migrationPathType(right);
-}
-
-function sameFileSnapshot(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
-  return left.isFile()
-    && right.isFile()
-    && samePathIdentity(left, right)
-    && left.size === right.size
-    && left.mtimeNs === right.mtimeNs
-    && left.ctimeNs === right.ctimeNs;
-}
-
-/** Migration-only path snapshot: bind every ancestor and the leaf without following symlinks. */
-function snapshotMigrationPath(root: string, relativePath: string, leafType: "file" | "directory"): MigrationPathSnapshot {
-  const targets = [root];
-  let absolute = root;
-  for (const segment of relativePath.split("/").filter(Boolean)) {
-    absolute = path.join(absolute, segment);
-    targets.push(absolute);
-  }
-  const identities: MigrationPathIdentity[] = [];
-  let leaf: fs.BigIntStats | undefined;
-  for (const [index, target] of targets.entries()) {
-    let stat: fs.BigIntStats;
-    try {
-      stat = fs.lstatSync(target, { bigint: true });
-    } catch (error) {
-      return {
-        kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe",
-        absolute: target,
-        reason: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unreadable",
-      };
-    }
-    const type = migrationPathType(stat);
-    if (type === "symlink") return { kind: "unsafe", absolute: target, reason: "symlink" };
-    const expected = index === targets.length - 1 ? leafType : "directory";
-    if (type !== expected) return { kind: "unsafe", absolute: target, reason: "type" };
-    identities.push({ absolute: target, dev: stat.dev, ino: stat.ino, type });
-    leaf = stat;
-  }
-  return { kind: "stable", absolute, identities, leaf: leaf as fs.BigIntStats };
-}
-
-function migrationPathIsStable(snapshot: Extract<MigrationPathSnapshot, { kind: "stable" }>): boolean {
-  return snapshot.identities.every((identity) => {
-    try {
-      const current = fs.lstatSync(identity.absolute, { bigint: true });
-      return current.dev === identity.dev && current.ino === identity.ino && migrationPathType(current) === identity.type;
-    } catch {
-      return false;
-    }
-  });
-}
-
-function containedBy(root: string, candidate: string): boolean {
-  const relativePath = path.relative(root, candidate);
-  return relativePath !== "" && !relativePath.startsWith(`..${path.sep}`) && relativePath !== ".." && !path.isAbsolute(relativePath);
-}
-
-function resolveDescriptorPath(descriptor: number): string | null {
-  try {
-    return fs.realpathSync(`/proc/self/fd/${descriptor}`);
-  } catch {
-    return null;
-  }
-}
-
-function descriptorMatchesPath(root: string, absolute: string, descriptorPath: string): boolean {
-  try {
-    return containedBy(root, descriptorPath) && fs.realpathSync(absolute) === descriptorPath;
-  } catch {
-    return false;
-  }
-}
-
 /** Migration-only source seam: pin one project file to a verified descriptor. */
 function readMigrationSource(root: string, relativePath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile {
-  const pathSnapshot = snapshotMigrationPath(root, relativePath, "file");
-  if (pathSnapshot.kind !== "stable") return { relative: relativePath, bytes: null, kind: pathSnapshot.kind };
-  let descriptor: number | undefined;
-  try {
-    const noFollow = (fs.constants as Record<string, number>).O_NOFOLLOW ?? 0;
-    descriptor = fs.openSync(pathSnapshot.absolute, fs.constants.O_RDONLY | noFollow);
-    const opened = fs.fstatSync(descriptor, { bigint: true });
-    if (!opened.isFile() || !samePathIdentity(pathSnapshot.leaf, opened) || !migrationPathIsStable(pathSnapshot)) {
-      return { relative: relativePath, bytes: null, kind: "unsafe" };
-    }
-    let descriptorRealPath: string | null = null;
-    try { descriptorRealPath = descriptorPathResolver(descriptor); } catch { /* Descriptor paths are optional strengthening. */ }
-    if (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath)) {
-      return { relative: relativePath, bytes: null, kind: "unsafe" };
-    }
-    const bytes = fs.readFileSync(descriptor);
-    const after = fs.fstatSync(descriptor, { bigint: true });
-    if (
-      !sameFileSnapshot(opened, after)
-      || BigInt(bytes.byteLength) !== opened.size
-      || !migrationPathIsStable(pathSnapshot)
-      || (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath))
-    ) {
-      return { relative: relativePath, bytes: null, kind: "unsafe" };
-    }
-    return { relative: relativePath, bytes, kind: "file" };
-  } catch {
-    return { relative: relativePath, bytes: null, kind: "unsafe" };
-  } finally {
-    if (descriptor !== undefined) {
-      try { fs.closeSync(descriptor); } catch { /* A failed close cannot make unverified bytes safe. */ }
-    }
-  }
+  return { relative: relativePath, ...readProjectFileSnapshot(root, relativePath, descriptorPathResolver) };
 }
 
 function directoryFiles(root: string, relativeRoot: string, accept: (relativePath: string) => boolean, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
@@ -315,18 +194,6 @@ function collectSources(root: string, descriptorPathResolver: DescriptorPathReso
     .map((directory): SourceFile => ({ relative: directory, bytes: null, kind: "missing" }));
   const byPath = new Map([...collected, ...missingRoots].map((source) => [source.relative, source]));
   return [...byPath.values()].sort((a, b) => a.relative.localeCompare(b.relative));
-}
-
-function validateProjectRoot(project: string): void {
-  let stat: fs.Stats;
-  try {
-    stat = fs.lstatSync(project);
-  } catch {
-    throw new Error(`project root '${project}' does not exist; choose an existing, real directory and retry`);
-  }
-  if (stat.isSymbolicLink()) throw new Error(`project root '${project}' is a symbolic link; choose an existing, real directory and retry`);
-  if (!stat.isDirectory()) throw new Error(`project root '${project}' is not a directory; choose an existing, real directory and retry`);
-  if (fs.realpathSync(project) !== project) throw new Error(`project root '${project}' traverses a symbolic link; choose an existing, real directory and retry`);
 }
 
 function authorityBinding(sourceRoot: string): { authority_schema_version: string; authority_sha256: string } {
@@ -673,9 +540,9 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   resolveDescriptorPath?: DescriptorPathResolver;
 } = {}): EntityMigrationPreview {
   const project = path.resolve(projectRoot);
-  validateProjectRoot(project);
+  validateRealProjectRoot(project);
   const authority = authorityBinding(sourceRoot);
-  const files = collectSources(project, options.resolveDescriptorPath ?? resolveDescriptorPath);
+  const files = collectSources(project, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
   const fingerprint = sourceFingerprint(files);
   const observations: Observation[] = [];
   inventoryFailureObservations(files, observations);
