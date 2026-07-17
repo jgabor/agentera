@@ -105,7 +105,7 @@ tasks:
       - "3"
       - "19"
       - "20"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN plans and tasks WHEN created or updated THEN each independently mutable entity uses the shared identity and writer contract.
       - GIVEN multiple open plans WHEN queried THEN selection is deterministic when unique and requires an explicit ID when ambiguous.

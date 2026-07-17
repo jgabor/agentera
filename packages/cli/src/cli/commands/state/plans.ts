@@ -5,6 +5,8 @@ import { emitStructured } from "../../structured.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getPlan, listPlans, type PlanListResponse } from "../../../state/planRetrieval.js";
 import type { Io } from "../../dispatch/shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { getPlanEntity, listPlanEntities } from "../../../state/planEntities.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -17,7 +19,7 @@ function requestedFormat(argv: string[]): Format {
   return "text";
 }
 
-function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
+function failure(message: string, verb: "list" | "get", entityMode = false): StateRetrievalFailure {
   const list = verb === "list";
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
@@ -27,14 +29,14 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
       message,
       syntax: list
         ? "agentera state plan list [--limit N] [--cursor TOKEN] --format json"
-        : "agentera state plan get --plan PLAN_ID --format json",
+        : entityMode ? "agentera state plan get --id ID --format json" : "agentera state plan get --plan PLAN_ID --format json",
       example: list
         ? "agentera state plan list --limit 20 --format json"
-        : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000 --format json",
+        : entityMode ? "agentera state plan get --id qjtrmnpvka --format json" : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000 --format json",
       recovery: "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
         ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
-        : ["get", "--plan PLAN_ID", "--format text|json|yaml"],
+        : entityMode ? ["get", "--id ID", "--format text|json|yaml"] : ["get", "--plan PLAN_ID", "--format text|json|yaml"],
     },
   }, 2);
 }
@@ -47,16 +49,17 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string } {
+function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string; id?: string } {
   let format: Format = "text";
   let limit = 20;
   let cursor: string | undefined;
   let plan: string | undefined;
+  let id: string | undefined;
   const seen = new Set<string>();
   for (let index = 0; index < argv.length;) {
     const token = argv[index]!;
-    const name = ["--format", "--limit", "--cursor", "--plan"].find((flag) => token === flag || token.startsWith(`${flag}=`));
-    if (!name || (verb === "list" && name === "--plan") || (verb === "get" && (name === "--limit" || name === "--cursor"))) {
+    const name = ["--format", "--limit", "--cursor", "--plan", "--id"].find((flag) => token === flag || token.startsWith(`${flag}=`));
+    if (!name || (verb === "list" && (name === "--plan" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor"))) {
       throw failure(`unrecognized argument '${token}'`, verb);
     }
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
@@ -75,10 +78,10 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
       if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
       limit = Number(parsed.value);
     } else if (name === "--cursor") cursor = parsed.value;
-    else plan = parsed.value;
+    else if (name === "--plan") plan = parsed.value;
+    else id = parsed.value;
   }
-  if (verb === "get" && plan === undefined) throw failure("--plan is required", verb);
-  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}) };
+  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}), ...(id ? { id } : {}) };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
@@ -116,15 +119,18 @@ export function runPlans(argv: string[], io: Io): number {
   if (verb !== "list" && verb !== "get") return emitFailure(failure(`expected 'list' or 'get', received '${verb ?? "nothing"}'`, "list"), format, io);
   try {
     const args = parse(argv.slice(1), verb);
+    const entityMode = detectStateMode(process.cwd()) === "entities";
+    if (verb === "get" && entityMode && (!args.id || args.plan)) throw failure("entity mode requires --id ID and does not accept --plan", verb, true);
+    if (verb === "get" && !entityMode && (!args.plan || args.id)) throw failure("legacy mode requires --plan PLAN_ID and does not accept --id", verb);
     const schema = loadSchemas(discoverSchemasDir()).plan;
     if (!schema) throw new Error("plan schema is unavailable");
     const activePath = artifactPath(schema, "plan");
-    const response = verb === "list"
-      ? listPlans(process.cwd(), activePath, { limit: args.limit, cursor: args.cursor, format: args.format })
-      : getPlan(activePath, args.plan!);
+    const response = entityMode
+      ? verb === "list" ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format }) : getPlanEntity(process.cwd(), args.id!)
+      : verb === "list" ? listPlans(process.cwd(), activePath, { limit: args.limit, cursor: args.cursor, format: args.format }) : getPlan(activePath, args.plan!);
     const out = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, out);
-    else if (verb === "list") out(renderList(response as PlanListResponse));
+    else if (verb === "list") out(entityMode ? YAML.stringify(response) : renderList(response as PlanListResponse));
     else out(YAML.stringify(response));
     return 0;
   } catch (error) {

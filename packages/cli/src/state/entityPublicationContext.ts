@@ -301,6 +301,34 @@ export class EntityPublicationContext {
     }
   }
 
+  removeExact(relativeTarget: string, expectedBytes: string): void {
+    const segments = relativeTarget.split(path.sep).filter(Boolean);
+    if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
+      throw new Error(`unsafe entity rollback target '${relativeTarget}'`);
+    const directories: DirectoryEntry[] = [];
+    let targetFd: number | undefined;
+    try {
+      let parentFd = this.rootFd;
+      for (const name of segments.slice(0, -1)) {
+        const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
+        directories.push({ parentFd, name, fd, created: false });
+        parentFd = fd;
+      }
+      const directoryFd = directories.at(-1)!.fd;
+      const targetName = segments.at(-1)!;
+      targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS);
+      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd });
+      if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes)))
+        throw new Error(`entity '${relativeTarget}' changed before rollback; preserve both values and resolve explicitly`);
+      this.removeOwnedFile(directoryFd, targetName, targetFd);
+      syncDirectory(directoryFd);
+      this.assertBoundary(directories);
+    } finally {
+      if (targetFd !== undefined) fs.closeSync(targetFd);
+      for (const entry of directories.reverse()) fs.closeSync(entry.fd);
+    }
+  }
+
   replaceExisting(relativeTarget: string, expectedBytes: string, bytes: string): void {
     const segments = relativeTarget.split(path.sep).filter(Boolean);
     if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))

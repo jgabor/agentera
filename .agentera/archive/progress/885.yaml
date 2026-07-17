@@ -1,0 +1,15 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 885
+record:
+  number: 885
+  timestamp: 2026-07-17 06:45
+  type: feat
+  phase: build
+  what: Added plans/tasks entity mode in packages/cli/src/state/planEntities.ts with independent bare-ID files, dependency validation, bounded retrieval, rollback-safe create, and Git-visible same-task conflicts.
+  verified: "pnpm -C packages/cli test: 2,507 passed; typecheck and build passed; state, plan capability, capability contract, compact, and built CLI legacy retrieval passed."
+  next: PLAN Task8 remains pending.
+  context:
+    intent: Complete PLAN Task7 without cutting over objectives, experiments, apply, or global plan consumers.
+    constraints: Preserve legacy authority while the marker is absent; no aggregate plan/archive writes in entity mode.
+record_sha256: 64facc9d32bb1edf093b975e9ae5f3bfd6f3153e7e0c0c3ff1b5c4ca08907132

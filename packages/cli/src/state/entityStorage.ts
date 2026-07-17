@@ -327,6 +327,19 @@ function discoverFile(
       });
     }
   }
+  if (!malformed && boundary === "plan" && record) {
+    const header = mapping(record.header) ? record.header : {};
+    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete"].includes(String(header.status))) {
+      malformed = true;
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan lifecycle fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan header schema and open|complete lifecycle`) });
+    }
+  }
+  if (!malformed && boundary === "plan_task" && record) {
+    if (typeof record.name !== "string" || !["pending", "in_progress", "complete", "blocked", "skipped"].includes(String(record.status)) || !Array.isArray(record.depends_on) || !Array.isArray(record.acceptance)) {
+      malformed = true;
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan task fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan task schema`) });
+    }
+  }
   return { id, artifact, boundary, record, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
 }
 
@@ -433,6 +446,41 @@ export function validateEntityState(projectRoot: string, sourceRoot?: string): E
           recovery: recovery(projectRoot, `set record.${relation.field} in '${entity.relativePath}' to ${relation.cardinality === "exactly_one" ? "one existing" : "only existing same-plan"} '${relation.target}' ID`),
         });
       }
+    }
+  }
+  const planTasks = discovery.entities.filter((entity) => entity.boundary === "plan_task" && entity.classification === "valid" && entity.id && entity.record);
+  const tasksByPlan = new Map<string, DiscoveredEntity[]>();
+  for (const task of planTasks) {
+    const planId = typeof task.record?.plan === "string" ? task.record.plan : "";
+    tasksByPlan.set(planId, [...(tasksByPlan.get(planId) ?? []), task]);
+  }
+  for (const [planId, tasks] of tasksByPlan) {
+    const byTaskId = new Map(tasks.map((task) => [task.id!, task]));
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+    const visit = (task: DiscoveredEntity): boolean => {
+      if (visiting.has(task.id!)) return true;
+      if (visited.has(task.id!)) return false;
+      visiting.add(task.id!);
+      const cyclic = (Array.isArray(task.record?.depends_on) ? task.record.depends_on : [])
+        .some((id) => typeof id === "string" && byTaskId.has(id) && visit(byTaskId.get(id)!));
+      visiting.delete(task.id!); visited.add(task.id!); return cyclic;
+    };
+    for (const task of tasks) if (visit(task)) issues.push({
+      code: "unresolved_relation", path: task.relativePath, id: task.id!, artifact: task.artifact ?? undefined, boundary: task.boundary ?? undefined,
+      relation: "depends_on", message: `plan '${planId}' task dependency graph contains a cycle involving '${task.id}'`,
+      recovery: recovery(projectRoot, `remove one record.depends_on edge in plan '${planId}' so the task graph is acyclic`),
+    });
+  }
+  for (const plan of discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record)) {
+    const header = mapping(plan.record!.header) ? plan.record!.header as JsonObject : {};
+    if (header.status === "complete") {
+      const incomplete = (tasksByPlan.get(plan.id!) ?? []).filter((task) => task.record?.status !== "complete");
+      if (incomplete.length) issues.push({
+        code: "conflicting_ownership", path: plan.relativePath, id: plan.id!, artifact: plan.artifact ?? undefined, boundary: plan.boundary ?? undefined,
+        message: `complete plan '${plan.id}' owns ${incomplete.length} incomplete task entities`,
+        recovery: recovery(projectRoot, `complete every task related to plan '${plan.id}' or restore the plan lifecycle to open`),
+      });
     }
   }
   for (const definition of model.entities) {

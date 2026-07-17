@@ -153,13 +153,25 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       valid_values: verbsForArtifact(artifact),
     });
   const spec = specOrReject(artifact, verb);
-  const fields = projectedFields(spec);
+  let initialProjectRoot = process.cwd();
+  for (let index = 1; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === "--project" && argv[index + 1]) initialProjectRoot = path.resolve(argv[index + 1]);
+    else if (token.startsWith("--project=")) initialProjectRoot = path.resolve(token.slice("--project=".length));
+  }
+  const entityPlan = artifact === "plan" && detectStateMode(initialProjectRoot) === "entities" && verb !== "create";
+  let fields = projectedFields(spec);
+  if (entityPlan) {
+    fields = fields.filter((field) => field.flag !== "--task").map((field) => field.flag === "--depends-on" ? { ...field, kind: "string_list" as const } : field);
+    if (["update", "set-status", "record-evaluation"].includes(verb)) fields.unshift({ flag: "--id", field: "id", kind: "string", required: true });
+    fields.unshift({ flag: "--plan", field: "plan", kind: "string" });
+  }
   const byFlag = new Map(fields.map((field) => [field.flag, field]));
   const values: Record<string, unknown> = {};
   const callerPayload: Record<string, unknown> = {};
   const occurrences = new Map<string, number>();
   let format: "text" | "json" = "text";
-  let projectRoot = process.cwd();
+  let projectRoot = initialProjectRoot;
   let dryRun = false;
   let force = false;
   let inputSource: string | null = null;
@@ -298,6 +310,20 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     if (!entityMode && mappingPath(values, "base_sha256") !== undefined)
       invalid({ class: "unrecognized_argument", message: "--base-sha256 applies only to entity-mode decisions" });
   }
+  if (artifact === "plan" && verb !== "create") {
+    const entityMode = detectStateMode(projectRoot) === "entities";
+    const taskVerb = ["update", "set-status", "record-evaluation"].includes(verb);
+    const id = mappingPath(values, "id");
+    const task = mappingPath(values, "task");
+    const plan = mappingPath(values, "plan");
+    if (entityMode && task !== undefined) invalid({ class: "unrecognized_argument", message: "numeric task selectors are unavailable in entity mode; use --id ID" });
+    if (!entityMode && (id !== undefined || plan !== undefined)) invalid({ class: "unrecognized_argument", message: "--id and --plan are unavailable in legacy mode; use the active plan and --task N" });
+    if (entityMode && taskVerb && id === undefined) invalid({ class: "missing_argument", message: `--id is required for plan ${verb} in entity mode` });
+    if (!entityMode && taskVerb && task === undefined) invalid({ class: "missing_argument", message: `--task is required for plan ${verb} in legacy mode` });
+    if (entityMode && force) invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plans; incomplete plans remain canonical history" });
+  }
+  if (artifact === "plan" && verb === "create" && detectStateMode(projectRoot) === "entities" && force)
+    invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plan create because multiple open plans coexist" });
   if (
     verb === "update" &&
     artifact === "plan" &&

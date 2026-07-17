@@ -31,7 +31,7 @@ describe("Decision 94 entity authority", () => {
 
     expect(authority.authority.source).toBe("references/artifacts/state-storage-authority.yaml");
     expect(target).toMatchObject({
-      status: "progress_decisions_and_health_implemented_other_families_declared",
+      status: "progress_decisions_health_and_plan_implemented_other_families_declared",
       decision: 94,
       public_schema: {
         canonical_identity_field: "id",
@@ -80,6 +80,7 @@ describe("Decision 94 entity authority", () => {
         progress: "implemented",
         decisions: "implemented",
         health: "implemented",
+        plan: "implemented",
         remaining_families: "declared_not_implemented",
       },
     });

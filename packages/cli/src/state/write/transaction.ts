@@ -57,6 +57,7 @@ import { detectStateModeBinding } from "../stateMode.js";
 import { appendProgressEntity } from "../progressEntities.js";
 import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEntity } from "../decisionEntities.js";
 import { appendHealthEntity } from "../healthEntities.js";
+import { mutatePlanEntities } from "../planEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
   if (!fs.existsSync(target)) return { doc: {}, bytes: "" };
@@ -428,6 +429,7 @@ export function executeStateWrite(
   const healthMode = req.artifact === "health" && ["append", "repair"].includes(req.spec.verb)
     ? detectStateModeBinding(req.projectRoot)
     : null;
+  const planMode = req.artifact === "plan" ? detectStateModeBinding(req.projectRoot) : null;
   if (progressMode?.mode === "entities") {
     try {
       return appendProgressEntity(req, {
@@ -456,6 +458,13 @@ export function executeStateWrite(
       return appendHealthEntity(req, { publicationContext: healthMode.publicationContext });
     } finally {
       healthMode.publicationContext.close();
+    }
+  }
+  if (planMode?.mode === "entities") {
+    try {
+      return mutatePlanEntities(req, { publicationContext: planMode.publicationContext });
+    } finally {
+      planMode.publicationContext.close();
     }
   }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {

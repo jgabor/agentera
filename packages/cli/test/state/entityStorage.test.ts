@@ -302,10 +302,12 @@ describe("entity discovery and publication", () => {
 });
 
 describe("whole-state entity validation", () => {
+  const planRecord = { header: { title: "Plan", created: "2026-07-17", status: "open" }, what: "Validate `.agentera/entities`.", why: "Relationships must resolve.", scope: {} };
+  const taskRecord = (plan: string) => ({ plan, name: "Validate", status: "pending", depends_on: [], acceptance: [] });
   it("reports duplicate IDs, invalid artifacts, unresolved links, and conflicting ownership with recovery", () => {
     const root = project();
-    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan", id: "aaaaaaaaaa", record: {} });
-    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan_task", id: "bbbbbbbbbb", record: { plan: "missinglink", depends_on: [] } });
+    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan", id: "aaaaaaaaaa", record: planRecord });
+    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan_task", id: "bbbbbbbbbb", record: taskRecord("missinglink") });
 
     const entityRoot = path.join(root, ".agentera/entities");
     fs.mkdirSync(path.join(entityRoot, "bogus/decision"), { recursive: true });
@@ -334,8 +336,8 @@ describe("whole-state entity validation", () => {
 
   it("accepts declared relationships that resolve to exactly one target boundary", () => {
     const root = project();
-    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan", id: "aaaaaaaaaa", record: {} });
-    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan_task", id: "bbbbbbbbbb", record: { plan: "aaaaaaaaaa", depends_on: [] } });
+    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan", id: "aaaaaaaaaa", record: planRecord });
+    publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan_task", id: "bbbbbbbbbb", record: taskRecord("aaaaaaaaaa") });
     expect(validateEntityState(root)).toMatchObject({ valid: true, issues: [], entityCount: 2 });
   });
 });

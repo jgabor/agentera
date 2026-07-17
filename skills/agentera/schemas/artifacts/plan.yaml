@@ -564,6 +564,7 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/eval/evalSkills.ts
     writers:
       - packages/cli/src/state/write/*.ts
+      - packages/cli/src/state/entityStorage.ts
       - packages/cli/src/cli/commands/state/write.ts
     migrators:
       - packages/cli/src/upgrade/migrateArtifacts*.ts
