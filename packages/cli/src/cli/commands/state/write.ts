@@ -23,6 +23,7 @@ import {
   type OperationSpec,
   type WritableArtifact,
 } from "../../../state/write/index.js";
+import { detectStateMode } from "../../../state/stateMode.js";
 
 interface ParsedWrite {
   artifact: WritableArtifact;
@@ -274,6 +275,19 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
         example: exampleFor(artifact, verb),
       });
     }
+  }
+  if (artifact === "decisions" && (verb === "update" || verb === "amend")) {
+    const entityMode = detectStateMode(projectRoot) === "entities";
+    const id = mappingPath(values, "id");
+    const number = mappingPath(values, "number");
+    if (entityMode && number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric decision selectors are unavailable in entity mode; use --id ID" });
+    if (!entityMode && id !== undefined) invalid({ class: "unrecognized_argument", message: "--id is unavailable in legacy mode; use --number N" });
+    if (entityMode && id === undefined) invalid({ class: "missing_argument", message: `--id is required for decisions ${verb} in entity mode` });
+    if (!entityMode && number === undefined) invalid({ class: "missing_argument", message: `--number is required for decisions ${verb} in legacy mode` });
+    if (entityMode && verb === "amend" && mappingPath(values, "base_sha256") === undefined)
+      invalid({ class: "missing_argument", message: "--base-sha256 is required for decisions amend in entity mode" });
+    if (!entityMode && mappingPath(values, "base_sha256") !== undefined)
+      invalid({ class: "unrecognized_argument", message: "--base-sha256 applies only to entity-mode decisions" });
   }
   if (
     verb === "update" &&

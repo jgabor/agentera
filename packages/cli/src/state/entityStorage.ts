@@ -21,6 +21,7 @@ interface EntityDefinition {
     forbiddenFields: string[];
     timestampFormat?: string;
   };
+  ownership?: { fields: string[]; cardinality: string };
 }
 
 interface RelationshipDefinition {
@@ -94,6 +95,7 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     }
     const record = mapping(value.record) ? value.record : null;
     const strings = (field: unknown): string[] => Array.isArray(field) && field.every((item) => typeof item === "string") ? field : [];
+    const ownership = mapping(value.ownership) ? value.ownership : null;
     return {
       boundary: value.boundary,
       artifact: value.artifact,
@@ -102,6 +104,10 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
         requiredPaths: strings(record.required_paths),
         forbiddenFields: strings(record.forbidden_fields),
         ...(typeof record.timestamp_format === "string" ? { timestampFormat: record.timestamp_format } : {}),
+      } } : {}),
+      ...(ownership ? { ownership: {
+        fields: strings(ownership.fields),
+        cardinality: String(ownership.cardinality ?? ""),
       } } : {}),
     };
   });
@@ -396,6 +402,28 @@ export function validateEntityState(projectRoot: string, sourceRoot?: string): E
       }
     }
   }
+  for (const definition of model.entities) {
+    if (!definition.ownership || definition.ownership.cardinality !== "zero_or_one") continue;
+    const claims = new Map<string, DiscoveredEntity[]>();
+    for (const entity of discovery.entities.filter(({ boundary, classification }) => boundary === definition.boundary && classification === "valid")) {
+      const values = definition.ownership.fields.map((field) => entity.record?.[field]);
+      if (values.some((value) => value === undefined)) continue;
+      const key = canonicalRecordJson(values);
+      claims.set(key, [...(claims.get(key) ?? []), entity]);
+    }
+    for (const claimants of claims.values()) {
+      if (claimants.length < 2) continue;
+      for (const entity of claimants) issues.push({
+        code: "conflicting_ownership",
+        path: entity.relativePath,
+        id: entity.id ?? undefined,
+        artifact: entity.artifact ?? undefined,
+        boundary: entity.boundary ?? undefined,
+        message: `entity '${entity.relativePath}' shares the authority-owned ${definition.ownership.fields.join("+")} claim with ${claimants.length - 1} other '${definition.boundary}' entity`,
+        recovery: recovery(projectRoot, `preserve every claimant and resolve the divergent '${definition.boundary}' ownership explicitly`),
+      });
+    }
+  }
   issues.sort(diagnosticSort);
   const omittedIssueCount = Math.max(0, issues.length - MAX_DIAGNOSTICS);
   const boundedIssues = issues.slice(0, MAX_DIAGNOSTICS);
@@ -435,6 +463,10 @@ export interface PublishEntityResult {
   boundary: string;
   path: string;
   replay: boolean;
+}
+
+export interface ReplaceEntityRequest extends PublishEntityRequest {
+  expectedRecord: JsonObject;
 }
 
 function publishEntityLocked(
@@ -523,6 +555,27 @@ function publishWithContext(
 export function publishEntity(request: PublishEntityRequest): PublishEntityResult {
   const model = authority(request.sourceRoot);
   return withPublicationContext(request, (context) => publishWithContext(request, model, context));
+}
+
+export function replaceEntity(request: ReplaceEntityRequest): PublishEntityResult {
+  const model = authority(request.sourceRoot);
+  return withPublicationContext(request, (context) => {
+    context.assertValid();
+    const lock = acquireWriterLock(context.pinnedPath(), 2000);
+    try {
+      const owner = model.byBoundary.get(request.boundary);
+      if (!owner || owner.artifact !== request.artifact) throw new Error(`unknown '${request.artifact}' entity boundary '${request.boundary}'`);
+      const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
+      const before = dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.expectedRecord });
+      const after = dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.record });
+      if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record))
+        return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
+      context.replaceExisting(relativeTarget, before, after);
+      return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false };
+    } finally {
+      lock.release();
+    }
+  });
 }
 
 export function allocateAndPublishEntity(

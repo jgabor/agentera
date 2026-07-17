@@ -79,7 +79,7 @@ tasks:
       - "3"
       - "19"
       - "20"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN decisions, satisfaction, revisions, and amendments WHEN written or read THEN each independent mutation uses canonical entity authority.
       - GIVEN unrelated decision writes on parallel branches WHEN merged THEN both survive without aggregate-state conflict.

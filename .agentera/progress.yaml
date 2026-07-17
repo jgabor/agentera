@@ -1,4 +1,31 @@
 cycles:
+  - number: 881
+    timestamp: 2026-07-17 05:07
+    type: feat
+    phase: build
+    what: Cut decisions over to canonical entity authority
+    inspiration: PLAN Task 5 and Decision 94
+    discovered: Satisfaction needs one replaceable owner per decision while
+      revisions need immutable decision-plus-base-hash ownership; generic
+      ownership validation makes branch divergence explicit without
+      family-specific race logic.
+    verified: "Focused decision/entity suites: 138/138 passed. Full CLI suite:
+      2480/2480 passed. Typecheck and build passed. State validation passed with
+      0 issues. Capability discuss and capability-contract validation passed.
+      Compaction passed with 0 over-limit artifacts and 0 errors."
+    next: Proceed to Task 6 only; health, plans, objectives, TODO, docs inventory,
+      durable apply, and global consumer cutover remain pending.
+    context:
+      intent: Execute PLAN Task 5 with isolated decision bases, satisfaction
+        ownership, immutable revisions, and bare-ID effective reads while
+        preserving marker-absent legacy behavior
+      constraints: Decisions family only; no migration marker, dual write, durable
+        apply, other family cutover, TODO/docs inventory, publish, push, or
+        vision changes.
+      unknowns: None for Task 5; later family and global consumer tasks remain pending.
+      scope: Decision entity writer/read/list, satisfaction and revision authority,
+        shared ownership validation and exact replacement, tests, changelog,
+        authority, plan, and progress state.
   - number: 880
     timestamp: 2026-07-17 04:42
     type: fix
@@ -282,47 +309,6 @@ cycles:
         identities; this retry does not resolve them.
       scope: packages/cli entity migration preview, CLI text/help, state-storage
         authority, focused tests, and this progress cycle.
-  - number: 871
-    timestamp: 2026-07-16 23:50
-    type: feat
-    phase: build
-    what: Added an explicit read-only entity-migration preview under agentera state
-      migrate entities. It inventories all declared entity families and
-      structured links, classifies complete, degraded, summary-only, mirrored,
-      conflicting, corrupt, and unsupported sources, allocates deterministic
-      preview-only target IDs, emits bounded source/preview digests, and refuses
-      stale apply binding before effects.
-    inspiration: Decision 94, Task 1 authority, and PLAN Task 3 acceptance criteria.
-    discovered: The current repository contains 90 irrecoverable summary-only
-      identities, 17 corrupt candidates, and 125 unresolved structured
-      relationships in the pre-closeout preview; these are preserved as explicit
-      Task 13 blockers rather than reconstructed. The existing plan-lifecycle
-      inventory also required the new migration reader to be classified as a
-      migrator.
-    verified: "Focused migration/entity regression: 4 files, 40 tests passed. Full
-      CLI suite: 203 files, 2,371 tests passed. Typecheck passed. Build passed.
-      check validate state passed with 0 issues. capability-contract validation
-      passed 2/2 checks. check compact passed for 10 artifacts with 0
-      over-limit, formatting, protected-overflow, or errors. Repeated repository
-      previews produced identical source fingerprint and preview digest; JSON
-      was 30,178 bytes and YAML 24,718 bytes, both below 32,768 bytes.
-      Zero-write fixtures covered empty, valid, malformed, and stale-apply
-      projects."
-    next: Proceed to Task 4 only in a separate cycle. Keep durable
-      apply/resume/rollback and cutover in Task 10; preserve Task 13 blockers
-      for explicit recovery.
-    context:
-      intent: Complete PLAN Task 3 without implementing entity publication, durable
-        mapping, snapshots, resume, rollback, or family cutover.
-      constraints: "Task 3 only: no entity publication, mapping or snapshot
-        persistence, migration lock, Git operation, family cutover, vision
-        change, release, push, or publish."
-      unknowns: Repository summary-only, corrupt, and unresolved relationship blockers
-        remain intentionally unresolved for Task 13; none blocks completion of
-        the read-only inventory contract.
-      scope: State-storage authority; state migrate entities CLI/help; pure entity
-        migration preview and binding; focused tests; plan lifecycle inventory;
-        progress and Task 3 status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -392,6 +378,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 871 (2026-07-16): Added an explicit read-only entity-migration
+      preview under agentera state migrate entities. It inventories all
+      declared..."
   - summary: "Cycle 870 (2026-07-16): Published private writer owner metadata
       atomically from a validated, fsynced temporary file and boundedly
       resampled..."
@@ -494,15 +483,18 @@ archive:
       atomic..."
   - summary: "Cycle 832 (2026-07-15): Define and verify the authoritative
       evidence-tier contract"
-  - summary: "Cycle 831 (2026-07-15): Diagnosed unavailable AGENTERA_HOME managed
-      scripts before fallback."
 omitted: true
-omitted_count: 116
+omitted_count: 117
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

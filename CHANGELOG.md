@@ -12,6 +12,7 @@
 
 ### Added
 
+- Added post-cutover decision entities for immutable bases and content revisions, replaceable satisfaction ownership, bare-ID exact and bounded reads, deterministic effective provenance, stale-base and transition validation, and explicit same-decision conflict detection; marker-absent projects retain the legacy numbered authority without dual writes.
 - Added the post-cutover progress entity writer and `state progress get|list` reads with bare IDs, one canonical file per cycle, atomic replay-safe publication, full provenance, bounded snapshot pagination, and no legacy projection or archive writes; legacy projects remain unchanged until the durable cutover marker exists.
 - Added authority-driven, one-file-per-entity storage primitives with secure project-wide IDs, symlink-safe discovery, conflict-safe publication, relationship validation, and `agentera check validate state` diagnostics.
 - Added an authoritative evidence-tier contract (`references/analysis/evidence-tier-authority.yaml`) and contract-model loader (`packages/cli/src/registries/evidenceTierContract.ts`) fixing the bounded full-evidence and signal tiers, supported Codex, Cursor, OpenCode, Copilot, and historical Claude source coverage, the consumer field-supply map including the latent startup-analysis reader, reserved signal semantics for the deferred glossary, and deterministic recovery outcomes for oversized, legacy, missing, corrupt, and incomplete state.

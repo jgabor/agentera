@@ -220,7 +220,7 @@ export function composeDecisionOverlay(
   return hydrated;
 }
 
-function requestedSatisfaction(
+export function requestedSatisfaction(
   requested: unknown,
   contract: DecisionOverlayContract,
 ): JsonObject {
@@ -269,7 +269,7 @@ function effectiveState(
   return valueAt(overlay?.satisfaction, "state") ?? valueAt(historicalSatisfaction, "state");
 }
 
-function validateTransition(
+export function validateTransition(
   requested: JsonObject,
   currentOverlay: JsonObject | undefined,
   historicalSatisfaction: unknown,

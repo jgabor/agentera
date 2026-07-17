@@ -107,7 +107,9 @@ describe("entity discovery and publication", () => {
   it("classifies valid, duplicate, malformed, and unsafe entities deterministically", () => {
     const root = project();
     publishEntity({ projectRoot: root, artifact: "progress", boundary: "progress_cycle", id: "aaaaaaaaaa", record: {} });
-    publishEntity({ projectRoot: root, artifact: "decisions", boundary: "decision", id: "bbbbbbbbbb", record: {} });
+    publishEntity({ projectRoot: root, artifact: "decisions", boundary: "decision", id: "bbbbbbbbbb", record: {
+      date: "2026-07-17", question: "Q?", context: "C", alternatives: [], choice: "A", reasoning: "R", confidence: "firm",
+    } });
 
     const duplicate = path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml");
     fs.mkdirSync(path.dirname(duplicate), { recursive: true });

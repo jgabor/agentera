@@ -11,6 +11,8 @@ import { emitStructured } from "../../structured.js";
 import type { Io } from "../../dispatch/shared.js";
 import { detectStateMode } from "../../../state/stateMode.js";
 import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
+import { listDecisionEntities } from "../../../state/decisionEntities.js";
+import YAML from "yaml";
 
 interface StateListArgs {
   limit: number;
@@ -147,14 +149,16 @@ function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "ya
 export function runStateList(artifactId: string, argv: string[], io: Io, projectRoot = process.cwd()): number {
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
-  let entityProgress = false;
+  let entityArtifact = false;
   try {
-    entityProgress = artifactId === "progress" && detectStateMode(projectRoot, sourceRoot) === "entities";
+    entityArtifact = ["progress", "decisions"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
     const args = parseListArgs(artifactId, argv, sourceRoot);
-    if (entityProgress) {
-      const response = listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format });
+    if (entityArtifact) {
+      const response = artifactId === "progress"
+        ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format })
+        : listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format });
       const output = io.out ?? ((text: string) => process.stdout.write(text));
-      if (args.format === "text") output(renderProgressEntityListText(response));
+      if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
       else emitStructured(response, args.format, output);
       return 0;
     }
@@ -170,10 +174,10 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) {
-      if (entityProgress) {
+      if (entityArtifact) {
         const body = structuredClone(error.body);
         delete body.error.artifact_id;
-        body.error.artifact = "progress";
+        body.error.artifact = artifactId;
         return emitFailure(new StateRetrievalFailure(body, error.exitCode), format, io);
       }
       return emitFailure(error, format, io);

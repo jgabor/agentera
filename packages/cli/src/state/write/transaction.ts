@@ -21,7 +21,7 @@ import {
   withStateMutation,
 } from "./mutation.js";
 import { nextEntryNumber } from "./assign.js";
-import type { OperationSpec, StateWriteEnvelope, StateWriteRequest, WritableArtifact } from "./operations.js";
+import type { StateWriteEnvelope, StateWriteRequest, WritableArtifact } from "./operations.js";
 export type { StateWriteRequest, StateWriteEnvelope } from "./operations.js";
 import { mutateCandidate, normalizedDecisionPayload } from "./candidateMutation.js";
 import { array, findByNumber, mapping, schemaViolation } from "./helpers.js";
@@ -55,6 +55,7 @@ import { repairHealthProjectionBytes } from "../healthRepair.js";
 import { executeExperimentPublication } from "./experimentPublication.js";
 import { detectStateModeBinding } from "../stateMode.js";
 import { appendProgressEntity } from "../progressEntities.js";
+import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEntity } from "../decisionEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
   if (!fs.existsSync(target)) return { doc: {}, bytes: "" };
@@ -420,6 +421,9 @@ export function executeStateWrite(
   const progressMode = req.artifact === "progress" && req.spec.verb === "append"
     ? detectStateModeBinding(req.projectRoot)
     : null;
+  const decisionMode = req.artifact === "decisions" && ["append", "update", "amend"].includes(req.spec.verb)
+    ? detectStateModeBinding(req.projectRoot)
+    : null;
   if (progressMode?.mode === "entities") {
     try {
       return appendProgressEntity(req, {
@@ -427,6 +431,16 @@ export function executeStateWrite(
       });
     } finally {
       progressMode.publicationContext.close();
+    }
+  }
+  if (decisionMode?.mode === "entities") {
+    try {
+      const publicationContext = decisionMode.publicationContext;
+      if (req.spec.verb === "append") return appendDecisionEntity(req, { publicationContext });
+      if (req.spec.verb === "update") return updateDecisionSatisfactionEntity(req, { publicationContext });
+      return amendDecisionEntity(req, { publicationContext });
+    } finally {
+      decisionMode.publicationContext.close();
     }
   }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {

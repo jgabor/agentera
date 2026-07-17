@@ -301,6 +301,46 @@ export class EntityPublicationContext {
     }
   }
 
+  replaceExisting(relativeTarget: string, expectedBytes: string, bytes: string): void {
+    const segments = relativeTarget.split(path.sep).filter(Boolean);
+    if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
+      throw new Error(`unsafe entity replacement target '${relativeTarget}'`);
+    const directories: DirectoryEntry[] = [];
+    let targetFd: number | undefined;
+    let stageFd: number | undefined;
+    let stageName: string | undefined;
+    try {
+      let parentFd = this.rootFd;
+      for (const name of segments.slice(0, -1)) {
+        const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
+        directories.push({ parentFd, name, fd, created: false });
+        parentFd = fd;
+      }
+      const directoryFd = directories.at(-1)!.fd;
+      const targetName = segments.at(-1)!;
+      targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS);
+      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd });
+      if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes)))
+        throw new Error(`entity '${relativeTarget}' changed before replacement; preserve both changes and retry explicitly`);
+      stageName = `.${targetName}.${process.pid}.${randomUUID()}.tmp`;
+      stageFd = fs.openSync(fdPath(directoryFd, stageName), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
+      fs.writeFileSync(stageFd, bytes, "utf8");
+      fs.fsyncSync(stageFd);
+      this.assertBoundary(directories, { name: stageName, fd: stageFd }, { name: targetName, fd: targetFd });
+      fs.renameSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName));
+      stageName = undefined;
+      syncDirectory(directoryFd);
+      this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd });
+    } finally {
+      const directoryFd = directories.at(-1)?.fd;
+      if (directoryFd !== undefined && stageFd !== undefined && stageName !== undefined)
+        this.removeOwnedFile(directoryFd, stageName, stageFd);
+      if (stageFd !== undefined) fs.closeSync(stageFd);
+      if (targetFd !== undefined) fs.closeSync(targetFd);
+      for (const entry of directories.reverse()) fs.closeSync(entry.fd);
+    }
+  }
+
   close(): void {
     if (this.closed) return;
     this.closed = true;

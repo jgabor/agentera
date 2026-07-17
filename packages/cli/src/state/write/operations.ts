@@ -111,11 +111,12 @@ const decisionAppend: OperationField[] = [
 ];
 
 const decisionUpdate: OperationField[] = [
+  { flag: "--id", field: "id", kind: "string" },
   {
     flag: "--number",
     field: "number",
     kind: "integer",
-    required: true,
+    required: false,
     description: EXISTING_DECISION_NUMBER_DESCRIPTION,
   },
   {
@@ -140,11 +141,13 @@ const decisionUpdate: OperationField[] = [
  * with recovery; the decisions projection is never rewritten.
  */
 const decisionAmend: OperationField[] = [
+  { flag: "--id", field: "id", kind: "string" },
+  { flag: "--base-sha256", field: "base_sha256", kind: "string" },
   {
     flag: "--number",
     field: "number",
     kind: "integer",
-    required: true,
+    required: false,
     description: EXISTING_DECISION_NUMBER_DESCRIPTION,
   },
   { flag: "--question", field: "question", kind: "string", required: false },

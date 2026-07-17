@@ -41,15 +41,15 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityProgress = artifact === "progress" && detectStateMode(projectRoot) === "entities";
-  const resolved = entityProgress
-    ? path.join(projectRoot, ".agentera", "entities", "progress", "progress_cycle", "<id>.yaml")
+  const entityArtifact = ["progress", "decisions"].includes(artifact) && detectStateMode(projectRoot) === "entities";
+  const resolved = entityArtifact
+    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
-  const doc = artifact === "experiments" || entityProgress ? {} : liveDoc(resolved);
+  const doc = artifact === "experiments" || entityArtifact ? {} : liveDoc(resolved);
   const next =
-    artifact === "experiments" || entityProgress
+    artifact === "experiments" || entityArtifact
       ? {}
       : artifact === "plan"
       ? { task_number: nextTaskNumber(doc) }
@@ -60,10 +60,12 @@ export function buildExplain(
           ),
         };
   const validator = new ArtifactSchemaValidator();
-  const fields = projectedFields(spec, validator).map((field) => ({
+  const fields = projectedFields(spec, validator)
+    .filter((field) => artifact !== "decisions" || !["update", "amend"].includes(verb) || (entityArtifact ? field.flag !== "--number" : !["--id", "--base-sha256"].includes(field.flag)))
+    .map((field) => ({
     flag: field.flag,
     field: field.field,
-    required: Boolean(field.required),
+    required: Boolean(field.required || (artifact === "decisions" && ["update", "amend"].includes(verb) && (entityArtifact ? field.flag === "--id" || (verb === "amend" && field.flag === "--base-sha256") : field.flag === "--number"))),
     type: field.kind,
     ...(field.validValues ? { valid_values: field.validValues } : {}),
     ...(field.repeatable ? { repeatable: true } : {}),
@@ -85,8 +87,8 @@ export function buildExplain(
     fields,
   };
   if (spec.compacts) {
-    result.compaction = entityProgress
-      ? "not applicable; each canonical progress entity is complete authority and no aggregate projection or archive is written"
+    result.compaction = entityArtifact
+      ? `not applicable; each canonical ${artifact} entity is authority and no aggregate projection or numbered archive is written`
       : artifact === "experiments"
       ? "uniform_10_40_50 (10 active full-detail and 40 one-line archive entries); runs automatically on publication; durable archival is deferred"
       : "uniform_10_40_50 (bounded active/archive projections: 10 active full-detail and 40 archive entries; verified numbered archives remain authoritative; no destructive deletion; recovery refuses to omit entries when archive evidence is missing); runs automatically on append";
@@ -108,12 +110,12 @@ export function buildExplain(
             : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
   }
-  result.guidance = decisionsGuidance(artifact, verb);
-  result.example = exampleFor(artifact, verb);
+  result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "decisions");
+  result.example = exampleFor(artifact, verb, entityArtifact && artifact === "decisions");
   return result;
 }
 
-function decisionsGuidance(artifact: WritableArtifact, verb: string): string[] {
+function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecisions = false): string[] {
   const base = [
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
@@ -129,6 +131,17 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string): string[] {
     return ["repair is a destructive projection edit; select an existing duplicate audit and pass --force", ...base];
   if (artifact === "experiments")
     return ["pass the intended non-negative --number; the CLI validates and assigns it to the entry", ...base];
+  if (entityDecisions && verb === "update") return [
+    "select one base decision with its bare --id; numeric selectors are unavailable",
+    "update replaces only that decision's authority-owned satisfaction entity after transition validation",
+    ...base,
+  ];
+  if (entityDecisions && verb === "amend") return [
+    "select one base decision with its bare --id and current --base-sha256",
+    "supply at least one amendable content field; satisfaction remains a separate mutation",
+    "apply publishes one immutable revision entity; identical retries converge and same-base divergence conflicts",
+    ...base,
+  ];
   if (artifact === "decisions" && verb === "update")
     return [
       "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
@@ -145,16 +158,20 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string): string[] {
       "apply publishes a record-local revision document override with recovery; the decisions projection stays byte-stable and reads compose base→revisions→overlay",
       "an identical re-submission is an idempotent replay; retry converges on a stable revision identity without duplicates or mixed state",
     ];
-  return ["number is assigned by the CLI; do not pass --number", ...base];
+  return [entityDecisions ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
 }
 
-export function exampleFor(artifact: WritableArtifact, verb: string): string {
+export function exampleFor(artifact: WritableArtifact, verb: string, entityDecisions = false): string {
   if (artifact === "progress")
     return 'agentera state progress append --type fix --phase build --what "..." --intent "..." --format json';
   if (artifact === "decisions" && verb === "update")
-    return 'agentera state decisions update --number 1 --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."';
+    return entityDecisions
+      ? 'agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."'
+      : 'agentera state decisions update --number 1 --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."';
   if (artifact === "decisions" && verb === "amend")
-    return 'agentera state decisions amend --number 53 --choice "..." --reasoning "..." --confidence firm --dry-run --format json';
+    return entityDecisions
+      ? 'agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --choice "..." --dry-run --format json'
+      : 'agentera state decisions amend --number 53 --choice "..." --reasoning "..." --confidence firm --dry-run --format json';
   if (artifact === "decisions")
     return 'agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm';
   if (artifact === "health" && verb === "repair") return "agentera state health repair --number 14 --keep first --force --format json";

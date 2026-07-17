@@ -31,7 +31,7 @@ describe("Decision 94 entity authority", () => {
 
     expect(authority.authority.source).toBe("references/artifacts/state-storage-authority.yaml");
     expect(target).toMatchObject({
-      status: "progress_implemented_other_families_declared",
+      status: "progress_and_decisions_implemented_other_families_declared",
       decision: 94,
       public_schema: {
         canonical_identity_field: "id",
@@ -78,6 +78,7 @@ describe("Decision 94 entity authority", () => {
       },
       implementation_status: {
         progress: "implemented",
+        decisions: "implemented",
         remaining_families: "declared_not_implemented",
       },
     });
@@ -104,6 +105,20 @@ describe("Decision 94 entity authority", () => {
         cursor: "opaque_snapshot_cursor",
         scalar_truncation: "forbidden",
       },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "decision")).toMatchObject({
+      artifact: "decisions",
+      implementation: "implemented",
+      publication: "immutable",
+      retrieval: { exact: "agentera state decisions get --id ID --format json", cursor: "opaque_snapshot_cursor" },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "decision_satisfaction")).toMatchObject({
+      publication: "replace_owned_entity",
+      ownership: { fields: ["decision"], cardinality: "zero_or_one" },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "decision_revision")).toMatchObject({
+      publication: "immutable",
+      ownership: { fields: ["decision", "base_sha256"], cardinality: "zero_or_one" },
     });
     expect(
       keysNamed(
