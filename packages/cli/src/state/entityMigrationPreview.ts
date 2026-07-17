@@ -118,8 +118,80 @@ function relative(root: string, target: string): string {
   return path.relative(root, target).replaceAll(path.sep, "/");
 }
 
-function sameFile(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
-  return left.dev === right.dev && left.ino === right.ino;
+type MigrationPathType = "file" | "directory" | "symlink" | "other";
+type DescriptorPathResolver = (descriptor: number) => string | null;
+
+interface MigrationPathIdentity {
+  absolute: string;
+  dev: bigint;
+  ino: bigint;
+  type: MigrationPathType;
+}
+
+type MigrationPathSnapshot =
+  | { kind: "stable"; absolute: string; identities: MigrationPathIdentity[]; leaf: fs.BigIntStats }
+  | { kind: "missing" | "unsafe"; absolute: string; reason: "missing" | "symlink" | "type" | "unreadable" };
+
+function migrationPathType(stat: fs.BigIntStats): MigrationPathType {
+  if (stat.isFile()) return "file";
+  if (stat.isDirectory()) return "directory";
+  if (stat.isSymbolicLink()) return "symlink";
+  return "other";
+}
+
+function samePathIdentity(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
+  return left.dev === right.dev && left.ino === right.ino && migrationPathType(left) === migrationPathType(right);
+}
+
+function sameFileSnapshot(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
+  return left.isFile()
+    && right.isFile()
+    && samePathIdentity(left, right)
+    && left.size === right.size
+    && left.mtimeNs === right.mtimeNs
+    && left.ctimeNs === right.ctimeNs;
+}
+
+/** Migration-only path snapshot: bind every ancestor and the leaf without following symlinks. */
+function snapshotMigrationPath(root: string, relativePath: string, leafType: "file" | "directory"): MigrationPathSnapshot {
+  const targets = [root];
+  let absolute = root;
+  for (const segment of relativePath.split("/").filter(Boolean)) {
+    absolute = path.join(absolute, segment);
+    targets.push(absolute);
+  }
+  const identities: MigrationPathIdentity[] = [];
+  let leaf: fs.BigIntStats | undefined;
+  for (const [index, target] of targets.entries()) {
+    let stat: fs.BigIntStats;
+    try {
+      stat = fs.lstatSync(target, { bigint: true });
+    } catch (error) {
+      return {
+        kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe",
+        absolute: target,
+        reason: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unreadable",
+      };
+    }
+    const type = migrationPathType(stat);
+    if (type === "symlink") return { kind: "unsafe", absolute: target, reason: "symlink" };
+    const expected = index === targets.length - 1 ? leafType : "directory";
+    if (type !== expected) return { kind: "unsafe", absolute: target, reason: "type" };
+    identities.push({ absolute: target, dev: stat.dev, ino: stat.ino, type });
+    leaf = stat;
+  }
+  return { kind: "stable", absolute, identities, leaf: leaf as fs.BigIntStats };
+}
+
+function migrationPathIsStable(snapshot: Extract<MigrationPathSnapshot, { kind: "stable" }>): boolean {
+  return snapshot.identities.every((identity) => {
+    try {
+      const current = fs.lstatSync(identity.absolute, { bigint: true });
+      return current.dev === identity.dev && current.ino === identity.ino && migrationPathType(current) === identity.type;
+    } catch {
+      return false;
+    }
+  });
 }
 
 function containedBy(root: string, candidate: string): boolean {
@@ -127,54 +199,46 @@ function containedBy(root: string, candidate: string): boolean {
   return relativePath !== "" && !relativePath.startsWith(`..${path.sep}`) && relativePath !== ".." && !path.isAbsolute(relativePath);
 }
 
-/** Migration-only source seam: pin one project file to a verified descriptor. */
-function readMigrationSource(root: string, relativePath: string): SourceFile {
-  let absolute = root;
-  const segments = relativePath.split("/");
-  let initial: fs.BigIntStats | null = null;
-  for (const [index, segment] of segments.entries()) {
-    absolute = path.join(absolute, segment);
-    let stat: fs.BigIntStats;
-    try {
-      stat = fs.lstatSync(absolute, { bigint: true });
-    } catch (error) {
-      return { relative: relativePath, bytes: null, kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe" };
-    }
-    const leaf = index === segments.length - 1;
-    if (stat.isSymbolicLink() || (leaf ? !stat.isFile() : !stat.isDirectory())) {
-      return { relative: relativePath, bytes: null, kind: "unsafe" };
-    }
-    if (leaf) initial = stat;
+function resolveDescriptorPath(descriptor: number): string | null {
+  try {
+    return fs.realpathSync(`/proc/self/fd/${descriptor}`);
+  } catch {
+    return null;
   }
+}
+
+function descriptorMatchesPath(root: string, absolute: string, descriptorPath: string): boolean {
+  try {
+    return containedBy(root, descriptorPath) && fs.realpathSync(absolute) === descriptorPath;
+  } catch {
+    return false;
+  }
+}
+
+/** Migration-only source seam: pin one project file to a verified descriptor. */
+function readMigrationSource(root: string, relativePath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile {
+  const pathSnapshot = snapshotMigrationPath(root, relativePath, "file");
+  if (pathSnapshot.kind !== "stable") return { relative: relativePath, bytes: null, kind: pathSnapshot.kind };
   let descriptor: number | undefined;
   try {
     const noFollow = (fs.constants as Record<string, number>).O_NOFOLLOW ?? 0;
-    descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | noFollow);
+    descriptor = fs.openSync(pathSnapshot.absolute, fs.constants.O_RDONLY | noFollow);
     const opened = fs.fstatSync(descriptor, { bigint: true });
-    if (!initial || !opened.isFile() || !sameFile(initial, opened)) {
+    if (!opened.isFile() || !samePathIdentity(pathSnapshot.leaf, opened) || !migrationPathIsStable(pathSnapshot)) {
       return { relative: relativePath, bytes: null, kind: "unsafe" };
     }
-    const projectRealPath = fs.realpathSync(root);
-    const descriptorRealPath = fs.realpathSync(`/proc/self/fd/${descriptor}`);
-    const current = fs.lstatSync(absolute, { bigint: true });
-    const currentRealPath = fs.realpathSync(absolute);
-    if (
-      current.isSymbolicLink()
-      || !current.isFile()
-      || !sameFile(opened, current)
-      || descriptorRealPath !== currentRealPath
-      || !containedBy(projectRealPath, descriptorRealPath)
-    ) {
+    let descriptorRealPath: string | null = null;
+    try { descriptorRealPath = descriptorPathResolver(descriptor); } catch { /* Descriptor paths are optional strengthening. */ }
+    if (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath)) {
       return { relative: relativePath, bytes: null, kind: "unsafe" };
     }
     const bytes = fs.readFileSync(descriptor);
-    const after = fs.lstatSync(absolute, { bigint: true });
+    const after = fs.fstatSync(descriptor, { bigint: true });
     if (
-      after.isSymbolicLink()
-      || !after.isFile()
-      || !sameFile(opened, fs.fstatSync(descriptor, { bigint: true }))
-      || !sameFile(opened, after)
-      || fs.realpathSync(absolute) !== descriptorRealPath
+      !sameFileSnapshot(opened, after)
+      || BigInt(bytes.byteLength) !== opened.size
+      || !migrationPathIsStable(pathSnapshot)
+      || (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath))
     ) {
       return { relative: relativePath, bytes: null, kind: "unsafe" };
     }
@@ -188,57 +252,68 @@ function readMigrationSource(root: string, relativePath: string): SourceFile {
   }
 }
 
-function directoryFiles(root: string, relativeRoot: string, accept: (relativePath: string) => boolean): SourceFile[] {
+function directoryFiles(root: string, relativeRoot: string, accept: (relativePath: string) => boolean, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const absoluteRoot = path.join(root, relativeRoot);
-  const files: SourceFile[] = [];
-  const visit = (directory: string): void => {
-    let stat: fs.Stats;
-    try {
-      stat = fs.lstatSync(directory);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+  type Enumeration = { files: SourceFile[]; changed: string | null };
+  const inventoryPath = (directory: string): string => `${relative(root, directory).replace(/\/$/, "")}/`;
+  const visit = (directory: string, isRoot = false): Enumeration => {
+    const directorySnapshot = snapshotMigrationPath(root, relative(root, directory), "directory");
+    if (directorySnapshot.kind !== "stable") {
+      if (directorySnapshot.kind === "missing") return isRoot ? { files: [], changed: null } : { files: [], changed: inventoryPath(directory) };
+      if (path.resolve(directorySnapshot.absolute) !== path.resolve(directory)) return { files: [], changed: inventoryPath(directory) };
+      if (directorySnapshot.reason === "symlink") throw new Error(`inventory root '${directory}' is a symbolic link; replace it with a real directory inside project '${root}' and retry`);
+      if (directorySnapshot.reason === "type") throw new Error(`inventory root '${directory}' is not a directory; replace it with a real directory inside project '${root}' and retry`);
       throw new Error(`inventory root '${directory}' cannot be inspected inside project '${root}'; replace it with a readable real directory and retry`);
     }
-    if (stat.isSymbolicLink()) throw new Error(`inventory root '${directory}' is a symbolic link; replace it with a real directory inside project '${root}' and retry`);
-    if (!stat.isDirectory()) throw new Error(`inventory root '${directory}' is not a directory; replace it with a real directory inside project '${root}' and retry`);
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
     } catch {
       throw new Error(`inventory root '${directory}' cannot be read inside project '${root}'; replace it with a readable real directory and retry`);
     }
+    if (!migrationPathIsStable(directorySnapshot)) return { files: [], changed: inventoryPath(directory) };
+    const files: SourceFile[] = [];
     for (const entry of entries) {
       const absolute = path.join(directory, entry.name);
       const candidate = relative(root, absolute);
       if (accept(candidate)) {
-        files.push(readMigrationSource(root, candidate));
+        files.push(readMigrationSource(root, candidate, descriptorPathResolver));
       } else if (entry.isSymbolicLink()) {
         throw new Error(`inventory root '${absolute}' is a symbolic link; replace it with a real directory or file inside project '${root}' and retry`);
-      } else if (entry.isDirectory()) visit(absolute);
+      } else if (entry.isDirectory()) {
+        const nested = visit(absolute);
+        if (nested.changed) return nested;
+        files.push(...nested.files);
+      }
     }
+    if (!migrationPathIsStable(directorySnapshot)) return { files: [], changed: inventoryPath(directory) };
+    return { files, changed: null };
   };
-  visit(absoluteRoot);
-  return files;
+  const enumeration = visit(absoluteRoot, true);
+  return enumeration.changed ? [{ relative: enumeration.changed, bytes: null, kind: "unsafe" }] : enumeration.files;
 }
 
-function collectSources(root: string): SourceFile[] {
+function collectSources(root: string, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const exact = [
     "TODO.md", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
     ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml",
-  ].map((candidate) => readMigrationSource(root, candidate));
+  ].map((candidate) => readMigrationSource(root, candidate, descriptorPathResolver));
   const archives = directoryFiles(root, ".agentera/archive", (candidate) =>
     /^\.agentera\/archive\/(progress|decisions|health)\/.+/.test(candidate)
       || PLAN_ARCHIVE_SOURCE.test(candidate),
+    descriptorPathResolver,
   );
   const objectives = [".agentera/optimize", ".agentera/optimera"].flatMap((directory) =>
-    directoryFiles(root, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate)),
+    directoryFiles(root, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate), descriptorPathResolver),
   );
+  const collected = [...exact, ...archives, ...objectives];
   const missingRoots = [".agentera/archive/", ".agentera/optimize/", ".agentera/optimera/"]
     .filter((directory) => {
+      if (collected.some((source) => source.kind === "unsafe" && source.relative === directory)) return false;
       try { return !fs.lstatSync(path.join(root, directory)).isDirectory(); } catch { return true; }
     })
     .map((directory): SourceFile => ({ relative: directory, bytes: null, kind: "missing" }));
-  const byPath = new Map([...exact, ...archives, ...objectives, ...missingRoots].map((source) => [source.relative, source]));
+  const byPath = new Map([...collected, ...missingRoots].map((source) => [source.relative, source]));
   return [...byPath.values()].sort((a, b) => a.relative.localeCompare(b.relative));
 }
 
@@ -284,6 +359,22 @@ function recovery(project: string, pathName: string): string {
 
 function unsafeSourceMessage(pathName: string): string {
   return `source path '${pathName}' is a symbolic link, non-file, or unreadable; replace it with a readable regular file inside the project`;
+}
+
+function inventoryFailureObservations(files: SourceFile[], observations: Observation[]): void {
+  for (const source of files.filter((candidate) => candidate.kind === "unsafe" && candidate.relative.endsWith("/"))) {
+    observations.push({
+      key: `migration_inventory:${source.relative}`,
+      artifact: "state",
+      boundary: "migration_inventory",
+      path: source.relative,
+      provenance: "source_inventory",
+      record: null,
+      detail: "corrupt",
+      relationships: [],
+      message: `inventory directory '${source.relative}' changed while it was enumerated; no candidate names were accepted`,
+    });
+  }
 }
 
 function numberedObservations(root: string, sourceRoot: string, files: SourceFile[], observations: Observation[]): void {
@@ -573,13 +664,21 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
   }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
 }
 
-export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: { limit?: number; after?: string; sourceFingerprint?: string; previewDigest?: string } = {}): EntityMigrationPreview {
+export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: {
+  limit?: number;
+  after?: string;
+  sourceFingerprint?: string;
+  previewDigest?: string;
+  /** Test seam and optional platform strengthening; null means descriptor paths are unavailable. */
+  resolveDescriptorPath?: DescriptorPathResolver;
+} = {}): EntityMigrationPreview {
   const project = path.resolve(projectRoot);
   validateProjectRoot(project);
   const authority = authorityBinding(sourceRoot);
-  const files = collectSources(project);
+  const files = collectSources(project, options.resolveDescriptorPath ?? resolveDescriptorPath);
   const fingerprint = sourceFingerprint(files);
   const observations: Observation[] = [];
+  inventoryFailureObservations(files, observations);
   numberedObservations(project, sourceRoot, files, observations);
   decisionEvidence(sourceRoot, files, observations);
   planObservations(project, files, observations);

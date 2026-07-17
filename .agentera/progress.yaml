@@ -1,4 +1,41 @@
 cycles:
+  - number: 876
+    timestamp: 2026-07-17 02:46
+    type: fix
+    phase: build
+    what: Revalidated descriptor metadata and recursive path identities so migration
+      snapshots reject hard-link mutations and directory replacement without
+      requiring /proc.
+    inspiration: PLAN Task 19 final retry, Decision 94, and the blocking
+      source-snapshot audit.
+    discovered: A pinned descriptor still accepted same-inode byte changes because
+      dev/ino alone did not describe one read snapshot, while recursive readdir
+      published names before its directory identity was revalidated.
+    verified: "Focused migration/plan/objective/entity verification passed 9 files
+      and 162 tests; full CLI passed 203 files and 2,438 tests. Typecheck and
+      build passed. State validation reported 0 issues; capability contract
+      passed 2/2; compact checked 10 artifacts with 0 errors or changes.
+      Repeated pre-log previews and continuation pages were identical and
+      zero-write: 1,284 verified full, 55 projection-only, 90 summary-only, 17
+      corrupt, 66 unresolved relationships, 173 blockers, 1,446 logical
+      identities, 1,467 physical records, 21 mirrors, and 2,118 relationships;
+      source fingerprint
+      8ba44a3fa75757f976b4a85fefb374859d7bec96ccd3d82faddd6447a435c3eb and
+      preview digest
+      784254b97bd31c3b0632fa6e68acfc2ed9266d24cace53b7bc1fa951966ac965. Bound
+      pre-apply returned apply_not_implemented with mutation_performed false."
+    next: Preserve complete Task 19; keep Tasks 4-9 pending and gated, and do not
+      begin family cutover or apply.
+    context:
+      intent: Close only the remaining Task 19 source-snapshot stability and
+        portability defects.
+      constraints: No apply implementation or effects, family cutover, vision change,
+        unrelated repair, amend, push, publish, or tag.
+      unknowns: Task 13 still owns disposition of the 173 blocked logical identities;
+        this retry does not resolve them.
+      scope: Migration source snapshot metadata and ancestor checks, recursive
+        directory enumeration checks, focused regressions, and progress
+        evidence.
   - number: 875
     timestamp: 2026-07-17 02:13
     type: fix
@@ -341,35 +378,6 @@ cycles:
         transition is covered by deterministic recovery tests.
       scope: packages/cli/src/state/write/lock.ts; writer-lock crash fixture and
         lock/entity concurrency tests; progress cycle only.
-  - number: 866
-    timestamp: 2026-07-16 20:49
-    type: fix
-    phase: build
-    what: Hardened writer-lock initialization with atomic publication,
-      descriptor-pinned exact-owner reclamation, and actionable legacy-file
-      conflicts.
-    inspiration: Replanned Task 17 and the independent audit of commit 255d4c08.
-    discovered: Publishing a fully initialized private directory makes the owner
-      file immutable before canonical visibility; hard-link claims then permit
-      exact inspected-owner replacement without pathname cleanup of a successor.
-    verified: "packages/cli/test/state/write/lock.test.ts covered the paused
-      initialization window, legacy-file replacement, successor tokens,
-      inspected malformed owners, and ownerless/dead/live/reentrant locks.
-      Focused lock/entity/state-writer/CLI validation: 159 passed. Full CLI:
-      2,351 passed, 1 skipped. Typecheck, build, check validate state,
-      capability-contract validation, targeted lint, and compact check passed."
-    next: Task 3 may proceed with Task 17 complete; retain the recorded historical
-      state caveats without unrelated repair.
-    context:
-      intent: Close Task 17 by eliminating the audit-reproduced ownerless canonical
-        lock race while preserving writer durability and state semantics.
-      constraints: Kept the project-local lock, fsync durability, bounded timeout,
-        symlink boundary checks, idempotent release, and existing state-writer
-        API.
-      unknowns: None within Task 17; legacy regular-file locks intentionally fail with
-        a structured manual correction instead of unsafe automatic unlink.
-      scope: packages/cli/src/state/write/lock.ts plus adversarial lock,
-        entity-publication, and state-writer regression tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -439,6 +447,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 866 (2026-07-16): Hardened writer-lock initialization with
+      atomic publication, descriptor-pinned exact-owner reclamation, and
+      actionable legacy-file conflicts."
   - summary: "Cycle 865 (2026-07-16): Audit retry 2 made project writer-lock stale
       reclamation and release ownership-safe."
   - summary: "Cycle 864 (2026-07-16): Audit retry 1 fixed PLAN Task 2 entity
@@ -537,15 +548,18 @@ archive:
   - summary: "Cycle 827 (2026-07-15): Defined schema-owned verbosity authority in
       references/artifacts/verbosity-budget-authority.yaml with fail-closed
       classification."
-  - summary: "Cycle 826 (2026-07-15): Recorded post-plan closure Audit 34 after
-      preserving the completed immutable plan archive."
 omitted: true
-omitted_count: 111
+omitted_count: 112
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
