@@ -193,7 +193,12 @@ export function amendDecisionEntity(req: StateWriteRequest, options: Options = {
 }
 
 function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date)}\0${entity.id}`; }
-function snapshot(entities: DiscoveredEntity[]): string { return createHash("sha256").update(canonicalRecordJson(entities.map(({ id, record }) => ({ id, record })))).digest("hex"); }
+function snapshot(root: string, entities: DiscoveredEntity[]): string {
+  const inputs = entities
+    .map(({ id, artifact, boundary, record, path: entityPath }) => ({ id, artifact, boundary, path: relative(root, entityPath), record }))
+    .sort((left, right) => canonicalRecordJson(left).localeCompare(canonicalRecordJson(right)));
+  return createHash("sha256").update(canonicalRecordJson(inputs)).digest("hex");
+}
 function cursorSecret(root: string, authorityPath: string): Buffer { return createHash("sha256").update(path.resolve(root)).update("\0").update(fs.readFileSync(authorityPath)).digest(); }
 function encode(payload: JsonObject, root: string, authorityPath: string): string { const bytes = Buffer.from(canonicalRecordJson(payload)); return `${bytes.toString("base64url")}.${createHmac("sha256", cursorSecret(root, authorityPath)).update(bytes).digest("base64url")}`; }
 function decode(token: string, root: string, authorityPath: string): JsonObject {
@@ -210,7 +215,7 @@ export function listDecisionEntities(root: string, limit?: number, topic?: strin
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw failure("invalid_request", `decisions list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.");
   const all = decisionEntities(root, sourceRoot); let bases = all.filter((entity) => entity.boundary === BASE).sort((a, b) => String(b.record!.date).localeCompare(String(a.record!.date)) || a.id!.localeCompare(b.id!));
   if (topic) { const needle = topic.toLowerCase(); bases = bases.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
-  const snap = snapshot(bases); let start = 0;
+  const snap = snapshot(root, all); let start = 0;
   if (cursor) { const value = decode(cursor, root, declared.authorityPath); if (value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null)) throw failure("cursor_snapshot_unavailable", "decisions changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot."); const found = bases.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1; }
   let selected = bases.slice(start, start + effectiveLimit); let trimmed = false;
   const response = (): JsonObject => { const remaining = bases.length - start - selected.length; const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, topic: topic ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined; return { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining ? "degraded" : "ok", entries: selected.map((base) => compose(root, base, all)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next, retrieval: { continue: `agentera state decisions list --limit ${effectiveLimit} --cursor ${next} --format json`, get: "agentera state decisions get --id ID --format json" } } : {}) }; };

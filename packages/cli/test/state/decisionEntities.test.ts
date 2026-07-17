@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runStateGet } from "../../src/cli/commands/state/get.js";
@@ -100,6 +101,48 @@ describe("decision entity authority", () => {
     const first = listDecisionEntities(root, 1) as any; expect(first.entries).toHaveLength(1); expect(first.next_cursor).toBeTruthy();
     const second = listDecisionEntities(root, 1, undefined, first.next_cursor) as any; expect(second.entries).toHaveLength(1); expect(second.entries[0].id).not.toBe(first.entries[0].id);
     base(root, "dddddddddd", "D"); expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor)).toThrow(/changed after this cursor snapshot/);
+  });
+
+  it("binds cursors to every revision and satisfaction input while stable snapshots continue", () => {
+    const mutations: Array<[string, (root: string) => void, (root: string) => void]> = [
+      ["satisfaction add", () => {}, (root) => { updateDecisionSatisfactionEntity(request(root, "update", { id: "aaaaaaaaaa", satisfaction: { state: "open" } }), { id: "dddddddddd" }); }],
+      ["satisfaction mutate", (root) => { updateDecisionSatisfactionEntity(request(root, "update", { id: "aaaaaaaaaa", satisfaction: { state: "open" } }), { id: "dddddddddd" }); }, (root) => { const file = path.join(root, ".agentera/entities/decisions/decision_satisfaction/dddddddddd.yaml"); fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("state: open", "state: provisionally_satisfied\n  evidence: changed")); }],
+      ["satisfaction remove", (root) => { updateDecisionSatisfactionEntity(request(root, "update", { id: "aaaaaaaaaa", satisfaction: { state: "open" } }), { id: "dddddddddd" }); }, (root) => { fs.rmSync(path.join(root, ".agentera/entities/decisions/decision_satisfaction/dddddddddd.yaml")); }],
+      ["satisfaction ownership conflict", (root) => { updateDecisionSatisfactionEntity(request(root, "update", { id: "aaaaaaaaaa", satisfaction: { state: "open" } }), { id: "dddddddddd" }); }, (root) => { const dir = path.join(root, ".agentera/entities/decisions/decision_satisfaction"); fs.writeFileSync(path.join(dir, "eeeeeeeeee.yaml"), dumpYamlMapping({ id: "eeeeeeeeee", artifact: "decisions", record: { decision: "aaaaaaaaaa", state: "open" } })); }],
+      ["revision add", () => {}, (root) => { const hash = (getDecisionEntity(root, "aaaaaaaaaa") as any).entry.effective_sha256; amendDecisionEntity(request(root, "amend", { id: "aaaaaaaaaa", base_sha256: hash, choice: "added" }), { id: "dddddddddd" }); }],
+      ["revision mutate", addRevision, (root) => { const file = path.join(root, ".agentera/entities/decisions/decision_revision/dddddddddd.yaml"); fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("choice: revised", "choice: changed")); }],
+      ["revision remove", addRevision, (root) => { fs.rmSync(path.join(root, ".agentera/entities/decisions/decision_revision/dddddddddd.yaml")); }],
+      ["revision ownership conflict", addRevision, (root) => { const file = path.join(root, ".agentera/entities/decisions/decision_revision/dddddddddd.yaml"); const entity = YAML.parse(fs.readFileSync(file, "utf8")); entity.id = "eeeeeeeeee"; fs.writeFileSync(path.join(path.dirname(file), "eeeeeeeeee.yaml"), dumpYamlMapping(entity)); }],
+    ];
+    function addRevision(root: string): void { const hash = (getDecisionEntity(root, "aaaaaaaaaa") as any).entry.effective_sha256; amendDecisionEntity(request(root, "amend", { id: "aaaaaaaaaa", base_sha256: hash, choice: "revised" }), { id: "dddddddddd" }); }
+    for (const [label, arrange, mutate] of mutations) {
+      const root = project(); base(root, "aaaaaaaaaa", "A"); base(root, "bbbbbbbbbb", "B"); base(root, "cccccccccc", "C"); arrange(root);
+      const first = listDecisionEntities(root, 1) as any;
+      expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor), `${label} stable`).not.toThrow();
+      mutate(root);
+      expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor), label).toThrow(/changed after this cursor snapshot/);
+    }
+  });
+
+  it("validates canonical revision schema, authority paths, provenance, hashes, and relations", () => {
+    const invalid: Array<[string, Record<string, unknown>]> = [
+      ["base hash", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_revision", base_sha256: "bad", changes: { choice: "new" } }],
+      ["provenance", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_archive", base_sha256: "0".repeat(64), changes: { choice: "new" } }],
+      ["changes mapping", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_revision", base_sha256: "0".repeat(64), changes: ["choice"] }],
+      ["non-amendable path", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_revision", base_sha256: "0".repeat(64), changes: { unknown: "new" } }],
+      ["identity overlap", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_revision", base_sha256: "0".repeat(64), changes: { decision: "bbbbbbbbbb", choice: "new" } }],
+      ["temporal overlap", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_revision", base_sha256: "0".repeat(64), changes: { date: "2026-07-18", choice: "new" } }],
+      ["satisfaction overlap", { decision: "aaaaaaaaaa", date: "2026-07-17", provenance: "historical_revision", base_sha256: "0".repeat(64), changes: { satisfaction: { state: "open" }, choice: "new" } }],
+      ["relation", { decision: ["aaaaaaaaaa"], date: "2026-07-17", provenance: "historical_revision", base_sha256: "0".repeat(64), changes: { choice: "new" } }],
+    ];
+    for (const [label, record] of invalid) {
+      const root = project(); base(root); const dir = path.join(root, ".agentera/entities/decisions/decision_revision"); fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, "bbbbbbbbbb.yaml"), dumpYamlMapping({ id: "bbbbbbbbbb", artifact: "decisions", record }));
+      expect(validateEntityState(root).valid, label).toBe(false);
+    }
+    const root = project(); base(root); const hash = (getDecisionEntity(root, "aaaaaaaaaa") as any).entry.effective_sha256;
+    amendDecisionEntity(request(root, "amend", { id: "aaaaaaaaaa", base_sha256: hash, choice: "valid" }), { id: "bbbbbbbbbb" });
+    expect(validateEntityState(root)).toMatchObject({ valid: true, issues: [] });
   });
 
   it("fails effective reads and state validation on ambiguous satisfaction or revision ownership", () => {

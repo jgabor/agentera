@@ -6,6 +6,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
+import { decisionRevisionContract, decisionRevisionEntityViolations } from "./decisionRevision.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { acquireWriterLock } from "./write/lock.js";
@@ -204,6 +205,7 @@ function discoverFile(
   boundary: string,
   model: EntityAuthority,
   issues: EntityDiagnostic[],
+  sourceRoot?: string,
 ): DiscoveredEntity {
   const relativePath = relative(projectRoot, file);
   const filenameId = path.basename(file, path.extname(file));
@@ -294,6 +296,21 @@ function discoverFile(
       });
     }
   }
+  if (!malformed && boundary === "decision_revision" && record) {
+    const violations = decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot));
+    if (violations.length) {
+      malformed = true;
+      issues.push({
+        code: "malformed_entity",
+        path: relativePath,
+        id,
+        artifact,
+        boundary,
+        message: `entity '${relativePath}' has an invalid decision revision: ${violations.join("; ")}`,
+        recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared decision revision contract`),
+      });
+    }
+  }
   return { id, artifact, boundary, record, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
 }
 
@@ -332,7 +349,7 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string): Enti
           issues.push({ code: "malformed_entity", path: relative(root, file), message: `entity path '${relative(root, file)}' is not a canonical YAML file`, recovery: recovery(root, `remove '${relative(root, file)}' or replace it with <ten-lowercase-letter-id>.yaml`) });
           continue;
         }
-        entities.push(discoverFile(root, file, artifactEntry.name, boundaryEntry.name, model, issues));
+        entities.push(discoverFile(root, file, artifactEntry.name, boundaryEntry.name, model, issues, sourceRoot));
       }
     }
   }

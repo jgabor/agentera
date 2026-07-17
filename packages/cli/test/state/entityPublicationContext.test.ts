@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { publishEntity } from "../../src/state/entityStorage.js";
+import { appendDecisionEntity, updateDecisionSatisfactionEntity } from "../../src/state/decisionEntities.js";
 import { appendProgressEntity } from "../../src/state/progressEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
@@ -48,6 +49,19 @@ function request(root: string): StateWriteRequest {
     callerPayload: structuredClone(values),
     input: null,
   };
+}
+
+function decisionRequest(root: string, verb: "append" | "update", values: Record<string, unknown>): StateWriteRequest {
+  const spec = operationSpec("decisions", verb);
+  if (!spec) throw new Error(`decisions ${verb} spec missing`);
+  return { artifact: "decisions", spec, projectRoot: root, dryRun: false, force: false, values, callerPayload: structuredClone(values), input: null };
+}
+
+function decisionWithSatisfaction(root: string): { target: string; bytes: string } {
+  appendDecisionEntity(decisionRequest(root, "append", { date: "2026-07-17", question: "Q?", context: "C", alternatives: { chosen: "A" }, choice: "A", reasoning: "R", confidence: "firm" }), { id: ENTITY_ID });
+  updateDecisionSatisfactionEntity(decisionRequest(root, "update", { id: ENTITY_ID, satisfaction: { state: "open" } }), { id: "bbbbbbbbbb" });
+  const target = path.join(root, ".agentera/entities/decisions/decision_satisfaction/bbbbbbbbbb.yaml");
+  return { target, bytes: fs.readFileSync(target, "utf8") };
 }
 
 function publishProgress(root: string): void {
@@ -200,4 +214,52 @@ describe("validated entity publication context", () => {
     }
     expect(fs.existsSync(path.join(root, `.agentera/entities/health/health_audit/${ENTITY_ID}.yaml`))).toBe(true);
   });
+
+  for (const boundary of ["rename", "directory-sync"] as const) {
+    function installReplacementMutation(target: string, mutate: () => void): () => boolean {
+      let mutated = false;
+      const once = (): void => { if (!mutated) { mutated = true; mutate(); } };
+      if (boundary === "rename") {
+        const original = fs.renameSync.bind(fs);
+        vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
+          original(source, destination);
+          if (String(destination).endsWith("/bbbbbbbbbb.yaml") && String(source).endsWith(".tmp")) once();
+        });
+      } else {
+        const original = fs.fsyncSync.bind(fs);
+        vi.spyOn(fs, "fsyncSync").mockImplementation((descriptor) => {
+          original(descriptor);
+          let descriptorPath = "";
+          try { descriptorPath = fs.readlinkSync(`/proc/self/fd/${descriptor}`); } catch { /* file descriptor */ }
+          if (descriptorPath.endsWith("/decision_satisfaction") && fs.existsSync(target)) once();
+        });
+      }
+      return () => mutated;
+    }
+
+    it(`restores exact satisfaction bytes after a root change at replacement ${boundary} without touching the successor`, () => {
+      const parent = project(); const root = path.join(parent, "project"); const held = path.join(parent, "held"); const successor = path.join(parent, "successor");
+      fs.mkdirSync(root); fs.mkdirSync(successor); activate(root); activate(successor);
+      const prior = decisionWithSatisfaction(root); const successorTarget = path.join(successor, path.relative(root, prior.target)); const successorBytes = "successor-owned-by-another-root\n";
+      fs.mkdirSync(path.dirname(successorTarget), { recursive: true }); fs.writeFileSync(successorTarget, successorBytes);
+      const originalRename = fs.renameSync.bind(fs);
+      const didMutate = installReplacementMutation(prior.target, () => { originalRename(root, held); originalRename(successor, root); });
+      expect(() => updateDecisionSatisfactionEntity(decisionRequest(root, "update", { id: ENTITY_ID, satisfaction: { state: "provisionally_satisfied", evidence: "new" } }))).toThrow(/project root .* changed|publication context/i);
+      expect(didMutate()).toBe(true);
+      expect(fs.readFileSync(path.join(held, path.relative(root, prior.target)), "utf8")).toBe(prior.bytes);
+      expect(fs.readFileSync(path.join(root, path.relative(successor, successorTarget)), "utf8")).toBe(successorBytes);
+      expect(namesBelow(held).filter((name) => name.includes(".previous") || name.includes(".tmp"))).toEqual([]);
+    });
+
+    for (const markerChange of ["remove", "replace"] as const) {
+      it(`${markerChange}s the marker at replacement ${boundary} and restores exact satisfaction bytes without residue`, () => {
+        const root = project(); activate(root); const marker = path.join(root, ".agentera/state-mode.yaml"); const prior = decisionWithSatisfaction(root);
+        const didMutate = installReplacementMutation(prior.target, () => { fs.rmSync(marker); if (markerChange === "replace") fs.writeFileSync(marker, VALID_MARKER); });
+        expect(() => updateDecisionSatisfactionEntity(decisionRequest(root, "update", { id: ENTITY_ID, satisfaction: { state: "provisionally_satisfied", evidence: "new" } }))).toThrow(/state mode marker .* changed.*conflict/i);
+        expect(didMutate()).toBe(true);
+        expect(fs.readFileSync(prior.target, "utf8")).toBe(prior.bytes);
+        expect(namesBelow(root).filter((name) => name.includes(".previous") || name.includes(".tmp"))).toEqual([]);
+      });
+    }
+  }
 });

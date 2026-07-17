@@ -309,6 +309,8 @@ export class EntityPublicationContext {
     let targetFd: number | undefined;
     let stageFd: number | undefined;
     let stageName: string | undefined;
+    let backupName: string | undefined;
+    let replacementVisible = false;
     try {
       let parentFd = this.rootFd;
       for (const name of segments.slice(0, -1)) {
@@ -322,19 +324,42 @@ export class EntityPublicationContext {
       this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd });
       if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes)))
         throw new Error(`entity '${relativeTarget}' changed before replacement; preserve both changes and retry explicitly`);
+      backupName = `.${targetName}.${process.pid}.${randomUUID()}.previous`;
+      fs.linkSync(fdPath(directoryFd, targetName), fdPath(directoryFd, backupName));
+      if (!openMatches(directoryFd, backupName, targetFd, FILE_FLAGS))
+        throw new Error(`entity '${relativeTarget}' prior value could not be pinned for replacement`);
       stageName = `.${targetName}.${process.pid}.${randomUUID()}.tmp`;
       stageFd = fs.openSync(fdPath(directoryFd, stageName), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
       fs.writeFileSync(stageFd, bytes, "utf8");
       fs.fsyncSync(stageFd);
       this.assertBoundary(directories, { name: stageName, fd: stageFd }, { name: targetName, fd: targetFd });
       fs.renameSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName));
+      replacementVisible = true;
       stageName = undefined;
       syncDirectory(directoryFd);
       this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd });
+      this.removeOwnedFile(directoryFd, backupName, targetFd);
+      backupName = undefined;
+    } catch (error) {
+      const directoryFd = directories.at(-1)?.fd;
+      if (replacementVisible && directoryFd !== undefined && stageFd !== undefined && targetFd !== undefined) {
+        const ownsReplacement = openMatches(directoryFd, segments.at(-1)!, stageFd, FILE_FLAGS);
+        const ownsPrior = backupName !== undefined && openMatches(directoryFd, backupName, targetFd, FILE_FLAGS);
+        if (ownsReplacement && ownsPrior) {
+          fs.renameSync(fdPath(directoryFd, backupName!), fdPath(directoryFd, segments.at(-1)!));
+          backupName = undefined;
+          syncDirectory(directoryFd);
+        } else if (ownsReplacement) {
+          throw new Error(`entity '${relativeTarget}' replacement failed and its descriptor-pinned prior value could not be restored`, { cause: error });
+        }
+      }
+      throw error;
     } finally {
       const directoryFd = directories.at(-1)?.fd;
       if (directoryFd !== undefined && stageFd !== undefined && stageName !== undefined)
         this.removeOwnedFile(directoryFd, stageName, stageFd);
+      if (directoryFd !== undefined && targetFd !== undefined && backupName !== undefined)
+        this.removeOwnedFile(directoryFd, backupName, targetFd);
       if (stageFd !== undefined) fs.closeSync(stageFd);
       if (targetFd !== undefined) fs.closeSync(targetFd);
       for (const entry of directories.reverse()) fs.closeSync(entry.fd);

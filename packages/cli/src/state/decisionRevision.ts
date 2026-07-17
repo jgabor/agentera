@@ -347,42 +347,58 @@ export function decisionRevisionViolations(
       continue;
     }
     value.forEach((revision, index) => {
-      if (!isRecord(revision)) {
-        violations.push(`${stableId}[${index}] must be a mapping of amendable fields and revision provenance`);
-        return;
-      }
-      for (const key of Object.keys(revision)) {
-        if (!allowed.has(key)) {
-          violations.push(`${stableId}[${index}] carries '${key}' which is not an amendable content path or revision meta key`);
-        }
-      }
-      const provenance = revision.provenance;
-      if (provenance !== undefined) {
-        if (typeof provenance !== "string") {
-          violations.push(`${stableId}[${index}].provenance must be a string`);
-        } else if (provenance === FORBIDDEN_REVISION_PROVENANCE) {
-          violations.push(`${stableId}[${index}].provenance must never claim historical_archive provenance`);
-        } else if (!REVISION_PROVENANCE_VALUES.includes(provenance as RevisionProvenanceValue)) {
-          violations.push(
-            `${stableId}[${index}].provenance '${provenance}' is not one of: ${REVISION_PROVENANCE_VALUES.join(", ")}`,
-          );
-        }
-      }
-      const baseSha = revision.base_sha256;
-      if (baseSha !== undefined && (typeof baseSha !== "string" || !/^[0-9a-f]{64}$/.test(baseSha))) {
-        violations.push(`${stableId}[${index}].base_sha256 must be a 64-character sha256 hex digest`);
-      }
-      const date = revision.date;
-      if (date !== undefined && (typeof date !== "string" || date.length === 0)) {
-        violations.push(`${stableId}[${index}].date must be a non-empty string`);
-      }
-      // A revision must amend at least one content field; provenance alone is not a revision.
-      const amendedFields = Object.keys(revision).filter((key) => amendable.has(key));
-      if (amendedFields.length === 0) {
-        violations.push(`${stableId}[${index}] must amend at least one content field (${contract.amendablePaths.join(", ")})`);
-      }
+      violations.push(...decisionRevisionRecordViolations(revision, `${stableId}[${index}]`, contract, allowed, amendable));
     });
   }
+  return violations;
+}
+
+function decisionRevisionRecordViolations(
+  revision: unknown,
+  label: string,
+  contract: DecisionRevisionContract,
+  allowed = new Set([...REVISION_META_KEYS, ...contract.amendablePaths]),
+  amendable = new Set(contract.amendablePaths),
+): string[] {
+  if (!isRecord(revision)) return [`${label} must be a mapping of amendable fields and revision provenance`];
+  const violations: string[] = [];
+  for (const key of Object.keys(revision)) {
+    if (!allowed.has(key)) violations.push(`${label} carries '${key}' which is not an amendable content path or revision meta key`);
+  }
+  const provenance = revision.provenance;
+  if (provenance !== undefined) {
+    if (typeof provenance !== "string") violations.push(`${label}.provenance must be a string`);
+    else if (provenance === FORBIDDEN_REVISION_PROVENANCE) violations.push(`${label}.provenance must never claim historical_archive provenance`);
+    else if (!REVISION_PROVENANCE_VALUES.includes(provenance as RevisionProvenanceValue))
+      violations.push(`${label}.provenance '${provenance}' is not one of: ${REVISION_PROVENANCE_VALUES.join(", ")}`);
+  }
+  const baseSha = revision.base_sha256;
+  if (baseSha !== undefined && (typeof baseSha !== "string" || !/^[0-9a-f]{64}$/.test(baseSha)))
+    violations.push(`${label}.base_sha256 must be a 64-character sha256 hex digest`);
+  const date = revision.date;
+  if (date !== undefined && (typeof date !== "string" || date.length === 0))
+    violations.push(`${label}.date must be a non-empty string`);
+  if (!Object.keys(revision).some((key) => amendable.has(key)))
+    violations.push(`${label} must amend at least one content field (${contract.amendablePaths.join(", ")})`);
+  return violations;
+}
+
+/** Validate one canonical entity revision through the same revision contract as legacy revisions. */
+export function decisionRevisionEntityViolations(
+  record: JsonObject,
+  contract: DecisionRevisionContract = decisionRevisionContract(),
+): string[] {
+  if (!isRecord(record.changes)) return ["decision revision changes must be a mapping of amendable fields"];
+  const amendable = new Set(contract.amendablePaths);
+  const violations = Object.keys(record.changes)
+    .filter((key) => !amendable.has(key))
+    .map((key) => `decision revision changes carries '${key}' which is not an amendable content path`);
+  violations.push(...decisionRevisionRecordViolations({
+    ...record.changes,
+    date: record.date,
+    provenance: record.provenance,
+    base_sha256: record.base_sha256,
+  }, "decision revision", contract));
   return violations;
 }
 

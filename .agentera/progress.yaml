@@ -1,4 +1,27 @@
 cycles:
+  - number: 882
+    timestamp: 2026-07-17 05:36
+    type: fix
+    phase: build
+    what: Hardened decision cursor snapshots, canonical revision validation, and
+      satisfaction replacement rollback.
+    inspiration: PLAN Task5 retry audit.
+    discovered: The decision cursor hashed only base records, whole-state validation
+      stopped at generic entity shape, and replacement had no descriptor-pinned
+      rollback after rename.
+    verified: "Focused Task5/Git/legacy/entity tests: 11 files, 230 tests passed.
+      Full CLI: 207 files, 2489 tests passed. Typecheck and build passed. State
+      validation, discuss capability, capability contract, and compact passed."
+    next: Keep Task5 complete and proceed only when explicitly asked; Task6 remains
+      pending.
+    context:
+      intent: Close only the three audited Task5 integrity defects without reopening
+        the family cutover.
+      constraints: Decision family only; no apply, global cutover, other family,
+        amend, push, publish, or vision changes.
+      unknowns: None.
+      scope: Decision entity retrieval and validation, shared entity replacement, and
+        proportional regression tests.
   - number: 881
     timestamp: 2026-07-17 05:07
     type: feat
@@ -278,37 +301,6 @@ cycles:
         identities.
       scope: Entity migration preview, CLI help, state-storage authority, focused
         tests, and this progress cycle.
-  - number: 872
-    timestamp: 2026-07-17 00:29
-    type: fix
-    phase: build
-    what: "Fixed Task 3 migration preview audit defects: keyed decision revisions,
-      fail-closed project roots, mirror/duplicate accounting, advancing bounded
-      recovery, complete text/help, and migration-authority binding."
-    inspiration: Independent audit retry 1 for PLAN Task 3 and Decision 94
-      state-storage authority.
-    discovered: The keyed decision revision authority currently contains zero
-      repository records, so adding correct revision inventory changed no final
-      repository count. Cycle 871's 125 unresolved relationships was a
-      pre-closeout snapshot; the reproducible implementation preview has 66.
-    verified: Focused entity/migration tests passed 7 files and 72 tests. Full CLI
-      passed 203 files and 2,378 tests. Typecheck and build passed. check
-      validate state reported 0 issues; capability-contract passed 2/2; check
-      compact passed 10 artifacts with 0 errors. The implementation preview
-      reproduced 1,279 verified, 55 projection-only, 90 summary-only, 17
-      corrupt, 66 unresolved relationships, 173 blocked, 1,441 logical entries,
-      1,462 physical records, and 21 mirrors.
-    next: Keep Task 3 complete and Task 4 pending. Do not implement durable apply or
-      begin any family cutover in this retry.
-    context:
-      intent: Make the read-only entity migration inventory complete, recoverable, and
-        approval-bound without implementing apply or cutting over a family.
-      constraints: No apply effects, durable mapping, family cutover, vision change,
-        release, push, publish, amend, or unrelated repair.
-      unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical
-        identities; this retry does not resolve them.
-      scope: packages/cli entity migration preview, CLI text/help, state-storage
-        authority, focused tests, and this progress cycle.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -378,6 +370,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 872 (2026-07-17): Fixed Task 3 migration preview audit defects:
+      keyed decision revisions, fail-closed project roots, mirror/duplicate
+      accounting,..."
   - summary: "Cycle 871 (2026-07-16): Added an explicit read-only entity-migration
       preview under agentera state migrate entities. It inventories all
       declared..."
@@ -481,15 +476,18 @@ archive:
   - summary: "Cycle 833 (2026-07-15): Publish bounded complete evidence as
       source-family shards plus a content-addressable derived signal tier with
       atomic..."
-  - summary: "Cycle 832 (2026-07-15): Define and verify the authoritative
-      evidence-tier contract"
 omitted: true
-omitted_count: 117
+omitted_count: 118
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
