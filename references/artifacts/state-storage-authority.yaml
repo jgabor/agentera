@@ -267,6 +267,13 @@ entity_target:
         required_fields: [header, what, why, scope]
         required_paths: [header.title, header.created, header.status]
         forbidden_fields: [id, artifact, stable_id, plan_id, tasks, previous_plan_archived]
+        field_shapes:
+          scope:
+            type: mapping
+            required_fields:
+              included: string_list
+              excluded: string_list
+            additional_fields: allowed
       retrieval:
         exact: agentera state plan get --id ID --format json
         list: agentera state plan list [--limit N] [--cursor TOKEN] --format json

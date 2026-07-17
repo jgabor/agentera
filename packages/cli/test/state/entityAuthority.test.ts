@@ -153,6 +153,16 @@ describe("Decision 94 entity authority", () => {
         scalar_truncation: "forbidden",
       },
     });
+    expect(target.entities.find((entity: any) => entity.boundary === "plan").record).toMatchObject({
+      required_fields: expect.arrayContaining(["scope"]),
+      field_shapes: {
+        scope: {
+          type: "mapping",
+          required_fields: { included: "string_list", excluded: "string_list" },
+          additional_fields: "allowed",
+        },
+      },
+    });
     expect(
       keysNamed(
         { entities: target.entities, relationships: target.relationships, views: target.views },

@@ -199,6 +199,7 @@ tasks:
     name: Apply the explicit repository cutover
     depends_on:
       - "13"
+      - "22"
     status: pending
     acceptance:
       - GIVEN an approved blocker-free preview on the selected integration checkout WHEN apply runs THEN entity authority and the migration record replace legacy authority.
@@ -287,6 +288,15 @@ tasks:
       - GIVEN retired-token findings and approved exceptions WHEN the active protocol scan runs THEN findings and exact canonical contexts are consumed one-to-one and duplicate, added, moved, or changed occurrences fail.
       - GIVEN registry-owned and separately generated bundle outputs WHEN inventory is checked THEN every shipped file is classified exactly once and any generated-only addition fails until explicitly classified.
       - GIVEN source and bundled active surfaces WHEN scanned THEN no active retired identity or selector is hidden by an exception and source/generated occurrence parity remains exact.
+  - number: 22
+    name: Enforce canonical plan scope shape
+    status: complete
+    depends_on:
+      - "13"
+    acceptance:
+      - GIVEN a canonical plan entity WHEN scope is validated THEN it is a mapping with included and excluded string lists.
+      - GIVEN malformed nonempty legacy scope WHEN preview or apply runs THEN the shared validator blocks before approval or effects rather than coercing or dropping content.
+      - GIVEN normalized absent scope WHEN migrated THEN explicit empty included and excluded lists plus normalization provenance remain valid across preview, apply, resume, and ordinary state validation.
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.

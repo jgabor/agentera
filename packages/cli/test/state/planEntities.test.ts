@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
-import { validateEntityState } from "../../src/state/entityStorage.js";
+import { canonicalEntityRecordViolations, validateEntityState } from "../../src/state/entityStorage.js";
 import { createPlanEntities } from "../../src/state/planEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
 import { executeStateWrite } from "../../src/state/write/transaction.js";
@@ -73,6 +73,33 @@ describe("plan and task entity authority", () => {
     expect(created.record.header.id).toBeUndefined(); expect(created.tasks[0].record.number).toBeUndefined();
     expect(fs.existsSync(path.join(root, ".agentera/plan.yaml"))).toBe(false);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it("applies the authority-backed plan scope shape at direct and whole-state boundaries", () => {
+    const base = plan("scope parity"); delete base.tasks;
+    for (const scope of [{ included: [], excluded: [] }, { included: ["plan"], excluded: ["release"], deferred: [] }]) {
+      expect(canonicalEntityRecordViolations("plan", { ...base, scope })).toEqual([]);
+    }
+    for (const [scope, message] of [
+      ["plan", "scope must be a mapping"],
+      [["plan"], "scope must be a mapping"],
+      [{ included: [] }, "scope.excluded is required"],
+      [{ included: "plan", excluded: [] }, "scope.included must be a list of strings"],
+      [{ included: [], excluded: [2] }, "scope.excluded must be a list of strings"],
+    ] as Array<[unknown, string]>) {
+      expect(canonicalEntityRecordViolations("plan", { ...base, scope } as any)).toContain(message);
+    }
+
+    const root = project(); const created = create(root, "malformed scope state");
+    const target = path.join(root, `.agentera/entities/plan/plan/${created.id}.yaml`);
+    const entity = loadYamlMapping(fs.readFileSync(target, "utf8")); (entity.record as Record<string, unknown>).scope = { included: ["plan"] };
+    fs.writeFileSync(target, dumpYamlMapping(entity));
+    const validation = validateEntityState(root);
+    expect(validation.valid).toBe(false);
+    expect(validation.issues).toEqual(expect.arrayContaining([expect.objectContaining({ boundary: "plan", message: expect.stringContaining("scope.excluded is required") })]));
+    const checked = capture(root, ["check", "validate", "state", "--format", "json"]);
+    expect(checked.rc).toBe(1);
+    expect(JSON.parse(checked.out).issues).toEqual(expect.arrayContaining([expect.objectContaining({ boundary: "plan", message: expect.stringContaining("scope.excluded is required") })]));
   });
 
   it("runs append, update, status, evaluation, lifecycle, and archive by entity selectors", () => {

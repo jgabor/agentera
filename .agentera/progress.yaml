@@ -1,4 +1,28 @@
 cycles:
+  - number: 907
+    timestamp: 2026-07-18 01:53
+    type: fix
+    phase: build
+    what: Enforced authority-backed canonical plan scope shape validation across
+      migration and entity-state boundaries.
+    inspiration: Plan Task22 and its Task14 dependency gate.
+    discovered: The read-only migration preview now blocks two historical plan
+      archives whose nonempty scope mappings omit required canonical lists.
+    verified: 31 focused tests and the full 2,632-test CLI suite passed; typecheck,
+      build, state validation, 12 capability validations, capability contract,
+      and compact passed. Preview remained read-only with zero effects and two
+      blockers.
+    next: Audit the two newly exposed historical plan-scope blockers before Task14
+      apply; do not generate final approval yet.
+    context:
+      intent: Complete replanned Task22 without applying the entity migration or
+        generating approval.
+      constraints: Canonical plan scope validation only; no Task15, version,
+        changelog, vision, apply, approval, push, or publish.
+      unknowns: Whether audit will repair or preserve the two malformed historical
+        archives.
+      scope: Entity authority, shared entity record validation, migration adapter
+        tests, entity validation tests, plan/progress state.
   - number: 906
     timestamp: 2026-07-18 01:06
     type: fix
@@ -231,28 +255,6 @@ cycles:
       intent: Complete plan Task 12 without implementing readiness recovery, live
         apply, or release finalization.
       constraints: Tasks 13 through 15 remain out of scope.
-  - number: 897
-    timestamp: 2026-07-17 15:56
-    type: fix
-    phase: build
-    what: Fixed entity-mode generic query dispatch to reject every schema-derived
-      converted-family alias before legacy aggregate reads while preserving
-      marker-absent aliases.
-    inspiration: Retry 2/2 final Task11 alias requirements.
-    discovered: The partial manual redirect omitted schema-admitted aliases and also
-      rejected legacy-mode aliases before mode detection.
-    verified: "Focused: 2 files, 17 tests passed. Full: 213 files, 2579 tests
-      passed. Typecheck, build, state validation, build capability, capability
-      contract, and compact passed."
-    next: Task 11 is complete. Task 12 remains pending; do not begin it in this
-      cycle.
-    context:
-      intent: Close only the final Task11 query alias dispatch leak.
-      constraints: Query alias dispatch only; no Task12 work, live apply, manual YAML
-        edits, vision changes, amend, push, publish, or tag.
-      unknowns: none
-      scope: Generic query alias matching, entity-mode rejection, and proportional
-        query regression tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -322,6 +324,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 897 (2026-07-17): Fixed entity-mode generic query dispatch to
+      reject every schema-derived converted-family alias before legacy aggregate
+      reads..."
   - summary: "Cycle 896 (2026-07-17): Corrected audited Task11 entity query,
       durability, migration binding, pagination, error, and identity
       boundaries."
@@ -416,16 +421,18 @@ archive:
       mapping: Task 5 now points to substantive Cycle..."
   - summary: "Cycle 858 (2026-07-16): Completed the Plan Task 5 retry closeout:
       corrected the remaining current contract vocabulary to use..."
-  - summary: "Cycle 857 (2026-07-16): Retried Plan Task 5 final synchronization:
-      canonicalized all shipped capability descriptors and current startup
-      guidance,..."
 omitted: true
-omitted_count: 142
+omitted_count: 143
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

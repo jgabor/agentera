@@ -24,9 +24,16 @@ interface EntityDefinition {
     requiredPaths: string[];
     forbiddenFields: string[];
     timestampFormat?: string;
+    fieldShapes: Record<string, FieldShape>;
   };
   ownership?: { fields: string[]; cardinality: string };
   baseline?: { field: string; value: string; cardinality: string };
+}
+
+interface FieldShape {
+  type: "mapping";
+  requiredFields: Record<string, "string_list">;
+  additionalFields: "allowed" | "forbidden";
 }
 
 interface RelationshipDefinition {
@@ -165,6 +172,21 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
 }
 
+function fieldShapes(value: unknown, authorityPath: string): Record<string, FieldShape> {
+  if (value === undefined) return {};
+  if (!mapping(value)) throw new Error(`invalid entity field_shapes declaration in '${authorityPath}'`);
+  return Object.fromEntries(Object.entries(value).map(([field, raw]) => {
+    if (!mapping(raw) || raw.type !== "mapping" || !mapping(raw.required_fields) || !["allowed", "forbidden"].includes(String(raw.additional_fields))) {
+      throw new Error(`invalid entity field_shapes.${field} declaration in '${authorityPath}'`);
+    }
+    const requiredFields = Object.fromEntries(Object.entries(raw.required_fields).map(([name, type]) => {
+      if (type !== "string_list") throw new Error(`invalid entity field_shapes.${field}.required_fields.${name} declaration in '${authorityPath}'`);
+      return [name, type];
+    })) as Record<string, "string_list">;
+    return [field, { type: "mapping", requiredFields, additionalFields: raw.additional_fields as "allowed" | "forbidden" }];
+  }));
+}
+
 function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   const authorityPath = path.join(sourceRoot, "references", "artifacts", "state-storage-authority.yaml");
   const document = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
@@ -186,6 +208,7 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
         requiredFields: strings(record.required_fields),
         requiredPaths: strings(record.required_paths),
         forbiddenFields: strings(record.forbidden_fields),
+        fieldShapes: fieldShapes(record.field_shapes, authorityPath),
         ...(typeof record.timestamp_format === "string" ? { timestampFormat: record.timestamp_format } : {}),
       } } : {}),
       ...(ownership ? { ownership: {
@@ -251,10 +274,23 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
   });
   const forbidden = [...new Set([...definition.record.forbiddenFields, ...model.forbiddenAliases])]
     .filter((field) => record[field] !== undefined);
+  const shapeViolations = Object.entries(definition.record.fieldShapes).flatMap(([field, shape]) => {
+    const value = record[field];
+    if (!mapping(value)) return [`${field} must be a mapping`];
+    const required = Object.entries(shape.requiredFields).flatMap(([name, type]) => {
+      if (!(name in value)) return [`${field}.${name} is required`];
+      if (type === "string_list" && (!Array.isArray(value[name]) || !value[name].every((item) => typeof item === "string"))) return [`${field}.${name} must be a list of strings`];
+      return [];
+    });
+    if (shape.additionalFields === "allowed") return required;
+    const extras = Object.keys(value).filter((name) => !(name in shape.requiredFields));
+    return [...required, ...extras.map((name) => `${field}.${name} is not allowed`)];
+  });
   return [
     ...missing.map((field) => `${field} is required by the canonical ${boundary} record contract`),
     ...missingPaths.map((field) => `${field} is required by the canonical ${boundary} record contract`),
     ...forbidden.map((field) => `${field} is forbidden by the canonical entity authority`),
+    ...shapeViolations,
   ];
 }
 
@@ -390,15 +426,9 @@ function discoverFile(
     }
   }
   if (!malformed && owner?.record && record) {
-    const missing = owner.record.requiredFields.filter((field) => record[field] === undefined);
-    const missingPaths = owner.record.requiredPaths.filter((field) => {
-      let current: unknown = record;
-      for (const part of field.split(".")) current = mapping(current) ? current[part] : undefined;
-      return typeof current !== "string" || current.length === 0;
-    });
-    const forbidden = [...new Set([...owner.record.forbiddenFields, ...model.forbiddenAliases])].filter((field) => record[field] !== undefined);
+    const violations = canonicalEntityRecordViolationsAgainstModel(boundary, record, model);
     const timestampInvalid = owner.record.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""));
-    if (missing.length || missingPaths.length || forbidden.length || timestampInvalid) {
+    if (violations.length || timestampInvalid) {
       malformed = true;
       issues.push({
         code: "malformed_entity",
@@ -406,7 +436,7 @@ function discoverFile(
         id,
         artifact,
         boundary,
-        message: `entity '${relativePath}' violates the authority-declared '${boundary}' record contract`,
+        message: `entity '${relativePath}' violates the authority-declared '${boundary}' record contract: ${[...violations, ...(timestampInvalid ? ["timestamp must use YYYY-MM-DD HH:MM"] : [])].join("; ")}`,
         recovery: recovery(projectRoot, `repair record fields in '${relativePath}' to match the state storage authority`),
       });
     }

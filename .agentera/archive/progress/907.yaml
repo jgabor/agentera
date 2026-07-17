@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 907
+record:
+  number: 907
+  timestamp: 2026-07-18 01:53
+  type: fix
+  phase: build
+  what: Enforced authority-backed canonical plan scope shape validation across migration and entity-state boundaries.
+  inspiration: Plan Task22 and its Task14 dependency gate.
+  discovered: The read-only migration preview now blocks two historical plan archives whose nonempty scope mappings omit required canonical lists.
+  verified: 31 focused tests and the full 2,632-test CLI suite passed; typecheck, build, state validation, 12 capability validations, capability contract, and compact passed. Preview remained read-only with zero effects and two blockers.
+  next: Audit the two newly exposed historical plan-scope blockers before Task14 apply; do not generate final approval yet.
+  context:
+    intent: Complete replanned Task22 without applying the entity migration or generating approval.
+    constraints: Canonical plan scope validation only; no Task15, version, changelog, vision, apply, approval, push, or publish.
+    unknowns: Whether audit will repair or preserve the two malformed historical archives.
+    scope: Entity authority, shared entity record validation, migration adapter tests, entity validation tests, plan/progress state.
+record_sha256: 7f3c775b3903af89feeec84db6b8e2545b77ef3186576a1aa0270ee3430baf72

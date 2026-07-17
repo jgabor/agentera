@@ -302,7 +302,7 @@ describe("entity discovery and publication", () => {
 });
 
 describe("whole-state entity validation", () => {
-  const planRecord = { header: { title: "Plan", created: "2026-07-17", status: "open" }, what: "Validate `.agentera/entities`.", why: "Relationships must resolve.", scope: {} };
+  const planRecord = { header: { title: "Plan", created: "2026-07-17", status: "open" }, what: "Validate `.agentera/entities`.", why: "Relationships must resolve.", scope: { included: [], excluded: [] } };
   const taskRecord = (plan: string) => ({ plan, name: "Validate", status: "pending", depends_on: [], acceptance: [] });
   it("reports duplicate IDs, invalid artifacts, unresolved links, and conflicting ownership with recovery", () => {
     const root = project();
