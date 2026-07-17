@@ -1,0 +1,64 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 63
+record:
+  number: 63
+  date: 2026-05-24
+  question: How should Agentera add Cursor as a first-class runtime in v1?
+  context: Cursor IDE and CLI research against runtime-feature-parity.md shows strong fit for shared Python hooks, portable skills, and .cursor/agents descriptors, but no bare-status prompt rewrite, no compaction injection, partial CLI hook parity, and zero Cursor adapter code in the repository today. Discuss deliberation resolved v1 scope, registry shape, validation claims, AGENTERA_HOME wiring, and distribution targets before implementation.
+  alternatives:
+    - name: Repo-native dogfood only
+      status: rejected
+      description: Ship committed .cursor/ in this repository without upgrade/doctor paths. Fast internally, but fails the first-class registry contract for other projects.
+    - name: Skills install only; hooks deferred
+      status: rejected
+      description: Lowest effort via npx skills -a cursor, but leaves session preload, validation, bookmarks, and lifecycle metadata unowned.
+    - name: Single cursor runtime with CLI drift notes
+      status: rejected
+      description: One registry id with known_drifts for CLI gaps. Simpler table, but blurs IDE-primary support from CLI-degraded behavior.
+    - name: Advisory validation only in v1
+      status: rejected
+      description: Ship Claude-class post-mutation validation without claiming hard gate. Safer claims, but undershoots Copilot-class parity the user wants when payloads are reconstructable.
+    - name: Full v1 with split runtimes and release-gated hard gate
+      status: chosen
+      description: Repo .cursor/ plus upgrade/doctor; cursor and cursor-agent registry entries; hard-gate claims after live preToolUse Write smoke; marketplace submit, eval runner, and managed agents in v1; cloud agents documented unsupported.
+  choice: Add Cursor as a first-class runtime in one v1 slice. Ship repo-native .cursor/ and agentera upgrade --runtime cursor for any project. Register cursor for IDE and cursor-agent for CLI as separate RuntimeAdapter records. Reuse shared hooks with Cursor-shaped sessionStart wrappers; claim conditional hard-gate parity for reconstructable Write/Edit candidates only after live preToolUse smoke passes, and block release tagging until that smoke succeeds. Wire AGENTERA_HOME through sessionStart env first; add setup_cursor.py only if shell-tool smoke shows env does not propagate. Include .cursor-plugin/plugin.json, marketplace submission, managed .cursor/agents for all twelve capabilities, and eval_skills --runtime cursor-agent. Document cloud agents as unsupported in v1. Accept metadata-only bare status routing like Claude/Copilot/Codex.
+  reasoning: First-class means registry, doctor, upgrade, lifecycle validator, and parity docs describe real adapter paths—not just files in this repo. Splitting cursor and cursor-agent keeps IDE support honest while letting CLI stay degraded without hiding gaps inside one row. Hard-gate claims stay Copilot-class but release-gated so docs never overship. Deferring setup_cursor.py avoids Codex-style config glue until evidence says sessionStart env is insufficient for shell tools. The user explicitly chose an ambitious v1 that includes marketplace, eval, and managed agents rather than phasing distribution surfaces.
+  confidence: firm
+  feeds_into: references/adapters/runtime-adapter-registry.yaml, references/adapters/runtime-feature-parity.md, references/adapters/cursor.md, .cursor/, .cursor-plugin/, hooks/validate_artifact.py, scripts/agentera_upgrade.py, scripts/eval_skills.py, scripts/smoke_live_hosts.py, AGENTS.md, tests, package-registry.yaml
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Cursor v1 slice shipped with cursor and cursor-agent registry records, repo-native hooks and managed agents, upgrade/doctor/eval paths, and parity docs. Live preToolUse Write smoke passed 2026-05-24. Cross-platform app-home resolution is implemented in the TypeScript CLI (`packages/cli/src/state/installRoot.ts`). User confirmed satisfaction in discuss on 2026-06-09 after verifying macOS app-home resolves to `~/Library/Application Support/agentera`.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-09
+  outcome: Add Cursor as a first-class runtime in one v1 slice. Ship repo-native .cursor/ and agentera upgrade --runtime cursor for any project. Register cursor for IDE and cursor-agent for CLI as separate RuntimeAdapter records. Reuse shared hooks with Cursor-shaped sessionStart wrappers; claim conditional hard-gate parity for reconstructable Write/Edit candidates only after live preToolUse smoke passes, and block release tagging until that smoke succeeds. Wire AGENTERA_HOME through sessionStart env first; add setup_cursor.py only if shell-tool smoke shows env does not propagate. Include .cursor-plugin/plugin.json, marketplace submission, managed .cursor/agents for all twelve capabilities, and eval_skills --runtime cursor-agent. Document cloud agents as unsupported in v1. Accept metadata-only bare status routing like Claude/Copilot/Codex.
+record_sha256: 21f76194918e24be23973134fdcbf39bbec80698e16f3a42c8f2c5537ac0f530
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 36c4b78e0fbf687204a960d139f149501800ab4e
+    blob: 3a10afe4b5734c0f78703e6fbed5d9f7c130f3bb
+    path: .agentera/decisions.yaml
+    record_sha256: 7fce697fe641e356139184264d96be7c459a8b730abaf865bb2f353a357e33ca
+  projection_transition:
+    commit: 923d714385203e389b5c230f11ac2f7c102642cf
+    parent: 36c4b78e0fbf687204a960d139f149501800ab4e
+    parent_count: 1
+    blob: a76844c86bbe36fdcabb323b89cdea47603594e2
+    record_sha256: 8e9967c43e4da7373cbb4aad9dd026d775ddb6aec4ce7ee1d4dd8937aaf9e2c1
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 22
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 8e9967c43e4da7373cbb4aad9dd026d775ddb6aec4ce7ee1d4dd8937aaf9e2c1
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

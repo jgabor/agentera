@@ -1,0 +1,90 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 74
+record:
+  number: 74
+  date: 2026-06-28
+  question: How should Agentera crystallize its identity away from bundle-of-skills / open-protocol / suite-of-plugins framing toward one agent with many capabilities driven through a single CLI — while retaining the efficiency benefits of specialized subagents?
+  context: |
+    Over many iterations the branding never settled into a concrete identity. Current on-disk headlines contradict each other across four surfaces (web Hero and docs index still say "open protocol… engineering team"; README says "engineering team"; vision.yaml says "opinionated mobile-first coding agent… a peer"; SKILL.md says "twelve capabilities live inside one Agentera skill"). Prior decisions built the architecture but never promoted it to the headline: D67 (mobile-first single brand), D68 (multi-surface one-fixed-workflow, no extensions), D69 (packages/cli as the narrow waist — all agent execution routes through CLI or serve; surfaces are clients), D70 (English capability names in v3), D73 (single primary Agentera agent at the runtime level, dispatching via Task to general subagents). The user's framing for this deliberation: Agentera is no longer a bundle, a protocol, or a suite of plugins — it still supports all harnesses, but as clients of a single CLI that owns artifact R/W, codified routing, tight inter-capability integration, and a single surface for agents to learn; it acts as one person able to do many things rather than many agents with specialized roles, while retaining subagent efficiency benefits (fresh context windows, dedicated instructions per task, token economy).
+  alternatives:
+    - name: Crystallize as single-agent identity driven through CLI-as-runtime
+      status: chosen
+      description: Agentera is the colleague, not the team. One persistent identity with many capabilities. Host coding agents (Claude, Cursor, Codex, Copilot, OpenCode) are harnesses — they provide the model, the tool runtime, and the spawn capacity. The CLI owns project memory, capability prose, routing judgment, and the worker-spec contract. Eleven top-level capabilities (profile demoted to utility; orchestrate defended as a distinct interaction mode from build). Retire skill, plugin, and engineering-team from product vocabulary; they survive only as internal transport terms.
+      reason_chosen: Resolves the four-way headline fracture; aligns the identity with the architecture D69/D73 already built; honestly carries "single surface to learn" by moving the routing brain inside the CLI; preserves subagent efficiency under the hood without making multiplicity the headline.
+    - name: Keep multi-agent team framing with shared state
+      status: rejected
+      description: Accept the contradiction; ship as "team of specialists with shared .agentera/ state." Each capability stays a discrete agent identity.
+      reason_rejected: User explicitly rejected multiplicity as the headline; conflicts with D67 mobile-first single brand and the sharp-colleague voice already in vision.yaml.
+    - name: Agentera owns a bundled model layer
+      status: rejected
+      description: Make "is the agent" carry cognition by bundling a model runtime in the npm package so the CLI spawns model-backed subagents directly.
+      reason_rejected: Contradicts host-as-harness; forces a model dependency in the npm package; the borrowed-cognition framing (identity + memory + discipline layer; model is the host's) is honest and matches the Cursor SDK pattern.
+    - name: Vocabulary reconciliation without identity pivot
+      status: rejected
+      description: Fix the web fracture but retain skill/plugin as product words with internal-vs-product disambiguation documented in the vocabulary.
+      reason_rejected: User rejected continued ambiguity; "single agent" framing is incompatible with skill/plugin terminology in user-facing copy.
+    - name: Capability redesign alongside identity
+      status: rejected
+      description: Reopen the capability set wholesale as part of the identity pass.
+      reason_rejected: Out of scope; user confirmed this is an identity/docs crystallization, not a capability redesign. Pressure-test on the twelve kept the set stable modulo profile demotion.
+  choice: |
+    Adopt the crystallized vision: "One agent, one CLI, many capabilities." Twelve commitments, locked across three rounds of structured deliberation: (1) thinking-work runs in the main context, doing-work spawns as bounded worker subagents that return results; (2) Agentera is the agent, host coding agents are harnesses; (3) the routing brain lives inside the CLI — host agents learn only the JSON contract from agentera prime; (4) capability set pressure-tested: eleven top-level capabilities (status, vision, discuss, research, plan, build, optimize, audit, document, design, orchestrate); profile demoted to utility that surfaces through existing capabilities (discuss, plan, status); (5) project state in .agentera/ is sufficient identity; identity is per-project with no bleed; (6) routing is codified for deterministic cases (bare invocation, explicit capability names) and intelligent for ambiguous natural language via trigger schemas with disambiguation when borderline; (7) orchestrate stays as a distinct interaction mode (hand off a full plan and step back vs build's task-by-task supervised mode); (8) optimize and design stay as critical capabilities; (9) borrowed cognition accepted — Agentera is the identity+memory+discipline layer, the model is the host's; (10) worker spawn: CLI returns a worker spec, the host harness spawns the model-backed subagent; (11) "acts more like a person" lives in capability execution and the sharp-colleague voice, not in fuzzy routing; (12) retire "skill," "plugin," and "engineering team" from product vocabulary — capabilities is the product word. Crystallized north-star paragraph anchors vision.yaml, README hero, and the web docs index.
+  reasoning: |
+    The four-way headline fracture on disk is the visible symptom of six weeks of pivots (D67 → D68 → D69 → now) each leaving downstream surfaces untouched. The architecture was already decided by D69 (CLI is the narrow waist) and D73 (single Agentera agent at runtime); what was missing was promoting that architecture to the identity headline. The "one agent, one CLI, many capabilities" framing gives the right name to architecture already on the books — it is a crystallization, not a new invention. The borrowed-cognition framing (Agentera is identity+memory+discipline layer; model is the host's) honestly carries "is the agent" without ownership of the model, matching the Cursor SDK pattern and avoiding a model dependency in the npm package. Per-project identity (commitment 5) is both the honest limit of project-state-only memory and a feature: no memory bleed across client projects. Profile demotion resolves the orphan created by rejecting a traveling persona layer (commitment 5) — profile becomes background machinery surfacing through existing capabilities, not a peer of build. The capability pressure-test defended orchestrate (distinct interaction mode, not a scope knob), optimize and design (critical), and demoted profile; the set now reads as modes of one engineering mind rather than a service catalog promoted for symmetry. Vocabulary retirement (commitment 12) is required by commitment 2: if Agentera is the agent and the host is the harness, "skill" and "plugin" imply Agentera is a module loaded into the host — the opposite of the crystallized relationship. They survive only as internal transport terms (skills/ directory, plugin.json manifest files required by host editors). This decision supersedes the "skills as internals" framing in D67 and the multi-surface vocabulary in D68; it operationalizes the D69 CLI-narrow-waist invariant at the identity layer; it is the vision whose runtime design D73 serves; and it confirms D70's English capability names as the binding surface under the single-agent identity.
+  confidence: firm
+  feeds_into: .agentera/vision.yaml, README.md, AGENTS.md, skills/agentera/SKILL.md, references/cli/vocabulary.md, references/cli/vocabulary-index.yaml, packages/cli/, packages/mobile/AGENTS.md, packages/web/, .agentera/decisions.yaml, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: User confirmed the crystallized vision draft via multi-question deliberation (commitments 1-6 locked in round 1; demotion outcomes and borrowed-cognition framing locked in round 2; vision draft, headline, profile exposure mechanism, and vocabulary retirement confirmed in round 3 with explicit "Yes — ship as the crystallized vision" reply). Per discuss decision-satisfaction authority, the user explicitly confirmed in the current deliberation, so user_confirmed_satisfied is legitimate.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-28
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: .agentera/vision.yaml
+    - source_field: feeds_into
+      reference: README.md
+    - source_field: feeds_into
+      reference: AGENTS.md
+    - source_field: feeds_into
+      reference: skills/agentera/SKILL.md
+    - source_field: feeds_into
+      reference: references/cli/vocabulary.md
+    - source_field: feeds_into
+      reference: references/cli/vocabulary-index.yaml
+    - source_field: feeds_into
+      reference: packages/cli/
+    - source_field: feeds_into
+      reference: packages/mobile/AGENTS.md
+    - source_field: feeds_into
+      reference: packages/web/
+    - source_field: feeds_into
+      reference: .agentera/decisions.yaml
+    - source_field: feeds_into
+      reference: TODO.md
+record_sha256: 47a0359e7209f9ccad1249d96e3f69179f4b93c6cf4e5381fec0ebc1044b9b78
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 00b93d0f785a61c74d8c7b0191e27c47fcfcb02d
+    blob: 5d2f697771ec62b73c11ec54e34b233734778736
+    path: .agentera/decisions.yaml
+    record_sha256: 47a0359e7209f9ccad1249d96e3f69179f4b93c6cf4e5381fec0ebc1044b9b78
+  projection_transition:
+    commit: f69abef2e399c53fcce34aa24c0d88df9a51091f
+    parent: 00b93d0f785a61c74d8c7b0191e27c47fcfcb02d
+    parent_count: 1
+    blob: 6bd8136dda6e108706f837bcd82359d79c4ba7d3
+    record_sha256: 2583645e27fc63cbb1cb94ec31f6657ad33fc1eddde95669b4dfc34fcd65165f
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 33
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 2583645e27fc63cbb1cb94ec31f6657ad33fc1eddde95669b4dfc34fcd65165f
+  overlay:
+    fields:
+      - date
+      - number
+    rule: parent_full_then_current_explicit_non_summary_fields

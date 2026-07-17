@@ -1,0 +1,57 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 53
+record:
+  number: 53
+  date: 2026-05-15
+  question: How should Agentera track whether decisions are satisfied?
+  context: Current decision CLI output exposes compacted entries and downstream references, but open TODOs show decisions can be forgotten after compaction or when they fall outside normal query range. The user wants outcome tracking and compaction recovery handled together.
+  alternatives:
+    - name: Track downstream references only
+      status: rejected
+      description: Shows where a decision should feed, but does not prove the intended outcome was accepted as fulfilled.
+    - name: Store satisfaction outside decisions
+      status: rejected
+      description: Keeps the decision schema smaller, but makes decisions depend on secondary indexes and leaves compaction without a canonical preservation rule.
+    - name: Decision-entry satisfaction state
+      status: chosen
+      description: Store satisfaction on the decision entry, let automation mark provisional evidence, require user confirmation for final satisfaction, and protect unresolved decisions from compaction.
+  choice: Store decision satisfaction state on each decision entry. Agents may mark provisional satisfaction with evidence, but only the user may confirm satisfaction. Open or provisionally satisfied decisions must not be compacted; old protected decisions trigger review before compaction, during health audits, and at release closeout.
+  reasoning: Decision satisfaction is an intent state, not just evidence of a downstream write. Keeping it on the decision entry makes compaction rules and CLI source contracts preserve the outcome instead of forcing agents into memory or git-history recovery.
+  confidence: firm
+  feeds_into: TODO.md, .agentera/decisions.yaml, scripts/agentera, hooks/compaction.py, tests, capability prose
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-15
+  outcome: Store decision satisfaction state on each decision entry. Agents may mark provisional satisfaction with evidence, but only the user may confirm satisfaction. Open or provisionally satisfied decisions must not be compacted; old protected decisions trigger review before compaction, during health audits, and at release closeout.
+record_sha256: 4951c5de96561cfdbc92ee748bc2118df62c4af692c1c42efe5a92384992bc28
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 32bac2ced3bc643360c8358676793df04f493a8a
+    blob: 6acdd496361120ef4a4f8be606fc8f3cebf9deef
+    path: .agentera/decisions.yaml
+    record_sha256: e7405f4d402282ee971e874d3fbfcbf49f4079ce4c046571d6593d296cc6367e
+  projection_transition:
+    commit: fb57e88a498636ab9c2e10edeb21f0f8d84b7909
+    parent: 32bac2ced3bc643360c8358676793df04f493a8a
+    parent_count: 1
+    blob: 4ddaf870be7766103c289795cf66c4b3ccc4d218
+    record_sha256: 0c63383384afd3e79d82bcaa4432fa3a36aa2ddd5a37c927624ce73f8a41d2db
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 12
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 0c63383384afd3e79d82bcaa4432fa3a36aa2ddd5a37c927624ce73f8a41d2db
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

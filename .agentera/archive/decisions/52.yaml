@@ -1,0 +1,57 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 52
+record:
+  number: 52
+  date: 2026-05-13
+  question: How should Agentera run and retain startup state-access benchmark metrics?
+  context: Decision 51 made startup state-access overlap an optimization metric. To compare versions, Agentera needs a repeatable manual run for `scripts/startup_analysis_contract.py` that can read local runtime history without committing or shipping generated local evidence.
+  alternatives:
+    - name: Ad hoc analyzer commands
+      status: rejected
+      description: Minimal, but weak for repeatability and trend comparison.
+    - name: Normal CI regression
+      status: rejected
+      description: CI cannot depend on private local runtime histories.
+    - name: Manual Mage benchmark with user-local retention
+      status: chosen
+      description: Mage runs the benchmark manually; aggregate history stays under `${AGENTERA_HOME}/benchmarks/startup-state/`.
+  choice: Add a manual Mage benchmark suite starting with the Decision 51 startup state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera data home, not the repository, and retain only the latest redacted detailed report beside it.
+  reasoning: Mage gives a clear manual benchmark surface while the Python analyzer remains the metric source of truth. User-local JSONL enables longitudinal optimization targets without polluting git or packages, and latest-only report retention preserves debuggability without accumulating bulky private artifacts.
+  confidence: firm
+  feeds_into: magefile.go, startup state-access benchmark, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-15
+  outcome: Add a manual Mage benchmark suite starting with the Decision 51 startup state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera data home, not the repository, and retain only the latest redacted detailed report beside it.
+record_sha256: e867f31d422702a6aff3fbd9a2fe761a611d58537cb165abc5bb74bc0b0f843f
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 32bac2ced3bc643360c8358676793df04f493a8a
+    blob: 6acdd496361120ef4a4f8be606fc8f3cebf9deef
+    path: .agentera/decisions.yaml
+    record_sha256: 68b650fd7bc664b088a7d9809143b638e6f0a137ffd6db253a8c77908339121a
+  projection_transition:
+    commit: fb57e88a498636ab9c2e10edeb21f0f8d84b7909
+    parent: 32bac2ced3bc643360c8358676793df04f493a8a
+    parent_count: 1
+    blob: 4ddaf870be7766103c289795cf66c4b3ccc4d218
+    record_sha256: 581f2f57e945548dfb9ee0e3a55afd4756d7a759290e63d7842208085ce895a6
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 11
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 581f2f57e945548dfb9ee0e3a55afd4756d7a759290e63d7842208085ce895a6
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

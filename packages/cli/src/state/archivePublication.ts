@@ -26,6 +26,10 @@ export interface NumberedArchiveBytes {
   recordSha256: string;
 }
 
+export interface NumberedArchiveEnvelopeOptions {
+  recoveryProvenance?: JsonObject;
+}
+
 export interface ArchivePublicationFileSystem {
   exists(path: string): boolean;
   mkdir(directory: string): void;
@@ -277,12 +281,13 @@ export function publishNumberedArchive(
     sourceRoot?: string;
     fileSystem?: ArchivePublicationFileSystem;
     afterDirectorySync?: () => void;
+    recoveryProvenance?: JsonObject;
   } = {},
 ): ArchivePublicationResult {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const fileSystem = options.fileSystem ?? nodeFileSystem;
   const location = archivePath(projectRoot, artifactId, entryNumber, sourceRoot);
-  const serialized = serializeNumberedArchive(artifactId, entryNumber, record, sourceRoot);
+  const serialized = serializeNumberedArchive(artifactId, entryNumber, record, sourceRoot, options);
   const published = publishImmutableFile(location.target, serialized.bytes, {
     fileSystem,
     directoryDurabilityRoot: projectRoot,
@@ -310,6 +315,7 @@ export function serializeNumberedArchive(
   entryNumber: number,
   record: JsonObject,
   sourceRoot: string = resolveSourceRoot(),
+  options: NumberedArchiveEnvelopeOptions = {},
 ): NumberedArchiveBytes {
   const contract = numberedArchiveContract(artifactId, sourceRoot);
   const canonical = validateRecord(sourceRoot, contract, entryNumber, record);
@@ -321,6 +327,7 @@ export function serializeNumberedArchive(
       entry_number: entryNumber,
       record,
       record_sha256: recordSha256,
+      ...(options.recoveryProvenance ? { recovery_provenance: options.recoveryProvenance } : {}),
     }),
     recordSha256,
   };

@@ -1,0 +1,166 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 8
+record:
+  number: 8
+  date: 2026-04-20
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+  findings_summary:
+    critical: 1
+    warning: 3
+    info: 4
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 7. Version B→C (6 unbumped feat/fix commits). Complexity C→C (one hotspot resolved, one new). Tests A→A (263 tests). Architecture, Patterns, Coupling, Security all stable at A.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: C
+    Tests: A
+    Version: C
+    Security: A
+    Artifact freshness: B
+record_sha256: 8a4918525653b8d554b4e650d3c56cd6154130e9fae28ba5dfb2f493959262d8
+recovery_provenance:
+  kind: legacy_health_markdown
+  source:
+    commit: 8b7a528b1d70ea256c34ae971645f91fb7b2f3b9
+    blob: d01355f60011592581e5c4fef78b6bcd45e78154
+    path: .agentera/HEALTH.md
+    section_sha256: 60f560c4998e66f0c45b468e2ff0ba777c8b9715bcfd9e26f49eac7487e6ce26
+    byte_range:
+      start: 56373
+      end: 63884
+    raw_section: |
+      ## Audit 8 · 2026-04-20
+
+      **Dimensions assessed**: architecture alignment, pattern consistency, coupling health, complexity hotspots, test health, version health, artifact freshness, security hygiene
+      **Findings**: 1 critical, 3 warnings, 4 info (0 filtered by confidence)
+      **Overall trajectory**: stable vs Audit 7. Version B→C (6 unbumped feat/fix commits). Complexity C→C (one hotspot resolved, one new). Tests A→A (263 tests). Architecture, Patterns, Coupling, Security all stable at A.
+      **Grades**: Architecture [A] | Patterns [A] | Coupling [A] | Complexity [C] | Tests [A] | Version [C] | Security [A] | Artifact freshness [B]
+
+      ### Architecture alignment: A
+
+      Linter: 0 errors, 17 advisory warnings across 12 skills (sentence-length and banned-vocabulary from Section 23). Registry: 12/12 skills at 1.13.0. SPEC.md Sections 22-23 confirmed. Lefthook config correct. CI updated with pytest install and contract freshness check. No structural regressions.
+
+      ### Pattern consistency: A
+
+      All 12 skills pass structural checks. Compaction threshold language present in all producing skills. "Twelve-skill suite" consistent. One minor anomaly:
+
+      #### ⇢ Literal `\n` in YAML frontmatter description in 3 skills, info (confidence: 90)
+
+      - **Location**: `skills/inspektera/SKILL.md:14`, `skills/visionera/SKILL.md:14`, `skills/visualisera/SKILL.md:14`
+      - **Evidence**: Trigger list lines end with `,\n  "next phrase"` instead of a real newline. Introduced by the `.md` extension normalization pass (`9daf4b7`).
+      - **Impact**: Low. The YAML `>` block scalar folds these anyway, but the literal `\n` is visible in the raw file and inconsistent with other skills.
+      - **Suggested action**: Replace `\n` with actual newline + indentation in the 3 files.
+
+      ### Coupling health: A
+
+      Clean DAG. No circular dependencies. Hooks still use subprocess boundary. validate_spec.py constants grew to 8 (added WORKTREE_DISPATCH_SKILLS) but remain manageable. common.py duplication with validate_artifact.py unchanged (known info from Audit 7).
+
+      ### Complexity hotspots: C
+
+      validate_spec.py grew from 1073 to 1367 lines (+27%). One prior warning resolved; one new warning.
+
+      #### ⇉ check_pre_dispatch_commit_gate() is 78 lines with 4 pattern checks, warning (confidence: 85)
+
+      - **Location**: `scripts/validate_spec.py:1037-1114`
+      - **Evidence**: Follows the same structure as check_reality_verification_gate: constant set, early return, 4 pattern checks, error accumulation. Not deeply nested but long.
+      - **Impact**: Maintenance burden if the gate evolves. Not urgent.
+      - **Suggested action**: Extract pattern-check helpers if the function grows further.
+
+      #### ⇢ validate_spec.py at 1367 lines (approaching 1400 threshold), info (confidence: 85)
+
+      - **Location**: `scripts/validate_spec.py`
+      - **Evidence**: Grew 27% since Audit 7. 35 functions including 22 check functions. Section 23 added 3 new check functions (banned_vocabulary, sentence_length, artifact_writing_conventions).
+      - **Impact**: Nearing the module-split threshold noted in Audit 7.
+      - **Suggested action**: No action now. If it crosses 1400, consider splitting by check category.
+
+      **Resolved**: check_severity_levels refactored from 98 lines to 36 lines with 4 named helpers (`_find_severity_in_tables`, `_find_severity_in_headings`, `_find_severity_in_section`, `_find_severity_in_mappings`). Prior warning closed.
+
+      ### Test health: A
+
+      263 tests across 12 files, all passing (up from 240). 3 new tests for Check 19. Test:source ratio 1.21:1. Prior gaps unchanged: hooks/common.py has no dedicated test file, validate_skill_definition has no direct test. Neither has worsened.
+
+      ### Version health: C
+
+      #### ⇶ 6 unbumped feat/fix commits since 1.13.0, critical (confidence: 100)
+
+      - **Location**: commits `4d394b5`, `c9c2a1a`, `9daf4b7`, `1a7ac34`, `3779c34`, `1dea65e` (3 feat, 3 fix since `319935d`)
+      - **Evidence**: semver_policy says feat = minor, fix = patch. 3 feat commits require a minor bump to 1.14.0. CHANGELOG.md [Unreleased] is empty.
+      - **Impact**: Version files report 1.13.0 but 6 bump-qualifying changes have shipped. All version locations are internally consistent but lag behind actual changes.
+      - **Suggested action**: Bump to 1.14.0, populate CHANGELOG.md [Unreleased] with the 6 changes.
+
+      ### Artifact freshness: B
+
+      No active PLAN.md; using PROGRESS.md fallback. Advisory, not authoritative.
+
+      #### ⇢ PROGRESS.md, CHANGELOG.md, TODO.md, HEALTH.md older than most recent work, info (confidence: 55)
+
+      - **Location**: `.agentera/PROGRESS.md` (2026-04-13), `CHANGELOG.md` (2026-04-13), `TODO.md` (2026-04-12), `.agentera/HEALTH.md` (2026-04-11)
+      - **Evidence**: 11 commits landed after these artifacts' last modification dates. PROGRESS.md has no cycle entries for the post-1.13.0 work. CHANGELOG.md [Unreleased] is empty.
+      - **Impact**: Consuming skills reading these artifacts see a stale snapshot. HEALTH.md is being updated by this audit.
+      - **Suggested action**: HEALTH.md resolved by this audit. CHANGELOG.md and version bump are the priority. PROGRESS.md cycle entries for the post-plan ad-hoc work are optional.
+
+      ### Security hygiene: A
+
+      Zero hardcoded secrets. Zero eval/exec. All subprocess calls list-form. Lefthook hooks are clean shell wrappers with no injection surface.
+
+      #### ⇢ .gitignore missing defensive credential patterns, info (confidence: 80)
+
+      - **Location**: `.gitignore`
+      - **Evidence**: No `.env`, `*.key`, `*.pem`, `credentials*` patterns. No such files exist in the repo.
+      - **Impact**: Purely defensive. An accidentally created .env would not be blocked from staging.
+      - **Suggested action**: Add `.env`, `*.key`, `*.pem` patterns to .gitignore.
+
+      > This is a lightweight surface scan. For comprehensive security analysis, use dedicated tools: semgrep, Snyk, Bandit (Python), or similar.
+
+      ### Trends vs Audit 7
+
+      - **Improved**: check_severity_levels C→resolved (refactored from 98 to 36 lines with helpers)
+      - **Degraded**: Version B→C (1 unbumped fix → 6 unbumped feat/fix). Artifact freshness A→B (4 artifacts older than most recent work).
+      - **Stable**: Architecture A, Patterns A, Coupling A, Tests A (240→263), Security A, Complexity C
+      - **New findings**: literal `\n` in 3 SKILL.md frontmatters (info), check_pre_dispatch_commit_gate 78 lines (warning), .gitignore credential patterns (info)
+      - **Resolved**: check_severity_levels 98-line function (refactored)
+
+      ### Patterns Observed
+
+      - Module structure: 12 skills, consistent. validate_spec.py growing as the single linter but still manageable.
+      - Hook architecture: unchanged. Subprocess boundary intact.
+      - Testing approach: 263 tests, 1.21:1 ratio. Section 23 checks have 3 tests already. Proportional.
+      - Version management: post-plan ad-hoc commits accumulated without a version bump. The plan-driven workflow naturally includes bump tasks; ad-hoc work does not.
+      - Infrastructure maturation: lefthook hooks, CI fixes, and Section 23 conventions are all infrastructure hardening that doesn't show up as cycle entries.
+
+      ## Archived Audits
+
+      ### Audit 7 · 2026-04-11 (⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18...)
+
+      ### Audit 6 · 2026-04-02 (⮉ improving. Tests D→B (171 tests, all 13 linter checks...)
+
+      ### Audit 5 · 2026-04-02 (⮉ improving. Architecture B (was C), Patterns A (was B),...)
+
+      ### Audit 4 · 2026-04-01 (first full audit (6 dimensions vs prior 2); architecture ⮋...)
+
+      ### Audit 3 · 2026-03-31 (⮉ improving vs Audit 2)
+
+      ### Audit 2 · 2026-03-31 (improving vs Audit 1)
+
+      ### Audit 1 · 2026-03-30 (first audit (no prior baseline))
+  converter:
+    version: agentera.legacyHealthMarkdown.v1
+    modeled_fields:
+      - number
+      - date
+      - dimensions
+      - findings_summary
+      - trajectory
+      - grades
+    unmodeled_text_preserved: true

@@ -1,0 +1,68 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 69
+record:
+  number: 69
+  date: 2026-06-07
+  question: What is the load-bearing invariant connecting Agentera's surfaces under Decision 68's "one fixed workflow" claim?
+  context: |
+    Decision 68 (firm) commits to one fixed twelve-capability workflow, shared `.agentera/` state, and built-in tools across mobile, web, CLI, and editor delivery surfaces. Decision 65 (firm) relocated capability prose to `packages/cli` and made `agentera prime --context` the startup contract. Prior D69 deliberation (`docs/consolidation/d69/`) explored four invariants and found no convergence until D68's implementation level was clarified. Discuss deliberation (2026-06-07) confirmed OpenCode-like architecture with `packages/cli` as foundation.
+  alternatives:
+    - name: D69-a/E — CLI capability schema + state contract
+      status: chosen
+      description: Capability schema and `.agentera/` validation in `packages/cli`; all surfaces are clients; execution routes through CLI or serve.
+    - name: D69-b — mental journey invariant
+      status: rejected
+      description: Five-phase journey as narrow waist; capability behavior may differ per surface.
+      reason_rejected: Reinterprets D68; allows observable capability divergence.
+    - name: D69-c — state-only invariant
+      status: rejected
+      description: Shared `.agentera/` schema only; behavior may differ per surface.
+      reason_rejected: Weak D68 fit.
+    - name: D69-d — brand only
+      status: rejected
+      description: Surfaces as independent products under one logo.
+      reason_rejected: Contradicts D68 by construction.
+  choice: |
+    Adopt `packages/cli` as the narrow waist. Layer A (contract) — twelve-capability schema, `.agentera/` artifact shapes, validation, and `agentera prime` / `agentera state *` JSON contracts are authoritative in CLI. Layer B (execution routing) — all agent execution routes through the CLI engine (direct or `agentera serve`). Provider runtimes (Cursor SDK first; future OpenCode SDK, Vercel AI) are Layer B adapters behind CLI. Surfaces are clients — mobile (presentation-only tiering), web (docs/inspector), editor-runtime composite (SKILL.md + hooks + CLI binary), future desktop/TUI. D68 means behavioral identity (interpretation A).
+  reasoning: |
+    OpenCode-like single engine with surface clients matches D65/D68 and prevents parallel agent loops on mobile. Editor-runtime is one delivery surface, not three workflows. Open follow-ups — serve API shape, conflict-resolution policy, schema package location — are implementation decisions, not invariant changes.
+  confidence: firm
+  feeds_into: docs/consolidation/monorepo-plan.md, docs/consolidation/d69/, docs/consolidation/mobile-open-decisions.md, packages/cli/, packages/mobile/, AGENTS.md, skills/agentera/SKILL.md, references/adapters/, hooks/, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Discuss deliberation 2026-06-07 — D68 interpretation A, Layer A+B, presentation-only mobile tiering, editor-runtime composite surface.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-07
+  outcome: |
+    Adopt `packages/cli` as the narrow waist. Layer A (contract) — twelve-capability schema, `.agentera/` artifact shapes, validation, and `agentera prime` / `agentera state *` JSON contracts are authoritative in CLI. Layer B (execution routing) — all agent execution routes through the CLI engine (direct or `agentera serve`). Provider runtimes (Cursor SDK first; future OpenCode SDK, Vercel AI) are Layer B adapters behind CLI. Surfaces are clients — mobile (presentation-only tiering), web (docs/inspector), editor-runtime composite (SKILL.md + hooks + CLI binary), future desktop/TUI. D68 means behavioral identity (interpretation A).
+record_sha256: 024f73d444f1da436098d77c84846ad06a8f61ec20896105707ccfe355b2dfec
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 6bfb5d38e1ccf4a830c438432a2e06dfbab438c8
+    blob: 3d56c41a96563e14700c881a88c2b4bb4a295f1d
+    path: .agentera/decisions.yaml
+    record_sha256: 580f53557d12a62620400be4cff9ab1ad70f91202f2e55b2fceb6809a44bde92
+  projection_transition:
+    commit: 68f6bbefec98c4a9b3ca135f303337692efd98d0
+    parent: 6bfb5d38e1ccf4a830c438432a2e06dfbab438c8
+    parent_count: 1
+    blob: 5a3f32357f4409cbae6e71bfb2375a9d0c53ea7a
+    record_sha256: 4f32d9453f52ccbe6d1d3903c9578b12ebd68909e0f30340b158245cd7beff64
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 28
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 4f32d9453f52ccbe6d1d3903c9578b12ebd68909e0f30340b158245cd7beff64
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

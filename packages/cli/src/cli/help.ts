@@ -173,13 +173,14 @@ export function printStateHelp(sub?: string): string {
       ? `${backfill.maximumHistoryBytes} bytes (${historyMiB} MiB)`
       : `${backfill.maximumHistoryBytes} bytes`;
     return [
-      "usage: agentera state backfill [-h] [--project PATH] [--artifact ARTIFACT]",
+      "usage: agentera state backfill [-h] [--recover-projections] [--project PATH] [--artifact ARTIFACT]",
       "                              [--number N] [--commit HASH] [--path PATH] [--limit N]",
       "                              [--dry-run|--apply --force] --format {text,json,yaml}",
       "",
       `Inventory exact ${backfill.supportedArtifacts.join(", ")} records from bounded local Git history.`,
       "Default inventory and --dry-run are read-only; preview is optional.",
       "Direct --apply --force publishes one immutable archive record after fresh checks.",
+      "--recover-projections selects only strict causal projection replacements and deterministic legacy health sections as one checked batch.",
       `Revalidation: ${backfill.guarantees.applyRevalidation}`,
       `Result limit: ${backfill.maximumLimit}; history limit: ${backfill.maximumCommits} units and ${historyLimit}.`,
       `Reads only ${backfill.reachableRefs.join(", ")}; excludes ${backfill.excludedRefs.join(", ")}.`,
@@ -190,6 +191,7 @@ export function printStateHelp(sub?: string): string {
       "options:",
       "  -h, --help            show this help message and exit",
       "  --project PATH        Project directory; optional for inventory/preview, required for apply",
+      "  --recover-projections Preview the narrow readiness-recovery batch; cannot use entry selectors",
       `  --artifact ARTIFACT   ${backfill.supportedArtifacts.join(", ")}`,
       "  --number N            Positive legacy entry number; requires --artifact",
       "  --commit HASH         Pin one reachable provenance occurrence",

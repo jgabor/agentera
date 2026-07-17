@@ -1,0 +1,60 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 48
+record:
+  number: 48
+  date: 2026-05-08
+  question: How should Agentera expose self-audit and maintainer scripts through the CLI?
+  context: Agents currently call `scripts/self_audit.py` through inline Python for pre-write artifact checks. Decision 45 made the CLI an agent-ready state interface, and Decision 47 keeps `agentera doctor` read-only for install/app/runtime diagnostics while `agentera upgrade` owns writes. README still exposes several direct maintainer scripts.
+  alternatives:
+    - name: Add agentera lint first
+      status: chosen
+      description: Expose self-audit through a dedicated lint namespace with structured output, advisory default behavior, and optional strict mode.
+    - name: Fold self-audit into doctor
+      status: rejected
+      description: Blurs doctor beyond install/app/runtime health into artifact prose quality and codebase health.
+    - name: Merge all scripts now
+      status: rejected
+      description: Creates a junk-drawer CLI before stable command namespaces are defined.
+    - name: Keep scripts only
+      status: rejected
+      description: Leaves agents using ad hoc inline Python for a contractually required pre-write check.
+  choice: "Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera doctor` scoped to install/app/runtime diagnostics. Promote other maintainer scripts behind cohesive non-deferred namespaces: `agentera validate` for validators, `agentera verify` or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera usage` for profile analytics. Keep registry/model modules private."
+  reasoning: A lint command solves the immediate agent ergonomics problem without changing doctor semantics. The remaining maintainer namespaces are part of the decision's required CLI surface; their command shapes should still be cohesive, structured, and workflow-driven rather than a junk drawer of raw script wrappers.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, README.md, capability prose, tests
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-15
+  outcome: "Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera doctor` scoped to install/app/runtime diagnostics. Promote other maintainer scripts behind cohesive non-deferred namespaces: `agentera validate` for validators, `agentera verify` or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera usage` for profile analytics. Keep registry/model modules private."
+record_sha256: 3604cb5742845362b36034e84ae54be9b06f9ae48491ea0bb79c264f605ab282
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 2aa613dc26e0d326444717721b97ce7c108a362a
+    blob: 771a5b8b95be59ff89d12eea98f164f6d0f0c42e
+    path: .agentera/decisions.yaml
+    record_sha256: 34c9b83bbe7baf689dbdaeb426bf5af35fb24fc362974de0ac043ecde93f15fe
+  projection_transition:
+    commit: d08c86107d21d94d41d08704052794a11ffba186
+    parent: 2aa613dc26e0d326444717721b97ce7c108a362a
+    parent_count: 1
+    blob: 45464b90af6c6ced0c14431a7119fa3e75598a24
+    record_sha256: c72f0ef428ecb796e9015aac3dfac20fb37df3ebf2f4a4ce769b351d9f0bb6fc
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 8
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: c72f0ef428ecb796e9015aac3dfac20fb37df3ebf2f4a4ce769b351d9f0bb6fc
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

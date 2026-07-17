@@ -124,7 +124,7 @@ function manifestBytes(plan: DurableEntityMigrationPlan, id: string, receipts: R
   return dumpYamlMapping({ schemaVersion: "agentera.entityMigrationManifest.v1", migration_id: id, project: plan.project, source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest, authority_schema_version: plan.authority_schema_version, authority_sha256: plan.authority_sha256, sources: plan.sources, entries: plan.entries, receipts, preserved_singletons: plan.preserved_singletons, counts: plan.counts });
 }
 function snapshotBytes(plan: DurableEntityMigrationPlan, id: string): string {
-  return dumpYamlMapping({ schemaVersion: "agentera.entityMigrationSnapshot.v1", migration_id: id, project: plan.project, sources: plan.sources });
+  return dumpYamlMapping({ schemaVersion: "agentera.entityMigrationSnapshot.v1", migration_id: id, project: plan.project, sources: plan.sources, migration_provenance: plan.entries.flatMap((entry) => entry.migration_provenance ? [{ source_identity: entry.source_identity, provenance: entry.migration_provenance }] : []) });
 }
 function journalBytes(journal: Journal): string { return dumpYamlMapping(journal as unknown as Record<string, unknown>); }
 function loadJournal(project: string, id: string): { journal: Journal; bytes: Buffer } {

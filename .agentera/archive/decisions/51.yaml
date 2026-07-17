@@ -1,0 +1,60 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 51
+record:
+  number: 51
+  date: 2026-05-13
+  question: What should Agentera measure before optimizing capability startup state access?
+  context: "Decision 41 closed the v2.0 token benchmark against the revised -10% target, but follow-up discussion identified a different pain: agents invoke Agentera capabilities, run Agentera CLI state commands for compressed project state, and then still read, grep, or glob raw `.agentera/*.yaml` or root artifact files before implementation work begins. An uncommitted startup-window draft first tried to measure only slash-route or exact intro-marker windows, found zero qualifying windows, and would have closed the startup-envelope follow-up. That draft was too strict because real OpenCode usage usually invokes capabilities through natural language such as `run orkestrera` or bare names such as `planera`."
+  alternatives:
+    - name: Keep the route/intro startup-window metric
+      status: rejected
+      description: It misses the observed OpenCode behavior because most follow-up capability invocations do not use `/agentera` route text.
+    - name: Design a generic startup state envelope immediately
+      status: rejected
+      description: The direct session scan shows redundant state access exists, but the interface should be driven by the retained artifact-overlap metric.
+    - name: Patch individual capability startup habits now
+      status: rejected
+      description: Lower scope, but it would likely fight symptoms while leaving the CLI state surface insufficient for capability startup needs.
+    - name: Measure CLI-state-to-raw-artifact overlap
+      status: chosen
+      description: Count state-gathering sequences where an Agentera CLI state command is followed by raw artifact read/grep/glob of the same state family before implementation work.
+  choice: "Replace the old startup-window metric with a state-access metric: after a capability-related user turn, anchor on the first Agentera CLI state call, stop at the first implementation boundary or next user turn, and count subsequent raw artifact read/grep/glob access, especially when the raw artifact overlaps the CLI state family already fetched."
+  reasoning: "Direct OpenCode inspection found the actual pattern: bare `planera`, bare `resonera`, natural-language Orkestrera handoffs, and subagent prompts frequently run `agentera plan`, `agentera progress`, `agentera docs`, or related state commands and then read raw YAML/Markdown artifacts before work begins. The discarded route/intro classifier therefore produced a false weak-evidence `close_without_implementation` result by measuring the wrong anchor. The retained state-access metric measures the product problem directly and can distinguish a broad CLI startup-envelope need from narrower capability guidance fixes."
+  confidence: firm
+  feeds_into: startup state-access analysis, scripts/agentera, scripts/extract_corpus.py, capability prose, tests, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-15
+  outcome: "Replace the old startup-window metric with a state-access metric: after a capability-related user turn, anchor on the first Agentera CLI state call, stop at the first implementation boundary or next user turn, and count subsequent raw artifact read/grep/glob access, especially when the raw artifact overlaps the CLI state family already fetched."
+record_sha256: 3f285b7548331add49e262bf3007bfc1047e0a3e6671ff612c536c74edfeadac
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: b7797b6fe8022354d3455a902e8ca529734523fb
+    blob: fb7a7737dae8bbf3528870d8bfe0fec33e51f25c
+    path: .agentera/decisions.yaml
+    record_sha256: 42037520b466a83e4acc81c0149c45f6923c8a3cfa9bc2c1e3047af478be1edb
+  projection_transition:
+    commit: d4eee6e04f9e7f5ddb7554f3256de398148ba200
+    parent: b7797b6fe8022354d3455a902e8ca529734523fb
+    parent_count: 1
+    blob: e56fa9d8173cddbd2f784378e2d31838c457cb3e
+    record_sha256: 580ccc5ca742aafb891012cfb4bd16f0dc50cd8a985e54fc2b0b6607a2e16c8a
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 10
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 580ccc5ca742aafb891012cfb4bd16f0dc50cd8a985e54fc2b0b6607a2e16c8a
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

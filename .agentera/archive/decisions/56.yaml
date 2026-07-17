@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 56
+record:
+  number: 56
+  date: 2026-05-17
+  question: Should Agentera 3.0 rewrite the CLI core in TypeScript for Bun/npm distribution and runtime integration?
+  context: Agentera 2.x is a Python CLI/app-home implementation with bundled skills, scripts, hooks, references, and runtime manifests. OpenCode already relies on a JavaScript plugin that duplicates app-home/runtime bootstrap logic, and upcoming Codex/OpenCode/npm packaging work increases the pressure to make runtime integration and distribution JS-native. The user framed the 3.0 question around pure TypeScript, Bun single-binary compilation, and easier npm distribution, then selected runtime integration, whole CLI core, contract-first parity, and CLI JSON contracts as the rewrite constraints.
+  alternatives:
+    - name: Keep Python core and improve packaging only
+      status: rejected
+      description: Lowest rewrite risk, but preserves split-brain JS runtime glue around a Python core and leaves npm/single-binary distribution as an adapter layer.
+    - name: TypeScript runtime adapter layer only
+      status: rejected
+      description: Improves OpenCode/Codex/npm integration, but leaves the core CLI, validators, compaction, doctor, upgrade, and state commands in Python.
+    - name: Whole CLI core TypeScript rewrite with contract-first parity
+      status: chosen
+      description: Reimplement the supported `agentera` CLI core in TypeScript/Bun only after existing JSON contracts, exit behavior, artifact rules, and runtime gates are captured as parity tests.
+    - name: Clean-slate TypeScript rewrite
+      status: rejected
+      description: Attractive architecturally, but too likely to regress mature CLI state, upgrade, validation, compaction, and protected-artifact behavior.
+  choice: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as the 3.0 direction, gated by contract-first parity. The Python implementation remains the behavior oracle until the TypeScript CLI preserves supported command JSON output shapes, exit behavior, artifact validation, compaction, doctor/upgrade safety, verify/usage/stats semantics, and runtime adapter hooks. Bun/npm/single-binary distribution is the payoff, but not a reason to weaken existing Agentera contracts.
+  reasoning: The strongest argument for TypeScript is runtime integration, not language preference. Agentera increasingly meets users through JS-native hosts and npm-shaped plugin surfaces, while the current OpenCode plugin already carries runtime bootstrap logic that would be cleaner if the CLI core and distribution target shared one toolchain. A full rewrite is justified only if it reduces runtime/package complexity without sacrificing the current agent-ready CLI contract. Therefore the rewrite must start from golden CLI JSON contracts and parity fixtures, not from a clean-slate architecture rewrite.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, pyproject.toml, package manifests, runtime adapters, tests, README.md, UPGRADE.md, release planning
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: User confirmed satisfaction during discuss review on 2026-05-31. Contract-first TypeScript CLI rewrite remains the 3.0 direction; feat/v3 packages/cli work is downstream implementation.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-31
+  outcome: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as the 3.0 direction, gated by contract-first parity. The Python implementation remains the behavior oracle until the TypeScript CLI preserves supported command JSON output shapes, exit behavior, artifact validation, compaction, doctor/upgrade safety, verify/usage/stats semantics, and runtime adapter hooks. Bun/npm/single-binary distribution is the payoff, but not a reason to weaken existing Agentera contracts.
+record_sha256: d3e671f370c7850b6a22fd0aafd797f6d39fc4591ebab2753cd8576508d2b415
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: b9a108b47924f0cc132c128f2b00c0f1f846f5cd
+    blob: 6be8f016a3319e8c617e3e6419e06400d6714ec7
+    path: .agentera/decisions.yaml
+    record_sha256: b5f6f88b9bdb1e9c6cadff393326494842fbf1dd6f5e4a9a2bf3a0b856fd242e
+  projection_transition:
+    commit: a2d3308d611ed0645c377ca8fac12da8ab414cb5
+    parent: b9a108b47924f0cc132c128f2b00c0f1f846f5cd
+    parent_count: 1
+    blob: ae053db382a2c20fcf5f448ffae30ef4747ae03d
+    record_sha256: 38ddb2d6cc7a91ef59581db760bb73d69c4d804694e10cc56fd8fcce1582e960
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 15
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 80126ca11f3fc7e2aa39dd9606704bdcf1360ff58355459c8c9f98cd7129a283
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

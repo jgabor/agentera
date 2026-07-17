@@ -1,0 +1,166 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 14
+record:
+  number: 14
+  date: 2026-04-26
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 2
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 13. Cross-Runtime Portability landed the AGENTERA_HOME contract cleanly across SPEC, OpenCode, Codex, and Copilot, and 1.20.0 shipped coherent. One DOCS.md staleness gap surfaced because dokumentera updated only the Audit Log, not the Index.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: B
+    Security: A
+    Deps: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: SPEC.md Section 7 formalizes AGENTERA_HOME with a per-runtime mechanism table. The 7-23 to 8-24 renumber landed atomically across SKILL.md frontmatter, prose Section refs, validator code, test fixtures, and regenerated contract.md files.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: ""
+      findings:
+        - heading: "⇢ PROFILERA_PROFILE_DIR and AGENTERA_HOME injection asymmetry, info (confidence: 60)"
+          severity: info
+          confidence: 60
+          location: |-
+            `.opencode/plugins/agentera.js:191`, `.opencode/plugins/agentera.js:231`, `SPEC.md:367`
+            - **Evidence**: PROFILERA_PROFILE_DIR is set by mutating `process.env` at plugin init; AGENTERA_HOME is set via the `shell.env` hook returning an env fragment merged into shell-tool subprocesses.
+            - **Impact**: Both correct for their consumers (PROFILE.md is read by helpers in the plugin Node process; AGENTERA_HOME is for shell-tool subprocesses), but the surface looks inconsistent.
+            - **Suggested action**: One sentence in SPEC Section 6 or 7 names the asymmetry as principled so future readers do not normalize them.
+          evidence: |-
+            PROFILERA_PROFILE_DIR is set by mutating `process.env` at plugin init; AGENTERA_HOME is set via the `shell.env` hook returning an env fragment merged into shell-tool subprocesses.
+            - **Impact**: Both correct for their consumers (PROFILE.md is read by helpers in the plugin Node process; AGENTERA_HOME is for shell-tool subprocesses), but the surface looks inconsistent.
+            - **Suggested action**: One sentence in SPEC Section 6 or 7 names the asymmetry as principled so future readers do not normalize them.
+          impact: |-
+            Both correct for their consumers (PROFILE.md is read by helpers in the plugin Node process; AGENTERA_HOME is for shell-tool subprocesses), but the surface looks inconsistent.
+            - **Suggested action**: One sentence in SPEC Section 6 or 7 names the asymmetry as principled so future readers do not normalize them.
+          suggested_action: One sentence in SPEC Section 6 or 7 names the asymmetry as principled so future readers do not normalize them.
+    - name: Coupling health
+      grade: A
+      summary: The `.codex-plugin/plugin.json` + `scripts/validate_lifecycle_adapters.py` + `tests/test_runtime_adapters.py` triplet is properly coupled around Section 22 invocationHint flow. Cycle 172 documented and synced all three atomically.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: A
+      summary: "`check_no_bare_claude_plugin_root` is small, single-responsibility, code-block-aware, and unit-tested with one pass plus one fail."
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: ""
+      findings:
+        - heading: "⇢ Codex and Copilot live-host AGENTERA_HOME inheritance untested, info (confidence: 65)"
+          severity: info
+          confidence: 65
+          location: |-
+            `tests/test_runtime_adapters.py`, `scripts/smoke_opencode_bootstrap.mjs`
+            - **Evidence**: The OpenCode `shell.env` branch is smoke-tested. Codex `shell_environment_policy.set` and Copilot rc inheritance are documented but unverified by an automated test against a live host.
+            - **Impact**: Future runtime updates could regress AGENTERA_HOME propagation under Codex or Copilot without the suite catching it; same caveat pattern as Audit 11's deferred live Copilot/Codex host smoke.
+            - **Suggested action**: Treat as continuation of the existing live-host caveat; reconsider if a host smoke harness lands.
+          evidence: |-
+            The OpenCode `shell.env` branch is smoke-tested. Codex `shell_environment_policy.set` and Copilot rc inheritance are documented but unverified by an automated test against a live host.
+            - **Impact**: Future runtime updates could regress AGENTERA_HOME propagation under Codex or Copilot without the suite catching it; same caveat pattern as Audit 11's deferred live Copilot/Codex host smoke.
+            - **Suggested action**: Treat as continuation of the existing live-host caveat; reconsider if a host smoke harness lands.
+          impact: |-
+            Future runtime updates could regress AGENTERA_HOME propagation under Codex or Copilot without the suite catching it; same caveat pattern as Audit 11's deferred live Copilot/Codex host smoke.
+            - **Suggested action**: Treat as continuation of the existing live-host caveat; reconsider if a host smoke harness lands.
+          suggested_action: Treat as continuation of the existing live-host caveat; reconsider if a host smoke harness lands.
+    - name: Version health
+      grade: A
+      summary: 12/12 per-skill `plugin.json`, marketplace, registry, root and `.github` Copilot manifests, `.codex-plugin/plugin.json`, and `.opencode/plugins/agentera.js` AGENTERA_VERSION all at 1.20.0. CHANGELOG records three feats, one docs, one refactor coherently.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: B
+      summary: ""
+      findings:
+        - heading: "⇉ DOCS.md Index dates and Coverage test count are stale, warning (confidence: 92)"
+          severity: warning
+          confidence: 92
+          location: |-
+            `.agentera/DOCS.md:53-58`, `.agentera/DOCS.md:84`
+            - **Evidence**: Index rows for Progress, TODO, Changelog, Health, Plan, and DOCS show 2026-04-25 or 2026-04-23 but `git log -1` reports 2026-04-26 for each. Coverage line says "359 tests across 13 files"; actual is 412 tests across 14 test files.
+            - **Impact**: Plan-relative staleness: dokumentera was dispatched in T3 but updated only the Audit Log section; Index rows and Coverage row carried into the post-plan state. Consuming skills reading DOCS.md see stale ground truth.
+            - **Suggested action**: Bump six Index rows to 2026-04-26 and update Coverage to "412 tests across 14 files" in a single dokumentera or chore cycle.
+          evidence: |-
+            Index rows for Progress, TODO, Changelog, Health, Plan, and DOCS show 2026-04-25 or 2026-04-23 but `git log -1` reports 2026-04-26 for each. Coverage line says "359 tests across 13 files"; actual is 412 tests across 14 test files.
+            - **Impact**: Plan-relative staleness: dokumentera was dispatched in T3 but updated only the Audit Log section; Index rows and Coverage row carried into the post-plan state. Consuming skills reading DOCS.md see stale ground truth.
+            - **Suggested action**: Bump six Index rows to 2026-04-26 and update Coverage to "412 tests across 14 files" in a single dokumentera or chore cycle.
+          impact: |-
+            Plan-relative staleness: dokumentera was dispatched in T3 but updated only the Audit Log section; Index rows and Coverage row carried into the post-plan state. Consuming skills reading DOCS.md see stale ground truth.
+            - **Suggested action**: Bump six Index rows to 2026-04-26 and update Coverage to "412 tests across 14 files" in a single dokumentera or chore cycle.
+          suggested_action: Bump six Index rows to 2026-04-26 and update Coverage to "412 tests across 14 files" in a single dokumentera or chore cycle.
+    - name: Security hygiene
+      grade: A
+      summary: Secret-pattern matches were limited to inspektera's own documented examples. No `eval()`, `exec()`, `os.system()`, or `subprocess shell=True` calls in agentera scripts, hooks, or the OpenCode plugin.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: "Python remains stdlib-only across validators, hooks, and tests. The OpenCode `@opencode-ai/plugin` Node dependency is unchanged this cycle. ### Trends vs Audit 13 - **Improved**: Cross-runtime portability surface is materially stronger: OpenCode plugin moved from broken-by-phantom-hook to actually working; Codex and Copilot users have copy-pasteable setup snippets backed by verified-source authority; spec validator gained a deterministic guard against future bare `${CLAUDE_PLUGIN_ROOT}` regressions. - **Degraded**: One new warning under Freshness (DOCS.md Index and Coverage drift). Two new info items (PROFILERA_PROFILE_DIR vs AGENTERA_HOME injection asymmetry, Codex/Copilot live-host coverage gap). - **Stable**: Validators, version targets, security posture, and dependency footprint held green at the post-1.20.0 baseline. - **Resolved**: Audit 11 deferred items remained closed; the cross-runtime helper-path defect that motivated the plan is gone. ### Patterns Observed - Module structure: SPEC primitives are now two adapter-injected env vars (PROFILERA_PROFILE_DIR for profile data, AGENTERA_HOME for install root) plus host-specific adapter manifests; SKILL.md prose stays runtime-agnostic via bash-fallback forms. - Adapter strategy: each runtime uses its own native, documented mechanism (Claude Code bash fallback, OpenCode `shell.env`, Codex `shell_environment_policy`, Copilot rc export); no custom abstraction layer. - Testing approach: lint rules added with one-pass + one-fail proportionality; smoke harness covers OpenCode plugin lifecycle; live-host paths for Codex and Copilot remain explicit caveats. - Release pattern: DOCS.md `feat = minor` policy continues to drive minor bumps; CHANGELOG promotion atomic with the bump cycle."
+      findings:
+        []
+  trends:
+    improved: |-
+      Cross-runtime portability surface is materially stronger: OpenCode plugin moved from broken-by-phantom-hook to actually working; Codex and Copilot users have copy-pasteable setup snippets backed by verified-source authority; spec validator gained a deterministic guard against future bare `${CLAUDE_PLUGIN_ROOT}` regressions.
+      - **Degraded**: One new warning under Freshness (DOCS.md Index and Coverage drift). Two new info items (PROFILERA_PROFILE_DIR vs AGENTERA_HOME injection asymmetry, Codex/Copilot live-host coverage gap).
+      - **Stable**: Validators, version targets, security posture, and dependency footprint held green at the post-1.20.0 baseline.
+      - **Resolved**: Audit 11 deferred items remained closed; the cross-runtime helper-path defect that motivated the plan is gone.
+    degraded: |-
+      One new warning under Freshness (DOCS.md Index and Coverage drift). Two new info items (PROFILERA_PROFILE_DIR vs AGENTERA_HOME injection asymmetry, Codex/Copilot live-host coverage gap).
+      - **Stable**: Validators, version targets, security posture, and dependency footprint held green at the post-1.20.0 baseline.
+      - **Resolved**: Audit 11 deferred items remained closed; the cross-runtime helper-path defect that motivated the plan is gone.
+    stable: |-
+      Validators, version targets, security posture, and dependency footprint held green at the post-1.20.0 baseline.
+      - **Resolved**: Audit 11 deferred items remained closed; the cross-runtime helper-path defect that motivated the plan is gone.
+    resolved: Audit 11 deferred items remained closed; the cross-runtime helper-path defect that motivated the plan is gone.
+  patterns:
+    - "Module structure: SPEC primitives are now two adapter-injected env vars (PROFILERA_PROFILE_DIR for profile data, AGENTERA_HOME for install root) plus host-specific adapter manifests; SKILL.md prose stays runtime-agnostic via bash-fallback forms."
+    - "Adapter strategy: each runtime uses its own native, documented mechanism (Claude Code bash fallback, OpenCode `shell.env`, Codex `shell_environment_policy`, Copilot rc export); no custom abstraction layer."
+    - "Testing approach: lint rules added with one-pass + one-fail proportionality; smoke harness covers OpenCode plugin lifecycle; live-host paths for Codex and Copilot remain explicit caveats."
+    - "Release pattern: DOCS.md `feat = minor` policy continues to drive minor bumps; CHANGELOG promotion atomic with the bump cycle."
+record_sha256: aaf1a8e5f304e04aab8ee0ebd1f7d66285123e5f3e1946cfb4bc4a40664484bc
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 6759bcf57adb41453cbc98a0690ad67fd6de7e3f
+    blob: f169672e8864f5c48d36f8a4188ed7a723e24181
+    path: .agentera/health.yaml
+    record_sha256: aaf1a8e5f304e04aab8ee0ebd1f7d66285123e5f3e1946cfb4bc4a40664484bc
+  projection_transition:
+    commit: 65417cd07beaa5715e3e27acd33ce05e07b203f3
+    parent: 6759bcf57adb41453cbc98a0690ad67fd6de7e3f
+    parent_count: 1
+    blob: 83ecde0e1b0368bad2d38ef3fc5cf7765def4793
+    record_sha256: 6afa4c6a1d2ab7e3a684e6425b19afa1a39e24e82b7464b01c1c6a0abaec94ee
+  current_projection:
+    path: .agentera/health.yaml
+    collection: archive
+    index: 13
+    document_sha256: 2b66b48dc19747c4e3777e8a36297731b13e9af76a38b56df77ca036587cc5b7
+    record_sha256: 6afa4c6a1d2ab7e3a684e6425b19afa1a39e24e82b7464b01c1c6a0abaec94ee
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

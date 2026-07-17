@@ -251,7 +251,7 @@ describe("orientation: artifact summaries", () => {
     expect(selectStatusNextAction(summary, { exists: false }, { exists: false }, [], null, false).object).not.toContain("PLAN Task");
   });
 
-  it("shares degraded lifecycle state with build and orchestration", () => {
+  it("normalizes a completed plan with pending tasks back to open", () => {
     const p = path.join(tmp, "plan.yaml");
     fs.writeFileSync(
       p,
@@ -268,7 +268,7 @@ describe("orientation: artifact summaries", () => {
     );
     const schemas = schema("plan", p);
     const summary = planSummary(schemas);
-    expect(summary.lifecycle_state).toMatchObject({ status: "degraded", diagnostic_count: 1 });
+    expect(summary.lifecycle_state).toMatchObject({ status: "available", diagnostic_count: 0 });
 
     const orchestration = orchestrationContext(
       "orchestrate",
@@ -280,8 +280,8 @@ describe("orientation: artifact summaries", () => {
       { status: "loaded" },
       { object: "Next", capability: "build", reason: "test" },
     );
-    expect(orchestration?.plan_lifecycle_state).toMatchObject({ status: "degraded" });
-    expect(orchestration?.selected_next_task).toBeNull();
+    expect(orchestration?.plan_lifecycle_state).toMatchObject({ status: "available" });
+    expect(orchestration?.selected_next_task).toMatchObject({ name: "Still pending" });
 
     const build = buildExecutionContext(
       "build",
@@ -294,7 +294,7 @@ describe("orientation: artifact summaries", () => {
       { status: "loaded" },
       { status: "up_to_date" },
     );
-    expect(build?.plan_lifecycle_state).toMatchObject({ status: "degraded" });
+    expect(build?.plan_lifecycle_state).toMatchObject({ status: "available" });
   });
 
   it("exposes persisted evaluation attempts and retry exhaustion to orchestration", () => {

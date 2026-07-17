@@ -1,0 +1,92 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 18
+record:
+  number: 18
+  date: 2026-04-29
+  dimensions:
+    - artifact freshness
+    - version health
+    - validation health
+    - documentation coherence
+    - forbidden objective layout
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: ⮉ improving vs Audit 17. The Completed Optimize Objective Archival plan resolved the DOCS coverage warning and closed the plan without adding forbidden objective surfaces.
+  grades:
+    Freshness: A
+    Version: A
+    Validation: A
+    Docs: A
+    Layout: A
+  dimension_details:
+    - name: Artifact freshness
+      grade: A
+      summary: "`.agentera/archive/PLAN-2026-04-29-completed-optimize-objective-archival.md:36-114` marks Tasks 1-8 complete, `.agentera/PLAN.md` is absent, and `TODO.md @ ✓ Resolved (completed-objective archival)` resolves the completed-objective item with `27bb667..a1e60bd` plus the checkpoint commit."
+      findings:
+        []
+    - name: Version health
+      grade: A
+      summary: "`registry.json`, 12 skill plugin manifests, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.opencode/plugins/agentera.js` report `1.24.1`. `.agents/plugins/marketplace.json` still has no version field, matching Cycle 231 evidence."
+      findings:
+        []
+    - name: Validation health
+      grade: A
+      summary: "Current reruns passed: `python3 scripts/validate_spec.py`, `python3 scripts/generate_contracts.py --check`, `python3 scripts/validate_lifecycle_adapters.py`, artifact self-audit, and `python3 -m pytest -q` with 523 passed."
+      findings:
+        []
+    - name: Documentation coherence
+      grade: A
+      summary: "`CHANGELOG.md:7-15`, `PROGRESS.md:3-21`, `.agentera/DOCS.md:90-108`, `README.md:461-471`, and `SPEC.md:151-162` describe the completed lifecycle consistently. Audit 17's DOCS coverage warning is resolved: DOCS now reports 523 tests across 19 files."
+      findings:
+        []
+    - name: Forbidden objective layout
+      grade: A
+      summary: "Glob checks found no active root `OBJECTIVE.md`, root `EXPERIMENTS.md`, or `.agentera/PLAN.md`. DOCS Artifact Mapping has no fixed OBJECTIVE/EXPERIMENTS rows; README and SPEC explicitly preserve per-objective `.agentera/optimize/<name>/` layout without registries or symlinks. ### Trends vs Audit 17 - **Improved**: Freshness B→A; DOCS coverage now matches the 523-test suite. - **Degraded**: none. - **Stable**: Version, validation, documentation, and objective layout are coherent. - **Resolved**: Audit 17 DOCS coverage baseline stale warning. ### Patterns Observed - Objective lifecycle: optimize keeps state self-contained under `.agentera/optimize/<name>/` and excludes closed objectives before active-work inference. - Release pattern: completed-objective fix landed as patch release `1.24.1`, followed by a plan-level freshness checkpoint. - Validation pattern: spec, contracts, lifecycle adapters, prose self-audit, and full pytest are the closure gate."
+      findings:
+        []
+  trends:
+    improved: |-
+      Freshness B→A; DOCS coverage now matches the 523-test suite.
+      - **Degraded**: none.
+      - **Stable**: Version, validation, documentation, and objective layout are coherent.
+      - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
+    degraded: |-
+      none.
+      - **Stable**: Version, validation, documentation, and objective layout are coherent.
+      - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
+    stable: |-
+      Version, validation, documentation, and objective layout are coherent.
+      - **Resolved**: Audit 17 DOCS coverage baseline stale warning.
+    resolved: Audit 17 DOCS coverage baseline stale warning.
+  patterns:
+    - "Objective lifecycle: optimize keeps state self-contained under `.agentera/optimize/<name>/` and excludes closed objectives before active-work inference."
+    - "Release pattern: completed-objective fix landed as patch release `1.24.1`, followed by a plan-level freshness checkpoint."
+    - "Validation pattern: spec, contracts, lifecycle adapters, prose self-audit, and full pytest are the closure gate."
+record_sha256: ece90e64fe8ced853ad0579ac0a55785d34a5fa83861a2ca4466c806a41e569c
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 3614696a4c315f4f39fe7c963e3bd7864ddccfef
+    blob: 760eb21752744e202776bf14d13e912d09e60973
+    path: .agentera/health.yaml
+    record_sha256: ece90e64fe8ced853ad0579ac0a55785d34a5fa83861a2ca4466c806a41e569c
+  projection_transition:
+    commit: 01e72923828c02937aadc213ab620de8d03f12d1
+    parent: 3614696a4c315f4f39fe7c963e3bd7864ddccfef
+    parent_count: 1
+    blob: 2de3fbcd091b1a548d14a7a15f9cf82c8166027c
+    record_sha256: bd68b9556c0a2645989eff4ace2859af0b4ce0224502d09937fd1199b653da37
+  current_projection:
+    path: .agentera/health.yaml
+    collection: archive
+    index: 17
+    document_sha256: 2b66b48dc19747c4e3777e8a36297731b13e9af76a38b56df77ca036587cc5b7
+    record_sha256: bd68b9556c0a2645989eff4ace2859af0b4ce0224502d09937fd1199b653da37
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

@@ -1,0 +1,120 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 2
+record:
+  number: 2
+  date: 2026-03-31
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+  findings_summary:
+    critical: 0
+    warning: 4
+    info: 6
+    filtered_by_confidence: 4
+  trajectory: improving vs Audit 1
+  grades:
+    Architecture: B
+    Patterns: B
+record_sha256: 65dc3841d166f401580e46e51b878db95fb03043981bc19dc328398a22f65fda
+recovery_provenance:
+  kind: legacy_health_markdown
+  source:
+    commit: 039248ae8d6423403023ba1e4b2be946111268a1
+    blob: b64da1e181855fa9db02cbb185d21941c8bfe3f7
+    path: .agentera/HEALTH.md
+    section_sha256: 5d6e6442cf06585166fc46d5d53f6df18553e50157a8aa4a9b40d3eeac60ac1f
+    byte_range:
+      start: 50883
+      end: 54864
+    raw_section: |+
+      ## Audit 2 · 2026-03-31
+
+      **Dimensions assessed**: architecture alignment, pattern consistency
+      **Findings**: 0 critical, 4 warnings, 6 info (4 filtered by confidence)
+      **Overall trajectory**: improving vs Audit 1
+      **Grades**: Architecture [B] | Patterns [B]
+
+      ### Architecture alignment: B
+
+      #### CLAUDE.md claims "Ten skills" · warning (confidence: 100)
+
+      - **Location**: `CLAUDE.md:5`
+      - **Evidence**: "Ten skills, each a self-contained SKILL.md" should be "Eleven skills" after hej addition
+      - **Impact**: Developers setting up the repo read stale count
+      - **Suggested action**: Update to "Eleven skills"
+
+      #### DOCS.md coverage says 10/10 · warning (confidence: 100)
+
+      - **Location**: `DOCS.md:46`
+      - **Evidence**: `Documented: 10/10 skills have SKILL.md`, should be 11/11
+      - **Impact**: Self-assessment of documentation coverage is off by one
+      - **Suggested action**: Update count
+
+      #### Some cross-skill references are unidirectional · warning (confidence: 90)
+
+      - **Location**: Multiple SKILL.md cross-skill sections
+      - **Evidence**: inspektera says "feeds /optimera" but optimera doesn't acknowledge reading HEALTH.md. dokumentera feeds planera/realisera but neither acknowledges dokumentera.
+      - **Impact**: Reading friction, not a logic error; all relationships work correctly
+      - **Suggested action**: Add reciprocal mentions where missing
+
+      #### README state artifacts table shows primary consumers only · info (confidence: 85)
+
+      - **Location**: `README.md:52-65`
+      - **Evidence**: Table shows primary workflow consumers, not the full mesh. Known from Audit 1. By design.
+
+      ### Pattern consistency: B
+
+      #### Resonera has duplicate "Getting started" sections · warning (confidence: 98)
+
+      - **Location**: `skills/resonera/SKILL.md:98` and `skills/resonera/SKILL.md:312`
+      - **Evidence**: Two `## Getting started` headings. First describes workflow initiation, second describes usage patterns. First is misplaced mid-document. All other skills have one section at the end.
+      - **Impact**: Breaks structural pattern followed by all 10 other skills
+      - **Suggested action**: Merge into one section at the end
+
+      #### Hej artifact path resolution under-specified · info (confidence: 75)
+
+      - **Location**: `skills/hej/SKILL.md:50-55`
+      - **Evidence**: Says "all artifact reads" without listing specific artifacts or noting hej produces nothing. Other skills list explicit examples.
+
+      #### Inspirera description differs between registry and marketplace · info (confidence: 100)
+
+      - **Location**: `registry.json:7` vs `.claude-plugin/marketplace.json:13`
+      - **Evidence**: "an external link" (singular, accurate) vs "external links" (plural)
+
+      #### Safety rails count varies 5-9 across skills · info (confidence: 65)
+
+      - **Location**: All SKILL.md safety rails sections
+      - **Evidence**: optimera 9, inspirera/profilera 5. Variation likely reflects genuine complexity differences.
+
+      #### Resonera is the only skill with a "Personality" section · info (confidence: 60)
+
+      - **Location**: `skills/resonera/SKILL.md:73-86`
+      - **Evidence**: No other skill documents communication personality as a formal section. Makes sense as an exception; resonera's warm Socratic style is central to its function.
+
+      ### Trends vs Audit 1
+
+      - **Improved**: Patterns C→B. All 6 Audit 1 findings (ISS-1 through ISS-6) resolved.
+      - **Stable**: Architecture remains B. No structural regressions from adding hej.
+      - **New**: 4 new findings: stale counts (CLAUDE.md, DOCS.md), resonera duplicate section, unidirectional cross-skill refs.
+      - **Resolved**: ISS-1 through ISS-7 (all prior issues cleared).
+
+      ### Patterns Observed
+
+      - Hej integrates cleanly as a meta-skill: reads all artifacts, produces none, passes all linter checks
+      - Doc references go stale immediately on skill addition (same pattern as ISS-1). Consider a linter check for count consistency.
+      - Pushback discipline addition fits tonally with resonera's personality
+      - Ecosystem handles skill count changes gracefully at the structural level; staleness is purely documentation
+
+      ---
+
+  converter:
+    version: agentera.legacyHealthMarkdown.v1
+    modeled_fields:
+      - number
+      - date
+      - dimensions
+      - findings_summary
+      - trajectory
+      - grades
+    unmodeled_text_preserved: true

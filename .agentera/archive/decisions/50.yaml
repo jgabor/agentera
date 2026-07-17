@@ -1,0 +1,57 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 50
+record:
+  number: 50
+  date: 2026-05-12
+  question: What should Agentera 2.3.0 include?
+  context: "2.2.3 release prep is complete and no open 2.2.x TODOs remain. Open degraded items cluster around installed capability reliability: self-audit helper exposure, schema discovery, and split install roots. Decision 47 requires app-home migration; Decision 48 says expose self-audit via `agentera lint` without merging every script into the CLI."
+  alternatives:
+    - name: Focused reliability release
+      status: chosen
+      description: Anchor 2.3.0 on app-home migration, `agentera lint`, and installed-capability diagnostics.
+    - name: Patch-only reliability
+      status: rejected
+      description: Fix helper/schema/root defects without app-home migration, leaving the root ambiguity intact.
+    - name: Broad capability expansion
+      status: rejected
+      description: Include Profilera corpus parity too, increasing validation scope before the app surface is coherent.
+  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration as a hard requirement; implement Decision 48 first through `agentera lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root doctor checks. Defer Profile corpus parity and broad script namespace promotion beyond `lint`.
+  reasoning: "The highest-friction failures share one cause: agents cannot confidently locate the active app, helper scripts, schemas, and install roots. App-home migration gives those surfaces one durable model, while `lint` solves the immediate self-audit ergonomics without turning the CLI into a script dump."
+  confidence: firm
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-15
+  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration as a hard requirement; implement Decision 48 first through `agentera lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root doctor checks. Defer Profile corpus parity and broad script namespace promotion beyond `lint`.
+record_sha256: 073d1e695aea77097d13b4e0b29d88b49a532541642bf9fe6bd88b2d748a991b
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: f259176f4a22e1b47e04373ea052f09a3bd706e6
+    blob: 5f6b7913992098970a10a61d74efc1724ec0c582
+    path: .agentera/decisions.yaml
+    record_sha256: 6be612ae2be99b4c953160b4c4103aeb56a07017c0ecfd500a5e7a245d9d147d
+  projection_transition:
+    commit: 1dd8e2ac5d3af7682e719572c11804b04171df8d
+    parent: f259176f4a22e1b47e04373ea052f09a3bd706e6
+    parent_count: 1
+    blob: d2af96aeeb2ec28dc67d133746808d382d0f6fe7
+    record_sha256: 689c0d3cf1684a9c4859f553439b69ec77e7e4dc56112358955bc5f55261131f
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 9
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: b9ad07cda41b76c298d89335adf95dcddde3fae668873a3b843fab6802fe83ec
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

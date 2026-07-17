@@ -1,0 +1,85 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 71
+record:
+  number: 71
+  date: 2026-06-23
+  question: |
+    How should Agentera tighten capability prose so weak models do not read capability instructions as user commands?
+  context: |
+    The over-prescription audit flagged research Key Concepts and Applicability Matrix, the vision principles field, and the plan design field as sections where descriptive prose drifts toward decisional content. The original audit TODO proposed a descriptive/decisional lint extension that would flag marker words (should, must, will, adopt, recommend) in descriptive artifacts. Discuss reframed: the actual failure mode is weak models reading capability instructions literally as user commands, not a taste problem of description-versus-decision drift. Modal auxiliary verbs are the disambiguator, not the offender.
+  alternatives:
+    - name: Reactive prose rewrite plus descriptive/decisional lint extension
+      status: rejected
+      description: |
+        A cleanup pass rewrites offending prose; a follow-up lint extension flags marker words (should, must, will, adopt, recommend) in descriptive artifacts going forward.
+      reason_rejected: |
+        Inverted premise - modal verbs solve the literal-reader problem, they do not cause it. Lint feed is blunt and catches legitimate uses (direct quotes, safety rails already tagged decisional).
+    - name: Preventive prose convention with deliberate modal vocabulary; drop lint TODO
+      status: chosen
+      description: |
+        Adopt RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY) for capability prose. Lowercase modal verbs remain ordinary English; capitalized keywords carry protocol force. Rewrite the three flagged sections as exemplars. Drop the descriptive/decisional lint-extension TODO entirely. Convention lives in capability_schema_contract.yaml.
+      reason_chosen: |
+        RFC 2119 keywords are externally anchored, stable, and born for the literal-reader problem. Rewritten prose converts bare imperatives and ambiguous verbs into noun-plus-modal forms (such as 'Steps SHOULD be ordered by value/effort ratio.') that weak models can disambiguate without structural overhead.
+    - name: Section-tag plus marker-list hybrid
+      status: rejected
+      description: |
+        Each section header gains a descriptive/decisional intent tag; the lint polices marker words only inside non-decisional sections.
+      reason_rejected: |
+        Over-engineered for the rarity of new explicit-intent sections; adds a new tag convention to every instructions.md and doubles rule surface area.
+  choice: |
+    Preventive prose convention using RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY). Lowercase modal verbs remain ordinary English; capitalized keywords carry protocol force. Tighten the three flagged section rewrites as exemplars. Drop the descriptive/decisional lint-extension TODO entirely. The convention lives in capability_schema_contract.yaml.
+  reasoning: |
+    RFC 2119 keywords are externally anchored, stable, and born for the literal-reader problem. Rewritten prose converts bare imperatives and ambiguous verbs into noun-plus-modal forms that weak models can disambiguate without structural overhead. The section-tag and structural-rubric variants over-engineered the problem for the rarity of new explicit-intent sections. The original lint-extension premise was inverted - modal verbs solve the failure, they do not cause it.
+  confidence: firm
+  feeds_into: capabilities/research, capabilities/vision, capabilities/plan, capability_schema_contract.yaml, VISION.md, TODO.md
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: capabilities/research
+    - source_field: feeds_into
+      reference: capabilities/vision
+    - source_field: feeds_into
+      reference: capabilities/plan
+    - source_field: feeds_into
+      reference: capability_schema_contract.yaml
+    - source_field: feeds_into
+      reference: VISION.md
+    - source_field: feeds_into
+      reference: TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: D71 modal vocabulary convention adopted and applied across audited capabilities (D79 status, D81 vision, D82 discuss, D83 research). Capitalized MUST/MUST NOT/SHOULD/MAY keywords carry protocol force; lowercase modal verbs remain ordinary English. Convention lives in capability_schema_contract.yaml. 8 remaining unaudited capabilities will adopt during their respective audits.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-07-09
+  outcome: |
+    Preventive prose convention using RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY). Lowercase modal verbs remain ordinary English; capitalized keywords carry protocol force. Tighten the three flagged section rewrites as exemplars. Drop the descriptive/decisional lint-extension TODO entirely. The convention lives in capability_schema_contract.yaml.
+record_sha256: 11c9a2f53c70ba0f27511503e79f9fe96cd015204babd4eedca9ba948fe92473
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 1c4807f0a2b0e96362127296e7bf429c7c92ec82
+    blob: 42c24959dbdc446023202e25baf215bb331c6783
+    path: .agentera/decisions.yaml
+    record_sha256: c3528e7dcae739630210e3261bec46f887973806b59502894b438afb8ffcb235
+  projection_transition:
+    commit: f10597b48b3780f3743cf684e0d60bf4207d28b8
+    parent: 1c4807f0a2b0e96362127296e7bf429c7c92ec82
+    parent_count: 1
+    blob: 8f408701e4b8c2413cf2333558924cdb7259221e
+    record_sha256: 10f7a5ccc693796914c8fe30ee9333e50c75065ece9795b40a29d1158d1b62cf
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 30
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 10f7a5ccc693796914c8fe30ee9333e50c75065ece9795b40a29d1158d1b62cf
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

@@ -1,0 +1,116 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 13
+record:
+  number: 13
+  date: 2026-04-25
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 12. The completed Copilot marketplace plan preserved the evidence boundary and did not degrade validation, versioning, or artifacts.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: A
+    Security: A
+    Deps: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: "The marketplace guidance matches the portability thesis: shared skills stay canonical, runtime install surfaces are adapter-specific, and unverified Copilot marketplace availability is not claimed."
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: README, PLAN, PROGRESS, TODO, and CHANGELOG use the same evidence-gated language. Legacy per-skill Copilot entries are observational, while aggregate `agentera` remains future verified-source guidance.
+      findings:
+        []
+    - name: Coupling health
+      grade: A
+      summary: Validation keeps Copilot install semantics in `tests/test_runtime_adapters.py` without adding runtime coupling. Host evidence remains recorded in artifacts, not encoded as unsupported install behavior.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: A
+      summary: "The new marketplace guards are small and proportional: one README pass plus focused failure cases for availability claims, placeholder-as-source, and primary fallback wording."
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: "Required checks pass: Copilot packaging 7 passed, runtime adapters 26 passed, full pytest 361 passed, lifecycle validation passed, spec validation passed with 0 warnings."
+      findings:
+        []
+    - name: Version health
+      grade: A
+      summary: The active plan introduced docs, test, and chore commits only after the existing 1.18.1 release state. DOCS.md policy correctly required no new bump.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: A
+      summary: PLAN is complete. PROGRESS, TODO, and CHANGELOG record the final no-verified-source outcome, and DOCS.md does not predate the plan creation date.
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: No real secret hits were found. Secret-pattern matches are only documented examples in inspektera source, and subprocess usage remains list-form or fixed-path plugin validation.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: "No dependencies changed during the plan. Python remains stdlib-only for validators and tests; the isolated OpenCode Node dependency surface is unchanged. ### Trends vs Audit 12 - **Improved**: Copilot marketplace guidance is now more explicit: syntax-only placeholder, verified built-in marketplaces, no `agentera` source claim. - **Degraded**: none. - **Stable**: Live host caveats remain explicit; validation and artifact freshness stayed green. ### Patterns Observed - Module structure: shared skill sources remain canonical; runtime adapters expose host-specific metadata and validation guards. - Evidence pattern: live-host observations are recorded as caveats unless a verified source exists. - Testing approach: install guidance gets additive negative tests to reject future contradictory wording. - Release pattern: docs/test/chore marketplace work does not bump versions without verified new install capability."
+      findings:
+        []
+  trends:
+    improved: |-
+      Copilot marketplace guidance is now more explicit: syntax-only placeholder, verified built-in marketplaces, no `agentera` source claim.
+      - **Degraded**: none.
+      - **Stable**: Live host caveats remain explicit; validation and artifact freshness stayed green.
+    degraded: |-
+      none.
+      - **Stable**: Live host caveats remain explicit; validation and artifact freshness stayed green.
+    stable: Live host caveats remain explicit; validation and artifact freshness stayed green.
+  patterns:
+    - "Module structure: shared skill sources remain canonical; runtime adapters expose host-specific metadata and validation guards."
+    - "Evidence pattern: live-host observations are recorded as caveats unless a verified source exists."
+    - "Testing approach: install guidance gets additive negative tests to reject future contradictory wording."
+    - "Release pattern: docs/test/chore marketplace work does not bump versions without verified new install capability."
+record_sha256: e7281d1a3cf275cca5d4ca63f92b041c8955f57ef86791889a53a005be86413f
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: fa17854110b5b6ca2ff0cba2f11e5c8e0696afcc
+    blob: 4c9e2815b9bd13497dfa9f5af2153e9bbf9d0e57
+    path: .agentera/health.yaml
+    record_sha256: e7281d1a3cf275cca5d4ca63f92b041c8955f57ef86791889a53a005be86413f
+  projection_transition:
+    commit: 7f977b3023f9c2a6620df967aa801f063e712dd5
+    parent: fa17854110b5b6ca2ff0cba2f11e5c8e0696afcc
+    parent_count: 1
+    blob: f169672e8864f5c48d36f8a4188ed7a723e24181
+    record_sha256: c55ed94c14209b2affa4edc79a9f0d7a769513eac3792de28e5557f456a385ff
+  current_projection:
+    path: .agentera/health.yaml
+    collection: archive
+    index: 12
+    document_sha256: 2b66b48dc19747c4e3777e8a36297731b13e9af76a38b56df77ca036587cc5b7
+    record_sha256: c55ed94c14209b2affa4edc79a9f0d7a769513eac3792de28e5557f456a385ff
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

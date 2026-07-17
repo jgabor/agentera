@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 65
+record:
+  number: 65
+  date: 2026-06-02
+  question: How should Agentera 3.0 reorganize the per-capability content surface relative to the bundled `/agentera` SKILL.md and the CLI?
+  context: SKILL.md is the discoverability surface for `npx skills`; the skills.sh public page for `agentera` empirically shows only the SKILL.md body, never per-capability instruction files. D59 makes the slim `capability_context` capsule the only supported capability startup JSON shape. D57 (firm) currently requires the runtime to read `instructions.md` in full on first invocation — that surface becomes redundant once the CLI capsule is authoritative and skills.sh only uses SKILL.md externally. Supported runtimes (Claude Code, OpenCode, Cursor, Copilot, Codex) all shell out cleanly to the CLI, and the broader CLI-over-MCP trend reinforces CLI as the canonical AI-agent interface. The v3 npm bundle is already self-contained at publish time via `scripts/copy-bundle.mjs`, so the source-of-truth can move without breaking install behavior or the `npx skills` ecosystem contract.
+  alternatives:
+    - name: Keep Markdown `instructions.md` as runtime surface
+      status: rejected
+      description: Status quo. The on-disk files stay in the runtime skill install; the CLI capsule becomes a parallel startup surface with no clear winner.
+    - name: Generated-from-source
+      status: rejected
+      description: "`instructions.md` stays in the runtime install but is generated from `src/instructions.ts` at publish. Halves the seam reduction and keeps a redundant Markdown surface the runtime still has to read."
+    - name: Drop from runtime install, relocate to `src/instructions.ts`
+      status: chosen
+      description: SKILL.md becomes the runtime discoverability surface (frontmatter index + body routing stub). The 12 per-capability `instructions.md` files leave the runtime install and move to `packages/cli/src/capabilities/*/instructions.ts` as TypeScript modules exporting the capability prose as a string constant. The CLI serves the prose as both the `capability_context` JSON capsule (D59) and as human-readable Markdown for the docs site. D57 first_invocation_read = full is replaced — the runtime shells out to `agentera prime --context <name>` instead of reading on-disk `instructions.md`.
+    - name: Keep both surfaces, no relocation
+      status: rejected
+      description: Adds `src/instructions.ts` alongside the on-disk `instructions.md`. Two authoring surfaces for the same prose invites drift and violates D58 single-name boundary.
+  choice: Adopt the SKILL-md-as-discoverability + `instructions.ts`-as-source-of-truth model. (1) `/agentera` SKILL.md is the runtime discoverability surface; frontmatter becomes a tight `name` + `description` index, body becomes a routing stub that hands off to `agentera prime` for state and to the CLI for capability execution. (2) The 12 per-capability `instructions.md` files leave the runtime skill install and relocate to `packages/cli/src/capabilities/*/instructions.ts` as TypeScript modules exporting the capability prose as a string constant. (3) The CLI serves the prose as both the `capability_context` JSON capsule (D59) and as human-readable Markdown for the docs site / GitHub. (4) D57 first_invocation_read = full is explicitly retired — the runtime shells out to `agentera prime --context <name>` instead of reading on-disk `instructions.md`. (5) The `npx skills` ecosystem surface (SKILL.md only) is unchanged.
+  reasoning: "The discoverability surface (SKILL.md) and the runtime startup surface (CLI capsule) are different concerns with different contracts. The Markdown `instructions.md` was bridging neither well — it was human-readable but rarely read by humans (skills.sh does not surface it), and runtime-readable but no longer the authoritative startup shape after D59. Moving prose to `src/instructions.ts` makes the TS source the human+runtime shared source; the CLI serves both shapes from one place, satisfying D58 single-name boundary and aligning with the CLI-over-MCP trend. Empirically verified that the skills.sh public surface is SKILL.md only, so the `npx skills` ecosystem sees no behavioral change. Three blind spots tested and held: (a) every supported runtime can shell out to the CLI; (b) the `npx skills` page tooling does not need per-capability Markdown; (c) the CLI is a stronger AI-agent content surface than static Markdown for the runtime working-memory slot that D57 used to fill."
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/SKILL.md, packages/cli/src/capabilities/*/instructions.ts (new), packages/cli/scripts/copy-bundle.mjs, references/cli/capability-instruction-contract.yaml, skills/agentera/capability_schema_contract.yaml, scripts/validate_capability.py, runtime descriptors, tests, README.md, AGENTS.md, references/cli/vocabulary.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Deliberation closed in resonara session on 2026-06-02 with three of three evidence-backed challenges landing. skills.sh public surface empirically verified to use SKILL.md only. CLI-over-MCP trend documented via jannikreinhard.com and justin.poehnelt.com references provided during the session. User confirmed D64-style capture and TODO filing. User confirmed satisfaction 2026-06-02 after D65 was written to `.agentera/decisions.yaml` with the schema and self_audit budget bumps in place.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-02
+  outcome: Adopt the SKILL-md-as-discoverability + `instructions.ts`-as-source-of-truth model. (1) `/agentera` SKILL.md is the runtime discoverability surface; frontmatter becomes a tight `name` + `description` index, body becomes a routing stub that hands off to `agentera prime` for state and to the CLI for capability execution. (2) The 12 per-capability `instructions.md` files leave the runtime skill install and relocate to `packages/cli/src/capabilities/*/instructions.ts` as TypeScript modules exporting the capability prose as a string constant. (3) The CLI serves the prose as both the `capability_context` JSON capsule (D59) and as human-readable Markdown for the docs site / GitHub. (4) D57 first_invocation_read = full is explicitly retired — the runtime shells out to `agentera prime --context <name>` instead of reading on-disk `instructions.md`. (5) The `npx skills` ecosystem surface (SKILL.md only) is unchanged.
+record_sha256: 46e5ffcc56a238978a06cebbb17e4cd72bf51298abb50127fd51708f2f9cd8c0
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: b6ef9fcff83f9d680ebe04731916c1dc9fef3dbd
+    blob: 467edb80f8e78300f0d810dfd6494f4962d59cb7
+    path: .agentera/decisions.yaml
+    record_sha256: 34a6fedc64f0d38c37b0bdf873f3e27e7ae26609635fc9af1463ab3674c086f5
+  projection_transition:
+    commit: 090929faf2d48990f2f447ae23d4c7b539f5d0bf
+    parent: b6ef9fcff83f9d680ebe04731916c1dc9fef3dbd
+    parent_count: 1
+    blob: 33479b94f6b721a144aef1d0d2fbcc992f98f3df
+    record_sha256: 48a5bb6779e3a610969dd9f0809927ed09a24b69dd4c6b244482c6946b26ad4e
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 24
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 48a5bb6779e3a610969dd9f0809927ed09a24b69dd4c6b244482c6946b26ad4e
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

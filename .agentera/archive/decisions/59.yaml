@@ -1,0 +1,70 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 59
+record:
+  number: 59
+  date: 2026-05-22
+  question: How should Agentera 3.0 default and measure JSON context output?
+  context: "Agentera v2 added `--context-profile slim` for `agentera hej --format json --capability-context <capability>` while preserving the full dashboard envelope as the default compatibility profile. The user clarified that Agentera 3.0 should not keep that compatibility path: slim capability context should become the only supported capability startup JSON shape, and every public JSON output surface should be inventoried, measured, and reviewed for bloat and token inefficiency. Follow-up deliberation clarified that 3.0 should make top-level commands map directly to capabilities, with `prime` as the intentional non-capability exception for central startup/context preparation. A second follow-up selected the stronger consolidation: `prime` should be the single non-capability control plane for initial session priming, project orientation/dashboard mode, and capability startup context. Bare `prime` keeps the static Agentera usage guide, a dashboard/orientation mode replaces the long-term need for `hej` as a separate context-serving command, and a context mode replaces `hej --capability-context`. The eventual dashboard/orientation display label and exact flag spelling remain provisional. The D47 vocabulary inventory provides the intended classification pattern: classify public surfaces and protected compatibility/history before implementation rather than rewriting opportunistically."
+  alternatives:
+    - name: Unified prime control plane
+      status: chosen
+      description: Remove full-profile capability-startup compatibility, make `capability_context` the supported startup JSON shape, make `prime` the single non-capability command for static priming, dashboard/orientation mode, and capability context mode, inventory every public JSON output, and gate byte and GPT-5 token budgets with measured results.
+    - name: Split prime and dashboard
+      status: rejected
+      description: Keeping `prime` for context while adding a separate dashboard command would create a second non-capability command exception after 3.0 and weaken the clean top-level capability map.
+    - name: Keep `hej --capability-context` as the central context seam
+      status: rejected
+      description: Keeping capability startup context under the orientation/dashboard surface would preserve a misleading ownership boundary after 3.0, especially if `hej` is renamed or narrowed to human-facing project orientation.
+    - name: Per-capability context commands
+      status: rejected
+      description: Commands such as `planera --context` would make each capability own its own startup envelope, but would duplicate context mechanics and weaken the single measured JSON budget surface.
+    - name: Compatibility-preserving default flip
+      status: rejected
+      description: Making slim the default while keeping `--context-profile full` would preserve the duplicate JSON shape the 3.0 boundary is meant to remove.
+    - name: Capability startup only
+      status: rejected
+      description: Measuring only `hej --capability-context` would miss bloat in other public JSON surfaces such as decisions, compact, validate, upgrade, describe, lint, gate, and query outputs.
+    - name: Manual measurement review only
+      status: rejected
+      description: Manual measurements are useful evidence, but without budget enforcement future JSON bloat can return unnoticed.
+  choice: Agentera 3.0 should remove `--context-profile full` as a supported capability startup compatibility path, make the slim `capability_context` capsule the only supported capability startup JSON shape, and consolidate central non-capability startup behavior under `prime`. Top-level commands should directly map to capabilities, with `prime` as the intentional non-capability exception. Bare `prime` should emit static Agentera usage for initial session priming. A dashboard/orientation mode under `prime` should replace separate `status` dashboard ownership, with the final display label and exact flag spelling still provisional. A context mode under `prime` should replace `status --capability-context` for preparing capability startup payloads. The implementation must require a D47-style inventory of all public JSON output surfaces, measure bytes and GPT-5 tokens for every supported `--format json` or `--json` public CLI output surface, and enforce budgets so bloated JSON fails tests.
+  reasoning: "Agent-facing JSON is protocol, not incidental formatting. Keeping both full and slim startup shapes would preserve the ambiguity Decision 58 is trying to remove, and keeping capability startup under `hej` would couple a central context API to a human-facing orientation surface whose future name remains open. Consolidating orientation and context under `prime` is stronger than adding a separate dashboard command because it creates one explicit control-plane exception rather than two: capability names run capabilities, while `prime` prepares the agent. Bare `prime` already carries static priming guidance, so extending it to dashboard/orientation mode and capability context mode makes the existing under-utilized command earn its name. Per-capability `--context` commands would spread startup mechanics across every capability and make measurement harder. A public-surface inventory plus automated byte/token budgets gives Planera and Realisera concrete acceptance criteria and prevents a clean 3.0 break from becoming another compatibility seam."
+  confidence: firm
+  feeds_into: TODO.md, PLAN.md, scripts/agentera, scripts/measure_capability_context_payloads.py, references/cli/agent-ready-state-contract.yaml, tests, README.md, UPGRADE.md, .agentera/archive/d47-app-home-vocabulary-inventory.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: D59 slim capability_context and unified prime control-plane direction confirmed as 3.0 policy during discuss satisfaction review on 2026-05-23. Implementation of dashboard mode, JSON surface inventory, and byte/token budgets remains downstream work.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+  outcome: Agentera 3.0 should remove `--context-profile full` as a supported capability startup compatibility path, make the slim `capability_context` capsule the only supported capability startup JSON shape, and consolidate central non-capability startup behavior under `prime`. Top-level commands should directly map to capabilities, with `prime` as the intentional non-capability exception. Bare `prime` should emit static Agentera usage for initial session priming. A dashboard/orientation mode under `prime` should replace separate `status` dashboard ownership, with the final display label and exact flag spelling still provisional. A context mode under `prime` should replace `status --capability-context` for preparing capability startup payloads. The implementation must require a D47-style inventory of all public JSON output surfaces, measure bytes and GPT-5 tokens for every supported `--format json` or `--json` public CLI output surface, and enforce budgets so bloated JSON fails tests.
+record_sha256: 6f3e408bdd38be46514e8ba2b3bacb8c26a9cfa89d185885a32d2cc2340173e6
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: aeafbd661dd54b483a8142f33548119d4e9a159f
+    blob: a026859b28b52476e5975a817c9814d69d60d47d
+    path: .agentera/decisions.yaml
+    record_sha256: fb4bf83bf92f87c89ce971e7444b09f5d524d1ea0b26d3f6d1987ffdf7f6dc44
+  projection_transition:
+    commit: 8b4ab30031a3a8f07ef890411f451a68cbdbf5fb
+    parent: aeafbd661dd54b483a8142f33548119d4e9a159f
+    parent_count: 1
+    blob: cb779bd542c24f45b3c8c7ec2dce2ec6b333b18b
+    record_sha256: 86d964ebaad07516959ab74d64d93e0fb93029222445be4a01ab0ecf44b90207
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 18
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 1797ac403d9955c12d65d0d144d9ec530239e0e661da37885f8cb9be798c1c8d
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

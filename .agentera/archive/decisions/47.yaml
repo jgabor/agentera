@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 47
+record:
+  number: 47
+  date: 2026-05-08
+  question: How should Agentera rename bundle semantics and organize app, profile, and user data roots?
+  context: Current `AGENTERA_HOME` means a replaceable installed bundle root, while `PROFILE.md` lives in the platform data directory. That split makes “bundle” leak into user language and blurs mutable user data versus managed app files.
+  alternatives:
+    - name: App-home layout
+      status: chosen
+      description: "`AGENTERA_HOME` is a durable platform data home; managed app files live under `AGENTERA_HOME/app`; profile and usage data live at the home root."
+    - name: Rename only in user-facing prose
+      status: rejected
+      description: Keeps root semantics and internal contracts confusing.
+    - name: Keep current bundle root
+      status: rejected
+      description: Preserves the profile/app split and stale install-root ambiguity.
+    - name: Mutate through doctor
+      status: rejected
+      description: Makes the self-check command write state instead of preserving read-only diagnostics.
+  choice: Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data under `AGENTERA_HOME`.
+  reasoning: “Install the Agentera app” is clearer than “install the Agentera bundle,” and home/app separation protects user data from app refreshes. `agentera doctor` should detect legacy bundle-root installs and report migration_required with exact dry-run/apply commands; `agentera upgrade` owns the idempotent migration writes.
+  confidence: firm
+  feeds_into: TODO.md, PLAN.md, README.md, UPGRADE.md, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, package/runtime registries, tests
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: "App-home implementation and tests exist: scripts/agentera_upgrade.py enforces managed app root planning/action behavior, scripts/agentera reports app_home, managedAppRoot, and userDataRoot, scripts/validate_app_home_contract.py checks public surfaces, and the focused app-home/upgrade/legacy-default test set passed 9 tests on 2026-05-15."
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+  outcome: Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data under `AGENTERA_HOME`.
+record_sha256: 5c5abe8d2540d8cf8dc78660df738b2c537949f4b24312ab507076ed845c81d4
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 218b882356835a66f32ab841810765d1b771557f
+    blob: 337501d445a8ae89ed0eb5708e03566d8f3a9a29
+    path: .agentera/decisions.yaml
+    record_sha256: 5ca13b03e48d33997af21bf0bdb632adebaa45ef2d884fffc06e681a94c48feb
+  projection_transition:
+    commit: 878838b009fdecefa56175f77384c20cc92b6bdf
+    parent: 218b882356835a66f32ab841810765d1b771557f
+    parent_count: 1
+    blob: cdd43bb4b0d1dc2c08f3cead38b4b2beec1041b3
+    record_sha256: 0820213ac39874e016540acf2fb8cd73d384c2d8302c32d87261dd0a42616547
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 7
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 0820213ac39874e016540acf2fb8cd73d384c2d8302c32d87261dd0a42616547
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

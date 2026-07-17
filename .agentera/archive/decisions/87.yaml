@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 87
+record:
+  number: 87
+  date: 2026-07-10
+  question: How should the audit capability instructions be audited, improved, and rewritten for the D80 six-section spine, D79 direct-contract delegation, D71 modal vocabulary, D81 voice delegation, and v3 reality?
+  context: 'Audit was the most bloated unaudited capability at 31,313 chars — 3x the D79 reference implementation. The audit prompt required ground-up audit with substance challenge (is the capability asking the right questions?) before structural challenge (are the instructions well-formed?). Four substance findings surfaced individually: (S1) per-dimension methodology is misplaced — ~60% of the 31K chars teach how to analyze source code per dimension (how to evaluate coupling, how to test quality, etc.) when the dimension table already provides sufficient guidance and the model knows SE methodology; (S2) self-audit as separate step should fold into Report per D85/D86 precedent; (S3) subagent spawning template should compress to brief pointer per D85/D86, with load-bearing citation standard relocated to State artifacts; (S4) "quick checklist" concept has no checklist items — a ghost reference. Structural findings: v2-era command references (agentera describe → agentera schema, agentera lint → agentera check lint, agentera decisions → agentera state decisions), v2-era file references (HEALTH.md, DECISIONS.md, PROGRESS.md, PLAN.md, VISION.md, DOCS.md, CLAUDE.md → .agentera/*.yaml + AGENTS.md), ghost file (references/audit-commands.md), spine violations (standalone Visual identity section, Artifact path resolution subsection, Contract subsection, Getting started section), personality leaks ("the colleague", narration voice, "hey I noticed this"), NEVER → MUST NOT (D71), comment header with decision ID.'
+  alternatives:
+    - name: Compress per-dimension methodology, fold self-audit, compress subagent spawning, cut quick checklist, apply all structural fixes
+      status: chosen
+      description: Keep the Available dimensions table verbatim. Cut the 7 standard SE dimension methodology sections (Architecture alignment, Pattern consistency, Coupling health, Complexity hotspots, Test health, Dependency health, Security hygiene). Retain the 3 agentera-specific dimension mechanics (Version health docs.yaml convention detection, Artifact freshness plan-relative staleness, Prose health self-audit rules). Fold self-audit into Report step (7→6 steps). Compress subagent spawning template to brief pointer. Relocate citation standard to State artifacts finding shape. Cut ghost quick checklist. Apply all structural fixes (D80 spine, D79 direct-contract, D71 modal vocab, D81 voice delegation, v3 reality command/file references).
+      reason_chosen: 'Precedent from all prior audits (D79-D86): instructions define process, not methodology. Build does not teach coding; research does not teach web reading; discuss does not teach deliberation. The dimension table with "What it evaluates" / "When to include" columns is the right granularity. The 7 cut dimensions are standard SE analysis the model already knows; the 3 retained dimensions have agentera-specific mechanics the model cannot derive. Self-audit fold-in and subagent spawning compression match D85/D86 precedent. The 41% reduction (31,313 → 18,401 chars) is consistent with the 20-46% reductions achieved by prior audits.'
+    - name: Retain per-dimension methodology
+      status: rejected
+      description: Keep all 10 per-dimension methodology sections at full detail. Preserves maximum guidance.
+      reason_rejected: At 31K chars (3x the reference implementation), the instructions waste tokens teaching what a capable model already knows. The methodology bloat is the root cause of the instruction size problem. Every prior audit of bloated capabilities (D85 build 20,662→15,081, D86 optimize 25,990→20,622) cut methodology content, not just drift.
+    - name: Externalize methodology to a reference file
+      status: rejected
+      description: Move per-dimension methodology to a separate reference document (like the non-existent references/audit-commands.md) and reference it from instructions.
+      reason_rejected: Adds a file to maintain that the instructions would need to reference. The non-existent references/audit-commands.md was a ghost reference — creating it would add maintenance burden without reducing the instructions served to the model. The dimension table is sufficient guidance.
+  choice: Compress per-dimension methodology (S1), fold self-audit into Report (S2), compress subagent spawning to brief pointer with citation standard relocated (S3), cut ghost quick checklist (S4), apply all structural fixes (D80 spine, D79 direct-contract, D71 modal vocab, D81 voice delegation, v3 reality command/file references). 31,313 → 18,401 chars (-41%). Six workflow steps (orient, select, assess, distill, report, connect).
+  reasoning: "The audit capability was the most bloated unaudited capability at 31K chars, with ~60% of content being per-dimension SE methodology the model already knows. The substance challenge revealed this as the root cause — not drift, not spine violations, but misplaced methodology. The precedent from all seven prior audits (D79-D86) is consistent: instructions define process (when to do what, what structure outputs take), not methodology (how to write code, how to evaluate coupling). The dimension table already provides sufficient \"what to evaluate\" and \"when to include\" guidance per dimension; the 3 agentera-specific dimension mechanics (Version health's docs.yaml convention detection, Artifact freshness's plan-relative staleness logic, Prose health's self-audit rules) were retained because they encode agentera-specific processes the model cannot derive. The self-audit fold-in and subagent spawning compression propagate the D85/D86 precedent to the seventh audited capability, and the structural fixes (D80 spine, D79 direct-contract, D71 modal vocab, D81 voice delegation, v3 reality) bring audit to full compliance with all cross-cutting rules."
+  confidence: firm
+  feeds_into: packages/cli/src/capabilities/audit/instructions.ts, references/cli/capability-instruction-structure.md, skills/agentera/capabilities/audit/schemas/validation.yaml, skills/agentera/capabilities/audit/schemas/exit.yaml, .agentera/decisions.yaml, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: "S1-S4 substance findings confirmed individually. Structural findings A-G approved as batch. Outline confirmed before drafting. Draft approved before applying to instructions.ts. Validation: typecheck 0 errors; build clean; capability validation PASS; drift verification confirms zero v2-era residue (NEVER=absent, CLAUDE.md=absent, agentera describe=absent, agentera lint=absent, HEALTH.md/DECISIONS.md/PROGRESS.md/PLAN.md/VISION.md/DOCS.md as standalone filenames=absent, Visual identity section=absent, Skill introduction=absent, personality leaks=absent, audit-commands.md ghost=absent, contract.md pointer=absent). Sibling files: validation.yaml V3 DECISIONS.md→.agentera/decisions.yaml; exit.yaml E1 HEALTH.md→health artifact; deviation table row Complete (D87). D76 compacted to archive to make room."
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-07-10
+  outcome: Compress per-dimension methodology (S1), fold self-audit into Report (S2), compress subagent spawning to brief pointer with citation standard relocated (S3), cut ghost quick checklist (S4), apply all structural fixes (D80 spine, D79 direct-contract, D71 modal vocab, D81 voice delegation, v3 reality command/file references). 31,313 → 18,401 chars (-41%). Six workflow steps (orient, select, assess, distill, report, connect).
+record_sha256: f17eb9da004a050889156347fe20918f6ec000fc7aed35f7dad8ac71411db0cb
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: e7233d177904a5315cf0617d9b1e293d4933d1b5
+    blob: 925f36bcbe30073f389b4a9e0d5ecbeb703c7877
+    path: .agentera/decisions.yaml
+    record_sha256: 060103da0e6cf87f28c459b71a37fd7f01b1c4473a0fb61fffc415d91b776b59
+  projection_transition:
+    commit: 97c0ff1c7301b340346f7359e0476224ae032bac
+    parent: e7233d177904a5315cf0617d9b1e293d4933d1b5
+    parent_count: 1
+    blob: 202fb76df15f5143da8756ca795c72a91ab4706e
+    record_sha256: 9629bb503bfb0058bfcb2a9ddba6b4148acf33a93d9a9ce2fbc86392400e3427
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 38
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 9629bb503bfb0058bfcb2a9ddba6b4148acf33a93d9a9ce2fbc86392400e3427
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

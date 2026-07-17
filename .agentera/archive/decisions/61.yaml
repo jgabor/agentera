@@ -1,0 +1,58 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 61
+record:
+  number: 61
+  date: 2026-05-23
+  question: How should Agentera adapt architecture-deepening concepts from external cross-pollination?
+  context: Inspirera analyzed an external architecture-deepening pattern. Follow-up resonera review compared inspektera, inspirera, and handoff-first options. The user chose better audits and accepted a narrow inspektera-first slice. Decision 60 remains separate; it covers Standards-and-Spec diff review.
+  alternatives:
+    - name: Narrow inspektera-first slice
+      status: chosen
+      description: Add evidence-backed deepening candidates to inspektera with deletion-test evidence, interface-test signal, dependency tags, and resonera handoff for load-bearing boundaries.
+    - name: Equal split ownership
+      status: rejected
+      description: Too diffuse for the first slice after better audits became dominant.
+    - name: External skill only
+      status: rejected
+      description: Fails the cross-pollination goal.
+  choice: Keep split ownership, but implement first in audit. Research imports sources; audit names evidence-backed audit candidates; discuss decides disputed boundaries; plan and build execute concrete candidates.
+  reasoning: The selected value was better audits. Inspektera is closest to concrete deepening opportunities. Narrow evidence keeps taste out of audit findings.
+  confidence: provisional
+  feeds_into: references/cli/vocabulary.md, audit, research, discuss, PLAN.md, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+    evidence: User confirmed satisfaction during discuss review on 2026-05-23.
+  outcome: Keep split ownership, but implement first in audit. Research imports sources; audit names evidence-backed audit candidates; discuss decides disputed boundaries; plan and build execute concrete candidates.
+record_sha256: 5f770f41b3d1d7ad7b120f1dd9423f90d70a2dd4100d9e6761d93864a8dfd444
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: bcf11f8a64005458304e6cc9b5676ceccfc36775
+    blob: 017ae9f5e2c015a56e2391b5ed1c32f25df50349
+    path: .agentera/decisions.yaml
+    record_sha256: 48cc54b6cd0edc221c73b01bfe2146fe1cd82ad7f7bb8e4623a3932fc1e41965
+  projection_transition:
+    commit: 51e8ae98c4ad99a32a2a0c8ae0f9e7a30c01def9
+    parent: bcf11f8a64005458304e6cc9b5676ceccfc36775
+    parent_count: 1
+    blob: 7212139cb488d08ef7dba8a86259cd87a41b53a2
+    record_sha256: 9e553b527b1e3a02ecedf2684dcb89acdd853833564884e1c43431a88dbab877
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 20
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: c26423a004d0ebf22bbdff4c5849486aa4d3efd261ec877ccfe178d7905b9aae
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

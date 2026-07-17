@@ -1,0 +1,62 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 66
+record:
+  number: 66
+  date: 2026-06-02
+  question: Should progress.yaml retain the per-cycle `commit` field or remove it entirely?
+  context: "Each full-detail cycle requires PR6 `commit` naming the product-change git hash. Build sets `commit: pending` then forward-backfills in a second commit. The TS CLI maintains `agentera check backfill` and `progressCommit.ts` (`commitToken`, `rewriteCycleCommits`, `computeBackfill`, `validateProgressCommits`) plus a validate-artifact ancestry guard. `rewriteCycleCommits` is brittle line-oriented YAML surgery (all-digit short hashes broke parsing until cycle 627 quoted values). The field duplicates `git log` scoped to cycle metadata. D58 single-source-of-truth and plan 'Reconsider the progress.yaml commit field' frame this evaluation. Cycle 629 freeze oracles omit per-cycle `commit`; audit 5b already skips change-magnitude when no hashes appear. Ripple inventory (21 files): DELETE `progressCommit.ts`, `backfill.ts`, `progressCommit.test.ts`, `backfill.test.ts`; EDIT `dispatch.ts` (parseBackfillArgs, runBackfill, check route), `validateArtifact.ts` (validateProgressCommits), `hooks/common.ts`, `core/git.ts` (ancestorState), `state.ts` (~L77), `help.ts`, `doctor.ts`, `migrateArtifactsV1ToV2.ts`; SCHEMA/PROSE progress schema PR6+PV2, build instructions, AGENTS.md, audit 5b, contract.md, UPGRADE.md, CHANGELOG; DATA `.agentera/progress.yaml`, TODO.md chore:3.0.0."
+  alternatives:
+    - name: Retain and fix the commit field
+      status: rejected
+      description: Keep PR6 required, retain backfill command and ancestry guard, continue forward-backfill ceremony. Cycle-627 quoting fixed one YAML edge case but preserves rewrite pipeline and double-commit-per-cycle cost.
+    - name: Remove the commit field from the progress schema
+      status: chosen
+      description: Drop PR6 and PV2 commit requirement, delete backfill command and progressCommit.ts, remove validate-artifact ancestry checks, strip commit from existing cycles, update AGENTS.md/build/UPGRADE/contract prose. Link cycles to product commits via git log plus timestamp/what/scope/verified.
+  choice: Remove the per-cycle `commit` field and delete backfill/rewrite/ancestry machinery. Do not retain `commit` as optional—D58 rejects parallel linkage sources. Follow-up build plan implements removal; this decision is design-only.
+  reasoning: "Field cost exceeds signal: forward-backfill forces a second commit per cycle for metadata `git log` already provides; `rewriteCycleCommits` stays fragile; ancestry guard mainly repairs amend-induced stale hashes the workflow creates. Consumers already cope: `progressVerificationSummary` never surfaced `commit`; audit 5b defaults depth without hashes; freeze oracles omit the key. Retain-and-fix perpetuates ceremony. Removal aligns with D58 and deletes a module plus command. Migration: (1) schema—drop PR6/PV2 commit; (2) delete `check backfill` surface; (3) delete `progressCommit.ts` and tests, drop `validateProgressCommits`; (4) remove commit from state progress text output; (5) strip commit from progress.yaml cycles and v1 migration; (6) update docs/prose; (7) test suite green and TODO resolved."
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/schemas/artifacts/progress.yaml, packages/cli/src/state/progressCommit.ts, packages/cli/src/cli/commands/backfill.ts, packages/cli/src/hooks/validateArtifact.ts, packages/cli/src/cli/dispatch.ts, AGENTS.md, skills/agentera/capabilities/build/instructions.md, UPGRADE.md, .agentera/progress.yaml
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Discuss evaluation and orchestrate plan task 1 (2026-06-02) recorded remove with 21-file ripple inventory, seven-step migration outline, and six follow-up build acceptance criteria. User confirmed satisfaction 2026-06-02; TODO.md chore entry rewritten for implementation per D66.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-02
+  follow_up_realisera_acceptance:
+    - GIVEN the progress artifact schema WHEN removal ships THEN PR6 `commit` is absent, PV2 no longer requires it, and `.agentera/progress.yaml` cycles validate without `commit` keys.
+    - GIVEN the backfill command surface WHEN removal ships THEN `agentera check backfill` is unreachable, `progressCommit.ts` and `backfill.ts` are deleted, and `validateArtifact.ts` no longer calls `validateProgressCommits`.
+    - GIVEN `agentera progress --format json` consumers WHEN cycles lack `commit` THEN JSON payloads remain valid, CLI tests pass, and audit 5b uses default audit depth.
+    - GIVEN AGENTS.md, build instructions, UPGRADE.md, and contract.md WHEN removal ships THEN commit-field and forward-backfill ceremony prose is removed.
+    - GIVEN the full CLI test suite WHEN removal completes THEN all tests pass and freeze oracles that omit per-cycle `commit` remain green.
+    - GIVEN TODO.md chore:3.0.0 WHEN closeout runs THEN the entry moves to Resolved with decision 66 reference and the implementation commit hash.
+  outcome: Remove the per-cycle `commit` field and delete backfill/rewrite/ancestry machinery. Do not retain `commit` as optional—D58 rejects parallel linkage sources. Follow-up build plan implements removal; this decision is design-only.
+record_sha256: 28079eca21bf305c6121512364df11cd078f79be731210ca593b5859307af3ac
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 7f5d47be7d813ed9fd6b045bf5ba003ebe49334d
+    blob: 6bd8136dda6e108706f837bcd82359d79c4ba7d3
+    path: .agentera/decisions.yaml
+    record_sha256: bd2475f2826fa74d0607e0d72017c73d0f6ffabbded11d70eeb6e1f51a30cf5a
+  projection_transition:
+    commit: 9ef66d8ccc6e65971faad2d186a47081abc877b2
+    parent: 7f5d47be7d813ed9fd6b045bf5ba003ebe49334d
+    parent_count: 1
+    blob: c4ed7aef67864f5d6eddefb04d1f4d9750a71773
+    record_sha256: 9a648b3da698864050623e53e8af82c42e89f9adb54e038d06e7efd8c3ad9a94
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 25
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 9a648b3da698864050623e53e8af82c42e89f9adb54e038d06e7efd8c3ad9a94
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

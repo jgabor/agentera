@@ -1,0 +1,90 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 70
+record:
+  number: 70
+  date: 2026-06-08
+  question: How should Agentera 3.0 name its twelve capabilities — Swedish `-era` forms or English aliases — once D58's zero-legacy-aliases rule activates?
+  context: |
+    Decision 58 (firm) says "zero post-3.0 surfaces may retain legacy aliases or multiple names." Decision 43 (firm) added English aliases (`status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, `orchestrate`) alongside the Swedish canonical IDs (`hej`, `visionera`, `resonera`, `inspirera`, `planera`, `realisera`, `optimera`, `inspektera`, `dokumentera`, `profilera`, `visualisera`, `orkestrera`). Decision 44 (firm) treats both surfaces as protected compatibility surfaces. The D43 aliasing was heavy: English aliases are referenced 6,365 times across the repo versus 3,281 for Swedish IDs, in 373 files. Decisions 65/67/68/69 (all firm) establish `packages/cli` as the narrow waist, mobile-first product posture, multi-surface one-fixed-workflow, and the CLI as the contract-defining surface that other surfaces honor. The CLI is ground zero. Naming decisions made at the CLI propagate to mobile, web, editor skills, and docs. v2 stable (`@latest`) ships from `main` as a separate distribution and remains Swedish; v3 (`@next`) is the surface this decision binds. Routing reliability is a tooling-design problem (careful `prime` output, dispatch rules, FSM-style state definitions where adopted) rather than a naming problem — names are stable identifiers within the routing machinery, not semantic load-bearers.
+  alternatives:
+    - name: Option 1 — keep both layers indefinitely
+      status: rejected
+      description: D43 aliasing continues. D58 looms but is never invoked.
+      reason_rejected: Contradicts D58; allows two names per capability to persist post-3.0.
+    - name: Option 2 — promote D43 English aliases to canonical in v3; retire Swedish `-era` in v3; v2 stable remains Swedish
+      status: chosen
+      description: Strict framing. The D43 aliases become the binding name set for v3 and onward. Future capability additions follow the same transfer-friendly pattern. Swedish forms persist only as historical artifacts and the v2 stable distribution. CLI is ground zero per D68/D69; mobile UX retires `brief` to align with `status`; editor skills and web docs use the same English names.
+      reason_chosen: Codebase has already transitioned (English aliases 2x Swedish hits). Mechanical English names compose with prior CLI patterns the LLM has dense priors on, supporting the LLM-routing reliability goal without making naming carry routing weight. Consistency across v3 surfaces wins over per-surface nuance; v2 stable is preserved as a frozen legacy path.
+    - name: Option 3 — phased transition with one release of protected Swedish legacy
+      status: rejected
+      description: v3.0.0 ships with both layers and a deprecation warning. v3.1.0 retires Swedish. v2 stable stays Swedish indefinitely.
+      reason_rejected: Adds a deprecation release without changing the outcome; defers the actual rename by one minor version.
+  choice: |
+    Promote the Decision 43 English aliases to canonical in v3. Retire the Swedish `-era` capability names in v3 surface only. v2 stable (`@latest`) and its capability surface remain Swedish. Mobile UX retires the `brief` UI label and aligns with the CLI's `status` canonical name. Editor skills and web docs use the same English names as the CLI. The Decision 43 alias set is the binding name set for v3 capability additions; future renames require a new decision. Existing references to Swedish IDs in v3 surface are demoted via mechanical cleanup (file path renames in `packages/cli/src/capabilities/` and `skills/agentera/capabilities/`, schema content updates, runtime descriptor updates, SKILL.md dispatch rewrite, vocabulary-index.yaml and vocabulary.md updates). D58 is reaffirmed: zero legacy aliases in v3. v2 stable is explicitly out of scope for this rename. The coexistence probe surfaces per-distribution naming divergence.
+  reasoning: |
+    D68/D69 establish the CLI as the contract-defining surface; D67 commits to mobile-first product; D65 relocates capability prose to `packages/cli`. Under these architectural commitments, the CLI's naming choice propagates to all v3 surfaces. Promoting D43 aliases to canonical yields a single name per capability in v3 (D58 satisfied), composes with LLM priors on common English CLI verbs, and the codebase has already done the heavy lifting through D43 aliasing. Strict framing (D43 aliases are the binding set) is chosen over soft framing (D43 as seed set) to give future capability additions a clear constraint; soft framing would re-decide naming conventions on every new capability, which is a per-addition tax. v2 stable remains Swedish because the branch model in AGENTS.md marks v2 as feature-frozen and a separate distribution; mixed environments are acceptable as a temporary state during v2→v3 migration. The rename cost is bounded: ~24 directory renames, ~50 schema/prose content updates, 36 runtime descriptor updates, and meta-file touches; the codebase's 2x English-alias footprint confirms the work is mechanical cleanup, not a rewrite. Routing reliability is solved through careful `prime` output and dispatch design (with FSM-style state definitions where adopted), not through naming — the names are stable identifiers within the routing machinery. Bare-routing second form (`bare status`) is dropped; `bare /agentera` is the only bare form. The 7 weak D43 aliases (which the deliberation initially considered re-picking with more distinctive English verbs) are accepted as-is because the D43 transfer-learning argument holds: common English CLI verbs let LLM agents compose with prior priors on `git status`/`kubectl status`/`npm status` patterns rather than learn from-scratch mappings for `status`. Mobile UX retires `brief` to align with `status` because CLI is ground zero; per-surface UI nuance loses to cross-surface consistency under D68/D69. Closeout deliberation 2026-06-09 (8 stresses): capability ID `status` replaces `status`; orientation stays `agentera prime` (no top-level `agentera status`); eleven English routing tops remain guidance-only; hard cut of Swedish IDs on feat/v3 at 3.0.0; NL triggers (`brief`, `what's next`) stay on `status`; handoffs use glyph plus English name; feat/v3 commit scopes use English; coexistence probe gains a naming-divergence line in the implementation PR; historical artifacts are not rewritten.
+  confidence: firm
+  feeds_into: skills/agentera/SKILL.md, skills/agentera/capabilities/*, packages/cli/src/capabilities/*, packages/mobile/, packages/web/, references/cli/vocabulary.md, references/cli/vocabulary-index.yaml, skills/agentera/protocol.yaml, .agentera/decisions.yaml, TODO.md, CHANGELOG.md, hooks/
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-09
+    evidence: Discuss deliberation 2026-06-08 — 10 stresses on Option 2; closeout deliberation 2026-06-09 — 8 implementation pins stressed and resolved; user accepted closeout package. Compaction deferred (D60 provisional). Mechanical rename deferred to implementation PR.
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: skills/agentera/SKILL.md
+    - source_field: feeds_into
+      reference: skills/agentera/capabilities/*
+    - source_field: feeds_into
+      reference: packages/cli/src/capabilities/*
+    - source_field: feeds_into
+      reference: packages/mobile/
+    - source_field: feeds_into
+      reference: packages/web/
+    - source_field: feeds_into
+      reference: references/cli/vocabulary.md
+    - source_field: feeds_into
+      reference: references/cli/vocabulary-index.yaml
+    - source_field: feeds_into
+      reference: skills/agentera/protocol.yaml
+    - source_field: feeds_into
+      reference: .agentera/decisions.yaml
+    - source_field: feeds_into
+      reference: TODO.md
+    - source_field: feeds_into
+      reference: CHANGELOG.md
+    - source_field: feeds_into
+      reference: hooks/
+  outcome: |
+    Promote the Decision 43 English aliases to canonical in v3. Retire the Swedish `-era` capability names in v3 surface only. v2 stable (`@latest`) and its capability surface remain Swedish. Mobile UX retires the `brief` UI label and aligns with the CLI's `status` canonical name. Editor skills and web docs use the same English names as the CLI. The Decision 43 alias set is the binding name set for v3 capability additions; future renames require a new decision. Existing references to Swedish IDs in v3 surface are demoted via mechanical cleanup (file path renames in `packages/cli/src/capabilities/` and `skills/agentera/capabilities/`, schema content updates, runtime descriptor updates, SKILL.md dispatch rewrite, vocabulary-index.yaml and vocabulary.md updates). D58 is reaffirmed: zero legacy aliases in v3. v2 stable is explicitly out of scope for this rename. The coexistence probe surfaces per-distribution naming divergence.
+record_sha256: dde64e302e82e5eff42ed675756541ec014676c4d0ef56989aa8ce6c1b5dd4f2
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 70a67a78c6779c3c3170b0106efda6e488e73a02
+    blob: 5a3f32357f4409cbae6e71bfb2375a9d0c53ea7a
+    path: .agentera/decisions.yaml
+    record_sha256: 3a88af9689c320cf51f45fa6f7e737a768b0729e38362825afee47b6f4879c63
+  projection_transition:
+    commit: 3bfa9ff77d94ddda8a8f8d07d0485c79e9a4cec1
+    parent: 70a67a78c6779c3c3170b0106efda6e488e73a02
+    parent_count: 1
+    blob: 42c24959dbdc446023202e25baf215bb331c6783
+    record_sha256: 23095dcb397bdccd824d9fa09093ec7fc6fdc3d143955eec1e346959a44418d7
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 29
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 23095dcb397bdccd824d9fa09093ec7fc6fdc3d143955eec1e346959a44418d7
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

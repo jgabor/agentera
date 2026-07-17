@@ -1,0 +1,113 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 19
+record:
+  number: 19
+  date: 2026-04-30
+  dimensions:
+    - artifact freshness
+    - optimize analyzer health
+    - test and validation health
+    - version health
+    - unintended-change hygiene
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable vs Audit 18. Optimize analyzer reliability landed cleanly, but DOCS coverage evidence lags the 536-test suite.
+  grades:
+    Freshness: A
+    Analyzer: A
+    Tests: B
+    Version: A
+    Change hygiene: A
+  dimension_details:
+    - name: Artifact freshness
+      grade: A
+      summary: "`5ee6db0` updates CHANGELOG, TODO, PROGRESS, and the archived plan after `2026-04-30` plan creation. `.agentera/PLAN.md` is absent, and this audit updates HEALTH."
+      findings:
+        []
+    - name: Optimize analyzer health
+      grade: A
+      summary: "`skills/optimize/scripts/analyze_experiments.py:39-444` keeps parsing, target extraction, analysis, and frontier rendering separated. Live build-token smoke produced 6 experiments, 2 kept, best metric 12055, and Markdown frontier output."
+      findings:
+        []
+    - name: Test and validation health
+      grade: B
+      summary: "Focused analyzer tests passed: `19 passed`. Full suite passed: `536 passed`. Spec, contract, lifecycle-adapter, eval dry-run, live analyzer, frontier, and artifact self-audit checks passed."
+      findings:
+        - heading: "⇉ DOCS coverage count is stale, warning (confidence: 95)"
+          severity: warning
+          confidence: 95
+          location: |-
+            `.agentera/DOCS.md:95`
+            - **Evidence**: DOCS reports "523 tests across 19 files". Current `python3 -m pytest --collect-only -q` reports 536 tests collected.
+            - **Impact**: Orientation consumers see stale validation scale after analyzer reliability tests landed.
+            - **Suggested action**: Run document to refresh DOCS.md Coverage and Test suite rows to 536 tests.
+          evidence: |-
+            DOCS reports "523 tests across 19 files". Current `python3 -m pytest --collect-only -q` reports 536 tests collected.
+            - **Impact**: Orientation consumers see stale validation scale after analyzer reliability tests landed.
+            - **Suggested action**: Run document to refresh DOCS.md Coverage and Test suite rows to 536 tests.
+          impact: |-
+            Orientation consumers see stale validation scale after analyzer reliability tests landed.
+            - **Suggested action**: Run document to refresh DOCS.md Coverage and Test suite rows to 536 tests.
+          suggested_action: Run document to refresh DOCS.md Coverage and Test suite rows to 536 tests.
+    - name: Version health
+      grade: A
+      summary: "Version-bearing targets report `1.25.0`: `registry.json`, root/Copilot/Codex manifests, 12 skill plugin manifests, Claude marketplace, and OpenCode `AGENTERA_VERSION`. No `feat` or `fix` commits landed after the bump."
+      findings:
+        []
+    - name: Unintended-change hygiene
+      grade: A
+      summary: "Only `.agentera/HEALTH.md` is modified after this audit. Plan commits changed the expected analyzer, tests, metadata, CHANGELOG, TODO, PROGRESS, and archived plan surfaces. ### Trends vs Audit 18 - **Improved**: Optimize analyzer reliability now has real-artifact JSON and frontier smoke evidence. - **Degraded**: Test evidence freshness B because DOCS coverage stayed at 523 after the 536-test suite. - **Stable**: Artifact lifecycle, version metadata, and change hygiene remain green. - **New findings**: DOCS coverage count stale. - **Resolved**: No prior Audit 18 findings were open. ### Patterns Observed - Optimize analyzer: one stdlib script owns parse, target extraction, analysis, and optional frontier rendering. - Testing approach: parser edge cases, target diagnostics, CLI mode compatibility, and frontier ordering are covered in `tests/test_analyze_experiments.py`. - Release pattern: feature-bearing analyzer work drove minor release `1.25.0`, then a freshness checkpoint archived the plan."
+      findings:
+        []
+  trends:
+    improved: |-
+      Optimize analyzer reliability now has real-artifact JSON and frontier smoke evidence.
+      - **Degraded**: Test evidence freshness B because DOCS coverage stayed at 523 after the 536-test suite.
+      - **Stable**: Artifact lifecycle, version metadata, and change hygiene remain green.
+      - **New findings**: DOCS coverage count stale.
+      - **Resolved**: No prior Audit 18 findings were open.
+    degraded: |-
+      Test evidence freshness B because DOCS coverage stayed at 523 after the 536-test suite.
+      - **Stable**: Artifact lifecycle, version metadata, and change hygiene remain green.
+      - **New findings**: DOCS coverage count stale.
+      - **Resolved**: No prior Audit 18 findings were open.
+    stable: |-
+      Artifact lifecycle, version metadata, and change hygiene remain green.
+      - **New findings**: DOCS coverage count stale.
+      - **Resolved**: No prior Audit 18 findings were open.
+    new_findings: |-
+      DOCS coverage count stale.
+      - **Resolved**: No prior Audit 18 findings were open.
+    resolved: No prior Audit 18 findings were open.
+  patterns:
+    - "Optimize analyzer: one stdlib script owns parse, target extraction, analysis, and optional frontier rendering."
+    - "Testing approach: parser edge cases, target diagnostics, CLI mode compatibility, and frontier ordering are covered in `tests/test_analyze_experiments.py`."
+    - "Release pattern: feature-bearing analyzer work drove minor release `1.25.0`, then a freshness checkpoint archived the plan."
+record_sha256: 4bfee09de22a888d94612447da24e3b705a84ce88e3f7fe542a8bf8a94da85f0
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 1a74866e066b48d6ffce5b81b1ca315f5a365631
+    blob: 2de3fbcd091b1a548d14a7a15f9cf82c8166027c
+    path: .agentera/health.yaml
+    record_sha256: 4bfee09de22a888d94612447da24e3b705a84ce88e3f7fe542a8bf8a94da85f0
+  projection_transition:
+    commit: 8a4cd2f546447d0ce8306268c0c72b9b21ac7d42
+    parent: 1a74866e066b48d6ffce5b81b1ca315f5a365631
+    parent_count: 1
+    blob: c3c67d1e33a694d11ee84eace4f749ab9b697ca8
+    record_sha256: 45e1b124788618a104f4eb41bf1deda45809eb616b2271f3f54b5e5c74762450
+  current_projection:
+    path: .agentera/health.yaml
+    collection: archive
+    index: 18
+    document_sha256: 2b66b48dc19747c4e3777e8a36297731b13e9af76a38b56df77ca036587cc5b7
+    record_sha256: 45e1b124788618a104f4eb41bf1deda45809eb616b2271f3f54b5e5c74762450
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

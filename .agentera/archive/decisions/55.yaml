@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 55
+record:
+  number: 55
+  date: 2026-05-17
+  question: How should Agentera expose usage statistics and local-history corpus generation?
+  context: D48 exposed `agentera usage` for analytics while intentionally not adding `agentera corpus`. The helper-script inventory identified `scripts/extract_corpus.py` as a direct helper that reads local runtime history and produces an intermediate corpus consumed by `scripts/usage_stats.py` and Profilera. A follow-up deliberation considered whether clear consent semantics made a top-level corpus command safe enough, then rejected exposing the implementation artifact as product vocabulary.
+  alternatives:
+    - name: Add top-level agentera corpus
+      status: rejected
+      description: Makes a sensitive intermediate data structure user-facing vocabulary and invites users to reason about extraction artifacts instead of the analytics outcome.
+    - name: Keep agentera usage only
+      status: rejected
+      description: Preserves compatibility, but leaves the missing-corpus path less discoverable and keeps the user-facing command name weaker than the outcome.
+    - name: Add agentera stats with internal corpus refresh
+      status: chosen
+      description: Expose usage statistics as the product command while keeping corpus generation as an internal, previewable, consent-gated implementation step.
+    - name: Auto-refresh stats from runtime history
+      status: rejected
+      description: Violates the privacy boundary by making a normal stats read silently inspect local AI runtime histories.
+  choice: Add `agentera stats` as the user-facing analytics workflow and do not expose a top-level `agentera corpus` command. Plain `agentera stats` reports from existing fresh data or shows the refresh command when data is missing or stale; it must not read local runtime history. `agentera stats refresh --dry-run` previews candidate runtimes, paths, and expected actions without extraction or writes. `agentera stats refresh --consent local-history` reads bounded local runtime history, writes the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and reports stats. Preserve `agentera usage` as a compatibility surface or alias.
+  reasoning: Users want to measure Agentera usage, not operate on a corpus artifact. Keeping corpus generation internal reduces vocabulary and privacy risk while still giving agents and users a supported way to refresh analytics data. The preview plus explicit `--consent local-history` contract satisfies non-interactive CLI design, makes sensitive local-history reads intentional, and keeps `usage_stats.py` and `extract_corpus.py` as implementation seams behind a clearer product command.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, scripts/extract_corpus.py, scripts/usage_stats.py, tests, README.md, capability prose
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: "D55 stats/corpus privacy boundary stands with D58 governing the 3.0 live boundary: `agentera usage` as a compatibility surface or alias is migration and upgrade-detection input only, not a supported live protocol alias after 3.0. Reconciled in discuss satisfaction review on 2026-05-23."
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+  outcome: Add `agentera stats` as the user-facing analytics workflow and do not expose a top-level `agentera corpus` command. Plain `agentera stats` reports from existing fresh data or shows the refresh command when data is missing or stale; it must not read local runtime history. `agentera stats refresh --dry-run` previews candidate runtimes, paths, and expected actions without extraction or writes. `agentera stats refresh --consent local-history` reads bounded local runtime history, writes the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and reports stats. Preserve `agentera usage` as a compatibility surface or alias.
+record_sha256: 8a0313201bfb3b5e0dd2a7a6c4602942d49b571f6be74fb900630038c03c9ac0
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 5b76d871c2e70ea68465ca3cea88813d1a786dc2
+    blob: e71f5ad123b85b37be83bbc505825628694c81e0
+    path: .agentera/decisions.yaml
+    record_sha256: bee14a4264ae51152b88ee6c852d627846a4088a43d40cf6e475cd69d9cff503
+  projection_transition:
+    commit: aceaa1081a5de84d56825eba9c4a2e8e7af9debd
+    parent: 5b76d871c2e70ea68465ca3cea88813d1a786dc2
+    parent_count: 1
+    blob: 6be8f016a3319e8c617e3e6419e06400d6714ec7
+    record_sha256: 3bee7e78fab82e0ec0a45012ad86687281268ac242e005ac916987fbf168d77e
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 14
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: a384e6d1c32e31c14612b553d14a61cf4659e46c5f94b9d6a83a1013b6083cef
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

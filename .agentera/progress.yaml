@@ -1,4 +1,29 @@
 cycles:
+  - number: 902
+    timestamp: 2026-07-17 22:06
+    type: fix
+    phase: build
+    what: Made repository entity migration ready with exact projection recovery,
+      historical health conversion, projection correlation, residue accounting,
+      and legacy docs/plan adapters.
+    inspiration: Plan Task 13 and repository-local causal Git evidence.
+    discovered: The authoritative identity lists reconcile to 39 decision plus 19
+      health envelopes; the stated expected decision count of 40 is
+      arithmetically inconsistent with the 32 current plus 7 archive-only
+      identities. Staging D3+D4 remains one non-entity residue.
+    verified: Recovery dry-run and explicit apply completed with zero refusals;
+      state validation passed; post-recovery entity preview reported 1,442
+      logical identities, 2,208 resolved relationships, one residue, and zero
+      blockers.
+    next: Task 14 remains pending. Use the clean-HEAD external approval transcript;
+      do not apply entity migration without explicit approval.
+    context:
+      intent: Complete Plan Task 13 without applying the Task 14 entity cutover.
+      constraints: No Task 14 apply, remote access, source aggregate edits, archive
+        edits, version, changelog, vision, push, publish, tag, or amend.
+      unknowns: none
+      scope: CLI projection recovery and entity migration adapters; immutable
+        decision/health recovery envelopes; Plan Task 13 and Cycle 902 evidence.
   - number: 901
     timestamp: 2026-07-17 19:23
     type: fix
@@ -211,32 +236,6 @@ cycles:
       unknowns: None within the corrected Task 10 audit scope.
       scope: Exact publication removal, migration preview/apply source identity and
         recovery, focused tests, migration help, and state-storage authority.
-  - number: 892
-    timestamp: 2026-07-17 13:00
-    type: feat
-    phase: build
-    what: Delivered Task 10 durable entity migration apply, explicit resume,
-      idempotent replay, and guarded rollback through agentera state migrate
-      entities.
-    inspiration: Active Plan Task 10 and Decision 94 state-storage authority.
-    discovered: Nested test runners rebuilt dist concurrently; crash tests now use
-      one built CLI worker subprocess so the full suite remains race-free.
-    verified: 138 focused migration/preview/authority/help/schema tests and full
-      2548-test CLI suite passed; typecheck, build, check validate state, build
-      capability and capability-contract validation, check compact, help, and
-      schema passed.
-    next: Task 11 remains pending. Do not apply migration to this repository or
-      begin consumer cleanup without a new cycle.
-    context:
-      intent: Complete only Plan Task 10 with durable pre-publication evidence,
-        deterministic resume, no-rewrite replay, and successor-safe rollback.
-      constraints: No live repository apply; no Task 11 consumer cleanup; no
-        entity-family redesign; no blocker repair; no vision, publish, push, or
-        tag.
-      unknowns: None within Task 10 acceptance; the live repository's blocked preview
-        remains intentionally untouched.
-      scope: packages/cli entity migration preview/apply command, durable journal
-        implementation, scoped schema/help/authority, and migration regressions.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -306,6 +305,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 892 (2026-07-17): Delivered Task 10 durable entity migration
+      apply, explicit resume, idempotent replay, and guarded rollback
+      through..."
   - summary: "Cycle 891 (2026-07-17): Fixed entity migration preview to inventory
       the canonical docs-mapped TODO source."
   - summary: "Cycle 890 (2026-07-17): Added TODO-item and documentation-inventory
@@ -400,16 +402,18 @@ archive:
   - summary: "Cycle 853 (2026-07-16): Made status startup self-contained: prime
       --context status now returns canonical bounded decision state with
       full..."
-  - summary: "Cycle 852 (2026-07-16): Repaired reopened compact-prime Plan Task 3
-      full-fidelity dashboard emission: conditional top-level omission now
-      applies only..."
 omitted: true
-omitted_count: 137
+omitted_count: 138
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

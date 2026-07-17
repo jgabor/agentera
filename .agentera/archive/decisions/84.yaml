@@ -1,0 +1,53 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 84
+record:
+  number: 84
+  date: 2026-07-09
+  question: How should the plan capability instructions be audited and rewritten to align with D80 six-section spine, D79 direct-contract philosophy, and D81 voice delegation, while adopting substance design improvements (unknowns/rejected fields, fog check at handoff, qualitative replan trigger) from the prior discuss and research audits (D82, D83)?
+  context: 'Fifth capability audit (D79 status, D81 vision, D82 discuss, D83 research done). Plan is a mode-split shape bridging deliberation (discuss) and execution (build), frequently called. Pre-flight grounding found v2-era ghosts: standalone "Visual identity" section (D79/D81 fold glyph into Purpose); "Skill introduction" line (D79/D82 cut); "Contract values" subsection enumerating VT5-VT8 IDs (D79 pattern: one-line reference to protocol.yaml); contract.md pointer (D79 removed from status/vision); `$AGENTERA_PROFILE_DIR/PROFILE.md` direct reads (v3 serves `planning_context.profile.path`); full artifact-path-resolution subsection (SKILL.md owns per D79); standalone Getting-started section (D80 spine: fold into section 6); `## How build reads PLAN.md` section (scope leak: build consumption flow belongs in build audit, not plan prose); hardcoded "sharp colleague" personality (D81 violation); re-encodings of `planning_context.startup_contract` rules (planning levels, step markers, max-tasks, cli-first orientation, artifact access boundaries, handoff expectations — runtime already mechanizes these); canonical-filename references (VISION.md, DECISIONS.md, TODO.md, HEALTH.md, PROGRESS.md — v3 serves as artifact-id + CLI mediation); CLAUDE.md reference (v3 uses AGENTS.md); `agentera plan --format json` for state (v3 state lives at `agentera state plan --format json`); `agentera describe`, `agentera query`, `agentera decisions`, `agentera lint` ghosts (v3 uses `agentera schema`, `agentera state query`, `agentera state decisions`, `agentera check lint`); contract Section 24 conventions reference (contract.md tops at Section 23 — ghost); `complete_for_normal_deliberation_context` wrong contract key (runtime serves `complete_for_plan_artifact`); `agentera lint --artifact` command shape in Step 4 prose (capability-instruction contract owns command shape). Schema version `agentera.planeraStartup.v1` still uses Swedish name (runtime field; out of scope for the prose audit — flagged for separate runtime cleanup). Substance design decisions: (S1) Skip-level criteria drops the 50-LOC threshold in favor of shape-only signals (single-file, localized defect, config tweak) AND touches-no-shared-abstraction. LOC count ignores shared-export impact; a 10-LOC change to a public export can ripple across many consumers. (S2) Effort-bias check cut entirely — plan picks ONE shape per request, there are no multi-option comparisons to bias. Rule was misplaced from discuss. (S3) Adversarial-review dismissed findings now persist in the artifact `rejected:` field (issue + rationale) rather than ephemera — downstream consumers inherit the adjudication instead of relitigating. (S4) Plan-level unknowns field added: every full plan surfaces at least one planning-time known-unknown (task X outcome determines whether task Y is needed) with question, affects_task, resolve_by. Mirrors discuss D82 fog-aware readiness check. (S5) Replanning trigger defined qualitatively: re-invoke plan when surprises on one task alter the acceptance criteria of downstream tasks — not a numeric threshold. (S6) `## How build reads PLAN.md` section cut; plan declares only the artifact read contract in section 2 (status enum, archive lifecycle, surprises+unknowns logging). Build consumption flow lives in build audit. (S7) Full-plan YAML formats reordered intent-first: what/why/overall_acceptance precede scope/design/tasks. Drift cleanup aligns with D79/D81/D82/D83 precedent. Safety rails converted from NEVER to MUST NOT (D71); added explicit consent-on-handoff rule. New length 14,515 chars (was 14,800 — substance additions balanced drift cuts). references/cli/capability-instruction-structure.md plan row Complete (D84). TODO.md plan audit marked resolved. typecheck 0 errors; capability and contract validation PASS; check compact within limits; vitest 1278/1278 green.'
+  alternatives:
+    - name: Rewrite with substance improvements, drift cleanup, scope-leak cut
+      status: chosen
+      reason_chosen: |
+        All seven substance findings (skip-threshold shape-only, effort-bias cut, dismissal persistence, plan-level unknowns, qualitative replan trigger, scope-leak cut, intent-first artifact ordering) address real capability design gaps. Drift cleanup aligns with D79/D81/D82/D83 precedent. Fog identification and rejected-field persistence propagate to remaining 7 unaudited capabilities as needed substance vocabulary.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: |
+        Would leave the effort-bias check mis-applied to single-option selection, the ephemeral dismissal provenance gap, the absence of planning-time fog capture, and the `How build reads PLAN.md` scope leak — a capability that writes a clean artifact but loses adjudication history and known-unknown foreshadowing downstream.
+  choice: Rewrite with substance improvements, drift cleanup, scope-leak cut
+  reasoning: |
+    The discuss (D82) and research (D83) audits established substance findings as the highest-leverage changes. Plan's effort-bias check, ephemeral dismissal provenance, absence of planning-time fog capture, and `How build reads PLAN.md` scope leak are the same class of finding. Unknowns and rejected fields propagate to orchestrate and build audits as needed (orchestrate will check unknowns-list state; build will write surprises referencing the resolved unknowns).
+  confidence: firm
+  feeds_into: references/cli/capability-instruction-structure.md, packages/cli/src/capabilities/plan/, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-07-10
+record_sha256: 2f9cf6f17592902ce1fbc3583f51ca567f538f13b9f0de72baf0f5d17b596e3f
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 3ba47658060b7deb39144dd4c728e22d1e1ad186
+    blob: 2632ad2ece66997c800e73ad8aea89fcb3c6cb70
+    path: .agentera/decisions.yaml
+    record_sha256: 8bab64b2638849c4e2e57f7176882121ca85f830563ac5861214e2b7702fade2
+  projection_transition:
+    commit: e3e603c140d7dd9eb3dd2de5d90629979b4d752a
+    parent: 3ba47658060b7deb39144dd4c728e22d1e1ad186
+    parent_count: 1
+    blob: 76109848b16921c9753cf8a29f8aac64808eaf7a
+    record_sha256: 53b6d6c8cbd2289ff9a65ca673e54aef24cd383b48f96ede341fbeb706353640
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 35
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 029fe7b3d03cedd69f39c07b63f2681f7a2da2b3c6ce0f862b0974cc17b59ad0
+  overlay:
+    fields:
+      - date
+      - number
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

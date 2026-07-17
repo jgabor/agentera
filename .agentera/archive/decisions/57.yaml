@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 57
+record:
+  number: 57
+  date: 2026-05-18
+  question: How should Agentera rename capability `prose.md` files and make first-invocation instruction reading explicit?
+  context: The capability file name `prose.md` undersells its role as the behavioral instruction source for each capability. The user asked how to rename it to `instructions.md` and enforce full reading during initial capability invocation. The practical constraint is that Agentera cannot technically force every runtime to read a file, but it can make the requirement explicit through schema metadata, CLI capability context, router guidance, descriptors, docs, and tests.
+  alternatives:
+    - name: Full instructions contract
+      status: chosen
+      description: Rename `skills/agentera/capabilities/*/prose.md` to `skills/agentera/capabilities/*/instructions.md`, add first-invocation read metadata, surface required reads through CLI capability context, and update the capability schema contract, router guidance, runtime descriptors, docs, and tests.
+    - name: Rename only
+      status: rejected
+      description: Improves naming but leaves agents guessing whether instructions must be read during startup.
+    - name: Metadata without rename
+      status: rejected
+      description: Adds startup-read semantics but keeps the misleading `prose.md` name and preserves the old vocabulary debt.
+    - name: Runtime hook enforcement
+      status: rejected
+      description: Not portable because runtimes do not expose a shared, reliable conversation-state proof that a file was read in full.
+  choice: Rename capability `prose.md` files to `instructions.md`, add `first_invocation_read` metadata with values such as `full`, `compact_startup`, or `skip`, surface the required reads through `agentera status --format json --capability-context <name>`, and update `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`, `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`, `AGENTS.md`, and `references/cli/vocabulary.md` so first capability invocation reads `instructions.md` in full unless an explicit compact-startup exception is declared.
+  reasoning: The `instructions.md` name states the file's purpose better than `prose.md` and turns capability startup from an implicit convention into a contract. Full technical enforcement across every runtime is unrealistic, so the durable implementation should combine schema metadata, CLI visibility, Agentera router guidance, descriptor updates, and regression coverage rather than relying on prose alone.
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/SKILL.md, skills/agentera/capability_schema_contract.yaml, scripts/agentera, scripts/validate_capability.py, runtime descriptors, tests, README.md, AGENTS.md, references/cli/vocabulary.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: "D57 instructions.md rename and first_invocation_read contract stand with D59 governing the capability startup context seam: required reads are surfaced through `agentera prime --context <capability>` rather than `status --capability-context`. Reconciled in discuss satisfaction review on 2026-05-23."
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+  outcome: Rename capability `prose.md` files to `instructions.md`, add `first_invocation_read` metadata with values such as `full`, `compact_startup`, or `skip`, surface the required reads through `agentera status --format json --capability-context <name>`, and update `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`, `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`, `AGENTS.md`, and `references/cli/vocabulary.md` so first capability invocation reads `instructions.md` in full unless an explicit compact-startup exception is declared.
+record_sha256: 01825019b4b9faac478576cdf3155a5ce6f2e73d43a685115461f17e10526877
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: f1a78204ceaf30d6234ac224bbd965c48751001b
+    blob: ae053db382a2c20fcf5f448ffae30ef4747ae03d
+    path: .agentera/decisions.yaml
+    record_sha256: b66459e89a05dce8aa6ac1987843dc8a0775053e9129d07ec3052b61a3da4c55
+  projection_transition:
+    commit: 95ef7986aedacbc24f68ea0d4abfc5c79f0c468a
+    parent: f1a78204ceaf30d6234ac224bbd965c48751001b
+    parent_count: 1
+    blob: a026859b28b52476e5975a817c9814d69d60d47d
+    record_sha256: b73efcf485f32320e280ff6fe8383853486116a53db5c9af02afd173855d01bb
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 16
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 06a34fe39374502e7df96380ec13ff74bbdbe4df48a5680b6561c0dcad97cdef
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

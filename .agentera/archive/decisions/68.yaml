@@ -1,0 +1,73 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 68
+record:
+  number: 68
+  date: 2026-06-05
+  question: Should Agentera expand from a skill suite into a multi-surface product sharing one fixed workflow?
+  context: |
+    Decision 67 (2026-06-05) repositioned docs toward mobile-first single brand
+    with three packages and described skills/references as internal implementation
+    contracts. An initial discuss draft (same day) incorrectly framed expansion as
+    SaaS/PaaS with Pi-style extensibility on some surfaces. User correction: drop
+    SaaS and PaaS entirely; no extensions remains true everywhere — Agentera ships
+    as-is with a fixed system prompt, fixed tools, and fixed workflow. Skills and
+    editor plugins are not user extensibility — they are another delivery surface for
+    the same workflow, alongside CLI, mobile, web, desktop, TUI, and potentially
+    cloud later.
+  alternatives:
+    - name: Keep D67 three-package ceiling
+      status: rejected
+      description: Mobile, web, and cli only; no additional surfaces; skills stay documented as internals.
+      reason_rejected: User intent is explicit multi-surface expansion; skills/plugins should be named as a surface, not demoted to hidden internals.
+    - name: SaaS/PaaS platform with third-party extensibility
+      status: rejected
+      description: Managed cloud product and/or platform APIs for others to build on; plugin ecosystems on editor or mobile surfaces.
+      reason_rejected: User rejected SaaS, PaaS, and extensibility framing on 2026-06-05 refinement.
+    - name: Pi-style user extensions on CLI/desktop/TUI
+      status: rejected
+      description: Users load third-party skills, plugins, or MCP servers on power-user surfaces while mobile stays curated.
+      reason_rejected: Contradicts no-extensions policy; Agentera ships as-is on every surface.
+    - name: Multi-surface product, one fixed workflow
+      status: chosen
+      description: Agentera is one opinionated product delivered through multiple surfaces — the same twelve-capability workflow, `.agentera/` state, and built-in tools everywhere. CLI, mobile, web, desktop, TUI, editor skill/plugin runtimes, and optional future cloud are surfaces (where and how you interact), not extension hosts. Nothing is loaded from outside; missing behavior is built into Agentera.
+  choice: Adopt multi-surface product architecture with a single fixed workflow. Surface map — packages/cli (state access + agent runtime), packages/mobile (flagship app), packages/web (marketing + docs), editor skill/plugin surfaces (Cursor, Claude, OpenCode, Codex, Copilot — same workflow as today), future packages/desktop, packages/tui, and optional future cloud surface. No SaaS or PaaS framing. No user extensions, plugins, MCP servers, or third-party skill loading on any surface. D67 docs pass remains valid for monorepo consolidation; D68 corrects the "skills as internals only" ceiling and replaces any SaaS/PaaS or extensibility split with surface parity under one product boundary.
+  reasoning: Surfaces answer "where do I use Agentera?" not "what can I bolt on?" The skill bundle in an editor and the mobile app are the same product in different shells — analogous to Pi's terminal vs SDK, but without Pi's extension model. Keeping no-extensions everywhere preserves the persona and product promise from D67 mobile principles across the full surface map.
+  confidence: firm
+  feeds_into: .agentera/vision.yaml, docs/consolidation/monorepo-plan.md, README.md, AGENTS.md, packages/mobile/README.md, references/cli/vocabulary.md, skills/agentera/SKILL.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: User refined discuss draft 2026-06-05 — drop SaaS/PaaS, keep no-extensions, skills/plugins are surfaces not extensibility.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-05
+  outcome: Adopt multi-surface product architecture with a single fixed workflow. Surface map — packages/cli (state access + agent runtime), packages/mobile (flagship app), packages/web (marketing + docs), editor skill/plugin surfaces (Cursor, Claude, OpenCode, Codex, Copilot — same workflow as today), future packages/desktop, packages/tui, and optional future cloud surface. No SaaS or PaaS framing. No user extensions, plugins, MCP servers, or third-party skill loading on any surface. D67 docs pass remains valid for monorepo consolidation; D68 corrects the "skills as internals only" ceiling and replaces any SaaS/PaaS or extensibility split with surface parity under one product boundary.
+record_sha256: 8bdc982c5cc8e8352c898e0260f54a6287ca3fd1188d27a1400f883be35172e1
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 03563d3ca98b4946b32e4b2c4301960d994a806e
+    blob: 89d754818c27ad6b9ea7801aff1cbd1ab038085d
+    path: .agentera/decisions.yaml
+    record_sha256: 85a8c9f66ef37efd2b2fbcf5d5acde6ef144c004d49b7b9aa2eab002ec158062
+  projection_transition:
+    commit: 6bfb5d38e1ccf4a830c438432a2e06dfbab438c8
+    parent: 03563d3ca98b4946b32e4b2c4301960d994a806e
+    parent_count: 1
+    blob: 3d56c41a96563e14700c881a88c2b4bb4a295f1d
+    record_sha256: f2e11f1dcc623e8004917ab54a090e5aac3cac2d6e8e5f3e87151701e34b1ec9
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 27
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: f2e11f1dcc623e8004917ab54a090e5aac3cac2d6e8e5f3e87151701e34b1ec9
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

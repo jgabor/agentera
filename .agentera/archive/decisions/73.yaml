@@ -1,0 +1,46 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 73
+record:
+  number: 73
+  date: 2026-06-26
+  question: How should Agentera design the single primary agent to replace 12 per-capability subagents?
+  context: D65 moved capability prose to TypeScript modules served via agentera prime --context, making per-capability subagents fetch-and-execute wrappers. Agentera's build.md and plan.md agents clobber OpenCode's built-in Build and Plan agents (with their own doom_loop/plan_exit/plan_enter permissions). A discuss deliberation resolved the design for a single replacement agent.
+  alternatives:
+    - name: Keep 12 scoped subagents
+      status: rejected
+      description: Redundant with CLI-served prose (D65) and clobbers OpenCode built-in agents.
+    - name: Single Prime agent, inline execution
+      status: rejected
+      description: Simplest, but long-running capabilities share the primary context window and could evict routing history.
+    - name: Single Agentera agent, Task dispatch to general subagents
+      status: chosen
+      description: One primary agent named Agentera with broad permissions. Loads skill for routing, fetches prose via prime --context, dispatches to general subagent.
+  choice: Ship a single primary agent named Agentera (agentera.md, mode primary, write+bash allow). Loads the Agentera skill for routing (SKILL.md per D65), fetches capability prose via "agentera prime --context <name> --format json", and dispatches to the runtime built-in general subagent with the prose as the task prompt. Cross-runtime scope is OpenCode and Cursor; Claude, Codex, and Copilot use the skill directly with no managed agents. Body is minimal (dispatch mechanism only; no routing logic duplication).
+  reasoning: D65 made per-capability subagents redundant. A single agent eliminates the Build/Plan collision while preserving context isolation via Task dispatch to general subagents. Broad permissions are acceptable because capability prose contains its own safety rails (NEVER push, NEVER modify vision.yaml, etc.). The name Agentera avoids confusion with the "agentera prime" CLI command that Prime would create. Routing stays in SKILL.md because the CLI prime command provides state and next_action suggestions, not request routing.
+  confidence: provisional
+  feeds_into: TODO.md, .opencode/agents/, .cursor/agents/, skills/agentera/SKILL.md, packages/cli/src/upgrade/runtimeMigration.ts
+record_sha256: 208fe600505da2517f2cb4907220c4a06419c9341b7211b9ff103c043d0e95aa
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: e3e603c140d7dd9eb3dd2de5d90629979b4d752a
+    blob: 76109848b16921c9753cf8a29f8aac64808eaf7a
+    path: .agentera/decisions.yaml
+    record_sha256: 208fe600505da2517f2cb4907220c4a06419c9341b7211b9ff103c043d0e95aa
+  projection_transition:
+    commit: 1516075f85e437f62951f34a4a2c9cb47a1c6d0a
+    parent: e3e603c140d7dd9eb3dd2de5d90629979b4d752a
+    parent_count: 1
+    blob: 203021ee1ae56f746d25393d82e3a2a088489f6b
+    record_sha256: 3874f8a3e7a774c7c03d1167eb39c4acc540cf6c8753ba9cd3d31b13ba083503
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 32
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 3874f8a3e7a774c7c03d1167eb39c4acc540cf6c8753ba9cd3d31b13ba083503
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

@@ -1,0 +1,106 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 75
+record:
+  number: 75
+  date: 2026-06-29
+  question: How should Agentera design the trigger-schema enrichment contract and the prime --route output schema for Layer 3-4 request-derived capability routing?
+  context: |
+    The audit found that prime returns state-derived next_action (what the project needs) rather than request-derived routing (what the user asked for). SKILL.md promises triggers.yaml owns matching semantics, but all twelve files share a bare shape (id, description, priority, patterns) with no confidence thresholds, no disambiguation metadata, and no regex. Layer 3-4 routing code is absent from packages/cli. Cross-capability pattern collisions exist (refine the vision in vision T3 and build T4; optimize in optimize T1/T2; orchestrate in orchestrate T1/T3; audit design in design T3 vs audit intent). The active plan (.agentera/plan.yaml) pre-decided pure request-derived for v1, a contract-owned borderline band with per-trigger override, --route as a mutually exclusive mode that suppresses next_action, and regex-weighted-higher-than-substring scoring. This decision records the design choices and rejected alternatives; it is design-only and does not modify schemas, the contract loader, or write routing code.
+  alternatives:
+    - name: Four optional fields with contract-owned defaults; weighted-average/max scoring; contract band with per-trigger override; mutually-exclusive --route; pure request-derived; backward compatible
+      status: chosen
+      description: |
+        Six design choices, each with the selection recorded here. (1) Field shape: add confidence_threshold (0-100 integer, contract default 50), disambiguates_against (list of {capability, hint}), patterns_regex (list of valid regex strings), and borderline_band (0-100 integer, contract default 15) as OPTIONAL triggers.yaml fields with defaults owned in capability_schema_contract.yaml and read through the loader. (2) Scoring: per-entry contribution = clamp01((substring_hits * W_SUBSTRING + regex_hits * W_REGEX) / max(total_hits, 1)) * W_PRIORITY[priority] * 100, with W_REGEX=1.0 and W_SUBSTRING=0.6 (regex weighted higher than substring); capability confidence is the MAX over qualifying entries; patterns and patterns_regex combine ADDITIVELY, not via replacement. (3) Borderline band: contract-owned default 15 with a per-trigger borderline_band override local to the lead trigger of the lead capability (per-trigger, not per-capability, and not a global source constant). (4) prime --route output: mutually exclusive mode returning route.capability, route.confidence, route.candidates, and route.fallback with NO next_action field; the orientation dashboard is suppressed entirely when --route is present. (5) Disambiguation context: pure request-derived (no project state, no session) for v1; state-augmented disambiguation deferred per plan scope.deferred. (6) Backward compatibility: all new fields optional; the twelve existing schemas validate unchanged; the engine applies documented defaults for absent fields. Full spec at references/cli/trigger-schema-enrichment.md.
+      reason_chosen: |
+        Per-choice rationale. (1) four fields cover the routing gaps (no confidence, no disambiguation, no precision matching, no band control) without restructuring the entry shape; contract-owned defaults satisfy D58 single-source-of-truth and keep the AGENTS.md contract-ownership rule. (2) max-across-entries lets one strong pattern win instead of being drowned by many weak ones and keeps scores comparable across capabilities with different trigger counts; additive combination keeps a strong regex match from discarding a substrate hit that may be the only signal for a sibling capability. (3) contract-plus-per-trigger splits the difference between a single global constant (too coarse for the optimize/orchestrate per-trigger collisions) and a per-capability override (too coarse for per-trigger collisions); local override (lead trigger only) keeps the rule predictable. (4) mutual exclusivity resolves the adversarial critic's coexistence concern by giving each mode a single-purpose output contract rather than forcing consumers to disambiguate merged fields. (5) pure request-derived honors the plan's YAGNI constraint and keeps the engine a pure function (testable, deterministic, no IO); the audit's flagged collisions are resolvable from text + hints alone. (6) optionality keeps the task sequence viable: the contract update (Task 4) lands first and the twelve-schema enrichment (Task 3) follows as opt-in rather than a coordinated breaking migration.
+    - name: Single confidence_threshold field only; engine-internal defaults for the rest
+      status: rejected
+      description: |
+        Alternative to design choice (1): add confidence_threshold as the only schema surface and leave disambiguation, regex, and the band as engine-internal constants with no triggers.yaml surface.
+      reason_rejected: |
+        Leaves the cross-capability collisions (refine the vision, optimize, orchestrate) unaddressable from the schema; disambiguation hints are per-trigger knowledge that belongs in triggers.yaml, not in engine constants. Violates the plan's schema-first constraint.
+    - name: Richer disambiguates_against object (weight, score_adjustment, required_state)
+      status: rejected
+      description: |
+        Alternative to design choice (1): make disambiguates_against carry weight, score_adjustment, and required_state fields alongside hint.
+      reason_rejected: |
+        YAGNI for v1 (plan constraint: no session state, no FSM). weight and score_adjustment are engine-internal concerns; required_state contradicts the pure request-derived decision. hint is the only field with a runtime surface (disambiguation output).
+    - name: Sum-across-entries scoring
+      status: rejected
+      description: |
+        Alternative to design choice (2): capability confidence = sum of qualifying entry contributions rather than max.
+      reason_rejected: |
+        Capabilities with more trigger entries (audit T2 has 11 patterns) would dominate capabilities with fewer entries regardless of per-entry fit quality.
+    - name: Regex replaces substring on the same input
+      status: rejected
+      description: |
+        Alternative to design choice (2): if patterns_regex is present, ignore the patterns substring list for that entry.
+      reason_rejected: |
+        Drops signal; a substring hit and a regex hit on the same input should strengthen, not erase. The plan explicitly chose additive scoring.
+    - name: Borderline band as a global source constant
+      status: rejected
+      description: |
+        Alternative to design choice (3): hardcode the band as a constant in the routing engine source rather than a contract-owned default.
+      reason_rejected: |
+        Violates the plan's schema-first constraint (routing semantics live in triggers.yaml and the contract, not in CLI source) and violates D58 by introducing a second source for the band value.
+    - name: Per-capability borderline band override
+      status: rejected
+      description: |
+        Alternative to design choice (3): allow the band override at the capability level rather than per trigger.
+      reason_rejected: |
+        Coarser than needed; the collisions are per-trigger (optimize T1 high vs T2 medium), not per-capability. A capability-level band cannot express the per-trigger nuance the audit surfaced.
+    - name: Merge route into next_action
+      status: rejected
+      description: |
+        Alternative to design choice (4): add a route sub-field to the existing next_action object so a single payload carries both.
+      reason_rejected: |
+        Forces every existing next_action consumer to handle a new sub-field and decide precedence between request- and state-derived results. Contradicts the plan's explicit mutual-exclusivity decision.
+    - name: Top-level agentera route subcommand rather than prime --route
+      status: rejected
+      description: |
+        Alternative to design choice (4): add a top-level agentera route command instead of a prime --route mode.
+      reason_rejected: |
+        AGENTS.md forbids broad new top-level CLI commands for implementation details, and the plan scopes this as a prime mode. Reusing the prime surface keeps the routing brain inside the CLI per D69.
+    - name: State-augmented disambiguation for v1
+      status: rejected
+      description: |
+        Alternative to design choice (5): allow the engine to read .agentera/ state (plan, health, objective) to break ties.
+      reason_rejected: |
+        Breaks the pure-function constraint, couples Layer 3-4 to artifact IO, and the plan explicitly defers it to scope.deferred. The C_top / C_second band + hints handle the known collisions without state.
+    - name: Require all twelve schemas to migrate immediately
+      status: rejected
+      description: |
+        Alternative to design choice (6): require every capability to specify the new fields immediately and fail validation otherwise.
+      reason_rejected: |
+        Couples the contract rollout to twelve simultaneous schema edits and breaks the task sequence (Task 3 enriches schemas after Task 4 updates the contract). Backward-compatible optionality lets the contract update land first.
+  choice: |
+    Adopt the four optional triggers.yaml fields (confidence_threshold, disambiguates_against, patterns_regex, borderline_band) with contract-owned defaults (50, empty, empty, 15) read through capability_schema_contract.yaml. Specify the scoring algorithm as a weighted-average-inside-entry / max-across-entries pure function with regex weighted higher than substring (W_REGEX=1.0, W_SUBSTRING=0.6) and additive patterns+patterns_regex combination. Make the borderline band contract-owned (15) with a per-trigger override local to the lead trigger. Define prime --route output as a mutually-exclusive mode returning route.capability, route.confidence, route.candidates, and route.fallback with no next_action field. Keep the engine pure request-derived (no project state) for v1, deferring state-augmented disambiguation. Keep all new fields optional so the twelve existing schemas validate unchanged until opt-in enrichment. The full specification lives at references/cli/trigger-schema-enrichment.md; this decision is design-only and does not modify schemas, the contract loader, or write routing code.
+  reasoning: |
+    The audit established that request-derived routing is a documented promise with no implementation and that the twelve triggers.yaml files lack the fields needed to express confidence, disambiguation, and precision matching. Four optional fields with contract-owned defaults close that gap without restructuring the entry shape or forcing a migration: schema-first authoring is opt-in per entry, the existing validator keeps passing, and every default has one home (capability_schema_contract.yaml, satisfying D58). The scoring algorithm satisfies the plan's regex-weighted-higher requirement while staying a pure function — max-across-entries keeps capabilities with many trigger entries from drowning capabilities with few, and weighted-average-inside-entry lets patterns and patterns_regex interpolate rather than one erasing the other, which beats the sum-across-entries and regex-replaces-substring alternatives. The borderline band's contract-owned-default-plus-per-trigger-override splits the difference between a single global source constant (too coarse) and a per-capability override (too coarse for per-trigger collisions like optimize T1/T2). Mutual exclusivity between --route and next_action resolves the adversarial critic's coexistence concern by giving each mode a single-purpose output contract rather than forcing consumers to disambiguate merged fields; the merge-into-next_action and top-level-subcommand alternatives both fail that test. Pure request-derived v1 honors the plan's YAGNI constraint and keeps the engine testable and deterministic; state-augmented disambiguation is a documented deferral (scope.deferred), not a rejection of the concept — the band-plus-hints handle the audit's flagged collisions without state. Backward compatibility keeps the task sequence viable: the contract update (Task 4) lands first and the twelve-schema enrichment (Task 3) follows as opt-in rather than a coordinated breaking migration, improving on the require-immediate-migration alternative.
+  confidence: firm
+  feeds_into: references/cli/trigger-schema-enrichment.md, skills/agentera/capability_schema_contract.yaml, packages/cli/src/registries/capabilityContract.ts, skills/agentera/capabilities/*/schemas/triggers.yaml, packages/cli/src/cli/orientation.ts, .agentera/plan.yaml, TODO.md
+record_sha256: 34c8e378adbd9b750ee6464eb10e345245559c39666577f0908fa35147ee3e8c
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: fe4ff6d754be3d4ce37ceb116a90c2315b989006
+    blob: 33479b94f6b721a144aef1d0d2fbcc992f98f3df
+    path: .agentera/decisions.yaml
+    record_sha256: 34c8e378adbd9b750ee6464eb10e345245559c39666577f0908fa35147ee3e8c
+  projection_transition:
+    commit: 6b392455c6d477b8be1d0bd5546c03ed2ccde5a4
+    parent: fe4ff6d754be3d4ce37ceb116a90c2315b989006
+    parent_count: 1
+    blob: 5d2f697771ec62b73c11ec54e34b233734778736
+    record_sha256: 00010884b6a8fc1f0af10d10db3d10e9c62e94d5e33a5fbdfbc9f08518b4c900
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 34
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 00010884b6a8fc1f0af10d10db3d10e9c62e94d5e33a5fbdfbc9f08518b4c900
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

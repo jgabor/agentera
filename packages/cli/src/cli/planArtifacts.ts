@@ -13,6 +13,7 @@ export interface PlanArtifact {
   path: string;
   data: JsonObject;
   archived: boolean;
+  migrationProvenance?: JsonObject;
 }
 
 export type PlanDiagnosticCategory = "parse" | "schema" | "lifecycle" | "identity" | "legacy";
@@ -68,12 +69,24 @@ function planStatus(data: JsonObject): string {
   return String(firstPresent(header, ["status"], "") || "");
 }
 
-function normalizePlanDocument(data: JsonObject): JsonObject {
+function normalizePlanDocument(data: JsonObject, archived: boolean): { data: JsonObject; provenance?: JsonObject } {
   const header = isMapping(data.header) ? data.header : {};
   const status = planStatus(data);
-  const normalized = normalizeLegacyStatus(status);
-  if (status === normalized) return data;
-  return { ...data, header: { ...header, status: normalized } };
+  const sourceTasks = (Array.isArray(data.entries) ? data.entries : data.tasks) as JsonObject[];
+  const incomplete = sourceTasks.some((task) => !taskIsComplete(task));
+  const normalizedStatus = normalizeLegacyStatus(status) === "complete" && incomplete ? "open" : normalizeLegacyStatus(status);
+  const taskNormalizations: JsonObject[] = [];
+  const tasks = sourceTasks.map((source, index) => {
+    const task = structuredClone(source); const legacy = typeof task.id === "string" ? /^T([1-9][0-9]*)$/.exec(task.id) : null;
+    if (legacy && task.number === undefined) { task.number = Number(legacy[1]); delete task.id; if (task.name === undefined && typeof task.title === "string") { task.name = task.title; delete task.title; } taskNormalizations.push({ index, source_id: source.id, source_title: source.title, normalized_number: task.number, normalized_name: task.name }); }
+    if (Array.isArray(task.depends_on)) task.depends_on = task.depends_on.map((dependency) => { const match = /^Task ([1-9][0-9]*)$/.exec(String(dependency)); return match ? match[1] : dependency; });
+    return task;
+  });
+  const normalizedData = { ...data, header: { ...header, status: normalizedStatus }, ...(Array.isArray(data.entries) ? { entries: tasks } : { tasks }) };
+  const changes: JsonObject = {};
+  if (status !== normalizedStatus) changes.lifecycle = { original_status: status, normalized_status: normalizedStatus, rule: incomplete ? "completed_with_incomplete_tasks_to_open" : "legacy_status" };
+  if (taskNormalizations.length) changes.tasks = taskNormalizations;
+  return { data: normalizedData, ...(Object.keys(changes).length ? { provenance: { kind: "legacy_plan_normalization", archived, ...changes } } : {}) };
 }
 
 /**
@@ -89,15 +102,6 @@ function isPlanDocument(value: unknown): value is JsonObject {
 
 function taskIsComplete(task: JsonObject): boolean {
   return COMPLETE_TASK_STATUSES.has(String(task.status ?? "").toLowerCase());
-}
-
-function lifecycleContradiction(data: JsonObject, status: string): string | null {
-  const tasks = (Array.isArray(data.entries) ? data.entries : data.tasks) as unknown[];
-  const taskEntries = tasks.filter(isMapping);
-  const allComplete = taskEntries.length > 0 && taskEntries.every(taskIsComplete);
-  if (status === "complete" && !allComplete)
-    return "plan header.status complete requires every task to be complete";
-  return null;
 }
 
 function inspectionDiagnostic(path: string, category: PlanDiagnosticCategory, message: string): PlanArtifactDiagnostic {
@@ -144,24 +148,21 @@ function inspectPlanArtifact(
     };
   }
 
-  const contradiction = lifecycleContradiction(data, normalizeLegacyStatus(status));
-  if (contradiction) {
-    return {
-      artifact: null,
-      diagnostics: [inspectionDiagnostic(artifactPath, "lifecycle", contradiction)],
-    };
-  }
-
   const diagnostics: PlanArtifactDiagnostic[] = [];
   if (status === "active" || status === "completed") {
     diagnostics.push(
       inspectionDiagnostic(artifactPath, "legacy", `legacy plan status ${status} normalized to ${normalizeLegacyStatus(status)}`),
     );
   }
+  const sourceTasks = (Array.isArray(data.entries) ? data.entries : data.tasks) as JsonObject[];
+  if (normalizeLegacyStatus(status) === "complete" && sourceTasks.some((task) => !taskIsComplete(task))) {
+    diagnostics.push(inspectionDiagnostic(artifactPath, "legacy", "completed plan with incomplete tasks normalized to open"));
+  }
   if (Array.isArray(data.entries)) {
     diagnostics.push(inspectionDiagnostic(artifactPath, "legacy", "legacy entries task shape is read compatibly"));
   }
-  return { artifact: { path: artifactPath, data: normalizePlanDocument(data), archived }, diagnostics };
+  const normalized = normalizePlanDocument(data, archived);
+  return { artifact: { path: artifactPath, data: normalized.data, archived, ...(normalized.provenance ? { migrationProvenance: normalized.provenance } : {}) }, diagnostics };
 }
 
 export function planDocumentParts(data: JsonObject): PlanDocumentParts {

@@ -15,6 +15,9 @@ import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./exper
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
+import { yamlArchiveEntry } from "../hooks/compaction/retention.js";
+import { truncateWords } from "../hooks/compaction/dryRun.js";
+import { legacyIdentity } from "./legacyIdentity.js";
 import {
   projectPathIsStable as migrationPathIsStable,
   readProjectFileSnapshot,
@@ -30,7 +33,8 @@ export type EntityMigrationClassification =
   | "duplicate"
   | "conflict"
   | "corrupt"
-  | "unsupported";
+  | "unsupported"
+  | "historical_projection_residue";
 
 export interface EntityMigrationRelationship {
   field: string;
@@ -53,6 +57,7 @@ export interface EntityMigrationEntry {
   proposed_target: { id: string; path: string } | null;
   relationships: EntityMigrationRelationship[];
   recovery: string;
+  migration_provenance?: JsonObject | JsonObject[];
 }
 
 export interface DurableEntityMigrationEntry extends EntityMigrationEntry {
@@ -127,6 +132,7 @@ interface Observation {
   detail: "full" | "summary" | "corrupt";
   relationships: Array<{ field: string; target: string | null }>;
   message?: string;
+  migrationProvenance?: JsonObject;
 }
 
 type SourceFile =
@@ -301,12 +307,16 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
         const collections: Array<[string, unknown[]]> = [[declaration.collection, currentValues]];
         if (Array.isArray(document.archive)) collections.push(["archive", document.archive]);
         collections.flatMap(([collection, values]) => values.map((value, index) => ({ collection, value, index }))).forEach(({ collection, value, index }) => {
-          const record = mapping(value);
-          const number = record?.number;
-          const key = typeof number === "number" && Number.isSafeInteger(number) && number > 0 ? `${artifact}:${number}` : `${artifact}:${collection}[${index}]`;
-          const valid = record && typeof number === "number" ? validateStateRecord(sourceRoot, artifact, record).length === 0 : false;
+          const record = mapping(value) ?? (typeof value === "string" ? { summary: value } : null);
+          const identity = legacyIdentity(record, artifact, "number");
+          const number = identity.number;
+          const key = number ? `${artifact}:${number}` : `${artifact}:${collection}[${index}]`;
+          const valid = record && typeof record.number === "number" ? validateStateRecord(sourceRoot, artifact, record).length === 0 : false;
           const summary = Boolean(record && (typeof record.summary === "string" || record.detail_availability === "summary_only"));
-          observations.push({ key, artifact, boundary: declaration.boundary, path: declaration.file, provenance: "current_projection", record, detail: valid ? "full" : summary ? "summary" : "corrupt", relationships: [], message: valid || summary ? undefined : "projection record does not satisfy the declared full-detail schema" });
+          const text = typeof record?.summary === "string" ? record.summary : "";
+          const decisionRefs = artifact === "decisions" ? [...text.matchAll(/\bD([1-9][0-9]*)\b/g)] : [];
+          const residue = identity.kind === "ambiguous" || (decisionRefs.length > 1 && !number);
+          observations.push({ key: residue ? `historical_projection_residue:${declaration.file}:${collection}[${index}]` : key, artifact, boundary: residue ? "historical_projection_residue" : declaration.boundary, path: declaration.file, provenance: residue ? "historical_projection_residue" : "current_projection", record, detail: valid ? "full" : summary ? "summary" : "corrupt", relationships: [], message: valid || summary ? undefined : "projection record does not satisfy the declared full-detail schema", ...(residue ? { migrationProvenance: { classification: "historical_projection_residue", path: declaration.file, collection, index, content_sha256: hash(canonicalRecordJson(record)), text, inbound_structured_references: 0 } } : {}) });
           if (artifact === "decisions" && mapping(record?.satisfaction)) {
             observations.push({ key: `decision_satisfaction:${key}`, artifact: "decisions", boundary: "decision_satisfaction", path: declaration.file, provenance: "current_projection", record: mapping(record?.satisfaction), detail: "full", relationships: [{ field: "decision", target: key }] });
           }
@@ -333,7 +343,7 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
         if (envelope.record_sha256 !== expected) throw new Error("archive record_sha256 does not match record bytes");
         const violations = validateStateRecord(sourceRoot, artifact, record);
         if (violations.length > 0) throw new Error(`archive record is invalid: ${violations.join("; ")}`);
-        observations.push({ key, artifact, boundary: declaration.boundary, path: source.relative, provenance: "verified_archive", record, detail: "full", relationships: [] });
+        observations.push({ key, artifact, boundary: declaration.boundary, path: source.relative, provenance: "verified_archive", record, detail: "full", relationships: [], ...(mapping(envelope.recovery_provenance) ? { migrationProvenance: mapping(envelope.recovery_provenance)! } : {}) });
       } catch (error) {
         observations.push({ key, artifact, boundary: declaration.boundary, path: source.relative, provenance: "archive", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
       }
@@ -405,7 +415,7 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
     seen.add(marker);
     const sourcePath = relative(root, identity.artifact.path);
     const classificationDetail = identity.ambiguous ? "corrupt" : "full";
-    observations.push({ key: identity.stableId, artifact: "plan", boundary: "plan", path: sourcePath, provenance: identity.artifact.path === active ? "current_canonical" : "verified_plan_archive", record: identity.artifact.data, detail: classificationDetail, relationships: [], message: identity.ambiguous ? "plan identity resolves to conflicting documents" : undefined });
+    observations.push({ key: identity.stableId, artifact: "plan", boundary: "plan", path: sourcePath, provenance: identity.artifact.path === active ? "current_canonical" : "verified_plan_archive", record: identity.artifact.data, detail: classificationDetail, relationships: [], message: identity.ambiguous ? "plan identity resolves to conflicting documents" : undefined, ...(identity.artifact.migrationProvenance ? { migrationProvenance: { ...identity.artifact.migrationProvenance, source_path: sourcePath } } : {}) });
     const parts = planDocumentParts(identity.artifact.data);
     parts.tasks.forEach((task, index) => {
       const number = task.number;
@@ -421,9 +431,10 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
         detail: typeof number === "number" ? classificationDetail : "corrupt",
         relationships: [
           { field: "plan", target: identity.stableId },
-          ...depends.map((dependency) => ({ field: "depends_on", target: /^[1-9][0-9]*$/.test(String(dependency)) ? `${identity.stableId}/task:${dependency}` : null })),
+          ...depends.map((dependency) => { const normalized = /^Task ([1-9][0-9]*)$/.exec(String(dependency))?.[1] ?? String(dependency); return { field: "depends_on", target: /^[1-9][0-9]*$/.test(normalized) ? `${identity.stableId}/task:${normalized}` : null }; }),
         ],
         message: typeof number === "number" ? undefined : "plan task has no positive structured number",
+        ...(identity.artifact.migrationProvenance ? { migrationProvenance: { ...identity.artifact.migrationProvenance, source_path: sourcePath, source_task_index: index } } : {}),
       });
     });
   }
@@ -508,10 +519,13 @@ function todoAndDocs(root: string, todoPath: string, files: SourceFile[], observ
       const document = parseYaml(docs);
       if (document.index !== undefined && !Array.isArray(document.index)) throw new Error("docs index must be a list");
       (Array.isArray(document.index) ? document.index : []).forEach((value, index) => {
-        const record = mapping(value);
+        const sourceRecord = mapping(value);
+        const originalStatus = sourceRecord?.status;
+        const normalizedStatus = originalStatus === "draft" ? "intent" : originalStatus === "archived" ? "stale" : originalStatus;
+        const record: JsonObject | null = sourceRecord ? { ...structuredClone(sourceRecord), ...(normalizedStatus !== originalStatus ? { status: normalizedStatus } : {}) } as JsonObject : null;
         const identity = typeof record?.path === "string" ? `docs:path:${record.path}` : `docs:index:${index}`;
         const violations = record ? todoDocsRecordViolations("documentation_inventory_entry", record) : ["documentation inventory entry must be a mapping"];
-        observations.push({ key: identity, artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
+        observations.push({ key: identity, artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined, ...(normalizedStatus !== originalStatus ? { migrationProvenance: { kind: "legacy_docs_status_normalization", source_path: docs.relative, index, ...(sourceRecord?.path !== undefined ? { original_path: sourceRecord.path } : {}), ...(originalStatus !== undefined ? { original_status: originalStatus } : {}), ...(normalizedStatus !== undefined ? { normalized_status: normalizedStatus } : {}) } } : {}) });
       });
     } catch (error) {
       observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
@@ -542,6 +556,7 @@ function previewId(fingerprint: string, key: string): string {
 }
 
 function classify(group: Observation[]): EntityMigrationClassification {
+  if (group.some((item) => item.provenance === "historical_projection_residue")) return "historical_projection_residue";
   if (group.some((item) => item.key.startsWith("unsupported:"))) return "unsupported";
   if (group.some((item) => item.detail === "corrupt")) return "corrupt";
   if (group.every((item) => item.detail === "summary")) return "irrecoverable_summary_only";
@@ -549,9 +564,26 @@ function classify(group: Observation[]): EntityMigrationClassification {
   const bodies = new Set(full.map((item) => canonicalRecordJson(item.record)));
   if (bodies.size > 1) return "duplicate";
   const projections = full.filter((item) => item.provenance === "current_projection");
-  if (group.some((item) => item.provenance === "verified_archive" || item.provenance === "verified_plan_archive")) return "verified_full";
+  const archive = group.find((item) => item.provenance === "verified_archive" && item.record);
+  const summaries = group.filter((item) => item.detail === "summary" && item.record);
+  if (archive && summaries.length) {
+    const recovery = archive.migrationProvenance;
+    const recorded = mapping(recovery?.current_projection)?.record_sha256;
+    const proven = summaries.every((item) => exactProjectionMirror(item.artifact, archive.record!, item.record!, recorded));
+    return proven ? "verified_full" : "conflict";
+  }
+  if (archive || group.some((item) => item.provenance === "verified_plan_archive")) return "verified_full";
   if (group.every((item) => item.provenance === "current_projection" || item.provenance === "experiment_projection")) return "recoverable_degraded_full_projection";
   return "verified_full";
+}
+
+function exactProjectionMirror(artifact: string, full: JsonObject, summary: JsonObject, recorded: unknown): boolean {
+  if (recorded === hash(canonicalRecordJson(summary))) return true;
+  if (artifact === "health" && typeof summary.summary === "string" && typeof full.number === "number" && typeof full.date === "string" && typeof full.trajectory === "string") {
+    return summary.summary === `Audit ${full.number} · ${full.date} (${truncateWords(full.trajectory, 10)})`;
+  }
+  if (artifact !== "progress" && artifact !== "decisions" && artifact !== "health") return false;
+  return canonicalRecordJson(yamlArchiveEntry(artifact, full)) === canonicalRecordJson(summary);
 }
 
 function canonicalMigrationRecord(boundary: string, source: JsonObject, relationships: EntityMigrationRelationship[]): JsonObject {
@@ -597,7 +629,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
     let classification = classify(group);
     if (collisions.has(key)) classification = "conflict";
     const primary = group[0];
-    const content = group.find((item) => item.record)?.record ?? null;
+    const content = group.find((item) => item.provenance === "verified_archive" && item.record)?.record ?? group.find((item) => item.record)?.record ?? null;
     const contentSha256s = [...new Set(group.flatMap((item) => item.record ? [hash(canonicalRecordJson(item.record))] : []))].sort();
     const mirrored = contentSha256s.length === 1 && group.filter((item) => item.record).length > 1;
     const id = ids.get(key) as string;
@@ -609,6 +641,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       status: relationship.target && groups.has(relationship.target) ? "resolved" : "unresolved",
     }));
     const record = content ? canonicalMigrationRecord(primary.boundary, content, relationships) : {};
+    const residue = classification === "historical_projection_residue";
     const blocked = BLOCKING.has(classification) || relationships.some((relationship) => relationship.status === "unresolved");
     return {
       source_identity: key,
@@ -621,10 +654,11 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       content_sha256: contentSha256s.length === 1 ? contentSha256s[0] : null,
       content_sha256s: contentSha256s,
       physical_record_count: group.length,
-      proposed_target: blocked ? null : { id, path: `.agentera/entities/${primary.artifact}/${primary.boundary}/${id}.yaml` },
+      proposed_target: blocked || residue ? null : { id, path: `.agentera/entities/${primary.artifact}/${primary.boundary}/${id}.yaml` },
       relationships,
       record,
       recovery: blocked ? recovery(project, primary.path) : "none",
+      ...(group.some((item) => item.migrationProvenance) ? { migration_provenance: group.flatMap((item) => item.migrationProvenance ? [item.migrationProvenance] : []) } : {}),
     };
   }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
   const decisions = new Map(entries.filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target).map((entry) => [entry.proposed_target!.id, entry.record]));
@@ -667,7 +701,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   todoAndDocs(project, todoPath, files, observations);
   const preserved = preservedSingletons(files);
   const completeEntries = buildEntries(project, fingerprint, observations);
-  const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"];
+  const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported", "historical_projection_residue"];
   const counts = Object.fromEntries(classes.map((classification) => [classification, completeEntries.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
   counts.total = completeEntries.length;
   counts.logical_identities = completeEntries.length;

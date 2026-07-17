@@ -1,0 +1,46 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 43
+record:
+  number: 43
+  date: 2026-05-07
+  question: How should Agentera expose plain user-facing routes without losing canonical Swedish capability identity?
+  context: The 2026-05-07 vocabulary deliberation settled on "Brand the worldview. Boring-name the work." Users should not need to know Swedish capability names first, but Decisions 39-40 made capabilities canonical v2 protocol objects and Decision 42 routes explicit capability names through `/agentera`.
+  alternatives:
+    - name: Rename capabilities to plain English
+      status: rejected
+      description: Clearer first contact, but high churn across directories, schemas, artifacts, markers, tests, and product identity.
+    - name: Trigger phrases only
+      status: rejected
+      description: Improves natural-language routing but gives users no stable plain shortcut.
+    - name: One primary plain alias per capability
+      status: chosen
+      description: Keep canonical names and add a small documented action alias surface; colloquial variants stay in trigger schemas.
+  choice: "Keep Swedish `-era` names canonical and add one primary plain `/agentera <alias>` per capability: `status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`."
+  reasoning: Aliases reduce first-contact friction without renaming protocol objects. Exact aliases stay few and stable; secondary phrases like `brief`, `what's next`, `deliberate`, `brainstorm`, and `rubber duck` belong in trigger schemas so they do not become canonical identity.
+  confidence: firm
+  feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md, tests
+record_sha256: fb46fd7654129b26bfb72bbaf608fd9d5bf469e484a5c5eb5a4a8a167c45bc68
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: b0900ac85eed96d283b65d63d20c0cd4c49bba4a
+    blob: ecbcc3319d47c59a4d4dcfc35f9d63fe98f6c29e
+    path: .agentera/decisions.yaml
+    record_sha256: fb46fd7654129b26bfb72bbaf608fd9d5bf469e484a5c5eb5a4a8a167c45bc68
+  projection_transition:
+    commit: eae822752df749e541e8a27239dbcbee582e388a
+    parent: b0900ac85eed96d283b65d63d20c0cd4c49bba4a
+    parent_count: 1
+    blob: 776f6726ba7f77c810b05d221ef199f067b28e2e
+    record_sha256: 04e16c7a0bb9597d6bb35c71352f433682bedaa912a67aebc23c7d0423f0b261
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 4
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 0a254aefef3d1d6a15066df3abdbfe15fb84ee52de153daef5f6b45cca5754f7
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

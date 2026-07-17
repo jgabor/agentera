@@ -1,0 +1,180 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: health
+entry_number: 15
+record:
+  number: 15
+  date: 2026-04-26
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 3
+    filtered_by_confidence: 0
+  trajectory: ⮉ improving vs Audit 14. The Codex+Copilot Completion plan landed two well-factored stdlib helpers, a Python smoke harness covering 11 black-box cases, and a clean 1.21.0 release. Audit 14 finding 1 (DOCS.md staleness) is resolved; finding 3 (live-host inheritance) is narrowed to a smaller residual gap on the runtime CLI side.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: A
+    Security: A
+    Deps: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: "`scripts/setup_codex.py` and `scripts/setup_copilot.py` slot into the existing repo-level utilities surface alongside `compact_artifact.py`, `usage_stats.py`, and `smoke_opencode_bootstrap.mjs`. They close the user-side install-friction gap on runtimes that have no plugin-level env-injection API, advancing VISION.md's portable-runtime thesis without forking skill behavior."
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: ""
+      findings:
+        - heading: "⇢ Two-helper shape is a nascent setup_*.py pattern, info (confidence: 55)"
+          severity: info
+          confidence: 55
+          location: |-
+            `scripts/setup_codex.py`, `scripts/setup_copilot.py`
+            - **Evidence**: Both files share `verify_install_root` → `auto_detect_install_root` → `resolve_install_root` → state-classify → `plan_change` → emit-or-write, the same `--install-root` / `--dry-run` / `--force` CLI surface, and identical four-entry canonical verification (scripts/validate_spec.py, hooks/, skills/, SPEC.md).
+            - **Impact**: At two instances the duplication is correct per YAGNI. A third runtime helper would justify lifting the shared shape into a small shared module.
+            - **Suggested action**: Defer until a third helper is needed; revisit if Gemini CLI or another runtime requires the same setup pattern.
+          evidence: |-
+            Both files share `verify_install_root` → `auto_detect_install_root` → `resolve_install_root` → state-classify → `plan_change` → emit-or-write, the same `--install-root` / `--dry-run` / `--force` CLI surface, and identical four-entry canonical verification (scripts/validate_spec.py, hooks/, skills/, SPEC.md).
+            - **Impact**: At two instances the duplication is correct per YAGNI. A third runtime helper would justify lifting the shared shape into a small shared module.
+            - **Suggested action**: Defer until a third helper is needed; revisit if Gemini CLI or another runtime requires the same setup pattern.
+          impact: |-
+            At two instances the duplication is correct per YAGNI. A third runtime helper would justify lifting the shared shape into a small shared module.
+            - **Suggested action**: Defer until a third helper is needed; revisit if Gemini CLI or another runtime requires the same setup pattern.
+          suggested_action: Defer until a third helper is needed; revisit if Gemini CLI or another runtime requires the same setup pattern.
+    - name: Coupling health
+      grade: A
+      summary: The new helpers are stdlib-only and import nothing from `hooks/`, `skills/`, or each other. `scripts/smoke_setup_helpers.py` invokes both as black-box subprocesses, so the harness survives helper internals refactors. Test files use the standard `conftest.py` importlib pattern.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: A
+      summary: '`setup_codex.py` (795 lines, 19 functions) and `setup_copilot.py` (717 lines, 16 functions) are the two largest stdlib scripts but stay well-factored: clear section banners, single-responsibility functions, linear `main()` orchestration, no nested-loop hotspots. The 541-line smoke harness uses 11 sequential numbered cases — the right shape for "the harness IS the test."'
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: ""
+      findings:
+        - heading: "⇢ Codex and Copilot live-host AGENTERA_HOME inheritance still untested, info (confidence: 50)"
+          severity: info
+          confidence: 50
+          location: |-
+            `scripts/smoke_setup_helpers.py`, `tests/test_runtime_adapters.py`
+            - **Evidence**: 412 → 433 tests (+10 codex, +11 copilot). The smoke harness verifies the WRITE side of the AGENTERA_HOME contract (helpers correctly emit `[shell_environment_policy]` and shell-rc export blocks). Whether Codex and Copilot CLIs actually inherit AGENTERA_HOME at runtime from those files remains unverified by an automated test.
+            - **Impact**: Narrower than Audit 14 finding 3 (write side is now covered). Future runtime updates could still regress the read-side inheritance without the suite catching it.
+            - **Suggested action**: Continue treating as a deferred caveat until a live-host harness lands. No standalone action recommended.
+          evidence: |-
+            412 → 433 tests (+10 codex, +11 copilot). The smoke harness verifies the WRITE side of the AGENTERA_HOME contract (helpers correctly emit `[shell_environment_policy]` and shell-rc export blocks). Whether Codex and Copilot CLIs actually inherit AGENTERA_HOME at runtime from those files remains unverified by an automated test.
+            - **Impact**: Narrower than Audit 14 finding 3 (write side is now covered). Future runtime updates could still regress the read-side inheritance without the suite catching it.
+            - **Suggested action**: Continue treating as a deferred caveat until a live-host harness lands. No standalone action recommended.
+          impact: |-
+            Narrower than Audit 14 finding 3 (write side is now covered). Future runtime updates could still regress the read-side inheritance without the suite catching it.
+            - **Suggested action**: Continue treating as a deferred caveat until a live-host harness lands. No standalone action recommended.
+          suggested_action: Continue treating as a deferred caveat until a live-host harness lands. No standalone action recommended.
+    - name: Version health
+      grade: A
+      summary: "Two minor bumps today (1.19.0 → 1.20.0 → 1.21.0), both justified per `feat = minor`: 1.20.0 carried the AGENTERA_HOME contract plus OpenCode bootstrap, 1.21.0 carries the two setup helpers plus smoke harness. Splitting was correct because Audit 14 had already snapshotted 1.20.0 as a coherent unit. No unbumped commits since 9773f35."
+      findings:
+        []
+    - name: Artifact freshness
+      grade: A
+      summary: "Audit 14 finding 1 resolved by T4 (commit 8e57ef4): DOCS.md Index now reads 433 tests across 17 files, the six previously-stale rows show 2026-04-26, and three new Index rows for `setup_codex.py`, `setup_copilot.py`, `smoke_setup_helpers.py` are present. PROGRESS, TODO, CHANGELOG, README, HEALTH all touched today. SPEC.md, DESIGN.md, VISION.md older than the plan, but the owning skills (design, vision) were not dispatched."
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: '`setup_copilot.py` writes user shell rc files but the injection surface is well-controlled. Install-root verification rejects malicious paths before any write (a path lacking the four canonical entries fails). `_quote_for_shell` escapes `\` and `"` for bash/zsh/fish, and `_toml_basic_string` handles all TOML 1.0 basic-string escapes plus unicode-escapes control characters. Idempotency anchors on a literal marker comment, so user-written `AGENTERA_HOME` lines stay untouched. No `eval`, `exec`, `os.system`, or `shell=True`; subprocess calls are list-form with hardcoded args.'
+      findings:
+        - heading: "⇢ PROFILERA_PROFILE_DIR and AGENTERA_HOME injection asymmetry, info (confidence: 60)"
+          severity: info
+          confidence: 60
+          location: |-
+            `.opencode/plugins/agentera.js:191`, `.opencode/plugins/agentera.js:231`, `SPEC.md` Section 7
+            - **Evidence**: Carry-forward from Audit 14. PROFILERA_PROFILE_DIR is set by mutating `process.env`; AGENTERA_HOME is set via the `shell.env` hook. Both correct for their consumers, surface still looks inconsistent.
+            - **Impact**: Same as Audit 14 — readability tax, not a defect.
+            - **Suggested action**: One sentence in SPEC Section 7 naming the asymmetry as principled. Defer until SPEC.md sees its next substantive edit.
+          evidence: |-
+            Carry-forward from Audit 14. PROFILERA_PROFILE_DIR is set by mutating `process.env`; AGENTERA_HOME is set via the `shell.env` hook. Both correct for their consumers, surface still looks inconsistent.
+            - **Impact**: Same as Audit 14 — readability tax, not a defect.
+            - **Suggested action**: One sentence in SPEC Section 7 naming the asymmetry as principled. Defer until SPEC.md sees its next substantive edit.
+          impact: |-
+            Same as Audit 14 — readability tax, not a defect.
+            - **Suggested action**: One sentence in SPEC Section 7 naming the asymmetry as principled. Defer until SPEC.md sees its next substantive edit.
+          suggested_action: One sentence in SPEC Section 7 naming the asymmetry as principled. Defer until SPEC.md sees its next substantive edit.
+    - name: Dependency health
+      grade: A
+      summary: "No new third-party dependencies. Both helpers are stdlib-only (argparse, pathlib, re, sys, os, tomllib, NamedTuple). `tomllib` is Python 3.11+ stdlib already implicit in the project. OpenCode Node dep unchanged. ### Trends vs Audit 14 - **Improved**: Freshness B → A (Audit 14's DOCS.md Index/Coverage warning resolved by T4). Tests stay A but the live-host gap narrowed: helpers + smoke harness cover the write side, residual confidence drops 65 → 50. - **Degraded**: none. - **Stable**: Architecture A, Patterns A (one new info on shape duplication, advisory only), Coupling A, Complexity A, Version A, Security A, Deps A. - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale). - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50). - **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory). ### Patterns Observed - Module structure: repo-level `scripts/` is the canonical surface for stdlib utilities. `setup_*.py` is the third archetype after `compact_artifact.py` (artifact compaction), `usage_stats.py` (corpus analytics), and the validators. - Helper shape: `verify_install_root` → `auto_detect_install_root` → `resolve_install_root` → state-classify → `plan_change` → emit-or-write is now a duplicated-but-parallel structure across two files. Pattern in waiting. - Idempotency pattern: literal marker comment + line-anchored read/rewrite, with byte-identity preservation of unrelated lines. Both helpers converged on this independently. - Smoke testing: language matches the system under test (Node smoke for OpenCode JS plugin, Python smoke for Python helpers). Black-box subprocess invocation rather than internal imports. - Release pattern: same-day double minor bumps remain acceptable when each bump represents a coherent unit; the prior audit snapshot determines the split point."
+      findings:
+        []
+  trends:
+    improved: |-
+      Freshness B → A (Audit 14's DOCS.md Index/Coverage warning resolved by T4). Tests stay A but the live-host gap narrowed: helpers + smoke harness cover the write side, residual confidence drops 65 → 50.
+      - **Degraded**: none.
+      - **Stable**: Architecture A, Patterns A (one new info on shape duplication, advisory only), Coupling A, Complexity A, Version A, Security A, Deps A.
+      - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale).
+      - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50).
+      - **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+    degraded: |-
+      none.
+      - **Stable**: Architecture A, Patterns A (one new info on shape duplication, advisory only), Coupling A, Complexity A, Version A, Security A, Deps A.
+      - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale).
+      - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50).
+      - **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+    stable: |-
+      Architecture A, Patterns A (one new info on shape duplication, advisory only), Coupling A, Complexity A, Version A, Security A, Deps A.
+      - **Resolved**: Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale).
+      - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50).
+      - **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+    new_findings: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+    resolved: |-
+      Audit 14 finding 1 (DOCS.md Index dates + Coverage line stale).
+      - **Carried forward**: Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50).
+      - **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+    carried_forward: |-
+      Audit 14 finding 2 (PROFILERA_PROFILE_DIR vs AGENTERA_HOME asymmetry, conf 60). Audit 14 finding 3 narrowed (live-host inheritance, conf 65 → 50).
+      - **New findings**: Two-helper shape is a nascent pattern (info, conf 55, advisory).
+  patterns:
+    - "Module structure: repo-level `scripts/` is the canonical surface for stdlib utilities. `setup_*.py` is the third archetype after `compact_artifact.py` (artifact compaction), `usage_stats.py` (corpus analytics), and the validators."
+    - "Helper shape: `verify_install_root` → `auto_detect_install_root` → `resolve_install_root` → state-classify → `plan_change` → emit-or-write is now a duplicated-but-parallel structure across two files. Pattern in waiting."
+    - "Idempotency pattern: literal marker comment + line-anchored read/rewrite, with byte-identity preservation of unrelated lines. Both helpers converged on this independently."
+    - "Smoke testing: language matches the system under test (Node smoke for OpenCode JS plugin, Python smoke for Python helpers). Black-box subprocess invocation rather than internal imports."
+    - "Release pattern: same-day double minor bumps remain acceptable when each bump represents a coherent unit; the prior audit snapshot determines the split point."
+record_sha256: 59c7cea420133e1deae037513a69edccca52dbc958865f1efb97adaf1d734a9e
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: c3f00d85cbe4d5f2a2e806a049f9f663180aa81f
+    blob: 680b1fac658c66daa938d4dac9ce0f27d7d3646a
+    path: .agentera/health.yaml
+    record_sha256: 59c7cea420133e1deae037513a69edccca52dbc958865f1efb97adaf1d734a9e
+  projection_transition:
+    commit: a0e38b581fbee03232a9c742030f3d68e89a2356
+    parent: c3f00d85cbe4d5f2a2e806a049f9f663180aa81f
+    parent_count: 1
+    blob: 832608e08571572c77e3da27bcdc46b128f642d4
+    record_sha256: a8b55575719dc62ea0f056177f8d516a27b9925b720eb575ef58b62cbdfe5635
+  current_projection:
+    path: .agentera/health.yaml
+    collection: archive
+    index: 14
+    document_sha256: 2b66b48dc19747c4e3777e8a36297731b13e9af76a38b56df77ca036587cc5b7
+    record_sha256: a8b55575719dc62ea0f056177f8d516a27b9925b720eb575ef58b62cbdfe5635
+  overlay:
+    fields:
+      []
+    rule: parent_full_then_current_explicit_non_summary_fields

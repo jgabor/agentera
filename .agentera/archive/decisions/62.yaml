@@ -1,0 +1,58 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 62
+record:
+  number: 62
+  date: 2026-05-24
+  question: How should Agentera strengthen visualisera governance for terminal-native agent output?
+  context: Agentera's visual identity lives in DESIGN.md and protocol.yaml. It governs terminal-native Markdown output, not rendered web UI. Agent-rendered surfaces such as the hej dashboard, capability introductions, and structured artifact headers can drift from declared glyphs, dividers, and constraints. Resonera review compared prose-only strengthening against near-term CLI enforcement and broader visualisera mode expansion. Decision 56 defers new CLI surfaces until contract-first parity work is ready for the 3.0 direction.
+  alternatives:
+    - name: Phase 1 prose adoption only
+      status: chosen
+      description: Extend DESIGN.md and visualisera instructions with a startup gate, brand-vs-product register rules, and expanded agent-output constraints. Defer deterministic linting and additional visualisera modes until drift is measurable or CLI parity work begins.
+    - name: Prose plus reverse-engineer mode
+      status: rejected
+      description: Adds a document-style workflow to infer tokens from observed output. Useful later, but broader than the first governance slice.
+    - name: Include deterministic design-output linting now
+      status: rejected
+      description: Would catch drift automatically, but adds a new CLI surface before recurring slop is evidenced and before Decision 56 parity constraints are satisfied.
+    - name: Defer all visualisera governance changes
+      status: rejected
+      description: Leaves agent-output drift unmanaged despite an existing design system.
+  choice: Adopt Phase 1 prose governance for design in one refine pass. Formalize `agentera prime --context design` plus DESIGN.md read as a hard Step 0 gate in design instructions. Add brand-vs-product output registers and suite-vs-project design authorities to DESIGN.md (alongside the terminal/mobile surface register on feat/v3). Expand DESIGN.md constraints with agent-output anti-patterns and a slop test. Defer deterministic design-output linting until evidence or 3.0 CLI work justifies it.
+  reasoning: Agentera already owns the token layer; the gap is explicit governance for agent-rendered output. Prose changes are contract-aligned and do not require a new CLI command. Resonera amendment 2026-06-09 separates suite design authority from project design authority so a host repo's DESIGN.md (for example a user-built coding-agent CLI) never conflates with Agentera chrome. On v3, capability prose ships in packages/cli instruction modules (D65); npm bundle does not copy suite DESIGN.md into host projects.
+  confidence: firm
+  feeds_into: DESIGN.md, packages/cli/src/capabilities/design/instructions.ts, skills/agentera/capabilities/status/schemas/artifacts.yaml, design
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-09
+record_sha256: 34710bd86278e4c8fb54b7aa4bd806d242db0a13f463b897afe42608fd5eacf3
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: b4103f5ce47830a5d4094610d3426c46485f4eef
+    blob: 7212139cb488d08ef7dba8a86259cd87a41b53a2
+    path: .agentera/decisions.yaml
+    record_sha256: 091880d6f922a2be5036bc063be9b531892e4db657e312e8062f13145843c897
+  projection_transition:
+    commit: fe7d869579631598ee25461a7e9c96a022303a3b
+    parent: b4103f5ce47830a5d4094610d3426c46485f4eef
+    parent_count: 1
+    blob: f6bb3fff94c48424484e180fc4076db02105fc45
+    record_sha256: b0efbc511f53caed4a192b8d408c2aae05ef736020bb053c0bda8d69ad216a9d
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 21
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: 74a604a693e2a4433b748f2589814560f01d36b382a1796b3610bc8a2bc06c6d
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

@@ -17,9 +17,10 @@ import {
   type GitBackfillResponse,
 } from "../../state/gitBackfill.js";
 import { renderGitBackfillText } from "../../state/gitBackfillOutput.js";
+import { applyProjectionRecovery, previewProjectionRecovery } from "../../state/projectionRecovery.js";
 
 const BACKFILL_SYNTAX =
-  "agentera state backfill [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
+  "agentera state backfill [--recover-projections] [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
 const BACKFILL_DRY_RUN_EXAMPLE =
   "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json";
 const BACKFILL_APPLY_EXAMPLE =
@@ -111,6 +112,7 @@ export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: st
     } else if (token === "--dry-run") args.dryRun = true;
     else if (token === "--apply") args.apply = true;
     else if (token === "--force") args.force = true;
+    else if (token === "--recover-projections") args.recoverProjections = true;
     else return { error: `unrecognized arguments: ${token}` };
     }
   return args;
@@ -119,6 +121,14 @@ export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: st
 function validateBackfillArgs(args: GitBackfillArgs, sourceRoot: string): string | null {
   const contract = stateGitBackfillContract(sourceRoot);
   const artifacts = numberedArchiveArtifacts(sourceRoot);
+  if (args.recoverProjections) {
+    if (args.artifact || args.number !== undefined || args.commit || args.path || args.limit !== undefined) return "--recover-projections is a whole-batch operation and cannot be combined with entry selectors";
+    if (args.apply && !args.force) return "--apply requires explicit --force intent";
+    if (args.force && !args.apply) return "--force requires --apply";
+    if (args.apply && !args.project) return "--apply requires explicit --project PATH";
+    if (args.apply && args.dryRun) return "--apply and --dry-run are mutually exclusive";
+    return null;
+  }
   if (args.artifact && !artifacts.includes(args.artifact)) {
     return `unsupported artifact '${args.artifact}'`;
   }
@@ -175,6 +185,18 @@ export function runBackfill(argv: string[], io: Io, sourceRootOverride?: string)
     return emitInvalidInput(io, invalid);
   }
   const mode = parsed.apply ? "apply" : parsed.dryRun ? "preview" : "inventory";
+  if (parsed.recoverProjections) {
+    try {
+      const project = resolvePath(parsed.project ?? process.cwd());
+      const response = parsed.apply ? applyProjectionRecovery(project, sourceRoot) : previewProjectionRecovery(project, sourceRoot);
+      const out = io.out ?? ((text: string) => process.stdout.write(text));
+      if (format === "json" || format === "yaml") emitStructured(response, format, out);
+      else out(`${response.status}: selected=${response.counts.selected} ready=${response.counts.ready} refused=${response.counts.refused} applied=${response.counts.applied}\n`);
+      return response.status === "blocked" ? 1 : 0;
+    } catch (error) {
+      return emitInvalidInput(io, failure((error as Error).message, format === "yaml" ? "text" : format));
+    }
+  }
   let response: GitBackfillResponse;
   try {
     const project = resolvePath(parsed.project ?? process.cwd());

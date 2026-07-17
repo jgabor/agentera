@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 46
+record:
+  number: 46
+  date: 2026-05-08
+  question: How should Agentera handle capability handoff wording and confirmation guidance for pending 2.2.0?
+  context: "`docs/notes.md` identified three related release-polish gaps: capability handoffs still teach standalone slash-capability labels such as `/realisera`, next capability recommendations are inconsistent, and bounded choices do not consistently use runtime-native question tools. Decisions 43 and 45 already separate `/agentera <alias>` routes from CLI state commands, so handoff prose should stop making agents remember runtime-specific slash conventions. The user selected the handoff polish option for v2.2.0 and explicitly required recording this decision before implementation continues."
+  alternatives:
+    - name: Handoff polish for v2.2.0
+      status: chosen
+      description: Normalize handoffs to glyph plus canonical capability name, reserve `/agentera <alias>` for explicit route docs, use runtime-native question tools for bounded choices, and add regression coverage.
+    - name: Completed-plan lifecycle cleanup
+      status: rejected
+      description: Relevant, but broader lifecycle behavior that should be planned separately from release polish.
+    - name: CLI write support
+      status: rejected
+      description: Valuable, but too large for the current 2.2.0 release window and likely deserves its own design.
+    - name: Record follow-ups only
+      status: rejected
+      description: Leaves a small but visible v2.2.0 UX inconsistency unresolved after Decisions 43-45 tightened the route surface.
+  choice: "Include a narrow handoff-polish item in pending 2.2.0: capability prose should recommend downstream capabilities as glyph plus canonical name labels such as `⧉ build`, reserve `/agentera <alias>` for explicit slash-route documentation, use the runtime's native question tool for clear bounded choices, put the recommended option first, include `Done`, and ask for confirmation before invoking a downstream capability."
+  reasoning: This compounds Decisions 43-45 without changing command semantics. It removes a runtime-convention burden from agents, makes handoffs more consistent, and keeps the release scope smaller than lifecycle archival or YAML write support.
+  confidence: firm
+  feeds_into: SKILL.md, capability prose, tests, CHANGELOG.md, references/cli/vocabulary.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: "D46 handoff enforcement now has runtime-facing regression evidence: semantic fixture defaults and documentation require glyph plus canonical capability names such as `⧉ build`, status routing fixtures forbid standalone slash-capability labels such as `/build`, focused semantic/dispatch tests passed 49 tests on 2026-05-15, and semantic fixture evals passed 4 fixtures. User confirmation is still required before marking this decision user-confirmed satisfied."
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+  outcome: "Include a narrow handoff-polish item in pending 2.2.0: capability prose should recommend downstream capabilities as glyph plus canonical name labels such as `⧉ build`, reserve `/agentera <alias>` for explicit slash-route documentation, use the runtime's native question tool for clear bounded choices, put the recommended option first, include `Done`, and ask for confirmation before invoking a downstream capability."
+record_sha256: 33709575ffdcb1c8648e95bb4fd3f18baf6bf420b06f7c48a8a68ea0713175d2
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 218b882356835a66f32ab841810765d1b771557f
+    blob: 337501d445a8ae89ed0eb5708e03566d8f3a9a29
+    path: .agentera/decisions.yaml
+    record_sha256: 00e0cf574aeacd6f15a0c6b281cdc8348d00124f7004b24590ccfcaeb2ea2934
+  projection_transition:
+    commit: 878838b009fdecefa56175f77384c20cc92b6bdf
+    parent: 218b882356835a66f32ab841810765d1b771557f
+    parent_count: 1
+    blob: cdd43bb4b0d1dc2c08f3cead38b4b2beec1041b3
+    record_sha256: 2e87304af1ca0941e16b3597f40139900165586d3aa416cbebfc618c17ea8792
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 6
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: f0a7ce63a72b07adf0b890959adfa0d87b5490efa6b6a6dab6a97d3efc12b430
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

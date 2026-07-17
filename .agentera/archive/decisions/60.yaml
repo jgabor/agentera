@@ -1,0 +1,61 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 60
+record:
+  number: 60
+  date: 2026-05-23
+  question: How should Agentera adopt two-axis diff review after inspirera analysis of an external review pattern?
+  context: Inspirera analyzed an external in-progress review skill, which reviews a git diff against a fixed point on two orthogonal axes — Standards (repo documented conventions) and Spec (originating requirements) — using parallel sub-agents with isolated context, then aggregates findings side-by-side without merging them. Agentera already has holistic health audits (inspektera), plan acceptance criteria (planera), and post-realisera verification (orkestrera spawning inspektera), but nothing that performs change-scoped diff review with separate standards and spec passes. The user requires an extremely high bar for introducing a 13th capability; extend existing capabilities until the seam breaks, then add.
+  alternatives:
+    - name: Inspektera review mode
+      status: chosen
+      description: Extend inspektera with an ephemeral diff-scoped review mode that runs parallel Standards and Spec sub-agents, emits a side-by-side report without writing health.yaml, optionally files TODO items, uses plan acceptance criteria as the primary Spec source via CLI, and falls back to Standards-only when no active plan exists. Invocation routing for manual pre-merge review is deferred.
+    - name: New 13th capability
+      status: rejected
+      description: A dedicated review capability would give clean identity and routes, but the user rejected adding capabilities until an existing seam demonstrably breaks.
+    - name: Realisera verify extension
+      status: rejected
+      description: Realisera already verifies against plan acceptance criteria, but review is read-only analysis; mixing build and review safety rails blurs capability ownership.
+    - name: Orkestrera spawn recipe only
+      status: rejected
+      description: Documenting two sub-agent prompts in orkestrera alone would cover post-realisera gating but not manual pre-merge review or stable capability schemas.
+  choice: Extend audit with a diff-scoped review mode adopting a two-axis Standards-and-Spec pattern. Review output is ephemeral — side-by-side Standards and Spec reports, optional TODO filing, and no health.yaml writes — so longitudinal health audits stay separate from change-scoped review. Plan acceptance criteria from `agentera plan --format json` are the primary Spec source; when no active plan exists, run Standards-only and note that Spec was skipped. Support both orchestrate post-build spawn and manual pre-merge entry; exact invocation surface is deferred. Add a new capability only if audit's identity collapses under the combined audit and review responsibilities.
+  reasoning: Review and audit answer different questions. Audit is repo-wide and longitudinal; review is change-scoped and orthogonal. Inspektera can host both if review mode never writes audit state. The user's extend-until-it-breaks bar favors inspektera extension over a 13th capability, while ephemeral output prevents polluting health trajectory. Plan AC as Spec source is the Agentera-native adaptation of an issue-tracker hierarchy.
+  confidence: provisional
+  feeds_into: skills/agentera/capabilities/audit/instructions.md, skills/agentera/SKILL.md, skills/agentera/capabilities/orchestrate/instructions.md, scripts/agentera, tests, TODO.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-05-23
+    evidence: User confirmed satisfaction during discuss review on 2026-05-23.
+  outcome: Extend audit with a diff-scoped review mode adopting a two-axis Standards-and-Spec pattern. Review output is ephemeral — side-by-side Standards and Spec reports, optional TODO filing, and no health.yaml writes — so longitudinal health audits stay separate from change-scoped review. Plan acceptance criteria from `agentera plan --format json` are the primary Spec source; when no active plan exists, run Standards-only and note that Spec was skipped. Support both orchestrate post-build spawn and manual pre-merge entry; exact invocation surface is deferred. Add a new capability only if audit's identity collapses under the combined audit and review responsibilities.
+record_sha256: f73a0bc9444fe63231bc06f1a5dc5b95bbbf37d472614b9e826e7d5e47144738
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: 6759bcf57adb41453cbc98a0690ad67fd6de7e3f
+    blob: e002703abdccdfd3c865aaff0aa2371c4c914af8
+    path: .agentera/decisions.yaml
+    record_sha256: 82860d7326608f19cebb978f0000da7cf6ee6c4a187fea2aa055b6fd11a944f5
+  projection_transition:
+    commit: 65417cd07beaa5715e3e27acd33ce05e07b203f3
+    parent: 6759bcf57adb41453cbc98a0690ad67fd6de7e3f
+    parent_count: 1
+    blob: 017ae9f5e2c015a56e2391b5ed1c32f25df50349
+    record_sha256: cf4b2146a39aee84c45825ed787dbb16ca856def0f1f5d019180f1e2690408a5
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 19
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: cdd0542d79bb3bb765228dd458cf5da9b58cab95e163fa04ff7a33598fdf7c04
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields

@@ -1,0 +1,58 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 67
+record:
+  number: 67
+  date: 2026-06-05
+  question: How should Agentera reposition from open protocol to mobile-first product?
+  context: The agentera-mobile staging repo and monorepo README previously framed Agentera as an open protocol with runtime adapters as the primary story. The mobile app is the flagship consumer product. Pi and T3 Code use one product name across monorepo packages.
+  alternatives:
+    - name: Single brand everywhere
+      status: chosen
+      description: Agentera is the product. @agentera/mobile, @agentera/web, @agentera/cli are product surfaces. Skills and references are internal implementation contracts.
+    - name: Keep open protocol as public headline
+      status: rejected
+      description: Conflicts with mobile-first product direction and opinionated no-extensions policy.
+    - name: Agentera Mobile as separate product name
+      status: rejected
+      description: Adds naming friction when mobile is the primary surface.
+  choice: Adopt single-brand product positioning. Merge mobile vision into root .agentera/vision.yaml. Restructure root README as Pi-style package index with @agentera/mobile as flagship. Demote editor runtime install matrices to README Internals and packages/cli/README.md. Document capability English aliases in packages/mobile/README.md without renaming schema IDs yet. Add DESIGN.md surface register (terminal vs mobile).
+  reasoning: One north star, one product name, package READMEs for surface-specific DX — matches Pi/T3 monorepo patterns and the user's merged-vision choice.
+  confidence: firm
+  feeds_into: README.md, .agentera/vision.yaml, AGENTS.md, DESIGN.md, packages/mobile/, references/cli/vocabulary.md, .agentera/docs.yaml, docs/consolidation/monorepo-plan.md
+  satisfaction:
+    state: user_confirmed_satisfied
+    evidence: Decision 68 (2026-06-05) corrected D67 skills-as-internals ceiling to a delivery surface, removed SaaS/PaaS framing, and reaffirmed multi-surface product boundary. User confirmed D67 satisfaction 2026-06-05 in current discuss deliberation. D67 feeds_into list is satisfied.
+    user_confirmation:
+      confirmed_by: user
+      confirmed_at: 2026-06-05
+  outcome: Adopt single-brand product positioning. Merge mobile vision into root .agentera/vision.yaml. Restructure root README as Pi-style package index with @agentera/mobile as flagship. Demote editor runtime install matrices to README Internals and packages/cli/README.md. Document capability English aliases in packages/mobile/README.md without renaming schema IDs yet. Add DESIGN.md surface register (terminal vs mobile).
+record_sha256: bfd1f88c50ac56c474193142e062fd517e456e851508cac782a539a2efbf0e94
+recovery_provenance:
+  kind: direct_projection_replacement
+  source:
+    commit: bc1ebc0062c84d0dd77a6035589cf696852a7f41
+    blob: c4ed7aef67864f5d6eddefb04d1f4d9750a71773
+    path: .agentera/decisions.yaml
+    record_sha256: ab330471eae1015e1285736c8de1eab2a8686453fde12e58ea82fc85d4f6a3cf
+  projection_transition:
+    commit: 03563d3ca98b4946b32e4b2c4301960d994a806e
+    parent: bc1ebc0062c84d0dd77a6035589cf696852a7f41
+    parent_count: 1
+    blob: 89d754818c27ad6b9ea7801aff1cbd1ab038085d
+    record_sha256: d4f04e79a29109fb7e896f4a8f9d98d5e9005d82ce7394e72d482cc72f13ca1a
+  current_projection:
+    path: .agentera/decisions.yaml
+    collection: archive
+    index: 26
+    document_sha256: 8e1de57cfc53bdceaf61eb86a6e4c6f7e1eb99b1445689a66074acf29b5e252f
+    record_sha256: d4f04e79a29109fb7e896f4a8f9d98d5e9005d82ce7394e72d482cc72f13ca1a
+  overlay:
+    fields:
+      - choice
+      - date
+      - feeds_into
+      - number
+      - outcome
+      - satisfaction
+    rule: parent_full_then_current_explicit_non_summary_fields
