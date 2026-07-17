@@ -116,6 +116,7 @@ export class EntityPublicationContext {
   private readonly markerFd: number;
   private readonly markerIdentity: FileIdentity;
   private readonly markerBytes: Buffer;
+  private readonly createdDirectories = new Map<string, FileIdentity>();
   private closed = false;
 
   private constructor(
@@ -209,6 +210,7 @@ export class EntityPublicationContext {
     this.assertValid();
 
     const directories: DirectoryEntry[] = [];
+    const createdPaths: Array<{ relativePath: string; fd: number }> = [];
     let stageFd: number | undefined;
     let stageName: string | undefined;
     let targetLinked = false;
@@ -230,6 +232,7 @@ export class EntityPublicationContext {
         }
         const entry = { parentFd: entryParentFd, name, fd, created };
         directories.push(entry);
+        if (created) createdPaths.push({ relativePath: segments.slice(0, directories.length).join("/"), fd });
         parentFd = fd;
         if (created) syncDirectory(entryParentFd);
         this.assertBoundary(directories);
@@ -273,6 +276,8 @@ export class EntityPublicationContext {
       stageName = undefined;
       syncDirectory(directoryFd);
       this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd });
+      for (const createdPath of createdPaths)
+        this.createdDirectories.set(createdPath.relativePath, identity(fs.fstatSync(createdPath.fd, { bigint: true })));
       return true;
     } catch (error) {
       const directoryFd = directories.at(-1)?.fd;
@@ -310,22 +315,56 @@ export class EntityPublicationContext {
     try {
       let parentFd = this.rootFd;
       for (const name of segments.slice(0, -1)) {
-        const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
+        let fd: number;
+        try { fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
         directories.push({ parentFd, name, fd, created: false });
         parentFd = fd;
       }
       const directoryFd = directories.at(-1)!.fd;
       const targetName = segments.at(-1)!;
-      targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd });
-      if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes)))
-        throw new Error(`entity '${relativeTarget}' changed before rollback; preserve both values and resolve explicitly`);
+      try { targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
+      if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes))) return;
       this.removeOwnedFile(directoryFd, targetName, targetFd);
       syncDirectory(directoryFd);
-      this.assertBoundary(directories);
     } finally {
       if (targetFd !== undefined) fs.closeSync(targetFd);
       for (const entry of directories.reverse()) fs.closeSync(entry.fd);
+      this.removeAttemptDirectories();
+    }
+  }
+
+  private removeAttemptDirectories(): void {
+    const paths = [...this.createdDirectories.keys()].sort((left, right) => right.split("/").length - left.split("/").length);
+    for (const relativePath of paths) {
+      const segments = relativePath.split("/");
+      const descriptors: number[] = [];
+      let targetFd: number | undefined;
+      let parentFd = this.rootFd;
+      try {
+        for (const name of segments.slice(0, -1)) {
+          const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
+          descriptors.push(fd); parentFd = fd;
+        }
+        targetFd = fs.openSync(fdPath(parentFd, segments.at(-1)!), DIRECTORY_FLAGS);
+        const expected = this.createdDirectories.get(relativePath)!;
+        const observed = fs.fstatSync(targetFd, { bigint: true });
+        if (observed.dev !== expected.dev || observed.ino !== expected.ino) {
+          this.createdDirectories.delete(relativePath);
+          continue;
+        }
+        fs.rmdirSync(fdPath(parentFd, segments.at(-1)!));
+        syncDirectory(parentFd);
+        this.createdDirectories.delete(relativePath);
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code ?? "";
+        if (code === "ENOENT") this.createdDirectories.delete(relativePath);
+        else if (!["ENOTEMPTY", "EEXIST"].includes(code)) throw error;
+      } finally {
+        if (targetFd !== undefined) fs.closeSync(targetFd);
+        for (const fd of descriptors.reverse()) fs.closeSync(fd);
+      }
     }
   }
 

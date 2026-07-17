@@ -15,6 +15,7 @@ import { detectStateModeBinding } from "./stateMode.js";
 import { validatePlanCreateInput, validatePlanPublicationCandidate } from "./write/planPublication.js";
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
+import { mutatePlanTaskEvaluation, planTaskRecordViolations } from "./write/planEvaluation.js";
 
 const ARTIFACT = "plan";
 const PLAN = "plan";
@@ -132,8 +133,10 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
       const result = publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, ...item });
       if (!result.replay) published.push({ relative: relative(req.projectRoot, result.path), bytes: dumpYamlMapping({ id: item.id, artifact: ARTIFACT, record: item.record }) });
     }
+    options.publicationContext.assertValid();
     const validation = validateEntityState(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot);
     if (!validation.valid) throw new Error(`created plan graph failed state validation: ${validation.issues.map(({ message }) => message).join("; ")}`);
+    options.publicationContext.assertValid();
   } catch (error) {
     for (const item of published.reverse()) options.publicationContext?.removeExact(item.relative, item.bytes);
     throw error;
@@ -155,6 +158,8 @@ function assertDependencies(root: string, sourceRoot: string, record: JsonObject
   }
 }
 function assertProjectedTask(entities: DiscoveredEntity[], id: string, record: JsonObject): void {
+  const violations = planTaskRecordViolations(record, `plan task '${id}'`);
+  if (violations.length) reject({ class: "schema_violation", message: `plan task '${id}' would violate the task schema`, violations });
   const planId = String(record.plan);
   const records = new Map(entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === planId && entity.id).map((entity) => [entity.id!, entity.id === id ? record : entity.record!]));
   if (records.has(id) === false) records.set(id, record);
@@ -208,12 +213,8 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     assertDependencies(req.projectRoot, sourceRoot, record, taskId);
   } else if (req.spec.verb === "set-status") record.status = String(req.values.status);
   else if (req.spec.verb === "record-evaluation") {
-    if (["complete", "blocked"].includes(String(record.status))) reject({ class: "conflict", message: `plan task '${taskId}' is ${record.status} and cannot accept another evaluation` });
-    const prior = mapping(record.evaluation) ? record.evaluation : {}; const evaluation = mapping(req.values.evaluation) ? req.values.evaluation : {}; const verdict = String(evaluation.verdict ?? ""); const attemptId = String(evaluation.attempt_id ?? "");
-    if (mapping(prior.provenance) && prior.provenance.attempt_id === attemptId) return envelope("state plan record-evaluation", { id: taskId, path: task.path, replay: true }, record, req.dryRun);
-    const failures = Number(prior.failure_count ?? 0) + (verdict === "fail" ? 1 : 0); if (verdict === "fail" && Number(prior.failure_count ?? 0) >= 2) reject({ class: "conflict", message: `plan task '${taskId}' has exhausted its evaluation retry budget` });
-    record.evaluation = { attempt_count: Number(prior.attempt_count ?? 0) + 1, failure_count: failures, last_verdict: verdict, last_failure_evidence: verdict === "fail" ? evaluation.failure_evidence ?? null : prior.last_failure_evidence ?? null, provenance: { attempt_id: attemptId, source: evaluation.provenance, recorded_at: new Date().toISOString().slice(0, 16).replace("T", " "), writer_command: "agentera state plan record-evaluation" } };
-    if (failures >= 2) record.status = "blocked";
+    const mutation = mutatePlanTaskEvaluation(record, req.values.evaluation, `plan task '${taskId}'`);
+    if (mutation.replay) return envelope("state plan record-evaluation", { id: taskId, path: task.path, replay: true }, record, req.dryRun);
   }
   assertProjectedTask(entities, taskId, record);
   if (canonicalRecordJson(record) === canonicalRecordJson(task.record)) return envelope(`state plan ${req.spec.verb}`, { id: taskId, path: task.path, replay: true }, record, req.dryRun);

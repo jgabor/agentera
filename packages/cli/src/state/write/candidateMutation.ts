@@ -9,6 +9,7 @@ import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./as
 import { reject } from "./errors.js";
 import { array, findByNumber, mapping, mappingPath } from "./helpers.js";
 import type { StateWriteRequest } from "./operations.js";
+import { mutatePlanTaskEvaluation } from "./planEvaluation.js";
 
 function buildProgress(
   doc: Record<string, unknown>,
@@ -280,67 +281,16 @@ export function mutateCandidate(
     const entry = findByNumber(tasks, taskNumber);
     if (!entry)
       reject({ class: "unsupported_target", message: `no plan task with number ${taskNumber}` });
-    const evaluationInput = mapping(req.values.evaluation);
-    const attemptId = String(evaluationInput.attempt_id ?? "").trim();
-    const verdict = String(evaluationInput.verdict ?? "");
-    const provenance = String(evaluationInput.provenance ?? "").trim();
-    const failureEvidence = String(evaluationInput.failure_evidence ?? "").trim();
-    if (!attemptId || !provenance)
-      reject({ class: "schema_violation", message: "evaluation requires non-empty --attempt-id and --provenance" });
-    if (verdict === "fail" && !failureEvidence)
-      reject({ class: "schema_violation", message: "a failed evaluation requires non-empty --failure-evidence" });
-    if (verdict === "pass" && failureEvidence)
-      reject({ class: "schema_violation", message: "--failure-evidence applies only to a failed evaluation" });
-    const prior = mapping(entry.evaluation);
-    const priorProvenance = mapping(prior.provenance);
-    if (priorProvenance.attempt_id === attemptId) {
-      const replay =
-        prior.last_verdict === verdict &&
-        priorProvenance.source === provenance &&
-        (verdict !== "fail" || prior.last_failure_evidence === failureEvidence);
-      if (!replay)
-        reject({
-          class: "conflict",
-          message: `evaluation attempt '${attemptId}' already exists with different result data`,
-        });
-      return {
-        candidate,
-        written: entry,
-        assigned: { number: taskNumber, attempt_count: prior.attempt_count ?? 0 },
-        replay: true,
-      };
-    }
-    if (["complete", "blocked"].includes(String(entry.status ?? "")))
-      reject({ class: "conflict", message: `plan task ${taskNumber} is ${entry.status} and cannot accept another evaluation` });
-    const attemptCount = Number(prior.attempt_count ?? 0);
-    const failureCount = Number(prior.failure_count ?? 0);
-    if (!Number.isInteger(attemptCount) || attemptCount < 0 || !Number.isInteger(failureCount) || failureCount < 0)
-      reject({ class: "schema_violation", message: `plan task ${taskNumber} has malformed evaluation state` });
-    if (verdict === "fail" && failureCount >= 2)
-      reject({ class: "conflict", message: `plan task ${taskNumber} has exhausted its evaluation retry budget` });
-    const nextFailureCount = failureCount + (verdict === "fail" ? 1 : 0);
-    entry.evaluation = {
-      attempt_count: attemptCount + 1,
-      failure_count: nextFailureCount,
-      last_verdict: verdict,
-      last_failure_evidence: verdict === "fail" ? failureEvidence : prior.last_failure_evidence ?? null,
-      provenance: {
-        attempt_id: attemptId,
-        source: provenance,
-        recorded_at: localTimestamp(),
-        writer_command: "agentera state plan record-evaluation",
-      },
-    };
-    if (nextFailureCount >= 2) entry.status = "blocked";
+    const mutation = mutatePlanTaskEvaluation(entry, req.values.evaluation, `plan task ${taskNumber}`);
     return {
       candidate,
       written: entry,
       assigned: {
         number: taskNumber,
-        attempt_count: attemptCount + 1,
-        failure_count: nextFailureCount,
+        attempt_count: mutation.attemptCount,
+        failure_count: mutation.failureCount,
       },
-      replay: false,
+      replay: mutation.replay,
     };
   }
   throw new Error(`unsupported transaction ${req.artifact} ${req.spec.verb}`);

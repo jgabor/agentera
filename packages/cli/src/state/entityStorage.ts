@@ -11,6 +11,7 @@ import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { healthEntityViolations } from "./healthEntityValidation.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { acquireWriterLock } from "./write/lock.js";
+import { planTaskRecordViolations } from "./write/planEvaluation.js";
 
 const MAX_DIAGNOSTICS = 100;
 
@@ -335,9 +336,9 @@ function discoverFile(
     }
   }
   if (!malformed && boundary === "plan_task" && record) {
-    if (typeof record.name !== "string" || !["pending", "in_progress", "complete", "blocked", "skipped"].includes(String(record.status)) || !Array.isArray(record.depends_on) || !Array.isArray(record.acceptance)) {
+    if (planTaskRecordViolations(record).length) {
       malformed = true;
-      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan task fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan task schema`) });
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan task or evaluation fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan task and evaluation schema`) });
     }
   }
   return { id, artifact, boundary, record, path: file, relativePath, classification: malformed ? "malformed" : "valid" };

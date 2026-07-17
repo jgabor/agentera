@@ -1,6 +1,7 @@
 import { dumpYamlMapping, loadYamlMapping } from "../../core/yaml.js";
 import { lintFullArtifactPayload } from "../../cli/commands/lint.js";
 import { reject } from "./errors.js";
+import { planEvaluationMetadataViolations } from "./planEvaluation.js";
 import { validateArtifactBytes } from "./validate.js";
 
 interface HistoricalPlanBudgetClassification {
@@ -46,64 +47,9 @@ export function validatePlanCreateInput(input: Record<string, unknown>): void {
 
 export function planEvaluationViolations(doc: Record<string, unknown>): string[] {
   const tasks = Array.isArray(doc.tasks) ? doc.tasks : [];
-  const violations: string[] = [];
-  const allowed = new Set([
-    "attempt_count",
-    "failure_count",
-    "last_verdict",
-    "last_failure_evidence",
-    "provenance",
-  ]);
-
-  tasks.forEach((task, index) => {
-    if (!isRecord(task) || task.evaluation === undefined) return;
-    const prefix = `tasks[${index}].evaluation`;
-    if (!isRecord(task.evaluation)) {
-      violations.push(`plan: '${prefix}' must be a mapping`);
-      return;
-    }
-    const evaluation = task.evaluation;
-    for (const field of Object.keys(evaluation)) {
-      if (!allowed.has(field)) violations.push(`plan: unsupported field '${prefix}.${field}'`);
-    }
-    const attemptCount = evaluation.attempt_count;
-    const failureCount = evaluation.failure_count;
-    if (!Number.isInteger(attemptCount) || Number(attemptCount) < 1)
-      violations.push(`plan: '${prefix}.attempt_count' must be a positive integer`);
-    if (!Number.isInteger(failureCount) || Number(failureCount) < 0)
-      violations.push(`plan: '${prefix}.failure_count' must be a non-negative integer`);
-    if (
-      Number.isInteger(attemptCount) &&
-      Number.isInteger(failureCount) &&
-      Number(failureCount) > Number(attemptCount)
-    )
-      violations.push(`plan: '${prefix}.failure_count' cannot exceed attempt_count`);
-
-    const verdict = evaluation.last_verdict;
-    if (verdict !== "pass" && verdict !== "fail")
-      violations.push(`plan: '${prefix}.last_verdict' must be pass or fail`);
-    const failureEvidence = evaluation.last_failure_evidence;
-    if (failureEvidence !== null && typeof failureEvidence !== "string")
-      violations.push(`plan: '${prefix}.last_failure_evidence' must be a string or null`);
-    if (verdict === "fail" && (typeof failureEvidence !== "string" || !failureEvidence.trim()))
-      violations.push(`plan: '${prefix}.last_failure_evidence' is required for a failed evaluation`);
-
-    if (!isRecord(evaluation.provenance)) {
-      violations.push(`plan: '${prefix}.provenance' must be a mapping`);
-    } else {
-      for (const field of ["attempt_id", "source", "recorded_at", "writer_command"]) {
-        const value = evaluation.provenance[field];
-        if (typeof value !== "string" || !value.trim())
-          violations.push(`plan: '${prefix}.provenance.${field}' must be a non-empty string`);
-      }
-      if (evaluation.provenance.writer_command !== "agentera state plan record-evaluation")
-        violations.push(`plan: '${prefix}.provenance.writer_command' must identify the evaluation writer`);
-    }
-
-    if (Number(failureCount) >= 2 && task.status !== "blocked")
-      violations.push(`plan: '${prefix}' with two failed evaluations requires task status blocked`);
-  });
-  return violations;
+  return tasks.flatMap((task, index) => isRecord(task)
+    ? planEvaluationMetadataViolations(task.evaluation, `tasks[${index}].evaluation`, task.status)
+    : []);
 }
 
 function withoutCliOwnedPlanLifecycleFields(doc: Record<string, unknown>): Record<string, unknown> {

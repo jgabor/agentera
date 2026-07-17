@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { createPlanEntities } from "../../src/state/planEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
@@ -14,10 +14,11 @@ import { executeStateWrite } from "../../src/state/write/transaction.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 
 const roots: string[] = [];
+const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
 
 function project(entity = true): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-plan-entities-")); roots.push(root);
-  if (entity) { fs.mkdirSync(path.join(root, ".agentera"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n"); }
+  if (entity) { fs.mkdirSync(path.join(root, ".agentera"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER); }
   return root;
 }
 function plan(title: string, dependency = false): Record<string, unknown> {
@@ -48,6 +49,18 @@ function git(root: string, ...args: string[]): string {
   return execFileSync("git", ["-c", "commit.gpgsign=false", ...args], { cwd: root, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 }
 
+function entityNames(root: string): string[] {
+  const entities = path.join(root, ".agentera/entities");
+  return fs.existsSync(entities) ? fs.readdirSync(entities, { recursive: true, encoding: "utf8" }) : [];
+}
+
+function unrelated(root: string): { file: string; bytes: string } {
+  const file = path.join(root, ".agentera/unrelated.txt");
+  const bytes = "successor or unrelated state\n";
+  fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, bytes);
+  return { file, bytes };
+}
+
 afterEach(() => { vi.restoreAllMocks(); while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true }); });
 
 describe("plan and task entity authority", () => {
@@ -74,6 +87,31 @@ describe("plan and task entity authority", () => {
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
   });
 
+  it("enforces shared evaluation validation, exact replay, and divergent-attempt conflicts through the public CLI", () => {
+    const root = project(); const created = create(root, "evaluation"); const taskId = created.tasks[0].id;
+    const evaluate = (...args: string[]) => capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", taskId, ...args, "--format", "json"]);
+    const target = path.join(root, `.agentera/entities/plan/plan_task/${taskId}.yaml`);
+    const initial = fs.readFileSync(target, "utf8");
+    for (const invalid of [
+      ["--attempt-id", "", "--verdict", "pass", "--provenance", "audit"],
+      ["--attempt-id", "audit-1", "--verdict", "pass", "--provenance", ""],
+      ["--attempt-id", "audit-1", "--verdict", "fail", "--provenance", "audit"],
+      ["--attempt-id", "audit-1", "--verdict", "pass", "--provenance", "audit", "--failure-evidence", "not allowed"],
+    ]) {
+      const result = evaluate(...invalid); expect(result.rc).not.toBe(0); expect(fs.readFileSync(target, "utf8")).toBe(initial);
+    }
+    const valid = ["--attempt-id", "audit-1", "--verdict", "fail", "--provenance", "audit", "--failure-evidence", "test:1"];
+    expect(evaluate(...valid).rc).toBe(0); const once = fs.readFileSync(target, "utf8");
+    expect(JSON.parse(evaluate(...valid).out).operation.idempotent_replay).toBe(true); expect(fs.readFileSync(target, "utf8")).toBe(once);
+    for (const divergent of [
+      ["--attempt-id", "audit-1", "--verdict", "pass", "--provenance", "audit"],
+      ["--attempt-id", "audit-1", "--verdict", "fail", "--provenance", "other", "--failure-evidence", "test:1"],
+      ["--attempt-id", "audit-1", "--verdict", "fail", "--provenance", "audit", "--failure-evidence", "test:2"],
+    ]) {
+      const result = evaluate(...divergent); expect(result.rc).not.toBe(0); expect(JSON.parse(result.out).error.class).toBe("conflict"); expect(fs.readFileSync(target, "utf8")).toBe(once);
+    }
+  });
+
   it("infers one open plan and reports zero or multiple open plans actionably", () => {
     const root = project(); const first = create(root, "first");
     expect(capture(root, ["state", "plan", "append", "--name", "Inferred", "--format", "json"]).rc).toBe(0);
@@ -98,6 +136,68 @@ describe("plan and task entity authority", () => {
     expect(() => createPlanEntities(request(root, "create", {}, plan("rollback", true)), { publicationContext: binding.publicationContext, candidate: (() => { const ids = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"]; return () => ids.shift()!; })() })).toThrow(/injected create failure/);
     binding.publicationContext.close();
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 0 });
+  });
+
+  it("rolls back the complete create graph after every successful file when the marker or root changes", () => {
+    for (const invalidation of ["remove", "replace", "root"] as const) for (const after of [1, 2, 3]) {
+      const container = project(false); const root = path.join(container, "project"); fs.mkdirSync(root); fs.mkdirSync(path.join(root, ".agentera")); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER);
+      const held = path.join(container, "held"); const successor = path.join(container, "successor");
+      if (invalidation === "root") { fs.mkdirSync(successor); fs.mkdirSync(path.join(successor, ".agentera")); fs.writeFileSync(path.join(successor, ".agentera/state-mode.yaml"), VALID_MARKER); }
+      const preserved = unrelated(invalidation === "root" ? successor : root);
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let calls = 0;
+      vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+        const result = original(target, bytes); calls += 1;
+        if (calls === after) {
+          if (invalidation === "root") { fs.renameSync(root, held); fs.renameSync(successor, root); }
+          else { fs.rmSync(path.join(root, ".agentera/state-mode.yaml")); if (invalidation === "replace") fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER); }
+        }
+        return result;
+      });
+      const ids = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"];
+      expect(() => createPlanEntities(request(root, "create", {}, plan("rollback", true)), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/changed|conflict/i);
+      expect(() => binding.publicationContext.publishImmutable(".agentera/entities/plan/plan/dddddddddd.yaml", "refused\n")).toThrow(/changed|conflict/i);
+      binding.publicationContext.close(); vi.restoreAllMocks();
+      const attemptedRoot = invalidation === "root" ? held : root;
+      expect(fs.existsSync(path.join(attemptedRoot, ".agentera/entities/plan"))).toBe(false);
+      expect(entityNames(attemptedRoot).filter((name) => name.includes(".tmp") || name.includes("aaaaaaaaaa") || name.includes("bbbbbbbbbb") || name.includes("cccccccccc"))).toEqual([]);
+      expect(fs.readFileSync(invalidation === "root" ? path.join(root, path.relative(successor, preserved.file)) : preserved.file, "utf8")).toBe(preserved.bytes);
+    }
+  });
+
+  it("rolls back prior create files when marker or root invalidation strikes every next-file publication boundary", () => {
+    for (const invalidation of ["remove", "replace", "root"] as const) for (const boundary of ["directory", "stage", "link", "final"] as const) {
+      const container = project(false); const root = path.join(container, "project"); fs.mkdirSync(root); fs.mkdirSync(path.join(root, ".agentera")); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER);
+      const held = path.join(container, "held"); const successor = path.join(container, "successor");
+      if (invalidation === "root") { fs.mkdirSync(successor); fs.mkdirSync(path.join(successor, ".agentera")); fs.writeFileSync(path.join(successor, ".agentera/state-mode.yaml"), VALID_MARKER); }
+      const preserved = unrelated(invalidation === "root" ? successor : root);
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const mutate = (): void => {
+        if (invalidation === "root") { fs.renameSync(root, held); fs.renameSync(successor, root); }
+        else { fs.rmSync(path.join(root, ".agentera/state-mode.yaml")); if (invalidation === "replace") fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER); }
+      };
+      let mutated = false; const once = (): void => { if (!mutated) { mutated = true; mutate(); } };
+      const originalMkdir = fs.mkdirSync.bind(fs), originalOpen = fs.openSync.bind(fs), originalLink = fs.linkSync.bind(fs), originalSync = fs.fsyncSync.bind(fs);
+      if (boundary === "directory") vi.spyOn(fs, "mkdirSync").mockImplementation((candidate, options) => { const result = originalMkdir(candidate, options as never); if (String(candidate).endsWith("/plan_task")) once(); return result as never; });
+      else if (boundary === "stage") vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => { const fd = originalOpen(candidate, flags, mode); if (String(candidate).includes(".bbbbbbbbbb.yaml.") && String(candidate).endsWith(".tmp")) once(); return fd; });
+      else if (boundary === "link") vi.spyOn(fs, "linkSync").mockImplementation((source, target) => { originalLink(source, target); if (String(target).endsWith("/bbbbbbbbbb.yaml")) once(); });
+      else vi.spyOn(fs, "fsyncSync").mockImplementation((fd) => { originalSync(fd); let descriptor = ""; try { descriptor = fs.readlinkSync(`/proc/self/fd/${fd}`); } catch { /* descriptor closed */ } if (descriptor.endsWith("/plan_task") && fs.existsSync(`/proc/self/fd/${fd}/bbbbbbbbbb.yaml`)) once(); });
+      const ids = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"];
+      expect(() => createPlanEntities(request(root, "create", {}, plan("rollback", true)), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/changed|conflict/i);
+      expect(mutated).toBe(true); binding.publicationContext.close(); vi.restoreAllMocks();
+      const attemptedRoot = invalidation === "root" ? held : root;
+      expect(fs.existsSync(path.join(attemptedRoot, ".agentera/entities/plan"))).toBe(false);
+      expect(entityNames(attemptedRoot).filter((name) => name.includes(".tmp") || name.includes("aaaaaaaaaa") || name.includes("bbbbbbbbbb"))).toEqual([]);
+      expect(fs.readFileSync(invalidation === "root" ? path.join(root, path.relative(successor, preserved.file)) : preserved.file, "utf8")).toBe(preserved.bytes);
+    }
+  });
+
+  it("rejects malformed entity evaluation metadata in whole-state validation", () => {
+    const root = project(); const created = create(root, "validation"); const target = path.join(root, `.agentera/entities/plan/plan_task/${created.tasks[0].id}.yaml`);
+    const entity = loadYamlMapping(fs.readFileSync(target, "utf8")); const record = entity.record as Record<string, unknown>;
+    record.evaluation = { attempt_count: 1, failure_count: 1, last_verdict: "fail", last_failure_evidence: null, provenance: { attempt_id: "audit-1", source: "audit", recorded_at: "2026-07-17 12:00", writer_command: "agentera state plan record-evaluation" } };
+    fs.writeFileSync(target, dumpYamlMapping(entity)); const validation = validateEntityState(root);
+    expect(validation.valid).toBe(false); expect(validation.issues).toEqual(expect.arrayContaining([expect.objectContaining({ message: expect.stringMatching(/evaluation fields/) })]));
   });
 
   it("provides full bounded plan/task snapshots and invalidates changed cursors", () => {

@@ -1,0 +1,17 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 886
+record:
+  number: 886
+  timestamp: 2026-07-17 07:10
+  type: fix
+  phase: build
+  what: Fixed audited Task 7 plan entity rollback and evaluation defects.
+  verified: 12 focused and 2,511 full tests passed; typecheck, build, state validation, plan capability validation, capability-contract validation, and compact passed.
+  next: "Task 8 remains pending: cut objectives and experiments over to entities."
+  context:
+    intent: Make multi-file plan creation recover exactly after authority invalidation and preserve the legacy evaluation contract in entity mode.
+    constraints: Only audited Task 7 defects, proportional tests, and required project-state updates.
+    unknowns: None.
+    scope: packages/cli plan entity publication, evaluation validation, and tests.
+record_sha256: ff6d12b44f76c595550a58bcc25a7b743e1b9729c9d672275d1304c1c29e162d

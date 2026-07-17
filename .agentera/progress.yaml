@@ -1,4 +1,20 @@
 cycles:
+  - number: 886
+    timestamp: 2026-07-17 07:10
+    type: fix
+    phase: build
+    what: Fixed audited Task 7 plan entity rollback and evaluation defects.
+    verified: 12 focused and 2,511 full tests passed; typecheck, build, state
+      validation, plan capability validation, capability-contract validation,
+      and compact passed.
+    next: "Task 8 remains pending: cut objectives and experiments over to entities."
+    context:
+      intent: Make multi-file plan creation recover exactly after authority
+        invalidation and preserve the legacy evaluation contract in entity mode.
+      constraints: Only audited Task 7 defects, proportional tests, and required
+        project-state updates.
+      unknowns: None.
+      scope: packages/cli plan entity publication, evaluation validation, and tests.
   - number: 885
     timestamp: 2026-07-17 06:45
     type: feat
@@ -227,43 +243,6 @@ cycles:
       unknowns: None for Task 4; durable marker publication remains owned by Task 10.
       scope: Progress entity writer, exact and bounded reads, read-only mode
         detection, shared entity validation, authority, tests, and changelog.
-  - number: 876
-    timestamp: 2026-07-17 02:46
-    type: fix
-    phase: build
-    what: Revalidated descriptor metadata and recursive path identities so migration
-      snapshots reject hard-link mutations and directory replacement without
-      requiring /proc.
-    inspiration: PLAN Task 19 final retry, Decision 94, and the blocking
-      source-snapshot audit.
-    discovered: A pinned descriptor still accepted same-inode byte changes because
-      dev/ino alone did not describe one read snapshot, while recursive readdir
-      published names before its directory identity was revalidated.
-    verified: "Focused migration/plan/objective/entity verification passed 9 files
-      and 162 tests; full CLI passed 203 files and 2,438 tests. Typecheck and
-      build passed. State validation reported 0 issues; capability contract
-      passed 2/2; compact checked 10 artifacts with 0 errors or changes.
-      Repeated pre-log previews and continuation pages were identical and
-      zero-write: 1,284 verified full, 55 projection-only, 90 summary-only, 17
-      corrupt, 66 unresolved relationships, 173 blockers, 1,446 logical
-      identities, 1,467 physical records, 21 mirrors, and 2,118 relationships;
-      source fingerprint
-      8ba44a3fa75757f976b4a85fefb374859d7bec96ccd3d82faddd6447a435c3eb and
-      preview digest
-      784254b97bd31c3b0632fa6e68acfc2ed9266d24cace53b7bc1fa951966ac965. Bound
-      pre-apply returned apply_not_implemented with mutation_performed false."
-    next: Preserve complete Task 19; keep Tasks 4-9 pending and gated, and do not
-      begin family cutover or apply.
-    context:
-      intent: Close only the remaining Task 19 source-snapshot stability and
-        portability defects.
-      constraints: No apply implementation or effects, family cutover, vision change,
-        unrelated repair, amend, push, publish, or tag.
-      unknowns: Task 13 still owns disposition of the 173 blocked logical identities;
-        this retry does not resolve them.
-      scope: Migration source snapshot metadata and ancestor checks, recursive
-        directory enumeration checks, focused regressions, and progress
-        evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -333,6 +312,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 876 (2026-07-17): Revalidated descriptor metadata and recursive
+      path identities so migration snapshots reject hard-link mutations and
+      directory..."
   - summary: "Cycle 875 (2026-07-17): Pinned migration reads to verified no-follow
       descriptors and made plan, objective, and experiment observers consume..."
   - summary: "Cycle 874 (2026-07-17): Closed exact-source migration boundary escapes
@@ -434,16 +416,18 @@ archive:
   - summary: "Cycle 837 (2026-07-15): Synchronized contracts and verified v3
       closeout: cleaned vestigial --output/corpus_path surfaces in
       report/usageStats/extractCorpus (tier-output flag, tier_path..."
-  - summary: "Cycle 836 (2026-07-15): Moved profile synthesis from monolithic
-      corpus.json to bounded signal tiers. Created profileSignals.ts module
-      (assessProfileSufficiency, readProfileSignals,..."
 omitted: true
-omitted_count: 121
+omitted_count: 122
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
