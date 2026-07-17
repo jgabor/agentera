@@ -498,7 +498,8 @@ entity_migration:
       --format {text,json,yaml}
     apply_preflight_command: >-
       agentera state migrate entities --project PATH --apply --force
-      --source-fingerprint SHA256 --preview-digest SHA256 --format {text,json,yaml}
+      --approval-file FILE --source-fingerprint SHA256 --preview-digest SHA256
+      --format {text,json,yaml}
     resume_command: >-
       agentera state migrate entities --project PATH --resume MIGRATION_ID
       --force --format {text,json,yaml}
@@ -510,6 +511,28 @@ entity_migration:
       durably prepares one root-bound deterministic operation, publishes the
       immutable mapped graph, validates it, and writes the authority marker last.
       Resume and rollback require the exact durable migration ID and --force.
+    git_approval_envelope:
+      required_in_git_checkout: true
+      generator_may_invoke_git: true
+      apply_invokes_git: false
+      external_regular_file: required
+      binds:
+        - real_project_root
+        - clean_head_and_ref
+        - empty_porcelain_assertion
+        - source_fingerprint
+        - preview_digest
+        - git_index_sha256
+        - canonical_tracked_worktree_manifest
+        - ignored_directory_prefixes_and_paths
+        - untracked_baseline
+      verification: >-
+        Apply resolves HEAD/ref and hashes the index by reading Git metadata
+        directly, then validates every approved tracked path's bytes, type,
+        mode, or symlink target and rejects missing or extra non-ignored paths.
+        It verifies once before migration evidence and again under the writer
+        lock immediately before the first effect. Non-Git fixtures may retain
+        source-fingerprint and preview-digest-only behavior.
   source_scope:
     included_entities: entity_target.entities
     included_structured_relationships: entity_target.relationships.declarations
@@ -518,6 +541,12 @@ entity_migration:
       Current canonical files, verified immutable archives, overlays, revisions,
       and validated reachable recovery evidence are inventoried together without
       changing their pre-cutover authority.
+    recovered_projection_correlation: >-
+      Every archive carrying recovery_provenance must match the immutable
+      .agentera/archive/recovery/projection-correlation.yaml recovery set by
+      identity, archive bytes, final record SHA-256, parent/child Git proof or
+      legacy converter/source proof, current projection bytes, and overlay.
+      Missing, changed, new, replaced, or unlisted recovery evidence blocks.
   read_only_preview:
     implementation: implemented
     ordering: artifact_then_boundary_then_source_identity_then_source_path

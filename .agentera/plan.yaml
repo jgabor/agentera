@@ -194,7 +194,7 @@ tasks:
       - GIVEN archive-missing or summary-only state WHEN recovery is attempted THEN only validated full detail is admitted and unresolved loss stops cutover.
       - GIVEN readiness review WHEN apply is approved THEN repository root, clean HEAD, source digest, preview digest, and blocker disposition are explicitly recorded.
       - GIVEN any checkout or source mismatch WHEN apply is requested THEN it refuses before publication and shows a safe correction.
-    evidence: Projection recovery published 39 decision and 19 health immutable envelopes with exact causal or legacy-section provenance; blocker-free migration preview mapped 1,442 identities with 2,208 resolved relationships, one explicit historical projection residue, and zero blockers.
+    evidence: Recovered decision satisfaction is preserved as 39 exact entities, including archive-only D74, D76, D77, and D78; 58 immutable projection archives are bound by one correlation manifest and final blocker-free preview maps 1,448 identities with 2,212 resolved relationships. Approval envelopes bind clean Git root, HEAD, index, tracked worktree, ignored inventory, source fingerprint, and preview digest without Git invocation during apply. Verified by 2,610 tests, typecheck, build, 12 capability validations, capability contract, state, and compact.
   - number: 14
     name: Apply the explicit repository cutover
     depends_on:

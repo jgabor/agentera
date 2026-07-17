@@ -13,6 +13,7 @@ import { EntityPublicationContext } from "../../src/state/entityPublicationConte
 import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
 import { detectStateMode } from "../../src/state/stateMode.js";
 import { loadYamlMapping } from "../../src/core/yaml.js";
+import { generateEntityMigrationApproval } from "../../src/state/entityMigrationApproval.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const WORKER = path.join(import.meta.dirname, "entityMigrationWorker.mjs");
@@ -38,6 +39,14 @@ function files(root: string, relative: string): string[] {
   const start = path.join(root, relative); if (!fs.existsSync(start)) return [];
   return fs.readdirSync(start, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => path.join(entry.parentPath, entry.name)).sort();
 }
+function git(root: string, args: string[]): string { const result = spawnSync("git", args, { cwd: root, encoding: "utf8" }); if (result.status) throw new Error(String(result.stderr)); return String(result.stdout).trim(); }
+function gitProject(): string {
+  const root = project({ "README.md": "approved\n" }); git(root, ["init", "--quiet"]); git(root, ["config", "user.name", "Approval Test"]); git(root, ["config", "user.email", "approval@example.invalid"]); git(root, ["config", "commit.gpgsign", "false"]); git(root, ["add", "."]); git(root, ["commit", "--quiet", "-m", "approved"]); return root;
+}
+function approvalFile(root: string, source: string, digest: string): string {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-approval-envelope-")); roots.push(directory); const file = path.join(directory, "approval.json"); fs.writeFileSync(file, JSON.stringify(generateEntityMigrationApproval(root, source, digest))); return file;
+}
+function expectNoMigrationEffects(root: string): void { expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false); expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false); }
 
 afterEach(() => { vi.restoreAllMocks(); for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
@@ -78,6 +87,34 @@ describe("durable entity migration", () => {
     expect(apply.rc).toBe(1); expect(JSON.parse(apply.out).error.class).toBe("inventory_blocked");
     expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  });
+
+  it.each([
+    ["dirty tracked bytes", (root: string) => fs.appendFileSync(path.join(root, "README.md"), "dirty\n")],
+    ["staged index", (root: string) => { fs.appendFileSync(path.join(root, "README.md"), "staged\n"); git(root, ["add", "README.md"]); }],
+    ["changed HEAD", (root: string) => { fs.writeFileSync(path.join(root, "HEAD.txt"), "next\n"); git(root, ["add", "HEAD.txt"]); git(root, ["commit", "--quiet", "-m", "next"]); }],
+    ["missing tracked path", (root: string) => fs.rmSync(path.join(root, "README.md"))],
+    ["added untracked path", (root: string) => fs.writeFileSync(path.join(root, "untracked.txt"), "extra\n")],
+  ])("rejects %s against the approval envelope before effects", (_label, mutate) => {
+    const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); mutate(root);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toThrow(); expectNoMigrationEffects(root);
+  });
+
+  it("rejects wrong-root, malformed, and symbolic-link approval files before effects", () => {
+    const root = gitProject(); const other = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const otherPreview = previewEntityMigration(other, SOURCE_ROOT); const wrong = approvalFile(other, otherPreview.source_fingerprint, otherPreview.preview_digest);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, wrong)).toThrow(/approval root|fingerprint/); expectNoMigrationEffects(root);
+    const malformed = path.join(path.dirname(wrong), "malformed.json"); fs.writeFileSync(malformed, "{}\n"); expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, malformed)).toThrow(/does not satisfy/); expectNoMigrationEffects(root);
+    const valid = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const link = `${valid}.link`; fs.symlinkSync(valid, link);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, link)).toThrow(/symbolic link/); expectNoMigrationEffects(root);
+  });
+
+  it("applies with a complete approval while PATH traps Git subprocess invocation", () => {
+    const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const oldPath = process.env.PATH;
+    process.env.PATH = "/path/that/contains/no/git";
+    try {
+      const result = capture(["state", "migrate", "entities", "--project", root, "--apply", "--force", "--approval-file", approval, "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"]);
+      expect(result.rc, result.out).toBe(0); expect(JSON.parse(result.out)).toMatchObject({ status: "complete" });
+    } finally { process.env.PATH = oldPath; }
   });
 
   it("prepares immutable evidence, cuts over once, repeats without rewrites, and rolls back exactly", () => {

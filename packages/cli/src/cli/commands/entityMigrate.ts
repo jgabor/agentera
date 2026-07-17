@@ -10,6 +10,7 @@ import {
   previewEntityMigration,
 } from "../../state/entityMigrationPreview.js";
 import { applyEntityMigration, EntityMigrationOperationError, resumeEntityMigration, rollbackEntityMigration } from "../../state/entityMigrationApply.js";
+import { EntityMigrationApprovalError } from "../../state/entityMigrationApproval.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -24,15 +25,16 @@ interface Args {
   force: boolean;
   sourceFingerprint?: string;
   previewDigest?: string;
+  approvalFile?: string;
   format: Format;
 }
 
-const SYNTAX = "agentera state migrate entities [--project PATH] (--dry-run | --apply --force | --resume MIGRATION_ID --force | --rollback MIGRATION_ID --force) [--format {text,json,yaml}]";
+const SYNTAX = "agentera state migrate entities [--project PATH] (--dry-run | --apply --force --approval-file FILE | --resume MIGRATION_ID --force | --rollback MIGRATION_ID --force) [--format {text,json,yaml}]";
 
 export function entityMigrateHelp(): string {
   return [
     `usage: ${SYNTAX}`,
-    "       agentera state migrate entities --project PATH --apply --force --source-fingerprint SHA256 --preview-digest SHA256 [--format {text,json,yaml}]",
+    "       agentera state migrate entities --project PATH --apply --force --approval-file FILE --source-fingerprint SHA256 --preview-digest SHA256 [--format {text,json,yaml}]",
     "       agentera state migrate entities --project PATH --resume MIGRATION_ID --force [--format {text,json,yaml}]",
     "       agentera state migrate entities --project PATH --rollback MIGRATION_ID --force [--format {text,json,yaml}]",
     "",
@@ -50,6 +52,7 @@ export function entityMigrateHelp(): string {
     "  --rollback ID --force      Guarded rollback of one explicit migration journal",
     "  --source-fingerprint SHA256  Approved source bytes, mode, type, and file-identity fingerprint",
     "  --preview-digest SHA256      Approved inventory and migration-authority digest",
+    "  --approval-file FILE         External root/HEAD/index/worktree approval envelope required in Git checkouts",
     "  --format {text,json,yaml}    Output format (default text)",
   ].join("\n");
 }
@@ -57,7 +60,7 @@ export function entityMigrateHelp(): string {
 function parse(argv: string[], cwd: string): Args | string {
   const args: Args = { project: cwd, dryRun: false, apply: false, force: false, format: "text" };
   const values = new Map([
-    ["--project", "project"], ["--after", "after"], ["--limit", "limit"], ["--source-fingerprint", "sourceFingerprint"], ["--preview-digest", "previewDigest"], ["--resume", "resume"], ["--rollback", "rollback"], ["--format", "format"],
+    ["--project", "project"], ["--after", "after"], ["--limit", "limit"], ["--source-fingerprint", "sourceFingerprint"], ["--preview-digest", "previewDigest"], ["--approval-file", "approvalFile"], ["--resume", "resume"], ["--rollback", "rollback"], ["--format", "format"],
   ] as const);
   const seen = new Set<string>();
   for (let index = 0; index < argv.length; index += 1) {
@@ -86,6 +89,7 @@ function parse(argv: string[], cwd: string): Args | string {
     } else if (field === "project") args.project = value;
     else if (field === "after") args.after = value;
     else if (field === "sourceFingerprint") args.sourceFingerprint = value;
+    else if (field === "approvalFile") args.approvalFile = value;
     else if (field === "resume") args.resume = value;
     else if (field === "rollback") args.rollback = value;
     else args.previewDigest = value;
@@ -98,7 +102,8 @@ function parse(argv: string[], cwd: string): Args | string {
   if (args.dryRun && args.after && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--after requires the prior page's --source-fingerprint SHA256 and --preview-digest SHA256";
   if (args.dryRun && !args.after && (args.sourceFingerprint || args.previewDigest)) return "--source-fingerprint and --preview-digest are only valid with --after or --apply";
   if (args.apply && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--apply requires --source-fingerprint SHA256 and --preview-digest SHA256";
-  if ((args.resume || args.rollback) && (args.sourceFingerprint || args.previewDigest || args.limit)) return "--resume and --rollback accept only their migration ID, --project, --force, and --format";
+  if (args.approvalFile && !args.apply) return "--approval-file is only valid with --apply";
+  if ((args.resume || args.rollback) && (args.sourceFingerprint || args.previewDigest || args.approvalFile || args.limit)) return "--resume and --rollback accept only their migration ID, --project, --force, and --format";
   if ((args.resume && !/^[a-f0-9]{20}$/.test(args.resume)) || (args.rollback && !/^[a-f0-9]{20}$/.test(args.rollback))) return "migration IDs must be 20 lowercase hexadecimal characters";
   return args;
 }
@@ -172,13 +177,13 @@ export function runEntityMigrate(argv: string[], io: Io, cwd = process.cwd(), so
   }
   try {
     return assertEntityMigrationBinding(parsed.sourceFingerprint as string, parsed.previewDigest as string, preview, () => {
-      const result = applyEntityMigration(path.resolve(parsed.project), sourceRoot, parsed.sourceFingerprint!, parsed.previewDigest!);
+      const result = applyEntityMigration(path.resolve(parsed.project), sourceRoot, parsed.sourceFingerprint!, parsed.previewDigest!, parsed.approvalFile ? path.resolve(parsed.approvalFile) : undefined);
       output(result as unknown as Record<string, unknown>, parsed.format, io); return 0;
     });
   } catch (error) {
-    if (error instanceof EntityMigrationBindingError) output({ ...preview, status: "blocked", mode: "apply_preflight", read_only: true, mutation_intent: true, mutation_performed: false, error: { class: error.classification, message: error.message, recovery: preview.retrieval.command } }, parsed.format, io);
+    if (error instanceof EntityMigrationBindingError) output({ ...preview, status: "blocked", mode: "apply_preflight", read_only: true, mutation_intent: true, mutation_performed: false, error: { class: error.classification, message: error.message, recovery: error.restartCommand } }, parsed.format, io);
     else {
-      const failure = error instanceof EntityMigrationOperationError ? error : new EntityMigrationOperationError("migration_failed", (error as Error).message, "Retain all durable migration evidence and retry the exact recovery command.");
+      const failure = error instanceof EntityMigrationOperationError ? error : error instanceof EntityMigrationApprovalError ? new EntityMigrationOperationError(error.classification, error.message, "Regenerate the external approval from a clean checkout and fresh unpaginated dry-run, then retry with its exact root, source fingerprint, preview digest, and --approval-file path.") : new EntityMigrationOperationError("migration_failed", (error as Error).message, "Retain all durable migration evidence and retry the exact recovery command.");
       output({ schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: false, mutation_intent: true, mutation_performed: false, error: { class: failure.classification, message: failure.message, recovery: failure.recovery } }, parsed.format, io);
     }
     return 1;

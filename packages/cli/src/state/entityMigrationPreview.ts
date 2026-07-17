@@ -216,7 +216,7 @@ function directoryFiles(root: string, validatedRoot: ValidatedProjectRoot, relat
 function collectSources(root: string, validatedRoot: ValidatedProjectRoot, todoPath: string, docsSnapshot: SourceFile, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const exact = [
     todoPath, "CHANGELOG.md", "DESIGN.md", ".agentera/vision.yaml", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
-    ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml",
+    ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml", ".agentera/archive/recovery/projection-correlation.yaml",
   ].map((candidate) => candidate === docsSnapshot.relative ? docsSnapshot : readMigrationSource(validatedRoot, candidate, descriptorPathResolver));
   const archives = directoryFiles(root, validatedRoot, ".agentera/archive", (candidate) =>
     /^\.agentera\/archive\/(progress|decisions|health)\/.+/.test(candidate)
@@ -297,6 +297,21 @@ function inventoryFailureObservations(files: SourceFile[], observations: Observa
 }
 
 function numberedObservations(root: string, sourceRoot: string, files: SourceFile[], observations: Observation[]): void {
+  const correlationSource = files.find((source) => source.relative === ".agentera/archive/recovery/projection-correlation.yaml");
+  let correlationManifest: Map<string, JsonObject> | null = null;
+  if (correlationSource?.kind === "file") {
+    try {
+      const manifest = parseYaml(correlationSource); const entries = Array.isArray(manifest.entries) ? manifest.entries.map(mapping) : [];
+      const validEntries = entries.filter((entry): entry is JsonObject => Boolean(entry));
+      const digest = hash(canonicalRecordJson({ schemaVersion: "agentera.projectionCorrelationSet.v1", entries: validEntries }));
+      if (manifest.schemaVersion !== "agentera.projectionCorrelationManifest.v1" || manifest.recovery_set_digest !== digest || validEntries.length !== entries.length) throw new Error("projection correlation manifest schema or digest is invalid");
+      correlationManifest = new Map(validEntries.map((entry) => [String(entry.identity), entry]));
+    } catch (error) {
+      observations.push({ key: "projection_correlation:manifest", artifact: "state", boundary: "migration_inventory", path: correlationSource.relative, provenance: "source_inventory", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
+    }
+  } else if (correlationSource?.kind === "unsafe") {
+    observations.push({ key: "projection_correlation:manifest", artifact: "state", boundary: "migration_inventory", path: correlationSource.relative, provenance: "source_inventory", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(correlationSource.relative) });
+  }
   for (const [artifact, declaration] of Object.entries(NUMBERED)) {
     const current = files.find((source) => source.relative === declaration.file);
     if (current?.kind === "file") {
@@ -341,9 +356,28 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
         if (!record || envelope.artifact_id !== artifact || envelope.entry_number !== Number(match[1])) throw new Error("archive envelope identity does not match its path");
         const expected = hash(canonicalRecordJson(record));
         if (envelope.record_sha256 !== expected) throw new Error("archive record_sha256 does not match record bytes");
+        if (mapping(envelope.recovery_provenance)) {
+          const correlation = correlationManifest?.get(key);
+          if (!correlation) throw new Error("recovered archive is absent from the immutable projection correlation manifest");
+          if (correlation.artifact !== artifact || correlation.identity !== key || correlation.archive_sha256 !== hash(source.bytes!)
+            || mapping(correlation.overlay)?.final_record_sha256 !== expected) throw new Error("recovered archive does not match its immutable projection correlation manifest entry");
+        }
         const violations = validateStateRecord(sourceRoot, artifact, record);
         if (violations.length > 0) throw new Error(`archive record is invalid: ${violations.join("; ")}`);
         observations.push({ key, artifact, boundary: declaration.boundary, path: source.relative, provenance: "verified_archive", record, detail: "full", relationships: [], ...(mapping(envelope.recovery_provenance) ? { migrationProvenance: mapping(envelope.recovery_provenance)! } : {}) });
+        if (artifact === "decisions" && mapping(record.satisfaction)) {
+          observations.push({
+            key: `decision_satisfaction:${key}`,
+            artifact: "decisions",
+            boundary: "decision_satisfaction",
+            path: source.relative,
+            provenance: "verified_archive",
+            record: mapping(record.satisfaction),
+            detail: "full",
+            relationships: [{ field: "decision", target: key }],
+            ...(mapping(envelope.recovery_provenance) ? { migrationProvenance: { kind: "nested_verified_archive_evidence", source: mapping(envelope.recovery_provenance)! } } : {}),
+          });
+        }
       } catch (error) {
         observations.push({ key, artifact, boundary: declaration.boundary, path: source.relative, provenance: "archive", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
       }
@@ -787,8 +821,11 @@ export class EntityMigrationContinuationError extends Error {
 
 export class EntityMigrationBindingError extends Error {
   readonly classification = "source_changed";
+  readonly restartCommand: string;
   constructor(readonly current: EntityMigrationPreview) {
-    super(`entity migration source or migration authority changed after preview; rerun ${current.retrieval.command}`);
+    const restartCommand = `agentera state migrate entities --project '${current.project.replaceAll("'", "'\\''")}' --dry-run --format json`;
+    super(`entity migration source or migration authority changed after preview; rerun ${restartCommand}`);
+    this.restartCommand = restartCommand;
     this.name = "EntityMigrationBindingError";
   }
 }

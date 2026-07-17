@@ -10,6 +10,7 @@ import { planEntityMigration, type DurableEntityMigrationEntry, type DurableEnti
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 import { acquireWriterLock } from "./write/lock.js";
+import { assertEntityMigrationApproval, projectIsGitCheckout } from "./entityMigrationApproval.js";
 
 const ROOT = ".agentera/migrations/entities";
 const MARKER = ".agentera/state-mode.yaml";
@@ -279,8 +280,13 @@ function advance(project: string, sourceRoot: string, journal: Journal, operatio
   return { schemaVersion: "agentera.entityMigration.v1", command: "state migrate entities", status: "complete", operation, migration_id: journal.migration_id, phase: journal.phase, idempotent: operation === "resume" && journal.phase === "cutover_complete", mutation_performed: true, entity_count: entries.length, evidence: evidence(project, journal.migration_id) };
 }
 
-export function applyEntityMigration(projectRoot: string, sourceRoot: string, fingerprint: string, digest: string): EntityMigrationResult {
-  const project = validateRealProjectRoot(projectRoot).path; const first = planEntityMigration(project, sourceRoot); assertPlanReady(first, sourceRoot); assertBinding(first, fingerprint, digest);
+export function applyEntityMigration(projectRoot: string, sourceRoot: string, fingerprint: string, digest: string, approvalFile?: string): EntityMigrationResult {
+  const project = validateRealProjectRoot(projectRoot).path;
+  if (projectIsGitCheckout(project)) {
+    if (!approvalFile) throw new EntityMigrationOperationError("approval_required", "entity migration apply in a Git checkout requires an external approval file", "Generate a clean approval envelope, then retry with --approval-file FILE and matching source/digest values.");
+    assertEntityMigrationApproval(project, approvalFile, fingerprint, digest);
+  }
+  const first = planEntityMigration(project, sourceRoot); assertPlanReady(first, sourceRoot); assertBinding(first, fingerprint, digest);
   const id = operationId(first); const existing = path.join(operationRoot(project, id), "journal.yaml");
   if (fs.existsSync(existing)) {
     const loaded = loadJournal(project, id).journal;
@@ -288,7 +294,11 @@ export function applyEntityMigration(projectRoot: string, sourceRoot: string, fi
     throw new EntityMigrationOperationError("migration_exists", `migration '${id}' was interrupted at '${loaded.phase}'`, `Resume it explicitly with agentera state migrate entities --project '${project}' --resume ${id} --force --format json.`);
   }
   const lock = acquireWriterLock(project, 2000);
-  try { const current = planEntityMigration(project, sourceRoot); assertPlanReady(current, sourceRoot); assertBinding(current, fingerprint, digest); assertNoCanonicalState(project, sourceRoot); return advance(project, sourceRoot, prepare(current), "apply"); }
+  try {
+    const current = planEntityMigration(project, sourceRoot); assertPlanReady(current, sourceRoot); assertBinding(current, fingerprint, digest); assertNoCanonicalState(project, sourceRoot);
+    if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest, true);
+    return advance(project, sourceRoot, prepare(current), "apply");
+  }
   finally { lock.release(); }
 }
 

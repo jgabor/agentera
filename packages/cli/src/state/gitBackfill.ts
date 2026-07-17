@@ -62,6 +62,7 @@ export interface GitBackfillArgs {
   force?: boolean;
   format?: BackfillFormat;
   recoverProjections?: boolean;
+  recoveryDigest?: string;
 }
 
 export interface GitBackfillCommandOptions {

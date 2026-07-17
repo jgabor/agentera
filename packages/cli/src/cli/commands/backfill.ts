@@ -20,7 +20,7 @@ import { renderGitBackfillText } from "../../state/gitBackfillOutput.js";
 import { applyProjectionRecovery, previewProjectionRecovery } from "../../state/projectionRecovery.js";
 
 const BACKFILL_SYNTAX =
-  "agentera state backfill [--recover-projections] [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
+  "agentera state backfill [--recover-projections] [--recovery-digest SHA256] [--project PATH] [--artifact ARTIFACT] [--number N] [--commit HASH] [--path PATH] [--limit N] [--dry-run|--apply --force] --format {text,json,yaml}";
 const BACKFILL_DRY_RUN_EXAMPLE =
   "agentera state backfill --project PATH --artifact progress --number 1 --dry-run --format json";
 const BACKFILL_APPLY_EXAMPLE =
@@ -85,7 +85,7 @@ function emitAuthorityFailure(failure: StateRetrievalFailure, format: "text" | "
 
 export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: string } {
   const args: GitBackfillArgs = { project: null, artifact: null, format: "text" };
-  const valueFlags = ["--project", "--artifact", "--number", "--limit", "--commit", "--path", "--format"];
+  const valueFlags = ["--project", "--artifact", "--number", "--limit", "--commit", "--path", "--recovery-digest", "--format"];
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     const flag = valueFlags.find((candidate) => token === candidate || token.startsWith(`${candidate}=`));
@@ -97,6 +97,7 @@ export function parseBackfillArgs(argv: string[]): GitBackfillArgs | { error: st
       else if (flag === "--artifact") args.artifact = parsed;
       else if (flag === "--commit") args.commit = parsed;
       else if (flag === "--path") args.path = parsed;
+      else if (flag === "--recovery-digest") args.recoveryDigest = parsed;
       else if (flag === "--format") {
         if (parsed !== "text" && parsed !== "json" && parsed !== "yaml") {
           return { error: `argument --format: invalid choice: '${parsed}'` };
@@ -127,8 +128,10 @@ function validateBackfillArgs(args: GitBackfillArgs, sourceRoot: string): string
     if (args.force && !args.apply) return "--force requires --apply";
     if (args.apply && !args.project) return "--apply requires explicit --project PATH";
     if (args.apply && args.dryRun) return "--apply and --dry-run are mutually exclusive";
+    if (args.recoveryDigest && (!args.apply || !/^[a-f0-9]{64}$/.test(args.recoveryDigest))) return "--recovery-digest must be a lowercase SHA-256 supplied with --apply";
     return null;
   }
+  if (args.recoveryDigest) return "--recovery-digest is only valid with --recover-projections --apply";
   if (args.artifact && !artifacts.includes(args.artifact)) {
     return `unsupported artifact '${args.artifact}'`;
   }
@@ -188,7 +191,7 @@ export function runBackfill(argv: string[], io: Io, sourceRootOverride?: string)
   if (parsed.recoverProjections) {
     try {
       const project = resolvePath(parsed.project ?? process.cwd());
-      const response = parsed.apply ? applyProjectionRecovery(project, sourceRoot) : previewProjectionRecovery(project, sourceRoot);
+      const response = parsed.apply ? applyProjectionRecovery(project, sourceRoot, parsed.recoveryDigest) : previewProjectionRecovery(project, sourceRoot);
       const out = io.out ?? ((text: string) => process.stdout.write(text));
       if (format === "json" || format === "yaml") emitStructured(response, format, out);
       else out(`${response.status}: selected=${response.counts.selected} ready=${response.counts.ready} refused=${response.counts.refused} applied=${response.counts.applied}\n`);

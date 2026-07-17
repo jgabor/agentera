@@ -1,4 +1,33 @@
 cycles:
+  - number: 903
+    timestamp: 2026-07-17 23:20
+    type: fix
+    phase: build
+    what: Closed the three Task 13 audit blockers by preserving
+      archive-authoritative decision satisfaction, binding recovered projections
+      to an immutable reviewed correlation set, and requiring a clean external
+      Git approval envelope for migration apply without invoking Git.
+    inspiration: Plan Task 13 retry and the Cycle 902 audit blockers.
+    discovered: The 39 recovered decision archives contain 35 structured
+      satisfaction records; four (D74, D76, D77, D78) were absent from the
+      compact projection and now become exact archive-provenanced entities. The
+      existing 58 recovery archives replayed byte-exactly, so publication added
+      only the correlation manifest.
+    verified: Focused migration/recovery tests passed 121; full CLI passed 2,610;
+      typecheck and build passed; all 12 capabilities, capability contract,
+      state validation, compact, blocker-free 1,447-identity/2,212-relationship
+      preview, and 58-archive replay passed.
+    next: Task 13 is complete. Task 14 remains pending; do not apply the entity
+      migration until a post-commit clean preview and matching external approval
+      envelope are explicitly approved.
+    context:
+      intent: Complete Plan Task 13 readiness recovery without applying the Task 14
+        entity cutover.
+      constraints: No Task 14 apply, version, changelog, vision, release, publication,
+        remote, or manual YAML changes.
+      unknowns: Task 14 apply authorization remains intentionally unresolved.
+      scope: Task 13 audit blockers, correlation evidence, approval preflight, tests,
+        and immutable state evidence only.
   - number: 902
     timestamp: 2026-07-17 22:06
     type: fix
@@ -209,33 +238,6 @@ cycles:
       scope: Operation-local migration receipts, pinned hard-link publication,
         descriptor-coherent evidence validation, rollback source revalidation,
         and adversarial subprocess tests.
-  - number: 893
-    timestamp: 2026-07-17 13:42
-    type: fix
-    phase: build
-    what: Corrected Cycle 892's immutable count evidence and closed Task 10 rollback
-      and source-binding audit defects.
-    inspiration: Retry 1/2 Task 10 audit findings A-E and Decision 94 state-storage
-      authority.
-    discovered: The existing exact removal primitive preserved successors but hid
-      identity mismatch from rollback, allowing journal advancement.
-    verified: "pnpm -C packages/cli exec vp test run
-      test/state/entityMigrationApply.test.ts: 1 file, 18 tests; expanded
-      entityMigrationApply, entityMigrationPreview, migrationAuthority, and
-      entityPublicationContext command: 4 files, 134 tests; pnpm -C packages/cli
-      test: 212 files, 2556 tests. Typecheck, build, check validate state, build
-      capability, capability contract, compact, migration help, and schema
-      passed."
-    next: Task 10 remains complete. Task 11 remains pending and requires a new
-      cycle; do not run live migration apply.
-    context:
-      intent: Make durable entity migration refuse source identity drift and rollback
-        races while converging safely across intra-loop crashes.
-      constraints: Only Task 10 audit defects; no Task 11, broad framework, live
-        apply, manual YAML edit, vision change, push, publish, or tag.
-      unknowns: None within the corrected Task 10 audit scope.
-      scope: Exact publication removal, migration preview/apply source identity and
-        recovery, focused tests, migration help, and state-storage authority.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -305,6 +307,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 893 (2026-07-17): Corrected Cycle 892's immutable count evidence
+      and closed Task 10 rollback and source-binding audit defects."
   - summary: "Cycle 892 (2026-07-17): Delivered Task 10 durable entity migration
       apply, explicit resume, idempotent replay, and guarded rollback
       through..."
@@ -399,16 +403,18 @@ archive:
       final verification: current English capability budget rows now..."
   - summary: "Cycle 854 (2026-07-16): Retried Plan Task 4: keep status mode and
       upgrade commands in the canonical nested status..."
-  - summary: "Cycle 853 (2026-07-16): Made status startup self-contained: prime
-      --context status now returns canonical bounded decision state with
-      full..."
 omitted: true
-omitted_count: 138
+omitted_count: 139
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
