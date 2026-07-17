@@ -4,8 +4,8 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { publishEntity } from "../../src/state/entityStorage.js";
 import { appendDecisionEntity, updateDecisionSatisfactionEntity } from "../../src/state/decisionEntities.js";
+import { appendHealthEntity } from "../../src/state/healthEntities.js";
 import { appendProgressEntity } from "../../src/state/progressEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
@@ -55,6 +55,13 @@ function decisionRequest(root: string, verb: "append" | "update", values: Record
   const spec = operationSpec("decisions", verb);
   if (!spec) throw new Error(`decisions ${verb} spec missing`);
   return { artifact: "decisions", spec, projectRoot: root, dryRun: false, force: false, values, callerPayload: structuredClone(values), input: null };
+}
+
+function healthRequest(root: string): StateWriteRequest {
+  const spec = operationSpec("health", "append");
+  if (!spec) throw new Error("health append spec missing");
+  const values = { date: "2026-07-17", dimensions: ["architecture_alignment"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { architecture_alignment: "A" } };
+  return { artifact: "health", spec, projectRoot: root, dryRun: false, force: false, values, callerPayload: structuredClone(values), input: values };
 }
 
 function decisionWithSatisfaction(root: string): { target: string; bytes: string } {
@@ -201,14 +208,10 @@ describe("validated entity publication context", () => {
     const binding = detectStateModeBinding(root);
     if (binding.mode !== "entities") throw new Error("entity mode expected");
     try {
-      expect(publishEntity({
-        projectRoot: root,
+      expect(appendHealthEntity(healthRequest(root), {
         publicationContext: binding.publicationContext,
-        artifact: "health",
-        boundary: "health_audit",
         id: ENTITY_ID,
-        record: {},
-      })).toMatchObject({ artifact: "health", boundary: "health_audit", replay: false });
+      })).toMatchObject({ artifact: "health", operation: { idempotent_replay: false } });
     } finally {
       binding.publicationContext.close();
     }

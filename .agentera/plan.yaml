@@ -92,11 +92,12 @@ tasks:
       - "3"
       - "19"
       - "20"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN health audit and repair operations WHEN exercised THEN each audit uses canonical entity authority and bare IDs.
       - GIVEN bounded health history WHEN queried THEN ordering, provenance, repair evidence, and exact retrieval remain correct.
       - GIVEN missing or conflicting historical detail WHEN validation runs THEN no complete audit is fabricated or silently replaced.
+    evidence: Health entity append/get/list/cursor/replay/conflict/corrupt/missing/repair/isolation/Git tests passed; full CLI suite 208 files and 2498 tests; typecheck, build, state, audit capability, capability contract, and compact gates passed.
   - number: 7
     name: Cut plans and tasks over to entities
     depends_on:

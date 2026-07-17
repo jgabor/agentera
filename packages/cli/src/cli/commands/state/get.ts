@@ -12,6 +12,7 @@ import type { Io } from "../../dispatch/shared.js";
 import { detectStateMode } from "../../../state/stateMode.js";
 import { getProgressEntity } from "../../../state/progressEntities.js";
 import { getDecisionEntity } from "../../../state/decisionEntities.js";
+import { getHealthEntity } from "../../../state/healthEntities.js";
 
 interface StateGetArgs {
   number: number;
@@ -166,7 +167,7 @@ export function runStateGet(
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
   try {
-    if (["progress", "decisions"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities") {
+    if (["progress", "decisions", "health"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities") {
       let id: string | undefined;
       let entityFormat: "text" | "json" | "yaml" = "text";
       for (let index = 0; index < argv.length; ) {
@@ -191,7 +192,11 @@ export function runStateGet(
         }
       }
       if (!id) throw entityParseFailure(`--id is required for entity-mode ${artifactId} retrieval`, id, artifactId);
-      const response = artifactId === "progress" ? getProgressEntity(projectRoot, id, sourceRoot) : getDecisionEntity(projectRoot, id, sourceRoot);
+      const response = artifactId === "progress"
+        ? getProgressEntity(projectRoot, id, sourceRoot)
+        : artifactId === "decisions"
+          ? getDecisionEntity(projectRoot, id, sourceRoot)
+          : getHealthEntity(projectRoot, id, sourceRoot);
       const output = io.out ?? ((text: string) => process.stdout.write(text));
       if (entityFormat === "json" || entityFormat === "yaml") emitStructured(response, entityFormat, output);
       else output(YAML.stringify(response));

@@ -8,6 +8,7 @@ import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { decisionRevisionContract, decisionRevisionEntityViolations } from "./decisionRevision.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
+import { healthEntityViolations } from "./healthEntityValidation.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { acquireWriterLock } from "./write/lock.js";
 
@@ -308,6 +309,21 @@ function discoverFile(
         boundary,
         message: `entity '${relativePath}' has an invalid decision revision: ${violations.join("; ")}`,
         recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared decision revision contract`),
+      });
+    }
+  }
+  if (!malformed && boundary === "health_audit" && record) {
+    const violations = healthEntityViolations(record);
+    if (violations.length) {
+      malformed = true;
+      issues.push({
+        code: "malformed_entity",
+        path: relativePath,
+        id,
+        artifact,
+        boundary,
+        message: `entity '${relativePath}' has an invalid canonical health audit`,
+        recovery: recovery(projectRoot, `preserve the declared audit evidence and repair '${relativePath}' using the health schema`),
       });
     }
   }

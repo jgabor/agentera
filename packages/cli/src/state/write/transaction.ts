@@ -56,6 +56,7 @@ import { executeExperimentPublication } from "./experimentPublication.js";
 import { detectStateModeBinding } from "../stateMode.js";
 import { appendProgressEntity } from "../progressEntities.js";
 import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEntity } from "../decisionEntities.js";
+import { appendHealthEntity } from "../healthEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
   if (!fs.existsSync(target)) return { doc: {}, bytes: "" };
@@ -424,6 +425,9 @@ export function executeStateWrite(
   const decisionMode = req.artifact === "decisions" && ["append", "update", "amend"].includes(req.spec.verb)
     ? detectStateModeBinding(req.projectRoot)
     : null;
+  const healthMode = req.artifact === "health" && ["append", "repair"].includes(req.spec.verb)
+    ? detectStateModeBinding(req.projectRoot)
+    : null;
   if (progressMode?.mode === "entities") {
     try {
       return appendProgressEntity(req, {
@@ -443,6 +447,17 @@ export function executeStateWrite(
       decisionMode.publicationContext.close();
     }
   }
+  if (healthMode?.mode === "entities") {
+    try {
+      if (req.spec.verb === "repair") reject({
+        class: "unsupported_target",
+        message: "canonical health audit entities are immutable and cannot be row-deduplicated; run agentera check validate state to diagnose malformed or duplicate ownership before repairing entity files",
+      });
+      return appendHealthEntity(req, { publicationContext: healthMode.publicationContext });
+    } finally {
+      healthMode.publicationContext.close();
+    }
+  }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
     return dispatchDecisionAmendment(req, options);
   }
@@ -454,7 +469,7 @@ export function executeStateWrite(
     req.projectRoot,
     (transaction) => executeStateWriteUnlocked(req, transaction),
     options,
-    progressMode?.root,
+    progressMode?.root ?? healthMode?.root,
   );
 }
 

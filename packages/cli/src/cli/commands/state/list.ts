@@ -12,6 +12,7 @@ import type { Io } from "../../dispatch/shared.js";
 import { detectStateMode } from "../../../state/stateMode.js";
 import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
+import { listHealthEntities } from "../../../state/healthEntities.js";
 import YAML from "yaml";
 
 interface StateListArgs {
@@ -151,12 +152,14 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
   const sourceRoot = resolveSourceRoot();
   let entityArtifact = false;
   try {
-    entityArtifact = ["progress", "decisions"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
+    entityArtifact = ["progress", "decisions", "health"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
     const args = parseListArgs(artifactId, argv, sourceRoot);
     if (entityArtifact) {
       const response = artifactId === "progress"
         ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format })
-        : listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format });
+        : artifactId === "decisions"
+          ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format })
+          : listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format });
       const output = io.out ?? ((text: string) => process.stdout.write(text));
       if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
       else emitStructured(response, args.format, output);

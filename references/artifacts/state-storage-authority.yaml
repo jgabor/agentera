@@ -14,7 +14,7 @@ authority:
     amendment revision paths, legacy label coexistence rules, failure classes,
     or byte limits.
   implementation_boundary: >-
-    Shared entity storage plus the progress and decisions family writers and retrieval are
+    Shared entity storage plus the progress, decisions, and health family writers and retrieval are
     implemented, but activate only from the durable cutover marker. Other entity
     families and durable migration apply remain declared, not implemented. The
     current numbered archive and retrieval groups remain implemented legacy
@@ -23,7 +23,7 @@ authority:
     and is not the Decision 94 cutover.
 
 entity_target:
-  status: progress_and_decisions_implemented_other_families_declared
+  status: progress_decisions_and_health_implemented_other_families_declared
   decision: 94
   activation: >-
     This target becomes active persisted and structured state authority only
@@ -32,9 +32,10 @@ entity_target:
   implementation_status:
     progress: implemented
     decisions: implemented
+    health: implemented
     remaining_families: declared_not_implemented
     rule: >-
-      The progress and decisions implementations select entity behavior only when the durable
+      The progress, decisions, and health implementations select entity behavior only when the durable
       cutover marker is valid and selects legacy behavior only while it is absent.
       It never creates the marker, migrates legacy state, or writes both authorities.
   public_schema:
@@ -185,6 +186,27 @@ entity_target:
       artifact: health
       independently_mutable: true
       relationships: []
+      implementation: implemented
+      publication: immutable
+      record:
+        required_fields: [date, dimensions, findings_summary, trajectory, grades]
+        required_paths: []
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+      retrieval:
+        exact: agentera state health get --id ID --format json
+        list: agentera state health list [--limit N] [--cursor TOKEN] --format json
+        ordering: date_desc_then_id_asc
+        default_limit: 20
+        maximum_limit: 100
+        max_utf8_bytes: 32768
+        cursor: opaque_snapshot_cursor
+        mutation_after_snapshot: cursor_snapshot_unavailable
+        omission: whole_entries_only_with_count_reason_continuation_and_exact_get
+        scalar_truncation: forbidden
+      repair: >-
+        Canonical health audit entities are immutable and cannot be row-deduplicated.
+        Malformed envelopes, duplicate IDs, or conflicting ownership fail before effects
+        and recover through agentera check validate state; no repair event is fabricated.
     - boundary: plan
       artifact: plan
       independently_mutable: true

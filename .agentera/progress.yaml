@@ -1,4 +1,27 @@
 cycles:
+  - number: 883
+    timestamp: 2026-07-17 06:01
+    type: feat
+    phase: build
+    what: Cut health audit storage, writes, bounded reads, and repair diagnostics
+      over to canonical immutable entities in entity mode.
+    inspiration: PLAN Task 6 and Decision 94 entity authority.
+    verified: "Focused health, entity-authority, shared-publication-context, and
+      legacy-writer tests passed: 4 files, 93 tests; final focused health tests
+      passed: 1 file, 9 tests. Full CLI suite passed: 208 files, 2498 tests.
+      Typecheck and build passed. State validation, audit capability validation,
+      capability-contract validation, and compact check all passed; compact
+      reported 0 errors, 0 over-limit, 0 protected overflow, and 0 changes."
+    next: Task 7 remains pending; do not begin plans/tasks entity mode in this cycle.
+    context:
+      intent: Complete Agentera PLAN Task 6 without migrating legacy state or changing
+        other entity families.
+      constraints: Health family only; no migration, dual write, apply, global
+        consumer cutover, TODO, docs family, objectives, publishing, pushing, or
+        unrelated repair.
+      scope: Health entity authority, append/get/list/cursor/repair routing, shared
+        publication-context coverage, Git merge fixtures, and proportional
+        tests.
   - number: 882
     timestamp: 2026-07-17 05:36
     type: fix
@@ -267,40 +290,6 @@ cycles:
       scope: Exact-source inspection reuse, plan discovery's pinned-byte seam,
         decision overlay/revision corrupt accounting, boundary regressions, and
         Task 19 state.
-  - number: 873
-    timestamp: 2026-07-17 01:00
-    type: fix
-    phase: build
-    what: "Fixed the four remaining Task 3 audit defects: recursive inventory roots
-      now fail closed, continuations bind the complete snapshot and selectors,
-      unresolved relationships own actionable diagnostics, and revision fixtures
-      use valid provenance."
-    inspiration: Final audit retry 2 for PLAN Task 3 and Decision 94 state-storage
-      authority.
-    discovered: Unresolved-only relationships accounted for 66 blocker entries but
-      previously owned no diagnostics; bound pagination now carries those
-      diagnostics with their entries.
-    verified: Focused entity migration and authority tests passed 2 files and 30
-      tests. Full CLI passed 203 files and 2,390 tests. Typecheck and build
-      passed. State validation reported 0 issues; capability contract passed
-      2/2; compact passed 10 artifacts with 0 errors. The pre-publication
-      repository preview reproduced 1,280 verified, 55 projection-only, 90
-      summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, 1,442
-      logical entries, 1,463 physical records, 21 mirrors, source fingerprint
-      f2d1513f96924883f3ebb39455899941cc700f88ca6dc42c8b06f2fb45af3eb8, and
-      preview digest
-      612a01fae3cc4ca7b46ae126fc84a50922d17a063e2db3a294bb4469f4dde579.
-    next: Keep Task 3 complete and Task 4 pending; do not implement apply or cut
-      over any family.
-    context:
-      intent: Close only the final read-only migration inventory audit defects without
-        apply effects or family cutover.
-      constraints: No apply effects, family cutover, vision change, release, push,
-        publish, amend, or unrelated repair.
-      unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical
-        identities.
-      scope: Entity migration preview, CLI help, state-storage authority, focused
-        tests, and this progress cycle.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -370,6 +359,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 873 (2026-07-17): Fixed the four remaining Task 3 audit defects:
+      recursive inventory roots now fail closed, continuations..."
   - summary: "Cycle 872 (2026-07-17): Fixed Task 3 migration preview audit defects:
       keyed decision revisions, fail-closed project roots, mirror/duplicate
       accounting,..."
@@ -473,16 +464,18 @@ archive:
   - summary: "Cycle 834 (2026-07-15): Migrated all four bounded analytics consumers
       (usage analytics, report status, prime corpus coverage, startup
       analysis..."
-  - summary: "Cycle 833 (2026-07-15): Publish bounded complete evidence as
-      source-family shards plus a content-addressable derived signal tier with
-      atomic..."
 omitted: true
-omitted_count: 118
+omitted_count: 119
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

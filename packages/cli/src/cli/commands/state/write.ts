@@ -265,6 +265,15 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
     });
+  if (artifact === "health" && verb === "repair" && detectStateMode(projectRoot) === "entities") {
+    invalid({
+      class: "unsupported_target",
+      message: "canonical health audit entities are immutable and cannot be row-deduplicated",
+      syntax: "agentera check validate state",
+      example: "agentera check validate state --format json",
+      recovery: "Validate malformed envelopes, duplicate IDs, or conflicting ownership and repair the canonical entity files without inventing audit history.",
+    });
+  }
   for (const field of fields.filter((candidate) => candidate.required)) {
     if (mappingPath(values, field.field) === undefined) {
       invalid({

@@ -41,9 +41,9 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityArtifact = ["progress", "decisions"].includes(artifact) && detectStateMode(projectRoot) === "entities";
+  const entityArtifact = ["progress", "decisions", "health"].includes(artifact) && detectStateMode(projectRoot) === "entities";
   const resolved = entityArtifact
-    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
+    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
@@ -61,6 +61,7 @@ export function buildExplain(
         };
   const validator = new ArtifactSchemaValidator();
   const fields = projectedFields(spec, validator)
+    .filter(() => !(entityArtifact && artifact === "health" && verb === "repair"))
     .filter((field) => artifact !== "decisions" || !["update", "amend"].includes(verb) || (entityArtifact ? field.flag !== "--number" : !["--id", "--base-sha256"].includes(field.flag)))
     .map((field) => ({
     flag: field.flag,
@@ -100,7 +101,7 @@ export function buildExplain(
       parser: "yaml",
       accepts_json: true,
       root: spec.inputRoot,
-      cli_owned_fields: spec.cliOwnedFields ?? [],
+      cli_owned_fields: entityArtifact && artifact === "health" ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
         artifact === "health"
@@ -110,12 +111,14 @@ export function buildExplain(
             : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
   }
-  result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "decisions");
-  result.example = exampleFor(artifact, verb, entityArtifact && artifact === "decisions");
+  result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "decisions", entityArtifact && artifact === "health");
+  result.example = entityArtifact && artifact === "health" && verb === "repair"
+    ? "agentera check validate state --format json"
+    : exampleFor(artifact, verb, entityArtifact && artifact === "decisions");
   return result;
 }
 
-function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecisions = false): string[] {
+function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecisions = false, entityHealth = false): string[] {
   const base = [
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
@@ -127,6 +130,8 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     ];
   if (artifact === "plan")
     return ["task numbers are assigned by the CLI for append", ...base];
+  if (entityHealth && verb === "repair")
+    return ["canonical health audit entities are immutable; validate malformed or duplicate ownership with agentera check validate state", ...base];
   if (artifact === "health" && verb === "repair")
     return ["repair is a destructive projection edit; select an existing duplicate audit and pass --force", ...base];
   if (artifact === "experiments")
@@ -158,7 +163,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
       "apply publishes a record-local revision document override with recovery; the decisions projection stays byte-stable and reads compose base→revisions→overlay",
       "an identical re-submission is an idempotent replay; retry converges on a stable revision identity without duplicates or mixed state",
     ];
-  return [entityDecisions ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
+  return [entityDecisions || entityHealth ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
 }
 
 export function exampleFor(artifact: WritableArtifact, verb: string, entityDecisions = false): string {

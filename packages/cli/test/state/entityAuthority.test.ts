@@ -31,7 +31,7 @@ describe("Decision 94 entity authority", () => {
 
     expect(authority.authority.source).toBe("references/artifacts/state-storage-authority.yaml");
     expect(target).toMatchObject({
-      status: "progress_and_decisions_implemented_other_families_declared",
+      status: "progress_decisions_and_health_implemented_other_families_declared",
       decision: 94,
       public_schema: {
         canonical_identity_field: "id",
@@ -79,6 +79,7 @@ describe("Decision 94 entity authority", () => {
       implementation_status: {
         progress: "implemented",
         decisions: "implemented",
+        health: "implemented",
         remaining_families: "declared_not_implemented",
       },
     });
@@ -119,6 +120,21 @@ describe("Decision 94 entity authority", () => {
     expect(target.entities.find((entity: any) => entity.boundary === "decision_revision")).toMatchObject({
       publication: "immutable",
       ownership: { fields: ["decision", "base_sha256"], cardinality: "zero_or_one" },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "health_audit")).toMatchObject({
+      artifact: "health",
+      implementation: "implemented",
+      publication: "immutable",
+      record: {
+        required_fields: ["date", "dimensions", "findings_summary", "trajectory", "grades"],
+        forbidden_fields: expect.arrayContaining(["number", "stable_id", "artifact_id", "entry_number"]),
+      },
+      retrieval: {
+        exact: "agentera state health get --id ID --format json",
+        ordering: "date_desc_then_id_asc",
+        cursor: "opaque_snapshot_cursor",
+        scalar_truncation: "forbidden",
+      },
     });
     expect(
       keysNamed(

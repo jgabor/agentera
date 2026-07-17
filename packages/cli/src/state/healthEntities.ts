@@ -1,0 +1,232 @@
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
+import YAML from "yaml";
+
+import type { JsonObject } from "../core/jsonValue.js";
+import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { loadYamlMapping } from "../core/yaml.js";
+import { canonicalRecordJson } from "./archiveDiscovery.js";
+import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
+import {
+  allocateAndPublishEntity,
+  allocateEntityId,
+  discoverEntities,
+  publishEntity,
+  type DiscoveredEntity,
+} from "./entityStorage.js";
+import type { EntityPublicationContext } from "./entityPublicationContext.js";
+import { healthEntityViolations } from "./healthEntityValidation.js";
+import { localDate } from "./write/assign.js";
+import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
+
+const ARTIFACT = "health";
+const BOUNDARY = "health_audit";
+const ORDER = "date_desc_then_id_asc";
+const ID_PATTERN = /^[a-z]{10}$/;
+
+interface HealthContract {
+  authorityPath: string;
+  entityRoot: string;
+  defaultLimit: number;
+  maximumLimit: number;
+  maxUtf8Bytes: number;
+}
+
+export interface HealthEntityOptions {
+  sourceRoot?: string;
+  id?: string;
+  candidate?: () => string;
+  publicationContext?: EntityPublicationContext;
+}
+
+function mapping(value: unknown): value is JsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function positive(value: unknown, field: string): number {
+  const result = Number(value);
+  if (!Number.isSafeInteger(result) || result < 1) throw new Error(`invalid health entity ${field} authority`);
+  return result;
+}
+
+function contract(sourceRoot = resolveSourceRoot()): HealthContract {
+  const authorityPath = path.join(sourceRoot, "references", "artifacts", "state-storage-authority.yaml");
+  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const target = mapping(authority.entity_target) ? authority.entity_target : {};
+  const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives)
+    ? target.storage_boundary.shared_primitives
+    : {};
+  const entities = Array.isArray(target.entities) ? target.entities : [];
+  const health = entities.find((value) => mapping(value) && value.boundary === BOUNDARY && value.artifact === ARTIFACT);
+  const retrieval = mapping(health) && mapping(health.retrieval) ? health.retrieval : {};
+  if (typeof storage.canonical_root !== "string") throw new Error(`invalid health entity contract in '${authorityPath}'`);
+  return {
+    authorityPath,
+    entityRoot: storage.canonical_root,
+    defaultLimit: positive(retrieval.default_limit, "default_limit"),
+    maximumLimit: positive(retrieval.maximum_limit, "maximum_limit"),
+    maxUtf8Bytes: positive(retrieval.max_utf8_bytes, "max_utf8_bytes"),
+  };
+}
+
+function failure(kind: StateFailureClass, message: string, recovery: string, id?: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
+  return new StateRetrievalFailure({
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: kind,
+      message,
+      syntax: "agentera state health get --id ID --format json",
+      example: `agentera state health get --id ${id ?? "qjtrmnpvka"} --format json`,
+      recovery,
+      artifact: ARTIFACT,
+      ...(id ? { id } : {}),
+    },
+  }, exitCode);
+}
+
+function listFailure(kind: StateFailureClass, message: string, recovery: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
+  const result = failure(kind, message, recovery, undefined, exitCode);
+  result.body.error.syntax = "agentera state health list [--limit N] [--cursor TOKEN] --format json";
+  result.body.error.example = "agentera state health list --limit 20 --format json";
+  return result;
+}
+
+function healthRecord(values: Record<string, unknown>): JsonObject {
+  for (const field of ["id", "artifact", "number", "stable_id", "artifact_id", "entry_number"]) {
+    if (field in values) throw new Error(`health entity record forbids identity field '${field}'`);
+  }
+  const record = structuredClone(values) as JsonObject;
+  if (typeof record.date !== "string") record.date = localDate();
+  const violations = healthEntityViolations(record);
+  if (violations.length) throw new Error(`health entity violates the canonical audit schema: ${violations.join("; ")}`);
+  return record;
+}
+
+function envelope(published: { path: string; id: string; artifact: string; replay: boolean }, record: JsonObject, dryRun: boolean): StateWriteEnvelope {
+  return {
+    schemaVersion: "agentera.stateWrite.v1",
+    command: "state health append",
+    status: "pass",
+    path: published.path,
+    id: published.id,
+    artifact: published.artifact,
+    record,
+    operation: { verb: "append", dry_run: dryRun, idempotent_replay: published.replay },
+    validation: { status: "pass", violations: [] },
+  };
+}
+
+export function appendHealthEntity(req: StateWriteRequest, options: HealthEntityOptions = {}): StateWriteEnvelope {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const declared = contract(sourceRoot);
+  const record = healthRecord(req.values);
+  if (req.dryRun) {
+    options.publicationContext?.assertValid();
+    const id = options.id ?? allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot);
+    options.publicationContext?.assertValid();
+    return envelope({ path: path.join(path.resolve(req.projectRoot), declared.entityRoot, ARTIFACT, BOUNDARY, `${id}.yaml`), id, artifact: ARTIFACT, replay: false }, record, true);
+  }
+  const published = options.id
+    ? publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: BOUNDARY, id: options.id, record })
+    : allocateAndPublishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: BOUNDARY, record }, options.candidate);
+  return envelope(published, record, false);
+}
+
+function relative(root: string, candidate: string): string {
+  return path.relative(path.resolve(root), candidate).split(path.sep).join("/");
+}
+
+function healthEntities(root: string, sourceRoot: string): DiscoveredEntity[] {
+  const relevant = discoverEntities(root, sourceRoot).entities.filter((entity) => entity.artifact === ARTIFACT || entity.boundary === BOUNDARY);
+  const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record || healthEntityViolations(entity.record).length > 0);
+  if (bad) throw listFailure(
+    bad.classification === "duplicate" ? "ambiguous" : "corrupt",
+    `health entity '${bad.relativePath}' is not canonical`,
+    "Run agentera check validate state, preserve conflicting evidence, and repair the canonical entity files.",
+  );
+  return relevant;
+}
+
+function entry(root: string, entity: DiscoveredEntity): JsonObject {
+  const id = entity.id!;
+  return {
+    id,
+    artifact: ARTIFACT,
+    record: entity.record!,
+    provenance: { storage: "canonical_entity_file", path: relative(root, entity.path), boundary: BOUNDARY, detail: "full" },
+    retrieval: { get: `agentera state health get --id ${id} --format json` },
+  };
+}
+
+export function getHealthEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject {
+  if (!ID_PATTERN.test(id)) throw failure("invalid_request", `health ID '${id}' must be ten lowercase letters`, "Use a bare ID returned by health append or list.", id, 2);
+  const all = discoverEntities(root, sourceRoot).entities;
+  const matches = all.filter((entity) => entity.id === id);
+  if (matches.length > 1 || matches.some((entity) => entity.classification === "duplicate")) throw failure("ambiguous", `health entity ID '${id}' has multiple canonical candidates`, "Run agentera check validate state, preserve conflicting evidence, and assign unique IDs.", id);
+  const selected = matches[0];
+  const expectedPath = path.join(path.resolve(root), contract(sourceRoot).entityRoot, ARTIFACT, BOUNDARY, `${id}.yaml`);
+  const canonical = all.find((entity) => entity.path === expectedPath);
+  if (!selected && canonical) throw failure("corrupt", `health entity '${canonical.relativePath}' does not match its canonical ID envelope`, "Run agentera check validate state and repair the canonical entity file.", id);
+  if (!selected || selected.artifact !== ARTIFACT || selected.boundary !== BOUNDARY) throw failure("not_found", `no health entity exists with ID '${id}'`, "Copy an ID from agentera state health list --format json and retry.", id);
+  if (selected.classification !== "valid" || !selected.record || healthEntityViolations(selected.record).length > 0) throw failure("corrupt", `health entity '${selected.relativePath}' is corrupt or violates the audit contract`, "Run agentera check validate state, preserve its evidence, and repair the canonical entity file.", id);
+  return {
+    schemaVersion: "agentera.stateRetrieval.v1",
+    command: "state health get",
+    status: "ok",
+    entry: entry(root, selected),
+    source: { artifact: ARTIFACT, authority: "canonical_entity_file" },
+    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full" },
+  };
+}
+
+function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date)}\0${entity.id}`; }
+function snapshot(root: string, entities: DiscoveredEntity[]): string {
+  const inputs = entities.map(({ id, artifact, boundary, record, path: entityPath }) => ({ id, artifact, boundary, path: relative(root, entityPath), record })).sort((a, b) => canonicalRecordJson(a).localeCompare(canonicalRecordJson(b)));
+  return createHash("sha256").update(canonicalRecordJson(inputs)).digest("hex");
+}
+function cursorSecret(root: string, authorityPath: string): Buffer { return createHash("sha256").update(path.resolve(root)).update("\0").update(fs.readFileSync(authorityPath)).digest(); }
+function encode(payload: JsonObject, root: string, authorityPath: string): string {
+  const bytes = Buffer.from(canonicalRecordJson(payload));
+  return `${bytes.toString("base64url")}.${createHmac("sha256", cursorSecret(root, authorityPath)).update(bytes).digest("base64url")}`;
+}
+function decode(token: string, root: string, authorityPath: string): JsonObject {
+  try {
+    const parts = token.split("."); if (parts.length !== 2) throw new Error();
+    const bytes = Buffer.from(parts[0], "base64url"); const supplied = Buffer.from(parts[1], "base64url"); const expected = createHmac("sha256", cursorSecret(root, authorityPath)).update(bytes).digest();
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new Error();
+    const value = JSON.parse(bytes.toString()); if (!mapping(value)) throw new Error(); return value;
+  } catch { throw listFailure("cursor_invalid", "health cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
+}
+function serializedBytes(value: JsonObject, format: string): number { return Buffer.byteLength(format === "json" ? `${JSON.stringify(value, null, 2)}\n` : YAML.stringify(value)); }
+
+export function listHealthEntities(root: string, limit?: number, dimension?: string, cursor?: string, options: { sourceRoot?: string; format?: string } = {}): JsonObject {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
+  if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw listFailure("invalid_request", `health list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", 2);
+  const all = healthEntities(root, sourceRoot);
+  let filtered = [...all].sort((a, b) => String(b.record!.date).localeCompare(String(a.record!.date)) || a.id!.localeCompare(b.id!));
+  if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
+  const snap = snapshot(root, all); let start = 0;
+  if (cursor) {
+    const value = decode(cursor, root, declared.authorityPath);
+    if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.dimension !== (dimension ?? null)) throw listFailure("cursor_snapshot_unavailable", "health changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot.");
+    const found = filtered.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw listFailure("cursor_snapshot_unavailable", "health cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1;
+  }
+  let selected = filtered.slice(start, start + effectiveLimit); let trimmed = false;
+  const response = (): JsonObject => {
+    const remaining = filtered.length - start - selected.length;
+    const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, dimension: dimension ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
+    return {
+      schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
+      counts: { total: filtered.length, returned: selected.length, remaining }, filters: { dimension: dimension ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: filtered.length },
+      source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" },
+      ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next, retrieval: { continue: `agentera state health list --limit ${effectiveLimit}${dimension ? ` --dimension ${dimension}` : ""} --cursor ${next} --format json`, get: "agentera state health get --id ID --format json" } } : {}),
+    };
+  };
+  let result = response();
+  while (serializedBytes(result, options.format ?? "json") > declared.maxUtf8Bytes && selected.length) { selected = selected.slice(0, -1); trimmed = true; result = response(); }
+  if (!selected.length && filtered.length > start) throw listFailure("unsupported_state", `one full health entity cannot fit the ${declared.maxUtf8Bytes}-byte list budget`, "Use exact get by ID for the full canonical entity.");
+  return result;
+}
