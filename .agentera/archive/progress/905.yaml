@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 905
+record:
+  number: 905
+  timestamp: 2026-07-18 00:29
+  type: fix
+  phase: build
+  what: Preserved historical projection residues as immutable nonentity migration evidence while publishing and validating only canonical entities.
+  inspiration: Task14 retry1/2 failed approved apply and the D3+D4 historical projection residue.
+  discovered: The migration planner correctly withheld a target from historical_projection_residue, but apply still passed every manifest entry through canonical boundary validation and receipt publication.
+  verified: Focused migration regression suite passed 2 files and 41 tests. Full CLI suite passed 218 files and 2619 tests. Typecheck and build passed. All 12 capability validations, capability contract 2/2, state validation, compact, bundle parity, active protocol scan, migration, legacy evidence writer, lifecycle consumer, Task10 approval, and Task13 correlation coverage passed.
+  next: Task14 remains pending. Use only the fresh post-commit approval command generated after this cycle; do not claim cutover completion until a separately authorized live apply and parity check succeed.
+  context:
+    intent: Correct only the approved Task14 apply defect without running the live cutover.
+    constraints: No live apply, Task14 completion, Task15 work, manual YAML edit, version, changelog, vision, remote, push, publish, or tag.
+    unknowns: none
+    scope: Entity migration preview, durable apply evidence, resume and guarded rollback, and exact residue regressions.
+record_sha256: ec1084b97b0de104f8fa941a093ec4d9c9035c130a3b2358e0448084094bcfbf

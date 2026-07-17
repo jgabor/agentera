@@ -26,6 +26,9 @@ const fixtures: Record<string, string> = {
   ".agentera/health.yaml": "audits:\n  - number: 1\n    date: 2026-07-17\n    dimensions: [architecture_alignment]\n    findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }\n    trajectory: stable\n    grades: { architecture_alignment: A }\n",
   ".agentera/plan.yaml": "header:\n  level: light\n  created: 2026-07-17\n  status: open\n  title: Migration fixture\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: migrate\nwhy: durability\nscope: { included: [state], excluded: [] }\ntasks:\n  - number: 1\n    name: migrate\n    status: pending\n    depends_on: []\n    acceptance: [pass]\n",
 };
+const residueFixture = {
+  ".agentera/decisions.yaml": `${fixtures[".agentera/decisions.yaml"]}archive:\n  - summary: Unnumbered D3+D4 composite remains historical projection evidence.\n`,
+};
 
 function project(extra: Record<string, string> = {}): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entity-apply-")); roots.push(root);
@@ -95,6 +98,13 @@ describe("durable entity migration", () => {
     expect(apply.rc).toBe(1); expect(JSON.parse(apply.out).error.class).toBe("inventory_blocked");
     expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  });
+
+  it("reports zero mutation and creates no evidence when an unnumbered projection cannot be classified as residue", () => {
+    const root = project({ ".agentera/decisions.yaml": "decisions: []\narchive:\n  - summary: Unnumbered projection with no composite identity.\n" }); const preview = previewEntityMigration(root, SOURCE_ROOT);
+    expect(preview.status).toBe("blocked"); expect(preview.preserved_residues).toEqual([]);
+    const result = capture(["state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"]);
+    expect(result.rc).toBe(1); expect(JSON.parse(result.out)).toMatchObject({ mutation_performed: false, error: { class: "inventory_blocked" } }); expectNoMigrationEffects(root);
   });
 
   it.each([
@@ -192,6 +202,15 @@ describe("durable entity migration", () => {
     }
   });
 
+  it.each(["tampered", "missing", "new"])("refuses %s preserved residue after preview before effects", (mutation) => {
+    const root = project(residueFixture); const source = path.join(root, ".agentera/decisions.yaml"); const preview = previewEntityMigration(root, SOURCE_ROOT);
+    if (mutation === "missing") fs.rmSync(source);
+    else if (mutation === "new") fs.appendFileSync(source, "  - summary: A second unnumbered D5+D6 composite.\n");
+    else fs.appendFileSync(source, "# tampered residue source\n");
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/source or authority changed after approval/);
+    expectNoMigrationEffects(root);
+  });
+
   it("refuses byte-identical legacy source inode replacement before rollback effects", () => {
     const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest); const source = path.join(root, "TODO.md"); const bytes = fs.readFileSync(source); const mode = fs.statSync(source).mode & 0o777;
     fs.renameSync(source, `${source}.old`); fs.writeFileSync(source, bytes, { mode });
@@ -199,9 +218,10 @@ describe("durable entity migration", () => {
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(true); expect(files(root, ".agentera/entities")).toHaveLength(preview.counts.total);
   });
 
-  it("resumes every durable phase boundary without reallocating IDs or duplicating relationships", () => {
+  it("resumes every durable phase while preserving a D3+D4 residue outside entity boundaries", () => {
     for (const phase of ["prepare_recovery", "publish_entities", "validate_graph", "cutover", "cutover_complete"]) {
-      const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+      const root = project(residueFixture); const residueBytes = fs.readFileSync(path.join(root, ".agentera/decisions.yaml")); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+      expect(preview).toMatchObject({ status: "ready", preserved_residues: [expect.objectContaining({ boundary: "historical_projection_residue", proposed_target: null, relationships: [] })] });
       const child = spawnSync(process.execPath, [WORKER], {
         encoding: "utf8",
         env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: phase, AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest },
@@ -210,10 +230,13 @@ describe("durable entity migration", () => {
       const migrations = fs.readdirSync(path.join(root, ".agentera/migrations/entities")); expect(migrations).toHaveLength(1);
       for (const name of ["manifest.yaml", "snapshot.yaml", "journal.yaml"]) expect(fs.existsSync(path.join(root, ".agentera/migrations/entities", migrations[0], name))).toBe(true);
       const markerExists = fs.existsSync(path.join(root, ".agentera/state-mode.yaml")); expect(markerExists).toBe(["cutover", "cutover_complete"].includes(phase));
-      if (markerExists) expect(files(root, ".agentera/entities")).toHaveLength(preview.counts.total);
-      const resumed = resumeEntityMigration(root, SOURCE_ROOT, migrations[0]); expect(resumed.status).toBe("complete");
+      if (markerExists) expect(files(root, ".agentera/entities")).toHaveLength(preview.counts.publishable_entities);
+      const resumed = resumeEntityMigration(root, SOURCE_ROOT, migrations[0]); expect(resumed).toMatchObject({ status: "complete", entity_count: preview.counts.publishable_entities, preserved_residues: { count: 1, sha256: expect.stringMatching(/^[a-f0-9]{64}$/), provenance: ["historical_projection_residue"] } });
       const ids = files(root, ".agentera/entities").map((file) => path.basename(file, ".yaml")).sort(); expect(new Set(ids).size).toBe(ids.length); expect(ids).toEqual(preview.entries.map((entry) => entry.proposed_target!.id).sort());
-      expect(rollbackEntityMigration(root, SOURCE_ROOT, migrations[0]).status).toBe("rolled_back");
+      const manifest = loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/migrations/entities", migrations[0], "manifest.yaml"), "utf8")); const snapshot = loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/migrations/entities", migrations[0], "snapshot.yaml"), "utf8"));
+      expect(manifest).toMatchObject({ entries: expect.any(Array), preserved_residues: [expect.objectContaining({ record: { summary: "Unnumbered D3+D4 composite remains historical projection evidence." } })], inventory: { entry_count: preview.counts.publishable_entities, preserved_residue_count: 1 } });
+      expect((manifest.entries as unknown[])).toHaveLength(preview.counts.publishable_entities); expect(snapshot.preserved_residues).toEqual(manifest.preserved_residues); expect(files(root, `.agentera/migrations/entities/${migrations[0]}/receipts`)).toHaveLength(preview.counts.publishable_entities + 1);
+      expect(rollbackEntityMigration(root, SOURCE_ROOT, migrations[0])).toMatchObject({ status: "rolled_back", preserved_residues: { count: 1 } }); expect(fs.readFileSync(path.join(root, ".agentera/decisions.yaml"))).toEqual(residueBytes);
     }
   }, 120_000);
 
@@ -331,10 +354,10 @@ describe("durable entity migration", () => {
 
   it("resumes interruption at every guarded rollback boundary without deleting successors", () => {
     for (const phase of ["rollback_prepared", "rollback_cutover", "rolled_back"]) {
-      const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+      const root = project(residueFixture); const residueBytes = fs.readFileSync(path.join(root, ".agentera/decisions.yaml")); const preview = previewEntityMigration(root, SOURCE_ROOT); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
       const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: phase, AGENTERA_ENTITY_MIGRATION_WORKER_OPERATION: "rollback", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_ID: applied.migration_id } });
       expect(child.status, `${phase}: ${child.stdout}\n${child.stderr}`).not.toBe(0); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(phase === "rollback_prepared");
-      expect(rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id).status).toBe("rolled_back"); expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+      expect(rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id)).toMatchObject({ status: "rolled_back", preserved_residues: { count: 1 } }); expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false); expect(fs.readFileSync(path.join(root, ".agentera/decisions.yaml"))).toEqual(residueBytes);
     }
   });
 

@@ -84,6 +84,7 @@ export interface DurableEntityMigrationPlan {
   authority_sha256: string;
   preserved_singletons: EntityMigrationPreview["preserved_singletons"];
   entries: DurableEntityMigrationEntry[];
+  preserved_residues: DurableEntityMigrationEntry[];
   sources: DurableEntityMigrationSource[];
   counts: EntityMigrationPreview["counts"];
   diagnostics: EntityMigrationPreview["diagnostics"];
@@ -102,7 +103,8 @@ export interface EntityMigrationPreview {
   preview_digest: string;
   preserved_singletons: Array<{ boundary: string; source_path: string; presence: "file" | "missing" | "unsafe"; content_sha256: string | null; preserved_sections?: string[] }>;
   entries: EntityMigrationEntry[];
-  counts: Record<EntityMigrationClassification | "total" | "physical_records" | "logical_identities" | "mirrors" | "duplicates" | "conflicts" | "relationships" | "unresolved_relationships" | "blockers", number>;
+  preserved_residues: EntityMigrationEntry[];
+  counts: Record<EntityMigrationClassification | "total" | "publishable_entities" | "physical_records" | "logical_identities" | "mirrors" | "duplicates" | "conflicts" | "relationships" | "unresolved_relationships" | "blockers", number>;
   diagnostics: Array<{
     classification: EntityMigrationClassification | "unresolved_relationship";
     path: string;
@@ -330,7 +332,7 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
           const summary = Boolean(record && (typeof record.summary === "string" || record.detail_availability === "summary_only"));
           const text = typeof record?.summary === "string" ? record.summary : "";
           const decisionRefs = artifact === "decisions" ? [...text.matchAll(/\bD([1-9][0-9]*)\b/g)] : [];
-          const residue = identity.kind === "ambiguous" || (decisionRefs.length > 1 && !number);
+          const residue = artifact === "decisions" && decisionRefs.length > 1 && !number;
           observations.push({ key: residue ? `historical_projection_residue:${declaration.file}:${collection}[${index}]` : key, artifact, boundary: residue ? "historical_projection_residue" : declaration.boundary, path: declaration.file, provenance: residue ? "historical_projection_residue" : "current_projection", record, detail: valid ? "full" : summary ? "summary" : "corrupt", relationships: [], message: valid || summary ? undefined : "projection record does not satisfy the declared full-detail schema", ...(residue ? { migrationProvenance: { classification: "historical_projection_residue", path: declaration.file, collection, index, content_sha256: hash(canonicalRecordJson(record)), text, inbound_structured_references: 0 } } : {}) });
           if (artifact === "decisions" && mapping(record?.satisfaction)) {
             observations.push({ key: `decision_satisfaction:${key}`, artifact: "decisions", boundary: "decision_satisfaction", path: declaration.file, provenance: "current_projection", record: mapping(record?.satisfaction), detail: "full", relationships: [{ field: "decision", target: key }] });
@@ -734,14 +736,17 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   objectiveObservations(project, files, observations);
   todoAndDocs(project, todoPath, files, observations);
   const preserved = preservedSingletons(files);
-  const completeEntries = buildEntries(project, fingerprint, observations);
+  const completeInventory = buildEntries(project, fingerprint, observations);
+  const preservedResidues = completeInventory.filter((entry) => entry.classification === "historical_projection_residue");
+  const completeEntries = completeInventory.filter((entry) => entry.classification !== "historical_projection_residue");
   const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported", "historical_projection_residue"];
-  const counts = Object.fromEntries(classes.map((classification) => [classification, completeEntries.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
-  counts.total = completeEntries.length;
-  counts.logical_identities = completeEntries.length;
+  const counts = Object.fromEntries(classes.map((classification) => [classification, completeInventory.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
+  counts.total = completeInventory.length;
+  counts.publishable_entities = completeEntries.length;
+  counts.logical_identities = completeInventory.length;
   counts.physical_records = observations.length;
-  counts.mirrors = completeEntries.reduce((total, entry) => total + (entry.provenance.includes("mirrored") ? entry.physical_record_count - 1 : 0), 0);
-  counts.duplicates = completeEntries.reduce((total, entry) => total + (entry.classification === "duplicate" ? entry.physical_record_count - 1 : 0), 0);
+  counts.mirrors = completeInventory.reduce((total, entry) => total + (entry.provenance.includes("mirrored") ? entry.physical_record_count - 1 : 0), 0);
+  counts.duplicates = completeInventory.reduce((total, entry) => total + (entry.classification === "duplicate" ? entry.physical_record_count - 1 : 0), 0);
   counts.conflicts = counts.duplicate + counts.conflict;
   counts.relationships = completeEntries.reduce((total, entry) => total + entry.relationships.length, 0);
   counts.unresolved_relationships = completeEntries.reduce((total, entry) => total + entry.relationships.filter((relationship) => relationship.status === "unresolved").length, 0);
@@ -754,12 +759,13 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
     }),
   ]);
   const digestEntries = completeEntries.map(({ record: _record, ...entry }) => entry);
-  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_singletons: preserved, counts, diagnostics };
+  const digestResidues = preservedResidues.map(({ record: _record, ...entry }) => entry);
+  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_residues: digestResidues, preserved_singletons: preserved, counts, diagnostics };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const sources = files.map((file): DurableEntityMigrationSource => {
     return { path: file.relative, presence: file.kind === "file" ? "file" : "missing", size: file.bytes?.byteLength ?? 0, sha256: file.bytes ? hash(file.bytes) : null, mode: file.kind === "file" ? file.mode : null, dev: file.kind === "file" ? String(file.dev) : null, ino: file.kind === "file" ? String(file.ino) : null, type: file.kind === "file" ? file.type : null, bytes_base64: file.bytes?.toString("base64") ?? null };
   });
-  return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, sources, counts, diagnostics };
+  return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, preserved_residues: preservedResidues, sources, counts, diagnostics };
 }
 
 export function planEntityMigration(projectRoot: string, sourceRoot: string, options: { resolveDescriptorPath?: DescriptorPathResolver } = {}): DurableEntityMigrationPlan {
@@ -778,6 +784,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   const { project, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, diagnostics } = inventory;
   const authority = { authority_schema_version: inventory.authority_schema_version, authority_sha256: inventory.authority_sha256 };
   const completeEntries: EntityMigrationEntry[] = inventory.entries.map(({ record: _record, ...entry }) => entry);
+  const preservedResidues: EntityMigrationEntry[] = inventory.preserved_residues.map(({ record: _record, ...entry }) => entry);
   const requestedLimit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT));
   const restartCommand = `agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json`;
   if (options.after !== undefined && (options.sourceFingerprint !== fingerprint || options.previewDigest !== previewDigest)) {
@@ -792,7 +799,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   };
   let omissionReason: EntityMigrationPreview["omission_reason"] = start > 0 || start + entries.length < completeEntries.length ? "result_limit" : null;
   const quotedProject = project.replaceAll("'", "'\\''");
-  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: true } } as const;
+  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, preserved_residues: preservedResidues, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: true } } as const;
   const serializedBytes = (): number => {
     const pageDiagnostics = diagnosticsForEntries();
     const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;

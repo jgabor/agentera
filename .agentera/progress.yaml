@@ -1,4 +1,32 @@
 cycles:
+  - number: 905
+    timestamp: 2026-07-18 00:29
+    type: fix
+    phase: build
+    what: Preserved historical projection residues as immutable nonentity migration
+      evidence while publishing and validating only canonical entities.
+    inspiration: Task14 retry1/2 failed approved apply and the D3+D4 historical
+      projection residue.
+    discovered: The migration planner correctly withheld a target from
+      historical_projection_residue, but apply still passed every manifest entry
+      through canonical boundary validation and receipt publication.
+    verified: Focused migration regression suite passed 2 files and 41 tests. Full
+      CLI suite passed 218 files and 2619 tests. Typecheck and build passed. All
+      12 capability validations, capability contract 2/2, state validation,
+      compact, bundle parity, active protocol scan, migration, legacy evidence
+      writer, lifecycle consumer, Task10 approval, and Task13 correlation
+      coverage passed.
+    next: Task14 remains pending. Use only the fresh post-commit approval command
+      generated after this cycle; do not claim cutover completion until a
+      separately authorized live apply and parity check succeed.
+    context:
+      intent: Correct only the approved Task14 apply defect without running the live
+        cutover.
+      constraints: No live apply, Task14 completion, Task15 work, manual YAML edit,
+        version, changelog, vision, remote, push, publish, or tag.
+      unknowns: none
+      scope: Entity migration preview, durable apply evidence, resume and guarded
+        rollback, and exact residue regressions.
   - number: 904
     timestamp: 2026-07-17 23:52
     type: fix
@@ -217,26 +245,6 @@ cycles:
       unknowns: none
       scope: Task11 query aliases, canonical entity durability, migration marker
         validation, entity pagination/errors/identity, and proportional tests.
-  - number: 895
-    timestamp: 2026-07-17 14:57
-    type: feat
-    phase: build
-    what: Task 11 cut entity-mode retrieval and maintenance APIs to canonical id and
-      artifact identity.
-    discovered: Entity durability can recover a locally missing canonical entity by
-      locating its exact committed boundary path in local Git without remote
-      contact.
-    verified: "pnpm test: 213 files, 2,564 tests passed; pnpm run typecheck passed;
-      pnpm build passed; check validate state, capability-contract, capability
-      build, and check compact passed."
-    next: "Task 12 remains pending: clean prime, context, hooks, package, and
-      broader command vocabulary without reopening Task 11 behavior."
-    context:
-      intent: Complete only PLAN Task 11 retrieval, durability, recovery, and
-        read-only maintenance surfaces while preserving marker-absent behavior
-        and deferring Task 12 vocabulary cleanup.
-      constraints: No live migration apply, repair, manual YAML edits, remote contact,
-        publication, or Task 12/13 work.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -306,6 +314,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 895 (2026-07-17): Task 11 cut entity-mode retrieval and
+      maintenance APIs to canonical id and artifact identity."
   - summary: "Cycle 894 (2026-07-17): Closed Task 10's final entity migration
       publication and rollback crash windows."
   - summary: "Cycle 893 (2026-07-17): Corrected Cycle 892's immutable count evidence
@@ -400,15 +410,18 @@ archive:
       guidance,..."
   - summary: "Cycle 856 (2026-07-16): Closed the compact-prime plan through the
       typed state writers after final verification: Task 5 evaluation..."
-  - summary: "Cycle 855 (2026-07-16): Synchronized Plan Task 5 startup contracts and
-      final verification: current English capability budget rows now..."
 omitted: true
-omitted_count: 140
+omitted_count: 141
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
