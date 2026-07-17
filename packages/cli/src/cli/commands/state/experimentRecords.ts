@@ -4,6 +4,8 @@ import { emitStructured } from "../../structured.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getExperiment, listExperiments, type ExperimentListResponse } from "../../../state/experimentRetrieval.js";
 import type { Io } from "../../dispatch/shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { getExperimentEntity, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -80,6 +82,61 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
   return { format, objective, limit, cursor, number };
 }
 
+function entityFailure(message: string, verb: "list" | "get"): StateRetrievalFailure {
+  const list = verb === "list";
+  return new StateRetrievalFailure({
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: "invalid_request",
+      message,
+      syntax: list
+        ? "agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json"
+        : "agentera state experiments get --id ID [--objective ID] --format json",
+      example: list
+        ? "agentera state experiments list --objective qjtrmnpvka --limit 20 --format json"
+        : "agentera state experiments get --id qjtrmnpvka --format json",
+      recovery: "Use bare ten-letter entity IDs and retry; no state was changed.",
+      valid_values: list
+        ? ["list", "--objective ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        : ["get", "--id ID", "--objective ID", "--format text|json|yaml"],
+    },
+  }, 2);
+}
+
+function parseEntity(argv: string[], verb: "list" | "get"): { format: Format; objective?: string; id?: string; limit: number; cursor?: string } {
+  let format: Format = "text";
+  let objective: string | undefined;
+  let id: string | undefined;
+  let limit = 20;
+  let cursor: string | undefined;
+  const seen = new Set<string>();
+  for (let index = 0; index < argv.length;) {
+    const token = argv[index]!;
+    const allowed = verb === "list" ? ["--format", "--objective", "--limit", "--cursor"] : ["--format", "--objective", "--id"];
+    const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
+    if (!name) throw entityFailure(`unrecognized argument '${token}'`, verb);
+    if (seen.has(name)) throw entityFailure(`${name} may only be supplied once`, verb);
+    seen.add(name);
+    let parsed: { value: string; next: number };
+    try { parsed = value(argv, index, name); } catch (error) { throw entityFailure((error as Error).message, verb); }
+    index = parsed.next;
+    if (name === "--format") {
+      if (!( ["text", "json", "yaml"] as string[]).includes(parsed.value)) throw entityFailure(`invalid --format '${parsed.value}'`, verb);
+      format = parsed.value as Format;
+    } else if (name === "--objective") objective = parsed.value;
+    else if (name === "--id") id = parsed.value;
+    else if (name === "--cursor") cursor = parsed.value;
+    else {
+      if (!/^[1-9][0-9]*$/.test(parsed.value)) throw entityFailure("--limit must be an integer from 1 through 100", verb);
+      limit = Number(parsed.value);
+    }
+  }
+  if (verb === "list" && !objective) throw entityFailure("--objective is required", verb);
+  if (verb === "get" && !id) throw entityFailure("--id is required", verb);
+  return { format, objective, id, limit, cursor };
+}
+
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
   if (format === "json" || format === "yaml") emitStructured(error.body, format, io.out ?? ((text) => process.stdout.write(text)));
   else {
@@ -114,6 +171,16 @@ export function runExperimentRecords(argv: string[], io: Io): number {
   const verb = argv[0];
   if (verb !== "list" && verb !== "get") return emitFailure(failure(`expected 'list' or 'get', received '${verb ?? "nothing"}'`, "list"), format, io);
   try {
+    if (detectStateMode(process.cwd()) === "entities") {
+      const args = parseEntity(argv.slice(1), verb);
+      const response = verb === "list"
+        ? listExperimentEntities(process.cwd(), args.objective!, args.limit, args.cursor, { format: args.format })
+        : getExperimentEntity(process.cwd(), args.id!, args.objective);
+      const out = io.out ?? ((text: string) => process.stdout.write(text));
+      if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, out);
+      else out(YAML.stringify(response));
+      return 0;
+    }
     const args = parse(argv.slice(1), verb);
     const response = verb === "list"
       ? listExperiments(process.cwd(), args.objective, { limit: args.limit, cursor: args.cursor, format: args.format })

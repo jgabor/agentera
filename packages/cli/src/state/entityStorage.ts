@@ -25,6 +25,7 @@ interface EntityDefinition {
     timestampFormat?: string;
   };
   ownership?: { fields: string[]; cardinality: string };
+  baseline?: { field: string; value: string; cardinality: string };
 }
 
 interface RelationshipDefinition {
@@ -99,6 +100,7 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     const record = mapping(value.record) ? value.record : null;
     const strings = (field: unknown): string[] => Array.isArray(field) && field.every((item) => typeof item === "string") ? field : [];
     const ownership = mapping(value.ownership) ? value.ownership : null;
+    const baseline = mapping(value.baseline) ? value.baseline : null;
     return {
       boundary: value.boundary,
       artifact: value.artifact,
@@ -111,6 +113,11 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
       ...(ownership ? { ownership: {
         fields: strings(ownership.fields),
         cardinality: String(ownership.cardinality ?? ""),
+      } } : {}),
+      ...(baseline && typeof baseline.field === "string" && typeof baseline.value === "string" ? { baseline: {
+        field: baseline.field,
+        value: baseline.value,
+        cardinality: String(baseline.cardinality ?? ""),
       } } : {}),
     };
   });
@@ -341,6 +348,12 @@ function discoverFile(
       issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan task or evaluation fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan task and evaluation schema`) });
     }
   }
+  if (!malformed && boundary === "experiment" && record) {
+    if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status))) {
+      malformed = true;
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid experiment date or status`, recovery: recovery(projectRoot, `repair '${relativePath}' using YYYY-MM-DD HH:MM and baseline|kept|discarded`) });
+    }
+  }
   return { id, artifact, boundary, record, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
 }
 
@@ -503,6 +516,23 @@ export function validateEntityState(projectRoot: string, sourceRoot?: string): E
         boundary: entity.boundary ?? undefined,
         message: `entity '${entity.relativePath}' shares the authority-owned ${definition.ownership.fields.join("+")} claim with ${claimants.length - 1} other '${definition.boundary}' entity`,
         recovery: recovery(projectRoot, `preserve every claimant and resolve the divergent '${definition.boundary}' ownership explicitly`),
+      });
+    }
+  }
+  for (const definition of model.entities) {
+    if (!definition.baseline || definition.baseline.cardinality !== "exactly_one_when_experiments_exist") continue;
+    const byOwner = new Map<string, DiscoveredEntity[]>();
+    for (const entity of discovery.entities.filter(({ boundary, classification, record }) => boundary === definition.boundary && classification === "valid" && record)) {
+      const owner = String(entity.record!.objective ?? "");
+      byOwner.set(owner, [...(byOwner.get(owner) ?? []), entity]);
+    }
+    for (const [owner, entities] of byOwner) {
+      const baselines = entities.filter((entity) => entity.record?.[definition.baseline!.field] === definition.baseline!.value);
+      if (baselines.length === 1) continue;
+      for (const entity of entities) issues.push({
+        code: "conflicting_ownership", path: entity.relativePath, id: entity.id ?? undefined, artifact: entity.artifact ?? undefined, boundary: entity.boundary ?? undefined,
+        message: `objective '${owner}' owns ${baselines.length} '${definition.baseline.value}' experiments; exactly one is required`,
+        recovery: recovery(projectRoot, baselines.length ? `preserve one immutable baseline for objective '${owner}' and resolve competing ownership` : `restore the missing immutable baseline for objective '${owner}'`),
       });
     }
   }

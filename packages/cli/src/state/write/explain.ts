@@ -21,7 +21,7 @@ function liveDoc(p: string): Record<string, unknown> {
 }
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
-  return artifact === "experiments" ? "publish" : "append";
+  return artifact === "experiments" ? "publish" : artifact === "objective" ? "create" : "append";
 }
 
 export function buildExplain(
@@ -41,9 +41,9 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityArtifact = ["progress", "decisions", "health"].includes(artifact) && detectStateMode(projectRoot) === "entities";
+  const entityArtifact = ["progress", "decisions", "health", "objective", "experiments"].includes(artifact) && detectStateMode(projectRoot) === "entities";
   const resolved = entityArtifact
-    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
+    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });

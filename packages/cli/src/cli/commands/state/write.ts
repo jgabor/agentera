@@ -272,7 +272,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       syntax: "--input PATH",
       example: exampleFor(artifact, verb),
     });
-  if (spec.inputRoot && Object.keys(values).length && !(artifact === "experiments" && verb === "publish"))
+  if (spec.inputRoot && Object.keys(values).length && !(["objective", "experiments"].includes(artifact)))
     invalid({
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
@@ -286,7 +286,8 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       recovery: "Validate malformed envelopes, duplicate IDs, or conflicting ownership and repair the canonical entity files without inventing audit history.",
     });
   }
-  for (const field of fields.filter((candidate) => candidate.required)) {
+  const entityExperiments = artifact === "experiments" && detectStateMode(projectRoot) === "entities";
+  for (const field of fields.filter((candidate) => candidate.required && !(entityExperiments && candidate.field === "number"))) {
     if (mappingPath(values, field.field) === undefined) {
       invalid({
         class: "missing_argument",
@@ -324,6 +325,16 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   }
   if (artifact === "plan" && verb === "create" && detectStateMode(projectRoot) === "entities" && force)
     invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plan create because multiple open plans coexist" });
+  if (artifact === "experiments" && verb === "publish") {
+    const entityMode = detectStateMode(projectRoot) === "entities";
+    const number = mappingPath(values, "number");
+    const id = mappingPath(values, "id");
+    if (entityMode && number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric experiment selectors are unavailable in entity mode; omit --number" });
+    if (!entityMode && id !== undefined) invalid({ class: "unrecognized_argument", message: "--id replay selectors are unavailable in legacy mode; use --number N" });
+    if (!entityMode && number === undefined) invalid({ class: "missing_argument", message: "--number is required for experiments publish in legacy mode" });
+  }
+  if (artifact === "objective" && detectStateMode(projectRoot) !== "entities")
+    invalid({ class: "unsupported_target", message: "objective create and update require the durable entity-mode marker; legacy optimize harness paths remain unchanged" });
   if (
     verb === "update" &&
     artifact === "plan" &&

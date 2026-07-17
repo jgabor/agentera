@@ -14,7 +14,7 @@ authority:
     amendment revision paths, legacy label coexistence rules, failure classes,
     or byte limits.
   implementation_boundary: >-
-    Shared entity storage plus the progress, decisions, health, and plan family writers and retrieval are
+    Shared entity storage plus the progress, decisions, health, plan, objective, and experiment family writers and retrieval are
     implemented, but activate only from the durable cutover marker. Other entity
     families and durable migration apply remain declared, not implemented. The
     current numbered archive and retrieval groups remain implemented legacy
@@ -23,7 +23,7 @@ authority:
     and is not the Decision 94 cutover.
 
 entity_target:
-  status: progress_decisions_health_and_plan_implemented_other_families_declared
+  status: progress_decisions_health_plan_objective_and_experiment_implemented_other_families_declared
   decision: 94
   activation: >-
     This target becomes active persisted and structured state authority only
@@ -34,6 +34,8 @@ entity_target:
     decisions: implemented
     health: implemented
     plan: implemented
+    objective: implemented
+    experiments: implemented
     remaining_families: declared_not_implemented
     rule: >-
       The progress, decisions, health, and plan implementations select entity behavior only when the durable
@@ -243,10 +245,48 @@ entity_target:
       artifact: objective
       independently_mutable: true
       relationships: []
+      implementation: implemented
+      publication: replace_owned_entity
+      record:
+        required_fields: [header, objective, metric, baseline, scope]
+        required_paths: [header.title, header.status, objective.description, objective.measurement]
+        forbidden_fields: [id, artifact, stable_id, objective_id]
+      retrieval:
+        exact: agentera state objective get --id ID --format json
+        list: agentera state objective list [--limit N] [--cursor TOKEN] --format json
+        ordering: created_desc_then_id_asc
+        default_limit: 20
+        maximum_limit: 100
+        max_utf8_bytes: 32768
+        cursor: opaque_snapshot_cursor
+        mutation_after_snapshot: cursor_snapshot_unavailable
+        omission: whole_entries_only_with_count_reason_continuation_and_exact_get
+        scalar_truncation: forbidden
     - boundary: experiment
       artifact: experiments
       independently_mutable: true
       relationships: [objective]
+      implementation: implemented
+      publication: immutable
+      baseline:
+        field: status
+        value: baseline
+        cardinality: exactly_one_when_experiments_exist
+      record:
+        required_fields: [objective, date, label, hypothesis, method, change, metric, regression, status, conclusion]
+        required_paths: [objective, date, label, status]
+        forbidden_fields: [id, artifact, number, experiment_number, stable_id, objective_id]
+      retrieval:
+        exact: agentera state experiments get --id ID --format json
+        list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json
+        ordering: date_desc_then_id_asc
+        default_limit: 20
+        maximum_limit: 100
+        max_utf8_bytes: 32768
+        cursor: opaque_snapshot_cursor
+        mutation_after_snapshot: cursor_snapshot_unavailable
+        omission: whole_entries_only_with_count_reason_continuation_and_exact_get
+        scalar_truncation: forbidden
     - boundary: todo_item
       artifact: todo
       independently_mutable: true

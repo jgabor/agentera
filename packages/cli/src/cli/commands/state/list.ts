@@ -13,6 +13,7 @@ import { detectStateMode } from "../../../state/stateMode.js";
 import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
+import { listObjectiveEntities } from "../../../state/objectiveExperimentEntities.js";
 import YAML from "yaml";
 
 interface StateListArgs {
@@ -74,8 +75,8 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parseListArgs(artifactId: string, argv: string[], sourceRoot: string): StateListArgs {
-  const validValues = numberedArchiveArtifacts(sourceRoot);
+function parseListArgs(artifactId: string, argv: string[], sourceRoot: string, entityArtifact = false): StateListArgs {
+  const validValues = entityArtifact ? [...numberedArchiveArtifacts(sourceRoot), "objective"] : numberedArchiveArtifacts(sourceRoot);
   if (!validValues.includes(artifactId)) {
     throw failure("unsupported_artifact", artifactId, `unsupported state artifact '${artifactId}'`, undefined, validValues);
   }
@@ -83,7 +84,7 @@ function parseListArgs(artifactId: string, argv: string[], sourceRoot: string): 
   let cursor: string | undefined;
   let format: StateListArgs["format"] = "text";
   const filters: StateListFilters = {};
-  const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : new Set(["--dimension"]);
+  const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : artifactId === "objective" ? new Set<string>() : new Set(["--dimension"]);
   let limitSupplied = false;
   let cursorSupplied = false;
   let formatSupplied = false;
@@ -152,14 +153,16 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
   const sourceRoot = resolveSourceRoot();
   let entityArtifact = false;
   try {
-    entityArtifact = ["progress", "decisions", "health"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
-    const args = parseListArgs(artifactId, argv, sourceRoot);
+    entityArtifact = ["progress", "decisions", "health", "objective"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
+    const args = parseListArgs(artifactId, argv, sourceRoot, entityArtifact);
     if (entityArtifact) {
       const response = artifactId === "progress"
         ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format })
         : artifactId === "decisions"
           ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format })
-          : listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format });
+          : artifactId === "health"
+            ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format })
+            : listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format });
       const output = io.out ?? ((text: string) => process.stdout.write(text));
       if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
       else emitStructured(response, args.format, output);

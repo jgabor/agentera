@@ -20,10 +20,29 @@ import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { firstPresent } from "../../stateQuery.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { currentObjectiveEntity } from "../../../state/objectiveExperimentEntities.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
+import { emitStructured } from "../../structured.js";
 
 export function queryObjective(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
+  if (detectStateMode(process.cwd()) === "entities") {
+    try {
+      const response = currentObjectiveEntity(process.cwd());
+      if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, o);
+      else o(formatEntry((response.entries as JsonObject[])[0], ["id", "artifact"]) + "\n");
+      return 0;
+    } catch (error) {
+      if (error instanceof StateRetrievalFailure) {
+        if (args.format === "json" || args.format === "yaml") emitStructured(error.body, args.format, o);
+        else e(`Error: ${error.body.error.message}\nRecovery: ${error.body.error.recovery}\n`);
+        return error.exitCode;
+      }
+      throw error;
+    }
+  }
   const info = schemas.objective;
   if (!info) {
     e(missingSchemaError("objective") + "\n");

@@ -1,4 +1,32 @@
 cycles:
+  - number: 888
+    timestamp: 2026-07-17 07:59
+    type: feat
+    phase: build
+    what: Added bare-ID objective create/update and immutable experiment
+      publication, exact retrieval, and bounded listing under entity authority.
+    inspiration: PLAN Task 8 and Decision 94 entity authority.
+    discovered: Existing experiment status already represented baseline semantics,
+      so no new workflow or metric model was needed.
+    verified: "Focused objective/experiment, identity, retrieval, publication,
+      entity-context, help, schema, and authority tests passed: 9 files, 99
+      tests. Full CLI passed: 210 files, 2,520 tests. Typecheck and build
+      passed. State validation passed with 0 issues. Optimize capability and
+      capability contract passed. Compact passed with 0 over-limit, formatting,
+      protected-overflow, error, or changed findings."
+    next: "Task 9 remains pending: cut TODO and documentation inventory over to
+      entities."
+    context:
+      intent: Complete PLAN Task 8 by cutting only objective and experiment behavior
+        over when the durable entity-mode marker is active.
+      constraints: Objective and experiment entity mode only; no migration apply,
+        global consumer cutover, TODO/docs mutation, vision, push, publish, or
+        unrelated family changes.
+      unknowns: None. Baseline uses the existing experiment status=baseline field with
+        authority-owned exactly-one cardinality when experiments exist.
+      scope: Entity objective create/update/get/list; immutable experiment
+        publish/get/list; baseline and ownership validation; mode isolation; Git
+        and root-marker regressions.
   - number: 887
     timestamp: 2026-07-17 07:30
     type: fix
@@ -206,36 +234,6 @@ cycles:
       unknowns: None within Task 4 root identity binding.
       scope: Project-root validation token, marker snapshot, progress writer
         lock/entity publication, and focused regression tests.
-  - number: 878
-    timestamp: 2026-07-17 03:51
-    type: fix
-    phase: build
-    what: "Closed the Task 4 state-mode marker boundary: project selectors are
-      validated before lookup, marker bytes come from one no-follow descriptor
-      snapshot, and marker or ancestor races fail closed without activating
-      entity mode."
-    inspiration: Task 4 retry blocking defect and the existing entity-migration
-      safe-read proof.
-    discovered: The migration reader's path snapshot and descriptor verification
-      could be extracted directly, avoiding a second filesystem safety
-      implementation.
-    verified: "Focused state-mode, progress, migration, and entity tests: 4 files,
-      104 tests passed. Full CLI: 205 files, 2,455 tests passed. Typecheck
-      passed. Build passed. State validation passed with 0 issues. Capability
-      contract passed 2/2. Compact passed with 0 over-limit, formatting,
-      protected-overflow, or error findings."
-    next: Keep Task 4 complete and Task 5 pending; do not begin decisions, apply,
-      global, or another family cutover.
-    context:
-      intent: Fix only the reopened Task 4 state-mode boundary defect while preserving
-        progress entity and legacy authority behavior.
-      constraints: State-mode marker boundary, proportional tests, migration safe-read
-        extraction, and progress evidence only; no vision, apply, global
-        consumer, other family, publish, or push changes.
-      unknowns: None; deterministic race tests prove outside marker bytes cannot
-        activate entity mode.
-      scope: packages/cli state-mode detection, shared project-file snapshot logic,
-        entity migration reuse, focused tests, and progress state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -305,6 +303,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 878 (2026-07-17): Closed the Task 4 state-mode marker boundary:
+      project selectors are validated before lookup, marker bytes..."
   - summary: "Cycle 877 (2026-07-17): Cut progress over to canonical entity
       authority after explicit state-mode activation."
   - summary: "Cycle 876 (2026-07-17): Revalidated descriptor metadata and recursive
@@ -406,15 +406,18 @@ archive:
   - summary: "Cycle 839 (2026-07-16): Defined decision amendment authority contracts
       and CLI discovery: revision authority in storage-authority YAML, amend
       verb..."
-  - summary: "Cycle 838 (2026-07-16): Moved lifecycle validation orchestration and
-      parity checks out of the public lifecycleAdapters.ts barrel into a..."
 omitted: true
-omitted_count: 123
+omitted_count: 124
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

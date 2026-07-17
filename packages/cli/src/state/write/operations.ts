@@ -1,6 +1,6 @@
 import type { JsonObject } from "../../core/jsonValue.js";
 
-export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "experiments"] as const;
+export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
 
 export const WRITE_VERBS = [
@@ -34,7 +34,7 @@ export interface OperationSpec {
   artifact: WritableArtifact;
   verb: Exclude<WriteVerb, "explain">;
   fields: OperationField[];
-  inputRoot?: "one audit entry" | "complete plan document" | "one experiment entry";
+  inputRoot?: "one audit entry" | "complete plan document" | "one objective document" | "one experiment entry";
   cliOwnedFields?: string[];
   allowForce?: boolean;
   compacts?: boolean;
@@ -283,6 +283,20 @@ const SPECS: OperationSpec[] = [
     allowForce: true,
   },
   {
+    artifact: "objective",
+    verb: "create",
+    fields: [],
+    inputRoot: "one objective document",
+    cliOwnedFields: ["id", "artifact", "header.id"],
+  },
+  {
+    artifact: "objective",
+    verb: "update",
+    fields: [{ flag: "--id", field: "id", kind: "string", required: true }],
+    inputRoot: "one objective document",
+    cliOwnedFields: ["id", "artifact", "header.id"],
+  },
+  {
     artifact: "experiments",
     verb: "publish",
     fields: [
@@ -297,9 +311,9 @@ const SPECS: OperationSpec[] = [
         flag: "--number",
         field: "number",
         kind: "integer",
-        required: true,
         description: "Non-negative experiment number, including baseline 0.",
       },
+      { flag: "--id", field: "id", kind: "string", description: "Existing immutable entity ID for exact replay in entity mode." },
     ],
     inputRoot: "one experiment entry",
     cliOwnedFields: ["number"],

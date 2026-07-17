@@ -8,6 +8,7 @@ import {
 import { stateGitBackfillContract } from "../state/gitBackfillAuthority.js";
 import { stateRetrievalCommands } from "../state/retrievalAuthority.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
+import { detectStateMode } from "../state/stateMode.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -124,6 +125,7 @@ export function printDoctorHelp(): string {
 export function printStateHelp(sub?: string): string {
   const migration = stateMigrationContract();
   const retrievalCommands = stateRetrievalCommands() as Record<string, Record<string, string>>;
+  const entityMode = detectStateMode(process.cwd()) === "entities";
   const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
   const stateCommands = stateCommandNames(migration);
   if (sub === migrationName) {
@@ -223,9 +225,9 @@ export function printStateHelp(sub?: string): string {
   if (sub === "experiments") {
     return [
       "usage: agentera state experiments [-h] [--format {text,json,yaml}] [filters]",
-      `       ${retrievalCommands.experiments.list}`,
-      `       ${retrievalCommands.experiments.get}`,
-      `       ${retrievalCommands.experiments.publish}`,
+      `       ${entityMode ? "agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json" : retrievalCommands.experiments.list}`,
+      `       ${entityMode ? "agentera state experiments get --id ID [--objective ID] --format json" : retrievalCommands.experiments.get}`,
+      `       ${entityMode ? "agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml --format json" : retrievalCommands.experiments.publish}`,
       "       (publish also accepts --dry-run and --format text)",
       "",
       "Publish is the validated mutation authority and atomically writes one schema-valid experiment.",
@@ -233,10 +235,24 @@ export function printStateHelp(sub?: string): string {
       "List merges retained projection and immutable archive identities newest-first with bounded opaque snapshot cursors.",
       "Get verifies archive detail first, then reports full, summary-only, or unavailable detail truthfully.",
       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
-      "Both verbs require --objective; experiment --number accepts 0 and later integers.",
+      entityMode ? "List and publish require one bare objective ID; get requires one bare experiment ID and may verify objective ownership." : "Both verbs require --objective; experiment --number accepts 0 and later integers.",
       "Legacy objective/path collisions return a structured ambiguous error.",
       "",
       "Discover writes: agentera state experiments explain --verb publish --format json",
+    ].join("\n");
+  }
+  if (sub === "objective" && entityMode) {
+    return [
+      "usage: agentera state objective [-h] [--format {text,json,yaml}]",
+      "       agentera state objective list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state objective get --id ID --format json",
+      "       agentera state objective create --input OBJECTIVE.yaml --format json",
+      "       agentera state objective update --id ID --input OBJECTIVE.yaml --format json",
+      "",
+      "Objective create publishes one independent entity; update replaces that entity through rollback-safe publication.",
+      "Bare objective queries infer an active objective only when exactly one exists.",
+      "",
+      "Discover writes: agentera state objective explain --format json",
     ].join("\n");
   }
   if (sub) {

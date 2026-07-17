@@ -118,7 +118,7 @@ tasks:
       - "3"
       - "19"
       - "20"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN objectives and experiments WHEN published or retrieved THEN UUID, composite, and numeric identities are replaced by bare project-wide IDs.
       - GIVEN experiment ownership WHEN migrated THEN every experiment resolves to one objective entity.

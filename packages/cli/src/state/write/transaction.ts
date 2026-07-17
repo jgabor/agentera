@@ -58,6 +58,7 @@ import { appendProgressEntity } from "../progressEntities.js";
 import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEntity } from "../decisionEntities.js";
 import { appendHealthEntity } from "../healthEntities.js";
 import { mutatePlanEntities } from "../planEntities.js";
+import { mutateObjectiveEntity, publishExperimentEntity } from "../objectiveExperimentEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
   if (!fs.existsSync(target)) return { doc: {}, bytes: "" };
@@ -430,6 +431,7 @@ export function executeStateWrite(
     ? detectStateModeBinding(req.projectRoot)
     : null;
   const planMode = req.artifact === "plan" ? detectStateModeBinding(req.projectRoot) : null;
+  const objectiveExperimentMode = req.artifact === "objective" || req.artifact === "experiments" ? detectStateModeBinding(req.projectRoot) : null;
   if (progressMode?.mode === "entities") {
     try {
       return appendProgressEntity(req, {
@@ -465,6 +467,15 @@ export function executeStateWrite(
       return mutatePlanEntities(req, { publicationContext: planMode.publicationContext });
     } finally {
       planMode.publicationContext.close();
+    }
+  }
+  if (objectiveExperimentMode?.mode === "entities") {
+    try {
+      return req.artifact === "objective"
+        ? mutateObjectiveEntity(req, { publicationContext: objectiveExperimentMode.publicationContext })
+        : publishExperimentEntity(req, { publicationContext: objectiveExperimentMode.publicationContext });
+    } finally {
+      objectiveExperimentMode.publicationContext.close();
     }
   }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
