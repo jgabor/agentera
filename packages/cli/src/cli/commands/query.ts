@@ -30,7 +30,7 @@ import {
 import { displayFields, queryTodo, StateArgs } from "./state/index.js";
 import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
-import { stateRetrievalCommands } from "../../state/retrievalAuthority.js";
+import { entityPublicRetrieval } from "../../state/retrievalAuthority.js";
 import { detectStateMode } from "../../state/stateMode.js";
 import { listProgressEntities } from "../../state/progressEntities.js";
 
@@ -86,7 +86,7 @@ function projectRelativeOrAbsolute(p: string): string {
 
 function artifactReadInterfaces(name: string, record: ArtifactRecord | null): JsonObject {
   const artifactId = record !== null ? record.artifactId : name;
-  const retrieval = stateRetrievalCommands() as Record<string, Record<string, string>>;
+  const retrieval = (entityPublicRetrieval().commands ?? {}) as Record<string, Record<string, string>>;
   const experimentList = retrieval.experiments.list
     .replace(" [--limit N] [--cursor TOKEN]", " --limit 20");
   const routineCommand = artifactId === "experiments"
@@ -163,7 +163,7 @@ function artifactLocationRecord(
     project_boundary_check: resolvedPath !== null ? "enforced" : "not_resolved",
   };
   return {
-    artifact_id: artifactId,
+    artifact: artifactId,
     name: artifactId,
     display_name: displayName,
     artifact_type: record !== null ? record.artifactType : meta.artifact_type ?? "unknown",

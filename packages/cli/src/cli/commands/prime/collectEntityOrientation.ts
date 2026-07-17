@@ -5,6 +5,7 @@ import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listPlanEntities, listPlanTaskEntities } from "../../../state/planEntities.js";
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -37,6 +38,25 @@ function complete(status: unknown): boolean {
   return ["complete", "completed", "closed", "done", "resolved", "retired"].includes(String(status ?? "").toLowerCase());
 }
 
+function selected(entries: JsonObject[], artifact: "plan" | "objective"): JsonObject | undefined {
+  if (entries.length < 2) return entries[0];
+  const ids = entries.map((entry) => String(entry.id)).sort().join(", ");
+  const noun = artifact === "plan" ? "open plans" : "active objectives";
+  const list = `agentera state ${artifact} list --format json`;
+  throw new StateRetrievalFailure({
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: "ambiguous",
+      artifact,
+      message: `multiple ${noun} require explicit selection: ${ids}`,
+      syntax: `agentera state ${artifact} get --id ID --format json`,
+      example: `agentera state ${artifact} get --id ${String(entries[0]?.id)} --format json`,
+      recovery: `Run ${list}, resolve the competing ${noun}, and retry prime.`,
+    },
+  }, 1);
+}
+
 export interface EntityOrientationProjection {
   plan: PlanSummary;
   docs: DocsSummary;
@@ -54,8 +74,9 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const progressList = listProgressEntities(projectRoot, 10, {}, undefined, { sourceRoot, format: "json" });
   const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json" });
   const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json" });
-  const planList = listPlanEntities(projectRoot, 20, undefined, { sourceRoot, format: "json" });
-  const objectiveList = listObjectiveEntities(projectRoot, 20, undefined, { sourceRoot, format: "json" });
+  const planList = listPlanEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"] });
+  const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"] });
+  const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, { sourceRoot, format: "json", statuses: ["closed"] });
   const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, {}, { sourceRoot, format: "json" });
   const docsList = listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json" });
 
@@ -67,8 +88,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const todoEntries = entries(todoList);
   const docsEntries = entries(docsList);
 
-  const openPlans = planEntries.filter((entry) => !complete(header(entry).status));
-  const selectedPlan = openPlans[0];
+  const selectedPlan = selected(planEntries, "plan");
   const taskEntries = (selectedPlan
     ? entries(listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json" }))
     : []).map((entry): JsonObject => ({ ...record(entry), id: entry.id, artifact: entry.artifact, provenance: entry.provenance }));
@@ -85,7 +105,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     total: taskEntries.length,
     complete_plan: taskEntries.length > 0 && taskEntries.every((entry) => complete(entry.status)),
     first_pending: firstPending ?? null,
-    diagnostics: openPlans.length > 1 ? [{ class: "multiple_open_plans", count: openPlans.length }] : [],
+    diagnostics: [],
   } : { exists: false, active: false, status: "missing", tasks: [], complete: 0, total: 0, complete_plan: false, first_pending: null };
 
   const latestProgress = progressEntries[0];
@@ -111,8 +131,8 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     grade: Object.values(grades).map(String).sort()[0] ?? "",
   } : { exists: false };
 
-  const activeObjectives = objectiveEntries.filter((entry) => !complete(header(entry).status));
-  const activeObjective = activeObjectives[0];
+  const activeObjective = selected(objectiveEntries, "objective");
+  const closedObjectiveCount = Number((closedObjectiveList.counts as JsonObject | undefined)?.total ?? 0);
   const objectiveRecord = record(activeObjective);
   const objective: ObjectiveSummary = activeObjective ? {
     exists: true,
@@ -123,8 +143,8 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     status: String(header(activeObjective).status ?? "open"),
     metric: String((objectiveRecord.metric as JsonObject | undefined)?.description ?? ""),
     experiments: entries(listExperimentEntities(projectRoot, String(activeObjective.id), 20, undefined, { sourceRoot, format: "json" })),
-    closed_count: objectiveEntries.filter((entry) => complete(header(entry).status)).length,
-  } : { exists: objectiveEntries.length > 0, active: false, closed_count: objectiveEntries.filter((entry) => complete(header(entry).status)).length };
+    closed_count: closedObjectiveCount,
+  } : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
 
   const todoItems = todoEntries.map((entry) => ({
     id: String(entry.id), artifact: String(entry.artifact),

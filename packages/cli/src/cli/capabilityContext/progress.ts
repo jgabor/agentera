@@ -69,7 +69,7 @@ export function retryState(selected: JsonObject | null = null, tasks: JsonObject
         : null;
   const source = {
     source_family: "plan",
-    command: "agentera state plan record-evaluation --task N --attempt-id ID --verdict {pass,fail}",
+    command: "agentera state plan record-evaluation --id ID --attempt-id ID --verdict {pass,fail}",
   };
   if (evaluation) {
     const attemptCount = Number(evaluation.attempt_count ?? 0);

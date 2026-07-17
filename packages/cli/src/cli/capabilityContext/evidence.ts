@@ -60,14 +60,14 @@ export function evidenceDocsState(docs: JsonObject): JsonObject {
 
 export function evidenceHealthState(health: JsonObject): JsonObject {
   const available = Boolean(health.exists);
-  const merged: JsonObject = { audit_number: health.number, ...health };
-  const nonEmptyFields = ["audit_number", "trajectory", "grade"].filter((f) => hasRecordedValue(merged[f]));
+  const nonEmptyFields = ["id", "artifact", "trajectory", "grade"].filter((f) => hasRecordedValue(health[f]));
   const auditDate = health.date ?? health.timestamp ?? null;
   const [currentState, currentStateCaveat] = currentStateStatus(auditDate, "Health");
   return {
     status: available ? "available" : "unavailable",
      source_provenance: sourceProvenance("health", STATE_FAMILY_LIST_COMMANDS.health),
-    audit_number: health.number ?? null,
+    id: health.id ?? null,
+    artifact: health.artifact ?? "health",
     date: auditDate,
     timestamp: auditDate,
     trajectory: health.trajectory ?? null,

@@ -389,7 +389,8 @@ describe("orientation: artifact summaries", () => {
     );
     const summary = healthSummary(schema("health", p));
     expect(summary.exists).toBe(true);
-    expect(summary.number).toBe(2);
+    expect(summary).not.toHaveProperty("number");
+    expect(summary.artifact).toBe("health");
     expect(summary.worst[0]).toBe("tests");
     expect(summary.degrading).toBe(true);
   });

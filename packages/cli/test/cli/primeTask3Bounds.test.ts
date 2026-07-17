@@ -361,7 +361,7 @@ describe("prime Task3 bounded source projections", () => {
     }
     for (const capability of CAPABILITY_NAMES) {
       const result = capture((out, err) => cmdPrime({ command: "prime", context: capability, format: "json" }, { out, err }));
-      expect(result.rc, capability).toBe(0);
+      expect(result.rc, `${capability}: ${result.err}`).toBe(0);
       outputs.push([`context ${capability}`, result.out]);
     }
 

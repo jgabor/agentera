@@ -162,12 +162,13 @@ function briefStatePresence(value: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): 
 }
 
 function briefPlan(plan: unknown): Record<string, unknown> {
-  // Keep the routing-essential summary consumers read (plan.exists/status/
-  // title/first_pending.name and completion counts) plus the nested
-  // source_contract.retrieval pointer. Drop task detail, the archive catalog,
+  // Keep canonical plan/task identity and the routing-essential summary consumers
+  // read plus the nested source_contract.retrieval pointer. Drop the archive catalog,
   // diagnostics, and lifecycle_state — each recovers via OMITTED_RICH_STATE.
   return pick(plan, [
     "exists",
+    "id",
+    "artifact",
     "active",
     "status",
     "title",
@@ -175,6 +176,7 @@ function briefPlan(plan: unknown): Record<string, unknown> {
     "total",
     "complete_plan",
     "first_pending",
+    "tasks",
     "task_count",
     "omitted_task_count",
     "source_contract",

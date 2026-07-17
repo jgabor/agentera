@@ -85,7 +85,6 @@ export interface HealthSummary {
   id?: JsonValue;
   artifact?: JsonValue;
   exists: boolean;
-  number?: string | number;
   date?: string | null;
   timestamp?: string | null;
   trajectory?: string;

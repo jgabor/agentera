@@ -99,10 +99,10 @@ explicit omissions, and exact detail commands. The runtime contract is
 
 ```bash
 agentera state plan list --format json
-agentera state plan get --plan PLAN_ID --format json
+agentera state plan get --id PLAN_ID --format json
 agentera state plan tasks list --limit 20 --format json
 agentera state experiments list --objective OBJECTIVE_ID --format json
-agentera state experiments get --objective OBJECTIVE_ID --number N --format json
+agentera state experiments get --objective OBJECTIVE_ID --id EXPERIMENT_ID --format json
 ```
 
 Plan list/get spans the active plan and immutable plan archives. Plan task

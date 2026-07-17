@@ -10,7 +10,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateEntityId, discoverEntities, publishEntity, replaceEntity, validateEntityState, type DiscoveredEntity } from "./entityStorage.js";
+import { allocateEntityId, publishEntity, replaceEntity, validateEntityState, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
@@ -56,7 +56,9 @@ function failure(kind: StateFailureClass, message: string, recovery: string, id?
 }
 function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
 function all(root: string, sourceRoot: string): DiscoveredEntity[] {
-  const discovered = discoverEntities(root, sourceRoot);
+  const discovered = validateEntityState(root, sourceRoot);
+  const graphIssue = discovered.issues.find((issue) => issue.artifact === ARTIFACT || issue.boundary === PLAN || issue.boundary === TASK);
+  if (graphIssue) throw failure(graphIssue.code === "duplicate_id" ? "ambiguous" : "corrupt", graphIssue.message, graphIssue.recovery, graphIssue.id);
   const relevant = discovered.entities.filter((entity) => entity.artifact === ARTIFACT || entity.boundary === PLAN || entity.boundary === TASK);
   const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record);
   if (bad) throw failure(bad.classification === "duplicate" ? "ambiguous" : "corrupt", `plan entity '${bad.relativePath}' is not canonical`, "Run agentera check validate state and resolve the reported plan ownership conflict.", bad.id ?? undefined);
@@ -242,7 +244,7 @@ function boundedList(root: string, sourceRoot: string, selected: DiscoveredEntit
   let result = response(); const bytes = (): number => serializedProjectionBytes(result, format === "text" ? "yaml" : format); while (bytes() > declared.maxUtf8Bytes && page.length) { page = page.slice(0, -1); trimmed = true; result = response(); } if (!page.length && selected.length > start) throw failure("unsupported_state", `one full plan entry cannot fit the ${declared.maxUtf8Bytes}-byte list budget`, "Use exact get by ID."); return result;
 }
 export function getPlanEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject { const entities = all(root, sourceRoot); const plan = selectedPlan(entities, id); return { schemaVersion: "agentera.stateGet.v1", command: "state plan get", status: "ok", entry: entry(root, plan), tasks: entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === id).sort((a, b) => a.id!.localeCompare(b.id!)).map((entity) => entry(root, entity)), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entities" } }; }
-export function listPlanEntities(root: string, limit?: number, cursor?: string, options: { sourceRoot?: string; format?: string } = {}): JsonObject { const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(root, sourceRoot); const plans = entities.filter((entity) => entity.boundary === PLAN).sort((a, b) => String(mapping(b.record?.header) ? b.record!.header.created ?? "" : "").localeCompare(String(mapping(a.record?.header) ? a.record!.header.created ?? "" : "")) || a.id!.localeCompare(b.id!)); return boundedList(root, sourceRoot, plans, entities, limit, cursor, ORDER, "state plan list", {}, options.format); }
+export function listPlanEntities(root: string, limit?: number, cursor?: string, options: { sourceRoot?: string; format?: string; statuses?: string[] } = {}): JsonObject { const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(root, sourceRoot); const statuses = options.statuses?.length ? new Set(options.statuses) : undefined; const plans = entities.filter((entity) => entity.boundary === PLAN && (!statuses || statuses.has(planStatus(entity)))).sort((a, b) => String(mapping(b.record?.header) ? b.record!.header.created ?? "" : "").localeCompare(String(mapping(a.record?.header) ? a.record!.header.created ?? "" : "")) || a.id!.localeCompare(b.id!)); return boundedList(root, sourceRoot, plans, entities, limit, cursor, ORDER, "state plan list", options.statuses ? { status: options.statuses } : {}, options.format); }
 export function getPlanTaskEntity(root: string, id: string, planId?: string, sourceRoot = resolveSourceRoot()): JsonObject { const entities = all(root, sourceRoot); const task = taskFor(entities, id, planId); return { schemaVersion: "agentera.stateGet.v1", command: "state plan tasks get", status: "ok", entry: entry(root, task), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entity" } }; }
 export function listPlanTaskEntities(root: string, planId?: string, limit?: number, cursor?: string, options: { sourceRoot?: string; format?: string } = {}): JsonObject { const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(root, sourceRoot); const plan = selectedPlan(entities, planId); const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id).sort((a, b) => a.id!.localeCompare(b.id!)); return boundedList(root, sourceRoot, tasks, entities, limit, cursor, TASK_ORDER, "state plan tasks list", { plan: plan.id! }, options.format); }
 

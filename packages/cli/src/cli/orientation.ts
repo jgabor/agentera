@@ -447,7 +447,7 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
   const tasks = asList(plan.tasks).filter((task) => task && typeof task === "object" && !Array.isArray(task));
   const boundedTasks = tasks.slice(0, 10).map((task) => {
     const item: JsonObject = {};
-    for (const key of ["number", "name", "title", "status", "depends_on", "acceptance_summary", "evidence_summary", "blocked_reasons", "evaluation_state"]) {
+    for (const key of ["id", "artifact", "name", "title", "status", "depends_on", "acceptance_summary", "evidence_summary", "blocked_reasons", "evaluation_state"]) {
       if (!(key in task)) continue;
       if (key === "acceptance_summary" || key === "evidence_summary") {
         const summary = task[key];
@@ -472,6 +472,8 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
   const archived = asList(plan.archived_plans).slice(0, 10);
   const diagnostics = asList(plan.diagnostics).slice(0, 10);
   return {
+    id: plan.id ?? null,
+    artifact: plan.artifact ?? "plan",
     exists: Boolean(plan.exists),
     active: Boolean(plan.active),
     status: plan.status,
@@ -480,7 +482,7 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     total: plan.total ?? tasks.length,
     complete_plan: Boolean(plan.complete_plan),
     first_pending: plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
-      ? { number: plan.first_pending.number ?? null, name: plan.first_pending.name ?? plan.first_pending.title ?? "", status: plan.first_pending.status ?? "pending" }
+      ? { id: plan.first_pending.id ?? null, artifact: plan.first_pending.artifact ?? "plan", name: plan.first_pending.name ?? plan.first_pending.title ?? "", status: plan.first_pending.status ?? "pending" }
       : null,
     tasks: boundedTasks,
     task_count: tasks.length,
@@ -577,11 +579,11 @@ export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = pr
   const trajectory = String(latest.trajectory ?? "");
   const auditDate = healthAuditDate(latest);
   const dateStr = auditDate !== null ? isoFromUtc(auditDate) : null;
-  const latestNumber = typeof latest.number === "string" || typeof latest.number === "number" ? latest.number : "?";
   const latestTimestamp = typeof latest.timestamp === "string" ? latest.timestamp : null;
   const summary: HealthSummary = {
     exists: true,
-    number: latestNumber,
+    id: latest.id ?? null,
+    artifact: "health",
     date: dateStr,
     timestamp: dateStr ?? latestTimestamp,
     trajectory,
@@ -825,7 +827,7 @@ export function selectStatusReadiness(
   }
   if (health.stale && !health.degrading) {
     candidates.push({
-      object: `HEALTH: Audit ${health.number ?? "?"} stale`,
+      object: `HEALTH: audit ${String(health.id ?? "unknown")} stale`,
       capability: "audit",
       reason: "stale health audit",
       phase: "audit",

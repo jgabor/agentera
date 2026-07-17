@@ -3,6 +3,16 @@ import { cmdCapability } from "../commands/capability.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
+import { StateRetrievalFailure } from "../../state/directRetrieval.js";
+import { emitStructured } from "../structured.js";
+
+function emitStateFailure(error: StateRetrievalFailure, format: string | undefined, io: Io): number {
+  const output = io.out ?? ((text: string) => process.stdout.write(text));
+  const diagnostic = io.err ?? ((text: string) => process.stderr.write(text));
+  if (format === "json" || format === "yaml") emitStructured(error.body, format, output);
+  else diagnostic(`Error: ${error.body.error.message}\nRecovery: ${error.body.error.recovery}\n`);
+  return error.exitCode;
+}
 
 export function runCapability(command: string, argv: string[], io: Io, prog: string): number {
   let format = "text";
@@ -42,6 +52,7 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
   try {
     return cmdCapability(command, { format }, io);
   } catch (exc) {
+    if (exc instanceof StateRetrievalFailure) return emitStateFailure(exc, format, io);
     return emitInvalidInput(io, {
       format: asEnvelopeFormat(format),
       body: { class: "unsupported_target", message: (exc as Error).message },
@@ -86,6 +97,7 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
   try {
     return cmdPrime(args, io);
   } catch (exc) {
+    if (exc instanceof StateRetrievalFailure) return emitStateFailure(exc, args.format, io);
     return emitInvalidInput(io, {
       format: asEnvelopeFormat(args.format),
       body: { class: "unsupported_target", message: (exc as Error).message },

@@ -20,6 +20,9 @@ import type { OrientationState } from "../contracts/orientationState.js";
 
 export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
+  const tasks = asList(plan.tasks)
+    .filter((task): task is JsonObject => Boolean(task) && typeof task === "object" && !Array.isArray(task))
+    .map(taskRef);
   return {
     exists: Boolean(plan.exists),
     id: plan.id ?? null,
@@ -28,6 +31,7 @@ export function slimPlanState(plan: JsonObject): JsonObject {
     title: plan.title ?? null,
     complete: plan.complete ?? null,
     total: plan.total ?? null,
+    tasks,
     first_pending: firstPending && typeof firstPending === "object" && !Array.isArray(firstPending) ? taskRef(firstPending) : null,
     diagnostics: asList(plan.diagnostics),
     invalid_path: plan.invalid_path ?? null,
@@ -225,6 +229,7 @@ export function slimCapabilityContext(
     };
   const contextPayload: JsonObject = { capability, schema_error: context.schema_error ?? null };
   Object.assign(contextPayload, genericSlimStartupContext(capability, context, plan, docs, progress, health, todoItems, profile));
+  contextPayload.plan = slimPlanState(plan);
   contextPayload.history = slimHistoryState(history);
   const firstRead = context.first_invocation_read;
   if (firstRead !== null && firstRead !== undefined) contextPayload.first_invocation_read = firstRead;

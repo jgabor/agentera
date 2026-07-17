@@ -332,7 +332,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     const worst = health.worst;
     const worstText = worst ? `${worst[0]}:${worst[1]}` : "none";
     out(
-      `health: audit=${health.number} | grade=${health.grade || "unknown"} | ` +
+      `health: id=${health.id ?? "unknown"} | artifact=${health.artifact ?? "health"} | grade=${health.grade || "unknown"} | ` +
         `trajectory=${health.trajectory || "unknown"} | worst=${worstText}\n`,
     );
   }

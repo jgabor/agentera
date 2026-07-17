@@ -190,12 +190,12 @@ export function buildOrientationAttention(state: OrientationState): string[] {
     );
   }
   if (health.stale) {
-    const auditNumber = health.number ?? "?";
+    const auditId = health.id ?? "unknown";
     const daysSince = health.days_since_audit ?? "?";
     const thresholdDays = health.stale_threshold_days ?? "?";
     const thresholdCycles = health.stale_threshold_cycles ?? "?";
     let attentionText =
-      `normal: audit stale (${daysSince} days since Audit ${auditNumber}; ` +
+      `normal: audit stale (${daysSince} days since health audit ${auditId}; ` +
       `threshold days=${thresholdDays}, cycles=${thresholdCycles}`;
     const cyclesSince = health.cycles_since_audit;
     if (cyclesSince !== null && cyclesSince !== undefined) attentionText += `; ${cyclesSince} cycles since audit`;

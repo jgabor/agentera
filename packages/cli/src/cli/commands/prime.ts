@@ -79,6 +79,8 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       delete context.first_invocation_read;
       delete context.history;
       context.status_context = buildStatusContextState(state, command);
+      // status_context already carries the canonical bounded plan projection.
+      delete context.plan;
     }
     return emitPrime(command, payload, format, args.fields, out, err, {
       maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
