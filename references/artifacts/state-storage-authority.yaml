@@ -481,9 +481,10 @@ entity_migration:
     filter: complete_declared_inventory
     source_fingerprint: >-
       SHA-256 over canonical JSON containing every declared source path's
-      project-relative name, presence, byte length, and byte SHA-256. Missing
-      declared roots are represented explicitly. No mtime, Git value, cache, or
-      runtime-local value participates.
+      project-relative name, presence, byte length, byte SHA-256, permission
+      mode, regular-file type, device, and inode from one verified open
+      descriptor. Missing declared roots are represented explicitly with null
+      identity. No mtime, Git value, or cache participates.
     project_root: >-
       The selected root must exist, be a directory, and resolve without a
       symbolic-link root or symbolic-link traversal. Failure is structured and

@@ -9,11 +9,11 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
 import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
-import { assertRealpathBoundary, loadArtifactRecord, loadDocsPathOverrides, resolveArtifactPath } from "../registries/artifactRegistry.js";
+import { assertRealpathBoundary, docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
-import { validateRealProjectRoot } from "./projectRoot.js";
+import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 import {
   projectPathIsStable as migrationPathIsStable,
@@ -65,6 +65,9 @@ export interface DurableEntityMigrationSource {
   size: number;
   sha256: string | null;
   mode: number | null;
+  dev: string | null;
+  ino: string | null;
+  type: "file" | null;
   bytes_base64: string | null;
 }
 
@@ -127,7 +130,7 @@ interface Observation {
 }
 
 type SourceFile =
-  | { relative: string; bytes: Buffer; kind: "file" }
+  | { relative: string; bytes: Buffer; kind: "file"; dev: bigint; ino: bigint; type: "file"; mode: number }
   | { relative: string; bytes: null; kind: "missing" | "unsafe" };
 
 const MAX_OUTPUT_BYTES = 32_768;
@@ -157,15 +160,16 @@ function relative(root: string, target: string): string {
 }
 
 /** Migration-only source seam: pin one project file to a verified descriptor. */
-function readMigrationSource(root: string, relativePath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile {
+function readMigrationSource(root: string | ValidatedProjectRoot, relativePath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile {
   return { relative: relativePath, ...readProjectFileSnapshot(root, relativePath, descriptorPathResolver) };
 }
 
-function directoryFiles(root: string, relativeRoot: string, accept: (relativePath: string) => boolean, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
+function directoryFiles(root: string, validatedRoot: ValidatedProjectRoot, relativeRoot: string, accept: (relativePath: string) => boolean, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const absoluteRoot = path.join(root, relativeRoot);
   type Enumeration = { files: SourceFile[]; changed: string | null };
   const inventoryPath = (directory: string): string => `${relative(root, directory).replace(/\/$/, "")}/`;
   const visit = (directory: string, isRoot = false): Enumeration => {
+    assertValidatedProjectRoot(validatedRoot);
     const directorySnapshot = snapshotMigrationPath(root, relative(root, directory), "directory");
     if (directorySnapshot.kind !== "stable") {
       if (directorySnapshot.kind === "missing") return isRoot ? { files: [], changed: null } : { files: [], changed: inventoryPath(directory) };
@@ -186,7 +190,7 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
       const absolute = path.join(directory, entry.name);
       const candidate = relative(root, absolute);
       if (accept(candidate)) {
-        files.push(readMigrationSource(root, candidate, descriptorPathResolver));
+        files.push(readMigrationSource(validatedRoot, candidate, descriptorPathResolver));
       } else if (entry.isSymbolicLink()) {
         throw new Error(`inventory root '${absolute}' is a symbolic link; replace it with a real directory or file inside project '${root}' and retry`);
       } else if (entry.isDirectory()) {
@@ -195,6 +199,7 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
         files.push(...nested.files);
       }
     }
+    assertValidatedProjectRoot(validatedRoot);
     if (!migrationPathIsStable(directorySnapshot)) return { files: [], changed: inventoryPath(directory) };
     return { files, changed: null };
   };
@@ -202,18 +207,18 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
   return enumeration.changed ? [{ relative: enumeration.changed, bytes: null, kind: "unsafe" }] : enumeration.files;
 }
 
-function collectSources(root: string, todoPath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
+function collectSources(root: string, validatedRoot: ValidatedProjectRoot, todoPath: string, docsSnapshot: SourceFile, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const exact = [
     todoPath, "CHANGELOG.md", "DESIGN.md", ".agentera/vision.yaml", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
     ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml",
-  ].map((candidate) => readMigrationSource(root, candidate, descriptorPathResolver));
-  const archives = directoryFiles(root, ".agentera/archive", (candidate) =>
+  ].map((candidate) => candidate === docsSnapshot.relative ? docsSnapshot : readMigrationSource(validatedRoot, candidate, descriptorPathResolver));
+  const archives = directoryFiles(root, validatedRoot, ".agentera/archive", (candidate) =>
     /^\.agentera\/archive\/(progress|decisions|health)\/.+/.test(candidate)
       || PLAN_ARCHIVE_SOURCE.test(candidate),
     descriptorPathResolver,
   );
   const objectives = [".agentera/optimize", ".agentera/optimera"].flatMap((directory) =>
-    directoryFiles(root, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate), descriptorPathResolver),
+    directoryFiles(root, validatedRoot, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate), descriptorPathResolver),
   );
   const collected = [...exact, ...archives, ...objectives];
   const missingRoots = [".agentera/archive/", ".agentera/optimize/", ".agentera/optimera/"]
@@ -249,6 +254,10 @@ function sourceFingerprint(files: SourceFile[]): string {
     presence: file.kind,
     size: file.bytes?.byteLength ?? 0,
     sha256: file.bytes ? hash(file.bytes) : null,
+    mode: file.kind === "file" ? file.mode : null,
+    dev: file.kind === "file" ? String(file.dev) : null,
+    ino: file.kind === "file" ? String(file.ino) : null,
+    type: file.kind === "file" ? file.type : null,
   }))));
 }
 
@@ -638,16 +647,16 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
 
 function migrationInventory(projectRoot: string, sourceRoot: string, resolveDescriptorPath: DescriptorPathResolver): DurableEntityMigrationPlan {
   const project = path.resolve(projectRoot);
-  validateRealProjectRoot(project);
+  const validatedProject = validateRealProjectRoot(project);
   const authority = authorityBinding(sourceRoot);
   const todoRecord = loadArtifactRecord("todo");
   if (!todoRecord) throw new Error("artifact registry is missing the canonical 'todo' record");
-  const docsSnapshot = readMigrationSource(project, ".agentera/docs.yaml", resolveDescriptorPath);
-  const overrides = docsSnapshot.kind === "unsafe" ? {} : loadDocsPathOverrides(project);
-  const todoAbsolute = todoRecord.displayName in overrides ? resolveArtifactPath(todoRecord, project) : path.join(project, todoRecord.defaultPath);
+  const docsSnapshot = { relative: ".agentera/docs.yaml", ...readProjectFileSnapshot(validatedProject, ".agentera/docs.yaml", resolveDescriptorPath) } as SourceFile;
+  const overrides = docsSnapshot.kind === "file" ? docsPathOverridesFromBytes(docsSnapshot.bytes) : {};
+  const todoAbsolute = todoRecord.displayName in overrides ? resolveArtifactPath(todoRecord, project, { docsPathOverrides: overrides }) : path.join(project, todoRecord.defaultPath);
   const todoPath = relative(project, todoAbsolute);
   if (todoPath !== todoRecord.defaultPath) assertRealpathBoundary(project, todoAbsolute, todoRecord.artifactId);
-  const files = collectSources(project, todoPath, resolveDescriptorPath);
+  const files = collectSources(project, validatedProject, todoPath, docsSnapshot, resolveDescriptorPath);
   const fingerprint = sourceFingerprint(files);
   const observations: Observation[] = [];
   inventoryFailureObservations(files, observations);
@@ -680,8 +689,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_singletons: preserved, counts, diagnostics };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const sources = files.map((file): DurableEntityMigrationSource => {
-    const stat = file.kind === "file" ? fs.lstatSync(path.join(project, file.relative)) : null;
-    return { path: file.relative, presence: file.kind === "file" ? "file" : "missing", size: file.bytes?.byteLength ?? 0, sha256: file.bytes ? hash(file.bytes) : null, mode: stat ? stat.mode & 0o7777 : null, bytes_base64: file.bytes?.toString("base64") ?? null };
+    return { path: file.relative, presence: file.kind === "file" ? "file" : "missing", size: file.bytes?.byteLength ?? 0, sha256: file.bytes ? hash(file.bytes) : null, mode: file.kind === "file" ? file.mode : null, dev: file.kind === "file" ? String(file.dev) : null, ino: file.kind === "file" ? String(file.ino) : null, type: file.kind === "file" ? file.type : null, bytes_base64: file.bytes?.toString("base64") ?? null };
   });
   return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, sources, counts, diagnostics };
 }

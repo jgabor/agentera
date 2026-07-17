@@ -19,7 +19,7 @@ export type ProjectPathSnapshot =
   | { kind: "unsafe"; absolute: string; reason: "symlink" | "type" | "unreadable" };
 
 export type ProjectFileSnapshot =
-  | { kind: "file"; bytes: Buffer }
+  | { kind: "file"; bytes: Buffer; dev: bigint; ino: bigint; type: "file"; mode: number }
   | { kind: "missing"; bytes: null; reason: "missing"; absolute: string }
   | { kind: "unsafe"; bytes: null; reason: "symlink" | "type" | "unreadable" | "changed" };
 
@@ -156,7 +156,14 @@ export function readProjectFileSnapshot(
       return { bytes: null, kind: "unsafe", reason: "changed" };
     }
     verifyRoot();
-    return { bytes, kind: "file" };
+    return {
+      bytes,
+      kind: "file",
+      dev: after.dev,
+      ino: after.ino,
+      type: "file",
+      mode: Number(after.mode & 0o7777n),
+    };
   } catch {
     return { bytes: null, kind: "unsafe", reason: "changed" };
   } finally {

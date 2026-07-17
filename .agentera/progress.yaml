@@ -1,4 +1,31 @@
 cycles:
+  - number: 893
+    timestamp: 2026-07-17 13:42
+    type: fix
+    phase: build
+    what: Corrected Cycle 892's immutable count evidence and closed Task 10 rollback
+      and source-binding audit defects.
+    inspiration: Retry 1/2 Task 10 audit findings A-E and Decision 94 state-storage
+      authority.
+    discovered: The existing exact removal primitive preserved successors but hid
+      identity mismatch from rollback, allowing journal advancement.
+    verified: "pnpm -C packages/cli exec vp test run
+      test/state/entityMigrationApply.test.ts: 1 file, 18 tests; expanded
+      entityMigrationApply, entityMigrationPreview, migrationAuthority, and
+      entityPublicationContext command: 4 files, 134 tests; pnpm -C packages/cli
+      test: 212 files, 2556 tests. Typecheck, build, check validate state, build
+      capability, capability contract, compact, migration help, and schema
+      passed."
+    next: Task 10 remains complete. Task 11 remains pending and requires a new
+      cycle; do not run live migration apply.
+    context:
+      intent: Make durable entity migration refuse source identity drift and rollback
+        races while converging safely across intra-loop crashes.
+      constraints: Only Task 10 audit defects; no Task 11, broad framework, live
+        apply, manual YAML edit, vision change, push, publish, or tag.
+      unknowns: None within the corrected Task 10 audit scope.
+      scope: Exact publication removal, migration preview/apply source identity and
+        recovery, focused tests, migration help, and state-storage authority.
   - number: 892
     timestamp: 2026-07-17 13:00
     type: feat
@@ -198,29 +225,6 @@ cycles:
       unknowns: None within the corrected public health append path.
       scope: One health entity input selection fix, realistic public CLI regressions,
         and exact cycle evidence.
-  - number: 883
-    timestamp: 2026-07-17 06:01
-    type: feat
-    phase: build
-    what: Cut health audit storage, writes, bounded reads, and repair diagnostics
-      over to canonical immutable entities in entity mode.
-    inspiration: PLAN Task 6 and Decision 94 entity authority.
-    verified: "Focused health, entity-authority, shared-publication-context, and
-      legacy-writer tests passed: 4 files, 93 tests; final focused health tests
-      passed: 1 file, 9 tests. Full CLI suite passed: 208 files, 2498 tests.
-      Typecheck and build passed. State validation, audit capability validation,
-      capability-contract validation, and compact check all passed; compact
-      reported 0 errors, 0 over-limit, 0 protected overflow, and 0 changes."
-    next: Task 7 remains pending; do not begin plans/tasks entity mode in this cycle.
-    context:
-      intent: Complete Agentera PLAN Task 6 without migrating legacy state or changing
-        other entity families.
-      constraints: Health family only; no migration, dual write, apply, global
-        consumer cutover, TODO, docs family, objectives, publishing, pushing, or
-        unrelated repair.
-      scope: Health entity authority, append/get/list/cursor/repair routing, shared
-        publication-context coverage, Git merge fixtures, and proportional
-        tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -290,6 +294,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 883 (2026-07-17): Cut health audit storage, writes, bounded
+      reads, and repair diagnostics over to canonical immutable entities..."
   - summary: "Cycle 882 (2026-07-17): Hardened decision cursor snapshots, canonical
       revision validation, and satisfaction replacement rollback."
   - summary: "Cycle 881 (2026-07-17): Cut decisions over to canonical entity authority"
@@ -387,16 +393,18 @@ archive:
   - summary: "Cycle 844 (2026-07-16): Close decision amend review gaps: dead-Set
       removal, byte-equality and corrupt-revision degradation coverage,
       transaction module headroom..."
-  - summary: "Cycle 843 (2026-07-16): Enforced legacy coexistence across decision
-      mutations so untouched inherited unsupported confidence labels (e.g. high)
-      no..."
 omitted: true
-omitted_count: 128
+omitted_count: 129
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

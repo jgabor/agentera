@@ -48,7 +48,7 @@ export function entityMigrateHelp(): string {
     "  --apply --force            Apply one approved blocker-free preview without prompting",
     "  --resume ID --force        Resume one explicit durable migration journal",
     "  --rollback ID --force      Guarded rollback of one explicit migration journal",
-    "  --source-fingerprint SHA256  Approved project-source fingerprint",
+    "  --source-fingerprint SHA256  Approved source bytes, mode, type, and file-identity fingerprint",
     "  --preview-digest SHA256      Approved inventory and migration-authority digest",
     "  --format {text,json,yaml}    Output format (default text)",
   ].join("\n");

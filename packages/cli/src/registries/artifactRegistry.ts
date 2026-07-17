@@ -333,14 +333,41 @@ export function loadArtifactRecord(
   return buildRequiredRecord(required.scope, required.identity, meta);
 }
 
+export function docsPathOverridesFromBytes(bytes: string | Buffer, strict = false): Record<string, string> {
+  let data: Record<string, unknown>;
+  try {
+    data = loadYamlMapping(bytes.toString());
+  } catch (exc) {
+    if (strict) throw new Error(`failed to load docs path overrides: ${(exc as Error).message}`);
+    process.stderr.write(`warning: failed to load docs path overrides: ${(exc as Error).message}\n`);
+    return {};
+  }
+  const mapping = data.mapping;
+  if (!Array.isArray(mapping)) {
+    if (strict && mapping !== undefined) throw new Error("failed to load docs path overrides: mapping must be a list");
+    return {};
+  }
+  const overrides: Record<string, string> = {};
+  for (const entry of mapping) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      if (strict) throw new Error("failed to load docs path overrides: every mapping entry must be a mapping");
+      continue;
+    }
+    const e = entry as Record<string, unknown>;
+    if (typeof e.artifact === "string" && typeof e.path === "string") overrides[e.artifact] = e.path;
+    else if (strict) throw new Error("failed to load docs path overrides: every mapping entry requires string artifact and path fields");
+  }
+  return overrides;
+}
+
 export function loadDocsPathOverrides(projectRoot: string, strict = false): Record<string, string> {
   const docsPath = path.join(projectRoot, ".agentera", "docs.yaml");
   if (!fs.existsSync(docsPath)) {
     return {};
   }
-  let data: Record<string, unknown>;
+  let bytes: Buffer;
   try {
-    data = loadYamlMapping(fs.readFileSync(docsPath, "utf8"));
+    bytes = fs.readFileSync(docsPath);
   } catch (exc) {
     if (strict) throw new Error(`failed to load docs path overrides: ${(exc as Error).message}`);
     process.stderr.write(
@@ -348,38 +375,13 @@ export function loadDocsPathOverrides(projectRoot: string, strict = false): Reco
     );
     return {};
   }
-  const mapping = data.mapping;
-  if (!Array.isArray(mapping)) {
-    if (strict && mapping !== undefined)
-      throw new Error("failed to load docs path overrides: mapping must be a list");
-    return {};
-  }
-  const overrides: Record<string, string> = {};
-  for (const entry of mapping) {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      if (strict)
-        throw new Error(
-          "failed to load docs path overrides: every mapping entry must be a mapping",
-        );
-      continue;
-    }
-    const e = entry as Record<string, unknown>;
-    const artifact = e.artifact;
-    const p = e.path;
-    if (typeof artifact === "string" && typeof p === "string") {
-      overrides[artifact] = p;
-    } else if (strict) {
-      throw new Error(
-        "failed to load docs path overrides: every mapping entry requires string artifact and path fields",
-      );
-    }
-  }
-  return overrides;
+  return docsPathOverridesFromBytes(bytes, strict);
 }
 
 export interface ResolveArtifactPathOptions {
   activeObjectiveName?: string | null;
   strictWrite?: boolean;
+  docsPathOverrides?: Readonly<Record<string, string>>;
 }
 
 function nearestExistingAncestor(p: string): string {
@@ -417,7 +419,7 @@ export function resolveArtifactPath(
       : { activeObjectiveName: activeObjectiveNameOrOptions };
   const activeObjectiveName = options.activeObjectiveName ?? null;
   let artifactPath = record.defaultPath;
-  const overrides = loadDocsPathOverrides(projectRoot, options.strictWrite === true);
+  const overrides = options.docsPathOverrides ?? loadDocsPathOverrides(projectRoot, options.strictWrite === true);
   if (record.docsYamlCanOverridePath && record.displayName in overrides) {
     artifactPath = overrides[record.displayName];
   }

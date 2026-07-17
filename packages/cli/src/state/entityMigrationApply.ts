@@ -8,6 +8,7 @@ import { EntityPublicationContext, type PublishedTargetIdentity } from "./entity
 import { canonicalEntityRecordViolations, discoverEntities, publishEntityUnderLock, validateEntityState } from "./entityStorage.js";
 import { planEntityMigration, type DurableEntityMigrationEntry, type DurableEntityMigrationPlan } from "./entityMigrationPreview.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
+import { readProjectFileSnapshot } from "./safeProjectFile.js";
 import { acquireWriterLock } from "./write/lock.js";
 
 const ROOT = ".agentera/migrations/entities";
@@ -109,7 +110,7 @@ function readRegular(file: string, label: string): Buffer {
   return fs.readFileSync(file);
 }
 function manifestBytes(plan: DurableEntityMigrationPlan, id: string): string {
-  return dumpYamlMapping({ schemaVersion: "agentera.entityMigrationManifest.v1", migration_id: id, project: plan.project, source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest, authority_schema_version: plan.authority_schema_version, authority_sha256: plan.authority_sha256, entries: plan.entries, preserved_singletons: plan.preserved_singletons, counts: plan.counts });
+  return dumpYamlMapping({ schemaVersion: "agentera.entityMigrationManifest.v1", migration_id: id, project: plan.project, source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest, authority_schema_version: plan.authority_schema_version, authority_sha256: plan.authority_sha256, sources: plan.sources, entries: plan.entries, preserved_singletons: plan.preserved_singletons, counts: plan.counts });
 }
 function snapshotBytes(plan: DurableEntityMigrationPlan, id: string): string {
   return dumpYamlMapping({ schemaVersion: "agentera.entityMigrationSnapshot.v1", migration_id: id, project: plan.project, sources: plan.sources });
@@ -129,7 +130,7 @@ function writeJournal(project: string, journal: Journal): Buffer {
   withMigrationContext(project, journal.migration_id, (context) => context.replaceExisting(relativeJournal, current.toString("utf8"), bytes));
   return Buffer.from(bytes);
 }
-function fault(phase: Phase): void { if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === phase) process.exit(86); }
+function fault(point: string): void { if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === point) process.exit(86); }
 
 function assertPlanReady(plan: DurableEntityMigrationPlan, sourceRoot?: string): void {
   if (plan.counts.blockers > 0) throw new EntityMigrationOperationError("inventory_blocked", `entity migration inventory has ${plan.counts.blockers} blocker(s)`, `Repair every preview diagnostic, then rerun agentera state migrate entities --project '${plan.project}' --dry-run --format json; no migration journal was created.`);
@@ -174,12 +175,16 @@ function loadEvidence(project: string, journal: Journal): DurableEntityMigration
   const snapshot = readRegular(path.join(root, "snapshot.yaml"), "migration snapshot");
   if (hash(manifest) !== journal.manifest_sha256 || hash(snapshot) !== journal.snapshot_sha256) throw new EntityMigrationOperationError("evidence_changed", `durable evidence for migration '${journal.migration_id}' changed`, "Retain all evidence and restore the immutable manifest and snapshot before retrying.");
   const document = loadYamlMapping(manifest.toString("utf8"));
-  if (document.migration_id !== journal.migration_id || document.project !== project || document.source_fingerprint !== journal.source_fingerprint || document.preview_digest !== journal.preview_digest || !Array.isArray(document.entries)) throw new EntityMigrationOperationError("evidence_invalid", `durable manifest for migration '${journal.migration_id}' is invalid`, "Retain the evidence and repair it from the approved preview before retrying.");
+  const snapshotDocument = loadYamlMapping(snapshot.toString("utf8"));
+  if (document.migration_id !== journal.migration_id || document.project !== project || document.source_fingerprint !== journal.source_fingerprint || document.preview_digest !== journal.preview_digest || !Array.isArray(document.entries) || !Array.isArray(document.sources)) throw new EntityMigrationOperationError("evidence_invalid", `durable manifest for migration '${journal.migration_id}' is invalid`, "Retain the evidence and repair it from the approved preview before retrying.");
+  if (snapshotDocument.migration_id !== journal.migration_id || snapshotDocument.project !== project || !Array.isArray(snapshotDocument.sources) || canonicalRecordJson(snapshotDocument.sources) !== canonicalRecordJson(document.sources)) throw new EntityMigrationOperationError("evidence_invalid", `durable snapshot for migration '${journal.migration_id}' is invalid`, "Retain the evidence and restore the immutable manifest and snapshot before retrying.");
   return document.entries as unknown as DurableEntityMigrationEntry[];
 }
 function assertCurrentSource(project: string, sourceRoot: string, journal: Journal): void {
   const current = planEntityMigration(project, sourceRoot);
-  if (current.source_fingerprint !== journal.source_fingerprint || current.preview_digest !== journal.preview_digest) throw new EntityMigrationOperationError("source_changed", `legacy source changed after migration '${journal.migration_id}' was prepared`, `Restore the recovery snapshot or roll back safely with agentera state migrate entities --project '${project}' --rollback ${journal.migration_id} --force --format json.`);
+  const snapshot = loadYamlMapping(readRegular(path.join(operationRoot(project, journal.migration_id), "snapshot.yaml"), "migration snapshot").toString("utf8"));
+  if (snapshot.migration_id !== journal.migration_id || snapshot.project !== project || !Array.isArray(snapshot.sources)) throw new EntityMigrationOperationError("evidence_invalid", `durable snapshot for migration '${journal.migration_id}' is invalid`, "Retain the evidence and restore the immutable snapshot before retrying.");
+  if (current.source_fingerprint !== journal.source_fingerprint || current.preview_digest !== journal.preview_digest || canonicalRecordJson(current.sources) !== canonicalRecordJson(snapshot.sources)) throw new EntityMigrationOperationError("source_changed", `legacy source changed after migration '${journal.migration_id}' was prepared`, `Restore the recovery snapshot or roll back safely with agentera state migrate entities --project '${project}' --rollback ${journal.migration_id} --force --format json.`);
 }
 function withMigrationContext<T>(project: string, id: string, run: (context: EntityPublicationContext) => T): T {
   const relativeManifest = `${ROOT}/${id}/manifest.yaml`; const bytes = readRegular(path.join(project, relativeManifest), "migration manifest");
@@ -203,6 +208,7 @@ function advance(project: string, sourceRoot: string, journal: Journal, operatio
         if (!target) throw new Error(`manifest entry '${entry.source_identity}' has no canonical target`);
         const result = publishEntityUnderLock({ projectRoot: project, sourceRoot, publicationContext: context, artifact: entry.artifact!, boundary: entry.boundary!, id: target.id, record: entry.record });
         const value = result.publishedIdentity ?? publishedIdentity(result.path); journal.entities[target.path] = identity(value);
+        fault("publish_entity");
       }
     });
     journal.phase = "publish_entities"; writeJournal(project, journal); fault("publish_entities");
@@ -210,7 +216,7 @@ function advance(project: string, sourceRoot: string, journal: Journal, operatio
   if (journal.phase === "publish_entities") { verifyManifestGraph(project, sourceRoot, entries); journal.phase = "validate_graph"; writeJournal(project, journal); fault("validate_graph"); }
   if (journal.phase === "validate_graph") {
     const markerBytes = dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities", migration_id: journal.migration_id, source_fingerprint: journal.source_fingerprint, preview_digest: journal.preview_digest });
-    withMigrationContext(project, journal.migration_id, (context) => { const value = context.publishImmutable(MARKER, markerBytes) ?? publishedIdentity(path.join(project, MARKER)); journal.marker = identity(value); });
+    withMigrationContext(project, journal.migration_id, (context) => { const value = context.publishImmutable(MARKER, markerBytes) ?? publishedIdentity(path.join(project, MARKER)); journal.marker = identity(value); fault("publish_marker"); });
     journal.phase = "cutover"; writeJournal(project, journal); fault("cutover");
   }
   if (journal.phase === "cutover") { verifyManifestGraph(project, sourceRoot, entries); journal.phase = "cutover_complete"; writeJournal(project, journal); fault("cutover_complete"); }
@@ -248,10 +254,9 @@ function assertSnapshotUnchanged(project: string, journal: Journal): void {
   const snapshot = loadYamlMapping(readRegular(path.join(operationRoot(project, journal.migration_id), "snapshot.yaml"), "migration snapshot").toString("utf8"));
   if (!Array.isArray(snapshot.sources)) throw new Error("migration snapshot has no source inventory");
   for (const source of snapshot.sources as Array<Record<string, unknown>>) {
-    const file = path.join(project, String(source.path)); const present = fs.existsSync(file);
-    if (source.presence === "missing") { if (present) throw new EntityMigrationOperationError("post_cutover_write", `legacy path '${source.path}' was created after cutover`, "Retain the journal, snapshot, marker, and entities; rollback refused before mutation."); continue; }
-    if (!present) throw new EntityMigrationOperationError("post_cutover_write", `legacy path '${source.path}' disappeared after cutover`, "Retain all recovery evidence; rollback refused before mutation.");
-    const stat = fs.lstatSync(file); if (!stat.isFile() || stat.isSymbolicLink() || hash(fs.readFileSync(file)) !== source.sha256 || (stat.mode & 0o7777) !== source.mode) throw new EntityMigrationOperationError("post_cutover_write", `legacy path '${source.path}' changed after cutover`, "Retain the journal, snapshot, marker, and entities; rollback refused before mutation.");
+    const observed = readProjectFileSnapshot(validateRealProjectRoot(project), String(source.path));
+    if (source.presence === "missing") { if (observed.kind !== "missing") throw new EntityMigrationOperationError("post_cutover_write", `legacy path '${source.path}' was created after cutover`, "Retain the journal, snapshot, marker, and entities; rollback refused before mutation."); continue; }
+    if (observed.kind !== "file" || hash(observed.bytes) !== source.sha256 || observed.mode !== source.mode || String(observed.dev) !== source.dev || String(observed.ino) !== source.ino || observed.type !== source.type) throw new EntityMigrationOperationError("post_cutover_write", `legacy path '${source.path}' changed after cutover`, "Retain the journal, snapshot, marker, and entities; rollback refused before mutation.");
   }
 }
 function assertRollbackOwnership(project: string, sourceRoot: string, journal: Journal, entries: DurableEntityMigrationEntry[]): void {
@@ -282,11 +287,17 @@ export function rollbackEntityMigration(projectRoot: string, sourceRoot: string,
     }
     if (journal.phase === "rollback_prepared") {
       assertSnapshotUnchanged(project, journal);
+      const markerPresent = fs.existsSync(path.join(project, MARKER));
       for (const entry of entries) {
         const target = entry.proposed_target!.path; const expected = journal.entities[target];
-        if (!expected || !fs.existsSync(path.join(project, target)) || canonicalRecordJson(identity(publishedIdentity(path.join(project, target)))) !== canonicalRecordJson(expected)) throw new EntityMigrationOperationError("post_cutover_write", `canonical entity '${target}' changed before rollback cutover`, "Retain all recovery evidence and canonical state; rollback refused before authority changed.");
+        if (!expected || !fs.existsSync(path.join(project, target)) || canonicalRecordJson(identity(publishedIdentity(path.join(project, target)))) !== canonicalRecordJson(expected)) throw new EntityMigrationOperationError(markerPresent ? "post_cutover_write" : "post_rollback_successor", `canonical entity '${target}' changed before rollback cleanup`, markerPresent ? "Retain all recovery evidence and canonical state; rollback refused before authority changed." : "Legacy authority is active; retain the successor and recovery evidence because rollback will never delete the new identity.");
       }
-      if (journal.marker && fs.existsSync(path.join(project, MARKER))) withMigrationContext(project, id, (context) => context.removeExact(MARKER, storedIdentity(journal.marker!)));
+      if (journal.marker && markerPresent) withMigrationContext(project, id, (context) => {
+        const result = context.removeExact(MARKER, storedIdentity(journal.marker!));
+        if (result === "identity_mismatch") throw new EntityMigrationOperationError("post_cutover_write", "state mode marker changed during rollback cutover", "Retain the successor marker, entities, and recovery evidence; rollback refused before authority changed.");
+        fault("rollback_remove_marker");
+      });
+      if (fs.existsSync(path.join(project, MARKER))) throw new EntityMigrationOperationError("post_cutover_write", "state mode marker remains after rollback cutover", "Retain the marker, entities, and recovery evidence; rollback did not change authority.");
       assertSnapshotUnchanged(project, journal); journal.phase = "rollback_cutover"; writeJournal(project, journal); fault("rollback_cutover");
     }
     if (journal.phase === "rollback_cutover") {
@@ -294,10 +305,15 @@ export function rollbackEntityMigration(projectRoot: string, sourceRoot: string,
         for (const entry of [...entries].reverse()) {
           const target = entry.proposed_target!.path; const absolute = path.join(project, target); const expected = journal.entities[target];
           if (!fs.existsSync(absolute)) continue;
-          if (!expected || canonicalRecordJson(identity(publishedIdentity(absolute))) !== canonicalRecordJson(expected)) throw new EntityMigrationOperationError("post_rollback_successor", `rollback successor '${target}' replaced an operation-owned entity`, "Retain the successor and recovery evidence; rollback will never delete the new inode.");
-          context.removeExact(target, storedIdentity(expected));
+          if (!expected || canonicalRecordJson(identity(publishedIdentity(absolute))) !== canonicalRecordJson(expected)) throw new EntityMigrationOperationError("post_rollback_successor", `rollback successor '${target}' replaced an operation-owned entity`, "Legacy authority is active; retain the successor and recovery evidence because rollback will never delete the new inode.");
+          const result = context.removeExact(target, storedIdentity(expected));
+          if (result === "identity_mismatch") throw new EntityMigrationOperationError("post_rollback_successor", `rollback successor '${target}' replaced an operation-owned entity during removal`, "Legacy authority is active; retain the successor and recovery evidence because rollback will never delete the new inode.");
+          fault("rollback_remove_entity");
         }
       });
+      if (fs.existsSync(path.join(project, MARKER))) throw new EntityMigrationOperationError("post_rollback_successor", "a state mode marker appeared during rollback cleanup", "Retain the marker and recovery evidence; rollback cannot report completion while its authority is unknown.");
+      const residue = entries.find((entry) => fs.existsSync(path.join(project, entry.proposed_target!.path)));
+      if (residue) throw new EntityMigrationOperationError("post_rollback_successor", `rollback successor '${residue.proposed_target!.path}' remains after cleanup`, "Legacy authority is active; retain the successor and recovery evidence because rollback cannot report completion.");
       journal.phase = "rolled_back"; writeJournal(project, journal); fault("rolled_back");
     }
     return { schemaVersion: "agentera.entityMigration.v1", command: "state migrate entities", status: "rolled_back", operation: "rollback", migration_id: id, phase: "rolled_back", idempotent: false, mutation_performed: true, entity_count: entries.length, evidence: evidence(project, id) };

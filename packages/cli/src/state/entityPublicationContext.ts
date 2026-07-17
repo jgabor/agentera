@@ -27,6 +27,8 @@ export interface PublishedTargetIdentity {
   sha256: string;
 }
 
+export type ExactRemovalResult = "removed" | "absent" | "identity_mismatch";
+
 interface DirectoryEntry {
   parentFd: number;
   name: string;
@@ -337,7 +339,7 @@ export class EntityPublicationContext {
     }
   }
 
-  removeExact(relativeTarget: string, expected: PublishedTargetIdentity): void {
+  removeExact(relativeTarget: string, expected: PublishedTargetIdentity): ExactRemovalResult {
     const segments = relativeTarget.split(path.sep).filter(Boolean);
     if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
       throw new Error(`unsafe entity rollback target '${relativeTarget}'`);
@@ -348,15 +350,15 @@ export class EntityPublicationContext {
       for (const name of segments.slice(0, -1)) {
         let fd: number;
         try { fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
+        catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return "absent"; throw error; }
         directories.push({ parentFd, name, fd, created: false });
         parentFd = fd;
       }
       const directoryFd = directories.at(-1)!.fd;
       const targetName = segments.at(-1)!;
       try { targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS); }
-      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return; throw error; }
-      if (!matchesPublished(targetFd, expected)) return;
+      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return "absent"; throw error; }
+      if (!matchesPublished(targetFd, expected)) return "identity_mismatch";
       const rollbackName = `.${targetName}.${process.pid}.${randomUUID()}.rollback`;
       fs.renameSync(fdPath(directoryFd, targetName), fdPath(directoryFd, rollbackName));
       if (openMatches(directoryFd, rollbackName, targetFd, FILE_FLAGS)) {
@@ -368,8 +370,11 @@ export class EntityPublicationContext {
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
         }
+        syncDirectory(directoryFd);
+        return "identity_mismatch";
       }
       syncDirectory(directoryFd);
+      return "removed";
     } finally {
       if (targetFd !== undefined) fs.closeSync(targetFd);
       for (const entry of directories.reverse()) fs.closeSync(entry.fd);
