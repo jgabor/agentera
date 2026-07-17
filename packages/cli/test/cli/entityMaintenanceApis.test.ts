@@ -6,12 +6,19 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { discoverSchemasDir, loadSchemas } from "../../src/cli/appContext.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { loadYamlMapping } from "../../src/core/yaml.js";
 
 const roots: string[] = [];
 const storageAuthority = loadYamlMapping(fs.readFileSync(path.resolve(import.meta.dirname, "../../../..", "references/artifacts/state-storage-authority.yaml"), "utf8"));
 const forbiddenAliases = new Set((storageAuthority.entity_target as any).public_schema.forbidden_canonical_aliases as string[]);
+const convertedSchemas = Object.keys(loadSchemas(discoverSchemasDir())).filter((name) =>
+  (storageAuthority.entity_target as any).implementation_status[name] === "implemented"
+);
+const convertedQueryAliases = convertedSchemas.flatMap((name) =>
+  [...new Set([name, name.replace(/s$/, ""), `${name}s`])].map((alias) => [alias, name] as const)
+);
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entity-maintenance-"));
@@ -37,7 +44,16 @@ function seeded(): string {
   entity(root, "plan", "plan_task", "ffffffffff", { plan: "eeeeeeeeee", name: "verify", status: "pending", depends_on: [], acceptance: ["pass"] });
   entity(root, "objective", "objective", "gggggggggg", { header: { title: "latency", status: "open", created: "2026-07-17" }, objective: { description: "Reduce latency", why: "Users wait", measurement: "p95", constraints: [] }, metric: { description: "p95", direction: "minimize", unit: "ms" }, baseline: { description: "100 ms" }, gates: {}, scope: { included: ["CLI"], excluded: [] } });
   entity(root, "experiments", "experiment", "hhhhhhhhhh", { objective: "gggggggggg", date: "2026-07-17 09:00", label: "baseline", hypothesis: "Measure", method: "Harness", change: "None", metric: { primary_value: "100 ms", delta_vs_baseline: "0" }, regression: "pass", status: "baseline", conclusion: "Measured", provenance: { command: "fixture", revision: "abc" } });
+  entity(root, "todo", "todo_item", "iiiiiiiiii", { severity: "normal", status: "open", description: "Entity TODO" });
+  entity(root, "docs", "documentation_inventory_entry", "jjjjjjjjjj", { document: "Entity docs", path: "docs/entity.md", last_updated: "2026-07-17", status: "current" });
   return root;
+}
+
+function seedLegacySecrets(root: string): void {
+  for (const name of convertedSchemas.filter((name) => name !== "todo")) {
+    fs.writeFileSync(path.join(root, `.agentera/${name}.yaml`), dumpYamlMapping({ entries: [{ secret: `LEGACY_${name.toUpperCase()}_SECRET` }] }));
+  }
+  fs.writeFileSync(path.join(root, "TODO.md"), "LEGACY_TODO_SECRET\n");
 }
 
 function capture(root: string, args: string[]): { rc: number; json: any; out: string; err: string } {
@@ -96,15 +112,55 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     const phase = capture(root, ["state", "query", "last-phase", "--format", "json"]); expect(phase.json).toMatchObject({ phase: "build", id: "aaaaaaaaaa", artifact: "progress" });
   });
 
-  it("rejects every singular and plural routine query alias before generic aggregate dispatch in JSON and text", () => {
+  it("rejects the generated alias matrix before generic aggregate dispatch in entity JSON and text", () => {
     const root = seeded();
-    for (const [alias, canonical] of [["decision", "decisions"], ["decisions", "decisions"], ["experiment", "experiments"], ["experiments", "experiments"], ["health", "health"], ["healths", "health"], ["plan", "plan"], ["plans", "plan"], ["progress", "progress"], ["progresses", "progress"]]) {
+    seedLegacySecrets(root);
+    expect(convertedQueryAliases.map(([alias]) => alias)).toEqual(expect.arrayContaining(["decisionss", "progresss", "experimentss", "docss"]));
+    for (const [alias, canonical] of convertedQueryAliases) {
       const json = capture(root, ["state", "query", alias, "--format", "json"]);
       expect(json.rc, alias).toBe(1); expect(json.err).toBe("");
       expect(json.json.error).toMatchObject({ class: "unsupported_target", recovery: expect.stringContaining(`agentera state ${canonical}`) });
-      expect(JSON.stringify(json.json)).not.toContain("legacy_summary");
-      const text = capture(root, ["state", "query", alias]); expect(text.rc).toBe(1); expect(text.out).toBe(""); expect(text.err).toContain("agentera state ");
+      expect(json.out).not.toContain("LEGACY_");
+      const text = capture(root, ["state", "query", alias]); expect(text.rc).toBe(1); expect(text.out).toBe(""); expect(text.err).toContain(`agentera state ${canonical}`); expect(text.err).not.toContain("LEGACY_");
     }
+  });
+
+  it("keeps direct singleton-style views and special query operations on entity authority", () => {
+    const root = seeded();
+    seedLegacySecrets(root);
+    for (const family of ["docs", "objective", "todo"]) {
+      const result = capture(root, ["state", family, "--format", "json"]);
+      expect(result.rc, `${family}: ${result.err || result.out}`).toBe(0);
+      expect(result.out).toContain(`\"artifact\": \"${family}\"`);
+      expect(result.out).not.toContain("LEGACY_");
+    }
+    const phase = capture(root, ["state", "query", "last-phase", "--format", "json"]);
+    expect(phase.rc).toBe(0); expect(phase.json).toMatchObject({ phase: "build", id: "aaaaaaaaaa", artifact: "progress" }); expect(phase.out).not.toContain("LEGACY_");
+    const inventory = capture(root, ["state", "query", "--list-artifacts", "--format", "json"]);
+    expect(inventory.rc).toBe(0); expect(inventory.json.names).toEqual(expect.arrayContaining(convertedSchemas));
+  });
+
+  it("preserves every generated generic alias byte-for-byte while the marker is absent", () => {
+    const root = seeded();
+    seedLegacySecrets(root);
+    fs.rmSync(path.join(root, ".agentera/state-mode.yaml"));
+    for (const format of ["json", "text"]) {
+      for (const family of convertedSchemas) {
+        const canonical = capture(root, ["state", "query", family, "--format", format]);
+        for (const [alias, target] of convertedQueryAliases.filter(([, target]) => target === family)) {
+          const result = capture(root, ["state", "query", alias, "--format", format]);
+          expect({ rc: result.rc, out: result.out, err: result.err }, `${format}:${alias}`).toEqual({ rc: canonical.rc, out: canonical.out, err: canonical.err });
+        }
+      }
+    }
+    expect(capture(root, ["state", "query", "decision", "--format", "json"]).out).toContain("LEGACY_DECISIONS_SECRET");
+  });
+
+  it("fails closed on an invalid mode marker instead of reading a legacy aggregate", () => {
+    const root = seeded();
+    seedLegacySecrets(root);
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: wrong\nmode: legacy\n");
+    expect(() => capture(root, ["state", "query", "decision", "--format", "json"])).toThrow(/restore the durable migration marker/i);
   });
 
   it("bounds exact pretty JSON stdout for decision and plan entity views including envelope overhead", () => {
@@ -131,7 +187,7 @@ describe("entity-mode retrieval and maintenance APIs", () => {
   it("keeps entity plan-selection recovery on bare IDs and canonical commands", () => {
     const none = project(); entity(none, "plan", "plan", "aaaaaaaaaa", { header: { level: "light", created: "2026-07-17", status: "complete", title: "Done" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
     const missing = capture(none, ["state", "plan", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.json.error.recovery).toContain("state plan get --id ID"); expect(missing.json.error.recovery).not.toMatch(/--plan(?:\s|$)/);
-    const many = seeded(); entity(many, "plan", "plan", "iiiiiiiiii", { header: { level: "light", created: "2026-07-16", status: "open", title: "Other" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
+    const many = seeded(); entity(many, "plan", "plan", "kkkkkkkkkk", { header: { level: "light", created: "2026-07-16", status: "open", title: "Other" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
     const ambiguous = capture(many, ["state", "plan", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(ambiguous.json.error.recovery).toContain("state plan get --id ID"); expect(ambiguous.json.error.recovery).not.toMatch(/--plan(?:\s|$)/);
   });
 

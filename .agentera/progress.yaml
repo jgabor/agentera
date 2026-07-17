@@ -1,4 +1,26 @@
 cycles:
+  - number: 897
+    timestamp: 2026-07-17 15:56
+    type: fix
+    phase: build
+    what: Fixed entity-mode generic query dispatch to reject every schema-derived
+      converted-family alias before legacy aggregate reads while preserving
+      marker-absent aliases.
+    inspiration: Retry 2/2 final Task11 alias requirements.
+    discovered: The partial manual redirect omitted schema-admitted aliases and also
+      rejected legacy-mode aliases before mode detection.
+    verified: "Focused: 2 files, 17 tests passed. Full: 213 files, 2579 tests
+      passed. Typecheck, build, state validation, build capability, capability
+      contract, and compact passed."
+    next: Task 11 is complete. Task 12 remains pending; do not begin it in this
+      cycle.
+    context:
+      intent: Close only the final Task11 query alias dispatch leak.
+      constraints: Query alias dispatch only; no Task12 work, live apply, manual YAML
+        edits, vision changes, amend, push, publish, or tag.
+      unknowns: none
+      scope: Generic query alias matching, entity-mode rejection, and proportional
+        query regression tests.
   - number: 896
     timestamp: 2026-07-17 15:31
     type: fix
@@ -214,28 +236,6 @@ cycles:
       scope: Entity objective create/update/get/list; immutable experiment
         publish/get/list; baseline and ownership validation; mode isolation; Git
         and root-marker regressions.
-  - number: 887
-    timestamp: 2026-07-17 07:30
-    type: fix
-    phase: build
-    what: Preserved same-path successors during plan graph rollback by retaining
-      exact published inode identities in
-      packages/cli/src/state/entityPublicationContext.ts.
-    inspiration: Task 7 final retry 2/2.
-    discovered: Equal bytes do not establish rollback ownership; inode identity must
-      distinguish an attempt-owned file from its successor.
-    verified: 13 focused tests and 2,512 full tests passed; typecheck, build, state
-      validation, plan capability validation, capability-contract validation,
-      and compact check passed.
-    next: Keep Task 7 complete and proceed to pending Task 8 only in a later cycle.
-    context:
-      intent: Close the Task 7 rollback gap without changing stable create or replay
-        behavior.
-      constraints: Only same-path equal-byte successor rollback, proportional tests,
-        and required state evidence were in scope.
-      unknowns: None.
-      scope: Entity publication identity, plan multi-file rollback, and plan rollback
-        regression tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -305,6 +305,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 887 (2026-07-17): Preserved same-path successors during plan
+      graph rollback by retaining exact published inode identities in
+      packages/cli/src/state/entityPublicationContext.ts."
   - summary: "Cycle 886 (2026-07-17): Fixed audited Task 7 plan entity rollback and
       evaluation defects."
   - summary: "Cycle 885 (2026-07-17): Added plans/tasks entity mode in
@@ -400,15 +403,18 @@ archive:
   - summary: "Cycle 848 (2026-07-16): Published one non-redundant prime contract:
       reconciled the four-way field drift to a single authority
       (PRIME_STRUCTURED_FIELDS..."
-  - summary: "Cycle 847 (2026-07-16): Closed compact-prime Plan Task 1 after its
-      third repair attempt. Reconciled the one remaining live..."
 omitted: true
-omitted_count: 132
+omitted_count: 133
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

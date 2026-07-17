@@ -57,13 +57,6 @@ const STATE_COMMAND_NAMES = new Set([
   "progress",
   "todo",
 ]);
-const ROUTINE_QUERY_ALIASES: Record<string, string> = {
-  decision: "decisions", decisions: "decisions",
-  experiment: "experiments", experiments: "experiments",
-  health: "health", healths: "health",
-  plan: "plan", plans: "plan",
-  progress: "progress", progresses: "progress",
-};
 
 export interface QueryArgs {
   query?: string | null;
@@ -275,6 +268,24 @@ function queryGeneric(args: QueryArgs, schemas: Record<string, SchemaInfo>, name
   return 0;
 }
 
+function matchedSchemaName(schemas: Record<string, SchemaInfo>, query: string): string | null {
+  if (query in schemas) return query;
+  return Object.keys(schemas).find((name) =>
+    query === name.replace(/s$/, "") || query === `${name}s`
+  ) ?? null;
+}
+
+function rejectEntityAggregateQuery(args: QueryArgs, name: string, query: string, io: Io): number {
+  const format = args.format ?? "text";
+  const command = `agentera state ${name} --format ${format}`;
+  if (format !== "text") {
+    emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_target", message: `routine artifact alias '${query}' is not available through state query`, syntax: command, example: command, recovery: `Use the canonical entity-aware command: ${command}` } }, format as "json" | "yaml", out(io));
+  } else {
+    err(io)(`Unsupported routine query: ${query}. Use \`${command}\` instead.\n`);
+  }
+  return 1;
+}
+
 function queryLastPhase(args: QueryArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
@@ -387,13 +398,6 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
   if (query.includes("/") || query.includes("\\") || query === "." || query === ".." || ENCODED_TRAVERSAL_RE.test(query)) {
     throw new Error(`unsupported artifact/query name ${pyRepr(query)}; path-like values are not artifact names`);
   }
-  const routine = ROUTINE_QUERY_ALIASES[query];
-  if (routine) {
-    const command = `agentera state ${routine} --format ${format}`;
-    if (format !== "text") emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_target", message: `routine artifact alias '${query}' is not available through state query`, syntax: command, example: command, recovery: `Use the canonical entity-aware command: ${command}` } }, format as "json" | "yaml", o);
-    else e(`Unsupported routine query: ${query}. Use \`${command}\` instead.\n`);
-    return 1;
-  }
   const schemas = loadSchemas(discoverSchemasDir());
   const stateArgs = args as unknown as StateArgs;
   const handlers: Record<string, (a: QueryArgs, s: Record<string, SchemaInfo>, io: Io) => number> = {
@@ -402,14 +406,14 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
     "open-todos": (a, s, ioo) => queryTodo({ ...(a as unknown as StateArgs), command: "todo" }, s, ioo, true),
   };
   if (query in handlers) {
-    if (format !== "text" && query in schemas) return queryGeneric(args, schemas, query, io);
-    return handlers[query](args, schemas, io);
+    if (format === "text" || !(query in schemas)) return handlers[query](args, schemas, io);
   }
-  if (query in schemas) return queryGeneric(args, schemas, query, io);
-  for (const name of Object.keys(schemas)) {
-    if (query === name || query === name.replace(/s$/, "") || query === name + "s") {
-      return queryGeneric(args, schemas, name, io);
+  const name = matchedSchemaName(schemas, query);
+  if (name !== null) {
+    if (detectStateMode(process.cwd()) === "entities" && STATE_COMMAND_NAMES.has(name)) {
+      return rejectEntityAggregateQuery(args, name, query, io);
     }
+    return queryGeneric(args, schemas, name, io);
   }
   e(`Unknown query: ${query}\n`);
   return 1;

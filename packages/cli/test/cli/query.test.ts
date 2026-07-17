@@ -55,10 +55,19 @@ describe("cli query", () => {
     expect(err).toContain("query pattern required");
   });
 
-  it("redirects routine artifact names to their state command", () => {
-    const { rc, err } = capture((io) => cmdQuery({ query: "progress" }, io));
-    expect(rc).toBe(1);
-    expect(err).toContain("Unsupported routine query: progress");
+  it("preserves generic routine aliases when no entity marker exists", () => {
+    fs.mkdirSync(path.join(tmp, ".agentera"));
+    fs.writeFileSync(path.join(tmp, ".agentera/progress.yaml"), "cycles:\n  - phase: build\n    what: legacy\n");
+    const prior = process.cwd();
+    process.chdir(tmp);
+    try {
+      const canonical = capture((io) => cmdQuery({ query: "progress" }, io));
+      const alias = capture((io) => cmdQuery({ query: "progresss" }, io));
+      expect(alias).toEqual(canonical);
+      expect(alias.out).toContain("build");
+    } finally {
+      process.chdir(prior);
+    }
   });
 
   it("rejects path-like query names", () => {
