@@ -13,6 +13,7 @@ import {
   type WriteVerb,
 } from "./operations.js";
 import { reject } from "./errors.js";
+import { detectStateMode } from "../stateMode.js";
 
 function liveDoc(p: string): Record<string, unknown> {
   if (!fs.existsSync(p)) return {};
@@ -40,12 +41,15 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const resolved = artifact === "experiments"
+  const entityProgress = artifact === "progress" && detectStateMode(projectRoot) === "entities";
+  const resolved = entityProgress
+    ? path.join(projectRoot, ".agentera", "entities", "progress", "progress_cycle", "<id>.yaml")
+    : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
-  const doc = artifact === "experiments" ? {} : liveDoc(resolved);
+  const doc = artifact === "experiments" || entityProgress ? {} : liveDoc(resolved);
   const next =
-    artifact === "experiments"
+    artifact === "experiments" || entityProgress
       ? {}
       : artifact === "plan"
       ? { task_number: nextTaskNumber(doc) }
@@ -81,7 +85,9 @@ export function buildExplain(
     fields,
   };
   if (spec.compacts) {
-    result.compaction = artifact === "experiments"
+    result.compaction = entityProgress
+      ? "not applicable; each canonical progress entity is complete authority and no aggregate projection or archive is written"
+      : artifact === "experiments"
       ? "uniform_10_40_50 (10 active full-detail and 40 one-line archive entries); runs automatically on publication; durable archival is deferred"
       : "uniform_10_40_50 (bounded active/archive projections: 10 active full-detail and 40 archive entries; verified numbered archives remain authoritative; no destructive deletion; recovery refuses to omit entries when archive evidence is missing); runs automatically on append";
   }

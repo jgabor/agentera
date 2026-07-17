@@ -9,6 +9,8 @@ import {
 } from "../../../state/directRetrieval.js";
 import { numberedArchiveArtifacts } from "../../../state/archiveDiscovery.js";
 import type { Io } from "../../dispatch/shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { getProgressEntity } from "../../../state/progressEntities.js";
 
 interface StateGetArgs {
   number: number;
@@ -56,6 +58,22 @@ function parseFailure(
     },
     2,
   );
+}
+
+function entityParseFailure(message: string, id?: string): StateRetrievalFailure {
+  return new StateRetrievalFailure({
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: "invalid_request",
+      message,
+      syntax: "agentera state progress get --id ID --format json",
+      example: `agentera state progress get --id ${id ?? "qjtrmnpvka"} --format json`,
+      recovery: "Use a bare ten-letter progress ID returned by append or list; no state was changed.",
+      artifact: "progress",
+      ...(id ? { id } : {}),
+    },
+  }, 2);
 }
 
 function readValue(argv: string[], index: number, name: string): { value: string; next: number } {
@@ -142,12 +160,44 @@ export function runStateGet(
   artifactId: string,
   argv: string[],
   io: Io,
+  projectRoot = process.cwd(),
 ): number {
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
   try {
+    if (artifactId === "progress" && detectStateMode(projectRoot, sourceRoot) === "entities") {
+      let id: string | undefined;
+      let entityFormat: "text" | "json" | "yaml" = "text";
+      for (let index = 0; index < argv.length; ) {
+        const token = argv[index];
+        if (token !== "--id" && !token.startsWith("--id=") && token !== "--format" && !token.startsWith("--format=")) {
+          throw entityParseFailure(`unrecognized argument '${token}'; entity-mode progress retrieval requires --id ID`, id);
+        }
+        const name = token.startsWith("--id") ? "--id" : "--format";
+        let parsed: { value: string; next: number };
+        try {
+          parsed = readValue(argv, index, name);
+        } catch (error) {
+          throw entityParseFailure((error as Error).message, id);
+        }
+        index = parsed.next;
+        if (name === "--id") {
+          if (id !== undefined) throw entityParseFailure("--id may only be supplied once", id);
+          id = parsed.value;
+        } else {
+          if (parsed.value !== "text" && parsed.value !== "json" && parsed.value !== "yaml") throw entityParseFailure(`invalid --format '${parsed.value}'`, id);
+          entityFormat = parsed.value;
+        }
+      }
+      if (!id) throw entityParseFailure("--id is required for entity-mode progress retrieval");
+      const response = getProgressEntity(projectRoot, id, sourceRoot);
+      const output = io.out ?? ((text: string) => process.stdout.write(text));
+      if (entityFormat === "json" || entityFormat === "yaml") emitStructured(response, entityFormat, output);
+      else output(YAML.stringify(response));
+      return 0;
+    }
     const args = parseGetArgs(artifactId, argv, sourceRoot);
-    const response = retrieveStateEntry(process.cwd(), artifactId, args.number, { sourceRoot });
+    const response = retrieveStateEntry(projectRoot, artifactId, args.number, { sourceRoot });
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, io.out ?? ((text: string) => process.stdout.write(text)));
     else {
       const out = io.out ?? ((text: string) => process.stdout.write(text));

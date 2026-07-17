@@ -14,20 +14,28 @@ authority:
     amendment revision paths, legacy label coexistence rules, failure classes,
     or byte limits.
   implementation_boundary: >-
-    entity_target and entity_migration declare the required post-cutover state,
-    but do not implement entity storage, writers, retrieval, or migration. The
-    current numbered archive and retrieval groups remain implemented authority
-    until the explicit entity cutover completes. The maintenance-only Git
-    backfill surface declared by api.backfill remains a separate legacy repair
-    operation and is not the Decision 94 cutover.
+    Shared entity storage and the progress family writer and retrieval are
+    implemented, but activate only from the durable cutover marker. Other entity
+    families and durable migration apply remain declared, not implemented. The
+    current numbered archive and retrieval groups remain implemented legacy
+    authority while that marker is absent. The maintenance-only Git backfill
+    surface declared by api.backfill remains a separate legacy repair operation
+    and is not the Decision 94 cutover.
 
 entity_target:
-  status: declared_not_implemented
+  status: progress_implemented_other_families_declared
   decision: 94
   activation: >-
     This target becomes active persisted and structured state authority only
     after entity_migration reaches cutover_complete. Until then, existing public
     contracts below describe current behavior and may retain legacy vocabulary.
+  implementation_status:
+    progress: implemented
+    remaining_families: declared_not_implemented
+    rule: >-
+      The progress implementation selects entity behavior only when the durable
+      cutover marker is valid and selects legacy behavior only while it is absent.
+      It never creates the marker, migrates legacy state, or writes both authorities.
   public_schema:
     canonical_identity_field: id
     canonical_classification_field: artifact
@@ -96,6 +104,24 @@ entity_target:
       artifact: progress
       independently_mutable: true
       relationships: []
+      implementation: implemented
+      record:
+        required_fields: [timestamp, type, phase, what, context]
+        required_paths: [context.intent]
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+        temporal_fields: [timestamp]
+        timestamp_format: 'YYYY-MM-DD HH:MM'
+      retrieval:
+        exact: agentera state progress get --id ID --format json
+        list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
+        ordering: timestamp_desc_then_id_asc
+        default_limit: 20
+        maximum_limit: 100
+        max_utf8_bytes: 32768
+        cursor: opaque_snapshot_cursor
+        mutation_after_snapshot: cursor_snapshot_unavailable
+        omission: whole_entries_only_with_count_reason_continuation_and_exact_get
+        scalar_truncation: forbidden
     - boundary: decision
       artifact: decisions
       independently_mutable: true
@@ -236,6 +262,16 @@ entity_migration:
   status: inventory_preview_implemented
   decision: 94
   kind: single_explicit_project_cutover
+  cutover_marker:
+    path: .agentera/state-mode.yaml
+    schema_version: agentera.stateMode.v1
+    entity_mode:
+      schemaVersion: agentera.stateMode.v1
+      mode: entities
+    absent_mode: legacy
+    invalid_behavior: fail_without_fallback
+    detection: read_only
+    publication_owner: durable_migration_apply
   invocation:
     explicit: required
     dry_run: required_before_apply

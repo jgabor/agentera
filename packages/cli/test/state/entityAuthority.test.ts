@@ -31,7 +31,7 @@ describe("Decision 94 entity authority", () => {
 
     expect(authority.authority.source).toBe("references/artifacts/state-storage-authority.yaml");
     expect(target).toMatchObject({
-      status: "declared_not_implemented",
+      status: "progress_implemented_other_families_declared",
       decision: 94,
       public_schema: {
         canonical_identity_field: "id",
@@ -69,6 +69,10 @@ describe("Decision 94 entity authority", () => {
         authority: "non_authoritative_cli_rendering",
         mutation: "forbidden",
       },
+      implementation_status: {
+        progress: "implemented",
+        remaining_families: "declared_not_implemented",
+      },
     });
     expect(target.identity.prohibited_components).toEqual([
       "prefix",
@@ -78,6 +82,22 @@ describe("Decision 94 entity authority", () => {
       "writer",
       "git_reference",
     ]);
+    expect(target.entities[0]).toMatchObject({
+      boundary: "progress_cycle",
+      artifact: "progress",
+      implementation: "implemented",
+      record: {
+        forbidden_fields: expect.arrayContaining(["number", "stable_id", "artifact_id", "entry_number"]),
+        required_paths: ["context.intent"],
+        temporal_fields: ["timestamp"],
+      },
+      retrieval: {
+        exact: "agentera state progress get --id ID --format json",
+        ordering: "timestamp_desc_then_id_asc",
+        cursor: "opaque_snapshot_cursor",
+        scalar_truncation: "forbidden",
+      },
+    });
     expect(
       keysNamed(
         { entities: target.entities, relationships: target.relationships, views: target.views },
@@ -165,6 +185,15 @@ describe("Decision 94 entity authority", () => {
         ordinary_writes_migrate: false,
         invokes_git: false,
         apply_boundary: expect.stringContaining("Task 10"),
+      },
+      cutover_marker: {
+        path: ".agentera/state-mode.yaml",
+        schema_version: "agentera.stateMode.v1",
+        entity_mode: { schemaVersion: "agentera.stateMode.v1", mode: "entities" },
+        absent_mode: "legacy",
+        invalid_behavior: "fail_without_fallback",
+        detection: "read_only",
+        publication_owner: "durable_migration_apply",
       },
       read_only_preview: {
         implementation: "implemented",

@@ -14,6 +14,12 @@ const MAX_DIAGNOSTICS = 100;
 interface EntityDefinition {
   boundary: string;
   artifact: string;
+  record?: {
+    requiredFields: string[];
+    requiredPaths: string[];
+    forbiddenFields: string[];
+    timestampFormat?: string;
+  };
 }
 
 interface RelationshipDefinition {
@@ -85,7 +91,18 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     if (!mapping(value) || typeof value.boundary !== "string" || typeof value.artifact !== "string") {
       throw new Error(`invalid entity declaration in '${authorityPath}'`);
     }
-    return { boundary: value.boundary, artifact: value.artifact };
+    const record = mapping(value.record) ? value.record : null;
+    const strings = (field: unknown): string[] => Array.isArray(field) && field.every((item) => typeof item === "string") ? field : [];
+    return {
+      boundary: value.boundary,
+      artifact: value.artifact,
+      ...(record ? { record: {
+        requiredFields: strings(record.required_fields),
+        requiredPaths: strings(record.required_paths),
+        forbiddenFields: strings(record.forbidden_fields),
+        ...(typeof record.timestamp_format === "string" ? { timestampFormat: record.timestamp_format } : {}),
+      } } : {}),
+    };
   });
   const declarations = target.relationships.declarations;
   if (!Array.isArray(declarations)) throw new Error(`invalid relationship declarations in '${authorityPath}'`);
@@ -220,6 +237,7 @@ function discoverFile(
       });
     }
   }
+  const owner = model.byBoundary.get(boundary);
   if (!model.artifacts.includes(pathArtifact) || !model.artifacts.includes(artifact)) {
     malformed = true;
     issues.push({
@@ -232,7 +250,6 @@ function discoverFile(
       recovery: recovery(projectRoot, `move or rewrite '${relativePath}'; valid artifact values: ${model.artifacts.join(", ")}`),
     });
   } else {
-    const owner = model.byBoundary.get(boundary);
     if (!owner || owner.artifact !== pathArtifact || artifact !== pathArtifact) {
       malformed = true;
       issues.push({
@@ -245,6 +262,28 @@ function discoverFile(
         recovery: recovery(projectRoot, owner
           ? `move '${relativePath}' under .agentera/entities/${owner.artifact}/${boundary}/ and set artifact to '${owner.artifact}'`
           : `move or rewrite '${relativePath}' using a boundary declared by the state storage authority`),
+      });
+    }
+  }
+  if (!malformed && owner?.record && record) {
+    const missing = owner.record.requiredFields.filter((field) => record[field] === undefined);
+    const missingPaths = owner.record.requiredPaths.filter((field) => {
+      let current: unknown = record;
+      for (const part of field.split(".")) current = mapping(current) ? current[part] : undefined;
+      return typeof current !== "string" || current.length === 0;
+    });
+    const forbidden = owner.record.forbiddenFields.filter((field) => record[field] !== undefined);
+    const timestampInvalid = owner.record.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""));
+    if (missing.length || missingPaths.length || forbidden.length || timestampInvalid) {
+      malformed = true;
+      issues.push({
+        code: "malformed_entity",
+        path: relativePath,
+        id,
+        artifact,
+        boundary,
+        message: `entity '${relativePath}' violates the authority-declared '${boundary}' record contract`,
+        recovery: recovery(projectRoot, `repair record fields in '${relativePath}' to match the state storage authority`),
       });
     }
   }
@@ -396,16 +435,13 @@ export interface PublishEntityResult {
   replay: boolean;
 }
 
-export function publishEntity(request: PublishEntityRequest): PublishEntityResult {
-  const model = authority(request.sourceRoot);
+function publishEntityLocked(request: PublishEntityRequest, model: EntityAuthority): PublishEntityResult {
   if (!model.pattern.test(request.id)) throw new Error(`entity ID '${request.id}' must match ${model.pattern.source}`);
   const owner = model.byBoundary.get(request.boundary);
   if (!owner) throw new Error(`unknown entity boundary '${request.boundary}'`);
   if (owner.artifact !== request.artifact) throw new Error(`boundary '${request.boundary}' is owned by artifact '${owner.artifact}', not '${request.artifact}'`);
   if (!mapping(request.record)) throw new Error("entity record must be a mapping");
   const root = path.resolve(request.projectRoot);
-  const lock = acquireWriterLock(root);
-  try {
     const target = path.join(root, model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
     const symlink = noSymlinkPrefix(root, target);
     if (symlink) throw new Error(`entity path contains symbolic link '${relative(root, symlink)}'; remove the symbolic link and retry`);
@@ -428,6 +464,34 @@ export function publishEntity(request: PublishEntityRequest): PublishEntityResul
       throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
     }
     return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: target, replay: false };
+}
+
+export function publishEntity(request: PublishEntityRequest): PublishEntityResult {
+  const model = authority(request.sourceRoot);
+  const lock = acquireWriterLock(path.resolve(request.projectRoot));
+  try {
+    return publishEntityLocked(request, model);
+  } finally {
+    lock.release();
+  }
+}
+
+export function allocateAndPublishEntity(
+  request: Omit<PublishEntityRequest, "id">,
+  candidate?: () => string,
+): PublishEntityResult {
+  const model = authority(request.sourceRoot);
+  const root = path.resolve(request.projectRoot);
+  const lock = acquireWriterLock(root);
+  try {
+    const existing = new Set(discoverEntities(root, request.sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
+    for (let attempt = 0; attempt < 1024; attempt += 1) {
+      const id = candidate ? candidate() : generatedId(model);
+      if (!model.pattern.test(id)) throw new Error(`entity ID candidate '${id}' must match ${model.pattern.source}`);
+      if (existing.has(id)) continue;
+      return publishEntityLocked({ ...request, id }, model);
+    }
+    throw new Error("could not allocate a unique entity ID after 1024 attempts; run agentera check validate state and retry");
   } finally {
     lock.release();
   }

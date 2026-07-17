@@ -53,6 +53,8 @@ import {
 } from "../decisionLegacyValidation.js";
 import { repairHealthProjectionBytes } from "../healthRepair.js";
 import { executeExperimentPublication } from "./experimentPublication.js";
+import { detectStateMode } from "../stateMode.js";
+import { appendProgressEntity } from "../progressEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
   if (!fs.existsSync(target)) return { doc: {}, bytes: "" };
@@ -415,6 +417,9 @@ export function executeStateWrite(
   req: StateWriteRequest,
   options: StateMutationOptions = {},
 ): StateWriteEnvelope {
+  if (req.artifact === "progress" && req.spec.verb === "append" && detectStateMode(req.projectRoot) === "entities") {
+    return appendProgressEntity(req);
+  }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
     return dispatchDecisionAmendment(req, options);
   }

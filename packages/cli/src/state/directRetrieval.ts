@@ -51,6 +51,8 @@ export interface StateFailureBody {
     artifact_id?: string;
     entry_number?: number;
     stable_id?: string;
+    artifact?: string;
+    id?: string;
     valid_values?: string[];
     details?: JsonObject;
   };

@@ -9,6 +9,8 @@ import { numberedArchiveArtifacts } from "../../../state/archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureBody } from "../../../state/directRetrieval.js";
 import { emitStructured } from "../../structured.js";
 import type { Io } from "../../dispatch/shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
 
 interface StateListArgs {
   limit: number;
@@ -142,23 +144,40 @@ function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "ya
   return error.exitCode;
 }
 
-export function runStateList(artifactId: string, argv: string[], io: Io): number {
+export function runStateList(artifactId: string, argv: string[], io: Io, projectRoot = process.cwd()): number {
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
+  let entityProgress = false;
   try {
+    entityProgress = artifactId === "progress" && detectStateMode(projectRoot, sourceRoot) === "entities";
     const args = parseListArgs(artifactId, argv, sourceRoot);
+    if (entityProgress) {
+      const response = listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format });
+      const output = io.out ?? ((text: string) => process.stdout.write(text));
+      if (args.format === "text") output(renderProgressEntityListText(response));
+      else emitStructured(response, args.format, output);
+      return 0;
+    }
     const response = boundStateList(
-      listStateEntries(process.cwd(), artifactId, args.limit, args.filters, args.cursor, { sourceRoot }),
+      listStateEntries(projectRoot, artifactId, args.limit, args.filters, args.cursor, { sourceRoot }),
       args.format === "text" ? "text" : args.format,
       sourceRoot,
-      process.cwd(),
+      projectRoot,
     );
     const out = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "text") out(renderStateListText(response));
     else emitStructured(response, args.format, out);
     return 0;
   } catch (error) {
-    if (error instanceof StateRetrievalFailure) return emitFailure(error, format, io);
+    if (error instanceof StateRetrievalFailure) {
+      if (entityProgress) {
+        const body = structuredClone(error.body);
+        delete body.error.artifact_id;
+        body.error.artifact = "progress";
+        return emitFailure(new StateRetrievalFailure(body, error.exitCode), format, io);
+      }
+      return emitFailure(error, format, io);
+    }
     return emitFailure(
       new StateRetrievalFailure(
         {
