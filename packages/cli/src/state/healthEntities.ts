@@ -122,7 +122,7 @@ function envelope(published: { path: string; id: string; artifact: string; repla
 export function appendHealthEntity(req: StateWriteRequest, options: HealthEntityOptions = {}): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const declared = contract(sourceRoot);
-  const record = healthRecord(req.values);
+  const record = healthRecord(req.input ?? req.values);
   if (req.dryRun) {
     options.publicationContext?.assertValid();
     const id = options.id ?? allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot);

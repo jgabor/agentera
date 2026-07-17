@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { runStateList } from "../../src/cli/commands/state/list.js";
+import { runStateWrite } from "../../src/cli/commands/state/write.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import {
   appendHealthEntity,
@@ -57,7 +58,16 @@ function audit(date = "2026-07-17", trajectory = "stable"): Record<string, unkno
 function request(root: string, verb: "append" | "repair", values: Record<string, unknown>, dryRun = false): StateWriteRequest {
   const spec = operationSpec("health", verb);
   if (!spec) throw new Error(`health ${verb} spec missing`);
-  return { artifact: "health", spec, projectRoot: root, dryRun, force: verb === "repair", values, callerPayload: structuredClone(values), input: verb === "append" ? values : null };
+  return {
+    artifact: "health",
+    spec,
+    projectRoot: root,
+    dryRun,
+    force: verb === "repair",
+    values: verb === "append" ? {} : values,
+    callerPayload: structuredClone(values),
+    input: verb === "append" ? values : null,
+  };
 }
 
 function append(root: string, id: string, date = "2026-07-17", trajectory = "stable"): void {
@@ -75,6 +85,53 @@ afterEach(() => {
 });
 
 describe("health entity authority", () => {
+  it("routes public input as the exact entity record and rejects envelopes before effects", () => {
+    const root = project();
+    const supplied = audit();
+    const input = path.join(root, "audit.yaml");
+    fs.writeFileSync(input, dumpYamlMapping(supplied));
+    let out = "";
+    let err = "";
+    expect(runStateWrite("health", ["append", "--input", input, "--project", root, "--format", "json"], {
+      out: (text) => { out += text; },
+      err: (text) => { err += text; },
+    })).toBe(0);
+    expect(err).toBe("");
+    const published = JSON.parse(out);
+    expect(published).toMatchObject({ id: expect.stringMatching(/^[a-z]{10}$/), artifact: "health" });
+    expect(published.record).toEqual(supplied);
+    expect((getHealthEntity(root, published.id) as any).entry).toEqual(expect.objectContaining({
+      id: published.id,
+      artifact: "health",
+      record: supplied,
+    }));
+    expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
+
+    for (const forbidden of [
+      { id: "aaaaaaaaaa", ...supplied },
+      { artifact: "health", ...supplied },
+      { number: 1, ...supplied },
+      { stable_id: "health:1", ...supplied },
+      { artifact_id: "health", ...supplied },
+      { entry_number: 1, ...supplied },
+      { record: supplied },
+      { audit: supplied },
+      { audits: [supplied] },
+    ]) {
+      const rejectedRoot = project();
+      const rejectedInput = path.join(rejectedRoot, "audit.yaml");
+      fs.writeFileSync(rejectedInput, dumpYamlMapping(forbidden));
+      expect(runStateWrite("health", ["append", "--input", rejectedInput, "--project", rejectedRoot, "--format", "json"], {
+        out: () => {},
+        err: () => {},
+      })).not.toBe(0);
+      expect(fs.existsSync(path.join(rejectedRoot, ".agentera/entities"))).toBe(false);
+      expect(fs.existsSync(path.join(rejectedRoot, ".agentera/health.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(rejectedRoot, ".agentera/archive"))).toBe(false);
+    }
+  });
+
   it("publishes one immutable canonical audit with no projection, archive, or numeric vocabulary", () => {
     const root = project();
     const result = executeStateWrite(request(root, "append", audit())) as any;

@@ -1,4 +1,28 @@
 cycles:
+  - number: 884
+    timestamp: 2026-07-17 06:19
+    type: fix
+    phase: build
+    what: Routed health entity append through the canonical loaded input while
+      preserving exact nested audit records and rejecting caller-owned envelopes
+      before effects.
+    discovered: Entity tests had populated both values and input, masking that
+      public --input requests intentionally leave values empty.
+    verified: "Focused health entity tests passed: 1 file, 10 tests. Full CLI
+      passed: 208 files, 2,499 tests. Typecheck and build passed. State
+      validation passed with 0 issues. Audit capability passed. Capability
+      contract passed 2/2. Compact passed for 10 artifacts with 0 over-limit,
+      formatting, protected-overflow, error, or changed findings."
+    next: Task 6 remains complete. Task 7 remains pending; do not begin it in this
+      cycle.
+    context:
+      intent: Fix only Task 6 public health input routing after the entity cutover
+        regression was identified.
+      constraints: Task 6 health public input routing only; no other entity family,
+        apply, push, publish, vision, or unrelated changes.
+      unknowns: None within the corrected public health append path.
+      scope: One health entity input selection fix, realistic public CLI regressions,
+        and exact cycle evidence.
   - number: 883
     timestamp: 2026-07-17 06:01
     type: feat
@@ -258,38 +282,6 @@ cycles:
         this retry does not resolve them.
       scope: Migration-only safe source read seam, collected plan/objective/experiment
         bytes, race regressions, and progress evidence.
-  - number: 874
-    timestamp: 2026-07-17 01:37
-    type: fix
-    phase: build
-    what: Closed exact-source migration boundary escapes by reusing inspected
-      active-plan bytes and explicitly classifying unsafe active-plan,
-      decision-overlay, and decision-revision paths without following them.
-    inspiration: Replanned PLAN Task 19, Decision 94, and the final Task 3 retry audit.
-    discovered: Active-plan archive discovery needed a pinned inspected-byte seam so
-      safe archives remain discoverable without rereading an unsafe active path.
-    verified: Focused migration/entity tests passed 4 files and 77 tests. Full CLI
-      passed 203 files and 2,408 tests. Typecheck and build passed. State
-      validation found 0 issues; capability contract passed 2/2; compact checked
-      10 artifacts with 0 errors. A repeated pre-publication preview produced
-      1,282 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66
-      unresolved relationships, 173 blocked, 1,444 logical entries, 1,465
-      physical records, 21 mirrors, 2,118 relationships, source fingerprint
-      7809c0c8c6d0ac3b23092949eeffb98581fbf489cc1b7509ad843e459be919eb, and
-      preview digest
-      581692f3f1f53ce8068932dee7aef47a64232400fe747af97fac5ad60539427d.
-    next: Keep Tasks 4-9 pending; do not begin any family cutover or durable apply
-      in this cycle.
-    context:
-      intent: Complete only replanned Task 19 after Task 3's audit escalation while
-        preserving the read-only migration boundary.
-      constraints: No family cutover, durable apply, apply effects, vision change,
-        unrelated repair, release, push, publish, or amend.
-      unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical
-        identities; this task does not resolve them.
-      scope: Exact-source inspection reuse, plan discovery's pinned-byte seam,
-        decision overlay/revision corrupt accounting, boundary regressions, and
-        Task 19 state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -359,6 +351,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 874 (2026-07-17): Closed exact-source migration boundary escapes
+      by reusing inspected active-plan bytes and explicitly classifying unsafe
+      active-plan,..."
   - summary: "Cycle 873 (2026-07-17): Fixed the four remaining Task 3 audit defects:
       recursive inventory roots now fail closed, continuations..."
   - summary: "Cycle 872 (2026-07-17): Fixed Task 3 migration preview audit defects:
@@ -461,16 +456,18 @@ archive:
   - summary: "Cycle 835 (2026-07-15): Fixed Criterion 3 audit failure: wired
       legacyCorpusReadable into extractStartupIntermediateFromCorpusFile so
       oversized legacy corpus.json is never..."
-  - summary: "Cycle 834 (2026-07-15): Migrated all four bounded analytics consumers
-      (usage analytics, report status, prime corpus coverage, startup
-      analysis..."
 omitted: true
-omitted_count: 119
+omitted_count: 120
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
