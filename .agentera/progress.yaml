@@ -1,4 +1,29 @@
 cycles:
+  - number: 904
+    timestamp: 2026-07-17 23:52
+    type: fix
+    phase: build
+    what: Added standard attached-worktree approval support by resolving regular
+      commondir metadata and reading per-worktree then common loose or packed
+      refs while keeping HEAD and index worktree-local.
+    inspiration: Retry 2/2 final Task 13 plan and the attached-worktree approval audit gap.
+    discovered: Cycle 903's full-suite count of 2,610 was one below its committed
+      2,611-test baseline; this change adds four attached-worktree cases, making
+      the exact current full count 2,615.
+    verified: Focused entityMigrationApply passed 35/35; full CLI passed 2,615/2,615
+      across 218 files; typecheck, build, all 12 capabilities, capability
+      contract 2/2, state validation, and compact passed.
+    next: Task 13 remains complete. Task 14 remains pending; do not apply the entity
+      migration. Regenerate the clean post-commit approval and blocker-free
+      preview only.
+    context:
+      intent: Complete Task 13 attached-worktree approval support without starting
+        Task 14.
+      constraints: No Task 14 apply, version, changelog, vision, release, publication,
+        remote, amend, push, tag, or manual YAML edits.
+      unknowns: Task 14 apply authorization remains intentionally unresolved.
+      scope: Attached-worktree Git approval metadata resolution, focused regressions,
+        and Task 13 evidence correction only.
   - number: 903
     timestamp: 2026-07-17 23:20
     type: fix
@@ -212,32 +237,6 @@ cycles:
         and deferring Task 12 vocabulary cleanup.
       constraints: No live migration apply, repair, manual YAML edits, remote contact,
         publication, or Task 12/13 work.
-  - number: 894
-    timestamp: 2026-07-17 14:16
-    type: fix
-    phase: build
-    what: Closed Task 10's final entity migration publication and rollback crash
-      windows.
-    inspiration: Retry 2/2 final Task 10 audit requirements A-E and Decision 94
-      state-storage authority.
-    discovered: Publication ownership must predate the canonical target; journal
-      updates after publication cannot establish safe rollback ownership.
-    verified: "entityMigrationApply.test.ts: 21/21; four-file migration focus:
-      137/137; full CLI: 212 files, 2559/2559. Typecheck, build, check validate
-      state, build capability, capability contract 2/2, compact, migration help,
-      and schema passed."
-    next: Task 10 remains complete. Task 11 remains pending; do not run live
-      migration apply or begin general transaction work.
-    context:
-      intent: Prevent resume from adopting byte-identical successor inodes and prevent
-        rollback completion after legacy source drift.
-      constraints: Only the two reproduced Task 10 crash windows; no Task 11, general
-        transaction framework, live apply, manual YAML edit, vision change,
-        amend, push, publish, or tag.
-      unknowns: None within the final Task 10 corrective scope.
-      scope: Operation-local migration receipts, pinned hard-link publication,
-        descriptor-coherent evidence validation, rollback source revalidation,
-        and adversarial subprocess tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -307,6 +306,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 894 (2026-07-17): Closed Task 10's final entity migration
+      publication and rollback crash windows."
   - summary: "Cycle 893 (2026-07-17): Corrected Cycle 892's immutable count evidence
       and closed Task 10 rollback and source-binding audit defects."
   - summary: "Cycle 892 (2026-07-17): Delivered Task 10 durable entity migration
@@ -401,15 +402,18 @@ archive:
       typed state writers after final verification: Task 5 evaluation..."
   - summary: "Cycle 855 (2026-07-16): Synchronized Plan Task 5 startup contracts and
       final verification: current English capability budget rows now..."
-  - summary: "Cycle 854 (2026-07-16): Retried Plan Task 4: keep status mode and
-      upgrade commands in the canonical nested status..."
 omitted: true
-omitted_count: 139
+omitted_count: 140
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 904
+record:
+  number: 904
+  timestamp: 2026-07-17 23:52
+  type: fix
+  phase: build
+  what: Added standard attached-worktree approval support by resolving regular commondir metadata and reading per-worktree then common loose or packed refs while keeping HEAD and index worktree-local.
+  inspiration: Retry 2/2 final Task 13 plan and the attached-worktree approval audit gap.
+  discovered: Cycle 903's full-suite count of 2,610 was one below its committed 2,611-test baseline; this change adds four attached-worktree cases, making the exact current full count 2,615.
+  verified: Focused entityMigrationApply passed 35/35; full CLI passed 2,615/2,615 across 218 files; typecheck, build, all 12 capabilities, capability contract 2/2, state validation, and compact passed.
+  next: Task 13 remains complete. Task 14 remains pending; do not apply the entity migration. Regenerate the clean post-commit approval and blocker-free preview only.
+  context:
+    intent: Complete Task 13 attached-worktree approval support without starting Task 14.
+    constraints: No Task 14 apply, version, changelog, vision, release, publication, remote, amend, push, tag, or manual YAML edits.
+    unknowns: Task 14 apply authorization remains intentionally unresolved.
+    scope: Attached-worktree Git approval metadata resolution, focused regressions, and Task 13 evidence correction only.
+record_sha256: 2e7eb1904007427ee872cc52e2bf664612b3e0ef8f612b36679fdfe8b2e06da9

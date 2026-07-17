@@ -49,44 +49,100 @@ function safeRelative(value: string): boolean {
     && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 }
 
-function gitDirectory(project: string): string | null {
-  const marker = path.join(project, ".git");
+interface GitLayout { gitDir: string; commonDir: string }
+
+function regularMetadata(file: string, label: string): Buffer {
   let stat: fs.Stats;
-  try { stat = fs.lstatSync(marker); } catch { return null; }
-  if (stat.isSymbolicLink()) throw new EntityMigrationApprovalError("project .git marker must not be a symbolic link");
-  if (stat.isDirectory()) return fs.realpathSync(marker);
-  if (!stat.isFile()) throw new EntityMigrationApprovalError("project .git marker must be a directory or gitfile");
-  const match = /^gitdir: (.+)\s*$/.exec(fs.readFileSync(marker, "utf8"));
-  if (!match) throw new EntityMigrationApprovalError("project gitfile is malformed");
-  const candidate = path.resolve(project, match[1]);
-  const resolved = fs.realpathSync(candidate);
-  if (!fs.statSync(resolved).isDirectory()) throw new EntityMigrationApprovalError("project gitfile does not resolve to a directory");
-  return resolved;
+  try { stat = fs.lstatSync(file); } catch (error) { throw new EntityMigrationApprovalError(`${label} is missing or unreadable: ${(error as Error).message}`); }
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new EntityMigrationApprovalError(`${label} must be a regular file and must not be a symbolic link`);
+  try { return fs.readFileSync(file); } catch (error) { throw new EntityMigrationApprovalError(`${label} is unreadable: ${(error as Error).message}`); }
 }
 
-function currentHead(gitDir: string): { commit: string; ref: string | null } {
-  const head = fs.readFileSync(path.join(gitDir, "HEAD"), "utf8").trim();
+function gitLayout(project: string): GitLayout | null {
+  const marker = path.join(project, ".git");
+  let stat: fs.Stats;
+  try { stat = fs.lstatSync(marker); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw new EntityMigrationApprovalError(`project .git marker is unreadable: ${(error as Error).message}`);
+  }
+  if (stat.isSymbolicLink()) throw new EntityMigrationApprovalError("project .git marker must not be a symbolic link");
+  if (stat.isDirectory()) { const gitDir = fs.realpathSync(marker); return { gitDir, commonDir: gitDir }; }
+  if (!stat.isFile()) throw new EntityMigrationApprovalError("project .git marker must be a directory or gitfile");
+  const match = /^gitdir: ([^\0\r\n]+)\r?\n?$/.exec(regularMetadata(marker, "project gitfile").toString("utf8"));
+  if (!match) throw new EntityMigrationApprovalError("project gitfile is malformed");
+  const candidate = path.resolve(project, match[1]);
+  let gitDir: string;
+  try { gitDir = fs.realpathSync(candidate); } catch (error) { throw new EntityMigrationApprovalError(`project gitfile target is missing or unsafe: ${(error as Error).message}`); }
+  if (gitDir !== candidate) throw new EntityMigrationApprovalError("project gitfile target traverses a symbolic link and is unsafe for approval");
+  if (!fs.statSync(gitDir).isDirectory()) throw new EntityMigrationApprovalError("project gitfile does not resolve to a directory");
+  const commonFile = path.join(gitDir, "commondir");
+  let commonStat: fs.Stats;
+  try { commonStat = fs.lstatSync(commonFile); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { gitDir, commonDir: gitDir };
+    throw new EntityMigrationApprovalError(`Git commondir is unreadable: ${(error as Error).message}`);
+  }
+  if (!commonStat.isFile() || commonStat.isSymbolicLink()) throw new EntityMigrationApprovalError("Git commondir must be a regular file and must not be a symbolic link");
+  const relative = fs.readFileSync(commonFile, "utf8").replace(/\r?\n$/, "");
+  if (!relative || relative.includes("\0") || relative.includes("\n") || path.isAbsolute(relative)) throw new EntityMigrationApprovalError("Git commondir is malformed; standard relative commondir metadata is required");
+  let commonDir: string;
+  try { commonDir = fs.realpathSync(path.resolve(gitDir, relative)); } catch (error) { throw new EntityMigrationApprovalError(`Git commondir target is missing or unsafe: ${(error as Error).message}`); }
+  const expected = fs.realpathSync(path.dirname(path.dirname(gitDir)));
+  if (commonDir !== expected) throw new EntityMigrationApprovalError(`Git commondir escapes the standard linked-worktree layout: '${relative}'`);
+  if (!fs.statSync(commonDir).isDirectory()) throw new EntityMigrationApprovalError("Git commondir does not resolve to a directory");
+  return { gitDir, commonDir };
+}
+
+function packedRef(directory: string, ref: string): string | undefined {
+  const file = path.join(directory, "packed-refs");
+  let stat: fs.Stats;
+  try { stat = fs.lstatSync(file); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw new EntityMigrationApprovalError(`Git packed-refs is unreadable: ${(error as Error).message}`);
+  }
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new EntityMigrationApprovalError("Git packed-refs must be a regular file and must not be a symbolic link");
+  let found: string | undefined;
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    if (!line || line.startsWith("#") || line.startsWith("^")) continue;
+    const match = /^([a-f0-9]{40}) (refs\/[\x21-\x7e]+)$/.exec(line);
+    if (!match || !safeRelative(match[2])) throw new EntityMigrationApprovalError("Git packed-refs is malformed; only the standard files format is supported");
+    if (match[2] === ref) found = match[1];
+  }
+  return found;
+}
+
+function looseRef(directory: string, ref: string): string | undefined {
+  const file = path.join(directory, ...ref.split("/"));
+  let stat: fs.Stats;
+  try { stat = fs.lstatSync(file); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw new EntityMigrationApprovalError(`Git loose ref '${ref}' is unreadable: ${(error as Error).message}`);
+  }
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new EntityMigrationApprovalError(`Git loose ref '${ref}' must be a regular file and must not be a symbolic link`);
+  if (fs.realpathSync(file) !== file) throw new EntityMigrationApprovalError(`Git loose ref '${ref}' traverses a symbolic link and is unsafe for approval`);
+  const commit = fs.readFileSync(file, "utf8").trim();
+  if (!/^[a-f0-9]{40}$/.test(commit)) throw new EntityMigrationApprovalError(`Git loose ref '${ref}' is malformed`);
+  return commit;
+}
+
+function currentHead(layout: GitLayout): { commit: string; ref: string | null } {
+  const head = regularMetadata(path.join(layout.gitDir, "HEAD"), "Git HEAD").toString("utf8").trim();
   if (/^[a-f0-9]{40}$/.test(head)) return { commit: head, ref: null };
   const match = /^ref: (refs\/.+)$/.exec(head);
   if (!match || !safeRelative(match[1])) throw new EntityMigrationApprovalError("Git HEAD is malformed");
   const ref = match[1];
+  const directories = layout.gitDir === layout.commonDir ? [layout.gitDir] : [layout.gitDir, layout.commonDir];
   let commit: string | undefined;
-  try { commit = fs.readFileSync(path.join(gitDir, ...ref.split("/")), "utf8").trim(); } catch { /* packed ref fallback */ }
-  if (!commit) {
-    try {
-      const packed = fs.readFileSync(path.join(gitDir, "packed-refs"), "utf8");
-      commit = packed.split(/\r?\n/).find((line) => line.endsWith(` ${ref}`))?.split(" ")[0];
-    } catch { /* reported below */ }
+  for (const directory of directories) {
+    commit = looseRef(directory, ref) ?? packedRef(directory, ref);
+    if (commit) break;
   }
-  if (!commit || !/^[a-f0-9]{40}$/.test(commit)) throw new EntityMigrationApprovalError(`Git HEAD ref '${ref}' cannot be resolved directly`);
+  if (!commit) throw new EntityMigrationApprovalError(`Git HEAD ref '${ref}' cannot be resolved from standard loose refs or packed-refs; unsupported ref storage requires a different approval checkout`);
   return { commit, ref };
 }
 
 function indexHash(gitDir: string): string {
   const index = path.join(gitDir, "index");
-  const stat = fs.lstatSync(index);
-  if (!stat.isFile() || stat.isSymbolicLink()) throw new EntityMigrationApprovalError("Git index must be a regular file");
-  return hash(fs.readFileSync(index));
+  return hash(regularMetadata(index, "Git index"));
 }
 
 function trackedPath(project: string, relative: string): TrackedPath {
@@ -103,7 +159,9 @@ function trackedPath(project: string, relative: string): TrackedPath {
 }
 
 function runGit(project: string, args: string[]): Buffer {
-  const result = spawnSync("git", args, { cwd: project, encoding: null, shell: false, maxBuffer: 64 * 1024 * 1024 });
+  const env = { ...process.env };
+  for (const name of ["GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"]) delete env[name];
+  const result = spawnSync("git", args, { cwd: project, encoding: null, shell: false, maxBuffer: 64 * 1024 * 1024, env });
   if (result.error || result.status !== 0) throw new EntityMigrationApprovalError(`Git approval inspection failed: ${result.error?.message ?? String(result.stderr)}`);
   return result.stdout;
 }
@@ -116,8 +174,10 @@ function zeroSeparated(bytes: Buffer): string[] {
 export function generateEntityMigrationApproval(projectRoot: string, sourceFingerprint: string, previewDigest: string): EntityMigrationApproval {
   const project = validateRealProjectRoot(projectRoot).path;
   if (!SHA256.test(sourceFingerprint) || !SHA256.test(previewDigest)) throw new EntityMigrationApprovalError("source fingerprint and preview digest must be lowercase SHA-256 values");
-  const gitDir = gitDirectory(project);
-  if (!gitDir) throw new EntityMigrationApprovalError("approval generation requires a Git checkout");
+  const layout = gitLayout(project);
+  if (!layout) throw new EntityMigrationApprovalError("approval generation requires a Git checkout");
+  const head = currentHead(layout);
+  const gitIndexSha256 = indexHash(layout.gitDir);
   const porcelain = runGit(project, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
   if (porcelain.length !== 0) throw new EntityMigrationApprovalError("approval generation requires a clean Git checkout with an empty porcelain status");
   const tracked = zeroSeparated(runGit(project, ["ls-files", "-z"])).sort().map((relative) => trackedPath(project, relative));
@@ -131,11 +191,11 @@ export function generateEntityMigrationApproval(projectRoot: string, sourceFinge
   return {
     schemaVersion: SCHEMA_VERSION,
     project,
-    head: currentHead(gitDir),
+    head,
     clean_porcelain: true,
     source_fingerprint: sourceFingerprint,
     preview_digest: previewDigest,
-    git_index_sha256: indexHash(gitDir),
+    git_index_sha256: gitIndexSha256,
     tracked_manifest_sha256: hash(canonicalRecordJson(tracked)),
     tracked,
     ignored_directory_prefixes: ignoredDirectoryPrefixes,
@@ -178,13 +238,13 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   const approvalPath = path.resolve(approvalFile);
   if (approvalPath === project || approvalPath.startsWith(`${project}${path.sep}`)) throw new EntityMigrationApprovalError("approval file must be outside the project mutation set");
   const approval = readApproval(approvalPath);
-  const gitDir = gitDirectory(project);
-  if (!gitDir) throw new EntityMigrationApprovalError("this project is not a Git checkout and does not accept a Git approval envelope");
+  const layout = gitLayout(project);
+  if (!layout) throw new EntityMigrationApprovalError("this project is not a Git checkout and does not accept a Git approval envelope");
   if (approval.project !== project) throw new EntityMigrationApprovalError(`approval root '${approval.project}' does not match project '${project}'`);
   if (approval.source_fingerprint !== sourceFingerprint || approval.preview_digest !== previewDigest) throw new EntityMigrationApprovalError("approval source fingerprint or preview digest does not match the requested migration");
-  const head = currentHead(gitDir);
+  const head = currentHead(layout);
   if (canonicalRecordJson(head) !== canonicalRecordJson(approval.head)) throw new EntityMigrationApprovalError("Git HEAD/ref changed after migration approval");
-  if (indexHash(gitDir) !== approval.git_index_sha256) throw new EntityMigrationApprovalError("Git index changed after migration approval");
+  if (indexHash(layout.gitDir) !== approval.git_index_sha256) throw new EntityMigrationApprovalError("Git index changed after migration approval");
   const tracked = approval.tracked.map((expected) => {
     if (!safeRelative(expected.path) || !SHA256.test(expected.sha256) || !Number.isInteger(expected.mode)) throw new EntityMigrationApprovalError(`approval tracked entry '${expected.path}' is malformed`);
     let observed: TrackedPath;
@@ -203,5 +263,5 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
 }
 
 export function projectIsGitCheckout(projectRoot: string): boolean {
-  return gitDirectory(validateRealProjectRoot(projectRoot).path) !== null;
+  return gitLayout(validateRealProjectRoot(projectRoot).path) !== null;
 }

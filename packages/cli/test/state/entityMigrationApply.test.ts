@@ -39,9 +39,17 @@ function files(root: string, relative: string): string[] {
   const start = path.join(root, relative); if (!fs.existsSync(start)) return [];
   return fs.readdirSync(start, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => path.join(entry.parentPath, entry.name)).sort();
 }
-function git(root: string, args: string[]): string { const result = spawnSync("git", args, { cwd: root, encoding: "utf8" }); if (result.status) throw new Error(String(result.stderr)); return String(result.stdout).trim(); }
+function git(root: string, args: string[]): string {
+  const env = { ...process.env }; for (const name of ["GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"]) delete env[name];
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8", env }); if (result.status) throw new Error(String(result.stderr)); return String(result.stdout).trim();
+}
 function gitProject(): string {
   const root = project({ "README.md": "approved\n" }); git(root, ["init", "--quiet"]); git(root, ["config", "user.name", "Approval Test"]); git(root, ["config", "user.email", "approval@example.invalid"]); git(root, ["config", "commit.gpgsign", "false"]); git(root, ["add", "."]); git(root, ["commit", "--quiet", "-m", "approved"]); return root;
+}
+function attachedWorktree(detached = false): { common: string; root: string } {
+  const common = gitProject(); const parent = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-attached-worktree-")); roots.push(parent); const root = path.join(parent, "checkout");
+  git(common, ["worktree", "add", "--quiet", ...(detached ? ["--detach"] : ["-b", `approval-${path.basename(parent)}`]), root]);
+  return { common, root };
 }
 function approvalFile(root: string, source: string, digest: string): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-approval-envelope-")); roots.push(directory); const file = path.join(directory, "approval.json"); fs.writeFileSync(file, JSON.stringify(generateEntityMigrationApproval(root, source, digest))); return file;
@@ -115,6 +123,34 @@ describe("durable entity migration", () => {
       const result = capture(["state", "migrate", "entities", "--project", root, "--apply", "--force", "--approval-file", approval, "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"]);
       expect(result.rc, result.out).toBe(0); expect(JSON.parse(result.out)).toMatchObject({ status: "complete" });
     } finally { process.env.PATH = oldPath; }
+  });
+
+  it.each(["loose branch", "packed branch", "detached HEAD"])("applies an attached-worktree approval with %s while PATH traps Git", (headKind) => {
+    const { common, root } = attachedWorktree(headKind === "detached HEAD");
+    if (headKind === "packed branch") git(common, ["pack-refs", "--all"]);
+    const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const envelope = JSON.parse(fs.readFileSync(approval, "utf8"));
+    expect(envelope.project).toBe(fs.realpathSync(root)); expect(envelope.head.ref === null).toBe(headKind === "detached HEAD");
+    if (envelope.head.ref) {
+      const loose = path.join(common, ".git", ...envelope.head.ref.split("/"));
+      expect(fs.existsSync(loose)).toBe(headKind === "loose branch");
+      if (headKind === "packed branch") expect(fs.readFileSync(path.join(common, ".git/packed-refs"), "utf8")).toContain(` ${envelope.head.ref}`);
+    }
+    const oldPath = process.env.PATH; process.env.PATH = "/path/that/contains/no/git";
+    try { expect(applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval).status).toBe("complete"); }
+    finally { process.env.PATH = oldPath; }
+  });
+
+  it("fails closed on malformed, escaping, and symlink-unsafe attached-worktree metadata", () => {
+    for (const defect of ["missing HEAD", "absolute commondir", "escaping commondir", "symlink commondir", "escaping HEAD", "symlink HEAD"] as const) {
+      const { root } = attachedWorktree(); const gitFile = fs.readFileSync(path.join(root, ".git"), "utf8"); const gitDir = path.resolve(root, /^gitdir: (.+)\s*$/.exec(gitFile)![1]);
+      if (defect === "missing HEAD") fs.rmSync(path.join(gitDir, "HEAD"));
+      else if (defect === "absolute commondir") fs.writeFileSync(path.join(gitDir, "commondir"), `${path.dirname(path.dirname(gitDir))}\n`);
+      else if (defect === "escaping commondir") fs.writeFileSync(path.join(gitDir, "commondir"), "../../..\n");
+      else if (defect === "symlink commondir") { fs.renameSync(path.join(gitDir, "commondir"), path.join(gitDir, "commondir.real")); fs.symlinkSync("commondir.real", path.join(gitDir, "commondir")); }
+      else if (defect === "escaping HEAD") fs.writeFileSync(path.join(gitDir, "HEAD"), "ref: refs/heads/../../outside\n");
+      else { fs.renameSync(path.join(gitDir, "HEAD"), path.join(gitDir, "HEAD.real")); fs.symlinkSync("HEAD.real", path.join(gitDir, "HEAD")); }
+      expect(() => generateEntityMigrationApproval(root, "0".repeat(64), "1".repeat(64))).toThrow(/commondir|HEAD.*(?:missing|symbolic link|malformed)/);
+    }
   });
 
   it("prepares immutable evidence, cuts over once, repeats without rewrites, and rolls back exactly", () => {
