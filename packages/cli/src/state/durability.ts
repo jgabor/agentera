@@ -12,6 +12,8 @@ import {
   type NumberedArchiveContract,
   type StateDurabilityContract,
 } from "./archiveDiscovery.js";
+import { detectStateMode } from "./stateMode.js";
+import { discoverEntities } from "./entityStorage.js";
 
 const GIT_TIMEOUT_MS = 1_000;
 const GIT_MAX_BUFFER = 2 * 1024 * 1024;
@@ -25,6 +27,7 @@ export interface DurabilityArgs {
   project?: string | null;
   artifact?: string | null;
   number?: number;
+  id?: string | null;
   limit?: number;
   format?: "text" | "json" | "yaml";
 }
@@ -92,6 +95,15 @@ interface DurabilityEntry {
   };
 }
 
+interface EntityDurabilityEntry {
+  id: string;
+  artifact: string;
+  status: DurabilityStatus;
+  local: DurabilityEntry["local"] & { path?: string };
+  git: DurabilityEntry["git"];
+  retrieval: { get: string };
+}
+
 export interface DurabilityResponse {
   command: string;
   status: DurabilityStatus;
@@ -109,7 +121,7 @@ export interface DurabilityResponse {
     local_corrupt: number;
     reachable_recovery: number;
   };
-  entries: DurabilityEntry[];
+  entries: Array<DurabilityEntry | EntityDurabilityEntry>;
   diagnostics: Array<{
     class: string;
     message: string;
@@ -458,6 +470,64 @@ function orderedCandidates(
   };
 }
 
+function inspectEntityDurability(
+  projectRoot: string,
+  artifact: string,
+  id: string,
+  contract: StateDurabilityContract,
+  run: GitCommandRunner,
+  sourceRoot: string,
+): DurabilityResponse {
+  const entityCommand = "agentera check durability --project PATH --artifact ARTIFACT --id ID --format json";
+  const git = gitContext(projectRoot, run);
+  const discovery = discoverEntities(projectRoot, sourceRoot);
+  const matches = discovery.entities.filter((entity) => entity.id === id && entity.artifact === artifact);
+  const canonical = matches.length === 1 && matches[0].classification === "valid" ? matches[0] : undefined;
+  let local: LocalDurabilityStatus = canonical ? "verified" : matches.length ? "corrupt" : "unavailable";
+  let bytes: string | undefined;
+  let localMessage: string | undefined;
+  if (canonical) {
+    try { bytes = fs.readFileSync(canonical.path, "utf8"); }
+    catch (error) { local = "corrupt"; localMessage = `cannot read canonical entity: ${(error as Error).message}`; }
+  } else if (matches.length > 1) localMessage = `entity ID '${id}' has conflicting ownership for artifact '${artifact}'`;
+  else if (matches.length === 1) localMessage = `entity '${matches[0].relativePath}' is not canonical`;
+  let committedPath: string | undefined;
+  if (!matches.length && git.available && git.root && git.before) {
+    const projectPrefix = path.relative(git.root, projectRoot).split(path.sep).join("/");
+    const entityPrefix = `${projectPrefix ? `${projectPrefix}/` : ""}.agentera/entities/${artifact}`;
+    const tree = run(["ls-tree", "-r", "--name-only", git.before, "--", entityPrefix], git.root);
+    if (successful(tree)) {
+      const candidates = tree.stdout.split(/\r?\n/).filter((value) => value.endsWith(`/${id}.yaml`));
+      if (candidates.length === 1) committedPath = path.join(git.root, ...candidates[0].split("/"));
+    }
+  }
+  const target = canonical?.path ?? matches[0]?.path ?? committedPath ?? path.join(projectRoot, ".agentera", "entities", artifact, `${id}.yaml`);
+  const candidate: Candidate = { path: target, stableId: id, artifactId: artifact, entryNumber: 0, local, ...(bytes !== undefined ? { bytes } : {}), ...(localMessage ? { localMessage } : {}) };
+  let evidence = buildGitEvidence(candidate, git, git.before, false);
+  const ending = git.available && git.root ? readHead(run, git.root) : undefined;
+  const after = ending?.value;
+  const changed = Boolean(git.before && after && git.before !== after);
+  if (git.available && git.before && !after) evidence = { status: "degraded", reason: "final_head_unavailable", reachableRecovery: false };
+  else if (changed) evidence = { status: "degraded", reason: "changed_head", reachableRecovery: false };
+  const status = entryStatus(local, evidence);
+  const get = artifact === "plan" ? `agentera state plan get --id ${id} --format json` : `agentera state ${artifact} get --id ${id} --format json`;
+  const diagnostics: DurabilityResponse["diagnostics"] = [];
+  if (local !== "verified") diagnostics.push({ class: local === "corrupt" ? "canonical_entity_corrupt" : "canonical_entity_missing", message: localMessage ?? `canonical ${artifact} entity '${id}' was not found`, recovery: `Run agentera check validate state, then recover exact detail with '${get}'; no state was changed.` });
+  if (evidence.status !== "verified") diagnostics.push({ class: evidence.reason, message: `${artifact} entity '${id}' has no verified committed recovery (${evidence.reason})`, recovery: `Use '${get}' for local recovery and do not require Git for state writes.` });
+  return {
+    command: entityCommand,
+    status,
+    project: projectRoot,
+    read_only: true,
+    remote_contact: false,
+    head: { status: !git.available || !git.before || !after ? "unavailable" : changed ? "changed" : "stable" },
+    counts: { discovered: matches.length, returned: 1, local_verified: local === "verified" ? 1 : 0, local_unavailable: local === "unavailable" ? 1 : 0, local_corrupt: local === "corrupt" ? 1 : 0, reachable_recovery: evidence.reachableRecovery ? 1 : 0 },
+    entries: [{ id, artifact, status, local: { status: local, detail_availability: local === "verified" ? "full" : "unavailable", path: path.relative(projectRoot, target).split(path.sep).join("/"), ...(localMessage ? { message: localMessage } : {}) }, git: { status: evidence.status, reason: evidence.reason, reachable_recovery: evidence.reachableRecovery }, retrieval: { get } }],
+    diagnostics: diagnostics.sort((a, b) => a.class.localeCompare(b.class)),
+    source_contract: { syntax: entityCommand, status_values: contract.statusValues, local_values: contract.localValues, git_values: contract.gitValues, read_only: true, remote_contact: false, writes_independent: true },
+  };
+}
+
 export function inspectDurability(
   project: string,
   args: Omit<DurabilityArgs, "project" | "format"> = {},
@@ -467,6 +537,10 @@ export function inspectDurability(
   const contract = stateDurabilityContract(sourceRoot);
   const projectRoot = resolvePath(project);
   const run = options.runGit ?? defaultGitRunner;
+  if (detectStateMode(projectRoot, sourceRoot) === "entities") {
+    if (!args.artifact || !args.id) throw new Error("entity-mode durability requires --artifact ARTIFACT --id ID");
+    return inspectEntityDurability(projectRoot, args.artifact, args.id, contract, run, sourceRoot);
+  }
   const git = gitContext(projectRoot, run);
   const artifact = args.artifact ?? null;
   const number = args.number;
@@ -599,8 +673,9 @@ export function renderDurabilityText(response: DurabilityResponse, out: (text: s
       `local_corrupt:${response.counts.local_corrupt} reachable_recovery:${response.counts.reachable_recovery}\n`,
   );
   for (const entry of response.entries) {
+    const identity = "id" in entry ? `${entry.artifact}:${entry.id}` : entry.stable_id;
     out(
-      `- ${entry.stable_id} | status=${entry.status} | local=${entry.local.status} ` +
+      `- ${identity} | status=${entry.status} | local=${entry.local.status} ` +
         `| git=${entry.git.status} | reason=${entry.git.reason} | ` +
         `reachable_recovery=${entry.git.reachable_recovery}\n`,
     );

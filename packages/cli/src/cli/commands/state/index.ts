@@ -27,6 +27,8 @@ import {
   hydrateDecisionEntries,
   displayFields,
 } from "./decisions.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
+import { emitStructured } from "../../structured.js";
 
 export { StateArgs, Io };
 export {
@@ -78,6 +80,11 @@ export function cmdState(args: StateArgs, io: Io): number {
     const handler = STATE_COMMAND_HANDLERS[args.command];
     return handler(args, schemas, io);
   } catch (exc) {
+    if (exc instanceof StateRetrievalFailure) {
+      if (args.format === "json" || args.format === "yaml") emitStructured(exc.body, args.format, io.out ?? ((text) => process.stdout.write(text)));
+      else e(`Error: ${exc.body.error.message}\nSyntax: ${exc.body.error.syntax}\nRecovery: ${exc.body.error.recovery}\n`);
+      return exc.exitCode;
+    }
     e(`Error: ${(exc as Error).message}\n`);
     return 2;
   }

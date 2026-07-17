@@ -12,6 +12,7 @@ import { applyEntityMigration, EntityMigrationOperationError, resumeEntityMigrat
 import { EntityPublicationContext } from "../../src/state/entityPublicationContext.js";
 import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
 import { detectStateMode } from "../../src/state/stateMode.js";
+import { loadYamlMapping } from "../../src/core/yaml.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const WORKER = path.join(import.meta.dirname, "entityMigrationWorker.mjs");
@@ -41,6 +42,15 @@ function files(root: string, relative: string): string[] {
 afterEach(() => { vi.restoreAllMocks(); for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
 describe("durable entity migration", () => {
+  it("makes maintenance validation fail read-only when a manifest target is missing", () => {
+    const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 }); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    const manifest = loadYamlMapping(fs.readFileSync(path.join(root, applied.evidence.manifest), "utf8")); const entry = (manifest.entries as Array<Record<string, any>>)[0];
+    fs.rmSync(path.join(root, entry.proposed_target.path));
+    const before = files(root, ".agentera").map((file) => [file, fs.readFileSync(file, "utf8")]);
+    const result = capture(["check", "validate", "state", "--cwd", root, "--format", "json"]);
+    expect(result.rc).toBe(1); expect(JSON.parse(result.out).issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "missing_migrated_entity", path: entry.proposed_target.path })]));
+    expect(files(root, ".agentera").map((file) => [file, fs.readFileSync(file, "utf8")])).toEqual(before);
+  });
   it("publishes apply, resume, rollback, JSON, help, and schema as one headless contract", () => {
     const help = entityMigrateHelp(); expect(help).toContain("--resume ID --force"); expect(help).toContain("--rollback ID --force"); expect(help).toContain("without prompting"); expect(help).toContain("mode, type, and file-identity");
     const schema = buildSchemaPayload(); expect(schema.entity_migration).toMatchObject({ status: "durable_apply_resume_rollback_implemented", invocation: { resume_command: expect.stringContaining("--resume MIGRATION_ID"), rollback_command: expect.stringContaining("--rollback MIGRATION_ID") } });

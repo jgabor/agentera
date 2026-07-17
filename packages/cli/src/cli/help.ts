@@ -205,17 +205,17 @@ export function printStateHelp(sub?: string): string {
   if (sub === "plan") {
     return [
       "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
-      `       ${retrievalCommands.plan_tasks.list}`,
-      `       ${retrievalCommands.plan_tasks.get}`,
-      `       ${retrievalCommands.plans.list}`,
-      `       ${retrievalCommands.plans.get}`,
+      `       ${entityMode ? "agentera state plan tasks list [--plan-id ID] [--limit N] [--cursor TOKEN] --format json" : retrievalCommands.plan_tasks.list}`,
+      `       ${entityMode ? "agentera state plan tasks get --id ID [--plan-id ID] --format json" : retrievalCommands.plan_tasks.get}`,
+      `       ${entityMode ? "agentera state plan list [--limit N] [--cursor TOKEN] --format json" : retrievalCommands.plans.list}`,
+      `       ${entityMode ? "agentera state plan get --id ID --format json" : retrievalCommands.plans.get}`,
       `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
       "",
-      "Plan list/get returns active and archived file-based plans with stable identity and lifecycle provenance.",
-      "Plan list is bounded and cursor-paginated; plan get requires --plan and returns the full selected document.",
+      entityMode ? "Plan and task reads use bare canonical IDs from entity list results." : "Plan list/get returns active and archived file-based plans with stable identity and lifecycle provenance.",
+      entityMode ? "Plan list is bounded and cursor-paginated; plan get requires --id." : "Plan list is bounded and cursor-paginated; plan get requires --plan and returns the full selected document.",
       "Invalid historical archives remain non-fatal compatibility diagnostics unless selected.",
-      "Plan task list/get reads the active plan only; --plan may pin that active identity but does not select an archive.",
-      "Task list and task get default to the active plan; --plan is optional and task get requires a positive --task.",
+      entityMode ? "Task list defaults to the sole open plan; --plan-id selects another bare plan ID and task get requires --id." : "Plan task list/get reads the active plan only; --plan may pin that active identity but does not select an archive.",
+      entityMode ? "Legacy --plan, --task, numeric, composite, and path selectors are rejected." : "Task list and task get default to the active plan; --plan is optional and task get requires a positive --task.",
       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",
@@ -354,7 +354,7 @@ export function printCheckHelp(sub?: string): string {
   if (sub === "durability") {
     return [
       "usage: agentera check durability [-h] [--project PATH] [--artifact ARTIFACT]",
-      "                                [--number N] [--limit N] --format {text,json,yaml}",
+      "                                [--number N|--id ID] [--limit N] --format {text,json,yaml}",
       "",
       "Read-only local archive and optional reachable Git durability evidence.",
       "Git is never required for local state writes and no remote is contacted.",
@@ -364,6 +364,7 @@ export function printCheckHelp(sub?: string): string {
       "  --project PATH        Project directory to inspect",
       "  --artifact ARTIFACT   progress, decisions, or health",
       "  --number N            Positive archive entry number; requires --artifact",
+      "  --id ID                Bare canonical entity ID after cutover; requires --artifact",
       "  --limit N             Bound returned archive entries (maximum 100)",
       "  --format FORMAT       Output format: text, json, or yaml",
     ].join("\n");

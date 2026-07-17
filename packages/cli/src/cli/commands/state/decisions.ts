@@ -25,6 +25,10 @@ import type { JsonObject } from "../../../core/jsonValue.js";
 import {
   hydrateDecisionRecords,
 } from "../../../state/decisionOverlay.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listDecisionEntities } from "../../../state/decisionEntities.js";
+import { emitStructured } from "../../structured.js";
+import YAML from "yaml";
 
 const DECISION_CONTEXT_FIELDS = [
   "number",
@@ -414,6 +418,13 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
 export function queryDecisions(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
+  if (detectStateMode(process.cwd()) === "entities") {
+    const format = args.format ?? "text";
+    const response = listDecisionEntities(process.cwd(), args.limit ?? undefined, args.topic ?? undefined, args.cursor ?? undefined, { format });
+    if (format === "text") o(YAML.stringify(response));
+    else emitStructured(response, format as "json" | "yaml", o);
+    return 0;
+  }
   const info = schemas.decisions;
   if (!info) {
     e(missingSchemaError("decisions") + "\n");

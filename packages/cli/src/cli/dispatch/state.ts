@@ -18,9 +18,11 @@ export function parseStateArgs(command: string, argv: string[]): StateArgs | { e
     status: null,
     dimension: null,
     severity: null,
-    limit: 5,
+    limit: null,
     format: "text",
     fields: null,
+    cursor: null,
+    objective: null,
   };
   const allowed = new Set([...(COMMAND_FILTERS[command] ?? []), "format", "fields"]);
   let i = 0;
@@ -35,6 +37,8 @@ export function parseStateArgs(command: string, argv: string[]): StateArgs | { e
     else if (named("--status", "status")) args.status = value("--status");
     else if (named("--dimension", "dimension")) args.dimension = value("--dimension");
     else if (named("--severity", "severity")) args.severity = value("--severity");
+    else if (named("--cursor", "cursor")) args.cursor = value("--cursor");
+    else if (named("--objective", "objective")) args.objective = value("--objective");
     else if (named("--limit", "limit")) {
       v = value("--limit");
       const n = Number(v);

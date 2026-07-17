@@ -30,6 +30,10 @@ import {
 import { planLifecycleState } from "../../planLifecycleState.js";
 import { resolvePlanTaskEvidence } from "../../planEvidence.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { currentPlanEntityView } from "../../../state/planEntities.js";
+import { emitStructured } from "../../structured.js";
+import YAML from "yaml";
 
 const PLAN_HISTORY_CATALOG_LIMIT = 10;
 const PLAN_TEXT_TASK_LIMIT = 10;
@@ -309,6 +313,14 @@ function planSourceContract(
 }
 
 export function queryPlan(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
+  if (detectStateMode(process.cwd()) === "entities") {
+    const o = out(io);
+    const format = args.format ?? "text";
+    const response = currentPlanEntityView(process.cwd(), args.limit ?? undefined, args.cursor ?? undefined, args.status ?? undefined, { format });
+    if (format === "text") o(YAML.stringify(response));
+    else emitStructured(response, format as "json" | "yaml", o);
+    return 0;
+  }
   const o = out(io);
   const e = err(io);
   const info = schemas.plan;

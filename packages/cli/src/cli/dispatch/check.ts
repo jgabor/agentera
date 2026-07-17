@@ -148,6 +148,7 @@ export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: s
     let parsed: string | null;
     if ((parsed = value("--project")) !== null) args.project = parsed;
     else if ((parsed = value("--artifact")) !== null) args.artifact = parsed;
+    else if ((parsed = value("--id")) !== null) args.id = parsed;
     else if ((parsed = value("--number")) !== null) {
       if (!/^[1-9][0-9]*$/.test(parsed)) return { error: `argument --number: invalid int value: '${parsed}'` };
       const number = Number(parsed);

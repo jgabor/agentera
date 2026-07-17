@@ -164,7 +164,7 @@ tasks:
       - "8"
       - "9"
       - "10"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN exact get, list, cursor, durability, recovery, and derived-view operations WHEN exercised THEN they use id and artifact consistently.
       - GIVEN old numeric or stable-ID selectors WHEN invoked after cutover THEN they fail with canonical ID syntax and no compatibility alias.

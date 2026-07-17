@@ -1,4 +1,24 @@
 cycles:
+  - number: 895
+    timestamp: 2026-07-17 14:57
+    type: feat
+    phase: build
+    what: Task 11 cut entity-mode retrieval and maintenance APIs to canonical id and
+      artifact identity.
+    discovered: Entity durability can recover a locally missing canonical entity by
+      locating its exact committed boundary path in local Git without remote
+      contact.
+    verified: "pnpm test: 213 files, 2,564 tests passed; pnpm run typecheck passed;
+      pnpm build passed; check validate state, capability-contract, capability
+      build, and check compact passed."
+    next: "Task 12 remains pending: clean prime, context, hooks, package, and
+      broader command vocabulary without reopening Task 11 behavior."
+    context:
+      intent: Complete only PLAN Task 11 retrieval, durability, recovery, and
+        read-only maintenance surfaces while preserving marker-absent behavior
+        and deferring Task 12 vocabulary cleanup.
+      constraints: No live migration apply, repair, manual YAML edits, remote contact,
+        publication, or Task 12/13 work.
   - number: 894
     timestamp: 2026-07-17 14:16
     type: fix
@@ -211,22 +231,6 @@ cycles:
         project-state updates.
       unknowns: None.
       scope: packages/cli plan entity publication, evaluation validation, and tests.
-  - number: 885
-    timestamp: 2026-07-17 06:45
-    type: feat
-    phase: build
-    what: Added plans/tasks entity mode in packages/cli/src/state/planEntities.ts
-      with independent bare-ID files, dependency validation, bounded retrieval,
-      rollback-safe create, and Git-visible same-task conflicts.
-    verified: "pnpm -C packages/cli test: 2,507 passed; typecheck and build passed;
-      state, plan capability, capability contract, compact, and built CLI legacy
-      retrieval passed."
-    next: PLAN Task8 remains pending.
-    context:
-      intent: Complete PLAN Task7 without cutting over objectives, experiments, apply,
-        or global plan consumers.
-      constraints: Preserve legacy authority while the marker is absent; no aggregate
-        plan/archive writes in entity mode.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -296,6 +300,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 885 (2026-07-17): Added plans/tasks entity mode in
+      packages/cli/src/state/planEntities.ts with independent bare-ID files,
+      dependency validation, bounded retrieval, rollback-safe..."
   - summary: "Cycle 884 (2026-07-17): Routed health entity append through the
       canonical loaded input while preserving exact nested audit records..."
   - summary: "Cycle 883 (2026-07-17): Cut health audit storage, writes, bounded
@@ -391,16 +398,18 @@ archive:
   - summary: "Cycle 846 (2026-07-16): Retried plan Task 1 after independent
       evaluation failed commit 798820a2. Reconciled the documented/runtime
       capability-context contract:..."
-  - summary: "Cycle 845 (2026-07-16): Established the prime consumer compatibility
-      boundary: inventoried every documented prime consumer with field-level
-      evidence, classified..."
 omitted: true
-omitted_count: 130
+omitted_count: 131
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

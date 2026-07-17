@@ -22,10 +22,20 @@ import {
 } from "../../stateQuery.js";
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
+import { emitStructured } from "../../structured.js";
 
 export function queryProgress(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
+  if (detectStateMode(process.cwd()) === "entities") {
+    const format = (args.format ?? "text") as "text" | "json" | "yaml";
+    const response = listProgressEntities(process.cwd(), args.limit ?? undefined, { topic: args.topic, status: args.status }, args.cursor ?? undefined, { format });
+    if (format === "text") o(renderProgressEntityListText(response));
+    else emitStructured(response, format, o);
+    return 0;
+  }
   const info = schemas.progress;
   if (!info) {
     e(missingSchemaError("progress") + "\n");

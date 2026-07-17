@@ -37,7 +37,7 @@ function parse(argv: string[], verb: "list" | "get", entityMode: boolean): { for
   const seen = new Set<string>();
   for (let index = 0; index < argv.length; ) {
     const token = argv[index];
-    const name = ["--format", "--plan", "--limit", "--cursor", "--task", "--id"].find((flag) => token === flag || token.startsWith(`${flag}=`));
+    const name = ["--format", "--plan", "--plan-id", "--limit", "--cursor", "--task", "--id"].find((flag) => token === flag || token.startsWith(`${flag}=`));
     if (!name || (verb === "list" && (name === "--task" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor"))) {
       throw requestFailure(`unrecognized argument '${token}'`, verb, entityMode);
     }
@@ -54,7 +54,11 @@ function parse(argv: string[], verb: "list" | "get", entityMode: boolean): { for
     if (name === "--format") {
       if (!(["text", "json", "yaml"] as string[]).includes(value)) throw requestFailure(`invalid --format '${value}'`, verb, entityMode);
       format = value as Format;
-    } else if (name === "--plan") plan = value;
+    } else if (name === "--plan" || name === "--plan-id") {
+      if (entityMode && name === "--plan") throw requestFailure("entity mode rejects legacy --plan; use --plan-id ID with a bare plan ID", verb, true);
+      if (!entityMode && name === "--plan-id") throw requestFailure("legacy mode rejects --plan-id; use --plan PLAN_ID", verb, false);
+      plan = value;
+    }
     else if (name === "--cursor") cursor = value;
     else if (name === "--limit") {
       if (!/^[1-9][0-9]*$/.test(value)) throw requestFailure("--limit must be an integer from 1 through 100", verb, entityMode);
@@ -76,15 +80,15 @@ function requestFailure(message: string, verb: "list" | "get", entityMode = fals
       class: "invalid_request",
       message,
       syntax: list
-        ? "agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
-        : entityMode ? "agentera state plan tasks get [--plan ID] --id ID --format json" : "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
+        ? entityMode ? "agentera state plan tasks list [--plan-id ID] [--limit N] [--cursor TOKEN] --format json" : "agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
+        : entityMode ? "agentera state plan tasks get [--plan-id ID] --id ID --format json" : "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
       example: list
         ? "agentera state plan tasks list --limit 20 --format json"
         : entityMode ? "agentera state plan tasks get --id qjtrmnpvka --format json" : "agentera state plan tasks get --task 1 --format json",
       recovery: "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
-        ? ["list", "--plan PLAN_ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
-        : entityMode ? ["get", "--id ID", "--plan ID", "--format text|json|yaml"] : ["get", "--task N", "--plan PLAN_ID", "--format text|json|yaml"],
+        ? ["list", entityMode ? "--plan-id ID" : "--plan PLAN_ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        : entityMode ? ["get", "--id ID", "--plan-id ID", "--format text|json|yaml"] : ["get", "--task N", "--plan PLAN_ID", "--format text|json|yaml"],
     },
   }, 2);
 }

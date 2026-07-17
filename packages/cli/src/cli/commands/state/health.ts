@@ -17,6 +17,10 @@ import {
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listHealthEntities } from "../../../state/healthEntities.js";
+import { emitStructured } from "../../structured.js";
+import YAML from "yaml";
 
 export function healthAuditNumber(entry: JsonObject): number | null {
   const number = entry.number;
@@ -43,6 +47,13 @@ export function latestHealthAudit(entries: JsonObject[]): JsonObject | null {
 export function queryHealth(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
+  if (detectStateMode(process.cwd()) === "entities") {
+    const format = args.format ?? "text";
+    const response = listHealthEntities(process.cwd(), args.limit ?? 1, args.dimension ?? undefined, args.cursor ?? undefined, { format });
+    if (format === "text") o(YAML.stringify(response));
+    else emitStructured(response, format as "json" | "yaml", o);
+    return 0;
+  }
   const info = schemas.health;
   if (!info) {
     e(missingSchemaError("health") + "\n");

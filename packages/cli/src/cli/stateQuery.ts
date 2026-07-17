@@ -68,14 +68,14 @@ export function availablePrimeFields(command: string): string[] {
 
 export const COMMAND_FILTERS: Record<string, string[]> = {
   prime: [],
-  plan: ["status"],
-  progress: ["topic", "status", "limit"],
-  health: ["dimension"],
+  plan: ["status", "limit", "cursor"],
+  progress: ["topic", "status", "limit", "cursor"],
+  health: ["dimension", "limit", "cursor"],
   todo: ["severity", "status"],
-  decisions: ["topic"],
+  decisions: ["topic", "limit", "cursor"],
   docs: ["topic", "status"],
   objective: ["status"],
-  experiments: ["topic", "status", "limit"],
+  experiments: ["topic", "status", "limit", "cursor", "objective"],
   query: ["list_artifacts", "topic", "severity", "dimension", "status", "limit"],
 };
 

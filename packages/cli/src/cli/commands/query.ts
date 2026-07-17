@@ -31,6 +31,8 @@ import { displayFields, queryTodo, StateArgs } from "./state/index.js";
 import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateRetrievalCommands } from "../../state/retrievalAuthority.js";
+import { detectStateMode } from "../../state/stateMode.js";
+import { listProgressEntities } from "../../state/progressEntities.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
@@ -270,6 +272,15 @@ function queryLastPhase(args: QueryArgs, schemas: Record<string, SchemaInfo>, io
   const o = out(io);
   const e = err(io);
   const format = args.format ?? "text";
+  if (detectStateMode(process.cwd()) === "entities") {
+    const response = listProgressEntities(process.cwd(), 1, {}, undefined, { format: format as "text" | "json" | "yaml" });
+    const entry = Array.isArray(response.entries) ? response.entries[0] as JsonObject | undefined : undefined;
+    const record = entry?.record as JsonObject | undefined;
+    const phase = String(record?.phase ?? "");
+    if (format === "text") { if (phase) o(`${phase}\n`); }
+    else emitStructured(entry ? { phase, id: entry.id, artifact: entry.artifact, provenance: entry.provenance, snapshot: response.snapshot, retrieval: { get: `agentera state progress get --id ${entry.id} --format json` } } : null, format, o);
+    return 0;
+  }
   const info = schemas.progress;
   if (!info) {
     e(missingSchemaError("progress") + "\n");

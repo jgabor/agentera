@@ -21,6 +21,10 @@ import {
 import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
+import { detectStateModeBinding } from "../../state/stateMode.js";
+import { loadCompletedEntityMigrationManifest } from "../../state/entityMigrationApply.js";
+import { validateRealProjectRoot } from "../../state/projectRoot.js";
+import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
 
@@ -536,23 +540,47 @@ export function cmdValidateState(
   const err = io.err ?? ((text: string) => process.stderr.write(text));
   const projectRoot = resolvePath(args.cwd ?? process.cwd());
   const result = validateEntityState(projectRoot);
+  const issues: JsonObject[] = [...result.issues as unknown as JsonObject[]];
+  try {
+    const binding = detectStateModeBinding(projectRoot);
+    if (binding.mode === "entities") {
+      binding.publicationContext.close();
+      const markerSnapshot = readProjectFileSnapshot(validateRealProjectRoot(projectRoot), ".agentera/state-mode.yaml");
+      if (markerSnapshot.kind !== "file") throw new Error("entity-mode marker became unavailable during maintenance validation");
+      const marker = loadYamlMapping(markerSnapshot.bytes.toString("utf8"));
+      if (typeof marker.migration_id === "string") {
+        const entries = loadCompletedEntityMigrationManifest(projectRoot, marker.migration_id);
+        const byPath = new Map(result.entities.map((entity) => [entity.relativePath, entity]));
+        for (const expected of entries) {
+          const target = expected.proposed_target;
+          const actual = target ? byPath.get(target.path) : undefined;
+          if (!target || !actual || actual.classification !== "valid" || actual.id !== target.id || actual.artifact !== expected.artifact) {
+            issues.push({ code: "missing_migrated_entity", path: target?.path ?? "", id: target?.id ?? null, artifact: expected.artifact, message: `migration '${marker.migration_id}' target '${target?.path ?? expected.source_identity}' is missing or no longer has its declared artifact and ID`, recovery: "Restore a valid canonical entity at the manifest-declared path, preserving its artifact and bare ID; no state was changed." });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    issues.push({ code: "invalid_state_marker_or_manifest", path: ".agentera/state-mode.yaml", message: (error as Error).message, recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check." });
+  }
+  const valid = result.valid && issues.length === 0;
   const payload: JsonObject = {
     command: "check validate state",
     target_family: "state",
-    status: result.valid ? "pass" : "fail",
-    valid: result.valid,
+    status: valid ? "pass" : "fail",
+    valid,
     project_root: projectRoot,
     entity_count: result.entityCount,
-    issue_count: result.issues.length + result.omittedIssueCount,
+    issue_count: issues.length + result.omittedIssueCount,
     omitted_issue_count: result.omittedIssueCount,
     valid_artifact_values: result.validArtifactValues,
-    issues: result.issues as unknown as JsonValue,
+    issues: issues as unknown as JsonValue,
   };
   if ((args.format ?? "text") === "json") emitStructured(payload, "json", out);
   else {
     out(`status=${payload.status} | entities=${result.entityCount} | issues=${payload.issue_count} | project_root=${projectRoot}\n`);
-    for (const issue of result.issues) err(`${issue.code}: ${issue.message}\nrecovery: ${issue.recovery}\n`);
+    for (const issue of issues) err(`${issue.code}: ${issue.message}\nrecovery: ${issue.recovery}\n`);
     if (result.omittedIssueCount > 0) err(`omitted ${result.omittedIssueCount} additional issues; repair listed issues and rerun agentera check validate state --cwd ${JSON.stringify(projectRoot)}\n`);
   }
-  return result.valid ? 0 : 1;
+  return valid ? 0 : 1;
 }

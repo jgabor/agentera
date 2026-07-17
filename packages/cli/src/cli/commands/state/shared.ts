@@ -16,6 +16,8 @@ export interface StateArgs {
   dimension?: string | null;
   severity?: string | null;
   limit?: number | null;
+  cursor?: string | null;
+  objective?: string | null;
   format?: string;
   fields?: string | null;
 }

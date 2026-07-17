@@ -327,6 +327,37 @@ describe("read-only archive and Git durability", () => {
     });
   });
 
+  it("uses bare entity identity after cutover and remains read-only", () => {
+    const root = nonGitProject();
+    fs.mkdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const target = path.join(root, ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml");
+    fs.writeFileSync(target, dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "progress", record: { timestamp: "2026-07-17 12:00", type: "test", phase: "build", what: "durable", context: { intent: "test" } } }));
+    const before = fs.readFileSync(target);
+    let out = "";
+    const rc = main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa", "--format", "json"], { out: (text) => out += text });
+    expect(rc).toBe(0); const payload = JSON.parse(out);
+    expect(payload).toMatchObject({ read_only: true, remote_contact: false, entries: [{ id: "aaaaaaaaaa", artifact: "progress", retrieval: { get: "agentera state progress get --id aaaaaaaaaa --format json" } }] });
+    expect(JSON.stringify(payload)).not.toMatch(/stable_id|artifact_id|entry_number/);
+    expect(fs.readFileSync(target)).toEqual(before);
+    out = ""; expect(main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--number", "1", "--format", "json"], { out: (text) => out += text })).toBe(2);
+    expect(JSON.parse(out).error).toMatchObject({ artifact: "progress" }); expect(JSON.stringify(JSON.parse(out))).not.toMatch(/stable_id|artifact_id|entry_number/);
+  });
+
+  it("reports committed, dirty, and locally missing entity recovery through Git", () => {
+    const root = project(); initGit(root);
+    fs.mkdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const target = path.join(root, ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml");
+    const bytes = dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "progress", record: { timestamp: "2026-07-17 12:00", type: "test", phase: "build", what: "durable", context: { intent: "test" } } });
+    fs.writeFileSync(target, bytes); git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity fixture"]);
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ id: "aaaaaaaaaa", git: { status: "verified", reason: "reachable_head", reachable_recovery: true } }] });
+    fs.writeFileSync(target, bytes.replace("what: durable", "what: dirty"));
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ git: { status: "degraded", reason: "dirty_archive", reachable_recovery: true } }] });
+    fs.rmSync(target);
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ local: { status: "unavailable" }, git: { status: "verified", reason: "reachable_head", reachable_recovery: true } }] });
+  });
+
   it.each([
     {
       args: ["--artifact", "bogus", "--format", "json"],

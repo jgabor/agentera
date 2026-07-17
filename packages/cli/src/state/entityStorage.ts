@@ -84,6 +84,10 @@ export interface EntityValidationResult extends EntityDiscoveryResult {
   omittedIssueCount: number;
 }
 
+export function entityArtifactValues(sourceRoot?: string): string[] {
+  return [...authority(sourceRoot).artifacts];
+}
+
 function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }

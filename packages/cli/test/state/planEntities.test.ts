@@ -234,8 +234,8 @@ describe("plan and task entity authority", () => {
     const root = project(); const first = create(root, "first"); create(root, "second");
     const listed = capture(root, ["state", "plan", "list", "--limit", "1", "--format", "json"]); expect(listed.rc).toBe(0); const page = JSON.parse(listed.out); expect(page.entries[0]).toHaveProperty("record"); expect(page.next_cursor).toBeTruthy();
     const exact = capture(root, ["state", "plan", "get", "--id", first.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(JSON.parse(exact.out).tasks[0].record).toBeTruthy();
-    const tasks = capture(root, ["state", "plan", "tasks", "list", "--plan", first.id, "--format", "json"]); expect(tasks.rc).toBe(0); const taskId = JSON.parse(tasks.out).entries[0].id;
-    expect(capture(root, ["state", "plan", "tasks", "get", "--plan", first.id, "--id", taskId, "--format", "json"]).rc).toBe(0);
+    const tasks = capture(root, ["state", "plan", "tasks", "list", "--plan-id", first.id, "--format", "json"]); expect(tasks.rc).toBe(0); const taskId = JSON.parse(tasks.out).entries[0].id;
+    expect(capture(root, ["state", "plan", "tasks", "get", "--plan-id", first.id, "--id", taskId, "--format", "json"]).rc).toBe(0);
     capture(root, ["state", "plan", "append", "--plan", first.id, "--name", "Changed snapshot", "--format", "json"]);
     const stale = capture(root, ["state", "plan", "list", "--limit", "1", "--cursor", page.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(JSON.parse(stale.out).error.class).toBe("cursor_snapshot_unavailable");
   });

@@ -556,6 +556,7 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/cli/appContext.ts
       - packages/cli/src/cli/commands/state/plan*.ts
       - packages/cli/src/state/plan*.ts
+      - packages/cli/src/state/durability.ts
       - packages/cli/src/cli/commands/prime/*.ts
       - packages/cli/src/cli/capabilityContext/*.ts
       - packages/cli/src/cli/contracts/orientationState.ts

@@ -22,10 +22,21 @@ import {
 import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { out, err, StateArgs, Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listCurrentExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
+import { emitStructured } from "../../structured.js";
+import YAML from "yaml";
 
 export function queryExperiments(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const e = err(io);
+  if (detectStateMode(process.cwd()) === "entities") {
+    const format = args.format ?? "text";
+    const response = listCurrentExperimentEntities(process.cwd(), args.objective ?? undefined, args.limit ?? undefined, args.cursor ?? undefined, { topic: args.topic ?? undefined, status: args.status ?? undefined }, { format });
+    if (format === "text") o(YAML.stringify(response));
+    else emitStructured(response, format as "json" | "yaml", o);
+    return 0;
+  }
   const info = schemas.experiments;
   if (!info) {
     e(missingSchemaError("experiments") + "\n");

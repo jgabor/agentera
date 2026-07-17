@@ -212,6 +212,13 @@ function loadEvidence(project: string, journal: Journal): LoadedEvidence {
   }
   return { entries, receipts };
 }
+
+/** Safely loads immutable evidence for maintenance validation without checking target inode ownership. */
+export function loadCompletedEntityMigrationManifest(project: string, id: string): DurableEntityMigrationEntry[] {
+  const { journal } = loadJournal(project, id);
+  if (journal.phase !== "cutover_complete") throw new EntityMigrationOperationError("migration_incomplete", `migration '${id}' is in phase '${journal.phase}', not cutover_complete`, "Resume or roll back the owning migration before validating entity-mode state.");
+  return loadEvidence(project, journal).entries;
+}
 function assertCurrentSource(project: string, sourceRoot: string, journal: Journal): void {
   const current = planEntityMigration(project, sourceRoot);
   const snapshot = loadYamlMapping(readRegular(project, `${ROOT}/${journal.migration_id}/snapshot.yaml`, "migration snapshot").toString("utf8"));

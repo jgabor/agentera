@@ -1491,10 +1491,12 @@ api:
     empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
   durability:
     command: agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json
+    entity_command: agentera check durability --project PATH --artifact ARTIFACT --id ID --format json
     formats: [text, json, yaml]
     selectors:
       artifact: optional supported numbered archive artifact ID
       number: optional positive entry number; requires artifact
+      id: entity-mode bare entity ID; requires artifact and replaces number after cutover
       limit: optional bounded result count
     default_limit: 100
     maximum_limit: 100
