@@ -148,7 +148,7 @@ tasks:
       - "7"
       - "8"
       - "9"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN approved apply intent WHEN migration starts THEN the complete mapping, source fingerprints, cutover journal, and recovery snapshot are durable before entity publication.
       - GIVEN interruption at any declared phase WHEN apply resumes THEN it converges on one graph without new IDs, duplicates, or divergent relationships.

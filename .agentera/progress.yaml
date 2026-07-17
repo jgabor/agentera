@@ -1,4 +1,30 @@
 cycles:
+  - number: 892
+    timestamp: 2026-07-17 13:00
+    type: feat
+    phase: build
+    what: Delivered Task 10 durable entity migration apply, explicit resume,
+      idempotent replay, and guarded rollback through agentera state migrate
+      entities.
+    inspiration: Active Plan Task 10 and Decision 94 state-storage authority.
+    discovered: Nested test runners rebuilt dist concurrently; crash tests now use
+      one built CLI worker subprocess so the full suite remains race-free.
+    verified: 138 focused migration/preview/authority/help/schema tests and full
+      2548-test CLI suite passed; typecheck, build, check validate state, build
+      capability and capability-contract validation, check compact, help, and
+      schema passed.
+    next: Task 11 remains pending. Do not apply migration to this repository or
+      begin consumer cleanup without a new cycle.
+    context:
+      intent: Complete only Plan Task 10 with durable pre-publication evidence,
+        deterministic resume, no-rewrite replay, and successor-safe rollback.
+      constraints: No live repository apply; no Task 11 consumer cleanup; no
+        entity-family redesign; no blocker repair; no vision, publish, push, or
+        tag.
+      unknowns: None within Task 10 acceptance; the live repository's blocked preview
+        remains intentionally untouched.
+      scope: packages/cli entity migration preview/apply command, durable journal
+        implementation, scoped schema/help/authority, and migration regressions.
   - number: 891
     timestamp: 2026-07-17 12:17
     type: fix
@@ -195,29 +221,6 @@ cycles:
       scope: Health entity authority, append/get/list/cursor/repair routing, shared
         publication-context coverage, Git merge fixtures, and proportional
         tests.
-  - number: 882
-    timestamp: 2026-07-17 05:36
-    type: fix
-    phase: build
-    what: Hardened decision cursor snapshots, canonical revision validation, and
-      satisfaction replacement rollback.
-    inspiration: PLAN Task5 retry audit.
-    discovered: The decision cursor hashed only base records, whole-state validation
-      stopped at generic entity shape, and replacement had no descriptor-pinned
-      rollback after rename.
-    verified: "Focused Task5/Git/legacy/entity tests: 11 files, 230 tests passed.
-      Full CLI: 207 files, 2489 tests passed. Typecheck and build passed. State
-      validation, discuss capability, capability contract, and compact passed."
-    next: Keep Task5 complete and proceed only when explicitly asked; Task6 remains
-      pending.
-    context:
-      intent: Close only the three audited Task5 integrity defects without reopening
-        the family cutover.
-      constraints: Decision family only; no apply, global cutover, other family,
-        amend, push, publish, or vision changes.
-      unknowns: None.
-      scope: Decision entity retrieval and validation, shared entity replacement, and
-        proportional regression tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -287,6 +290,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 882 (2026-07-17): Hardened decision cursor snapshots, canonical
+      revision validation, and satisfaction replacement rollback."
   - summary: "Cycle 881 (2026-07-17): Cut decisions over to canonical entity authority"
   - summary: "Cycle 880 (2026-07-17): Bound all entity-family publication to one
       pinned project-root and exact state-mode marker context, with
@@ -385,15 +390,18 @@ archive:
   - summary: "Cycle 843 (2026-07-16): Enforced legacy coexistence across decision
       mutations so untouched inherited unsupported confidence labels (e.g. high)
       no..."
-  - summary: "Cycle 842 (2026-07-16): Published record-local decision amendments
-      with recovery (plan task 3). Wired amend publication through the typed..."
 omitted: true
-omitted_count: 127
+omitted_count: 128
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

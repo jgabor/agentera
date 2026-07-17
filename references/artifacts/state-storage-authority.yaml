@@ -15,9 +15,10 @@ authority:
     or byte limits.
   implementation_boundary: >-
     Shared entity storage plus the progress, decisions, health, plan, objective,
-    experiment, TODO-item, and documentation-inventory family writers and retrieval
-    are implemented, but activate only from the durable cutover marker. Other entity
-    families and durable migration apply remain declared, not implemented. The
+    experiment, TODO-item, and documentation-inventory family writers and retrieval,
+    plus durable migration apply, resume, and guarded rollback, are implemented but
+    activate entity authority only from the durable cutover marker. The preserved
+    singleton families remain legacy files. The
     current numbered archive and retrieval groups remain implemented legacy
     authority while that marker is absent. The maintenance-only Git backfill
     surface declared by api.backfill remains a separate legacy repair operation
@@ -428,7 +429,7 @@ entity_target:
       never truncate bytes, omit required identity, or fabricate detail.
 
 entity_migration:
-  status: inventory_preview_implemented
+  status: durable_apply_resume_rollback_implemented
   decision: 94
   kind: single_explicit_project_cutover
   cutover_marker:
@@ -455,11 +456,17 @@ entity_migration:
     apply_preflight_command: >-
       agentera state migrate entities --project PATH --apply --force
       --source-fingerprint SHA256 --preview-digest SHA256 --format {text,json,yaml}
+    resume_command: >-
+      agentera state migrate entities --project PATH --resume MIGRATION_ID
+      --force --format {text,json,yaml}
+    rollback_command: >-
+      agentera state migrate entities --project PATH --rollback MIGRATION_ID
+      --force --format {text,json,yaml}
     apply_boundary: >-
-      Task 3 implements only source binding. A matching apply request reports
-      apply_not_implemented without effects; a changed source is refused before
-      a supplied effect can run. Durable mapping, snapshot, journal, publication,
-      resume, rollback, and cutover remain Task 10.
+      A matching blocker-free apply serializes through the project writer lock,
+      durably prepares one root-bound deterministic operation, publishes the
+      immutable mapped graph, validates it, and writes the authority marker last.
+      Resume and rollback require the exact durable migration ID and --force.
   source_scope:
     included_entities: entity_target.entities
     included_structured_relationships: entity_target.relationships.declarations
@@ -494,9 +501,9 @@ entity_migration:
       Preview-only ten-letter candidates are deterministically allocated from a
       domain-separated SHA-256 of the complete source fingerprint and canonical
       source key. This is allocation of a new opaque target candidate, not
-      reconstruction of a missing source ID. A collision is a blocker. Task 10
-      must persist the approved mapping before publication and must not
-      regenerate candidates during apply or resume.
+      reconstruction of a missing source ID. A collision is a blocker. Apply
+      persists the approved mapping before publication and resume never
+      regenerates candidates.
     preview_digest: >-
       SHA-256 over canonical JSON of the complete unbounded inventory, proposed
       mapping, relationship rewrite map, counts, blockers, and source
@@ -566,6 +573,13 @@ entity_migration:
       - silent dropping, deduplication, or winner selection
     partial_cutover_success: forbidden
   durable_evidence:
+    root: .agentera/migrations/entities/MIGRATION_ID
+    manifest: manifest.yaml
+    snapshot: snapshot.yaml
+    journal: journal.yaml
+    operation_identity: >-
+      First 20 lowercase hexadecimal characters of domain-separated SHA-256 over
+      the real project root, complete source fingerprint, and preview digest.
     required_before_entity_publication:
       - source root and source fingerprints
       - complete old-to-new ID mapping
@@ -573,6 +587,12 @@ entity_migration:
       - preview digest and approved apply intent
       - recovery snapshot and cutover journal
     durability_rule: the mapping and journal are reused on resume; IDs are never regenerated
+    publication_order: manifest_then_snapshot_then_journal_then_entities_then_marker
+    journal_phases: [prepare_recovery, publish_entities, validate_graph, cutover, cutover_complete, rollback_prepared, rollback_cutover, rolled_back]
+    fault_test_hook: >-
+      Tests may set NODE_ENV=test and
+      AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE to one declared durable
+      phase. Other environments ignore the variable.
   lifecycle:
     - phase: inventory
       mutates: false

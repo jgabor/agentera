@@ -782,7 +782,7 @@ describe("entity migration read-only preview", () => {
     let out = "";
     const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", first.source_fingerprint, "--preview-digest", first.preview_digest, "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), REPO_ROOT);
     expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "apply_not_implemented" } });
+    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "inventory_blocked" } });
     expect(out).not.toContain("223e4567-e89b-42d3-a456-426614174000");
     expect(tree(root)).toEqual(before);
   });
@@ -867,7 +867,7 @@ describe("entity migration read-only preview", () => {
     let out = "";
     const rc = race(() => main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", first.source_fingerprint, "--preview-digest", first.preview_digest, "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), REPO_ROOT));
     expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "apply_not_implemented" } });
+    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "migration_failed" } });
     expect(out).not.toContain("external-marker");
     expect(tree(root)).toEqual(before);
   });

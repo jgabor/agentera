@@ -12,6 +12,7 @@
 
 ### Added
 
+- Added `agentera state migrate entities --apply|--resume|--rollback --force` with durable pre-publication manifests and exact-byte recovery snapshots, deterministic phase-journal resume, no-rewrite completed replay, marker-last cutover, and guarded successor-safe rollback.
 - Added post-cutover decision entities for immutable bases and content revisions, replaceable satisfaction ownership, bare-ID exact and bounded reads, deterministic effective provenance, stale-base and transition validation, and explicit same-decision conflict detection; marker-absent projects retain the legacy numbered authority without dual writes.
 - Added the post-cutover progress entity writer and `state progress get|list` reads with bare IDs, one canonical file per cycle, atomic replay-safe publication, full provenance, bounded snapshot pagination, and no legacy projection or archive writes; legacy projects remain unchanged until the durable cutover marker exists.
 - Added authority-driven, one-file-per-entity storage primitives with secure project-wide IDs, symlink-safe discovery, conflict-safe publication, relationship validation, and `agentera check validate state` diagnostics.

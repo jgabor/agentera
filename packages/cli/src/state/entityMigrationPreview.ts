@@ -5,6 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 
 import type { JsonObject } from "../core/jsonValue.js";
+import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
 import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
@@ -54,6 +55,32 @@ export interface EntityMigrationEntry {
   recovery: string;
 }
 
+export interface DurableEntityMigrationEntry extends EntityMigrationEntry {
+  record: JsonObject;
+}
+
+export interface DurableEntityMigrationSource {
+  path: string;
+  presence: "file" | "missing";
+  size: number;
+  sha256: string | null;
+  mode: number | null;
+  bytes_base64: string | null;
+}
+
+export interface DurableEntityMigrationPlan {
+  project: string;
+  source_fingerprint: string;
+  preview_digest: string;
+  authority_schema_version: string;
+  authority_sha256: string;
+  preserved_singletons: EntityMigrationPreview["preserved_singletons"];
+  entries: DurableEntityMigrationEntry[];
+  sources: DurableEntityMigrationSource[];
+  counts: EntityMigrationPreview["counts"];
+  diagnostics: EntityMigrationPreview["diagnostics"];
+}
+
 export interface EntityMigrationPreview {
   schemaVersion: "agentera.entityMigrationPreview.v1";
   command: "state migrate entities";
@@ -84,7 +111,7 @@ export interface EntityMigrationPreview {
   page_after: string | null;
   next_after: string | null;
   retrieval: { command: string };
-  source_contract: { authority: string; authority_schema_version: string; authority_sha256: string; zero_write: true; scalar_truncation: "forbidden"; apply_implemented: false };
+  source_contract: { authority: string; authority_schema_version: string; authority_sha256: string; zero_write: true; scalar_truncation: "forbidden"; apply_implemented: true };
 }
 
 interface Observation {
@@ -207,6 +234,13 @@ function authorityBinding(sourceRoot: string): { authority_schema_version: strin
     throw new Error("active entity migration authority is missing its schema version or entity_migration contract");
   }
   return { authority_schema_version: authority.schema_version, authority_sha256: hash(bytes) };
+}
+
+export function entityMigrationAuthorityProjection(sourceRoot = resolveSourceRoot()): JsonObject {
+  const authorityPath = path.join(sourceRoot, AUTHORITY_PATH);
+  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  if (!mapping(authority.entity_migration)) throw new Error(`state storage authority '${authorityPath}' has no entity migration contract`);
+  return { authority: AUTHORITY_PATH, ...(authority.entity_migration as JsonObject) } as JsonObject;
 }
 
 function sourceFingerprint(files: SourceFile[]): string {
@@ -511,7 +545,35 @@ function classify(group: Observation[]): EntityMigrationClassification {
   return "verified_full";
 }
 
-function buildEntries(project: string, fingerprint: string, observations: Observation[]): EntityMigrationEntry[] {
+function canonicalMigrationRecord(boundary: string, source: JsonObject, relationships: EntityMigrationRelationship[]): JsonObject {
+  const record = structuredClone(source);
+  for (const field of ["id", "artifact", "number", "stable_id", "artifact_id", "entry_number", "task_number", "plan_id", "objective_id", "experiment_number"]) delete record[field];
+  if (boundary === "decision") delete record.satisfaction;
+  if (boundary === "plan" || boundary === "objective") {
+    const header = record.header;
+    if (mapping(header)) delete (header as JsonObject).id;
+  }
+  if (boundary === "plan") {
+    delete record.tasks;
+    delete record.previous_plan_archived;
+    const header = record.header;
+    if (mapping(header)) {
+      const planHeader = header as JsonObject;
+      if (planHeader.status === "active") planHeader.status = "open";
+      if (planHeader.status === "completed") planHeader.status = "complete";
+    }
+  }
+  for (const relationship of relationships) {
+    if (relationship.field === "depends_on") {
+      record.depends_on = relationships.filter(({ field }) => field === "depends_on").map(({ target_id }) => target_id as string);
+    } else {
+      record[relationship.field] = relationship.target_id as string;
+    }
+  }
+  return record;
+}
+
+function buildEntries(project: string, fingerprint: string, observations: Observation[]): DurableEntityMigrationEntry[] {
   const groups = new Map<string, Observation[]>();
   for (const observation of observations) groups.set(observation.key, [...(groups.get(observation.key) ?? []), observation]);
   const ids = new Map<string, string>();
@@ -522,7 +584,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
     const owner = idOwners.get(id);
     if (owner) { collisions.add(owner); collisions.add(key); } else idOwners.set(id, key);
   }
-  return [...groups.entries()].map(([key, group]): EntityMigrationEntry => {
+  const entries = [...groups.entries()].map(([key, group]): DurableEntityMigrationEntry => {
     let classification = classify(group);
     if (collisions.has(key)) classification = "conflict";
     const primary = group[0];
@@ -537,6 +599,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       target_id: relationship.target ? ids.get(relationship.target) ?? null : null,
       status: relationship.target && groups.has(relationship.target) ? "resolved" : "unresolved",
     }));
+    const record = content ? canonicalMigrationRecord(primary.boundary, content, relationships) : {};
     const blocked = BLOCKING.has(classification) || relationships.some((relationship) => relationship.status === "unresolved");
     return {
       source_identity: key,
@@ -551,32 +614,40 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       physical_record_count: group.length,
       proposed_target: blocked ? null : { id, path: `.agentera/entities/${primary.artifact}/${primary.boundary}/${id}.yaml` },
       relationships,
+      record,
       recovery: blocked ? recovery(project, primary.path) : "none",
     };
   }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
+  const decisions = new Map(entries.filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target).map((entry) => [entry.proposed_target!.id, entry.record]));
+  const groupedRevisions = new Map<string, DurableEntityMigrationEntry[]>();
+  for (const entry of entries.filter(({ boundary }) => boundary === "decision_revision")) {
+    const decision = entry.relationships.find(({ field }) => field === "decision")?.target_id ?? "";
+    groupedRevisions.set(decision, [...(groupedRevisions.get(decision) ?? []), entry]);
+  }
+  for (const [decision, revisions] of groupedRevisions) {
+    let effective = structuredClone(decisions.get(decision) ?? {});
+    for (const entry of revisions.sort((left, right) => left.source_identity.localeCompare(right.source_identity, undefined, { numeric: true }))) {
+      const source = entry.record;
+      const changes = mapping(source.changes) ? structuredClone(source.changes) as JsonObject : Object.fromEntries(Object.entries(source).filter(([field]) => !["decision", "date", "provenance", "base_sha256"].includes(field))) as JsonObject;
+      entry.record = { decision, date: source.date, provenance: source.provenance, base_sha256: hash(canonicalRecordJson(effective)), changes };
+      effective = { ...effective, ...structuredClone(changes) };
+    }
+  }
+  return entries;
 }
 
-export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: {
-  limit?: number;
-  after?: string;
-  sourceFingerprint?: string;
-  previewDigest?: string;
-  /** Test seam and optional platform strengthening; null means descriptor paths are unavailable. */
-  resolveDescriptorPath?: DescriptorPathResolver;
-} = {}): EntityMigrationPreview {
+function migrationInventory(projectRoot: string, sourceRoot: string, resolveDescriptorPath: DescriptorPathResolver): DurableEntityMigrationPlan {
   const project = path.resolve(projectRoot);
   validateRealProjectRoot(project);
   const authority = authorityBinding(sourceRoot);
   const todoRecord = loadArtifactRecord("todo");
   if (!todoRecord) throw new Error("artifact registry is missing the canonical 'todo' record");
-  const docsSnapshot = readMigrationSource(project, ".agentera/docs.yaml", options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
+  const docsSnapshot = readMigrationSource(project, ".agentera/docs.yaml", resolveDescriptorPath);
   const overrides = docsSnapshot.kind === "unsafe" ? {} : loadDocsPathOverrides(project);
-  const todoAbsolute = todoRecord.displayName in overrides
-    ? resolveArtifactPath(todoRecord, project)
-    : path.join(project, todoRecord.defaultPath);
+  const todoAbsolute = todoRecord.displayName in overrides ? resolveArtifactPath(todoRecord, project) : path.join(project, todoRecord.defaultPath);
   const todoPath = relative(project, todoAbsolute);
   if (todoPath !== todoRecord.defaultPath) assertRealpathBoundary(project, todoAbsolute, todoRecord.artifactId);
-  const files = collectSources(project, todoPath, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
+  const files = collectSources(project, todoPath, resolveDescriptorPath);
   const fingerprint = sourceFingerprint(files);
   const observations: Observation[] = [];
   inventoryFailureObservations(files, observations);
@@ -602,19 +673,35 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
     ...(BLOCKING.has(entry.classification) ? [{ classification: entry.classification, path: entry.source_paths[0], source_identity: entry.source_identity, message: observations.find((item) => item.key === entry.source_identity)?.message ?? `${entry.classification} source requires explicit recovery`, recovery: entry.recovery }] : []),
     ...entry.relationships.filter((relationship) => relationship.status === "unresolved").map((relationship) => {
       const target = relationship.target_source_identity ?? "missing structured reference";
-      return {
-        classification: "unresolved_relationship" as const,
-        path: entry.source_paths[0],
-        source_identity: entry.source_identity,
-        relationship_field: relationship.field,
-        target_source_identity: relationship.target_source_identity,
-        message: `source '${entry.source_identity}' relationship '${relationship.field}' references unresolved target '${target}'`,
-        recovery: `Repair relationship '${relationship.field}' on '${entry.source_identity}' to reference an inventoried source identity instead of '${target}', then run agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --dry-run --format json.`,
-      };
+      return { classification: "unresolved_relationship" as const, path: entry.source_paths[0], source_identity: entry.source_identity, relationship_field: relationship.field, target_source_identity: relationship.target_source_identity, message: `source '${entry.source_identity}' relationship '${relationship.field}' references unresolved target '${target}'`, recovery: `Repair relationship '${relationship.field}' on '${entry.source_identity}' to reference an inventoried source identity instead of '${target}', then run agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --dry-run --format json.` };
     }),
   ]);
-  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: completeEntries, preserved_singletons: preserved, counts, diagnostics };
+  const digestEntries = completeEntries.map(({ record: _record, ...entry }) => entry);
+  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_singletons: preserved, counts, diagnostics };
   const previewDigest = hash(canonicalRecordJson(digestBody));
+  const sources = files.map((file): DurableEntityMigrationSource => {
+    const stat = file.kind === "file" ? fs.lstatSync(path.join(project, file.relative)) : null;
+    return { path: file.relative, presence: file.kind === "file" ? "file" : "missing", size: file.bytes?.byteLength ?? 0, sha256: file.bytes ? hash(file.bytes) : null, mode: stat ? stat.mode & 0o7777 : null, bytes_base64: file.bytes?.toString("base64") ?? null };
+  });
+  return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, sources, counts, diagnostics };
+}
+
+export function planEntityMigration(projectRoot: string, sourceRoot: string, options: { resolveDescriptorPath?: DescriptorPathResolver } = {}): DurableEntityMigrationPlan {
+  return migrationInventory(projectRoot, sourceRoot, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
+}
+
+export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: {
+  limit?: number;
+  after?: string;
+  sourceFingerprint?: string;
+  previewDigest?: string;
+  /** Test seam and optional platform strengthening; null means descriptor paths are unavailable. */
+  resolveDescriptorPath?: DescriptorPathResolver;
+} = {}): EntityMigrationPreview {
+  const inventory = migrationInventory(projectRoot, sourceRoot, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
+  const { project, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, diagnostics } = inventory;
+  const authority = { authority_schema_version: inventory.authority_schema_version, authority_sha256: inventory.authority_sha256 };
+  const completeEntries: EntityMigrationEntry[] = inventory.entries.map(({ record: _record, ...entry }) => entry);
   const requestedLimit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT));
   const restartCommand = `agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json`;
   if (options.after !== undefined && (options.sourceFingerprint !== fingerprint || options.previewDigest !== previewDigest)) {
@@ -629,7 +716,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   };
   let omissionReason: EntityMigrationPreview["omission_reason"] = start > 0 || start + entries.length < completeEntries.length ? "result_limit" : null;
   const quotedProject = project.replaceAll("'", "'\\''");
-  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: false } } as const;
+  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: true } } as const;
   const serializedBytes = (): number => {
     const pageDiagnostics = diagnosticsForEntries();
     const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;

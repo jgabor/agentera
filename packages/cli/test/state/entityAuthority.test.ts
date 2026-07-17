@@ -230,7 +230,7 @@ describe("Decision 94 entity authority", () => {
     const measurement = authority.entity_target.measurement_contract;
 
     expect(migration).toMatchObject({
-      status: "inventory_preview_implemented",
+      status: "durable_apply_resume_rollback_implemented",
       decision: 94,
       kind: "single_explicit_project_cutover",
       invocation: {
@@ -239,7 +239,7 @@ describe("Decision 94 entity authority", () => {
         ordinary_reads_migrate: false,
         ordinary_writes_migrate: false,
         invokes_git: false,
-        apply_boundary: expect.stringContaining("Task 10"),
+        apply_boundary: expect.stringContaining("writes the authority marker last"),
       },
       cutover_marker: {
         path: ".agentera/state-mode.yaml",

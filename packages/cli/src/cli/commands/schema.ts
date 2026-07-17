@@ -41,6 +41,7 @@ import {
   stateGitBackfillContract,
 } from "../../state/gitBackfillAuthority.js";
 import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 
 export interface TransitionalTopLevelAlias {
   legacy: string;
@@ -508,6 +509,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       authority: migrationAuthority.authorityPath,
       ...migrationAuthority.migration,
     } as JsonObject,
+    entity_migration: entityMigrationAuthorityProjection(),
     state_backfill: gitBackfillContractProjection(backfillAuthority) as unknown as JsonObject,
     runtime_lifecycle: {
       authority: lifecycleAuthority.sourcePath,
