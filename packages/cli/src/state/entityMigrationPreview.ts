@@ -12,6 +12,7 @@ import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js"
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 import { validateRealProjectRoot } from "./projectRoot.js";
+import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 import {
   projectPathIsStable as migrationPathIsStable,
   readProjectFileSnapshot,
@@ -63,6 +64,7 @@ export interface EntityMigrationPreview {
   mutation_performed: false;
   source_fingerprint: string;
   preview_digest: string;
+  preserved_singletons: Array<{ boundary: string; source_path: string; presence: "file" | "missing" | "unsafe"; content_sha256: string | null; preserved_sections?: string[] }>;
   entries: EntityMigrationEntry[];
   counts: Record<EntityMigrationClassification | "total" | "physical_records" | "logical_identities" | "mirrors" | "duplicates" | "conflicts" | "relationships" | "unresolved_relationships" | "blockers", number>;
   diagnostics: Array<{
@@ -174,7 +176,7 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
 
 function collectSources(root: string, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const exact = [
-    "TODO.md", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
+    "TODO.md", "CHANGELOG.md", "DESIGN.md", ".agentera/vision.yaml", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
     ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml",
   ].map((candidate) => readMigrationSource(root, candidate, descriptorPathResolver));
   const archives = directoryFiles(root, ".agentera/archive", (candidate) =>
@@ -442,10 +444,16 @@ function objectiveObservations(root: string, files: SourceFile[], observations: 
 function todoAndDocs(root: string, files: SourceFile[], observations: Observation[]): void {
   const todo = files.find((source) => source.relative === "TODO.md");
   if (todo?.kind === "file" && todo.bytes) {
+    let section = "normal";
     todo.bytes.toString("utf8").split(/\r?\n/).forEach((line, index) => {
+      const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
+      if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : section;
       const item = parseTodoMarkdownListItem(line.trim());
       if (!item) return;
-      observations.push({ key: `TODO.md:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record: { status: item.status, description: item.description }, detail: "full", relationships: [] });
+      const severity = section === "resolved" ? "normal" : section;
+      const record = { severity, status: item.status, description: item.description };
+      const violations = todoDocsRecordViolations("todo_item", record);
+      observations.push({ key: `TODO.md:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
     });
   } else if (todo?.kind === "unsafe") {
     observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: "TODO.md", provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage("TODO.md") });
@@ -458,7 +466,8 @@ function todoAndDocs(root: string, files: SourceFile[], observations: Observatio
       (Array.isArray(document.index) ? document.index : []).forEach((value, index) => {
         const record = mapping(value);
         const identity = typeof record?.path === "string" ? `docs:path:${record.path}` : `docs:index:${index}`;
-        observations.push({ key: identity, artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record, detail: record && typeof record.path === "string" ? "full" : "corrupt", relationships: [], message: record && typeof record.path === "string" ? undefined : "documentation inventory entry lacks a structured path" });
+        const violations = record ? todoDocsRecordViolations("documentation_inventory_entry", record) : ["documentation inventory entry must be a mapping"];
+        observations.push({ key: identity, artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
       });
     } catch (error) {
       observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
@@ -466,6 +475,21 @@ function todoAndDocs(root: string, files: SourceFile[], observations: Observatio
   } else if (docs?.kind === "unsafe") {
     observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(docs.relative) });
   }
+}
+
+function preservedSingletons(files: SourceFile[]): EntityMigrationPreview["preserved_singletons"] {
+  const declarations = [
+    { boundary: "vision", source_path: ".agentera/vision.yaml" },
+    { boundary: "design", source_path: "DESIGN.md" },
+    { boundary: "changelog", source_path: "CHANGELOG.md" },
+    { boundary: "docs_mapping", source_path: ".agentera/docs.yaml", preserved_sections: ["last_audit", "conventions", "mapping", "coverage", "audit_log"] },
+    { boundary: "profile", source_path: "$AGENTERA_PROFILE_DIR/PROFILE.md" },
+    { boundary: "runtime_local_session_state", source_path: "runtime-local" },
+  ];
+  return declarations.map((declaration) => {
+    const source = files.find((candidate) => candidate.relative === declaration.source_path);
+    return { ...declaration, presence: source?.kind ?? "missing", content_sha256: source?.bytes ? hash(source.bytes) : null };
+  });
 }
 
 function previewId(fingerprint: string, key: string): string {
@@ -551,6 +575,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   planObservations(project, files, observations);
   objectiveObservations(project, files, observations);
   todoAndDocs(project, files, observations);
+  const preserved = preservedSingletons(files);
   const completeEntries = buildEntries(project, fingerprint, observations);
   const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"];
   const counts = Object.fromEntries(classes.map((classification) => [classification, completeEntries.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
@@ -578,7 +603,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
       };
     }),
   ]);
-  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: completeEntries, counts, diagnostics };
+  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: completeEntries, preserved_singletons: preserved, counts, diagnostics };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const requestedLimit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT));
   const restartCommand = `agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json`;
@@ -594,7 +619,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   };
   let omissionReason: EntityMigrationPreview["omission_reason"] = start > 0 || start + entries.length < completeEntries.length ? "result_limit" : null;
   const quotedProject = project.replaceAll("'", "'\\''");
-  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: false } } as const;
+  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_implemented: false } } as const;
   const serializedBytes = (): number => {
     const pageDiagnostics = diagnosticsForEntries();
     const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;

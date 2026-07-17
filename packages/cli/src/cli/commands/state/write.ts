@@ -272,7 +272,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       syntax: "--input PATH",
       example: exampleFor(artifact, verb),
     });
-  if (spec.inputRoot && Object.keys(values).length && !(["objective", "experiments"].includes(artifact)))
+  if (spec.inputRoot && Object.keys(values).length && !(["objective", "experiments", "docs"].includes(artifact)))
     invalid({
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,

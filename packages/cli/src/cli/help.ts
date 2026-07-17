@@ -255,6 +255,48 @@ export function printStateHelp(sub?: string): string {
       "Discover writes: agentera state objective explain --format json",
     ].join("\n");
   }
+  if (sub === "todo" && entityMode) {
+    return [
+      "usage: agentera state todo [-h] [--severity LEVEL] [--status STATUS] [--format {text,json,yaml}]",
+      "       agentera state todo list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state todo get --id ID --format json",
+      '       agentera state todo create --severity LEVEL --description TEXT --format json',
+      "       agentera state todo update --id ID [--severity LEVEL] [--description TEXT] --format json",
+      "       agentera state todo resolve --id ID --format json",
+      "",
+      "Each TODO item is one independently mutable canonical entity. IDs are bare ten-letter project-wide identities.",
+      "Default and list views are bounded in severity/status order; exact get returns complete detail.",
+      "TODO.md remains legacy authority only while the durable entity marker is absent.",
+      "",
+      "Discover writes: agentera state todo explain --format json",
+    ].join("\n");
+  }
+  if (sub === "docs" && entityMode) {
+    return [
+      "usage: agentera state docs [-h] [--topic TOPIC] [--status STATUS] [--format {text,json,yaml}]",
+      "       agentera state docs list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state docs get --id ID --format json",
+      "       agentera state docs create --input ENTRY.yaml --format json",
+      "       agentera state docs update --id ID --input ENTRY.yaml --format json",
+      "",
+      "Each documentation inventory entry is one independently mutable canonical entity; path is record data, not identity.",
+      "Mappings, conventions, coverage, and editorial configuration retain whole-document authority in .agentera/docs.yaml.",
+      "Default and list views are bounded by path then ID; exact get returns complete detail.",
+      "",
+      "Discover writes: agentera state docs explain --format json",
+    ].join("\n");
+  }
+  if ((sub === "todo" || sub === "docs") && !entityMode) {
+    return [
+      `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
+      "",
+      `${sub === "todo" ? "TODO.md" : ".agentera/docs.yaml"} remains the marker-absent legacy authority. Entity create/update/list/get commands activate only after durable cutover.`,
+      "",
+      "options:",
+      "  -h, --help            show this help message and exit",
+      "  --format FORMAT       Output format: text, json, or yaml",
+    ].join("\n");
+  }
   if (sub) {
     const verbs = verbsForArtifact(sub);
     return [

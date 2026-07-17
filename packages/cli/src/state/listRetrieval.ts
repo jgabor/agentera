@@ -39,6 +39,7 @@ export interface StateListFilters {
   topic?: string | null;
   status?: string | null;
   dimension?: string | null;
+  severity?: string | null;
 }
 
 export interface StateListOptions {

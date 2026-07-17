@@ -14,6 +14,7 @@ import { getProgressEntity } from "../../../state/progressEntities.js";
 import { getDecisionEntity } from "../../../state/decisionEntities.js";
 import { getHealthEntity } from "../../../state/healthEntities.js";
 import { getObjectiveEntity } from "../../../state/objectiveExperimentEntities.js";
+import { getTodoDocsEntity } from "../../../state/todoDocsEntities.js";
 
 interface StateGetArgs {
   number: number;
@@ -168,7 +169,7 @@ export function runStateGet(
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
   try {
-    if (["progress", "decisions", "health", "objective"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities") {
+    if (["progress", "decisions", "health", "objective", "todo", "docs"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities") {
       let id: string | undefined;
       let entityFormat: "text" | "json" | "yaml" = "text";
       for (let index = 0; index < argv.length; ) {
@@ -199,7 +200,9 @@ export function runStateGet(
           ? getDecisionEntity(projectRoot, id, sourceRoot)
           : artifactId === "health"
             ? getHealthEntity(projectRoot, id, sourceRoot)
-            : getObjectiveEntity(projectRoot, id, sourceRoot);
+            : artifactId === "objective"
+              ? getObjectiveEntity(projectRoot, id, sourceRoot)
+              : getTodoDocsEntity(projectRoot, artifactId as "todo" | "docs", id, sourceRoot);
       const output = io.out ?? ((text: string) => process.stdout.write(text));
       if (entityFormat === "json" || entityFormat === "yaml") emitStructured(response, entityFormat, output);
       else output(YAML.stringify(response));

@@ -12,6 +12,7 @@ import { healthEntityViolations } from "./healthEntityValidation.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { acquireWriterLock } from "./write/lock.js";
 import { planTaskRecordViolations } from "./write/planEvaluation.js";
+import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 
 const MAX_DIAGNOSTICS = 100;
 
@@ -318,7 +319,7 @@ function discoverFile(
       for (const part of field.split(".")) current = mapping(current) ? current[part] : undefined;
       return typeof current !== "string" || current.length === 0;
     });
-    const forbidden = owner.record.forbiddenFields.filter((field) => record[field] !== undefined);
+    const forbidden = [...new Set([...owner.record.forbiddenFields, ...model.forbiddenAliases])].filter((field) => record[field] !== undefined);
     const timestampInvalid = owner.record.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""));
     if (missing.length || missingPaths.length || forbidden.length || timestampInvalid) {
       malformed = true;
@@ -380,6 +381,13 @@ function discoverFile(
     if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status))) {
       malformed = true;
       issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid experiment date or status`, recovery: recovery(projectRoot, `repair '${relativePath}' using YYYY-MM-DD HH:MM and baseline|kept|discarded`) });
+    }
+  }
+  if (!malformed && (boundary === "todo_item" || boundary === "documentation_inventory_entry") && record) {
+    const violations = todoDocsRecordViolations(boundary, record);
+    if (violations.length) {
+      malformed = true;
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has an invalid ${boundary} record: ${violations.join("; ")}`, recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared ${boundary} fields`) });
     }
   }
   return { id, artifact, boundary, record, path: file, relativePath, classification: malformed ? "malformed" : "valid" };

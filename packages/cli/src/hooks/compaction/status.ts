@@ -13,6 +13,7 @@ import path from "node:path";
 import { DEFAULT_ARTIFACT_PATHS, parseDocsYamlMapping } from "../common.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { COMPACTABLE_YAML_ARTIFACTS, NON_COMPACTABLE_ARTIFACTS } from "./dryRun.js";
+import { detectStateMode } from "../../state/stateMode.js";
 import {
   decisionProtectedOverflowCount,
   decisionSatisfiedActiveCount,
@@ -150,7 +151,10 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
   const statuses: CompactionStatus[] = [];
 
   const todoPath = paths.todo;
-  if (fs.existsSync(todoPath)) {
+  if (detectStateMode(projectRoot) === "entities") {
+    // TODO item entities are canonical after cutover; the legacy Markdown
+    // aggregate is neither read nor compacted as authority in this mode.
+  } else if (fs.existsSync(todoPath)) {
     const todoText = fs.readFileSync(todoPath, "utf8");
     const headingCount = countTodoResolvedSectionHeadings(todoText);
     if (headingCount > 1) {

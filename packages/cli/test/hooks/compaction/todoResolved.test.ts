@@ -26,6 +26,13 @@ afterEach(() => {
 });
 
 describe("parse todo-resolved layout", () => {
+  it("does not read the legacy TODO aggregate as compaction authority in entity mode", () => {
+    fs.mkdirSync(path.join(tmp, ".agentera"));
+    fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.writeFileSync(path.join(tmp, "TODO.md"), "not a valid TODO aggregate\n");
+    expect(computeCompactionStatus(tmp).some((status) => status.artifact === "todo#Resolved")).toBe(false);
+  });
+
   it("counts mis-placed resolved rows in severity bands for the compaction gate", () => {
     const todo = [
       "# TODO",

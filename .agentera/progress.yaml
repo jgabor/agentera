@@ -1,4 +1,31 @@
 cycles:
+  - number: 890
+    timestamp: 2026-07-17 11:53
+    type: feat
+    phase: build
+    what: Added TODO-item and documentation-inventory entity mode with bounded exact
+      retrieval.
+    discovered: Marker-absent schema discovery had to omit entity-only TODO/docs
+      writes, and entity-mode compaction had to stop treating TODO.md as
+      authority.
+    verified: packages/cli/test/state/todoDocsEntities.test.ts and
+      entityMigrationPreview.test.ts cover real Git worktrees, conflicts, mode
+      isolation, root/marker races, rollback, aliases, bounds, cursors,
+      ordering, help/explain, and singleton-preserving preview; pnpm test passed
+      2532 tests; typecheck, build, state validation, document capability,
+      capability contract, and compact passed.
+    next: "Task 10 remains pending: durable migration apply, resume, and rollback
+      were not started."
+    context:
+      intent: Complete Plan Task 9 without starting durable migration apply or
+        consumer-wide cutover.
+      constraints: TODO items and docs index entries only; preserve TODO.md and
+        docs.yaml legacy authority without a marker and retain docs singleton
+        sections whole.
+      unknowns: None for Task 9; durable migration publication and broader consumer
+        cutover remain deferred.
+      scope: packages/cli TODO/docs writers, retrieval, validation, migration preview,
+        help/explain, schemas, authority, and focused tests.
   - number: 889
     timestamp: 2026-07-17 08:22
     type: fix
@@ -196,38 +223,6 @@ cycles:
       scope: Decision entity writer/read/list, satisfaction and revision authority,
         shared ownership validation and exact replacement, tests, changelog,
         authority, plan, and progress state.
-  - number: 880
-    timestamp: 2026-07-17 04:42
-    type: fix
-    phase: build
-    what: Bound all entity-family publication to one pinned project-root and exact
-      state-mode marker context, with identity-checked rollback at directory,
-      stage, link, and final durability boundaries.
-    inspiration: Replanned Agentera PLAN Task 20 and the final Task 4 retry audit.
-    discovered: Node cannot make pathname validation and mutation one kernel
-      operation; descriptor-rooted publication plus before-and-after validation
-      and exact owned rollback provides the required observable failure
-      contract.
-    verified: "Focused lock/entity/progress/state-mode/authority tests passed: 6
-      files, 75 tests. Full CLI passed: 206 files, 2,471 tests. Typecheck and
-      build passed. State validation passed with 0 issues. Capability contract
-      passed 2/2. Compact passed for 10 artifacts with 0 over-limit, formatting,
-      protected-overflow, projection, error, or changed findings."
-    next: Task 20 is complete. Keep Tasks 5-9 pending; do not begin another entity
-      family in this cycle.
-    context:
-      intent: Complete escalated plan Task 20 after Task 4 exhausted two retries by
-        closing the remaining pathname substitution window.
-      constraints: Task 20 only; preserve legacy writes, immutable replay/conflict
-        semantics, durability, merge/pagination, public APIs, and successor
-        data. No apply, other family, unrelated repair, push, publish, or vision
-        changes.
-      unknowns: No acceptance blocker remains. Node pathname operations still require
-        the documented pinned publication and rollback protocol rather than
-        pre-write rename exclusion.
-      scope: Shared entity publication context and boundary, progress handoff,
-        authority contract, race regressions, replan, progress evidence, and
-        Task 20 status.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -297,6 +292,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 880 (2026-07-17): Bound all entity-family publication to one
+      pinned project-root and exact state-mode marker context, with
+      identity-checked..."
   - summary: "Cycle 879 (2026-07-17): Bound progress mode detection and publication
       to one validated project-root identity."
   - summary: "Cycle 878 (2026-07-17): Closed the Task 4 state-mode marker boundary:
@@ -396,16 +394,18 @@ archive:
   - summary: "Cycle 841 (2026-07-16): Ran orchestrator presence verification for
       Task 2 (revision-backed effective decision reads) after cycle 840
       reported..."
-  - summary: "Cycle 840 (2026-07-16): Wired revision-backed effective decision reads
-      across exact get, list, startup, and compaction consumers with
-      truthful..."
 omitted: true
-omitted_count: 125
+omitted_count: 126
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

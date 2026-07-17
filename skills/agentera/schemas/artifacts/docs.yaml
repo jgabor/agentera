@@ -2,7 +2,10 @@
 #
 # Documentation contract maintained by document. Tracks project doc
 # conventions, artifact path overrides, document index with status, coverage
-# metrics, and timestamped audit findings.
+# metrics, and timestamped audit findings. After durable entity cutover only
+# index entries become independent entities; mappings, conventions, coverage,
+# audit/editorial configuration, and other singleton sections retain
+# intentional whole-document authority in docs.yaml.
 #
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
 # following capability_schema_contract.yaml and protocol.yaml conventions.

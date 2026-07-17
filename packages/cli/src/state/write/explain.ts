@@ -21,7 +21,7 @@ function liveDoc(p: string): Record<string, unknown> {
 }
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
-  return artifact === "experiments" ? "publish" : artifact === "objective" ? "create" : "append";
+  return artifact === "experiments" ? "publish" : ["objective", "todo", "docs"].includes(artifact) ? "create" : "append";
 }
 
 export function buildExplain(
@@ -29,6 +29,10 @@ export function buildExplain(
   projectRoot: string,
   requestedVerb?: string | null,
 ): Record<string, unknown> {
+  const stateMode = detectStateMode(projectRoot);
+  if (["todo", "docs"].includes(artifact) && stateMode !== "entities") {
+    reject({ class: "unsupported_target", message: `${artifact} item writes are unavailable while the marker-absent legacy aggregate remains authoritative` });
+  }
   const verb = (requestedVerb ?? defaultVerb(artifact)) as Exclude<WriteVerb, "explain">;
   const spec = operationSpec(artifact, verb);
   if (!spec) {
@@ -41,9 +45,9 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityArtifact = ["progress", "decisions", "health", "objective", "experiments"].includes(artifact) && detectStateMode(projectRoot) === "entities";
+  const entityArtifact = ["progress", "decisions", "health", "objective", "experiments", "todo", "docs"].includes(artifact) && stateMode === "entities";
   const resolved = entityArtifact
-    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
+    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
@@ -113,7 +117,7 @@ export function buildExplain(
         ? ["id", "artifact", "objective"]
         : entityArtifact && artifact === "objective"
           ? ["id", "artifact"]
-          : entityArtifact && artifact === "health" ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
+          : entityArtifact && ["health", "docs"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
         artifact === "health"
@@ -154,6 +158,14 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     return ["select one objective with its bare ten-letter --id; numeric and composite selectors are unavailable", "the CLI preserves that ID while replacing the validated objective record", ...base];
   if (entityArtifact && artifact === "objective")
     return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
+  if (entityArtifact && artifact === "todo" && verb !== "create")
+    return ["select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable", ...base];
+  if (entityArtifact && artifact === "todo")
+    return ["a bare ten-letter TODO item ID is assigned by the CLI; status starts open", ...base];
+  if (entityArtifact && artifact === "docs" && verb === "update")
+    return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];
+  if (entityArtifact && artifact === "docs")
+    return ["a bare ten-letter documentation inventory ID is assigned by the CLI; path remains record data", ...base];
   if (entityDecisions && verb === "update") return [
     "select one base decision with its bare --id; numeric selectors are unavailable",
     "update replaces only that decision's authority-owned satisfaction entity after transition validation",
@@ -201,6 +213,11 @@ export function exampleFor(artifact: WritableArtifact, verb: string, entityDecis
   if (artifact === "health") return "agentera state health append --input audit.yaml --format json";
   if (entityArtifact && artifact === "objective" && verb === "create") return "agentera state objective create --input objective.yaml --format json";
   if (entityArtifact && artifact === "objective" && verb === "update") return "agentera state objective update --id qjtrmnpvka --input objective.yaml --format json";
+  if (entityArtifact && artifact === "todo" && verb === "create") return 'agentera state todo create --severity normal --description "..." --format json';
+  if (entityArtifact && artifact === "todo" && verb === "resolve") return "agentera state todo resolve --id qjtrmnpvka --format json";
+  if (entityArtifact && artifact === "todo" && verb === "update") return 'agentera state todo update --id qjtrmnpvka --description "..." --format json';
+  if (entityArtifact && artifact === "docs" && verb === "create") return "agentera state docs create --input documentation.yaml --format json";
+  if (entityArtifact && artifact === "docs" && verb === "update") return "agentera state docs update --id qjtrmnpvka --input documentation.yaml --format json";
   if (verb === "create") return "agentera state plan create --input plan.yaml --format json";
   if (verb === "archive") return "agentera state plan archive --dry-run";
   if (verb === "update") return 'agentera state plan update --task 1 --name "..." --format json';

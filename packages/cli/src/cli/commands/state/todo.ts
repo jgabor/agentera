@@ -24,6 +24,11 @@ import { SchemaInfo, artifactPath } from "../../appContext.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "../../todoMarkdown.js";
 import { TODO_SEVERITY_ORDER_KEYS } from "../../todoSeverity.js";
 import { out, err, StateArgs, Io } from "./shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
+import { emitStructured } from "../../structured.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
+import YAML from "yaml";
 const TODO_SEV_GLYPHS: Record<string, string> = {
   critical: "⇶",
   degraded: "⇉",
@@ -53,6 +58,26 @@ export function queryTodo(
   const severity = args.severity ?? null;
   const status = args.status ?? null;
   const format = args.format ?? "text";
+
+  if (detectStateMode(process.cwd()) === "entities") {
+    try {
+      const response = listTodoDocsEntities(process.cwd(), "todo", args.limit ?? undefined, undefined, {
+        ...(severity ? { severity } : {}),
+        ...(status ? { status } : {}),
+        ...(openOnly ? { status: "open" } : {}),
+      }, { format });
+      if (format === "json" || format === "yaml") emitStructured(response, format, o);
+      else for (const entry of response.entries as Array<{ id: string; record: { severity: string; status: string; description: string } }>) o(`[${entry.record.severity}] ${entry.id} ${entry.record.status}: ${entry.record.description}\n`);
+      return 0;
+    } catch (error) {
+      if (error instanceof StateRetrievalFailure) {
+        if (format === "json" || format === "yaml") emitStructured(error.body, format, o);
+        else err(io)(YAML.stringify(error.body));
+        return error.exitCode;
+      }
+      throw error;
+    }
+  }
 
   if (!fs.existsSync(todoPath)) {
     if (format !== "text") {

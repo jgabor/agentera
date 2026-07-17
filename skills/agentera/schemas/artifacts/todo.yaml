@@ -3,16 +3,16 @@
 # Open issues and tasks maintained by build and audit. Severity-ranked
 # checklist of work to be done, resolved items, and deferred work.
 #
-# Note: TODO.md is a human-facing Markdown artifact. It remains at the
-# project root and is not migrated to YAML. This schema exists for validation
-# and CLI discovery consistency.
+# Marker-absent projects retain TODO.md as legacy authority. After durable
+# entity cutover, each item is authoritative in one shared-contract entity
+# file and `agentera state todo` renders the bounded human-facing view.
 
 meta:
   name: todo
   version: "1.0.0"
   description: >-
     Open issues and tasks. Produced by capabilities that file work or findings.
-    Human-facing: remains Markdown at project root.
+    Human-facing legacy aggregate before cutover; bounded entity view after cutover.
   artifact_type: human_facing
   path: "TODO.md"
   producer:

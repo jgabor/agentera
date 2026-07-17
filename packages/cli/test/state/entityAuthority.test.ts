@@ -31,7 +31,7 @@ describe("Decision 94 entity authority", () => {
 
     expect(authority.authority.source).toBe("references/artifacts/state-storage-authority.yaml");
     expect(target).toMatchObject({
-      status: "progress_decisions_health_plan_objective_and_experiment_implemented_other_families_declared",
+      status: "progress_decisions_health_plan_objective_experiment_todo_and_docs_implemented_other_families_declared",
       decision: 94,
       public_schema: {
         canonical_identity_field: "id",
@@ -83,6 +83,8 @@ describe("Decision 94 entity authority", () => {
         plan: "implemented",
         objective: "implemented",
         experiments: "implemented",
+        todo: "implemented",
+        docs: "implemented",
         remaining_families: "declared_not_implemented",
       },
     });
@@ -115,6 +117,18 @@ describe("Decision 94 entity authority", () => {
       implementation: "implemented",
       publication: "immutable",
       retrieval: { exact: "agentera state decisions get --id ID --format json", cursor: "opaque_snapshot_cursor" },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "todo_item")).toMatchObject({
+      artifact: "todo",
+      implementation: "implemented",
+      publication: "replace_owned_entity",
+      retrieval: { exact: "agentera state todo get --id ID --format json", ordering: "severity_then_status_then_id" },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "documentation_inventory_entry")).toMatchObject({
+      artifact: "docs",
+      implementation: "implemented",
+      publication: "replace_owned_entity",
+      retrieval: { exact: "agentera state docs get --id ID --format json", ordering: "path_then_id" },
     });
     expect(target.entities.find((entity: any) => entity.boundary === "decision_satisfaction")).toMatchObject({
       publication: "replace_owned_entity",

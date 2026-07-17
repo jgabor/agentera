@@ -14,7 +14,9 @@ import { listProgressEntities, renderProgressEntityListText } from "../../../sta
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listObjectiveEntities } from "../../../state/objectiveExperimentEntities.js";
+import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import YAML from "yaml";
+import type { JsonObject } from "../../../core/jsonValue.js";
 
 interface StateListArgs {
   limit: number;
@@ -76,7 +78,7 @@ function readValue(argv: string[], index: number, name: string): { value: string
 }
 
 function parseListArgs(artifactId: string, argv: string[], sourceRoot: string, entityArtifact = false): StateListArgs {
-  const validValues = entityArtifact ? [...numberedArchiveArtifacts(sourceRoot), "objective"] : numberedArchiveArtifacts(sourceRoot);
+  const validValues = entityArtifact ? [...numberedArchiveArtifacts(sourceRoot), "objective", "todo", "docs"] : numberedArchiveArtifacts(sourceRoot);
   if (!validValues.includes(artifactId)) {
     throw failure("unsupported_artifact", artifactId, `unsupported state artifact '${artifactId}'`, undefined, validValues);
   }
@@ -84,7 +86,7 @@ function parseListArgs(artifactId: string, argv: string[], sourceRoot: string, e
   let cursor: string | undefined;
   let format: StateListArgs["format"] = "text";
   const filters: StateListFilters = {};
-  const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : artifactId === "objective" ? new Set<string>() : new Set(["--dimension"]);
+  const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : artifactId === "todo" ? new Set(["--severity", "--status"]) : artifactId === "docs" ? new Set(["--topic", "--status"]) : artifactId === "objective" ? new Set<string>() : new Set(["--dimension"]);
   let limitSupplied = false;
   let cursorSupplied = false;
   let formatSupplied = false;
@@ -153,7 +155,7 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
   const sourceRoot = resolveSourceRoot();
   let entityArtifact = false;
   try {
-    entityArtifact = ["progress", "decisions", "health", "objective"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
+    entityArtifact = ["progress", "decisions", "health", "objective", "todo", "docs"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
     const args = parseListArgs(artifactId, argv, sourceRoot, entityArtifact);
     if (entityArtifact) {
       const response = artifactId === "progress"
@@ -162,7 +164,9 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
           ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format })
           : artifactId === "health"
             ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format })
-            : listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format });
+            : artifactId === "objective"
+              ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format })
+              : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format });
       const output = io.out ?? ((text: string) => process.stdout.write(text));
       if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
       else emitStructured(response, args.format, output);

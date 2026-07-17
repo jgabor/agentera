@@ -1,6 +1,7 @@
 import type { JsonObject } from "../../core/jsonValue.js";
+import { detectStateMode } from "../stateMode.js";
 
-export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments"] as const;
+export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
 
 export const WRITE_VERBS = [
@@ -14,6 +15,7 @@ export const WRITE_VERBS = [
   "archive",
   "create",
   "publish",
+  "resolve",
   "explain",
 ] as const;
 export type WriteVerb = (typeof WRITE_VERBS)[number];
@@ -34,7 +36,7 @@ export interface OperationSpec {
   artifact: WritableArtifact;
   verb: Exclude<WriteVerb, "explain">;
   fields: OperationField[];
-  inputRoot?: "one audit entry" | "complete plan document" | "one objective document" | "one experiment entry";
+  inputRoot?: "one audit entry" | "complete plan document" | "one objective document" | "one experiment entry" | "one documentation inventory entry";
   cliOwnedFields?: string[];
   allowForce?: boolean;
   compacts?: boolean;
@@ -319,6 +321,32 @@ const SPECS: OperationSpec[] = [
     cliOwnedFields: ["number"],
     compacts: true,
   },
+  {
+    artifact: "todo",
+    verb: "create",
+    fields: [
+      { flag: "--severity", field: "severity", kind: "string", required: true, validValues: ["critical", "degraded", "normal", "annoying"] },
+      { flag: "--description", field: "description", kind: "string", required: true },
+    ],
+  },
+  {
+    artifact: "todo",
+    verb: "update",
+    fields: [
+      { flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter TODO item ID returned by create or list." },
+      { flag: "--severity", field: "severity", kind: "string", required: false, validValues: ["critical", "degraded", "normal", "annoying"] },
+      { flag: "--description", field: "description", kind: "string", required: false },
+    ],
+  },
+  { artifact: "todo", verb: "resolve", fields: [{ flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter TODO item ID returned by create or list." }] },
+  { artifact: "docs", verb: "create", fields: [], inputRoot: "one documentation inventory entry", cliOwnedFields: ["id", "artifact"] },
+  {
+    artifact: "docs",
+    verb: "update",
+    fields: [{ flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter documentation inventory ID returned by create or list." }],
+    inputRoot: "one documentation inventory entry",
+    cliOwnedFields: ["id", "artifact"],
+  },
 ];
 
 export function operationSpec(artifact: string, verb: string): OperationSpec | null {
@@ -341,8 +369,9 @@ export function isWritableArtifact(value: string): value is WritableArtifact {
   return WRITABLE_ARTIFACTS.includes(value as WritableArtifact);
 }
 
-export function stateWriterArtifactContract(artifact: string): JsonObject | null {
+export function stateWriterArtifactContract(artifact: string, projectRoot = process.cwd()): JsonObject | null {
   if (!isWritableArtifact(artifact)) return null;
+  if (["todo", "docs"].includes(artifact) && detectStateMode(projectRoot) !== "entities") return null;
   const verbs = verbsForArtifact(artifact);
   const mutations = verbs.filter((verb) => verb !== "explain");
   return {
@@ -364,7 +393,7 @@ export function stateWriterContract(
 ): JsonObject {
   const uniqueTargets = [...new Set(targets)];
   const artifacts = uniqueTargets
-    .map(stateWriterArtifactContract)
+    .map((target) => stateWriterArtifactContract(target))
     .filter((entry): entry is JsonObject => entry !== null);
   return {
     schemaVersion: "agentera.stateWriterDiscovery.v1",
@@ -374,6 +403,6 @@ export function stateWriterContract(
     authority: "runtime operation registry",
     discovery_command: "agentera schema --format json",
     artifacts,
-    unsupported_targets: uniqueTargets.filter((target) => !isWritableArtifact(target)),
+    unsupported_targets: uniqueTargets.filter((target) => stateWriterArtifactContract(target) === null),
   };
 }

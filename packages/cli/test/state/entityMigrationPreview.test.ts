@@ -69,7 +69,7 @@ const VALID_EXPERIMENTS = "experiments:\n  - number: 7\n    result: pinned sourc
 
 const EXACT_SOURCE_FIXTURES = {
   "TODO.md": "# TODO\n\n## → Normal\n- [ ] Preserve this exact item.\n",
-  ".agentera/docs.yaml": "index:\n  - path: README.md\n",
+  ".agentera/docs.yaml": "index:\n  - document: README\n    path: README.md\n    last_updated: 2026-07-17\n    status: current\n",
   ".agentera/progress.yaml": "cycles:\n  - number: 1\n    timestamp: 2026-07-16 10:00\n    type: feat\n    phase: build\n    what: complete\n    inspiration: test\n    discovered: none\n    verified: passed\n    next: done\n    context:\n      intent: test\n      constraints: none\n      unknowns: none\n      scope: fixture\n",
   ".agentera/decisions.yaml": "decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Test exact source inspection.\n    alternatives:\n      - name: Preserve project boundaries\n        status: chosen\n      - name: Follow external paths\n        status: rejected\n    choice: Preserve project boundaries.\n    reasoning: External bytes cannot define project state.\n    confidence: firm\n    feeds_into: Task 19\n",
   ".agentera/health.yaml": "audits:\n  - number: 1\n    date: 2026-07-16\n    dimensions: [architecture_alignment]\n    findings_summary:\n      critical: 0\n      warning: 0\n      info: 0\n      filtered_by_confidence: 0\n    trajectory: stable\n    grades:\n      architecture_alignment: A\n",
@@ -238,6 +238,31 @@ describe("entity migration read-only preview", () => {
       expect(preview.entries.some((entry) => entry.source_paths.includes(relative))).toBe(true);
     }
     expect(preview.entries.filter((entry) => entry.source_paths.some((sourcePath) => EXACT_SOURCE_PATHS.includes(sourcePath as keyof typeof EXACT_SOURCE_FIXTURES)) && entry.classification === "corrupt")).toEqual([]);
+  });
+
+  it("classifies only itemized TODO/docs records and binds preserved singleton authority", () => {
+    const root = project();
+    write(root, "TODO.md", "# TODO\n\n## ⇉ Degraded\n- [ ] Repair migration.\n\n## ✓ Resolved\n- [x] Preserve history.\n");
+    write(root, ".agentera/docs.yaml", "last_audit: 2026-07-17 (fixture)\nconventions:\n  doc_root: .\nmapping:\n  - artifact: TODO.md\n    path: TODO.md\ncoverage:\n  documented: 1\naudit_log:\n  - date: 2026-07-17\nindex:\n  - document: README\n    path: README.md\n    last_updated: 2026-07-17\n    status: current\n");
+    write(root, ".agentera/vision.yaml", "north_star: preserve intent\n");
+    write(root, "DESIGN.md", "# Design\n");
+    write(root, "CHANGELOG.md", "# Changelog\n");
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const todo = preview.entries.filter((entry) => entry.boundary === "todo_item");
+    const docs = preview.entries.filter((entry) => entry.boundary === "documentation_inventory_entry");
+    expect(todo.map((entry) => entry.source_identity)).toEqual(["TODO.md:line:4", "TODO.md:line:7"]);
+    expect(todo.map((entry) => entry.content_sha256)).not.toContain(null);
+    expect(docs).toHaveLength(1); expect(docs[0].source_identity).toBe("docs:path:README.md");
+    expect(preview.entries.some((entry) => entry.source_identity.includes("mapping") || entry.source_paths.includes("DESIGN.md") || entry.source_paths.includes("CHANGELOG.md") || entry.source_paths.includes(".agentera/vision.yaml"))).toBe(false);
+    expect(preview.preserved_singletons).toEqual(expect.arrayContaining([
+      expect.objectContaining({ boundary: "vision", source_path: ".agentera/vision.yaml", presence: "file", content_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) }),
+      expect.objectContaining({ boundary: "design", presence: "file" }),
+      expect.objectContaining({ boundary: "changelog", presence: "file" }),
+      expect.objectContaining({ boundary: "docs_mapping", presence: "file", preserved_sections: ["last_audit", "conventions", "mapping", "coverage", "audit_log"] }),
+      expect.objectContaining({ boundary: "profile", presence: "missing" }),
+      expect.objectContaining({ boundary: "runtime_local_session_state", presence: "missing" }),
+    ]));
   });
 
   it("retains safe source parity when descriptor path resolution is unavailable", () => {

@@ -25,6 +25,11 @@ import fs from "node:fs";
 import { registryArtifactPath } from "../../orientation.js";
 import { capabilityStartupComplete } from "../../startupCompletenessContract.js";
 import { out, err, StateArgs, Io } from "./shared.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
+import { emitStructured } from "../../structured.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
+import YAML from "yaml";
 
 export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
@@ -39,6 +44,31 @@ export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   const p = artifactPath(info, "docs");
   const data = loadArtifact(p);
   const format = args.format ?? "text";
+  if (detectStateMode(process.cwd()) === "entities") {
+    try {
+      const singleton = data !== null && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : {};
+      const mapping = asList(singleton.mapping);
+      const coverage = singleton.coverage && typeof singleton.coverage === "object" && !Array.isArray(singleton.coverage) ? singleton.coverage : {};
+      const conventions = singleton.conventions && typeof singleton.conventions === "object" && !Array.isArray(singleton.conventions) ? singleton.conventions : {};
+      const summary = { last_audit: singleton.last_audit, conventions, mapping, mapping_entries: mapping.length, coverage, source_contract: { capability_startup_complete: capabilityStartupComplete({ profileStatus }), raw_artifact_reads_required: false, inventory_authority: "canonical_entity_files", singleton_authority: p } };
+      const reservedUtf8Bytes = Math.max(Buffer.byteLength(JSON.stringify({ summary }, null, 2)), Buffer.byteLength(YAML.stringify({ summary }))) + 256;
+      const response = listTodoDocsEntities(process.cwd(), "docs", args.limit ?? undefined, undefined, {
+        ...(args.topic ? { topic: args.topic } : {}),
+        ...(args.status ? { status: args.status } : {}),
+      }, { format, reservedUtf8Bytes });
+      const projected = { ...response, summary };
+      if (format === "json" || format === "yaml") emitStructured(projected, format, o);
+      else { o(`Docs: last_audit=${singleton.last_audit ?? "-"}\nMapping: entries=${mapping.length}\n`); for (const entry of response.entries as Array<{ id: string; record: Record<string, unknown> }>) o(`${entry.id} document=${entry.record.document} | path=${entry.record.path} | last_updated=${entry.record.last_updated} | status=${entry.record.status}\n`); }
+      return 0;
+    } catch (error) {
+      if (error instanceof StateRetrievalFailure) {
+        if (format === "json" || format === "yaml") emitStructured(error.body, format, o);
+        else e(YAML.stringify(error.body));
+        return error.exitCode;
+      }
+      throw error;
+    }
+  }
   const isDict = data !== null && typeof data === "object" && !Array.isArray(data);
   if (!isDict) {
     if (format !== "text") {

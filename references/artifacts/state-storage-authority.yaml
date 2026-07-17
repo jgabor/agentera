@@ -14,8 +14,9 @@ authority:
     amendment revision paths, legacy label coexistence rules, failure classes,
     or byte limits.
   implementation_boundary: >-
-    Shared entity storage plus the progress, decisions, health, plan, objective, and experiment family writers and retrieval are
-    implemented, but activate only from the durable cutover marker. Other entity
+    Shared entity storage plus the progress, decisions, health, plan, objective,
+    experiment, TODO-item, and documentation-inventory family writers and retrieval
+    are implemented, but activate only from the durable cutover marker. Other entity
     families and durable migration apply remain declared, not implemented. The
     current numbered archive and retrieval groups remain implemented legacy
     authority while that marker is absent. The maintenance-only Git backfill
@@ -23,7 +24,7 @@ authority:
     and is not the Decision 94 cutover.
 
 entity_target:
-  status: progress_decisions_health_plan_objective_and_experiment_implemented_other_families_declared
+  status: progress_decisions_health_plan_objective_experiment_todo_and_docs_implemented_other_families_declared
   decision: 94
   activation: >-
     This target becomes active persisted and structured state authority only
@@ -36,9 +37,11 @@ entity_target:
     plan: implemented
     objective: implemented
     experiments: implemented
+    todo: implemented
+    docs: implemented
     remaining_families: declared_not_implemented
     rule: >-
-      The progress, decisions, health, and plan implementations select entity behavior only when the durable
+      Every implemented family selects entity behavior only when the durable
       cutover marker is valid and selects legacy behavior only while it is absent.
       It never creates the marker, migrates legacy state, or writes both authorities.
   public_schema:
@@ -291,10 +294,44 @@ entity_target:
       artifact: todo
       independently_mutable: true
       relationships: []
+      implementation: implemented
+      publication: replace_owned_entity
+      record:
+        required_fields: [severity, status, description]
+        required_paths: []
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number, path]
+      retrieval:
+        exact: agentera state todo get --id ID --format json
+        list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
+        ordering: severity_then_status_then_id
+        default_limit: 20
+        maximum_limit: 100
+        max_utf8_bytes: 32768
+        cursor: opaque_snapshot_cursor
+        mutation_after_snapshot: cursor_snapshot_unavailable
+        omission: whole_entries_only_with_count_reason_continuation_and_exact_get
+        scalar_truncation: forbidden
     - boundary: documentation_inventory_entry
       artifact: docs
       independently_mutable: true
       relationships: []
+      implementation: implemented
+      publication: replace_owned_entity
+      record:
+        required_fields: [document, path, last_updated, status]
+        required_paths: []
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+      retrieval:
+        exact: agentera state docs get --id ID --format json
+        list: agentera state docs list [--limit N] [--cursor TOKEN] --format json
+        ordering: path_then_id
+        default_limit: 20
+        maximum_limit: 100
+        max_utf8_bytes: 32768
+        cursor: opaque_snapshot_cursor
+        mutation_after_snapshot: cursor_snapshot_unavailable
+        omission: whole_entries_only_with_count_reason_continuation_and_exact_get
+        scalar_truncation: forbidden
   relationships:
     representation: bare target entity ID in the named record field
     integrity: every non-null target must resolve to exactly one entity with the declared target boundary

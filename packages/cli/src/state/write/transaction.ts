@@ -59,6 +59,7 @@ import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEn
 import { appendHealthEntity } from "../healthEntities.js";
 import { mutatePlanEntities } from "../planEntities.js";
 import { mutateObjectiveEntity, publishExperimentEntity } from "../objectiveExperimentEntities.js";
+import { mutateTodoDocsEntity } from "../todoDocsEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
   if (!fs.existsSync(target)) return { doc: {}, bytes: "" };
@@ -432,6 +433,7 @@ export function executeStateWrite(
     : null;
   const planMode = req.artifact === "plan" ? detectStateModeBinding(req.projectRoot) : null;
   const objectiveExperimentMode = req.artifact === "objective" || req.artifact === "experiments" ? detectStateModeBinding(req.projectRoot) : null;
+  const todoDocsMode = req.artifact === "todo" || req.artifact === "docs" ? detectStateModeBinding(req.projectRoot) : null;
   if (progressMode?.mode === "entities") {
     try {
       return appendProgressEntity(req, {
@@ -477,6 +479,19 @@ export function executeStateWrite(
     } finally {
       objectiveExperimentMode.publicationContext.close();
     }
+  }
+  if (todoDocsMode?.mode === "entities") {
+    try {
+      return mutateTodoDocsEntity(req, { publicationContext: todoDocsMode.publicationContext });
+    } finally {
+      todoDocsMode.publicationContext.close();
+    }
+  }
+  if (todoDocsMode?.mode === "legacy") {
+    reject({
+      class: "unsupported_target",
+      message: `${req.artifact} item mutations are available only after durable entity cutover; the marker-absent legacy aggregate remains unchanged`,
+    });
   }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
     return dispatchDecisionAmendment(req, options);
