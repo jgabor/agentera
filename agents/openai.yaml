@@ -1,5 +1,5 @@
 display_name: Agentera
-description: Portable Agentera suite for Codex: one bundled skill with exact bare `/agentera` routing and twelve routed capabilities.
+description: "Portable Agentera suite for Codex: one bundled skill with exact bare `/agentera` routing and twelve routed capabilities."
 icon: AG
 brand_color: "#111827"
 default_prompt: Use $agentera to inspect project state and route to the right capability; exact bare `/agentera` uses the agentera prime dashboard path.

@@ -40,7 +40,7 @@ consumers:
       - plan.first_pending.name
       - progress
       - progress.latest
-      - progress.latest.number
+      - progress.latest.id
       - progress.latest.what
       - progress.latest.next
       - next_action
@@ -581,7 +581,7 @@ fixtures:
           present_when: health.exists
         - path: plan.first_pending.name
           present_when: plan.first_pending
-        - path: progress.latest.number
+        - path: progress.latest.id
           present_when: progress.latest
         - path: progress.latest.what
           present_when: progress.latest

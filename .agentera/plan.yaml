@@ -180,7 +180,7 @@ tasks:
       - GIVEN source contracts and generated bundle WHEN equivalent commands run against one fixture THEN JSON envelopes and exit codes match.
       - GIVEN retired vocabulary WHEN active public and bundled state contracts are scanned THEN no obsolete field or selector remains; historical prose and internal implementation names are exempt.
       - GIVEN legacy state without a completed cutover WHEN ordinary runtime commands run THEN they report the explicit migration requirement without converting state.
-    evidence: Final entity lifecycle gate, canonical startup/hooks/compact consumers, static ID grammar, generated bundle parity, and regression coverage verified by 2580 tests plus typecheck/build/contract/compact gates.
+    evidence: Complete registry-derived coverage now scans 129 active copied source/generated pairs, classifies 8 exact copied files narrowly, and enforces exact semantic/Markdown exceptions. Verified by 2585 tests, typecheck, build, 12 capability validations, capability contract, state, compact, and focused active-surface/bundle parity gates.
   - number: 13
     name: Resolve repository migration readiness
     depends_on:

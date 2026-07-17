@@ -1,4 +1,32 @@
 cycles:
+  - number: 900
+    timestamp: 2026-07-17 18:41
+    type: fix
+    phase: build
+    what: Expanded Task 12 active protocol coverage to the complete registry-owned
+      references inventory and every generated counterpart, with exact semantic
+      and Markdown exceptions.
+    inspiration: Retry 2/2 final Task 12 audit requirements.
+    discovered: The package registry copies the entire 39-file references tree; the
+      prior four-reference scan omitted active vocabulary and prime consumer
+      contracts, and agents/openai.yaml required quoting before semantic YAML
+      inspection.
+    verified: "CLI suite: 216 files and 2585 tests passed. Typecheck and build
+      passed. All 12 capability validations, capability contract, state
+      validation, compact, and focused active-protocol and independent
+      source/bundle parity tests passed."
+    next: Task 12 remains complete. Task 13 is pending; do not begin Task 14 or
+      later work.
+    context:
+      intent: Close the final Task 12 scan-coverage gap without entering migration
+        readiness or changing historical evidence.
+      constraints: Preserve Cycle 899, migration source vocabulary, versions,
+        changelog, vision, Task 13+, and live state; no migration apply,
+        release, amend, push, or publish.
+      unknowns: none
+      scope: Registry-derived copied surface classification, exact active-protocol
+        exceptions, vocabulary and prime identity contracts, and YAML semantic
+        scan compatibility.
   - number: 899
     timestamp: 2026-07-17 18:05
     type: fix
@@ -205,33 +233,6 @@ cycles:
       unknowns: None for this audit fix.
       scope: packages/cli/src/state/entityMigrationPreview.ts and focused migration
         preview regressions.
-  - number: 890
-    timestamp: 2026-07-17 11:53
-    type: feat
-    phase: build
-    what: Added TODO-item and documentation-inventory entity mode with bounded exact
-      retrieval.
-    discovered: Marker-absent schema discovery had to omit entity-only TODO/docs
-      writes, and entity-mode compaction had to stop treating TODO.md as
-      authority.
-    verified: packages/cli/test/state/todoDocsEntities.test.ts and
-      entityMigrationPreview.test.ts cover real Git worktrees, conflicts, mode
-      isolation, root/marker races, rollback, aliases, bounds, cursors,
-      ordering, help/explain, and singleton-preserving preview; pnpm test passed
-      2532 tests; typecheck, build, state validation, document capability,
-      capability contract, and compact passed.
-    next: "Task 10 remains pending: durable migration apply, resume, and rollback
-      were not started."
-    context:
-      intent: Complete Plan Task 9 without starting durable migration apply or
-        consumer-wide cutover.
-      constraints: TODO items and docs index entries only; preserve TODO.md and
-        docs.yaml legacy authority without a marker and retain docs singleton
-        sections whole.
-      unknowns: None for Task 9; durable migration publication and broader consumer
-        cutover remain deferred.
-      scope: packages/cli TODO/docs writers, retrieval, validation, migration preview,
-        help/explain, schemas, authority, and focused tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -301,6 +302,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 890 (2026-07-17): Added TODO-item and documentation-inventory
+      entity mode with bounded exact retrieval."
   - summary: "Cycle 889 (2026-07-17): Closed Task 8 audit defects in objective and
       experiment entity publication."
   - summary: "Cycle 888 (2026-07-17): Added bare-ID objective create/update and
@@ -396,15 +399,18 @@ archive:
       applies only..."
   - summary: "Cycle 851 (2026-07-16): Retry Plan Task 3: bound degraded prime
       envelopes and gate final UTF-8 output"
-  - summary: "Cycle 850 (2026-07-16): Deliver bounded default decision brief for
-      bare prime --format json (Plan Task 3)"
 omitted: true
-omitted_count: 135
+omitted_count: 136
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
