@@ -7,6 +7,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { publishImmutableFile } from "./archivePublication.js";
+import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { acquireWriterLock } from "./write/lock.js";
 
 const MAX_DIAGNOSTICS = 100;
@@ -425,6 +426,7 @@ export interface PublishEntityRequest {
   id: string;
   record: JsonObject;
   sourceRoot?: string;
+  validatedRoot?: ValidatedProjectRoot;
 }
 
 export interface PublishEntityResult {
@@ -436,6 +438,7 @@ export interface PublishEntityResult {
 }
 
 function publishEntityLocked(request: PublishEntityRequest, model: EntityAuthority): PublishEntityResult {
+  if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
   if (!model.pattern.test(request.id)) throw new Error(`entity ID '${request.id}' must match ${model.pattern.source}`);
   const owner = model.byBoundary.get(request.boundary);
   if (!owner) throw new Error(`unknown entity boundary '${request.boundary}'`);
@@ -457,6 +460,7 @@ function publishEntityLocked(request: PublishEntityRequest, model: EntityAuthori
       throw new Error(`divergent content for existing entity ID '${request.id}' at '${exact.relativePath}'; keep the existing ID unchanged or allocate a new ID`);
     }
     if (matches.length > 0) throw new Error(`entity ID '${request.id}' already exists at '${matches[0].relativePath}' owned by boundary '${matches[0].boundary}'; allocate a new project-wide ID`);
+    if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
     const created = publishImmutableFile(target, bytes, { directoryDurabilityRoot: root });
     if (!created) {
       const existing = loadYamlMapping(fs.readFileSync(target, "utf8"));
@@ -468,8 +472,9 @@ function publishEntityLocked(request: PublishEntityRequest, model: EntityAuthori
 
 export function publishEntity(request: PublishEntityRequest): PublishEntityResult {
   const model = authority(request.sourceRoot);
-  const lock = acquireWriterLock(path.resolve(request.projectRoot));
+  const lock = acquireWriterLock(path.resolve(request.projectRoot), 2000, request.validatedRoot);
   try {
+    if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
     return publishEntityLocked(request, model);
   } finally {
     lock.release();
@@ -482,8 +487,9 @@ export function allocateAndPublishEntity(
 ): PublishEntityResult {
   const model = authority(request.sourceRoot);
   const root = path.resolve(request.projectRoot);
-  const lock = acquireWriterLock(root);
+  const lock = acquireWriterLock(root, 2000, request.validatedRoot);
   try {
+    if (request.validatedRoot) assertValidatedProjectRoot(request.validatedRoot);
     const existing = new Set(discoverEntities(root, request.sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
     for (let attempt = 0; attempt < 1024; attempt += 1) {
       const id = candidate ? candidate() : generatedId(model);

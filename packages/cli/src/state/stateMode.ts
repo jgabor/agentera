@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
-import { validateRealProjectRoot } from "./projectRoot.js";
+import { validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 export type StateMode = "legacy" | "entities";
@@ -46,12 +46,12 @@ function contract(sourceRoot = resolveSourceRoot()): StateModeContract {
   return { markerPath: marker.path, schemaVersion: marker.schema_version, mode: entityMode.mode };
 }
 
-function readStableMarker(root: string, markerPath: string): Buffer | null {
+function readStableMarker(root: ValidatedProjectRoot, markerPath: string): Buffer | null {
   const snapshot = readProjectFileSnapshot(root, markerPath);
   if (snapshot.kind === "missing") {
-    if (path.resolve(snapshot.absolute) === root) {
+    if (path.resolve(snapshot.absolute) === root.path) {
       throw new Error(
-        `project root '${root}' changed while the state mode marker was inspected; restore the real directory and retry`,
+        `project root '${root.path}' changed while the state mode marker was inspected; restore the real directory and retry`,
       );
     }
     return null;
@@ -70,11 +70,14 @@ function readStableMarker(root: string, markerPath: string): Buffer | null {
 }
 
 /** Read the authority-owned cutover marker without creating or repairing state. */
-export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceRoot()): StateMode {
+export function detectStateModeBinding(
+  projectRoot: string,
+  sourceRoot = resolveSourceRoot(),
+): { mode: StateMode; root: ValidatedProjectRoot } {
   const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);
   const bytes = readStableMarker(root, declared.markerPath);
-  if (bytes === null) return "legacy";
+  if (bytes === null) return { mode: "legacy", root };
   let document: Record<string, unknown>;
   try {
     document = loadYamlMapping(bytes.toString("utf8"));
@@ -88,5 +91,9 @@ export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceR
       `state mode marker '${declared.markerPath}' must declare schemaVersion '${declared.schemaVersion}' and mode '${declared.mode}'; restore the durable migration marker before retrying`,
     );
   }
-  return "entities";
+  return { mode: "entities", root };
+}
+
+export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceRoot()): StateMode {
+  return detectStateModeBinding(projectRoot, sourceRoot).mode;
 }

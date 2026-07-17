@@ -53,7 +53,7 @@ import {
 } from "../decisionLegacyValidation.js";
 import { repairHealthProjectionBytes } from "../healthRepair.js";
 import { executeExperimentPublication } from "./experimentPublication.js";
-import { detectStateMode } from "../stateMode.js";
+import { detectStateModeBinding } from "../stateMode.js";
 import { appendProgressEntity } from "../progressEntities.js";
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
@@ -417,8 +417,11 @@ export function executeStateWrite(
   req: StateWriteRequest,
   options: StateMutationOptions = {},
 ): StateWriteEnvelope {
-  if (req.artifact === "progress" && req.spec.verb === "append" && detectStateMode(req.projectRoot) === "entities") {
-    return appendProgressEntity(req);
+  const progressMode = req.artifact === "progress" && req.spec.verb === "append"
+    ? detectStateModeBinding(req.projectRoot)
+    : null;
+  if (progressMode?.mode === "entities") {
+    return appendProgressEntity(req, { validatedRoot: progressMode.root });
   }
   if (req.artifact === "decisions" && req.spec.verb === "amend") {
     return dispatchDecisionAmendment(req, options);
@@ -431,6 +434,7 @@ export function executeStateWrite(
     req.projectRoot,
     (transaction) => executeStateWriteUnlocked(req, transaction),
     options,
+    progressMode?.root,
   );
 }
 

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { assertRealpathBoundary } from "../../registries/artifactRegistry.js";
+import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "../projectRoot.js";
 import { reject } from "./errors.js";
 
 const sleepArray = new Int32Array(new SharedArrayBuffer(4));
@@ -817,17 +818,42 @@ function cleanupCreatedDirectory(projectDirectory: string, createdDirectory: boo
   }
 }
 
+function openProjectDirectory(
+  projectRoot: string,
+  expectedRoot?: ValidatedProjectRoot,
+): { projectDirectory: string; createdDirectory: boolean; parentFd: number } {
+  if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
+  const projectDirectory = path.join(projectRoot, ".agentera");
+  assertRealpathBoundary(projectRoot, projectDirectory, "writer lock");
+  const createdDirectory = !fs.existsSync(projectDirectory);
+  let parentFd: number | undefined;
+  try {
+    fs.mkdirSync(projectDirectory, { recursive: true });
+    if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
+    parentFd = fs.openSync(projectDirectory, DIRECTORY_FLAGS);
+    if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
+    return { projectDirectory, createdDirectory, parentFd };
+  } catch (error) {
+    if (parentFd !== undefined) fs.closeSync(parentFd);
+    cleanupCreatedDirectory(projectDirectory, createdDirectory);
+    throw error;
+  }
+}
+
 export interface WriterLock {
   path: string;
   release: () => void;
 }
 
-export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): WriterLock {
-  const projectDirectory = path.join(projectRoot, ".agentera");
-  assertRealpathBoundary(projectRoot, projectDirectory, "writer lock");
-  const createdDirectory = !fs.existsSync(projectDirectory);
-  fs.mkdirSync(projectDirectory, { recursive: true });
-  const parentFd = fs.openSync(projectDirectory, DIRECTORY_FLAGS);
+export function acquireWriterLock(
+  projectRoot: string,
+  timeoutMs = 2000,
+  expectedRoot?: ValidatedProjectRoot,
+): WriterLock {
+  const { projectDirectory, createdDirectory, parentFd } = openProjectDirectory(
+    projectRoot,
+    expectedRoot,
+  );
   const lockName = ".writer.lock";
   const lockPath = path.join(projectDirectory, lockName);
   const anchoredLockPath = fdPath(parentFd, lockName);
@@ -843,6 +869,7 @@ export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): Writer
     if (waitedForPreparation && Date.now() >= deadline) timeout(lockPath);
     prepared = prepareLock(parentFd);
     while (true) {
+      if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
       const published = publishPrepared(
         prepared,
         projectDirectory,
@@ -851,7 +878,16 @@ export function acquireWriterLock(projectRoot: string, timeoutMs = 2000): Writer
         lockName,
         createdDirectory,
       );
-      if (published) return published;
+      if (published) {
+        try {
+          if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
+        } catch (error) {
+          published.release();
+          prepared = undefined;
+          throw error;
+        }
+        return published;
+      }
       if (prepared.dirFd < 0 || prepared.ownerFd < 0) {
         prepared = prepareLock(parentFd);
       }

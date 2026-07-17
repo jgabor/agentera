@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runStateGet } from "../../src/cli/commands/state/get.js";
@@ -76,8 +76,20 @@ function git(root: string, ...args: string[]): string {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true });
 });
+
+function expectNoProgressWrite(...projectRoots: string[]): void {
+  for (const root of projectRoots) {
+    expect(fs.existsSync(path.join(root, ".agentera/progress.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/progress"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
+    if (fs.existsSync(path.join(root, ".agentera"))) {
+      expect(fs.readdirSync(path.join(root, ".agentera")).some((name) => name.startsWith(".writer."))).toBe(false);
+    }
+  }
+}
 
 describe("progress entity authority", () => {
   it("selects exactly one authority from the read-only cutover marker", () => {
@@ -118,6 +130,80 @@ describe("progress entity authority", () => {
     fs.writeFileSync(path.join(corruptMarker, ".agentera/state-mode.yaml"), "mode: entities\n");
     expect(() => detectStateMode(corruptMarker)).toThrow(/must declare schemaVersion/);
     expect(fs.existsSync(path.join(corruptMarker, ".agentera/entities"))).toBe(false);
+  });
+
+  it("rejects an ancestor replacement between marker inspection and mutation", () => {
+    const outer = project();
+    const ancestor = path.join(outer, "ancestor");
+    const held = path.join(outer, "held");
+    const replacement = path.join(outer, "replacement");
+    const root = path.join(ancestor, "project");
+    const replacementRoot = path.join(replacement, "project");
+    fs.mkdirSync(root, { recursive: true });
+    fs.mkdirSync(replacementRoot, { recursive: true });
+    activate(replacementRoot);
+    const writeRequest = request(root);
+    const originalExists = fs.existsSync.bind(fs);
+    let replaced = false;
+
+    vi.spyOn(fs, "existsSync").mockImplementation((candidate) => {
+      if (
+        !replaced
+        && typeof candidate === "string"
+        && path.resolve(candidate) === path.join(root, ".agentera")
+      ) {
+        fs.renameSync(ancestor, held);
+        fs.renameSync(replacement, ancestor);
+        replaced = true;
+      }
+      return originalExists(candidate);
+    });
+
+    expect(() => executeStateWrite(writeRequest)).toThrow(/project root .* changed after validation.*exact real directory/i);
+    expect(replaced).toBe(true);
+    expectNoProgressWrite(path.join(held, "project"), root);
+  });
+
+  it("rejects root replacement through lock publication and cleans descriptors and lock residue", () => {
+    const parent = project();
+    const root = path.join(parent, "project");
+    const held = path.join(parent, "held");
+    const replacement = path.join(parent, "replacement");
+    fs.mkdirSync(root);
+    fs.mkdirSync(replacement);
+    activate(root);
+    activate(replacement);
+    const writeRequest = request(root);
+    const originalRename = fs.renameSync.bind(fs);
+    const originalOpen = fs.openSync.bind(fs);
+    const originalClose = fs.closeSync.bind(fs);
+    const openDescriptors = new Set<number>();
+    let replaced = false;
+
+    vi.spyOn(fs, "openSync").mockImplementation((...args) => {
+      const descriptor = Reflect.apply(originalOpen, fs, args);
+      if (typeof args[0] === "string" && (args[0].includes(".writer") || args[0].includes(".agentera"))) {
+        openDescriptors.add(descriptor);
+      }
+      return descriptor;
+    });
+    vi.spyOn(fs, "closeSync").mockImplementation((descriptor) => {
+      openDescriptors.delete(descriptor);
+      return originalClose(descriptor);
+    });
+    vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => {
+      if (!replaced && String(destination).endsWith("/.writer.lock")) {
+        originalRename(root, held);
+        originalRename(replacement, root);
+        replaced = true;
+      }
+      return originalRename(source, destination);
+    });
+
+    expect(() => executeStateWrite(writeRequest)).toThrow(/project root .* changed after validation.*exact real directory/i);
+    expect(replaced).toBe(true);
+    expect(openDescriptors).toEqual(new Set());
+    expectNoProgressWrite(held, root);
   });
 
   it("appends, replays, retrieves, and rejects divergent content by bare ID", () => {

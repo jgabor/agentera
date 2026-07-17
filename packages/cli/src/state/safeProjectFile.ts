@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
+
 export type ProjectPathType = "file" | "directory" | "symlink" | "other";
 export type ProjectDescriptorPathResolver = (descriptor: number) => string | null;
 
@@ -112,15 +114,24 @@ function descriptorMatchesPath(root: string, absolute: string, descriptorPath: s
 
 /** Pin one project file to a verified descriptor and return only stable in-project bytes. */
 export function readProjectFileSnapshot(
-  root: string,
+  projectRoot: string | ValidatedProjectRoot,
   relativePath: string,
   descriptorPathResolver: ProjectDescriptorPathResolver = resolveProjectDescriptorPath,
 ): ProjectFileSnapshot {
+  const root = typeof projectRoot === "string" ? projectRoot : projectRoot.path;
+  const verifyRoot = (): void => {
+    if (typeof projectRoot !== "string") assertValidatedProjectRoot(projectRoot);
+  };
+  verifyRoot();
   const pathSnapshot = snapshotProjectPath(root, relativePath, "file");
   if (pathSnapshot.kind === "missing") {
+    verifyRoot();
     return { bytes: null, kind: "missing", reason: "missing", absolute: pathSnapshot.absolute };
   }
-  if (pathSnapshot.kind === "unsafe") return { bytes: null, kind: "unsafe", reason: pathSnapshot.reason };
+  if (pathSnapshot.kind === "unsafe") {
+    verifyRoot();
+    return { bytes: null, kind: "unsafe", reason: pathSnapshot.reason };
+  }
   let descriptor: number | undefined;
   try {
     const noFollow = (fs.constants as Record<string, number>).O_NOFOLLOW ?? 0;
@@ -144,6 +155,7 @@ export function readProjectFileSnapshot(
     ) {
       return { bytes: null, kind: "unsafe", reason: "changed" };
     }
+    verifyRoot();
     return { bytes, kind: "file" };
   } catch {
     return { bytes: null, kind: "unsafe", reason: "changed" };

@@ -8,6 +8,7 @@ import {
   publishNumberedArchive,
   type ArchivePublicationResult,
 } from "../archivePublication.js";
+import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "../projectRoot.js";
 import type { WritableArtifact } from "./operations.js";
 import { acquireWriterLock } from "./lock.js";
 
@@ -261,10 +262,12 @@ export function withStateMutation<T>(
   projectRoot: string,
   operation: (transaction: StateMutationTransaction) => T,
   options: StateMutationOptions = {},
+  validatedRoot?: ValidatedProjectRoot,
 ): T {
-  const lock = acquireWriterLock(projectRoot, options.lockTimeoutMs);
+  const lock = acquireWriterLock(projectRoot, options.lockTimeoutMs, validatedRoot);
   const transaction = new StateMutationTransaction(projectRoot, options);
   try {
+    if (validatedRoot) assertValidatedProjectRoot(validatedRoot);
     removeStaleStages(path.join(projectRoot, ".agentera"));
     return operation(transaction);
   } finally {

@@ -1,4 +1,28 @@
 cycles:
+  - number: 879
+    timestamp: 2026-07-17 04:10
+    type: fix
+    phase: build
+    what: Bound progress mode detection and publication to one validated
+      project-root identity.
+    inspiration: Final retry 2 of 2 for plan Task 4.
+    discovered: Fresh root baselines allowed a replacement real directory to inherit
+      marker authority between validation and mutation.
+    verified: Focused 4 files/119 tests and full 205 files/2,458 tests passed.
+      Deterministic real-root, ancestor, marker, and lock-publication
+      replacement tests wrote no progress state to either root and cleaned
+      descriptors and lock residue. Typecheck, build, state validation,
+      capability contract 2/2, and compact passed.
+    next: Task 4 remains complete. Task 5 remains pending; do not begin it in this
+      cycle.
+    context:
+      intent: Close Task 4's root-replacement gap without beginning another artifact
+        family or changing cutover scope.
+      constraints: Fix/tests/progress only; no other family, apply, global cutover,
+        push, publish, or vision changes.
+      unknowns: None within Task 4 root identity binding.
+      scope: Project-root validation token, marker snapshot, progress writer
+        lock/entity publication, and focused regression tests.
   - number: 878
     timestamp: 2026-07-17 03:51
     type: fix
@@ -308,45 +332,6 @@ cycles:
         post-fix stress repetitions.
       scope: packages/cli/src/state/write/lock.ts; lock/entity test workers and
         suites; progress state.
-  - number: 869
-    timestamp: 2026-07-16 22:23
-    type: fix
-    phase: build
-    what: Treated positively live private writer preparations as bounded contention
-      while preserving fail-closed recovery for unknown residue, with
-      deterministic and repeated multiprocess regressions.
-    inspiration: PLAN Task 18 after Task 17 exhausted two retries and its final
-      audit isolated live peer preparations in the unknown-residue path.
-    discovered: Preparation recovery needed three outcomes rather than a boolean,
-      and PID liveness needed a tri-state so permission-denied probes remain
-      indeterminate instead of being treated as live.
-    verified: "PASS: pnpm -C packages/cli exec vp test run
-      test/state/write/lock.test.ts test/state/entityStorage.test.ts (2 files,
-      36 tests; 12/12 stale-lock repetitions each produced one publisher, one
-      canonical duplicate-ID loser, one entity, and zero residue); pnpm -C
-      packages/cli test (202 files, 2362 tests); pnpm -C packages/cli run
-      typecheck; pnpm -C packages/cli build; node
-      packages/cli/dist/bin/agentera.js check validate state --format json (0
-      issues); node packages/cli/dist/bin/agentera.js check validate
-      capability-contract --format json (2/2 checks); node
-      packages/cli/dist/bin/agentera.js check compact (10 artifacts, 0
-      over-limit, formatting, protected-overflow, or errors)."
-    next: Task 3 remains pending and depends on completed Task 18; do not begin Task
-      3 or family cutovers in this cycle.
-    context:
-      intent: Complete PLAN Task 18 by removing timing-dependent residue failures from
-        same-ID concurrent publication without weakening Task 17 writer-lock
-        safety.
-      constraints: Preserved no-age deletion, exact token/inode ownership,
-        deterministic reclamation, six crash transitions, atomic publication,
-        successor-safe and idempotent release, legacy structured failure,
-        project boundaries, and fsync durability.
-      unknowns: None; the forced live-preparation handoff reached canonical
-        duplicate-ID handling and all 12 stale-lock repetitions had invariant
-        outcomes.
-      scope: Writer-lock preparation classification/acquisition plus lock and entity
-        publication workers/tests; pre-existing Task 18 replanning; progress and
-        Task 18 status only.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -416,6 +401,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 869 (2026-07-16): Treated positively live private writer
+      preparations as bounded contention while preserving fail-closed recovery
+      for unknown..."
   - summary: "Cycle 868 (2026-07-16): Made private writer-preparation reclamation
       proof-based: only a demonstrably dead PID, matching dead owner, or
       verified..."
@@ -516,15 +504,18 @@ archive:
       scripts before fallback."
   - summary: "Cycle 830 (2026-07-15): Verified authoritative verbosity budgets and
       advisory lint exits."
-  - summary: "Cycle 829 (2026-07-15): Corrected advisory lint exits while preserving
-      strict operational and publication failures."
 omitted: true
-omitted_count: 114
+omitted_count: 115
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

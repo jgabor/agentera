@@ -16,6 +16,7 @@ import {
   publishEntity,
   type DiscoveredEntity,
 } from "./entityStorage.js";
+import type { ValidatedProjectRoot } from "./projectRoot.js";
 import { localTimestamp } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 
@@ -50,6 +51,7 @@ export interface AppendProgressEntityOptions {
   sourceRoot?: string;
   id?: string;
   candidate?: () => string;
+  validatedRoot?: ValidatedProjectRoot;
 }
 
 function mapping(value: unknown): value is Record<string, unknown> {
@@ -190,6 +192,7 @@ export function appendProgressEntity(
     ? publishEntity({
         projectRoot: req.projectRoot,
         sourceRoot,
+        validatedRoot: options.validatedRoot,
         artifact: ARTIFACT,
         boundary: BOUNDARY,
         id: options.id,
@@ -199,6 +202,7 @@ export function appendProgressEntity(
         {
           projectRoot: req.projectRoot,
           sourceRoot,
+          validatedRoot: options.validatedRoot,
           artifact: ARTIFACT,
           boundary: BOUNDARY,
           record,

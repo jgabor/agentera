@@ -55,6 +55,36 @@ describe("state mode marker boundary", () => {
     expect(() => detectStateMode(linkedRoot)).toThrow(/project root .* symbolic link.*real directory/i);
   });
 
+  it("rejects a real-directory root replacement between validation and marker inspection", () => {
+    const parent = project();
+    const root = path.join(parent, "project");
+    const held = path.join(parent, "held");
+    const replacement = path.join(parent, "replacement");
+    fs.mkdirSync(root);
+    fs.mkdirSync(replacement);
+    marker(replacement);
+    const originalRead = fs.readFileSync.bind(fs);
+    let replaced = false;
+
+    vi.spyOn(fs, "readFileSync").mockImplementation((...args) => {
+      if (
+        !replaced
+        && typeof args[0] === "string"
+        && args[0].endsWith("references/artifacts/state-storage-authority.yaml")
+      ) {
+        fs.renameSync(root, held);
+        fs.renameSync(replacement, root);
+        replaced = true;
+      }
+      return Reflect.apply(originalRead, fs, args);
+    });
+
+    expect(() => detectStateMode(root)).toThrow(/project root .* changed after validation.*exact real directory/i);
+    expect(replaced).toBe(true);
+    expect(fs.existsSync(path.join(held, ".agentera"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  });
+
   it("rejects missing, non-directory, and symlink-traversing project selectors", () => {
     const parent = project();
     const missing = path.join(parent, "missing");
