@@ -67,7 +67,8 @@ describe("durable entity migration", () => {
     const evidenceFiles = Object.values(applied.evidence).map((relative) => path.join(root, relative)); expect(evidenceFiles.every((file) => fs.existsSync(file))).toBe(true);
     for (const relative of [applied.evidence.manifest, applied.evidence.snapshot]) expect(fs.readFileSync(path.join(root, relative), "utf8")).toMatch(/mode: \d+[\s\S]*dev: ['"]?\d+[\s\S]*ino: ['"]?\d+[\s\S]*type: file/);
     const entityFiles = files(root, ".agentera/entities"); expect(entityFiles).toHaveLength(preview.counts.total);
-    const before = new Map(entityFiles.map((file) => [file, { bytes: fs.readFileSync(file), stat: fs.statSync(file) }]));
+    const immutableFiles = [...entityFiles, path.join(root, ".agentera/state-mode.yaml"), ...files(root, ".agentera/migrations")];
+    const before = new Map(immutableFiles.map((file) => [file, { bytes: fs.readFileSync(file), stat: fs.statSync(file) }]));
     const replay = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
     expect(replay).toMatchObject({ status: "complete", idempotent: true, mutation_performed: false, migration_id: applied.migration_id });
     for (const [file, value] of before) { const stat = fs.statSync(file); expect(fs.readFileSync(file)).toEqual(value.bytes); expect(stat.ino).toBe(value.stat.ino); expect(stat.mtimeMs).toBe(value.stat.mtimeMs); }
@@ -156,11 +157,37 @@ describe("durable entity migration", () => {
       const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
       const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: point, AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } });
       expect(child.status, `${point}: ${child.stdout}\n${child.stderr}`).toBe(86);
+      const published = point === "publish_entity" ? files(root, ".agentera/entities")[0] : path.join(root, ".agentera/state-mode.yaml"); const publishedInode = fs.statSync(published).ino;
       const [id] = fs.readdirSync(path.join(root, ".agentera/migrations/entities")); const resumed = resumeEntityMigration(root, SOURCE_ROOT, id);
       expect(resumed).toMatchObject({ migration_id: id, status: "complete" }); expect(files(root, ".agentera/entities")).toHaveLength(preview.counts.total);
-      expect(new Set(files(root, ".agentera/entities").map((file) => path.basename(file))).size).toBe(preview.counts.total); expect(files(root, ".agentera").filter((file) => /\.(tmp|rollback)$/.test(file))).toEqual([]);
+      expect(fs.statSync(published).ino).toBe(publishedInode); expect(new Set(files(root, ".agentera/entities").map((file) => path.basename(file))).size).toBe(preview.counts.total); expect(files(root, ".agentera").filter((file) => /\.(tmp|rollback)$/.test(file))).toEqual([]);
+      expect(rollbackEntityMigration(root, SOURCE_ROOT, id).status).toBe("rolled_back"); expect(fs.existsSync(published)).toBe(false);
     }
   });
+
+  it("refuses byte-identical successor inodes after entity and marker publication crashes", () => {
+    for (const point of ["publish_entity", "publish_marker"] as const) {
+      const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+      const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: point, AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } });
+      expect(child.status).toBe(86); const [id] = fs.readdirSync(path.join(root, ".agentera/migrations/entities"));
+      const target = point === "publish_entity" ? files(root, ".agentera/entities")[0] : path.join(root, ".agentera/state-mode.yaml"); const bytes = fs.readFileSync(target); const owned = fs.statSync(target).ino;
+      fs.renameSync(target, `${target}.owned`); fs.writeFileSync(target, bytes); const successor = fs.statSync(target).ino; expect(successor).not.toBe(owned);
+      expect(() => resumeEntityMigration(root, SOURCE_ROOT, id)).toThrow(/collides with migration ownership receipt/);
+      expect(() => rollbackEntityMigration(root, SOURCE_ROOT, id)).toThrow(); expect(fs.statSync(target).ino).toBe(successor); expect(fs.readFileSync(target)).toEqual(bytes);
+    }
+  }, 60_000);
+
+  it("refuses removed, replaced, or modified entity and marker ownership receipts", () => {
+    for (const receiptName of ["0000.yaml", "marker.yaml"]) for (const mutation of ["remove", "replace", "tamper"] as const) {
+      const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT);
+      const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_recovery", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } });
+      expect(child.status).toBe(86); const [id] = fs.readdirSync(path.join(root, ".agentera/migrations/entities")); const receipt = path.join(root, ".agentera/migrations/entities", id, "receipts", receiptName); const bytes = fs.readFileSync(receipt);
+      if (mutation === "remove") fs.unlinkSync(receipt);
+      else if (mutation === "replace") { fs.renameSync(receipt, `${receipt}.prior`); fs.writeFileSync(receipt, bytes); }
+      else fs.appendFileSync(receipt, "# tampered\n");
+      expect(() => resumeEntityMigration(root, SOURCE_ROOT, id), `${receiptName}:${mutation}`).toThrow(/receipt/); expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    }
+  }, 120_000);
 
   it("never removes an exact-byte successor entity or marker during rollback", () => {
     for (const replace of ["entity", "marker"] as const) {
@@ -223,5 +250,14 @@ describe("durable entity migration", () => {
       const resumed = rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id); expect(resumed).toMatchObject({ migration_id: applied.migration_id, status: "rolled_back" }); expect(files(root, ".agentera/entities")).toEqual([]); expect(files(root, ".agentera").filter((file) => /\.(tmp|rollback)$/.test(file))).toEqual([]);
       expect(rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id)).toMatchObject({ idempotent: true, mutation_performed: false });
     }
+  });
+
+  it("refuses rollback continuation when legacy source changes after entity cleanup starts", () => {
+    const root = project(); const source = path.join(root, "TODO.md"); const sourceBytes = fs.readFileSync(source); const preview = previewEntityMigration(root, SOURCE_ROOT); const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "rollback_remove_entity", AGENTERA_ENTITY_MIGRATION_WORKER_OPERATION: "rollback", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_ID: applied.migration_id } });
+    expect(child.status).toBe(86); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false); const remaining = files(root, ".agentera/entities").length;
+    fs.appendFileSync(source, "changed after authority returned\n");
+    expect(() => rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id)).toThrow(/legacy path 'TODO.md' changed/); expect(files(root, ".agentera/entities")).toHaveLength(remaining); expect(fs.readFileSync(path.join(root, applied.evidence.journal), "utf8")).toContain("phase: rollback_cutover"); expect(files(root, ".agentera/migrations").length).toBeGreaterThan(3);
+    fs.writeFileSync(source, sourceBytes); expect(rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id).status).toBe("rolled_back"); expect(files(root, ".agentera/entities")).toEqual([]);
   });
 });

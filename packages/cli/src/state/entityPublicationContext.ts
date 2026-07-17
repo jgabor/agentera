@@ -27,6 +27,14 @@ export interface PublishedTargetIdentity {
   sha256: string;
 }
 
+function samePublished(left: PublishedTargetIdentity, right: PublishedTargetIdentity): boolean {
+  return left.dev === right.dev
+    && left.ino === right.ino
+    && left.type === right.type
+    && left.size === right.size
+    && left.sha256 === right.sha256;
+}
+
 export type ExactRemovalResult = "removed" | "absent" | "identity_mismatch";
 
 interface DirectoryEntry {
@@ -336,6 +344,77 @@ export class EntityPublicationContext {
     } finally {
       if (stageFd !== undefined) fs.closeSync(stageFd);
       for (const entry of directories.reverse()) fs.closeSync(entry.fd);
+    }
+  }
+
+  publishPreowned(
+    relativeTarget: string,
+    relativeReceipt: string,
+    expected: PublishedTargetIdentity,
+  ): PublishedTargetIdentity {
+    const targetSegments = relativeTarget.split(path.sep).filter(Boolean);
+    const receiptSegments = relativeReceipt.split(path.sep).filter(Boolean);
+    if ([targetSegments, receiptSegments].some((segments) => segments.length < 2 || segments.includes("..") || segments.includes("."))
+      || path.isAbsolute(relativeTarget) || path.isAbsolute(relativeReceipt)) throw new Error("unsafe preowned publication path");
+    this.assertValid();
+    const receiptDirectories: DirectoryEntry[] = [];
+    const targetDirectories: DirectoryEntry[] = [];
+    const createdPaths: Array<{ relativePath: string; fd: number }> = [];
+    let receiptFd: number | undefined;
+    let targetFd: number | undefined;
+    let linked = false;
+    try {
+      let receiptParent = this.rootFd;
+      for (const name of receiptSegments.slice(0, -1)) {
+        const fd = fs.openSync(fdPath(receiptParent, name), DIRECTORY_FLAGS);
+        receiptDirectories.push({ parentFd: receiptParent, name, fd, created: false });
+        receiptParent = fd;
+      }
+      receiptFd = fs.openSync(fdPath(receiptParent, receiptSegments.at(-1)!), FILE_FLAGS);
+      const receiptIdentity = publishedIdentity(receiptFd);
+      if (!samePublished(receiptIdentity, expected)) throw new Error(`migration ownership receipt '${relativeReceipt}' changed`);
+
+      let targetParent = this.rootFd;
+      for (const [index, name] of targetSegments.slice(0, -1).entries()) {
+        this.assertBoundary(targetDirectories);
+        const parentFd = targetParent;
+        let fd: number;
+        let created = false;
+        try { fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); }
+        catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+          fs.mkdirSync(fdPath(parentFd, name)); created = true;
+          fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); syncDirectory(parentFd);
+        }
+        targetDirectories.push({ parentFd, name, fd, created });
+        if (created) createdPaths.push({ relativePath: targetSegments.slice(0, index + 1).join("/"), fd });
+        targetParent = fd;
+      }
+      const targetName = targetSegments.at(-1)!;
+      try {
+        fs.linkSync(fdPath(receiptParent, receiptSegments.at(-1)!), fdPath(targetParent, targetName));
+        linked = true; syncDirectory(targetParent);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      }
+      targetFd = fs.openSync(fdPath(targetParent, targetName), FILE_FLAGS);
+      const targetIdentity = publishedIdentity(targetFd);
+      if (!sameObject(fs.fstatSync(receiptFd, { bigint: true }), fs.fstatSync(targetFd, { bigint: true })) || !samePublished(targetIdentity, expected)) {
+        throw new Error(`canonical target '${relativeTarget}' collides with migration ownership receipt; byte-identical replacement inodes are never adopted`);
+      }
+      this.assertBoundary(targetDirectories, undefined, { name: targetName, fd: targetFd });
+      for (const createdPath of createdPaths) this.createdDirectories.set(createdPath.relativePath, identity(fs.fstatSync(createdPath.fd, { bigint: true })));
+      return targetIdentity;
+    } catch (error) {
+      const targetParent = targetDirectories.at(-1)?.fd;
+      if (linked && targetParent !== undefined && receiptFd !== undefined) this.removeOwnedFile(targetParent, targetSegments.at(-1)!, receiptFd);
+      this.removeCreatedDirectories(targetDirectories);
+      throw error;
+    } finally {
+      if (targetFd !== undefined) fs.closeSync(targetFd);
+      if (receiptFd !== undefined) fs.closeSync(receiptFd);
+      for (const entry of targetDirectories.reverse()) fs.closeSync(entry.fd);
+      for (const entry of receiptDirectories.reverse()) fs.closeSync(entry.fd);
     }
   }
 

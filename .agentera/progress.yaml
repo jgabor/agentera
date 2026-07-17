@@ -1,4 +1,30 @@
 cycles:
+  - number: 894
+    timestamp: 2026-07-17 14:16
+    type: fix
+    phase: build
+    what: Closed Task 10's final entity migration publication and rollback crash
+      windows.
+    inspiration: Retry 2/2 final Task 10 audit requirements A-E and Decision 94
+      state-storage authority.
+    discovered: Publication ownership must predate the canonical target; journal
+      updates after publication cannot establish safe rollback ownership.
+    verified: "entityMigrationApply.test.ts: 21/21; four-file migration focus:
+      137/137; full CLI: 212 files, 2559/2559. Typecheck, build, check validate
+      state, build capability, capability contract 2/2, compact, migration help,
+      and schema passed."
+    next: Task 10 remains complete. Task 11 remains pending; do not run live
+      migration apply or begin general transaction work.
+    context:
+      intent: Prevent resume from adopting byte-identical successor inodes and prevent
+        rollback completion after legacy source drift.
+      constraints: Only the two reproduced Task 10 crash windows; no Task 11, general
+        transaction framework, live apply, manual YAML edit, vision change,
+        amend, push, publish, or tag.
+      unknowns: None within the final Task 10 corrective scope.
+      scope: Operation-local migration receipts, pinned hard-link publication,
+        descriptor-coherent evidence validation, rollback source revalidation,
+        and adversarial subprocess tests.
   - number: 893
     timestamp: 2026-07-17 13:42
     type: fix
@@ -201,30 +227,6 @@ cycles:
         or global plan consumers.
       constraints: Preserve legacy authority while the marker is absent; no aggregate
         plan/archive writes in entity mode.
-  - number: 884
-    timestamp: 2026-07-17 06:19
-    type: fix
-    phase: build
-    what: Routed health entity append through the canonical loaded input while
-      preserving exact nested audit records and rejecting caller-owned envelopes
-      before effects.
-    discovered: Entity tests had populated both values and input, masking that
-      public --input requests intentionally leave values empty.
-    verified: "Focused health entity tests passed: 1 file, 10 tests. Full CLI
-      passed: 208 files, 2,499 tests. Typecheck and build passed. State
-      validation passed with 0 issues. Audit capability passed. Capability
-      contract passed 2/2. Compact passed for 10 artifacts with 0 over-limit,
-      formatting, protected-overflow, error, or changed findings."
-    next: Task 6 remains complete. Task 7 remains pending; do not begin it in this
-      cycle.
-    context:
-      intent: Fix only Task 6 public health input routing after the entity cutover
-        regression was identified.
-      constraints: Task 6 health public input routing only; no other entity family,
-        apply, push, publish, vision, or unrelated changes.
-      unknowns: None within the corrected public health append path.
-      scope: One health entity input selection fix, realistic public CLI regressions,
-        and exact cycle evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -294,6 +296,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 884 (2026-07-17): Routed health entity append through the
+      canonical loaded input while preserving exact nested audit records..."
   - summary: "Cycle 883 (2026-07-17): Cut health audit storage, writes, bounded
       reads, and repair diagnostics over to canonical immutable entities..."
   - summary: "Cycle 882 (2026-07-17): Hardened decision cursor snapshots, canonical
@@ -390,16 +394,18 @@ archive:
   - summary: "Cycle 845 (2026-07-16): Established the prime consumer compatibility
       boundary: inventoried every documented prime consumer with field-level
       evidence, classified..."
-  - summary: "Cycle 844 (2026-07-16): Close decision amend review gaps: dead-Set
-      removal, byte-equality and corrupt-revision degradation coverage,
-      transaction module headroom..."
 omitted: true
-omitted_count: 129
+omitted_count: 130
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
