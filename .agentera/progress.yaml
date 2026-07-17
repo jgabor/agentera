@@ -1,4 +1,33 @@
 cycles:
+  - number: 906
+    timestamp: 2026-07-18 01:06
+    type: fix
+    phase: build
+    what: Normalized lossless legacy plan omissions and made preview validate every
+      final canonical target through the same authority-backed envelope and
+      graph boundary used by apply.
+    inspiration: Task14 retry2/2 FINAL after approved apply rejected a legacy plan
+      task missing canonical required list fields.
+    discovered: "Complete target validation exposed only deterministic legacy plan
+      representations: absent/null/empty list fields, scalar list values,
+      one-entry YAML acceptance mappings, completed task status, and absent
+      scope."
+    verified: Focused migration and protocol suite passed 134 tests; full CLI passed
+      2,622 tests across 218 files; typecheck and build passed; all 12
+      capabilities, capability contract 2/2, state validation, compact, and a
+      blocker-free 1,449-target canonical validation passed.
+    next: Task14 remains pending. An independent audit must review a fresh
+      post-commit candidate approval before any separately authorized live
+      apply.
+    context:
+      intent: Fix only the second approved Task14 apply defect and preview/apply
+        target parity without applying the cutover.
+      constraints: No live apply, Task14 completion, Task15, version, changelog,
+        vision, manual YAML edit, remote, amend, push, publish, or tag.
+      unknowns: Independent audit and live apply authorization remain unresolved.
+      scope: Legacy plan migration adapters, shared canonical target validation,
+        preview digest binding, apply defense checks, authority contract, and
+        migration regressions.
   - number: 905
     timestamp: 2026-07-18 00:29
     type: fix
@@ -224,27 +253,6 @@ cycles:
       unknowns: none
       scope: Generic query alias matching, entity-mode rejection, and proportional
         query regression tests.
-  - number: 896
-    timestamp: 2026-07-17 15:31
-    type: fix
-    phase: build
-    what: Corrected audited Task11 entity query, durability, migration binding,
-      pagination, error, and identity boundaries.
-    discovered: Decision and plan entity lists measured compact JSON instead of the
-      exact emitted pretty JSON; the current plan view also added its plan
-      envelope after pagination.
-    verified: "Focused: 5 files, 79 tests passed. Full: 213 files, 2576 tests
-      passed. Typecheck, build, state validation, build capability, capability
-      contract, and compact gates passed."
-    next: Task 12 remains pending; do not begin it in this cycle.
-    context:
-      intent: Close only the audited Task11 boundary defects without entering Task12,
-        applying live migration, or changing legacy authority where intended.
-      constraints: No Task12/13 work, live apply, manual YAML edits, amend, push,
-        publish, or vision changes.
-      unknowns: none
-      scope: Task11 query aliases, canonical entity durability, migration marker
-        validation, entity pagination/errors/identity, and proportional tests.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -314,6 +322,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 896 (2026-07-17): Corrected audited Task11 entity query,
+      durability, migration binding, pagination, error, and identity
+      boundaries."
   - summary: "Cycle 895 (2026-07-17): Task 11 cut entity-mode retrieval and
       maintenance APIs to canonical id and artifact identity."
   - summary: "Cycle 894 (2026-07-17): Closed Task 10's final entity migration
@@ -408,15 +419,18 @@ archive:
   - summary: "Cycle 857 (2026-07-16): Retried Plan Task 5 final synchronization:
       canonicalized all shipped capability descriptors and current startup
       guidance,..."
-  - summary: "Cycle 856 (2026-07-16): Closed the compact-prime plan through the
-      typed state writers after final verification: Task 5 evaluation..."
 omitted: true
-omitted_count: 141
+omitted_count: 142
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

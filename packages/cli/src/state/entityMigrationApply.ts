@@ -5,8 +5,8 @@ import path from "node:path";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { EntityPublicationContext, type PublishedTargetIdentity } from "./entityPublicationContext.js";
-import { canonicalEntityRecordViolations, discoverEntities, validateEntityState } from "./entityStorage.js";
-import { planEntityMigration, type DurableEntityMigrationEntry, type DurableEntityMigrationPlan } from "./entityMigrationPreview.js";
+import { canonicalEntityEnvelopeBytes, discoverEntities, validateEntityState } from "./entityStorage.js";
+import { planEntityMigration, validateEntityMigrationTargets, type DurableEntityMigrationEntry, type DurableEntityMigrationPlan } from "./entityMigrationPreview.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 import { acquireWriterLock } from "./write/lock.js";
@@ -161,10 +161,10 @@ function writeJournal(project: string, journal: Journal): Buffer {
 }
 function fault(point: string): void { if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === point) process.exit(86); }
 
-function assertPlanReady(plan: DurableEntityMigrationPlan, sourceRoot?: string): void {
+function assertPlanReady(plan: DurableEntityMigrationPlan, sourceRoot: string): void {
   if (plan.counts.blockers > 0) throw new EntityMigrationOperationError("inventory_blocked", `entity migration inventory has ${plan.counts.blockers} blocker(s)`, `Repair every preview diagnostic, then rerun agentera state migrate entities --project '${plan.project}' --dry-run --format json; no migration journal was created.`);
-  const invalid = plan.entries.find((entry) => canonicalEntityRecordViolations(entry.boundary!, entry.record, sourceRoot).length > 0);
-  if (invalid) throw new EntityMigrationOperationError("target_invalid", `mapped record '${invalid.source_identity}' does not satisfy canonical ${invalid.boundary} entity validation: ${canonicalEntityRecordViolations(invalid.boundary!, invalid.record, sourceRoot).join("; ")}`, `Repair the legacy record, rerun the dry-run preview, and approve the new digest; no migration journal was created.`);
+  const invalid = validateEntityMigrationTargets(plan.project, plan.entries, sourceRoot)[0];
+  if (invalid) throw new EntityMigrationOperationError("target_invalid", `mapped record '${invalid.sourceIdentity}' does not satisfy canonical target validation: ${invalid.message}`, `Repair the legacy record, rerun the dry-run preview, and approve the new digest; no migration journal was created.`);
 }
 function assertBinding(plan: DurableEntityMigrationPlan, fingerprint: string, digest: string): void {
   if (plan.source_fingerprint !== fingerprint || plan.preview_digest !== digest) throw new EntityMigrationOperationError("source_changed", "entity migration source or authority changed after approval", `Rerun agentera state migrate entities --project '${plan.project}' --dry-run --format json and approve the new fingerprint and digest.`);
@@ -187,7 +187,7 @@ function prepare(plan: DurableEntityMigrationPlan): Journal {
     const receiptsFd = fs.openSync(fdPath(stageFd, "receipts"), DIRECTORY_FLAGS); const receipts: Record<string, Receipt> = {};
     try {
       for (const [index, entry] of plan.entries.entries()) {
-        const target = entry.proposed_target!.path; const name = `${String(index).padStart(4, "0")}.yaml`; const bytes = dumpYamlMapping({ id: entry.proposed_target!.id, artifact: entry.artifact, record: entry.record });
+        const target = entry.proposed_target!.path; const name = `${String(index).padStart(4, "0")}.yaml`; const bytes = canonicalEntityEnvelopeBytes({ id: entry.proposed_target!.id, artifact: entry.artifact!, record: entry.record });
         durableCreate(fdPath(receiptsFd, name), bytes); receipts[target] = { ...identity(descriptorIdentity(fdPath(receiptsFd, name))), path: `${ROOT}/${id}/receipts/${name}`, target, kind: "entity" };
       }
       durableCreate(fdPath(receiptsFd, "marker.yaml"), markerBytes(id, plan)); receipts[MARKER] = { ...identity(descriptorIdentity(fdPath(receiptsFd, "marker.yaml"))), path: `${ROOT}/${id}/receipts/marker.yaml`, target: MARKER, kind: "marker" };
@@ -276,6 +276,8 @@ function matchesReceipt(project: string, target: string, receipt: Receipt): bool
 }
 function advance(project: string, sourceRoot: string, journal: Journal, operation: "apply" | "resume"): EntityMigrationResult {
   const { entries, preservedResidues, receipts } = loadEvidence(project, journal); assertCurrentSource(project, sourceRoot, journal);
+  const invalid = validateEntityMigrationTargets(project, entries, sourceRoot)[0];
+  if (invalid) throw new EntityMigrationOperationError("target_invalid", `durable mapped record '${invalid.sourceIdentity}' does not satisfy canonical target validation: ${invalid.message}`, "Retain all recovery evidence and do not publish or modify targets; restore the exact validated manifest before resuming.");
   if (["rollback_prepared", "rollback_cutover", "rolled_back"].includes(journal.phase)) throw new EntityMigrationOperationError("migration_rolled_back", `migration '${journal.migration_id}' entered rollback at '${journal.phase}'`, `Continue rollback explicitly with agentera state migrate entities --project '${project}' --rollback ${journal.migration_id} --force --format json.`);
   if (journal.phase === "prepare_recovery") {
     withMigrationContext(project, journal.migration_id, (context) => {

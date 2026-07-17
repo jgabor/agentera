@@ -78,13 +78,35 @@ function normalizePlanDocument(data: JsonObject, archived: boolean): { data: Jso
   const taskNormalizations: JsonObject[] = [];
   const tasks = sourceTasks.map((source, index) => {
     const task = structuredClone(source); const legacy = typeof task.id === "string" ? /^T([1-9][0-9]*)$/.exec(task.id) : null;
-    if (legacy && task.number === undefined) { task.number = Number(legacy[1]); delete task.id; if (task.name === undefined && typeof task.title === "string") { task.name = task.title; delete task.title; } taskNormalizations.push({ index, source_id: source.id, source_title: source.title, normalized_number: task.number, normalized_name: task.name }); }
+    const taskNormalization: JsonObject = { index };
+    if (legacy && task.number === undefined) { task.number = Number(legacy[1]); delete task.id; if (task.name === undefined && typeof task.title === "string") { task.name = task.title; delete task.title; } Object.assign(taskNormalization, { source_id: source.id, source_title: source.title, normalized_number: task.number, normalized_name: task.name }); }
+    const normalizedLists = ["depends_on", "acceptance"].filter((field) => source[field] === undefined || source[field] === null || typeof source[field] === "string");
+    if (normalizedLists.length) {
+      for (const field of normalizedLists) task[field] = typeof source[field] === "string" && source[field] !== "" ? [source[field]] : [];
+      taskNormalization.normalized_list_fields = normalizedLists;
+      taskNormalization.source_list_forms = Object.fromEntries(normalizedLists.map((field) => [field, source[field] === undefined ? "absent" : source[field] === null ? "null" : source[field] === "" ? "empty_scalar" : "scalar"]));
+    }
+    if (Array.isArray(task.acceptance)) {
+      const acceptanceItems: JsonObject[] = [];
+      task.acceptance = task.acceptance.map((item, acceptanceIndex) => {
+        if (!isMapping(item)) return item;
+        const pairs = Object.entries(item);
+        if (pairs.length !== 1 || typeof pairs[0][1] !== "string") return item;
+        const normalized = `${pairs[0][0]}: ${pairs[0][1]}`;
+        acceptanceItems.push({ index: acceptanceIndex, source_mapping: item, normalized });
+        return normalized;
+      });
+      if (acceptanceItems.length) taskNormalization.acceptance_mapping_items = acceptanceItems;
+    }
+    if (task.status === "completed") { task.status = "complete"; taskNormalization.status = { original: "completed", normalized: "complete" }; }
+    if (Object.keys(taskNormalization).length > 1) taskNormalizations.push(taskNormalization);
     if (Array.isArray(task.depends_on)) task.depends_on = task.depends_on.map((dependency) => { const match = /^Task ([1-9][0-9]*)$/.exec(String(dependency)); return match ? match[1] : dependency; });
     return task;
   });
-  const normalizedData = { ...data, header: { ...header, status: normalizedStatus }, ...(Array.isArray(data.entries) ? { entries: tasks } : { tasks }) };
+  const normalizedData: JsonObject = { ...data, header: { ...header, status: normalizedStatus }, ...(Array.isArray(data.entries) ? { entries: tasks } : { tasks }) };
   const changes: JsonObject = {};
   if (status !== normalizedStatus) changes.lifecycle = { original_status: status, normalized_status: normalizedStatus, rule: incomplete ? "completed_with_incomplete_tasks_to_open" : "legacy_status" };
+  if (data.scope === undefined || data.scope === null || data.scope === "") { normalizedData.scope = { included: [], excluded: [] }; changes.scope = { source_form: data.scope === undefined ? "absent" : data.scope === null ? "null" : "empty_scalar", normalized: "explicit_empty_lists" }; }
   if (taskNormalizations.length) changes.tasks = taskNormalizations;
   return { data: normalizedData, ...(Object.keys(changes).length ? { provenance: { kind: "legacy_plan_normalization", archived, ...changes } } : {}) };
 }

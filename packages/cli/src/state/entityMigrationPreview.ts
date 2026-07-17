@@ -11,6 +11,7 @@ import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.j
 import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
 import { assertRealpathBoundary, docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
+import { canonicalEntityEnvelopeBytes, validateCanonicalEntityTargets } from "./entityStorage.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
@@ -55,6 +56,7 @@ export interface EntityMigrationEntry {
   content_sha256s: string[];
   physical_record_count: number;
   proposed_target: { id: string; path: string } | null;
+  target_sha256: string | null;
   relationships: EntityMigrationRelationship[];
   recovery: string;
   migration_provenance?: JsonObject | JsonObject[];
@@ -691,6 +693,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       content_sha256s: contentSha256s,
       physical_record_count: group.length,
       proposed_target: blocked || residue ? null : { id, path: `.agentera/entities/${primary.artifact}/${primary.boundary}/${id}.yaml` },
+      target_sha256: null,
       relationships,
       record,
       recovery: blocked ? recovery(project, primary.path) : "none",
@@ -713,6 +716,17 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
     }
   }
   return entries;
+}
+
+export function validateEntityMigrationTargets(project: string, entries: DurableEntityMigrationEntry[], sourceRoot: string): Array<{ sourceIdentity: string; path: string; message: string }> {
+  const targets = entries.flatMap((entry) => entry.proposed_target && entry.artifact && entry.boundary ? [{ sourceIdentity: entry.source_identity, path: entry.proposed_target.path, id: entry.proposed_target.id, artifact: entry.artifact, boundary: entry.boundary, record: entry.record }] : []);
+  const diagnostics = validateCanonicalEntityTargets(project, targets, sourceRoot);
+  for (const entry of entries) {
+    if (!entry.proposed_target || !entry.artifact) continue;
+    const actual = hash(canonicalEntityEnvelopeBytes({ id: entry.proposed_target.id, artifact: entry.artifact, record: entry.record }));
+    if (entry.target_sha256 !== actual) diagnostics.push({ sourceIdentity: entry.source_identity, path: entry.proposed_target.path, message: `canonical target bytes have SHA-256 '${actual}', not manifest binding '${entry.target_sha256 ?? "missing"}'` });
+  }
+  return diagnostics;
 }
 
 function migrationInventory(projectRoot: string, sourceRoot: string, resolveDescriptorPath: DescriptorPathResolver): DurableEntityMigrationPlan {
@@ -739,10 +753,22 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   const completeInventory = buildEntries(project, fingerprint, observations);
   const preservedResidues = completeInventory.filter((entry) => entry.classification === "historical_projection_residue");
   const completeEntries = completeInventory.filter((entry) => entry.classification !== "historical_projection_residue");
+  for (const entry of completeEntries) {
+    if (entry.proposed_target && entry.artifact) entry.target_sha256 = hash(canonicalEntityEnvelopeBytes({ id: entry.proposed_target.id, artifact: entry.artifact, record: entry.record }));
+  }
+  const targetDiagnostics = validateEntityMigrationTargets(project, completeEntries, sourceRoot);
+  for (const diagnostic of targetDiagnostics) {
+    const entry = completeEntries.find((candidate) => candidate.source_identity === diagnostic.sourceIdentity);
+    if (!entry) continue;
+    entry.classification = "corrupt";
+    entry.proposed_target = null;
+    entry.target_sha256 = null;
+    entry.recovery = recovery(project, entry.source_paths[0]);
+  }
   const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported", "historical_projection_residue"];
   const counts = Object.fromEntries(classes.map((classification) => [classification, completeInventory.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
   counts.total = completeInventory.length;
-  counts.publishable_entities = completeEntries.length;
+  counts.publishable_entities = completeEntries.filter(({ proposed_target }) => proposed_target !== null).length;
   counts.logical_identities = completeInventory.length;
   counts.physical_records = observations.length;
   counts.mirrors = completeInventory.reduce((total, entry) => total + (entry.provenance.includes("mirrored") ? entry.physical_record_count - 1 : 0), 0);
@@ -757,6 +783,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
       const target = relationship.target_source_identity ?? "missing structured reference";
       return { classification: "unresolved_relationship" as const, path: entry.source_paths[0], source_identity: entry.source_identity, relationship_field: relationship.field, target_source_identity: relationship.target_source_identity, message: `source '${entry.source_identity}' relationship '${relationship.field}' references unresolved target '${target}'`, recovery: `Repair relationship '${relationship.field}' on '${entry.source_identity}' to reference an inventoried source identity instead of '${target}', then run agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --dry-run --format json.` };
     }),
+    ...targetDiagnostics.filter(({ sourceIdentity }) => sourceIdentity === entry.source_identity).map((diagnostic) => ({ classification: "corrupt" as const, path: entry.source_paths[0], source_identity: entry.source_identity, message: `target_invalid: ${diagnostic.message}`, recovery: entry.recovery })),
   ]);
   const digestEntries = completeEntries.map(({ record: _record, ...entry }) => entry);
   const digestResidues = preservedResidues.map(({ record: _record, ...entry }) => entry);

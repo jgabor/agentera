@@ -579,9 +579,17 @@ entity_migration:
       regenerates candidates.
     preview_digest: >-
       SHA-256 over canonical JSON of the complete unbounded inventory, proposed
-      mapping, relationship rewrite map, counts, blockers, and source
+      mapping, authority-validated final envelope byte SHA-256 values,
+      relationship rewrite map, counts, blockers, and source
       fingerprint plus the project selector, complete-source filter, declared
       order, and migration-authority binding before output omission.
+    target_validation: >-
+      Before preview can be ready or produce an approvable digest, every proposed
+      final envelope, record, public field vocabulary, and relationship graph is
+      validated through the same authority-backed canonical target validator used
+      defensively by apply and resume. A target failure is a corrupt blocker tied
+      to its source identity and recovery action; preserved nonentity residues are
+      excluded from target validation and publication.
     output:
       max_utf8_bytes: 32768
       default_limit: 100
@@ -657,6 +665,7 @@ entity_migration:
       - source root and source fingerprints
       - complete old-to-new ID mapping
       - relationship rewrite map
+      - authority-validated final envelope byte SHA-256 values
       - preview digest and approved apply intent
       - recovery snapshot and cutover journal
     durability_rule: the mapping and journal are reused on resume; IDs are never regenerated

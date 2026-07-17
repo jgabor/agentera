@@ -84,6 +84,21 @@ export interface EntityValidationResult extends EntityDiscoveryResult {
   omittedIssueCount: number;
 }
 
+export interface CanonicalEntityTarget {
+  sourceIdentity: string;
+  path: string;
+  id: string;
+  artifact: string;
+  boundary: string;
+  record: JsonObject;
+}
+
+export interface CanonicalEntityTargetDiagnostic {
+  sourceIdentity: string;
+  path: string;
+  message: string;
+}
+
 export function entityArtifactValues(sourceRoot?: string): string[] {
   return [...authority(sourceRoot).artifacts];
 }
@@ -102,6 +117,15 @@ export function canonicalEntityEnvelope(
   sourceRoot?: string,
 ): { id: string; artifact: string; record: JsonObject } {
   const model = authority(sourceRoot);
+  return canonicalEntityEnvelopeAgainstModel(bytes, expected, model, sourceRoot);
+}
+
+function canonicalEntityEnvelopeAgainstModel(
+  bytes: string,
+  expected: { artifact: string; boundary: string; id: string },
+  model: EntityAuthority,
+  sourceRoot?: string,
+): { id: string; artifact: string; record: JsonObject } {
   const owner = model.byBoundary.get(expected.boundary);
   if (!owner || owner.artifact !== expected.artifact || !model.pattern.test(expected.id)) {
     throw new Error("the requested artifact, boundary, or ID is not authority-declared");
@@ -114,7 +138,7 @@ export function canonicalEntityEnvelope(
     throw new Error("entity envelope does not match the requested artifact and ID");
   }
   const record = document.record as JsonObject;
-  const violations = canonicalEntityRecordViolations(expected.boundary, record, sourceRoot);
+  const violations = canonicalEntityRecordViolationsAgainstModel(expected.boundary, record, model);
   if (owner.record?.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""))) violations.push("timestamp must use YYYY-MM-DD HH:MM");
   if (expected.boundary === "decision_revision") violations.push(...decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot)));
   if (expected.boundary === "health_audit") violations.push(...healthEntityViolations(record));
@@ -127,6 +151,10 @@ export function canonicalEntityEnvelope(
   if (expected.boundary === "todo_item" || expected.boundary === "documentation_inventory_entry") violations.push(...todoDocsRecordViolations(expected.boundary, record));
   if (violations.length) throw new Error(`entity record violates the '${expected.boundary}' boundary contract: ${violations.join("; ")}`);
   return { id: expected.id, artifact: expected.artifact, record };
+}
+
+export function canonicalEntityEnvelopeBytes(target: Pick<CanonicalEntityTarget, "id" | "artifact" | "record">): string {
+  return dumpYamlMapping({ id: target.id, artifact: target.artifact, record: target.record });
 }
 
 function mapping(value: unknown): value is Record<string, unknown> {
@@ -209,6 +237,10 @@ export function canonicalEntityRecordViolations(
   sourceRoot?: string,
 ): string[] {
   const model = authority(sourceRoot);
+  return canonicalEntityRecordViolationsAgainstModel(boundary, record, model);
+}
+
+function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: JsonObject, model: EntityAuthority): string[] {
   const definition = model.byBoundary.get(boundary);
   if (!definition?.record) throw new Error(`unknown entity record boundary '${boundary}'`);
   const missing = definition.record.requiredFields.filter((field) => record[field] === undefined);
@@ -510,9 +542,8 @@ function relationTargets(entity: DiscoveredEntity, relation: RelationshipDefinit
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
 }
 
-export function validateEntityState(projectRoot: string, sourceRoot?: string): EntityValidationResult {
+function validateEntityDiscovery(projectRoot: string, sourceRoot: string | undefined, discovery: EntityDiscoveryResult, boundIssues = true): EntityValidationResult {
   const model = authority(sourceRoot);
-  const discovery = discoverEntities(projectRoot, sourceRoot);
   const issues = [...discovery.issues];
   const byId = new Map<string, DiscoveredEntity[]>();
   for (const entity of discovery.entities) {
@@ -619,8 +650,39 @@ export function validateEntityState(projectRoot: string, sourceRoot?: string): E
   }
   issues.sort(diagnosticSort);
   const omittedIssueCount = Math.max(0, issues.length - MAX_DIAGNOSTICS);
-  const boundedIssues = issues.slice(0, MAX_DIAGNOSTICS);
+  const boundedIssues = boundIssues ? issues.slice(0, MAX_DIAGNOSTICS) : issues;
   return { ...discovery, issues: boundedIssues, valid: issues.length === 0, entityCount: discovery.entities.length, omittedIssueCount };
+}
+
+export function validateEntityState(projectRoot: string, sourceRoot?: string): EntityValidationResult {
+  return validateEntityDiscovery(projectRoot, sourceRoot, discoverEntities(projectRoot, sourceRoot));
+}
+
+/** Validate the exact canonical envelopes and graph proposed by a migration without publishing them. */
+export function validateCanonicalEntityTargets(projectRoot: string, targets: CanonicalEntityTarget[], sourceRoot?: string): CanonicalEntityTargetDiagnostic[] {
+  const model = authority(sourceRoot);
+  const entities: DiscoveredEntity[] = [];
+  const issues: EntityDiagnostic[] = [];
+  const sourceByPath = new Map(targets.map((target) => [target.path, target.sourceIdentity]));
+  const targetsById = new Map<string, CanonicalEntityTarget[]>();
+  for (const target of targets) targetsById.set(target.id, [...(targetsById.get(target.id) ?? []), target]);
+  for (const target of targets) {
+    const expectedPath = path.posix.join(model.entityRoot, target.artifact, target.boundary, `${target.id}.yaml`);
+    let record: JsonObject | null = null;
+    let message: string | null = target.path === expectedPath ? null : `canonical target path '${target.path}' must be '${expectedPath}'`;
+    if (!message) {
+      try { record = canonicalEntityEnvelopeAgainstModel(canonicalEntityEnvelopeBytes(target), target, model, sourceRoot).record; }
+      catch (error) { message = (error as Error).message; }
+    }
+    if (message) issues.push({ code: "malformed_entity", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message, recovery: recovery(projectRoot, `repair legacy source '${target.sourceIdentity}' so its canonical target satisfies the authority-backed boundary validator`) });
+    entities.push({ id: target.id, artifact: target.artifact, boundary: target.boundary, record, path: path.join(projectRoot, target.path), relativePath: target.path, classification: message ? "malformed" : "valid" });
+  }
+  for (const duplicates of targetsById.values()) {
+    if (duplicates.length < 2) continue;
+    for (const target of duplicates) issues.push({ code: "duplicate_id", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message: `entity ID '${target.id}' appears ${duplicates.length} times across proposed canonical targets`, recovery: recovery(projectRoot, `repair migration identity allocation for '${target.sourceIdentity}'`) });
+  }
+  const validation = validateEntityDiscovery(projectRoot, sourceRoot, { entities, issues, validArtifactValues: model.artifacts }, false);
+  return validation.issues.map((issue) => ({ sourceIdentity: sourceByPath.get(issue.path) ?? issue.id ?? issue.path, path: issue.path, message: issue.message }));
 }
 
 function generatedId(model: EntityAuthority): string {

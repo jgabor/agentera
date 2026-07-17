@@ -11,7 +11,9 @@ import { printStateHelp } from "../../src/cli/help.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import {
   assertEntityMigrationBinding,
+  planEntityMigration,
   previewEntityMigration,
+  validateEntityMigrationTargets,
   type EntityMigrationPreview,
 } from "../../src/state/entityMigrationPreview.js";
 
@@ -211,7 +213,7 @@ describe("entity migration read-only preview", () => {
 
   it("inventories authority-valid ordered decision revisions and classifies malformed provenance separately", () => {
     const root = project();
-    write(root, ".agentera/decisions.yaml", `decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    choice: Choice.\n    reasoning: Reason.\n    confidence: high\n    status: decided\n    feeds_into: []\n`);
+    write(root, ".agentera/decisions.yaml", `decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Validate revision targets.\n    alternatives:\n      - name: Preserve\n        status: chosen\n    choice: Choice.\n    reasoning: Reason.\n    confidence: firm\n`);
     write(root, ".agentera/revisions/decisions.yaml", `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: historical_revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: degraded_projection\ndecisions:8:\n  - choice: Invalid provenance.\n    provenance: revision\ndecisions:bad: not-a-list\n`);
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     const revisions = preview.entries.filter((entry) => entry.boundary === "decision_revision");
@@ -238,6 +240,19 @@ describe("entity migration read-only preview", () => {
       expect(preview.entries.some((entry) => entry.source_paths.includes(relative))).toBe(true);
     }
     expect(preview.entries.filter((entry) => entry.source_paths.some((sourcePath) => EXACT_SOURCE_PATHS.includes(sourcePath as keyof typeof EXACT_SOURCE_FIXTURES)) && entry.classification === "corrupt")).toEqual([]);
+  });
+
+  it("validates final canonical envelopes and relationships across every entity boundary", () => {
+    const root = project();
+    for (const [relative, bytes] of Object.entries(EXACT_SOURCE_FIXTURES)) write(root, relative, bytes);
+    write(root, ".agentera/optimize/latency/objective.yaml", VALID_OBJECTIVE);
+    write(root, ".agentera/optimize/latency/experiments.yaml", "experiments:\n  - number: 7\n    date: 2026-07-17 10:00\n    status: baseline\n    result: pinned source\n");
+    const plan = planEntityMigration(root, REPO_ROOT);
+    expect([...new Set(plan.entries.map(({ boundary }) => boundary))].sort()).toEqual([
+      "decision", "decision_revision", "decision_satisfaction", "documentation_inventory_entry", "experiment", "health_audit", "objective", "plan", "plan_task", "progress_cycle", "todo_item",
+    ]);
+    expect(validateEntityMigrationTargets(root, plan.entries, REPO_ROOT)).toEqual([]);
+    expect(plan.entries.every((entry) => entry.proposed_target === null || /^[a-f0-9]{64}$/.test(entry.target_sha256 ?? ""))).toBe(true);
   });
 
   it("classifies only itemized TODO/docs records and binds preserved singleton authority", () => {
