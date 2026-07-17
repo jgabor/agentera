@@ -1,4 +1,30 @@
 cycles:
+  - number: 901
+    timestamp: 2026-07-17 19:23
+    type: fix
+    phase: build
+    what: "Made final protocol scan exceptions and bundle inventory exact: 315
+      boolean allowances became 165 one-to-one context-bound exceptions, active
+      progress explain stopped emitting the retired selector, and all 139 bundle
+      files received exact reverse ownership (137 copied, 2 generated)."
+    inspiration: Replanned PLAN Task21 acceptance and final Task12 adversarial scan audit.
+    discovered: The state authority repeated artifact_id at one pointer, active
+      entity progress explain still emitted --number, and generated-only bundle
+      files had no authoritative ownership.
+    verified: "Focused tests passed: active protocol 9/9, decision amendment 14/14,
+      package registry 9/9, bundle parity 17/17. Full CLI suite passed: 216
+      files, 2592 tests. Typecheck and build passed. All 12 capabilities,
+      capability contract 2/2, state validation, compact, and bundle parity
+      passed."
+    next: Execute pending Task13; Task21 is complete.
+    context:
+      intent: Close Task21's final Task12 scan-proof defects without entering Task13
+        or later migration, documentation, release, or live-apply scope.
+      constraints: Kept web docs, Task13+, versions, changelog, vision, publication,
+        and live migration apply out of scope.
+      unknowns: None.
+      scope: Protocol scan reconciliation and tests, progress explain guidance,
+        package bundle ownership contract, and state authority wording.
   - number: 900
     timestamp: 2026-07-17 18:41
     type: fix
@@ -211,28 +237,6 @@ cycles:
         remains intentionally untouched.
       scope: packages/cli entity migration preview/apply command, durable journal
         implementation, scoped schema/help/authority, and migration regressions.
-  - number: 891
-    timestamp: 2026-07-17 12:17
-    type: fix
-    phase: build
-    what: Fixed entity migration preview to inventory the canonical docs-mapped TODO
-      source.
-    inspiration: Task 9 audit retry 1/2 and the existing artifact registry resolver.
-    discovered: Migration preview alone had hardcoded root TODO.md while normal
-      state reads already honored docs mapping.
-    verified: entityMigrationPreview.test.ts passed 81 tests; full CLI passed 211
-      files and 2,538 tests; typecheck, build, state validation, document
-      capability, capability contract 2/2, and compact passed.
-    next: "Task 10 remains pending: durable migration apply, resume, and rollback
-      were not changed."
-    context:
-      intent: Close the Task 9 audit defect without changing migration apply or Task
-        10 behavior.
-      constraints: Reuse canonical mapping semantics; preserve docs.yaml singleton
-        authority and zero-write preview; no apply work.
-      unknowns: None for this audit fix.
-      scope: packages/cli/src/state/entityMigrationPreview.ts and focused migration
-        preview regressions.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -302,6 +306,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 891 (2026-07-17): Fixed entity migration preview to inventory
+      the canonical docs-mapped TODO source."
   - summary: "Cycle 890 (2026-07-17): Added TODO-item and documentation-inventory
       entity mode with bounded exact retrieval."
   - summary: "Cycle 889 (2026-07-17): Closed Task 8 audit defects in objective and
@@ -397,15 +403,18 @@ archive:
   - summary: "Cycle 852 (2026-07-16): Repaired reopened compact-prime Plan Task 3
       full-fidelity dashboard emission: conditional top-level omission now
       applies only..."
-  - summary: "Cycle 851 (2026-07-16): Retry Plan Task 3: bound degraded prime
-      envelopes and gate final UTF-8 output"
 omitted: true
-omitted_count: 136
+omitted_count: 137
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

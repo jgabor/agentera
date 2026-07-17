@@ -135,6 +135,15 @@ records:
           path: .opencode/package.json
         - id: cursor-hooks
           path: .cursor/hooks.json
+      generated_files:
+        - id: npx-bundle-marker
+          path: .agentera-npx-bundle.json
+          format: json
+          classification: active
+        - id: extract-corpus-parity
+          path: extract-corpus-parity.json
+          format: json
+          classification: active
       skip_parts:
         - __pycache__
         - .pytest_cache

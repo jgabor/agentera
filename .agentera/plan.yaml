@@ -187,6 +187,7 @@ tasks:
       - "10"
       - "11"
       - "12"
+      - "21"
     status: pending
     acceptance:
       - GIVEN this repository WHEN dry-run completes THEN every current entity and inbound structured reference has a proposed ID or exact blocker.
@@ -276,6 +277,15 @@ tasks:
       - GIVEN the state-mode marker is removed or replaced after detection WHEN a progress write reaches publication THEN the operation fails and leaves no entity, legacy, lock, or staging residue.
       - GIVEN stable validated root and marker identities WHEN entity publication runs THEN canonical writes, replay, conflict, and durability behavior remain correct.
       - GIVEN future entity families use shared publication WHEN root and marker race fixtures run THEN one shared boundary prevents pathname substitution without family-specific duplication.
+  - number: 21
+    name: Make protocol scan exceptions and bundle inventory exact
+    status: complete
+    depends_on:
+      - "12"
+    acceptance:
+      - GIVEN retired-token findings and approved exceptions WHEN the active protocol scan runs THEN findings and exact canonical contexts are consumed one-to-one and duplicate, added, moved, or changed occurrences fail.
+      - GIVEN registry-owned and separately generated bundle outputs WHEN inventory is checked THEN every shipped file is classified exactly once and any generated-only addition fails until explicitly classified.
+      - GIVEN source and bundled active surfaces WHEN scanned THEN no active retired identity or selector is hidden by an exception and source/generated occurrence parity remains exact.
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.

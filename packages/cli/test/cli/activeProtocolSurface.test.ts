@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 
@@ -14,8 +15,8 @@ const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const BUNDLE = path.join(ROOT, "packages/cli/bundle");
 const RETIRED = /\b(?:stable_id|artifact_id|entry_number|task_number|experiment_number|plan_id|objective_id)\b|--(?:number|plan|task)(?=$|[\s=])|\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b|\b(?:plan|task|objective|experiment|progress|decision|health):(?:[a-z]{10}|\d+|[0-9a-f]{8}-[0-9a-f-]{27,})\b|\b[a-z]{10}\/experiment:\d+\b/g;
 
-interface Finding { surface: string; pointer: string; match: string; excerpt: string }
-interface Exception { surface: string; pointer: string; match: string; expected: string; reason: string }
+interface Finding { surface: string; pointer: string; match: string; excerpt: string; contextHash: string }
+interface Exception { surface: string; pointer: string; match: string; contextHash: string; reason: string }
 type ReferenceClassification = { kind: "active" } | { kind: "excluded"; reason: "immutable history" | "migration input/apply internals" | "evaluator fixture" | "internal adapter not public identity" };
 
 function files(patternRoot: string, suffix?: string): string[] {
@@ -113,7 +114,7 @@ const STATE_STORAGE_EXACT: Array<[string, string]> = [
   ["/experiment_archival/identity/stable_id", "stable_id"], ["/experiment_archival/identity/path_selector", "experiment_number"], ["/experiment_archival/identity/objective_binding", "objective_id"], ["/experiment_archival/identity/content_binding", "experiment_number"],
   ["/experiment_archival/envelope/required_fields/1", "stable_id"], ["/experiment_archival/envelope/required_fields/2", "objective_id"], ["/experiment_archival/envelope/required_fields/3", "experiment_number"], ["/experiment_archival/envelope/provenance_required_fields/1", "objective_id"],
   ["/storage/archive/filename/entry_number", "entry_number"], ["/storage/archive/filename/directory_name", "artifact_id"], ["/storage/archive/retry_policy", "artifact_id"], ["/storage/archive/retry_policy", "entry_number"],
-  ["/identity/stable_id", "stable_id"], ["/identity/components/artifact_id", "artifact_id"], ["/identity/components/artifact_id", "artifact_id"], ["/identity/components/entry_number", "entry_number"], ["/identity/uniqueness", "stable_id"], ["/identity/ordering/list", "entry_number"], ["/identity/ordering/tie_breaker", "stable_id"], ["/identity/ordering/get", "stable_id"],
+  ["/identity/stable_id", "stable_id"], ["/identity/components/artifact_id", "artifact_id"], ["/identity/components/entry_number", "entry_number"], ["/identity/uniqueness", "stable_id"], ["/identity/ordering/list", "entry_number"], ["/identity/ordering/tie_breaker", "stable_id"], ["/identity/ordering/get", "stable_id"],
   ["/identity/legacy_rows/canonical_number", "entry_number"], ["/identity/legacy_rows/unaddressable", "stable_id"], ["/identity/legacy_rows/unaddressable", "entry_number"], ["/identity/legacy_rows/ambiguous", "stable_id"],
   ["/envelope/required_fields/1", "artifact_id"], ["/envelope/required_fields/2", "entry_number"], ["/envelope/field_contract/artifact_id", "artifact_id"], ["/envelope/field_contract/entry_number", "entry_number"], ["/envelope/identity_checks/0", "artifact_id"], ["/envelope/identity_checks/1", "entry_number"], ["/envelope/identity_checks/2", "entry_number"],
   ["/projections/summary/required_item_fields/0", "stable_id"], ["/projections/summary/required_item_fields/1", "artifact_id"], ["/projections/summary/required_item_fields/2", "entry_number"], ["/projections/summary/nullable_item_fields/0", "stable_id"], ["/projections/summary/nullable_item_fields/1", "entry_number"],
@@ -126,26 +127,43 @@ const STATE_STORAGE_EXACT: Array<[string, string]> = [
   ["/failures/envelope/error_optional_fields/0", "artifact_id"], ["/failures/envelope/error_optional_fields/1", "entry_number"], ["/failures/envelope/error_optional_fields/2", "stable_id"],
 ];
 
-const RUNTIME_EXACT: Array<[string, string]> = [
-  ["/schema/state_migration/command", "--number"], ["/schema/state_migration/selectors/number/flag", "--number"], ["/schema/state_migration/modes/apply/selectors_required/1", "--number"], ["/schema/state_migration/result/entry_fields/2", "artifact_id"], ["/schema/state_migration/result/entry_fields/3", "entry_number"], ["/schema/state_migration/result/omission/output_retry", "--number"],
-  ["/schema/state_migration/failures/classes/0/example", "--number"], ["/schema/state_migration/failures/classes/3/example", "--number"], ["/schema/state_migration/failures/classes/4/example", "--number"], ["/schema/state_migration/failures/classes/5/example", "--number"], ["/schema/state_migration/failures/classes/6/example", "--number"], ["/schema/state_migration/failures/classes/7/example", "--number"],
-  ["/schema/state_backfill/command", "--number"], ["/schema/state_backfill/apply_requires/4", "--number"], ["/schema/state_backfill/response/entry_fields/1", "artifact_id"], ["/schema/state_backfill/response/entry_fields/2", "entry_number"], ["/schema/state_backfill/recovery/omission", "--number"],
-  ["/explain/stdout/guidance/0", "--number"], ["/legacy_explain/stdout/guidance/0", "--number"],
+const RUNTIME_EXACT: Array<[string, string, string]> = [
+  ["/schema/state_migration/command", "--number", "50202a1d2b4cbe8405be4eb3c516eb3534e5a215c1037cf99914ad23e8d09a95"], ["/schema/state_migration/selectors/number/flag", "--number", "5e23817f53a16146558ae73bab28977dcccff509f9f188465d829480263e91fa"], ["/schema/state_migration/modes/apply/selectors_required/1", "--number", "ee83192a0b8f3aca2b8c5e4834d4cb9c2fabd97d98044b413994a0cd07468ecc"], ["/schema/state_migration/result/entry_fields/2", "artifact_id", "763699b7364292b373d5ecb1b4003e26cd7c79a78df5743bf5c200761dceb0b8"], ["/schema/state_migration/result/entry_fields/3", "entry_number", "3dda1118c4b2ba1bb9de6e6901c04bb927081502b6033a9385fd34eb6be35156"], ["/schema/state_migration/result/omission/output_retry", "--number", "8a2cd997289530bd343ff1e797d6107ed90d8c8a8557839350338ec7e8773191"],
+  ["/schema/state_migration/failures/classes/0/example", "--number", "9caa5dcf473f7351de39f5cd6b043c3c76cbb34f51112096e331241f13fb3390"], ["/schema/state_migration/failures/classes/3/example", "--number", "ed4c59be7c17b813534834c0a12562f86dbad16fa53a455af5682cc3fb3fc163"], ["/schema/state_migration/failures/classes/4/example", "--number", "8fdf55a5983697e2ad0b229535e22c6c7db6ed4e38faacc53a0bbf155d8fe598"], ["/schema/state_migration/failures/classes/5/example", "--number", "183c7fc64cf75a33a8bc4c6a4cc5134dcea8863341cca58657ea6ec26e65f45b"], ["/schema/state_migration/failures/classes/6/example", "--number", "1fa387b95a84efd28a4f28e80bd18f3db24e7290154d80302f847691ec58af0a"], ["/schema/state_migration/failures/classes/7/example", "--number", "df7f6f7a0d298f1a5230bf1f52c32be2aece690f02f6b5faaf14763a612f5ef1"],
+  ["/schema/state_backfill/command", "--number", "410ef60c0ccaea5b1ec2c66fb7cb84d424100ae677a8ec353b9129e72bd647cf"], ["/schema/state_backfill/apply_requires/4", "--number", "7a223c7c06001711cd0d09cf9035b9601ad55e3c6c5e1d7c1355be6a97738167"], ["/schema/state_backfill/response/entry_fields/1", "artifact_id", "e2a1cf0621b69ce0849a52894bb860beeca7add8ecd24173e7e100ad2bd09fa5"], ["/schema/state_backfill/response/entry_fields/2", "entry_number", "22aa461515984e74dcbee25a7463ad34f7f5d6703a3f64b91f2f2e2ad4976449"], ["/schema/state_backfill/recovery/omission", "--number", "cd5e94aa96905c8c3caf1d330185e5bba3fcd874819a03755f906e5d2913ed4f"],
+  ["/legacy_explain/stdout/guidance/0", "--number", "7d6b39905d921ab5b58a5809a224098e863082f4e4e4d9f7ea3fb5a4f7f5482d"],
 ];
+
+const SOURCE_CONTEXT_HASHES: Record<string, string> = {
+  "references/artifacts/state-storage-authority.yaml": "b26b7165b5a48699f474472f009ede26a69aa89427959038633252393d6075bd",
+  "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
+  "references/cli/prime-consumer-compatibility.yaml": "da41e21b628d9091f3bab0ddb7bdb4f86b5649f8f108b25d2dd307ff4e64c7f9",
+  "UPGRADE.md": "5cfe1ded5845beb2278098082c2561f8e85b25bfddfbb9af652c169aa0621bbc",
+};
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }
 
-function semanticFindings(surface: string, value: unknown, pointer = ""): Finding[] {
+function hash(value: string | Buffer): string { return crypto.createHash("sha256").update(value).digest("hex"); }
+
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, child]) => [key, canonical(child)]));
+  return value;
+}
+
+function semanticFindings(surface: string, value: unknown, pointer = "", parent: unknown = null): Finding[] {
   const findings: Finding[] = [];
-  if (Array.isArray(value)) value.forEach((child, index) => findings.push(...semanticFindings(surface, child, `${pointer}/${index}`)));
+  if (Array.isArray(value)) value.forEach((child, index) => findings.push(...semanticFindings(surface, child, `${pointer}/${index}`, value)));
   else if (value && typeof value === "object") {
     for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
       const childPointer = `${pointer}/${pointerEscape(key)}`;
-      for (const match of key.matchAll(RETIRED)) findings.push({ surface, pointer: childPointer, match: match[0], excerpt: key });
-      findings.push(...semanticFindings(surface, child, childPointer));
+      const contextHash = hash(JSON.stringify(canonical({ value: key, parent: value })));
+      for (const match of key.matchAll(RETIRED)) findings.push({ surface, pointer: childPointer, match: match[0], excerpt: key, contextHash });
+      findings.push(...semanticFindings(surface, child, childPointer, value));
     }
   } else if (typeof value === "string") {
-    for (const match of value.matchAll(RETIRED)) findings.push({ surface, pointer: pointer || "/", match: match[0], excerpt: value });
+    const contextHash = hash(JSON.stringify(canonical({ value, parent })));
+    for (const match of value.matchAll(RETIRED)) findings.push({ surface, pointer: pointer || "/", match: match[0], excerpt: value, contextHash });
   }
   return findings;
 }
@@ -155,48 +173,65 @@ function textFindings(surface: string, text: string): Finding[] {
   const findings: Finding[] = [];
   text.split("\n").forEach((line, index) => {
     const heading = /^(#{1,6})\s+(.+)$/.exec(line); if (heading) section = heading[2].trim();
-    for (const match of line.matchAll(RETIRED)) findings.push({ surface, pointer: `section=${section};line=${index + 1}`, match: match[0], excerpt: line.trim() });
+    const excerpt = line.trim();
+    const contextHash = hash(JSON.stringify({ section, line: excerpt }));
+    for (const match of line.matchAll(RETIRED)) findings.push({ surface, pointer: `section=${section};line=${index + 1}`, match: match[0], excerpt, contextHash });
   });
   return findings;
 }
 
 function fileFindings(relative: string): Finding[] {
-  const text = fs.readFileSync(path.join(ROOT, relative), "utf8");
-  if (relative.endsWith(".yaml") || relative.endsWith(".yml")) return semanticFindings(relative, parseYaml(text));
-  if (relative.endsWith(".json")) return semanticFindings(relative, JSON.parse(text));
-  return textFindings(relative, text);
+  const bytes = fs.readFileSync(path.join(ROOT, relative));
+  const text = bytes.toString("utf8");
+  const findings = relative.endsWith(".yaml") || relative.endsWith(".yml")
+    ? semanticFindings(relative, parseYaml(text))
+    : relative.endsWith(".json") ? semanticFindings(relative, JSON.parse(text)) : textFindings(relative, text);
+  return findings.map((finding) => ({ ...finding, contextHash: hash(bytes) }));
 }
 
-function exactExceptions(findings: Finding[], runtime: any): Exception[] {
-  expect(runtime.explain.stdout.guidance).toContain("number is assigned by the CLI; do not pass --number");
+function exactExceptions(runtime: any): Exception[] {
+  expect(runtime.explain.stdout.guidance).toContain("a bare ten-letter ID is assigned by the CLI; do not pass an identity");
+  expect(runtime.legacy_explain.stdout.guidance).toContain("number is assigned by the CLI; do not pass --number");
   expect(runtime.legacy_explain.stdout).toMatchObject({ classification: "legacy_migration_evidence", recovery_only: true });
   const exceptions: Exception[] = [];
-  const add = (surface: string, pointer: string, match: string, expected: string, reason: string): void => {
-    exceptions.push({ surface, pointer, match, expected, reason });
-  };
-  const addPaired = (surface: string, pointer: string, match: string, expected: string, reason: string): void => {
-    add(surface, pointer, match, expected, reason);
-    const generated = new Map(copyOwnedPairs()).get(surface);
-    if (generated) add(generated, pointer, match, expected, reason);
+  const add = (surface: string, pointer: string, match: string, contextHash: string, reason: string): void => {
+    exceptions.push({ surface, pointer, match, contextHash, reason });
   };
 
   for (const [pointer, match] of STATE_STORAGE_EXACT) {
     const negative = pointer.includes("/forbidden_");
-    addPaired("references/artifacts/state-storage-authority.yaml", pointer, match, match, negative ? "exact negative prohibition" : "exact pre-cutover migration input/apply contract");
+    add("references/artifacts/state-storage-authority.yaml", pointer, match, SOURCE_CONTEXT_HASHES["references/artifacts/state-storage-authority.yaml"], negative ? "exact internal adapter prohibition semantics" : "exact internal adapter migration semantics");
   }
-  for (const [pointer, match] of RUNTIME_EXACT) add("runtime://public-structured-outputs", pointer, match, match, pointer.includes("/guidance/") ? "exact negative prohibition" : "exact migration input/apply runtime contract");
+  for (const [pointer, match, contextHash] of RUNTIME_EXACT) add("runtime://public-structured-outputs", pointer, match, contextHash, pointer.includes("/guidance/") ? "exact legacy evidence writer guidance" : "exact migration input/apply runtime contract");
   for (const [pointer, match] of [["/PUBLICATION/4/required_fields/1", "stable_id"], ["/PUBLICATION/4/required_fields/2", "objective_id"], ["/PUBLICATION/4/required_fields/3", "experiment_number"], ["/PUBLICATION/4/provenance_fields/1", "objective_id"]] as Array<[string, string]>) {
-    addPaired("skills/agentera/schemas/artifacts/experiments.yaml", pointer, match, match, "exact legacy experiment migration source envelope");
+    add("skills/agentera/schemas/artifacts/experiments.yaml", pointer, match, SOURCE_CONTEXT_HASHES["skills/agentera/schemas/artifacts/experiments.yaml"], "exact legacy experiment migration source envelope");
   }
-  addPaired("references/cli/prime-consumer-compatibility.yaml", "/plan", "plan:634c092e-a7bc-48f4-80ee-2c91940e54f1", "plan:634c092e-a7bc-48f4-80ee-2c91940e54f1", "exact immutable plan evidence reference");
+  add("references/cli/prime-consumer-compatibility.yaml", "/plan", "plan:634c092e-a7bc-48f4-80ee-2c91940e54f1", SOURCE_CONTEXT_HASHES["references/cli/prime-consumer-compatibility.yaml"], "exact immutable plan evidence reference");
   for (const [line, text] of [[202, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [203, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --apply --force --format json"], [214, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [215, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --apply --force --format json"]] as Array<[number, string]>) {
-    addPaired("UPGRADE.md", `section=Legacy state and optional Git enrichment;line=${line}`, "--number", text, "exact migration input/apply command");
+    add("UPGRADE.md", `section=Legacy state and optional Git enrichment;line=${line}`, "--number", SOURCE_CONTEXT_HASHES["UPGRADE.md"], "exact migration input/apply command");
   }
   return exceptions;
 }
 
-function allowed(finding: Finding, exceptions: Exception[]): boolean {
-  return exceptions.some((exception) => exception.surface === finding.surface && exception.pointer === finding.pointer && exception.match === finding.match && (exception.expected === finding.match || exception.expected === finding.excerpt));
+function identity(item: Pick<Finding | Exception, "surface" | "pointer" | "match">): string {
+  return JSON.stringify([item.surface, item.pointer, item.match]);
+}
+
+function reconcile(findings: Finding[], exceptions: Exception[]): string[] {
+  const errors: string[] = [];
+  const findingGroups = Map.groupBy(findings, identity);
+  const exceptionGroups = Map.groupBy(exceptions, identity);
+  for (const [key, group] of findingGroups) if (group.length !== 1) errors.push(`duplicate finding ${key} x${group.length}`);
+  for (const [key, group] of exceptionGroups) if (group.length !== 1) errors.push(`duplicate exception ${key} x${group.length}`);
+  for (const finding of findings) {
+    const candidates = exceptionGroups.get(identity(finding)) ?? [];
+    if (candidates.length !== 1 || candidates[0].contextHash !== finding.contextHash) errors.push(`prohibited finding ${identity(finding)} context=${finding.contextHash}`);
+  }
+  for (const exception of exceptions) {
+    const candidates = findingGroups.get(identity(exception)) ?? [];
+    if (candidates.length !== 1 || candidates[0].contextHash !== exception.contextHash) errors.push(`unconsumed exception ${identity(exception)} context=${exception.contextHash}`);
+  }
+  return errors;
 }
 
 function classifyReference(relative: string): ReferenceClassification {
@@ -212,14 +247,43 @@ function classifyCopiedSurface(relative: string): ReferenceClassification {
 }
 
 function copyOwnedPairs(): Array<[string, string]> {
-  const registry = parseYaml(fs.readFileSync(path.join(ROOT, "references/adapters/package-registry.yaml"), "utf8")) as any;
-  const surfaces = registry.records.find((entry: any) => entry.identity.id === "agentera").bundle_surfaces;
+  const surfaces = bundleSurfaces();
   const pairs: Array<[string, string]> = [];
   for (const file of surfaces.files) pairs.push([file.path, `packages/cli/bundle/${file.path}`]);
   for (const directory of surfaces.directories) {
     for (const source of files(directory.path).filter((file) => !file.split("/").some((part) => surfaces.skip_parts.includes(part)) && !surfaces.skip_suffixes.some((suffix: string) => file.endsWith(suffix)))) pairs.push([source, `packages/cli/bundle/${source}`]);
   }
   return pairs;
+}
+
+function bundleSurfaces(): any {
+  const registry = parseYaml(fs.readFileSync(path.join(ROOT, "references/adapters/package-registry.yaml"), "utf8")) as any;
+  return registry.records.find((entry: any) => entry.identity.id === "agentera").bundle_surfaces;
+}
+
+function treeFiles(root: string): string[] {
+  const result: string[] = [];
+  const walk = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(absolute);
+      else if (entry.isFile()) result.push(path.relative(root, absolute).split(path.sep).join("/"));
+    }
+  };
+  walk(root);
+  return result;
+}
+
+function bundleInventoryErrors(bundleRoot: string, expected: string[]): string[] {
+  const duplicates = [...new Set(expected.filter((entry, index) => expected.indexOf(entry) !== index))];
+  const actual = treeFiles(bundleRoot);
+  const expectedSet = new Set(expected);
+  const actualSet = new Set(actual);
+  return [
+    ...duplicates.map((entry) => `duplicate ownership: ${entry}`),
+    ...actual.filter((entry) => !expectedSet.has(entry)).map((entry) => `unclassified bundle file: ${entry}`),
+    ...expected.filter((entry) => !actualSet.has(entry)).map((entry) => `missing bundle file: ${entry}`),
+  ];
 }
 
 let project = "", legacyProject = "";
@@ -267,6 +331,30 @@ describe("authoritative active final-protocol surfaces", () => {
       expect(["active", "excluded"], `${source} and ${generated}`).toContain(classification.kind);
       expect(fs.readFileSync(path.join(ROOT, generated)), generated).toEqual(fs.readFileSync(path.join(ROOT, source)));
     }
+    const generated = bundleSurfaces().generated_files as Array<{ path: string; format: string; classification: string }>;
+    const expected = [...pairs.map(([, target]) => path.relative(BUNDLE, path.join(ROOT, target)).split(path.sep).join("/")), ...generated.map((entry) => entry.path)];
+    expect(bundleInventoryErrors(BUNDLE, expected)).toEqual([]);
+    expect(new Set(expected).size).toBe(expected.length);
+    for (const output of generated) {
+      expect(output.format, output.path).toBe("json");
+      expect(output.classification, output.path).toBe("active");
+      expect(() => JSON.parse(fs.readFileSync(path.join(BUNDLE, output.path), "utf8")), output.path).not.toThrow();
+      expect(fileFindings(`packages/cli/bundle/${output.path}`), output.path).toEqual([]);
+    }
+  });
+
+  it("rejects an undeclared generated-only bundle file", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-bundle-inventory-"));
+    try {
+      const expected = treeFiles(BUNDLE);
+      for (const relative of expected) {
+        const target = path.join(tmp, relative);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, "");
+      }
+      fs.writeFileSync(path.join(tmp, ".bundle-generated"), "sentinel\n");
+      expect(bundleInventoryErrors(tmp, expected)).toEqual(["unclassified bundle file: .bundle-generated"]);
+    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   });
 
   it("rejects retired public identity and selector vocabulary on source, generated, and runtime surfaces", () => {
@@ -280,7 +368,6 @@ describe("authoritative active final-protocol surfaces", () => {
         const sourceFindings = fileFindings(source);
         const generatedFindings = fileFindings(generated);
         expect(generatedFindings.map(({ pointer, match, excerpt }) => ({ pointer, match, excerpt })), generated).toEqual(sourceFindings.map(({ pointer, match, excerpt }) => ({ pointer, match, excerpt })));
-        findings.push(...generatedFindings);
       }
     }
     const runtime = {
@@ -294,11 +381,19 @@ describe("authoritative active final-protocol surfaces", () => {
       contexts: Object.fromEntries(CAPABILITY_NAMES.map((name) => [name, capture(["prime", "--context", name, "--format", "json"])])),
     };
     findings.push(...semanticFindings("runtime://public-structured-outputs", runtime));
-    const exceptions = exactExceptions(findings, runtime);
-    const unexpected = findings.filter((finding) => !allowed(finding, exceptions));
-    expect(unexpected.map(({ surface, pointer, match, excerpt }) => ({ surface, pointer, match, excerpt }))).toEqual([]);
-    for (const exception of exceptions) {
-      expect(findings.some((finding) => finding.surface === exception.surface && finding.pointer === exception.pointer && finding.match === exception.match), exception.reason).toBe(true);
-    }
+    const exceptions = exactExceptions(runtime);
+    expect(reconcile(findings, exceptions)).toEqual([]);
   });
+});
+
+describe("retired finding reconciliation", () => {
+  const finding: Finding = { surface: "source.yaml", pointer: "/command", match: "--number", excerpt: "command --number", contextHash: "context" };
+  const exception: Exception = { surface: finding.surface, pointer: finding.pointer, match: finding.match, contextHash: finding.contextHash, reason: "migration apply" };
+
+  it("consumes one exact finding with one exact exception", () => expect(reconcile([finding], [exception])).toEqual([]));
+  it("rejects a duplicate exception", () => expect(reconcile([finding], [exception, exception]).some((error) => error.includes("duplicate exception"))).toBe(true));
+  it("rejects a duplicated finding at the same pointer", () => expect(reconcile([finding, finding], [exception]).some((error) => error.includes("duplicate finding"))).toBe(true));
+  it("rejects changed context retaining the token", () => expect(reconcile([{ ...finding, contextHash: "changed" }], [exception]).some((error) => error.includes("prohibited finding"))).toBe(true));
+  it("rejects a moved pointer or heading", () => expect(reconcile([{ ...finding, pointer: "/moved" }], [exception]).some((error) => error.includes("prohibited finding"))).toBe(true));
+  it("rejects an added occurrence", () => expect(reconcile([finding, { ...finding, pointer: "/added" }], [exception]).some((error) => error.includes("prohibited finding"))).toBe(true));
 });

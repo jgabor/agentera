@@ -1256,7 +1256,7 @@ identity:
     accepted_pattern: '^(progress|decisions|health):[1-9][0-9]*$'
     example: decisions:53
   components:
-    artifact_id: one of scope.supported_artifacts.artifact_id
+    artifact_id: one of the supported artifact values declared by scope
     entry_number: positive integer from the artifact's entry_number_field
   uniqueness: stable_id is unique within one project archive
   ordering:

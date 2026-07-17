@@ -31,7 +31,7 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   ],
   version_surfaces: ["surfaces", "excluded_runtime_manifests"],
   runtime_package_manifests: ["manifests", "shared_paths", "shared_paths_policy"],
-  bundle_surfaces: ["directories", "files", "skip_parts", "skip_suffixes"],
+  bundle_surfaces: ["directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
   package_commands: ["commands", "safety"],
   docs_targets: ["version_files_source", "version_files", "index_targets", "excluded_version_files"],
   release_policy: [

@@ -196,7 +196,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
       "apply publishes a record-local revision document override with recovery; the decisions projection stays byte-stable and reads compose base→revisions→overlay",
       "an identical re-submission is an idempotent replay; retry converges on a stable revision identity without duplicates or mixed state",
     ];
-  return [entityDecisions || entityHealth ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
+  return [entityArtifact ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
 }
 
 export function exampleFor(artifact: WritableArtifact, verb: string, entityDecisions = false, entityArtifact = false): string {
