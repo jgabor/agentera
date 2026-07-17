@@ -88,11 +88,9 @@ interface Observation {
   message?: string;
 }
 
-interface SourceFile {
-  relative: string;
-  bytes: Buffer | null;
-  kind: "file" | "missing" | "unsafe";
-}
+type SourceFile =
+  | { relative: string; bytes: Buffer; kind: "file" }
+  | { relative: string; bytes: null; kind: "missing" | "unsafe" };
 
 const MAX_OUTPUT_BYTES = 32_768;
 const DEFAULT_LIMIT = 100;
@@ -106,6 +104,7 @@ const BLOCKING = new Set<EntityMigrationClassification>(["irrecoverable_summary_
 const INVENTORY_ORDER = "artifact_then_boundary_then_source_identity_then_source_path";
 const INVENTORY_FILTER = "complete_declared_inventory";
 const AUTHORITY_PATH = "references/artifacts/state-storage-authority.yaml";
+const PLAN_ARCHIVE_SOURCE = /^\.agentera\/archive\/PLAN-[^/]+\.ya?ml$/i;
 
 function mapping(value: unknown): JsonObject | null {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : null;
@@ -119,14 +118,25 @@ function relative(root: string, target: string): string {
   return path.relative(root, target).replaceAll(path.sep, "/");
 }
 
-function inspectPath(root: string, relativePath: string): SourceFile {
+function sameFile(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function containedBy(root: string, candidate: string): boolean {
+  const relativePath = path.relative(root, candidate);
+  return relativePath !== "" && !relativePath.startsWith(`..${path.sep}`) && relativePath !== ".." && !path.isAbsolute(relativePath);
+}
+
+/** Migration-only source seam: pin one project file to a verified descriptor. */
+function readMigrationSource(root: string, relativePath: string): SourceFile {
   let absolute = root;
   const segments = relativePath.split("/");
+  let initial: fs.BigIntStats | null = null;
   for (const [index, segment] of segments.entries()) {
     absolute = path.join(absolute, segment);
-    let stat: fs.Stats;
+    let stat: fs.BigIntStats;
     try {
-      stat = fs.lstatSync(absolute);
+      stat = fs.lstatSync(absolute, { bigint: true });
     } catch (error) {
       return { relative: relativePath, bytes: null, kind: (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unsafe" };
     }
@@ -134,11 +144,47 @@ function inspectPath(root: string, relativePath: string): SourceFile {
     if (stat.isSymbolicLink() || (leaf ? !stat.isFile() : !stat.isDirectory())) {
       return { relative: relativePath, bytes: null, kind: "unsafe" };
     }
+    if (leaf) initial = stat;
   }
+  let descriptor: number | undefined;
   try {
-    return { relative: relativePath, bytes: fs.readFileSync(absolute), kind: "file" };
+    const noFollow = (fs.constants as Record<string, number>).O_NOFOLLOW ?? 0;
+    descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | noFollow);
+    const opened = fs.fstatSync(descriptor, { bigint: true });
+    if (!initial || !opened.isFile() || !sameFile(initial, opened)) {
+      return { relative: relativePath, bytes: null, kind: "unsafe" };
+    }
+    const projectRealPath = fs.realpathSync(root);
+    const descriptorRealPath = fs.realpathSync(`/proc/self/fd/${descriptor}`);
+    const current = fs.lstatSync(absolute, { bigint: true });
+    const currentRealPath = fs.realpathSync(absolute);
+    if (
+      current.isSymbolicLink()
+      || !current.isFile()
+      || !sameFile(opened, current)
+      || descriptorRealPath !== currentRealPath
+      || !containedBy(projectRealPath, descriptorRealPath)
+    ) {
+      return { relative: relativePath, bytes: null, kind: "unsafe" };
+    }
+    const bytes = fs.readFileSync(descriptor);
+    const after = fs.lstatSync(absolute, { bigint: true });
+    if (
+      after.isSymbolicLink()
+      || !after.isFile()
+      || !sameFile(opened, fs.fstatSync(descriptor, { bigint: true }))
+      || !sameFile(opened, after)
+      || fs.realpathSync(absolute) !== descriptorRealPath
+    ) {
+      return { relative: relativePath, bytes: null, kind: "unsafe" };
+    }
+    return { relative: relativePath, bytes, kind: "file" };
   } catch {
     return { relative: relativePath, bytes: null, kind: "unsafe" };
+  } finally {
+    if (descriptor !== undefined) {
+      try { fs.closeSync(descriptor); } catch { /* A failed close cannot make unverified bytes safe. */ }
+    }
   }
 }
 
@@ -151,23 +197,24 @@ function directoryFiles(root: string, relativeRoot: string, accept: (relativePat
       stat = fs.lstatSync(directory);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
-      throw error;
+      throw new Error(`inventory root '${directory}' cannot be inspected inside project '${root}'; replace it with a readable real directory and retry`);
     }
     if (stat.isSymbolicLink()) throw new Error(`inventory root '${directory}' is a symbolic link; replace it with a real directory inside project '${root}' and retry`);
     if (!stat.isDirectory()) throw new Error(`inventory root '${directory}' is not a directory; replace it with a real directory inside project '${root}' and retry`);
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
-    } catch (error) {
-      throw new Error(`inventory root '${directory}' cannot be read inside project '${root}': ${(error as Error).message}`);
+    } catch {
+      throw new Error(`inventory root '${directory}' cannot be read inside project '${root}'; replace it with a readable real directory and retry`);
     }
     for (const entry of entries) {
       const absolute = path.join(directory, entry.name);
       const candidate = relative(root, absolute);
-      if (entry.isSymbolicLink()) {
+      if (accept(candidate)) {
+        files.push(readMigrationSource(root, candidate));
+      } else if (entry.isSymbolicLink()) {
         throw new Error(`inventory root '${absolute}' is a symbolic link; replace it with a real directory or file inside project '${root}' and retry`);
       } else if (entry.isDirectory()) visit(absolute);
-      else if (entry.isFile() && accept(candidate)) files.push({ relative: candidate, bytes: fs.readFileSync(absolute), kind: "file" });
     }
   };
   visit(absoluteRoot);
@@ -178,10 +225,10 @@ function collectSources(root: string): SourceFile[] {
   const exact = [
     "TODO.md", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
     ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml",
-  ].map((candidate) => inspectPath(root, candidate));
+  ].map((candidate) => readMigrationSource(root, candidate));
   const archives = directoryFiles(root, ".agentera/archive", (candidate) =>
     /^\.agentera\/archive\/(progress|decisions|health)\/.+/.test(candidate)
-      || /^\.agentera\/archive\/PLAN-[^/]+\.(yaml|yml)$/.test(candidate),
+      || PLAN_ARCHIVE_SOURCE.test(candidate),
   );
   const objectives = [".agentera/optimize", ".agentera/optimera"].flatMap((directory) =>
     directoryFiles(root, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate)),
@@ -335,7 +382,15 @@ function decisionEvidence(sourceRoot: string, files: SourceFile[], observations:
 function planObservations(root: string, files: SourceFile[], observations: Observation[]): void {
   const active = path.join(root, ".agentera", "plan.yaml");
   const activeSource = files.find((source) => source.relative === ".agentera/plan.yaml");
-  const discovery = discoverPlanArtifacts(active, { activeBytes: activeSource?.kind === "file" ? activeSource.bytes : null });
+  const archiveBytes = new Map(files.flatMap((source): Array<[string, Buffer]> =>
+    source.kind === "file" && PLAN_ARCHIVE_SOURCE.test(source.relative)
+      ? [[path.join(root, source.relative), source.bytes]]
+      : [],
+  ));
+  const discovery = discoverPlanArtifacts(active, {
+    activeBytes: activeSource?.kind === "file" ? activeSource.bytes : null,
+    archiveBytes,
+  });
   const seen = new Set<string>();
   if (activeSource?.kind === "unsafe") {
     observations.push({ key: "plan:document", artifact: "plan", boundary: "plan", path: activeSource.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(activeSource.relative) });
@@ -373,33 +428,44 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
     const sourcePath = relative(root, diagnostic.path);
     observations.push({ key: `plan:corrupt:${sourcePath}`, artifact: "plan", boundary: "plan", path: sourcePath, provenance: "plan_candidate", record: null, detail: "corrupt", relationships: [], message: diagnostic.message });
   }
-  for (const source of files.filter((candidate) => candidate.relative.startsWith(".agentera/archive/PLAN-"))) {
+  for (const source of files.filter((candidate) => PLAN_ARCHIVE_SOURCE.test(candidate.relative))) {
     if (!discovery.identities.some((identity) => relative(root, identity.artifact.path) === source.relative) && !observations.some((entry) => entry.path === source.relative)) {
-      observations.push({ key: `plan:corrupt:${source.relative}`, artifact: "plan", boundary: "plan", path: source.relative, provenance: "plan_candidate", record: null, detail: "corrupt", relationships: [], message: "plan archive could not be validated" });
+      observations.push({ key: `plan:corrupt:${source.relative}`, artifact: "plan", boundary: "plan", path: source.relative, provenance: "plan_candidate", record: null, detail: "corrupt", relationships: [], message: source.kind === "unsafe" ? unsafeSourceMessage(source.relative) : "plan archive could not be validated" });
     }
   }
 }
 
-function objectiveObservations(root: string, observations: Observation[]): void {
-  const discovery = discoverObjectiveArtifacts(root);
+function objectiveObservations(root: string, files: SourceFile[], observations: Observation[]): void {
+  const sourceBytes = new Map(files.flatMap((source): Array<[string, Buffer]> =>
+    source.kind === "file" && /^\.agentera\/(optimize|optimera)\/.+\/(objective|experiments)\.yaml$/.test(source.relative)
+      ? [[path.join(root, source.relative), source.bytes]]
+      : [],
+  ));
+  const discovery = discoverObjectiveArtifacts(root, sourceBytes);
   for (const objective of discovery.objectives) {
     for (const objectivePath of objective.paths) {
+      const sourcePath = relative(root, objectivePath);
+      const source = files.find((candidate) => candidate.relative === sourcePath);
       let document: JsonObject | null = null;
-      try { document = loadYamlMapping(fs.readFileSync(objectivePath, "utf8")) as JsonObject; } catch { /* discovery diagnostic accounts for it */ }
-      observations.push({ key: objective.stableId, artifact: "objective", boundary: "objective", path: relative(root, objectivePath), provenance: objective.roots.includes("optimize") ? "current_canonical" : "legacy_objective_root", record: document, detail: objective.ambiguous || !document ? "corrupt" : "full", relationships: [], message: objective.ambiguous ? "objective identity is ambiguous" : undefined });
+      try { if (source?.kind === "file") document = parseYaml(source); } catch { /* discovery diagnostic accounts for it */ }
+      observations.push({ key: objective.stableId, artifact: "objective", boundary: "objective", path: sourcePath, provenance: sourcePath.startsWith(".agentera/optimize/") ? "current_canonical" : "legacy_objective_root", record: document, detail: objective.ambiguous || !document ? "corrupt" : "full", relationships: [], message: objective.ambiguous ? "objective identity is ambiguous" : undefined });
     }
     if (objective.ambiguous) continue;
     const objectivePath = objective.paths[0];
-    const experimentsPath = path.join(path.dirname(objectivePath), "experiments.yaml");
-    if (!fs.existsSync(experimentsPath)) continue;
-    try {
-      const document = loadYamlMapping(fs.readFileSync(experimentsPath, "utf8")) as JsonObject;
-      for (const experiment of inspectExperimentIdentities(objective.stableId, document).entries) {
-        const key = experiment.stableId ?? `${objective.stableId}/experiment:${experiment.provenance.collection}[${experiment.provenance.index}]`;
-        observations.push({ key, artifact: "experiments", boundary: "experiment", path: relative(root, experimentsPath), provenance: "experiment_projection", record: experiment.data, detail: experiment.addressable ? "full" : experiment.compatibility === "legacy_missing_identity" ? "summary" : "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: experiment.caveats.join("; ") || undefined });
+    const experimentsRelative = relative(root, path.join(path.dirname(objectivePath), "experiments.yaml"));
+    const experiments = files.find((source) => source.relative === experimentsRelative);
+    if (experiments?.kind === "file") {
+      try {
+        const document = parseYaml(experiments);
+        for (const experiment of inspectExperimentIdentities(objective.stableId, document).entries) {
+          const key = experiment.stableId ?? `${objective.stableId}/experiment:${experiment.provenance.collection}[${experiment.provenance.index}]`;
+          observations.push({ key, artifact: "experiments", boundary: "experiment", path: experiments.relative, provenance: "experiment_projection", record: experiment.data, detail: experiment.addressable ? "full" : experiment.compatibility === "legacy_missing_identity" ? "summary" : "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: experiment.caveats.join("; ") || undefined });
+        }
+      } catch (error) {
+        observations.push({ key: `${objective.stableId}/experiments`, artifact: "experiments", boundary: "experiment", path: experiments.relative, provenance: "experiment_projection", record: null, detail: "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: (error as Error).message });
       }
-    } catch (error) {
-      observations.push({ key: `${objective.stableId}/experiments`, artifact: "experiments", boundary: "experiment", path: relative(root, experimentsPath), provenance: "experiment_projection", record: null, detail: "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: (error as Error).message });
+    } else if (experiments?.kind === "unsafe") {
+      observations.push({ key: `${objective.stableId}/experiments`, artifact: "experiments", boundary: "experiment", path: experiments.relative, provenance: "experiment_projection", record: null, detail: "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: unsafeSourceMessage(experiments.relative) });
     }
   }
   for (const diagnostic of discovery.diagnostics) {
@@ -407,6 +473,11 @@ function objectiveObservations(root: string, observations: Observation[]): void 
       if (observations.some((entry) => entry.path === relative(root, candidate))) continue;
       observations.push({ key: `objective:corrupt:${relative(root, candidate)}`, artifact: "objective", boundary: "objective", path: relative(root, candidate), provenance: "objective_candidate", record: null, detail: "corrupt", relationships: [], message: diagnostic.message });
     }
+  }
+  for (const source of files.filter((candidate) => candidate.kind === "unsafe" && /\/(objective|experiments)\.yaml$/.test(candidate.relative))) {
+    if (observations.some((entry) => entry.path === source.relative)) continue;
+    const artifact = source.relative.endsWith("/objective.yaml") ? "objective" : "experiments";
+    observations.push({ key: `${artifact}:corrupt:${source.relative}`, artifact, boundary: artifact === "objective" ? "objective" : "experiment", path: source.relative, provenance: artifact === "objective" ? "objective_candidate" : "experiment_projection", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(source.relative) });
   }
 }
 
@@ -512,7 +583,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   numberedObservations(project, sourceRoot, files, observations);
   decisionEvidence(sourceRoot, files, observations);
   planObservations(project, files, observations);
-  objectiveObservations(project, observations);
+  objectiveObservations(project, files, observations);
   todoAndDocs(project, files, observations);
   const completeEntries = buildEntries(project, fingerprint, observations);
   const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"];

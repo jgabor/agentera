@@ -84,22 +84,37 @@ interface InspectedObjective extends ObjectiveIdentity {
   root: "optimize" | "optimera";
 }
 
-export function discoverObjectiveArtifacts(projectRoot: string): ObjectiveArtifactDiscovery {
+export function discoverObjectiveArtifacts(
+  projectRoot: string,
+  sourceBytes?: ReadonlyMap<string, Buffer>,
+): ObjectiveArtifactDiscovery {
   const inspected: InspectedObjective[] = [];
   const diagnostics: ObjectiveIdentityDiagnostic[] = [];
   for (const root of ["optimize", "optimera"] as const) {
     const directory = path.join(projectRoot, ".agentera", root);
-    let slugs: string[] = [];
-    try {
-      slugs = fs.readdirSync(directory).sort();
-    } catch {
-      continue;
-    }
-    for (const slug of slugs) {
-      const objectivePath = path.join(directory, slug, "objective.yaml");
-      if (!fs.existsSync(objectivePath)) continue;
+    let sources: Array<{ slug: string; objectivePath: string; bytes?: Buffer }> = [];
+    if (sourceBytes) {
+      sources = [...sourceBytes.entries()].flatMap(([objectivePath, bytes]) => {
+        const candidate = path.relative(directory, objectivePath).split(path.sep);
+        return candidate.length === 2 && candidate[1] === "objective.yaml"
+          ? [{ slug: candidate[0], objectivePath, bytes }]
+          : [];
+      }).sort((left, right) => left.slug.localeCompare(right.slug));
+    } else {
+      let slugs: string[] = [];
       try {
-        const identity = resolveObjectiveIdentity(loadYamlMapping(fs.readFileSync(objectivePath, "utf8")) as JsonObject);
+        slugs = fs.readdirSync(directory).sort();
+      } catch {
+        continue;
+      }
+      sources = slugs.flatMap((slug) => {
+        const objectivePath = path.join(directory, slug, "objective.yaml");
+        return fs.existsSync(objectivePath) ? [{ slug, objectivePath }] : [];
+      });
+    }
+    for (const { slug, objectivePath, bytes } of sources) {
+      try {
+        const identity = resolveObjectiveIdentity(loadYamlMapping(bytes !== undefined ? bytes.toString("utf8") : fs.readFileSync(objectivePath, "utf8")) as JsonObject);
         inspected.push({ ...identity, path: objectivePath, slug, root });
       } catch (error) {
         diagnostics.push({

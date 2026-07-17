@@ -40,6 +40,33 @@ tasks:
 surprises: []
 `;
 
+const ACTIVE_PLAN_ID = "plan:123e4567-e89b-42d3-a456-426614174000";
+const ARCHIVED_PLAN_ID = "plan:223e4567-e89b-42d3-a456-426614174000";
+const OBJECTIVE_ID = "objective:323e4567-e89b-42d3-a456-426614174000";
+const VALID_ARCHIVED_PLAN = VALID_PLAN
+  .replace(ACTIVE_PLAN_ID, ARCHIVED_PLAN_ID)
+  .replace("status: open", "status: complete")
+  .replace("status: pending", "status: complete");
+const VALID_OBJECTIVE = `header:
+  id: ${OBJECTIVE_ID}
+  title: Reduce latency
+  status: open
+objective:
+  description: Reduce latency
+  measurement: p95
+  constraints: []
+metric:
+  direction: minimize
+  unit: ms
+baseline:
+  description: 100 ms
+gates: {}
+scope:
+  included: [CLI]
+  excluded: []
+`;
+const VALID_EXPERIMENTS = "experiments:\n  - number: 7\n    result: pinned source\n";
+
 const EXACT_SOURCE_FIXTURES = {
   "TODO.md": "# TODO\n\n## → Normal\n- [ ] Preserve this exact item.\n",
   ".agentera/docs.yaml": "index:\n  - path: README.md\n",
@@ -65,6 +92,59 @@ function write(root: string, relative: string, bytes: string): void {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, bytes);
 }
+
+function replaceWithExternalSymlink(target: string, externalTarget: string, externalRoot: string): void {
+  fs.renameSync(target, path.join(externalRoot, "pinned-source"));
+  fs.symlinkSync(externalTarget, target, "file");
+}
+
+const REPRESENTATIVE_SOURCES = [
+  {
+    name: "active plan",
+    relative: ".agentera/plan.yaml",
+    bytes: VALID_PLAN,
+    identity: ACTIVE_PLAN_ID,
+    externalBytes: VALID_PLAN.replace(ACTIVE_PLAN_ID, "plan:923e4567-e89b-42d3-a456-426614174000"),
+    externalIdentity: "plan:923e4567-e89b-42d3-a456-426614174000",
+    prerequisites: {},
+  },
+  {
+    name: "decision sidecar",
+    relative: ".agentera/revisions/decisions.yaml",
+    bytes: EXACT_SOURCE_FIXTURES[".agentera/revisions/decisions.yaml"],
+    identity: "decision_revision:decisions:7:0",
+    externalBytes: "decisions:999:\n  - choice: External choice.\n    provenance: historical_revision\n",
+    externalIdentity: "decision_revision:decisions:999:0",
+    prerequisites: {},
+  },
+  {
+    name: "plan archive",
+    relative: ".agentera/archive/plan-race.yaml",
+    bytes: VALID_ARCHIVED_PLAN,
+    identity: ARCHIVED_PLAN_ID,
+    externalBytes: VALID_ARCHIVED_PLAN.replace(ARCHIVED_PLAN_ID, "plan:823e4567-e89b-42d3-a456-426614174000"),
+    externalIdentity: "plan:823e4567-e89b-42d3-a456-426614174000",
+    prerequisites: {},
+  },
+  {
+    name: "objective",
+    relative: ".agentera/optimize/latency/objective.yaml",
+    bytes: VALID_OBJECTIVE,
+    identity: OBJECTIVE_ID,
+    externalBytes: VALID_OBJECTIVE.replace(OBJECTIVE_ID, "objective:723e4567-e89b-42d3-a456-426614174000"),
+    externalIdentity: "objective:723e4567-e89b-42d3-a456-426614174000",
+    prerequisites: {},
+  },
+  {
+    name: "experiment",
+    relative: ".agentera/optimize/latency/experiments.yaml",
+    bytes: VALID_EXPERIMENTS,
+    identity: `${OBJECTIVE_ID}/experiment:7`,
+    externalBytes: "experiments:\n  - number: 999\n    result: external source\n",
+    externalIdentity: `${OBJECTIVE_ID}/experiment:999`,
+    prerequisites: { ".agentera/optimize/latency/objective.yaml": VALID_OBJECTIVE },
+  },
+] as const;
 
 function tree(root: string): string[] {
   const visit = (directory: string): string[] => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -149,6 +229,209 @@ describe("entity migration read-only preview", () => {
       expect(preview.entries.some((entry) => entry.source_paths.includes(relative))).toBe(true);
     }
     expect(preview.entries.filter((entry) => entry.source_paths.some((sourcePath) => EXACT_SOURCE_PATHS.includes(sourcePath as keyof typeof EXACT_SOURCE_FIXTURES)) && entry.classification === "corrupt")).toEqual([]);
+  });
+
+  it.each(REPRESENTATIVE_SOURCES)("rejects $name replacement after metadata inspection without reading external bytes", ({ relative, bytes, externalBytes, externalIdentity, prerequisites }) => {
+    const root = project();
+    const external = project();
+    for (const [requiredPath, requiredBytes] of Object.entries(prerequisites)) write(root, requiredPath, requiredBytes);
+    write(root, relative, bytes);
+    write(external, "external-source", externalBytes);
+    const target = path.join(root, relative);
+    const externalTarget = path.join(external, "external-source");
+    const originalOpen = fs.openSync.bind(fs);
+    const originalRead = fs.readFileSync.bind(fs);
+    let replaced = false;
+    let openFlags: number | string | undefined;
+
+    vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => {
+      if (!replaced && typeof candidate === "string" && path.resolve(candidate) === target) {
+        replaceWithExternalSymlink(target, externalTarget, external);
+        replaced = true;
+        openFlags = flags;
+      }
+      return originalOpen(candidate, flags, mode);
+    });
+    vi.spyOn(fs, "readFileSync").mockImplementation((...args) => {
+      const candidate = args[0];
+      if (!replaced && typeof candidate === "string" && path.resolve(candidate) === target) {
+        replaceWithExternalSymlink(target, externalTarget, external);
+        replaced = true;
+      }
+      return Reflect.apply(originalRead, fs, args);
+    });
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const observations = preview.entries.filter((entry) => entry.source_paths.includes(relative));
+
+    expect(replaced).toBe(true);
+    if (typeof fs.constants.O_NOFOLLOW === "number" && typeof openFlags === "number") {
+      expect(openFlags & fs.constants.O_NOFOLLOW).toBe(fs.constants.O_NOFOLLOW);
+    }
+    expect(observations).toHaveLength(1);
+    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(JSON.stringify(preview)).not.toContain(externalIdentity);
+    expect(JSON.stringify(preview)).not.toContain("external source");
+  });
+
+  it.each(REPRESENTATIVE_SOURCES)("uses collected $name bytes after the pathname is replaced", ({ relative, bytes, identity, externalBytes, externalIdentity, prerequisites }) => {
+    const root = project();
+    const external = project();
+    for (const [requiredPath, requiredBytes] of Object.entries(prerequisites)) write(root, requiredPath, requiredBytes);
+    write(root, relative, bytes);
+    write(external, "external-source", externalBytes);
+    const target = path.join(root, relative);
+    const externalTarget = path.join(external, "external-source");
+    const originalOpen = fs.openSync.bind(fs);
+    const originalClose = fs.closeSync.bind(fs);
+    let sourceDescriptor: number | undefined;
+    let replaced = false;
+
+    vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => {
+      const descriptor = originalOpen(candidate, flags, mode);
+      if (typeof candidate === "string" && path.resolve(candidate) === target) sourceDescriptor = descriptor;
+      return descriptor;
+    });
+    vi.spyOn(fs, "closeSync").mockImplementation((descriptor) => {
+      originalClose(descriptor);
+      if (!replaced && descriptor === sourceDescriptor) {
+        replaceWithExternalSymlink(target, externalTarget, external);
+        replaced = true;
+      }
+    });
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+
+    expect(replaced).toBe(true);
+    expect(preview.entries.filter((entry) => entry.source_identity === identity)).toHaveLength(1);
+    expect(JSON.stringify(preview)).not.toContain(externalIdentity);
+    expect(JSON.stringify(preview)).not.toContain("external source");
+  });
+
+  it("does not reread an empty collected objective pathname", () => {
+    const root = project();
+    const relative = ".agentera/optimize/empty/objective.yaml";
+    const target = path.join(root, relative);
+    write(root, relative, "");
+    const readSpy = vi.spyOn(fs, "readFileSync");
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+
+    expect(readSpy.mock.calls.some(([candidate]) => typeof candidate === "string" && path.resolve(candidate) === target)).toBe(false);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toHaveLength(1);
+  });
+
+  it("fails closed when an opened source pathname is replaced before descriptor verification", () => {
+    const root = project();
+    const external = project();
+    write(root, ".agentera/plan.yaml", VALID_PLAN);
+    write(external, "external-source", VALID_PLAN.replace(ACTIVE_PLAN_ID, "plan:923e4567-e89b-42d3-a456-426614174000"));
+    const target = path.join(root, ".agentera/plan.yaml");
+    const originalOpen = fs.openSync.bind(fs);
+    const originalFstat = fs.fstatSync.bind(fs);
+    let sourceDescriptor: number | undefined;
+    let replaced = false;
+
+    vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => {
+      const descriptor = originalOpen(candidate, flags, mode);
+      if (typeof candidate === "string" && path.resolve(candidate) === target) sourceDescriptor = descriptor;
+      return descriptor;
+    });
+    vi.spyOn(fs, "fstatSync").mockImplementation((descriptor, options) => {
+      if (!replaced && descriptor === sourceDescriptor) {
+        replaceWithExternalSymlink(target, path.join(external, "external-source"), external);
+        replaced = true;
+      }
+      return originalFstat(descriptor, options);
+    });
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    expect(replaced).toBe(true);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(".agentera/plan.yaml"))).toEqual([
+      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
+    ]);
+    expect(JSON.stringify(preview)).not.toContain("923e4567-e89b-42d3-a456-426614174000");
+  });
+
+  it("fails closed when a recursive source ancestor is replaced before open", () => {
+    const root = project();
+    const external = project();
+    const relative = ".agentera/optimize/latency/objective.yaml";
+    const target = path.join(root, relative);
+    const ancestor = path.dirname(target);
+    const externalAncestor = path.join(external, "external-ancestor");
+    write(root, relative, VALID_OBJECTIVE);
+    write(externalAncestor, "objective.yaml", VALID_OBJECTIVE.replace(OBJECTIVE_ID, "objective:723e4567-e89b-42d3-a456-426614174000"));
+    const originalOpen = fs.openSync.bind(fs);
+    let replaced = false;
+
+    vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => {
+      if (!replaced && typeof candidate === "string" && path.resolve(candidate) === target) {
+        fs.renameSync(ancestor, path.join(external, "pinned-ancestor"));
+        fs.symlinkSync(externalAncestor, ancestor, "dir");
+        replaced = true;
+      }
+      return originalOpen(candidate, flags, mode);
+    });
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    expect(replaced).toBe(true);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([
+      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
+    ]);
+    expect(JSON.stringify(preview)).not.toContain("objective:723e4567-e89b-42d3-a456-426614174000");
+  });
+
+  it.each(["vanished", "unreadable"])("classifies a %s source race without exposing raw filesystem errors", (failure) => {
+    const root = project();
+    const relative = ".agentera/plan.yaml";
+    const target = path.join(root, relative);
+    write(root, relative, VALID_PLAN);
+    const originalOpen = fs.openSync.bind(fs);
+    let intercepted = false;
+
+    vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => {
+      if (!intercepted && typeof candidate === "string" && path.resolve(candidate) === target) {
+        intercepted = true;
+        if (failure === "vanished") fs.rmSync(target);
+        else {
+          const error = new Error("raw access failure") as NodeJS.ErrnoException;
+          error.code = "EACCES";
+          throw error;
+        }
+      }
+      return originalOpen(candidate, flags, mode);
+    });
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    expect(intercepted).toBe(true);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([
+      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
+    ]);
+    expect(JSON.stringify(preview)).not.toContain("raw access failure");
+    expect(preview.diagnostics.find((diagnostic) => diagnostic.path === relative)?.message).toContain("source path '.agentera/plan.yaml' is");
+  });
+
+  it("inventories safe plan, sidecar, objective, and experiment records exactly once", () => {
+    const root = project();
+    write(root, ".agentera/plan.yaml", VALID_PLAN);
+    write(root, ".agentera/archive/PLAN-safe.yaml", VALID_ARCHIVED_PLAN);
+    write(root, ".agentera/revisions/decisions.yaml", EXACT_SOURCE_FIXTURES[".agentera/revisions/decisions.yaml"]);
+    write(root, ".agentera/optimize/latency/objective.yaml", VALID_OBJECTIVE);
+    write(root, ".agentera/optimize/latency/experiments.yaml", VALID_EXPERIMENTS);
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    for (const identity of [
+      ACTIVE_PLAN_ID,
+      `${ACTIVE_PLAN_ID}/task:1`,
+      ARCHIVED_PLAN_ID,
+      `${ARCHIVED_PLAN_ID}/task:1`,
+      "decision_revision:decisions:7:0",
+      OBJECTIVE_ID,
+      `${OBJECTIVE_ID}/experiment:7`,
+    ]) {
+      expect(preview.entries.filter((entry) => entry.source_identity === identity), identity).toHaveLength(1);
+    }
   });
 
   it.each(EXACT_SOURCE_PATHS)("accounts for a symlinked exact source %s without reading its target", (relative) => {
@@ -283,6 +566,26 @@ describe("entity migration read-only preview", () => {
     const before = tree(root);
     expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow(`inventory root '${path.join(root, `.agentera/${name}`)}' is not a directory`);
     expect(tree(root)).toEqual(before);
+  });
+
+  it("reports an unreadable recursive inventory root without exposing the raw error", () => {
+    const root = project();
+    const inventoryRoot = path.join(root, ".agentera", "optimize");
+    fs.mkdirSync(inventoryRoot, { recursive: true });
+    const originalReadDirectory = fs.readdirSync.bind(fs);
+    vi.spyOn(fs, "readdirSync").mockImplementation((candidate, options) => {
+      if (typeof candidate === "string" && path.resolve(candidate) === inventoryRoot) {
+        throw new Error("raw directory failure");
+      }
+      return originalReadDirectory(candidate, options);
+    });
+    let out = "";
+
+    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined });
+
+    expect(rc).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({ status: "fail", error: { class: "inventory_failed", message: expect.stringContaining("cannot be read inside project") } });
+    expect(out).not.toContain("raw directory failure");
   });
 
   it.each(["missing", "file", "symlink"])("rejects a %s project root without writes", (kind) => {

@@ -182,10 +182,13 @@ export function planDocumentParts(data: JsonObject): PlanDocumentParts {
 /**
  * Discover the active plan and typed-writer archives. The active path is
  * schema-resolved; its sibling `archive/` directory is the writer-owned
- * history location. Callers with an inspected active source can pin its bytes,
- * or pass null to exclude an unsafe path without following it.
+ * history location. Callers with inspected sources can pin active and archive
+ * bytes, or pass null to exclude an unsafe active path without following it.
  */
-export function discoverPlanArtifacts(activePath: string, options?: { activeBytes: Buffer | null }): PlanArtifactDiscovery {
+export function discoverPlanArtifacts(
+  activePath: string,
+  options?: { activeBytes: Buffer | null; archiveBytes?: ReadonlyMap<string, Buffer> },
+): PlanArtifactDiscovery {
   const archiveDirectory = path.join(path.dirname(activePath), "archive");
   const activeInspection = options
     ? options.activeBytes === null
@@ -199,23 +202,33 @@ export function discoverPlanArtifacts(activePath: string, options?: { activeByte
   const invalidArchivePaths: string[] = [];
   const diagnostics = [...activeInspection.diagnostics];
 
-  let names: string[] = [];
-  try {
-    names = fs.readdirSync(archiveDirectory);
-  } catch {
-    // A missing archive directory is the normal state before the first archive.
+  let archiveSources: Array<[string, Buffer | undefined]> = [];
+  if (options?.archiveBytes) {
+    archiveSources = [...options.archiveBytes.entries()]
+      .filter(([archivePath]) => path.dirname(archivePath) === archiveDirectory && PLAN_ARCHIVE_FILE.test(path.basename(archivePath)))
+      .sort(([left], [right]) => left.localeCompare(right));
+  } else {
+    let names: string[] = [];
+    try {
+      names = fs.readdirSync(archiveDirectory);
+    } catch {
+      // A missing archive directory is the normal state before the first archive.
+    }
+    archiveSources = names
+      .filter((candidate) => PLAN_ARCHIVE_FILE.test(candidate))
+      .sort()
+      .flatMap((name): Array<[string, undefined]> => {
+        const archivePath = path.join(archiveDirectory, name);
+        try {
+          return fs.statSync(archivePath).isFile() ? [[archivePath, undefined]] : [];
+        } catch {
+          return [];
+        }
+      });
   }
 
-  for (const name of names.filter((candidate) => PLAN_ARCHIVE_FILE.test(candidate)).sort()) {
-    const archivePath = path.join(archiveDirectory, name);
-    let isFile = false;
-    try {
-      isFile = fs.statSync(archivePath).isFile();
-    } catch {
-      continue;
-    }
-    if (!isFile) continue;
-    const inspection = inspectPlanArtifact(archivePath, true);
+  for (const [archivePath, bytes] of archiveSources) {
+    const inspection = inspectPlanArtifact(archivePath, true, bytes);
     diagnostics.push(...inspection.diagnostics);
     if (inspection.artifact) archived.push(inspection.artifact);
     else invalidArchivePaths.push(archivePath);

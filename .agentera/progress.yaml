@@ -1,4 +1,38 @@
 cycles:
+  - number: 875
+    timestamp: 2026-07-17 02:13
+    type: fix
+    phase: build
+    what: Pinned migration reads to verified no-follow descriptors and made plan,
+      objective, and experiment observers consume collected bytes.
+    inspiration: PLAN Task 19 retry audit, Decision 94, and the source-boundary
+      defect report.
+    discovered: Fifteen lowercase legacy plan archives were being reread outside
+      collected inventory and therefore omitted from the source fingerprint; the
+      collected-byte seam now preserves their parity.
+    verified: "Focused migration/plan/objective/entity verification passed 9 files
+      and 154 tests; full CLI passed 203 files and 2,430 tests. Typecheck and
+      build passed. State validation reported 0 issues; capability contract
+      passed 2/2; compact checked 10 artifacts with 0 errors or changes.
+      Repeated pre-log previews were read-only, zero-write, and identical: 1,283
+      verified full, 55 projection-only, 90 summary-only, 17 corrupt, 66
+      unresolved relationships, 173 blockers, 1,445 logical identities, 1,466
+      physical records, 21 mirrors, and 2,118 relationships; source fingerprint
+      cfdd701e13cfb001060559bdadefea387f9c55fbab974f234a26f57e7a833398 and
+      preview digest
+      5e1cdb97e5aabdfb4949adec7f23970412dac506045ee9c5e971f00cd4e3e25b. Bound
+      pre-apply returned apply_not_implemented with mutation_performed false."
+    next: Preserve complete Task 19; keep Tasks 4-9 pending and gated, and do not
+      begin family cutover or apply.
+    context:
+      intent: Close only the Task 19 check/use replacement race and migration consumer
+        rereads found by the retry audit.
+      constraints: No apply implementation or effects, family cutover, vision change,
+        unrelated repair, amend, push, publish, or tag.
+      unknowns: Task 13 still owns disposition of the 173 blocked logical identities;
+        this retry does not resolve them.
+      scope: Migration-only safe source read seam, collected plan/objective/experiment
+        bytes, race regressions, and progress evidence.
   - number: 874
     timestamp: 2026-07-17 01:37
     type: fix
@@ -336,35 +370,6 @@ cycles:
         a structured manual correction instead of unsafe automatic unlink.
       scope: packages/cli/src/state/write/lock.ts plus adversarial lock,
         entity-publication, and state-writer regression tests.
-  - number: 865
-    timestamp: 2026-07-16 20:13
-    type: fix
-    phase: build
-    what: Audit retry 2 made project writer-lock stale reclamation and release
-      ownership-safe.
-    inspiration: Independent audit retry 2 of 2 for PLAN Task 2.
-    discovered: A durable token-bearing lock directory lets stale reclaimers unlink
-      owner metadata through the exact inspected directory instance; only the
-      unlink winner can remove that directory, while release refuses successor
-      tokens.
-    verified: Focused lock/entity/state-writer and CLI validation coverage passed 9
-      files and 172 tests, including a genuine two-process seeded-dead-lock
-      publication race, inspected-instance replacement protection, and
-      successor-token release protection; full CLI suite passed 202 files with 1
-      skipped and 2346 tests with 1 skipped; typecheck and build passed; state
-      validation reported zero issues; capability-contract passed 2/2; compact
-      gate reported zero over-limit artifacts or errors.
-    next: Return PLAN Task 2 audit retry 2 for independent review; leave Task 2
-      complete and Task 3 pending.
-    context:
-      intent: Close PLAN Task 2's remaining stale-reclaimer race without starting Task
-        3 or cutting over any state family.
-      constraints: No Task 3 work, state-family cutover, evaluation write, vision
-        change, push, publish, or unrelated caveat change.
-      unknowns: None.
-      scope: packages/cli/src/state/write/lock.ts;
-        packages/cli/test/state/write/lock.test.ts;
-        packages/cli/test/state/entityStorage.test.ts; progress cycle 865.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -434,6 +439,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 865 (2026-07-16): Audit retry 2 made project writer-lock stale
+      reclamation and release ownership-safe."
   - summary: "Cycle 864 (2026-07-16): Audit retry 1 fixed PLAN Task 2 entity
       publication races and logical replay equality."
   - summary: "Cycle 863 (2026-07-16): Added authority-driven entity storage,
@@ -532,15 +539,18 @@ archive:
       classification."
   - summary: "Cycle 826 (2026-07-15): Recorded post-plan closure Audit 34 after
       preserving the completed immutable plan archive."
-  - summary: "Cycle 825 (2026-07-15): Closed Audit 32 remediation with independent
-      Audit 33 and synchronized replacement Task 3 state."
 omitted: true
-omitted_count: 110
+omitted_count: 111
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
