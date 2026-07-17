@@ -6,9 +6,7 @@ import {
   stateMigrationContract,
 } from "../state/migrationAuthority.js";
 import { stateGitBackfillContract } from "../state/gitBackfillAuthority.js";
-import { stateRetrievalCommands } from "../state/retrievalAuthority.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
-import { detectStateMode } from "../state/stateMode.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -124,8 +122,9 @@ export function printDoctorHelp(): string {
 
 export function printStateHelp(sub?: string): string {
   const migration = stateMigrationContract();
-  const retrievalCommands = stateRetrievalCommands() as Record<string, Record<string, string>>;
-  const entityMode = detectStateMode(process.cwd()) === "entities";
+  // Public help is the final entity protocol even before repository cutover.
+  // Marker-absent legacy writers are recovery-only evidence surfaces, not a
+  // second ordinary grammar.
   const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
   const stateCommands = stateCommandNames(migration);
   if (sub === migrationName) {
@@ -205,17 +204,17 @@ export function printStateHelp(sub?: string): string {
   if (sub === "plan") {
     return [
       "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
-      `       ${entityMode ? "agentera state plan tasks list [--plan-id ID] [--limit N] [--cursor TOKEN] --format json" : retrievalCommands.plan_tasks.list}`,
-      `       ${entityMode ? "agentera state plan tasks get --id ID [--plan-id ID] --format json" : retrievalCommands.plan_tasks.get}`,
-      `       ${entityMode ? "agentera state plan list [--limit N] [--cursor TOKEN] --format json" : retrievalCommands.plans.list}`,
-      `       ${entityMode ? "agentera state plan get --id ID --format json" : retrievalCommands.plans.get}`,
+      "       agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state plan tasks get --id ID --format json",
+      "       agentera state plan list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state plan get --id ID --format json",
       `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
       "",
-      entityMode ? "Plan and task reads use bare canonical IDs from entity list results." : "Plan list/get returns active and archived file-based plans with stable identity and lifecycle provenance.",
-      entityMode ? "Plan list is bounded and cursor-paginated; plan get requires --id." : "Plan list is bounded and cursor-paginated; plan get requires --plan and returns the full selected document.",
+      "Plan and task reads use bare canonical IDs from entity list results.",
+      "Plan list is bounded and cursor-paginated; plan get requires --id.",
       "Invalid historical archives remain non-fatal compatibility diagnostics unless selected.",
-      entityMode ? "Task list defaults to the sole open plan; --plan-id selects another bare plan ID and task get requires --id." : "Plan task list/get reads the active plan only; --plan may pin that active identity but does not select an archive.",
-      entityMode ? "Legacy --plan, --task, numeric, composite, and path selectors are rejected." : "Task list and task get default to the active plan; --plan is optional and task get requires a positive --task.",
+      "Task list defaults to the sole open plan; task get requires --id.",
+      "Only the displayed bare-ID selectors are accepted.",
       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",
@@ -225,9 +224,9 @@ export function printStateHelp(sub?: string): string {
   if (sub === "experiments") {
     return [
       "usage: agentera state experiments [-h] [--format {text,json,yaml}] [filters]",
-      `       ${entityMode ? "agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json" : retrievalCommands.experiments.list}`,
-      `       ${entityMode ? "agentera state experiments get --id ID [--objective ID] --format json" : retrievalCommands.experiments.get}`,
-      `       ${entityMode ? "agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml --format json" : retrievalCommands.experiments.publish}`,
+      "       agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state experiments get --id ID [--objective ID] --format json",
+      "       agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml --format json",
       "       (publish also accepts --dry-run and --format text)",
       "",
       "Publish is the validated mutation authority and atomically writes one schema-valid experiment.",
@@ -235,13 +234,13 @@ export function printStateHelp(sub?: string): string {
       "List merges retained projection and immutable archive identities newest-first with bounded opaque snapshot cursors.",
       "Get verifies archive detail first, then reports full, summary-only, or unavailable detail truthfully.",
       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
-      entityMode ? "List and publish require one bare objective ID; get requires one bare experiment ID and may verify objective ownership." : "Both verbs require --objective; experiment --number accepts 0 and later integers.",
+      "List and publish require one bare objective ID; get requires one bare experiment ID and may verify objective ownership.",
       "Legacy objective/path collisions return a structured ambiguous error.",
       "",
       "Discover writes: agentera state experiments explain --verb publish --format json",
     ].join("\n");
   }
-  if (sub === "objective" && entityMode) {
+  if (sub === "objective") {
     return [
       "usage: agentera state objective [-h] [--format {text,json,yaml}]",
       "       agentera state objective list [--limit N] [--cursor TOKEN] --format json",
@@ -255,7 +254,7 @@ export function printStateHelp(sub?: string): string {
       "Discover writes: agentera state objective explain --format json",
     ].join("\n");
   }
-  if (sub === "todo" && entityMode) {
+  if (sub === "todo") {
     return [
       "usage: agentera state todo [-h] [--severity LEVEL] [--status STATUS] [--format {text,json,yaml}]",
       "       agentera state todo list [--limit N] [--cursor TOKEN] --format json",
@@ -266,12 +265,12 @@ export function printStateHelp(sub?: string): string {
       "",
       "Each TODO item is one independently mutable canonical entity. IDs are bare ten-letter project-wide identities.",
       "Default and list views are bounded in severity/status order; exact get returns complete detail.",
-      "TODO.md remains legacy authority only while the durable entity marker is absent.",
+       "Marker-absent repositories must complete migration before ordinary TODO access.",
       "",
       "Discover writes: agentera state todo explain --format json",
     ].join("\n");
   }
-  if (sub === "docs" && entityMode) {
+  if (sub === "docs") {
     return [
       "usage: agentera state docs [-h] [--topic TOPIC] [--status STATUS] [--format {text,json,yaml}]",
       "       agentera state docs list [--limit N] [--cursor TOKEN] --format json",
@@ -286,22 +285,11 @@ export function printStateHelp(sub?: string): string {
       "Discover writes: agentera state docs explain --format json",
     ].join("\n");
   }
-  if ((sub === "todo" || sub === "docs") && !entityMode) {
-    return [
-      `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
-      "",
-      `${sub === "todo" ? "TODO.md" : ".agentera/docs.yaml"} remains the marker-absent legacy authority. Entity create/update/list/get commands activate only after durable cutover.`,
-      "",
-      "options:",
-      "  -h, --help            show this help message and exit",
-      "  --format FORMAT       Output format: text, json, or yaml",
-    ].join("\n");
-  }
   if (sub) {
     const verbs = verbsForArtifact(sub);
     return [
       `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
-      "       agentera state <artifact> get --number N --format {text,json,yaml}",
+      "       agentera state <artifact> get --id ID --format {text,json,yaml}",
       "       agentera state <artifact> list [--limit N] [--cursor TOKEN] --format {text,json,yaml}",
       ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
       ...(verbs.length
@@ -357,6 +345,7 @@ export function printCheckHelp(sub?: string): string {
       "                                [--number N|--id ID] [--limit N] --format {text,json,yaml}",
       "",
       "Read-only local archive and optional reachable Git durability evidence.",
+      "This is an explicit migration/readiness diagnostic, not ordinary retrieval grammar.",
       "Git is never required for local state writes and no remote is contacted.",
       "",
       "options:",

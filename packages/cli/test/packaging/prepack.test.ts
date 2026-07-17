@@ -466,7 +466,13 @@ describe("v3 packaging (T1)", () => {
       expect(stat.size).toBeGreaterThan(1_000_000);
       expect(stat.mode & 0o111).not.toBe(0);
 
-      const prime = spawnSync(outfile, ["prime", "--format", "json"], { encoding: "utf8" });
+      fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
+      fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      const prime = spawnSync(outfile, ["prime", "--format", "json"], {
+        cwd: tmp,
+        encoding: "utf8",
+        env: { ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(PKG_ROOT, "../..") },
+      });
       expect(
         prime.status,
         `single-binary prime must exit 0; stderr=${prime.stderr.slice(0, 500)}`,

@@ -38,7 +38,7 @@ function parse(argv: string[], verb: "list" | "get", entityMode: boolean): { for
   for (let index = 0; index < argv.length; ) {
     const token = argv[index];
     const name = ["--format", "--plan", "--plan-id", "--limit", "--cursor", "--task", "--id"].find((flag) => token === flag || token.startsWith(`${flag}=`));
-    if (!name || (verb === "list" && (name === "--task" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor"))) {
+    if (!name || (entityMode && ["--plan", "--plan-id", "--task"].includes(name)) || (verb === "list" && (name === "--task" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor"))) {
       throw requestFailure(`unrecognized argument '${token}'`, verb, entityMode);
     }
     if (seen.has(name)) throw requestFailure(`${name} may only be supplied once`, verb, entityMode);
@@ -80,15 +80,15 @@ function requestFailure(message: string, verb: "list" | "get", entityMode = fals
       class: "invalid_request",
       message,
       syntax: list
-        ? entityMode ? "agentera state plan tasks list [--plan-id ID] [--limit N] [--cursor TOKEN] --format json" : "agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
-        : entityMode ? "agentera state plan tasks get [--plan-id ID] --id ID --format json" : "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
+        ? entityMode ? "agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json" : "agentera state plan tasks list [legacy plan selector] [--limit N] [--cursor TOKEN] --format json"
+        : entityMode ? "agentera state plan tasks get --id ID --format json" : "agentera state plan tasks get [legacy plan selector] [legacy task selector] --format json",
       example: list
         ? "agentera state plan tasks list --limit 20 --format json"
         : entityMode ? "agentera state plan tasks get --id qjtrmnpvka --format json" : "agentera state plan tasks get --task 1 --format json",
       recovery: "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
-        ? ["list", entityMode ? "--plan-id ID" : "--plan PLAN_ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
-        : entityMode ? ["get", "--id ID", "--plan-id ID", "--format text|json|yaml"] : ["get", "--task N", "--plan PLAN_ID", "--format text|json|yaml"],
+        ? entityMode ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"] : ["list", "legacy plan selector", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        : entityMode ? ["get", "--id ID", "--format text|json|yaml"] : ["get", "legacy selectors", "--format text|json|yaml"],
     },
   }, 2);
 }
@@ -138,7 +138,7 @@ export function runPlanTasks(argv: string[], io: Io): number {
     if (!schema) throw new Error("plan schema is unavailable");
     const activePath = artifactPath(schema, "plan");
     const response = entityMode
-      ? verb === "list" ? listPlanTaskEntities(process.cwd(), args.plan, args.limit, args.cursor, { format: args.format }) : getPlanTaskEntity(process.cwd(), args.id!, args.plan)
+      ? verb === "list" ? listPlanTaskEntities(process.cwd(), undefined, args.limit, args.cursor, { format: args.format }) : getPlanTaskEntity(process.cwd(), args.id!)
       : verb === "list" ? listPlanTasks(process.cwd(), activePath, { plan: args.plan, limit: args.limit, cursor: args.cursor, format: args.format }) : getPlanTask(process.cwd(), activePath, args.task!, args.plan);
     const out = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, out);

@@ -36,6 +36,8 @@ import {
   summarizeRuntimeLifecycle,
 } from "../../../runtime/lifecycleSnapshot.js";
 import { startupHistorySummary } from "../../../state/startupProjection.js";
+import { detectStateMode } from "../../../state/stateMode.js";
+import { collectEntityOrientation } from "./collectEntityOrientation.js";
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
@@ -77,35 +79,23 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   profileDict.bounded_signals = boundedSignals as unknown as ProfileSummary["bounded_signals"];
   const v1Artifacts = detectV1ArtifactPairs(process.cwd());
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
-  const plan = planSummary(schemas);
-  const docs = docsSummary(schemas, { profileStatus });
-  const progress = progressSummary(schemas);
-  const health = healthSummary(schemas, env);
-  const history: Record<string, StartupHistorySummary> = {};
-  for (const artifactId of ["progress", "decisions", "health"] as const) {
-    try {
-      history[artifactId] = startupHistorySummary(process.cwd(), artifactId, sourceRoot);
-    } catch (error) {
-      history[artifactId] = {
-        artifact: artifactId,
-        status: "degraded",
-        counts: { physical: 0, addressable: 0, addressable_ids: 0, unaddressable: 0, ambiguous: 0, mirrored: 0, duplicate: 0, conflict: 0, omitted: 0 },
-        entries: [],
-        source: { error: (error as Error).message },
-        retrieval: {
-          list: `agentera state ${artifactId} list --limit 20 --format json`,
-          get: `agentera state ${artifactId} get --number N --format json`,
-        },
-        omission: { omitted: false, omitted_count: 0, omission_reason: "source_scan_failed", retrieval: {} },
-      } as StartupHistorySummary;
-    }
+  const entityMode = detectStateMode(process.cwd(), sourceRoot) === "entities";
+  const entity = entityMode ? collectEntityOrientation(process.cwd(), sourceRoot) : null;
+  const plan = entity?.plan ?? planSummary(schemas);
+  const docs = entity?.docs ?? docsSummary(schemas, { profileStatus });
+  const progress = entity?.progress ?? progressSummary(schemas);
+  const health = entity?.health ?? healthSummary(schemas, env);
+  const history: Record<string, StartupHistorySummary> = entity?.history ?? {};
+  if (!entityMode) for (const artifactId of ["progress", "decisions", "health"] as const) {
+    try { history[artifactId] = startupHistorySummary(process.cwd(), artifactId, sourceRoot); }
+    catch (error) { history[artifactId] = { artifact: artifactId, status: "degraded", counts: {}, entries: [], source: { error: (error as Error).message }, retrieval: { list: `agentera state ${artifactId} list --limit 20 --format json`, get: `agentera state ${artifactId} get --id ID --format json` }, omission: { omitted: false, omitted_count: 0, omission_reason: "source_scan_failed", retrieval: {} } } as StartupHistorySummary; }
   }
-  const objective = activeObjectiveSummary();
+  const objective = entity?.objective ?? activeObjectiveSummary();
   const presence = statePresence(plan, docs, progress, health, objective);
-  const todoItems = loadTodoItems(schemas);
+  const todoItems = entity?.todoItems ?? loadTodoItems(schemas);
   const counts = issueCounts(todoItems);
-  const decision = decisionFollowUp(schemas);
-  const decisionAttention = decisionReviewAttention(schemas);
+  const decision = entity?.decision ?? decisionFollowUp(schemas);
+  const decisionAttention = entity?.decisionAttention ?? decisionReviewAttention(schemas);
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
   const project = process.cwd();
   const lifecycleSnapshot = observeProjectIntegrationLifecycle({

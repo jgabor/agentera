@@ -277,6 +277,14 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
         }
         if (appHomeTmp) fs.rmSync(appHomeTmp, { recursive: true, force: true });
       }
+      if (["prime", "state_plan", "state_todo"].includes(name)) {
+        expect(rc).toBe(1);
+        expect(JSON.parse(out).error).toMatchObject({
+          class: "migration_required",
+          recovery: expect.stringContaining("state migrate entities"),
+        });
+        return;
+      }
       expect(rc).toBe(spec.exitCode);
       const payload = JSON.parse(out);
       for (const key of spec.requiredKeys) {

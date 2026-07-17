@@ -48,11 +48,11 @@ describe("agentera hook dispatch", () => {
     }
   });
 
-  it("session-start succeeds on a minimal event", () => {
+  it("session-start reports migration required on a marker-absent minimal event", () => {
     const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     try {
       const rc = main(["node", "agentera", "hook", "session-start"], { stdin: () => "{}" });
-      expect(rc).toBe(0);
+      expect(rc).toBe(1);
     } finally {
       spy.mockRestore();
     }

@@ -362,7 +362,7 @@ TASK:
 VALIDATION:
   1:
     id: PV1
-    rule: unique_task_numbers
+    rule: unique_entity_ids
     severity: error
     description: >-
       Task numbers must be unique within a plan and sequential.
@@ -514,7 +514,7 @@ LIFECYCLE_CONTRACT:
         - .agentera/plan.yaml
         - plan.yaml
         - state.plan.
-        - artifact_id: plan
+        - artifact: plan
         - artifact: plan
         - active plan
         - archived plan

@@ -179,11 +179,11 @@ export function runHook(name: string, argv: string[], io: Io): number {
   // Each hook owns its own stdout newline convention; do not wrap stdout here.
   switch (name) {
     case "session-start":
-      return runSessionStart(raw);
+      return runSessionStart(raw, { out: io.out, err: io.err });
     case "session-stop":
       return runSessionStop(raw);
     case "cursor-session-start":
-      return runCursorSessionStart(raw);
+      return runCursorSessionStart(raw, { out: io.out, err: io.err });
     case "cursor-pre-tool-use":
       return runCursorPreToolUse(raw);
     case "validate-artifact": {

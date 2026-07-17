@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { main } from "../../../src/cli/dispatch.js";
+import { runStateWrite } from "../../../src/cli/commands/state/write.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../../src/core/yaml.js";
 import { operationSpec } from "../../../src/state/write/operations.js";
 import { executeStateWrite } from "../../../src/state/write/transaction.js";
@@ -65,7 +65,7 @@ function run(root: string, args: string[], input: Record<string, unknown>): {
 } {
   let out = "";
   let err = "";
-  const rc = main(["node", "agentera", "state", "experiments", ...args, "--project", root], {
+  const rc = runStateWrite("experiments", [...args, "--project", root], {
     out: (text) => { out += text; },
     err: (text) => { err += text; },
     stdin: () => dumpYamlMapping(input),
@@ -101,13 +101,13 @@ describe("validated experiment publication", () => {
     expect(result.json).toMatchObject({
       artifact: "experiments",
       requested_verb: "publish",
-      path: ".agentera/optimize/<objective>/experiments.yaml",
-      input_schema: { root: "one experiment entry", cli_owned_fields: ["number"] },
+      path: ".agentera/entities/experiments/experiment/<id>.yaml",
+      input_schema: { root: "one experiment entry", cli_owned_fields: ["id", "artifact", "objective"] },
       example: expect.stringContaining("state experiments publish"),
     });
     expect(result.json?.fields).toEqual(expect.arrayContaining([
       expect.objectContaining({ flag: "--objective", required: true }),
-      expect.objectContaining({ flag: "--number", required: true }),
+      expect.objectContaining({ flag: "--id", required: false }),
     ]));
   });
 

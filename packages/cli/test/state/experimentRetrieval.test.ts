@@ -5,7 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { main } from "../../src/cli/dispatch/index.js";
+import { runExperimentRecords } from "../../src/cli/commands/state/experimentRecords.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { prepareExperimentArchive } from "../../src/state/experimentArchive.js";
 import { resolveObjectiveIdentity } from "../../src/state/experimentIdentity.js";
@@ -71,7 +71,7 @@ function capture(root: string, args: string[]) {
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", "state", "experiments", ...args], {
+    const rc = runExperimentRecords(args, {
       out: (text) => { out += text; },
       err: (text) => { err += text; },
     });

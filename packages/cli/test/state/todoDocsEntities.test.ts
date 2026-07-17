@@ -85,7 +85,7 @@ describe("TODO item and documentation inventory entity authority", () => {
       expect(result.rc, alias).toBe(2); expect(result.json.error.class).toBe("schema_violation");
     }
     expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`))).toEqual(before);
-    const legacy = project(false); const queried = capture(legacy, ["state", "todo", "--format", "json"]); expect(queried.rc).toBe(0); expect(queried.json.source.path).toContain("TODO.md"); expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
+    const legacy = project(false); const queried = capture(legacy, ["state", "todo", "--format", "json"]); expect(queried.rc).toBe(1); expect(queried.json.error.class).toBe("migration_required"); expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
     const malformed = path.join(root, ".agentera/entities/docs/documentation_inventory_entry/bbbbbbbbbb.yaml"); fs.mkdirSync(path.dirname(malformed), { recursive: true }); fs.writeFileSync(malformed, "id: bbbbbbbbbb\nartifact: docs\nrecord:\n  document: bad\n  path: bad.md\n  last_updated: nope\n  status: invented\n  stable_id: alias\n"); expect(validateEntityState(root).valid).toBe(false); fs.rmSync(malformed);
     const duplicate = path.join(root, `.agentera/entities/docs/documentation_inventory_entry/${item.id}.yaml`); fs.copyFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`), duplicate); expect(validateEntityState(root).issues.some((issue) => issue.code === "duplicate_id")).toBe(true);
   });
@@ -104,13 +104,13 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
   });
 
-  it("uses mode-sensitive help and explain with bare IDs", () => {
+  it("uses static final help and explain with bare IDs", () => {
     const root = project();
     const todoHelp = capture(root, ["state", "todo", "--help"]); const docsHelp = capture(root, ["state", "docs", "--help"]);
     expect(todoHelp.out).toContain("todo resolve --id ID"); expect(docsHelp.out).toContain("docs update --id ID"); expect(todoHelp.out + docsHelp.out).not.toContain("--number"); expect(docsHelp.out).toContain("path is record data, not identity");
     const explain = capture(root, ["state", "todo", "explain", "--verb", "update", "--format", "json"]); expect(explain.json.fields).toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--id", required: true })])); expect(explain.json.example).toContain("--id qjtrmnpvka");
     expect(capture(root, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
-    const legacy = project(false); expect(capture(legacy, ["state", "todo", "--help"]).out).not.toContain("todo create"); expect(capture(legacy, ["state", "todo", "explain", "--format", "json"]).json.error.class).toBe("unsupported_target"); expect(capture(legacy, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).not.toEqual(expect.arrayContaining(["todo", "docs"]));
+    const legacy = project(false); expect(capture(legacy, ["state", "todo", "--help"]).out).toContain("todo create"); expect(capture(legacy, ["state", "todo", "explain", "--format", "json"]).json.example).toContain("todo create"); expect(capture(legacy, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
   });
 
   it("lets real Git worktrees merge unrelated additions and updates while same-entity updates conflict", () => {

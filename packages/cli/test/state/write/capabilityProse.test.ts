@@ -54,10 +54,10 @@ describe("producer capability writer integration", () => {
   it("routes every writable capability artifact through the state writer", () => {
     expect(buildInstructions).toContain("agentera state progress append");
     expect(buildInstructions).toContain(
-      "agentera state plan set-status --task N --status complete",
+      "agentera state plan set-status --id ID --status complete",
     );
     expect(discussInstructions).toContain("agentera state decisions append");
-    expect(discussInstructions).toContain("agentera state decisions update --number N");
+    expect(discussInstructions).toContain("agentera state decisions update --id ID");
     expect(planInstructions).toContain("agentera state plan create --input PATH");
     expect(planInstructions).toContain("agentera state plan archive --format json");
     expect(orchestrateInstructions).toContain("agentera state plan set-status");

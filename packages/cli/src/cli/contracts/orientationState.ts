@@ -32,6 +32,8 @@ export interface V1MigrationSummary {
 }
 
 export interface PlanSummary {
+  id?: JsonValue;
+  artifact?: JsonValue;
   exists: boolean;
   active?: boolean;
   tasks?: JsonObject[];
@@ -67,6 +69,7 @@ export interface DocsSummary {
   coverage?: JsonObject;
   source_contract?: JsonObject;
   indexed_documents?: number;
+  entries?: JsonValue[];
 }
 
 export interface ProgressSummary {
@@ -79,6 +82,8 @@ export interface ProgressSummary {
 }
 
 export interface HealthSummary {
+  id?: JsonValue;
+  artifact?: JsonValue;
   exists: boolean;
   number?: string | number;
   date?: string | null;
@@ -97,6 +102,8 @@ export interface HealthSummary {
 }
 
 export interface ObjectiveSummary {
+  id?: JsonValue;
+  artifact?: JsonValue;
   exists: boolean;
   active?: boolean;
   closed_count?: number;
@@ -105,6 +112,7 @@ export interface ObjectiveSummary {
   status?: string;
   metric?: string;
   target?: string;
+  experiments?: JsonValue[];
 }
 
 export interface StatePresenceSummary {
@@ -143,7 +151,8 @@ export interface DecisionFollowUp {
 }
 
 export interface DecisionReviewEntry {
-  number: string | number;
+  id: string;
+  artifact: string;
   title: string;
   state: string;
   source: JsonValue;

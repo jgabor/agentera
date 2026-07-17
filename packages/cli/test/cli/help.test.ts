@@ -65,20 +65,19 @@ describe("cli help", () => {
 
   it("documents executable plan and plan-task retrieval grammar", () => {
     const plan = printStateHelp("plan");
-    expect(plan).toContain("agentera state plan tasks list [--plan PLAN_ID]");
-    expect(plan).toContain("agentera state plan tasks get [--plan PLAN_ID] --task N");
-    expect(plan).toContain("agentera state plan get --plan PLAN_ID --format json");
-    expect(plan).toContain("Plan list/get returns active and archived file-based plans");
-    expect(plan).toContain("plan get requires --plan and returns the full selected document");
+    expect(plan).toContain("agentera state plan tasks list [--limit N]");
+    expect(plan).toContain("agentera state plan tasks get --id ID");
+    expect(plan).toContain("agentera state plan get --id ID --format json");
+    expect(plan).toContain("Plan and task reads use bare canonical IDs");
     expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
-    expect(plan).toContain("Plan task list/get reads the active plan only");
+    expect(plan).toContain("Task list defaults to the sole open plan");
 
     const experiments = printStateHelp("experiments");
-    expect(experiments).toContain("agentera state experiments list --objective OBJECTIVE_ID");
-    expect(experiments).toContain("agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml");
+    expect(experiments).toContain("agentera state experiments list --objective ID");
+    expect(experiments).toContain("agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml");
     expect(experiments).toContain("agentera state experiments explain --verb publish --format json");
     expect(experiments).toContain("byte-equivalent identity retry is idempotent");
-    expect(experiments).toContain("experiment --number accepts 0");
+    expect(experiments).toContain("get requires one bare experiment ID");
     expect(experiments).toContain("structured ambiguous error");
   });
 

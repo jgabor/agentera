@@ -153,14 +153,20 @@ describe("entity-mode retrieval and maintenance APIs", () => {
         }
       }
     }
-    expect(capture(root, ["state", "query", "decision", "--format", "json"]).out).toContain("LEGACY_DECISIONS_SECRET");
+    const legacy = capture(root, ["state", "query", "decision", "--format", "json"]);
+    expect(legacy.rc).toBe(1);
+    expect(legacy.json.error.class).toBe("migration_required");
+    expect(legacy.out).not.toContain("LEGACY_DECISIONS_SECRET");
   });
 
   it("fails closed on an invalid mode marker instead of reading a legacy aggregate", () => {
     const root = seeded();
     seedLegacySecrets(root);
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: wrong\nmode: legacy\n");
-    expect(() => capture(root, ["state", "query", "decision", "--format", "json"])).toThrow(/restore the durable migration marker/i);
+    const invalid = capture(root, ["state", "query", "decision", "--format", "json"]);
+    expect(invalid.rc).toBe(1);
+    expect(invalid.json.error.class).toBe("invalid_state_marker");
+    expect(invalid.out).not.toContain("LEGACY_DECISIONS_SECRET");
   });
 
   it("bounds exact pretty JSON stdout for decision and plan entity views including envelope overhead", () => {
@@ -180,7 +186,7 @@ describe("entity-mode retrieval and maintenance APIs", () => {
       ["state", "plan", "get", "--plan", "plan:123e4567-e89b-42d3-a456-426614174000", "--format", "json"],
       ["state", "plan", "tasks", "get", "--task", "1", "--format", "json"],
       ["state", "plan", "tasks", "list", "--plan", "eeeeeeeeee", "--format", "json"],
-    ]) { const result = capture(root, args); expect(result.rc).toBe(2); expect(result.json.error.syntax).toMatch(/--(?:plan-)?id/); expect(forbiddenIdentityKeys(result.json)).toEqual([]); }
+    ]) { const result = capture(root, args); expect(result.rc).toBe(2); expect(result.json.error.syntax).not.toMatch(/--number|--plan\b|--task\b/); expect(forbiddenIdentityKeys(result.json)).toEqual([]); }
     const missing = capture(root, ["state", "progress", "get", "--id", "zzzzzzzzzz", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.json.error).toMatchObject({ class: "not_found", id: "zzzzzzzzzz", artifact: "progress" });
   });
 

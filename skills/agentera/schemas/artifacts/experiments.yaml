@@ -275,16 +275,17 @@ PUBLICATION:
     id: EP1
     operation: publish
     command: >-
-      agentera state experiments publish --objective OBJECTIVE_ID --number N
+      agentera state experiments publish --objective ID [--id ID]
       --input EXPERIMENT.yaml --format json
     description: >-
       The typed state writer is the mutation authority. It validates the
-      objective, identity, caller entry, existing projection, and final bytes
-      before assigning number and atomically publishing one experiment.
+      objective, identity, caller entry, and canonical entity state before
+      atomically publishing one experiment entity.
   2:
     id: EP2
-    identity: '<objective-id>/experiment:<non-negative-integer>'
-    cli_owned_fields: [number]
+    identity: bare_ten_letter_id
+    classification: experiments
+    cli_owned_fields: [id, artifact, objective]
     retry: byte_equivalent_identity_is_idempotent
     collision: same_identity_with_different_content_fails
     description: >-
@@ -292,14 +293,14 @@ PUBLICATION:
       pre-publication failures preserve active and archive projection bytes.
   3:
     id: EP3
-    projection: uniform_10_40_50
-    durable_archive: objective_scoped_immutable_full_detail
+    projection: bounded_entity_list
+    durable_archive: not_applicable
     description: >-
-      Publication validates and durably publishes the full experiment under
-      the objective directory before replacing the compacted projection. The
-      projection still retains 10 full entries and 40 one-line summaries.
+      Publication validates and durably publishes one immutable canonical
+      experiment entity. Bounded list output never compacts entity records.
   4:
     id: EP4
+    classification: legacy_migration_source_provenance
     archive_path: '.agentera/<objective-root>/<objective>/archive/experiments/<experiment-number>.yaml'
     canonical_objective_root: optimize
     readable_legacy_objective_roots: [optimera]
@@ -333,14 +334,13 @@ RETRIEVAL:
   1:
     id: ER1
     list: >-
-      agentera state experiments list --objective OBJECTIVE_ID [--limit N]
+      agentera state experiments list --objective ID [--limit N]
       [--cursor TOKEN] --format json
     get: >-
-      agentera state experiments get --objective OBJECTIVE_ID --number N
-      --format json
+      agentera state experiments get --id ID --format json
     description: >-
-      List returns newest-first objective-scoped identities from the bounded
-      projection and immutable archive. Get returns one exact identity.
+      List returns newest-first objective-scoped canonical entities. Get returns
+      one exact entity by bare ID.
   2:
     id: ER2
     cursor: opaque_snapshot_cursor
@@ -408,22 +408,22 @@ ARCHIVE:
 VALIDATION:
   1:
     id: EV1
-    rule: unique_experiment_numbers
+    rule: unique_entity_ids
     severity: error
     description: >-
-      Experiment numbers must be unique and sequential.
+      Experiment IDs must be unique project-wide and match the canonical pattern.
     checks:
-      - "All experiment numbers are unique across active and archived entries"
-      - "Experiment numbers are sequential starting from 0"
+      - "All experiment IDs are unique across canonical entities"
+      - "Every ID is ten lowercase letters"
   2:
     id: EV2
     rule: required_fields
     severity: error
     description: >-
-      Each full-detail experiment entry must have: number, date, label,
+      Each full-detail experiment entity record must have: date, label,
       hypothesis, method, change, metric, status, and conclusion.
     checks:
-      - "number is present and is a non-negative integer"
+      - "the envelope has id and artifact fields"
       - "date is present and matches YYYY-MM-DD HH:MM"
       - "label is present and non-empty"
       - "hypothesis is present and non-empty"

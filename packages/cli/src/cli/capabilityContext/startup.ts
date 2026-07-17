@@ -22,6 +22,8 @@ export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
   return {
     exists: Boolean(plan.exists),
+    id: plan.id ?? null,
+    artifact: plan.artifact ?? "plan",
     status: plan.status ?? null,
     title: plan.title ?? null,
     complete: plan.complete ?? null,
@@ -49,15 +51,16 @@ export function slimDocsState(docs: JsonObject): JsonObject {
 
 export function slimProgressState(progress: JsonObject): JsonObject {
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
-  const latestCycle: JsonObject = {};
-  for (const key of ["number", "timestamp", "type", "phase"]) {
-    if (latest[key] !== null && latest[key] !== undefined && latest[key] !== "") latestCycle[key] = latest[key];
+  const latestRecord = latest.record && typeof latest.record === "object" && !Array.isArray(latest.record) ? latest.record as JsonObject : latest;
+  const latestCycle: JsonObject = { id: latest.id ?? null, artifact: latest.artifact ?? "progress" };
+  for (const key of ["timestamp", "type", "phase"]) {
+    if (latestRecord[key] !== null && latestRecord[key] !== undefined && latestRecord[key] !== "") latestCycle[key] = latestRecord[key];
   }
   return {
     exists: Boolean(progress.exists),
     status: progress.status ?? null,
     latest_cycle: latestCycle,
-    verified_present: hasRecordedValue(latest.verified),
+    verified_present: hasRecordedValue(latestRecord.verified),
     source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
   };
 }
@@ -65,7 +68,8 @@ export function slimProgressState(progress: JsonObject): JsonObject {
 export function slimHealthState(health: JsonObject): JsonObject {
   return {
     exists: Boolean(health.exists),
-    number: health.number ?? null,
+    id: health.id ?? null,
+    artifact: health.artifact ?? "health",
     grade: health.grade ?? null,
     trajectory: health.trajectory ?? null,
     worst: health.worst ?? null,
@@ -82,9 +86,10 @@ function slimHistoryState(history: JsonObject): JsonObject {
     result[artifact] = {
       status: item.status ?? "degraded",
       counts: item.counts ?? {},
+      entries: asList(item.entries),
       retrieval: item.retrieval ?? {
         list: STATE_FAMILY_LIST_COMMANDS[artifact] ?? `agentera state ${artifact} list --limit 20 --format json`,
-        get: STATE_FAMILY_GET_COMMANDS[artifact] ?? `agentera state ${artifact} get --number N --format json`,
+        get: STATE_FAMILY_GET_COMMANDS[artifact] ?? `agentera state ${artifact} get --id ID --format json`,
       },
       omission: item.omission && typeof item.omission === "object" && !Array.isArray(item.omission)
         ? Object.fromEntries(Object.entries(item.omission as JsonObject).filter(([key]) => ["omitted", "omitted_count", "omission_reason"].includes(key)))
@@ -103,6 +108,7 @@ export function slimTodoState(todoItems: Array<Record<string, string>>): JsonObj
   return {
     open_count: todoItems.length,
     severity_counts: severityCounts,
+    entries: todoItems,
     source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
   };
 }

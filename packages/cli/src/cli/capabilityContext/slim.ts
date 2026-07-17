@@ -34,7 +34,8 @@ export function slimBenchmarkContext(value: JsonObject): JsonObject {
 export function compactTaskSummaryForSlim(task: any): any {
   if (!task || typeof task !== "object" || Array.isArray(task)) return task;
   return {
-    number: task.number ?? null,
+    id: task.id ?? null,
+    artifact: task.artifact ?? "plan",
     name: task.name ?? null,
     status: task.status ?? null,
     depends_on: task.depends_on ?? null,

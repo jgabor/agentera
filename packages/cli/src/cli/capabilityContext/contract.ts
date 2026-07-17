@@ -18,7 +18,7 @@ import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterContract } from "../../state/write/operations.js";
-import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 
 function stateRetrievalContract(needs: string[]): JsonObject | null {
   const surfaces = [
@@ -27,23 +27,18 @@ function stateRetrievalContract(needs: string[]): JsonObject | null {
   ];
   if (surfaces.length === 0) return null;
   const loaded = loadStateRetrievalAuthority();
-  const retrieval = loaded.retrieval as Record<string, any>;
-  const collections = [
-    ...(needs.includes("plan") ? ["plan.plans", "plan.tasks"] : []),
-    ...(needs.includes("experiments") ? ["experiments.records"] : []),
+  const retrieval = entityPublicRetrieval() as Record<string, any>;
+  const boundaries = [
+    ...(needs.includes("plan") ? ["plan", "plan_task"] : []),
+    ...(needs.includes("experiments") ? ["experiment"] : []),
   ];
   return {
     authority: loaded.authority,
     schema_version: retrieval.schema_version,
+    status: retrieval.status,
     commands: Object.fromEntries(surfaces.map((surface) => [surface, retrieval.commands[surface]])),
-    cursor: retrieval.cursor,
-    omission: retrieval.omission,
-    output_bounds: retrieval.output_bounds,
-    detail_availability: retrieval.envelope.entry_required_fields.includes("detail_availability"),
-    failures: retrieval.failures,
-    storage_ownership: retrieval.collections
-      .filter((entry: Record<string, unknown>) => collections.includes(String(entry.collection_id)))
-      .map((entry: Record<string, unknown>) => ({ collection_id: entry.collection_id, storage_ownership: entry.storage_ownership })),
+    collections: retrieval.collections
+      .filter((entry: Record<string, unknown>) => boundaries.includes(String(entry.boundary ?? entry.artifact))),
   };
 }
 
@@ -187,10 +182,10 @@ export function capabilityArtifactInventory(capability: string): [JsonObject, st
       continue;
     }
     const e = entry as JsonObject;
-    const artifactId = String(e.artifact_id ?? "").trim();
+    const artifactId = String(e.artifact ?? "").trim();
     const localRole = String(e.local_role ?? "").trim();
     if (!artifactId) {
-      errors.push(`entry ${key} is missing artifact_id`);
+      errors.push(`entry ${key} is missing artifact`);
       continue;
     }
     if (localRole === "consumes") appendUnique(inventory.read_needs, artifactId);

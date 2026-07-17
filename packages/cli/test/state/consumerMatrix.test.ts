@@ -24,7 +24,7 @@ function schemaConsumers(relativePath: string): string[] {
   return Object.values(schema.ARTIFACTS ?? {})
     .filter((entry): entry is Record<string, any> => Boolean(entry && typeof entry === "object"))
     .filter((entry) => String(entry.local_role ?? "").includes("consumes"))
-    .map((entry) => String(entry.artifact_id))
+    .map((entry) => String(entry.artifact))
     .filter((artifact) => STATE_ARTIFACTS.has(artifact));
 }
 
@@ -45,7 +45,7 @@ describe("state consumer matrix", () => {
     expect(consumers.map((entry) => entry.name)).toEqual(CAPABILITY_NAMES);
     expect(new Set(consumers.map((entry) => entry.name)).size).toBe(12);
     expect(matrix.access_contract.list).toContain("list --limit 20");
-    expect(matrix.access_contract.get).toContain("get --number N");
+    expect(matrix.access_contract.get).toContain("get --id ID");
 
     const rawReadPattern = /(?:fs\.)?readFile(?:Sync)?\([^)]*(?:decisions|progress|health)/i;
     const staleCommandPattern = /agentera (?:state )?(?:decisions|progress|health) --format json/;

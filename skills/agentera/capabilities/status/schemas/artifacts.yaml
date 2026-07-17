@@ -1,63 +1,63 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: vision
+    artifact: vision
     local_role: consumes
     description: >-
       Status reads this for the briefing's project context.
   2:
     id: A2
-    artifact_id: decisions
+    artifact: decisions
     local_role: consumes
     description: >-
       Status reads this to identify unresolved decisions requiring follow-up.
   3:
     id: A3
-    artifact_id: plan
+    artifact: plan
     local_role: consumes
     description: >-
       Status reads this to identify the next executable task and plan progress.
   4:
     id: A4
-    artifact_id: progress
+    artifact: progress
     local_role: consumes
     description: >-
       Status reads this for the briefing's "what shipped" context.
   5:
     id: A5
-    artifact_id: todo
+    artifact: todo
     local_role: consumes
     description: >-
       Status reads this to identify high-severity open items for routing.
   6:
     id: A6
-    artifact_id: health
+    artifact: health
     local_role: consumes
     description: >-
       Status reads this for the health status line and attention items.
   7:
     id: A7
-    artifact_id: objective
+    artifact: objective
     local_role: consumes
     description: >-
       Status reads this to check for active optimization objectives.
   8:
     id: A8
-    artifact_id: experiments
+    artifact: experiments
     local_role: consumes
     description: >-
       Status reads this alongside the active optimization target to determine
       optimization status.
   9:
     id: A9
-    artifact_id: docs
+    artifact: docs
     local_role: consumes
     description: >-
       Status reads this first to resolve project-local artifact mappings before
       reading other artifacts.
   10:
     id: A10
-    artifact_id: design
+    artifact: design
     local_role: consumes
     description: >-
       Status reads this for project design status metadata (exists, stale, missing).
@@ -66,7 +66,7 @@ ARTIFACTS:
       artifact.
   11:
     id: A11
-    artifact_id: profile
+    artifact: profile
     local_role: consumes
     description: >-
       Status reads this to report profile status (loaded/not found) in the briefing.

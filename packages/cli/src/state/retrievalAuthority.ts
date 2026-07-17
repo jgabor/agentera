@@ -239,12 +239,8 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   }
   const planTaskSelectors = mapping(mapping(commands.plan_tasks).selectors);
   const planTaskPlanSelector = mapping(planTaskSelectors.plan);
-  if (planTaskPlanSelector.list_required !== false || planTaskPlanSelector.get_required !== false) {
-    errors.push("retrieval.commands.plan_tasks.selectors.plan.required");
-  }
-  for (const field of ["list_default", "get_default"]) {
-    requireNonEmpty(planTaskPlanSelector, field, "retrieval.commands.plan_tasks.selectors.plan", errors);
-  }
+  if (planTaskPlanSelector.list_required !== false || planTaskPlanSelector.get_required !== false) errors.push("retrieval.commands.plan_tasks.selectors.plan.required");
+  for (const field of ["list_default", "get_default"]) requireNonEmpty(planTaskPlanSelector, field, "retrieval.commands.plan_tasks.selectors.plan", errors);
   patternAccepts(
     planTaskPlanSelector.pattern,
     ["plan:018f6b9a-7c2d-7abc-8def-0123456789ab", `legacy-plan:${"a".repeat(64)}`],
@@ -266,9 +262,7 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   );
   const experimentSelectors = mapping(mapping(commands.experiments).selectors);
   const objectiveSelector = mapping(experimentSelectors.objective);
-  if (objectiveSelector.list_required !== true || objectiveSelector.get_required !== true) {
-    errors.push("retrieval.commands.experiments.selectors.objective.required");
-  }
+  if (objectiveSelector.list_required !== true || objectiveSelector.get_required !== true) errors.push("retrieval.commands.experiments.selectors.objective.required");
   patternAccepts(
     objectiveSelector.pattern,
     ["objective:018f6b9a-7c2d-7abc-8def-0123456789ab", `legacy-objective:${"b".repeat(64)}`],
@@ -342,4 +336,15 @@ export function loadStateRetrievalAuthority(sourceRoot = resolveSourceRoot()): S
 export function stateRetrievalCommands(sourceRoot = resolveSourceRoot()): JsonObject {
   const commands = mapping(loadStateRetrievalAuthority(sourceRoot).retrieval.commands);
   return commands as JsonObject;
+}
+
+export function entityPublicRetrieval(sourceRoot = resolveSourceRoot()): JsonObject {
+  const authorityPath = path.join(sourceRoot, STATE_RETRIEVAL_AUTHORITY_PATH);
+  const value = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const target = mapping(value.entity_target);
+  const projection = mapping(target.public_retrieval);
+  if (projection.schema_version !== "agentera.entityPublicRetrieval.v1" || projection.status !== "final") {
+    throw new Error(`state storage authority '${authorityPath}' has no final entity public retrieval projection`);
+  }
+  return projection as JsonObject;
 }

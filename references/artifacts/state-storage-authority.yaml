@@ -29,8 +29,9 @@ entity_target:
   decision: 94
   activation: >-
     This target becomes active persisted and structured state authority only
-    after entity_migration reaches cutover_complete. Until then, existing public
-    contracts below describe current behavior and may retain legacy vocabulary.
+    after entity_migration reaches cutover_complete. Before then, legacy aggregates
+    remain migration input and explicitly labelled migration-evidence writer state;
+    ordinary public reads fail with migration_required instead of exposing them.
   implementation_status:
     progress: implemented
     decisions: implemented
@@ -43,8 +44,9 @@ entity_target:
     remaining_families: declared_not_implemented
     rule: >-
       Every implemented family selects entity behavior only when the durable
-      cutover marker is valid and selects legacy behavior only while it is absent.
-      It never creates the marker, migrates legacy state, or writes both authorities.
+      cutover marker is valid. Marker-absent ordinary consumers fail with
+      migration_required; allowlisted migration, readiness, and legacy migration
+      evidence operations never create entity state or write both authorities.
   public_schema:
     canonical_identity_field: id
     canonical_classification_field: artifact
@@ -66,6 +68,47 @@ entity_target:
       - historical prose and immutable historical evidence
       - internal TypeScript variable names that are not persisted or public structured output
       - current pre-cutover contracts explicitly marked as implemented legacy authority
+  public_retrieval:
+    schema_version: agentera.entityPublicRetrieval.v1
+    status: final
+    commands:
+      progress:
+        list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state progress get --id ID --format json
+      decisions:
+        list: agentera state decisions list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state decisions get --id ID --format json
+      health:
+        list: agentera state health list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state health get --id ID --format json
+      plans:
+        list: agentera state plan list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state plan get --id ID --format json
+      plan_tasks:
+        list: agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state plan tasks get --id ID --format json
+      objective:
+        list: agentera state objective list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state objective get --id ID --format json
+      experiments:
+        list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json
+        get: agentera state experiments get --id ID --format json
+      todo:
+        list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state todo get --id ID --format json
+      docs:
+        list: agentera state docs list [--limit N] [--cursor TOKEN] --format json
+        get: agentera state docs get --id ID --format json
+    collections:
+      - { artifact: progress, identity: id, classification: artifact }
+      - { artifact: decisions, identity: id, classification: artifact }
+      - { artifact: health, identity: id, classification: artifact }
+      - { artifact: plan, boundary: plan, identity: id, classification: artifact }
+      - { artifact: plan, boundary: plan_task, identity: id, classification: artifact }
+      - { artifact: objective, identity: id, classification: artifact }
+      - { artifact: experiments, identity: id, classification: artifact }
+      - { artifact: todo, identity: id, classification: artifact }
+      - { artifact: docs, identity: id, classification: artifact }
   identity:
     scope: project_wide_across_all_entity_artifacts
     alphabet: abcdefghijklmnopqrstuvwxyz
@@ -1034,7 +1077,7 @@ consumer_matrix:
   access_contract:
     startup: agentera prime --context <capability> --format json
     list: agentera state <artifact-id> list --limit 20 --format json
-    get: agentera state <artifact-id> get --number N --format json
+    get: agentera state <artifact> get --id ID --format json
     policy: >-
       Use the bounded prime context first, then the bounded state list for
       discovery and exact state get for requested detail. Raw artifact or Git

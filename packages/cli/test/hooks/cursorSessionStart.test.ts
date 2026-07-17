@@ -24,6 +24,11 @@ function writeSetupRoot(root: string): void {
   fs.mkdirSync(path.join(root, "skills"), { recursive: true });
 }
 
+function writeCutover(root: string): void {
+  fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+}
+
 const PLUGIN = "/opt/agentera-plugin";
 
 describe("resolveInstallRoot", () => {
@@ -94,6 +99,7 @@ describe("runCursorSessionStart", () => {
     writeSetupRoot(pluginRoot);
     const unrelated = path.join(tmp, "workspace");
     fs.mkdirSync(unrelated);
+    writeCutover(unrelated);
     let output = "";
     const code = runCursorSessionStart(JSON.stringify({ cwd: unrelated }), {
       env: { AGENTERA_HOME: undefined } as Record<string, string | undefined>,
@@ -115,6 +121,7 @@ describe("runCursorSessionStart", () => {
     writeSetupRoot(platformDefault);
     const unrelated = path.join(tmp, "workspace");
     fs.mkdirSync(unrelated);
+    writeCutover(unrelated);
     let output = "";
     const code = runCursorSessionStart(JSON.stringify({ cwd: unrelated }), {
       env: { HOME: home },
@@ -130,6 +137,7 @@ describe("runCursorSessionStart", () => {
     writeSetupRoot(managed);
     const project = path.join(managed, "service");
     fs.mkdirSync(project);
+    writeCutover(project);
     let output = "";
     runCursorSessionStart(JSON.stringify({ cwd: project }), {
       env: {},

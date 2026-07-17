@@ -5,6 +5,11 @@ import { resolvePath } from "../core/paths.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { retrieveStateEntry } from "../state/directRetrieval.js";
 import { listStateEntries } from "../state/listRetrieval.js";
+import { detectStateMode } from "../state/stateMode.js";
+import { listProgressEntities } from "../state/progressEntities.js";
+import { listHealthEntities } from "../state/healthEntities.js";
+import { listPlanEntities, listPlanTaskEntities } from "../state/planEntities.js";
+import { listTodoDocsEntities } from "../state/todoDocsEntities.js";
 import {
   loadArtifactOverrides,
   resolveArtifactPath,
@@ -17,6 +22,7 @@ import {
  */
 
 import type { JsonObject } from "../core/jsonValue.js";
+import { enforceCompletedEntityCutover } from "../cli/migrationRequired.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -196,6 +202,7 @@ export function extractSessionSummaryYaml(data: unknown): string | null {
 }
 
 export function buildDigest(projectRoot: string, env: Env = process.env): string | null {
+  if (detectStateMode(projectRoot) === "entities") return buildEntityDigest(projectRoot, env);
   const overrides = loadArtifactOverrides(projectRoot);
   const sections: string[] = [];
 
@@ -243,9 +250,60 @@ export function buildDigest(projectRoot: string, env: Env = process.env): string
   return "# Session context\n\n" + sections.join("\n\n") + "\n";
 }
 
+function objects(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
+    : [];
+}
+
+function entityLine(entry: JsonObject, fields: string[]): string {
+  const record = entry.record && typeof entry.record === "object" && !Array.isArray(entry.record)
+    ? entry.record as JsonObject
+    : {};
+  return [
+    `id: ${entry.id}`,
+    `artifact: ${entry.artifact}`,
+    ...fields.filter((field) => record[field] !== undefined).map((field) => `${field}: ${String(record[field])}`),
+  ].join("\n");
+}
+
+function buildEntityDigest(projectRoot: string, env: Env): string | null {
+  const sections: string[] = [];
+  const progress = objects(listProgressEntities(projectRoot, 1, {}, undefined, { format: "json" }).entries)[0];
+  if (progress) sections.push(`## Latest progress\n${entityLine(progress, ["timestamp", "phase", "what", "verified"])}`);
+
+  const health = objects(listHealthEntities(projectRoot, 1, undefined, undefined, { format: "json" }).entries)[0];
+  if (health) sections.push(`## Health\n${entityLine(health, ["date", "trajectory"])}`);
+
+  const plans = objects(listPlanEntities(projectRoot, 20, undefined, { format: "json" }).entries);
+  const openPlan = plans.find((entry) => {
+    const record = entry.record as JsonObject | undefined;
+    const header = record?.header as JsonObject | undefined;
+    return !["complete", "closed", "done"].includes(String(header?.status ?? "open").toLowerCase());
+  });
+  if (openPlan) {
+    const tasks = objects(listPlanTaskEntities(projectRoot, String(openPlan.id), 100, undefined, { format: "json" }).entries);
+    const task = tasks.find((entry) => String((entry.record as JsonObject | undefined)?.status ?? "pending") !== "complete");
+    if (task) sections.push(`## Next task\n${entityLine(task, ["name", "status"])}`);
+  }
+
+  const todos = objects(listTodoDocsEntities(projectRoot, "todo", 20, undefined, { severity: "critical", status: "open" }, { format: "json" }).entries);
+  if (todos.length) sections.push(`## Critical issues\n${todos.map((entry) => entityLine(entry, ["description", "severity", "status"])).join("\n\n")}`);
+
+  const sessionPath = resolveSessionPath(projectRoot, env);
+  if (fs.existsSync(sessionPath)) {
+    const summary = sessionPath.endsWith(".yaml")
+      ? extractSessionSummaryYaml(loadYaml(sessionPath))
+      : extractSessionSummary(fs.readFileSync(sessionPath, "utf8"));
+    if (summary) sections.push(`## Last session\n${summary}`);
+  }
+  return sections.length ? `# Session context\n\n${sections.join("\n\n")}\n` : null;
+}
+
 export interface HookRunOptions {
   env?: Env;
   out?: (text: string) => void;
+  err?: (text: string) => void;
 }
 
 export function runSessionStart(rawStdin: string, opts: HookRunOptions = {}): number {
@@ -261,6 +319,11 @@ export function runSessionStart(rawStdin: string, opts: HookRunOptions = {}): nu
     cwd = ".";
   }
   const projectRoot = resolvePath(cwd);
+  const cutoverFailure = enforceCompletedEntityCutover(projectRoot, "text", {
+    out,
+    err: opts.err,
+  });
+  if (cutoverFailure !== null) return cutoverFailure;
   const digest = buildDigest(projectRoot, env);
   if (digest) {
     out(digest);

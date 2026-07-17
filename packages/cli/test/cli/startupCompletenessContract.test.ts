@@ -37,6 +37,14 @@ describe("startup completeness recovery", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-startup-fallback-"));
     roots.push(root);
     fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const planDir = path.join(root, ".agentera/entities/plan/plan");
+    fs.mkdirSync(planDir, { recursive: true });
+    fs.writeFileSync(path.join(planDir, "aaaaaaaaaa.yaml"), [
+      "id: aaaaaaaaaa", "artifact: plan", "record:", "  header:", "    level: light",
+      "    created: 2026-07-17", "    status: open", "    title: Startup fallback",
+      "  what: test", "  why: test", "  scope:", "    included: [state]", "    excluded: []", "",
+    ].join("\n"));
 
     expect(startupCompletenessContract().cli_fallback).toEqual([...STARTUP_COMPLETENESS_CLI_FALLBACK]);
     for (const command of STARTUP_COMPLETENESS_CLI_FALLBACK) {

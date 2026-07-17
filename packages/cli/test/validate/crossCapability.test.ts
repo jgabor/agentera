@@ -54,7 +54,7 @@ function capabilityArtifact(artifactId: string, localRole: string): any {
     ARTIFACTS: {
       1: {
         id: `${artifactId}-${localRole}`,
-        artifact_id: artifactId,
+        artifact: artifactId,
         local_role: localRole,
       },
     },
@@ -106,7 +106,7 @@ describe("validateGraph", () => {
     expect(errors.some((e) => e.includes("producers"))).toBe(true);
   });
 
-  it("reports an unknown artifact_id without a display-name translation map", () => {
+  it("reports an unknown artifact without a display-name translation map", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
     const model = path.join(tmp, "model.yaml");
@@ -116,7 +116,7 @@ describe("validateGraph", () => {
     writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
     writeYaml(path.join(caps, "plan", "schemas", "artifacts.yaml"), capabilityArtifact("ghost", "produces"));
 
-    expect(validateGraph(schemas, caps, model)).toContain("plan: unknown artifact_id 'ghost'");
+    expect(validateGraph(schemas, caps, model)).toContain("plan: unknown artifact 'ghost'");
   });
 
   it("loads special cases from the registry not validator-local exceptions", () => {

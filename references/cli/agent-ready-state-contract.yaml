@@ -332,7 +332,7 @@ structured_output:
             derives from the same `_decision_context_entry` and
              `_decision_satisfaction_context` semantics as bounded `agentera state
              decisions list --limit 20 --format json` plus exact `state decisions
-             get --number N`, never infers satisfaction, never mutates `.agentera/decisions.yaml`,
+             get --id ID`, never infers satisfaction, never mutates decision entities,
             keeps top-level attention bounded, and must not change `next_action`
             routing priority.
           evidence_context_target_contract: evidence_context_target_contract
@@ -491,13 +491,13 @@ evidence_context_target_contract:
         fallback: none when complete_for_plan_artifact is true
       - family: progress_verification
         source: agentera state progress list --limit 20 --format json latest verification
-        fallback: agentera state progress get --number N --format json
+        fallback: agentera state progress get --id ID --format json
       - family: docs_state
         source: agentera state docs --format json summary and entries
         fallback: agentera state docs --format json
       - family: health_state
         source: agentera state health list --limit 20 --format json latest audit
-        fallback: agentera state health get --number N --format json
+        fallback: agentera state health get --id ID --format json
       - family: todo_state
         source: agentera state todo --format json known issues and source-contract TODOs
         fallback: agentera state todo --format json

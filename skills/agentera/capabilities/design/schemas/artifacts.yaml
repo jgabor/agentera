@@ -1,7 +1,7 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: design
+    artifact: design
     local_role: produces_and_consumes
     description: >-
       Visual identity system with design tokens, typography, colors,
@@ -9,35 +9,35 @@ ARTIFACTS:
       reads agent-readable YAML token blocks with HTML comment markers.
   2:
     id: A2
-    artifact_id: vision
+    artifact: vision
     local_role: consumes
     description: >-
       Design reads the Identity section to propose visual tokens
       coherent with the declared verbal personality.
   3:
     id: A3
-    artifact_id: progress
+    artifact: progress
     local_role: consumes
     description: >-
       Design reads this during refine mode to identify UI work and
       inline design decisions since the design system was written.
   4:
     id: A4
-    artifact_id: todo
+    artifact: todo
     local_role: produces_and_consumes
     description: >-
       Design reads this to check for design-related issues and files
       code drift findings here during audit mode.
   5:
     id: A5
-    artifact_id: docs
+    artifact: docs
     local_role: consumes
     description: >-
       Design reads this first to resolve project-local artifact mappings
       before accessing other artifacts.
   6:
     id: A6
-    artifact_id: profile
+    artifact: profile
     local_role: consumes
     description: >-
       Design reads aesthetic preferences from the profile as defaults

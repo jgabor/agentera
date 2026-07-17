@@ -36,6 +36,11 @@ function mkdirs(paths: string[]): void {
   for (const item of paths) fs.mkdirSync(item, { recursive: true });
 }
 
+function writeCutover(project: string): void {
+  fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+  fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+}
+
 function deepPath(root: string, label: string, depth: number): string {
   const segment = `${label}-${"x".repeat(176)}`;
   return path.join(root, ...Array.from({ length: depth }, (_value, index) => `${segment}-${index}`));
@@ -342,6 +347,7 @@ describe("test-only lifecycle observer harness parity", () => {
     const bin = path.join(root, "bin");
     const invocationMarker = path.join(root, "native-process-invoked");
     mkdirs([home, project]);
+    writeCutover(project);
     writeTrapBinaries(bin, invocationMarker);
     const arranged = fixture.arrange(home, project);
     const before = treeSnapshot(root);
@@ -395,6 +401,7 @@ describe("prime and doctor lifecycle integration", () => {
     const bin = path.join(root, "bin");
     const invocationMarker = path.join(root, "native-process-invoked");
     mkdirs([home, project]);
+    writeCutover(project);
     writeTrapBinaries(bin, invocationMarker);
     const fakeInputPath = path.join(root, "runtime-lifecycle-input.json");
     fs.writeFileSync(fakeInputPath, JSON.stringify({
@@ -456,6 +463,7 @@ describe("prime and doctor lifecycle integration", () => {
     const bin = path.join(root, "bin");
     const invocationMarker = path.join(root, "native-process-invoked");
     mkdirs([home, project]);
+    writeCutover(project);
     writeTrapBinaries(bin, invocationMarker);
     const env = {
       ...process.env,
@@ -484,6 +492,7 @@ describe("prime and doctor lifecycle integration", () => {
     const home = path.join(root, "home");
     const project = path.join(root, "project");
     mkdirs([home, project]);
+    writeCutover(project);
     const child = runCli(["prime", "--context", "build", "--format", "json"], project, {
       ...process.env,
       HOME: home,

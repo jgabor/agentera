@@ -40,7 +40,7 @@ import {
   gitBackfillContractProjection,
   stateGitBackfillContract,
 } from "../../state/gitBackfillAuthority.js";
-import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 
 export interface TransitionalTopLevelAlias {
@@ -501,10 +501,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     commands: describeCommands(migrationAuthority, backfillAuthority),
     state_writer: stateWriterContract(),
-    state_retrieval: {
-      authority: retrievalAuthority.authority,
-      ...retrievalAuthority.retrieval,
-    },
+    state_retrieval: { authority: retrievalAuthority.authority, ...entityPublicRetrieval() },
     state_migration: {
       authority: migrationAuthority.authorityPath,
       ...migrationAuthority.migration,

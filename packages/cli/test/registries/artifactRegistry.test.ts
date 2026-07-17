@@ -162,9 +162,9 @@ function validateCapabilityReference(reference: JsonObject, model: JsonObject): 
   for (const record of model.explicit_special_cases as any[]) validIds.add(record.artifact_id);
   const validRoles = new Set<string>(model.owned_enums.local_usage_role);
 
-  const artifactId = reference.artifact_id;
+  const artifactId = reference.artifact;
   const localRole = reference.local_role;
-  if (!validIds.has(artifactId)) errors.push(`capability_reference.artifact_id unknown: ${artifactId}`);
+  if (!validIds.has(artifactId)) errors.push(`capability_reference.artifact unknown: ${artifactId}`);
   if (!("local_role" in reference)) {
     errors.push("capability_reference.local_role missing");
   } else if (!validRoles.has(localRole)) {
@@ -259,15 +259,15 @@ describe("artifact registry contract", () => {
 
   it("rejects invalid ids, missing roles, and repeated registry facts in capability references", () => {
     const model = modelFixture();
-    expect(validateCapabilityReference({ artifact_id: "ghost", display_name: "PLAN.md" }, model)).toEqual([
-      "capability_reference.artifact_id unknown: ghost",
+    expect(validateCapabilityReference({ artifact: "ghost", display_name: "PLAN.md" }, model)).toEqual([
+      "capability_reference.artifact unknown: ghost",
       "capability_reference.local_role missing",
       "capability_reference.display_name repeats canonical registry fact",
     ]);
 
     const validId = model.required_artifact_identities.project_agent_state[0].artifact_id;
-    expect(validateCapabilityReference({ artifact_id: validId, local_role: "consumes" }, model)).toEqual([]);
-    expect(validateCapabilityReference({ artifact_id: validId, local_role: "observes" }, model)).toEqual([
+    expect(validateCapabilityReference({ artifact: validId, local_role: "consumes" }, model)).toEqual([]);
+    expect(validateCapabilityReference({ artifact: validId, local_role: "observes" }, model)).toEqual([
       "capability_reference.local_role unsupported: observes",
     ]);
   });

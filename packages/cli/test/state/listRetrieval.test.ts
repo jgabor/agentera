@@ -7,7 +7,7 @@ import { performance } from "node:perf_hooks";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { main } from "../../src/cli/dispatch/index.js";
+import { runStateList } from "../../src/cli/commands/state/list.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { retrieveStateEntry } from "../../src/state/directRetrieval.js";
@@ -94,7 +94,7 @@ function captureCli(root: string, args: string[]): { rc: number; out: string; er
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", "state", "progress", "list", ...args], {
+    const rc = runStateList("progress", args, {
       out: (text) => (out += text),
       err: (text) => (err += text),
     });

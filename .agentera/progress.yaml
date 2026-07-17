@@ -1,4 +1,18 @@
 cycles:
+  - number: 898
+    timestamp: 2026-07-17 17:16
+    type: feat
+    phase: build
+    what: Finalized lifecycle and packaged consumers on the canonical id and
+      artifact entity protocol.
+    verified: "CLI suite passed: 216 files and 2580 tests. Typecheck, build,
+      capability-contract validation, compact gate, bundle parity, and active
+      protocol checks passed."
+    next: Proceed to Task 13 readiness recovery.
+    context:
+      intent: Complete plan Task 12 without implementing readiness recovery, live
+        apply, or release finalization.
+      constraints: Tasks 13 through 15 remain out of scope.
   - number: 897
     timestamp: 2026-07-17 15:56
     type: fix
@@ -208,34 +222,6 @@ cycles:
       unknowns: none
       scope: packages/cli entity storage, objective/experiment writer, explain output,
         and Task 8 tests.
-  - number: 888
-    timestamp: 2026-07-17 07:59
-    type: feat
-    phase: build
-    what: Added bare-ID objective create/update and immutable experiment
-      publication, exact retrieval, and bounded listing under entity authority.
-    inspiration: PLAN Task 8 and Decision 94 entity authority.
-    discovered: Existing experiment status already represented baseline semantics,
-      so no new workflow or metric model was needed.
-    verified: "Focused objective/experiment, identity, retrieval, publication,
-      entity-context, help, schema, and authority tests passed: 9 files, 99
-      tests. Full CLI passed: 210 files, 2,520 tests. Typecheck and build
-      passed. State validation passed with 0 issues. Optimize capability and
-      capability contract passed. Compact passed with 0 over-limit, formatting,
-      protected-overflow, error, or changed findings."
-    next: "Task 9 remains pending: cut TODO and documentation inventory over to
-      entities."
-    context:
-      intent: Complete PLAN Task 8 by cutting only objective and experiment behavior
-        over when the durable entity-mode marker is active.
-      constraints: Objective and experiment entity mode only; no migration apply,
-        global consumer cutover, TODO/docs mutation, vision, push, publish, or
-        unrelated family changes.
-      unknowns: None. Baseline uses the existing experiment status=baseline field with
-        authority-owned exactly-one cardinality when experiments exist.
-      scope: Entity objective create/update/get/list; immutable experiment
-        publish/get/list; baseline and ownership validation; mode isolation; Git
-        and root-marker regressions.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -305,6 +291,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 888 (2026-07-17): Added bare-ID objective create/update and
+      immutable experiment publication, exact retrieval, and bounded listing
+      under entity..."
   - summary: "Cycle 887 (2026-07-17): Preserved same-path successors during plan
       graph rollback by retaining exact published inode identities in
       packages/cli/src/state/entityPublicationContext.ts."
@@ -400,16 +389,18 @@ archive:
   - summary: "Cycle 849 (2026-07-16): Omit inactive default-only top-level
       v1_migration, docs, and objective from the default bare prime briefing;
       correct..."
-  - summary: "Cycle 848 (2026-07-16): Published one non-redundant prime contract:
-      reconciled the four-way field drift to a single authority
-      (PRIME_STRUCTURED_FIELDS..."
 omitted: true
-omitted_count: 133
+omitted_count: 134
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

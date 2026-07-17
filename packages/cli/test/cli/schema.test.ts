@@ -107,33 +107,17 @@ describe("cli schema", () => {
     );
     expect(payload.state_retrieval).toMatchObject({
       authority: "references/artifacts/state-storage-authority.yaml",
-      schema_version: "agentera.stateRetrievalAuthority.v1",
-      status: "plan_task_plan_and_experiment_retrieval_implemented",
-      implementation: {
-        plan_tasks: "implemented",
-        plans: "implemented",
-        experiments: "implemented",
-      },
+      schema_version: "agentera.entityPublicRetrieval.v1",
+      status: "final",
       commands: {
         plan_tasks: {
-          get: "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
+          get: "agentera state plan tasks get --id ID --format json",
         },
         plans: {
-          get: "agentera state plan get --plan PLAN_ID --format json",
+          get: "agentera state plan get --id ID --format json",
         },
         experiments: {
-          get: "agentera state experiments get --objective OBJECTIVE_ID --number N --format json",
-        },
-      },
-      identity: {
-        experiment: {
-          publication: {
-            authority: "typed_state_writer",
-            archive_ownership: "experiment_archival",
-            storage_scope: "objective_directory",
-            publication_order: "archive_before_projection",
-            projection_policy: "uniform_10_40_50",
-          },
+          get: "agentera state experiments get --id ID --format json",
         },
       },
     });

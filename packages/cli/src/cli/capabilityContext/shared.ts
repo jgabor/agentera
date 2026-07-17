@@ -40,7 +40,13 @@ export function appendUnique(items: string[], value: string): void {
 }
 
 export function taskRef(task: JsonObject): JsonObject {
-  return { number: task.number ?? null, name: firstPresent(task, ["name", "title"], ""), status: entryStatus(task, "pending") };
+  const record = task.record && typeof task.record === "object" && !Array.isArray(task.record) ? task.record as JsonObject : task;
+  return {
+    id: task.id ?? null,
+    artifact: task.artifact ?? "plan",
+    name: firstPresent(record, ["name", "title"], ""),
+    status: entryStatus(record, "pending"),
+  };
 }
 
 export function sourceProvenance(sourceFamily: string, command: string, field: string | null = null): JsonObject {
@@ -63,7 +69,7 @@ export function hasRecordedValue(value: unknown): boolean {
 }
 
 export function fallbackStatePointer(artifactId: string, command: string): JsonObject {
-  return { status: "fallback_only", artifact_id: artifactId, fallback_command: command, raw_artifact_reads_required: false };
+  return { status: "fallback_only", artifact: artifactId, fallback_command: command, raw_artifact_reads_required: false };
 }
 
 export function capabilityContextAppSummary(appHome: JsonObject, bundle: JsonObject): JsonObject {

@@ -5,7 +5,8 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { main } from "../../src/cli/dispatch/index.js";
+import { runPlanTasks } from "../../src/cli/commands/state/planTasks.js";
+import { runState } from "../../src/cli/dispatch/state.js";
 import { printStateHelp } from "../../src/cli/help.js";
 import { stateRetrievalCommands } from "../../src/state/retrievalAuthority.js";
 
@@ -41,7 +42,7 @@ function capture(root: string, args: string[]): { rc: number; out: string; err: 
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", "state", "plan", "tasks", ...args], {
+    const rc = runPlanTasks(args, {
       out: (text) => (out += text),
       err: (text) => (err += text),
     });
@@ -57,10 +58,10 @@ function capturePlan(root: string, args: string[]): { rc: number; out: string; e
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", "state", "plan", ...args], {
+    const rc = runState("plan", args, {
       out: (text) => (out += text),
       err: (text) => (err += text),
-    });
+    }, "agentera state plan");
     return { rc, out, err };
   } finally {
     process.chdir(previous);
@@ -118,13 +119,12 @@ describe("active plan task retrieval", () => {
     });
   });
 
-  it("keeps help, authority, and runtime aligned on active-plan task get", () => {
+  it("keeps legacy migration retrieval internal while public help uses final IDs", () => {
     const grammar = (stateRetrievalCommands().plan_tasks as Record<string, string>).get;
     const help = printStateHelp("plan");
     expect(grammar).toBe("agentera state plan tasks get [--plan PLAN_ID] --task N --format json");
-    expect(help).toContain(grammar);
-    expect(help).toContain("Task list and task get default to the active plan; --plan is optional");
-    expect(help).not.toContain("task get requires --plan");
+    expect(help).toContain("agentera state plan tasks get --id ID --format json");
+    expect(help).not.toContain(grammar);
 
     const root = project([task(1)]);
     const result = capture(root, ["get", "--task", "1", "--format", "json"]);

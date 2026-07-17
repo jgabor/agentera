@@ -1,5 +1,4 @@
 import type { JsonObject } from "../../core/jsonValue.js";
-import { detectStateMode } from "../stateMode.js";
 
 export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
@@ -371,7 +370,7 @@ export function isWritableArtifact(value: string): value is WritableArtifact {
 
 export function stateWriterArtifactContract(artifact: string, projectRoot = process.cwd()): JsonObject | null {
   if (!isWritableArtifact(artifact)) return null;
-  if (["todo", "docs"].includes(artifact) && detectStateMode(projectRoot) !== "entities") return null;
+  void projectRoot;
   const verbs = verbsForArtifact(artifact);
   const mutations = verbs.filter((verb) => verb !== "explain");
   return {

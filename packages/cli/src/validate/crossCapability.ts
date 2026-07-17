@@ -84,7 +84,7 @@ export function loadCapabilityArtifacts(
         continue;
       }
       const e = entry as JsonObject;
-      const artifactId = String(e.artifact_id ?? "").trim();
+      const artifactId = String(e.artifact ?? "").trim();
       const localRole = String(e.local_role ?? "").trim();
       if (!artifactId) {
         continue;
@@ -167,7 +167,7 @@ export function validateGraph(
     byArtifactId.get(record.artifactId)!.push(record);
     const name = displayName(record, registry);
     if (!canonical.has(record.artifactId)) {
-      errors.push(`${record.capability}: unknown artifact_id '${record.artifactId}'`);
+      errors.push(`${record.capability}: unknown artifact '${record.artifactId}'`);
       continue;
     }
     if (record.producers.size === 0 && record.consumers.size === 0) {

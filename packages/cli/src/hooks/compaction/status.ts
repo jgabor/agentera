@@ -14,6 +14,7 @@ import { DEFAULT_ARTIFACT_PATHS, parseDocsYamlMapping } from "../common.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { COMPACTABLE_YAML_ARTIFACTS, NON_COMPACTABLE_ARTIFACTS } from "./dryRun.js";
 import { detectStateMode } from "../../state/stateMode.js";
+import { discoverEntities } from "../../state/entityStorage.js";
 import {
   decisionProtectedOverflowCount,
   decisionSatisfiedActiveCount,
@@ -146,15 +147,30 @@ function projectionRecoveryFor(
 }
 
 export function computeCompactionStatus(projectRoot: string): CompactionStatus[] {
+  if (detectStateMode(projectRoot) === "entities") {
+    const discovered = discoverEntities(projectRoot);
+    const issueCount = discovered.issues.length;
+    return [{
+      artifact: "entity_state",
+      path: path.join(projectRoot, ".agentera", "entities"),
+      classification: issueCount ? "error" : "canonical_entities",
+      active_count: discovered.entities.length,
+      archive_count: 0,
+      total_count: discovered.entities.length,
+      over_limit_count: 0,
+      reason: issueCount
+        ? `${issueCount} canonical entity validation issue(s); run agentera check validate state --format json`
+        : "canonical entity state is independently stored and is not compacted",
+      protected_overflow_count: 0,
+      exists: true,
+    }];
+  }
   const paths = artifactPaths(projectRoot);
   const projectionPolicy = loadProjectionPolicy();
   const statuses: CompactionStatus[] = [];
 
   const todoPath = paths.todo;
-  if (detectStateMode(projectRoot) === "entities") {
-    // TODO item entities are canonical after cutover; the legacy Markdown
-    // aggregate is neither read nor compacted as authority in this mode.
-  } else if (fs.existsSync(todoPath)) {
+  if (fs.existsSync(todoPath)) {
     const todoText = fs.readFileSync(todoPath, "utf8");
     const headingCount = countTodoResolvedSectionHeadings(todoText);
     if (headingCount > 1) {
@@ -416,6 +432,11 @@ export function runCompaction(
   options: StateMutationOptions = {},
 ): CompactionOperation[] {
   if (mode === "check") return checkCompaction(projectRoot);
-  if (mode === "fix") return fixCompaction(projectRoot, options);
+  if (mode === "fix") {
+    if (detectStateMode(projectRoot) === "entities") {
+      return computeCompactionStatus(projectRoot).map((status) => operationForStatus(status, "fix"));
+    }
+    return fixCompaction(projectRoot, options);
+  }
   throw new Error(`unknown compaction mode: ${mode}`);
 }

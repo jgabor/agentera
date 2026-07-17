@@ -44,9 +44,9 @@ describe("cli capability routing", () => {
     expect(yaml.out).toBe(text.out);
   });
 
-  it("routes capability names through the dispatcher", () => {
-    const { rc, out } = capture((io) => main(["node", "agentera", "vision"], io));
-    expect(rc).toBe(0);
-    expect(out).toContain("agentera vision");
+  it("gates capability startup through the dispatcher before cutover", () => {
+    const { rc, err } = capture((io) => main(["node", "agentera", "vision"], io));
+    expect(rc).toBe(1);
+    expect(err).toContain("completed entity-state cutover");
   });
 });

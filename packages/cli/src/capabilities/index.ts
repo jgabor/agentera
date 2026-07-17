@@ -6,16 +6,16 @@
 import { instructions as statusInstructions } from "./status/instructions.js";
 import { statusStartupInstructions } from "./status/startupInstructions.js";
 import { instructions as visionInstructions } from "./vision/instructions.js";
-import { instructions as discussInstructions } from "./discuss/instructions.js";
+import discussInstructions from "./discuss/instructions.js";
 import { instructions as researchInstructions } from "./research/instructions.js";
 import { instructions as planInstructions } from "./plan/instructions.js";
-import { instructions as buildInstructions } from "./build/instructions.js";
-import { instructions as optimizeInstructions } from "./optimize/instructions.js";
+import buildInstructions from "./build/instructions.js";
+import optimizeInstructions from "./optimize/instructions.js";
 import { instructions as auditInstructions } from "./audit/instructions.js";
 import { instructions as documentInstructions } from "./document/instructions.js";
 import { instructions as profileInstructions } from "./profile/instructions.js";
 import { instructions as designInstructions } from "./design/instructions.js";
-import { instructions as orchestrateInstructions } from "./orchestrate/instructions.js";
+import orchestrateInstructions from "./orchestrate/instructions.js";
 
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   status: statusStartupInstructions(statusInstructions),

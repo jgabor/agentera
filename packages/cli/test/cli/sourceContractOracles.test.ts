@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { cmdQuery } from "../../src/cli/commands/query.js";
 import { cmdState } from "../../src/cli/commands/state/index.js";
-import { main } from "../../src/cli/dispatch.js";
+import { runPrime } from "../../src/cli/dispatch/prime.js";
+import { runQuery, runState } from "../../src/cli/dispatch/state.js";
 
 const SOURCE_CONTRACT_ORACLE_PATH = path.join(
   __dirname,
@@ -234,7 +235,11 @@ function assertExactKeys(
 }
 
 function runDispatch(argv: string[]): { rc: number; payload: Record<string, unknown> } {
-  const { rc, out } = capture((io) => main(["node", "agentera", ...argv], io));
+  const { rc, out } = capture((io) => argv[0] === "prime"
+    ? runPrime("prime", argv.slice(1), io, "agentera prime")
+    : argv[0] === "state" && argv[1] === "query"
+      ? runQuery(argv.slice(2), io, "agentera state query")
+      : runState(argv[1], argv.slice(2), io, `agentera state ${argv[1]}`));
   return { rc, payload: readJson(out) };
 }
 

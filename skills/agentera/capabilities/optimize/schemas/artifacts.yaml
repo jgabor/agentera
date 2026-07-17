@@ -1,7 +1,7 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: objective
+    artifact: objective
     local_role: produces_and_consumes
     description: >-
       Optimization target definition: metric, current value, target, constraints,
@@ -10,7 +10,7 @@ ARTIFACTS:
       canonical closure.
   2:
     id: A2
-    artifact_id: optimize_harness
+    artifact: optimize_harness
     local_role: produces
     description: >-
       Eval script that measures the metric and outputs structured JSON. Written
@@ -18,7 +18,7 @@ ARTIFACTS:
       Never modified during optimization cycles.
   3:
     id: A3
-    artifact_id: experiments
+    artifact: experiments
     local_role: produces_and_consumes
     description: >-
       Log of every experiment: hypothesis, method, change, metric before/after,
@@ -26,42 +26,42 @@ ARTIFACTS:
       suggestion. Optimize appends to this each cycle.
   4:
     id: A4
-    artifact_id: progress
+    artifact: progress
     local_role: consumes
     description: >-
       Optimize inspects the last 3 entries to detect 3 consecutive failures
       before reporting exit status.
   5:
     id: A5
-    artifact_id: todo
+    artifact: todo
     local_role: produces
     description: >-
       Optimize writes to this when logging a failure pattern after 3
       consecutive failures.
   6:
     id: A6
-    artifact_id: decisions
+    artifact: decisions
     local_role: consumes
     description: >-
       Optimize reads this during Orient for context on prior deliberations
       about the optimization objective.
   7:
     id: A7
-    artifact_id: profile
+    artifact: profile
     local_role: consumes
     description: >-
       Optimize reads this to modulate experiment aggressiveness and constraint
       tolerance based on user preferences.
   8:
     id: A8
-    artifact_id: docs
+    artifact: docs
     local_role: consumes
     description: >-
       Optimize reads this first to resolve project-local artifact mappings
       before accessing other artifacts.
   9:
     id: A9
-    artifact_id: benchmark_context
+    artifact: benchmark_context
     local_role: consumes
     description: >-
       CLI-provided startup benchmark summary from `agentera prime --context

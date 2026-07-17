@@ -1,7 +1,7 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: vision
+    artifact: vision
     local_role: produces_and_consumes
     description: >-
       Build consumes this through CLI execution_context caveats or explicit
@@ -9,7 +9,7 @@ ARTIFACTS:
       during vision bootstrap.
   2:
     id: A2
-    artifact_id: todo
+    artifact: todo
     local_role: produces_and_consumes
     description: >-
       Build consumes TODO state from execution_context and included status state
@@ -17,7 +17,7 @@ ARTIFACTS:
       entries. Severity classified per protocol SI1-SI4.
   3:
     id: A3
-    artifact_id: changelog
+    artifact: changelog
     local_role: produces_and_consumes
     description: >-
       Build consumes changelog boundary from execution_context or the listed
@@ -25,27 +25,27 @@ ARTIFACTS:
       [Unreleased] based on commit type and promotes on version bumps.
   4:
     id: A4
-    artifact_id: progress
+    artifact: progress
     local_role: produces_and_consumes
     description: >-
       Operational cycle log. Build consumes latest progress evidence from
       execution_context first, then bounded `agentera state progress list --limit
-      20 --format json` discovery or exact `state progress get --number N`
+       20 --format json` discovery or exact `state progress get --id ID`
       retrieval, and appends one entry per cycle with mandatory Verified field.
       Compacted by applying schema COMPACTION rules.
   5:
     id: A5
-    artifact_id: health
+    artifact: health
     local_role: consumes
     description: >-
       Build consumes health state from execution_context and included status
       state before bounded `agentera state health list --limit 20 --format json`
-      discovery or exact `state health get --number N` retrieval, focusing on
+       discovery or exact `state health get --id ID` retrieval, focusing on
       critical and degraded findings for work selection. Raw reads are
       diagnostic-only for corruption or CLI-defect investigation.
   6:
     id: A6
-    artifact_id: decisions
+    artifact: decisions
     local_role: consumes
     description: >-
       Build consumes decision caveats and bounded list/get fallback commands from
@@ -54,7 +54,7 @@ ARTIFACTS:
       diagnostic-only for corruption or CLI-defect investigation.
   7:
     id: A7
-    artifact_id: plan
+    artifact: plan
     local_role: produces_and_consumes
     description: >-
       Build consumes selected task, acceptance criteria, dependencies,
@@ -62,7 +62,7 @@ ARTIFACTS:
       direct plan reads, then updates task status and surprises during execution.
   8:
     id: A8
-    artifact_id: profile
+    artifact: profile
     local_role: consumes
     description: >-
       Build consumes status profile summary first. Missing or stale profile state
@@ -70,14 +70,14 @@ ARTIFACTS:
       during normal startup.
   9:
     id: A9
-    artifact_id: docs
+    artifact: docs
     local_role: consumes
     description: >-
       Build consumes artifact mappings and docs caveats from execution_context
       and included status docs state before direct docs reads.
   10:
     id: A10
-    artifact_id: design
+    artifact: design
     local_role: consumes
     description: >-
       Build treats design state missing from execution_context as a caveat or

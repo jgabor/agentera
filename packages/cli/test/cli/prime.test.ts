@@ -321,6 +321,16 @@ describe("orkestrera orchestration_context task_queue", () => {
         "",
       ].join("\n"),
     );
+    fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (const [boundary, id, record] of [
+      ["plan", "aaaaaaaaaa", "header:\n  level: light\n  created: 2026-07-17\n  title: Dependency queue regression\n  status: open\nwhat: test\nwhy: test\nscope:\n  included: [state]\n  excluded: []\n"],
+      ["plan_task", "bbbbbbbbbb", "plan: aaaaaaaaaa\nname: First task\nstatus: complete\ndepends_on: []\nacceptance: []\n"],
+      ["plan_task", "cccccccccc", "plan: aaaaaaaaaa\nname: Second task\nstatus: pending\ndepends_on: [bbbbbbbbbb]\nacceptance: []\n"],
+    ] as const) {
+      const dir = path.join(tmp, ".agentera/entities/plan", boundary);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, `${id}.yaml`), `id: ${id}\nartifact: plan\nrecord:\n${record.split("\n").filter(Boolean).map((line) => `  ${line}`).join("\n")}\n`);
+    }
     process.chdir(tmp);
   });
 
@@ -343,14 +353,14 @@ describe("orkestrera orchestration_context task_queue", () => {
     const payload = buildPrimeCapabilityContextPayload(state, "orchestrate");
     const orch = payload.capability_context.context.orchestration_context as Record<string, unknown>;
     const taskQueue = orch.task_queue as Record<string, unknown>;
-    const ready = (taskQueue.dependency_ready_tasks as Array<{ number: number }>).map((t) => t.number);
-    const blocked = taskQueue.blocked_tasks as Array<{ number: number; blocked_reasons?: string[] }>;
+    const ready = (taskQueue.dependency_ready_tasks as Array<{ id: string }>).map((t) => t.id);
+    const blocked = taskQueue.blocked_tasks as Array<{ id: string; blocked_reasons?: string[] }>;
     const allReasons = blocked.flatMap((t) => t.blocked_reasons ?? []);
 
-    expect(ready).toContain(2);
-    expect(blocked.some((t) => t.number === 2)).toBe(false);
-    expect(allReasons.some((r) => r.includes("dependency 1 is not present in plan tasks"))).toBe(false);
-    expect((orch.task_summaries as Array<{ number: number; status: string }>)[0].status).toBe("complete");
+    expect(ready).toContain("cccccccccc");
+    expect(blocked.some((t) => t.id === "cccccccccc")).toBe(false);
+    expect(allReasons.some((r) => r.includes("dependency bbbbbbbbbb is not present in plan tasks"))).toBe(false);
+    expect((orch.task_summaries as Array<{ id: string; status: string }>)[0].status).toBe("complete");
     expect((orch.selected_next_action as Record<string, unknown>)?.object).toBeTruthy();
   });
 
@@ -358,12 +368,12 @@ describe("orkestrera orchestration_context task_queue", () => {
     const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(rc).toBe(0);
     const orch = JSON.parse(out).capability_context.context.orchestration_context;
-    const ready = orch.task_queue.dependency_ready_tasks.map((t: { number: number }) => t.number);
+    const ready = orch.task_queue.dependency_ready_tasks.map((t: { id: string }) => t.id);
     const blockedReasons = orch.task_queue.blocked_tasks.flatMap(
       (t: { blocked_reasons?: string[] }) => t.blocked_reasons ?? [],
     );
 
-    expect(ready).toContain(2);
-    expect(blockedReasons.some((r: string) => r.includes("dependency 1 is not present in plan tasks"))).toBe(false);
+    expect(ready).toContain("cccccccccc");
+    expect(blockedReasons.some((r: string) => r.includes("dependency bbbbbbbbbb is not present in plan tasks"))).toBe(false);
   });
 });

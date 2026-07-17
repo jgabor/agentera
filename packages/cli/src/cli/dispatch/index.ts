@@ -35,6 +35,12 @@ import { emitInvalidInput } from "../errors.js";
 import { isWriteVerb } from "../../state/write/operations.js";
 import { stateMigrationContract } from "../../state/migrationAuthority.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
+import {
+  enforceCompletedEntityCutover,
+  migrationProject,
+  requestedMigrationFailureFormat,
+  requiresCompletedEntityCutover,
+} from "../migrationRequired.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -59,6 +65,15 @@ export function main(argv: string[], io: Io = {}): number {
         message: `unknown or not-yet-ported command: ${command}`,
       },
     });
+  }
+
+  if (requiresCompletedEntityCutover(args)) {
+    const failure = enforceCompletedEntityCutover(
+      migrationProject(args),
+      requestedMigrationFailureFormat(args),
+      io,
+    );
+    if (failure !== null) return failure;
   }
 
   switch (command) {

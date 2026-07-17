@@ -5,7 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { main } from "../../src/cli/dispatch/index.js";
+import { runState } from "../../src/cli/dispatch/state.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import { printStateHelp } from "../../src/cli/help.js";
 import { loadStateRetrievalAuthority } from "../../src/state/retrievalAuthority.js";
@@ -37,10 +37,10 @@ function capture(root: string, args: string[]): { rc: number; out: string; err: 
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", "state", "plan", ...args], {
+    const rc = runState("plan", args, {
       out: (text) => (out += text),
       err: (text) => (err += text),
-    });
+    }, "agentera state plan");
     return { rc, out, err };
   } finally {
     process.chdir(previous);
@@ -53,10 +53,10 @@ function capturePlanTasks(root: string, args: string[]): { rc: number; out: stri
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", "state", "plan", "tasks", ...args], {
+    const rc = runState("plan", ["tasks", ...args], {
       out: (text) => (out += text),
       err: (text) => (err += text),
-    });
+    }, "agentera state plan");
     return { rc, out, err };
   } finally {
     process.chdir(previous);
@@ -262,9 +262,16 @@ describe("active and archived plan retrieval", () => {
     const schema = buildSchemaPayload("schema").state_retrieval as any;
     expect(authority.status).toBe("plan_task_plan_and_experiment_retrieval_implemented");
     expect(authority.implementation).toEqual(expected);
-    expect(schema.status).toBe(authority.status);
-    expect(schema.implementation).toEqual(expected);
-    expect(printStateHelp("plan")).toContain("Plan list/get returns active and archived file-based plans");
+    expect(schema).toMatchObject({
+      schema_version: "agentera.entityPublicRetrieval.v1",
+      status: "final",
+      commands: {
+        plans: { get: "agentera state plan get --id ID --format json" },
+        plan_tasks: { get: "agentera state plan tasks get --id ID --format json" },
+        experiments: { get: "agentera state experiments get --id ID --format json" },
+      },
+    });
+    expect(printStateHelp("plan")).toContain("Plan and task reads use bare canonical IDs");
     expect(printStateHelp("experiments")).toContain("List merges retained projection and immutable archive identities");
 
     const root = project();

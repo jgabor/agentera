@@ -168,7 +168,7 @@ Common mutations:
 
 - `agentera state progress append ... --format json`
 - `agentera state decisions append ... --format json`
-- `agentera state decisions update --number N ... --format json`
+- `agentera state decisions update --id ID ... --format json`
 - `agentera state plan create --input plan.yaml --format json`
 - `agentera state plan append|update|set-status|set-plan-status ... --format json`
 - `agentera state plan archive --format json`

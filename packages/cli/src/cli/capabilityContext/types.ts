@@ -13,7 +13,7 @@ export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
   decisions: "agentera state decisions list --limit 20 --format json",
   changelog: "agentera state query changelog --format json",
   objective: "agentera state objective --format json",
-  experiments: "agentera state experiments list --objective OBJECTIVE_ID --limit 20 --format json",
+  experiments: "agentera state experiments list --objective ID --limit 20 --format json",
 };
 
 export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {
@@ -23,9 +23,9 @@ export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {
 };
 
 export const STATE_FAMILY_GET_COMMANDS: Record<string, string> = {
-  progress: "agentera state progress get --number N --format json",
-  decisions: "agentera state decisions get --number N --format json",
-  health: "agentera state health get --number N --format json",
+  progress: "agentera state progress get --id ID --format json",
+  decisions: "agentera state decisions get --id ID --format json",
+  health: "agentera state health get --id ID --format json",
 };
 export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set([
   "plan", "docs", "progress", "health", "todo", "objective", "benchmark_context",

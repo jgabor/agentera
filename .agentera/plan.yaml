@@ -174,12 +174,13 @@ tasks:
     name: Cut lifecycle and packaged consumers to the final protocol
     depends_on:
       - "11"
-    status: pending
+    status: complete
     acceptance:
       - GIVEN startup context, hooks, diagnostics, help, schemas, skills, and structured output WHEN inspected THEN active public state surfaces use id and artifact consistently.
       - GIVEN source contracts and generated bundle WHEN equivalent commands run against one fixture THEN JSON envelopes and exit codes match.
       - GIVEN retired vocabulary WHEN active public and bundled state contracts are scanned THEN no obsolete field or selector remains; historical prose and internal implementation names are exempt.
       - GIVEN legacy state without a completed cutover WHEN ordinary runtime commands run THEN they report the explicit migration requirement without converting state.
+    evidence: Final entity lifecycle gate, canonical startup/hooks/compact consumers, static ID grammar, generated bundle parity, and regression coverage verified by 2580 tests plus typecheck/build/contract/compact gates.
   - number: 13
     name: Resolve repository migration readiness
     depends_on:

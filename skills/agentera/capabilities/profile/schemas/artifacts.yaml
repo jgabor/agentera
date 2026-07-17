@@ -1,7 +1,7 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: profile
+    artifact: profile
     local_role: produces_and_consumes
     description: >-
       Decision profile with per-entry confidence scoring, permanence
@@ -9,7 +9,7 @@ ARTIFACTS:
       and Validate modes, then reads it for validation and update context.
   2:
     id: A2
-    artifact_id: decisions
+    artifact: decisions
     local_role: consumes
     description: >-
       Profile treats this as a high-signal source for extraction scripts.

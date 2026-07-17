@@ -1,7 +1,7 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: health
+    artifact: health
     local_role: produces_and_consumes
     description: >-
       Codebase health assessment with findings, dimension grades, and trajectory.
@@ -9,11 +9,11 @@ ARTIFACTS:
       severity and confidence scores, trend comparisons, and de facto
       architecture patterns. During evaluation startup, Audit consumes health
       state through CLI `evidence_context`, then bounded `agentera state health
-      list --limit 20 --format json` and exact `state health get --number N`.
+       list --limit 20 --format json` and exact `state health get --id ID`.
       Raw health reads are diagnostic-only for corruption or CLI-defect investigation.
   2:
     id: A2
-    artifact_id: vision
+    artifact: vision
     local_role: consumes
     description: >-
       Audit treats vision state as protected during evidence-context startup;
@@ -21,17 +21,17 @@ ARTIFACTS:
       instead of forcing a raw vision read.
   3:
     id: A3
-    artifact_id: decisions
+    artifact: decisions
     local_role: consumes
     description: >-
       Audit consumes decision caveats through CLI `evidence_context`, then
       bounded `agentera state decisions list --limit 20 --format json` discovery
-      and exact `state decisions get --number N` retrieval. Raw decision reads
+       and exact `state decisions get --id ID` retrieval. Raw decision reads
       are diagnostic-only for corruption or CLI-defect investigation. Compacted
       decision caveats must be preserved rather than reconstructed.
   4:
     id: A4
-    artifact_id: todo
+    artifact: todo
     local_role: produces_and_consumes
     description: >-
       Audit reads this to avoid re-reporting known issues and writes to it
@@ -41,17 +41,17 @@ ARTIFACTS:
       for corruption or CLI-defect investigation.
   5:
     id: A5
-    artifact_id: progress
+    artifact: progress
     local_role: consumes
     description: >-
       Audit consumes latest progress verification and progress caveats through
       CLI `evidence_context`, then bounded `agentera state progress list --limit
-      20 --format json` discovery and exact `state progress get --number N`
+       20 --format json` discovery and exact `state progress get --id ID`
       retrieval. Raw progress reads are diagnostic-only for corruption or
       CLI-defect investigation.
   6:
     id: A6
-    artifact_id: plan
+    artifact: plan
     local_role: consumes
     description: >-
       Audit consumes evaluation target and plan criteria through CLI
@@ -59,7 +59,7 @@ ARTIFACTS:
       still provides the artifact-current-state baseline when that state is needed.
   7:
     id: A7
-    artifact_id: design
+    artifact: design
     local_role: consumes
     description: >-
       Audit treats design state as optional during evidence-context startup;
@@ -67,7 +67,7 @@ ARTIFACTS:
       diagnostic-only raw design read.
   8:
     id: A8
-    artifact_id: docs
+    artifact: docs
     local_role: consumes
     description: >-
       Audit reads this first to resolve project-local artifact mappings
@@ -76,7 +76,7 @@ ARTIFACTS:
       CLI `evidence_context` before any diagnostic-only raw docs read.
   9:
     id: A9
-    artifact_id: profile
+    artifact: profile
     local_role: consumes
     description: >-
       Audit consumes profile status and stale-profile caveats through CLI

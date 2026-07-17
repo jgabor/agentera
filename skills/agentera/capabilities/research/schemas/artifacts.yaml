@@ -1,7 +1,7 @@
 ARTIFACTS:
   1:
     id: A1
-    artifact_id: todo
+    artifact: todo
     local_role: produces
     description: >-
       Open problems by severity. Research writes actionable findings here
@@ -9,14 +9,14 @@ ARTIFACTS:
       SF1-SF3. Build picks up changes automatically in its next cycle.
   2:
     id: A2
-    artifact_id: vision
+    artifact: vision
     local_role: produces
     description: >-
       Research may refine project direction with user confirmation when the
       analysis shifts thinking about the project's direction.
   3:
     id: A3
-    artifact_id: profile
+    artifact: profile
     local_role: consumes
     description: >-
       Research reads the profile via research_context.profile from the prime

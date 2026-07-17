@@ -5,7 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { main } from "../../src/cli/dispatch/index.js";
+import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { retrieveStateEntry, StateRetrievalFailure } from "../../src/state/directRetrieval.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 
@@ -71,7 +71,7 @@ function archive(root: string, artifact: Artifact, number: number): void {
 function captureGet(artifact: string, args: string[]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const rc = main(["node", "agentera", "state", artifact, "get", ...args], { out: (text) => (out += text), err: (text) => (err += text) });
+  const rc = runStateGet(artifact, args, { out: (text) => (out += text), err: (text) => (err += text) });
   return { rc, out, err };
 }
 

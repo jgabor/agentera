@@ -30,9 +30,6 @@ export function buildExplain(
   requestedVerb?: string | null,
 ): Record<string, unknown> {
   const stateMode = detectStateMode(projectRoot);
-  if (["todo", "docs"].includes(artifact) && stateMode !== "entities") {
-    reject({ class: "unsupported_target", message: `${artifact} item writes are unavailable while the marker-absent legacy aggregate remains authoritative` });
-  }
   const verb = (requestedVerb ?? defaultVerb(artifact)) as Exclude<WriteVerb, "explain">;
   const spec = operationSpec(artifact, verb);
   if (!spec) {
@@ -45,7 +42,8 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityArtifact = ["progress", "decisions", "health", "objective", "experiments", "todo", "docs"].includes(artifact) && stateMode === "entities";
+  const legacyEvidence = stateMode === "legacy" && ["progress", "decisions", "health", "plan"].includes(artifact);
+  const entityArtifact = !legacyEvidence && ["progress", "decisions", "health", "objective", "experiments", "todo", "docs"].includes(artifact);
   const resolved = entityArtifact
     ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
@@ -93,6 +91,11 @@ export function buildExplain(
     command: `state ${artifact} explain`,
     requested_verb: verb,
     artifact,
+    ...(legacyEvidence ? {
+      classification: "legacy_migration_evidence",
+      recovery_only: true,
+      recovery: `Complete the entity cutover with agentera state migrate entities --project ${projectRoot} --dry-run --format json; this writer remains aggregate-only and creates no entity state.`,
+    } : {}),
     path: path.relative(projectRoot, resolved) || resolved,
     verbs: verbsForArtifact(artifact),
     next,

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -155,14 +155,16 @@ function declaredCurrentSurfacePaths(): string[] {
 }
 
 describe("retired runtime current-surface policy", () => {
-  it("serves canonical raw capability instructions without rewrite overlays", () => {
+  it("serves each capability module's canonical instruction export", async () => {
     for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
       const modulePath = capabilityInstructionModulePath(capability);
       const raw = decodeRawCapabilityModule(modulePath);
       // Status keeps one canonical instruction vocabulary but publishes its
       // one-call startup wording through the same deterministic adapter used
       // by the runtime. Other capabilities remain raw and unchanged.
-      const expected = capability === "status" ? statusStartupInstructions(raw) : raw;
+      const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
+      const canonical = typeof module.default === "string" ? module.default : raw;
+      const expected = capability === "status" ? statusStartupInstructions(canonical) : canonical;
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
       expect(currentSupportViolations(served), `${capability} served instructions`).toEqual([]);

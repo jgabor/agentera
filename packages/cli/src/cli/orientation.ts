@@ -735,7 +735,8 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
     const state = decisionAttentionState(satisfaction);
     stateCounts[state] = (stateCounts[state] ?? 0) + 1;
     reviewEntries.push({
-      number: typeof entry.number === "string" || typeof entry.number === "number" ? entry.number : "?",
+      id: String(entry.stable_id ?? entry.number ?? "legacy-unaddressable"),
+      artifact: "decisions",
       title: truncate(firstPresent(entry, ["question", "choice", "summary"], "decision review"), 80),
       state,
       source: satisfaction.source ?? null,
@@ -747,7 +748,7 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
     .sort()
     .map((name) => `${name}=${stateCounts[name]}`)
     .join(", ");
-  const refs = boundedEntries.map((entry) => `Decision ${entry.number}: ${entry.title}`).join("; ");
+  const refs = boundedEntries.map((entry) => `Decision ${entry.id}: ${entry.title}`).join("; ");
   const more = reviewEntries.length - boundedEntries.length;
   const suffix = more > 0 ? `; +${more} more` : "";
   return {

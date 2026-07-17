@@ -26,7 +26,7 @@ export function orchestrationTaskSummary(task: JsonObject): JsonObject {
   };
 }
 
-/** Coerce plan task numbers and depends_on refs to comparable lookup keys (int/string/object forms). */
+/** Coerce canonical IDs and internal legacy task refs to comparable lookup keys. */
 export function planTaskRefKeys(value: unknown): string[] {
   if (value === null || value === undefined) return [];
   if (typeof value === "object" && !Array.isArray(value)) {
@@ -57,8 +57,9 @@ export function planDependsOnList(task: JsonObject): JsonValue[] {
 export function indexPlanTasksByNumber(tasks: JsonObject[]): Record<string, JsonObject> {
   const taskByNumber: Record<string, JsonObject> = {};
   for (const task of tasks) {
-    if (task.number === null || task.number === undefined) continue;
-    for (const key of planTaskRefKeys(task.number)) taskByNumber[key] = task;
+    for (const value of [task.id, task.number]) {
+      for (const key of planTaskRefKeys(value)) taskByNumber[key] = task;
+    }
   }
   return taskByNumber;
 }

@@ -6,6 +6,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { classifyResolvedRoot, resolveCandidate } from "../state/installRoot.js";
 import { buildDigest } from "./sessionStart.js";
 import { pyJsonInline } from "../core/pyjson.js";
+import { enforceCompletedEntityCutover } from "../cli/migrationRequired.js";
 
 /**
  * Cursor sessionStart hook: export AGENTERA_HOME and preload session context.
@@ -62,6 +63,7 @@ export function resolveInstallRoot(
 export interface CursorSessionStartOptions {
   env?: Env;
   out?: (text: string) => void;
+  err?: (text: string) => void;
   pluginRoot?: string;
 }
 
@@ -86,6 +88,10 @@ export function runCursorSessionStart(rawStdin: string, opts: CursorSessionStart
   }
 
   const projectRoot = resolvePath(String(cwd));
+  const cutoverFailure = enforceCompletedEntityCutover(projectRoot, "text", {
+    err: opts.err,
+  });
+  if (cutoverFailure !== null) return cutoverFailure;
   const installRoot = resolveInstallRoot(projectRoot, { env, pluginRoot: opts.pluginRoot });
   const payload: Record<string, unknown> = {};
   if (installRoot !== null) {

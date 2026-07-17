@@ -98,10 +98,11 @@ describe("schema-advertised alias/runtime parity", () => {
       const argv = [alias.legacy, "--alias-parity-invalid", "--format", "json"];
       const legacy = capture(argv);
       const canonical = capture(canonicalArgv(alias, argv));
-      expect(legacy.rc, alias.legacy).toBe(2);
+      expect(legacy.rc, alias.legacy).toBe(alias.legacy === "query" ? 1 : 2);
       expect(legacy.rc, alias.legacy).toBe(canonical.rc);
       expect(parseStructured(legacy, alias.legacy)).toEqual(parseStructured(canonical, alias.canonical));
-      expect(legacy.err).toContain(`Deprecation: agentera ${alias.legacy} is deprecated`);
+      if (alias.legacy === "query") expect(legacy.err).toBe("");
+      else expect(legacy.err).toContain(`Deprecation: agentera ${alias.legacy} is deprecated`);
       expect(canonical.err, alias.canonical).toBe("");
     }
   });
