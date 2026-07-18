@@ -4,7 +4,7 @@ record:
   name: Delegate entity cutover under upgrade consent
   depends_on:
     - xhxchnzrhy
-  status: pending
+  status: complete
   acceptance:
     - GIVEN ready v2 state WHEN upgrade --yes runs THEN migration completes without hashes, approval files, force flags, or operation IDs.
     - GIVEN a Git checkout WHEN cutover begins THEN existing root, source, worktree, and stale-source protections are enforced internally.

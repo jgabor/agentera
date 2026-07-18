@@ -30,6 +30,7 @@ import {
 import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
+  delegatePlanLifecycleToEntityCutover,
   detectV1ArtifactPairs,
   dryRunMigration,
   hasPendingPlanLifecycleMigration,
@@ -50,6 +51,11 @@ import {
 } from "../runtime/lifecycleOwnershipJournal.js";
 import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 import { previewEntityMigration } from "../state/entityMigrationPreview.js";
+import {
+  applyPreparedEntityMigrationForUpgrade,
+  prepareEntityMigrationForUpgrade,
+  type PreparedUpgradeEntityMigration,
+} from "../state/entityMigrationApply.js";
 import { detectStateMode } from "../state/stateMode.js";
 
 /**
@@ -395,13 +401,18 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   }
 
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
+  const entityAuthorityActive = detectStateMode(project, sourceRoot) === "entities";
   const entitySelected = Boolean(args.only?.includes("artifacts"))
     || (crossMajorMigration && (!args.only || args.only.length === 0));
   const partialStateApply = Boolean(args.only?.some((phase) => phase === "runtime" || phase === "cleanup"))
     && !args.only?.includes("artifacts");
-  const entityPhase = entitySelected || partialStateApply
+  let entityPhase = entitySelected || partialStateApply
     ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected)
     : null;
+  const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;
+  if (args.yes && (entityCutoverPending || entityAuthorityActive)) {
+    if (migrationPreview) delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
+  }
   const lifecycleArgs = lifecycleSelector || args.legacyCleanup ? {
     selector: lifecycleSelector,
     home,
@@ -426,6 +437,19 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const preflight = aggregateSummary(plannedPhases.filter((phase) => phase.name !== "lifecycle"));
   const preflightBlocked = preflight.blocked > 0 || preflight.failed > 0;
 
+  let preparedEntityMigration: PreparedUpgradeEntityMigration | null = null;
+  if (args.yes && entitySelected && entityPhase?.status === "pending" && !preflightBlocked) {
+    preparedEntityMigration = prepareEntityMigrationForUpgrade(project, sourceRoot);
+  }
+  if (preparedEntityMigration) {
+    const result = applyPreparedEntityMigrationForUpgrade(preparedEntityMigration);
+    entityPhase = summarizeOrchestratorPhase("entities", [{
+      status: "applied",
+      action: "entity-cutover",
+      message: `${result.entity_count} entity record(s) published and validated; authority marker written last`,
+    }]);
+  }
+
   if (args.yes && migrationPreview && !preflightBlocked) {
     const applyPhases = (args.only ?? MIGRATION_ONLY_PHASES)
       .filter((phase) => !(args.runtime && phase === "runtime"));
@@ -435,7 +459,6 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
       applyPhases,
     );
   }
-
   if (migrationPreview) {
     if (phaseFilter.has("artifacts")) {
       phases.push(migrationPhaseToOrchestrator(migrationPreview.artifacts));

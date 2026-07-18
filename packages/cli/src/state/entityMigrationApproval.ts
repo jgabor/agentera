@@ -295,11 +295,15 @@ function inventoryWorktree(project: string, ignoredDirectories: Set<string>): st
   return result;
 }
 
-export function assertEntityMigrationApproval(projectRoot: string, approvalFile: string, sourceFingerprint: string, previewDigest: string, writerLockHeld = false, currentPlan?: Pick<DurableEntityMigrationPlan, "project" | "source_fingerprint" | "preview_digest" | "entries">): EntityMigrationApproval {
+function assertApproval(
+  projectRoot: string,
+  approval: EntityMigrationApproval,
+  sourceFingerprint: string,
+  previewDigest: string,
+  writerLockHeld = false,
+  currentPlan?: Pick<DurableEntityMigrationPlan, "project" | "source_fingerprint" | "preview_digest" | "entries">,
+): EntityMigrationApproval {
   const project = validateRealProjectRoot(projectRoot).path;
-  const approvalPath = path.resolve(approvalFile);
-  if (approvalPath === project || approvalPath.startsWith(`${project}${path.sep}`)) throw new EntityMigrationApprovalError("approval file must be outside the project mutation set");
-  const approval = readApproval(approvalPath);
   const layout = gitLayout(project);
   if (!layout) throw new EntityMigrationApprovalError("this project is not a Git checkout and does not accept a Git approval envelope");
   if (approval.project !== project) throw new EntityMigrationApprovalError(`approval root '${approval.project}' does not match project '${project}'`);
@@ -333,6 +337,17 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   if (canonicalRecordJson(confirmedPriorEvidence) !== canonicalRecordJson(priorEvidence)) throw new EntityMigrationApprovalError("retained rolled-back migration evidence changed during approval validation");
   if (canonicalRecordJson(confirmed ?? null) !== canonicalRecordJson(preparation ?? null)) throw new EntityMigrationApprovalError("migration preparation changed during approval validation");
   return approval;
+}
+
+export function assertEntityMigrationApprovalEnvelope(projectRoot: string, approval: EntityMigrationApproval, sourceFingerprint: string, previewDigest: string, writerLockHeld = false, currentPlan?: Pick<DurableEntityMigrationPlan, "project" | "source_fingerprint" | "preview_digest" | "entries">): EntityMigrationApproval {
+  return assertApproval(projectRoot, approval, sourceFingerprint, previewDigest, writerLockHeld, currentPlan);
+}
+
+export function assertEntityMigrationApproval(projectRoot: string, approvalFile: string, sourceFingerprint: string, previewDigest: string, writerLockHeld = false, currentPlan?: Pick<DurableEntityMigrationPlan, "project" | "source_fingerprint" | "preview_digest" | "entries">): EntityMigrationApproval {
+  const project = validateRealProjectRoot(projectRoot).path;
+  const approvalPath = path.resolve(approvalFile);
+  if (approvalPath === project || approvalPath.startsWith(`${project}${path.sep}`)) throw new EntityMigrationApprovalError("approval file must be outside the project mutation set");
+  return assertApproval(project, readApproval(approvalPath), sourceFingerprint, previewDigest, writerLockHeld, currentPlan);
 }
 
 export function projectIsGitCheckout(projectRoot: string): boolean {

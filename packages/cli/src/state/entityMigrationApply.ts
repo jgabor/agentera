@@ -10,7 +10,13 @@ import { planEntityMigration, validateEntityMigrationTargets, type DurableEntity
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 import { acquireWriterLock } from "./write/lock.js";
-import { assertEntityMigrationApproval, projectIsGitCheckout } from "./entityMigrationApproval.js";
+import {
+  assertEntityMigrationApproval,
+  assertEntityMigrationApprovalEnvelope,
+  generateEntityMigrationApproval,
+  projectIsGitCheckout,
+  type EntityMigrationApproval,
+} from "./entityMigrationApproval.js";
 import {
   ENTITY_MIGRATION_MARKER,
   ENTITY_MIGRATION_ROOT,
@@ -65,6 +71,14 @@ export interface EntityMigrationResult {
   preserved_residues: { count: number; sha256: string; provenance: string[] };
   evidence: { journal: string; manifest: string; snapshot: string };
   preparation?: { action: "created" | "resumed" | "replaced"; path: string };
+}
+
+export interface PreparedUpgradeEntityMigration {
+  project: string;
+  sourceRoot: string;
+  sourceFingerprint: string;
+  previewDigest: string;
+  approval: EntityMigrationApproval | null;
 }
 
 export class EntityMigrationOperationError extends Error {
@@ -567,17 +581,19 @@ function advance(project: string, sourceRoot: string, journal: Journal, operatio
   return { schemaVersion: "agentera.entityMigration.v1", command: "state migrate entities", status: "complete", operation, migration_id: journal.migration_id, phase: journal.phase, idempotent: operation === "resume" && journal.phase === "cutover_complete", mutation_performed: true, entity_count: entries.length, preserved_residues: residueSummary(preservedResidues), evidence: evidence(project, journal.migration_id), ...(preparation ? { preparation } : {}) };
 }
 
-export function applyEntityMigration(projectRoot: string, sourceRoot: string, fingerprint: string, digest: string, approvalFile?: string): EntityMigrationResult {
+function applyEntityMigrationApproved(projectRoot: string, sourceRoot: string, fingerprint: string, digest: string, approvalFile?: string, approvalEnvelope?: EntityMigrationApproval): EntityMigrationResult {
   const project = validateRealProjectRoot(projectRoot).path;
   const first = planEntityMigration(project, sourceRoot); assertPlanReady(first, sourceRoot); assertBinding(first, fingerprint, digest);
   inspectPreparations(project, first);
   if (projectIsGitCheckout(project)) {
-    if (!approvalFile) throw new EntityMigrationOperationError("approval_required", "entity migration apply in a Git checkout requires an external approval file", "Generate a clean approval envelope, then retry with --approval-file FILE and matching source/digest values.");
-    assertEntityMigrationApproval(project, approvalFile, fingerprint, digest, false, first);
+    if (!approvalFile && !approvalEnvelope) throw new EntityMigrationOperationError("approval_required", "entity migration apply in a Git checkout requires an external approval file", "Generate a clean approval envelope, then retry with --approval-file FILE and matching source/digest values.");
+    if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest, false, first);
+    else assertEntityMigrationApprovalEnvelope(project, approvalEnvelope!, fingerprint, digest, false, first);
   }
   const id = operationId(first); const existing = path.join(operationRoot(project, id), "journal.yaml");
   if (fs.existsSync(existing)) {
     if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest);
+    else if (approvalEnvelope) assertEntityMigrationApprovalEnvelope(project, approvalEnvelope, fingerprint, digest);
     const loaded = loadJournal(project, id).journal;
     if (loaded.phase === "cutover_complete") return resumeEntityMigration(project, sourceRoot, id, "apply");
     throw new EntityMigrationOperationError("migration_exists", `migration '${id}' was interrupted at '${loaded.phase}'`, `Resume it explicitly with agentera state migrate entities --project '${project}' --resume ${id} --force --format json.`);
@@ -588,6 +604,7 @@ export function applyEntityMigration(projectRoot: string, sourceRoot: string, fi
     const current = planEntityMigration(project, sourceRoot); assertPlanReady(current, sourceRoot); assertBinding(current, fingerprint, digest); assertNoCanonicalState(project, sourceRoot);
     const preparations = inspectPreparations(project, current);
     if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest, true, current);
+    else if (approvalEnvelope) assertEntityMigrationApprovalEnvelope(project, approvalEnvelope, fingerprint, digest, true, current);
     let selected: Preparation | undefined = preparations[0]; let action: "created" | "resumed" | "replaced" = selected?.id === id ? "resumed" : "created";
     if (selected && selected.id !== id) {
       const pinned = pinnedMigrationParent(validateRealProjectRoot(project));
@@ -602,6 +619,37 @@ export function applyEntityMigration(projectRoot: string, sourceRoot: string, fi
     throw error;
   }
   finally { lock.release(); }
+}
+
+export function applyEntityMigration(projectRoot: string, sourceRoot: string, fingerprint: string, digest: string, approvalFile?: string): EntityMigrationResult {
+  return applyEntityMigrationApproved(projectRoot, sourceRoot, fingerprint, digest, approvalFile);
+}
+
+export function prepareEntityMigrationForUpgrade(projectRoot: string, sourceRoot: string): PreparedUpgradeEntityMigration {
+  const project = validateRealProjectRoot(projectRoot).path;
+  const plan = planEntityMigration(project, sourceRoot);
+  assertPlanReady(plan, sourceRoot);
+  inspectPreparations(project, plan);
+  return {
+    project,
+    sourceRoot,
+    sourceFingerprint: plan.source_fingerprint,
+    previewDigest: plan.preview_digest,
+    approval: projectIsGitCheckout(project)
+      ? generateEntityMigrationApproval(project, plan.source_fingerprint, plan.preview_digest)
+      : null,
+  };
+}
+
+export function applyPreparedEntityMigrationForUpgrade(prepared: PreparedUpgradeEntityMigration): EntityMigrationResult {
+  return applyEntityMigrationApproved(
+    prepared.project,
+    prepared.sourceRoot,
+    prepared.sourceFingerprint,
+    prepared.previewDigest,
+    undefined,
+    prepared.approval ?? undefined,
+  );
 }
 
 export function resumeEntityMigration(projectRoot: string, sourceRoot: string, id: string, operation: "apply" | "resume" = "resume"): EntityMigrationResult {

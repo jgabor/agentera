@@ -378,6 +378,17 @@ export function applyArtifactsPhase(phase: MigrationPhase, project: string, forc
   phase.summary = updated.summary;
 }
 
+export function delegatePlanLifecycleToEntityCutover(phase: MigrationPhase): void {
+  for (const item of phase.items) {
+    if (item.status !== "pending" || item.action !== PLAN_LIFECYCLE_ACTION) continue;
+    item.status = "noop";
+    item.message = "entity cutover normalizes plan lifecycle while retaining the legacy source as recovery evidence";
+  }
+  const updated = summarizePhase("artifacts", phase.items, phase.message);
+  phase.status = updated.status;
+  phase.summary = updated.summary;
+}
+
 export function planRuntimeRewirePhase(ctx: MigrationContext): MigrationPhase {
   const items = planRuntimeMigrationItems(ctx);
   return summarizePhase(

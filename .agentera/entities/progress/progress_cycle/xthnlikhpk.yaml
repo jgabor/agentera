@@ -1,0 +1,15 @@
+id: xthnlikhpk
+artifact: progress
+record:
+  timestamp: 2026-07-18 10:51
+  type: feat
+  phase: build
+  what: Added prepared in-memory cutover in packages/cli/src/state/entityMigrationApply.ts and wired upgrade --yes in upgradeOrchestrator.ts. Git approval invariants are revalidated before and under the writer lock; entity graphs validate before .agentera/state-mode.yaml, legacy YAML and migration evidence remain, and state migrate entities keeps explicit apply/resume/rollback.
+  context:
+    intent: Complete task uwfilxpkrh by making upgrade --yes own first-time entity publication without exposing hashes, approval files, force flags, or operation IDs.
+    constraints: Apply delegation only; automatic interrupted-operation selection, mandatory startup verification/output redesign, release/docs completion, publication, push, tag, vision, and unrelated TODO work remain out of scope.
+    unknowns: Supported canonical v2 YAML lifecycle normalization is projected during entity cutover; interrupted-operation selection remains deferred to task pffccgtcro.
+    scope: Entity migration approval/apply internals, upgrade orchestration, lifecycle delegation, executable storage authority, focused upgrade tests, and active-protocol contract hash.
+  inspiration: Plan zqwisfegxj task uwfilxpkrh, Decision 94, and audited dependency commit 7a36b132925f0866d10a16c0719953d044705fb4.
+  verified: "pnpm test test/upgrade/upgradeEntityCutover.test.ts test/upgrade/upgradeOrchestrator.test.ts test/state/entityMigrationApply.test.ts: 90 passed; pnpm test: 219 files and 2700 tests passed; pnpm run typecheck and pnpm run build passed; capability-contract validation and check compact passed."
+  next: Task pffccgtcro may add unambiguous automatic continuation without changing this first-time prepared apply seam.
