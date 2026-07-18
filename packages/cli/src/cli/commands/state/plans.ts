@@ -28,14 +28,14 @@ function failure(message: string, verb: "list" | "get", entityMode = false): Sta
       class: "invalid_request",
       message,
       syntax: list
-        ? "agentera state plan list [--limit N] [--cursor TOKEN] --format json"
+        ? "agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] --format json"
         : entityMode ? "agentera state plan get --id ID --format json" : "agentera state plan get --plan PLAN_ID --format json",
       example: list
         ? "agentera state plan list --limit 20 --format json"
         : entityMode ? "agentera state plan get --id qjtrmnpvka --format json" : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000 --format json",
       recovery: "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
-        ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        ? ["list", "--status open|complete|archived", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
         : entityMode ? ["get", "--id ID", "--format text|json|yaml"] : ["get", "--plan PLAN_ID", "--format text|json|yaml"],
     },
   }, 2);
@@ -49,17 +49,18 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string; id?: string } {
+function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string; id?: string; status?: string } {
   let format: Format = "text";
   let limit = 20;
   let cursor: string | undefined;
   let plan: string | undefined;
   let id: string | undefined;
+  let status: string | undefined;
   const seen = new Set<string>();
   for (let index = 0; index < argv.length;) {
     const token = argv[index]!;
-    const name = ["--format", "--limit", "--cursor", "--plan", "--id"].find((flag) => token === flag || token.startsWith(`${flag}=`));
-    if (!name || (verb === "list" && (name === "--plan" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor"))) {
+    const name = ["--format", "--limit", "--cursor", "--plan", "--id", "--status"].find((flag) => token === flag || token.startsWith(`${flag}=`));
+    if (!name || (verb === "list" && (name === "--plan" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor" || name === "--status"))) {
       throw failure(`unrecognized argument '${token}'`, verb);
     }
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
@@ -78,10 +79,14 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
       if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
       limit = Number(parsed.value);
     } else if (name === "--cursor") cursor = parsed.value;
+    else if (name === "--status") {
+      if (!["open", "complete", "archived"].includes(parsed.value)) throw failure(`invalid --status '${parsed.value}'`, verb);
+      status = parsed.value;
+    }
     else if (name === "--plan") plan = parsed.value;
     else id = parsed.value;
   }
-  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}), ...(id ? { id } : {}) };
+  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}), ...(id ? { id } : {}), ...(status ? { status } : {}) };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
@@ -122,11 +127,12 @@ export function runPlans(argv: string[], io: Io): number {
     const entityMode = detectStateMode(process.cwd()) === "entities";
     if (verb === "get" && entityMode && (!args.id || args.plan)) throw failure("entity mode requires --id ID and does not accept --plan", verb, true);
     if (verb === "get" && !entityMode && (!args.plan || args.id)) throw failure("legacy mode requires --plan PLAN_ID and does not accept --id", verb);
+    if (!entityMode && args.status) throw failure("legacy mode does not support --status; migrate to entity mode or list all plans", verb);
     const schema = loadSchemas(discoverSchemasDir()).plan;
     if (!schema) throw new Error("plan schema is unavailable");
     const activePath = artifactPath(schema, "plan");
     const response = entityMode
-      ? verb === "list" ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format }) : getPlanEntity(process.cwd(), args.id!)
+      ? verb === "list" ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format, ...(args.status ? { statuses: [args.status] } : {}) }) : getPlanEntity(process.cwd(), args.id!)
       : verb === "list" ? listPlans(process.cwd(), activePath, { limit: args.limit, cursor: args.cursor, format: args.format }) : getPlan(activePath, args.plan!);
     const out = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, out);

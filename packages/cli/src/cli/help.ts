@@ -208,7 +208,7 @@ export function printStateHelp(sub?: string): string {
       "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
       "       agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json",
       "       agentera state plan tasks get --id ID --format json",
-      "       agentera state plan list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] --format json",
       "       agentera state plan get --id ID --format json",
       `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
       "",

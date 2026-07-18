@@ -103,10 +103,10 @@ HEADER:
     type: string
     required: true
     description: >-
-      Canonical plan lifecycle. Positional activity is derived from the
-      plan's location and is not persisted.
+      Canonical plan lifecycle. Open plans are active candidates, complete
+      plans satisfy every task, and archived plans are historical or abandoned.
     validation:
-      - "Must be one of: open, complete"
+      - "Must be one of: open, complete, archived"
   4:
     id: PH4
     field: reviewed
@@ -380,7 +380,7 @@ VALIDATION:
     checks:
       - "level is present and is 'light' or 'full'"
       - "created is present and matches YYYY-MM-DD"
-      - "status is present and is 'open' or 'complete'"
+      - "status is present and is 'open', 'complete', or 'archived'"
       - "title is present and non-empty"
       - "what is present and non-empty"
       - "why is present and non-empty"
@@ -436,19 +436,21 @@ LIFECYCLE_CONTRACT:
       values:
         - open
         - complete
+        - archived
       meaning:
-        open: Work is unfinished, whether the plan is current or archived.
+        open: Work is active and unfinished.
         complete: Every task is complete.
+        archived: Historical or abandoned source; tasks may be incomplete or empty.
     position:
-      active: The plan occupies the docs-mapped current-plan path.
-      archived: The plan occupies the sibling archive directory.
-      persisted: false
+      active: A unique open entity plan supplies the default active selection.
+      archived: Archived lifecycle marks historical or abandoned entity plans; legacy archives occupy the sibling archive directory.
+      persisted: true
     execution:
       eligible: Only a plan at the current-plan path can supply executable work.
       archived: An archived plan is historical and non-executable regardless of status.
     forced_archive:
-      unfinished_status: open
-      effect: Move the plan to immutable history without claiming completion.
+      unfinished_status: archived
+      effect: Move the plan to immutable history without claiming completion or changing tasks.
   compatibility:
     legacy_read_window:
       scope: >-
@@ -456,7 +458,7 @@ LIFECYCLE_CONTRACT:
         active to open and completed to complete for artifacts produced by
         pre-canonical Agentera versions at the docs-mapped current-plan path
         or its sibling archive directory.
-      writers: Canonical writers and migrators must emit only open or complete.
+      writers: Ordinary create and status writers emit open or complete; only archive lifecycle and migration emit archived.
       removal_condition: >-
         Remove normalization only after the deterministic migration covers
         current plans, archives, fixtures, and bundled upgrade inputs, and

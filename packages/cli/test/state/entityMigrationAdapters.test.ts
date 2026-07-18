@@ -5,8 +5,10 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { planEntityMigration, previewEntityMigration, validateEntityMigrationTargets } from "../../src/state/entityMigrationPreview.js";
-import { applyEntityMigration, resumeEntityMigration } from "../../src/state/entityMigrationApply.js";
+import { applyEntityMigration, resumeEntityMigration, rollbackEntityMigration } from "../../src/state/entityMigrationApply.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
+import { currentPlanEntityView, listPlanEntities } from "../../src/state/planEntities.js";
+import { main } from "../../src/cli/dispatch/index.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../.."); const roots: string[] = [];
 function project(): string { const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-migration-adapters-")); roots.push(root); fs.mkdirSync(path.join(root, ".agentera/archive"), { recursive: true }); return root; }
@@ -14,6 +16,52 @@ function write(root: string, relative: string, bytes: string): void { const targ
 afterEach(() => { for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
 describe("entity migration legacy adapters", () => {
+  it("archives every verified plan archive without changing tasks and rolls the cutover back exactly", () => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    const plans = [
+      [".agentera/plan.yaml", "123e4567-e89b-42d3-a456-426614174000", "open", "pending"],
+      [".agentera/archive/PLAN-incomplete.yaml", "223e4567-e89b-42d3-a456-426614174000", "open", "pending"],
+      [".agentera/archive/PLAN-complete.yaml", "323e4567-e89b-42d3-a456-426614174000", "complete", "complete"],
+      [".agentera/archive/PLAN-empty.yaml", "423e4567-e89b-42d3-a456-426614174000", "open", null],
+    ] as const;
+    for (const [sourcePath, id, status, taskStatus] of plans) write(root, sourcePath, `header:\n  id: plan:${id}\n  title: ${path.basename(sourcePath)}\n  created: 2026-07-17\n  status: ${status}\nwhat: migrate\nwhy: preserve lifecycle\nscope: {included: [state], excluded: []}\ntasks:${taskStatus ? `\n  - number: 1\n    name: Preserve task\n    status: ${taskStatus}\n    depends_on: []\n    acceptance: [pass]` : " []"}\n`);
+    const originals = new Map(plans.map(([sourcePath]) => [sourcePath, fs.readFileSync(path.join(root, sourcePath), "utf8")]));
+
+    const migration = planEntityMigration(root, SOURCE_ROOT);
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "ready", counts: { blockers: 0 } });
+    const migratedPlans = migration.entries.filter((entry) => entry.boundary === "plan");
+    const active = migratedPlans.find((entry) => entry.source_paths.includes(".agentera/plan.yaml"));
+    expect((active?.record.header as Record<string, unknown>).status).toBe("open");
+    for (const [sourcePath, , sourceStatus] of plans.slice(1)) {
+      const migrated = migratedPlans.find((entry) => entry.source_paths.includes(sourcePath));
+      expect((migrated?.record.header as Record<string, unknown>).status).toBe("archived");
+      expect(migrated?.migration_provenance).toEqual(expect.arrayContaining([expect.objectContaining({
+        source_path: sourcePath,
+        source_lifecycle: "verified_plan_archive",
+        source_status: sourceStatus,
+        target_status: "archived",
+      })]));
+    }
+    expect(migratedPlans.find((entry) => entry.source_paths.includes(".agentera/archive/PLAN-incomplete.yaml"))?.record).not.toHaveProperty("tasks");
+    expect(migration.entries.filter((entry) => entry.boundary === "plan_task").map((entry) => entry.record.status).sort()).toEqual(["complete", "pending", "pending"]);
+
+    const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    expect(validateEntityState(root, SOURCE_ROOT)).toMatchObject({ valid: true });
+    expect((currentPlanEntityView(root, undefined, undefined, undefined, { sourceRoot: SOURCE_ROOT }).plan as Record<string, any>).record.header.status).toBe("open");
+    expect((listPlanEntities(root, 100, undefined, { sourceRoot: SOURCE_ROOT, statuses: ["archived"] }).counts as Record<string, unknown>).total).toBe(3);
+    const previousCwd = process.cwd(); process.chdir(root);
+    try {
+      for (const args of [["state", "plan", "--format", "json"], ["prime", "--context", "build", "--format", "json"]]) {
+        let out = "", err = "";
+        const rc = main(["node", "agentera", ...args], { out: (text) => out += text, err: (text) => err += text });
+        expect(rc, err || out).toBe(0);
+      }
+    } finally { process.chdir(previousCwd); }
+    expect(rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id)).toMatchObject({ status: "rolled_back" });
+    for (const [sourcePath, bytes] of originals) expect(fs.readFileSync(path.join(root, sourcePath), "utf8")).toBe(bytes);
+  });
+
   it("normalizes docs statuses, Task dependencies, mobile task shape, and incomplete completed plans with provenance", () => {
     const root = project();
     write(root, ".agentera/docs.yaml", "index:\n  - document: Idea\n    path: IDEA.md\n    last_updated: 2026-07-17\n    status: draft\n  - document: Old\n    path: OLD.md\n    last_updated: 2026-07-17\n    status: archived\n");
@@ -91,7 +139,8 @@ describe("entity migration legacy adapters", () => {
     const migration = planEntityMigration(root, SOURCE_ROOT);
     const plan = migration.entries.find((entry) => entry.boundary === "plan");
     expect(plan?.record.scope).toEqual({ included: ["first", "second"], excluded: ["never"], deferred: ["later", "punctuation: exactly"] });
-    expect(plan?.migration_provenance).toBeUndefined();
+    if (_shape === "archived") expect(plan?.migration_provenance).toEqual(expect.arrayContaining([expect.objectContaining({ source_path: sourcePath, source_status: planStatus, target_status: "archived" })]));
+    else expect(plan?.migration_provenance).toBeUndefined();
     expect(validateEntityMigrationTargets(root, migration.entries, SOURCE_ROOT)).toEqual([]);
     const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
     expect(preview).toMatchObject({ status: "ready", counts: { blockers: 0 } });

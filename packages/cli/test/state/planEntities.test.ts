@@ -114,7 +114,7 @@ describe("plan and task entity authority", () => {
     result = capture(root, ["state", "plan", "record-evaluation", "--plan", planId, "--id", added, "--attempt-id", "audit-1", "--verdict", "pass", "--provenance", "test", "--format", "json"]); expect(result.rc).toBe(0);
     for (const id of [first, added]) { result = capture(root, ["state", "plan", "set-status", "--plan", planId, "--id", id, "--status", "complete", "--format", "json"]); expect(result.rc).toBe(0); }
     result = capture(root, ["state", "plan", "set-plan-status", "--plan", planId, "--status", "complete", "--format", "json"]); expect(result.rc).toBe(0);
-    result = capture(root, ["state", "plan", "archive", "--plan", planId, "--format", "json"]); expect(result.rc).toBe(0); expect(JSON.parse(result.out).operation.idempotent_replay).toBe(true);
+    result = capture(root, ["state", "plan", "archive", "--plan", planId, "--format", "json"]); expect(result.rc).toBe(0); expect(JSON.parse(result.out)).toMatchObject({ record: { header: { status: "archived" } }, operation: { idempotent_replay: false } });
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
   });
 
@@ -150,6 +150,33 @@ describe("plan and task entity authority", () => {
     const ambiguous = capture(root, ["state", "plan", "append", "--name", "No owner", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(ambiguous.err).toMatch(new RegExp(`${first.id}.*${second.id}|${second.id}.*${first.id}`));
     expect(capture(root, ["state", "plan", "append", "--plan", second.id, "--name", "Explicit", "--format", "json"]).rc).toBe(0);
     const empty = project(); const missing = capture(empty, ["state", "plan", "append", "--name", "Missing", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.err).toMatch(/no open plan/i);
+  });
+
+  it("keeps one active plan unambiguous beside more than twenty archived plans and exposes archived exact/filter reads", () => {
+    const root = project(); const active = create(root, "active"); const archived: any[] = [];
+    for (let index = 0; index < 21; index += 1) {
+      const historical = create(root, `historical-${index}`);
+      const result = capture(root, ["state", "plan", "archive", "--plan", historical.id, "--format", "json"]);
+      expect(result.rc, result.err || result.out).toBe(0);
+      expect(JSON.parse(result.out).record.header.status).toBe("archived");
+      archived.push(historical);
+    }
+
+    const current = capture(root, ["state", "plan", "--format", "json"]);
+    expect(current.rc, current.err || current.out).toBe(0);
+    expect(JSON.parse(current.out).plan.id).toBe(active.id);
+    const filtered = capture(root, ["state", "plan", "list", "--status", "archived", "--limit", "100", "--format", "json"]);
+    expect(filtered.rc, filtered.err || filtered.out).toBe(0);
+    expect(JSON.parse(filtered.out)).toMatchObject({ counts: { total: 21, returned: 21 }, filters: { status: ["archived"] } });
+    const exact = capture(root, ["state", "plan", "get", "--id", archived[0].id, "--format", "json"]);
+    expect(exact.rc, exact.err || exact.out).toBe(0);
+    expect(JSON.parse(exact.out).entry.record.header.status).toBe("archived");
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 44 });
+
+    const archivedInput = plan("ordinary archived create"); (archivedInput.header as Record<string, unknown>).status = "archived";
+    const input = path.join(root, "archived.yaml"); fs.writeFileSync(input, dumpYamlMapping(archivedInput));
+    expect(capture(root, ["state", "plan", "create", "--input", input, "--format", "json"]).rc).not.toBe(0);
+    expect(capture(root, ["state", "plan", "set-plan-status", "--plan", active.id, "--status", "archived", "--format", "json"]).rc).not.toBe(0);
   });
 
   it("rejects missing, cross-plan, self, and cyclic dependencies without changing the task", () => {

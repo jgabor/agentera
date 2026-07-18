@@ -452,8 +452,25 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
     if (seen.has(marker)) continue;
     seen.add(marker);
     const sourcePath = relative(root, identity.artifact.path);
+    const archived = identity.artifact.path !== active;
+    const source = files.find((candidate) => candidate.relative === sourcePath);
+    let sourceStatus = String((mapping(identity.artifact.data.header) ?? {}).status ?? "");
+    if (source?.kind === "file") {
+      const sourceDocument = parseYaml(source);
+      sourceStatus = String((mapping(sourceDocument.header) ?? {}).status ?? "");
+    }
+    const planRecord = structuredClone(identity.artifact.data);
+    const migratedHeader = mapping(planRecord.header);
+    if (archived && migratedHeader) migratedHeader.status = "archived";
+    const migrationProvenance = archived ? {
+      ...identity.artifact.migrationProvenance,
+      source_path: sourcePath,
+      source_lifecycle: "verified_plan_archive",
+      source_status: sourceStatus,
+      target_status: "archived",
+    } : identity.artifact.migrationProvenance ? { ...identity.artifact.migrationProvenance, source_path: sourcePath } : undefined;
     const classificationDetail = identity.ambiguous ? "corrupt" : "full";
-    observations.push({ key: identity.stableId, artifact: "plan", boundary: "plan", path: sourcePath, provenance: identity.artifact.path === active ? "current_canonical" : "verified_plan_archive", record: identity.artifact.data, detail: classificationDetail, relationships: [], message: identity.ambiguous ? "plan identity resolves to conflicting documents" : undefined, ...(identity.artifact.migrationProvenance ? { migrationProvenance: { ...identity.artifact.migrationProvenance, source_path: sourcePath } } : {}) });
+    observations.push({ key: identity.stableId, artifact: "plan", boundary: "plan", path: sourcePath, provenance: archived ? "verified_plan_archive" : "current_canonical", record: planRecord, detail: classificationDetail, relationships: [], message: identity.ambiguous ? "plan identity resolves to conflicting documents" : undefined, ...(migrationProvenance ? { migrationProvenance } : {}) });
     const parts = planDocumentParts(identity.artifact.data);
     parts.tasks.forEach((task, index) => {
       const number = task.number;

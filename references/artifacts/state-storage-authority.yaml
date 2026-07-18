@@ -82,7 +82,7 @@ entity_target:
         list: agentera state health list [--limit N] [--cursor TOKEN] --format json
         get: agentera state health get --id ID --format json
       plans:
-        list: agentera state plan list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] --format json
         get: agentera state plan get --id ID --format json
       plan_tasks:
         list: agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json

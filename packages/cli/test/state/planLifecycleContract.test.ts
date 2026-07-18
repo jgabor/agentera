@@ -108,10 +108,10 @@ describe("plan lifecycle contract", () => {
     const contract = lifecycleContract();
 
     expect(contract.authority).toBe("this schema");
-    expect(contract.canonical.persisted_status.values).toEqual(["open", "complete"]);
-    expect(contract.canonical.position.persisted).toBe(false);
+    expect(contract.canonical.persisted_status.values).toEqual(["open", "complete", "archived"]);
+    expect(contract.canonical.position.persisted).toBe(true);
     expect(contract.canonical.execution.archived).toContain("non-executable");
-    expect(contract.canonical.forced_archive.unfinished_status).toBe("open");
+    expect(contract.canonical.forced_archive.unfinished_status).toBe("archived");
   });
 
   it("bounds legacy reads and classifies every lifecycle-bearing repository surface", () => {

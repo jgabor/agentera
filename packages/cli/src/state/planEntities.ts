@@ -23,7 +23,7 @@ const ARTIFACT = "plan";
 const PLAN = "plan";
 const TASK = "plan_task";
 const ID = /^[a-z]{10}$/;
-const OPEN = new Set(["open", "active"]);
+const OPEN = new Set(["open"]);
 const ORDER = "created_desc_then_id_asc";
 const TASK_ORDER = "id_asc";
 
@@ -194,16 +194,17 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
   }
   if (req.spec.verb === "set-plan-status" || req.spec.verb === "archive") {
     const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id);
-    const requested = req.spec.verb === "archive" ? "complete" : String(req.values.status);
-    if (requested === "complete" && tasks.some((task) => task.record?.status !== "complete")) reject({ class: "conflict", message: "plan cannot be completed or archived while incomplete tasks remain" });
-    if (req.spec.verb === "archive" && planStatus(plan) !== "complete") reject({ class: "conflict", message: "plan must be complete before archive; set the plan status after completing every task" });
-    if (req.spec.verb === "archive") return envelope("state plan archive", { id: plan.id!, path: plan.path, replay: true }, plan.record!, req.dryRun);
+    const requested = req.spec.verb === "archive" ? "archived" : String(req.values.status);
+    if (requested === "complete" && tasks.some((task) => task.record?.status !== "complete")) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
+    if (planStatus(plan) === "archived" && req.spec.verb !== "archive") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
     const record = structuredClone(plan.record!); const header = mapping(record.header) ? record.header : {}; header.status = requested; record.header = header;
-    if (canonicalRecordJson(record) === canonicalRecordJson(plan.record)) return envelope("state plan set-plan-status", { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun);
-    if (req.dryRun) return envelope("state plan set-plan-status", { id: plan.id!, path: plan.path, replay: false }, record, true);
+    const command = req.spec.verb === "archive" ? "state plan archive" : "state plan set-plan-status";
+    if (canonicalRecordJson(record) === canonicalRecordJson(plan.record)) return envelope(command, { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun);
+    if (req.dryRun) return envelope(command, { id: plan.id!, path: plan.path, replay: false }, record, true);
     const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, record });
-    return envelope("state plan set-plan-status", result, record, false);
+    return envelope(command, result, record, false);
   }
+  if (planStatus(plan) === "archived") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
   const taskId = String(req.values.id ?? ""); const task = taskFor(entities, taskId, plan.id!); const record = structuredClone(task.record!);
   if (req.spec.verb === "update") {
     const taskFields = ["name", "depends_on", "acceptance", "status", "evidence", "blocked_reason"];

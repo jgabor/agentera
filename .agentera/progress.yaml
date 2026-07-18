@@ -1,4 +1,26 @@
 cycles:
+  - number: 916
+    timestamp: 2026-07-18 06:19
+    type: fix
+    phase: build
+    what: Added archived plan lifecycle semantics for entity migration and canonical
+      plan state.
+    inspiration: Task14 parity failure after the first successful entity apply and
+      guarded rollback.
+    discovered: Verified archive source plans retained open lifecycle in entity
+      targets, so 21 historical plans competed with the active plan.
+    verified: 2681 tests passed; typecheck, build, state validation, 12 capability
+      validations, capability contract, compact, and blocker-free 1463-entity
+      dry-run passed.
+    next: Task14 remains pending; do not apply the live migration until separately
+      authorized.
+    context:
+      intent: Preserve verified archive plans as historical entities without making
+        them active or rewriting their tasks.
+      constraints: No live apply, Task15, version, changelog, vision, task status, or
+        manual YAML edits.
+      scope: Plan entity migration, lifecycle validation/writers, plan list
+        filtering/help, shared plan authority/schema, and focused tests.
   - number: 915
     timestamp: 2026-07-18 05:51
     type: fix
@@ -214,35 +236,6 @@ cycles:
         archives.
       scope: Entity authority, shared entity record validation, migration adapter
         tests, entity validation tests, plan/progress state.
-  - number: 906
-    timestamp: 2026-07-18 01:06
-    type: fix
-    phase: build
-    what: Normalized lossless legacy plan omissions and made preview validate every
-      final canonical target through the same authority-backed envelope and
-      graph boundary used by apply.
-    inspiration: Task14 retry2/2 FINAL after approved apply rejected a legacy plan
-      task missing canonical required list fields.
-    discovered: "Complete target validation exposed only deterministic legacy plan
-      representations: absent/null/empty list fields, scalar list values,
-      one-entry YAML acceptance mappings, completed task status, and absent
-      scope."
-    verified: Focused migration and protocol suite passed 134 tests; full CLI passed
-      2,622 tests across 218 files; typecheck and build passed; all 12
-      capabilities, capability contract 2/2, state validation, compact, and a
-      blocker-free 1,449-target canonical validation passed.
-    next: Task14 remains pending. An independent audit must review a fresh
-      post-commit candidate approval before any separately authorized live
-      apply.
-    context:
-      intent: Fix only the second approved Task14 apply defect and preview/apply
-        target parity without applying the cutover.
-      constraints: No live apply, Task14 completion, Task15, version, changelog,
-        vision, manual YAML edit, remote, amend, push, publish, or tag.
-      unknowns: Independent audit and live apply authorization remain unresolved.
-      scope: Legacy plan migration adapters, shared canonical target validation,
-        preview digest binding, apply defense checks, authority contract, and
-        migration regressions.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -312,6 +305,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 906 (2026-07-18): Normalized lossless legacy plan omissions and
+      made preview validate every final canonical target through the..."
   - summary: "Cycle 905 (2026-07-18): Preserved historical projection residues as
       immutable nonentity migration evidence while publishing and validating
       only canonical..."
@@ -409,16 +404,18 @@ archive:
   - summary: "Cycle 867 (2026-07-16): Replaced link-count stale-lock election with
       an exclusive descriptor-pinned claim and recoverable owner transition,
       then added..."
-  - summary: "Cycle 866 (2026-07-16): Hardened writer-lock initialization with
-      atomic publication, descriptor-pinned exact-owner reclamation, and
-      actionable legacy-file conflicts."
 omitted: true
-omitted_count: 151
+omitted_count: 152
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

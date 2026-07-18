@@ -26,6 +26,13 @@ export function validatePlanCreateInput(input: Record<string, unknown>): void {
       violations: ["header.id is assigned by the validated plan writer"],
     });
   }
+  if (header.status === "archived") {
+    reject({
+      class: "schema_violation",
+      message: "plan create cannot publish an archived plan",
+      violations: ["header.status archived is owned by agentera state plan archive"],
+    });
+  }
   const tasks = Array.isArray(input.tasks) ? input.tasks.filter(isRecord) : [];
   const numbers = tasks.map((task) => Number(task.number));
   const expected = tasks.map((_, index) => index + 1);
