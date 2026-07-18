@@ -1,0 +1,16 @@
+id: jmpnifbsby
+artifact: progress
+record:
+  timestamp: 2026-07-18 14:22
+  type: fix
+  phase: build
+  what: Shipped the Git-only one-command v2-to-v3 development upgrade contract across CLI help, UPGRADE.md, the shared skill, channel and state-storage authorities, release notes, and bundled package data. Corrected packed npm execution to prefer configured v2 managed-app evidence over the running v3 bundle so cross-major entity cutover runs. Added extracted-package and contract regressions.
+  context:
+    intent: Complete plan task cugspwxwgl by proving the public full upgrade from the packed development package and synchronizing active release contracts.
+    constraints: No publish, tag, push, stable-v2 behavior, vision/profile, unrelated TODO, or Task 4 closeout changes.
+    unknowns: "Resolved: packed npm source-root classification must not mask configured v2 managed-app evidence."
+    scope: Upgrade classification, active upgrade guidance and authorities, package metadata and bundle inputs, release notes, and package integration tests.
+  inspiration: Plan xfdsbawvzk task cugspwxwgl and the independently passed bvpqawhzhb and sbebutulja audits.
+  discovered: Packed execution initially classified its own v3 bundle before the configured v2 managed app, skipping cross-major entity cutover; app evidence must take precedence.
+  verified: Passed 217 test files and 2591 tests; typecheck; build; build capability and capability-contract validation; state validation with 1488 entities and zero issues; compaction; release-metadata validation; npm pack dry-run for 3.0.0-dev.25; and extracted-package tracked-v2 upgrade with entity authority plus prime.
+  next: Task yqvarvxadk owns final plan, progress, docs inventory, health, manual-review TODO, and worktree closeout.
