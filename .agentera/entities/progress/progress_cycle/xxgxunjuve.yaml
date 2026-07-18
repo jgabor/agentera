@@ -1,0 +1,15 @@
+id: xxgxunjuve
+artifact: progress
+record:
+  timestamp: 2026-07-18 20:38
+  type: fix
+  phase: build
+  what: Corrected the first independent-evaluation findings for exclusive upgrade mutation ownership.
+  context:
+    intent: Keep the two-domain lock design while supporting project/home overlap, token-only ownership, and attempt-owned empty-directory cleanup.
+    constraints: No new domains, leases, liveness, takeover, retries, registries, journals, generalized lock framework, plan tasks, release, or push.
+    unknowns: none
+    scope: packages/cli/src/upgrade/upgradeLock.ts, upgradeOrchestrator.ts, state/entityCutover.ts, and the existing proportional upgrade lock/cutover tests.
+  inspiration: Independent evaluation qrdnhmioyq-audit-1.
+  verified: "Finding 1: the overlapping project/home full-cutover case passed, with entity preflight allowing the two existing held lock paths while the unrelated-dirty-checkout coverage still rejects arbitrary files. Finding 2: the shared-runtime lock case proved release removes a .agentera parent created by that attempt when it remains empty. Finding 3: the same-project case proved the on-disk record equals exactly {token}; checked release and stale manual handoff still pass. Focused upgrade tests passed 64/64, full CLI tests passed 2587/2587, and pnpm run typecheck plus pnpm run build passed."
+  next: Leave Task qrdnhmioyq in_progress for independent re-audit; do not start another task.

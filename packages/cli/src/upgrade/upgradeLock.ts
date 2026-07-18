@@ -5,15 +5,14 @@ import path from "node:path";
 export type UpgradeMutationDomain = "project" | "runtime";
 
 interface UpgradeLockRecord {
-  pid: number;
   token: string;
-  started: string;
 }
 
 export interface UpgradeLock {
   domain: UpgradeMutationDomain;
   path: string;
   token: string;
+  createdParent: boolean;
 }
 
 const MAX_LOCK_BYTES = 4 * 1024;
@@ -33,6 +32,16 @@ function manualRecovery(lockPath: string): Error {
   return new UpgradeLockError(lockPath);
 }
 
+function removeCreatedParent(parent: string, created: boolean): void {
+  if (!created) return;
+  try {
+    fs.rmdirSync(parent);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT" && code !== "ENOTEMPTY" && code !== "EEXIST") throw error;
+  }
+}
+
 function lockRecord(lockPath: string): UpgradeLockRecord | null {
   try {
     const stat = fs.lstatSync(lockPath);
@@ -41,11 +50,9 @@ function lockRecord(lockPath: string): UpgradeLockRecord | null {
     if (
       value === null
       || typeof value !== "object"
-      || !Number.isSafeInteger((value as { pid?: unknown }).pid)
-      || (value as { pid: number }).pid <= 0
+      || Object.keys(value).length !== 1
       || typeof (value as { token?: unknown }).token !== "string"
       || (value as { token: string }).token.length === 0
-      || typeof (value as { started?: unknown }).started !== "string"
     ) return null;
     return value as UpgradeLockRecord;
   } catch {
@@ -55,26 +62,35 @@ function lockRecord(lockPath: string): UpgradeLockRecord | null {
 
 export function acquireUpgradeLock(root: string, domain: UpgradeMutationDomain): UpgradeLock {
   const lockPath = upgradeLockPath(root, domain);
-  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  const parent = path.dirname(lockPath);
+  let createdParent = false;
+  try {
+    fs.mkdirSync(parent);
+    createdParent = true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+  }
   const token = randomUUID();
   let fd: number;
   try {
     fd = fs.openSync(lockPath, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL, 0o600);
   } catch (error) {
+    removeCreatedParent(parent, createdParent);
     if ((error as NodeJS.ErrnoException).code === "EEXIST") throw manualRecovery(lockPath);
     throw error;
   }
   try {
-    fs.writeFileSync(fd, `${JSON.stringify({ pid: process.pid, token, started: new Date().toISOString() })}\n`);
+    fs.writeFileSync(fd, `${JSON.stringify({ token })}\n`);
     fs.fsyncSync(fd);
   } finally {
     fs.closeSync(fd);
   }
-  return { domain, path: lockPath, token };
+  return { domain, path: lockPath, token, createdParent };
 }
 
 export function releaseUpgradeLock(lock: UpgradeLock): void {
   const record = lockRecord(lock.path);
   if (!record || record.token !== lock.token) throw manualRecovery(lock.path);
   fs.unlinkSync(lock.path);
+  removeCreatedParent(path.dirname(lock.path), lock.createdParent);
 }

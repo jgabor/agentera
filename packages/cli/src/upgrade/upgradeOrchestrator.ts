@@ -232,9 +232,10 @@ function entityReadinessPhase(
   pendingV1Artifacts: boolean,
   selected: boolean,
   apply: boolean,
+  activeUpgradeLockPaths: readonly string[],
 ): UpgradeOrchestratorPhase {
   try {
-    const cutover = inspectEntityCutoverForUpgrade(project, sourceRoot, apply && selected);
+    const cutover = inspectEntityCutoverForUpgrade(project, sourceRoot, apply && selected, activeUpgradeLockPaths);
     if (cutover.phase === "active") {
       return summarizeOrchestratorPhase("entities", [{
         status: "noop",
@@ -361,13 +362,13 @@ function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhas
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
-  if (!args.yes) return buildUpgradePlanUnlocked(args, home, project);
+  if (!args.yes) return buildUpgradePlanUnlocked(args, home, project, []);
 
   const projectLock = acquireUpgradeLock(project, "project");
   try {
     const runtimeLock = acquireUpgradeLock(home, "runtime");
     try {
-      return buildUpgradePlanUnlocked(args, home, project);
+      return buildUpgradePlanUnlocked(args, home, project, [projectLock.path, runtimeLock.path]);
     } finally {
       releaseUpgradeLock(runtimeLock);
     }
@@ -380,6 +381,7 @@ function buildUpgradePlanUnlocked(
   args: UpgradeOrchestratorArgs,
   home: string,
   project: string,
+  activeUpgradeLockPaths: readonly string[],
 ): UpgradePlanV2 {
   const sourceRoot = resolveSourceRootStrict();
   const env: Record<string, string | undefined> = { ...process.env, HOME: home };
@@ -440,7 +442,7 @@ function buildUpgradePlanUnlocked(
   const entitySelected = entityBoundary && (!filteredEntityBoundary || (!args.yes && Boolean(args.only?.includes("artifacts"))));
   const partialStateApply = filteredEntityBoundary && !entitySelected;
   let entityPhase = entitySelected || partialStateApply || (entityAuthorityActive && crossMajorMigration)
-    ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected, Boolean(args.yes))
+    ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected, Boolean(args.yes), activeUpgradeLockPaths)
     : null;
   const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;
   if (args.yes && (entityCutoverPending || entityAuthorityActive)) {
@@ -472,10 +474,10 @@ function buildUpgradePlanUnlocked(
 
   let preparedEntityMigration: PreparedEntityCutover | null = null;
   if (args.yes && entitySelected && entityPhase?.status === "pending" && !preflightBlocked) {
-    preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot);
+    preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot, activeUpgradeLockPaths);
   }
   if (preparedEntityMigration) {
-    const result = applyPreparedEntityCutover(preparedEntityMigration);
+    const result = applyPreparedEntityCutover(preparedEntityMigration, activeUpgradeLockPaths);
     entityPhase = summarizeOrchestratorPhase("entities", [{
       status: "applied",
       action: "entity-cutover",

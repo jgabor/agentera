@@ -87,7 +87,8 @@ function treeBytes(root: string, relative = "."): Record<string, string> {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (entry.name === ".git") continue;
       const absolute = path.join(directory, entry.name);
-      if (entry.isDirectory()) visit(absolute);
+      if (entry.isSymbolicLink()) result[path.relative(root, absolute).split(path.sep).join("/")] = `link:${fs.readlinkSync(absolute)}`;
+      else if (entry.isDirectory()) visit(absolute);
       else result[path.relative(root, absolute).split(path.sep).join("/")] = fs.readFileSync(absolute).toString("base64");
     }
   };
@@ -115,14 +116,13 @@ afterEach(() => {
 describe("one-way Git entity cutover", () => {
   it("cuts over a clean tracked v2 project without consuming or deleting migration inputs", () => {
     const root = project();
+    const appHome = managedV2(root);
     initializeGit(root);
     const sourceBefore = new Map([
       [".agentera/plan.yaml", fs.readFileSync(path.join(root, ".agentera/plan.yaml"))],
       [".agentera/progress.yaml", fs.readFileSync(path.join(root, ".agentera/progress.yaml"))],
     ]);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
-    roots.push(home);
-    const appHome = managedV2(home);
+    const home = root;
 
     const applied = applyUpgrade(root, appHome, home);
 

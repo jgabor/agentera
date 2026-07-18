@@ -30,7 +30,7 @@ describe("upgrade mutation ownership", () => {
     expect(() => acquireUpgradeLock(project, "project")).toThrow(
       `inspect ${upgradeLockPath(project, "project")}`,
     );
-    expect(JSON.parse(fs.readFileSync(owner.path, "utf8"))).toMatchObject({ token: owner.token });
+    expect(JSON.parse(fs.readFileSync(owner.path, "utf8"))).toEqual({ token: owner.token });
 
     releaseUpgradeLock(owner);
   });
@@ -48,6 +48,7 @@ describe("upgrade mutation ownership", () => {
     expect(fs.existsSync(secondApp)).toBe(true);
 
     releaseUpgradeLock(owner);
+    expect(fs.existsSync(path.join(home, ".agentera"))).toBe(false);
   });
 
   it("does not block an independent mutation domain", () => {
@@ -66,9 +67,7 @@ describe("upgrade mutation ownership", () => {
     const project = root("release");
     const owner = acquireUpgradeLock(project, "project");
     fs.writeFileSync(owner.path, `${JSON.stringify({
-      pid: 999_999_999,
       token: "stale-owner",
-      started: "2020-01-01T00:00:00.000Z",
     })}\n`);
 
     expect(() => releaseUpgradeLock(owner)).toThrow(

@@ -4,7 +4,6 @@ import path from "node:path";
 
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { writeFileAtomic } from "../upgrade/atomicWriter.js";
-import { upgradeLockPath } from "../upgrade/upgradeLock.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { verifyEntityCutoverGitSource } from "./entityCutoverGit.js";
 import { canonicalEntityEnvelopeBytes, validateEntityState } from "./entityStorage.js";
@@ -230,7 +229,13 @@ export function loadEntityCutoverTargetsForMarker(projectRoot: string, bytes: Bu
   throw new EntityCutoverError("entity marker has no supported one-way or historical cutover binding");
 }
 
-function inspect(projectRoot: string, sourceRoot: string, requireGit: boolean, writerLockHeld = false): { inspection: EntityCutoverInspection; plan?: DurableEntityMigrationPlan; head?: string } {
+function inspect(
+  projectRoot: string,
+  sourceRoot: string,
+  requireGit: boolean,
+  writerLockHeld = false,
+  activeUpgradeLockPaths: readonly string[] = [],
+): { inspection: EntityCutoverInspection; plan?: DurableEntityMigrationPlan; head?: string } {
   const project = validateRealProjectRoot(projectRoot).path;
   const marker = markerSnapshot(project);
   if (marker.kind === "file") return { inspection: { phase: "active", entityCount: validateActiveEntityCutover(project, marker.bytes, sourceRoot) } };
@@ -246,8 +251,14 @@ function inspect(projectRoot: string, sourceRoot: string, requireGit: boolean, w
 
   let head: string | undefined;
   if (requireGit) {
-    const projectUpgradeLock = path.relative(project, upgradeLockPath(project, "project")).split(path.sep).join("/");
-    const allowedPaths = new Set<string>([FORWARD_MANIFEST, ENTITY_MODE_MARKER, projectUpgradeLock]);
+    const allowedPaths = new Set<string>([FORWARD_MANIFEST, ENTITY_MODE_MARKER]);
+    for (const activeLockPath of activeUpgradeLockPaths) {
+      if (!fs.existsSync(activeLockPath)) continue;
+      const relative = path.relative(project, path.resolve(activeLockPath));
+      if (relative !== "" && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) {
+        allowedPaths.add(relative.split(path.sep).join("/"));
+      }
+    }
     if (manifest) for (const target of targets) allowedPaths.add(target.path);
     const binding = verifyEntityCutoverGitSource(project, plan, { paths: allowedPaths, prefixes: [MIGRATION_STAGING, ...(writerLockHeld ? [".agentera/.writer.lock"] : [])] });
     head = binding.head;
@@ -256,12 +267,21 @@ function inspect(projectRoot: string, sourceRoot: string, requireGit: boolean, w
   return { inspection: { phase: manifest?.phase ?? "ready", entityCount: targets.length }, plan, ...(head ? { head } : {}) };
 }
 
-export function inspectEntityCutoverForUpgrade(projectRoot: string, sourceRoot: string, requireGit = false): EntityCutoverInspection {
-  return inspect(projectRoot, sourceRoot, requireGit).inspection;
+export function inspectEntityCutoverForUpgrade(
+  projectRoot: string,
+  sourceRoot: string,
+  requireGit = false,
+  activeUpgradeLockPaths: readonly string[] = [],
+): EntityCutoverInspection {
+  return inspect(projectRoot, sourceRoot, requireGit, false, activeUpgradeLockPaths).inspection;
 }
 
-export function prepareEntityCutoverForUpgrade(projectRoot: string, sourceRoot: string): PreparedEntityCutover {
-  const current = inspect(projectRoot, sourceRoot, true);
+export function prepareEntityCutoverForUpgrade(
+  projectRoot: string,
+  sourceRoot: string,
+  activeUpgradeLockPaths: readonly string[] = [],
+): PreparedEntityCutover {
+  const current = inspect(projectRoot, sourceRoot, true, false, activeUpgradeLockPaths);
   if (current.inspection.phase === "active" || !current.plan || !current.head) throw new EntityCutoverError("entity authority is already active; no cutover preparation is available");
   return { project: current.plan.project, sourceRoot, head: current.head, sourceFingerprint: current.plan.source_fingerprint, previewDigest: current.plan.preview_digest };
 }
@@ -358,14 +378,17 @@ function fault(phase: string): void {
   if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === phase) throw new EntityCutoverError(`simulated entity cutover interruption after ${phase}`);
 }
 
-export function applyPreparedEntityCutover(prepared: PreparedEntityCutover): EntityCutoverResult {
-  const before = inspect(prepared.project, prepared.sourceRoot, true);
+export function applyPreparedEntityCutover(
+  prepared: PreparedEntityCutover,
+  activeUpgradeLockPaths: readonly string[] = [],
+): EntityCutoverResult {
+  const before = inspect(prepared.project, prepared.sourceRoot, true, false, activeUpgradeLockPaths);
   if (before.inspection.phase === "active") return { status: "complete", phase: "active", idempotent: true, mutation_performed: false, entity_count: before.inspection.entityCount };
   if (!before.plan || before.head !== prepared.head || before.plan.source_fingerprint !== prepared.sourceFingerprint || before.plan.preview_digest !== prepared.previewDigest) throw new EntityCutoverError("Git-pinned entity cutover preparation changed before apply");
 
   const lock = acquireWriterLock(prepared.project, 2000);
   try {
-    const current = inspect(prepared.project, prepared.sourceRoot, true, true);
+    const current = inspect(prepared.project, prepared.sourceRoot, true, true, activeUpgradeLockPaths);
     if (current.inspection.phase === "active") return { status: "complete", phase: "active", idempotent: true, mutation_performed: false, entity_count: current.inspection.entityCount };
     const plan = current.plan!;
     if (current.head !== prepared.head || plan.source_fingerprint !== prepared.sourceFingerprint || plan.preview_digest !== prepared.previewDigest) throw new EntityCutoverError("Git-pinned entity cutover source changed before its first publication effect");
