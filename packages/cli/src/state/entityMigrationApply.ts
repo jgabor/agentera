@@ -17,6 +17,7 @@ import {
   entityMigrationOperationId,
   inspectEntityMigrationPreparation,
   EntityMigrationPreparationInspectionError,
+  type EntityMigrationPreparationReceipt,
 } from "./entityMigrationPreparation.js";
 
 const ROOT = ENTITY_MIGRATION_ROOT;
@@ -186,7 +187,15 @@ function assertNoCanonicalState(project: string, sourceRoot: string): void {
   const discovered = discoverEntities(project, sourceRoot);
   if (discovered.entities.length || discovered.issues.length) throw new EntityMigrationOperationError("entity_collision", "canonical entity paths are not empty before migration apply", "Run agentera check validate state, preserve the existing entities, and resolve ownership before retrying; no journal was created.");
 }
-interface Preparation { name: string; id: string; relative: string; targets: string[]; directory: { dev: string; ino: string } }
+interface Preparation {
+  name: string;
+  id: string;
+  relative: string;
+  targets: string[];
+  directory: { dev: string; ino: string };
+  receiptsDirectory: { dev: string; ino: string };
+  receipts: EntityMigrationPreparationReceipt[];
+}
 
 function preparationError(message: string): never {
   throw new EntityMigrationOperationError("preparation_invalid", message, "Preserve the preparation and canonical state; remove nothing manually, then repair or quarantine only with a tested migration maintenance path.");
@@ -196,32 +205,119 @@ function inspectPreparations(project: string, current?: DurableEntityMigrationPl
   if (!current) return [];
   try {
     const inspected = inspectEntityMigrationPreparation(project, current);
-    return inspected ? [{ name: inspected.name, id: inspected.id, relative: inspected.relative_path, targets: inspected.targets, directory: inspected.directory }] : [];
+    return inspected ? [{ name: inspected.name, id: inspected.id, relative: inspected.relative_path, targets: inspected.targets, directory: inspected.directory, receiptsDirectory: inspected.receipts_directory, receipts: inspected.receipts }] : [];
   } catch (error) {
     if (error instanceof EntityMigrationPreparationInspectionError) return preparationError(error.message);
     throw error;
   }
 }
 
+function receiptIdentity(parentFd: number, name: string, relativePath: string): EntityMigrationPreparationReceipt {
+  let fd: number | undefined;
+  try {
+    const linked = fs.lstatSync(fdPath(parentFd, name), { bigint: true });
+    if (!linked.isFile() || linked.isSymbolicLink() || linked.nlink !== 1n) preparationError(`stale preparation receipt '${relativePath}' is not an unlinked regular file`);
+    fd = fs.openSync(fdPath(parentFd, name), fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    const before = fs.fstatSync(fd, { bigint: true }); const bytes = fs.readFileSync(fd); const after = fs.fstatSync(fd, { bigint: true });
+    if (!after.isFile() || after.nlink !== 1n || before.dev !== after.dev || before.ino !== after.ino || before.mode !== after.mode || before.size !== after.size || BigInt(bytes.length) !== after.size) preparationError(`stale preparation receipt '${relativePath}' changed while inspected`);
+    return { path: relativePath, dev: String(after.dev), ino: String(after.ino), type: String(after.mode & BigInt(fs.constants.S_IFMT)), mode: String(after.mode), size: String(after.size), sha256: hash(bytes) };
+  } catch (error) {
+    if (error instanceof EntityMigrationOperationError) throw error;
+    return preparationError(`stale preparation receipt '${relativePath}' is unsafe or changed while inspected`);
+  } finally { if (fd !== undefined) fs.closeSync(fd); }
+}
+
+function inspectBoundPreparation(stageFd: number, preparation: Preparation, stageName: string): { receiptsFd: number; inventory: EntityMigrationPreparationReceipt[] } {
+  const stage = fs.fstatSync(stageFd, { bigint: true });
+  if (String(stage.dev) !== preparation.directory.dev || String(stage.ino) !== preparation.directory.ino || fs.readdirSync(fdPath(stageFd)).join("\0") !== "receipts") preparationError(`stale preparation '${preparation.name}' directory changed at '${stageName}'`);
+  const receiptsFd = fs.openSync(fdPath(stageFd, "receipts"), DIRECTORY_FLAGS);
+  try {
+    const receiptsDirectory = fs.fstatSync(receiptsFd, { bigint: true });
+    if (String(receiptsDirectory.dev) !== preparation.receiptsDirectory.dev || String(receiptsDirectory.ino) !== preparation.receiptsDirectory.ino) preparationError(`stale preparation '${preparation.name}' receipts directory changed at '${stageName}/receipts'`);
+    const names = fs.readdirSync(fdPath(receiptsFd)).sort();
+    const expectedNames = preparation.receipts.map((receipt) => path.posix.basename(receipt.path)).sort();
+    if (names.join("\0") !== expectedNames.join("\0")) preparationError(`stale preparation '${preparation.name}' receipt inventory changed at '${stageName}/receipts'`);
+    const inventory = names.map((name) => receiptIdentity(receiptsFd, name, preparation.receipts.find((receipt) => path.posix.basename(receipt.path) === name)!.path));
+    if (canonicalRecordJson(inventory) !== canonicalRecordJson(preparation.receipts)) preparationError(`stale preparation '${preparation.name}' complete receipt inventory changed at '${stageName}/receipts'`);
+    return { receiptsFd, inventory };
+  } catch (error) { fs.closeSync(receiptsFd); throw error; }
+}
+
+function pathMatchesReceipt(parentFd: number, name: string, expectedFd: number, expected: EntityMigrationPreparationReceipt): boolean {
+  let observed: number | undefined;
+  try {
+    observed = fs.openSync(fdPath(parentFd, name), fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    const held = fs.fstatSync(expectedFd, { bigint: true }); const linked = fs.fstatSync(observed, { bigint: true });
+    return held.dev === linked.dev && held.ino === linked.ino && canonicalRecordJson(receiptIdentity(parentFd, name, expected.path)) === canonicalRecordJson(expected);
+  } catch { return false; }
+  finally { if (observed !== undefined) fs.closeSync(observed); }
+}
+
+function restoreQuarantine(pinned: ReturnType<typeof pinnedMigrationParent>, preparation: Preparation, quarantine: string, removed: number): string {
+  const original = fdPath(pinned.fd, preparation.name); const quarantined = fdPath(pinned.fd, quarantine);
+  if (removed > 0) return `partial exact cleanup removed ${removed} operation-owned receipt(s); legacy authority remains and retained recovery evidence is '${quarantined}'`;
+  try {
+    fs.lstatSync(original);
+    return `the original path successor is '${original}' and retained quarantine is '${quarantined}'`;
+  } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") return `inspect original path '${original}' and retained quarantine '${quarantined}'`; }
+  try { fs.renameSync(quarantined, original); fs.fsyncSync(pinned.fd); return `the unchanged preparation was restored to '${original}'`; }
+  catch { return `automatic restore was unsafe; retained quarantine is '${quarantined}' and intended original path is '${original}'`; }
+}
+
 function removeStalePreparation(project: string, preparation: Preparation, pinned: ReturnType<typeof pinnedMigrationParent>): void {
   if (fs.existsSync(fdPath(pinned.fd, preparation.id))) preparationError(`stale preparation '${preparation.name}' has final operation evidence`);
   for (const target of preparation.targets) if (fs.existsSync(path.join(project, target))) preparationError(`stale preparation '${preparation.name}' has canonical publication '${target}'`);
-  const quarantine = `.${preparation.id}.discard-${randomUUID()}`; let held: number | undefined; let renamed = false;
+  const quarantine = `.${preparation.id}.discard-${randomUUID()}`; let held: number | undefined; let receiptsFd: number | undefined; let renamed = false; let removed = 0;
   try {
     held = fs.openSync(fdPath(pinned.fd, preparation.name), DIRECTORY_FLAGS); pinned.assertValid();
-    const expected = fs.fstatSync(held, { bigint: true });
-    if (String(expected.dev) !== preparation.directory.dev || String(expected.ino) !== preparation.directory.ino) preparationError(`stale preparation '${preparation.name}' was replaced before quarantine`);
+    ({ receiptsFd } = inspectBoundPreparation(held, preparation, preparation.name));
     fs.renameSync(fdPath(pinned.fd, preparation.name), fdPath(pinned.fd, quarantine)); renamed = true; fs.fsyncSync(pinned.fd);
     try { fs.lstatSync(fdPath(pinned.fd, preparation.name)); preparationError(`stale preparation '${preparation.name}' gained a successor during quarantine`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     const observed = fs.openSync(fdPath(pinned.fd, quarantine), DIRECTORY_FLAGS);
-    try { if (!sameDirectory(fs.fstatSync(held, { bigint: true }), fs.fstatSync(observed, { bigint: true }))) preparationError(`stale preparation '${preparation.name}' was replaced during quarantine`); } finally { fs.closeSync(observed); }
-    fs.rmSync(fdPath(pinned.fd, quarantine), { recursive: true }); fs.fsyncSync(pinned.fd); pinned.assertValid();
+    try {
+      if (!sameDirectory(fs.fstatSync(held, { bigint: true }), fs.fstatSync(observed, { bigint: true }))) preparationError(`stale preparation '${preparation.name}' was replaced during quarantine`);
+      const post = inspectBoundPreparation(observed, preparation, quarantine); fs.closeSync(post.receiptsFd);
+    } finally { fs.closeSync(observed); }
+    for (const expected of preparation.receipts) {
+      const name = path.posix.basename(expected.path); let receiptFd: number | undefined; const removalName = `.${name}.discard-${randomUUID()}`; let receiptRenamed = false;
+      try {
+        receiptFd = fs.openSync(fdPath(receiptsFd, name), fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+        if (!pathMatchesReceipt(receiptsFd, name, receiptFd, expected)) preparationError(`stale preparation receipt '${expected.path}' changed before exact removal`);
+        fs.renameSync(fdPath(receiptsFd, name), fdPath(receiptsFd, removalName)); receiptRenamed = true; fs.fsyncSync(receiptsFd);
+        try { fs.lstatSync(fdPath(receiptsFd, name)); preparationError(`stale preparation receipt '${expected.path}' gained a successor during exact removal`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+        if (!pathMatchesReceipt(receiptsFd, removalName, receiptFd, expected)) preparationError(`stale preparation receipt '${expected.path}' changed during exact removal`);
+        fs.unlinkSync(fdPath(receiptsFd, removalName)); receiptRenamed = false; fs.fsyncSync(receiptsFd); removed += 1;
+      } catch (error) {
+        if (receiptRenamed) {
+          try { fs.lstatSync(fdPath(receiptsFd, name)); }
+          catch (missing) { if ((missing as NodeJS.ErrnoException).code === "ENOENT") { try { fs.renameSync(fdPath(receiptsFd, removalName), fdPath(receiptsFd, name)); fs.fsyncSync(receiptsFd); receiptRenamed = false; } catch {} } }
+        }
+        throw error;
+      } finally { if (receiptFd !== undefined) fs.closeSync(receiptFd); }
+    }
+    if (fs.readdirSync(fdPath(receiptsFd)).length !== 0) preparationError(`stale preparation '${preparation.name}' receipts directory gained a successor during cleanup`);
+    const receiptsIdentity = fs.fstatSync(receiptsFd, { bigint: true });
+    if (String(receiptsIdentity.dev) !== preparation.receiptsDirectory.dev || String(receiptsIdentity.ino) !== preparation.receiptsDirectory.ino) preparationError(`stale preparation '${preparation.name}' receipts directory was replaced during cleanup`);
+    const receiptsRemovalName = `.receipts.discard-${randomUUID()}`;
+    fs.renameSync(fdPath(held, "receipts"), fdPath(held, receiptsRemovalName)); fs.fsyncSync(held);
+    try { fs.lstatSync(fdPath(held, "receipts")); preparationError(`stale preparation '${preparation.name}' receipts directory gained a successor during exact removal`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    const removalDirectory = fs.openSync(fdPath(held, receiptsRemovalName), DIRECTORY_FLAGS);
+    try { if (!sameDirectory(fs.fstatSync(receiptsFd, { bigint: true }), fs.fstatSync(removalDirectory, { bigint: true })) || fs.readdirSync(fdPath(removalDirectory)).length !== 0) preparationError(`stale preparation '${preparation.name}' receipts directory changed during exact removal`); }
+    finally { fs.closeSync(removalDirectory); }
+    fs.rmdirSync(fdPath(held, receiptsRemovalName)); fs.fsyncSync(held); fs.closeSync(receiptsFd); receiptsFd = undefined;
+    if (fs.readdirSync(fdPath(held)).length !== 0) preparationError(`stale preparation '${preparation.name}' directory gained a successor during cleanup`);
+    const stageIdentity = fs.fstatSync(held, { bigint: true });
+    if (String(stageIdentity.dev) !== preparation.directory.dev || String(stageIdentity.ino) !== preparation.directory.ino) preparationError(`stale preparation '${preparation.name}' directory was replaced during cleanup`);
+    fs.rmdirSync(fdPath(pinned.fd, quarantine)); fs.fsyncSync(pinned.fd); pinned.assertValid();
     try { fs.lstatSync(fdPath(pinned.fd, preparation.name)); preparationError(`stale preparation '${preparation.name}' gained a successor during cleanup`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
   } catch (error) {
-    if (renamed && error instanceof EntityMigrationOperationError && !error.mutationPerformed) throw new EntityMigrationOperationError(error.classification, error.message, error.recovery, true);
-    if (renamed && !(error instanceof EntityMigrationOperationError)) throw new EntityMigrationOperationError("preparation_cleanup_failed", (error as Error).message, "The stale preparation was quarantined but cleanup did not complete; preserve every successor and inspect the operation paths before retrying.", true);
+    if (renamed) {
+      const recovery = restoreQuarantine(pinned, preparation, quarantine, removed);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new EntityMigrationOperationError(error instanceof EntityMigrationOperationError ? error.classification : "preparation_cleanup_failed", `${message}; ${recovery}`, `Retry only after comparing the exact reported recovery paths and current legacy authority; changed successors were retained.`, true);
+    }
     throw error;
-  } finally { if (held !== undefined) fs.closeSync(held); }
+  } finally { if (receiptsFd !== undefined) fs.closeSync(receiptsFd); if (held !== undefined) fs.closeSync(held); }
 }
 
 function prepare(plan: DurableEntityMigrationPlan, preparation?: Preparation, action: "created" | "resumed" | "replaced" = "created"): { journal: Journal; preparation: NonNullable<EntityMigrationResult["preparation"]> } {

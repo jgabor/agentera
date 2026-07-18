@@ -202,6 +202,7 @@ tasks:
       - "22"
       - "23"
       - "24"
+      - "25"
     status: pending
     acceptance:
       - GIVEN an approved blocker-free preview on the selected integration checkout WHEN apply runs THEN entity authority and the migration record replace legacy authority.
@@ -321,6 +322,16 @@ tasks:
       - GIVEN approval cleanliness checks after an interrupted attempt WHEN operation-owned lock and preparation paths are present THEN only the exact approved operation paths are admitted; unrelated untracked or tampered content still refuses before effects.
       - GIVEN a source or approval change WHEN stale preparation exists THEN cleanup is successor-safe and no canonical entity, marker, or unrelated evidence is removed.
     evidence: Approval generation and apply now share one read-only strict preparation inspector. Git porcelain admits only the exact validated transient inventory; approval binds its path, operation, directory identity, receipt count, canonical inventory digest, and stale/same-operation classification. Apply revalidates before acceptance and under lock, with successor-safe identity checks. Verified by 53 focused and 2,668 full tests across 218 files, typecheck, and build.
+  - number: 25
+    name: Make stale preparation cleanup successor-safe
+    status: complete
+    depends_on:
+      - "24"
+    acceptance:
+      - GIVEN an approval-bound stale receipt inventory WHEN cleanup quarantines it THEN the complete receipt count, paths, identities, sizes, modes, and content hashes are revalidated after rename before any deletion.
+      - GIVEN any receipt or directory changes before or during quarantine cleanup WHEN exact removal runs THEN the changed successor is preserved, cleanup refuses, and no canonical entity or marker is published.
+      - GIVEN an unchanged stale preparation WHEN removed THEN only exact bound receipt files and their pinned empty directories are deleted, with no recursive unverified removal.
+    evidence: "Cycle 914: approval-bound preparation inspection now carries complete receipt path/dev/ino/type/mode/size/hash inventory plus stage and receipts-directory identities; stale cleanup revalidates after quarantine, removes only exact pinned receipts and empty directories, restores safely or reports retained recovery paths, and reports honest partial cleanup. Verified by 59 focused and 2,674 full tests across 218 files, typecheck, build, state validation, 12 capability validations, capability contract 2/2, compact, and blocker-free read-only live preview."
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.

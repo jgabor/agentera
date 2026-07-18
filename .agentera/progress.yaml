@@ -1,4 +1,25 @@
 cycles:
+  - number: 914
+    timestamp: 2026-07-18 05:28
+    type: fix
+    phase: build
+    what: Made stale migration preparation cleanup successor-safe with complete
+      approval-bound receipt inventories, post-quarantine reinspection, exact
+      receipt unlinking, pinned empty-directory removal, safe restoration, and
+      honest partial-cleanup recovery.
+    inspiration: Plan Task 25 and its final audit reproduction requirements.
+    verified: 59 focused and 2,674 full tests across 218 files passed; typecheck,
+      build, state validation, 12 capability validations, capability contract
+      2/2, compact, and blocker-free read-only live preview passed.
+    next: Task 14 remains pending; obtain explicit approval before any repository
+      cutover apply.
+    context:
+      intent: Complete replanned Task 25 without applying the repository migration or
+        touching the live stale preparation.
+      constraints: No approval generation, apply, Task 15, version, changelog, vision,
+        push, publish, or manual YAML edits; live stale preparation retained.
+      scope: Entity migration preparation inspection, stale cleanup, race/recovery
+        tests, plan Task 25.
   - number: 913
     timestamp: 2026-07-18 04:50
     type: fix
@@ -221,31 +242,6 @@ cycles:
       unknowns: none
       scope: Entity migration preview, durable apply evidence, resume and guarded
         rollback, and exact residue regressions.
-  - number: 904
-    timestamp: 2026-07-17 23:52
-    type: fix
-    phase: build
-    what: Added standard attached-worktree approval support by resolving regular
-      commondir metadata and reading per-worktree then common loose or packed
-      refs while keeping HEAD and index worktree-local.
-    inspiration: Retry 2/2 final Task 13 plan and the attached-worktree approval audit gap.
-    discovered: Cycle 903's full-suite count of 2,610 was one below its committed
-      2,611-test baseline; this change adds four attached-worktree cases, making
-      the exact current full count 2,615.
-    verified: Focused entityMigrationApply passed 35/35; full CLI passed 2,615/2,615
-      across 218 files; typecheck, build, all 12 capabilities, capability
-      contract 2/2, state validation, and compact passed.
-    next: Task 13 remains complete. Task 14 remains pending; do not apply the entity
-      migration. Regenerate the clean post-commit approval and blocker-free
-      preview only.
-    context:
-      intent: Complete Task 13 attached-worktree approval support without starting
-        Task 14.
-      constraints: No Task 14 apply, version, changelog, vision, release, publication,
-        remote, amend, push, tag, or manual YAML edits.
-      unknowns: Task 14 apply authorization remains intentionally unresolved.
-      scope: Attached-worktree Git approval metadata resolution, focused regressions,
-        and Task 13 evidence correction only.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -315,6 +311,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 904 (2026-07-17): Added standard attached-worktree approval
+      support by resolving regular commondir metadata and reading per-worktree
+      then common..."
   - summary: "Cycle 903 (2026-07-17): Closed the three Task 13 audit blockers by
       preserving archive-authoritative decision satisfaction, binding recovered
       projections..."
@@ -411,15 +410,18 @@ archive:
       actionable legacy-file conflicts."
   - summary: "Cycle 865 (2026-07-16): Audit retry 2 made project writer-lock stale
       reclamation and release ownership-safe."
-  - summary: "Cycle 864 (2026-07-16): Audit retry 1 fixed PLAN Task 2 entity
-      publication races and logical replay equality."
 omitted: true
-omitted_count: 149
+omitted_count: 150
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

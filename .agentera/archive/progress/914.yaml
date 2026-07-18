@@ -1,0 +1,17 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 914
+record:
+  number: 914
+  timestamp: 2026-07-18 05:28
+  type: fix
+  phase: build
+  what: Made stale migration preparation cleanup successor-safe with complete approval-bound receipt inventories, post-quarantine reinspection, exact receipt unlinking, pinned empty-directory removal, safe restoration, and honest partial-cleanup recovery.
+  inspiration: Plan Task 25 and its final audit reproduction requirements.
+  verified: 59 focused and 2,674 full tests across 218 files passed; typecheck, build, state validation, 12 capability validations, capability contract 2/2, compact, and blocker-free read-only live preview passed.
+  next: Task 14 remains pending; obtain explicit approval before any repository cutover apply.
+  context:
+    intent: Complete replanned Task 25 without applying the repository migration or touching the live stale preparation.
+    constraints: No approval generation, apply, Task 15, version, changelog, vision, push, publish, or manual YAML edits; live stale preparation retained.
+    scope: Entity migration preparation inspection, stale cleanup, race/recovery tests, plan Task 25.
+record_sha256: 20cd31970423faa19440916645bcdd0b5068d2afa12dcd60cf76820cd5ef48d7

@@ -12,10 +12,12 @@ export const ENTITY_MIGRATION_ROOT = ".agentera/migrations/entities";
 export const ENTITY_MIGRATION_MARKER = ".agentera/state-mode.yaml";
 const DIRECTORY_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY ?? 0) | (fs.constants.O_NOFOLLOW ?? 0);
 
-interface InventoryEntry {
+export interface EntityMigrationPreparationReceipt {
   path: string;
   dev: string;
   ino: string;
+  type: string;
+  mode: string;
   size: string;
   sha256: string;
 }
@@ -25,6 +27,8 @@ export interface EntityMigrationPreparationInspection {
   id: string;
   relative_path: string;
   directory: { dev: string; ino: string };
+  receipts_directory: { dev: string; ino: string };
+  receipts: EntityMigrationPreparationReceipt[];
   receipt_count: number;
   inventory_sha256: string;
   untracked_paths: string[];
@@ -77,7 +81,7 @@ function pathExists(value: string): boolean {
   }
 }
 
-function stableRegularFile(parent: number, name: string, relativePath: string): { bytes: Buffer; inventory: InventoryEntry } {
+function stableRegularFile(parent: number, name: string, relativePath: string): { bytes: Buffer; inventory: EntityMigrationPreparationReceipt } {
   let fd: number | undefined;
   try {
     const linked = fs.lstatSync(fdPath(parent, name), { bigint: true });
@@ -88,7 +92,7 @@ function stableRegularFile(parent: number, name: string, relativePath: string): 
     const bytes = fs.readFileSync(fd);
     const after = fs.fstatSync(fd, { bigint: true });
     if (!after.isFile() || before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mode !== after.mode || BigInt(bytes.length) !== after.size) fail(`migration preparation receipt '${name}' changed while inspected`);
-    return { bytes, inventory: { path: relativePath, dev: String(after.dev), ino: String(after.ino), size: String(after.size), sha256: hash(bytes) } };
+    return { bytes, inventory: { path: relativePath, dev: String(after.dev), ino: String(after.ino), type: String(after.mode & BigInt(fs.constants.S_IFMT)), mode: String(after.mode), size: String(after.size), sha256: hash(bytes) } };
   } catch (error) {
     if (error instanceof EntityMigrationPreparationInspectionError) throw error;
     return fail(`migration preparation receipt '${name}' is unsafe or changed while inspected`);
@@ -146,7 +150,7 @@ export function inspectEntityMigrationPreparation(projectRoot: string, current: 
     if (entityNames.some((entry, index) => entry !== `${String(index).padStart(4, "0")}.yaml`) || (receiptNames.includes("marker.yaml") && entityNames.length === 0)) fail(`migration preparation '${name}' has an invalid receipt inventory`);
 
     const targets: string[] = [];
-    const inventory: InventoryEntry[] = [];
+    const inventory: EntityMigrationPreparationReceipt[] = [];
     for (const [index, receiptName] of entityNames.entries()) {
       const relativeReceipt = `${relativePath}/receipts/${receiptName}`;
       const observed = stableRegularFile(receiptsFd, receiptName, relativeReceipt);
@@ -198,11 +202,14 @@ export function inspectEntityMigrationPreparation(projectRoot: string, current: 
     if (!sameDirectory(parentIdentity, fs.fstatSync(parentFd, { bigint: true }))) fail(`migration preparation parent changed while inspected`);
     assertValidatedProjectRoot(root);
 
+    const receiptsIdentity = fs.fstatSync(receiptsFd, { bigint: true });
     return {
       name,
       id,
       relative_path: relativePath,
       directory: { dev: String(stageIdentity.dev), ino: String(stageIdentity.ino) },
+      receipts_directory: { dev: String(receiptsIdentity.dev), ino: String(receiptsIdentity.ino) },
+      receipts: inventory,
       receipt_count: inventory.length,
       inventory_sha256: hash(canonicalRecordJson(inventory)),
       untracked_paths: inventory.map((entry) => entry.path),
