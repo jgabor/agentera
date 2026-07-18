@@ -11,8 +11,6 @@ import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import {
   STATUS_MANUAL_REVIEW_NEEDED,
-  STATUS_NO_CHANGES_NEEDED,
-  STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
 } from "../../src/upgrade/compatibility.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
@@ -131,13 +129,17 @@ describe("buildUpgradePlan", () => {
     expect(JSON.stringify(snapshotTree(appHome))).toBe(appBefore);
   });
 
-  it("plans empty state as initialization and only completed entity state as a no-op", () => {
+  it("rejects unknown marker-absent state with a manual handoff and treats completed entity state as a no-op", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const empty = path.join(tmp, "empty-state");
     fs.mkdirSync(empty);
     const emptyPlan = buildUpgradePlan({ installRoot: appHome, home, project: empty, channel: "development", dryRun: true, only: ["artifacts"] });
-    expect(emptyPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "pending", action: "initialize-entity-state" });
+    expect(emptyPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({
+      status: "blocked",
+      action: "unsupported-state-source",
+      message: expect.stringMatching(/manual/i),
+    });
 
     const orphaned = path.join(tmp, "orphaned-marker");
     fs.mkdirSync(path.join(orphaned, ".agentera"), { recursive: true });
@@ -166,19 +168,20 @@ describe("buildUpgradePlan", () => {
     expect(JSON.stringify(snapshotTree(tmp))).toBe(before);
   });
 
-  it("blocks unresolved v1 Markdown but accepts the same source after deterministic conversion is resolved", () => {
+  it("rejects unresolved v1 Markdown with a manual handoff", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-v1-md-project", path.join(tmp, "v1-readiness"));
     const unresolved = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", dryRun: true, only: ["artifacts"] });
-    expect(unresolved.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "blocked", action: "resolve-v1-state" });
+    expect(unresolved.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({
+      status: "blocked",
+      action: "resolve-v1-state",
+      message: expect.stringMatching(/manual/i),
+    });
 
-    fs.writeFileSync(path.join(project, ".agentera/progress.yaml"), "cycles: []\n");
-    const resolved = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", dryRun: true, only: ["artifacts"] });
-    expect(resolved.phases.find((phase) => phase.name === "entities")?.status).toBe("pending");
   });
 
-  it("skips v2→v3 migration phases for v3 self-contained npm bundles", () => {
+  it.each(["npm", "source"] as const)("selects marker-absent v2 project state under %s v3 execution without preview writes", (execution) => {
     const bundle = path.join(tmp, "npx-bundle");
     fs.mkdirSync(path.join(bundle, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(bundle, "skills", "agentera", "SKILL.md"), "x");
@@ -191,19 +194,23 @@ describe("buildUpgradePlan", () => {
       JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
     );
 
+    const project = copyFixture("v2-yaml-project", path.join(tmp, `v2-${execution}`));
+    const before = snapshotTree(project);
     const plan = buildUpgradePlan({
-      installRoot: bundle,
+      installRoot: execution === "npm" ? bundle : REPO_ROOT,
       home,
-      project: bundle,
-      channel: "stable",
+      project,
+      channel: "development",
       dryRun: true,
     });
 
-    expect(plan.install.kind).toBe("v3_self_contained_npm");
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect"]);
-    expect(plan.lifecycleStatus).toBe(STATUS_NO_CHANGES_NEEDED);
-    expect(plan.summary.pending).toBe(0);
-    expect(plan.summary.blocked).toBe(0);
+    expect(plan.install.kind).toBe(execution === "npm" ? "v3_self_contained_npm" : "source_checkout");
+    expect(plan.crossMajorBoundary).toBe(false);
+    expect(plan.phases.find((phase) => phase.name === "entities")?.items).toEqual([
+      expect.objectContaining({ status: "pending", action: "entity-cutover" }),
+    ]);
+    expect(plan.summary.pending).toBeGreaterThan(0);
+    expect(snapshotTree(project)).toEqual(before);
   });
 
   it("emits agentera.upgrade.v2 with phases, channel metadata, and commands on dry-run", () => {

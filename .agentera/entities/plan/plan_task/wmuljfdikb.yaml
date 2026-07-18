@@ -1,0 +1,14 @@
+id: wmuljfdikb
+artifact: plan
+record:
+  name: Establish one command vocabulary
+  depends_on:
+    - tcrhynzola
+    - wqvwvdpgvx
+  status: pending
+  acceptance:
+    - GIVEN canonical, deprecated, hidden, or removed commands WHEN queried THEN help, schema, dispatch, and correction behavior match the declared category.
+    - GIVEN legacy mode WHEN a normal command runs THEN recovery consistently points to the sole upgrade command.
+    - GIVEN retained aliases WHEN invoked THEN canonical effects and deprecation diagnostics remain stable.
+  test_proportionality: Command-category matrix and representative output and exit-code parity.
+  plan: psmmjdmrwd

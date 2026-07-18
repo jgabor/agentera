@@ -1,0 +1,15 @@
+id: mohlqxuurj
+artifact: plan
+record:
+  name: Plan lifecycle resources once
+  depends_on:
+    - avqwfdnkbi
+    - hihdmiommk
+  status: pending
+  acceptance:
+    - GIVEN selected runtimes WHEN inspected THEN resources are observed once, planned once, and projected consistently.
+    - GIVEN full v2 upgrade without a runtime selector WHEN entities activate THEN mandatory v2 rewiring still runs afterward.
+    - GIVEN user-owned or ambiguous resources WHEN encountered THEN they remain untouched and manual handoff names them.
+    - GIVEN retry after partial runtime work WHEN evaluated THEN completed operations are no-ops and unfinished work is reconsidered.
+  test_proportionality: All/selected runtime, managed rewrite, collision, ownership-proof, and fault/retry cases.
+  plan: psmmjdmrwd

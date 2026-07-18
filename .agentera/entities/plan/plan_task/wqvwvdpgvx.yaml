@@ -1,0 +1,13 @@
+id: wqvwvdpgvx
+artifact: plan
+record:
+  name: Remove global legacy and entity routing
+  depends_on:
+    - vlthncdcui
+  status: pending
+  acceptance:
+    - GIVEN normal state or startup commands WHEN dispatched THEN they require active entity authority without a legacy implementation branch.
+    - GIVEN legacy, v1, unknown, or active state WHEN classified THEN upgrade alone owns the classification.
+    - GIVEN specialized entity selectors WHEN routed THEN their ownership and relationship semantics remain intact.
+  test_proportionality: Entity family and migration-gate matrices plus focused specialized selector cases.
+  plan: psmmjdmrwd

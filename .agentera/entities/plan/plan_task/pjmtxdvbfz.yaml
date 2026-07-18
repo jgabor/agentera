@@ -1,0 +1,18 @@
+id: pjmtxdvbfz
+artifact: plan
+record:
+  name: Remove duplicate test authorities and separate test lanes
+  depends_on:
+    - ojzirrivfy
+    - vlthncdcui
+    - wqvwvdpgvx
+    - wmuljfdikb
+    - hihdmiommk
+    - mohlqxuurj
+  status: pending
+  acceptance:
+    - GIVEN obsolete gap, oracle, parity, and harness machinery WHEN removed THEN public effects remain covered by owner suites.
+    - GIVEN ordinary source tests WHEN run THEN they do not rebuild package output.
+    - GIVEN the package gate WHEN run THEN build, bundle, pack, packed upgrade, and installed behavior are verified once.
+  test_proportionality: One required source lane and one required package lane without duplicate architectural assertions.
+  plan: psmmjdmrwd

@@ -89,6 +89,7 @@
 
 ### Fixed
 
+- Fixed marker-absent v2 projects to select the entity cutover from project state under npm or source v3 execution, so the recovery command emitted by `prime` can complete the forward migration instead of reporting an unrelated no-op.
 - Fixed post-cutover routine query aliases, canonical-boundary Git recovery, migration-marker evidence binding, entity page byte caps, plan recovery guidance, and nested entity identity metadata.
 - Fixed the npm shim to diagnose a configured `AGENTERA_HOME` whose managed script is missing or not runnable before continuing through repository and `uvx` fallback resolution.
 - Fixed `agentera check lint` to report findings without failing by default, fail the same findings with `--strict`, and keep invalid input, authority failures, and validated plan publication nonzero.

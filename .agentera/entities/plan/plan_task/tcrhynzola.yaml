@@ -1,0 +1,14 @@
+id: tcrhynzola
+artifact: plan
+record:
+  name: Remove alternate legacy operation and compatibility paths
+  depends_on:
+    - mnezhmizhr
+  status: pending
+  acceptance:
+    - GIVEN marker-absent state WHEN commands other than upgrade preview/apply or static discovery run THEN they reject with the sole upgrade command.
+    - GIVEN v1, backfill, repair, partial apply, restore, downgrade, or obsolete cutover evidence WHEN requested THEN no automatic mutation path exists.
+    - GIVEN active v3 state WHEN aggregates remain THEN they cannot become authority.
+    - GIVEN help, schema, and upgrade guidance WHEN inspected THEN they agree on v2-only forward support.
+  test_proportionality: Command rejection and manual-handoff matrices plus one retained v2 success case.
+  plan: psmmjdmrwd

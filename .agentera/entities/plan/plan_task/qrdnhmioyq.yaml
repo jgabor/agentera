@@ -1,0 +1,13 @@
+id: qrdnhmioyq
+artifact: plan
+record:
+  name: Establish exclusive mutation ownership
+  depends_on:
+    - udueghnaov
+  status: pending
+  acceptance:
+    - GIVEN overlapping project or runtime mutations WHEN they start THEN only one process mutates each shared domain.
+    - GIVEN a held lock WHEN another process exits THEN it cannot release the owner's lock.
+    - GIVEN stale or malformed lock state WHEN encountered THEN mutation stops with bounded manual instructions.
+  test_proportionality: One same-project race, one shared-runtime race, one independent-domain case, and one checked-release case.
+  plan: psmmjdmrwd

@@ -1,0 +1,35 @@
+id: psmmjdmrwd
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-18
+    status: open
+    reviewed: 2026-07-18
+    critic_issues: 15 found, 15 addressed, 0 dismissed
+    title: "Plan: Simplify Agentera around one best-effort v2-to-v3 upgrade"
+  what: Implement the five reviewed simplifications while retaining one public legacy mutation command. Migrate recognized v2 aggregate projects according to project state, independent of the v3 CLI installation source. Remove v1 automation, alternate legacy mutation, rollback, downgrade, and obsolete cutover compatibility.
+  why: Parallel state, command, lifecycle, and test architectures make the CLI difficult to maintain. A real upgrade applied unrelated changes, reported success, left the project legacy, and sent prime into a recovery loop because cutover selection was coupled to installation history rather than project state.
+  constraints: Preserve one forward-only v2 aggregate to v3 entity path, dry-run, explicit consent, path boundaries, bounded output, atomic file publication, complete graph validation, marker-last activation, exclusive mutation ownership, and user-owned resources. Do not add rollback, source backups, staging graphs, approval tokens, duplicate validators, recovery journals, v1 conversion, remote work, release, or publication.
+  overall_acceptance: GIVEN a recognized v2 project WHEN the sole upgrade command runs under a packed or source v3 CLI THEN a complete valid entity graph activates, runtime work converges best-effort, failures return actionable manual handoff, retry progresses forward, and no successful result leaves the original migration blocker unresolved.
+  scope:
+    included:
+      - One project-driven v2-to-v3 upgrade contract and packed end-to-end fixture.
+      - Entity-only normal operation, shared retrieval, and centralized state routing.
+      - One command vocabulary and one-pass lifecycle planning.
+      - Deletion of superseded production, compatibility, and test-only systems.
+    excluded:
+      - V1 conversion, downgrade, rollback, restore, and automatic malformed-source repair.
+      - Remote operations, new import formats, unrelated features, release, and publication.
+    deferred:
+      []
+  design: Characterize the sole migration first, correct project-driven selection and truthful outcomes, then reduce cutover to read, convert, write, validate, and activate. Remove alternate legacy paths before consolidating entity retrieval and command vocabulary. Simplify lifecycle planning last. Every phase replaces an old concept rather than adding a parallel abstraction.
+  unknowns:
+    - question: Which legacy helpers remain reachable from the packed full upgrade after unsupported paths are excluded?
+      affects_task: 6
+      resolve_by: Trace source and packed entrypoints and retain only helpers exercised by the fixed-path fixture.
+    - question: Can one current ownership manifest preserve the user-owned runtime collision boundary?
+      affects_task: 11
+      resolve_by: Replay owned, missing, corrupt, and user-modified resource fixtures; retain the smallest proof mechanism that distinguishes ownership safely.
+  surprises:
+    []

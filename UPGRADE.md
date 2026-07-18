@@ -38,6 +38,13 @@ includes:
 - exact manual or host-native actions;
 - required support-floor gaps.
 
+For project-state migration, the installation and project are classified
+independently. A v3 CLI from npm or a source checkout previews the same one-way
+cutover when the project has recognized marker-absent v2 aggregate state. The
+preview does not mutate that state. Pending v1 Markdown state and unknown
+marker-absent state are not converted automatically; the preview exits nonzero
+with manual recovery instructions.
+
 `prime` exposes a bounded projection of the same snapshot. `doctor` exposes the
 detailed read-only diagnosis:
 

@@ -18,14 +18,10 @@ function git(root: string, ...args: string[]): void {
   if (result.status !== 0) throw new Error(result.stderr);
 }
 
-function managedV2(appHome: string): void {
-  const app = path.join(appHome, "app");
-  fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
-  fs.writeFileSync(path.join(app, "scripts/agentera"), "#!/usr/bin/env node\n");
-  fs.mkdirSync(path.join(app, "skills/agentera"), { recursive: true });
-  fs.writeFileSync(path.join(app, "skills/agentera/SKILL.md"), "fixture\n");
-  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
-  fs.writeFileSync(path.join(app, ".agentera-bundle.json"), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
+function recoveryArgs(command: string): string[] {
+  const prefix = "npx -y agentera@next ";
+  expect(command.startsWith(prefix)).toBe(true);
+  return command.slice(prefix.length).match(/"[^"]*"|\S+/g)?.map((part) => part.replace(/^"|"$/g, "")) ?? [];
 }
 
 describe("packed v2-to-v3 upgrade", () => {
@@ -56,13 +52,23 @@ describe("packed v2-to-v3 upgrade", () => {
       expect(run("git", ["status", "--porcelain"], project).stdout).toBe("");
 
       const home = path.join(tmp, "home");
-      const appHome = path.join(home, ".local/share/agentera");
       fs.mkdirSync(home, { recursive: true });
-      managedV2(appHome);
-      const env = { ...process.env, HOME: home, XDG_DATA_HOME: path.join(home, ".local/share"), AGENTERA_HOME: appHome };
+      const env = { ...process.env, HOME: home, XDG_DATA_HOME: path.join(home, ".local/share") };
       const bin = path.join(packageDir, "dist/bin/agentera.js");
 
-      const upgraded = run(process.execPath, [bin, "upgrade", "--channel", "development", "--project", project, "--yes"], project, env);
+      const blockedPrime = run(process.execPath, [bin, "prime", "--format", "json"], project, env);
+      expect(blockedPrime.status).toBe(1);
+      const failure = JSON.parse(blockedPrime.stdout) as { error: { class: string; recovery: string } };
+      expect(failure.error.class).toBe("migration_required");
+
+      const preview = run(process.execPath, [bin, ...recoveryArgs(failure.error.recovery).map((arg) => arg === "--yes" ? "--dry-run" : arg), "--format", "json"], project, env);
+      const previewJson = JSON.parse(preview.stdout) as { install: { kind: string }; crossMajorBoundary: boolean; phases: Array<{ name: string; items: Array<{ action: string }> }> };
+      expect(previewJson.install.kind).toBe("v3_self_contained_npm");
+      expect(previewJson.crossMajorBoundary).toBe(false);
+      expect(previewJson.phases.find((phase) => phase.name === "entities")?.items.some((item) => item.action === "entity-cutover")).toBe(true);
+      expect(fs.existsSync(path.join(project, ".agentera/state-mode.yaml"))).toBe(false);
+
+      const upgraded = run(process.execPath, [bin, ...recoveryArgs(failure.error.recovery)], project, env);
       expect(upgraded.status, `${upgraded.stdout}\n${upgraded.stderr}`).toBe(0);
       expect(upgraded.stdout).toContain("state and startup validation passed");
       expect(YAML.parse(fs.readFileSync(path.join(project, ".agentera/state-mode.yaml"), "utf8"))).toMatchObject({ mode: "entities" });

@@ -1,0 +1,13 @@
+id: vlthncdcui
+artifact: plan
+record:
+  name: Consolidate bounded entity retrieval
+  depends_on:
+    - tcrhynzola
+  status: pending
+  acceptance:
+    - GIVEN every existing family and verb WHEN used THEN envelopes, ordering, relationships, filters, cursors, omissions, and byte ceilings remain unchanged.
+    - GIVEN invalid, stale, changed-filter, or cross-family cursors WHEN used THEN they reject without mutation.
+    - GIVEN migrated state WHEN traversed THEN every listed ID resolves exactly without adding family verbs.
+  test_proportionality: One shared retrieval matrix plus only family-specific relationship and overlay cases.
+  plan: psmmjdmrwd

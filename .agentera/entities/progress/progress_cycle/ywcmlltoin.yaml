@@ -1,0 +1,12 @@
+id: ywcmlltoin
+artifact: progress
+record:
+  timestamp: 2026-07-18 19:30
+  type: fix
+  phase: build
+  what: Updated packages/cli/src/upgrade/upgradeOrchestrator.ts so marker-absent v2 projects select entity cutover under npm and source v3.
+  context:
+    intent: Characterize the fixed migration boundary and reproduce the prime recovery loop for Task udueghnaov.
+  inspiration: Task udueghnaov and RCA session ses_089ecadccffeiQ87Iv8GcgABZN.
+  verified: 2593/2593 CLI tests passed; pnpm run typecheck and pnpm run build passed; packed recovery fixture passed; npm pack --dry-run --json --ignore-scripts, agentera check compact, suiteVersion 3.0.0, and git diff --check passed.
+  next: Continue only with the next separately assigned plan task; no new plan tasks were added.

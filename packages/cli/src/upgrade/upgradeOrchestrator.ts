@@ -272,15 +272,15 @@ function entityReadinessPhase(
       return summarizeOrchestratorPhase("entities", [{
         status: "blocked",
         action: "resolve-v1-state",
-        message: "pending v1 Markdown conversion cannot be used as entity input without a prerequisite write; complete the deterministic v1 conversion, then retry the upgrade",
+        message: "pending v1 Markdown state is not a supported automatic source; preserve it and follow the manual v1 recovery instructions in UPGRADE.md",
       }]);
     }
     const empty = cutover.entityCount === 0;
     return summarizeOrchestratorPhase("entities", [{
-      status: "pending",
-      action: empty ? "initialize-entity-state" : "entity-cutover",
+      status: empty ? "blocked" : "pending",
+      action: empty ? "unsupported-state-source" : "entity-cutover",
       message: empty
-        ? "empty legacy state is ready for safe entity initialization"
+        ? "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md"
         : `${cutover.entityCount} entity record(s) are ready for marker-last Git cutover`,
     }]);
   } catch (error) {
@@ -401,11 +401,17 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const pendingPlanLifecycleMigration = hasPendingPlanLifecycleMigration(project);
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
+  const entityAuthorityActive = detectStateMode(project, sourceRoot) === "entities";
+  const projectEntityCutover = !entityAuthorityActive
+    && channel.distributionMajor >= 3
+    && !args.only
+    && !args.runtime
+    && !args.legacyCleanup;
   const pendingCleanup =
     planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
     planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
   const runMigration =
-    crossMajorMigration || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup || Boolean(lifecycleSelector);
+    crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup || Boolean(lifecycleSelector);
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -414,11 +420,11 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   }
 
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
-  const entityAuthorityActive = detectStateMode(project, sourceRoot) === "entities";
-  const filteredCrossMajor = crossMajorMigration && Boolean(args.only && args.only.length > 0);
-  const entitySelected = crossMajorMigration && (!filteredCrossMajor || (!args.yes && Boolean(args.only?.includes("artifacts"))));
-  const partialStateApply = filteredCrossMajor && !entitySelected;
-  let entityPhase = entitySelected || partialStateApply
+  const entityBoundary = projectEntityCutover || crossMajorMigration;
+  const filteredEntityBoundary = entityBoundary && Boolean(args.only && args.only.length > 0);
+  const entitySelected = entityBoundary && (!filteredEntityBoundary || (!args.yes && Boolean(args.only?.includes("artifacts"))));
+  const partialStateApply = filteredEntityBoundary && !entitySelected;
+  let entityPhase = entitySelected || partialStateApply || (entityAuthorityActive && crossMajorMigration)
     ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected, Boolean(args.yes))
     : null;
   const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;

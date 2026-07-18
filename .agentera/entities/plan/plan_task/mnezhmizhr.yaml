@@ -1,0 +1,14 @@
+id: mnezhmizhr
+artifact: plan
+record:
+  name: Reduce cutover to one best-effort forward importer
+  depends_on:
+    - avqwfdnkbi
+  status: pending
+  acceptance:
+    - GIVEN recognized v2 input WHEN converted THEN all expected entities are written or accepted as exact matches before activation.
+    - GIVEN conversion, graph, or target failure WHEN apply stops THEN source remains unchanged, the marker remains absent, and handoff names the first unresolved path.
+    - GIVEN complete valid entities WHEN activation occurs THEN the marker is written last.
+    - GIVEN blocked runtime work WHEN entity state is valid THEN entities activate, the resource remains untouched, and action-required identifies post-marker work.
+  test_proportionality: Success, exact partial retry, divergent target, unsupported record, marker fault, and pre/post-marker runtime faults.
+  plan: psmmjdmrwd

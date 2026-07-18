@@ -135,10 +135,10 @@ const RUNTIME_EXACT: Array<[string, string, string]> = [
 ];
 
 const SOURCE_CONTEXT_HASHES: Record<string, string> = {
-  "references/artifacts/state-storage-authority.yaml": "1c9335e2593e2563d2db53827bad2c28af5ccb23eb8372a4ab6c1b53fff54034",
+  "references/artifacts/state-storage-authority.yaml": "6c0b204c3b156007c6f52bf3e38111af9462197e8b74685bda2aedaa03742430",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
   "references/cli/prime-consumer-compatibility.yaml": "da41e21b628d9091f3bab0ddb7bdb4f86b5649f8f108b25d2dd307ff4e64c7f9",
-  "UPGRADE.md": "570abe05529a904ea44aec6c00c587940557546631d8da23461bfc8d6fc46b59",
+  "UPGRADE.md": "4d680b5c7eb156b86839b05ef31cf25aee522a0539d12fec5ae844963a34de3f",
 };
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }
@@ -207,7 +207,7 @@ function exactExceptions(runtime: any): Exception[] {
     add("skills/agentera/schemas/artifacts/experiments.yaml", pointer, match, SOURCE_CONTEXT_HASHES["skills/agentera/schemas/artifacts/experiments.yaml"], "exact legacy experiment migration source envelope");
   }
   add("references/cli/prime-consumer-compatibility.yaml", "/plan", "plan:634c092e-a7bc-48f4-80ee-2c91940e54f1", SOURCE_CONTEXT_HASHES["references/cli/prime-consumer-compatibility.yaml"], "exact immutable plan evidence reference");
-  for (const [line, text] of [[190, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [191, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --apply --force --format json"], [202, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [203, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --apply --force --format json"]] as Array<[number, string]>) {
+  for (const [line, text] of [[197, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [198, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --apply --force --format json"], [209, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [210, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --apply --force --format json"]] as Array<[number, string]>) {
     add("UPGRADE.md", `section=Legacy state and optional Git enrichment;line=${line}`, "--number", SOURCE_CONTEXT_HASHES["UPGRADE.md"], "exact migration input/apply command");
   }
   return exceptions;

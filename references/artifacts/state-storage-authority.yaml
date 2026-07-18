@@ -504,6 +504,12 @@ entity_migration:
     invalid_behavior: fail_without_fallback
     detection: read_only
     publication_owner: development_channel_v2_to_v3_upgrade
+    selection: >-
+      Project state and CLI installation state are independent dimensions. A v3
+      CLI selects this cutover for recognized marker-absent v2 aggregate state
+      whether the CLI runs from a self-contained npm package or a source
+      checkout. Pending v1 Markdown state and marker-absent state with no
+      recognized v2 entity input are rejected with manual recovery instructions.
   invocation:
     explicit_apply: full_upgrade_yes_only
     dry_run: optional_read_only_preview
@@ -568,7 +574,7 @@ entity_migration:
         Deterministic legacy plan lifecycle normalization is part of entity
         projection during cutover. Upgrade retains the original legacy YAML as
         source and recovery evidence instead of rewriting it first.
-      empty_state: valid_empty_initialization
+      empty_state: unsupported_unknown_source_with_manual_handoff
       existing_entity_state: validate_then_no_op
   source_scope:
     included_entities: entity_target.entities

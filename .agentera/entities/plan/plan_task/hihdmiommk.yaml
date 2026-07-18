@@ -1,0 +1,13 @@
+id: hihdmiommk
+artifact: plan
+record:
+  name: Migrate command namespaces and delete duplicate machinery
+  depends_on:
+    - wmuljfdikb
+  status: pending
+  acceptance:
+    - GIVEN each command namespace WHEN migrated THEN arguments, streams, errors, and side-effect boundaries remain stable.
+    - GIVEN invalid input WHEN parsed THEN it fails before side effects with actionable corrections.
+    - GIVEN all namespaces migrated WHEN duplicates are removed THEN one command contract owns the complete vocabulary.
+  test_proportionality: One pass and one failure per migrated leaf plus generated vocabulary parity.
+  plan: psmmjdmrwd

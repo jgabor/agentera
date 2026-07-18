@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -209,15 +210,21 @@ describe("verify", () => {
     return { rc, out, err };
   }
 
-  it("fullUpgradeThenDoctorAndPrime: upgrade --yes --verify exits 0 with doctor up_to_date and N prime schema_error: null", () => {
+  it("fullUpgradeThenDoctorAndPrime: upgrade --yes --verify exits 0 after state and startup validation", () => {
     const appHome = path.join(home, ".local", "share", "agentera");
     fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
     fs.writeFileSync(path.join(appHome, "v3-handoff.json"), "{}");
-    const project = path.join(tmp, "empty-project");
-    fs.mkdirSync(project, { recursive: true });
+    const project = path.join(tmp, "v2-project");
+    fs.cpSync(path.join(REPO_ROOT, "packages/cli/test/upgrade/fixtures/v2-yaml-project"), project, { recursive: true });
+    execFileSync("git", ["init", "--quiet"], { cwd: project });
+    execFileSync("git", ["config", "user.name", "Upgrade Verify Test"], { cwd: project });
+    execFileSync("git", ["config", "user.email", "upgrade-verify@example.invalid"], { cwd: project });
+    execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: project });
+    execFileSync("git", ["add", "."], { cwd: project });
+    execFileSync("git", ["commit", "--quiet", "-m", "v2 state"], { cwd: project });
 
-    const { rc, err } = capture([
+    const { rc, out, err } = capture([
       "node",
       "agentera",
       "upgrade",
@@ -232,10 +239,7 @@ describe("verify", () => {
     ]);
 
     expect(rc).toBe(0);
-    expect(err).toContain("status: passed");
-    expect(err).toContain("status=up_to_date");
-    expect(err).toContain("schema_error: null");
-    const primeMatches = err.match(/prime --context /g) ?? [];
-    expect(primeMatches.length).toBe(Object.keys(CAPABILITY_INSTRUCTIONS).length);
+    expect(out).toContain("state and startup validation passed");
+    expect(err).toBe("");
   });
 });

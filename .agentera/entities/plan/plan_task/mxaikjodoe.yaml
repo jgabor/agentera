@@ -1,0 +1,25 @@
+id: mxaikjodoe
+artifact: plan
+record:
+  name: Audit final integration and synchronize project state
+  depends_on:
+    - udueghnaov
+    - qrdnhmioyq
+    - avqwfdnkbi
+    - mnezhmizhr
+    - tcrhynzola
+    - ojzirrivfy
+    - vlthncdcui
+    - wqvwvdpgvx
+    - wmuljfdikb
+    - hihdmiommk
+    - mohlqxuurj
+    - pjmtxdvbfz
+  status: pending
+  acceptance:
+    - GIVEN a packed v3 CLI and managed v2 fixture WHEN the sole command runs THEN entities activate, runtime work converges or hands off, prime succeeds, and retry converges.
+    - GIVEN every unsupported or partial state WHEN exercised THEN handoff exposes classification, mutation, authority, phase, path, retry safety, next action, and no-rollback status.
+    - GIVEN repository gates WHEN run THEN typecheck, source/package tests, build, validation, compaction, and package dry-run pass.
+    - GIVEN completion WHEN state and release metadata are inspected THEN task-owned docs and evidence agree, suite remains 3.0.0, and nothing was published.
+  test_proportionality: One fixed-path end-to-end fixture, one handoff matrix, and one final gate run.
+  plan: psmmjdmrwd

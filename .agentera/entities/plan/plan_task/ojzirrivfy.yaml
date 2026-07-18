@@ -1,0 +1,14 @@
+id: ojzirrivfy
+artifact: plan
+record:
+  name: Delete unreachable production implementations
+  depends_on:
+    - mnezhmizhr
+    - tcrhynzola
+  status: pending
+  acceptance:
+    - GIVEN normal and packed-upgrade entrypoints WHEN reachability is checked THEN deleted systems have no supported consumer.
+    - GIVEN build, bundle, and pack WHEN run THEN every supported runtime dependency remains available.
+    - GIVEN removed internals WHEN tests are revised THEN externally observable behavior remains covered by its owner suite.
+  test_proportionality: Source and packed smoke tests; no replacement tests for deleted internals.
+  plan: psmmjdmrwd

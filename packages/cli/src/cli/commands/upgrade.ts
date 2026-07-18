@@ -135,11 +135,13 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   }
 
   let plan;
-  let fullCrossMajorApply = false;
+  let fullEntityCutoverApply = false;
   try {
     if (orchestratorArgs.yes) {
       const preview = buildUpgradePlan({ ...orchestratorArgs, yes: false });
-      fullCrossMajorApply = preview.crossMajorBoundary && !orchestratorArgs.only;
+      fullEntityCutoverApply = !orchestratorArgs.only && (preview.crossMajorBoundary || preview.phases.some((phase) =>
+        phase.name === "entities" && phase.items.some((item) => item.action === "entity-cutover" && item.status === "pending"),
+      ));
       const applyError = validateUpgradeApply(orchestratorArgs, preview);
       if (applyError) {
         if (preview.crossMajorBoundary) {
@@ -160,7 +162,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     }
     plan = buildUpgradePlan(orchestratorArgs);
   } catch (exc) {
-    if (fullCrossMajorApply) {
+    if (fullEntityCutoverApply) {
       err("upgrade error: the v2-to-v3 upgrade did not complete. Rerun the same upgrade command to continue forward.\n");
     } else {
       err(`upgrade error: ${(exc as Error).message}\n`);
@@ -168,7 +170,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     return 2;
   }
 
-  if (fullCrossMajorApply) {
+  if (fullEntityCutoverApply) {
     const applyExit = upgradeExitCode(plan);
     const verification = (dependencies.verifyOneWayUpgrade ?? verifyOneWayUpgrade)(toVerifyContext(args));
     const verificationPassed = verification.state_validation.status === "passed"

@@ -1,0 +1,15 @@
+id: avqwfdnkbi
+artifact: plan
+record:
+  name: Select migration by project state and enforce truthful outcomes
+  depends_on:
+    - udueghnaov
+    - qrdnhmioyq
+  status: pending
+  acceptance:
+    - GIVEN recognized v2 state under any supported v3 installation WHEN full upgrade runs THEN entity migration is selected independently of installation history.
+    - GIVEN intended migration ends with legacy authority WHEN results are rendered THEN exit is nonzero and unrelated work cannot mask failure.
+    - GIVEN verification runs WHEN authority is absent or invalid THEN state validation and public startup fail.
+    - GIVEN active valid entities WHEN upgrade reruns THEN unfinished runtime work remains eligible.
+  test_proportionality: Selector matrix, masked-success regression, public-startup verification, and active pending-runtime case.
+  plan: psmmjdmrwd

@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  STATUS_NO_CHANGES_NEEDED,
   UPGRADE_PREVIEW_SCHEMA,
 } from "../../src/upgrade/compatibility.js";
 import {
@@ -85,7 +84,7 @@ afterEach(() => {
 });
 
 describe("idempotency", () => {
-  it("second orchestrator dry-run reports no_changes_needed after full apply", () => {
+  it("reports entity cutover pending after only the legacy migration phases apply", () => {
     const { appHome, project } = seedLayout(tmp);
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = dryRunMigration(ctx);
@@ -98,8 +97,9 @@ describe("idempotency", () => {
       channel: "development",
     });
     expect(second.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
-    expect(second.lifecycleStatus).toBe(STATUS_NO_CHANGES_NEEDED);
-    expect(upgradeExitCode(second)).toBe(0);
+    expect(second.lifecycleStatus).toBe("ready_to_apply");
+    expect(second.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ action: "entity-cutover", status: "pending" });
+    expect(upgradeExitCode(second)).toBe(1);
   });
 
   it("applyRepeatYes: a second upgrade --yes on an already-applied install exits 0 with no pending items and unchanged file checksums", () => {
