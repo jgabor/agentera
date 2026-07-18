@@ -1,4 +1,33 @@
 cycles:
+  - number: 915
+    timestamp: 2026-07-18 05:51
+    type: fix
+    phase: build
+    what: Closed the in-place write immediately-before-unlink stale-receipt race by
+      holding and validating each receipt descriptor across unlink, stably
+      rereading it afterward, and durably recovering exact changed bytes before
+      refusing canonical publication.
+    inspiration: Task25 retry 1/2 reviewer reproduction for mutation of the
+      quarantined discard inode inside unlink.
+    discovered: A receipt pathname can still name the approved inode immediately
+      before unlink while a concurrent writer changes that same inode inside the
+      unlink boundary; pathname successor checks cannot preserve the
+      now-unlinked changed bytes.
+    verified: 64 focused entity migration apply tests and the full 2,679-test suite
+      across 218 files passed; typecheck, build, and compact passed. Added exact
+      before-unlink, held-writer after-unlink, unstable descriptor, O_EXCL
+      collision, and recovery-fsync failure coverage.
+    next: Task25 is complete. Task14 remains pending; do not generate a live
+      approval or apply migration without explicit authorization.
+    context:
+      intent: Fix only Task25's exact-receipt descriptor mutation window without
+        redesigning migration cleanup or touching live preparation state.
+      constraints: No approval, apply, Task15, version, changelog, vision, manual
+        YAML, amend, push, publish, or changes under the live
+        .agentera/migrations preparation.
+      unknowns: Task14 apply authorization remains intentionally unresolved.
+      scope: packages/cli/src/state/entityMigrationApply.ts and
+        packages/cli/test/state/entityMigrationApply.test.ts
   - number: 914
     timestamp: 2026-07-18 05:28
     type: fix
@@ -214,34 +243,6 @@ cycles:
       scope: Legacy plan migration adapters, shared canonical target validation,
         preview digest binding, apply defense checks, authority contract, and
         migration regressions.
-  - number: 905
-    timestamp: 2026-07-18 00:29
-    type: fix
-    phase: build
-    what: Preserved historical projection residues as immutable nonentity migration
-      evidence while publishing and validating only canonical entities.
-    inspiration: Task14 retry1/2 failed approved apply and the D3+D4 historical
-      projection residue.
-    discovered: The migration planner correctly withheld a target from
-      historical_projection_residue, but apply still passed every manifest entry
-      through canonical boundary validation and receipt publication.
-    verified: Focused migration regression suite passed 2 files and 41 tests. Full
-      CLI suite passed 218 files and 2619 tests. Typecheck and build passed. All
-      12 capability validations, capability contract 2/2, state validation,
-      compact, bundle parity, active protocol scan, migration, legacy evidence
-      writer, lifecycle consumer, Task10 approval, and Task13 correlation
-      coverage passed.
-    next: Task14 remains pending. Use only the fresh post-commit approval command
-      generated after this cycle; do not claim cutover completion until a
-      separately authorized live apply and parity check succeed.
-    context:
-      intent: Correct only the approved Task14 apply defect without running the live
-        cutover.
-      constraints: No live apply, Task14 completion, Task15 work, manual YAML edit,
-        version, changelog, vision, remote, push, publish, or tag.
-      unknowns: none
-      scope: Entity migration preview, durable apply evidence, resume and guarded
-        rollback, and exact residue regressions.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -311,6 +312,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 905 (2026-07-18): Preserved historical projection residues as
+      immutable nonentity migration evidence while publishing and validating
+      only canonical..."
   - summary: "Cycle 904 (2026-07-17): Added standard attached-worktree approval
       support by resolving regular commondir metadata and reading per-worktree
       then common..."
@@ -408,15 +412,18 @@ archive:
   - summary: "Cycle 866 (2026-07-16): Hardened writer-lock initialization with
       atomic publication, descriptor-pinned exact-owner reclamation, and
       actionable legacy-file conflicts."
-  - summary: "Cycle 865 (2026-07-16): Audit retry 2 made project writer-lock stale
-      reclamation and release ownership-safe."
 omitted: true
-omitted_count: 150
+omitted_count: 151
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

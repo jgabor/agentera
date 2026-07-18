@@ -421,6 +421,55 @@ describe("durable entity migration", () => {
     const quarantine = fs.readdirSync(parent).find((name) => name.includes(".discard-"))!; expect(raced).toBe(true); expect(failure).toMatchObject({ classification: "preparation_invalid", mutationPerformed: true, message: expect.stringMatching(/partial exact cleanup removed 1 operation-owned receipt/) }); expect(fs.readFileSync(path.join(parent, quarantine, "receipts/new-child.yaml"), "utf8")).toBe("successor\n"); expectNoCanonicalMigrationEffects(root);
   });
 
+  it.each(["immediately before unlink", "after unlink through a held writer descriptor"])("recovers exact receipt bytes changed %s", (timing) => {
+    const { root, current, parent } = stalePreparation(); const unlink = fs.unlinkSync.bind(fs); const changed = Buffer.from(`changed discard inode ${timing}\n`); let raced = false;
+    vi.spyOn(fs, "unlinkSync").mockImplementation((target) => {
+      if (!raced && path.basename(String(target)).startsWith(".0000.yaml.discard-")) {
+        raced = true;
+        if (timing === "immediately before unlink") { fs.writeFileSync(String(target), changed); unlink(target); }
+        else { const writer = fs.openSync(String(target), fs.constants.O_WRONLY); try { unlink(target); fs.ftruncateSync(writer, 0); fs.writeFileSync(writer, changed); fs.fsyncSync(writer); } finally { fs.closeSync(writer); } }
+      } else unlink(target);
+    });
+    let failure: unknown; try { applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest); } catch (error) { failure = error; }
+    const quarantine = fs.readdirSync(parent).find((name) => name.includes(".discard-"))!; const receipts = path.join(parent, quarantine, "receipts"); const recovery = fs.readdirSync(receipts).find((name) => name.startsWith("0000.yaml.recovery-"));
+    expect(raced).toBe(true); expect(failure).toMatchObject({ classification: "preparation_invalid", mutationPerformed: true, message: expect.stringMatching(/changed during exact removal.*recovery/) }); expect(recovery).toBeDefined(); expect(fs.readFileSync(path.join(receipts, recovery!))).toEqual(changed); expectNoCanonicalMigrationEffects(root);
+  });
+
+  it("retries an exclusive recovery-name collision", () => {
+    const { root, current, parent } = stalePreparation(); const unlink = fs.unlinkSync.bind(fs); const open = fs.openSync.bind(fs); const changed = Buffer.from("collision-safe recovery\n"); let collided = false; let recoveryOpens = 0;
+    vi.spyOn(fs, "unlinkSync").mockImplementation((target) => { if (path.basename(String(target)).startsWith(".0000.yaml.discard-")) fs.writeFileSync(String(target), changed); unlink(target); });
+    vi.spyOn(fs, "openSync").mockImplementation(((target: fs.PathLike, flags: fs.OpenMode, mode?: fs.Mode) => {
+      if (String(target).includes("0000.yaml.recovery-")) { recoveryOpens += 1; if (!collided) { collided = true; const error = new Error("collision") as NodeJS.ErrnoException; error.code = "EEXIST"; throw error; } }
+      return open(target, flags, mode);
+    }) as typeof fs.openSync);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest)).toThrow(/recovery/);
+    const quarantine = fs.readdirSync(parent).find((name) => name.includes(".discard-"))!; const recovery = fs.readdirSync(path.join(parent, quarantine, "receipts")).find((name) => name.startsWith("0000.yaml.recovery-"))!;
+    expect(collided).toBe(true); expect(recoveryOpens).toBe(2); expect(fs.readFileSync(path.join(parent, quarantine, "receipts", recovery))).toEqual(changed); expectNoCanonicalMigrationEffects(root);
+  });
+
+  it("retains the best recovery file and refuses publication when recovery fsync fails", () => {
+    const { root, current, parent } = stalePreparation(); const unlink = fs.unlinkSync.bind(fs); const open = fs.openSync.bind(fs); const fsync = fs.fsyncSync.bind(fs); const changed = Buffer.from("recovery fsync failure bytes\n"); let recoveryFd: number | undefined;
+    vi.spyOn(fs, "unlinkSync").mockImplementation((target) => { if (path.basename(String(target)).startsWith(".0000.yaml.discard-")) fs.writeFileSync(String(target), changed); unlink(target); });
+    vi.spyOn(fs, "openSync").mockImplementation(((target: fs.PathLike, flags: fs.OpenMode, mode?: fs.Mode) => { const fd = open(target, flags, mode); if (String(target).includes("0000.yaml.recovery-")) recoveryFd = fd; return fd; }) as typeof fs.openSync);
+    vi.spyOn(fs, "fsyncSync").mockImplementation((fd) => { if (fd === recoveryFd) throw new Error("simulated recovery fsync failure"); fsync(fd); });
+    let failure: unknown; try { applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest); } catch (error) { failure = error; }
+    const quarantine = fs.readdirSync(parent).find((name) => name.includes(".discard-"))!; const recovery = fs.readdirSync(path.join(parent, quarantine, "receipts")).find((name) => name.startsWith("0000.yaml.recovery-"))!;
+    expect(failure).toMatchObject({ mutationPerformed: true, message: expect.stringMatching(/simulated recovery fsync failure/) }); expect(fs.readFileSync(path.join(parent, quarantine, "receipts", recovery))).toEqual(changed); expectNoCanonicalMigrationEffects(root);
+  });
+
+  it("recovers the best observed bytes and refuses an unstable unlinked descriptor", () => {
+    const { root, current, parent } = stalePreparation(); const unlink = fs.unlinkSync.bind(fs); const fstat = fs.fstatSync.bind(fs); const changed = Buffer.from("unstable descriptor bytes\n"); let afterUnlink = false; let tick = 0;
+    vi.spyOn(fs, "unlinkSync").mockImplementation((target) => { if (path.basename(String(target)).startsWith(".0000.yaml.discard-")) { fs.writeFileSync(String(target), changed); unlink(target); afterUnlink = true; } else unlink(target); });
+    vi.spyOn(fs, "fstatSync").mockImplementation(((fd: number, options?: { bigint?: boolean }) => {
+      const stat = fstat(fd, options as { bigint: true });
+      if (!afterUnlink || !stat.isFile() || stat.nlink !== 0n) return stat;
+      const unstable = Object.create(Object.getPrototypeOf(stat), Object.getOwnPropertyDescriptors(stat)); Object.defineProperty(unstable, "ctimeNs", { value: stat.ctimeNs + BigInt(++tick), enumerable: true }); return unstable;
+    }) as typeof fs.fstatSync);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest)).toThrow(/unstable after exact removal.*recovered/);
+    const quarantine = fs.readdirSync(parent).find((name) => name.includes(".discard-"))!; const recovery = fs.readdirSync(path.join(parent, quarantine, "receipts")).find((name) => name.startsWith("0000.yaml.recovery-"))!;
+    expect(fs.readFileSync(path.join(parent, quarantine, "receipts", recovery))).toEqual(changed); expectNoCanonicalMigrationEffects(root);
+  });
+
   it("preserves a receipts-directory successor created during pinned empty-directory removal", () => {
     const { root, current, parent } = stalePreparation(); const rename = fs.renameSync.bind(fs); let raced = false;
     vi.spyOn(fs, "renameSync").mockImplementation((source, target) => { rename(source, target); if (!raced && path.basename(String(source)) === "receipts" && path.basename(String(target)).startsWith(".receipts.discard-")) { raced = true; fs.mkdirSync(String(source)); fs.writeFileSync(path.join(String(source), "successor.yaml"), "changed\n"); } });

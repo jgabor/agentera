@@ -118,7 +118,7 @@ function pinnedMigrationParent(root: ValidatedProjectRoot): { fd: number; close:
     for (const entry of descriptors.reverse()) fs.closeSync(entry.fd); fs.closeSync(rootFd); throw error;
   }
 }
-function durableCreate(file: string, bytes: string): void {
+function durableCreate(file: string, bytes: string | Buffer): void {
   const fd = fs.openSync(file, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
   try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
   syncDirectory(path.dirname(file));
@@ -253,6 +253,58 @@ function pathMatchesReceipt(parentFd: number, name: string, expectedFd: number, 
   finally { if (observed !== undefined) fs.closeSync(observed); }
 }
 
+interface ReceiptDescriptorSnapshot {
+  bytes: Buffer;
+  dev: bigint;
+  ino: bigint;
+  mode: bigint;
+  size: bigint;
+  mtimeNs: bigint;
+  ctimeNs: bigint;
+}
+
+function readReceiptDescriptor(fd: number): ReceiptDescriptorSnapshot {
+  const before = fs.fstatSync(fd, { bigint: true });
+  if (!before.isFile() || before.size > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("receipt descriptor is not a bounded regular file");
+  const bytes = Buffer.alloc(Number(before.size)); let offset = 0;
+  while (offset < bytes.length) { const read = fs.readSync(fd, bytes, offset, bytes.length - offset, offset); if (read === 0) break; offset += read; }
+  const after = fs.fstatSync(fd, { bigint: true });
+  const observed = { bytes: bytes.subarray(0, offset), dev: after.dev, ino: after.ino, mode: after.mode, size: after.size, mtimeNs: after.mtimeNs, ctimeNs: after.ctimeNs };
+  if (!after.isFile() || before.dev !== after.dev || before.ino !== after.ino || before.mode !== after.mode || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || offset !== bytes.length) {
+    const error = new Error("receipt descriptor changed while read") as Error & { observed: ReceiptDescriptorSnapshot }; error.observed = observed; throw error;
+  }
+  return observed;
+}
+
+function stableReceiptDescriptor(fd: number): ReceiptDescriptorSnapshot {
+  let last: ReceiptDescriptorSnapshot | undefined;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const first = readReceiptDescriptor(fd); const second = readReceiptDescriptor(fd); last = second;
+      if (first.dev === second.dev && first.ino === second.ino && first.mode === second.mode && first.size === second.size && first.mtimeNs === second.mtimeNs && first.ctimeNs === second.ctimeNs && first.bytes.equals(second.bytes)) return second;
+    } catch (error) { last = (error as Error & { observed?: ReceiptDescriptorSnapshot }).observed ?? last; }
+  }
+  const error = new Error("receipt descriptor did not become stable") as Error & { observed?: ReceiptDescriptorSnapshot };
+  error.observed = last; throw error;
+}
+
+function descriptorMatchesReceipt(observed: ReceiptDescriptorSnapshot, expected: EntityMigrationPreparationReceipt): boolean {
+  return String(observed.dev) === expected.dev && String(observed.ino) === expected.ino && String(observed.mode) === expected.mode && String(observed.size) === expected.size && hash(observed.bytes) === expected.sha256;
+}
+
+function recoverChangedReceipt(receiptsFd: number, quarantine: string, name: string, bytes: Buffer): string {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const recoveryName = `${name}.recovery-${randomUUID()}`;
+    try {
+      durableCreate(fdPath(receiptsFd, recoveryName), bytes);
+      return `${ROOT}/${quarantine}/receipts/${recoveryName}`;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    }
+  }
+  throw new Error(`could not reserve an exclusive recovery file for '${name}'`);
+}
+
 function restoreQuarantine(pinned: ReturnType<typeof pinnedMigrationParent>, preparation: Preparation, quarantine: string, removed: number): string {
   const original = fdPath(pinned.fd, preparation.name); const quarantined = fdPath(pinned.fd, quarantine);
   if (removed > 0) return `partial exact cleanup removed ${removed} operation-owned receipt(s); legacy authority remains and retained recovery evidence is '${quarantined}'`;
@@ -282,11 +334,23 @@ function removeStalePreparation(project: string, preparation: Preparation, pinne
       const name = path.posix.basename(expected.path); let receiptFd: number | undefined; const removalName = `.${name}.discard-${randomUUID()}`; let receiptRenamed = false;
       try {
         receiptFd = fs.openSync(fdPath(receiptsFd, name), fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
-        if (!pathMatchesReceipt(receiptsFd, name, receiptFd, expected)) preparationError(`stale preparation receipt '${expected.path}' changed before exact removal`);
+        let observed = stableReceiptDescriptor(receiptFd);
+        if (!descriptorMatchesReceipt(observed, expected) || !pathMatchesReceipt(receiptsFd, name, receiptFd, expected)) preparationError(`stale preparation receipt '${expected.path}' changed before exact removal`);
         fs.renameSync(fdPath(receiptsFd, name), fdPath(receiptsFd, removalName)); receiptRenamed = true; fs.fsyncSync(receiptsFd);
         try { fs.lstatSync(fdPath(receiptsFd, name)); preparationError(`stale preparation receipt '${expected.path}' gained a successor during exact removal`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-        if (!pathMatchesReceipt(receiptsFd, removalName, receiptFd, expected)) preparationError(`stale preparation receipt '${expected.path}' changed during exact removal`);
-        fs.unlinkSync(fdPath(receiptsFd, removalName)); receiptRenamed = false; fs.fsyncSync(receiptsFd); removed += 1;
+        observed = stableReceiptDescriptor(receiptFd);
+        if (!descriptorMatchesReceipt(observed, expected) || !pathMatchesReceipt(receiptsFd, removalName, receiptFd, expected)) preparationError(`stale preparation receipt '${expected.path}' changed during exact removal`);
+        fs.unlinkSync(fdPath(receiptsFd, removalName)); receiptRenamed = false; removed += 1;
+        try { observed = stableReceiptDescriptor(receiptFd); }
+        catch (error) {
+          const unstable = error as Error & { observed?: ReceiptDescriptorSnapshot }; const recovery = unstable.observed ? recoverChangedReceipt(receiptsFd, quarantine, name, unstable.observed.bytes) : undefined;
+          preparationError(`stale preparation receipt '${expected.path}' was unstable after exact removal${recovery ? `; best observed bytes recovered at '${recovery}'` : " and no stable recovery bytes were available"}`);
+        }
+        if (!descriptorMatchesReceipt(observed, expected)) {
+          const recovery = recoverChangedReceipt(receiptsFd, quarantine, name, observed.bytes);
+          preparationError(`stale preparation receipt '${expected.path}' changed during exact removal; recovery is '${recovery}'`);
+        }
+        fs.fsyncSync(receiptsFd);
       } catch (error) {
         if (receiptRenamed) {
           try { fs.lstatSync(fdPath(receiptsFd, name)); }
