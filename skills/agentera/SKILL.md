@@ -57,6 +57,20 @@ For static routing guidance (agentera vs native tools):
 npx -y agentera prime --guidance
 ```
 
+### Upgrade from v2 to v3 development
+
+The preview is optional. Apply is one full command:
+
+```bash
+npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run
+npx -y agentera@next upgrade --channel development --project "$PWD" --yes
+```
+
+Apply requires the complete v2 migration source to be tracked by Git and
+unchanged at `HEAD`. The boundary is one-way: there is no rollback, restore,
+non-Git, or partial cross-major workflow. Rerun the same apply command after an
+interruption; recovery continues forward internally.
+
 ---
 
 ## Routing

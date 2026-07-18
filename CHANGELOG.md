@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Changed the v2-to-v3 development upgrade to one full Git-backed command that requires every migration input to match tracked `HEAD`, activates entity authority last, and validates state and `prime` startup automatically. The optional dry-run is read-only; cross-major apply is one-way and has no rollback, restore, non-Git, or partial workflow.
 - Cut ordinary project state over to one canonical writer-owned file per entity. Public records now use only bare `id` and `artifact` identity, bounded `list` and exact `get --id` reads, and typed writers discovered through `agentera state <artifact> explain`; aggregate state files and ordinal selectors remain migration or historical evidence only.
 - Split lifecycle validation orchestration from the public validation facade while preserving its import surface and validation behavior.
 - Eliminated the monolithic `corpus.json` publication output from the extract CLI; report dry-run diagnostics now reference tier files and the `privacy.corpus_write` field is renamed to `privacy.tier_write`.
@@ -14,7 +15,7 @@
 ### Added
 
 - Added post-cutover entity-backed default state views, bare-ID durability diagnostics, and read-only migration-manifest target validation while preserving legacy numbered behavior before cutover.
-- Added `agentera state migrate entities --apply|--resume|--rollback --force` with durable pre-publication manifests and exact-byte recovery snapshots, deterministic phase-journal resume, no-rewrite completed replay, marker-last cutover, and guarded successor-safe rollback.
+- Added a Git-backed entity cutover owned by the full development-channel `upgrade --yes` command, with deterministic projection, marker-last authority activation, and bounded forward-only interruption recovery.
 - Added post-cutover decision entities for immutable bases and content revisions, replaceable satisfaction ownership, bare-ID exact and bounded reads, deterministic effective provenance, stale-base and transition validation, and explicit same-decision conflict detection; marker-absent projects retain the legacy numbered authority without dual writes.
 - Added the post-cutover progress entity writer and `state progress get|list` reads with bare IDs, one canonical file per cycle, atomic replay-safe publication, full provenance, bounded snapshot pagination, and no legacy projection or archive writes; legacy projects remain unchanged until the durable cutover marker exists.
 - Added authority-driven, one-file-per-entity storage primitives with secure project-wide IDs, symlink-safe discovery, conflict-safe publication, relationship validation, and `agentera check validate state` diagnostics.
@@ -57,11 +58,11 @@
 - Changed `agentera state backfill` to remain optional local-Git enrichment: direct
   `--apply --force` revalidates the project, `HEAD`, candidate, reachability, and
   immutable target, while bounded history and no-remote behavior remain explicit.
-- Changed `agentera upgrade --only artifacts` to preview and apply deterministic
-  plan lifecycle migration for docs-mapped current plans and archives. Legacy
-  `active` and `completed` plan statuses become `open` and `complete` without
-  rewriting retained task evidence; archive recency now uses persisted creation
-  dates instead of file modification times.
+- Changed deterministic plan lifecycle migration to run inside the full
+  development-channel v2-to-v3 upgrade. Legacy `active` and `completed` plan
+  statuses become `open` and `complete` without rewriting retained task
+  evidence; archive recency uses persisted creation dates instead of file
+  modification times.
 - Changed plan reads to normalize legacy `active` and `completed` statuses within
   the current-plan and archive boundary, with structured diagnostics for
   malformed current plans and archives.

@@ -12,12 +12,12 @@ record:
     - GIVEN structured output WHEN requested THEN bounded phase, state-validation, startup-validation, and status fields are accurate and no partial-upgrade result exists.
   plan: xfdsbawvzk
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "High: a post-marker cleanup failure emits Git recovery and falsely claims no v3 authority was activated because guidance uses aggregate applyExit instead of durable state mode. Medium: upgrade schema introspection omits the singular phase field emitted by structured one-way upgrade output. Fix marker-aware forward guidance and schema parity with regression tests."
     provenance:
-      attempt_id: task-sbebutulja-audit-1
-      source: orchestrate audit evaluation for task sbebutulja
-      recorded_at: 2026-07-18 13:40
+      attempt_id: task-sbebutulja-audit-2
+      source: orchestrate audit re-evaluation for task sbebutulja
+      recorded_at: 2026-07-18 14:00
       writer_command: agentera state plan record-evaluation

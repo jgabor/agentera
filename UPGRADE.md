@@ -169,27 +169,15 @@ npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run
 npx -y agentera@next upgrade --channel development --project "$PWD" --yes
 ```
 
-The preview reports artifact migration, app migration, legacy cleanup, and any
-explicitly selected runtime work as separate phases. It does not cross the
-major boundary or mutate the project without `--yes`.
+The dry-run is optional and read-only. Before applying, commit or restore the
+complete v2 migration source: every input must be a regular file tracked by Git
+and unchanged at `HEAD`. The apply command performs the full runtime and entity
+state upgrade, then validates state and representative `prime` startup.
 
-Forward migration to v3 is one-way. Returning to the prior Python 2.x support
-line is permanently unsupported; review the development-channel preview before
-applying it.
-
-Useful phase filters are repeatable:
-
-```bash
-npx -y agentera@next upgrade --only artifacts --dry-run
-npx -y agentera@next upgrade --only runtime --dry-run
-npx -y agentera@next upgrade --only cleanup --dry-run
-```
-
-`--only runtime` filters the v2-to-v3 project-migration runtime phase. It does
-not select an Agentera runtime identity or limit lifecycle diagnosis. Use
-`--runtime all|opencode|codex|cursor|copilot` for lifecycle work; it cannot be
-combined with `--only`. Development-channel dry-runs without `--runtime` still
-observe all active lifecycle runtimes.
+Forward migration to v3 is one-way. Returning to the Python 2.x line is not
+supported, and cross-major apply has no rollback, restore, non-Git, or partial
+workflow. If an apply is interrupted, rerun the same full apply command to
+continue forward.
 
 ## Legacy state and optional Git enrichment
 

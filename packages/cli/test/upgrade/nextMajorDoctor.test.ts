@@ -70,7 +70,7 @@ describe("loadChannelNextMajor", () => {
       channel: "development",
       version: "3.0.0",
     });
-    expect(block?.previewCommand).toContain("upgrade --dry-run");
+    expect(block?.previewCommand).toBe('npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run');
   });
 
   it("returns null when development has next_major omitted", () => {

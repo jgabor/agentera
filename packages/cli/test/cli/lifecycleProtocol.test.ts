@@ -102,7 +102,7 @@ describe("final lifecycle protocol", () => {
       expect(result.rc).toBe(1); expect(result.err).toBe("");
       expect(JSON.parse(result.out).error).toEqual(expect.objectContaining({
         class: "migration_required",
-        recovery: `agentera state migrate entities --project ${root} --dry-run --format json`,
+        recovery: `npx -y agentera@next upgrade --channel development --project ${JSON.stringify(root)} --yes`,
       }));
       expect(treeDigest(root)).toBe(before);
       expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);

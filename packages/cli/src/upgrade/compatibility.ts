@@ -209,9 +209,9 @@ export function classifyInstall(args: ClassifyInstallArgs): InstallClassificatio
   const activeBundleRoot = roots.activeBundleRoot;
   const signals = readSignals(appHome, sourceRoot, activeBundleRoot);
 
-  if (isNpxBundleRoot(sourceRoot) || isNpxBundleRoot(activeBundleRoot) || isNpxBundleRoot(appHome)) {
+  if (hasV2ManagedEvidence(signals, activeBundleRoot)) {
     return {
-      kind: "v3_self_contained_npm",
+      kind: "v2_managed_app_home",
       appHome,
       activeBundleRoot,
       managedAppRoot: roots.managedAppRoot,
@@ -220,9 +220,9 @@ export function classifyInstall(args: ClassifyInstallArgs): InstallClassificatio
     };
   }
 
-  if (hasV2ManagedEvidence(signals, activeBundleRoot)) {
+  if (isNpxBundleRoot(sourceRoot) || isNpxBundleRoot(activeBundleRoot) || isNpxBundleRoot(appHome)) {
     return {
-      kind: "v2_managed_app_home",
+      kind: "v3_self_contained_npm",
       appHome,
       activeBundleRoot,
       managedAppRoot: roots.managedAppRoot,

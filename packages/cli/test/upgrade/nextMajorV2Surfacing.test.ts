@@ -104,7 +104,7 @@ describe("v2 install track successor surfacing (#32)", () => {
     expect(lines?.[2]).toContain("3.0.0");
     expect(lines?.[2]).toContain("development channel");
     expect(lines?.[3]).toContain(V2_GUIDE_FRAGMENT);
-    expect(lines?.[4]).toContain("npx -y agentera@next upgrade --dry-run");
+    expect(lines?.[4]).toContain('npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run');
 
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
@@ -126,7 +126,7 @@ describe("v2 install track successor surfacing (#32)", () => {
     expect(doctorText.indexOf(NEXT_MAJOR_SECTION_HEADER)).toBeLessThan(
       doctorText.indexOf("Agentera doctor"),
     );
-    expect(doctorText).toContain("agentera@next upgrade --dry-run");
+    expect(doctorText).toContain('agentera@next upgrade --channel development --project "$PWD" --dry-run');
     expect(doctorText).toContain(V2_GUIDE_FRAGMENT);
   });
 

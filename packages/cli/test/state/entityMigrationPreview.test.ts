@@ -1097,6 +1097,6 @@ describe("entity migration read-only preview", () => {
     expect(apply).toBe(2);
     expect(rejected).toContain("unrecognized argument '--apply'");
     expect(tree(root)).toEqual(before);
-    expect(printStateHelp("migrate")).toContain("agentera state migrate entities");
+    expect(printStateHelp("migrate")).not.toContain("agentera state migrate entities");
   });
 });

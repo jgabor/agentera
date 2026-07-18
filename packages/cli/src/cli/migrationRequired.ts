@@ -65,7 +65,7 @@ export function enforceCompletedEntityCutover(
     return 1;
   }
   if (mode === "entities") return null;
-  const recovery = `agentera state migrate entities --project ${project} --dry-run --format json`;
+  const recovery = `npx -y agentera@next upgrade --channel development --project ${JSON.stringify(project)} --yes`;
   const envelope = {
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",

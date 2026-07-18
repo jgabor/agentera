@@ -281,7 +281,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
         expect(rc).toBe(1);
         expect(JSON.parse(out).error).toMatchObject({
           class: "migration_required",
-          recovery: expect.stringContaining("state migrate entities"),
+          recovery: expect.stringContaining("agentera@next upgrade --channel development"),
         });
         return;
       }

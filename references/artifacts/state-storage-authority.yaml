@@ -511,12 +511,9 @@ entity_migration:
     ordinary_writes_migrate: false
     apply_invokes_git: true
     read_only_command: >-
-      agentera state migrate entities [--project PATH]
-      [--after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256]
-      [--limit N] --dry-run
-      --format {text,json,yaml}
+      npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run
     apply_command: >-
-      agentera upgrade --channel development --project PATH --yes
+      npx -y agentera@next upgrade --channel development --project "$PWD" --yes
     apply_boundary: >-
       Full upgrade serializes through the project writer lock, stages and graph-
       validates deterministic entities, publishes them without deleting a
@@ -588,6 +585,7 @@ entity_migration:
       identity, archive bytes, final record SHA-256, parent/child Git proof or
       legacy converter/source proof, current projection bytes, and overlay.
       Missing, changed, new, replaced, or unlisted recovery evidence blocks.
+  internal_migration_diagnostic: true
   read_only_preview:
     implementation: implemented
     ordering: artifact_then_boundary_then_source_identity_then_source_path

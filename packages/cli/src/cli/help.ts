@@ -81,6 +81,12 @@ export function printUpgradeHelp(): string {
     "  --force               Overwrite managed runtime files or conflicting backups",
     "  --verify              Verify the current install; full v2-to-v3 apply verifies state and startup automatically",
     "  --format {text,json}  Structured output format",
+    "",
+    "v2-to-v3 development upgrade (one-way):",
+    "  Optional preview: npx -y agentera@next upgrade --channel development --project \"$PWD\" --dry-run",
+    "  Full apply:       npx -y agentera@next upgrade --channel development --project \"$PWD\" --yes",
+    "  Apply requires a Git worktree whose complete v2 migration source is tracked and unchanged at HEAD.",
+    "  Cross-major apply is always full: --only cannot be used; there is no rollback, restore, or non-Git workflow.",
   ].join("\n");
 }
 
@@ -143,7 +149,6 @@ export function printStateHelp(sub?: string): string {
       "Inventory bounded, project-local legacy state under the state-storage authority.",
       `Default inventory and ${dryRunFlag} are read-only; ${applyFlags.join(" ")} is the only mutation intent.`,
       "This surface publishes authority and dispatch only; migration execution never contacts Git or a remote.",
-      "Entity preview has a separate grammar: agentera state migrate entities --help",
       "",
       "options:",
       "  -h, --help            show this help message and exit",
