@@ -1,4 +1,31 @@
 cycles:
+  - number: 910
+    timestamp: 2026-07-18 03:05
+    type: fix
+    phase: build
+    what: Closed the final anchor/tag bypass in historical block-single-pair
+      plan-scope normalization by requiring metadata-free map, pair-key, and
+      pair-value nodes plus an unambiguous plain raw sequence prefix and safe
+      nested ranges.
+    inspiration: Task23 retry 2/2 FINAL and the Task14 dependency gate.
+    discovered: YAML may attach an inline mapping anchor or tag to the first scalar
+      while excluding its token from the map range, so API metadata checks and
+      the raw source prefix are both required; anchored aliases remain objects
+      and canonical validation blocks them.
+    verified: 35 focused and 2,654 full tests across 218 files passed; typecheck,
+      build, state validation, 12 capability validations, capability contract
+      2/2, compact, exact live13 normalization coverage, and blocker-free
+      no-effect live preview passed.
+    next: Task23 is complete. Task14 remains pending; do not apply migration or
+      generate approval.
+    context:
+      intent: Complete Task23 retry 2/2 FINAL by fixing only the anchor/tag
+        normalization bypass without applying or approving migration.
+      constraints: No apply, approval, Task15, version, changelog, vision, manual YAML
+        edit, amend, push, publish, or tag.
+      unknowns: Independent Task14 apply authorization remains intentionally unresolved.
+      scope: Plan artifact YAML source-node normalization, anchor/tag regressions,
+        storage authority, and plan/progress state.
   - number: 909
     timestamp: 2026-07-18 02:39
     type: fix
@@ -235,34 +262,6 @@ cycles:
       unknowns: None.
       scope: Protocol scan reconciliation and tests, progress explain guidance,
         package bundle ownership contract, and state authority wording.
-  - number: 900
-    timestamp: 2026-07-17 18:41
-    type: fix
-    phase: build
-    what: Expanded Task 12 active protocol coverage to the complete registry-owned
-      references inventory and every generated counterpart, with exact semantic
-      and Markdown exceptions.
-    inspiration: Retry 2/2 final Task 12 audit requirements.
-    discovered: The package registry copies the entire 39-file references tree; the
-      prior four-reference scan omitted active vocabulary and prime consumer
-      contracts, and agents/openai.yaml required quoting before semantic YAML
-      inspection.
-    verified: "CLI suite: 216 files and 2585 tests passed. Typecheck and build
-      passed. All 12 capability validations, capability contract, state
-      validation, compact, and focused active-protocol and independent
-      source/bundle parity tests passed."
-    next: Task 12 remains complete. Task 13 is pending; do not begin Task 14 or
-      later work.
-    context:
-      intent: Close the final Task 12 scan-coverage gap without entering migration
-        readiness or changing historical evidence.
-      constraints: Preserve Cycle 899, migration source vocabulary, versions,
-        changelog, vision, Task 13+, and live state; no migration apply,
-        release, amend, push, or publish.
-      unknowns: none
-      scope: Registry-derived copied surface classification, exact active-protocol
-        exceptions, vocabulary and prime identity contracts, and YAML semantic
-        scan compatibility.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -332,6 +331,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 900 (2026-07-17): Expanded Task 12 active protocol coverage to
+      the complete registry-owned references inventory and every generated..."
   - summary: "Cycle 899 (2026-07-17): Closed the audited Task 12 startup identity,
       bounded selection, independent bundle parity, and active
       protocol-surface..."
@@ -428,15 +429,18 @@ archive:
   - summary: "Cycle 861 (2026-07-16): Completed post-plan Audit 37 for compact,
       self-contained prime startup; recorded all-A grades, improving trajectory,
       zero..."
-  - summary: "Cycle 860 (2026-07-16): Append immutable Cycle 860 to correct Cycle
-      859: Cycle 859 inaccurately claimed prior failure_count 2..."
 omitted: true
-omitted_count: 145
+omitted_count: 146
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

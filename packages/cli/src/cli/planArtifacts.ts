@@ -71,6 +71,25 @@ function planStatus(data: JsonObject): string {
   return String(firstPresent(header, ["status"], "") || "");
 }
 
+function hasYamlMetadata(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return false;
+  const node = value as { anchor?: unknown; tag?: unknown };
+  return node.anchor !== undefined || node.tag !== undefined;
+}
+
+function hasSafeRange(value: unknown, textLength: number): value is { range: number[] } {
+  if (value === null || typeof value !== "object") return false;
+  const range = (value as { range?: unknown }).range;
+  if (!Array.isArray(range) || range.length < 2 || range.some((offset) => !Number.isInteger(offset))) return false;
+  return range[0] >= 0 && range[0] <= range[1] && range[1] <= textLength &&
+    (range[2] === undefined || (range[1] <= range[2] && range[2] <= textLength));
+}
+
+function hasPlainSequenceItemPrefix(text: string, itemStart: number): boolean {
+  const lineStart = text.lastIndexOf("\n", itemStart - 1) + 1;
+  return /^[ \t]*-[ \t]+$/.test(text.slice(lineStart, itemStart));
+}
+
 function blockScopeItemSources(text: string): Map<string, JsonObject> {
   const sources = new Map<string, JsonObject>();
   const document = YAML.parseDocument(text);
@@ -82,8 +101,13 @@ function blockScopeItemSources(text: string): Map<string, JsonObject> {
     if (!isSeq(sequence)) continue;
     sequence.items.forEach((item, index) => {
       if (!isMap(item) || item.flow === true || item.items.length !== 1) return;
-      const [{ key, value }] = item.items;
-      if (!isScalar(key) || !isScalar(value) || typeof key.value !== "string" || typeof value.value !== "string" || !item.range) return;
+      const [pair] = item.items;
+      const { key, value } = pair;
+      if (!isScalar(key) || !isScalar(value) || typeof key.value !== "string" || typeof value.value !== "string") return;
+      if ([item, pair, key, value].some(hasYamlMetadata)) return;
+      if (!hasSafeRange(item, text.length) || !hasSafeRange(key, text.length) || !hasSafeRange(value, text.length)) return;
+      if (key.range[0] < item.range[0] || key.range[1] > item.range[1] || value.range[0] < item.range[0] || value.range[1] > item.range[1]) return;
+      if (!hasPlainSequenceItemPrefix(text, item.range[0])) return;
       const sourceText = text.slice(item.range[0], item.range[1]).trimEnd();
       if (sourceText.includes("\n") || sourceText.includes("\r")) return;
       sources.set(`${field}:${index}`, {

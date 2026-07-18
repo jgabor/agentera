@@ -136,6 +136,43 @@ describe("entity migration legacy adapters", () => {
   });
 
   it.each([
+    ["item anchor prefix", "    - &owner owner: platform\n"],
+    ["map item anchor", "    - &owner\n      owner: platform\n"],
+    ["map item tag", "    - !!map\n      owner: platform\n"],
+    ["key tag", "    - !!str owner: platform\n"],
+    ["value tag", "    - owner: !!str platform\n"],
+    ["custom key tag", "    - !scope owner: platform\n"],
+    ["custom value tag", "    - owner: !scope platform\n"],
+  ])("keeps a scope mapping with an explicit %s as an object and blocks migration", (_name, item) => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", `header:\n  id: plan:d23e4567-e89b-42d3-a456-426614174000\n  title: Metadata-bearing scope item\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve YAML metadata\nscope:\n  included:\n${item}  excluded: []\ntasks: []\nsurprises: []\n`);
+    const migration = planEntityMigration(root, SOURCE_ROOT);
+    const plan = migration.entries.find((entry) => entry.boundary === "plan");
+    expect(plan?.record.scope).toEqual({ included: [{ owner: "platform" }], excluded: [] });
+    expect(plan?.migration_provenance).toBeUndefined();
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "blocked", counts: { blockers: 1 } });
+    expect(preview.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ classification: "corrupt", message: expect.stringMatching(/target_invalid:.*scope/) })]));
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/inventory has 1 blocker/);
+    expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  });
+
+  it("keeps an anchored scope mapping and its alias as objects without normalization provenance", () => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", "header:\n  id: plan:e23e4567-e89b-42d3-a456-426614174000\n  title: Anchored scope alias\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve aliases\nscope:\n  included:\n    - &owner\n      owner: platform\n  excluded:\n    - *owner\ntasks: []\nsurprises: []\n");
+    const migration = planEntityMigration(root, SOURCE_ROOT);
+    const plan = migration.entries.find((entry) => entry.boundary === "plan");
+    expect(plan?.record.scope).toEqual({ included: [{ owner: "platform" }], excluded: [{ owner: "platform" }] });
+    expect(plan?.migration_provenance).toBeUndefined();
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "blocked", counts: { blockers: 1 } });
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/inventory has 1 blocker/);
+    expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  });
+
+  it.each([
     ["multi-pair mapping", "    - owner: platform\n      team: runtime\n"],
     ["nested mapping", "    - owner:\n        team: platform\n"],
     ["non-string mapping value", "    - owner: 2\n"],
