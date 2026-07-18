@@ -135,6 +135,7 @@ describe("durable entity migration", () => {
 
   it("applies with a complete approval while PATH traps Git subprocess invocation", () => {
     const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const oldPath = process.env.PATH;
+    expect(JSON.parse(fs.readFileSync(approval, "utf8"))).not.toHaveProperty("transient_preparation");
     process.env.PATH = "/path/that/contains/no/git";
     try {
       const result = capture(["state", "migrate", "entities", "--project", root, "--apply", "--force", "--approval-file", approval, "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"]);
