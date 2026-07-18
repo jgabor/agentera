@@ -2,6 +2,6 @@ id: rhmccgpvnj
 artifact: docs
 record:
   document: Health
-  path: .agentera/health.yaml
-  last_updated: 2026-07-14
+  path: .agentera/entities/health/
+  last_updated: 2026-07-18
   status: current

@@ -1,0 +1,50 @@
+id: bmytkqnvbx
+artifact: health
+record:
+  date: 2026-07-18
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - complexity_hotspots
+    - test_health
+    - security_hygiene
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving vs Audit 37: the repository now runs on validated merge-safe entity authority with release and merge gates green."
+  grades:
+    architecture_alignment: A
+    pattern_consistency: A
+    coupling_health: A
+    complexity_hotspots: A
+    test_health: A
+    security_hygiene: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: Decision 94, the storage authority, runtime, and live project state now use one canonical entity graph.
+    - name: pattern_consistency
+      grade: A
+      summary: All migrated families use bare id and artifact identity with bounded exact/list views.
+    - name: coupling_health
+      grade: A
+      summary: Independent entity files remove aggregate write coupling while singleton editorial artifacts remain whole.
+    - name: complexity_hotspots
+      grade: A
+      summary: The one-time migration is complete; normal runtime paths no longer depend on legacy aggregate authority.
+    - name: test_health
+      grade: A
+      summary: Entity-scale, merge-safety, package, web, full CLI, and state validation gates passed on the migrated checkout.
+    - name: security_hygiene
+      grade: A
+      summary: Explicit approval, recovery evidence, source binding, and guarded rollback protected cutover without Git mutation or remote effects.
+  trends:
+    improved: Repository state moved from numbered aggregates to 1,467 validated canonical entities with one active plan and bounded startup/retrieval.
+    degraded: None.
+    new_findings: None.
+    carried_forward: Unrelated product TODO items remain explicitly open and outside this migration plan.
+  patterns:
+    - One contract now drives identity, storage, readers, writers, migration evidence, public guidance, and package parity.

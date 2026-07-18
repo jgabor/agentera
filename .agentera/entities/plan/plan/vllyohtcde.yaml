@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-07-16
-    status: open
+    status: complete
     reviewed: 2026-07-16
     critic_issues: 9 found, 9 addressed, 0 dismissed
     revised: Split oversized family cutovers; ordered apply after target semantics; moved bundle parity before packaging; clarified active-contract vocabulary; added checkout approval, guarded rollback, whole-state validation, real Git merge fixtures, and a no-Git-side-effects rule.
