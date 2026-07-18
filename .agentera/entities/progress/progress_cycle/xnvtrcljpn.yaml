@@ -1,0 +1,15 @@
+id: xnvtrcljpn
+artifact: progress
+record:
+  timestamp: 2026-07-18 13:24
+  type: fix
+  phase: build
+  what: Added mandatory entity-state and representative prime startup validation to full development-channel v2-to-v3 upgrade apply, with concise text and bounded structured results.
+  context:
+    intent: Verify and report the one-way upgrade automatically without exposing internal migration controls or suggesting reversal.
+    constraints: No public docs, package/version/changelog closeout, rollback machinery, partial apply, or remote mutation.
+    unknowns: None.
+    scope: packages/cli command, help, schema authority, upgrade tests, and typed plan/progress state.
+  inspiration: Active plan xfdsbawvzk task sbebutulja and the independently audited one-way cutover dependency bvpqawhzhb.
+  verified: Focused upgrade and validator tests passed 66/66; full pnpm -C packages/cli test passed 2588/2588; typecheck and build passed; capability-contract validation, schema introspection, and check validate state passed with 1486 entities and zero issues.
+  next: Task cugspwxwgl owns final public docs, skills, package, version, and changelog work; task yqvarvxadk owns closeout.

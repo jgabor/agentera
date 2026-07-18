@@ -53,10 +53,17 @@ function initializeGit(root: string): void {
   git(root, "commit", "--quiet", "-m", "v2 state");
 }
 
-function applyUpgrade(root: string, appHome: string, home: string, only?: readonly ("artifacts" | "runtime" | "cleanup")[]): { code: number; out: string; err: string } {
+function applyUpgrade(
+  root: string,
+  appHome: string,
+  home: string,
+  only?: readonly ("artifacts" | "runtime" | "cleanup")[],
+  format: "text" | "json" = "text",
+  verification?: Parameters<typeof cmdUpgrade>[2],
+): { code: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const code = cmdUpgrade({ installRoot: appHome, home, project: root, channel: "development", yes: true, only }, { out: (value) => { out += value; }, err: (value) => { err += value; } });
+  const code = cmdUpgrade({ installRoot: appHome, home, project: root, channel: "development", yes: true, only, format }, { out: (value) => { out += value; }, err: (value) => { err += value; } }, verification);
   return { code, out, err };
 }
 
@@ -119,6 +126,8 @@ describe("one-way Git entity cutover", () => {
     const applied = applyUpgrade(root, appHome, home);
 
     expect(applied).toMatchObject({ code: 0, err: "" });
+    expect(applied.out).toBe("Agentera upgraded this project from v2 to v3; state and startup validation passed.\n");
+    expect(applied.out).not.toMatch(/manifest|migration|receipt|snapshot|rollback|operation[_ -]?id/i);
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
     for (const [relative, bytes] of sourceBefore) expect(fs.readFileSync(path.join(root, relative))).toEqual(bytes);
     const manifest = YAML.parse(fs.readFileSync(path.join(root, FORWARD_MANIFEST), "utf8"));
@@ -153,6 +162,8 @@ describe("one-way Git entity cutover", () => {
     const refused = applyUpgrade(root, appHome, home);
 
     expect(refused.code).not.toBe(0);
+    expect(refused.err).toContain("Recover the tracked v2 checkout with Git and retry");
+    expect(refused.err).not.toMatch(/rollback|migration[_ -]?id|manifest|receipt|snapshot/i);
     expect(treeBytes(root)).toEqual(projectBefore);
     expect(treeBytes(appHome)).toEqual(appBefore);
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
@@ -239,10 +250,38 @@ describe("one-way Git entity cutover", () => {
     expect(capture(root, ["state", "progress", "list", "--format", "json"]).code).toBe(0);
     managedV2(home);
 
-    expect(applyUpgrade(root, appHome, home).code).toBe(0);
+    const repeated = applyUpgrade(root, appHome, home, undefined, "json");
+    expect(repeated.code).toBe(0);
+    expect(JSON.parse(repeated.out)).toEqual({
+      phase: "complete",
+      startup_validation: { status: "passed" },
+      state_validation: { entity_count: expect.any(Number), issue_count: 0, status: "passed" },
+      status: "success",
+    });
     expect(fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"))).toEqual(markerBefore);
     expect(fs.readFileSync(path.join(root, FORWARD_MANIFEST))).toEqual(manifestBefore);
     expect(capture(root, ["state", "progress", "list", "--format", "json"]).out).toContain("post-cutover write");
+  }, 30_000);
+
+  it.each([
+    ["state", { state_validation: { status: "failed", entity_count: 2, issue_count: 1 }, startup_validation: { status: "passed" } }],
+    ["startup", { state_validation: { status: "passed", entity_count: 2, issue_count: 0 }, startup_validation: { status: "failed" } }],
+  ])("exits nonzero with bounded forward guidance when %s validation fails", (_name, result) => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-verify-failure-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+
+    const failed = applyUpgrade(root, appHome, home, undefined, "json", {
+      verifyOneWayUpgrade: () => result,
+    });
+
+    expect(failed.code).toBe(1);
+    expect(JSON.parse(failed.out)).toEqual({ phase: "verification", status: "failed", ...result });
+    expect(failed.err).toContain("Rerun the same upgrade command to continue forward");
+    expect(failed.err).not.toMatch(/rollback|migration[_ -]?id|manifest|receipt|snapshot/i);
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
   }, 30_000);
 
   it("exposes preview only and has no entity recovery or cross-major restore commands", () => {

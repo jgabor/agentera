@@ -4,7 +4,7 @@ record:
   name: Verify and report the one-way upgrade
   depends_on:
     - bvpqawhzhb
-  status: pending
+  status: complete
   acceptance:
     - GIVEN full cross-major apply WHEN all effects finish THEN the public entity-state validator and one representative prime startup check run automatically without --verify.
     - GIVEN verification failure WHEN the command exits THEN it is nonzero and gives forward-rerun or Git recovery guidance without rollback or migration IDs.

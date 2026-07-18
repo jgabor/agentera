@@ -539,6 +539,20 @@ export function cmdValidateState(
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   const err = io.err ?? ((text: string) => process.stderr.write(text));
   const projectRoot = resolvePath(args.cwd ?? process.cwd());
+  const payload = validateStatePayload(projectRoot);
+  const issues = payload.issues as unknown as JsonObject[];
+  if ((args.format ?? "text") === "json") emitStructured(payload, "json", out);
+  else {
+    out(`status=${payload.status} | entities=${payload.entity_count} | issues=${payload.issue_count} | project_root=${projectRoot}\n`);
+    for (const issue of issues) err(`${issue.code}: ${issue.message}\nrecovery: ${issue.recovery}\n`);
+    if ((payload.omitted_issue_count as number) > 0) err(`omitted ${payload.omitted_issue_count} additional issues; repair listed issues and rerun agentera check validate state --cwd ${JSON.stringify(projectRoot)}\n`);
+  }
+  return payload.valid ? 0 : 1;
+}
+
+/** The executable whole-state contract shared by the public command and upgrade verification. */
+export function validateStatePayload(projectRootInput: string): JsonObject {
+  const projectRoot = resolvePath(projectRootInput);
   const result = validateEntityState(projectRoot);
   const issues: JsonObject[] = [...result.issues as unknown as JsonObject[]];
   try {
@@ -575,11 +589,5 @@ export function cmdValidateState(
     valid_artifact_values: result.validArtifactValues,
     issues: issues as unknown as JsonValue,
   };
-  if ((args.format ?? "text") === "json") emitStructured(payload, "json", out);
-  else {
-    out(`status=${payload.status} | entities=${result.entityCount} | issues=${payload.issue_count} | project_root=${projectRoot}\n`);
-    for (const issue of issues) err(`${issue.code}: ${issue.message}\nrecovery: ${issue.recovery}\n`);
-    if (result.omittedIssueCount > 0) err(`omitted ${result.omittedIssueCount} additional issues; repair listed issues and rerun agentera check validate state --cwd ${JSON.stringify(projectRoot)}\n`);
-  }
-  return valid ? 0 : 1;
+  return payload;
 }

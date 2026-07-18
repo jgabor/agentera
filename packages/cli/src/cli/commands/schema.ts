@@ -349,6 +349,8 @@ function describeCommands(
       "phases",
       "lifecycle",
       "summary",
+      "state_validation",
+      "startup_validation",
       "dryRunCommand",
       "applyCommand",
     ]),

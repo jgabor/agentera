@@ -9,11 +9,16 @@ import {
 } from "../../upgrade/upgradeOrchestrator.js";
 import {
   renderVerifySummary,
+  verifyOneWayUpgrade,
   verifyUpgrade,
+  type OneWayUpgradeVerification,
   type VerifyContext,
 } from "./upgradeVerify.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
+type UpgradeDependencies = {
+  verifyOneWayUpgrade?: (ctx: VerifyContext) => OneWayUpgradeVerification;
+};
 
 export interface UpgradeArgs {
   installRoot?: string | null;
@@ -58,7 +63,26 @@ function toVerifyContext(args: UpgradeArgs): VerifyContext {
   };
 }
 
-export function cmdUpgrade(args: UpgradeArgs, io: Io = {}): number {
+function renderOneWayResult(
+  verification: OneWayUpgradeVerification,
+  applyPassed: boolean,
+  json: boolean,
+): string {
+  const verificationPassed = verification.state_validation.status === "passed"
+    && verification.startup_validation.status === "passed";
+  const result = {
+    phase: applyPassed ? (verificationPassed ? "complete" : "verification") : "apply",
+    startup_validation: verification.startup_validation,
+    state_validation: verification.state_validation,
+    status: applyPassed && verificationPassed ? "success" : "failed",
+  };
+  if (json) return JSON.stringify(result, null, 2) + "\n";
+  return result.status === "success"
+    ? "Agentera upgraded this project from v2 to v3; state and startup validation passed.\n"
+    : "Agentera could not verify the v2-to-v3 upgrade.\n";
+}
+
+export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: UpgradeDependencies = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const orchestratorArgs = toOrchestratorArgs(args);
@@ -102,19 +126,50 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}): number {
   }
 
   let plan;
+  let fullCrossMajorApply = false;
   try {
     if (orchestratorArgs.yes) {
       const preview = buildUpgradePlan({ ...orchestratorArgs, yes: false });
+      fullCrossMajorApply = preview.crossMajorBoundary && !orchestratorArgs.only;
       const applyError = validateUpgradeApply(orchestratorArgs, preview);
       if (applyError) {
-        err(`upgrade error: ${applyError}\n`);
+        if (preview.crossMajorBoundary) {
+          if (orchestratorArgs.only) {
+            err("upgrade error: v2-to-v3 apply must run as one full upgrade --yes; --only is preview-only.\n");
+          } else if (preview.channel.distributionMajor < 3) {
+            err("upgrade error: v2-to-v3 apply requires the development channel; preview there, then retry with --yes.\n");
+          } else {
+            err("upgrade error: v2-to-v3 preflight failed. Recover the tracked v2 checkout with Git and retry.\n");
+          }
+        } else {
+          err(`upgrade error: ${applyError}\n`);
+        }
         return 1;
       }
     }
     plan = buildUpgradePlan(orchestratorArgs);
   } catch (exc) {
-    err(`upgrade error: ${(exc as Error).message}\n`);
+    if (fullCrossMajorApply) {
+      err("upgrade error: the v2-to-v3 upgrade did not complete. Rerun the same upgrade command to continue forward.\n");
+    } else {
+      err(`upgrade error: ${(exc as Error).message}\n`);
+    }
     return 2;
+  }
+
+  if (fullCrossMajorApply) {
+    const applyExit = upgradeExitCode(plan);
+    const verification = (dependencies.verifyOneWayUpgrade ?? verifyOneWayUpgrade)(toVerifyContext(args));
+    const verificationPassed = verification.state_validation.status === "passed"
+      && verification.startup_validation.status === "passed";
+    out(renderOneWayResult(verification, applyExit === 0, (args.format ?? "text") === "json"));
+    if (applyExit !== 0 || !verificationPassed) {
+      err(applyExit !== 0
+        ? "Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n"
+        : "Rerun the same upgrade command to continue forward; verification is read-only and no completed effect was reversed.\n");
+      return 1;
+    }
+    return 0;
   }
 
   if ((args.format ?? "text") === "json") {

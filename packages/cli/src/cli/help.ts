@@ -79,7 +79,7 @@ export function printUpgradeHelp(): string {
     "  --yes                 Explicitly approve declared Agentera-owned operations; never native/trust actions",
     "                        Corrupt/disconnected ownership journals and malformed locks fail closed",
     "  --force               Overwrite managed runtime files or conflicting backups",
-    "  --verify              Post-apply verify: doctor status + 12 prime capability schema checks",
+    "  --verify              Verify the current install; full v2-to-v3 apply verifies state and startup automatically",
     "  --format {text,json}  Structured output format",
   ].join("\n");
 }
