@@ -1,0 +1,52 @@
+id: vvxnfkefnu
+artifact: health
+record:
+  date: 2026-07-18
+  dimensions:
+    - architecture_alignment
+    - coupling_health
+    - complexity_hotspots
+    - test_health
+    - version_health
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the replacement architecture removes generalized cross-major recovery while retaining fail-before-effects and bounded forward completion."
+  grades:
+    architecture_alignment: A
+    coupling_health: A
+    complexity_hotspots: A
+    test_health: A
+    version_health: A
+    artifact_freshness: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: The active contract is Git-only, full-upgrade-only, strictly one-way, and marker-last.
+    - name: coupling_health
+      grade: A
+      summary: Disposable staging and one bounded forward manifest replace public resume, rollback, restore, and generalized recovery coupling.
+    - name: complexity_hotspots
+      grade: A
+      summary: The replacement architecture removed approximately 2,295 lines while leaving historical migration evidence inert.
+    - name: test_health
+      grade: A
+      summary: All 2,592 CLI tests, typecheck, build, validators, package dry-run, and extracted-package upgrade plus prime passed.
+    - name: version_health
+      grade: A
+      summary: Package 3.0.0-dev.25, suite 3.0.0, and governed gitRef 967fc2fd43ef255377d304d0951d4128968c9810 are aligned.
+    - name: artifact_freshness
+      grade: A
+      summary: Active plan closeout, progress, documentation inventory, health, and the scoped manual-review TODO are synchronized without rewriting archived evidence.
+  trends:
+    improved: One public upgrade --yes path now owns complete v2-to-v3 cutover and automatic verification.
+    degraded: None.
+    stable: Tracked-HEAD preflight, deterministic entities, graph validation, marker-last activation, and inert historical migration bytes remain enforced.
+    new_findings: None.
+    resolved: Git-only v2-to-v3 entity cutover no longer requires manual migration inputs or recovery controls.
+    carried_forward: TODO bpldovnflp remains open only for unrelated upgrade and migration scenarios; orchestration still owns plan completion and archival.
+  patterns:
+    - Use source-control recovery plus bounded forward completion instead of a generalized rollback machine when the product contract is one-way.

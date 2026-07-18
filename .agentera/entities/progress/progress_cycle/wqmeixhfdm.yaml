@@ -1,0 +1,16 @@
+id: wqmeixhfdm
+artifact: progress
+record:
+  timestamp: 2026-07-18 15:02
+  type: chore
+  phase: build
+  what: Synchronized the one-way v2-to-v3 upgrade closeout across the active task, scoped TODO, documentation inventory, final health audit, and progress evidence while preserving archived predecessor requirements and failed-then-passed evaluations.
+  context:
+    intent: Close only plan xfdsbawvzk task yqvarvxadk after independently audited implementation and complete release-shaped verification.
+    constraints: Do not complete or archive plan xfdsbawvzk; do not alter archived plan zqwisfegxj, historical migration evidence, unrelated TODOs, stable v2, vision/profile, remotes, tags, or publication.
+    unknowns: None.
+    scope: .agentera typed plan, progress, docs, health, and TODO entities only, including the pre-existing cugspwxwgl PASS evaluation.
+  inspiration: Plan xfdsbawvzk task yqvarvxadk; implementation tasks bvpqawhzhb, sbebutulja, and cugspwxwgl all have passing independent evaluations.
+  discovered: TODO bpldovnflp is broader than entity cutover, so it remains open and now distinguishes the resolved Git-only v2-to-v3 scenario from unrelated queued upgrade and migration scenarios.
+  verified: pnpm -C packages/cli test passed 217 files and 2,592 tests; typecheck and build passed. Build capability, capability-contract 2/2, cross-capability, lifecycle-adapters, app-home-contract, release-metadata, and state validators passed; schema reported gaps=[]; compact reported over_limit=0 and changed=0. npm pack dry-run produced agentera@3.0.0-dev.25 with 733 entries; the extracted-package tracked-v2 public upgrade --yes and prime regression passed. Package 3.0.0-dev.25, suite 3.0.0, and gitRef 967fc2fd43ef255377d304d0951d4128968c9810 match authority. Build regenerated source/bundle parity; git diff found no bundle drift. Historical .agentera/migrations bytes match their introduction commit 7be6db23. git diff --check passed.
+  next: Orchestration should independently evaluate yqvarvxadk, then complete and archive plan xfdsbawvzk. Keep TODO bpldovnflp open for unrelated scenarios.

@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: State storage authority
   path: references/artifacts/state-storage-authority.yaml
-  last_updated: 2026-07-15
+  last_updated: 2026-07-18
   status: current

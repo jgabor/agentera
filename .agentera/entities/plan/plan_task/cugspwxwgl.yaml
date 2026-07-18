@@ -13,12 +13,12 @@ record:
     - GIVEN release gates WHEN they run THEN full tests, typecheck, build, contracts, state validation, compaction, package dry-run, and extracted-package execution pass.
   plan: xfdsbawvzk
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "High: active UPGRADE.md and bundled UPGRADE.md still advertise upgrade --restore without excluding irreversible v2-to-v3 cutover, contradicting the one-way public contract. Remove the stale normal-path statement or explicitly limit it to older non-cross-major migrations, then rebuild bundle and revalidate guidance parity."
     provenance:
-      attempt_id: task-cugspwxwgl-audit-1
-      source: orchestrate audit evaluation for task cugspwxwgl
-      recorded_at: 2026-07-18 14:35
+      attempt_id: task-cugspwxwgl-audit-2
+      source: orchestrate audit re-evaluation for task cugspwxwgl
+      recorded_at: 2026-07-18 14:50
       writer_command: agentera state plan record-evaluation

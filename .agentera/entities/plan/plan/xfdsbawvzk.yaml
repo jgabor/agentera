@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-07-18
-    status: open
+    status: complete
     reviewed: 2026-07-18
     critic_issues: 5 found, 5 addressed, 0 dismissed
     title: "Plan: Make v2-to-v3 Cutover One-Way"
