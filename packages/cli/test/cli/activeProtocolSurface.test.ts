@@ -138,7 +138,7 @@ const SOURCE_CONTEXT_HASHES: Record<string, string> = {
   "references/artifacts/state-storage-authority.yaml": "1c9335e2593e2563d2db53827bad2c28af5ccb23eb8372a4ab6c1b53fff54034",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
   "references/cli/prime-consumer-compatibility.yaml": "da41e21b628d9091f3bab0ddb7bdb4f86b5649f8f108b25d2dd307ff4e64c7f9",
-  "UPGRADE.md": "23a971219f26eca9b1432ab1cc561d932d7b1f77b23febfc9dfb51870abc5858",
+  "UPGRADE.md": "570abe05529a904ea44aec6c00c587940557546631d8da23461bfc8d6fc46b59",
 };
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }

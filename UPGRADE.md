@@ -229,10 +229,8 @@ npx -y agentera@next prime --format json
 `upgrade --verify` without `--yes` is a read-only doctor and capability-context
 verification. With `--yes`, it runs those checks after the approved upgrade
 apply. Lifecycle selections with `--verify` require `--yes`.
-`upgrade --restore` restores the latest supported app-migration snapshot; it
-does not bypass lifecycle ownership or trust checks. For lifecycle partial
-failure, rerun the same preview and apply selection. Do not delete or hand-edit
-the ownership journal to force adoption.
+For lifecycle partial failure, rerun the same preview and apply selection. Do
+not delete or hand-edit the ownership journal to force adoption.
 
 `--force` applies only where the owning migration contract explicitly permits
 replacement. It does not convert user-owned resources into Agentera-owned

@@ -5,10 +5,20 @@ record:
   depends_on:
     - bvpqawhzhb
     - sbebutulja
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN only the packed development package WHEN a tracked clean v2 Git fixture runs the public upgrade --yes command THEN entity authority activates and prime succeeds.
     - GIVEN active guidance WHEN users follow v2-to-v3 upgrade THEN it shows one full apply command, optional dry-run, tracked-HEAD prerequisite, one-way boundary, and no rollback, restore, non-Git, or partial workflow.
     - GIVEN release metadata WHEN synchronized THEN the npm package advances one development build, suite versions remain 3.0.0, and bundle/source references are current.
     - GIVEN release gates WHEN they run THEN full tests, typecheck, build, contracts, state validation, compaction, package dry-run, and extracted-package execution pass.
   plan: xfdsbawvzk
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "High: active UPGRADE.md and bundled UPGRADE.md still advertise upgrade --restore without excluding irreversible v2-to-v3 cutover, contradicting the one-way public contract. Remove the stale normal-path statement or explicitly limit it to older non-cross-major migrations, then rebuild bundle and revalidate guidance parity."
+    provenance:
+      attempt_id: task-cugspwxwgl-audit-1
+      source: orchestrate audit evaluation for task cugspwxwgl
+      recorded_at: 2026-07-18 14:35
+      writer_command: agentera state plan record-evaluation
