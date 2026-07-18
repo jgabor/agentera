@@ -1,0 +1,16 @@
+id: lasgdhntir
+artifact: progress
+record:
+  timestamp: 2026-07-18 14:46
+  type: docs
+  phase: build
+  what: Deleted the unavailable upgrade --restore sentence from UPGRADE.md, rebuilt packages/cli/bundle/UPGRADE.md, and extended oneCommandContract.test.ts to require byte parity and reject that command.
+  context:
+    intent: Resolve the first cugspwxwgl audit failure without changing the one-command upgrade implementation or Task 4 state.
+    constraints: No version bump, Task 4 closeout, publish, tag, push, or unrelated edits.
+    unknowns: "Resolved: v3 CLI rejects --restore, so deletion is correct rather than scoping unavailable behavior."
+    scope: UPGRADE.md, bundled UPGRADE.md generation, active-guidance tests, release provenance, and cugspwxwgl state.
+  inspiration: Persisted audit attempt task-cugspwxwgl-audit-1 identified contradictory active restore guidance.
+  discovered: Release validation treats UPGRADE.md as governed bundled package input, so gitRef had to advance to the immutable retry commit while package and suite versions remained unchanged.
+  verified: Focused guidance, bundle, package parity, help, and packed-upgrade tests passed 53/53; full pnpm -C packages/cli test passed 2592/2592; typecheck and build passed; release metadata passed; state validation passed with 1489 entities and zero issues; compact passed; npm pack dry-run produced agentera@3.0.0-dev.25 with 733 entries; extracted-package upgrade and prime passed.
+  next: Task yqvarvxadk remains responsible for final project-state closeout.
