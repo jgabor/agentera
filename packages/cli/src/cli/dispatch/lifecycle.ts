@@ -285,7 +285,6 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     only: [],
     force: false,
     verify: false,
-    restore: false,
     runtime: null,
     legacyCleanup: null,
     format: "text",
@@ -376,7 +375,6 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--force") args.force = true;
     else if (a === "--verify") args.verify = true;
-    else if (a === "--restore") args.restore = true;
     else if (a === "--update-packages") {
       return rejectUnsupportedUpgradeFlag(
         io,

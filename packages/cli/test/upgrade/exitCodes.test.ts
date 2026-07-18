@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -37,9 +38,20 @@ function seedLayout(sandbox: string): { appHome: string; project: string } {
   fs.mkdirSync(h, { recursive: true });
   const appHome = path.join(h, "agentera");
   managedV2(appHome);
-  fs.cpSync(path.join(FIXTURES, "v2-yaml-project"), path.join(sandbox, "project"), { recursive: true });
+  const project = path.join(sandbox, "project");
+  fs.cpSync(path.join(FIXTURES, "v2-yaml-project"), project, { recursive: true });
   fs.cpSync(path.join(FIXTURES, "v2-runtime-python"), h, { recursive: true });
-  return { appHome, project: path.join(sandbox, "project") };
+  const git = (...args: string[]): void => {
+    const result = spawnSync("git", args, { cwd: project, encoding: "utf8" });
+    if (result.status !== 0) throw new Error(String(result.stderr));
+  };
+  git("init", "--quiet");
+  git("config", "user.name", "Upgrade Test");
+  git("config", "user.email", "upgrade@example.invalid");
+  git("config", "commit.gpgsign", "false");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "v2 state");
+  return { appHome, project };
 }
 
 beforeEach(() => {
@@ -63,12 +75,12 @@ describe("exitCodes", () => {
   it("partialFailureApply: upgradeExitCode returns 1 when summary.failed > 0 after a partial-failure apply", () => {
     const { appHome, project } = seedLayout(tmp);
 
-    const realCpSync = fs.cpSync.bind(fs);
-    vi.spyOn(fs, "cpSync").mockImplementation((src, dest, opts) => {
-      if (typeof dest === "string" && dest.includes("upgrade-snapshot")) {
+    const realRmSync = fs.rmSync.bind(fs);
+    vi.spyOn(fs, "rmSync").mockImplementation((target, options) => {
+      if (path.resolve(String(target)) === path.resolve(appHome, "app")) {
         throw Object.assign(new Error("write ENOSPC"), { code: "ENOSPC" }) as NodeJS.ErrnoException;
       }
-      return realCpSync(src as fs.PathOrFileDescriptor, dest as fs.PathOrFileDescriptor, opts as fs.CopySyncOptions);
+      return realRmSync(target, options);
     });
 
     const plan = buildUpgradePlan({

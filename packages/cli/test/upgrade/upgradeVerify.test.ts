@@ -8,7 +8,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { main } from "../../src/cli/dispatch.js";
 import {
-  renderRestoreSummary,
   renderVerifySummary,
   verifyUpgrade,
 } from "../../src/cli/commands/upgradeVerify.js";
@@ -148,32 +147,7 @@ describe("renderVerifySummary", () => {
   });
 });
 
-describe("renderRestoreSummary", () => {
-  it("reports the file count and source when restore succeeds", () => {
-    const summary = renderRestoreSummary("/tmp/agentera", {
-      restored: true,
-      source: "/tmp/agentera/app",
-      snapshotDir: "/tmp/agentera/.agentera/upgrade-snapshot-1",
-      created: "2026-07-03T00:00:00.000Z",
-      fileCount: 12,
-    });
-    expect(summary).toContain("restored 12 files to /tmp/agentera/app");
-    expect(summary).toContain("from snapshot created 2026-07-03T00:00:00.000Z");
-  });
-
-  it("reports 'no upgrade snapshot' when nothing was found", () => {
-    const summary = renderRestoreSummary("/tmp/agentera", {
-      restored: false,
-      source: null,
-      snapshotDir: null,
-      created: null,
-      fileCount: 0,
-    });
-    expect(summary).toContain("no upgrade snapshot found at /tmp/agentera");
-  });
-});
-
-describe("cli dispatch: upgrade --verify / --restore", () => {
+describe("cli dispatch: upgrade --verify", () => {
   function capture(argv: string[]): { rc: number; out: string; err: string } {
     let out = "";
     let err = "";
@@ -185,29 +159,6 @@ describe("cli dispatch: upgrade --verify / --restore", () => {
     const { rc, err } = capture(["node", "agentera", "upgrade", "--verify", "--dry-run"]);
     expect(rc).toBe(2);
     expect(err).toContain("--verify cannot be combined with --dry-run");
-  });
-
-  it("upgrade --restore --yes is rejected as mutually exclusive (rc 2)", () => {
-    const { rc, err } = capture(["node", "agentera", "upgrade", "--restore", "--yes"]);
-    expect(rc).toBe(2);
-    expect(err).toContain("--restore is mutually exclusive");
-  });
-
-  it("upgrade --restore reports 'no upgrade snapshot' and exits 0 when no manifest exists", () => {
-    const appHome = path.join(tmp, "restore-empty");
-    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
-    const { rc, out } = capture([
-      "node",
-      "agentera",
-      "upgrade",
-      "--restore",
-      "--install-root",
-      appHome,
-      "--home",
-      home,
-    ]);
-    expect(rc).toBe(0);
-    expect(out).toContain("no upgrade snapshot found");
   });
 
   it("upgrade --verify --install-root <missing> exits non-zero with a failed doctor check", () => {

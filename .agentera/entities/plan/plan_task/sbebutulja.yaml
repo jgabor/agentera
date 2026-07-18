@@ -1,0 +1,13 @@
+id: sbebutulja
+artifact: plan
+record:
+  name: Verify and report the one-way upgrade
+  depends_on:
+    - bvpqawhzhb
+  status: pending
+  acceptance:
+    - GIVEN full cross-major apply WHEN all effects finish THEN the public entity-state validator and one representative prime startup check run automatically without --verify.
+    - GIVEN verification failure WHEN the command exits THEN it is nonzero and gives forward-rerun or Git recovery guidance without rollback or migration IDs.
+    - GIVEN success WHEN text output is shown THEN one concise v2-to-v3 result omits internal migration controls.
+    - GIVEN structured output WHEN requested THEN bounded phase, state-validation, startup-validation, and status fields are accurate and no partial-upgrade result exists.
+  plan: xfdsbawvzk

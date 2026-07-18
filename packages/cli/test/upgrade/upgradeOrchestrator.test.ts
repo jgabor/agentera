@@ -1,14 +1,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
-import { applyEntityMigration } from "../../src/state/entityMigrationApply.js";
-import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
+import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import {
   STATUS_MANUAL_REVIEW_NEEDED,
   STATUS_NO_CHANGES_NEEDED,
@@ -33,6 +33,20 @@ let stderr: string;
 function copyFixture(name: string, dest: string): string {
   fs.cpSync(path.join(FIXTURES, name), dest, { recursive: true });
   return dest;
+}
+
+function git(root: string, ...args: string[]): void {
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  if (result.status !== 0) throw new Error(String(result.stderr));
+}
+
+function initializeGit(root: string): void {
+  git(root, "init", "--quiet");
+  git(root, "config", "user.name", "Upgrade Test");
+  git(root, "config", "user.email", "upgrade@example.invalid");
+  git(root, "config", "commit.gpgsign", "false");
+  git(root, "add", ".");
+  git(root, "commit", "--quiet", "--allow-empty", "-m", "v2 state");
 }
 
 function snapshotTree(root: string): Record<string, string> {
@@ -133,8 +147,8 @@ describe("buildUpgradePlan", () => {
 
     const existing = path.join(tmp, "existing-entities");
     fs.mkdirSync(existing);
-    const preview = previewEntityMigration(existing, REPO_ROOT);
-    applyEntityMigration(existing, REPO_ROOT, preview.source_fingerprint, preview.preview_digest);
+    initializeGit(existing);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(existing, REPO_ROOT));
     const existingPlan = buildUpgradePlan({ installRoot: appHome, home, project: existing, channel: "development", dryRun: true, only: ["artifacts"] });
     expect(existingPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "noop", action: "entity-state-active" });
   });

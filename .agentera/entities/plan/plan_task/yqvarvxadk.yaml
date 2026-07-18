@@ -1,0 +1,14 @@
+id: yqvarvxadk
+artifact: plan
+record:
+  name: Synchronize final project state
+  depends_on:
+    - bvpqawhzhb
+    - sbebutulja
+    - cugspwxwgl
+  status: pending
+  acceptance:
+    - GIVEN all gates pass WHEN state synchronizes THEN plan, progress, docs inventory, health, and the related manual-review TODO reflect the delivered simplification.
+    - GIVEN the superseded plan and failed evaluation WHEN closeout is inspected THEN they remain historical evidence rather than active requirements.
+    - GIVEN final verification WHEN the plan is evaluated THEN all gates and a clean worktree prove completion while unrelated TODOs remain unchanged.
+  plan: xfdsbawvzk

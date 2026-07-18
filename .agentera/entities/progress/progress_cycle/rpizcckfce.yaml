@@ -1,0 +1,16 @@
+id: rpizcckfce
+artifact: progress
+record:
+  timestamp: 2026-07-18 12:52
+  type: fix
+  phase: build
+  what: Replaced recovery-heavy v2-to-v3 entity migration with a Git-HEAD-bound, full-upgrade-only, marker-last cutover using disposable staging and one fixed forward manifest.
+  context:
+    intent: Complete task bvpqawhzhb under the approved strictly one-way Git cutover contract.
+    constraints: Preserved Decision 94 mapping and graph validation, stable v2 behavior, normal entity authority, and committed historical evidence; no release, publication, push, version, vision/profile, or unrelated TODO work.
+    unknowns: "Resolved: active recovery apply/resume/rollback, approval, preparation, snapshots, receipts, and app restore were removable; retained only bounded read-only historical manifest validation."
+    scope: Entity cutover authority, Git preflight, upgrade composition, preview-only entity command, restore removal, state validation compatibility, and proportional tests.
+  inspiration: Replacement plan xfdsbawvzk and the user-approved decision that Git history, not Agentera rollback, recovers v2 state.
+  discovered: Executable tracing showed normal entity reads and writes do not consume migration journals; only public state validation needs a minimal read-only parser for historical marker-backed manifests.
+  verified: pnpm exec vp test run focused surfaces passed 165/165; pnpm test passed 215 files and 2,586 tests; typecheck and build passed; capability-contract passed 2/2; check validate state passed with 1,485 entities and 0 issues; root check compact passed; command/help smokes passed; git diff --exit-code -- .agentera/migrations passed.
+  next: Task sbebutulja owns mandatory startup verification and output; cugspwxwgl owns final docs/package/version work; yqvarvxadk owns closeout.

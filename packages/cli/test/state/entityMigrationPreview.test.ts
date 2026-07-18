@@ -770,7 +770,7 @@ describe("entity migration read-only preview", () => {
     expect(tree(root)).toEqual(before);
   });
 
-  it("keeps active-plan preview, continuation, and apply preflight bound to the unsafe project path", () => {
+  it("keeps active-plan preview and continuation bound to the unsafe project path", () => {
     const root = project();
     const external = project();
     const externalPlan = path.join(external, "plan.yaml");
@@ -794,11 +794,6 @@ describe("entity migration read-only preview", () => {
     expect(repeated.entries).toEqual(first.entries);
     expect(continuedAgain).toEqual(continued);
 
-    let out = "";
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", first.source_fingerprint, "--preview-digest", first.preview_digest, "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), REPO_ROOT);
-    expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "inventory_blocked" } });
-    expect(out).not.toContain("223e4567-e89b-42d3-a456-426614174000");
     expect(tree(root)).toEqual(before);
   });
 
@@ -831,7 +826,7 @@ describe("entity migration read-only preview", () => {
     expect(tree(root)).toEqual(before);
   });
 
-  it("discards a replaced recursive root before external names can bind preview, continuation, or pre-apply", () => {
+  it("discards a replaced recursive root before external names can bind preview or continuation", () => {
     const root = project();
     const external = project();
     const inventoryRoot = path.join(root, ".agentera", "archive");
@@ -879,12 +874,6 @@ describe("entity migration read-only preview", () => {
     expect(JSON.stringify(repeated)).not.toContain("external-marker");
     expect(tree(root)).toEqual(before);
 
-    let out = "";
-    const rc = race(() => main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", first.source_fingerprint, "--preview-digest", first.preview_digest, "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), REPO_ROOT));
-    expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "migration_failed" } });
-    expect(out).not.toContain("external-marker");
-    expect(tree(root)).toEqual(before);
   });
 
   it("discards an entire recursive inventory when a nested directory is replaced during readdir", () => {
@@ -1103,10 +1092,10 @@ describe("entity migration read-only preview", () => {
     expect(preview).toMatchObject({ command: "state migrate entities", read_only: true, mutation_performed: false });
     write(root, "TODO.md", "# TODO\n- [ ] changed after preview\n");
     const before = tree(root);
-    out = "";
-    const apply = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"], { out: (text) => (out += text), err: () => undefined });
-    expect(apply).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ mutation_performed: false, error: { class: "source_changed" } });
+    let rejected = "";
+    const apply = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"], { out: (text) => (rejected += text), err: (text) => (rejected += text) });
+    expect(apply).toBe(2);
+    expect(rejected).toContain("unrecognized argument '--apply'");
     expect(tree(root)).toEqual(before);
     expect(printStateHelp("migrate")).toContain("agentera state migrate entities");
   });

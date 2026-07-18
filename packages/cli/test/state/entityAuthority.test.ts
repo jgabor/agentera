@@ -235,22 +235,27 @@ describe("Decision 94 entity authority", () => {
     ).toEqual(["missing_decision"]);
   });
 
-  it("defines non-fabricating cutover outcomes, recovery, and measurable target gates", () => {
+  it("defines non-fabricating one-way cutover and measurable target gates", () => {
     const authority = loadAuthority();
     const migration = authority.entity_migration;
     const measurement = authority.entity_target.measurement_contract;
 
     expect(migration).toMatchObject({
-      status: "durable_apply_resume_rollback_implemented",
+      status: "one_way_git_cutover_implemented",
       decision: 94,
-      kind: "single_explicit_project_cutover",
+      kind: "single_full_upgrade_cutover",
       invocation: {
-        explicit: "required",
-        dry_run: "required_before_apply",
+        explicit_apply: "full_upgrade_yes_only",
+        dry_run: "optional_read_only_preview",
         ordinary_reads_migrate: false,
         ordinary_writes_migrate: false,
-        invokes_git: false,
+        apply_invokes_git: true,
         apply_boundary: expect.stringContaining("writes the authority marker last"),
+        git_preflight: {
+          required: true,
+          source: "HEAD_commit",
+          ignored_or_untracked_input: "refuse",
+        },
       },
       cutover_marker: {
         path: ".agentera/state-mode.yaml",
@@ -259,7 +264,7 @@ describe("Decision 94 entity authority", () => {
         absent_mode: "legacy",
         invalid_behavior: "fail_without_fallback",
         detection: "read_only",
-        publication_owner: "durable_migration_apply",
+        publication_owner: "development_channel_v2_to_v3_upgrade",
       },
       read_only_preview: {
         implementation: "implemented",
@@ -280,9 +285,12 @@ describe("Decision 94 entity authority", () => {
         },
       },
       non_fabrication: { partial_cutover_success: "forbidden" },
-      resume: {
-        changed_source: "refuse before further publication",
-        replay_after_complete: "report idempotent completion without rewriting entities",
+      forward_state: {
+        staging: ".agentera/migrations/entities/staging",
+        manifest: ".agentera/migrations/entities/forward.yaml",
+        manifest_fields: ["schemaVersion", "phase", "source", "targets", "marker"],
+        phases: ["publishing_entities", "entities_published"],
+        forbidden_fields: expect.arrayContaining(["operation_id", "snapshots", "inode_receipts", "rollback_state"]),
       },
     });
     expect(
@@ -302,16 +310,14 @@ describe("Decision 94 entity authority", () => {
     expect(migration.lifecycle.map((phase: any) => phase.phase)).toEqual([
       "inventory",
       "preview",
-      "approve",
-      "prepare_recovery",
-      "publish_entities",
-      "validate_graph",
-      "cutover",
-      "cutover_complete",
+      "git_preflight",
+      "stage_entities",
+      "publishing_entities",
+      "entities_published",
+      "marker",
     ]);
-    expect(migration.durable_evidence.required_before_entity_publication).toEqual(
-      expect.arrayContaining(["complete old-to-new ID mapping", "recovery snapshot and cutover journal"]),
-    );
+    expect(migration).not.toHaveProperty("resume");
+    expect(migration).not.toHaveProperty("recovery");
     expect(migration.non_fabrication.forbidden).toEqual(
       expect.arrayContaining(["synthetic entities for missing source detail", "guessed relationship targets"]),
     );

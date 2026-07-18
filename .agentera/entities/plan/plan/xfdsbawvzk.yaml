@@ -1,0 +1,36 @@
+id: xfdsbawvzk
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-18
+    status: open
+    reviewed: 2026-07-18
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: "Plan: Make v2-to-v3 Cutover One-Way"
+  what: Replace the recovery-heavy entity migration path with a Git-backed, one-way v2-to-v3 cutover owned entirely by the existing development-channel upgrade --yes invocation.
+  why: The source v2 state is recoverable from Git. Non-Git migration, rollback to v2, reversible authority changes, public resume IDs, and extensive receipt recovery add machinery without a product requirement. Users need one forward upgrade with bounded safe rerun behavior.
+  constraints: Require every existing migration input to be a regular tracked file matching HEAD before cross-major mutation; reject ignored, untracked, staged, modified, renamed, unsafe, or non-regular inputs. Preserve Decision 94 entity identity, deterministic mapping, graph validation, source meaning, and marker-last authority. Do not support non-Git apply, rollback to v2, legacy reactivation, partial cross-major apply, or movement between authority modes. Preserve committed historical evidence as inert history. Do not change stable v2, publish, tag, push, modify vision/profile, or perform unrelated cleanup.
+  overall_acceptance: GIVEN a supported v2 project whose complete migration input is tracked and unchanged at HEAD WHEN the user runs npx -y agentera@next upgrade --channel development --project "$PWD" --yes THEN Agentera completes one full forward runtime and entity-state upgrade, activates validated entity authority last, verifies state and startup, exposes no migration or rollback workflow, and a repeated invocation safely finishes recognized forward work or reports an already-upgraded no-op.
+  scope:
+    included:
+      - Full development-channel v2-to-v3 Git-only cutover.
+      - HEAD-bound source inventory and fail-before-effects preflight.
+      - Migration-owned staging and one bounded forward checkpoint manifest.
+      - Removal of v3 cross-major rollback, restore, public resume, and future heavy recovery generation.
+      - Mandatory state/startup verification and concise output.
+      - Help, upgrade guidance, skills, package contracts, release metadata, and end-to-end tests.
+      - Preservation of committed historical migration evidence as inert history.
+    excluded:
+      - Non-Git or partial cross-major apply.
+      - Rollback to v2, legacy authority reactivation, or automatic Git mutation.
+      - Deletion or rewriting of committed historical migration evidence.
+      - Stable-v2 behavior changes, unrelated lifecycle/TODO work, publication, tagging, pushing, or vision changes.
+    deferred:
+      []
+  design: Upgrade plans the complete cross-major effect set before mutation and proves every present migration input is recoverable byte-for-byte from HEAD. It builds and validates deterministic entities in migration-owned staging, then promotes them and activates authority last. Before canonical publication, a rerun discards only known staging and recomputes. After canonical publication but before authority, a bounded forward manifest validates target bytes and graph before finishing the marker. After authority, reruns validate or no-op. No path deletes canonical entities, restores legacy authority, or rolls back. Historical journals remain inert and future upgrades do not generate snapshots, per-file inode receipts, rollback phases, or public operation IDs.
+  unknowns:
+    - question: How much active recovery code can be removed without breaking already-entity projects or inert historical evidence?
+      affects_task: 1
+      resolve_by: Trace executable consumers and prove current entity reads and validation do not depend on migration journals; retain read-only compatibility only where a current public contract requires it.
+  surprises: User superseded recovery-heavy requirements after audit exposed diminishing-return tamper cases; Git history is the recovery authority and v2-to-v3 is one-way.

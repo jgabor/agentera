@@ -64,7 +64,7 @@ export function printUpgradeHelp(): string {
     "                        [--runtime {all,opencode,codex,cursor,copilot}]",
     "                        [--legacy-cleanup {claude}]",
     "                        [--only {artifacts,runtime,cleanup}] [--dry-run] [--yes]",
-    "                        [--force] [--verify] [--restore] [--format {text,json}]",
+    "                        [--force] [--verify] [--format {text,json}]",
     "",
     "options:",
     "  -h, --help            show this help message and exit",
@@ -80,7 +80,6 @@ export function printUpgradeHelp(): string {
     "                        Corrupt/disconnected ownership journals and malformed locks fail closed",
     "  --force               Overwrite managed runtime files or conflicting backups",
     "  --verify              Post-apply verify: doctor status + 12 prime capability schema checks",
-    "  --restore             Reverse remove-managed-app-home from the latest upgrade snapshot",
     "  --format {text,json}  Structured output format",
   ].join("\n");
 }

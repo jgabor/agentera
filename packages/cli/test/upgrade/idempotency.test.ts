@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -51,9 +52,20 @@ function seedLayout(sandbox: string): { appHome: string; project: string } {
   fs.mkdirSync(h, { recursive: true });
   const appHome = path.join(h, "agentera");
   managedV2(appHome);
-  fs.cpSync(path.join(FIXTURES, "v2-yaml-project"), path.join(sandbox, "project"), { recursive: true });
+  const project = path.join(sandbox, "project");
+  fs.cpSync(path.join(FIXTURES, "v2-yaml-project"), project, { recursive: true });
   fs.cpSync(path.join(FIXTURES, "v2-runtime-python"), h, { recursive: true });
-  return { appHome, project: path.join(sandbox, "project") };
+  const git = (...args: string[]): void => {
+    const result = spawnSync("git", args, { cwd: project, encoding: "utf8" });
+    if (result.status !== 0) throw new Error(String(result.stderr));
+  };
+  git("init", "--quiet");
+  git("config", "user.name", "Upgrade Test");
+  git("config", "user.email", "upgrade@example.invalid");
+  git("config", "commit.gpgsign", "false");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "v2 state");
+  return { appHome, project };
 }
 
 beforeEach(() => {

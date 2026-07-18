@@ -50,13 +50,12 @@ import {
   releaseLifecycleOwnershipJournalLock,
 } from "../runtime/lifecycleOwnershipJournal.js";
 import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
-import { previewEntityMigration } from "../state/entityMigrationPreview.js";
 import {
-  applyPreparedEntityMigrationForUpgrade,
-  inspectUpgradeEntityMigration,
-  prepareEntityMigrationForUpgrade,
-  type PreparedUpgradeEntityMigration,
-} from "../state/entityMigrationApply.js";
+  applyPreparedEntityCutover,
+  inspectEntityCutoverForUpgrade,
+  prepareEntityCutoverForUpgrade,
+  type PreparedEntityCutover,
+} from "../state/entityCutover.js";
 import { detectStateMode } from "../state/stateMode.js";
 
 /**
@@ -237,36 +236,36 @@ function entityReadinessPhase(
   sourceRoot: string,
   pendingV1Artifacts: boolean,
   selected: boolean,
+  apply: boolean,
 ): UpgradeOrchestratorPhase {
   try {
-    const recovery = inspectUpgradeEntityMigration(project, sourceRoot);
-    if (recovery?.phase === "cutover_complete") {
+    const cutover = inspectEntityCutoverForUpgrade(project, sourceRoot, apply && selected);
+    if (cutover.phase === "active") {
       return summarizeOrchestratorPhase("entities", [{
         status: "noop",
         action: "entity-state-active",
         message: "validated entity authority is already active",
       }]);
     }
-    if (recovery) {
+    if (cutover.phase !== "ready") {
       if (!selected) {
         return summarizeOrchestratorPhase("entities", [{
           status: "blocked",
           action: "entity-cutover-required",
-          message: "an interrupted entity cutover must complete before runtime-only or cleanup-only upgrade effects; include artifacts to continue it safely",
+          message: "a forward entity cutover must complete inside one full upgrade before any filtered effects",
         }]);
       }
       return summarizeOrchestratorPhase("entities", [{
         status: "pending",
         action: "entity-cutover",
-        message: `matching interrupted entity cutover '${recovery.operationId}' is ready for automatic continuation`,
+        message: "validated forward entity publication is ready to complete without deleting canonical entities",
       }]);
     }
-    if (detectStateMode(project, sourceRoot) === "entities") throw new Error("entity-state marker has no exactly matching completed durable migration operation");
     if (!selected) {
       return summarizeOrchestratorPhase("entities", [{
         status: "blocked",
         action: "entity-cutover-required",
-        message: "marker-absent projects cannot apply runtime-only or cleanup-only upgrades; include artifacts so entity readiness is composed before effects",
+        message: "marker-absent projects require one full cross-major upgrade; filtered apply is unavailable",
       }]);
     }
     if (pendingV1Artifacts) {
@@ -276,16 +275,13 @@ function entityReadinessPhase(
         message: "pending v1 Markdown conversion cannot be used as entity input without a prerequisite write; complete the deterministic v1 conversion, then retry the upgrade",
       }]);
     }
-    const preview = previewEntityMigration(project, sourceRoot, { limit: 1 });
-    const empty = preview.counts.total === 0;
+    const empty = cutover.entityCount === 0;
     return summarizeOrchestratorPhase("entities", [{
-      status: preview.status === "blocked" ? "blocked" : "pending",
+      status: "pending",
       action: empty ? "initialize-entity-state" : "entity-cutover",
-      message: preview.status === "blocked"
-        ? `${preview.counts.blockers} entity readiness blocker(s); repair the reported state through agentera state migrate entities --dry-run before retrying`
-        : empty
-          ? "empty legacy state is ready for safe entity initialization"
-          : `${preview.counts.publishable_entities} entity record(s) are ready for marker-last cutover`,
+      message: empty
+        ? "empty legacy state is ready for safe entity initialization"
+        : `${cutover.entityCount} entity record(s) are ready for marker-last Git cutover`,
     }]);
   } catch (error) {
     return summarizeOrchestratorPhase("entities", [{
@@ -419,12 +415,11 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
 
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
   const entityAuthorityActive = detectStateMode(project, sourceRoot) === "entities";
-  const entitySelected = Boolean(args.only?.includes("artifacts"))
-    || (crossMajorMigration && (!args.only || args.only.length === 0));
-  const partialStateApply = Boolean(args.only?.some((phase) => phase === "runtime" || phase === "cleanup"))
-    && !args.only?.includes("artifacts");
+  const filteredCrossMajor = crossMajorMigration && Boolean(args.only && args.only.length > 0);
+  const entitySelected = crossMajorMigration && (!filteredCrossMajor || (!args.yes && Boolean(args.only?.includes("artifacts"))));
+  const partialStateApply = filteredCrossMajor && !entitySelected;
   let entityPhase = entitySelected || partialStateApply
-    ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected)
+    ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected, Boolean(args.yes))
     : null;
   const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;
   if (args.yes && (entityCutoverPending || entityAuthorityActive)) {
@@ -454,12 +449,12 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const preflight = aggregateSummary(plannedPhases.filter((phase) => phase.name !== "lifecycle"));
   const preflightBlocked = preflight.blocked > 0 || preflight.failed > 0;
 
-  let preparedEntityMigration: PreparedUpgradeEntityMigration | null = null;
+  let preparedEntityMigration: PreparedEntityCutover | null = null;
   if (args.yes && entitySelected && entityPhase?.status === "pending" && !preflightBlocked) {
-    preparedEntityMigration = prepareEntityMigrationForUpgrade(project, sourceRoot);
+    preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot);
   }
   if (preparedEntityMigration) {
-    const result = applyPreparedEntityMigrationForUpgrade(preparedEntityMigration);
+    const result = applyPreparedEntityCutover(preparedEntityMigration);
     entityPhase = summarizeOrchestratorPhase("entities", [{
       status: "applied",
       action: "entity-cutover",
@@ -552,6 +547,9 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
   }
   if (!args.yes) {
     return null;
+  }
+  if (plan.crossMajorBoundary && args.only && args.only.length > 0) {
+    return "cross-major v2→v3 apply must run as one full upgrade --yes; --only is preview-only at this boundary";
   }
   if (isBlockedUpgradeOutcome(plan.upgradeOutcome)) {
     return plan.upgradeOutcome.message ?? "upgrade blocked";

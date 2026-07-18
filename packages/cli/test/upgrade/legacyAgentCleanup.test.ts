@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -36,6 +37,19 @@ let home: string;
 function copyFixture(name: string, dest: string): string {
   fs.cpSync(path.join(FIXTURES, name), dest, { recursive: true });
   return dest;
+}
+
+function initializeGit(root: string): void {
+  const run = (...args: string[]): void => {
+    const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+    if (result.status !== 0) throw new Error(String(result.stderr));
+  };
+  run("init", "--quiet");
+  run("config", "user.name", "Upgrade Test");
+  run("config", "user.email", "upgrade@example.invalid");
+  run("config", "commit.gpgsign", "false");
+  run("add", ".");
+  run("commit", "--quiet", "-m", "v2 state");
 }
 
 function managedV2(appHome: string): void {
@@ -241,11 +255,14 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
     const cursorAgents = path.join(project, ".cursor", "agents");
     seedSwedishVerbAgents(cursorAgents);
     seedPreservedAgents(cursorAgents);
+    initializeGit(project);
 
     const opencodeAgents = path.join(opencodeConfigDir(home, sandboxMigrationEnv(home, REPO_ROOT)), "agents");
     seedSwedishVerbAgents(opencodeAgents);
     seedPreservedAgents(opencodeAgents);
 
+    let output = "";
+    let errors = "";
     const code = cmdUpgrade(
       {
         installRoot: appHome,
@@ -255,10 +272,10 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
         format: "json",
         channel: "development",
       },
-      { out: () => {}, err: () => {} },
+      { out: (text) => { output += text; }, err: (text) => { errors += text; } },
     );
 
-    expect(code).toBe(0);
+    expect({ code, output, errors }).toMatchObject({ code: 0, errors: "" });
     for (const name of V2_SWEDISH_VERB_AGENT_FILES) {
       expect(fs.existsSync(path.join(cursorAgents, name))).toBe(false);
       expect(fs.existsSync(path.join(opencodeAgents, name))).toBe(false);

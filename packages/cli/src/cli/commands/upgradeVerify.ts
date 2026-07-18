@@ -97,27 +97,3 @@ export function renderVerifySummary(result: VerifyResult, json: boolean): string
   }
   return lines.join("\n") + "\n";
 }
-
-export function renderRestoreSummary(
-  appHome: string,
-  result: {
-    restored: boolean;
-    source: string | null;
-    snapshotDir: string | null;
-    created: string | null;
-    fileCount: number;
-  },
-): string {
-  if (result.restored) {
-    const created = result.created ?? "unknown";
-    return [
-      "Agentera restore",
-      `restored ${result.fileCount} files to ${result.source}`,
-      `from snapshot created ${created}`,
-    ].join("\n") + "\n";
-  }
-  if (result.snapshotDir === null && result.source === null) {
-    return `Agentera restore\nno upgrade snapshot found at ${appHome}\n`;
-  }
-  return `Agentera restore\nsnapshot was incomplete; manifest cleared\n`;
-}

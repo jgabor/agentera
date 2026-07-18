@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -130,6 +131,31 @@ describe("cli validate state", () => {
     expect(payload.issues[0]).toMatchObject({ code: "invalid_artifact", artifact: "unknown" });
     expect(payload.issues[0].recovery).toContain("valid artifact values:");
     expect(payload.issues[0].recovery).toContain("agentera check validate state --cwd");
+  });
+
+  it("retains read-only validation of entity markers backed by historical migration evidence", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "validate-legacy-cutover-"));
+    fixtureRoots.push(root);
+    const id = "0123456789abcdefabcd";
+    const fingerprint = "a".repeat(64);
+    const digest = "b".repeat(64);
+    const marker = Buffer.from(`schemaVersion: agentera.stateMode.v1\nmode: entities\nmigration_id: ${id}\nsource_fingerprint: ${fingerprint}\npreview_digest: ${digest}\n`);
+    const target = ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml";
+    const entity = Buffer.from("id: aaaaaaaaaa\nartifact: progress\nrecord:\n  timestamp: 2026-07-18 12:00\n  type: fix\n  phase: build\n  what: retained evidence\n  context:\n    intent: validate historical cutover\n");
+    const hash = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
+    const manifest = Buffer.from(JSON.stringify({ schemaVersion: "agentera.entityMigrationManifest.v1", migration_id: id, source_fingerprint: fingerprint, preview_digest: digest, entries: [{ artifact: "progress", source_identity: "progress:1", proposed_target: { path: target, id: "aaaaaaaaaa" }, target_sha256: hash(entity) }], receipts: { ".agentera/state-mode.yaml": { sha256: hash(marker) } } }));
+    const operation = path.join(root, ".agentera/migrations/entities", id);
+    fs.mkdirSync(operation, { recursive: true });
+    fs.mkdirSync(path.dirname(path.join(root, target)), { recursive: true });
+    fs.writeFileSync(path.join(root, target), entity);
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), marker);
+    fs.writeFileSync(path.join(operation, "manifest.yaml"), manifest);
+    fs.writeFileSync(path.join(operation, "journal.yaml"), JSON.stringify({ schemaVersion: "agentera.entityMigrationJournal.v1", migration_id: id, source_fingerprint: fingerprint, preview_digest: digest, phase: "cutover_complete", manifest_sha256: hash(manifest) }));
+
+    const { rc, out } = capture((io) => cmdValidateState({ cwd: root, format: "json" }, io));
+
+    expect(JSON.parse(out)).toMatchObject({ status: "pass", valid: true, issue_count: 0, issues: [] });
+    expect(rc).toBe(0);
   });
 });
 

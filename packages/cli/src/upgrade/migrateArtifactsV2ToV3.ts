@@ -16,10 +16,6 @@ import {
   releaseUpgradeLock,
 } from "./upgradeLock.js";
 import {
-  removeUpgradeSnapshot,
-  snapshotManagedApp,
-} from "./upgradeSnapshot.js";
-import {
   applyV1ArtifactsPhase,
   planV1ArtifactsPhase,
 } from "./migrateArtifactsV1ToV2.js";
@@ -518,33 +514,17 @@ export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext)
     applyAppContentRefreshItems(phase.items, ctx);
   }
   applyLegacyAgentCleanupItems(phase.items);
-  const snapshots: { appHome: string; dir: string }[] = [];
   for (const item of phase.items) {
     if (item.status !== "pending" || item.action !== "remove-managed-app-home" || !item.source) {
       continue;
     }
-    const appHome = ctx?.appHome ?? item.target ?? "";
     try {
-      if (appHome) {
-        const snapshotDir = snapshotManagedApp(item.source, appHome);
-        if (snapshotDir) {
-          snapshots.push({ appHome, dir: snapshotDir });
-        }
-      }
       removeDirectoryRecursive(item.source);
       item.status = "applied";
       item.message = "managed Python app-home bundle removed; user state preserved";
     } catch (exc) {
       item.status = "failed";
       item.message = `cleanup failed: ${(exc as Error).message}`;
-    }
-  }
-  const cleanupFailed = phase.items.some(
-    (item) => item.action === "remove-managed-app-home" && item.status === "failed",
-  );
-  if (!cleanupFailed) {
-    for (const snap of snapshots) {
-      removeUpgradeSnapshot(snap.appHome, snap.dir);
     }
   }
   const updated = summarizePhase("cleanup", phase.items, phase.message);

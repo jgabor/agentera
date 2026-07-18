@@ -16,8 +16,8 @@ authority:
   implementation_boundary: >-
     Shared entity storage plus the progress, decisions, health, plan, objective,
     experiment, TODO-item, and documentation-inventory family writers and retrieval,
-    plus durable migration apply, resume, and guarded rollback, are implemented but
-    activate entity authority only from the durable cutover marker. The preserved
+    plus one-way Git cutover, are implemented but activate entity authority only
+    from the durable cutover marker. The preserved
     singleton families remain legacy files. The
     current numbered archive and retrieval groups remain implemented legacy
     authority while that marker is absent. The maintenance-only Git backfill
@@ -29,7 +29,8 @@ entity_target:
   decision: 94
   activation: >-
     This target becomes active persisted and structured state authority only
-    after entity_migration reaches cutover_complete. Before then, legacy aggregates
+    after entity_migration publishes a validated entity graph and writes the marker
+    last. Before then, legacy aggregates
     remain migration input and explicitly labelled migration-evidence writer state;
     ordinary public reads fail with migration_required instead of exposing them.
   implementation_status:
@@ -45,8 +46,8 @@ entity_target:
     rule: >-
       Every implemented family selects entity behavior only when the durable
       cutover marker is valid. Marker-absent ordinary consumers fail with
-      migration_required; allowlisted migration, readiness, and legacy migration
-      evidence operations never create entity state or write both authorities.
+      migration_required; the read-only migration preview and readiness checks do
+      not create entity state or write both authorities.
   public_schema:
     canonical_identity_field: id
     canonical_classification_field: artifact
@@ -490,9 +491,9 @@ entity_target:
       never truncate bytes, omit required identity, or fabricate detail.
 
 entity_migration:
-  status: durable_apply_resume_rollback_implemented
+  status: one_way_git_cutover_implemented
   decision: 94
-  kind: single_explicit_project_cutover
+  kind: single_full_upgrade_cutover
   cutover_marker:
     path: .agentera/state-mode.yaml
     schema_version: agentera.stateMode.v1
@@ -502,90 +503,65 @@ entity_migration:
     absent_mode: legacy
     invalid_behavior: fail_without_fallback
     detection: read_only
-    publication_owner: durable_migration_apply
+    publication_owner: development_channel_v2_to_v3_upgrade
   invocation:
-    explicit: required
-    dry_run: required_before_apply
+    explicit_apply: full_upgrade_yes_only
+    dry_run: optional_read_only_preview
     ordinary_reads_migrate: false
     ordinary_writes_migrate: false
-    invokes_git: false
+    apply_invokes_git: true
     read_only_command: >-
       agentera state migrate entities [--project PATH]
       [--after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256]
       [--limit N] --dry-run
       --format {text,json,yaml}
-    apply_preflight_command: >-
-      agentera state migrate entities --project PATH --apply --force
-      --approval-file FILE --source-fingerprint SHA256 --preview-digest SHA256
-      --format {text,json,yaml}
-    resume_command: >-
-      agentera state migrate entities --project PATH --resume MIGRATION_ID
-      --force --format {text,json,yaml}
-    rollback_command: >-
-      agentera state migrate entities --project PATH --rollback MIGRATION_ID
-      --force --format {text,json,yaml}
+    apply_command: >-
+      agentera upgrade --channel development --project PATH --yes
     apply_boundary: >-
-      A matching blocker-free apply serializes through the project writer lock,
-      durably prepares one root-bound deterministic operation, publishes the
-      immutable mapped graph, validates it, and writes the authority marker last.
-      Resume and rollback require the exact durable migration ID and --force.
-    git_approval_envelope:
-      required_in_git_checkout: true
-      generator_may_invoke_git: true
-      apply_invokes_git: false
-      external_regular_file: required
-      binds:
-        - real_project_root
-        - clean_head_and_ref
-        - empty_porcelain_assertion
-        - source_fingerprint
-        - preview_digest
-        - git_index_sha256
-        - canonical_tracked_worktree_manifest
-        - ignored_directory_prefixes_and_paths
-        - untracked_baseline
+      Full upgrade serializes through the project writer lock, stages and graph-
+      validates deterministic entities, publishes them without deleting a
+      canonical entity, and writes the authority marker last. There is no direct
+      entity apply, public operation ID, resume, rollback, or cross-major restore.
+    git_preflight:
+      required: true
+      project_root: exact_worktree_root
+      source: HEAD_commit
+      checkout: no_staged_modified_renamed_or_untracked_paths_except_exact_cutover_outputs
+      migration_inputs: regular_tracked_files_whose_bytes_and_executable_mode_match_HEAD
+      absent_input: absent_from_HEAD_and_worktree
+      ignored_or_untracked_input: refuse
       verification: >-
-        Apply resolves HEAD/ref and hashes the index by reading Git metadata
-        directly, then validates every approved tracked path's bytes, type,
-        mode, or symlink target and rejects missing or extra non-ignored paths.
-        It verifies once before migration evidence and again under the writer
-        lock immediately before the first effect. Non-Git fixtures may retain
-        source-fingerprint and preview-digest-only behavior.
+        Planning and apply resolve the current HEAD commit and prove every present
+        migration input is a safe regular tracked path whose bytes and executable
+        mode match that commit. Apply repeats the proof under the writer lock
+        before its first effect. Non-Git projects and dirty or unsupported source
+        state are refused before any selected upgrade effect.
     upgrade_composition:
       owner: development_channel_v2_to_v3_upgrade
-      selected_with: [full, artifacts]
+      selected_with: [full]
       apply_consent: >-
-        The upgrade --yes consent prepares and applies entity cutover in process.
-        It derives source and preview bindings internally and, for Git checkouts,
-        captures and revalidates the same real-root, HEAD, index, tracked-worktree,
-        ignored-path, untracked-path, preparation, and retained-evidence envelope
-        without an approval file. Users do not provide hashes, migration IDs,
-        approval files, --force, or any additional cutover consent.
-      low_level_recovery: >-
-        The state migrate entities preview, explicit apply approval, resume, and
-        rollback commands remain unchanged for expert diagnosis and recovery.
-      automatic_continuation: >-
-        A repeated upgrade invocation may continue durable work only when the
-        migration evidence root contains exactly one finalized operation, its
-        deterministic ID matches the current real project root, source
-        fingerprint, and preview digest, and its journal, manifest, proposed
-        graph, snapshot, and complete receipt inventory validate against that
-        invocation. Zero finalized operations starts a new cutover. A completed
-        matching operation is an idempotent no-op. Rolled-back, stale,
-        unrelated, corrupt, tampered, or multiple operations refuse all further
-        effects while retaining every evidence path. Selection never uses
-        recency or path order and never rolls back automatically. Marker
-        presence never establishes completed authority by itself: upgrade first
-        validates the owning durable operation, resumes a matching forward
-        interruption, and admits a no-op only for cutover_complete evidence
-        whose marker and canonical graph still match their receipts.
+        The upgrade --yes consent derives all source and target bindings in
+        process. Users provide no hashes, approval files, migration IDs, --force,
+        or additional cutover consent. Any --only apply is rejected at this
+        cross-major boundary.
+      interruption: >-
+        Before forward-manifest publication, a rerun may discard only the fixed
+        migration-owned staging path and recompute it from the same Git-bound
+        source. After manifest or canonical publication, a rerun validates the
+        manifest binding and every existing canonical target, republishes only
+        missing targets from recomputed staging, validates the graph, and finishes
+        the marker forward. It never deletes canonical entities.
+      completed: >-
+        A valid entity marker makes legacy authority permanently inactive.
+        Repeated upgrade validates current entity state and reports a no-op;
+        normal entity writes may evolve records without reopening cutover.
       preflight: >-
         Upgrade plans artifact normalization, entity readiness, runtime work,
         and cleanup read-only before any selected apply function runs. Any
         blocker prevents every selected effect.
       phase_filters: >-
-        Marker-absent runtime-only and cleanup-only apply are invalid because
-        they would leave a project unusable under v3 entity authority.
+        Every --only apply is invalid during a v2-to-v3 boundary. Read-only
+        filtered preview may remain available.
       legacy_projection: >-
         Canonical v2 YAML and already-resolved v1 conversions are inventoried
         directly. A pending v1 Markdown conversion is not projected through a
@@ -596,15 +572,16 @@ entity_migration:
         projection during cutover. Upgrade retains the original legacy YAML as
         source and recovery evidence instead of rewriting it first.
       empty_state: valid_empty_initialization
-      existing_entity_state: no_op
+      existing_entity_state: validate_then_no_op
   source_scope:
     included_entities: entity_target.entities
     included_structured_relationships: entity_target.relationships.declarations
     preserved_singletons: entity_target.intentional_singletons.boundaries
     sources: >-
       Current canonical files, verified immutable archives, overlays, revisions,
-      and validated reachable recovery evidence are inventoried together without
-      changing their pre-cutover authority.
+      and validated source evidence are inventoried together without changing
+      their pre-cutover authority. Every present input must be recoverable from
+      the pinned Git commit.
     recovered_projection_correlation: >-
       Every archive carrying recovery_provenance must match the immutable
       .agentera/archive/recovery/projection-correlation.yaml recovery set by
@@ -639,8 +616,8 @@ entity_migration:
       domain-separated SHA-256 of the complete source fingerprint and canonical
       source key. This is allocation of a new opaque target candidate, not
       reconstruction of a missing source ID. A collision is a blocker. Apply
-      persists the approved mapping before publication and resume never
-      regenerates candidates.
+      preserves the deterministic mapping in staged canonical paths and the
+      bounded forward manifest before canonical publication.
     preview_digest: >-
       SHA-256 over canonical JSON of the complete unbounded inventory, proposed
       mapping, authority-validated final envelope byte SHA-256 values,
@@ -651,7 +628,7 @@ entity_migration:
       Before preview can be ready or produce an approvable digest, every proposed
       final envelope, record, public field vocabulary, and relationship graph is
       validated through the same authority-backed canonical target validator used
-      defensively by apply and resume. A target failure is a corrupt blocker tied
+      defensively by upgrade apply and forward continuation. A target failure is a corrupt blocker tied
       to its source identity and recovery action; preserved nonentity residues are
       excluded from target validation and publication.
     output:
@@ -681,10 +658,9 @@ entity_migration:
       open no writer or upgrade lock and create no directory, temporary file,
       mapping, snapshot, journal, cache, or state file.
     binding: >-
-      Before any apply effect, recompute the complete preview and require both
-      source_fingerprint and preview_digest to equal the approved values.
-      Mismatch is source_changed and includes the same dry-run command as the
-      recovery action.
+      Before any apply effect, recompute the complete preview and require its
+      source fingerprint and preview digest to match the Git-pinned preparation
+      or retained forward manifest. A mismatch refuses every selected effect.
   source_outcomes:
     valid_full:
       outcome: ready
@@ -717,24 +693,28 @@ entity_migration:
       - guessed relationship targets
       - silent dropping, deduplication, or winner selection
     partial_cutover_success: forbidden
-  durable_evidence:
-    root: .agentera/migrations/entities/MIGRATION_ID
-    manifest: manifest.yaml
-    snapshot: snapshot.yaml
-    journal: journal.yaml
-    operation_identity: >-
-      First 20 lowercase hexadecimal characters of domain-separated SHA-256 over
-      the real project root, complete source fingerprint, and preview digest.
-    required_before_entity_publication:
-      - source root and source fingerprints
-      - complete old-to-new ID mapping
-      - relationship rewrite map
-      - authority-validated final envelope byte SHA-256 values
-      - preview digest and approved apply intent
-      - recovery snapshot and cutover journal
-    durability_rule: the mapping and journal are reused on resume; IDs are never regenerated
-    publication_order: manifest_then_snapshot_then_journal_then_entities_then_marker
-    journal_phases: [prepare_recovery, publish_entities, validate_graph, cutover, cutover_complete, rollback_prepared, rollback_cutover, rolled_back]
+  forward_state:
+    root: .agentera/migrations/entities
+    staging: .agentera/migrations/entities/staging
+    manifest: .agentera/migrations/entities/forward.yaml
+    manifest_schema_version: agentera.entityCutoverManifest.v1
+    manifest_fields: [schemaVersion, phase, source, targets, marker]
+    source_fields: [head, source_fingerprint, preview_digest]
+    target_fields: [path, sha256]
+    marker_fields: [path, sha256]
+    phases: [publishing_entities, entities_published]
+    forbidden_fields:
+      - operation_id
+      - migration_id
+      - snapshots
+      - source_bytes
+      - inode_receipts
+      - rollback_state
+    publication_order: staging_then_forward_manifest_then_entities_then_marker
+    historical_evidence: >-
+      Already committed .agentera/migrations content is inert and remains
+      byte-for-byte untouched. Read-only legacy manifest parsing is retained only
+      for public validation of entity markers created by the former cutover.
     fault_test_hook: >-
       Tests may set NODE_ENV=test and
       AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE to one declared durable
@@ -746,37 +726,21 @@ entity_migration:
     - phase: preview
       mutates: false
       exit: proposed graph, mapping, outcomes, blockers, and digest are complete
-    - phase: approve
+    - phase: git_preflight
       mutates: false
-      exit: project root, clean source fingerprint, preview digest, and explicit apply intent match
-    - phase: prepare_recovery
+      exit: project root, HEAD, clean checkout, source bytes, types, and modes match
+    - phase: stage_entities
       mutates: true
-      exit: durable mapping, recovery snapshot, and journal exist before entity publication
-    - phase: publish_entities
+      exit: deterministic entity bytes and graph validate under the fixed staging path
+    - phase: publishing_entities
       mutates: true
-      resumable: true
-      exit: every mapped entity and relationship is staged once using the durable mapping
-    - phase: validate_graph
+      exit: one bounded forward manifest exists and every canonical target matches or is published once
+    - phase: entities_published
       mutates: false
-      exit: source-to-target parity, uniqueness, ownership, relationships, and budgets pass
-    - phase: cutover
+      exit: canonical source-to-target parity, uniqueness, ownership, relationships, and budgets pass
+    - phase: marker
       mutates: true
       exit: one durable marker activates entity_target and retires writable legacy authority
-    - phase: cutover_complete
-      mutates: false
-      exit: exact reads and bounded views reproduce the validated graph
-  resume:
-    rule: >-
-      Resume reads the durable journal and mapping, revalidates source and
-      published bytes, and continues from the first incomplete phase without
-      allocating IDs again or duplicating entities.
-    changed_source: refuse before further publication
-    replay_after_complete: report idempotent completion without rewriting entities
-  recovery:
-    pre_cutover: remove only journal-recorded staged outputs and preserve source authority
-    post_cutover_without_new_writes: guarded rollback restores the recovery snapshot byte-for-byte
-    post_cutover_with_new_writes: refuse rollback and retain all recovery evidence
-    interrupted_phase: report the phase, durable evidence paths, and exact resume command
 
 scope:
   supported_artifacts:

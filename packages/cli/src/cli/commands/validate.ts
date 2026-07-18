@@ -22,7 +22,7 @@ import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
 import { detectStateModeBinding } from "../../state/stateMode.js";
-import { loadCompletedEntityMigrationForMarker } from "../../state/entityMigrationApply.js";
+import { loadEntityCutoverTargetsForMarker } from "../../state/entityCutover.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
 
@@ -548,14 +548,13 @@ export function cmdValidateState(
       const markerSnapshot = readProjectFileSnapshot(validateRealProjectRoot(projectRoot), ".agentera/state-mode.yaml");
       if (markerSnapshot.kind !== "file") throw new Error("entity-mode marker became unavailable during maintenance validation");
       const marker = loadYamlMapping(markerSnapshot.bytes.toString("utf8"));
-      if (typeof marker.migration_id === "string") {
-        const entries = loadCompletedEntityMigrationForMarker(projectRoot, markerSnapshot.bytes);
+      if (typeof marker.migration_id === "string" || marker.cutover === "one_way_git") {
+        const targets = loadEntityCutoverTargetsForMarker(projectRoot, markerSnapshot.bytes);
         const byPath = new Map(result.entities.map((entity) => [entity.relativePath, entity]));
-        for (const expected of entries) {
-          const target = expected.proposed_target;
-          const actual = target ? byPath.get(target.path) : undefined;
-          if (!target || !actual || actual.classification !== "valid" || actual.id !== target.id || actual.artifact !== expected.artifact) {
-            issues.push({ code: "missing_migrated_entity", path: target?.path ?? "", id: target?.id ?? null, artifact: expected.artifact, message: `migration '${marker.migration_id}' target '${target?.path ?? expected.source_identity}' is missing or no longer has its declared artifact and ID`, recovery: "Restore a valid canonical entity at the manifest-declared path, preserving its artifact and bare ID; no state was changed." });
+        for (const target of targets) {
+          const actual = byPath.get(target.path);
+          if (!actual || actual.classification !== "valid" || (target.id && actual.id !== target.id) || (target.artifact && actual.artifact !== target.artifact)) {
+            issues.push({ code: "missing_migrated_entity", path: target.path, id: target.id ?? null, artifact: target.artifact ?? null, message: `cutover target '${target.path}' is missing or no longer has its declared identity`, recovery: "Restore a valid canonical entity at the manifest-declared path; no state was changed." });
           }
         }
       }

@@ -1,7 +1,3 @@
-import os from "node:os";
-
-import { expanduser, resolvePath } from "../../core/paths.js";
-import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import {
   buildUpgradePlan,
   renderUpgradePlan,
@@ -11,9 +7,7 @@ import {
   type UpgradeOrchestratorArgs,
   type UpgradeOnlyPhase,
 } from "../../upgrade/upgradeOrchestrator.js";
-import { restoreFromSnapshot } from "../../upgrade/upgradeSnapshot.js";
 import {
-  renderRestoreSummary,
   renderVerifySummary,
   verifyUpgrade,
   type VerifyContext,
@@ -34,7 +28,6 @@ export interface UpgradeArgs {
   runtime?: UpgradeOrchestratorArgs["runtime"];
   legacyCleanup?: UpgradeOrchestratorArgs["legacyCleanup"];
   verify?: boolean;
-  restore?: boolean;
   format?: string;
 }
 
@@ -84,17 +77,6 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}): number {
     return 2;
   }
 
-  if (args.restore && (
-    orchestratorArgs.yes
-    || orchestratorArgs.dryRun
-    || args.verify
-    || orchestratorArgs.runtime
-    || orchestratorArgs.legacyCleanup
-  )) {
-    err("upgrade error: --restore is mutually exclusive with --yes, --dry-run, --verify, --runtime, and --legacy-cleanup\n");
-    return 2;
-  }
-
   if (args.verify && orchestratorArgs.dryRun) {
     err("upgrade error: --verify cannot be combined with --dry-run\n");
     return 2;
@@ -105,21 +87,6 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}): number {
   )) {
     err("upgrade error: lifecycle selection with --verify requires --yes; preview lifecycle work with --dry-run instead\n");
     return 2;
-  }
-
-  if (args.restore) {
-    let installRoot: string;
-    try {
-      const sourceRoot = resolveSourceRootStrict();
-      const home = resolvePath(expanduser(args.home ?? os.homedir()));
-      [installRoot] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
-    } catch (exc) {
-      err(`upgrade error: ${(exc as Error).message}\n`);
-      return 2;
-    }
-    const result = restoreFromSnapshot(installRoot);
-    out(renderRestoreSummary(installRoot, result));
-    return 0;
   }
 
   if (args.verify && !orchestratorArgs.yes) {

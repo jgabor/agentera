@@ -3,14 +3,7 @@ import path from "node:path";
 import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
-import {
-  EntityMigrationBindingError,
-  EntityMigrationContinuationError,
-  assertEntityMigrationBinding,
-  previewEntityMigration,
-} from "../../state/entityMigrationPreview.js";
-import { applyEntityMigration, EntityMigrationOperationError, resumeEntityMigration, rollbackEntityMigration } from "../../state/entityMigrationApply.js";
-import { EntityMigrationApprovalError } from "../../state/entityMigrationApproval.js";
+import { EntityMigrationContinuationError, previewEntityMigration } from "../../state/entityMigrationPreview.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -19,26 +12,19 @@ interface Args {
   limit?: number;
   after?: string;
   dryRun: boolean;
-  apply: boolean;
-  resume?: string;
-  rollback?: string;
-  force: boolean;
   sourceFingerprint?: string;
   previewDigest?: string;
-  approvalFile?: string;
   format: Format;
 }
 
-const SYNTAX = "agentera state migrate entities [--project PATH] (--dry-run | --apply --force --approval-file FILE | --resume MIGRATION_ID --force | --rollback MIGRATION_ID --force) [--format {text,json,yaml}]";
+const SYNTAX = "agentera state migrate entities [--project PATH] [--after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256] [--limit N] --dry-run [--format {text,json,yaml}]";
 
 export function entityMigrateHelp(): string {
   return [
     `usage: ${SYNTAX}`,
-    "       agentera state migrate entities --project PATH --apply --force --approval-file FILE --source-fingerprint SHA256 --preview-digest SHA256 [--format {text,json,yaml}]",
-    "       agentera state migrate entities --project PATH --resume MIGRATION_ID --force [--format {text,json,yaml}]",
-    "       agentera state migrate entities --project PATH --rollback MIGRATION_ID --force [--format {text,json,yaml}]",
     "",
     "Inventory the complete Decision 94 entity migration graph without writing state.",
+    "Entity publication is available only through one full development-channel upgrade --yes.",
     "",
     "options:",
     "  -h, --help                 Show this dedicated help message and exit",
@@ -47,30 +33,22 @@ export function entityMigrateHelp(): string {
     "                              Continue the bound snapshot from a prior page",
     "  --limit 1..1000            Bound logical identities returned on one preview page (default 100)",
     "  --dry-run                  Read-only inventory and preview",
-    "  --apply --force            Apply one approved blocker-free preview without prompting",
-    "  --resume ID --force        Resume one explicit durable migration journal",
-    "  --rollback ID --force      Guarded rollback of one explicit migration journal",
-    "  --source-fingerprint SHA256  Approved source bytes, mode, type, and file-identity fingerprint",
-    "  --preview-digest SHA256      Approved inventory and migration-authority digest",
-    "  --approval-file FILE         External root/HEAD/index/worktree approval envelope required in Git checkouts",
-    "  --format {text,json,yaml}    Output format (default text)",
+    "  --format {text,json,yaml}  Output format (default text)",
   ].join("\n");
 }
 
 function parse(argv: string[], cwd: string): Args | string {
-  const args: Args = { project: cwd, dryRun: false, apply: false, force: false, format: "text" };
+  const args: Args = { project: cwd, dryRun: false, format: "text" };
   const values = new Map([
-    ["--project", "project"], ["--after", "after"], ["--limit", "limit"], ["--source-fingerprint", "sourceFingerprint"], ["--preview-digest", "previewDigest"], ["--approval-file", "approvalFile"], ["--resume", "resume"], ["--rollback", "rollback"], ["--format", "format"],
+    ["--project", "project"], ["--after", "after"], ["--limit", "limit"], ["--source-fingerprint", "sourceFingerprint"], ["--preview-digest", "previewDigest"], ["--format", "format"],
   ] as const);
   const seen = new Set<string>();
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-    if (token === "--dry-run" || token === "--apply" || token === "--force") {
+    if (token === "--dry-run") {
       if (seen.has(token)) return `${token} may only be supplied once`;
       seen.add(token);
-      if (token === "--dry-run") args.dryRun = true;
-      if (token === "--apply") args.apply = true;
-      if (token === "--force") args.force = true;
+      args.dryRun = true;
       continue;
     }
     const pair = [...values].find(([flag]) => token === flag || token.startsWith(`${flag}=`));
@@ -89,49 +67,38 @@ function parse(argv: string[], cwd: string): Args | string {
     } else if (field === "project") args.project = value;
     else if (field === "after") args.after = value;
     else if (field === "sourceFingerprint") args.sourceFingerprint = value;
-    else if (field === "approvalFile") args.approvalFile = value;
-    else if (field === "resume") args.resume = value;
-    else if (field === "rollback") args.rollback = value;
     else args.previewDigest = value;
   }
-  const operations = [args.dryRun, args.apply, args.resume !== undefined, args.rollback !== undefined].filter(Boolean).length;
-  if (operations !== 1) return "choose exactly one of --dry-run, --apply, --resume MIGRATION_ID, or --rollback MIGRATION_ID";
-  if (!args.dryRun && !args.force) return "--apply, --resume, and --rollback require --force";
-  if (args.force && args.dryRun) return "--force requires --apply, --resume, or --rollback";
-  if (args.after && !args.dryRun) return "--after is only valid with --dry-run";
-  if (args.dryRun && args.after && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--after requires the prior page's --source-fingerprint SHA256 and --preview-digest SHA256";
-  if (args.dryRun && !args.after && (args.sourceFingerprint || args.previewDigest)) return "--source-fingerprint and --preview-digest are only valid with --after or --apply";
-  if (args.apply && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--apply requires --source-fingerprint SHA256 and --preview-digest SHA256";
-  if (args.approvalFile && !args.apply) return "--approval-file is only valid with --apply";
-  if ((args.resume || args.rollback) && (args.sourceFingerprint || args.previewDigest || args.approvalFile || args.limit)) return "--resume and --rollback accept only their migration ID, --project, --force, and --format";
-  if ((args.resume && !/^[a-f0-9]{20}$/.test(args.resume)) || (args.rollback && !/^[a-f0-9]{20}$/.test(args.rollback))) return "migration IDs must be 20 lowercase hexadecimal characters";
+  if (!args.dryRun) return "--dry-run is required; entity apply is owned by one full development-channel upgrade --yes";
+  if (args.after && (!/^[a-f0-9]{64}$/.test(args.sourceFingerprint ?? "") || !/^[a-f0-9]{64}$/.test(args.previewDigest ?? ""))) return "--after requires the prior page's --source-fingerprint SHA256 and --preview-digest SHA256";
+  if (!args.after && (args.sourceFingerprint || args.previewDigest)) return "--source-fingerprint and --preview-digest are only valid with --after";
   return args;
 }
 
 function output(value: Record<string, unknown>, format: Format, io: Io): void {
   const out = io.out ?? ((text: string) => process.stdout.write(text));
-  if (format === "text") {
-    const counts = value.counts as Record<string, number> | undefined;
-    const error = value.error as Record<string, unknown> | undefined;
-    const diagnostics = Array.isArray(value.diagnostics) ? value.diagnostics as Array<Record<string, unknown>> : [];
-    const classes = counts ? ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"].map((name) => `${name}=${counts[name] ?? 0}`).join(", ") : "unavailable";
-    const sink = error ? io.err ?? ((text: string) => process.stderr.write(text)) : out;
-    sink([
-      `status: ${String(value.status)}`,
-      `command: ${String(value.command)}`,
-      ...(value.migration_id ? [`migration_id: ${String(value.migration_id)}`, `phase: ${String(value.phase)}`, `idempotent: ${String(value.idempotent)}`] : []),
-      `classes: ${classes}`,
-      `physical_records: ${counts?.physical_records ?? "unavailable"}; logical_identities: ${counts?.logical_identities ?? "unavailable"}; mirrors: ${counts?.mirrors ?? "unavailable"}; duplicates: ${counts?.duplicates ?? "unavailable"}; conflicts: ${counts?.conflicts ?? "unavailable"}`,
-      `relationships: ${counts?.relationships ?? "unavailable"}; unresolved_relationships: ${counts?.unresolved_relationships ?? "unavailable"}; blockers: ${counts?.blockers ?? "unavailable"}`,
-      `omission: omitted=${String(value.omitted ?? false)}, entries=${String(value.omitted_count ?? 0)}, diagnostics=${String(value.diagnostics_omitted_count ?? 0)}, reason=${String(value.omission_reason ?? "none")}`,
-      `source_fingerprint: ${String(value.source_fingerprint ?? "unavailable")}`,
-      `preview_digest: ${String(value.preview_digest ?? "unavailable")}`,
-      ...diagnostics.map((diagnostic) => `blocker ${String(diagnostic.classification)} ${String(diagnostic.source_identity)}: ${String(diagnostic.recovery)}`),
-      `recovery: ${String(error?.recovery ?? (value.retrieval as Record<string, unknown> | undefined)?.command ?? "none")}`,
-      "",
-    ].join("\n"));
+  if (format !== "text") {
+    emitStructured(value, format, out);
+    return;
   }
-  else emitStructured(value, format, out);
+  const counts = value.counts as Record<string, number> | undefined;
+  const error = value.error as Record<string, unknown> | undefined;
+  const diagnostics = Array.isArray(value.diagnostics) ? value.diagnostics as Array<Record<string, unknown>> : [];
+  const classes = counts ? ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"].map((name) => `${name}=${counts[name] ?? 0}`).join(", ") : "unavailable";
+  const sink = error ? io.err ?? ((text: string) => process.stderr.write(text)) : out;
+  sink([
+    `status: ${String(value.status)}`,
+    `command: ${String(value.command)}`,
+    `classes: ${classes}`,
+    `physical_records: ${counts?.physical_records ?? "unavailable"}; logical_identities: ${counts?.logical_identities ?? "unavailable"}; mirrors: ${counts?.mirrors ?? "unavailable"}; duplicates: ${counts?.duplicates ?? "unavailable"}; conflicts: ${counts?.conflicts ?? "unavailable"}`,
+    `relationships: ${counts?.relationships ?? "unavailable"}; unresolved_relationships: ${counts?.unresolved_relationships ?? "unavailable"}; blockers: ${counts?.blockers ?? "unavailable"}`,
+    `omission: omitted=${String(value.omitted ?? false)}, entries=${String(value.omitted_count ?? 0)}, diagnostics=${String(value.diagnostics_omitted_count ?? 0)}, reason=${String(value.omission_reason ?? "none")}`,
+    `source_fingerprint: ${String(value.source_fingerprint ?? "unavailable")}`,
+    `preview_digest: ${String(value.preview_digest ?? "unavailable")}`,
+    ...diagnostics.map((diagnostic) => `blocker ${String(diagnostic.classification)} ${String(diagnostic.source_identity)}: ${String(diagnostic.recovery)}`),
+    `recovery: ${String(error?.recovery ?? (value.retrieval as Record<string, unknown> | undefined)?.command ?? "none")}`,
+    "",
+  ].join("\n"));
 }
 
 export function runEntityMigrate(argv: string[], io: Io, cwd = process.cwd(), sourceRoot = resolveSourceRoot()): number {
@@ -148,44 +115,14 @@ export function runEntityMigrate(argv: string[], io: Io, cwd = process.cwd(), so
     else output(body, format, io);
     return 2;
   }
-  if (parsed.resume || parsed.rollback) {
-    try {
-      const result = parsed.resume ? resumeEntityMigration(path.resolve(parsed.project), sourceRoot, parsed.resume) : rollbackEntityMigration(path.resolve(parsed.project), sourceRoot, parsed.rollback!);
-      output(result as unknown as Record<string, unknown>, parsed.format, io); return 0;
-    } catch (error) {
-      const failure = error instanceof EntityMigrationOperationError ? error : new EntityMigrationOperationError("migration_failed", (error as Error).message, `Retain all migration evidence and retry with the same migration ID.`);
-      const body = { schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: false, mutation_performed: false, error: { class: failure.classification, message: failure.message, recovery: failure.recovery } };
-      output(body, parsed.format, io); return 1;
-    }
-  }
-  let preview;
   try {
-    preview = previewEntityMigration(path.resolve(parsed.project), sourceRoot, { limit: parsed.limit, after: parsed.after, sourceFingerprint: parsed.sourceFingerprint, previewDigest: parsed.previewDigest });
-  } catch (error) {
-    if (error instanceof EntityMigrationContinuationError) {
-      const body = { schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: true, mutation_performed: false, error: { class: error.classification, message: error.message, recovery: error.restartCommand } };
-      output(body, parsed.format, io);
-      return 1;
-    }
-    const body = { schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: true, mutation_performed: false, error: { class: "inventory_failed", message: (error as Error).message, recovery: "Choose an existing, real directory inside the intended checkout, repair any reported source, then rerun agentera state migrate entities --project PATH --dry-run --format json; no state was changed." } };
-    output(body, parsed.format, io);
-    return 1;
-  }
-  if (parsed.dryRun) {
+    const preview = previewEntityMigration(path.resolve(parsed.project), sourceRoot, { limit: parsed.limit, after: parsed.after, sourceFingerprint: parsed.sourceFingerprint, previewDigest: parsed.previewDigest });
     output(preview as unknown as Record<string, unknown>, parsed.format, io);
     return preview.status === "ready" ? 0 : 1;
-  }
-  try {
-    return assertEntityMigrationBinding(parsed.sourceFingerprint as string, parsed.previewDigest as string, preview, () => {
-      const result = applyEntityMigration(path.resolve(parsed.project), sourceRoot, parsed.sourceFingerprint!, parsed.previewDigest!, parsed.approvalFile ? path.resolve(parsed.approvalFile) : undefined);
-      output(result as unknown as Record<string, unknown>, parsed.format, io); return 0;
-    });
   } catch (error) {
-    if (error instanceof EntityMigrationBindingError) output({ ...preview, status: "blocked", mode: "apply_preflight", read_only: true, mutation_intent: true, mutation_performed: false, error: { class: error.classification, message: error.message, recovery: error.restartCommand } }, parsed.format, io);
-    else {
-      const failure = error instanceof EntityMigrationOperationError ? error : error instanceof EntityMigrationApprovalError ? new EntityMigrationOperationError(error.classification, error.message, "Regenerate the external approval from a clean checkout and fresh unpaginated dry-run, then retry with its exact root, source fingerprint, preview digest, and --approval-file path.") : new EntityMigrationOperationError("migration_failed", (error as Error).message, "Retain all durable migration evidence and retry the exact recovery command.");
-      output({ schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: false, mutation_intent: true, mutation_performed: failure.mutationPerformed, error: { class: failure.classification, message: failure.message, recovery: failure.recovery } }, parsed.format, io);
-    }
+    const continuation = error instanceof EntityMigrationContinuationError;
+    const body = { schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: true, mutation_performed: false, error: { class: continuation ? error.classification : "inventory_failed", message: (error as Error).message, recovery: continuation ? error.restartCommand : "Choose an existing, real directory inside the intended checkout, repair the reported source, then rerun agentera state migrate entities --project PATH --dry-run --format json; no state was changed." } };
+    output(body, parsed.format, io);
     return 1;
   }
 }

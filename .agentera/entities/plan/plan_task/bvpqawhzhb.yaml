@@ -1,0 +1,13 @@
+id: bvpqawhzhb
+artifact: plan
+record:
+  name: Replace recovery machinery with one-way Git cutover
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a supported v2 project WHEN every migration input matches tracked HEAD state and full upgrade --yes runs THEN cutover succeeds without migration inputs.
+    - GIVEN non-Git, partial apply, or any ignored, untracked, staged, modified, renamed, unsafe, or unsupported source WHEN apply is requested THEN all effects are refused.
+    - GIVEN interruption before publication WHEN upgrade repeats THEN known staging is recomputed; GIVEN published canonical entities THEN one bounded manifest validates and completes authority forward without deletion.
+    - GIVEN v3 development commands WHEN inspected and tested THEN entity resume/rollback and cross-major restore are unavailable, no path reactivates legacy authority, and inert historical evidence remains untouched.
+  plan: xfdsbawvzk
