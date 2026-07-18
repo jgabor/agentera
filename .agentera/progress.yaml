@@ -1,4 +1,25 @@
 cycles:
+  - number: 912
+    timestamp: 2026-07-18 04:15
+    type: test
+    phase: build
+    what: Added explicit real-FIFO regressions proving pre-journal approval
+      inspection rejects special files in receipt and preparation-root
+      inventories without effects.
+    inspiration: PLAN Task24 retry 1/2
+    discovered: The existing regular-file and exact top-level inventory checks
+      already reject both special-file placements; no production change was
+      required.
+    verified: 48 focused and 2,663 full tests across 218 files passed; typecheck,
+      build, state validation, 12 capability validations, capability contract
+      2/2, and compact passed.
+    next: Task24 is complete. Task14 remains pending; do not approve or apply the
+      live migration.
+    context:
+      intent: Complete Task24 retry 1/2 by covering special-file preparation
+        inspection without changing production or authorizing migration apply.
+      constraints: No approval, live apply, Task15, version, changelog, vision, manual
+        YAML edit, amend, push, publish, or tag.
   - number: 911
     timestamp: 2026-07-18 03:39
     type: fix
@@ -230,31 +251,6 @@ cycles:
       unknowns: Task 14 apply authorization remains intentionally unresolved.
       scope: Task 13 audit blockers, correlation evidence, approval preflight, tests,
         and immutable state evidence only.
-  - number: 902
-    timestamp: 2026-07-17 22:06
-    type: fix
-    phase: build
-    what: Made repository entity migration ready with exact projection recovery,
-      historical health conversion, projection correlation, residue accounting,
-      and legacy docs/plan adapters.
-    inspiration: Plan Task 13 and repository-local causal Git evidence.
-    discovered: The authoritative identity lists reconcile to 39 decision plus 19
-      health envelopes; the stated expected decision count of 40 is
-      arithmetically inconsistent with the 32 current plus 7 archive-only
-      identities. Staging D3+D4 remains one non-entity residue.
-    verified: Recovery dry-run and explicit apply completed with zero refusals;
-      state validation passed; post-recovery entity preview reported 1,442
-      logical identities, 2,208 resolved relationships, one residue, and zero
-      blockers.
-    next: Task 14 remains pending. Use the clean-HEAD external approval transcript;
-      do not apply entity migration without explicit approval.
-    context:
-      intent: Complete Plan Task 13 without applying the Task 14 entity cutover.
-      constraints: No Task 14 apply, remote access, source aggregate edits, archive
-        edits, version, changelog, vision, push, publish, tag, or amend.
-      unknowns: none
-      scope: CLI projection recovery and entity migration adapters; immutable
-        decision/health recovery envelopes; Plan Task 13 and Cycle 902 evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -324,6 +320,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 902 (2026-07-17): Made repository entity migration ready with
+      exact projection recovery, historical health conversion, projection
+      correlation, residue..."
   - summary: "Cycle 901 (2026-07-17): Made final protocol scan exceptions and bundle
       inventory exact: 315 boolean allowances became 165 one-to-one..."
   - summary: "Cycle 900 (2026-07-17): Expanded Task 12 active protocol coverage to
@@ -419,15 +418,18 @@ archive:
   - summary: "Cycle 863 (2026-07-16): Added authority-driven entity storage,
       project-wide ID allocation, safe discovery and publication, graph
       validation, and agentera..."
-  - summary: "Cycle 862 (2026-07-16): Declared the Decision 94 entity model and
-      explicit migration lifecycle in the single state storage..."
 omitted: true
-omitted_count: 147
+omitted_count: 148
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
