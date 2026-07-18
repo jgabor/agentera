@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Changed the v2-to-v3 development upgrade to one full Git-backed command that requires every migration input to match tracked `HEAD`, activates entity authority last, and validates state and `prime` startup automatically. The optional dry-run is read-only; cross-major apply is one-way and has no rollback, restore, non-Git, or partial workflow.
+- Changed the v2-to-v3 development upgrade to one full Git-backed command that requires every migration input to match tracked `HEAD`, activates entity authority last, and validates state and public `prime` startup automatically. Successful unrelated work can no longer mask missing or invalid entity authority. The optional dry-run is read-only; cross-major apply is one-way and has no rollback, restore, non-Git, or partial workflow.
 - Cut ordinary project state over to one canonical writer-owned file per entity. Public records now use only bare `id` and `artifact` identity, bounded `list` and exact `get --id` reads, and typed writers discovered through `agentera state <artifact> explain`; aggregate state files and ordinal selectors remain migration or historical evidence only.
 - Split lifecycle validation orchestration from the public validation facade while preserving its import surface and validation behavior.
 - Eliminated the monolithic `corpus.json` publication output from the extract CLI; report dry-run diagnostics now reference tier files and the `privacy.corpus_write` field is renamed to `privacy.tier_write`.

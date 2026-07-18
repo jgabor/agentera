@@ -301,6 +301,27 @@ describe("one-way Git entity cutover", () => {
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
   }, 30_000);
 
+  it("does not let successful verification mask missing entity authority", () => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-masked-success-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+
+    const failed = applyUpgrade(root, appHome, home, undefined, "json", {
+      verifyOneWayUpgrade: () => {
+        fs.rmSync(path.join(root, ".agentera/state-mode.yaml"));
+        return {
+          state_validation: { status: "passed", entity_count: 2, issue_count: 0 },
+          startup_validation: { status: "passed" },
+        };
+      },
+    });
+
+    expect(failed.code).toBe(1);
+    expect(JSON.parse(failed.out)).toMatchObject({ phase: "apply", status: "failed" });
+  }, 30_000);
+
   it("exposes preview only and has no entity recovery or cross-major restore commands", () => {
     const root = project();
     const entityHelp = capture(root, ["state", "migrate", "entities", "--help"]);

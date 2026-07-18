@@ -5,7 +5,7 @@ record:
   depends_on:
     - udueghnaov
     - qrdnhmioyq
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN recognized v2 state under any supported v3 installation WHEN full upgrade runs THEN entity migration is selected independently of installation history.
     - GIVEN intended migration ends with legacy authority WHEN results are rendered THEN exit is nonzero and unrelated work cannot mask failure.
@@ -13,3 +13,4 @@ record:
     - GIVEN active valid entities WHEN upgrade reruns THEN unfinished runtime work remains eligible.
   test_proportionality: Selector matrix, masked-success regression, public-startup verification, and active pending-runtime case.
   plan: psmmjdmrwd
+  evidence: "Criterion 1: existing npm/source selector matrix passed 2/2. Criterion 2: masked-success authority regression passed. Criterion 3: absent-marker validation and public prime startup regression passed. Criterion 4: active entity project with pending runtime hooks remained eligible. Focused upgrade tests passed 44/44; startup tests 43/43; full suite 2589/2589; typecheck, build, and compact passed. Status remains in_progress for independent audit."

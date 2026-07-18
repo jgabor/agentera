@@ -6,6 +6,7 @@ import { APP_UP_TO_DATE, buildDoctorStatus } from "../../upgrade/doctor.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
 import { buildPrimeCapabilityContextPayload } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
+import { cmdPrime } from "./prime.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { validateStatePayload } from "./validate.js";
 
@@ -59,15 +60,13 @@ export function verifyOneWayUpgrade(ctx: VerifyContext): OneWayUpgradeVerificati
 
   let startupPassed = false;
   try {
-    const state = inProject(project, () => collectOrientationState({
+    startupPassed = inProject(project, () => cmdPrime({
+      context: "status",
+      format: "json",
       home: resolvePath(expanduser(ctx.home ?? os.homedir())),
       installRoot: ctx.installRoot ?? null,
       expectedVersion: ctx.expectedVersion ?? null,
-    }));
-    const payload = buildPrimeCapabilityContextPayload(state, "status", "prime");
-    const capabilityContext = payload.capability_context as JsonObject | undefined;
-    const stateBlock = capabilityContext?.state as JsonObject | undefined;
-    startupPassed = stateBlock?.schema_error === null;
+    }, { out: () => {}, err: () => {} })) === 0;
   } catch {
     startupPassed = false;
   }

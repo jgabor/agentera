@@ -36,7 +36,7 @@ import {
   summarizeRuntimeLifecycle,
 } from "../../../runtime/lifecycleSnapshot.js";
 import { startupHistorySummary } from "../../../state/startupProjection.js";
-import { detectStateMode } from "../../../state/stateMode.js";
+import { detectAuthoritativeStateModeBinding } from "../../../state/stateMode.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
@@ -79,7 +79,9 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   profileDict.bounded_signals = boundedSignals as unknown as ProfileSummary["bounded_signals"];
   const v1Artifacts = detectV1ArtifactPairs(process.cwd());
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
-  const entityMode = detectStateMode(process.cwd(), sourceRoot) === "entities";
+  const stateModeBinding = detectAuthoritativeStateModeBinding(process.cwd(), sourceRoot);
+  const entityMode = stateModeBinding.mode === "entities";
+  if (stateModeBinding.mode === "entities") stateModeBinding.publicationContext.close();
   const entity = entityMode ? collectEntityOrientation(process.cwd(), sourceRoot) : null;
   const plan = entity?.plan ?? planSummary(schemas);
   const docs = entity?.docs ?? docsSummary(schemas, { profileStatus });

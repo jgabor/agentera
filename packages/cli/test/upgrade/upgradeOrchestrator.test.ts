@@ -287,7 +287,7 @@ describe("buildUpgradePlan", () => {
   });
 
 
-  it("runs runtime rewire without crossMajorBoundary when project hooks are pending", () => {
+  it("keeps runtime rewire eligible for an active entity project with pending hooks", () => {
     const bundle = path.join(tmp, "npx-bundle-runtime");
     fs.mkdirSync(path.join(bundle, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(bundle, "skills", "agentera", "SKILL.md"), "x");
@@ -312,6 +312,8 @@ describe("buildUpgradePlan", () => {
       path.join(FIXTURES, "v2-runtime-cursor-full/project/.cursor/hooks.json"),
       path.join(project, ".cursor", "hooks.json"),
     );
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, bundle));
 
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
     const plan = buildUpgradePlan({

@@ -10,6 +10,7 @@ import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMaj
 import { main } from "../../src/cli/dispatch.js";
 import {
   renderVerifySummary,
+  verifyOneWayUpgrade,
   verifyUpgrade,
 } from "../../src/cli/commands/upgradeVerify.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
@@ -241,5 +242,23 @@ describe("verify", () => {
     expect(rc).toBe(0);
     expect(out).toContain("state and startup validation passed");
     expect(err).toBe("");
+  });
+
+  it("fails state validation and public startup when entity authority is absent", () => {
+    const project = path.join(tmp, "authority-absent");
+    fs.cpSync(path.join(REPO_ROOT, ".agentera/entities"), path.join(project, ".agentera/entities"), { recursive: true });
+
+    const verification = verifyOneWayUpgrade({ home, project });
+    const previous = process.cwd();
+    process.chdir(project);
+    try {
+      const startup = capture(["node", "agentera", "prime", "--context", "status", "--format", "json", "--home", home]);
+      expect(startup.rc).not.toBe(0);
+    } finally {
+      process.chdir(previous);
+    }
+
+    expect(verification.state_validation.status).toBe("failed");
+    expect(verification.startup_validation.status).toBe("failed");
   });
 });

@@ -4,7 +4,7 @@ record:
   name: Establish exclusive mutation ownership
   depends_on:
     - udueghnaov
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN overlapping project or runtime mutations WHEN they start THEN only one process mutates each shared domain.
     - GIVEN a held lock WHEN another process exits THEN it cannot release the owner's lock.
@@ -12,12 +12,12 @@ record:
   test_proportionality: One same-project race, one shared-runtime race, one independent-domain case, and one checked-release case.
   plan: psmmjdmrwd
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Lock ownership works, but project==home makes the runtime lock fail entity Git preflight; runtime-only attempts can leave an empty .agentera directory; and lock records retain unused pid/started fields contrary to the token-only simplicity constraint. Correct within this task without new lock machinery or plan tasks.
     provenance:
-      attempt_id: qrdnhmioyq-audit-1
-      source: independent review ses_0898e6e68ffeFO03MadwBAxd8Z
-      recorded_at: 2026-07-18 20:29
+      attempt_id: qrdnhmioyq-audit-2
+      source: independent review ses_0898e6e68ffeFO03MadwBAxd8Z after commit 30c1e8a5
+      recorded_at: 2026-07-18 20:45
       writer_command: agentera state plan record-evaluation
