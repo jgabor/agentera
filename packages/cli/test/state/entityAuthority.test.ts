@@ -159,7 +159,8 @@ describe("Decision 94 entity authority", () => {
         scope: {
           type: "mapping",
           required_fields: { included: "string_list", excluded: "string_list" },
-          additional_fields: "allowed",
+          optional_fields: { deferred: "string_list" },
+          additional_fields: "forbidden",
         },
       },
     });

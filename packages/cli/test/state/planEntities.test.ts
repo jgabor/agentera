@@ -77,7 +77,7 @@ describe("plan and task entity authority", () => {
 
   it("applies the authority-backed plan scope shape at direct and whole-state boundaries", () => {
     const base = plan("scope parity"); delete base.tasks;
-    for (const scope of [{ included: [], excluded: [] }, { included: ["plan"], excluded: ["release"], deferred: [] }]) {
+    for (const scope of [{ included: [], excluded: [] }, { included: ["plan"], excluded: ["release"], deferred: ["later", "exactly"] }]) {
       expect(canonicalEntityRecordViolations("plan", { ...base, scope })).toEqual([]);
     }
     for (const [scope, message] of [
@@ -86,6 +86,10 @@ describe("plan and task entity authority", () => {
       [{ included: [] }, "scope.excluded is required"],
       [{ included: "plan", excluded: [] }, "scope.included must be a list of strings"],
       [{ included: [], excluded: [2] }, "scope.excluded must be a list of strings"],
+      [{ included: [], excluded: [], deferred: "later" }, "scope.deferred must be a list of strings"],
+      [{ included: [], excluded: [], deferred: {} }, "scope.deferred must be a list of strings"],
+      [{ included: [], excluded: [], deferred: ["later", 2] }, "scope.deferred must be a list of strings"],
+      [{ included: [], excluded: [], other: [] }, "scope.other is not allowed"],
     ] as Array<[unknown, string]>) {
       expect(canonicalEntityRecordViolations("plan", { ...base, scope } as any)).toContain(message);
     }

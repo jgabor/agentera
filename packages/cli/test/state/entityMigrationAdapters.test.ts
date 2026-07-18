@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { planEntityMigration, previewEntityMigration, validateEntityMigrationTargets } from "../../src/state/entityMigrationPreview.js";
 import { applyEntityMigration, resumeEntityMigration } from "../../src/state/entityMigrationApply.js";
+import { validateEntityState } from "../../src/state/entityStorage.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../.."); const roots: string[] = [];
 function project(): string { const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-migration-adapters-")); roots.push(root); fs.mkdirSync(path.join(root, ".agentera/archive"), { recursive: true }); return root; }
@@ -75,6 +76,64 @@ describe("entity migration legacy adapters", () => {
     const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
     expect(preview).toMatchObject({ status: "blocked", counts: { blockers: 1 } });
     expect(preview.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ classification: "corrupt", source_identity: "plan:623e4567-e89b-42d3-a456-426614174000", message: expect.stringMatching(/target_invalid:.*scope/) })]));
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/inventory has 1 blocker/);
+    expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  });
+
+  it.each([
+    ["active", ".agentera/plan.yaml", "open", "pending"],
+    ["archived", ".agentera/archive/PLAN-deferred.yaml", "complete", "complete"],
+  ])("preserves deferred exactly from the %s historical plan shape through apply", (_shape, sourcePath, planStatus, taskStatus) => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, sourcePath, `header:\n  id: plan:723e4567-e89b-42d3-a456-426614174000\n  title: Deferred scope\n  created: 2026-07-17\n  status: ${planStatus}\nwhat: migrate\nwhy: preserve deferred\nscope:\n  included: [first, second]\n  excluded: [never]\n  deferred: [later, 'punctuation: exactly']\ntasks:\n  - number: 1\n    name: Preserve scope\n    status: ${taskStatus}\n    depends_on: []\n    acceptance: [pass]\nsurprises: []\n`);
+    const migration = planEntityMigration(root, SOURCE_ROOT);
+    const plan = migration.entries.find((entry) => entry.boundary === "plan");
+    expect(plan?.record.scope).toEqual({ included: ["first", "second"], excluded: ["never"], deferred: ["later", "punctuation: exactly"] });
+    expect(plan?.migration_provenance).toBeUndefined();
+    expect(validateEntityMigrationTargets(root, migration.entries, SOURCE_ROOT)).toEqual([]);
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "ready", counts: { blockers: 0 } });
+    const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    expect(applied.status).toBe("complete");
+    expect(validateEntityState(root, SOURCE_ROOT)).toMatchObject({ valid: true });
+  });
+
+  it("keeps valid absent deferred absent without normalization provenance", () => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", "header:\n  id: plan:823e4567-e89b-42d3-a456-426614174000\n  title: No deferred scope\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve absence\nscope: {included: [state], excluded: []}\ntasks: []\nsurprises: []\n");
+    const plan = planEntityMigration(root, SOURCE_ROOT).entries.find((entry) => entry.boundary === "plan");
+    expect(plan?.record.scope).toEqual({ included: ["state"], excluded: [] });
+    expect((plan?.record.scope as Record<string, unknown>).deferred).toBeUndefined();
+    expect(plan?.migration_provenance).toBeUndefined();
+  });
+
+  it("normalizes the two evidenced historical scope item encodings with exact provenance", () => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", "header:\n  id: plan:a23e4567-e89b-42d3-a456-426614174000\n  title: Historical scope encodings\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve historical text\nscope:\n  included:\n    - 'prefix': exact text\n  excluded: []\n  deferred:\n    - [later]\ntasks: []\nsurprises: []\n");
+    const migration = planEntityMigration(root, SOURCE_ROOT);
+    const plan = migration.entries.find((entry) => entry.boundary === "plan");
+    expect(plan?.record.scope).toEqual({ included: ["prefix: exact text"], excluded: [], deferred: ["later"] });
+    expect(plan?.migration_provenance).toEqual(expect.arrayContaining([expect.objectContaining({ scope_list_items: [
+      { field: "included", index: 0, source_form: "single_pair_mapping", source: { prefix: "exact text" }, normalized: "prefix: exact text" },
+      { field: "deferred", index: 0, source_form: "singleton_sequence", source: ["later"], normalized: "later" },
+    ] })]));
+    expect(validateEntityMigrationTargets(root, migration.entries, SOURCE_ROOT)).toEqual([]);
+    expect(previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 })).toMatchObject({ status: "ready", counts: { blockers: 0 } });
+  });
+
+  it.each([
+    ["deferred scalar", "scope: {included: [state], excluded: [], deferred: later}\n"],
+    ["deferred object", "scope: {included: [state], excluded: [], deferred: {when: later}}\n"],
+    ["deferred non-string", "scope: {included: [state], excluded: [], deferred: [later, 2]}\n"],
+    ["unknown field", "scope: {included: [state], excluded: [], other: [later]}\n"],
+  ])("blocks malformed %s without migration effects", (_name, scope) => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", `header:\n  id: plan:923e4567-e89b-42d3-a456-426614174000\n  title: Invalid deferred scope\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: reject malformed fields\n${scope}tasks: []\nsurprises: []\n`);
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "blocked", counts: { blockers: 1 } });
+    expect(preview.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ classification: "corrupt", message: expect.stringMatching(/target_invalid:.*scope/) })]));
     expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/inventory has 1 blocker/);
     expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);

@@ -33,6 +33,7 @@ interface EntityDefinition {
 interface FieldShape {
   type: "mapping";
   requiredFields: Record<string, "string_list">;
+  optionalFields: Record<string, "string_list">;
   additionalFields: "allowed" | "forbidden";
 }
 
@@ -179,11 +180,21 @@ function fieldShapes(value: unknown, authorityPath: string): Record<string, Fiel
     if (!mapping(raw) || raw.type !== "mapping" || !mapping(raw.required_fields) || !["allowed", "forbidden"].includes(String(raw.additional_fields))) {
       throw new Error(`invalid entity field_shapes.${field} declaration in '${authorityPath}'`);
     }
-    const requiredFields = Object.fromEntries(Object.entries(raw.required_fields).map(([name, type]) => {
-      if (type !== "string_list") throw new Error(`invalid entity field_shapes.${field}.required_fields.${name} declaration in '${authorityPath}'`);
-      return [name, type];
-    })) as Record<string, "string_list">;
-    return [field, { type: "mapping", requiredFields, additionalFields: raw.additional_fields as "allowed" | "forbidden" }];
+    const declaredFields = (group: "required_fields" | "optional_fields"): Record<string, "string_list"> => {
+      const declaration = raw[group];
+      if (declaration === undefined && group === "optional_fields") return {};
+      if (!mapping(declaration)) throw new Error(`invalid entity field_shapes.${field}.${group} declaration in '${authorityPath}'`);
+      return Object.fromEntries(Object.entries(declaration).map(([name, type]) => {
+        if (type !== "string_list") throw new Error(`invalid entity field_shapes.${field}.${group}.${name} declaration in '${authorityPath}'`);
+        return [name, type];
+      })) as Record<string, "string_list">;
+    };
+    return [field, {
+      type: "mapping",
+      requiredFields: declaredFields("required_fields"),
+      optionalFields: declaredFields("optional_fields"),
+      additionalFields: raw.additional_fields as "allowed" | "forbidden",
+    }];
   }));
 }
 
@@ -282,9 +293,15 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
       if (type === "string_list" && (!Array.isArray(value[name]) || !value[name].every((item) => typeof item === "string"))) return [`${field}.${name} must be a list of strings`];
       return [];
     });
-    if (shape.additionalFields === "allowed") return required;
-    const extras = Object.keys(value).filter((name) => !(name in shape.requiredFields));
-    return [...required, ...extras.map((name) => `${field}.${name} is not allowed`)];
+    const optional = Object.entries(shape.optionalFields).flatMap(([name, type]) => {
+      if (!(name in value)) return [];
+      if (type === "string_list" && (!Array.isArray(value[name]) || !value[name].every((item) => typeof item === "string"))) return [`${field}.${name} must be a list of strings`];
+      return [];
+    });
+    if (shape.additionalFields === "allowed") return [...required, ...optional];
+    const declared = new Set([...Object.keys(shape.requiredFields), ...Object.keys(shape.optionalFields)]);
+    const extras = Object.keys(value).filter((name) => !declared.has(name));
+    return [...required, ...optional, ...extras.map((name) => `${field}.${name} is not allowed`)];
   });
   return [
     ...missing.map((field) => `${field} is required by the canonical ${boundary} record contract`),

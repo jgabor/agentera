@@ -200,6 +200,7 @@ tasks:
     depends_on:
       - "13"
       - "22"
+      - "23"
     status: pending
     acceptance:
       - GIVEN an approved blocker-free preview on the selected integration checkout WHEN apply runs THEN entity authority and the migration record replace legacy authority.
@@ -297,6 +298,15 @@ tasks:
       - GIVEN a canonical plan entity WHEN scope is validated THEN it is a mapping with included and excluded string lists.
       - GIVEN malformed nonempty legacy scope WHEN preview or apply runs THEN the shared validator blocks before approval or effects rather than coercing or dropping content.
       - GIVEN normalized absent scope WHEN migrated THEN explicit empty included and excluded lists plus normalization provenance remain valid across preview, apply, resume, and ordinary state validation.
+  - number: 23
+    name: Preserve deferred plan scope
+    status: complete
+    depends_on:
+      - "22"
+    acceptance:
+      - GIVEN a legacy plan scope with included, excluded, and deferred string lists WHEN migrated THEN all three lists are preserved exactly in the canonical plan entity.
+      - GIVEN deferred or any unknown scope field with malformed content WHEN validated THEN preview and ordinary entity validation fail before effects.
+      - GIVEN plan scopes without deferred WHEN validated THEN the optional field remains absent and existing canonical behavior is unchanged.
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.

@@ -106,7 +106,33 @@ function normalizePlanDocument(data: JsonObject, archived: boolean): { data: Jso
   const normalizedData: JsonObject = { ...data, header: { ...header, status: normalizedStatus }, ...(Array.isArray(data.entries) ? { entries: tasks } : { tasks }) };
   const changes: JsonObject = {};
   if (status !== normalizedStatus) changes.lifecycle = { original_status: status, normalized_status: normalizedStatus, rule: incomplete ? "completed_with_incomplete_tasks_to_open" : "legacy_status" };
-  if (data.scope === undefined || data.scope === null || data.scope === "") { normalizedData.scope = { included: [], excluded: [] }; changes.scope = { source_form: data.scope === undefined ? "absent" : data.scope === null ? "null" : "empty_scalar", normalized: "explicit_empty_lists" }; }
+  if (data.scope === undefined || data.scope === null || data.scope === "") {
+    normalizedData.scope = { included: [], excluded: [] };
+    changes.scope = { source_form: data.scope === undefined ? "absent" : data.scope === null ? "null" : "empty_scalar", normalized: "explicit_empty_lists" };
+  } else if (isMapping(data.scope)) {
+    const scope = structuredClone(data.scope);
+    const itemNormalizations: JsonObject[] = [];
+    for (const field of ["included", "excluded", "deferred"]) {
+      if (!Array.isArray(scope[field])) continue;
+      scope[field] = scope[field].map((item, index) => {
+        if (Array.isArray(item) && item.length === 1 && typeof item[0] === "string") {
+          itemNormalizations.push({ field, index, source_form: "singleton_sequence", source: item, normalized: item[0] });
+          return item[0];
+        }
+        if (isMapping(item)) {
+          const pairs = Object.entries(item);
+          if (pairs.length === 1 && typeof pairs[0][1] === "string") {
+            const normalized = `${pairs[0][0]}: ${pairs[0][1]}`;
+            itemNormalizations.push({ field, index, source_form: "single_pair_mapping", source: item, normalized });
+            return normalized;
+          }
+        }
+        return item;
+      });
+    }
+    normalizedData.scope = scope;
+    if (itemNormalizations.length) changes.scope_list_items = itemNormalizations;
+  }
   if (taskNormalizations.length) changes.tasks = taskNormalizations;
   return { data: normalizedData, ...(Object.keys(changes).length ? { provenance: { kind: "legacy_plan_normalization", archived, ...changes } } : {}) };
 }

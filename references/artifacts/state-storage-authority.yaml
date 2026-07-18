@@ -273,7 +273,9 @@ entity_target:
             required_fields:
               included: string_list
               excluded: string_list
-            additional_fields: allowed
+            optional_fields:
+              deferred: string_list
+            additional_fields: forbidden
       retrieval:
         exact: agentera state plan get --id ID --format json
         list: agentera state plan list [--limit N] [--cursor TOKEN] --format json

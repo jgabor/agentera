@@ -1,4 +1,29 @@
 cycles:
+  - number: 908
+    timestamp: 2026-07-18 02:10
+    type: fix
+    phase: build
+    what: Made canonical plan scope accept only required included/excluded string
+      lists plus an optional deferred string list, while losslessly adapting the
+      two evidenced historical YAML item encodings.
+    inspiration: Plan Task23 and its Task14 dependency gate.
+    discovered: Five historical plans use singleton-sequence or single-pair-mapping
+      YAML item encodings; the adapter now records each real normalization while
+      valid deferred lists remain byte-for-byte values with no fake provenance.
+    verified: Full CLI suite passed 2,640 tests across 218 files; typecheck, build,
+      state validation, 12 capability validations, capability contract 2/2,
+      compact, and a blocker-free 1,453-target live preview passed with zero
+      effects.
+    next: Task14 remains pending for audit; do not apply migration or generate
+      approval yet.
+    context:
+      intent: Complete replanned Task23 without applying the entity migration or
+        generating approval.
+      constraints: No Task15, version, changelog, vision, manual YAML edits, amend,
+        push, publish, tag, apply, or approval.
+      unknowns: Independent audit remains pending.
+      scope: Canonical plan scope authority, shared validation, legacy migration
+        adaptation, regression coverage, and plan/progress state.
   - number: 907
     timestamp: 2026-07-18 01:53
     type: fix
@@ -241,20 +266,6 @@ cycles:
       scope: Prime identity and selection, entity graph readers, package/source parity
         tests, active protocol manifest, canonical README commands, and exact
         Task 12 evidence.
-  - number: 898
-    timestamp: 2026-07-17 17:16
-    type: feat
-    phase: build
-    what: Finalized lifecycle and packaged consumers on the canonical id and
-      artifact entity protocol.
-    verified: "CLI suite passed: 216 files and 2580 tests. Typecheck, build,
-      capability-contract validation, compact gate, bundle parity, and active
-      protocol checks passed."
-    next: Proceed to Task 13 readiness recovery.
-    context:
-      intent: Complete plan Task 12 without implementing readiness recovery, live
-        apply, or release finalization.
-      constraints: Tasks 13 through 15 remain out of scope.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -324,6 +335,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 898 (2026-07-17): Finalized lifecycle and packaged consumers on
+      the canonical id and artifact entity protocol."
   - summary: "Cycle 897 (2026-07-17): Fixed entity-mode generic query dispatch to
       reject every schema-derived converted-family alias before legacy aggregate
       reads..."
@@ -419,15 +432,18 @@ archive:
       859: Cycle 859 inaccurately claimed prior failure_count 2..."
   - summary: "Cycle 859 (2026-07-16): Corrected the reopened Plan Task 5 evidence
       mapping: Task 5 now points to substantive Cycle..."
-  - summary: "Cycle 858 (2026-07-16): Completed the Plan Task 5 retry closeout:
-      corrected the remaining current contract vocabulary to use..."
 omitted: true
-omitted_count: 143
+omitted_count: 144
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
