@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 917
+record:
+  number: 917
+  timestamp: 2026-07-18 06:37
+  type: fix
+  phase: build
+  what: Admitted only fully validated retained rolled-back migration evidence into successor approvals and bound its exact identities, digests, phase, operation IDs, and untracked inventory across pre-lock and locked apply validation.
+  inspiration: Task14 direct integration failure against retained migration 0759ac490c44a3fe6eb1.
+  discovered: Pre-journal preparation discovery incorrectly treated every finalized operation sibling as mutually exclusive, while approval generation had no separate retained-evidence admission path.
+  verified: "Full CLI suite passed: 218 files and 2688 tests; typecheck and build passed. Regression coverage proves apply-roll back-successor apply, byte/inode preservation, stale preparation composition, Git-free apply validation, and tamper/missing/extra/incomplete refusal."
+  next: Task14 remains pending; generate no live approval and perform no live apply until separately authorized.
+  context:
+    intent: Fix Task14 approval generation rejecting intentionally retained evidence from the prior successful guarded rollback without running the live migration.
+    constraints: No task creation or replanning, Task14 completion, Task15, version, changelog, vision, manual YAML edits, amend, push, publish, tag, or live approval/apply.
+    unknowns: The separately authorized live successor migration has not been attempted.
+    scope: Entity migration retained-evidence inspection, approval binding, preparation coexistence, and focused apply regressions.
+record_sha256: c9b08cc9cab12a5ad3dd628b28a3f4ce3302f2420cd54f78c27766c33f30e189

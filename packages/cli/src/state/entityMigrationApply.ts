@@ -42,6 +42,16 @@ interface Journal {
   snapshot_sha256: string;
 }
 
+export interface RolledBackEntityMigrationEvidenceInspection {
+  operation_id: string;
+  phase: "rolled_back";
+  relative_path: string;
+  directory: { dev: string; ino: string };
+  evidence: Array<{ path: string; dev: string; ino: string; mode: number; size: string; sha256: string }>;
+  inventory_sha256: string;
+  untracked_paths: string[];
+}
+
 export interface EntityMigrationResult {
   schemaVersion: "agentera.entityMigration.v1";
   command: "state migrate entities";
@@ -447,6 +457,46 @@ function loadEvidence(project: string, journal: Journal): LoadedEvidence {
     if (canonicalRecordJson(current) !== canonicalRecordJson({ dev: receipt.dev, ino: receipt.ino, type: receipt.type, size: receipt.size, sha256: receipt.sha256 })) throw new EntityMigrationOperationError("receipt_changed", `migration ownership receipt for '${target}' changed`, "Retain canonical targets and recovery evidence; restore the exact pre-publication receipt inode before retrying.");
   }
   return { entries, preservedResidues, receipts };
+}
+
+function retainedEvidenceFile(project: string, relativePath: string): RolledBackEntityMigrationEvidenceInspection["evidence"][number] {
+  const observed = readProjectFileSnapshot(validateRealProjectRoot(project), relativePath);
+  if (observed.kind !== "file") throw new EntityMigrationOperationError("evidence_invalid", `retained migration evidence '${relativePath}' is missing or unsafe`, "Retain and restore the exact rolled-back operation evidence before generating a new approval.");
+  return { path: relativePath, dev: String(observed.dev), ino: String(observed.ino), mode: observed.mode, size: String(observed.bytes.length), sha256: hash(observed.bytes) };
+}
+
+/** Read-only admission of complete rollback evidence retained beside a future operation. */
+export function inspectRolledBackEntityMigrationEvidence(projectRoot: string): RolledBackEntityMigrationEvidenceInspection[] {
+  const project = validateRealProjectRoot(projectRoot).path;
+  const parent = path.join(project, ROOT);
+  if (!fs.existsSync(parent)) return [];
+  const parentStat = fs.lstatSync(parent, { bigint: true });
+  if (!parentStat.isDirectory() || parentStat.isSymbolicLink() || fs.realpathSync(parent) !== parent) throw new EntityMigrationOperationError("evidence_invalid", `migration evidence root '${ROOT}' is unsafe`, "Restore the migration evidence root as a real in-project directory.");
+  const names = fs.readdirSync(parent).sort();
+  const preparationPattern = /^\.[a-f0-9]{20}\.prepare-[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
+  const unknown = names.find((name) => !/^[a-f0-9]{20}$/.test(name) && !preparationPattern.test(name));
+  if (unknown) throw new EntityMigrationOperationError("evidence_invalid", `migration evidence root has unknown child '${unknown}'`, "Retain all evidence and remove no paths until the unknown child is independently classified.");
+  return names.filter((name) => /^[a-f0-9]{20}$/.test(name)).map((id) => {
+    const relativePath = `${ROOT}/${id}`;
+    const directoryPath = path.join(project, relativePath);
+    const before = fs.lstatSync(directoryPath, { bigint: true });
+    if (!before.isDirectory() || before.isSymbolicLink() || fs.realpathSync(directoryPath) !== directoryPath) throw new EntityMigrationOperationError("evidence_invalid", `migration operation '${id}' is not a real directory`, "Retain all evidence and restore the exact operation directory.");
+    const { journal } = loadJournal(project, id);
+    if (journal.phase !== "rolled_back" || canonicalRecordJson(journal.phases) !== canonicalRecordJson(PHASES) || entityMigrationOperationId(journal) !== id) throw new EntityMigrationOperationError("evidence_invalid", `migration operation '${id}' is not fully validated rolled_back evidence`, "Resume or roll back the owning operation; a new approval cannot admit incomplete or fabricated evidence.");
+    const loaded = loadEvidence(project, journal);
+    const receiptPaths = Object.values(loaded.receipts).map((receipt) => receipt.path).sort();
+    const expectedChildren = ["journal.yaml", "manifest.yaml", "receipts", "snapshot.yaml"];
+    if (fs.readdirSync(directoryPath).sort().join("\0") !== expectedChildren.join("\0")) throw new EntityMigrationOperationError("evidence_invalid", `migration operation '${id}' has an unknown or missing evidence path`, "Retain all evidence and restore the exact operation inventory.");
+    const receiptsPath = path.join(directoryPath, "receipts");
+    const receiptsStat = fs.lstatSync(receiptsPath, { bigint: true });
+    if (!receiptsStat.isDirectory() || receiptsStat.isSymbolicLink() || fs.realpathSync(receiptsPath) !== receiptsPath || fs.readdirSync(receiptsPath).sort().join("\0") !== receiptPaths.map((file) => path.posix.basename(file)).sort().join("\0")) throw new EntityMigrationOperationError("evidence_invalid", `migration operation '${id}' has an unsafe or changed receipt inventory`, "Retain all evidence and restore the exact receipt inventory.");
+    const successor = [MARKER, ...loaded.entries.map((entry) => entry.proposed_target!.path)].find((target) => fs.existsSync(path.join(project, target)));
+    if (successor) throw new EntityMigrationOperationError("post_rollback_successor", `rollback successor '${successor}' exists for retained migration '${id}'`, "Retain the successor and evidence; do not approve a new migration over ambiguous canonical ownership.");
+    const evidence = [`${relativePath}/journal.yaml`, `${relativePath}/manifest.yaml`, `${relativePath}/snapshot.yaml`, ...receiptPaths].sort().map((file) => retainedEvidenceFile(project, file));
+    const after = fs.lstatSync(directoryPath, { bigint: true });
+    if (before.dev !== after.dev || before.ino !== after.ino || fs.readdirSync(directoryPath).sort().join("\0") !== expectedChildren.join("\0")) throw new EntityMigrationOperationError("evidence_changed", `migration operation '${id}' changed while inspected`, "Retry only after the retained evidence is stable.");
+    return { operation_id: id, phase: "rolled_back", relative_path: relativePath, directory: { dev: String(after.dev), ino: String(after.ino) }, evidence, inventory_sha256: hash(canonicalRecordJson(evidence)), untracked_paths: evidence.map(({ path: file }) => file) };
+  });
 }
 
 /** Safely loads immutable evidence for maintenance validation without checking target inode ownership. */

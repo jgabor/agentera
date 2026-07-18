@@ -11,6 +11,7 @@ import {
 } from "./entityMigrationPreparation.js";
 import type { DurableEntityMigrationPlan } from "./entityMigrationPreview.js";
 import { validateRealProjectRoot } from "./projectRoot.js";
+import { inspectRolledBackEntityMigrationEvidence, type RolledBackEntityMigrationEvidenceInspection } from "./entityMigrationApply.js";
 
 const SCHEMA_VERSION = "agentera.entityMigrationApproval.v1";
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -44,6 +45,7 @@ export interface EntityMigrationApproval {
     inventory_sha256: string;
     expected_classification: "stale" | "same_operation";
   };
+  prior_rolled_back_operations?: RolledBackEntityMigrationEvidenceInspection[];
 }
 
 export class EntityMigrationApprovalError extends Error {
@@ -223,12 +225,13 @@ export function generateEntityMigrationApproval(projectRoot: string, sourceFinge
   const layout = gitLayout(project);
   if (!layout) throw new EntityMigrationApprovalError("approval generation requires a Git checkout");
   const binding = { project, source_fingerprint: sourceFingerprint, preview_digest: previewDigest };
+  const priorEvidence = inspectRolledBackEntityMigrationEvidence(project);
   const preparation = inspectPreparation(project, binding);
   const head = currentHead(layout);
   const gitIndexSha256 = indexHash(layout.gitDir);
   const porcelain = runGit(project, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
   const untracked = porcelainUntracked(porcelain);
-  const expectedUntracked = preparation?.untracked_paths.slice().sort() ?? [];
+  const expectedUntracked = [...priorEvidence.flatMap(({ untracked_paths }) => untracked_paths), ...(preparation?.untracked_paths ?? [])].sort();
   if (canonicalRecordJson(untracked) !== canonicalRecordJson(expectedUntracked)) throw new EntityMigrationApprovalError(`approval generation found unvalidated untracked path '${untracked.find((value) => !expectedUntracked.includes(value)) ?? expectedUntracked.find((value) => !untracked.includes(value)) ?? "unknown"}'`);
   const tracked = zeroSeparated(runGit(project, ["ls-files", "-z"])).sort().map((relative) => trackedPath(project, relative));
   const ignored = zeroSeparated(runGit(project, ["status", "--porcelain=v1", "-z", "--ignored=matching", "--untracked-files=all"]));
@@ -239,8 +242,11 @@ export function generateEntityMigrationApproval(projectRoot: string, sourceFinge
   });
   const ignoredDirectoryPrefixes = ignoredValues.filter((entry) => entry.endsWith("/")).map((entry) => entry.slice(0, -1)).filter(safeRelative).sort();
   const ignoredPaths = ignoredValues.filter((entry) => !entry.endsWith("/")).filter(safeRelative).sort();
-  if (preparation && [...ignoredDirectoryPrefixes, ...ignoredPaths].some((value) => coversPath(value, preparation.relative_path) || coversPath(preparation.relative_path, value))) throw new EntityMigrationApprovalError("approval generation cannot admit a migration preparation hidden by Git ignore rules");
+  const admittedDirectories = [...priorEvidence.map(({ relative_path }) => relative_path), ...(preparation ? [preparation.relative_path] : [])];
+  if ([...ignoredDirectoryPrefixes, ...ignoredPaths].some((value) => admittedDirectories.some((directory) => coversPath(value, directory) || coversPath(directory, value)))) throw new EntityMigrationApprovalError("approval generation cannot admit migration evidence hidden by Git ignore rules");
+  const confirmedPriorEvidence = inspectRolledBackEntityMigrationEvidence(project);
   const confirmed = inspectPreparation(project, binding);
+  if (canonicalRecordJson(confirmedPriorEvidence) !== canonicalRecordJson(priorEvidence)) throw new EntityMigrationApprovalError("retained rolled-back migration evidence changed during approval generation");
   if (canonicalRecordJson(confirmed ?? null) !== canonicalRecordJson(preparation ?? null)) throw new EntityMigrationApprovalError("migration preparation changed during approval generation");
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -255,6 +261,7 @@ export function generateEntityMigrationApproval(projectRoot: string, sourceFinge
     ignored_directory_prefixes: ignoredDirectoryPrefixes,
     ignored_paths: ignoredPaths,
     untracked_baseline: [],
+    ...(priorEvidence.length ? { prior_rolled_back_operations: priorEvidence } : {}),
     ...(preparation ? { transient_preparation: approvalTransient(preparation) } : {}),
   };
 }
@@ -298,6 +305,8 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   if (approval.project !== project) throw new EntityMigrationApprovalError(`approval root '${approval.project}' does not match project '${project}'`);
   if (approval.source_fingerprint !== sourceFingerprint || approval.preview_digest !== previewDigest) throw new EntityMigrationApprovalError("approval source fingerprint or preview digest does not match the requested migration");
   const preparation = inspectPreparation(project, currentPlan ?? { project, source_fingerprint: sourceFingerprint, preview_digest: previewDigest });
+  const priorEvidence = inspectRolledBackEntityMigrationEvidence(project);
+  if (canonicalRecordJson(approval.prior_rolled_back_operations ?? []) !== canonicalRecordJson(priorEvidence)) throw new EntityMigrationApprovalError("approved retained rolled-back migration evidence identity, digest, phase, operation, or inventory changed");
   const expectedTransient = preparation ? approvalTransient(preparation) : undefined;
   if (canonicalRecordJson(approval.transient_preparation ?? null) !== canonicalRecordJson(expectedTransient ?? null)) throw new EntityMigrationApprovalError("approved migration preparation path, operation, identity, inventory, count, or classification changed");
   const head = currentHead(layout);
@@ -316,9 +325,12 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   const ignoredDirectories = new Set(approval.ignored_directory_prefixes);
   if (writerLockHeld) ignoredDirectories.add(".agentera/.writer.lock");
   if (preparation) ignoredDirectories.add(preparation.relative_path);
+  for (const operation of priorEvidence) ignoredDirectories.add(operation.relative_path);
   const extras = inventoryWorktree(project, ignoredDirectories).filter((relative) => !allowed.has(relative));
   if (extras.length) throw new EntityMigrationApprovalError(`worktree has unapproved non-ignored path '${extras[0]}'`);
   const confirmed = inspectPreparation(project, currentPlan ?? { project, source_fingerprint: sourceFingerprint, preview_digest: previewDigest });
+  const confirmedPriorEvidence = inspectRolledBackEntityMigrationEvidence(project);
+  if (canonicalRecordJson(confirmedPriorEvidence) !== canonicalRecordJson(priorEvidence)) throw new EntityMigrationApprovalError("retained rolled-back migration evidence changed during approval validation");
   if (canonicalRecordJson(confirmed ?? null) !== canonicalRecordJson(preparation ?? null)) throw new EntityMigrationApprovalError("migration preparation changed during approval validation");
   return approval;
 }

@@ -1,4 +1,34 @@
 cycles:
+  - number: 917
+    timestamp: 2026-07-18 06:37
+    type: fix
+    phase: build
+    what: Admitted only fully validated retained rolled-back migration evidence into
+      successor approvals and bound its exact identities, digests, phase,
+      operation IDs, and untracked inventory across pre-lock and locked apply
+      validation.
+    inspiration: Task14 direct integration failure against retained migration
+      0759ac490c44a3fe6eb1.
+    discovered: Pre-journal preparation discovery incorrectly treated every
+      finalized operation sibling as mutually exclusive, while approval
+      generation had no separate retained-evidence admission path.
+    verified: "Full CLI suite passed: 218 files and 2688 tests; typecheck and build
+      passed. Regression coverage proves apply-roll back-successor apply,
+      byte/inode preservation, stale preparation composition, Git-free apply
+      validation, and tamper/missing/extra/incomplete refusal."
+    next: Task14 remains pending; generate no live approval and perform no live
+      apply until separately authorized.
+    context:
+      intent: Fix Task14 approval generation rejecting intentionally retained evidence
+        from the prior successful guarded rollback without running the live
+        migration.
+      constraints: No task creation or replanning, Task14 completion, Task15, version,
+        changelog, vision, manual YAML edits, amend, push, publish, tag, or live
+        approval/apply.
+      unknowns: The separately authorized live successor migration has not been
+        attempted.
+      scope: Entity migration retained-evidence inspection, approval binding,
+        preparation coexistence, and focused apply regressions.
   - number: 916
     timestamp: 2026-07-18 06:19
     type: fix
@@ -212,30 +242,6 @@ cycles:
       unknowns: Independent audit remains pending.
       scope: Canonical plan scope authority, shared validation, legacy migration
         adaptation, regression coverage, and plan/progress state.
-  - number: 907
-    timestamp: 2026-07-18 01:53
-    type: fix
-    phase: build
-    what: Enforced authority-backed canonical plan scope shape validation across
-      migration and entity-state boundaries.
-    inspiration: Plan Task22 and its Task14 dependency gate.
-    discovered: The read-only migration preview now blocks two historical plan
-      archives whose nonempty scope mappings omit required canonical lists.
-    verified: 31 focused tests and the full 2,632-test CLI suite passed; typecheck,
-      build, state validation, 12 capability validations, capability contract,
-      and compact passed. Preview remained read-only with zero effects and two
-      blockers.
-    next: Audit the two newly exposed historical plan-scope blockers before Task14
-      apply; do not generate final approval yet.
-    context:
-      intent: Complete replanned Task22 without applying the entity migration or
-        generating approval.
-      constraints: Canonical plan scope validation only; no Task15, version,
-        changelog, vision, apply, approval, push, or publish.
-      unknowns: Whether audit will repair or preserve the two malformed historical
-        archives.
-      scope: Entity authority, shared entity record validation, migration adapter
-        tests, entity validation tests, plan/progress state.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -305,6 +311,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 907 (2026-07-18): Enforced authority-backed canonical plan scope
+      shape validation across migration and entity-state boundaries."
   - summary: "Cycle 906 (2026-07-18): Normalized lossless legacy plan omissions and
       made preview validate every final canonical target through the..."
   - summary: "Cycle 905 (2026-07-18): Preserved historical projection residues as
@@ -401,16 +409,18 @@ archive:
   - summary: "Cycle 868 (2026-07-16): Made private writer-preparation reclamation
       proof-based: only a demonstrably dead PID, matching dead owner, or
       verified..."
-  - summary: "Cycle 867 (2026-07-16): Replaced link-count stale-lock election with
-      an exclusive descriptor-pinned claim and recoverable owner transition,
-      then added..."
 omitted: true
-omitted_count: 152
+omitted_count: 153
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

@@ -81,6 +81,11 @@ function pathExists(value: string): boolean {
   }
 }
 
+function hasCanonicalEntityState(directory: string): boolean {
+  if (!pathExists(directory)) return false;
+  return fs.readdirSync(directory, { withFileTypes: true }).some((entry) => entry.isDirectory() && !entry.isSymbolicLink() ? hasCanonicalEntityState(path.join(directory, entry.name)) : true);
+}
+
 function stableRegularFile(parent: number, name: string, relativePath: string): { bytes: Buffer; inventory: EntityMigrationPreparationReceipt } {
   let fd: number | undefined;
   try {
@@ -131,7 +136,8 @@ export function inspectEntityMigrationPreparation(projectRoot: string, current: 
       return undefined;
     }
     if (preparationNames.length > 1) fail("multiple migration preparations are ambiguous and cannot be resumed or cleaned automatically");
-    if (names.length !== 1) fail(`migration preparation has unknown or final sibling '${names.find((name) => name !== preparationNames[0])}'`);
+    const sibling = names.find((name) => name !== preparationNames[0] && !/^[a-f0-9]{20}$/.test(name));
+    if (sibling) fail(`migration preparation has unknown sibling '${sibling}'`);
 
     const name = preparationNames[0];
     const match = /^\.([a-f0-9]{20})\.prepare-([a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/.exec(name);
@@ -189,7 +195,7 @@ export function inspectEntityMigrationPreparation(projectRoot: string, current: 
 
     if (pathExists(path.join(parentPath, id))) fail(`migration preparation '${name}' has final operation evidence`);
     if (pathExists(path.join(root.path, ENTITY_MIGRATION_MARKER))) fail(`migration preparation '${name}' has a canonical state marker`);
-    if (pathExists(path.join(root.path, ".agentera/entities"))) fail(`migration preparation '${name}' has canonical entity state`);
+    if (hasCanonicalEntityState(path.join(root.path, ".agentera/entities"))) fail(`migration preparation '${name}' has canonical entity state`);
     for (const target of targets) if (pathExists(path.join(root.path, target))) fail(`migration preparation '${name}' has canonical publication '${target}'`);
 
     if (fs.readdirSync(fdPath(stageFd)).join("\0") !== "receipts" || fs.readdirSync(fdPath(receiptsFd)).sort().join("\0") !== receiptNames.join("\0")) fail(`migration preparation '${name}' changed while inspected`);

@@ -58,6 +58,12 @@ function attachedWorktree(detached = false): { common: string; root: string } {
 function approvalFile(root: string, source: string, digest: string): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-approval-envelope-")); roots.push(directory); const file = path.join(directory, "approval.json"); fs.writeFileSync(file, JSON.stringify(generateEntityMigrationApproval(root, source, digest))); return file;
 }
+function rolledBackGitProject(): { root: string; id: string } {
+  const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest);
+  const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval);
+  expect(rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id).status).toBe("rolled_back");
+  return { root, id: applied.migration_id };
+}
 function interruptPreparation(root: string, preview: ReturnType<typeof previewEntityMigration>, receiptIndex: number, approval: string): string {
   const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: String(receiptIndex), AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: approval } });
   expect(child.status).toBe(86);
@@ -148,6 +154,49 @@ describe("durable entity migration", () => {
       expect(result.rc, result.out).toBe(0); expect(JSON.parse(result.out)).toMatchObject({ status: "complete" });
     } finally { process.env.PATH = oldPath; }
   });
+
+  it("retains validated rollback evidence byte-for-byte and inode-for-inode beside a second approved apply", () => {
+    const { root, id } = rolledBackGitProject(); const oldRoot = path.join(root, ".agentera/migrations/entities", id);
+    const before = files(root, `.agentera/migrations/entities/${id}`).map((file) => ({ file, bytes: fs.readFileSync(file), ino: fs.statSync(file).ino }));
+    fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] approve a distinct successor.\n"); git(root, ["add", "TODO.md"]); git(root, ["commit", "--quiet", "-m", "new migration source"]);
+    const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const envelope = JSON.parse(fs.readFileSync(approval, "utf8"));
+    expect(envelope.prior_rolled_back_operations).toEqual([expect.objectContaining({ operation_id: id, phase: "rolled_back", relative_path: `.agentera/migrations/entities/${id}`, inventory_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) })]);
+    expect(envelope.prior_rolled_back_operations[0].untracked_paths).toEqual(before.map(({ file }) => path.relative(root, file)).sort());
+    const oldPath = process.env.PATH; process.env.PATH = "/path/that/contains/no/git";
+    try { expect(applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval).status).toBe("complete"); }
+    finally { process.env.PATH = oldPath; }
+    expect(fs.existsSync(oldRoot)).toBe(true);
+    for (const expected of before) { expect(fs.readFileSync(expected.file)).toEqual(expected.bytes); expect(fs.statSync(expected.file).ino).toBe(expected.ino); }
+    expect(fs.readdirSync(path.join(root, ".agentera/migrations/entities")).sort()).toHaveLength(2);
+  }, 30_000);
+
+  it.each(["tampered", "missing", "extra"] as const)("refuses %s bound rollback evidence before second-apply effects", (defect) => {
+    const { root, id } = rolledBackGitProject(); fs.appendFileSync(path.join(root, "TODO.md"), `- [ ] ${defect} successor.\n`); git(root, ["add", "TODO.md"]); git(root, ["commit", "--quiet", "-m", `new ${defect} source`]);
+    const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const operation = path.join(root, ".agentera/migrations/entities", id);
+    if (defect === "tampered") fs.appendFileSync(path.join(operation, "snapshot.yaml"), "# changed\n");
+    else if (defect === "missing") fs.rmSync(path.join(operation, "snapshot.yaml"));
+    else fs.writeFileSync(path.join(operation, "unknown"), "x");
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toThrow(/evidence|snapshot|unknown|missing|unsafe/);
+    expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera/migrations/entities"))).toEqual([id]);
+  }, 30_000);
+
+  it.each(["cutover_complete", "prepare_recovery"])("rejects retained evidence fabricated as %s during approval generation", (phase) => {
+    const { root, id } = rolledBackGitProject(); const journal = path.join(root, ".agentera/migrations/entities", id, "journal.yaml");
+    fs.writeFileSync(journal, fs.readFileSync(journal, "utf8").replace("phase: rolled_back", `phase: ${phase}`));
+    fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] distinct successor.\n"); git(root, ["add", "TODO.md"]); git(root, ["commit", "--quiet", "-m", "new source"]); const preview = previewEntityMigration(root, SOURCE_ROOT);
+    expect(() => generateEntityMigrationApproval(root, preview.source_fingerprint, preview.preview_digest)).toThrow(/not fully validated rolled_back/);
+    expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  }, 30_000);
+
+  it("composes retained rollback evidence with a stale preparation during approval generation", () => {
+    const { root, id } = rolledBackGitProject(); fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] stale source.\n"); git(root, ["add", "TODO.md"]); git(root, ["commit", "--quiet", "-m", "stale source"]);
+    const stale = previewEntityMigration(root, SOURCE_ROOT); const staleApproval = approvalFile(root, stale.source_fingerprint, stale.preview_digest); const stage = interruptPreparation(root, stale, 0, staleApproval);
+    fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] current source.\n"); git(root, ["add", "TODO.md"]); git(root, ["commit", "--quiet", "-m", "current source"]); const current = previewEntityMigration(root, SOURCE_ROOT);
+    const envelope = generateEntityMigrationApproval(root, current.source_fingerprint, current.preview_digest);
+    expect(envelope.prior_rolled_back_operations?.map(({ operation_id }) => operation_id)).toEqual([id]);
+    expect(envelope.transient_preparation).toMatchObject({ relative_path: `.agentera/migrations/entities/${stage}`, expected_classification: "stale" });
+  }, 30_000);
 
   it.each(["loose branch", "packed branch", "detached HEAD"])("applies an attached-worktree approval with %s while PATH traps Git", (headKind) => {
     const { common, root } = attachedWorktree(headKind === "detached HEAD");
