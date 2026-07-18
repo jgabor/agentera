@@ -14,6 +14,7 @@ import {
   type OneWayUpgradeVerification,
   type VerifyContext,
 } from "./upgradeVerify.js";
+import { detectStateMode } from "../../state/stateMode.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -82,6 +83,14 @@ function renderOneWayResult(
     : "Agentera could not verify the v2-to-v3 upgrade.\n";
 }
 
+function entityAuthorityConfirmedInactive(project: string): boolean {
+  try {
+    return detectStateMode(project) !== "entities";
+  } catch {
+    return false;
+  }
+}
+
 export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: UpgradeDependencies = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -138,8 +147,10 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
             err("upgrade error: v2-to-v3 apply must run as one full upgrade --yes; --only is preview-only.\n");
           } else if (preview.channel.distributionMajor < 3) {
             err("upgrade error: v2-to-v3 apply requires the development channel; preview there, then retry with --yes.\n");
-          } else {
+          } else if (entityAuthorityConfirmedInactive(preview.project)) {
             err("upgrade error: v2-to-v3 preflight failed. Recover the tracked v2 checkout with Git and retry.\n");
+          } else {
+            err("upgrade error: v2-to-v3 preflight failed. Rerun the same upgrade command to continue forward.\n");
           }
         } else {
           err(`upgrade error: ${applyError}\n`);
@@ -164,7 +175,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
       && verification.startup_validation.status === "passed";
     out(renderOneWayResult(verification, applyExit === 0, (args.format ?? "text") === "json"));
     if (applyExit !== 0 || !verificationPassed) {
-      err(applyExit !== 0
+      err(applyExit !== 0 && entityAuthorityConfirmedInactive(plan.project)
         ? "Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n"
         : "Rerun the same upgrade command to continue forward; verification is read-only and no completed effect was reversed.\n");
       return 1;

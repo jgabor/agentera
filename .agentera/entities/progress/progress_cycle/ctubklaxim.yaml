@@ -1,0 +1,15 @@
+id: ctubklaxim
+artifact: progress
+record:
+  timestamp: 2026-07-18 13:46
+  type: fix
+  phase: build
+  what: Corrected one-way upgrade recovery guidance to follow durable entity authority after failed effects and added singular phase to upgrade schema introspection.
+  context:
+    intent: Resolve only the two persisted audit findings for task sbebutulja without widening recovery or public release scope.
+    constraints: No rollback, generalized recovery, upgrade reordering, public docs, package/version/changelog work, closeout, or remote mutation.
+    unknowns: None.
+    scope: Upgrade failure guidance, test-only cleanup fault injection, upgrade schema introspection, and focused regressions.
+  inspiration: Persisted audit attempt task-sbebutulja-audit-1 identified post-marker Git guidance and singular phase introspection drift.
+  verified: Focused upgrade, output, and schema tests passed 49/49; full pnpm -C packages/cli test passed 2589/2589; typecheck and build passed; capability-contract validation passed 2/2; schema introspection reported no gaps; state validation passed with 1487 entities and zero issues; compact passed.
+  next: Independent audit should re-evaluate sbebutulja; cugspwxwgl and yqvarvxadk remain downstream and untouched.

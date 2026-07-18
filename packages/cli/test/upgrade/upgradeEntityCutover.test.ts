@@ -107,6 +107,7 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE;
+  delete process.env.AGENTERA_FAULT_INJECT_V2_CLEANUP_FAILURE;
   setSuccessorAnnouncedOverrideForTests(null);
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
@@ -234,6 +235,22 @@ describe("one-way Git entity cutover", () => {
       expect(fs.readFileSync(absolute)).toEqual(expected.bytes);
     }
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+  }, 30_000);
+
+  it("keeps recovery forward when cleanup fails after entity authority activates", () => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-post-marker-failure-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    process.env.AGENTERA_FAULT_INJECT_V2_CLEANUP_FAILURE = "1";
+
+    const failed = applyUpgrade(root, appHome, home);
+
+    expect(failed.code).toBe(1);
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    expect(failed.err).toContain("Rerun the same upgrade command to continue forward");
+    expect(failed.err).not.toMatch(/Recover the tracked v2 checkout with Git|no v3 authority was activated/i);
   }, 30_000);
 
   it("keeps entity authority active across normal writes and repeated upgrade", () => {

@@ -346,6 +346,7 @@ function describeCommands(
       "schemaVersion",
       "mode",
       "status",
+      "phase",
       "phases",
       "lifecycle",
       "summary",

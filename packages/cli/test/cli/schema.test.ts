@@ -77,6 +77,10 @@ describe("cli schema", () => {
       kind: "state_git_backfill",
       structured_fields: expect.arrayContaining(["scan", "entries", "source_contract"]),
     });
+    const upgrade = (payload.commands as Array<{ name: string; structured_fields: string[] }>).find(
+      (command) => command.name === "upgrade",
+    );
+    expect(upgrade?.structured_fields).toEqual(expect.arrayContaining(["phase", "phases"]));
     expect(payload.doctor.signal_kinds).toContain("missing_marker");
     expect(Array.isArray(payload.artifact_schemas)).toBe(true);
     expect(payload.artifact_locations.schemaVersion).toBe("agentera.artifact_locations.v1");

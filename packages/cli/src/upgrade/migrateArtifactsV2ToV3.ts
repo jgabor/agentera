@@ -519,6 +519,9 @@ export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext)
       continue;
     }
     try {
+      if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_V2_CLEANUP_FAILURE === "1") {
+        throw new Error("simulated post-marker cleanup failure");
+      }
       removeDirectoryRecursive(item.source);
       item.status = "applied";
       item.message = "managed Python app-home bundle removed; user state preserved";
