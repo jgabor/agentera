@@ -1,0 +1,12 @@
+id: qnhaadkrxa
+artifact: progress
+record:
+  timestamp: 2026-07-18 21:16
+  type: fix
+  phase: build
+  what: Retried avqwfdnkbi after audit 1 by routing packages/cli/src/cli/commands/upgradeVerify.ts through enforceCompletedEntityCutover and deleting detectAuthoritativeStateModeBinding.
+  context:
+    intent: Make one-way verification use the same cutover gate as public prime without adding an authority predicate or state-shape matrix.
+  inspiration: Independent evaluation avqwfdnkbi-audit-1 identified a bare marker-absent project that internal cmdPrime verification incorrectly accepted.
+  verified: Bare marker-absent state now fails both one-way state and startup verification. Existing selector, masked-success, interrupted-resume, and active pending-runtime cases passed. Focused cutover/gate tests passed 52/52, startup tests 43/43, full tests 2589/2589; typecheck, build, state validation, and compact passed.
+  next: Keep avqwfdnkbi in_progress pending independent re-audit; add no plan task.

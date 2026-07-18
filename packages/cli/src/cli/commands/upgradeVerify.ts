@@ -9,6 +9,7 @@ import { collectOrientationState } from "./prime/collectOrientationState.js";
 import { cmdPrime } from "./prime.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { validateStatePayload } from "./validate.js";
+import { enforceCompletedEntityCutover } from "../migrationRequired.js";
 
 export interface VerifyCheck {
   name: string;
@@ -46,29 +47,35 @@ function inProject<T>(project: string, action: () => T): T {
 /** Mandatory read-only checks for an activated v2-to-v3 project. */
 export function verifyOneWayUpgrade(ctx: VerifyContext): OneWayUpgradeVerification {
   const project = resolvePath(expanduser(ctx.project ?? process.cwd()));
+  const cutoverPassed = enforceCompletedEntityCutover(project, "json", {
+    out: () => {},
+    err: () => {},
+  }) === null;
   let stateValidation: OneWayUpgradeVerification["state_validation"];
   try {
     const state = validateStatePayload(project);
     stateValidation = {
-      status: state.valid === true ? "passed" : "failed",
+      status: cutoverPassed && state.valid === true ? "passed" : "failed",
       entity_count: Number(state.entity_count),
-      issue_count: Number(state.issue_count),
+      issue_count: Number(state.issue_count) + (cutoverPassed ? 0 : 1),
     };
   } catch {
     stateValidation = { status: "failed", entity_count: 0, issue_count: 1 };
   }
 
   let startupPassed = false;
-  try {
-    startupPassed = inProject(project, () => cmdPrime({
-      context: "status",
-      format: "json",
-      home: resolvePath(expanduser(ctx.home ?? os.homedir())),
-      installRoot: ctx.installRoot ?? null,
-      expectedVersion: ctx.expectedVersion ?? null,
-    }, { out: () => {}, err: () => {} })) === 0;
-  } catch {
-    startupPassed = false;
+  if (cutoverPassed) {
+    try {
+      startupPassed = inProject(project, () => cmdPrime({
+        context: "status",
+        format: "json",
+        home: resolvePath(expanduser(ctx.home ?? os.homedir())),
+        installRoot: ctx.installRoot ?? null,
+        expectedVersion: ctx.expectedVersion ?? null,
+      }, { out: () => {}, err: () => {} })) === 0;
+    } catch {
+      startupPassed = false;
+    }
   }
 
   return {

@@ -107,23 +107,6 @@ export function detectStateModeBinding(
   };
 }
 
-/** Reject canonical entity bytes that are not bound to durable entity authority. */
-export function detectAuthoritativeStateModeBinding(
-  projectRoot: string,
-  sourceRoot = resolveSourceRoot(),
-): StateModeBinding {
-  const binding = detectStateModeBinding(projectRoot, sourceRoot);
-  if (
-    binding.mode === "legacy"
-    && readProjectFileSnapshot(binding.root, ".agentera/entities").kind !== "missing"
-  ) {
-    throw new Error(
-      "canonical entity state exists without the state mode marker; restore the durable migration marker before retrying",
-    );
-  }
-  return binding;
-}
-
 export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceRoot()): StateMode {
   const binding = detectStateModeBinding(projectRoot, sourceRoot);
   if (binding.mode === "entities") binding.publicationContext.close();

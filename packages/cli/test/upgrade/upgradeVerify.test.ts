@@ -246,7 +246,7 @@ describe("verify", () => {
 
   it("fails state validation and public startup when entity authority is absent", () => {
     const project = path.join(tmp, "authority-absent");
-    fs.cpSync(path.join(REPO_ROOT, ".agentera/entities"), path.join(project, ".agentera/entities"), { recursive: true });
+    fs.mkdirSync(project);
 
     const verification = verifyOneWayUpgrade({ home, project });
     const previous = process.cwd();

@@ -21,7 +21,7 @@ import {
 import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
-import { detectAuthoritativeStateModeBinding } from "../../state/stateMode.js";
+import { detectStateModeBinding } from "../../state/stateMode.js";
 import { loadEntityCutoverTargetsForMarker } from "../../state/entityCutover.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
@@ -556,7 +556,7 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
   const result = validateEntityState(projectRoot);
   const issues: JsonObject[] = [...result.issues as unknown as JsonObject[]];
   try {
-    const binding = detectAuthoritativeStateModeBinding(projectRoot);
+    const binding = detectStateModeBinding(projectRoot);
     if (binding.mode === "entities") {
       binding.publicationContext.close();
       const markerSnapshot = readProjectFileSnapshot(validateRealProjectRoot(projectRoot), ".agentera/state-mode.yaml");
