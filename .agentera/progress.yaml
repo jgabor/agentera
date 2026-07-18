@@ -1,4 +1,29 @@
 cycles:
+  - number: 909
+    timestamp: 2026-07-18 02:39
+    type: fix
+    phase: build
+    what: Restricted historical plan-scope mapping flattening to source-proven block
+      single-pair sequence items while preserving explicit flow objects for
+      canonical validation.
+    inspiration: Task23 retry 1/2 and the Task14 dependency gate.
+    discovered: YAML AST collection style distinguishes the three live legacy
+      block-colon mappings from explicit flow objects without claiming semantic
+      intent; all 13 live historical item normalizations remain exact.
+    verified: Full CLI suite passed 2,646 tests across 218 files; typecheck, build,
+      state validation, 12 capability validations, capability contract 2/2,
+      compact, targeted malformed-source regressions, and blocker-free no-effect
+      live preview passed.
+    next: Task14 remains pending for audit; do not apply migration or generate
+      approval.
+    context:
+      intent: Complete Task23 retry 1/2 by fixing only overbroad single-pair mapping
+        flattening without applying or approving migration.
+      constraints: No apply, approval, Task15, version, changelog, vision, manual YAML
+        edit, amend, push, publish, or tag.
+      unknowns: Independent audit remains pending.
+      scope: Plan artifact YAML source-node normalization, migration regressions,
+        storage authority, and plan/progress state.
   - number: 908
     timestamp: 2026-07-18 02:10
     type: fix
@@ -238,34 +263,6 @@ cycles:
       scope: Registry-derived copied surface classification, exact active-protocol
         exceptions, vocabulary and prime identity contracts, and YAML semantic
         scan compatibility.
-  - number: 899
-    timestamp: 2026-07-17 18:05
-    type: fix
-    phase: build
-    what: Closed the audited Task 12 startup identity, bounded selection,
-      independent bundle parity, and active protocol-surface gaps.
-    inspiration: Retry 1/2 Task 12 audit findings.
-    discovered: Prime selection paged only the first 20 unfiltered plans and
-      objectives; the prior bundle parity test shared one executable and
-      project; the active scan excluded broad surfaces and missed packaged
-      README and runtime output drift.
-    verified: "CLI suite: 216 files and 2585 tests passed. Typecheck and build
-      passed. All 12 capability validations, capability contract, state
-      validation, compact, independent source/bundle command parity, active
-      protocol scan, migration gate, legacy evidence writer, and lifecycle
-      consumer tests passed."
-    next: Task 12 remains complete. Task 13 is pending; do not begin Task 14 or
-      later work.
-    context:
-      intent: Fix only audited Task 12 gaps without readiness recovery, live migration
-        apply, or release finalization.
-      constraints: Task 13 and later remain out of scope; preserve Cycle 898,
-        migration/admin/evidence-writer/compact behavior, versions, vision, and
-        immutable history.
-      unknowns: none
-      scope: Prime identity and selection, entity graph readers, package/source parity
-        tests, active protocol manifest, canonical README commands, and exact
-        Task 12 evidence.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -335,6 +332,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 899 (2026-07-17): Closed the audited Task 12 startup identity,
+      bounded selection, independent bundle parity, and active
+      protocol-surface..."
   - summary: "Cycle 898 (2026-07-17): Finalized lifecycle and packaged consumers on
       the canonical id and artifact entity protocol."
   - summary: "Cycle 897 (2026-07-17): Fixed entity-mode generic query dispatch to
@@ -430,15 +430,18 @@ archive:
       zero..."
   - summary: "Cycle 860 (2026-07-16): Append immutable Cycle 860 to correct Cycle
       859: Cycle 859 inaccurately claimed prior failure_count 2..."
-  - summary: "Cycle 859 (2026-07-16): Corrected the reopened Plan Task 5 evidence
-      mapping: Task 5 now points to substantive Cycle..."
 omitted: true
-omitted_count: 144
+omitted_count: 145
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

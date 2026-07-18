@@ -276,6 +276,15 @@ entity_target:
             optional_fields:
               deferred: string_list
             additional_fields: forbidden
+            legacy_source_normalization: >-
+              A block-style, non-flow, exactly-one-pair mapping used directly as
+              an included, excluded, or deferred sequence item is the historical
+              block-colon string encoding and normalizes to one `key: value`
+              string only when both source nodes are string scalars. Explicit
+              flow mapping syntax never normalizes and remains invalid under the
+              canonical validator. A deliberate block single-pair mapping is
+              syntactically indistinguishable from the legacy encoding and falls
+              under this source-form rule; no semantic intent is inferred.
       retrieval:
         exact: agentera state plan get --id ID --format json
         list: agentera state plan list [--limit N] [--cursor TOKEN] --format json

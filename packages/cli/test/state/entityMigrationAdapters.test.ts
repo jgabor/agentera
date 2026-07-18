@@ -109,18 +109,68 @@ describe("entity migration legacy adapters", () => {
     expect(plan?.migration_provenance).toBeUndefined();
   });
 
-  it("normalizes the two evidenced historical scope item encodings with exact provenance", () => {
+  it("normalizes only the historical block-colon scope encoding and preserves quoted colon scalars", () => {
     const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
-    write(root, ".agentera/plan.yaml", "header:\n  id: plan:a23e4567-e89b-42d3-a456-426614174000\n  title: Historical scope encodings\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve historical text\nscope:\n  included:\n    - 'prefix': exact text\n  excluded: []\n  deferred:\n    - [later]\ntasks: []\nsurprises: []\n");
+    write(root, ".agentera/plan.yaml", "header:\n  id: plan:a23e4567-e89b-42d3-a456-426614174000\n  title: Historical scope encodings\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve historical text\nscope:\n  included:\n    - 'prefix': exact text\n    - 'quoted: scalar'\n  excluded: []\n  deferred:\n    - [later]\ntasks: []\nsurprises: []\n");
     const migration = planEntityMigration(root, SOURCE_ROOT);
     const plan = migration.entries.find((entry) => entry.boundary === "plan");
-    expect(plan?.record.scope).toEqual({ included: ["prefix: exact text"], excluded: [], deferred: ["later"] });
+    expect(plan?.record.scope).toEqual({ included: ["prefix: exact text", "quoted: scalar"], excluded: [], deferred: ["later"] });
     expect(plan?.migration_provenance).toEqual(expect.arrayContaining([expect.objectContaining({ scope_list_items: [
-      { field: "included", index: 0, source_form: "single_pair_mapping", source: { prefix: "exact text" }, normalized: "prefix: exact text" },
+      { field: "included", index: 0, source_form: "block_single_pair_mapping", source_context: "scope.included_sequence_item", source_text: "'prefix': exact text", source: { prefix: "exact text" }, normalized: "prefix: exact text" },
       { field: "deferred", index: 0, source_form: "singleton_sequence", source: ["later"], normalized: "later" },
     ] })]));
     expect(validateEntityMigrationTargets(root, migration.entries, SOURCE_ROOT)).toEqual([]);
     expect(previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 })).toMatchObject({ status: "ready", counts: { blockers: 0 } });
+  });
+
+  it("blocks explicit flow mappings without migration effects", () => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", "header:\n  id: plan:b23e4567-e89b-42d3-a456-426614174000\n  title: Explicit object scope item\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: preserve explicit mappings\nscope:\n  included:\n    - {owner: platform}\n  excluded: []\ntasks: []\nsurprises: []\n");
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "blocked", counts: { blockers: 1 } });
+    expect(preview.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ classification: "corrupt", message: expect.stringMatching(/target_invalid:.*scope/) })]));
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/inventory has 1 blocker/);
+    expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  });
+
+  it.each([
+    ["multi-pair mapping", "    - owner: platform\n      team: runtime\n"],
+    ["nested mapping", "    - owner:\n        team: platform\n"],
+    ["non-string mapping value", "    - owner: 2\n"],
+    ["sequence", "    - [owner, platform]\n"],
+  ])("blocks malformed %s scope items without migration effects", (_name, item) => {
+    const root = project(); write(root, ".agentera/docs.yaml", "index: []\n");
+    write(root, ".agentera/plan.yaml", `header:\n  id: plan:c23e4567-e89b-42d3-a456-426614174000\n  title: Malformed scope item\n  created: 2026-07-17\n  status: open\nwhat: migrate\nwhy: reject malformed items\nscope:\n  included:\n${item}  excluded: []\ntasks: []\nsurprises: []\n`);
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    expect(preview).toMatchObject({ status: "blocked", counts: { blockers: 1 } });
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/inventory has 1 blocker/);
+    expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  });
+
+  it("keeps the 13 live historical scope normalizations exact", () => {
+    const items = planEntityMigration(SOURCE_ROOT, SOURCE_ROOT).entries
+      .filter((entry) => entry.boundary === "plan")
+      .flatMap((entry) => (Array.isArray(entry.migration_provenance) ? entry.migration_provenance : [entry.migration_provenance]))
+      .filter((provenance): provenance is Record<string, any> => provenance !== undefined)
+      .flatMap((provenance) => (provenance.scope_list_items ?? []) as Array<Record<string, unknown>>);
+    expect(items.map(({ field, index, source_form, normalized }) => ({ field, index, source_form, normalized }))).toEqual([
+      { field: "included", index: 3, source_form: "block_single_pair_mapping", normalized: "Treat v1 installs as the v2 predecessor: render v1→v2 section in v1 doctor" },
+      { field: "deferred", index: 0, source_form: "block_single_pair_mapping", normalized: "v3→v4 successor: enabled by populating `channels.development.next_major` later" },
+      { field: "included", index: 4, source_form: "block_single_pair_mapping", normalized: "migrate Python callers in risk order: doctor first, setup helpers second, upgrade last" },
+      { field: "deferred", index: 0, source_form: "singleton_sequence", normalized: "arch-package-manifest-registry" },
+      { field: "deferred", index: 1, source_form: "singleton_sequence", normalized: "arch-artifact-write-validation" },
+      { field: "deferred", index: 2, source_form: "singleton_sequence", normalized: "install-root-generated-cross-language-contract" },
+      { field: "deferred", index: 0, source_form: "singleton_sequence", normalized: "arch-artifact-write-validation" },
+      { field: "deferred", index: 1, source_form: "singleton_sequence", normalized: "audit-20-health-command-stale" },
+      { field: "deferred", index: 2, source_form: "singleton_sequence", normalized: "agentera-optional-claude-live-smoke" },
+      { field: "deferred", index: 3, source_form: "singleton_sequence", normalized: "install-root-generated-cross-language-contract" },
+      { field: "deferred", index: 0, source_form: "singleton_sequence", normalized: "arch-artifact-write-validation" },
+      { field: "deferred", index: 1, source_form: "singleton_sequence", normalized: "audit-20-health-command-stale" },
+      { field: "deferred", index: 2, source_form: "singleton_sequence", normalized: "agentera-optional-claude-live-smoke" },
+    ]);
   });
 
   it.each([

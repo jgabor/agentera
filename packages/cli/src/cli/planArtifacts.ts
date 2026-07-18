@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import YAML, { isMap, isScalar, isSeq } from "yaml";
+
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolvePlanIdentity } from "../state/planIdentity.js";
@@ -69,7 +71,33 @@ function planStatus(data: JsonObject): string {
   return String(firstPresent(header, ["status"], "") || "");
 }
 
-function normalizePlanDocument(data: JsonObject, archived: boolean): { data: JsonObject; provenance?: JsonObject } {
+function blockScopeItemSources(text: string): Map<string, JsonObject> {
+  const sources = new Map<string, JsonObject>();
+  const document = YAML.parseDocument(text);
+  if (!isMap(document.contents)) return sources;
+  const scope = document.contents.get("scope", true);
+  if (!isMap(scope)) return sources;
+  for (const field of ["included", "excluded", "deferred"]) {
+    const sequence = scope.get(field, true);
+    if (!isSeq(sequence)) continue;
+    sequence.items.forEach((item, index) => {
+      if (!isMap(item) || item.flow === true || item.items.length !== 1) return;
+      const [{ key, value }] = item.items;
+      if (!isScalar(key) || !isScalar(value) || typeof key.value !== "string" || typeof value.value !== "string" || !item.range) return;
+      const sourceText = text.slice(item.range[0], item.range[1]).trimEnd();
+      if (sourceText.includes("\n") || sourceText.includes("\r")) return;
+      sources.set(`${field}:${index}`, {
+        source_form: "block_single_pair_mapping",
+        source_context: `scope.${field}_sequence_item`,
+        source_text: sourceText,
+        normalized: `${key.value}: ${value.value}`,
+      });
+    });
+  }
+  return sources;
+}
+
+function normalizePlanDocument(data: JsonObject, archived: boolean, blockScopeItems: Map<string, JsonObject>): { data: JsonObject; provenance?: JsonObject } {
   const header = isMapping(data.header) ? data.header : {};
   const status = planStatus(data);
   const sourceTasks = (Array.isArray(data.entries) ? data.entries : data.tasks) as JsonObject[];
@@ -121,9 +149,10 @@ function normalizePlanDocument(data: JsonObject, archived: boolean): { data: Jso
         }
         if (isMapping(item)) {
           const pairs = Object.entries(item);
-          if (pairs.length === 1 && typeof pairs[0][1] === "string") {
-            const normalized = `${pairs[0][0]}: ${pairs[0][1]}`;
-            itemNormalizations.push({ field, index, source_form: "single_pair_mapping", source: item, normalized });
+          const source = blockScopeItems.get(`${field}:${index}`);
+          if (pairs.length === 1 && typeof pairs[0][1] === "string" && source?.normalized === `${pairs[0][0]}: ${pairs[0][1]}`) {
+            const normalized = source.normalized;
+            itemNormalizations.push({ field, index, ...source, source: item });
             return normalized;
           }
         }
@@ -162,8 +191,10 @@ function inspectPlanArtifact(
   bytes?: Buffer,
 ): { artifact: PlanArtifact | null; diagnostics: PlanArtifactDiagnostic[] } {
   let data: unknown;
+  let sourceText: string;
   try {
-    data = loadYamlMapping(bytes !== undefined ? bytes.toString("utf8") : fs.readFileSync(artifactPath, "utf8"));
+    sourceText = bytes !== undefined ? bytes.toString("utf8") : fs.readFileSync(artifactPath, "utf8");
+    data = loadYamlMapping(sourceText);
   } catch (error) {
     const message = (error as Error).message;
     const category = message === "YAML root must be a mapping" ? "schema" : "parse";
@@ -209,7 +240,7 @@ function inspectPlanArtifact(
   if (Array.isArray(data.entries)) {
     diagnostics.push(inspectionDiagnostic(artifactPath, "legacy", "legacy entries task shape is read compatibly"));
   }
-  const normalized = normalizePlanDocument(data, archived);
+  const normalized = normalizePlanDocument(data, archived, blockScopeItemSources(sourceText));
   return { artifact: { path: artifactPath, data: normalized.data, archived, ...(normalized.provenance ? { migrationProvenance: normalized.provenance } : {}) }, diagnostics };
 }
 

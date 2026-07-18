@@ -135,7 +135,7 @@ const RUNTIME_EXACT: Array<[string, string, string]> = [
 ];
 
 const SOURCE_CONTEXT_HASHES: Record<string, string> = {
-  "references/artifacts/state-storage-authority.yaml": "d11791a27acde717d56ed42393e2c461263a979e08168469b92250813ae678be",
+  "references/artifacts/state-storage-authority.yaml": "b2ddf839845475a54cf64a7e2eb1c9e1479551ae9222c37ee9987774a6b5ffa1",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
   "references/cli/prime-consumer-compatibility.yaml": "da41e21b628d9091f3bab0ddb7bdb4f86b5649f8f108b25d2dd307ff4e64c7f9",
   "UPGRADE.md": "5cfe1ded5845beb2278098082c2561f8e85b25bfddfbb9af652c169aa0621bbc",

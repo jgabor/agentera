@@ -1,0 +1,19 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 909
+record:
+  number: 909
+  timestamp: 2026-07-18 02:39
+  type: fix
+  phase: build
+  what: Restricted historical plan-scope mapping flattening to source-proven block single-pair sequence items while preserving explicit flow objects for canonical validation.
+  inspiration: Task23 retry 1/2 and the Task14 dependency gate.
+  discovered: YAML AST collection style distinguishes the three live legacy block-colon mappings from explicit flow objects without claiming semantic intent; all 13 live historical item normalizations remain exact.
+  verified: Full CLI suite passed 2,646 tests across 218 files; typecheck, build, state validation, 12 capability validations, capability contract 2/2, compact, targeted malformed-source regressions, and blocker-free no-effect live preview passed.
+  next: Task14 remains pending for audit; do not apply migration or generate approval.
+  context:
+    intent: Complete Task23 retry 1/2 by fixing only overbroad single-pair mapping flattening without applying or approving migration.
+    constraints: No apply, approval, Task15, version, changelog, vision, manual YAML edit, amend, push, publish, or tag.
+    unknowns: Independent audit remains pending.
+    scope: Plan artifact YAML source-node normalization, migration regressions, storage authority, and plan/progress state.
+record_sha256: 02d8496b895389e899903375e28e333b9d8930b4f2a41bc0e8d72c18fd6265c3
