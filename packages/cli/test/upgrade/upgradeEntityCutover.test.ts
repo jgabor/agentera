@@ -10,14 +10,18 @@ import { main } from "../../src/cli/dispatch.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { detectStateMode } from "../../src/state/stateMode.js";
 import {
+  applyEntityMigration,
   applyPreparedEntityMigrationForUpgrade,
   prepareEntityMigrationForUpgrade,
+  rollbackEntityMigration,
 } from "../../src/state/entityMigrationApply.js";
 import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
+import { generateEntityMigrationApproval, projectIsGitCheckout } from "../../src/state/entityMigrationApproval.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const FIXTURE = path.join(import.meta.dirname, "fixtures/v2-yaml-project");
+const MIGRATION_WORKER = path.join(import.meta.dirname, "../state/entityMigrationWorker.mjs");
 const roots: string[] = [];
 
 function managedV2(home: string): string {
@@ -63,6 +67,39 @@ function applyUpgrade(root: string, appHome: string, home: string): { code: numb
   return { code, out, err };
 }
 
+function interrupt(root: string, phase = "prepare_recovery"): string {
+  const preview = previewEntityMigration(root, SOURCE_ROOT);
+  let approvalFile: string | undefined;
+  if (projectIsGitCheckout(root)) {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-approval-"));
+    roots.push(directory);
+    approvalFile = path.join(directory, "approval.json");
+    fs.writeFileSync(approvalFile, JSON.stringify(generateEntityMigrationApproval(root, preview.source_fingerprint, preview.preview_digest)));
+  }
+  const child = spawnSync(process.execPath, [MIGRATION_WORKER], {
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: phase,
+      AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root,
+      AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT,
+      AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint,
+      AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest,
+      ...(approvalFile ? { AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: approvalFile } : {}),
+    },
+  });
+  expect(child.status).toBe(86);
+  fs.rmSync(path.join(root, ".agentera/.writer.lock"), { recursive: true, force: true });
+  return fs.readdirSync(path.join(root, ".agentera/migrations/entities")).find((name) => /^[a-f0-9]{20}$/.test(name))!;
+}
+
+function canonicalBytes(root: string): Array<[string, Buffer]> {
+  const base = path.join(root, ".agentera");
+  return fs.readdirSync(base, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && (entry.parentPath.includes("/entities") || entry.name === "state-mode.yaml"))
+    .map((entry) => [path.relative(root, path.join(entry.parentPath, entry.name)), fs.readFileSync(path.join(entry.parentPath, entry.name))]);
+}
+
 beforeEach(() => {
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = SOURCE_ROOT;
   setSuccessorAnnouncedOverrideForTests(true);
@@ -104,6 +141,74 @@ describe("upgrade-owned entity cutover", () => {
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
   });
+
+  it("continues exactly one matching interrupted operation without reallocating entities", () => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const operation = interrupt(root, "publish_entities");
+    const before = fs.readdirSync(path.join(root, ".agentera/entities"), { recursive: true }).sort();
+
+    const resumed = applyUpgrade(root, appHome, home);
+
+    expect(resumed.code, resumed.err || resumed.out).toBe(0);
+    expect(fs.readdirSync(path.join(root, ".agentera/migrations/entities")).filter((name) => /^[a-f0-9]{20}$/.test(name))).toEqual([operation]);
+    expect(fs.readdirSync(path.join(root, ".agentera/entities"), { recursive: true }).sort()).toEqual(before);
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+  }, 30_000);
+
+  it("reports completed replay as a byte-preserving no-op", () => {
+    const root = project();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    expect(applyUpgrade(root, appHome, home).code).toBe(0);
+    const before = canonicalBytes(root);
+
+    const replay = applyUpgrade(root, appHome, home);
+
+    expect(replay.code, replay.err || replay.out).toBe(0);
+    expect(replay.out).toMatch(/already active|no changes/i);
+    expect(canonicalBytes(root)).toEqual(before);
+  }, 30_000);
+
+  it.each([
+    ["stale source", (root: string, _id: string) => fs.appendFileSync(path.join(root, ".agentera/plan.yaml"), "# changed\n")],
+    ["conflicting operation", (root: string, id: string) => fs.cpSync(path.join(root, ".agentera/migrations/entities", id), path.join(root, ".agentera/migrations/entities/00000000000000000000"), { recursive: true })],
+    ["tampered receipt", (root: string, id: string) => fs.appendFileSync(path.join(root, ".agentera/migrations/entities", id, "receipts/0000.yaml"), "# tampered\n")],
+  ])("refuses %s evidence without changing or removing it", (_label, mutate) => {
+    const root = project();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const id = interrupt(root);
+    mutate(root, id);
+    const evidenceBefore = fs.readdirSync(path.join(root, ".agentera/migrations/entities"), { recursive: true }).sort();
+
+    const refused = applyUpgrade(root, appHome, home);
+
+    expect(refused.code).not.toBe(0);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera/migrations/entities"), { recursive: true }).sort()).toEqual(evidenceBefore);
+  }, 30_000);
+
+  it("refuses retained rolled-back evidence without starting another operation", () => {
+    const root = project();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const preview = previewEntityMigration(root, SOURCE_ROOT);
+    const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    rollbackEntityMigration(root, SOURCE_ROOT, applied.migration_id);
+
+    const refused = applyUpgrade(root, appHome, home);
+
+    expect(refused.code).not.toBe(0);
+    expect(fs.readdirSync(path.join(root, ".agentera/migrations/entities"))).toEqual([applied.migration_id]);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  }, 30_000);
 
   it("leaves low-level Git apply behind its explicit approval seam", () => {
     const root = project();

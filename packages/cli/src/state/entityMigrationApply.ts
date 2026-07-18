@@ -79,6 +79,7 @@ export interface PreparedUpgradeEntityMigration {
   sourceFingerprint: string;
   previewDigest: string;
   approval: EntityMigrationApproval | null;
+  recoveryOperationId?: string;
 }
 
 export class EntityMigrationOperationError extends Error {
@@ -473,6 +474,49 @@ function loadEvidence(project: string, journal: Journal): LoadedEvidence {
   return { entries, preservedResidues, receipts };
 }
 
+function matchingUpgradeOperation(project: string, sourceRoot: string, plan: DurableEntityMigrationPlan): string | undefined {
+  inspectPreparations(project, plan);
+  const parent = path.join(project, ROOT);
+  if (!fs.existsSync(parent)) return undefined;
+  const parentStat = fs.lstatSync(parent);
+  if (!parentStat.isDirectory() || parentStat.isSymbolicLink() || fs.realpathSync(parent) !== parent) throw new EntityMigrationOperationError("evidence_invalid", `migration evidence root '${ROOT}' is unsafe`, "Retain all evidence and restore the migration evidence root as a real in-project directory.");
+  const names = fs.readdirSync(parent).sort();
+  const finalized = names.filter((name) => /^[a-f0-9]{20}$/.test(name));
+  if (finalized.length === 0) return undefined;
+  if (finalized.length !== 1) throw new EntityMigrationOperationError("migration_ambiguous", `${finalized.length} durable migration operations exist for the current upgrade`, "Retain every operation and use the low-level recovery commands to resolve ownership explicitly; automatic continuation never selects by recency or path order.");
+
+  const id = finalized[0];
+  const directory = path.join(parent, id);
+  const stat = fs.lstatSync(directory);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || fs.realpathSync(directory) !== directory) throw new EntityMigrationOperationError("evidence_invalid", `migration operation '${id}' is not a real directory`, "Retain all evidence and restore the exact operation directory.");
+  const { journal } = loadJournal(project, id);
+  const loaded = loadEvidence(project, journal);
+  const expectedChildren = ["journal.yaml", "manifest.yaml", "receipts", "snapshot.yaml"];
+  const receiptNames = Object.values(loaded.receipts).map(({ path: receiptPath }) => path.posix.basename(receiptPath)).sort();
+  const receiptsPath = path.join(directory, "receipts");
+  const receiptsStat = fs.lstatSync(receiptsPath);
+  if (fs.readdirSync(directory).sort().join("\0") !== expectedChildren.join("\0") || !receiptsStat.isDirectory() || receiptsStat.isSymbolicLink() || fs.realpathSync(receiptsPath) !== receiptsPath || fs.readdirSync(receiptsPath).sort().join("\0") !== receiptNames.join("\0")) throw new EntityMigrationOperationError("evidence_invalid", `migration operation '${id}' has an unknown or incomplete evidence inventory`, "Retain all evidence and restore the exact manifest, snapshot, journal, and receipt inventory.");
+  if (journal.phase.startsWith("rollback_") || journal.phase === "rolled_back") throw new EntityMigrationOperationError("migration_rolled_back", `migration '${id}' entered rollback at '${journal.phase}'`, "Retain all evidence; automatic continuation never rolls back or restarts a rolled-back operation.");
+  if (canonicalRecordJson(journal.phases) !== canonicalRecordJson(PHASES)
+    || id !== operationId(plan)
+    || journal.source_fingerprint !== plan.source_fingerprint
+    || journal.preview_digest !== plan.preview_digest
+    || canonicalRecordJson(loaded.entries) !== canonicalRecordJson(plan.entries)
+    || canonicalRecordJson(loaded.preservedResidues) !== canonicalRecordJson(plan.preserved_residues)) {
+    throw new EntityMigrationOperationError("migration_conflict", `durable migration '${id}' does not exactly match the current upgrade invocation`, "Retain all evidence and use the low-level recovery commands with the explicit operation ID; automatic continuation refuses stale or unrelated work.");
+  }
+  assertCurrentSource(project, sourceRoot, journal);
+  return id;
+}
+
+/** Read-only bounded selection used by upgrade planning and repeated apply. */
+export function inspectUpgradeEntityMigration(projectRoot: string, sourceRoot: string): string | undefined {
+  const project = validateRealProjectRoot(projectRoot).path;
+  const plan = planEntityMigration(project, sourceRoot);
+  assertPlanReady(plan, sourceRoot);
+  return matchingUpgradeOperation(project, sourceRoot, plan);
+}
+
 function retainedEvidenceFile(project: string, relativePath: string): RolledBackEntityMigrationEvidenceInspection["evidence"][number] {
   const observed = readProjectFileSnapshot(validateRealProjectRoot(project), relativePath);
   if (observed.kind !== "file") throw new EntityMigrationOperationError("evidence_invalid", `retained migration evidence '${relativePath}' is missing or unsafe`, "Retain and restore the exact rolled-back operation evidence before generating a new approval.");
@@ -629,19 +673,38 @@ export function prepareEntityMigrationForUpgrade(projectRoot: string, sourceRoot
   const project = validateRealProjectRoot(projectRoot).path;
   const plan = planEntityMigration(project, sourceRoot);
   assertPlanReady(plan, sourceRoot);
-  inspectPreparations(project, plan);
+  const recoveryOperationId = matchingUpgradeOperation(project, sourceRoot, plan);
   return {
     project,
     sourceRoot,
     sourceFingerprint: plan.source_fingerprint,
     previewDigest: plan.preview_digest,
-    approval: projectIsGitCheckout(project)
+    approval: !recoveryOperationId && projectIsGitCheckout(project)
       ? generateEntityMigrationApproval(project, plan.source_fingerprint, plan.preview_digest)
       : null,
+    ...(recoveryOperationId ? { recoveryOperationId } : {}),
   };
 }
 
 export function applyPreparedEntityMigrationForUpgrade(prepared: PreparedUpgradeEntityMigration): EntityMigrationResult {
+  if (prepared.recoveryOperationId) {
+    const project = validateRealProjectRoot(prepared.project).path;
+    const lock = acquireWriterLock(project, 2000);
+    try {
+      const current = planEntityMigration(project, prepared.sourceRoot);
+      assertPlanReady(current, prepared.sourceRoot);
+      assertBinding(current, prepared.sourceFingerprint, prepared.previewDigest);
+      const selected = matchingUpgradeOperation(project, prepared.sourceRoot, current);
+      if (selected !== prepared.recoveryOperationId) throw new EntityMigrationOperationError("migration_conflict", "automatic migration recovery selection changed before continuation", "Retain all evidence and retry only after the operation inventory is stable.");
+      const journal = loadJournal(project, selected).journal;
+      if (journal.phase === "cutover_complete") {
+        const { entries, preservedResidues, receipts } = loadEvidence(project, journal); assertCurrentSource(project, prepared.sourceRoot, journal); verifyManifestGraph(project, prepared.sourceRoot, entries);
+        if (!matchesReceipt(project, MARKER, receipts[MARKER])) throw new EntityMigrationOperationError("marker_diverged", "completed migration marker changed after cutover", "Retain all recovery evidence and repair no authority files manually.");
+        return { schemaVersion: "agentera.entityMigration.v1", command: "state migrate entities", status: "complete", operation: "resume", migration_id: selected, phase: journal.phase, idempotent: true, mutation_performed: false, entity_count: entries.length, preserved_residues: residueSummary(preservedResidues), evidence: evidence(project, selected) };
+      }
+      return advance(project, prepared.sourceRoot, journal, "resume");
+    } finally { lock.release(); }
+  }
   return applyEntityMigrationApproved(
     prepared.project,
     prepared.sourceRoot,

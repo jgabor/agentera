@@ -564,6 +564,17 @@ entity_migration:
       low_level_recovery: >-
         The state migrate entities preview, explicit apply approval, resume, and
         rollback commands remain unchanged for expert diagnosis and recovery.
+      automatic_continuation: >-
+        A repeated upgrade invocation may continue durable work only when the
+        migration evidence root contains exactly one finalized operation, its
+        deterministic ID matches the current real project root, source
+        fingerprint, and preview digest, and its journal, manifest, proposed
+        graph, snapshot, and complete receipt inventory validate against that
+        invocation. Zero finalized operations starts a new cutover. A completed
+        matching operation is an idempotent no-op. Rolled-back, stale,
+        unrelated, corrupt, tampered, or multiple operations refuse all further
+        effects while retaining every evidence path. Selection never uses
+        recency or path order and never rolls back automatically.
       preflight: >-
         Upgrade plans artifact normalization, entity readiness, runtime work,
         and cleanup read-only before any selected apply function runs. Any

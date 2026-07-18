@@ -11,3 +11,13 @@ record:
     - GIVEN publication WHEN authority changes THEN entities and relationships have validated and legacy sources plus recovery evidence remain available.
     - GIVEN focused tests WHEN delegation runs THEN Git and non-Git success plus stale-source refusal pass while low-level recovery remains supported.
   plan: zqwisfegxj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task-uwfilxpkrh-audit-1
+      source: orchestrate audit evaluation for task uwfilxpkrh
+      recorded_at: 2026-07-18 11:02
+      writer_command: agentera state plan record-evaluation

@@ -53,6 +53,7 @@ import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication
 import { previewEntityMigration } from "../state/entityMigrationPreview.js";
 import {
   applyPreparedEntityMigrationForUpgrade,
+  inspectUpgradeEntityMigration,
   prepareEntityMigrationForUpgrade,
   type PreparedUpgradeEntityMigration,
 } from "../state/entityMigrationApply.js";
@@ -257,6 +258,14 @@ function entityReadinessPhase(
         status: "blocked",
         action: "resolve-v1-state",
         message: "pending v1 Markdown conversion cannot be used as entity input without a prerequisite write; complete the deterministic v1 conversion, then retry the upgrade",
+      }]);
+    }
+    const recoveryOperation = inspectUpgradeEntityMigration(project, sourceRoot);
+    if (recoveryOperation) {
+      return summarizeOrchestratorPhase("entities", [{
+        status: "pending",
+        action: "entity-cutover",
+        message: `matching interrupted entity cutover '${recoveryOperation}' is ready for automatic continuation`,
       }]);
     }
     const preview = previewEntityMigration(project, sourceRoot, { limit: 1 });

@@ -1,0 +1,15 @@
+id: faxnwkdaxx
+artifact: progress
+record:
+  timestamp: 2026-07-18 11:14
+  type: fix
+  phase: build
+  what: Task pffccgtcro added exact-match automatic continuation in packages/cli/src/state/entityMigrationApply.ts and upgrade orchestration. Selection requires one finalized operation bound to the real project, current source fingerprint and preview digest, immutable graph, and complete receipts; stale, rolled-back, conflicting, or tampered evidence fails closed.
+  context:
+    intent: Make repeated upgrade --yes invocations converge safely without exposing migration recovery machinery.
+    constraints: No automatic rollback, recovery subcommands, output redesign, release metadata, publication, push, vision, profile, or unrelated TODO changes.
+    unknowns: "Resolved: interrupted work is unambiguous only when exactly one finalized durable operation exactly matches all current invocation and evidence bindings; every other durable-operation class fails closed."
+    scope: Entity migration authority, upgrade recovery selection/orchestration, integration tests, and active protocol authority hash.
+  inspiration: Plan zqwisfegxj task pffccgtcro and Decision 94 durable entity migration semantics.
+  verified: pnpm -C packages/cli exec vp test run test/upgrade/upgradeEntityCutover.test.ts passed 10/10; pnpm -C packages/cli test passed 2706/2706; typecheck and build passed; capability-contract validation passed 2/2; check compact passed with zero over-limit artifacts.
+  next: Task yknigjocnc may build the mandatory startup verification and broader output contract on the bounded recovery result; release, package, and final closeout remain deferred.

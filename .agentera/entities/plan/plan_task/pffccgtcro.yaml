@@ -4,7 +4,7 @@ record:
   name: Converge retries without exposed machinery
   depends_on:
     - uwfilxpkrh
-  status: pending
+  status: complete
   acceptance:
     - GIVEN one matching interrupted operation WHEN upgrade --yes repeats THEN it resumes without reallocating or duplicating entities.
     - GIVEN completed migration WHEN upgrade repeats THEN it reports an idempotent no-op and preserves canonical bytes.
