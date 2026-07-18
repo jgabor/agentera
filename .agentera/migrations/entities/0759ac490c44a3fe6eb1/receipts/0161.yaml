@@ -1,0 +1,7 @@
+id: tlvgrevreh
+artifact: docs
+record:
+  document: Startup analysis report generator
+  path: scripts/startup_analysis_contract.py
+  last_updated: 2026-05-15
+  status: current

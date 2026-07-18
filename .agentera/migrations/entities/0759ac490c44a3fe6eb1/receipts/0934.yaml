@@ -1,0 +1,11 @@
+id: lwxwuvftdf
+artifact: plan
+record:
+  name: After-check rendering aligned with lifecycle vocabulary
+  depends_on:
+    - gbkysgzlcq
+  status: complete
+  acceptance:
+    - GIVEN successful whole repair on platform home fixture WHEN upgrade --yes completes THEN stdout contains a plain After-check pass phrase and not failed with setup_doctor aggregate fail counts
+    - GIVEN repair applied but app still outdated WHEN postflight runs THEN After-check names the actionable signal without install-root recovery footer unless bundle phase was blocked
+  plan: ctldxvvhsp

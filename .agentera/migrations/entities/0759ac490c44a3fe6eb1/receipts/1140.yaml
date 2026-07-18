@@ -1,0 +1,34 @@
+id: xgslmmgdlk
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-18
+    status: complete
+    reviewed: 2026-06-18
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: Profilera corpus coverage trust + test gate recovery
+  what: "Fix four project-integration test regressions introduced after the structural-debt refactor, then implement profilera corpus coverage guardrails: mandatory pre-extraction Coverage Audit, corpus envelope coverage arrays, overridable SQLite caps with truncation warnings, Py/TS extractor parity, and clearer runtime metadata/docs."
+  why: Full-mode profilera can rebuild PROFILE.md from partial history with no user-visible warning. The incident session skipped available runtimes via --no-* flags and truncated a 95,334-session opencode store to 60 rows. Until this chain lands, every Full rebuild is a data-integrity risk. Test regressions (912/916) block committing the already-landed structural-debt work.
+  constraints: feat/v3 only. Behavior-preserving for happy-path extraction when all runtimes selected and under caps. Preserve Decision 55 local-only privacy boundaries. No npm publish. Fold addressed TODO items into each task's implementation commit. Do not edit vision or objective state.
+  scope:
+    included:
+      - projectIntegration and app-home test regression fixes
+      - Coverage Audit pre-extraction step in profilera Full mode
+      - Corpus envelope available/selected/skipped arrays
+      - SQLite cap CLI/env overrides and truncated_at metadata
+      - Py/TS extractor parity gate
+      - candidate_count rename and --no-runtime flag documentation
+      - Final state sync and TODO fold-in
+    excluded:
+      - Decision 70 capability rename
+      - Capability prose over-prescription audit
+      - Artifact descriptive/decisional lint extension
+      - Profile first:/confidence carry-forward fix
+    deferred:
+      - 3-tier capability mode taxonomy
+      - macOS/Windows GHA CI jobs
+  design: Sequence test recovery before feature work. Coverage Audit is the user-facing gate; corpus envelope fields are the machine-readable contract hej/prime consume. Cap overrides and parity test prevent silent reversion. Metadata rename closes the "1 candidate = 1 conversation" misread trap.
+  overall_acceptance: GIVEN a host with codex, claude-code, and opencode stores WHEN Full-mode profilera runs with --no-codex THEN the user sees coverage loss before extraction and the run is flagged until accepted. GIVEN an opencode store with more than 60 sessions WHEN extraction runs under default caps THEN truncated_at is visible and hej attention surfaces the truncation. GIVEN vitest on feat/v3 WHEN the plan completes THEN 916/916 tests pass.
+  surprises:
+    []

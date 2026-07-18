@@ -1,0 +1,16 @@
+id: ddhqousmsk
+artifact: progress
+record:
+  timestamp: 2026-07-17 18:41
+  type: fix
+  phase: build
+  what: Expanded Task 12 active protocol coverage to the complete registry-owned references inventory and every generated counterpart, with exact semantic and Markdown exceptions.
+  inspiration: Retry 2/2 final Task 12 audit requirements.
+  discovered: The package registry copies the entire 39-file references tree; the prior four-reference scan omitted active vocabulary and prime consumer contracts, and agents/openai.yaml required quoting before semantic YAML inspection.
+  verified: "CLI suite: 216 files and 2585 tests passed. Typecheck and build passed. All 12 capability validations, capability contract, state validation, compact, and focused active-protocol and independent source/bundle parity tests passed."
+  next: Task 12 remains complete. Task 13 is pending; do not begin Task 14 or later work.
+  context:
+    intent: Close the final Task 12 scan-coverage gap without entering migration readiness or changing historical evidence.
+    constraints: Preserve Cycle 899, migration source vocabulary, versions, changelog, vision, Task 13+, and live state; no migration apply, release, amend, push, or publish.
+    unknowns: none
+    scope: Registry-derived copied surface classification, exact active-protocol exceptions, vocabulary and prime identity contracts, and YAML semantic scan compatibility.

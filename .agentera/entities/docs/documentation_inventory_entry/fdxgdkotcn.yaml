@@ -1,0 +1,7 @@
+id: fdxgdkotcn
+artifact: docs
+record:
+  document: Capability contract loader/model
+  path: scripts/capability_contract.py
+  last_updated: 2026-05-07
+  status: current

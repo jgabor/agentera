@@ -1,0 +1,12 @@
+id: ddeoaogqhd
+artifact: plan
+record:
+  name: Corpus envelope coverage arrays
+  depends_on:
+    - jsvdqlijiy
+  status: complete
+  acceptance:
+    - GIVEN extraction completes WHEN corpus metadata is emitted THEN available_runtimes, selected_runtimes, and available_but_not_selected arrays are present
+    - GIVEN available_but_not_selected is non-empty WHEN hej or prime consumes corpus state THEN attention includes a coverage-loss item
+    - GIVEN a runtime was skipped despite an available store WHEN profilera Full mode finishes THEN the envelope records the runtime in available_but_not_selected with reason
+  plan: xgslmmgdlk

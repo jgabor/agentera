@@ -1,0 +1,10 @@
+id: qsnmkrkvqg
+artifact: plan
+record:
+  name: Prepare the governed development release boundary
+  depends_on:
+    - eyzvdzzspq
+  status: pending
+  acceptance:
+    - GIVEN 3.0.0-dev.20 and five npm 12 parser failures WHEN release preparation runs THEN all failures are repaired or the task blocks; only the package advances to dev.21, governed surfaces align while suite versions remain 3.0.0, gitRef names immutable source, and package contents pass without publication or tagging.
+  plan: dejfosgnsl

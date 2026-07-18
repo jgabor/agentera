@@ -1,0 +1,13 @@
+id: occueixndy
+artifact: plan
+record:
+  name: Implement v2 state manifest for v3 consumption (TODO L24 → both)
+  depends_on:
+    - ayeuhkbcbv
+  status: complete
+  acceptance:
+    - "GIVEN `feat/v3` base WHEN `references/cli/v3-handoff-manifest.yaml` is authored THEN it defines the manifest format schema: v2 install/upgrade writes `~/.local/share/agentera/v3-handoff.json` with installed v2 version, app home path, user data inventory (`benchmarks/`, `intermediate/`, `sessions/`, `history/`, `corpus/`, profile files), and runtime adapters in use; the schema is versioned and discoverable"
+    - GIVEN the schema WHEN `packages/cli/src/upgrade/v3HandoffManifest.ts` is authored THEN it reads the manifest in <100ms during v3 migration preflight instead of scanning the whole app home; the v3 reader is the `feat/v3` side of the `→ both` work
+    - GIVEN the v3 reader WHEN `node packages/cli/dist/bin/agentera.js upgrade --dry-run` runs on a fixture v2 home with `v3-handoff.json` THEN the manifest is read in <100ms (asserted by a vitest); the new manifest regression is green; per V5 the proportionality target is one pass + one fail per manifest field (v2 version + app home + user data inventory + runtime adapters = 4 × 2 = 8 cases)
+    - GIVEN the v3 reader WHEN the implementation commit lands on `feat/v3` THEN the v2 writer backport is a separate `feat/v3-rewrite-completion-both` branch off `main` after T11; the v2 writer produces the same shape, and the round-trip parity test (v3 reader reads v2 writer output) verifies the backport without pytest (the v2-side test cannot run in this worktree's vitest and lands with the `main`-branch backport)
+  plan: lzsuezxesf

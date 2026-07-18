@@ -1,0 +1,12 @@
+id: ymghnnnmoo
+artifact: plan
+record:
+  name: Restore five-layer routing model definition in repo
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a developer reading the repo WHEN they search for the routing model THEN they find a definition of what Layers 1-5 are and what each layer's routing semantics are
+    - GIVEN the routing model definition WHEN Layer 3 and Layer 4 are referenced in code or tests THEN the definition explains what those layers mean
+    - GIVEN the routing model definition WHEN Layers 1, 2, and 5 are referenced THEN the definition confirms they are already implemented and unchanged by this plan
+  plan: vhgknrcomu

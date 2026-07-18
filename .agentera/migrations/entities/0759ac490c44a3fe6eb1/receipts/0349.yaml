@@ -1,0 +1,13 @@
+id: fmbtppzhge
+artifact: plan
+record:
+  name: Define retrieval authority and command grammar
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN each state collection WHEN classified THEN growth, identity, storage ownership, ordering, bounds, cursor, omission, and get behavior are explicit.
+    - GIVEN plan tasks, plans, and experiments WHEN commands are specified THEN grammar, selectors, experiment zero, and structured errors are unambiguous.
+    - GIVEN valid and invalid contract examples WHEN tested THEN at least one passing and failing case covers each rule.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 1.
+  plan: hcjrszmsio

@@ -1,0 +1,13 @@
+id: uyhnjncxvo
+artifact: progress
+record:
+  timestamp: 2026-07-16 09:03
+  type: fix
+  phase: build
+  what: "Enforced legacy coexistence across decision mutations so untouched inherited unsupported confidence labels (e.g. high) no longer block append, satisfaction update, or amend. Extracted gateExistingDecisions, gateCandidateDecisions, and gateCompactedDecisions into decisionLegacyValidation.ts to partition violations at three validation points: whole-artifact prevalidation, candidate validation, and post-compaction invariant. Each gate tolerates only legacy confidence labels on untouched records while blocking all other violations. New/amended content stays strict via touched-number tracking. Updated decisionRevision.legacyFullProjectionFor to tolerate legacy labels so amend can proceed over a legacy base. Added amend envelope compatibility.legacy_caveats reporting in decisionRevisionPublication."
+  verified: pnpm run typecheck passes. pnpm run build passes. npx vitest run — 2264 tests pass across 195 files (including 18 new tests in decisionLegacyCoexistence.test.ts). node packages/cli/dist/bin/agentera.js check compact passes. Monolith lint gate passes (transaction.ts 997 lines, under 1000 limit).
+  next: Task 5 owns plan/TODO synchronization and progress evidence consolidation. Do not close Task 4 status or its originating TODO from this cycle.
+  context:
+    intent: Remove a blocking strict-validation gate that prevented decision mutations when an unrelated inherited record carried a legacy confidence label outside the current vocabulary, while keeping new/amended content strict and preserving legacy labels byte-stable.
+    constraints: Do not modify vision. Do not push. Do not close the originating TODO or plan — Task 5 owns synchronization. Never coerce high or other inherited labels.
+    scope: packages/cli/src/state/decisionLegacyValidation.ts (new), packages/cli/src/state/write/transaction.ts, packages/cli/src/state/decisionRevision.ts, packages/cli/src/state/decisionRevisionPublication.ts, packages/cli/test/state/decisionLegacyCoexistence.test.ts (new)

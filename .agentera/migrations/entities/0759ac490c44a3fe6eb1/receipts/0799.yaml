@@ -1,0 +1,12 @@
+id: yfcroxszlw
+artifact: plan
+record:
+  name: Measurement contract and privacy boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN post-2.3 analysis is configured WHEN the contract is read THEN it defines the date/version boundary source, startup-window anchors, counted event classes, degradation reasons, and report fields.
+    - GIVEN records include transcript text, local paths, or session identifiers WHEN analysis emits reports, fixtures, logs, or stdout snapshots THEN output uses canonical labels or non-reconstructable hashes and contains no raw transcript text, full local paths, raw store paths, or unredacted session ids.
+    - GIVEN the existing Section 22 corpus format is consumed WHEN startup analysis is added THEN existing extract_corpus and usage_stats behavior remains compatible or any extension is versioned and documented.
+  plan: dqipjmhdxs

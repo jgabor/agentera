@@ -1,0 +1,14 @@
+id: wpyrehzpft
+artifact: plan
+record:
+  name: Rename and update runtime descriptor files
+  depends_on:
+    - reayzzjrro
+  status: complete
+  acceptance:
+    - GIVEN the .cursor/agents/ directory WHEN inspected THEN 12 .md files use English IDs as filenames
+    - GIVEN the .opencode/agents/ directory WHEN inspected THEN 12 .md files use English IDs as filenames
+    - GIVEN the skills/agentera/agents/ directory WHEN inspected THEN 12 .toml files use English IDs as filenames
+    - GIVEN each runtime descriptor file WHEN inspected THEN the agentera prime --context reference uses the English capability name
+    - GIVEN the validate capability command WHEN run against any renamed runtime descriptor THEN it passes
+  plan: zzdkwllddt

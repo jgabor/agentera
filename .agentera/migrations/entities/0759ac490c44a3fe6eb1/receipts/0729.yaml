@@ -1,0 +1,14 @@
+id: jpguuwpjjj
+artifact: plan
+record:
+  name: Long-tail surface — alias elimination + cast narrowing (setup, doctor, upgrade, analytics, eval, release)
+  depends_on:
+    - kvewsaevxm
+  status: complete
+  acceptance:
+    - GIVEN the long-tail surface WHEN local aliases and the extract-corpus re-export passthrough are converted THEN typecheck passes and no behavior change is observed in the affected commands' output.
+  evidence:
+    - Local aliases eliminated in 15 long-tail files (setup/doctor/*, setup/codex, setup/smokeChecks, upgrade/{nextMajorDoctor,channels,coexistenceProbe,appModel}, analytics/usageStats, release/releaseMetadata, eval/*); extractCorpus/core.ts retained as sanctioned passthrough (task 6 deletes).
+    - "Task-4 PackageRegistry exception closed: appModel.ts 2-level chain cast-narrowed at IO boundary; packageRegistry get() return flipped back to strict JsonObject."
+    - typecheck 0 errors; 1145/1145 tests green; 0 fixture/snapshot drift.
+  plan: lazyquobjy

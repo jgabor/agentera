@@ -1,0 +1,72 @@
+id: tupdttwgpp
+artifact: health
+record:
+  date: 2026-07-15
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - test_health
+    - version_health
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving vs Audit 31: bounded retrieval is durable, tested, packaged, and closed; one stale authority sentence blocks release."
+  grades:
+    architecture_alignment: B
+    pattern_consistency: A
+    coupling_health: A
+    test_health: A
+    version_health: B
+    artifact_freshness: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: B
+      summary: Runtime and tests derive retrieval grammar from references/artifacts/state-storage-authority.yaml; one publication scope sentence contradicts its implemented archive contract.
+      findings:
+        - heading: Experiment publication authority still denies implemented durability
+          severity: warning
+          confidence: 99
+          location: references/artifacts/state-storage-authority.yaml:203-205,487-527
+          evidence: publication.scope_boundary says publication does not introduce durable archival, while experiment_archival is implemented and requires archive-before-projection publication.
+          impact: The packaged canonical authority can mislead agents about durability ownership; release should block until the contradiction is removed.
+          suggested_action: Align publication.scope_boundary with the implemented objective-scoped immutable archive contract and add a semantic parity assertion.
+          verify_command: rg -n 'scope_boundary|does not introduce the durable|experiment_archival|archive_before_projection' references/artifacts/state-storage-authority.yaml
+    - name: pattern_consistency
+      grade: A
+      summary: Plan-task, plan, and objective-scoped experiment list/get share bounded envelopes, opaque snapshots, whole-entry omissions, exact recovery, and structured failures.
+      findings:
+        []
+    - name: coupling_health
+      grade: A
+      summary: Typed publication validates identity and final bytes, durably publishes immutable experiment detail before projection replacement, and retries idempotently.
+      findings:
+        []
+    - name: test_health
+      grade: A
+      summary: Focused retrieval, archive, writer, parity, release, and packaging checks passed 249 tests; Cycle 820 independently records 2060 full-suite tests.
+      findings:
+        []
+    - name: version_health
+      grade: B
+      summary: Release provenance validation and package dry-run passed for 3.0.0-dev.21, but the packaged authority contradiction is release-blocking.
+      findings:
+        []
+    - name: artifact_freshness
+      grade: A
+      summary: The completed plan archive validates and is exactly addressed by list/get; no active plan remains. Existing progress:793, health:20-21, and two lifecycle diagnostics are unchanged caveats.
+      findings:
+        []
+  trends:
+    improved: Bounded retrieval, experiment durability, alias parity, packaging, release provenance, and state lineage now have independent executable evidence.
+    degraded: One stale authority sentence conflicts with implemented experiment archival.
+    stable: Cursor, omission, exact-get, typed-writer, immutable publication, and archive-recovery safety remain coherent.
+    new_findings: Canonical publication scope text denies the durable archive that the same authority and runtime implement.
+    resolved: No bounded-retrieval behavior or closeout regression was found.
+    carried_forward: progress:793 and health:20-21 archive recovery refusals; two legacy lifecycle diagnostics.
+  patterns:
+    - One executable authority projects retrieval grammar into runtime, schema, help, prime, docs, tests, and package data.
+    - Immutable archive detail precedes bounded projection publication; reads preserve legacy ambiguity and unavailable detail without fabrication.

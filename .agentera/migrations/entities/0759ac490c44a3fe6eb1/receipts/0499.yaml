@@ -1,0 +1,13 @@
+id: xkqmtgmeat
+artifact: plan
+record:
+  name: Capability contract documentation
+  depends_on:
+    - ebuivmqqsy
+  status: complete
+  evidence:
+    - Updated hej attention/next-action rules and inspektera periodic guidance with CLI env contract
+  acceptance:
+    - GIVEN hej capability instructions WHEN attention rules are read THEN overdue health audits are documented with hybrid time/cycle semantics and env var names
+    - GIVEN inspektera capability instructions WHEN periodic guidance is read THEN it references the CLI/hej staleness contract instead of only prose cadence
+  plan: sebihbfeow

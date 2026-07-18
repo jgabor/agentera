@@ -1,0 +1,16 @@
+id: eqduypylvf
+artifact: progress
+record:
+  timestamp: 2026-07-17 03:22
+  type: feat
+  phase: build
+  what: Cut progress over to canonical entity authority after explicit state-mode activation.
+  inspiration: Decision 94 storage authority and Plan Task 4 acceptance.
+  discovered: The authority needed a family-neutral read-only state-mode detector and an explicit progress record/retrieval contract; no mixed-authority compatibility layer was needed.
+  verified: "pnpm test: 204 files and 2,444 tests passed; pnpm run typecheck passed; pnpm build passed; check validate state passed with zero issues; capability-contract validation passed 2/2; check compact passed with zero over-limit/errors; entity-mode CLI append/get/list smoke returned one bare ID and no legacy projection; focused test creates two Git worktrees from one base, merges both append commits, retrieves both cycles, and passes state validation."
+  next: Keep Task 5 and later families pending. Do not apply durable migration, activate this checkout, or cut decisions, health, plans, objectives, TODO, docs, or global consumers in this cycle.
+  context:
+    intent: Complete Plan Task 4 without migrating this legacy checkout or cutting over any other state family.
+    constraints: Progress family only; preserve marker-absent legacy writes and existing tests; no implicit migration, dual write, merge driver, push, publish, or vision edit.
+    unknowns: None for Task 4; durable marker publication remains owned by Task 10.
+    scope: Progress entity writer, exact and bounded reads, read-only mode detection, shared entity validation, authority, tests, and changelog.

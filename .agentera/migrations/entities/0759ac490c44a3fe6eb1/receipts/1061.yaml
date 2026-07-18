@@ -1,0 +1,13 @@
+id: pxxiplzmim
+artifact: plan
+record:
+  name: Preserve deferred plan scope
+  status: complete
+  depends_on:
+    - jnqcqcwqye
+  acceptance:
+    - GIVEN a legacy plan scope with included, excluded, and deferred string lists WHEN migrated THEN all three lists are preserved exactly in the canonical plan entity.
+    - GIVEN deferred or any unknown scope field with malformed content WHEN validated THEN preview and ordinary entity validation fail before effects.
+    - GIVEN plan scopes without deferred WHEN validated THEN the optional field remains absent and existing canonical behavior is unchanged.
+  evidence: Canonical deferred scope remains lossless, and block-single-pair normalization now rejects anchors and explicit standard or custom tags exposed on the map, pair key/value nodes, or raw sequence-item prefix; ambiguous ranges fail closed. Anchored aliases, tagged mappings, flow mappings, nested mappings, and malformed values remain objects for canonical validation with no false normalization provenance. All 13 live historical normalizations remain exact. Verified by 35 focused and 2,654 full tests across 218 files, typecheck, build, state validation, 12 capability validations, capability contract 2/2, compact, and a blocker-free no-effect live preview.
+  plan: pohgeeghnl

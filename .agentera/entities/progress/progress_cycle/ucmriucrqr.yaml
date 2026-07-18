@@ -1,0 +1,16 @@
+id: ucmriucrqr
+artifact: progress
+record:
+  timestamp: 2026-07-17 23:20
+  type: fix
+  phase: build
+  what: Closed the three Task 13 audit blockers by preserving archive-authoritative decision satisfaction, binding recovered projections to an immutable reviewed correlation set, and requiring a clean external Git approval envelope for migration apply without invoking Git.
+  inspiration: Plan Task 13 retry and the Cycle 902 audit blockers.
+  discovered: The 39 recovered decision archives contain 35 structured satisfaction records; four (D74, D76, D77, D78) were absent from the compact projection and now become exact archive-provenanced entities. The existing 58 recovery archives replayed byte-exactly, so publication added only the correlation manifest.
+  verified: Focused migration/recovery tests passed 121; full CLI passed 2,610; typecheck and build passed; all 12 capabilities, capability contract, state validation, compact, blocker-free 1,447-identity/2,212-relationship preview, and 58-archive replay passed.
+  next: Task 13 is complete. Task 14 remains pending; do not apply the entity migration until a post-commit clean preview and matching external approval envelope are explicitly approved.
+  context:
+    intent: Complete Plan Task 13 readiness recovery without applying the Task 14 entity cutover.
+    constraints: No Task 14 apply, version, changelog, vision, release, publication, remote, or manual YAML changes.
+    unknowns: Task 14 apply authorization remains intentionally unresolved.
+    scope: Task 13 audit blockers, correlation evidence, approval preflight, tests, and immutable state evidence only.

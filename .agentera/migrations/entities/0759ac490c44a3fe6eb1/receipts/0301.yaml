@@ -1,0 +1,23 @@
+id: lptccttlhl
+artifact: plan
+record:
+  name: Replace retention limits with lossless projection policy
+  depends_on:
+    - zjsdtiqzie
+  status: complete
+  acceptance:
+    - GIVEN entries exceed active or summary projection defaults WHEN projection runs THEN archive records remain complete and no logical entry is deleted.
+    - GIVEN unresolved decisions exceed display capacity WHEN projection runs THEN storage does not fail solely because review pressure is high.
+    - GIVEN oversized entries or responses WHEN byte budgets apply THEN deterministic omission metadata replaces unbounded output or silent truncation.
+    - GIVEN below, at, above, oversized, and protected-review fixtures WHEN projection checks run THEN results match the authority contract.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Projection policy leaves legacy inline summaries unbounded, does not recheck sparse payload bytes, and emits unsupported retrieval pointers for unnumbered artifacts such as TODO.
+    provenance:
+      attempt_id: task-7-attempt-2
+      source: audit-task-7-413a7e39+a89fef8a
+      recorded_at: 2026-07-13 14:59
+      writer_command: agentera state plan record-evaluation
+  plan: oxisposbmm

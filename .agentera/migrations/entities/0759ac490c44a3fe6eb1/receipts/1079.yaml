@@ -1,0 +1,38 @@
+id: iojgvxazbl
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-15
+    status: complete
+    reviewed: 2026-05-15
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: D48 Validate Namespace Plan
+  what: Define and deliver an `agentera validate` CLI namespace for Agentera's existing capability and artifact validation workflows. The namespace should give agents one discoverable, non-interactive validation surface while preserving current validator behavior, artifact labels, and direct script/hook entry points.
+  why: "The next highest-priority TODO asks for the D48 validation namespace because validation is currently discoverable only through separate commands such as `scripts/validate_capability.py` and `hooks/validate_artifact.py`. A standard namespace makes validation safer for agents: they can ask the CLI what to run, receive structured results, and avoid guessing unsupported command names."
+  constraints: Preserve existing validation semantics, existing direct validator entry points, artifact labels, capability schema contracts, non-interactive behavior, JSON output expectations, and hook behavior. Do not implement the separate D48 `smoke`, `verify`, `corpus`, or `usage` namespaces. Do not redesign schemas, rename canonical artifacts, publish, push, tag, refresh installed apps/profile, edit vision state, edit objective state, change decision satisfaction state, or run unsupported capability-name CLI commands.
+  scope:
+    included:
+      - User-facing `agentera validate` command contract for capability and artifact validation use cases.
+      - Stable text and JSON result behavior for success, validation failure, and invalid input cases.
+      - Compatibility guarantees for existing direct validation commands and hook validation behavior.
+      - Help, error, or guidance text needed so agents can discover valid targets and correct syntax.
+      - Focused regression coverage and affected artifact/capability validation.
+      - Feature-level release metadata and local state sync under `.agentera/docs.yaml` semver policy.
+    excluded:
+      - D48 `smoke`, `verify`, `corpus`, or `usage` namespaces.
+      - Broad validator semantic redesign or schema-contract redesign.
+      - Renaming artifact IDs, schema names, persisted metadata keys, or CLI selectors.
+      - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or decision satisfaction changes.
+    deferred:
+      - Broader validation UX improvements outside the D48 namespace.
+      - Consolidation of smoke/eval/usage command families.
+      - Historical cleanup of old validation examples not touched by this work.
+  design: Treat D48 validate as a CLI discoverability and contract feature, not as a rewrite of validation engines. The plan should prove that agents can validate capability and artifact targets through a standard namespace, while existing direct validators remain valid compatibility surfaces.
+  overall_acceptance:
+    - GIVEN an agent needs validation help WHEN it runs `agentera validate` for a supported capability or artifact target THEN it receives a stable validation result without guessing lower-level scripts.
+    - GIVEN unsupported validation input is provided WHEN the command fails THEN the response identifies valid values, correct syntax, and a concrete example.
+    - GIVEN existing direct validators and hooks remain part of the project WHEN the namespace lands THEN their observable behavior remains compatible.
+    - GIVEN the feature closes WHEN verification and state sync finish THEN the D48 TODO is resolved with exact evidence and feature-level release metadata handled under the documented semver policy.
+  surprises:
+    - Pre-write `agentera lint --artifact PLAN.md --text ... --format json` passed verbosity, abstraction, and filler checks for the D48 validate namespace draft, with abstraction anchored by `scripts/validate_capability.py`.

@@ -1,0 +1,11 @@
+id: nrjvzqjkwe
+artifact: plan
+record:
+  name: Add regression test for non-deprecated fallback commands
+  depends_on:
+    - oilfqakopd
+  status: complete
+  acceptance:
+    - GIVEN STATE_FAMILY_FALLBACK_COMMANDS entries WHEN checked THEN every value matches `agentera state` prefix
+    - GIVEN startup.ts direct fallback strings for query vision and query design WHEN checked THEN they match `agentera state query` prefix
+  plan: kunvwyrjcj

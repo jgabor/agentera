@@ -1,0 +1,28 @@
+id: lpqipgqtbx
+artifact: plan
+record:
+  name: Synchronize contracts and verify current state
+  depends_on:
+    - cerbdveyej
+    - vuhyzxretc
+    - bjavrpwnjt
+    - zrewgjhyzc
+  status: complete
+  acceptance:
+    - GIVEN the changed startup surfaces WHEN schema, help, capability contracts, bundled data, and user guidance are compared THEN they agree on fields, bounds, compatibility, and recovery commands.
+    - GIVEN live repository state and representative accumulated-state fixtures WHEN budget checks run THEN bare prime and status context satisfy their 12000-byte and 25000-byte limits.
+    - GIVEN capability contexts changed by this plan WHEN their existing declared budgets are checked THEN none regress beyond its authoritative limit.
+    - GIVEN the completed change WHEN full CLI tests, typecheck, build, capability-contract validation, and compact validation run THEN all pass.
+    - GIVEN recommendations outside this plan WHEN project state is reviewed THEN recommendations 4 through 7 remain discoverable as open TODO items.
+  evaluation:
+    attempt_count: 4
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Cycle 859 falsely states the fresh pass preserved failure_count 2 and prior failure evidence; live Task 5 evaluation instead has failure_count 0 and null failure evidence. A later immutable correction must supersede that claim.
+    provenance:
+      attempt_id: task-5-audit-4-20260716
+      source: "Cycle 860 correction and final typed-state audit: Task 5 substantive evidence remains progress Cycle 857; the user-authorized reopen reset prior live history, and the independent audit failure is the one retained failure. Writer semantics must produce attempt_count 4 and failure_count 1 while retaining the current last failure evidence."
+      recorded_at: 2026-07-16 17:34
+      writer_command: agentera state plan record-evaluation
+  evidence: agentera state progress get --number 857 --format json
+  plan: lpjgrqdyzs

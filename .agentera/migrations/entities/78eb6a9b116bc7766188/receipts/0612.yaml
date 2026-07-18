@@ -1,0 +1,11 @@
+id: hfotxymutg
+artifact: plan
+record:
+  name: GitHub Copilot corpus parity
+  depends_on:
+    - yvsbepdyzg
+  status: complete
+  acceptance:
+    - GIVEN Copilot local conversations exist WHEN extraction runs THEN user-before-assistant turns and decision-rich prompts normalize like existing runtimes.
+    - GIVEN Copilot storage is sparse or unavailable WHEN extraction runs THEN diagnostics show bounded remediation labels without transcript leakage.
+  plan: kxmbqforny

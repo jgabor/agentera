@@ -1,0 +1,6 @@
+id: rfqvuybqmg
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] `agentera check compact --apply` produces archive entry ordering that `agentera check validate artifact --artifact..."

@@ -1,0 +1,13 @@
+id: lpkxstlbes
+artifact: plan
+record:
+  name: Add durable experiment archival
+  depends_on:
+    - bcqtyyucba
+  status: complete
+  acceptance:
+    - GIVEN projection retention is crossed WHEN publication succeeds THEN newly published full detail is durably recoverable before compaction.
+    - GIVEN 10/40/50 projection compaction WHEN run THEN projection policy is unchanged and archive provenance remains explicit.
+    - GIVEN archive success, failure, and retry fixtures WHEN tested THEN no detail is silently lost or duplicated.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 7.
+  plan: hcjrszmsio

@@ -1,0 +1,13 @@
+id: omhqqbzovy
+artifact: plan
+record:
+  name: Add Structured Routine State Output
+  depends_on:
+    - rlrylrnvwj
+  status: complete
+  acceptance:
+    - GIVEN routine state commands are run with structured output WHEN a machine consumer requests JSON or YAML THEN `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, and `experiments` return parseable state without raw artifact reads
+    - GIVEN routine state commands are run without structured output WHEN a human reads the result THEN command names remain stable and the text output remains clear even if presentation improves
+    - GIVEN structured output is documented WHEN agents use the routine commands THEN status, entries, counts, source metadata, and empty-state behavior are discoverable without static prompt stuffing
+    - GIVEN output checks are added WHEN structured output validation runs THEN each covered command has pass/fail evidence or a recorded proportionality rationale
+  plan: xprbindgbm

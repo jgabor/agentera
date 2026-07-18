@@ -1,0 +1,12 @@
+id: xljxpelhvr
+artifact: plan
+record:
+  name: Add focused entrypoint regressions
+  depends_on:
+    - sgoeojgejs
+    - ajpkuijmvr
+  status: complete
+  acceptance:
+    - GIVEN tests run with unset or empty `AGENTERA_HOME` and `XDG_DATA_HOME` WHEN the installed `hej` command construction is exercised THEN they prove no command path collapses to `/app/scripts/agentera` and the resolved path is based on the normal Agentera directory.
+    - GIVEN existing app-home and OpenCode adapter regressions run WHEN the fix is in place THEN valid custom `AGENTERA_HOME`, default app home discovery, compatibility identifiers, and local checkout development seams remain supported.
+  plan: zixugefprn

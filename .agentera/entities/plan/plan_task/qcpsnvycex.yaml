@@ -1,0 +1,16 @@
+id: qcpsnvycex
+artifact: plan
+record:
+  name: Synchronize final state and rerun every release gate
+  depends_on:
+    - olsxqaztyb
+    - hzgoyxybkc
+    - vjblxzukqk
+    - fimgpoebqk
+    - jgdhnphdwz
+    - eyzvdzzspq
+    - qsnmkrkvqg
+  status: pending
+  acceptance:
+    - GIVEN every prior outcome is verified WHEN typed closeout synchronizes lineage, progress, TODO, health, docs, and changelog and all named CLI, typecheck, build, validation, compact, migration, npm pack, and npm publish dry-run gates pass without carve-out THEN the plan archives, no active plan remains, and all incomplete predecessors remain discoverable.
+  plan: dejfosgnsl

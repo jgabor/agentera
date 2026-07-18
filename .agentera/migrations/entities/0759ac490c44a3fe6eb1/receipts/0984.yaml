@@ -1,0 +1,16 @@
+id: cawwerldfn
+artifact: plan
+record:
+  name: Benchmark and artifact boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the TODO cites DECISIONS.md raw reads after CLI WHEN benchmark evidence is inspected THEN the exact retained report/window or historical limitation is named.
+    - GIVEN DECISIONS.md is a canonical artifact label WHEN raw-read pressure is scoped THEN the plan maps it to `.agentera/decisions.yaml` through CLI/docs artifact mapping rather than assuming a root Markdown file.
+    - GIVEN read sources can be classified WHEN implementation scope is chosen THEN avoidable normal-context reads are separated from legitimate decision writes, artifact repair, CLI-defect investigation, validation, and benchmark analysis.
+  evidence:
+    - Historical benchmark row in `/home/jgabor/.local/share/agentera/benchmarks/startup-state/runs.jsonl` generated at `2026-05-15T15:42:10+00:00` reported `raw_artifact_access_after_cli_counts.DECISIONS.md=2`, `redundant_raw_artifact_access_counts.DECISIONS.md=1`, and `estimated_redundant_raw_tokens_by_artifact.DECISIONS.md=24` with action `targeted_capability_guidance_fixes`.
+    - Current `.agentera/docs.yaml` maps canonical `DECISIONS.md` to `.agentera/decisions.yaml`; implementation did not assume a root Markdown artifact and did not mutate `.agentera/decisions.yaml`.
+    - Latest benchmark after implementation no longer reproduces DECISIONS.md raw reads; scope therefore targets historical normal-context ambiguity while preserving raw decision artifact access for Resonera writes/repairs, corruption diagnostics, CLI defect investigation, validation, and benchmark analysis.
+  plan: srgdpftdaw

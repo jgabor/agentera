@@ -1,0 +1,14 @@
+id: lyavfaretj
+artifact: plan
+record:
+  name: Benchmark context output contract
+  depends_on:
+    - pmlqftdxho
+  status: complete
+  evidence:
+    - "`scripts/agentera` now emits Optimera-only `benchmark_context` through the existing `agentera hej --format json --capability-context optimera` seam, with latest report, history, runtime coverage, state-access, token-impact, comparison, recommendation, manual-refresh, privacy, fallback, and source contract fields. No `agentera optimera` command was added."
+  acceptance:
+    - GIVEN `agentera hej --format json --capability-context optimera` runs and retained startup benchmark evidence is available WHEN structured output is returned THEN it includes `benchmark_context` with source, latest report summary, history summary, runtime coverage, rates, token estimates, comparison status, recommendation, manual refresh guidance, privacy boundary, caveats, fallbacks, and truthful completeness metadata.
+    - GIVEN retained benchmark files are missing, empty, or malformed WHEN benchmark context is built THEN `complete_for_benchmark_context` is false, missing evidence is named, manual refresh guidance is present when available, and direct raw file reads remain last-resort diagnostics rather than normal startup behavior.
+    - GIVEN CLI command guidance and parser surfaces are scanned WHEN this task completes THEN no new `agentera optimera`, top-level command, route-alias command, or unsupported capability-name command is introduced.
+  plan: diqscycqjf

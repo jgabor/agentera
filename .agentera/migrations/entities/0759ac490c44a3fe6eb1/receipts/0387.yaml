@@ -1,0 +1,12 @@
+id: nbjqkklfqw
+artifact: plan
+record:
+  name: Establish stable plan identity
+  depends_on:
+    - eiapdtscat
+  status: complete
+  acceptance:
+    - GIVEN a current plan WHEN archived THEN its identity remains unchanged and lifecycle provenance changes explicitly.
+    - GIVEN legacy plans WHEN identity is derived THEN results are deterministic without rewriting history; collisions return structured ambiguity.
+    - GIVEN valid transition and collision fixtures WHEN tested THEN identity continuity passes and ambiguous identity fails safely.
+  plan: zmjvhbfhpm

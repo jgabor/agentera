@@ -1,0 +1,7 @@
+id: dhmidyuoxw
+artifact: docs
+record:
+  document: Semantic fixture contract
+  path: scripts/semantic_fixtures.py
+  last_updated: 2026-05-15
+  status: current

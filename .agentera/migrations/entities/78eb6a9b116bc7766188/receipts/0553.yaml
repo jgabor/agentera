@@ -1,0 +1,13 @@
+id: naeuzcbpbu
+artifact: plan
+record:
+  name: Human-Facing Schema Architecture
+  depends_on:
+    - thsjbenqgr
+    - qfunfsajoh
+  status: complete
+  acceptance:
+    - GIVEN todo/design/changelog schemas declare format markdown WHEN validating Markdown artifacts THEN schema is consulted
+    - GIVEN Markdown artifact with missing required fields per schema WHEN validator runs THEN reports violations
+    - GIVEN schema format declaration WHEN artifact is Markdown THEN format field value is markdown
+  plan: fcctntwhtx

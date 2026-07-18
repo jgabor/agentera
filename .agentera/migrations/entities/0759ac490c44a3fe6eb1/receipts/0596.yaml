@@ -1,0 +1,12 @@
+id: loufqwdxlh
+artifact: plan
+record:
+  name: Run analyzer and privacy audit reports
+  depends_on:
+    - iegmapbczd
+  status: complete
+  acceptance:
+    - GIVEN prepared corpus or intermediate input WHEN `scripts/startup_analysis_contract.py` runs THEN it writes `startup-overhead-report.json` and `startup-overhead-report.md` under an untracked local output directory.
+    - GIVEN generated reports are audited WHEN forbidden tokens are searched THEN raw transcript text, full local paths, raw store paths, raw artifact YAML paths, unredacted session IDs, and private salt values are absent from both generated reports and committed artifacts.
+    - GIVEN report validation runs WHEN complete THEN JSON parses, required report fields exist, and the Markdown summary agrees with the structured recommendation.
+  plan: qkkryvdjxx

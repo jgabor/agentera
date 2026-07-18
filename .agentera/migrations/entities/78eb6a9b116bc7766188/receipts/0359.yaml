@@ -1,0 +1,13 @@
+id: ynbtrkfftg
+artifact: plan
+record:
+  name: Establish objective-scoped experiment identity
+  depends_on:
+    - rufogcejbq
+  status: complete
+  acceptance:
+    - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
+    - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.
+    - GIVEN scoped, renamed, zero, duplicate, and missing fixtures WHEN tested THEN valid identities pass and ambiguous publication fails.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 5.
+  plan: cccqoakytz

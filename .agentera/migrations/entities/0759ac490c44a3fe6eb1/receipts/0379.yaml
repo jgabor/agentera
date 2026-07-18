@@ -1,0 +1,11 @@
+id: tbdmytlrtx
+artifact: plan
+record:
+  name: Close the routing and execution vocabulary plan artifacts
+  depends_on:
+    - jsmqkweszh
+  status: complete
+  acceptance:
+    - GIVEN focused verification runs WHEN implementation is complete THEN exact test, artifact validation, and diff-check evidence is recorded in plan evidence and progress.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the top `[docs:2.4.x]` routing/execution vocabulary TODO is resolved and the later fix/test and Decision 57 TODOs remain open.
+  plan: fwpgooyzbh

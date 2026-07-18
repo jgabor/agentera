@@ -1,0 +1,17 @@
+id: tzmgwgwvoe
+artifact: plan
+record:
+  name: Move existing bespoke contexts into slim mode
+  depends_on:
+    - kapigtbyou
+  status: complete
+  acceptance:
+    - GIVEN Realisera context is requested WHEN slim JSON is emitted THEN `execution_context` semantics, completeness flags, fallback commands, and caveats are preserved under `capability_context.context`.
+    - GIVEN Optimera, Inspektera, Dokumentera, or Orkestrera context is requested WHEN slim JSON is emitted THEN each existing bespoke context remains complete in the new capsule location.
+    - GIVEN full compatibility output is requested WHEN existing context tests run THEN legacy top-level paths still pass or have explicit migration coverage.
+    - GIVEN profile or app state is stale or missing WHEN bespoke contexts are emitted THEN caveats are preserved and do not authorize refreshes.
+  evidence:
+    - Slim mode now copies non-null bespoke contexts into `capability_context.context`, preserving `execution_context`, `benchmark_context`, `evidence_context`, `closeout_context`, and `orchestration_context` source contracts.
+    - Focused tests verify slim nesting for Realisera, Optimera, Inspektera, Dokumentera, and Orkestrera while full compatibility output remains unchanged.
+    - "Verification passed: focused bespoke-context slim tests, Realisera slim CLI spot check, and `git diff --check`."
+  plan: eodwfvjsay

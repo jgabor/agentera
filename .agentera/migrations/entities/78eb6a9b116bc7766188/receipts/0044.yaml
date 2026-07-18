@@ -1,0 +1,21 @@
+id: gfjkkmtcwu
+artifact: decisions
+record:
+  date: 2026-05-12
+  question: What should Agentera 2.3.0 include?
+  context: "2.2.3 release prep is complete and no open 2.2.x TODOs remain. Open degraded items cluster around installed capability reliability: self-audit helper exposure, schema discovery, and split install roots. Decision 47 requires app-home migration; Decision 48 says expose self-audit via `agentera lint` without merging every script into the CLI."
+  alternatives:
+    - name: Focused reliability release
+      status: chosen
+      description: Anchor 2.3.0 on app-home migration, `agentera lint`, and installed-capability diagnostics.
+    - name: Patch-only reliability
+      status: rejected
+      description: Fix helper/schema/root defects without app-home migration, leaving the root ambiguity intact.
+    - name: Broad capability expansion
+      status: rejected
+      description: Include Profilera corpus parity too, increasing validation scope before the app surface is coherent.
+  choice: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration as a hard requirement; implement Decision 48 first through `agentera lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root doctor checks. Defer Profile corpus parity and broad script namespace promotion beyond `lint`.
+  reasoning: "The highest-friction failures share one cause: agents cannot confidently locate the active app, helper scripts, schemas, and install roots. App-home migration gives those surfaces one durable model, while `lint` solves the immediate self-audit ergonomics without turning the CLI into a script dump."
+  confidence: firm
+  feeds_into: TODO.md, .agentera/plan.yaml, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, README.md, UPGRADE.md, capability prose, tests
+  outcome: Make 2.3.0 a focused reliability release. Include Decision 47 app-home migration as a hard requirement; implement Decision 48 first through `agentera lint`; resolve the degraded helper exposure/removal, schema discovery, and split-root doctor checks. Defer Profile corpus parity and broad script namespace promotion beyond `lint`.

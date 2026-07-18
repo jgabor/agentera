@@ -1,0 +1,12 @@
+id: enoylzqrow
+artifact: plan
+record:
+  name: Regression tests + doctor consistency
+  depends_on:
+    - tglaqoeitl
+  status: complete
+  acceptance:
+    - GIVEN a fixture with a divergent ~/.agents copy WHEN prime runs THEN a regression test asserts prime surfaces staleness rather than false up_to_date
+    - GIVEN upgrade on a divergent copy THEN a test asserts the path is now a symlink to the canonical source and the opencode-specific symlink is gone
+    - GIVEN doctor runs THEN it still recognizes the canonical default-skill-root without drift between doctor and bundleStatus lists
+  plan: qzcscecynw

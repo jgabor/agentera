@@ -1,0 +1,14 @@
+id: tkpvwyeqei
+artifact: plan
+record:
+  name: Implement Layer 3-4 routing engine
+  depends_on:
+    - qxmnymdriz
+    - ratmsjsdau
+  status: complete
+  acceptance:
+    - GIVEN a test corpus of 3 inputs per capability (36 total) WHEN the engine evaluates each input THEN it returns the correct capability with confidence above threshold for at least 85 percent of inputs
+    - GIVEN 5 adversarial inputs that match multiple capabilities within the borderline band WHEN the engine evaluates them THEN it returns disambiguation candidates with their scores
+    - GIVEN 5 adversarial inputs that match no triggers WHEN the engine evaluates them THEN it returns fallback to status
+    - GIVEN the same input text WHEN the engine is called twice THEN it returns identical results (pure function, no side effects)
+  plan: rbwcnrsgbn

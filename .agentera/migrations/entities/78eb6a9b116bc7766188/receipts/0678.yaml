@@ -1,0 +1,12 @@
+id: fmyymrldyh
+artifact: plan
+record:
+  name: Add doctor check for deprecated PROFILERA_PROFILE_DIR
+  depends_on:
+    - mhpaovsfab
+  status: complete
+  acceptance:
+    - GIVEN a new diagnoseOpencodeProfileDir check exists in doctor/opencode.ts, WHEN doctor runs and PROFILERA_PROFILE_DIR is detected in env or config, THEN it emits a warn with migration guidance
+    - AND the check name is registered in runtime-adapter-registry.yaml
+    - AND all tests pass
+  plan: ptxzdrxixt

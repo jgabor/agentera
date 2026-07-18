@@ -1,0 +1,13 @@
+id: pdxwvnolov
+artifact: plan
+record:
+  name: CLI wiring and project-root mapping
+  depends_on:
+    - gcxgofnnjb
+  status: complete
+  acceptance:
+    - GIVEN default extraction WHEN agentera stats refresh --dry-run or extract_corpus.py runs THEN cursor probe resolves ~/.cursor/projects and honors --cursor-projects-dir and --no-cursor flags consistent with sibling runtime flags
+    - GIVEN --project-root paths WHEN extraction runs THEN Cursor project dirs matching those repos are preferred over unrelated transcript stores
+  evidence:
+    - --cursor-projects-dir, --no-cursor, resolve_cursor_projects_path(); test_cursor_project_root_scoping_skips_unrelated_projects
+  plan: jsfkwytjzd

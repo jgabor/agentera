@@ -1,0 +1,16 @@
+id: obkcxlmjqk
+artifact: progress
+record:
+  timestamp: 2026-07-14 22:37
+  type: feat
+  phase: build
+  what: Defined executable bounded-retrieval authority and reserved plan, task, and experiment command grammar.
+  inspiration: Approved plan Task 1 and Decision 93 CLI authority.
+  discovered: "The live catalog has 134 physical valid plans and 133 logical identities: one byte-equivalent mirrored pair and no ambiguous identities. Two invalid historical archives remain compatibility caveats. No objective directories currently exist under optimize or optimera."
+  verified: Focused 87 tests and full 1883-test suite passed. Typecheck, build, capability-contract validation, compact gate, schema introspection, help smoke checks, and live identity scan passed.
+  next: Begin Task 2 only after a new explicit cycle; implement plan task list/get against this grammar.
+  context:
+    intent: Complete Task 1 by making collection classification, identity, selectors, cursors, omissions, and structured failures authoritative before retrieval implementation.
+    constraints: Contracts and grammar only; preserved numbered archives, file plan archives, objective scope, experiment 10/40/50, suite 3.0.0 metadata, and legacy bytes.
+    unknowns: "Resolved: normalized-document legacy plan IDs produce one mirrored duplicate and no ambiguity live; persisted objective UUID survives rename, optimera is read-compatible legacy, experiment 0 is valid; five current plan/experiment count or byte gaps are named; degraded plan archives are non-fatal compatibility caveats unless selected."
+    scope: State retrieval authority, validator/registry projection, plan/experiment help and schema introspection, contract tests, changelog, plan status, and progress evidence.

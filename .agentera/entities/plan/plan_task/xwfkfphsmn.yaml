@@ -1,0 +1,14 @@
+id: xwfkfphsmn
+artifact: plan
+record:
+  name: Documentation and release state alignment
+  depends_on:
+    - yjwgjtbuwu
+    - ogsjrrypoz
+    - rndldbbgia
+  status: complete
+  acceptance:
+    - GIVEN a user reads README, UPGRADE, capability prose, TODO, or docs state alongside Decisions 47, 48, and 50 WHEN 2.3.0 scope is described THEN downstream docs reflect those decisions without modifying decision records.
+    - GIVEN open TODOs are inspected WHEN included 2.3.0 reliability tasks close THEN they are resolved or explicitly retargeted with rationale.
+    - GIVEN docs state is queried WHEN the release candidate is ready THEN modified docs and artifact mappings report current status.
+  plan: mpdielqjbe

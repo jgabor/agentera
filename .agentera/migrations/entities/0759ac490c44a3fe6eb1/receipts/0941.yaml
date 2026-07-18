@@ -1,0 +1,13 @@
+id: eykkftvjpx
+artifact: plan
+record:
+  name: Wire upgrade, doctor, and lifecycle validation
+  depends_on:
+    - sxcmrrgtht
+    - cxxwhhxcwr
+  status: complete
+  acceptance:
+    - GIVEN a project without committed Cursor surfaces WHEN runtime upgrade runs in dry-run and apply modes THEN managed hooks, agents, and plugin targets are planned and installed with the same ownership protections used by other supported runtimes.
+    - GIVEN upgrade completes on an isolated project WHEN doctor diagnosis runs for Cursor THEN install health reports pass, warn, or fail states for helper access, managed surfaces, and documented default app homes.
+    - GIVEN lifecycle adapter validation runs WHEN Cursor wiring is checked THEN required session and pre-tool validation events are present and documented limitations remain truthful before any hard-gate claim is promoted.
+  plan: bizikrrbyb

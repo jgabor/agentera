@@ -1,0 +1,10 @@
+id: bchrnsaidh
+artifact: plan
+record:
+  status: complete
+  acceptance:
+    - Root README Pi-style package table; package.json mobile:* scripts; AGENTS.md mobile scope and package DX section.
+  name: Monorepo README and AGENTS.md pivot
+  depends_on:
+    []
+  plan: plepyjdube

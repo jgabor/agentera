@@ -1,0 +1,16 @@
+id: pxvyfbxtyp
+artifact: plan
+record:
+  name: Optimera guidance and schema integration
+  depends_on:
+    - lmennlaier
+    - uozuvuzvti
+  status: complete
+  evidence:
+    - Optimera prose now requires `benchmark_context` before direct retained benchmark file reads for benchmark-oriented startup. Optimera artifact and validation schemas declare CLI benchmark_context consumption, context-first behavior, and caveat preservation.
+  acceptance:
+    - GIVEN Optimera startup begins for benchmark-oriented work WHEN capability prose is read THEN it directs agents to start from `agentera hej --format json --capability-context optimera` and use complete `benchmark_context` before direct `latest-report.json`, `latest-report.md`, or `runs.jsonl` reads.
+    - GIVEN benchmark context is incomplete WHEN guidance continues THEN it instructs agents to use listed CLI and manual-refresh guidance before any last-resort direct benchmark file read.
+    - GIVEN benchmark caveats about manual-only execution, missing local history, runtime coverage, token estimates, previous comparison, or privacy boundaries are present WHEN Optimera reports results THEN those caveats are preserved rather than hidden, upgraded, or reconstructed.
+    - GIVEN capability schemas are validated WHEN this task completes THEN Optimera artifact descriptions declare CLI `benchmark_context` consumption and schema rules declare context-first and caveat-preservation behavior without claiming machine enforcement beyond the schema contract.
+  plan: dlmrrzhsvy

@@ -1,0 +1,14 @@
+id: kzewqlojjv
+artifact: progress
+record:
+  timestamp: 2026-07-16 10:27
+  type: test
+  phase: plan
+  what: "Established the prime consumer compatibility boundary: inventoried every documented prime consumer with field-level evidence, classified each field proposed for omission as required/conditional/diagnostic/deprecated-transition/retired with rationale, recorded an approved public-output policy for Tasks 2-4, and added a policy-verified pass/fail fixture test."
+  inspiration: plan:634c092e-a7bc-48f4-80ee-2c91940e54f1 task 1
+  verified: "vitest: packages/cli/test/cli/primeCompatibilityBoundary.test.ts (8 tests, pass) — every documented consumer fixture's fields are a subset of declared_available_fields; retired field 'bundle' fails visibly via --fields (rc=1 + 'Available fields:' correction listing app_home/app); policy declared_available_fields reconciled against emitPrime selector and default bare-prime emission. Full suite pnpm -C packages/cli test: 196 files / 2274 tests pass. typecheck pass. build pass. check compact: status=pass over_limit=0 errors=0."
+  next: "Task 2: publish one non-redundant prime contract — reconcile schema.ts STATUS_STRUCTURED_FIELDS, the text-briefing hardcoded list, and agent-ready-state-contract.yaml hej.fields to the emitted authority per the approved public_output_policy; preserve the 'issues' deprecated transition alias and the fail-visible --fields contract."
+  context:
+    intent: "Plan Task 1: give Tasks 2-4 an unambiguous compatibility boundary before any prime payload change."
+    constraints: "Plan exclusions preserved: no structured attention records, no stable artifact identities/reference routing, no summary-vs-diagnostic projection modes, no compiled/cached capability instructions. Did not perform broad payload changes (deferred to Task 2)."
+    scope: references/cli/prime-consumer-compatibility.yaml (new), packages/cli/test/cli/primeCompatibilityBoundary.test.ts (new), .agentera/plan.yaml (task 1 -> complete)

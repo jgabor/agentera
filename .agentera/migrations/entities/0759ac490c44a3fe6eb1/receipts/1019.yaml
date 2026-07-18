@@ -1,0 +1,12 @@
+id: oilfqakopd
+artifact: plan
+record:
+  name: Update direct fallback strings in context builders
+  depends_on:
+    - xczzbyusks
+  status: complete
+  acceptance:
+    - GIVEN startup.ts WHEN inspected THEN `query vision` and `query design` fallbacks use `agentera state query` forms
+    - GIVEN realisera.ts, orchestration.ts, evidence.ts, closeout.ts, benchmark.ts WHEN inspected THEN all fallbackCommands push calls use `agentera state` forms
+    - GIVEN source_provenance strings in those same files WHEN inspected THEN they are unchanged
+  plan: kunvwyrjcj

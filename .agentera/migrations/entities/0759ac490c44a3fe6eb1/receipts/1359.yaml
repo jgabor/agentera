@@ -1,0 +1,16 @@
+id: nexzevzimf
+artifact: progress
+record:
+  timestamp: 2026-07-17 13:42
+  type: fix
+  phase: build
+  what: Corrected Cycle 892's immutable count evidence and closed Task 10 rollback and source-binding audit defects.
+  inspiration: Retry 1/2 Task 10 audit findings A-E and Decision 94 state-storage authority.
+  discovered: The existing exact removal primitive preserved successors but hid identity mismatch from rollback, allowing journal advancement.
+  verified: "pnpm -C packages/cli exec vp test run test/state/entityMigrationApply.test.ts: 1 file, 18 tests; expanded entityMigrationApply, entityMigrationPreview, migrationAuthority, and entityPublicationContext command: 4 files, 134 tests; pnpm -C packages/cli test: 212 files, 2556 tests. Typecheck, build, check validate state, build capability, capability contract, compact, migration help, and schema passed."
+  next: Task 10 remains complete. Task 11 remains pending and requires a new cycle; do not run live migration apply.
+  context:
+    intent: Make durable entity migration refuse source identity drift and rollback races while converging safely across intra-loop crashes.
+    constraints: Only Task 10 audit defects; no Task 11, broad framework, live apply, manual YAML edit, vision change, push, publish, or tag.
+    unknowns: None within the corrected Task 10 audit scope.
+    scope: Exact publication removal, migration preview/apply source identity and recovery, focused tests, migration help, and state-storage authority.

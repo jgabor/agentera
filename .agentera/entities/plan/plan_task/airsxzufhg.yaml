@@ -1,0 +1,13 @@
+id: airsxzufhg
+artifact: plan
+record:
+  name: Operator docs and benchmark interpretation
+  depends_on:
+    - wpvhdqtihg
+    - etrjbclscs
+  status: complete
+  acceptance:
+    - GIVEN README or docs are read WHEN an operator wants to run the benchmark THEN they show the manual Mage command, required approval inputs, user-local storage location, and generated-output retention policy.
+    - GIVEN benchmark results are documented WHEN an operator reviews them THEN raw-after-CLI rate and redundant raw-access rate are named as the optimization target for startup state-access work.
+    - GIVEN docs mention generated metrics WHEN reviewed THEN they state metrics are user-local, uncommitted, unshipped, and not part of normal CI.
+  plan: kztirfhynv

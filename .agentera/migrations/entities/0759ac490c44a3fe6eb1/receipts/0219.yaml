@@ -1,0 +1,12 @@
+id: ihgqyioypl
+artifact: plan
+record:
+  name: Build shared lifecycle operation engine
+  depends_on:
+    - ajicarbtig
+  status: complete
+  acceptance:
+    - GIVEN exact, modified, missing, legacy, symlinked, wrong-type, partially managed, or unowned resources WHEN operations are planned THEN ownership and action outcomes are deterministic.
+    - GIVEN preview with absent parents WHEN filesystem and state snapshots are compared THEN no mutation, lock, cache, telemetry, or native installer activity occurred.
+    - GIVEN partial application failure WHEN the operation is retried THEN completed work remains safe and pending work converges with truthful final status.
+  plan: uspieksgub

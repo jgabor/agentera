@@ -1,0 +1,7 @@
+id: ykrysqynze
+artifact: docs
+record:
+  document: Schema-backed routing test interface
+  path: tests/routing_test_interface.py
+  last_updated: 2026-05-17
+  status: current

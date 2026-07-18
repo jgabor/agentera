@@ -1,0 +1,6 @@
+id: rpqmhmyvjd
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[test:3.0.0] Verify Plan Lifecycle Clarity and Validated Publication closeout. Resolved 2026-07-13: `packages/cli/test/state/planLifecycleContract.test.ts`, lifecycle fixtures, and..."

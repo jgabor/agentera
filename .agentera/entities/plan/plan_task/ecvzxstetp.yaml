@@ -1,0 +1,16 @@
+id: ecvzxstetp
+artifact: plan
+record:
+  name: Release-gated live preToolUse Write smoke
+  depends_on:
+    - udqulixmqb
+  status: complete
+  evidence:
+    - "Invalid-block PASS: Write to reconstructable `.agentera/progress.yaml` with `{{{\\n  broken yaml` denied by preToolUse hook (progress: invalid YAML flow mapping parse error); mutation blocked before apply."
+    - "Valid-allow PASS: Write to `.agentera/smoke-cursor-pretooluse-evidence.txt` allowed; harmless one-line timestamp evidence file created."
+    - "AC3 unchanged: release tags, registry hard-gate claims, and parity docs not promoted this cycle; advisory-only posture retained per task constraint."
+  acceptance:
+    - GIVEN live-host smoke is enabled WHEN a reconstructable invalid Write candidate is attempted through Cursor pre-tool validation THEN the mutation is blocked and the smoke records passing evidence.
+    - GIVEN live-host smoke is enabled WHEN a valid Write candidate is attempted THEN the mutation is allowed and the smoke records passing evidence; proportionality target is one passing invalid-write block case and one passing valid-write allow case.
+    - GIVEN hard-gate parity is not yet proven WHEN release readiness is evaluated THEN release tagging remains blocked, registry and parity docs stay advisory-only, and persistent shell configuration is added only if shell-tool smoke shows session env does not propagate.
+  plan: eblyfjdqfm

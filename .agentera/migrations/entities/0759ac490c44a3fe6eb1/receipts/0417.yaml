@@ -1,0 +1,14 @@
+id: ijzqmywfic
+artifact: plan
+record:
+  name: Synchronize 2.2.2 release metadata
+  depends_on:
+    - nscyvuftaj
+    - vpgydkmfgc
+  status: complete
+  acceptance:
+    - GIVEN both fixes are complete WHEN release metadata is updated THEN version-bearing working-tree surfaces identify 2.2.2 without creating tags, publication state, or live install claims.
+    - GIVEN the changelog is prepared WHEN the release notes are read THEN 2.2.2 lists only patch-scope fixes and verification evidence.
+    - GIVEN TODO state is updated WHEN agentera todo is queried THEN the two 2.2.2 fix items are no longer open.
+    - GIVEN progress and docs state are updated WHEN Agentera state is queried THEN they agree on 2.2.2 scope without claiming live install proof.
+  plan: evlwlzprps

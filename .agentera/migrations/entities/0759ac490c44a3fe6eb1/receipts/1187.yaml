@@ -1,0 +1,39 @@
+id: urcofuuwnm
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-14
+    status: complete
+    reviewed: 2026-05-14
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    revised: Adversarial review tightened the orchestration context plan by defining the required completeness predicate, making retry state provenance explicit, adding installed-app staleness as a validation caveat instead of a repair action, binding the 2.3.7 archive transition to acceptance criteria, clarifying the selected 2.3.8 patch-train version target, softening field shape details into observable outcomes, and making unsupported capability CLI commands testably forbidden.
+    title: 2.3.8 Orchestration Context Source Contract
+  what: Add an Orkestrera orchestration-context source contract to the supported `agentera hej --format json --capability-context orkestrera` startup seam. The context should combine dependency-ready plan tasks, blocked task reasons, latest progress verification, health/TODO/decision caveats, retry state when recorded, and evaluator handoff requirements so task selection and Inspektera handoff can proceed from CLI state during normal startup and evaluation.
+  why: "Decision 51 showed that capability startup and state gathering still over-read raw artifacts after CLI state access, and Orkestrera is the highest-friction example because it coordinates plan, progress, health, TODO, decision, retry, and evaluator state. The 2.3.7 decision-context source contract proved the right pattern: carry completeness and caveats through the CLI state seam rather than forcing agents to read raw YAML after already asking the CLI for state."
+  constraints: Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary. Do not add `agentera orkestrera` or any capability-name CLI command; Orkestrera startup context belongs on `agentera hej --format json --capability-context orkestrera` plus routine fallback commands. Preserve the existing `agentera plan --format json` source contract and docs.yaml artifact path resolution. Do not fabricate progress verification, retry attempts, decision consequences, health state, or evaluator evidence. Retry state must be `known`, `not_recorded`, or `unavailable` with source provenance before any attempt count is exposed. Installed app staleness is a caveat for this local checkout plan, not approval to run upgrade or repair. Do not implement the separate Dokumentera, Inspektera, Optimera, or Realisera source-contract TODOs. The selected target for this source-contract patch train is 2.3.8 despite the `[feat:2.3.8]` TODO label; Task 6 must record that resolution before metadata edits. Do not tag, push, publish, refresh installed apps, edit vision, or edit objective state without explicit approval.
+  scope:
+    included:
+      - Orkestrera capability-context output on `agentera hej --format json --capability-context orkestrera`.
+      - Source-contract metadata that declares included state families, completeness, caveats, fallback commands, and raw-read policy.
+      - Dependency-ready task queue, blocked task reasons, selected next task, and task acceptance/evidence summaries from existing plan state.
+      - Latest progress verification summary, evaluator handoff requirements, and retry state only where a recorded source exists.
+      - Health, TODO, and decision caveats needed for safe Orkestrera task selection and Inspektera handoff.
+      - Orkestrera prose/schema guidance, focused startup-state validation, and 2.3.8 TODO/docs/changelog/progress/version metadata sync.
+    excluded:
+      - Unsupported `agentera orkestrera` or capability-name CLI commands.
+      - Broad Orkestrera runtime rewrite or implementation subagent behavior changes beyond startup/evaluation context.
+      - Source contracts for Dokumentera, Inspektera, Optimera, or Realisera.
+      - Git-history reconstruction or raw artifact fallback as normal behavior.
+      - Publication, tag, push, installed app refresh, vision edit, or objective-state edit.
+    deferred:
+      - Separate 2.3.9+ source-contract TODOs.
+      - Rich retry persistence if current artifacts do not record retry attempts.
+      - Cross-capability orchestration dashboards beyond the Orkestrera startup envelope.
+  design: Expose a composite Orkestrera startup context through the existing hej capability-context seam. The contract is complete only when task queue, dependency readiness, blocked reasons, selected task, latest progress summary or caveat, health/TODO/decision caveats, evaluator handoff inputs, fallback commands, retry-state provenance, and raw-read policy are each present or explicitly marked unavailable with a reason. Field names should follow existing Agentera JSON conventions; exact nesting may be adjusted during implementation as long as the observable completeness and caveat contract is preserved.
+  overall_acceptance:
+    - GIVEN `agentera hej --format json --capability-context orkestrera` is used for startup WHEN plan and progress state are available THEN Orkestrera receives selected task, dependency readiness, latest verification, state caveats, and evaluator handoff requirements without normal raw artifact reads.
+    - GIVEN required orchestration context state is missing or caveated WHEN Orkestrera proceeds THEN the source contract names missing state, fallback commands, and last-resort raw-read policy honestly.
+    - GIVEN 2.3.8 closes WHEN validation and state sync finish THEN deferred 2.3.9+ source-contract TODOs remain visible and no prohibited release, installed-app, unsupported CLI, or protected-state action occurred.
+  surprises:
+    []

@@ -1,0 +1,14 @@
+id: jtipwnefuk
+artifact: plan
+record:
+  name: Publish local migration inventory and mutation authority
+  depends_on:
+    - gmbzutcvhx
+  status: pending
+  acceptance:
+    - GIVEN the six fixed legacy pairs and custom-name question WHEN design begins THEN the operator confirms either a closed set or bounded directory inventory, and unsupported results plus fixtures encode that choice.
+    - GIVEN local migration needs a CLI surface WHEN design begins THEN the operator confirms the exact namespace before parser, dispatch, help, schema, or docs commit to it.
+    - GIVEN the confirmed command WHEN invoked without mutation flags THEN selectors, project bounds, inventory limits, JSON/YAML outcomes, compatibility window, backups, failures, and preview/apply/force examples are discoverable.
+    - GIVEN interruption, retry, conflict, or partial state WHEN authority is validated THEN local publication is monotonic, typed, project-bounded, and independent of Git.
+    - GIVEN each inventory and mutation class WHEN `state-storage-authority.yaml` and contract tests run THEN formats, numbering, modes, bounds, provenance, backups, and outcomes are schema-backed rather than prose-only.
+  plan: ckzzomuyos

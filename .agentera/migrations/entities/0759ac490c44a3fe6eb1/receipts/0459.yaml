@@ -1,0 +1,13 @@
+id: gjvamjocsq
+artifact: plan
+record:
+  name: State sync and release gate
+  depends_on:
+    - nqomiffdvr
+    - fqtwgqhyro
+  status: complete
+  acceptance:
+    - GIVEN the benchmark suite is complete WHEN state sync runs THEN TODO, progress, changelog, and docs record benchmark evidence and preserve the separate startup state-envelope follow-up.
+    - GIVEN no release target is selected WHEN state sync runs THEN version-bearing files remain unchanged and changelog wording stays unreleased-state evidence, not release preparation.
+    - GIVEN final validation runs WHEN the plan closes THEN focused tests, Mage target validation, ruff or compile checks, YAML parsing, and `git diff --check` pass or blockers are documented.
+  plan: umxbxviebr

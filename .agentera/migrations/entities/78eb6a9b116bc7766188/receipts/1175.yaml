@@ -1,0 +1,57 @@
+id: nkbaxezqtr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-14
+    status: archived
+    reviewed: 2026-07-14
+    critic_issues: 13 found, 10 addressed, 3 dismissed
+    revised: Separated retrieval envelopes from storage authority, resolved command grammar, split lifecycle boundaries, narrowed collection coverage, and made legacy and experiment durability limits explicit.
+    title: "Plan: Complete bounded plan and experiment retrieval"
+  what: Make growing plan and experiment collections bounded, stably addressable, and recoverable through CLI list/get flows instead of silent slicing or raw artifact traversal.
+  why: Bounded startup projections are safe only when retained records have stable identities and every omission has a documented continuation or exact retrieval path. Decision 93 requires the CLI to own that state contract.
+  constraints: Preserve numbered archives for progress, decisions, and health; preserve file-based plan archives; keep experiments objective-scoped; keep the CLI authoritative; preserve legacy readability without fabricating history; retain experiment 10/40/50 projections; keep suite metadata at 3.0.0; do not publish, tag, or add unrelated state families.
+  overall_acceptance: GIVEN newly published or retained plan and experiment records WHEN any collection is bounded THEN identities, ordering, omissions, continuation, exact retrieval, detail availability, and archive provenance are explicit; active-to-archive plan identity remains stable; experiment zero and objective scope remain valid; legacy ambiguity is reported rather than invented; public contracts and verification gates agree.
+  scope:
+    included:
+      - Shared bounded-retrieval envelope and cursor vocabulary
+      - Plan task list/get
+      - Stable active-plan and file-archive identity and retrieval
+      - Objective-scoped experiment identity and validated publication
+      - Durable experiment detail archival before projection compaction
+      - Experiment list/get across retained and archived records
+      - Plan and experiment cursor and omission coverage
+      - Help, schema introspection, agent context, capability prose, docs, and tests
+      - Permitted CLI development metadata and state closeout
+    excluded:
+      - Migrating plans or experiments into numbered archives
+      - Changing experiment 10/40/50 projection retention
+      - Repairing unrelated degraded historical archives
+      - Adding bounded retrieval to unrelated state families
+      - Runtime-specific adapters, publication, tags, or remote pushes
+    deferred:
+      - Search beyond identity, objective filters, and cursor traversal
+  design: "Define one public retrieval-envelope and cursor vocabulary while preserving separate storage authorities: numbered archives for existing numbered families, file archives for plans, and objective-scoped durable experiment records. Establish identity and publication guarantees before retrieval, then close only evidenced plan and experiment omission gaps. Dependent work pauses for replanning if compatibility evidence invalidates its acceptance."
+  unknowns:
+    - question: Can legacy plan archives receive deterministic identities that survive active-to-archive transition without rewriting history or collisions?
+      affects_task: 3
+      resolve_by: Task 1 proves uniqueness over fixtures and the live catalog; otherwise re-plan Task 3 before execution.
+    - question: What canonical objective identity preserves experiment identity across objective renames and legacy optimera/optimize path variants?
+      affects_task: 5
+      resolve_by: Task 1 selects and validates the namespace, experiment-zero behavior, and compatibility mapping before Task 5.
+    - question: Which plan or experiment outputs can currently exceed count or byte budgets without recoverable identity?
+      affects_task: 9
+      resolve_by: Task 1 records an evidence-backed matrix; Task 9 closes only those named gaps and triggers replanning for other families.
+    - question: Should existing degraded plan-archive diagnostics fail live retrieval smoke tests or remain reported compatibility caveats?
+      affects_task: 12
+      resolve_by: Task 1 classifies pre-existing diagnostics; Task 12 verifies retrieval without silently repairing out-of-scope history.
+  rejected:
+    - issue: Plan and experiments must migrate into numbered archives to support list/get.
+      rationale: Compatible retrieval envelopes do not require one storage model; existing authority deliberately keeps plan history file-based.
+    - issue: This feature requires suite metadata above 3.0.0.
+      rationale: The cutover hold forbids that; only the CLI development package may advance.
+    - issue: Existing degraded archive diagnostics must be repaired in this plan.
+      rationale: They require explicit smoke-test treatment, but repair is unrelated unless retrieval correctness depends on it.
+  surprises:
+    []

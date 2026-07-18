@@ -1,0 +1,16 @@
+id: mxpowxbtsf
+artifact: plan
+record:
+  name: Version bump and final state sync
+  depends_on:
+    - vgmqfqkihv
+    - rnpdpreidr
+    - wpmebtvrco
+    - urluccvrxe
+    - piveinibhn
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN check compact is run THEN all compactable artifacts are within uniform_10_40_50 limits
+    - GIVEN all prior tasks are complete WHEN check validate artifact is run on DECISIONS.md and TODO.md THEN both pass with zero violations
+    - GIVEN the version-bearing files are inspected THEN the minor version is bumped per the docs.yaml semver_policy (feat → minor)
+  plan: fidstglvlh

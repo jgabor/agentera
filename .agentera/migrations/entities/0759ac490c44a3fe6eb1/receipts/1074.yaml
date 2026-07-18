@@ -1,0 +1,37 @@
+id: gremlonjmv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-24
+    status: open
+    reviewed: 2026-06-24
+    critic_issues: 10 found, 10 addressed, 0 dismissed
+    title: "Plan: Install Track Consolidation (Decision 72)"
+  what: |
+    Promote the existing internal install-lineage classifier to a public field in diagnostic output, rename legacy bundle terminology to app terminology across public output, and surface the coexistence warning through the existing attention mechanism. Three parallel install-state concepts become one canonical public field; one redundant public field retires.
+  why: |
+    Users cannot tell at a glance whether they are running v2, v3, or from source. Three parallel concepts overlap and create internal confusion about which is canonical. The coexistence warning (v2 app plus v3 hooks) exists in doctor output but does not surface in the orientation briefing. The bundle field name is a straggler from before the app-terminology decision.
+  constraints: |
+    Must not break the development-channel npm flow. Must not remove protected user state. Must not change upgrade behavior (diagnostic output only). Must not add new npm dependencies. Must preserve the coexistence contract message ("pick one line"). Breaking change to JSON output accepted because the CLI is pre-release on the development channel; all consumers are internal. External consumers verified: packages/mobile and packages/web do not read bundle or rootStatus from orientation or doctor JSON output.
+  scope:
+    included:
+      - Promote the internal lineage classifier to a public install_track field in orientation and doctor output
+      - Rename bundle to app in public diagnostic output (orientation, doctor)
+      - Retire the redundant rootStatus field from public output
+      - Add coexistence warning as an attention item in orientation output
+      - Update all internal production consumers of the renamed fields
+      - Update tests covering diagnostic output
+    excluded:
+      - Upgrade command output (already shows version transition)
+      - Coexistence contract message text (stays 'pick one line')
+      - Capability startup context shape (not a diagnostic surface)
+      - "Mobile or web packages (verified: no JSON field reads of bundle or rootStatus)"
+    deferred:
+      - Retiring the internal classifier field name (internal rename, not user-visible; can land separately)
+  design: |
+    The tasks run sequentially because multiple tasks edit the same orientation and doctor output assemblers; parallel execution would collide on shared files. The promotion phase runs first: the lineage classifier gains a public projection function that maps internal values to the four public values. The rename phase runs second: all public output fields carrying the legacy bundle name switch to the app name. The retirement phase runs third: the redundant root health field is removed from public output while staying internal for classifier logic. The coexistence phase runs fourth: the existing coexistence detection feeds into the existing orientation attention builder (already present), and the doctor coexistence section stays as-is. The consumer-update phase runs fifth: all internal production code that reads the old field names is updated. The test phase runs sixth: tests covering diagnostic output are updated to assert the new field names and values. The final task verifies the full suite, content gate, typecheck, and captures the breaking change in the changelog.
+  overall_acceptance: |
+    GIVEN the orientation command runs with JSON output WHEN a user inspects the output THEN the user sees install_track (v2/v3/source/unknown) in app_home and app.status (health) as the two orthogonal install fields, with no bundle or rootStatus keys present. GIVEN a v2 install with v3 hooks WHEN the orientation command runs THEN the attention list warns about coexistence with the "pick one line" message. GIVEN the full test suite and content gate run WHEN verification completes THEN both pass with zero failures.
+  surprises:
+    []

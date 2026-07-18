@@ -1,0 +1,16 @@
+id: covxcoozgg
+artifact: progress
+record:
+  timestamp: 2026-07-13 16:16
+  type: test
+  phase: build
+  what: Verified the final text list renderer includes explicit provenance and compatibility for every bounded row; snapshot pagination, archive/current classification, and all previously recorded gates remain unchanged. Task 9 remains pending.
+  inspiration: Final diff review identified that text output needed the same explicit provenance contract as JSON and YAML.
+  discovered: Adding explicit text provenance did not change the deterministic page, benchmark, or failure behavior; the five packaging failures remain isolated to npm 12 JSON parsing.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2 files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts test/state/archivePublication.test.ts test/state/directRetrieval.test.ts test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 133 tests passed. Non-packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts, 169 files and 1678 tests passed. Full: pnpm -C packages/cli test, 169 of 170 files and 1682 of 1687 tests passed; exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing failures remain in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; prior lint passed with 101 pre-existing warnings and 0 errors; capability-contract and progress artifact validation passed; final check compact remains required after this append."
+  next: Task 9 remains pending for evaluator review. Task 10 prime consumers, migration, Git durability, and release work remain out of scope.
+  context:
+    intent: Record the final post-review verification for the list read surface without closing Task 9 or expanding scope.
+    constraints: Do not mark Task 9 complete. Do not modify prime or capability consumers, migration, Git, health, vision, profile, decisions, TODO, version, publish, push, or tag surfaces. Packaging files remain unchanged.
+    unknowns: No persistent index is introduced; reevaluate only if a reproducible authority benchmark exceeds its declared threshold on another filesystem.
+    scope: packages/cli/src/state/listRetrieval.ts; packages/cli/src/cli/commands/state/list.ts; packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts; packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/state/directRetrieval.ts; packages/cli/test/state/listRetrieval.test.ts; packages/cli/test/state/archiveAuthority.test.ts; references/artifacts/state-storage-authority.yaml; .agentera/progress.yaml

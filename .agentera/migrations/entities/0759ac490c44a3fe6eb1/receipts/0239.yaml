@@ -1,0 +1,24 @@
+id: vxfyizfaeo
+artifact: plan
+record:
+  name: Capability context and fallback guidance
+  depends_on:
+    - pvgeimhnph
+    - lodxasuocy
+  status: complete
+  acceptance:
+    - GIVEN a capability declares state needs WHEN context is requested for that capability THEN the CLI result contains the relevant state families or names the missing families.
+    - GIVEN CLI state declares itself complete WHEN Agentera guidance is followed THEN agents do not perform defensive raw artifact reads for normal startup.
+    - GIVEN CLI state is unavailable or incomplete WHEN Agentera guidance is followed THEN agents try the CLI-provided fallback before raw file access.
+  evidence:
+    capability_context_behavior:
+      - "`agentera hej --format json --capability-context <capability>` now returns `source_contract.capability_context` with declared state needs from the capability artifact schema, included startup state families, missing state families, CLI fallback commands for missing routine state, and raw-file fallback policy."
+      - "`uv run scripts/agentera hej --format json --capability-context orkestrera --fields source_contract` returned Orkestrera declared needs `plan`, `progress`, `health`, `todo`, `decisions`, `vision`, `profile`, and `docs`; included startup families `plan`, `progress`, `health`, `todo`, and `docs`; missing families `decisions`, `vision`, and `profile`; and CLI fallback `agentera decisions --format json`."
+    guidance_behavior:
+      - "`skills/agentera/SKILL.md` now states that complete CLI startup coverage means no defensive raw artifact reads for normal startup."
+      - If CLI state is unavailable or incomplete, the guidance tells agents to try CLI-provided fallback commands before raw file access.
+      - Capability-specific startup context is requested through the existing `agentera hej` state seam, preserving routine state command names and Decision 43 slash-route separation.
+    verification:
+      - uv run pytest tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py tests/test_cross_capability.py
+      - uv run scripts/agentera hej --format json --capability-context orkestrera --fields source_contract
+  plan: ilsmrmrchl

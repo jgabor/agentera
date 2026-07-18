@@ -1,0 +1,16 @@
+id: umuqgfypbc
+artifact: progress
+record:
+  timestamp: 2026-07-17 01:00
+  type: fix
+  phase: build
+  what: "Fixed the four remaining Task 3 audit defects: recursive inventory roots now fail closed, continuations bind the complete snapshot and selectors, unresolved relationships own actionable diagnostics, and revision fixtures use valid provenance."
+  inspiration: Final audit retry 2 for PLAN Task 3 and Decision 94 state-storage authority.
+  discovered: Unresolved-only relationships accounted for 66 blocker entries but previously owned no diagnostics; bound pagination now carries those diagnostics with their entries.
+  verified: Focused entity migration and authority tests passed 2 files and 30 tests. Full CLI passed 203 files and 2,390 tests. Typecheck and build passed. State validation reported 0 issues; capability contract passed 2/2; compact passed 10 artifacts with 0 errors. The pre-publication repository preview reproduced 1,280 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, 1,442 logical entries, 1,463 physical records, 21 mirrors, source fingerprint f2d1513f96924883f3ebb39455899941cc700f88ca6dc42c8b06f2fb45af3eb8, and preview digest 612a01fae3cc4ca7b46ae126fc84a50922d17a063e2db3a294bb4469f4dde579.
+  next: Keep Task 3 complete and Task 4 pending; do not implement apply or cut over any family.
+  context:
+    intent: Close only the final read-only migration inventory audit defects without apply effects or family cutover.
+    constraints: No apply effects, family cutover, vision change, release, push, publish, amend, or unrelated repair.
+    unknowns: Task 13 still owns recovery or disposition of the 173 blocked logical identities.
+    scope: Entity migration preview, CLI help, state-storage authority, focused tests, and this progress cycle.

@@ -1,0 +1,14 @@
+id: ceienufwzt
+artifact: plan
+record:
+  name: Align tests and validation coverage
+  depends_on:
+    - tjqaqlykcs
+    - cblsgctlno
+  status: complete
+  acceptance:
+    - GIVEN capability contract and validator tests run WHEN the rename is complete THEN they encode `instructions.md` as the supported capability instruction filename and reject new canonical `instructions.md` conventions where in scope.
+    - GIVEN focused regression tests inspect remaining `prose.md` occurrences WHEN they pass THEN every survivor is classified as compatibility-preserved, historical, fixture-only, generated-output evidence, or unrelated prose.
+  evidence:
+    - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  plan: pkfbsrvrby

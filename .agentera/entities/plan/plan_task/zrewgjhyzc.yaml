@@ -1,0 +1,25 @@
+id: zrewgjhyzc
+artifact: plan
+record:
+  name: Make status startup self-contained
+  depends_on:
+    - bjavrpwnjt
+  status: complete
+  acceptance:
+    - GIVEN a status-capability invocation WHEN status context is requested THEN one response contains both status instructions and the bounded state needed by every dashboard field and routing rule.
+    - GIVEN that response WHEN the dashboard is rendered THEN no separate bare-prime call or raw artifact read is required.
+    - GIVEN unrelated lifecycle diagnostics WHEN status starts normally THEN they are omitted unless status has declared them necessary for the current brief.
+    - GIVEN pretty UTF-8 JSON with a trailing newline WHEN status context is serialized THEN stdout is at most 25000 bytes and stderr is measured separately.
+    - GIVEN fresh, returning, flagged, waiting, and incomplete-state fixtures WHEN status runs THEN existing safety rails, exit markers, and recovery behavior hold.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Self-contained status context deletes nested mode required by its instructions and projects away project_integration.dry_run_command/apply_command required for upgrade rendering; fixtures read envelope mode and do not exercise named incomplete-family recovery.
+    provenance:
+      attempt_id: task-4-retry-20260716
+      source: "Focused status-context retry verification after task-4-audit-1: canonical nested mode, conditional upgrade commands, strict status_context fixtures, executable decisions fallback, and all repository gates passed."
+      recorded_at: 2026-07-16 15:19
+      writer_command: agentera state plan record-evaluation
+  evidence: agentera state progress get --number 854 --format json
+  plan: lpjgrqdyzs

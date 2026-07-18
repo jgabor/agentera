@@ -1,0 +1,6 @@
+id: qtqbncshgw
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Bespoke capability contexts return error instead of degraded output. `prime.ts:43-61` — capability contexts not..."

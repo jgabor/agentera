@@ -1,0 +1,26 @@
+id: acfyxpgxzl
+artifact: plan
+record:
+  name: Final state sync — fold TODO L16 to `## ✓ Resolved`, flip plan/progress metadata, archive plan, run all six verification gates
+  depends_on:
+    - tatysbtsxo
+    - gynrjwzeba
+    - vciacpieon
+    - kqzllvaoip
+    - ngvbnsjemo
+    - nkzoquluvz
+    - ytpjemxeji
+    - lgjczzripd
+    - qzgctzuhwa
+    - sesudjbjee
+  status: complete
+  acceptance:
+    - "GIVEN T1-T10 complete WHEN the cutover publish commit is staged THEN TODO L16 (Rewrite the supported Agentera CLI core in TypeScript) and the resolved sub-task entries (L17 Bun/npm packaging, L20 single-name protocol boundary, L21 v1 legacy cruft, L22 TS monolith hotspot split, L24 v2 handoff manifest, L25 v2/v3 coexistence, the audience-namespace phase 3 completion, the cursor agent surface fix) move to the `## ✓ Resolved` section using the standard ledger form `- ~~[type:3.0.0] ...~~ · resolved on `feat/v3-cutover` @ <sha>: <one-line summary of what changed>` naming the cutover commit hash once known"
+    - GIVEN the same commit WHEN `.agentera/plan.yaml` status flips from `active` to `complete` and the new plan archives to `.agentera/archive/plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml` THEN the D56 plan archive remains at `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml` (no-op verification); the `previous_plan_archived` line in the new plan points at the D56 archive path
+    - GIVEN the same commit WHEN `.agentera/progress.yaml` is updated THEN a new full-detail cycle entry is appended whose scope is `v2→v3 TS rewrite completion`; per Decision 66 the cycle omits the `commit` field and follows the post-D66 cycle shape; the commit is folded into the cutover publish commit per AGENTS.md `Agentera commits` rules, not a separate bookkeeping commit
+    - GIVEN the same commit WHEN `rg '^- Placeholder' TODO.md` runs THEN zero hits (the previous folds' Placeholder removals are preserved); the resolved-ledger entries sit at the top of `## ✓ Resolved`
+    - "GIVEN the cutover publish commit WHEN the six verification gates run THEN all six must pass: (T-vitest) `pnpm -C packages/cli test` full vitest suite green with the npmParityMatrix reporting all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked); (T-typecheck) `pnpm -C packages/cli run typecheck` zero errors; (T-build) `pnpm -C packages/cli build` exit 0 with `dist/bin/agentera.js` present; (T-capability-contract) `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` pass; (T-capability-per-name) `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities pass; (T-npm-parity-matrix) `pnpm -C packages/cli test -- npmParityMatrix` reports all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked), zero `ts_smaller` or `python_smaller` rows; the lint-monolith regression (T2) reports zero files >1000 lines; the single-name protocol regression (T3) reports zero legacy substrings; the v3-handoff manifest regression (T5) reports a <100ms read on the fixture; the v3 cursor agent surface regression (T7) reports the D65 form"
+    - GIVEN the same commit WHEN the npm `@latest` version-divergence re-run fires THEN `npx -y agentera@latest check validate capability-contract --format json` is re-run after the version bump and reports green; the npm @latest pin is 3.0.0
+    - GIVEN the commit WHEN the AGENTS.md `Agentera commits` rule is applied THEN no separate bookkeeping commit is created; the TODO.md L16 fold, the resolved sub-task folds, plan.yaml status flip, progress cycle, six gate runs, capability-contract validate, and per-name capability validate are all in a single commit; the cutover publish commit folds the CHANGELOG 3.0.0 entry, the version bumps, the `.opencode/package.json` lockstep, and the T9 docs promotion per AGENTS.md
+    - GIVEN the post-commit state WHEN `agentera plan --format json` is queried THEN the response reports the new plan as `complete`, the previous_plan_archived is `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`, and the source_contract `complete_for_plan_artifact` is `true`; the headline TODO L16 closes per Decision 56's `feeds_into`
+  plan: sgnbhadusj

@@ -1,0 +1,14 @@
+id: pmhadktnqm
+artifact: progress
+record:
+  timestamp: 2026-07-17 06:01
+  type: feat
+  phase: build
+  what: Cut health audit storage, writes, bounded reads, and repair diagnostics over to canonical immutable entities in entity mode.
+  inspiration: PLAN Task 6 and Decision 94 entity authority.
+  verified: "Focused health, entity-authority, shared-publication-context, and legacy-writer tests passed: 4 files, 93 tests; final focused health tests passed: 1 file, 9 tests. Full CLI suite passed: 208 files, 2498 tests. Typecheck and build passed. State validation, audit capability validation, capability-contract validation, and compact check all passed; compact reported 0 errors, 0 over-limit, 0 protected overflow, and 0 changes."
+  next: Task 7 remains pending; do not begin plans/tasks entity mode in this cycle.
+  context:
+    intent: Complete Agentera PLAN Task 6 without migrating legacy state or changing other entity families.
+    constraints: Health family only; no migration, dual write, apply, global consumer cutover, TODO, docs family, objectives, publishing, pushing, or unrelated repair.
+    scope: Health entity authority, append/get/list/cursor/repair routing, shared publication-context coverage, Git merge fixtures, and proportional tests.

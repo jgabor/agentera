@@ -1,0 +1,24 @@
+id: jewclprxlb
+artifact: decisions
+record:
+  date: 2026-05-18
+  question: How should Agentera rename capability `prose.md` files and make first-invocation instruction reading explicit?
+  context: The capability file name `prose.md` undersells its role as the behavioral instruction source for each capability. The user asked how to rename it to `instructions.md` and enforce full reading during initial capability invocation. The practical constraint is that Agentera cannot technically force every runtime to read a file, but it can make the requirement explicit through schema metadata, CLI capability context, router guidance, descriptors, docs, and tests.
+  alternatives:
+    - name: Full instructions contract
+      status: chosen
+      description: Rename `skills/agentera/capabilities/*/prose.md` to `skills/agentera/capabilities/*/instructions.md`, add first-invocation read metadata, surface required reads through CLI capability context, and update the capability schema contract, router guidance, runtime descriptors, docs, and tests.
+    - name: Rename only
+      status: rejected
+      description: Improves naming but leaves agents guessing whether instructions must be read during startup.
+    - name: Metadata without rename
+      status: rejected
+      description: Adds startup-read semantics but keeps the misleading `prose.md` name and preserves the old vocabulary debt.
+    - name: Runtime hook enforcement
+      status: rejected
+      description: Not portable because runtimes do not expose a shared, reliable conversation-state proof that a file was read in full.
+  choice: Rename capability `prose.md` files to `instructions.md`, add `first_invocation_read` metadata with values such as `full`, `compact_startup`, or `skip`, surface the required reads through `agentera status --format json --capability-context <name>`, and update `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`, `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`, `AGENTS.md`, and `references/cli/vocabulary.md` so first capability invocation reads `instructions.md` in full unless an explicit compact-startup exception is declared.
+  reasoning: The `instructions.md` name states the file's purpose better than `prose.md` and turns capability startup from an implicit convention into a contract. Full technical enforcement across every runtime is unrealistic, so the durable implementation should combine schema metadata, CLI visibility, Agentera router guidance, descriptor updates, and regression coverage rather than relying on prose alone.
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/SKILL.md, skills/agentera/capability_schema_contract.yaml, scripts/agentera, scripts/validate_capability.py, runtime descriptors, tests, README.md, AGENTS.md, references/cli/vocabulary.md
+  outcome: Rename capability `prose.md` files to `instructions.md`, add `first_invocation_read` metadata with values such as `full`, `compact_startup`, or `skip`, surface the required reads through `agentera status --format json --capability-context <name>`, and update `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`, `scripts/validate_capability.py`, runtime descriptors, tests, `README.md`, `AGENTS.md`, and `references/cli/vocabulary.md` so first capability invocation reads `instructions.md` in full unless an explicit compact-startup exception is declared.

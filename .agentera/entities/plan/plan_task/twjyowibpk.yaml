@@ -1,0 +1,35 @@
+id: twjyowibpk
+artifact: plan
+record:
+  name: Verify bounded retrieval end to end
+  depends_on:
+    - rufogcejbq
+    - lqnkhhwghy
+    - jpqsiyhscl
+    - jazdftactj
+    - ynbtrkfftg
+    - awpcyicppv
+    - avvfhzosdc
+    - iyubaeohmd
+    - rmohcqfqix
+    - mdllwiwtsp
+    - nhxqirtjxr
+    - ltrakrsner
+    - cwcjgtejuy
+  status: complete
+  acceptance:
+    - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, legacy caveats, and alias parity pass.
+    - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.
+    - GIVEN live read-only smoke tests WHEN run THEN advertised commands and corrections execute with structured results and pre-existing diagnostics remain classified.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task-14-audit-1-20260715
+      source: independent bounded retrieval end-to-end audit
+      recorded_at: 2026-07-15 13:30
+      writer_command: agentera state plan record-evaluation
+  evidence: Independent audit task-14-audit-1-20260715 passed with Cycle 820 verification.
+  plan: cccqoakytz

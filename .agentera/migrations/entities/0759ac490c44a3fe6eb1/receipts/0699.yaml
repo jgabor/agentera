@@ -1,0 +1,23 @@
+id: nldqclpodg
+artifact: plan
+record:
+  name: Make migration authority executable and evidence truthful
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the confirmed namespace and bounded inventory policy WHEN runtime, schema, help, and output contracts are inspected THEN one canonical authority drives selector requirements, invalid combinations, count fields, omission metadata, formats, and valid values with zero unclassified duplicates.
+    - GIVEN authority-defined roots, depth, exclusions, 256-file, 1-MiB-file, 16-MiB-total, and limit bounds WHEN contract surfaces are exercised THEN normalized ordering, boundary and symlink rejection, truncation, omission counts, omission reasons, and retry guidance are equivalent across text, JSON, and YAML.
+    - GIVEN preview and apply requests WHEN Task 1 tests validation and dispatch THEN pass and reject cases prove explicit force, compatibility, backups, retry, and Git independence while asserting no filesystem migration occurs.
+    - GIVEN Cycle 781 contains inaccurate count and path claims WHEN correction is published THEN a new immutable progress cycle records the exact independently rerun command, observed count, and actual changed path, marks 781 superseded, and leaves 781 unchanged.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Count and omission semantics remain hardcoded, duplicate authority invalid combinations are accepted, required recovery metadata is absent, and read-only inventory does not exercise the authority's candidate/file/total byte bounds.
+    provenance:
+      attempt_id: continuation-task1-audit-2
+      source: "Independent orchestration evaluator: canonical authority, bounded inventory, read-only mutation boundary, and immutable correction evidence audit"
+      recorded_at: 2026-07-14 08:36
+      writer_command: agentera state plan record-evaluation
+  plan: nvbzrxjepf

@@ -1,0 +1,13 @@
+id: dhpresfxln
+artifact: plan
+record:
+  name: Reconcile Plan State And Registry Scope
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the routing and exit vocabulary plan is complete WHEN this plan becomes active THEN the completed plan is archived with cycle 327 validation evidence intact
+    - GIVEN TODO has multiple open findings WHEN the next item is selected THEN [arch-artifact-registry] is identified as the planned work and unrelated TODOs remain open
+    - GIVEN registry planning starts WHEN scope is recorded THEN artifact write validation, health freshness, live smoke, install-root, package/runtime, version, release, vision, objective, commit, and push changes are explicitly out of scope
+    - GIVEN CLI behavior is in scope only as a consumer concern WHEN baseline is recorded THEN current outputs for hej, todo, docs, query --list-artifacts, and a representative query command are preserved unless a later task records an intentional difference
+  plan: bvacoxfryf

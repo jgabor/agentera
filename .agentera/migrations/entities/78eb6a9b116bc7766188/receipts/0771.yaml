@@ -1,0 +1,12 @@
+id: tgfbitxolg
+artifact: plan
+record:
+  name: Execute non-Git legacy migration
+  depends_on:
+    - okfilrfocq
+  status: pending
+  acceptance:
+    - GIVEN inline summaries and locally available full entries WHEN migration is previewed or explicitly applied THEN verified archives publish monotonically and projections remain compatible.
+    - GIVEN non-Git, partial, complete, conflicting, duplicate, custom-name, and summary-only projects WHEN migration runs THEN each receives deterministic per-row outcomes without rollback or recovery overclaims.
+    - GIVEN interruption or retry WHEN prior immutable archives exist THEN equality checks converge without duplicate or unrelated state changes.
+  plan: ulutbnlztj

@@ -1,0 +1,16 @@
+id: wbuiweocrk
+artifact: progress
+record:
+  timestamp: 2026-07-16 21:25
+  type: fix
+  phase: build
+  what: Replaced link-count stale-lock election with an exclusive descriptor-pinned claim and recoverable owner transition, then added bounded private-residue recovery.
+  inspiration: Replanned Task 17 retry 1 after independent audit identified all-loser claim contention, an unrecoverable two-link adoption state, and abandoned private directories.
+  discovered: The first full-suite run exposed the crash fixture's nested Vitest global setup racing the parent build; the fixture now runs as a plain Node child against the global-setup build, and the full suite passed on retry.
+  verified: "pnpm exec vp test run test/state/write/lock.test.ts test/state/entityStorage.test.ts test/state/write/stateWrite.test.ts test/cli/validate.test.ts test/cli/validateParity.test.ts test/cli/validateVerifyOracles.test.ts --reporter=dot: 6 files, 160 tests passed. pnpm exec vp test run test/state/write/lock.test.ts --reporter=dot: 1 file, 16 tests passed. pnpm test: 202 files and 2354 tests passed, 1 file/test skipped. pnpm run typecheck: passed. pnpm run build: passed. check validate state --format json: pass, 0 issues. check validate capability-contract --format json: pass, 2/2 checks. check compact: pass, 0 over-limit and 0 errors. Three synchronized stale-lock publisher repeats each yielded one entity, one explicit duplicate-ID loser, and no residue; five injected claim/adoption crash points recovered in a fresh process; known empty, malformed, dead, old hard-link, and legacy-claim residue was removed while live/unknown private state was preserved."
+  next: Keep Task 17 complete and Task 3 pending; do not begin migration-family cutover in this cycle.
+  context:
+    intent: "Close Task 17 retry-1 audit failures: deterministic one-winner reclamation, recovery from every Agentera-owned claim/adoption crash state, and safe abandoned-private cleanup."
+    constraints: Preserved the public writer-lock API, atomic initialized publication, token/instance verification, fsync durability, project/symlink boundaries, bounded timeout, idempotent release, and structured legacy-file correction. No vision, release, publication, or Task 3 work.
+    unknowns: None within Task 17 acceptance; every enumerated claim/adoption crash transition is covered by deterministic recovery tests.
+    scope: packages/cli/src/state/write/lock.ts; writer-lock crash fixture and lock/entity concurrency tests; progress cycle only.

@@ -1,0 +1,18 @@
+id: zlhpwxxgso
+artifact: plan
+record:
+  name: Regression and measurement evidence
+  depends_on:
+    - rrhswogtbl
+    - hxmiskvrhh
+  status: complete
+  acceptance:
+    - GIVEN focused CLI tests run WHEN a plan artifact includes summary, tasks, dependencies, acceptance, evidence, overall acceptance, surprises, and prior-plan archive metadata THEN JSON output and source-contract fields prove those values are available without a raw plan read.
+    - GIVEN guidance tests run WHEN Planera and shared Agentera instructions are parsed THEN they assert complete CLI plan state suppresses defensive plan artifact reads during normal startup/evaluation.
+    - GIVEN the TODO is benchmark-driven WHEN verification runs THEN the smallest available benchmark or usage-stat command that reports raw plan reads is run, or the exact attempted command, failure reason, and focused-test fallback evidence are recorded.
+    - GIVEN benchmark evidence still contains degraded runtime coverage WHEN results are summarized THEN degraded runtimes are separated from product behavior.
+  evidence:
+    - Focused regression tests passed with `uv run pytest tests/test_query_cli.py::TestArtifactSpecificSummaries::test_plan_json_declares_complete_plan_artifact_contract tests/test_query_cli.py::TestArtifactSpecificSummaries::test_legacy_plan_entries_do_not_claim_complete_plan_artifact_contract tests/test_planera_capability.py::test_planera_prose_uses_complete_plan_cli_state_before_raw_artifact_reads tests/test_decision45_cli_contract.py::test_plan_source_contract_closes_plan_artifact_fallback tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary -q`.
+    - "`mage bench:startupState` completed successfully and wrote the retained report to `$AGENTERA_HOME/benchmarks/startup-state/latest-report.json`; the latest window still reports direct PLAN.md pressure (`raw_artifact_access_after_cli_counts.PLAN.md=11`, `redundant_raw_artifact_access_counts.PLAN.md=10`) and recommendation `plan_cli_startup_envelope`, so the measurement is a retrospective pressure baseline rather than proof of future-session adoption."
+    - "Benchmark runtime coverage was recorded separately: codex and opencode were `ok`, while claude-code and github-copilot were degraded by `schema_divergent`."
+  plan: fuwkumrpdy

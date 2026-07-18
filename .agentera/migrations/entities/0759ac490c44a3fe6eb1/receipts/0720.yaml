@@ -1,0 +1,13 @@
+id: rpgztwrfrx
+artifact: plan
+record:
+  name: Archive Decision 45 And Define Handoff Contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the Decision 45 plan is complete WHEN the Decision 46 plan is written THEN the completed Decision 45 plan is preserved at `.agentera/archive/PLAN-2026-05-08-implement-decision-45-agent-ready-state-interface-for-220.yaml`
+    - GIVEN the new active plan is inspected WHEN the archive is recorded THEN `previous_plan_archived` points at the Decision 45 archive path and artifact validation passes
+    - GIVEN Decision 46 is reviewed WHEN the handoff contract is documented THEN glyph/name handoffs, `/agentera <alias>` route docs, runtime question tools, recommended-first options, `Done`, and confirmation semantics are all defined in one authoritative guidance surface
+    - GIVEN existing route and CLI boundaries are reviewed WHEN the contract is added THEN it preserves Decisions 43 and 45 without adding CLI commands or changing aliases
+  plan: qumcfibccu

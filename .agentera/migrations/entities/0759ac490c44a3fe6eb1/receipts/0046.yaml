@@ -1,0 +1,21 @@
+id: fxvenrbuwf
+artifact: decisions
+record:
+  date: 2026-05-13
+  question: How should Agentera run and retain startup state-access benchmark metrics?
+  context: Decision 51 made startup state-access overlap an optimization metric. To compare versions, Agentera needs a repeatable manual run for `scripts/startup_analysis_contract.py` that can read local runtime history without committing or shipping generated local evidence.
+  alternatives:
+    - name: Ad hoc analyzer commands
+      status: rejected
+      description: Minimal, but weak for repeatability and trend comparison.
+    - name: Normal CI regression
+      status: rejected
+      description: CI cannot depend on private local runtime histories.
+    - name: Manual Mage benchmark with user-local retention
+      status: chosen
+      description: Mage runs the benchmark manually; aggregate history stays under `${AGENTERA_HOME}/benchmarks/startup-state/`.
+  choice: Add a manual Mage benchmark suite starting with the Decision 51 startup state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera data home, not the repository, and retain only the latest redacted detailed report beside it.
+  reasoning: Mage gives a clear manual benchmark surface while the Python analyzer remains the metric source of truth. User-local JSONL enables longitudinal optimization targets without polluting git or packages, and latest-only report retention preserves debuggability without accumulating bulky private artifacts.
+  confidence: firm
+  feeds_into: magefile.go, startup state-access benchmark, TODO.md
+  outcome: Add a manual Mage benchmark suite starting with the Decision 51 startup state-access metric. Persist aggregate `runs.jsonl` history under the user Agentera data home, not the repository, and retain only the latest redacted detailed report beside it.

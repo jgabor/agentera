@@ -1,0 +1,42 @@
+id: mpdielqjbe
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-12
+    status: archived
+    reviewed: 2026-05-12
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    revised: Kept doctor inside the Decision 48 boundary, split versioning from validation, made decisions read-only context, and tightened discovery and release-check acceptance.
+    title: 2.3.0 app-home and installed-capability reliability
+  what: |
+    Build a focused 2.3.0 reliability release that makes installed Agentera discoverable and inspectable from one durable app-home model. The release migrates live bundle terminology to app terminology, gives agents a first-class lint entrypoint for self-audit, makes installed schemas and helpers discoverable from the active invocation, and closes split-root ambiguity before execution is handed off.
+  why: |
+    The 2.2.3 release-prep plan is complete and the remaining degraded issues share one cause: agents cannot confidently identify which app root, skill root, helper scripts, and schemas are authoritative. Decisions 47, 48, and 50 define 2.3.0 as a reliability release anchored on app-home migration and a narrow lint surface.
+  constraints: |
+    Keep 2.3.0 focused on reliability. Do not include Profilera corpus parity. Do not broaden script consolidation beyond lint. Keep doctor read-only and scoped to install, app, and runtime diagnostics. Keep upgrade as the migration writer. Preserve CLI-first state access. Use at least one passing and one negative path for each changed command behavior where practical. Do not tag, push, publish, commit, refresh installed bundles, update package-manager installs, edit vision, or edit objective state without explicit approval.
+  scope:
+    included:
+      - App-home migration contract and user-facing terminology from Decision 47.
+      - Doctor legacy-root and split-root diagnostics scoped to install, app, and runtime roots.
+      - Upgrade preview/apply migration behavior with idempotent outcomes.
+      - Lint self-audit command surface from Decision 48.
+      - Installed schema and helper discovery through the active app model.
+      - Capability prose, README, UPGRADE, TODO, docs, release metadata, and validation evidence for 2.3.0.
+    excluded:
+      - Git commit, tag, push, package publication, package-manager update, and installed bundle refresh.
+      - Profilera corpus parity for OpenCode and GitHub Copilot.
+      - Broad script namespaces beyond lint.
+      - Runtime feature expansion unrelated to installed Agentera reliability.
+    deferred:
+      - Profilera corpus parity for OpenCode and GitHub Copilot.
+      - validate, verify, smoke, corpus, and usage CLI namespaces beyond lint.
+      - Future standalone runtime work.
+  design: |
+    Treat 2.3.0 as one reliability migration. Establish one app-home contract first, make diagnostics explain install and runtime roots without absorbing helper or schema checks, let upgrade own migration writes, then expose lint and discovery through the same active app model. Documentation, TODO targeting, versioning, and validation follow only after the command surfaces prove the model.
+  overall_acceptance:
+    - GIVEN Agentera is installed or migrated WHEN a user or agent asks where it lives THEN app-home, managed app, user data, skill, and runtime roots are described consistently.
+    - GIVEN an installed capability needs linting, helper access, or schema access WHEN it follows Agentera instructions THEN it can resolve those surfaces through the active app model without manual root searching.
+    - GIVEN 2.3.0 is ready for an explicit release action WHEN state, docs, versions, and validation evidence are inspected THEN reliability TODOs are closed or retargeted, deferred work remains visible, and no unauthorized publication action has occurred.
+  surprises:
+    []

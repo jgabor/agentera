@@ -1,0 +1,16 @@
+id: tdqapshyai
+artifact: progress
+record:
+  timestamp: 2026-07-16 19:29
+  type: feat
+  phase: build
+  what: Added authority-driven entity storage, project-wide ID allocation, safe discovery and publication, graph validation, and agentera check validate state.
+  inspiration: PLAN Task 2 and Decision 94.
+  discovered: Task 1 declared entity boundaries and relationships but intentionally left the shared canonical path and validation surface for implementation; Task 2 added those details to the same authority.
+  verified: 37 focused tests and 2,340 full CLI tests passed; typecheck, build, agentera check validate state, capability-contract validation, and compact exited 0.
+  next: Task 3 may inventory migration sources in a separate cycle; no family uses entity storage yet.
+  context:
+    intent: Deliver PLAN Task 2 shared entity primitives without cutting any state family over or starting migration inventory.
+    constraints: Kept legacy production readers and writers unchanged; no migration, adapters, cutover, profile repair, or vision changes.
+    unknowns: None within Task 2; migration behavior remains intentionally unimplemented.
+    scope: State storage authority, shared TypeScript entity primitives, check validate state dispatch, and focused tests.

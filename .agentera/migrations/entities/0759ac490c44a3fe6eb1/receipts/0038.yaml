@@ -1,0 +1,8 @@
+id: egamtbtlng
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-07-16T18:42:54+02:00
+  decision: peglvokevs

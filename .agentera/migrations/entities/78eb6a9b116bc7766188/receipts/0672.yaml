@@ -1,0 +1,12 @@
+id: rghkejendi
+artifact: plan
+record:
+  name: Close the Decision 54 vocabulary TODO artifacts
+  depends_on:
+    - upirprhnxr
+  status: complete
+  acceptance:
+    - GIVEN focused verification runs WHEN the batch is complete THEN the exact command output is recorded in plan evidence and progress.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the top `[docs:2.4.x]` lifecycle vocabulary authority TODO is resolved and the next open TODO remains correctly ordered.
+  evidence: 'Verification recorded for this closeout: `uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed with 5 tests; `uv run pytest tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py -q` passed with 8 tests; `uv run "$AGENTERA_HOME/app/scripts/agentera" validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned `status=pass`; `git diff --check` passed. The top lifecycle vocabulary TODO moved to Resolved and the next P0 TODO remains first open.'
+  plan: avlujsvpiv

@@ -1,0 +1,17 @@
+id: eriqbwbpuk
+artifact: plan
+record:
+  name: 2.3.6 state and release metadata sync
+  depends_on:
+    - dcdqdangfx
+    - cmrgtjfnnh
+    - nuafrgrbpg
+    - vfzqltulwb
+    - tltyftkphb
+    - wczbmrjuqx
+  status: complete
+  acceptance:
+    - GIVEN compaction enforcement passes verification WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.6 patch and the remaining deferred source-contract train.
+    - GIVEN the docs semver policy maps fix work to a patch bump WHEN release metadata is synchronized THEN version-bearing files target 2.3.6 consistently.
+    - GIVEN the release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, objective-state edit, or unexpected session overrun occurred without explicit approval.
+  plan: nlxcuhxfsh

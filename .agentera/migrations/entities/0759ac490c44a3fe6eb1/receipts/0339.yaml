@@ -1,0 +1,17 @@
+id: bdrxgspsbt
+artifact: plan
+record:
+  name: Migrate tests, semantic fixtures, and JSON surface manifest
+  depends_on:
+    - yvadqzntmf
+    - rjqjxgukmg
+    - jggbtddlgy
+    - fhbmuezwzl
+  status: complete
+  evidence: "Updated scripts/json_output_surface_manifest.yaml to canonical schema, state/*, report/*, and check/* command paths with budgets enforced (67 surfaces, 0 violations). Semantic fixtures and hej routing tests now require `agentera prime` tool calls. Added tests/test_cli_namespace_migration_closeout.py for remaining state/check coverage plus prime/schema alias parity. Full suite: 1287 passed with pytest tests/ -q -n auto."
+  acceptance:
+    - GIVEN focused CLI tests run WHEN namespace and alias coverage executes THEN tests cover `prime` default briefing, `schema`, `state/*`, `report/*`, `check/*`, deprecation aliases, and preserved top-level upgrade/doctor/ capability commands.
+    - GIVEN semantic eval fixtures reference `agentera hej` WHEN updated THEN fixtures and expected facts use `agentera prime` without changing routing semantics under test.
+    - GIVEN `scripts/json_output_surface_manifest.yaml` lists public JSON surfaces WHEN migration completes THEN renamed commands (`schema`, namespace paths) have updated command rows and budgets remain enforced.
+    - GIVEN `uv run pytest tests/ -q -n auto` runs WHEN closeout verification executes THEN the full suite passes without weakening lefthook coverage.
+  plan: jgfblycafy

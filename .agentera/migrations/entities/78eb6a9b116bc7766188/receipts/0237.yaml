@@ -1,0 +1,42 @@
+id: ncyrxytvsg
+artifact: plan
+record:
+  name: Startup completeness contract
+  depends_on:
+    - umwlqlzssn
+  status: complete
+  acceptance:
+    - GIVEN an agent requests startup state WHEN the CLI responds THEN the response states whether it is complete for capability startup and whether raw artifact reads are required.
+    - GIVEN startup state is incomplete WHEN the response is reviewed THEN missing state, confidence caveats, and CLI fallback are explicit.
+    - GIVEN maintainers review the contract WHEN command vocabulary is checked THEN routine state command names stay stable and slash-route aliases remain outside the CLI command surface.
+  evidence:
+    contract_surface: agentera hej source_contract.capability_startup
+    complete_for_capability_startup: false
+    raw_artifact_reads_required: false
+    missing_state:
+      - plan task dependencies, acceptance criteria, and evidence details
+      - docs artifact mapping and source-contract completeness metadata
+      - latest progress verification metadata needed for Orkestrera evaluation
+    cli_fallback:
+      - agentera plan --format json
+      - agentera docs --format json
+      - agentera progress --format json
+    confidence_caveats:
+      - representative benchmark evidence exists, but claude-code and github-copilot coverage is degraded by schema divergence
+      - Task 3 defines the completeness contract only; Task 4 owns expanded state coverage
+    command_vocabulary:
+      routine_state_commands_preserved: true
+      slash_route_alias_cli_commands_added: false
+    task_file_scope:
+      included:
+        - scripts/agentera
+        - tests/test_query_cli.py
+        - tests/test_decision45_cli_contract.py
+        - references/cli/agent-ready-state-contract.yaml
+        - .agentera/plan.yaml
+        - .agentera/progress.yaml
+      excluded_pre_existing_unrelated:
+        - docs/benchmark.md
+    verification:
+      - uv run pytest tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing tests/test_decision45_cli_contract.py
+  plan: wncxfohlqr

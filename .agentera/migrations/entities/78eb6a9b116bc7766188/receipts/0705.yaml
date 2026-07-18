@@ -1,0 +1,18 @@
+id: gfwzkoebhn
+artifact: plan
+record:
+  name: Synchronize final state and rerun every gate
+  depends_on:
+    - mrbearobcb
+    - cghngaibvd
+    - ukmpyqfqrx
+    - whraierngj
+    - pxmatxrmjd
+    - cxcqonnqeb
+  status: pending
+  acceptance:
+    - GIVEN every prior outcome is verified WHEN closeout runs THEN evaluator verdicts, task and plan statuses, archive lifecycle, lineage, typed progress and health, and owner-governed TODO, docs, and changelog updates agree and validate without manufactured evidence.
+    - GIVEN synchronized state WHEN full tests, typecheck, build, capability and artifact validation, compact, migration fixtures, package dry-run, and publish dry-run run THEN every governed gate passes without carve-out.
+    - GIVEN closeout changes any shipped release surface WHEN final gates run THEN release metadata, package checks, dry-runs, and immutable release-source provenance are regenerated before archival.
+    - GIVEN final evaluation passes WHEN the plan archives THEN no active plan remains and every incomplete predecessor is discoverable through lineage.
+  plan: epuxwhmxgv

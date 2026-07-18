@@ -1,0 +1,12 @@
+id: jhuqzllfjy
+artifact: plan
+record:
+  name: Backport parser fix to main (v2 stable)
+  depends_on:
+    - mikzkgkkay
+  status: complete
+  acceptance:
+    - GIVEN the same mixed-checkbox TODO.md fixture WHEN agentera state todo --format json runs on main THEN open/resolved split matches feat/v3 behavior
+    - GIVEN main pytest WHEN run for the touched modules THEN checkbox parsing regressions pass
+    - GIVEN npx agentera@latest parity target WHEN compared to feat/v3 contract THEN no [x] row in a severity section is reported as open
+  plan: lxrohjluya

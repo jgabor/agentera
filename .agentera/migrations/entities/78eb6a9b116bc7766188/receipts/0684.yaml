@@ -1,0 +1,11 @@
+id: naesfipiel
+artifact: plan
+record:
+  name: Clean remaining 8 Swedish verbs in packages/cli/src/
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN visionera, resonera, inspirera, optimera, inspektera, dokumentera, visualisera, orkestrera renamed, WHEN rg -i for each runs against packages/cli/src/ excluding schema version strings, THEN zero matches remain
+    - AND vitest run passes AND tsc --noEmit clean
+  plan: ptxzdrxixt

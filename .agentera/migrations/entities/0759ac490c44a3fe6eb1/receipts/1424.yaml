@@ -1,0 +1,6 @@
+id: jfueyffutl
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Align the plan capability's published YAML format with the typed writer schema. Resolved 2026-07-13:..."

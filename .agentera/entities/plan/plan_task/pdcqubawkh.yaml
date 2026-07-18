@@ -1,0 +1,12 @@
+id: pdcqubawkh
+artifact: plan
+record:
+  name: Benchmark contract and storage boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the benchmark contract is documented WHEN an operator reviews it THEN it names the manual-only execution rule, the exact runtime/path approval requirement, and the default `${AGENTERA_HOME}/benchmarks/startup-state/` storage location.
+    - GIVEN benchmark output is specified WHEN retained history is inspected THEN aggregate `runs.jsonl` and fixed latest report files are the only durable outputs.
+    - GIVEN privacy boundaries are specified WHEN the contract is reviewed THEN raw transcripts, raw corpus files, raw intermediates, raw store paths, raw session IDs, private salts, and generated salted hashes are excluded from retained aggregate history.
+  plan: kztirfhynv

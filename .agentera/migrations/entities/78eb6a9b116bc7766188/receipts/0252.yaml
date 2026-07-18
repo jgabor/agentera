@@ -1,0 +1,12 @@
+id: axnawuveml
+artifact: plan
+record:
+  name: Resolve copied user-hook commands and trust hashes
+  depends_on:
+    - cengmxdwxc
+  status: complete
+  acceptance:
+    - GIVEN `agentera upgrade --runtime codex` copies user hooks WHEN `~/.codex/hooks.json` is written THEN command handlers contain a resolved app-root validator path rather than hook-time `${AGENTERA_HOME}`.
+    - GIVEN Codex config receives `[hooks.state]` entries WHEN trust hashes are computed THEN they match the exact copied hook command and target `hooks.json` path.
+    - GIVEN hook subprocesses lack `[shell_environment_policy].set` inheritance WHEN regression tests inspect the copied config THEN the hooks still point at an executable validator path.
+  plan: iqrevgmgtx

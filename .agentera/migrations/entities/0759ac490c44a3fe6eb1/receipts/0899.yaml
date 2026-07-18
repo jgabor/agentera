@@ -1,0 +1,14 @@
+id: ufvhzryauu
+artifact: plan
+record:
+  name: Replace target-major guards in compatibility and orchestrator
+  depends_on:
+    - rixjyjmjtz
+  status: complete
+  acceptance:
+    - GIVEN upgrade --dry-run on v2 fixture with development channel WHEN latest on channel is 3.x THEN preview lists cross-major migration phases and lifecycleStatus is ready_to_apply or manual_review_needed without requiring --target-major
+    - GIVEN upgrade --yes without prior dry-run on forward major or v2 migration WHEN attempted THEN command exits non-zero with plain-language preview-mandatory error
+    - GIVEN upgrade --yes after matching dry-run on same channel WHEN apply runs THEN migration executes without --target-major and targets latest on that channel
+    - GIVEN stable channel while stable resolution still tracks 2.x WHEN v2 home is probed THEN no v3 migration phases appear in preview
+    - GIVEN blocked_downgrade_to_v2 WHEN user requests apply THEN plan status is blocked with irreversibility messaging
+  plan: brcxwbztnv

@@ -1,0 +1,16 @@
+id: hljfrncwks
+artifact: plan
+record:
+  name: Regression and non-live smoke proof
+  depends_on:
+    - xokrgmvagw
+    - ososvnyalh
+    - prxxdqjajd
+    - txwffwhrpf
+    - vubjuhrmkf
+  status: complete
+  acceptance:
+    - GIVEN the proportionality target is one positive and one negative proof per changed setup or runtime surface WHEN validation is reviewed THEN shell-rc immutability, stale environment recovery, managed refresh, user-owned conflict blocking, and package opt-in behavior each have pass and fail coverage.
+    - GIVEN default smoke runs WHEN it completes THEN it proves repair and runtime behavior without live paid hosts and without changing real shell startup files.
+    - GIVEN shell startup fixtures contain legacy Agentera blocks WHEN the full repair test path completes THEN every fixture remains byte-for-byte unchanged.
+  plan: lxpdfnzgfj

@@ -1,0 +1,35 @@
+id: jcootkibwr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-12
+    status: archived
+    reviewed: 2026-07-12
+    critic_issues: 12 found, 12 addressed, 0 dismissed
+    title: Plan Lifecycle Clarity and Validated Publication
+  what: Simplify plan validation language, make plan publication contingent on prose lint and schema validation of the final candidate, and separate persisted plan lifecycle from positional activity.
+  why: The current workflow relies on agents connecting lint and publication manually, while the persisted `active` status collides conceptually with the derived `active` boolean and allows archived plans to appear executable in later sessions.
+  constraints: Preserve task-level status values, immutable plan evidence, docs-mapped paths, dry-run behavior, retry safety, and crash-consistent current-plan replacement. Do not publish releases, alter runtime trust state, or extend automatic lint enforcement to non-plan artifact writers in this plan.
+  overall_acceptance: GIVEN a plan draft WHEN the typed create operation succeeds THEN the exact published candidate has passed strict prose lint and schema validation. GIVEN plan lifecycle output WHEN current and archived plans are rendered THEN `active` describes canonical location and `status` uses only `open` or `complete`. GIVEN an archive-only session WHEN prime or state plan selects next work THEN archived tasks are not presented as an executable active plan. GIVEN legacy or malformed plan artifacts WHEN state is queried THEN bounded normalization or structured diagnostics make the condition explicit.
+  scope:
+    included:
+      - Plan artifact schema, lifecycle vocabulary, and compatibility contract
+      - Typed plan create and archive publication behavior
+      - Plan lint integration and structured diagnostics
+      - Plan discovery, orientation, state output, and execution eligibility
+      - Migration of repository plans, migrators, fixtures, and historical archives
+      - Plan capability instructions, help, vocabulary, and regression coverage
+    excluded:
+      - Task-level status vocabulary
+      - Automatic lint integration for progress, decisions, or health writers
+      - Release publication, tags, pushes, and runtime trust remediation
+    deferred:
+      - Generalizing validated publication into a shared policy for every artifact writer
+  design: Establish lifecycle and compatibility semantics before changing accepted writes. Introduce bounded legacy normalization and deterministic migration, then enforce the canonical vocabulary. Validate the fully transformed candidate before crash-consistent publication, derive positional fields only from artifact location, and simplify capability language after runtime behavior is authoritative.
+  unknowns:
+    - question: Do shipped external consumers require a temporary legacy-read window for plan status `active`?
+      affects_task: 2
+      resolve_by: Task 1 inventories package, adapter, migration, and documented compatibility surfaces; retain a bounded read-only normalization window only where concrete consumers require it.
+  surprises:
+    []

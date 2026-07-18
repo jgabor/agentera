@@ -1,0 +1,16 @@
+id: dfnvdxsblv
+artifact: progress
+record:
+  timestamp: 2026-07-16 20:49
+  type: fix
+  phase: build
+  what: Hardened writer-lock initialization with atomic publication, descriptor-pinned exact-owner reclamation, and actionable legacy-file conflicts.
+  inspiration: Replanned Task 17 and the independent audit of commit 255d4c08.
+  discovered: Publishing a fully initialized private directory makes the owner file immutable before canonical visibility; hard-link claims then permit exact inspected-owner replacement without pathname cleanup of a successor.
+  verified: "packages/cli/test/state/write/lock.test.ts covered the paused initialization window, legacy-file replacement, successor tokens, inspected malformed owners, and ownerless/dead/live/reentrant locks. Focused lock/entity/state-writer/CLI validation: 159 passed. Full CLI: 2,351 passed, 1 skipped. Typecheck, build, check validate state, capability-contract validation, targeted lint, and compact check passed."
+  next: Task 3 may proceed with Task 17 complete; retain the recorded historical state caveats without unrelated repair.
+  context:
+    intent: Close Task 17 by eliminating the audit-reproduced ownerless canonical lock race while preserving writer durability and state semantics.
+    constraints: Kept the project-local lock, fsync durability, bounded timeout, symlink boundary checks, idempotent release, and existing state-writer API.
+    unknowns: None within Task 17; legacy regular-file locks intentionally fail with a structured manual correction instead of unsafe automatic unlink.
+    scope: packages/cli/src/state/write/lock.ts plus adversarial lock, entity-publication, and state-writer regression tests.

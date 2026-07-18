@@ -1,0 +1,12 @@
+id: cmrgtjfnnh
+artifact: plan
+record:
+  name: Shared compaction check and fix behavior
+  depends_on:
+    - dcdqdangfx
+  status: complete
+  acceptance:
+    - GIVEN a compactable artifact exceeds 10 full, 40 compact, or 50 total retained entries WHEN check mode runs THEN it reports the artifact as over limit and does not modify files.
+    - GIVEN fix mode runs on an over-limit compactable artifact WHEN the operation completes THEN the artifact matches its schema compaction contract and unrelated top-level metadata, mapping, and protected state are unchanged.
+    - GIVEN optional artifacts are missing or protected WHEN check or fix mode runs THEN they are reported predictably without failing unrelated compactable artifacts.
+  plan: nlxcuhxfsh

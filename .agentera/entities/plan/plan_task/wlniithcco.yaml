@@ -1,0 +1,24 @@
+id: wlniithcco
+artifact: plan
+record:
+  name: Synchronize current state and close the plan
+  depends_on:
+    - qteagwcvse
+    - urskxvrqlv
+    - ivguweulzz
+    - bkpcpqoxez
+    - vnmyjnjtux
+    - eebsayrqcj
+    - lxmchmvogf
+    - oysiorlrnu
+    - eiswrnasxv
+    - fyjqtqlrjo
+    - wawythhljo
+    - coftqmzzda
+    - hcbtelhkrr
+  status: pending
+  acceptance:
+    - GIVEN verification evidence WHEN work closes THEN docs, TODO, progress, and plan state agree with shipped behavior.
+    - GIVEN typed writer support WHEN state changes are recorded THEN owning interfaces validate final bytes and preserve lineage.
+    - GIVEN final state queries WHEN run THEN no completed task, unresolved in-scope omission, or required closeout remains.
+  plan: juqmsmvfev

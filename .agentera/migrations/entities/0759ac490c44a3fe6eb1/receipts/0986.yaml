@@ -1,0 +1,17 @@
+id: uhgjulyaqq
+artifact: plan
+record:
+  name: Bounded decision source-contract clarity
+  depends_on:
+    - sluaipbdin
+  status: complete
+  acceptance:
+    - GIVEN `agentera decisions --format json` returns source_contract WHEN implementation completes THEN it exposes distinct boundaries for `missing_full_detail_boundary`, `missing_artifact_boundary`, `filtered_result_boundary`, `satisfaction_review_boundary`, and `compacted_history_boundary`.
+    - GIVEN returned entries are compacted or have missing full-detail fields WHEN source contract is inspected THEN `raw_artifact_reads_required=false` and normal-use sufficiency remains explicit without claiming full historical detail.
+    - GIVEN satisfaction review is needed WHEN decision context is emitted THEN the contract preserves the non-inference policy and tells agents to carry review pressure forward rather than claiming user-confirmed satisfaction.
+    - GIVEN filtered results are empty WHEN source_contract is emitted THEN the contract distinguishes "no matching returned decisions" from missing artifact state.
+  evidence:
+    - "`agentera decisions --format json` source_contract now includes `complete_for_returned_full_detail`, `complete_for_normal_deliberation_context`, `normal_deliberation_context`, `missing_full_detail_boundary`, `missing_artifact_boundary`, `filtered_result_boundary`, `satisfaction_review_boundary`, `compacted_history_boundary`, `raw_artifact_access_boundary`, and `fallback_policy`."
+    - Direct `uv run scripts/agentera decisions --format json --fields source_contract` showed the active repo has full-detail completeness false due compacted/missing entries, normal deliberation completeness true, 40 compacted entries, 4 satisfaction-review entries, raw reads not required, and explicit carry-forward caveats.
+    - The contract preserves satisfaction non-inference and separates filtered no-match results from missing artifact state without expanding compacted decisions or changing satisfaction.
+  plan: srgdpftdaw

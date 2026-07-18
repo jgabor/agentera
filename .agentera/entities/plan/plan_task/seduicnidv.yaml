@@ -1,0 +1,15 @@
+id: seduicnidv
+artifact: plan
+record:
+  name: Regression and validation coverage
+  depends_on:
+    - qhulnoughq
+  status: complete
+  evidence:
+    - "Focused regression and validation coverage passed after updating the affected install-root characterization expectation to the new `Agentera directory` wording. Verification covered app-home contract behavior, doctor/upgrade behavior, package/runtime surfaces, affected textual fixtures, targeted stale-terminology audit, lifecycle adapter metadata, CLI describe metadata, schema self-validation, edited capability validation, PLAN and SESSION artifact validation, and `git diff --check`. The focused verification suite reported 346 passing tests. Remaining caveats are non-blocking: the known OpenCode bootstrap environment propagation assertion and the known Planera full-plan lint verbosity advisory."
+  acceptance:
+    - GIVEN changed code, tests, docs, or fixtures are in place WHEN focused verification runs THEN selected tests cover app-home contract behavior, `doctor`/`upgrade` behavior, package/runtime surfaces, and affected textual fixtures, or the closeout explains why a category was not touched.
+    - GIVEN stale terminology is intentionally preserved WHEN a targeted terminology audit is reviewed THEN every remaining relevant occurrence has a `preserve` or `defer` rationale from Task 1.
+    - GIVEN version, package, plugin, registry, or runtime metadata files are changed WHEN metadata alignment checks are relevant THEN the selected checks prove those surfaces remain aligned; otherwise alignment work is recorded as deferred with no code changes.
+    - GIVEN capability prose, schemas, or Agentera artifacts are changed WHEN validation runs THEN affected capability validation, schema validation, artifact validation, and `git diff --check` pass.
+  plan: dcrphgvsnb

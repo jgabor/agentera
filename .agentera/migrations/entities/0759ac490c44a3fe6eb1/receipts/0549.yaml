@@ -1,0 +1,12 @@
+id: rkskfujmwe
+artifact: plan
+record:
+  name: Add Missing Validation Rules
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN health.yaml artifact with missing finding fields WHEN validator runs THEN reports violations
+    - GIVEN plan.yaml artifact with missing task fields WHEN validator runs THEN reports violations
+    - GIVEN experiments/progress/decisions artifacts with missing ARCHIVE.summary WHEN validator runs THEN reports violations
+  plan: swacjgsmpq

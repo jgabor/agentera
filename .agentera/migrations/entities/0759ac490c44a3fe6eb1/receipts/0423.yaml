@@ -1,0 +1,19 @@
+id: uhbovddpnb
+artifact: plan
+record:
+  name: Inspektera guidance and schema integration
+  depends_on:
+    - tquzntqpjc
+    - syzfmsqssv
+  status: complete
+  acceptance:
+    - GIVEN Inspektera evaluates current or completed work WHEN evaluation startup begins THEN capability prose directs agents to start from `agentera hej --format json --capability-context inspektera` and use complete `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts.
+    - GIVEN evidence context is incomplete WHEN guidance continues THEN it instructs agents to run listed existing CLI fallbacks before any last-resort raw artifact read.
+    - GIVEN caveats about stale app/profile state, compacted decisions, protected-state boundaries, unavailable version evidence, or residual risks are present WHEN Inspektera reports evaluation results THEN those caveats are preserved rather than hidden or reconstructed.
+    - GIVEN capability schemas are validated WHEN this task completes THEN Inspektera artifact descriptions declare CLI `evidence_context` consumption and validation rules require context-first, fallback-before-raw, and caveat-preservation behavior.
+  evidence:
+    - "`skills/agentera/capabilities/inspektera/prose.md` now requires evaluation startup from `agentera hej --format json --capability-context inspektera`, use of complete `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts, and listed CLI fallbacks before any last-resort raw artifact diagnostics."
+    - Inspektera guidance now preserves state-family caveats, attributed residual risks, compacted decision caveats, protected-state boundaries, stale app/profile state, unavailable version/publication/remote evidence, and manual-check states instead of hiding or reconstructing them.
+    - "`schemas/artifacts.yaml` declares CLI `evidence_context` consumption for plan, progress, docs, health, TODO, decisions, profile, vision, and design state; `schemas/validation.yaml` adds V7-V9 for context-first, fallback-before-raw, and caveat-preservation behavior."
+    - Focused tests in `tests/test_inspektera_capability.py` enforce the prose, artifact schema, and validation schema contract. Verification passed with `uv run scripts/validate_capability.py skills/agentera/capabilities/inspektera` and `uv run pytest tests/test_inspektera_capability.py` (8 tests). No unsupported `agentera inspektera` command, installed app refresh, profile refresh, vision edit, objective-state edit, publication, push, tag, or commit occurred.
+  plan: tzdfruwtjr

@@ -1,0 +1,13 @@
+id: ocoeguoqkq
+artifact: plan
+record:
+  name: Extraction and token contract matrix
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN runtime status is interpreted WHEN the contract is reviewed THEN `schema_divergent`, `no_matching_records`, and successful zero-record window outcomes are distinct and testable.
+    - GIVEN runtime fixtures are implemented WHEN maintainers review the matrix THEN each supported runtime lists accepted input schema classes, normalized record fields, status mapping, and redaction rules.
+    - GIVEN token-impact fields are reviewed WHEN retained outputs are inspected THEN estimator inputs, estimator version, aggregate fields, comparable-row rules, and null reasons are defined without raw paths or transcript text.
+  evidence: "`references/analysis/startup-measurement-contract.yaml` now defines distinct runtime status outcomes for `schema_divergent`, `no_matching_records`, and successful zero-record windows; a per-runtime extraction matrix for codex, claude-code, opencode, and github-copilot; and the `approx_bytes_div_4_v1` privacy-safe token estimate contract. `docs/benchmark.md` summarizes the status interpretation and retained token fields for maintainers, and `tests/test_startup_analysis_contract.py` asserts the contract structure."
+  plan: vbepjijzmu

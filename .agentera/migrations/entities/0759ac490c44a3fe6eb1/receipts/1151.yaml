@@ -1,0 +1,45 @@
+id: sphjbaunyn
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-07
+    status: complete
+    reviewed: 2026-05-07
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    revised: |
+      Added a prerequisite archive reference, narrowed the route/CLI boundary, limited secondary wording to Decision 43, consolidated validation work, softened version-bump assumptions, and made the final state sync explicit.
+    title: Implement Capability Route Aliases
+  what: |
+    Implement Decision 43 by giving each Agentera capability one primary plain `/agentera <alias>` route while keeping Swedish `-era` capability names canonical. Secondary user wording stays in routing phrases, docs explain the route/CLI split, and validation proves routing remains predictable.
+  why: |
+    Decision 43 reduces first-contact friction without renaming protocol objects. Users can type memorable routes like `/agentera status`, `/agentera discuss`, or `/agentera build`, while capabilities, artifacts, schemas, and historical decisions keep their canonical names.
+  constraints: |
+    Preserve canonical Swedish capability names, existing bare `/agentera` hej behavior, and the state-oriented `agentera` CLI command surface. Do not add non-hej capability or alias commands to the CLI. Do not mutate vision or objective state. Keep secondary phrases below explicit route aliases so build, research, audit, and document intent is not stolen by vague discussion wording.
+  scope:
+    included:
+      - archive the completed Hej dashboard plan before replacing the active plan
+      - define one primary alias per capability from Decision 43
+      - preserve secondary request wording without creating extra exact aliases
+      - update README and vocabulary documentation for aliases and route behavior
+      - prove routing behavior and capability validation
+      - assess version policy for the feature
+      - run the final state sync and close plan state
+    excluded:
+      - renaming capability directories, artifacts, or schema IDs
+      - changing the state-oriented `agentera <command>` CLI surface
+      - adding multiple exact aliases per capability
+      - broad vocabulary cleanup outside Decision 43
+      - remote push, release publication, or package-manager updates
+      - vision or objective edits
+    deferred:
+      - optional future alias telemetry or user research
+  design: |
+    Add deterministic route behavior at the dispatcher boundary: canonical capability names and one primary plain `/agentera <alias>` route directly; broader user phrasing remains secondary request language. Documentation presents plain aliases first for user action, then preserves canonical names as protocol identity. Validation proves the full alias map, route priority, CLI separation, and fallback behavior.
+  overall_acceptance:
+    - GIVEN all primary aliases from Decision 43 are used as `/agentera <alias>` requests WHEN routing is evaluated THEN each routes to the intended capability without renaming canonical Agentera objects
+    - GIVEN users read README and vocabulary docs WHEN they compare slash routes to state commands THEN they can tell `/agentera plan` from `agentera plan`
+    - GIVEN secondary phrasing is used WHEN the request has more specific build, research, audit, document, or orchestration intent THEN the more specific capability wins or Agentera asks for disambiguation
+    - GIVEN validation completes WHEN the plan is ready to close THEN alias routing, canonical routing, trigger routing, fallback behavior, capability contracts, and version policy have evidence
+  surprises:
+    []

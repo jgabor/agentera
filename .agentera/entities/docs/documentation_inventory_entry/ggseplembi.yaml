@@ -1,0 +1,7 @@
+id: ggseplembi
+artifact: docs
+record:
+  document: RuntimeAdapter registry tests
+  path: tests/test_runtime_adapter_registry.py
+  last_updated: 2026-05-06
+  status: current

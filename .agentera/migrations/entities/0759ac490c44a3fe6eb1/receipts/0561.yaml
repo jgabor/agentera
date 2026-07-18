@@ -1,0 +1,16 @@
+id: gmbzutcvhx
+artifact: plan
+record:
+  name: Validate the repair and migrate the complete consumer matrix
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN the predecessor prime task is retry-exhausted but later repaired WHEN its full default, dashboard, sparse, and 12-context Unicode suite reruns THEN the repair passes before any consumer edit begins.
+    - GIVEN every declared decision, progress, or health consumer WHEN historical detail is needed THEN it uses bounded state get/list contracts rather than raw archive or Git traversal.
+    - GIVEN recoverable archived decisions WHEN source contracts are emitted THEN completeness and provenance replace permanent-unavailability claims.
+    - GIVEN unaddressable, ambiguous, compacted-only, or satisfaction-incomplete history WHEN consumed THEN caveats remain explicit and no absent value is inferred.
+    - GIVEN all 12 capabilities across source and bundle WHEN a checked-in matrix and static raw-read scan run THEN every surface is classified, zero consumers are unclassified, diagnostic exceptions are named, and generated parity passes.
+    - GIVEN Decision 53 and `uniform_10_40_50` fixtures WHEN consumers and compact run THEN missing, open, or provisional satisfaction remains review-required, only explicit confirmation satisfies it, and protected rows remain without treating projection capacity as retention.
+    - GIVEN the stale predecessor Task 9 TODO WHEN current cursor, identity, and 50-row compact evidence is verified THEN it moves to Resolved with corrected source references.
+  plan: ckzzomuyos

@@ -1,0 +1,9 @@
+id: sbxixckwqe
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: Discuss deliberation 2026-06-07 — D68 interpretation A, Layer A+B, presentation-only mobile tiering, editor-runtime composite surface.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-07
+  decision: rxvpooklyc

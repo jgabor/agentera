@@ -1,0 +1,12 @@
+id: qaefkrodlk
+artifact: plan
+record:
+  name: Prepare the next development release boundary
+  depends_on:
+    - lxdbhgwnmn
+  status: pending
+  acceptance:
+    - GIVEN current development metadata WHEN release preparation runs THEN only the package advances from `3.0.0-dev.20` to `3.0.0-dev.21`, every version-file and registry authority plus the development update channel aligns, suite versions remain `3.0.0`, and a 40-character immutable release-source reference is recorded.
+    - GIVEN the five known npm 12 JSON-parser failures WHEN release metadata, package, and publish dry-run gates run THEN those failures and only necessary compatibility-harness changes are repaired or the task blocks; no failure is waived or hidden.
+    - GIVEN release notes and package contents WHEN inspected THEN shipped behavior, commands, contracts, docs, and bundles agree without publishing, tagging, or pushing.
+  plan: nvbzrxjepf

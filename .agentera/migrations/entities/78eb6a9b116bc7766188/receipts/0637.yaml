@@ -1,0 +1,12 @@
+id: gbqoykcwcc
+artifact: plan
+record:
+  name: Shared repo-state fixture harness
+  depends_on:
+    - urogvnebbl
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/test/fixtures/repo-state/ WHEN tests import the helper THEN named variants copy into an isolated temp directory with .agentera and TODO.md layouts
+    - GIVEN at least variants ok, todo-resolved-over-limit, progress-at-cap, progress-over-limit, and invalid-progress-yaml WHEN documented THEN each variant's intent is one line in a fixture README
+    - GIVEN two tests WHEN they use the same variant THEN they get independent temp copies with no cross-test mutation
+  plan: rasbpognba

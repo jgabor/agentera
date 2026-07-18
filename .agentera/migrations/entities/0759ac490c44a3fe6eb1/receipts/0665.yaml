@@ -1,0 +1,14 @@
+id: jorferuojy
+artifact: plan
+record:
+  name: Wire CI Tier 0 and Tier 1 on feat/v3
+  depends_on:
+    - vfldtwwrut
+    - rvlopuihnk
+  status: complete
+  acceptance:
+    - GIVEN feat/v3 pull request WHEN opened THEN CI runs pnpm -C packages/cli test test/upgrade/ as required check
+    - GIVEN nightly or pre-release workflow WHEN triggered THEN it builds packages/cli dist and runs scripts/sandbox/v2v3-upgrade-harness.sh for all P0 fixture ids
+    - GIVEN CI sandbox WHEN executing THEN job exports isolated HOME and fails if real home paths appear in plan install-root
+    - GIVEN harness failure WHEN any P0 scenario fails THEN uploaded sandbox-report.json artifact identifies fixtureId and failing assertion name
+  plan: gntadmkfrl

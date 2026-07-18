@@ -1,0 +1,21 @@
+id: xbjlngqjnk
+artifact: decisions
+record:
+  date: 2026-06-05
+  question: How should Agentera reposition from open protocol to mobile-first product?
+  context: The agentera-mobile staging repo and monorepo README previously framed Agentera as an open protocol with runtime adapters as the primary story. The mobile app is the flagship consumer product. Pi and T3 Code use one product name across monorepo packages.
+  alternatives:
+    - name: Single brand everywhere
+      status: chosen
+      description: Agentera is the product. @agentera/mobile, @agentera/web, @agentera/cli are product surfaces. Skills and references are internal implementation contracts.
+    - name: Keep open protocol as public headline
+      status: rejected
+      description: Conflicts with mobile-first product direction and opinionated no-extensions policy.
+    - name: Agentera Mobile as separate product name
+      status: rejected
+      description: Adds naming friction when mobile is the primary surface.
+  choice: Adopt single-brand product positioning. Merge mobile vision into root .agentera/vision.yaml. Restructure root README as Pi-style package index with @agentera/mobile as flagship. Demote editor runtime install matrices to README Internals and packages/cli/README.md. Document capability English aliases in packages/mobile/README.md without renaming schema IDs yet. Add DESIGN.md surface register (terminal vs mobile).
+  reasoning: One north star, one product name, package READMEs for surface-specific DX — matches Pi/T3 monorepo patterns and the user's merged-vision choice.
+  confidence: firm
+  feeds_into: README.md, .agentera/vision.yaml, AGENTS.md, DESIGN.md, packages/mobile/, references/cli/vocabulary.md, .agentera/docs.yaml, docs/consolidation/monorepo-plan.md
+  outcome: Adopt single-brand product positioning. Merge mobile vision into root .agentera/vision.yaml. Restructure root README as Pi-style package index with @agentera/mobile as flagship. Demote editor runtime install matrices to README Internals and packages/cli/README.md. Document capability English aliases in packages/mobile/README.md without renaming schema IDs yet. Add DESIGN.md surface register (terminal vs mobile).

@@ -1,0 +1,14 @@
+id: clvterhhuu
+artifact: plan
+record:
+  name: Enforce Completed-Plan Lifecycle And Hej Stale-Context Behavior
+  depends_on:
+    - ijguwnnlhj
+  status: complete
+  acceptance:
+    - "GIVEN a plan has `header.status: complete` and every task is complete WHEN lifecycle closure runs THEN completion evidence is preserved before active plan state is removed"
+    - GIVEN a plan has blocked, skipped, or otherwise incomplete tasks WHEN lifecycle closure is evaluated THEN it is not archived as a successful completed plan
+    - GIVEN a completed plan has been archived and active state removed WHEN `agentera hej` runs THEN the dashboard does not report stale complete-plan context or route from that completed plan
+    - GIVEN realisera or orkestrera reaches all-tasks-complete state WHEN the workflow closes THEN the plan-completion sweep runs before handoff back to unplanned work selection
+    - GIVEN regression evidence is reviewed WHEN Task 2 completes THEN both lifecycle prose and CLI-visible hej behavior are covered
+  plan: lrgibkudrd

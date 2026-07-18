@@ -1,0 +1,12 @@
+id: keenilhwyz
+artifact: plan
+record:
+  name: State sync and release-target gate
+  depends_on:
+    - hljfrncwks
+  status: complete
+  acceptance:
+    - GIVEN the plan completes WHEN state sync runs THEN TODO, changelog, docs, progress, and plan state record shell-rc removal, stale-remnant handling, and verification evidence.
+    - GIVEN the change is release-targeted WHEN version sync runs THEN version-bearing files follow the documented semver policy for the selected target.
+    - GIVEN no release target is selected WHEN final sync runs THEN version-bearing files remain unchanged and the release gate is recorded explicitly.
+  plan: lxpdfnzgfj

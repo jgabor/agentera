@@ -1,0 +1,39 @@
+id: wsrzwqzvkd
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-15
+    status: archived
+    reviewed: 2026-05-15
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: Planera Lint Anchor False Positive Fix
+  what: Investigate and fix the false-positive `agentera lint --artifact PLAN.md` abstraction advisory reported for a Planera plan draft that already contained concrete anchors. The fix should make lint results trustworthy for Planera plans without weakening the abstraction check for generic prose.
+  why: The highest-priority open TODO is a degraded false positive in the pre-write artifact lint path. If lint flags concrete Planera plans as anchorless, agents either rewrite useful detail away or carry unnecessary `[post-audit-flagged]` caveats. The result should preserve self-audit trust while keeping diagnostics actionable.
+  constraints: Preserve the existing `agentera lint --artifact <ARTIFACT>` CLI contract, advisory-by-default behavior, strict-mode failure behavior, JSON/text output shapes, text/file/stdin input behavior, and canonical artifact labels. Do not loosen the abstraction rule so generic or unanchored prose passes. Do not redesign lint thresholds broadly, mine session transcripts, implement D48 namespace changes, publish, push, tag, refresh installed apps/profile, edit vision state, edit objective state, or change decision satisfaction state.
+  scope:
+    included:
+      - Reproduce or bound the reported false positive using the temporary Planera plan path `/tmp/opencode/aila-m13-plan.yaml` when available, or a representative copy with equivalent concrete anchors.
+      - Identify the observable lint behavior that makes an anchored Planera plan receive the no-anchor advisory.
+      - Apply the smallest product change that makes anchored Planera plans pass while preserving failures for unanchored prose.
+      - Add or update focused regression coverage for PLAN.md lint behavior and any changed diagnostics or guidance.
+      - Handle fix-level release metadata according to `.agentera/docs.yaml` semver policy.
+      - Sync required local state after verification, with TODO, PROGRESS, and PLAN closeout mandatory and CHANGELOG/DOCS updates conditional on policy or touched surfaces.
+    excluded:
+      - Broad self-audit threshold redesign beyond this false positive.
+      - Transcript-wide lint threshold analysis from the separate annoying TODO.
+      - D48 CLI namespace work such as validate, smoke, verify, corpus, or usage.
+      - Renaming artifact IDs, CLI selectors, schema names, or persisted metadata keys.
+      - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or decision satisfaction changes.
+    deferred:
+      - Larger prose-health policy changes discovered while fixing this issue.
+      - Cross-runtime benchmark improvements unrelated to the false-positive path.
+      - Cleanup of historical resolved TODO or changelog wording.
+  design: "Treat the TODO as a contract bug in the self-audit surface. First check the reported temporary Planera draft or a faithful representative through `agentera lint`, then make the least invasive correction that preserves the current CLI and artifact-label contracts. Verification should prove both sides: a concrete Planera plan no longer receives the abstraction advisory, and generic prose still receives it."
+  overall_acceptance:
+    - GIVEN a concrete Planera plan draft is linted WHEN it includes accepted anchors THEN it does not receive a false no-anchor advisory.
+    - GIVEN generic artifact prose is linted WHEN it lacks concrete anchors THEN the abstraction advisory still appears.
+    - GIVEN existing lint callers use supported inputs, outputs, and strictness modes WHEN the fix ships THEN command compatibility is preserved.
+    - GIVEN the plan closes WHEN verification and state sync finish THEN the TODO is resolved with exact evidence and fix-level release metadata handled under the documented semver policy.
+  surprises:
+    - "[post-audit-flagged] Pre-write `agentera lint --artifact PLAN.md` on the draft passed abstraction and filler checks, but reported `verbosity mismatch: 125 words exceeds 100 budget`; this is the known full-plan advisory budget mismatch, not an abstraction failure."

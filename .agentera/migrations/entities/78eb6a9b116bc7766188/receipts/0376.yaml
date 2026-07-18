@@ -1,0 +1,11 @@
+id: qqzmqxcehu
+artifact: plan
+record:
+  name: Inventory routing and execution vocabulary surfaces
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN current vocabulary docs, capability instructions, runtime adapter references, archived pre-dispatch commit guidance, and TODO sequencing are inspected WHEN the vocabulary boundary is designed THEN each surviving term is classified as canonical, compatibility-preserved, historical, fixture-only, code identifier, or ambiguous current prose.
+    - GIVEN adjacent TODOs are reviewed WHEN scope is recorded THEN this plan explicitly excludes broad current-prose replacement, the full future regression sweep, Decision 57 instruction-file renames, and `first_invocation_read` feature work.
+  plan: pmsaaqnenw

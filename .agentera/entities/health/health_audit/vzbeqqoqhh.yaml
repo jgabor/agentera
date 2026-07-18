@@ -1,0 +1,28 @@
+id: vzbeqqoqhh
+artifact: health
+record:
+  date: 2026-04-11
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 3
+    info: 5
+    filtered_by_confidence: 0
+  trajectory: ⮉ improving vs Audit 6. Tests B→A (240 tests, 18/18 linter checks, all scripts covered). Architecture A, Patterns A, Coupling A, Security A. Version B (one unbumped fix commit since 1.8.0). Complexity C (newly assessed; 2 hotspots in data-processing scripts).
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: C
+    Tests: A
+    Version: B
+    Security: A
+    Artifact freshness: A

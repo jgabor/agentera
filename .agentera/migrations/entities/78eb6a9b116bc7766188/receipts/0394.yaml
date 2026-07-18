@@ -1,0 +1,13 @@
+id: rlrylrnvwj
+artifact: plan
+record:
+  name: Define Agent-Ready State CLI Contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Decision 45 and the agent-ready interface playbook are reviewed WHEN the CLI contract is recorded THEN stable state commands, slash route aliases, doctor, describe, structured output, field selection, and input-hardening boundaries are classified with rationale
+    - GIVEN routine state commands are reviewed WHEN command vocabulary is defined THEN `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments`, and `query` remain stable
+    - GIVEN Decision 43 aliases are reviewed WHEN CLI vocabulary is defined THEN slash routes such as `status`, `build`, `audit`, and `document` are not taught as CLI commands
+    - GIVEN Agentera self-check vocabulary is reviewed WHEN doctor scope is defined THEN CLI/install/runtime health is separated from project artifact health and codebase audit output
+  plan: xprbindgbm

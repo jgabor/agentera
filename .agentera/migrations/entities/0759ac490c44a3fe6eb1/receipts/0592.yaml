@@ -1,0 +1,17 @@
+id: caaotbrwuz
+artifact: plan
+record:
+  name: Close stale 2.4.x TODO and reassess readiness
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the open 2.4.x TODO WHEN committed evidence and validation results are reviewed THEN the item is recognized as satisfied by commit 9f8071a.
+    - GIVEN the stale TODO is resolved WHEN TODO/progress metadata are updated THEN no unrelated 3.0.0 TODOs or protected artifacts are changed.
+    - GIVEN validations are rerun WHEN release readiness is reassessed THEN the handoff reports whether 2.4.x is ready for a separate release-prep step.
+    - GIVEN the scope excludes release execution WHEN the work completes THEN no version, package, changelog promotion, tag, push, or publication work has occurred.
+  evidence:
+    - "TODO.md now marks the stale `[test:2.4.x]` instruction-validation item resolved by commit 9f8071a (`test(schemas): add instruction contract regressions`) and names the validator, contract-loader, contract-structure, and hej capability-context coverage."
+    - "Focused closeout checks reran after metadata sync: capability-contract validation passed, the targeted instruction-validation regression selection passed, all capability directory validation passed, and artifact validators for TODO.md, PLAN.md, and PROGRESS.md passed."
+    - Scope stayed limited to TODO.md, PLAN, PROGRESS, and the pre-existing archived previous plan artifact; no version, package, changelog promotion, tag, push, publication, protected vision/objective edit, package refresh, installed-app refresh, or decision-satisfaction update was performed.
+  plan: ilapmtvspy

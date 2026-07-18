@@ -1,0 +1,28 @@
+id: zabkajpnmo
+artifact: plan
+record:
+  name: Synchronize final state and run release gates
+  depends_on:
+    - xpohohpnlt
+    - slyiselsqi
+    - dqwsaeloke
+    - ersqcjcbfs
+    - dtfjwlsieh
+    - pfvzhjagrb
+    - lgdhbmyrqv
+    - nesjfesrmz
+    - sypmxxfitz
+    - pxubomjcys
+    - vijxqetbkx
+    - yevbejjnvr
+    - wsttzbcogd
+    - isafyfphut
+    - tdszvulviy
+    - jleysdafaf
+    - kjvmlavmye
+  status: pending
+  acceptance:
+    - GIVEN all prior outcomes are verified WHEN closeout runs THEN plan, progress, TODO, health, docs, and changelog state agree without manufacturing audit evidence.
+    - GIVEN the synchronized final tree WHEN full tests, typecheck, build, schema validation, projection checks, migration fixtures, and package dry-run run THEN every gate passes.
+    - GIVEN final evaluation succeeds WHEN the plan is completed and archived THEN immutable plan lineage remains and no active plan survives.
+  plan: snzwzclohe

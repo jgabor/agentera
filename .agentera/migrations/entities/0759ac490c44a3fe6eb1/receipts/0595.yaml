@@ -1,0 +1,12 @@
+id: iegmapbczd
+artifact: plan
+record:
+  name: Prepare post-2.3 local input
+  depends_on:
+    - ikxsbzslnq
+  status: complete
+  acceptance:
+    - GIVEN approved local runtime stores for Claude, Codex, OpenCode, or GitHub Copilot WHEN preparation runs THEN it creates analyzer input filtered to records after `2026-05-12T17:50:13+02:00`.
+    - GIVEN a runtime is missing, locked, sparse, schema-divergent, or not approved WHEN preparation runs THEN bounded status is captured and other approved runtimes continue.
+    - GIVEN preparation writes intermediate files WHEN inspected THEN they are outside committed artifacts and contain only redacted identifiers, canonical labels, runtime names, and counts.
+  plan: qkkryvdjxx

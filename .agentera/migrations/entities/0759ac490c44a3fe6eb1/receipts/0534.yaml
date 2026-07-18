@@ -1,0 +1,10 @@
+id: cwbjzuclxi
+artifact: plan
+record:
+  name: Define Schema-Backed Routing Test Interface
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: aqddfogkvg

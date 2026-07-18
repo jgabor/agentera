@@ -1,0 +1,13 @@
+id: sxpuepgbjl
+artifact: plan
+record:
+  name: Add regression coverage and close artifacts
+  depends_on:
+    - vifzgphpco
+    - dxwkwdtbaw
+  status: complete
+  acceptance:
+    - GIVEN docs regressions are tested WHEN the helper policy changes THEN tests assert the policy, canonical examples, and no-corpus boundary stay present.
+    - GIVEN TODO, changelog, docs, progress, and plan artifacts are inspected WHEN the batch is complete THEN all remaining 2.5.x helper-script TODOs are resolved and only 3.0.0 work remains open.
+  evidence: "`uv run pytest tests/test_helper_script_policy.py tests/test_validate_namespace.py tests/test_usage_namespace.py -q` passed with 25 tests, covering policy text, canonical validation examples, preserved stats boundary, validate wrappers, and stats/usage compatibility."
+  plan: mvumniyosj

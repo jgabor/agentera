@@ -1,0 +1,12 @@
+id: vxgshfqkal
+artifact: plan
+record:
+  name: Reconcile runtime copy and cleanup apply for bridge commands
+  depends_on:
+    - ucpdkzqbqu
+  status: complete
+  acceptance:
+    - GIVEN whole repair apply on fixture with stale v1-style managed hej.md WHEN upgrade --yes completes THEN cleanup does not report still present after cleanup for a command runtime intentionally refreshed OR hej.md is absent when product policy treats it as removable legacy bridge
+    - GIVEN runtime phase copies agentera.md WHEN upgrade --yes completes THEN agentera.md remains present and is not flagged as stale
+    - GIVEN apply order runtime then cleanup WHEN cleanup runs THEN paths written by runtime copy-command in the same apply pass are not misreported as failed cleanup remnants
+  plan: mzyheqitgp

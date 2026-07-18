@@ -1,0 +1,14 @@
+id: taiclblasr
+artifact: plan
+record:
+  name: Widen doctor's detectContentLanguage to detect JS bodies
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a script body that contains 'const x = 1' WHEN detectContentLanguage is called THEN it returns 'js'
+    - GIVEN a script body that contains 'import foo from "bar"' WHEN detectContentLanguage is called THEN it returns 'js'
+    - GIVEN a script body that contains 'def main()' WHEN detectContentLanguage is called THEN it returns 'python' (existing behavior preserved)
+    - GIVEN a script body that contains 'import sys' WHEN detectContentLanguage is called THEN it returns 'python' (existing behavior preserved)
+    - "GIVEN a script with 'python' shebang and a JS body WHEN doctor runs with probeCli: true THEN a runtime_mismatch signal is emitted (currently invisible)"
+  plan: ptxfeeqxeb

@@ -1,0 +1,21 @@
+id: aehhuyjujw
+artifact: plan
+record:
+  name: Synchronize contracts, docs, and validation
+  depends_on:
+    - nhccapugjo
+    - kapigtbyou
+    - tzmgwgwvoe
+    - ltzsholuyj
+    - mnskhngeqg
+  status: complete
+  acceptance:
+    - GIVEN CLI structured contracts mention capability context WHEN docs or contract tests run THEN they describe full dashboard mode, slim startup mode, compatibility behavior, and no capability-name CLI commands.
+    - GIVEN capability prose references context seams WHEN validation runs THEN references match the new capsule path or documented compatibility path.
+    - GIVEN final validation runs WHEN the plan is complete THEN focused CLI tests, capability validation, payload budget checks, and `git diff --check` pass.
+    - GIVEN version or changelog policy applies WHEN closeout occurs THEN release metadata work is either performed with explicit approval or deferred with rationale.
+  evidence:
+    - Updated `references/cli/agent-ready-state-contract.yaml`, `skills/agentera/SKILL.md`, Planera instructions, and README guidance to distinguish full compatibility output from slim startup capsules and to document the slim Planera startup-contract path.
+    - Focused contract/prose tests passed for the Decision 45 contract, Planera instructions, master skill route boundary, slim hej contexts, and payload measurement coverage.
+    - Capability validation, capability-contract self-validation, artifact validation, payload budget check, and `git diff --check` passed locally; release metadata, publication, tag, push, and installed-app refresh were deferred because this task had no explicit release approval.
+  plan: eodwfvjsay

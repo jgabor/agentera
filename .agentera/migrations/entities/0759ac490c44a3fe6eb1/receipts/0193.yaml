@@ -1,0 +1,117 @@
+id: wpbavyzwta
+artifact: health
+record:
+  date: 2026-05-30
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - dependency health
+    - version health
+    - artifact freshness
+    - prose health
+    - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 4
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 21 on v2→v3 upgrade architecture and channel guard rails; complexity remains the weakest grade as TS monoliths replace the Python CLI.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: B
+    Complexity: C
+    Tests: B
+    Deps: A
+    Version: C
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: Upgrade work splits channels, compatibility, migration, orchestration, and shared command rendering; backport-safety tests encode the stable-channel major-boundary contract from Decision 56.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: doctor, prime, and upgradeOrchestrator share upgradeCommands.ts and resolveUpdateChannel(); vocabulary authorities stay in references/cli/*.yaml.
+      findings:
+        []
+    - name: Coupling health
+      grade: B
+      summary: New upgrade modules are narrow, but capabilityContext.ts and startupAnalysis.ts remain high-fan-in hubs for prime and state startup.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: C
+      summary: Python scripts/agentera is gone, but five TS modules exceed 900 lines and capabilityContext.ts is 2542 lines.
+      findings:
+        - heading: "⇉ TS monolith hotspots persist after rewrite, warning (confidence: 88)"
+          severity: warning
+          confidence: 88
+          location: packages/cli/src/cli/capabilityContext.ts, startupAnalysis.ts, extractCorpus.ts
+          evidence: capabilityContext.ts 2542 lines; startupAnalysis.ts 2047; extractCorpus.ts 1828; state.ts 1178; setup/doctor.ts 1385.
+          impact: Prime and analytics paths stay hard to navigate and risky to change without focused regressions.
+          suggested_action: Plan a follow-up slice to split capabilityContext and startupAnalysis by state family before 3.0 RC.
+    - name: Test health
+      grade: B
+      summary: Vitest reports 541/543 passed including 60 upgrade tests; two failures are repo-state housekeeping, not migration logic regressions.
+      findings:
+        - heading: "⇉ Compaction and plan-validate tests fail on current artifacts, warning (confidence: 90)"
+          severity: warning
+          confidence: 90
+          location: packages/cli/test/hooks/compaction.test.ts:41, test/cli/validate.test.ts
+          evidence: compaction.test expects no over_limit ops but progress.yaml exceeds budget after cycles 616–622; validate.test expects an active plan.yaml after orchestration archived the completed plan.
+          impact: Full vitest is red on CI-style gates even when upgrade work is sound.
+          suggested_action: Compact progress.yaml or adjust compaction policy; update validate fixture to tolerate archived-plan closeout or restore a stub plan for validation-only.
+    - name: Dependency health
+      grade: A
+      summary: npm audit reports 0 vulnerabilities; runtime deps are yaml and smol-toml only with pinned dev tooling.
+      findings:
+        []
+    - name: Version health
+      grade: C
+      summary: suiteVersion and offline_defaults now carry 2.7.7 on feat/v3, but package.json remains 3.0.0-dev.4 while the @next channel publishes the TS rewrite; release-metadata parity across npm and suite surfaces stays open.
+      findings:
+        - heading: "⇉ npm @next dev series vs suiteVersion channel split, warning (confidence: 88)"
+          severity: warning
+          confidence: 88
+          location: packages/cli/package.json, references/cli/update-channels.yaml
+          evidence: version 3.0.0-dev.4 vs suiteVersion 2.7.7; @next ships the TS CLI while stable @latest remains on 2.x until explicit retirement.
+          impact: Installed-app expectations and publish metadata can disagree until the 3.0 RC alignment pass lands.
+          suggested_action: Coordinate release-metadata parity when the 3.0 RC cuts; keep stable channel on 2.x until explicit retirement.
+    - name: Artifact freshness
+      grade: A
+      summary: The 2.7.7 plan archived to `.agentera/archive/plan-2026-06-03.yaml`, active plan slot cleared, progress.yaml at 10/40/50 under the compaction cap, and TODO 2.7.7 ledger reconciled.
+      findings:
+        []
+    - name: Prose health
+      grade: A
+      summary: UPGRADE.md channel and backport sections stay factual; new vocabulary authorities delegate prose to YAML without table duplication.
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: No hardcoded secrets or dangerous eval/exec on user input in scanned TS sources; extractCorpus keeps consent-gated local-history reads.
+      findings:
+        - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
+          severity: info
+          confidence: 60
+          location: repository-wide
+          evidence: Regex hygiene scan only; npm audit clean.
+          impact: Surface scan cannot replace dependency or secret-scan CI for publish.
+          suggested_action: Keep npm audit and secret scanning in release CI for 3.x.
+  trends:
+    improved: v2→v3 migration architecture, dual update channels, 60 upgrade vitest cases, backport-safety gates, 2.7.7 suiteVersion bump, progress.yaml compaction enforcement, D66 commit-field removal, and audit WARN/FAIL citation contract on feat/v3.
+    degraded: Complexity grade slips as large TS modules replace the Python CLI monolith; npm @next dev-series vs suiteVersion channel split persists.
+    stable: Dependency, prose, and security posture remain healthy.
+    new_findings: npm @next 3.0.0-dev.4 vs suiteVersion 2.7.7 release-metadata divergence; Python stable mirrors for 2.7.7 both-branch items deferred.
+    resolved: progress.yaml over-budget compaction pressure; D66 progress commit field and backfill flow; audit WARN false-positive citation gap; 2.7.7 plan archived and active plan slot cleared; Audit 21 hybrid-staleness and health-selection issues remain fixed in the ported TS CLI paths.
+  patterns:
+    - "Upgrade architecture: channels.ts → compatibility.ts → migrateArtifactsV2ToV3.ts → upgradeOrchestrator.ts with shared upgradeCommands.ts for doctor/prime."
+    - "Distribution model: self-contained npm package with references/cli bundled; stable vs development channels encoded in update-channels.yaml."
+    - "Testing approach: vitest fixture trees under packages/cli/test/upgrade/fixtures/ with Python-oracle parity JSON for contract-first migration work."

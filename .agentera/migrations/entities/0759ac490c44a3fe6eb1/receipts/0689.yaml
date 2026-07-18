@@ -1,0 +1,12 @@
+id: wjqviwmogo
+artifact: plan
+record:
+  name: Implement default legacy retirement
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `AGENTERA_HOME` is unset and the old default app home contains managed Agentera files WHEN upgrade previews the bundle phase THEN the new platform app home is selected and retirement is explicit without writing state.
+    - GIVEN the default upgrade is approved WHEN user state exists in the old default app home THEN known user state is moved to the new app home before managed legacy files are removed.
+    - GIVEN retirement has already run WHEN upgrade runs again THEN it reports a coherent noop without recreating or reusing the old default.
+  plan: zyszgrkwrx

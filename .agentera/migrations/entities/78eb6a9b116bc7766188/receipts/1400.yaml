@@ -1,0 +1,6 @@
+id: cmblkkszqp
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[refactor:3.0.0] Stop repeating full mutable artifact prose in prime routing results. Give TODO, plan, decision, objective, and vision items stable canonical identities plus short labels; make `next_action` reference those identities and provide an exact detail command instead of copying long descriptions."

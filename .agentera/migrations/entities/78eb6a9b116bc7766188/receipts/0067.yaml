@@ -1,0 +1,20 @@
+id: kqbkoffywb
+artifact: decisions
+record:
+  date: 2026-06-26
+  question: How should Agentera design the single primary agent to replace 12 per-capability subagents?
+  context: D65 moved capability prose to TypeScript modules served via agentera prime --context, making per-capability subagents fetch-and-execute wrappers. Agentera's build.md and plan.md agents clobber OpenCode's built-in Build and Plan agents (with their own doom_loop/plan_exit/plan_enter permissions). A discuss deliberation resolved the design for a single replacement agent.
+  alternatives:
+    - name: Keep 12 scoped subagents
+      status: rejected
+      description: Redundant with CLI-served prose (D65) and clobbers OpenCode built-in agents.
+    - name: Single Prime agent, inline execution
+      status: rejected
+      description: Simplest, but long-running capabilities share the primary context window and could evict routing history.
+    - name: Single Agentera agent, Task dispatch to general subagents
+      status: chosen
+      description: One primary agent named Agentera with broad permissions. Loads skill for routing, fetches prose via prime --context, dispatches to general subagent.
+  choice: Ship a single primary agent named Agentera (agentera.md, mode primary, write+bash allow). Loads the Agentera skill for routing (SKILL.md per D65), fetches capability prose via "agentera prime --context <name> --format json", and dispatches to the runtime built-in general subagent with the prose as the task prompt. Cross-runtime scope is OpenCode and Cursor; Claude, Codex, and Copilot use the skill directly with no managed agents. Body is minimal (dispatch mechanism only; no routing logic duplication).
+  reasoning: D65 made per-capability subagents redundant. A single agent eliminates the Build/Plan collision while preserving context isolation via Task dispatch to general subagents. Broad permissions are acceptable because capability prose contains its own safety rails (NEVER push, NEVER modify vision.yaml, etc.). The name Agentera avoids confusion with the "agentera prime" CLI command that Prime would create. Routing stays in SKILL.md because the CLI prime command provides state and next_action suggestions, not request routing.
+  confidence: provisional
+  feeds_into: TODO.md, .opencode/agents/, .cursor/agents/, skills/agentera/SKILL.md, packages/cli/src/upgrade/runtimeMigration.ts

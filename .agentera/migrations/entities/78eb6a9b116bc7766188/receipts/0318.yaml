@@ -1,0 +1,13 @@
+id: cmyvpdfoji
+artifact: plan
+record:
+  name: Offline smoke and adapter parity sync
+  depends_on:
+    - nnbfthvqri
+  status: complete
+  acceptance:
+    - GIVEN default scripts/smoke_live_hosts.py WHEN profilera corpus audits run THEN Cursor fixture parity and absent-store degradation are proven separately from local environment availability
+    - GIVEN references/adapters/runtime-feature-parity.md WHEN profilera corpus row for Cursor IDE is read THEN it states supported local session mining rather than runtime-only context injection
+  evidence:
+    - smoke_live_hosts profilera fixture and unavailable-store audits pass with cursor runtime; runtime-feature-parity.md Profilera session corpus table
+  plan: jsfkwytjzd

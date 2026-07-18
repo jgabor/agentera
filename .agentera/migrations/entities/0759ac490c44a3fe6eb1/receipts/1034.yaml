@@ -1,0 +1,17 @@
+id: zktycooxtg
+artifact: plan
+record:
+  name: Synchronize contracts and verify current state
+  depends_on:
+    - zbyrnqfgqs
+    - vggrgwgjdy
+    - ixssbsaqql
+    - isfkgvfvqc
+  status: complete
+  acceptance:
+    - GIVEN amendment behavior is complete WHEN command help, explain output, schemas, storage authority, recovery guidance, and contributor documentation are compared THEN terminology and examples agree.
+    - GIVEN the final tree WHEN focused tests, the full CLI suite, typecheck, build, capability-contract validation, and compaction run THEN every required gate passes.
+    - GIVEN the originating TODO WHEN all behavioral evidence is verified THEN it is resolved and plan and progress state record concrete verification in the same implementation commit.
+    - GIVEN feeds_into references outside the amended record WHEN closeout runs THEN no cascading rewrite occurs and that exclusion remains documented.
+    - GIVEN the v3 cutover hold WHEN work closes THEN suite surfaces remain at 3.0.0 and no release, publication, tag, or push occurs.
+  plan: ecztvnspps

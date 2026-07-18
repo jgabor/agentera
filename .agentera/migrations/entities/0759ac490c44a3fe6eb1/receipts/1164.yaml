@@ -1,0 +1,41 @@
+id: vhgknrcomu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-29
+    status: complete
+    reviewed: 2026-06-29
+    critic_issues: 16 found, 14 addressed, 2 dismissed
+    title: Trigger Schema Enrichment and Layer 3-4 Routing
+  what: |
+    Enrich Agentera's twelve capability trigger schemas with confidence thresholds, disambiguation metadata, and optional regex patterns to enable request-derived natural-language routing. Build the routing engine and expose it through prime --route as a path distinct from the existing state-derived next_action.
+  why: |
+    The audit found that prime returns state-derived next_action (what the project needs), not request-derived routing (what the user asked for). SKILL.md promises triggers.yaml owns matching semantics, but all twelve files carry only priority and keyword patterns — no confidence thresholds, no disambiguation metadata, no regex expressions. Layer 3-4 routing code is completely absent from the CLI. Without this work, natural-language capability routing is a documented promise with no implementation.
+  constraints: |
+    Schema-first architecture: routing semantics must live in triggers.yaml and the capability schema contract, not hardcoded in CLI source. YAGNI: enrich with what is needed for Layers 3-4, nothing more — no session state, no FSM, no embedding-based matching beyond regex. The routing engine is a pure function: (input text, trigger schemas) to (matched capability or disambiguation candidates or fallback). Backward compatible: triggers.yaml without enriched fields must still validate. No changes to the state-derived next_action cascade or to Layers 1, 2, 5. Max 8 tasks.
+  scope:
+    included:
+      - Trigger schema enrichment (confidence thresholds, disambiguation metadata, regex patterns) across all twelve capabilities
+      - Capability schema contract updates and validation enforcement
+      - Trigger schema loader for runtime consumption
+      - Layer 3-4 routing engine (pure function)
+      - prime --route CLI command
+      - Five-layer routing model definition restored to repo
+    excluded:
+      - Changes to the state-derived next_action cascade (--route is additive)
+      - Changes to Layers 1, 2, 5 routing (already implemented)
+      - Semantic or embedding-based matching (YAGNI; regex and keywords sufficient for v1)
+    deferred:
+      - Four-question repair framing in prime JSON (separate light plan; independent of routing work)
+      - State-augmented disambiguation (if text-only disambiguation proves insufficient, add optional state context in a follow-up)
+  design: |
+    Four phases:
+    1. Contract phase: Define the enrichment fields that trigger schemas gain for Layer 3-4 semantics — per-trigger confidence thresholds, cross-capability disambiguation declarations with hints, optional regex patterns, and the borderline band (contract-owned default with per-trigger override). The scoring algorithm (how pattern matches and regex matches combine into a confidence score) is specified at the contract level, not left to the implementer. The relationship between prime --route (request-derived) and prime (state-derived) output is defined: --route is a mutually exclusive mode that suppresses state-derived output. The engine is pure request-derived for v1 — no state context, no session. A decision artifact records the design choices and rejected alternatives.
+    2. Model phase: Restore the five-layer routing model definition to the repo so Layer 3-4 implementation has an in-repo contract to reference. The model defines what each layer is and how layers interact.
+    3. Population phase: Apply the enriched contract to all twelve capability trigger schemas, encoding the cross-capability conflicts discovered in the audit (e.g., refine the vision shared between vision and build) and applying priority hints from the cross-cutting vs. state-primary distinction (status, research, profile as cross-cutting).
+    4. Runtime phase: Build the trigger loader (schema to runtime model) and the routing engine (pure function: text plus triggers yields matched capability or disambiguation candidates or fallback). Expose through prime --route as the request-derived routing path.
+  overall_acceptance: |
+    The five-layer routing model is defined in the repo with each layer's semantics documented. All twelve capabilities' triggers.yaml pass validation against the enriched contract, and triggers without enriched fields still pass (backward compatible). prime --route returns a capability match, disambiguation candidates, or fallback for any input from the test corpus — never an error or empty response. Layer 3 and Layer 4 have dedicated tests; Layers 1, 2, and 5 are unchanged and their existing tests pass.
+  surprises: |
+    Task 7 criterion #1: 'help me decide' routes to fallback (status) instead of discuss. The substring score (0.6 * 0.7 * 100 = 42) falls below discuss T2 confidence_threshold (50). The implementation is correct — the test corpus input was not algorithmically verified against the scoring weights during planning. Fix: add regex patterns to discuss triggers for common natural-language phrases so regex weighting (1.0) clears the threshold, or lower the threshold for discuss T2.

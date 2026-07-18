@@ -1,0 +1,14 @@
+id: tdszvulviy
+artifact: plan
+record:
+  name: Integrate optional Git recovery with legacy migration
+  depends_on:
+    - wsttzbcogd
+    - isafyfphut
+  status: pending
+  acceptance:
+    - GIVEN a legacy project with recoverable and irrecoverable IDs WHEN migration uses Git enrichment THEN verified records publish and unresolved summaries retain explicit caveats.
+    - GIVEN Git recovery is unavailable or declined WHEN migration runs THEN local migration still completes to its declared compatibility state.
+    - GIVEN partial enrichment is retried WHEN prior archives exist THEN immutable equality prevents duplicate or conflicting publication.
+    - GIVEN mixed-history fixtures WHEN end-to-end tests run THEN counts and per-ID outcomes remain deterministic.
+  plan: snzwzclohe

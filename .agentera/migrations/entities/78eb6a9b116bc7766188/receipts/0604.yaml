@@ -1,0 +1,17 @@
+id: ltzsholuyj
+artifact: plan
+record:
+  name: Add slim builders for generic capabilities
+  depends_on:
+    - kapigtbyou
+  status: complete
+  acceptance:
+    - GIVEN Visionera context is requested WHEN slim JSON is emitted THEN it includes vision status or pointer, docs mapping pointer, compact progress/health/TODO summaries, decisions fallback, and design/profile caveats.
+    - GIVEN Resonera or Inspirera context is requested WHEN slim JSON is emitted THEN it includes only deliberation or research startup needs, fallback commands, and protected write boundaries.
+    - GIVEN Planera context is requested WHEN slim JSON is emitted THEN the existing startup contract appears as `planning_context` with compact plan/docs/health/TODO/progress state and decisions fallback.
+    - GIVEN Profilera or Visualisera context is requested WHEN slim JSON is emitted THEN profile/design startup context is present without full hej dashboard summaries.
+  evidence:
+    - "Slim mode now adds targeted generic contexts under `capability_context.context`: `vision_startup_context`, `deliberation_context`, `research_context`, `planning_context`, `profile_context`, and `design_context`."
+    - Generic builders reuse compact plan, docs, progress, health, TODO, and profile summaries plus fallback pointers for missing vision, decisions, objective, and design state.
+    - "Verification passed: focused generic/bespoke slim pytest targets and Planera/Visualisera slim CLI spot checks."
+  plan: eodwfvjsay

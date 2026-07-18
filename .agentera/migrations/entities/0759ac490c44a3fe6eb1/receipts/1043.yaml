@@ -1,0 +1,15 @@
+id: elmuqasato
+artifact: plan
+record:
+  name: Move current profile synthesis to bounded signals
+  depends_on:
+    - ebwcpjajct
+    - thqojruljm
+  status: complete
+  acceptance:
+    - GIVEN refreshed tiers WHEN current profile synthesis runs THEN it uses bounded signals without loading all full evidence.
+    - GIVEN a synthesized claim WHEN evidence is checked THEN its source identity resolves to retained full evidence.
+    - GIVEN insufficient signals WHEN synthesis begins THEN the limitation is reported without fabricated confidence.
+    - GIVEN representative corpora WHEN bounded and prior intended evidence distributions are compared THEN the agreed sufficiency threshold is met.
+  evidence: Bounded profile synthesis reads signal tier via readProfileSignals; evidence_anchor resolves to retained full-evidence shard via resolveProfileEvidence; sufficiency gate in assessProfileSufficiency flags capped tiers with <50% family retention; profile_sufficiency contract section in evidence-tier-authority.yaml resolves Unknown 2; all 2176 tests pass; compaction gate passes.
+  plan: lmggziyygs

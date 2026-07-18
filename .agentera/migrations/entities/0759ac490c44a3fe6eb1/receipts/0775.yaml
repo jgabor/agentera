@@ -1,0 +1,12 @@
+id: btngebkcto
+artifact: plan
+record:
+  name: Inventory current bundle wording surfaces
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `references/cli/bundle-skill-vocabulary.yaml`, current docs, CLI diagnostics, README/UPGRADE guidance, scripts, and focused tests are inspected WHEN each surviving `bundle` occurrence is classified THEN the implementation scope separates current user-facing installed-app wording from compatibility identifiers, package metadata, historical records, fixtures, generic prose, and unrelated SKILL.md vocabulary.
+    - GIVEN adjacent TODOs are reviewed WHEN the scope is recorded THEN ambiguous SKILL.md cleanup, routing/execution cleanup, Decision 57 implementation, broad vocabulary regression coverage, and 3.0.0 packaging remain explicitly out of scope.
+  evidence: "Inspected the authority, active docs/guidance/diagnostic surfaces, scripts, focused tests, and adjacent TODOs. In scope: current installed-app diagnostic wording in `scripts/agentera` and `scripts/agentera_upgrade.py`; preserved compatibility fields and selectors such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, `bundle.dryRunCommand`, and `--only bundle`; left SKILL.md, routing/execution, capability instruction rename, broad regression, package, and historical-record work out of scope."
+  plan: lmkbkfjlug

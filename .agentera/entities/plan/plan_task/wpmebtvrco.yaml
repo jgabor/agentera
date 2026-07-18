@@ -1,0 +1,12 @@
+id: wpmebtvrco
+artifact: plan
+record:
+  name: Remove prime --route CLI surface and routing engine
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN agentera prime --route is invoked THEN the flag is rejected (unknown argument or explicit error) — no routing engine is invoked and no route payload is emitted
+    - GIVEN the source tree is inspected after implementation THEN routeEngine.ts, routeOutput.ts, and routeCorpus.ts are deleted AND no remaining source file imports from the routing barrel (--route was a v3-only feature that never shipped to stable, so no deprecation path is needed)
+    - GIVEN agentera prime --help is called THEN --route does not appear in the help text
+  plan: fidstglvlh

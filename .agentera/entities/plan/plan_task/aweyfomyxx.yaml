@@ -1,0 +1,14 @@
+id: aweyfomyxx
+artifact: plan
+record:
+  name: Inspektera WARN and FAIL must cite file:line
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - "GIVEN an inspektera WARN or FAIL finding WHEN rendered THEN the finding carries a `citation: file:line` field, or `not-applicable` with reason"
+    - GIVEN a WARN finding with a citation WHEN re-verified by the exact `grep` or `git show` command shown in the citation THEN the evidence reproduces at that line
+    - GIVEN the orkestrera Step 3 Surface 2 delegation template WHEN the inspektera delegation prompt is constructed THEN the template requires the citation field
+    - GIVEN `references/cli/capability-instruction-contract.yaml` WHEN the evaluator-handoff schema is loaded THEN WARN and FAIL rows fail validation without a valid citation
+    - GIVEN a sample inspektera report WHEN a regression test runs THEN every WARN/FAIL entry carries a valid file:line citation
+  plan: ovatptxgko

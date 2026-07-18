@@ -1,0 +1,48 @@
+id: cuwtihanlb
+artifact: decisions
+record:
+  date: 2026-06-23
+  question: |
+    How should Agentera tighten capability prose so weak models do not read capability instructions as user commands?
+  context: |
+    The over-prescription audit flagged research Key Concepts and Applicability Matrix, the vision principles field, and the plan design field as sections where descriptive prose drifts toward decisional content. The original audit TODO proposed a descriptive/decisional lint extension that would flag marker words (should, must, will, adopt, recommend) in descriptive artifacts. Discuss reframed: the actual failure mode is weak models reading capability instructions literally as user commands, not a taste problem of description-versus-decision drift. Modal auxiliary verbs are the disambiguator, not the offender.
+  alternatives:
+    - name: Reactive prose rewrite plus descriptive/decisional lint extension
+      status: rejected
+      description: |
+        A cleanup pass rewrites offending prose; a follow-up lint extension flags marker words (should, must, will, adopt, recommend) in descriptive artifacts going forward.
+      reason_rejected: |
+        Inverted premise - modal verbs solve the literal-reader problem, they do not cause it. Lint feed is blunt and catches legitimate uses (direct quotes, safety rails already tagged decisional).
+    - name: Preventive prose convention with deliberate modal vocabulary; drop lint TODO
+      status: chosen
+      description: |
+        Adopt RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY) for capability prose. Lowercase modal verbs remain ordinary English; capitalized keywords carry protocol force. Rewrite the three flagged sections as exemplars. Drop the descriptive/decisional lint-extension TODO entirely. Convention lives in capability_schema_contract.yaml.
+      reason_chosen: |
+        RFC 2119 keywords are externally anchored, stable, and born for the literal-reader problem. Rewritten prose converts bare imperatives and ambiguous verbs into noun-plus-modal forms (such as 'Steps SHOULD be ordered by value/effort ratio.') that weak models can disambiguate without structural overhead.
+    - name: Section-tag plus marker-list hybrid
+      status: rejected
+      description: |
+        Each section header gains a descriptive/decisional intent tag; the lint polices marker words only inside non-decisional sections.
+      reason_rejected: |
+        Over-engineered for the rarity of new explicit-intent sections; adds a new tag convention to every instructions.md and doubles rule surface area.
+  choice: |
+    Preventive prose convention using RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY). Lowercase modal verbs remain ordinary English; capitalized keywords carry protocol force. Tighten the three flagged section rewrites as exemplars. Drop the descriptive/decisional lint-extension TODO entirely. The convention lives in capability_schema_contract.yaml.
+  reasoning: |
+    RFC 2119 keywords are externally anchored, stable, and born for the literal-reader problem. Rewritten prose converts bare imperatives and ambiguous verbs into noun-plus-modal forms that weak models can disambiguate without structural overhead. The section-tag and structural-rubric variants over-engineered the problem for the rarity of new explicit-intent sections. The original lint-extension premise was inverted - modal verbs solve the failure, they do not cause it.
+  confidence: firm
+  feeds_into: capabilities/research, capabilities/vision, capabilities/plan, capability_schema_contract.yaml, VISION.md, TODO.md
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: capabilities/research
+    - source_field: feeds_into
+      reference: capabilities/vision
+    - source_field: feeds_into
+      reference: capabilities/plan
+    - source_field: feeds_into
+      reference: capability_schema_contract.yaml
+    - source_field: feeds_into
+      reference: VISION.md
+    - source_field: feeds_into
+      reference: TODO.md
+  outcome: |
+    Preventive prose convention using RFC 2119 modal vocabulary (MUST, MUST NOT, SHOULD, SHOULD NOT, MAY). Lowercase modal verbs remain ordinary English; capitalized keywords carry protocol force. Tighten the three flagged section rewrites as exemplars. Drop the descriptive/decisional lint-extension TODO entirely. The convention lives in capability_schema_contract.yaml.

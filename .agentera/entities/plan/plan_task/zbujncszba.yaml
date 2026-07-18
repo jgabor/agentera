@@ -1,0 +1,13 @@
+id: zbujncszba
+artifact: plan
+record:
+  name: Runtime adapter and generated contract repair
+  depends_on:
+    - onacnrfcdl
+    - nemtrlbetn
+  status: complete
+  acceptance:
+    - GIVEN OpenCode bootstrap resolves Agentera home and installed skills WHEN `AGENTERA_HOME` is absent THEN it does not prefer `~/.agents/agentera` or `~/.agents/skills/agentera` as app-home fallbacks except in explicitly named legacy skill-source detection tests.
+    - GIVEN `resolveAgenteraHome` or `resolveInstalledAgenteraSkillsDir` runs with a current app-home layout WHEN it chooses paths THEN it resolves through `$AGENTERA_HOME/app` or the generated managed app path, not the old root layout.
+    - GIVEN generated JS contracts, runtime registries, package manifests, or plugin descriptions mention `AGENTERA_HOME` WHEN validators run THEN they describe app-home semantics and avoid install-root or default-durable-root wording outside bounded historical fixtures.
+  plan: anedpqtccr

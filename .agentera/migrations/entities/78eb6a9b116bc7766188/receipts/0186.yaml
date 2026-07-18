@@ -1,0 +1,123 @@
+id: zjprtvfpxu
+artifact: health
+record:
+  date: 2026-04-28
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: ⮉ improving vs Audit 15. The setup bundle plan landed the shared package-root story, read-only doctor, offline smoke evidence, confirmed installer, and 1.21.0 release metadata without breaking validators or tests. The only new risk is concentration in `setup_doctor.py`, which is acceptable until another runtime or installer path expands it.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: A
+    Security: A
+    Deps: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: Decision 33's suite-bundle boundary is reflected in aggregate runtime metadata and lifecycle validation. Shared infrastructure lives at the bundle root; skill-local scripts remain in owning skills; single-skill core behavior is still described as independent of suite tools.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: Executable suite scripts now share uv script headers and empty dependency metadata. Doctor output keeps the existing pass, warn, fail, skip status vocabulary, and installer planning reuses the existing Codex and Copilot helper logic instead of inventing a parallel writer.
+      findings:
+        []
+    - name: Coupling health
+      grade: A
+      summary: Runtime package-shape checks stay centralized in `scripts/validate_lifecycle_adapters.py`, while `scripts/setup_doctor.py` depends only on stdlib code and the existing setup helpers. Tests exercise the doctor mostly through subprocess or public module functions, so internal reshaping remains possible.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: A
+      summary: ""
+      findings:
+        - heading: "⇢ Setup doctor is the new setup hotspot, info (confidence: 65)"
+          severity: info
+          confidence: 65
+          location: |-
+            `scripts/setup_doctor.py:332`, `scripts/setup_doctor.py:588`, `scripts/setup_doctor.py:969`, `scripts/setup_doctor.py:1184`
+            - **Evidence**: One 1285-line script now owns smoke checks, four runtime diagnoses, installer planning and writes, report rendering, and CLI flow.
+            - **Impact**: Current shape is sectioned and tested, but the next writable runtime or live-host branch could make the file harder to change safely.
+            - **Suggested action**: Keep it whole for now; split doctor, smoke, and installer helpers only when another setup path lands.
+          evidence: |-
+            One 1285-line script now owns smoke checks, four runtime diagnoses, installer planning and writes, report rendering, and CLI flow.
+            - **Impact**: Current shape is sectioned and tested, but the next writable runtime or live-host branch could make the file harder to change safely.
+            - **Suggested action**: Keep it whole for now; split doctor, smoke, and installer helpers only when another setup path lands.
+          impact: |-
+            Current shape is sectioned and tested, but the next writable runtime or live-host branch could make the file harder to change safely.
+            - **Suggested action**: Keep it whole for now; split doctor, smoke, and installer helpers only when another setup path lands.
+          suggested_action: Keep it whole for now; split doctor, smoke, and installer helpers only when another setup path lands.
+    - name: Test health
+      grade: A
+      summary: "Coverage is proportional to the risk surface: bundle metadata has pass/fail fixtures, script hygiene has one failure per rule, and setup doctor tests cover runtime pass, classified gaps, skips, non-mutation, smoke failure visibility, denied writes, confirmed writes, and idempotent reruns. Full collection reports 477 tests across 17 files."
+      findings:
+        []
+    - name: Version health
+      grade: A
+      summary: The setup feature and fix commits are covered by the `1.21.0` bump, and no `feat` or `fix` commits landed after the bump. Version target scans found no stale `1.20.x` or local `1.22.0` residues in listed suite surfaces.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: A
+      summary: PLAN, PROGRESS, TODO, CHANGELOG, and DOCS were all updated at `2026-04-28T21:55:28+02:00`, after the plan creation date. README setup guidance was updated during Task 7, and this audit updates HEALTH for the post-plan check.
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: Secret-pattern hits are limited to audit's own documented examples. Setup doctor and smoke subprocess calls use list-form commands with timeouts and no `shell=True`; installer writes are limited to confirmed Codex and Copilot runtime-native config targets.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: "No new third-party Python dependencies were introduced; executable suite scripts declare `dependencies = []`. The only external runtime dependency remains the pinned OpenCode plugin package in `.opencode/package.json`. ### Trends vs Audit 15 - **Improved**: Architecture and freshness now capture the suite-bundle setup surface rather than two separate setup helpers. Tests grew from 433 to 477 and cover doctor, smoke, installer, package-shape, and uv metadata behavior. - **Degraded**: none. - **Stable**: Version, security, and dependency posture remain green. - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot. - **Resolved**: Audit 15's \"two-helper shape\" note is absorbed into the bundle-owned doctor and installer surface. - **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls. ### Patterns Observed - Module structure: shared suite infrastructure lives in root `scripts/`, `hooks/`, manifests, and references; behavioral scripts remain inside owning skills. - Validation ownership: lifecycle/package-shape drift belongs to `scripts/validate_lifecycle_adapters.py`; spec and contract drift stay in `validate_spec.py` and `generate_contracts.py`. - Testing approach: setup behavior is verified by focused subprocess smoke tests plus public-function fixtures, not by reaching through private runtime internals. - Dependency patterns: Python remains stdlib-only; runtime-specific metadata carries host requirements rather than adding a common abstraction layer."
+      findings:
+        []
+  trends:
+    improved: |-
+      Architecture and freshness now capture the suite-bundle setup surface rather than two separate setup helpers. Tests grew from 433 to 477 and cover doctor, smoke, installer, package-shape, and uv metadata behavior.
+      - **Degraded**: none.
+      - **Stable**: Version, security, and dependency posture remain green.
+      - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+      - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the bundle-owned doctor and installer surface.
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+    degraded: |-
+      none.
+      - **Stable**: Version, security, and dependency posture remain green.
+      - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+      - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the bundle-owned doctor and installer surface.
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+    stable: |-
+      Version, security, and dependency posture remain green.
+      - **New findings**: `setup_doctor.py` is a large but acceptable setup hotspot.
+      - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the bundle-owned doctor and installer surface.
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+    new_findings: |-
+      `setup_doctor.py` is a large but acceptable setup hotspot.
+      - **Resolved**: Audit 15's "two-helper shape" note is absorbed into the bundle-owned doctor and installer surface.
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+    resolved: |-
+      Audit 15's "two-helper shape" note is absorbed into the bundle-owned doctor and installer surface.
+      - **Carried forward**: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+    carried_forward: Richer live-host proof remains deferred by plan, but default doctor smoke explicitly avoids live model calls.
+  patterns:
+    - "Module structure: shared suite infrastructure lives in root `scripts/`, `hooks/`, manifests, and references; behavioral scripts remain inside owning skills."
+    - "Validation ownership: lifecycle/package-shape drift belongs to `scripts/validate_lifecycle_adapters.py`; spec and contract drift stay in `validate_spec.py` and `generate_contracts.py`."
+    - "Testing approach: setup behavior is verified by focused subprocess smoke tests plus public-function fixtures, not by reaching through private runtime internals."
+    - "Dependency patterns: Python remains stdlib-only; runtime-specific metadata carries host requirements rather than adding a common abstraction layer."

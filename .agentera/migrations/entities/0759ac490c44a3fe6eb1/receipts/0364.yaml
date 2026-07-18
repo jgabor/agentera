@@ -1,0 +1,17 @@
+id: twotlpywlh
+artifact: plan
+record:
+  name: Lock validator requirement to instructions.md
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a capability directory with schemas but no `instructions.md` WHEN capability validation runs THEN validation fails with a message naming `instructions.md`.
+    - GIVEN a capability directory with `prose.md` but no `instructions.md` WHEN capability validation runs THEN validation still fails instead of accepting `prose.md`.
+    - GIVEN the supported validate capability namespace WHEN the same invalid fixture is validated THEN the CLI reports the same failure semantics.
+    - GIVEN a valid real capability WHEN capability validation runs THEN it still passes.
+  evidence:
+    - Added regression tests covering schemas without `instructions.md`, legacy `prose.md` without `instructions.md`, and the supported `agentera validate capability` namespace preserving the same failure.
+    - "Focused tests passed: `uv run pytest tests/test_capability_validator_characterization.py tests/test_capability_contract_structure.py tests/test_capability_contract_loader.py` reported 38 passed."
+    - "Acceptance CLI checks passed: direct validator and `agentera validate capability` both failed invalid fixtures with `instructions.md not found`; `agentera validate capability hej` passed."
+  plan: xhrikecwdl

@@ -1,0 +1,12 @@
+id: klzjdiqgfi
+artifact: plan
+record:
+  name: Sync bounded handoff state
+  depends_on:
+    - vsimpffzam
+  status: complete
+  acceptance:
+    - GIVEN the recommendation is `plan_cli_startup_envelope` WHEN state sync runs THEN TODO or a new plan captures envelope planning without implementing envelope behavior.
+    - GIVEN the state-access metric supersedes the discarded startup-window draft closure WHEN state sync runs THEN TODO reopens CLI startup state-envelope planning rather than preserving the false weak-evidence close.
+    - GIVEN no release target is selected WHEN sync runs THEN version-bearing files remain unchanged and the release gate is recorded explicitly.
+  plan: idljacvake

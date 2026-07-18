@@ -1,0 +1,6 @@
+id: wwqpzglref
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Persist orchestration retry state through the typed plan interface. Resolved 2026-07-12: `record-evaluation` persists CLI-owned..."

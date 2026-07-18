@@ -1,0 +1,15 @@
+id: xvvdmeqvba
+artifact: progress
+record:
+  timestamp: 2026-07-17 11:53
+  type: feat
+  phase: build
+  what: Added TODO-item and documentation-inventory entity mode with bounded exact retrieval.
+  discovered: Marker-absent schema discovery had to omit entity-only TODO/docs writes, and entity-mode compaction had to stop treating TODO.md as authority.
+  verified: packages/cli/test/state/todoDocsEntities.test.ts and entityMigrationPreview.test.ts cover real Git worktrees, conflicts, mode isolation, root/marker races, rollback, aliases, bounds, cursors, ordering, help/explain, and singleton-preserving preview; pnpm test passed 2532 tests; typecheck, build, state validation, document capability, capability contract, and compact passed.
+  next: "Task 10 remains pending: durable migration apply, resume, and rollback were not started."
+  context:
+    intent: Complete Plan Task 9 without starting durable migration apply or consumer-wide cutover.
+    constraints: TODO items and docs index entries only; preserve TODO.md and docs.yaml legacy authority without a marker and retain docs singleton sections whole.
+    unknowns: None for Task 9; durable migration publication and broader consumer cutover remain deferred.
+    scope: packages/cli TODO/docs writers, retrieval, validation, migration preview, help/explain, schemas, authority, and focused tests.

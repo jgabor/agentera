@@ -1,0 +1,17 @@
+id: bjombfevex
+artifact: plan
+record:
+  name: Resolve Decision 44 TODO And Evidence State
+  depends_on:
+    - noodpsaojr
+    - ljxtdvoqqk
+    - eozhwqvted
+    - zrgdmyrmak
+    - lbomarcxec
+    - ceikahbyay
+  status: complete
+  acceptance:
+    - GIVEN Decision 44 execution evidence exists WHEN project state is synchronized THEN TODO, changelog, progress, docs metadata, and plan evidence reflect the completed vocabulary cleanup
+    - GIVEN unrelated follow-ups remain WHEN TODO is synchronized THEN optional Claude live-smoke and install-root generated-contract work stay open and separate
+    - GIVEN protected compatibility exceptions remain WHEN state is synchronized THEN the recorded evidence distinguishes deliberate exceptions from unfinished vocabulary cleanup
+  plan: pltwboytxf

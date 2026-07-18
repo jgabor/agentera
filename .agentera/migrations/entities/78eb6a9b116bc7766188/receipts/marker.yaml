@@ -1,0 +1,5 @@
+schemaVersion: agentera.stateMode.v1
+mode: entities
+migration_id: 78eb6a9b116bc7766188
+source_fingerprint: a9ad31f0a39da626e00e6c6646da668e722b2280598bc6ddfea6a63e190384bb
+preview_digest: e394ce87f0b37a40638396c0afc167a530a579e25418bd94f636a8498f7057ad

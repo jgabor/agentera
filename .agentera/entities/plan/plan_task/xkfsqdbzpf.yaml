@@ -1,0 +1,18 @@
+id: xkfsqdbzpf
+artifact: plan
+record:
+  name: Validate and smoke-test descriptor parity
+  depends_on:
+    - khggikaxwn
+    - mxpmnzhdky
+    - dybqlnelkx
+  status: complete
+  acceptance:
+    - GIVEN descriptor files exist WHEN validation runs THEN every capability has matching Codex `.toml` and OpenCode `.md` descriptors with required fields and prose pointers.
+    - GIVEN setup or doctor validation is selected WHEN tests run THEN Codex `realisera.toml`, OpenCode `realisera.md`, Copilot `/fleet` limitation prose, and Claude Code Task-tool prompt contract are covered.
+    - GIVEN focused gates run WHEN implementation is complete THEN relevant setup, upgrade, runtime-adapter, capability prose, smoke, and artifact validator tests pass without live model-host calls.
+  evidence:
+    - Added `agentera validate descriptors` and validate namespace coverage for all 24 Codex/OpenCode descriptor files.
+    - "Focused gates passed: descriptor validation, setup Codex, OpenCode smoke, setup doctor, upgrade CLI, runtime adapters, package registry, capability prose tests, and capability validators."
+    - Full repository verification passed with `uv run pytest` after updating installed-surface test fixtures for the new `.opencode/agents` bundle surface.
+  plan: jekxkxdzjd

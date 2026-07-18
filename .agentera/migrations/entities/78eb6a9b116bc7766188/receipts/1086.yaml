@@ -1,0 +1,46 @@
+id: xpmuycwtqe
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-07
+    status: archived
+    reviewed: 2026-05-07
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    revised: |
+      Split final synchronization into evidence and closure tasks, made release evidence ownership explicit, required the active plan itself to follow Decision 44 wording, tied edits to the replacement inventory, and narrowed observable wording changes so stable protocol identity stays intact.
+    title: Apply Decision 44 Plain-English Vocabulary For 2.2.0
+  what: |
+    Apply Decision 44 plain-English vocabulary across Agentera's current docs, capability instructions, diagnostics, tests, and state labels before the pending 2.2.0 release is considered ready. Replace ambiguous protocol jargon with current/up-to-date/status wording, Git-only checkpoint language, saved project context, behavioral verification gate, orchestration loop, and docs-first workflow language while preserving stable identifiers and enums unless a deliberate migration is justified.
+  why: |
+    Decision 44 reduces first-contact friction for the same 2.2.0 release that added plain capability route aliases. The alias work made Agentera easier to invoke; this plan makes the surrounding protocol language easier to understand without weakening existing contracts, routing behavior, or package metadata.
+  constraints: |
+    Treat this as vocabulary cleanup for the pending 2.2.0 release, not a new feature surface. User-visible wording may change, but schema fields, stable IDs, enums, routing semantics, CLI exit behavior, persisted state shape, canonical Swedish capability names, and Decision 43 aliases must not change unless a migration rationale is recorded and validated. Do not create a version beyond 2.2.0 unless policy requires it. Do not tag, push, publish, update packages, refresh the installed bundle, or mutate vision/objective state. Keep optional Claude live-smoke and install-root generated-contract work separate.
+  scope:
+    included:
+      - archive the completed Decision 43 route-alias plan before replacing the active plan
+      - classify Decision 44 terms into replacement, allowed-use, and protected-compatibility groups
+      - update current user-facing docs and examples that teach protocol language
+      - update current capability and protocol instructions without renaming capabilities or schemas
+      - align visible diagnostics, test labels, and safe labels where wording is user-facing or maintained as current guidance
+      - prove vocabulary coverage with an explicit scan/check and existing behavior validation
+      - record Decision 44 under the pending 2.2.0 release without publication
+      - resolve the Decision 44 TODO and close plan state after verified execution
+    excluded:
+      - rewriting historical archive, changelog, or progress entries solely to alter old wording
+      - renaming capability directories, artifact names, schema IDs, enum values, or persisted fields without an explicit migration decision
+      - changing state-oriented `agentera <command>` CLI commands or `/agentera <alias>` routing behavior
+      - release publication, remote push, git tag creation, package-manager updates, or installed bundle refresh
+      - vision or objective edits
+    deferred:
+      - optional future generated cross-language install-root contract
+      - optional Claude Code live model-host smoke
+  design: |
+    Start with a source-of-truth vocabulary boundary, then apply it outward from docs to capability instructions to diagnostics and tests. Validation should check both sides of the migration: deprecated wording is no longer preferred in current surfaces, and protected compatibility vocabulary remains only where stable contracts or deliberately scoped exceptions require it. Release work only attaches the completed vocabulary cleanup to 2.2.0; it does not publish or refresh installed bundles.
+  overall_acceptance:
+    - GIVEN a first-time user reads current Agentera docs and capability guidance WHEN protocol language appears THEN the preferred wording is plain English and matches Decision 44
+    - GIVEN maintained diagnostics, tests, and state labels are reviewed WHEN deprecated wording appears THEN each occurrence is either replaced or recorded as an allowed/protected exception with rationale
+    - GIVEN 2.2.0 release readiness is checked WHEN Decision 44 work is complete THEN the vocabulary cleanup is included in 2.2.0 without unapproved publication or bundle refresh
+    - GIVEN `/agentera` runs after closure WHEN the briefing chooses next work THEN Decision 44 is no longer the pending attention item and unrelated TODOs remain separate
+  surprises:
+    []

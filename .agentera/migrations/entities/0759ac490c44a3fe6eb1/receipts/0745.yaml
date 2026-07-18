@@ -1,0 +1,14 @@
+id: bjnsezqlqp
+artifact: plan
+record:
+  name: Final state sync and plan archive
+  depends_on:
+    - zkgohnodrn
+    - kjiojtyeyw
+    - jnbkncylji
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks complete WHEN this task runs THEN plan archives to .agentera/archive/plan-2026-06-03-durable-pre-commit-hooks.yaml and the active plan slot clears
+    - GIVEN TODO.md WHEN a chore item exists for lefthook bypass or brittle oracle THEN it moves to Resolved with the implementation commit hash
+    - GIVEN a normal product commit on feat/v3 WHEN attempted with hooks enabled THEN the agent does not need LEFTHOOK=0 for routine ledger edits
+  plan: ydayxhdazr

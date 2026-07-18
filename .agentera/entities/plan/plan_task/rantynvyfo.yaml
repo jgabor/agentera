@@ -1,0 +1,12 @@
+id: rantynvyfo
+artifact: plan
+record:
+  name: Runtime surface ownership contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a stale runtime surface has Agentera ownership proof WHEN repair preview evaluates it THEN the preview identifies the safe action and the ownership reason.
+    - GIVEN a stale runtime surface has no Agentera ownership proof WHEN repair preview evaluates it THEN no write or removal is planned and the surface is reported as user-owned.
+    - GIVEN package-manager actions are available WHEN repair preview runs without package-update approval THEN those actions are listed as skipped and no external package command runs.
+  plan: lxpdfnzgfj

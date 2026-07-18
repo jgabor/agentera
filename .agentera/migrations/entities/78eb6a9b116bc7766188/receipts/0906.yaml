@@ -1,0 +1,12 @@
+id: rnoiopzdtt
+artifact: plan
+record:
+  name: Normalize OpenCode agent descriptors
+  depends_on:
+    - ankdscscvo
+  status: complete
+  acceptance:
+    - "GIVEN official OpenCode markdown agent docs WHEN `.opencode/agents/*.md` is inspected THEN each managed descriptor has `description` and `mode: subagent` and omits redundant `name` frontmatter."
+    - GIVEN custom frontmatter is passed through as model options WHEN descriptors are refreshed THEN Agentera ownership uses a non-config body marker instead of `agentera_managed` frontmatter.
+    - GIVEN user-owned collisions exist WHEN bootstrap runs THEN only absent or Agentera-managed descriptors are written and unknown files remain untouched.
+  plan: iooijalkqr

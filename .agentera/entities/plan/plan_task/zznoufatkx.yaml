@@ -1,0 +1,20 @@
+id: zznoufatkx
+artifact: plan
+record:
+  name: Sync validation regression state
+  depends_on:
+    - pmfhxlkrfi
+    - nwczobrxzx
+    - dhcdbsxqmp
+    - znbhnzmetz
+  status: complete
+  acceptance:
+    - GIVEN the targeted regression tests are implemented WHEN they run individually THEN they pass.
+    - GIVEN the canonical validators are run WHEN `agentera validate capability-contract` and representative capability validation execute THEN they pass.
+    - GIVEN the diff is reviewed WHEN the task completes THEN changes remain limited to validation or regression coverage and any minimal validator behavior needed for that coverage.
+    - GIVEN the plan scope excludes status mutation WHEN the task completes THEN no vision, objective, package, publication, install-repair, tag, push, or decision-satisfaction files were changed.
+  evidence:
+    - Targeted regression selection passed with 45 tests across validator, contract-loader, contract-structure, and hej capability-context coverage.
+    - "Canonical validators passed: `agentera validate capability-contract --format json`, plus representative `hej`, `planera`, `realisera`, and `orkestrera` capability validation."
+    - Diff scope review found tracked changes only in validator/contract code, regression tests, PLAN, and PROGRESS; protected vision, objective, decisions, package, release, TODO, README, and changelog files were not modified.
+  plan: fmktobmnvx

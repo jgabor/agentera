@@ -1,0 +1,22 @@
+id: gxuurooesw
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-17
+    status: archived
+    title: Stats Privacy and Consent Workflow
+  what: Add `agentera stats` as the canonical user-facing usage analytics workflow over the existing usage analytics engine, with explicit local-history consent for corpus refresh and no top-level `agentera corpus` command.
+  why: "`agentera usage` already provides analytics over an existing corpus, but the remaining 2.5.x TODO requires a safer user-facing workflow: plain stats must not touch runtime history, refresh previews must be dry-run safe, and extraction must require explicit consent before reading local runtime stores."
+  constraints: Preserve `agentera usage` compatibility and direct `scripts/usage_stats.py` behavior. Do not expose `agentera corpus`. Plain `stats` and `stats refresh --dry-run` must not read local runtime history or write corpus files. Do not refresh installed apps/profiles beyond the explicitly consented internal corpus, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - "`agentera stats` is the canonical user-facing usage analytics command and never reads local runtime history unless `stats refresh --consent local-history` is explicitly provided."
+    - "`agentera usage` remains compatible for existing callers and direct usage stats tests continue to pass."
+    - No top-level `agentera corpus` command is added.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

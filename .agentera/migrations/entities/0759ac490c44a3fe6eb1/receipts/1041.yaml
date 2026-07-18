@@ -1,0 +1,13 @@
+id: ebwcpjajct
+artifact: plan
+record:
+  name: Publish bounded complete evidence and signals
+  depends_on:
+    - bckuvgfboq
+  status: complete
+  acceptance:
+    - GIVEN accepted extracted evidence WHEN publication completes THEN every full record remains retrievable and no artifact exceeds its declared bound.
+    - GIVEN identical inputs WHEN extraction repeats THEN tier membership and ordering remain stable.
+    - GIVEN interruption or stale prior state WHEN refresh runs THEN no consumer can observe a partially published generation.
+    - GIVEN a bounded signal WHEN its evidence is requested THEN its identity resolves to retained full evidence.
+  plan: lmggziyygs

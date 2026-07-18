@@ -1,0 +1,17 @@
+id: qwpagxffud
+artifact: plan
+record:
+  name: Focused startup-state and orchestration validation
+  depends_on:
+    - gdmhewesvo
+    - jfbckkgxof
+    - phqwtrkrqu
+  status: complete
+  acceptance:
+    - GIVEN focused tests run WHEN orchestration context is complete, missing state, dependency-blocked, or compacted-decision-caveated THEN pass and fail paths cover task selection, fallback commands, retry provenance, evaluator handoff fields, and raw-read policy.
+    - GIVEN startup-analysis fixtures run WHEN a complete Orkestrera context is available through CLI state THEN normal startup/evaluation guidance introduces no raw-after-CLI artifact read requirement for plan, progress, health, TODO, decisions, or docs.
+    - GIVEN repository gates and validators run WHEN validation completes THEN compaction check, artifact validation, capability validation, and diff checks pass without installed app refresh.
+  evidence:
+    - cycle: 487
+      note: Task 5 added focused regression coverage for the Orkestrera startup and evaluation source contract. `tests/test_query_cli.py` now covers a complete Orkestrera context fixture with no caveats or fallback commands, the existing ready/blocked selected-task path, compacted decision fallback caveats, missing progress caveats, retry provenance without `attempt_count`, evaluator handoff fields, and raw-read policy. `tests/test_orkestrera_capability.py` now guards the Orkestrera prose against reverting to raw PLAN/DECISIONS/PROGRESS/PROFILE reads and checks the V6-V8 context-first validation rules. Startup-analysis tests ran alongside the Orkestrera/Decision45 slices to verify the raw-after- CLI classifier remains clean for normal guidance. Validation passed with 89 focused tests, Orkestrera capability validation, schema self-validation, live Orkestrera context, PLAN/PROGRESS artifact validators, gate, compaction check, and diff whitespace check. Inspektera evaluation returned PASS with no blocking findings. The live installed app still reported update-needed marker 2.3.4 expected 2.3.7 and stale profile state; no installed app or profile refresh was run.
+  plan: urcofuuwnm

@@ -1,0 +1,13 @@
+id: pnrmrwrgam
+artifact: plan
+record:
+  name: Synchronize release contracts and verify merge safety
+  depends_on:
+    - ulnrauxhtf
+  status: pending
+  acceptance:
+    - GIVEN the final protocol WHEN active help, skills, docs, schemas, changelog Unreleased, and bundled data are checked THEN they describe one state authority without rewriting historical prose.
+    - GIVEN the v3 hold WHEN versions are inspected THEN suite metadata remains 3.0.0 and only the permitted next development package version is selected.
+    - GIVEN two temporary Git repositories from one committed fixture WHEN default Git merges unrelated entity commits THEN both survive; same-file edits conflict and distinct-path duplicate IDs fail state validation.
+    - GIVEN declared fixture scales WHEN startup, retrieval, and release checks run THEN authority-owned budgets, tests, typecheck, build, contract validation, package dry-run, and state validation pass.
+  plan: vllyohtcde

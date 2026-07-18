@@ -1,0 +1,10 @@
+id: pjusbglniq
+artifact: plan
+record:
+  name: Add Common commands cheat sheet to AGENTS.md
+  depends_on:
+    - jboevblhnl
+  status: complete
+  acceptance:
+    []
+  plan: hjzvphzxiz

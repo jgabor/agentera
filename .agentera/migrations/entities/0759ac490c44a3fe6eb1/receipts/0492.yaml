@@ -1,0 +1,17 @@
+id: tdxbnkcndi
+artifact: plan
+record:
+  name: Guidance alignment
+  depends_on:
+    - ymzshvarno
+  status: complete
+  acceptance:
+    - GIVEN the compact contract has passing tests WHEN Planera/master guidance is updated THEN normal Planera execution starts from the selected compact context before any Planera prose read.
+    - GIVEN prose remains authoritative WHEN guidance is updated THEN it says to read `planera/prose.md` for editing Planera, resolving contradiction or ambiguity, validating detailed behavior not covered by compact context, or investigating benchmark/read-trigger evidence.
+    - GIVEN stable discoverability is tested WHEN guidance changes THEN tests assert section headings or stable markers rather than brittle full paragraphs.
+    - GIVEN unrelated capabilities have their own prose-read pressure WHEN this plan completes THEN their guidance and contracts are left unchanged except for shared dispatcher wording required by Planera.
+  evidence:
+    - "`skills/agentera/SKILL.md` now tells normal Planera execution to use `capability_context.startup_contract` before reading Planera prose, preserves the precise prose-read exceptions, and explicitly keeps `agentera planera` unsupported."
+    - "`skills/agentera/capabilities/planera/prose.md` documents the compact startup contract as the normal-startup read model while preserving prose as authority for editing, ambiguity, uncovered detailed behavior, and benchmark/read-trigger work."
+    - No other capability prose was edited for this Planera-specific pressure except the shared dispatcher wording required to route Planera startup through the compact context.
+  plan: dfsuxktekm

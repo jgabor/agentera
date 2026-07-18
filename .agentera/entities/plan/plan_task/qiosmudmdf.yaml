@@ -1,0 +1,12 @@
+id: qiosmudmdf
+artifact: plan
+record:
+  name: Extract resolve_session_path to common
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN hooks/common.py WHEN session hooks import resolve_session_path THEN only one implementation defines AGENTERA_HOME and default data home resolution
+    - GIVEN a fixed project root and AGENTERA_HOME WHEN resolving session path THEN the returned path matches the pre-extraction session_start and session_stop behavior
+    - GIVEN session_start.py and session_stop.py WHEN updated THEN they no longer define duplicate resolve_session_path bodies
+  plan: htklvtprnu

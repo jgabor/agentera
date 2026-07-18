@@ -1,0 +1,14 @@
+id: nqflecovtk
+artifact: plan
+record:
+  name: Chain optional Git enrichment after local migration
+  depends_on:
+    - gzkkoqlbcr
+  status: pending
+  acceptance:
+    - GIVEN local migration completes WHEN no Git enrichment is requested THEN it succeeds without starting Git and emits stable IDs plus exact `--artifact` and `--number` follow-up selectors.
+    - GIVEN operators choose enrichment WHEN `state backfill --artifact A --number N --dry-run` precedes `--apply --force` THEN only exact reachable candidates enrich unresolved addressable rows.
+    - GIVEN Git is unavailable, degraded, shallow, rewritten, ambiguous, or declined WHEN the chain runs THEN local migration remains complete with deterministic refusal provenance.
+    - GIVEN partial enrichment is interrupted or retried WHEN archives exist THEN head revalidation, bounded local history, and equality prevent duplicate or conflicting publication.
+    - GIVEN mixed Git and non-Git fixtures WHEN tests run THEN migration and backfill counts agree without remote or remote-tracking refs; unavailable Git completes this task as an explicit skipped outcome.
+  plan: ckzzomuyos

@@ -1,0 +1,14 @@
+id: nrcmoqxtba
+artifact: plan
+record:
+  name: Consolidate and expand shared-module regression tests
+  depends_on:
+    - goimnheppu
+    - gtdqknadmp
+  status: complete
+  acceptance:
+    - GIVEN the shared commit_token WHEN tested THEN one parametrized table covers hash/hash+subject/pending/N-A/non-hash/non-string/empty, replacing the CLI-only table and covering the formerly-untested hook token path
+    - GIVEN rewrite_cycle_commits WHEN tested THEN coverage is expanded for folded/flow scalars and comment/quoting preservation (>-, |, flow {}/[], inline comments, archive lines)
+    - GIVEN both consumers (CLI backfill and validator guard) WHEN tested THEN thin assertions verify each delegates to the shared module so logic cannot re-diverge
+    - GIVEN the full suite WHEN run THEN all progress-commit tests pass
+  plan: jynhicyclu

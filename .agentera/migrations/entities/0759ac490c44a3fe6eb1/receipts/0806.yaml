@@ -1,0 +1,12 @@
+id: dvczkzxazq
+artifact: plan
+record:
+  name: State sync and release-target gate
+  depends_on:
+    - ojdqanrsyl
+  status: complete
+  acceptance:
+    - GIVEN the analysis plan completes WHEN state sync runs THEN progress, docs, TODO/changelog as appropriate, and plan state record the evidence, recommendation, and privacy validation.
+    - GIVEN the recommendation selects follow-up implementation WHEN state sync runs THEN the next work is captured as TODO or a new plan, not silently implemented in this plan.
+    - GIVEN no release target is selected WHEN final sync runs THEN version-bearing files remain unchanged and the gate is recorded explicitly.
+  plan: dqipjmhdxs

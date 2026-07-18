@@ -1,0 +1,12 @@
+id: ixmbmrkpkr
+artifact: plan
+record:
+  name: Schema and Integration Fixes
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN agentera.js hook WHEN validator writes violations to stderr THEN correctly parses exit code 2
+    - GIVEN Planera validation schema WHEN checking vocabulary THEN uses final state sync not deprecated checkpoint vocabulary
+    - GIVEN artifact path mappings WHEN referenced THEN single source of truth in common.py
+  plan: fcctntwhtx

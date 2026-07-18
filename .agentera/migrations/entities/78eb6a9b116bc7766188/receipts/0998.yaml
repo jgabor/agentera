@@ -1,0 +1,12 @@
+id: poedgkolnm
+artifact: plan
+record:
+  name: Add stable validator subcommands
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `agentera validate --help` is inspected WHEN supported families are listed THEN cross-capability, lifecycle-adapters, app-home-contract, and capability-contract validation are discoverable with examples.
+    - GIVEN each new validate family is run in text mode WHEN the delegated helper passes THEN stdout preserves the helper's useful success wording and exits zero.
+  evidence: "`agentera validate` now exposes `cross-capability`, `lifecycle-adapters`, `app-home-contract`, and `capability-contract` families. Text-mode wrapper output matches the direct helper scripts for the delegated validators."
+  plan: lhrmcundrj

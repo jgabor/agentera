@@ -1,0 +1,14 @@
+id: aerwbvxghe
+artifact: plan
+record:
+  name: Validate and record closeout evidence
+  depends_on:
+    - zattomjddv
+  status: complete
+  acceptance:
+    - GIVEN implementation is complete WHEN the task closes THEN the focused pytest selection for routing vocabulary authority passes.
+    - GIVEN plan closeout is complete WHEN validation runs THEN relevant artifact validators and `git diff --check` pass.
+  evidence:
+    - "Focused pytest passed before artifact closeout: `uv run pytest tests/test_routing_execution_vocabulary_authority.py -q` reported 9 passed."
+    - Artifact validators passed for PLAN.md, TODO.md, PROGRESS.md, and CHANGELOG.md; `git diff --check` passed.
+  plan: fuwjgvkgre

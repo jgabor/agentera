@@ -1,0 +1,16 @@
+id: jnomteqcml
+artifact: progress
+record:
+  timestamp: 2026-07-13 16:13
+  type: test
+  phase: build
+  what: Reverified Task 9 after the final overlay provenance assertion and state synchronization; the list implementation and Task 8 plan evaluation remain intact, and Task 9 remains pending.
+  inspiration: Final Task 9 evaluator handoff requires exact commands and post-change counts.
+  discovered: The final assertion-only test addition changes focused, adjacent, and non-packaging totals by one while preserving all pass/failure classes; no packaging behavior changed.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts, 2 files and 17 tests passed. Adjacent: pnpm -C packages/cli exec vp test run test/state/listRetrieval.test.ts test/state/archiveAuthority.test.ts test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts test/state/archivePublication.test.ts test/state/directRetrieval.test.ts test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts test/cli/state.test.ts test/cli/compactParity.test.ts, 10 files and 133 tests passed. Non-packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts, 169 files and 1678 tests passed. Full: pnpm -C packages/cli test, 169 of 170 files and 1682 of 1687 tests passed; exactly 5 pre-existing npm 12 npm pack --dry-run --json parsing failures remain in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; pnpm -C packages/cli lint passed with 101 pre-existing warnings and 0 errors; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json passed; progress, decisions, and health artifact validation passed; node packages/cli/dist/bin/agentera.js check compact --format json passed with 0 over-limit and 0 protected-overflow counts, retaining 5 known progress archive recovery refusals."
+  next: Task 9 remains pending for evaluator review. Task 10 prime consumers, migration, Git durability, and release work remain out of scope.
+  context:
+    intent: Record exact final verification counts for the bounded list read surface without changing plan status or out-of-scope consumers.
+    constraints: Do not mark Task 9 complete. Do not modify prime or capability consumers, migration, Git, health, vision, profile, decisions, TODO, version, publish, push, or tag surfaces. The five npm 12 packaging failures remain pre-existing and packaging files were not changed.
+    unknowns: No persistent index is introduced; reevaluate only if a reproducible authority benchmark exceeds its declared threshold on another filesystem.
+    scope: packages/cli/src/state/listRetrieval.ts; packages/cli/src/cli/commands/state/list.ts; packages/cli/src/cli/dispatch/state.ts; packages/cli/src/cli/help.ts; packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/state/directRetrieval.ts; packages/cli/test/state/listRetrieval.test.ts; packages/cli/test/state/archiveAuthority.test.ts; references/artifacts/state-storage-authority.yaml; .agentera/progress.yaml

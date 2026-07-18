@@ -1,0 +1,16 @@
+id: ojdqanrsyl
+artifact: plan
+record:
+  name: Regression and non-live validation
+  depends_on:
+    - vqlhmhjjzm
+    - ssglwuukuw
+    - nnqtxsbkcd
+    - lxuleizzeb
+    - yxjanjvahq
+  status: complete
+  acceptance:
+    - GIVEN classifier, extractor, aggregator, threshold, and report units change WHEN focused tests run THEN each unit has at least one positive and one negative proof.
+    - GIVEN default validation runs WHEN complete THEN it uses fixtures or local files only, performs no live host calls, and writes no real shell startup files.
+    - GIVEN privacy validation runs WHEN outputs are inspected THEN raw transcript text, full local paths, raw store paths, and unredacted session ids are absent from committed artifacts and test snapshots.
+  plan: dqipjmhdxs

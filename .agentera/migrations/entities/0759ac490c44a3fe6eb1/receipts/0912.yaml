@@ -1,0 +1,12 @@
+id: gdmhewesvo
+artifact: plan
+record:
+  name: Orchestration context output contract
+  depends_on:
+    - ckizwcjejm
+  status: complete
+  acceptance:
+    - GIVEN `agentera hej --format json --capability-context orkestrera` runs WHEN plan state is available THEN the output includes dependency-ready tasks, blocked tasks with reasons, selected next task, task acceptance/evidence summaries, and a truthful `source_contract` for orchestration context.
+    - GIVEN one required state family is unavailable or incomplete WHEN orchestration context is built THEN completeness is false or caveated, fallback commands are listed, and raw artifact reads remain last-resort rather than normal startup behavior.
+    - GIVEN command guidance and tests are scanned WHEN this task completes THEN no new `agentera orkestrera` or other unsupported capability-name CLI command is introduced.
+  plan: urcofuuwnm

@@ -1,0 +1,30 @@
+id: nhsavvqlvf
+artifact: health
+record:
+  date: 2026-04-23
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 3
+    info: 6
+    filtered_by_confidence: 0
+  trajectory: ⮉ improving vs Audit 8. Complexity C→B (Audit 8's 78-line gate collapsed to 30; analyze() 114→26 lines per cycle 123). Version C→B (6 unbumped down to 1 after 1.15.0 bump). Freshness B→A (HEALTH.md was the only stale artifact, resolved here). Architecture, Patterns, Coupling, Tests, Security stable at A. Dependency assessed for first time at A (Node surface entered via `.opencode/`).
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: B
+    Tests: A
+    Version: B
+    Freshness: A
+    Security: A
+    Deps: A

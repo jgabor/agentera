@@ -1,0 +1,6 @@
+id: yyunggqbwe
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Add light/normal/full levels to document. Light handles one localized documentation correction, normal covers a feature or coherent document set, and full performs repository-wide generation or drift auditing. Levels control document scope and verification breadth while preserving approval gates. Update the startup contract, instructions, schemas, and tests."

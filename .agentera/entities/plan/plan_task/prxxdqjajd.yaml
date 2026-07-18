@@ -1,0 +1,13 @@
+id: prxxdqjajd
+artifact: plan
+record:
+  name: Whole-repair preview and apply contract
+  depends_on:
+    - rantynvyfo
+    - ososvnyalh
+  status: complete
+  acceptance:
+    - GIVEN app files and managed runtime surfaces are stale WHEN repair preview runs THEN the preview lists app refresh, runtime config/plugin/hook/command refresh, cleanup, skipped package actions, and blocked user-owned conflicts together.
+    - GIVEN repair apply follows a clean preview WHEN it runs THEN only preview-safe managed actions are applied and shell startup files remain unchanged.
+    - GIVEN a managed surface changes between preview and apply WHEN apply rechecks safety THEN the action blocks rather than mutating an unverified surface.
+  plan: lxpdfnzgfj

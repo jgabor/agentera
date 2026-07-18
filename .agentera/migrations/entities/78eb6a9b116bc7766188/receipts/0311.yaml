@@ -1,0 +1,18 @@
+id: hirklhrpnu
+artifact: plan
+record:
+  name: Final State Sync, The Plan-Level Current-State Check
+  depends_on:
+    - ceourbqvko
+    - jlylmnuzjs
+    - lbctcibaeo
+    - cqivapbdsy
+    - thvsjxmtoc
+    - xfijbkuhgl
+    - yvdikfdsrg
+  status: complete
+  acceptance:
+    - GIVEN Tasks 1-7 are complete WHEN the final current-state check runs THEN the active plan is ready for conductor closure and future `/agentera` briefing will no longer treat Decision 44 as pending after closure
+    - GIVEN final state is reviewed WHEN pre-closure sync completes THEN TODO, changelog, progress, docs metadata, and plan status agree on the 2.2.0 Decision 44 evidence while Task 8 remains pending for conductor ownership
+    - GIVEN release and safety boundaries are reviewed WHEN pre-closure sync completes THEN vision/objective state is untouched and no tag, push, publication, package update, or bundle refresh occurred without approval
+  plan: xpmuycwtqe

@@ -1,0 +1,13 @@
+id: jpgjdiorfo
+artifact: plan
+record:
+  name: Update capability schema contract and TS loader
+  depends_on:
+    - lzceadlhge
+  status: complete
+  acceptance:
+    - GIVEN the updated contract WHEN a triggers.yaml file has a confidence_threshold outside 0-100 THEN validation fails with a clear error message including the valid range
+    - GIVEN the updated contract WHEN a triggers.yaml file has disambiguates_against referencing a non-existent capability THEN validation fails
+    - GIVEN the updated contract WHEN a triggers.yaml file has all new fields correctly THEN validation passes
+    - GIVEN the existing triggers.yaml files without enrichment WHEN validated THEN they still pass
+  plan: vhgknrcomu

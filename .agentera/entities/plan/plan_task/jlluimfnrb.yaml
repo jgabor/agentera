@@ -1,0 +1,14 @@
+id: jlluimfnrb
+artifact: plan
+record:
+  name: Extract and verify lifecycle orchestration
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN existing consumers import lifecycle validation symbols from the public surface WHEN the refactor is complete THEN those imports remain available with the same behavior.
+    - GIVEN lifecycle validation runs against the repository WHEN the command completes THEN its exit code and success output match the current behavior.
+    - GIVEN legacy Python parity is disabled or enabled explicitly WHEN lifecycle validation runs THEN the parity checks remain skipped or invoked exactly as before.
+    - GIVEN runtime-ID and consumer-wiring parity inputs WHEN valid and invalid cases are evaluated THEN the existing results and diagnostics are preserved.
+    - GIVEN the CLI test, typecheck, build, and compaction gates run after the refactor WHEN they finish THEN all pass without introducing new lint-baseline entries.
+  plan: xpusrpuwck

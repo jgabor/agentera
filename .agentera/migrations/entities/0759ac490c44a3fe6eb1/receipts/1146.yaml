@@ -1,0 +1,40 @@
+id: qmqdxuwpuf
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-06-22
+    status: open
+    title: v2→v3 cutover stability — degraded issue remediation (batch 1)
+  what: |
+    Fix four degraded cutover-stability issues surfaced after the critical batch landed: make the major-boundary gate channel-aware, validate shebang/runtime before shim spawn (with crash fallback), stop doctor from silently suppressing cross-major version-mismatch signals, and make doctor's bundle evidence check shebang-aware so retryCommand matches the managed script's actual runtime.
+  why: |
+    The critical batch fixed the visible "ReferenceError on first run" path and the prime/upgrade messaging conflict, but the underlying gate still hardcodes the stable channel, the shim has no defense against future shebang corruption, and doctor's "up_to_date" verdict is dishonest on cross-major boundaries. Each of these four issues is a foot-gun the previous plan explicitly excluded, and any one of them can break the v2→v3 cutover window the same way the critical issues did. Fixing them now, while v3 is still feature-frozen, is cheaper than after cutover.
+  constraints: |
+    All work on feat/v3 only. Do not flip the update-channels.yaml announced flag — v3 is not yet announced. Do not touch the three duplicate hasBundleRootEvidence implementations in compatibility.ts, coexistenceProbe.ts, appModel.ts — scope is doctor.ts only. Do not extract a shared TS shebang-read helper between the shim and the CLI; the shim is a separate ESM build with different dependencies, and ~10 lines of shebang parsing does not warrant the cost. Tests must not break the existing 970/970 vitest green count. The shim has no existing test suite — adding one for this work is in scope, but keep it minimal.
+  scope:
+    included:
+      - isStableSuccessorAnnounced channel-awareness in packages/cli/src/upgrade/nextMajorDoctor.ts
+      - Shim shebang/runtime validation and crash fallback in packages/cli/shim/lib/resolve.mjs and exec.mjs
+      - Doctor cross_major_pending advisory signal in packages/cli/src/upgrade/doctor.ts (lines 257-272)
+      - Doctor shebang-aware retryCommand in packages/cli/src/upgrade/doctor.ts (lines 80-85, 316-319)
+      - Regression tests for all four fixes (vitest for the CLI; minimal new test files for the shim)
+    excluded:
+      - Audit capability prose for over-prescription language (TODO.md line 12 — content/docs change, defers to a docs-focused plan)
+      - --force major-boundary bypass (TODO.md line 28 — channel-awareness from Task 1 subsumes half; explicit --force flag can be a follow-up)
+      - Consolidating duplicate hasBundleRootEvidence across compatibility.ts, coexistenceProbe.ts, appModel.ts (separate chore item)
+      - Shim → CLI shared shebang-read helper extraction (over-engineering at this scale)
+      - update-channels.yaml announced flag flip
+      - Removing missingScriptCommands dead code (TODO.md line 29 — separate chore)
+    deferred:
+      - --force-major-boundary flag (only worth doing if Task 1 channel-awareness is not enough)
+      - Prose audit for over-prescription language (separate docs plan)
+  design: |
+    Task 1 widens isStableSuccessorAnnounced from (sourceRoot) to (sourceRoot, channel) and threads channel through doctor.ts:258, versionResolution.ts:199, projectIntegration.ts:230. The stable channel is the legacy default — old callers get identical behavior. update-channels.yaml stays unchanged (no next_major block under development, so --channel development still returns false at runtime, preserving current behavior outside of test cases).
+    Task 2 adds a shebang-read step in resolve.mjs after isRunnableFile passes. If the shebang says node but the content is Python, OR vice versa, the shim logs "app-home backend unavailable: shebang/content mismatch" to stderr and falls through to the next strategy. exec.mjs spawnChecked already exits non-zero on script crash; the fix is to treat non-zero as "backend unavailable" instead of "fatal" and return the same fallthrough signal.
+    Task 3 replaces the silent splice at doctor.ts:260-272 with an explicit emit: when crossMajorDetected && !successorAnnounced && actualMajor < 3 && expectedMajor >= 3, push a kind: "cross_major_pending" signal with a non-actionable advisory message and set final status to APP_MANUAL_REVIEW_NEEDED instead of APP_UP_TO_DATE. This makes the version gap visible in JSON output and honest in status.
+    Task 4 makes hasBundleRootEvidence at doctor.ts:80-85 read the shebang as part of the evidence check, and constructs retryCommand at doctor.ts:316-319 by spawning with shebang-derived runtime (uv run for Python PEP 723, node for #!/usr/bin/env node, omit for unreadable/no shebang). When probeCli is true, the doctor emits a cli_probe_failed signal on shebang/content mismatch.
+    Parallelization: Tasks 1 and 3 both touch doctor.ts:257-272 but Task 1 changes the function signature at line 258 and Task 3 consumes the result; sequence them (1 before 3) within the batch. Tasks 2 and 4 are disjoint (shim ESM vs CLI TS) and can run in parallel with the Task 1+3 chain.
+  overall_acceptance: |
+    A user on a feat/v3 checkout with a v2 managed app can run prime with --channel development and observe the same "blocked" verdict as with --channel stable (the gate is now channel-aware but no behavior change until development's next_major block is set). The shim refuses to spawn a Python script under Node or a Node script under uv, logs the mismatch to stderr, and falls through to the next resolution strategy instead of crashing. Doctor's cross-major verdict is honest: v2.7.9 facing 3.0.0 shows manual_review_needed, not up_to_date, with a cross_major_pending advisory signal. Doctor's retryCommand matches the managed script's actual runtime. Full vitest suite passes (970/970 baseline). New shim tests pass. agentera check compact passes. The 4 chosen Degraded TODO items are marked resolved.
+  surprises: ""

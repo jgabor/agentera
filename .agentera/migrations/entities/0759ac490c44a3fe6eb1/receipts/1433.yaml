@@ -1,0 +1,6 @@
+id: ujqnhzvayq
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[release:3.0.0] Prepare the final 3.0.0 release surfaces. Resolved 2026-07-12: tracked package and runtime manifests, skill,..."

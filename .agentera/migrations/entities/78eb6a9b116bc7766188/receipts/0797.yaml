@@ -1,0 +1,14 @@
+id: diecpvddvi
+artifact: plan
+record:
+  name: 2.7.7 version bump and CHANGELOG update
+  depends_on:
+    - dcwwowdlxi
+    - aweyfomyxx
+    - vgdyavzskl
+  status: complete
+  acceptance:
+    - GIVEN DOCS.md versioning policy WHEN the release is cut THEN every file in `docs.yaml` `version_files` carries version 2.7.7
+    - GIVEN CHANGELOG.md WHEN the 2.7.7 entry is recorded THEN it lists D66, the WARN-citation fix, and the progress.yaml compaction with imperative phrasing and the implementation commit hashes
+    - GIVEN `agentera upgrade --dry-run` WHEN run from a clean install THEN it reports 2.7.7 as the current version
+  plan: ovatptxgko

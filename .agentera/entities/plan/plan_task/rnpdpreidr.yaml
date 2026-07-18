@@ -1,0 +1,12 @@
+id: rnpdpreidr
+artifact: plan
+record:
+  name: Update prime JSON and text output for the ranked next_action hint
+  depends_on:
+    - vgmqfqkihv
+  status: complete
+  acceptance:
+    - GIVEN a returning project with a pending plan WHEN agentera prime --format json is called THEN the next_action field carries the recommended capability AND a non-empty alternatives array AND a phase tag per entry
+    - GIVEN a returning project WHEN agentera prime (text mode) is called THEN the next_action section renders the recommendation AND at least one alternative line prefixed with a visual marker
+    - GIVEN a fresh project with no artifacts WHEN agentera prime --format json is called THEN next_action.object and next_action.capability are non-empty strings (recommendation always populated, no analysis paralysis)
+  plan: fidstglvlh

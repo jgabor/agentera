@@ -1,0 +1,12 @@
+id: rioaqlmjuy
+artifact: plan
+record:
+  name: Retire redundant root health field from public output
+  depends_on:
+    - tscenohbeb
+  status: complete
+  acceptance:
+    - GIVEN the orientation command runs with JSON output WHEN the output is parsed THEN no key named rootStatus exists anywhere in the output
+    - GIVEN the doctor command runs with JSON output WHEN the output is parsed THEN no key named rootStatus exists anywhere in the output
+    - GIVEN the doctor text output WHEN rendered THEN the root classification is still reported in human-readable form without referencing the retired field name
+  plan: fedtqulqpx

@@ -1,0 +1,13 @@
+id: jywyqxrfnq
+artifact: plan
+record:
+  name: Prepare the governed development release boundary
+  depends_on:
+    - mopclznkfl
+  status: pending
+  acceptance:
+    - GIVEN user-visible feature and fix work WHEN development metadata is prepared THEN the package advances only to the next permitted `3.0.0-dev.N` boundary and suite-bearing surfaces remain `3.0.0`.
+    - GIVEN the known npm 12 package-output incompatibility WHEN package verification runs THEN it is repaired or the governed package dry-run cannot pass.
+    - GIVEN release notes are read cold WHEN users upgrade THEN listing, compatibility, durability, recovery limits, migration commands, and irrecoverable cases are actionable.
+    - GIVEN package contents are inspected WHEN dry-run packaging runs THEN schemas, contracts, commands, bundled data, docs, and immutable release provenance are aligned without publishing or tagging.
+  plan: ulutbnlztj

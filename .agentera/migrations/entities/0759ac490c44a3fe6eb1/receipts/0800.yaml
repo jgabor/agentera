@@ -1,0 +1,12 @@
+id: vqlhmhjjzm
+artifact: plan
+record:
+  name: Startup fixture and classifier coverage
+  depends_on:
+    - yfcroxszlw
+  status: complete
+  acceptance:
+    - GIVEN fixture conversations contain route triggers, capability intro markers, CLI state calls, raw artifact reads, capability prose reads, implementation tool calls, and unrelated turns WHEN classification runs THEN startup events are separated from implementation work.
+    - GIVEN fixtures contain no marker, malformed records, implementation-only tool calls, transcript-bearing fields, or insufficient post-2.3 evidence WHEN classification runs THEN each case degrades or is excluded with bounded labels.
+    - GIVEN fixture output is committed WHEN tests fail or snapshots render THEN no raw transcript text or full local path appears in the expected output.
+  plan: dqipjmhdxs

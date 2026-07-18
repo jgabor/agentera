@@ -1,0 +1,13 @@
+id: yuknornsjr
+artifact: plan
+record:
+  name: Compacted decision completeness and future preservation
+  depends_on:
+    - umuwjdpwnw
+    - yiojbyihnf
+  status: complete
+  acceptance:
+    - GIVEN compacted historical decision entries are included WHEN JSON is rendered THEN unavailable fields are explicitly marked missing rather than causing agents to read raw YAML or git history.
+    - GIVEN future decision compaction runs WHEN a full decision moves to compact form THEN the retained summary preserves the contract-required outcome information allowed by the decision schema.
+    - GIVEN compacted decision behavior changes WHEN validation runs THEN decision schema, decision compaction, and CLI tests agree on the retained fields and no unrelated artifact families are changed.
+  plan: xsarkcjuwo

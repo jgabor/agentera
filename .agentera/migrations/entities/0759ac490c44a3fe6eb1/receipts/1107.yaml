@@ -1,0 +1,35 @@
+id: gjjuohyorr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-14
+    status: complete
+    reviewed: 2026-05-14
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    revised: Adversarial review tightened the explicit-override distinction, limited scope to the two 2.3.5 install-state TODOs plus required validation and closeout, removed implementation leakage from acceptance criteria, scoped runtime work to adapters that propagate `AGENTERA_HOME`, recorded the reconciled Decision 47 invariant, and made upgrade-vs-repair semantics depend on the shared app-home contract.
+    title: 2.3.5 Install-State Reliability Patch
+  what: Make 2.3.5 a narrow install-state reliability patch that stops stale parent-process `AGENTERA_HOME` values from becoming authoritative during normal installed execution and separates app-update guidance from broken-state repair guidance.
+  why: The app-home migration created the durable `AGENTERA_HOME` and app-files model, but runtime-injected legacy values can still steer agents to old roots, and ordinary version mismatch is still worded like stale or broken repair. That undermines the one-install, one-entry-point recovery flow and makes normal upgrades look scarier than they are.
+  constraints: "Preserve Decision 47: the normal platform Agentera directory is the default installed source of truth, while `AGENTERA_HOME` remains valid only as a deliberate, validated app-home override. Keep `agentera doctor` read-only, keep `agentera upgrade` as the repair writer, require dry-run before writes, preserve explicit valid custom app homes and hermetic tests, avoid shell-startup mutation, do not expand into 2.3.6 source-contract work, and do not tag, push, publish, refresh installed apps, edit vision, or edit objective state without explicit approval."
+  scope:
+    included:
+      - "TODO scope: `[fix:2.3.5]` demote `AGENTERA_HOME` to a validated override."
+      - "TODO scope: `[fix:2.3.5]` distinguish app upgrades from broken or stale state."
+      - Validation, documentation/state sync, changelog, and 2.3.5 version metadata required to close those fixes.
+    excluded:
+      - Source-contract feature train now targeted at 2.3.6 and later.
+      - New runtime package formats or broad adapter registry redesign.
+      - Shell startup file cleanup or mutation.
+      - Release publication, remote push, tag creation, installed app refresh, vision edits, or objective-state edits.
+    deferred:
+      - Broader install-root vocabulary cleanup not required by the two 2.3.5 TODOs.
+      - Startup benchmark or source-contract optimization work.
+  design: "Use `scripts/install_root.py`, `scripts/agentera_upgrade.py`, `scripts/agentera`, `.opencode/plugins/agentera.js`, and the install-root/runtime regression tests as concrete anchors, but keep the plan focused on behavior. The reconciled invariant is: platform app-home resolution is the normal installed truth; `AGENTERA_HOME` is accepted only when it is a validated, intentional override, with explicit flags and hermetic test channels preserved. Keep update-needed, repairable broken state, blocked unsafe state, and fresh state separate in structured status so user-facing copy can choose upgrade wording for version mismatch and safe-repair wording only for broken or unverifiable app files. Runtime adapters that propagate `AGENTERA_HOME` should pass a validated app home, not blindly mirror inherited legacy values. Test proportionality target: one positive and one negative regression per changed boundary."
+  overall_acceptance:
+    - GIVEN stale legacy `AGENTERA_HOME` residue exists in a parent runtime WHEN a normal installed Agentera invocation starts THEN the platform Agentera directory is used or previewed safely rather than treating the residue as the normal source of truth.
+    - GIVEN a valid custom Agentera directory or explicit directory flag is used WHEN Agentera starts or runtime setup is refreshed THEN that custom selection remains supported.
+    - GIVEN app files are merely out of date WHEN user-facing recovery guidance renders THEN it is framed as an upgrade or update, while broken, missing, unmanaged, or unsafe states keep repair or blocked language.
+    - GIVEN 2.3.5 closes WHEN validation and state sync finish THEN version metadata, TODO, changelog, docs, and progress agree on the patch release without publishing, pushing, tagging, refreshing the installed app, or editing protected state.
+  surprises:
+    []

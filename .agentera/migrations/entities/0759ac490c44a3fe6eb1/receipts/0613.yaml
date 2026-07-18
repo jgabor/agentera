@@ -1,0 +1,11 @@
+id: gmxahiztwx
+artifact: plan
+record:
+  name: Cross-runtime fixture coverage
+  depends_on:
+    - muurjbnvxk
+    - kzeowjqjuj
+  status: complete
+  acceptance:
+    - GIVEN Claude, Codex, OpenCode, and Copilot fixtures WHEN focused tests run THEN each runtime proves normalized families, ordering, degradation, and bounded lock handling.
+  plan: defvwzwnfs

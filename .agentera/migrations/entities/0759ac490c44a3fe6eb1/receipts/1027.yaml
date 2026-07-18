@@ -1,0 +1,14 @@
+id: siiglgprlf
+artifact: plan
+record:
+  name: Make lint consume authoritative budgets
+  depends_on:
+    - kceknrdbgi
+  status: complete
+  acceptance:
+    - GIVEN a numeric full-file or per-entry verbosity limit WHEN lint evaluates the artifact THEN the declared authority value governs without a duplicate runtime table.
+    - GIVEN an explicit no-limit or non-word-only declaration WHEN lint evaluates that dimension THEN no word-budget finding is invented.
+    - GIVEN required authority data is malformed or unavailable WHEN lint evaluates the artifact THEN it returns an actionable authority error without fallback constants.
+    - GIVEN non-verbosity lint checks WHEN budget consumption changes THEN their findings and classifications remain unchanged.
+    - GIVEN governed, unlimited, non-word, malformed, and alias cases WHEN focused tests run THEN each behavior is covered without redundant fixtures.
+  plan: cjoiklkzlw

@@ -1,0 +1,26 @@
+id: tcgjrcorfi
+artifact: plan
+record:
+  name: Synchronize final project state
+  depends_on:
+    - fhyxtckxiy
+    - piatorxaxp
+    - fogsvgbhqa
+    - njfegzvzfe
+    - wgndwmlmgp
+    - hznktnwtlg
+    - tspxgigaah
+    - dhfscnarbz
+    - rvgokeqowa
+    - rqgpsnmbor
+    - movialfdkq
+    - gqoilsmayw
+    - bkaovxugvi
+    - wjphygqjof
+    - mtsdpbyptv
+  status: pending
+  acceptance:
+    - GIVEN all implementation tasks are complete WHEN project state is queried THEN the plan, Decision 94 consequences, TODO, docs, progress, and health evidence agree on the migrated outcome.
+    - GIVEN final verification WHEN repeated from the migrated checkout THEN the full CLI suite and merge-safety checks pass with no unexplained degradation.
+    - GIVEN tracked files WHEN status is inspected THEN only intended product, migration, documentation, and state changes remain.
+  plan: pohgeeghnl

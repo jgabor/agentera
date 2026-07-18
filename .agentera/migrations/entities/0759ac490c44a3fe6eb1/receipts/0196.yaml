@@ -1,0 +1,123 @@
+id: bdjeolwxik
+artifact: health
+record:
+  date: 2026-06-28
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - dependency health
+    - version health
+    - artifact freshness
+    - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 2
+    filtered_by_confidence: 0
+  trajectory: "⮉ improving vs Audit 24. Plan C74 consolidated ~44 Dict aliases, 9 Record<string, unknown> variants, and 6 re-export passthroughs into the shared core/jsonValue.ts JsonObject; casts narrowed to IO boundaries with // cast markers; vitest 1145/1145 green; typecheck 0 errors. Single source of truth for JSON-value types achieved in src/. Residual debt: one test-local JsonObject shadow, PackageRegistry cast density, and the deferred deprecated Dict alias."
+  grades:
+    Architecture: A
+    Patterns: B
+    Coupling: B
+    Complexity: A
+    Tests: A
+    Deps: A
+    Version: A
+    Freshness: A
+    Security: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: C74 was type-only; module boundaries, layering, and the prime/ contracts/ orientation/ split from Audit 24 are unchanged. No boundary violations introduced.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: B
+      summary: Single JSON-value type authority achieved in src/ (core/jsonValue.ts JsonObject); casts carry // cast markers at IO boundaries. One test file bypasses the canonical type via a local shadow that tsc does not enforce.
+      findings:
+        - heading: "⇉ Test-local JsonObject shadow bypasses canonical type, warning (confidence: 80)"
+          severity: warning
+          confidence: 80
+          location: packages/cli/test/validate/vocabularyAuthority.test.ts:41
+          evidence: Line 7 imports `type { JsonObject }` from core/jsonValue.js, then line 41 declares `type JsonObject = Record<string, unknown>`, shadowing the strict JsonValue union with a looser record. The imported canonical type is dead. tsc -p tsconfig.json does not include test files, so the drift is invisible to typecheck.
+          impact: Test code silently diverges from the canonical JSON-value type; a future removal of JsonObject would not break this test, and the looser shape weakens the type contract C74 established.
+          suggested_action: Delete the local shadow on line 41 and use the imported canonical JsonObject; add test files to the typecheck config or a separate vitest tsconfig to catch future drift.
+          verify_command: sed -n '7p;41p' packages/cli/test/validate/vocabularyAuthority.test.ts
+    - name: Coupling health
+      grade: B
+      summary: Type-alias coupling eliminated (Dict to JsonObject single source); casts narrowed to IO boundaries. PackageRegistry parsed-record type is still untyped, forcing repeated casts. orientation.ts hub density persists but is no longer the worst coupling issue.
+      findings:
+        - heading: "⇉ PackageRegistry parsed-record type is untyped, 21 casts in one file, warning (confidence: 72)"
+          severity: warning
+          confidence: 72
+          location: packages/cli/src/registries/packageRegistry.ts:108
+          evidence: REQUIRED_FIELDS and REQUIRED_GROUPS document the registry schema, but the parsed record is typed as JsonObject and every access (record.identity, .version_authority, .runtime_package_manifests) casts via `as JsonObject`. 10 `as JsonObject` and 21 total cast expressions appear in this one file.
+          impact: Each consumer reaches into untyped record internals with casts; schema drift between REQUIRED_FIELDS and the parsed shape is invisible to the compiler. C74 narrowed casts to IO boundaries but made their density conspicuous.
+          suggested_action: Lift the registry record to a typed PackageRegistryRecord interface (identity, version_authority, runtime_package_manifests, etc.) and parse into it at the YAML IO boundary, eliminating per-access casts.
+          verify_command: rg -c "as (JsonObject|string|string\[\]|JsonObject\[\])" packages/cli/src/registries/packageRegistry.ts
+    - name: Complexity hotspots
+      grade: A
+      summary: Dict alias proliferation across ~42 modules (Audit 24 info) is resolved; only a single deprecated Dict = JsonObject alias remains with zero consumers. No source file exceeds the 1000-line gate; largest are packageRegistry.ts (703) and orientation.ts (684).
+      findings:
+        - heading: "⇢ orientation.ts hub density unchanged, 684 lines, info (confidence: 75)"
+          severity: info
+          confidence: 75
+          location: packages/cli/src/cli/orientation.ts:62
+          evidence: orientation.ts grew 673 to 684 lines during C74 (added !Array.isArray guards and IO casts in task 2); the summary-builder aggregation that Audit 24 flagged is unchanged.
+          impact: Status and prime orientation edits still touch a dense file. Not worsened since Audit 24; carried forward.
+          suggested_action: Continue extracting state-family summary builders into cli/orientation/ slices.
+          verify_command: wc -l packages/cli/src/cli/orientation.ts
+        - heading: "⇢ Deprecated Dict alias is dead code, zero consumers, info (confidence: 78)"
+          severity: info
+          confidence: 78
+          location: packages/cli/src/core/jsonValue.ts:13
+          evidence: "`export type Dict = JsonObject;` survives with zero imports across src/ and test/ (the only Dict match is the unrelated counterDict function name). C74 task 6 deferred removal."
+          impact: Dead export violates YAGNI; the canonical JsonObject is the sole consumed JSON-value type name.
+          suggested_action: Delete the deprecated Dict alias from core/jsonValue.ts.
+          verify_command: rg -n "import.*\bDict\b" packages/cli/src packages/cli/test
+    - name: Test health
+      grade: A
+      summary: pnpm -C packages/cli test reports 1145/1145 passed (up from 916 at Audit 24); typecheck 0 errors; compaction gate passes. The extractCorpusParity Python-probe test is environment-coupled (uv run) and tracked under the TODO legacy-python-parity flag item.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: C74 was type-only; no dependency changes. Runtime deps remain yaml and smol-toml. Not re-audited at depth (no dep-graph delta).
+      findings:
+        []
+    - name: Version health
+      grade: A
+      summary: packages/cli/package.json is 3.0.0-next.1, bumped 2026-06-23. All 6 C74 commits are chore(cli) (non-bumping per docs convention). Zero unbumped feat/fix commits since the bump.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: A
+      summary: Plan C74 archived to .agentera/archive/; progress.yaml cycle 684 (2026-06-27 build phase) verified present; TODO chore:3.0.0 Dict consolidation closed; health.yaml refreshed by this audit. All fresh.
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: No hardcoded secrets or dangerous eval/exec in scanned TS sources; the only eval-pattern match is JSON.parse on a string literal in capability instructions, not user input. Dedicated security tooling still recommended for release CI.
+      findings:
+        []
+  trends:
+    improved: Dict alias proliferation (~42 modules) consolidated to single JsonObject source; casts narrowed to IO boundaries with cast markers; vitest 916 to 1145 green; package.json bumped to 3.0.0-next.1 with zero unbumped feat/fix; C74 WIP committed cleanly (resolves Audit 24 uncommitted-WIP warning); plan archived and TODO closed.
+    degraded: Pattern consistency A to B — one test file shadows the canonical JsonObject with a looser Record and tsc does not cover test files, so the drift is unenforced.
+    stable: Architecture, Coupling (B, but the worst warning shifted from orientation hub to PackageRegistry cast density), Tests, Deps, Security.
+    new_findings: Test-local JsonObject shadow; PackageRegistry cast density.
+    resolved: Audit 24 Complexity finding (Dict aliases in ~42 modules) — systemic duplication eliminated.
+    carried_forward: orientation.ts summary hub density (Audit 24 Coupling warning, now downgraded to info — not worsened); deprecated Dict alias (residual of the resolved systemic issue); dedicated security tooling recommendation.
+  patterns:
+    - "JSON-value typing: core/jsonValue.ts JsonObject is the sole canonical type for parsed JSON/YAML/TOML records; IO boundaries cast with explicit cast marker comments."
+    - "Registry access: parsed records stay loosely typed (JsonObject) and consumers cast per-access at the IO boundary; schema lives in REQUIRED_FIELDS validation tables, not in a TS interface."
+    - "Test typing: test files are excluded from tsc -p tsconfig.json; vitest transforms handle them, allowing type drift from canonical types to pass typecheck silently."
+    - "Testing approach: 1145 vitest cases; monolith lint and compaction budget gates run via the built CLI; analytics parity tests couple to an external Python (uv) probe."
+  notes:
+    - "[lint-gate-unavailable] agentera lint is not ported to the v3 CLI; pre-write self-audit was a manual compactness pass against the health.yaml schema and verbosity rules."
+    - Audit 24's uncommitted-WIP warning is resolved (C74 committed across 6 commits 2715bd28 to 8e9f2447).
+    - health.yaml now holds 11 full audits (15-25); the 10-full compaction threshold is exceeded. Per explicit instruction to preserve all existing entries intact, no compaction was applied. The next audit should archive Audit 15 to a one-line summary.
+    - Decision context is caveated (40 compacted entries, 8 require satisfaction review); no decision satisfaction was inferred or user-confirmed by this audit.
+    - Protected state (vision, objective) was not read or modified; not-checked-by-design caveats preserved.

@@ -1,0 +1,12 @@
+id: ghpnzakrxz
+artifact: plan
+record:
+  name: Doctor app and runtime root diagnostics
+  depends_on:
+    - spkbfyxaib
+  status: complete
+  acceptance:
+    - GIVEN a legacy bundle-root install exists WHEN doctor runs THEN it reports migration_required with exact preview and apply commands.
+    - GIVEN multiple Agentera roots participate in invocation WHEN doctor runs THEN it reports the active app home, managed app root, skill root, and runtime root clearly enough to identify the authoritative root.
+    - GIVEN the app and runtime roots are coherent WHEN doctor runs THEN it reports no split-root or migration-required warning for that home.
+  plan: eugrpfgykm

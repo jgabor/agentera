@@ -1,0 +1,12 @@
+id: hrvjocusgs
+artifact: progress
+record:
+  timestamp: 2026-07-17 17:16
+  type: feat
+  phase: build
+  what: Finalized lifecycle and packaged consumers on the canonical id and artifact entity protocol.
+  verified: "CLI suite passed: 216 files and 2580 tests. Typecheck, build, capability-contract validation, compact gate, bundle parity, and active protocol checks passed."
+  next: Proceed to Task 13 readiness recovery.
+  context:
+    intent: Complete plan Task 12 without implementing readiness recovery, live apply, or release finalization.
+    constraints: Tasks 13 through 15 remain out of scope.

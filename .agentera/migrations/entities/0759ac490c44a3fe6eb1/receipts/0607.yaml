@@ -1,0 +1,10 @@
+id: rsouheplpi
+artifact: plan
+record:
+  name: Profilera staleness tracking
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN profilera has not run in N cycles AND a configurable threshold is exceeded WHEN agent dispatches THEN the agent suggests a profilera run
+  plan: hswymjfrev

@@ -1,0 +1,13 @@
+id: shalfbphrc
+artifact: plan
+record:
+  name: Define and verify the tier contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN each supported consumer WHEN required evidence is mapped THEN one bounded input contract supplies every required field with source identity.
+    - GIVEN supported Codex, Cursor, OpenCode, Copilot, and historical Claude sources WHEN the contract is checked THEN none is silently omitted.
+    - GIVEN correction, decision, question, instruction, configuration, record identity, date, and evidence-anchor signals WHEN the contract is fixed THEN their required meaning remains available to current and declared deferred consumers.
+    - GIVEN oversized, legacy, missing, corrupt, or incomplete state WHEN compatibility is evaluated THEN bounds and recovery outcomes are deterministic, actionable, and covered by passing and failing checks.
+  plan: lgsvfenmgs

@@ -1,0 +1,12 @@
+id: yipvcrdqph
+artifact: plan
+record:
+  name: Select exact 2.2.2 scope and TODO targets
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the release lane is selected WHEN open 2.2.x TODOs are reviewed THEN only the two fix-class items are retargeted to [fix:2.2.2].
+    - GIVEN 2.3 work exists WHEN release scope is reviewed THEN feature-class work remains outside the 2.2.2 patch lane.
+    - GIVEN release state is queried WHEN the scope task completes THEN the local 2.2.1 baseline is visible and no publication claim is added.
+  plan: evlwlzprps

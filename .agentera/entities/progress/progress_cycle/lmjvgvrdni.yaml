@@ -1,0 +1,15 @@
+id: lmjvgvrdni
+artifact: progress
+record:
+  timestamp: 2026-07-15 09:52
+  type: fix
+  phase: build
+  what: Corrected Task 8 experiment cursors across 10/40/50 retention rollover.
+  discovered: The failed cursor fingerprint encoded projection collection and array index even when an immutable archive already owned experiment detail.
+  verified: "AC1 root commands: pnpm -C packages/cli exec vp test run test/state/experimentRetrieval.test.ts -t 'full-to-summary rollover' => 1 passed, 9 skipped; -t 'summary-to-drop rollover|byte-limited traversal' => 2 passed, 8 skipped; -t 'rejects rollover without archive proof' => 1 passed, 9 skipped. Audit fixture: node /tmp/opencode/audit809.mjs => 14 pages, 125 unique identities, 13 byte-bound pages, rollover resumed. AC2/AC3 parity: retrievalAuthority, planRetrieval, schema => 143 passed. Full CLI 183 files/2020 tests; typecheck, build, capability-contract, compact, diff-check passed."
+  next: Task 8 awaits corrective audit; do not start Task 9 in this cycle.
+  context:
+    intent: Make append-only experiment snapshots independent of mutable projection placement while failing closed without immutable proof.
+    constraints: Preserved Cycle 809, Task 8 audit attempt 1 failure, Task 7 state, immutable archives, 10/40/50 retention, package metadata, and all user changes.
+    unknowns: Independent corrective audit remains pending; cursor continuation intentionally fails when original detail cannot be substantiated.
+    scope: Task 8 cursor fingerprinting, archive-backed list summaries, rollover and stale-safety tests, authority clarification, changelog, plan, and progress only.

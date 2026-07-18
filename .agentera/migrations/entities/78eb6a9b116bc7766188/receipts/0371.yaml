@@ -1,0 +1,12 @@
+id: lmqhqnlttn
+artifact: plan
+record:
+  name: Explicit CLI surfaces
+  depends_on:
+    - jxwyohfthr
+  status: complete
+  acceptance:
+    - GIVEN a user runs the compaction command in text or JSON mode WHEN artifacts are in bounds or over bounds THEN the command returns truthful status, counts, exit code, and repair guidance.
+    - GIVEN a user invokes artifact validation with explicit artifact and file arguments WHEN the artifact is valid or invalid THEN the command performs real validation and returns a truthful pass or fail instead of succeeding as a no-op.
+    - GIVEN canonical artifact names and explicit file paths differ WHEN validation or compaction runs THEN provided paths and docs-mapped defaults are resolved consistently and reported in the output.
+  plan: gpurjrmtdd

@@ -1,0 +1,16 @@
+id: cbblprrvsr
+artifact: progress
+record:
+  timestamp: 2026-07-16 19:53
+  type: fix
+  phase: build
+  what: Audit retry 1 fixed PLAN Task 2 entity publication races and logical replay equality.
+  inspiration: Independent audit failure of PLAN Task 2.
+  discovered: The first full-suite invocation ran before dist existed and failed only two packaging preconditions; build restored dist and the complete suite passed.
+  verified: Focused entity storage passed 11/11; entity authority and validation CLI passed 29/29; full CLI suite passed 202 files with 1 skipped and 2343 tests with 1 skipped after build; typecheck and build passed; state validation passed with zero issues; capability-contract passed 2/2; compact gate reported zero over-limit artifacts or errors.
+  next: Return Task 2 audit retry 1 for independent review; preserve completed Task 2 and do not begin Task 3 or family cutovers.
+  context:
+    intent: Close the independent audit's cross-artifact race and byte-order replay defects without beginning Task 3 or family cutovers.
+    constraints: Task 2 remains complete; no vision, Task 3, family cutover, publish, push, or unrelated caveat changes.
+    unknowns: None.
+    scope: Shared entity storage authority, publication primitive, and race/replay regression tests.

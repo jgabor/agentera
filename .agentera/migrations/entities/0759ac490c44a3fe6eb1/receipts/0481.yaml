@@ -1,0 +1,17 @@
+id: krcgxzjitl
+artifact: plan
+record:
+  name: Verification gate and state sync
+  depends_on:
+    - btigklmtzs
+    - mpzubhvmwl
+    - qaomsplwcd
+    - mhtkabskho
+    - hrqlritove
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks complete WHEN full pytest suite runs THEN all tests pass
+    - GIVEN before and after wall times recorded WHEN compared THEN improvement is documented in progress evidence
+  evidence:
+    - 1230 passed in ~60s; baseline ~114s; dominant savings from shared primary_surface_measurements and parallelized full-surface setup
+  plan: bszbmkggss

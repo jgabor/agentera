@@ -1,0 +1,14 @@
+id: lxdbhgwnmn
+artifact: plan
+record:
+  name: Audit the completed archive rollout
+  depends_on:
+    - nldqclpodg
+    - scqyocxxwz
+    - jnghcdjqzo
+    - zxmtbfoyvl
+  status: pending
+  acceptance:
+    - GIVEN the delivered model WHEN a typed health audit evaluates architecture, contract ownership, bounded I/O, tests, compatibility, integrity, durability, and freshness THEN each dimension receives cited evidence and a grade.
+    - GIVEN predecessor failures, corrected evidence, archive refusals, npm 12 failures, or new findings WHEN audit reports THEN each is explicitly resolved, blocked, or carried forward without inferred health.
+  plan: nvbzrxjepf

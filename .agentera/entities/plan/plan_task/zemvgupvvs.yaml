@@ -1,0 +1,14 @@
+id: zemvgupvvs
+artifact: plan
+record:
+  name: Connect docs and regression coverage to the authority
+  depends_on:
+    - unrwxgxwnt
+    - kczsgvvhgq
+  status: complete
+  evidence:
+    - Updated `docs/vocabulary.md` to delegate bundle/SKILL.md classification to the YAML authority without a parallel Markdown table, and added `tests/test_bundle_skill_vocabulary_authority.py` coverage for canonical concepts, allowed/forbidden terms, compatibility preservation, classification rules, docs delegation, and source-index wiring.
+  acceptance:
+    - GIVEN `docs/vocabulary.md` is inspected WHEN the bundle/SKILL.md vocabulary section is read THEN it delegates classification details to the structured authority and describes the user-facing boundary without duplicating a parallel untyped table.
+    - GIVEN vocabulary regression tests run WHEN `bundle` or `SKILL.md` usage is ambiguous THEN the tests fail while still allowing canonical concepts, compatibility-preserved identifiers, historical records, fixtures, and path-like references.
+  plan: iotducihyh

@@ -1,0 +1,34 @@
+id: fmktobmnvx
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-18
+    status: archived
+    reviewed: 2026-05-18
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: Capability Instruction Validation Regression Coverage
+  what: Add validation and regression coverage proving capability directories require canonical `instructions.md` files, legacy `prose.md` conventions are rejected for new capability structure, required-read capability context is emitted, and explicit compact-startup exceptions continue to work where supported.
+  why: "Decision 57 moved capability instruction authority to `instructions.md` and added first-invocation read discoverability. The remaining risk is regression: future changes could silently reintroduce `prose.md`, weaken validator enforcement, or break the compact Planera startup seam."
+  constraints: Keep this work limited to validation and regression coverage. Do not perform broad wording cleanup, package refresh, publication, push, tag, vision or objective mutation, decision satisfaction updates, installed-app repair, or 3.0 compatibility removal.
+  scope:
+    included:
+      - Validator and contract regression coverage for `instructions.md` as the required capability instruction file.
+      - Regression coverage rejecting `prose.md` as a new canonical capability convention.
+      - Capability-context tests for `first_invocation_read` and required-read metadata.
+      - Preservation tests for explicit compact-startup exceptions where supported.
+    excluded:
+      - Documentation rewrites unrelated to test authority.
+      - Runtime first-invocation behavior implementation.
+      - Release, package, publication, or installation work.
+      - Protected vision, objective, profile, decision-satisfaction, and TODO completion mutations.
+    deferred:
+      - 3.0 compatibility removal.
+      - Runtime enforcement of first-invocation reads.
+  design: Treat `capability_schema_contract.yaml` and `references/cli/capability-instruction-contract.yaml` as the authorities. Add regression coverage at the validator, contract-loader, and hej capability-context seams so failures are observable through supported CLI surfaces rather than raw directory assumptions.
+  overall_acceptance:
+    - GIVEN a future change attempts to make `prose.md` the capability instruction convention WHEN validator or contract tests run THEN the regression suite fails.
+    - GIVEN capability-context startup metadata is requested WHEN supported CLI JSON output is inspected THEN required-read obligations and compact exceptions are explicit and stable.
+    - GIVEN the validation suite passes WHEN the work is reviewed THEN the coverage proves Decision 57 validation behavior without broad documentation cleanup or release work.
+  surprises:
+    []

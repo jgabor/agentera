@@ -1,0 +1,13 @@
+id: tltyftkphb
+artifact: plan
+record:
+  name: Current artifact remediation
+  depends_on:
+    - cmrgtjfnnh
+    - nuafrgrbpg
+  status: complete
+  acceptance:
+    - GIVEN the current repository starts with over-cap TODO, progress, decisions, or health artifacts WHEN the new fix path runs THEN those artifacts end within 10 full, 40 compact, and 50 total retained entries.
+    - GIVEN remediation rewrites artifacts WHEN the diff is inspected THEN only permitted compaction changes appear and session remains within its existing 10/40/50 boundary.
+    - GIVEN artifact validation follows remediation WHEN TODO, progress, decisions, health, and session are checked THEN validation passes for the compacted artifacts.
+  plan: nlxcuhxfsh

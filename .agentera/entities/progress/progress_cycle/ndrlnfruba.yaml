@@ -1,0 +1,16 @@
+id: ndrlnfruba
+artifact: progress
+record:
+  timestamp: 2026-07-15 21:41
+  type: feat
+  phase: build
+  what: "Moved profile synthesis from monolithic corpus.json to bounded signal tiers. Created profileSignals.ts module (assessProfileSufficiency, readProfileSignals, resolveProfileEvidence, profileSignalsStatus) that reads only the signal tier, never full evidence. Added profile_sufficiency section to evidence-tier-authority.yaml resolving Unknown 2: minimum_family_retention=0.5 threshold, profile_signal_types=[decision,question,correction,instruction,configuration]. Eliminated monolithic corpus.json write from extract CLI — tiers are the only canonical output. Updated report command: corpus_write renamed to tier_write. Surfaced bounded_signals in prime --context profile output. Updated profile instructions to use bounded signals with sufficiency gate and evidence anchor resolution."
+  inspiration: Plan Task 4; Depends on Task 2 (bounded evidence tier publication) and Task 3 (analytics reader migration)
+  discovered: The assessProfileSufficiency function must iterate over the selection report's per_family entries, not just retained profile signals, to detect complete-capping scenarios where all signals are lost to the selection cap.
+  verified: pnpm -C packages/cli build (exit 0); pnpm -C packages/cli test (2176/2176 passed, 0 failed); agentera check compact (status=pass); agentera prime --context profile --format json shows bounded_signals.state=legacy with refresh guidance
+  next: "Task 5: synchronize contracts, help, profile instructions, TODO, changelog, and progress; run full release-readiness gates."
+  context:
+    intent: "Plan Task 4: move current profile synthesis to bounded signals, eliminating the monolithic corpus.json write that was retained solely because profile depended on it."
+    constraints: No profile levels, glossary, remote storage, release, or suite version above 3.0.0. Task 5 owns final broad synchronization.
+    unknowns: none
+    scope: packages/cli/src/analytics/profileSignals.ts (new); packages/cli/src/registries/evidenceTierContract.ts; packages/cli/src/analytics/extractCorpus/cli.ts; packages/cli/src/cli/commands/report.ts; packages/cli/src/cli/commands/prime/collectOrientationState.ts; packages/cli/src/cli/capabilityContext/shared.ts; packages/cli/src/cli/contracts/orientationState.ts; packages/cli/src/capabilities/profile/instructions.ts; references/analysis/evidence-tier-authority.yaml; packages/cli/test/analytics/profileSignals.test.ts (new); packages/cli/test/analytics/extractCorpus.test.ts; packages/cli/test/registries/evidenceTierContract.test.ts; packages/cli/test/cli/report.test.ts

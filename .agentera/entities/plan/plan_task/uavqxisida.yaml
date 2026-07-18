@@ -1,0 +1,11 @@
+id: uavqxisida
+artifact: plan
+record:
+  name: Add RFC 2119 convention to capability_schema_contract.yaml
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN capability_schema_contract.yaml WHEN inspected THEN it contains an RFC 2119 convention block with capitalized protocol force and lowercase ordinary English, with a concrete example
+    - GIVEN the contract file WHEN validated THEN it still passes agentera check validate capability-contract
+  plan: pkpreybxbf

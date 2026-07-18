@@ -1,0 +1,16 @@
+id: xtefcxakqi
+artifact: plan
+record:
+  name: Cut decisions over to entities
+  depends_on:
+    - ybkphfcetp
+    - xnwwlycpwz
+    - prefuuwhri
+    - ciuqfpudze
+  status: complete
+  acceptance:
+    - GIVEN decisions, satisfaction, revisions, and amendments WHEN written or read THEN each independent mutation uses canonical entity authority.
+    - GIVEN unrelated decision writes on parallel branches WHEN merged THEN both survive without aggregate-state conflict.
+    - GIVEN concurrent changes to one decision WHEN merged or validated THEN overlap is explicit and neither value is silently selected.
+    - GIVEN effective decision reads WHEN provenance is inspected THEN base, revision, and satisfaction evidence compose without numbered identity.
+  plan: vllyohtcde

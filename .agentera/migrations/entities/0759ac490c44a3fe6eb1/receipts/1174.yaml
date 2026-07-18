@@ -1,0 +1,33 @@
+id: vqurzbvilr
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-06-02
+    status: open
+    title: "Shim cwd preservation: project path resolution for installed apps"
+  what: |
+    When users run `npx -y agentera` in a project, the published 0.0.0 shim spawns the Python CLI with cwd set to the installed app home, causing every state command to read from $AGENTERA_HOME/app/... instead of the user's project. The shim must preserve the user's working directory so the Python CLI's existing os.getcwd()-based path resolution finds the project artifacts. A regression test pins the new behavior, and a CHANGELOG note records the shim's transitional role against the upcoming 3.0 TypeScript CLI.
+  why: |
+    The installed shim is the only npm-published agentera entry point until 3.0 ships the native TypeScript CLI. Today every user with an installed app home hits the bug on first run: agentera state plan reports "no plan" while the project has a complete plan, agentera state todo reports "empty" while the project has open items, and hej/planera/resonera/inspektera all see a fresh project. The shim blocks every project-state read path.
+  constraints: |
+    - The Python CLI's os.getcwd() semantics must not change; the shim is
+      the only site allowed to influence cwd.
+    - The repo backend (kind equals repo, local clone with scripts/agentera)
+      must keep its existing behavior — repo root is project root.
+    - No new uv, npm, or external dependencies. - The shim version stays 0.0.0; the v3 TypeScript CLI is the resolution. - No remote push; do not edit vision.yaml or objective state.
+  scope:
+    included:
+      - npm shim runBackend app-home cwd preservation
+      - Regression test exercising the app-home backend from a temporary cwd outside the app home
+      - CHANGELOG note under [Unreleased] for the shim's transitional role
+    excluded:
+      - Python CLI os.getcwd() semantics changes
+      - Repo-backend cwd changes (kind equals repo)
+      - v3 TypeScript CLI implementation work
+    deferred:
+      - Full v3 TypeScript CLI release replacing the shim
+  overall_acceptance: |
+    All five behavioral criteria in task 1 must hold after one realisera cycle. No remote push. vision.yaml and objective state untouched.
+  surprises:
+    []

@@ -1,0 +1,16 @@
+id: dvifyrqfho
+artifact: progress
+record:
+  timestamp: 2026-07-18 06:43
+  type: feat
+  phase: build
+  what: Applied the approved repository entity cutover and verified canonical state parity.
+  context:
+    intent: Complete original Plan Task 14 by replacing legacy authority with the validated entity graph.
+    constraints: No new tasks, speculative hardening, publication, push, tag, vision change, or remote operation.
+    unknowns: none
+    scope: .agentera entity graph, durable migration evidence, state-mode marker, and original Task 14 state evidence.
+  inspiration: Decision 94 and original Plan Task 14.
+  discovered: Archived plan sources require an explicit archived lifecycle so historical unfinished tasks do not become active plans.
+  verified: Migration 78eb6a9b116bc7766188 completed with 1,465 entities and one preserved residue; check validate state passed with zero issues; state plan resolved one open plan; prime returned status ok; approved side effects were limited to the entity, migration-evidence, and state-mode paths.
+  next: Execute only original Task 15 release-contract, merge-safety, performance, package, and state verification.

@@ -1,0 +1,12 @@
+id: uhvnvmrxdr
+artifact: plan
+record:
+  name: Update user-facing docs Version badge and packaging reference
+  depends_on:
+    - yojsgunqzy
+  status: complete
+  acceptance:
+    - GIVEN README.md line 218 WHEN read THEN the Version badge reads 3.0.0-next.1 (or the first published 3.0.0-next.x)
+    - GIVEN docs/packaging/v3-packaging.md line 150 WHEN read THEN the version literal is 3.0.0-next.x (not 3.0.0-dev.6)
+    - GIVEN AGENTS.md WHEN grepped for 3.0.0-dev THEN zero matches (it never had any -- sanity check)
+  plan: kpuutmaoki

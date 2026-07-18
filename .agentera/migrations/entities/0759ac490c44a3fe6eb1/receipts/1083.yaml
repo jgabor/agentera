@@ -1,0 +1,32 @@
+id: cmdppboxha
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-03
+    status: complete
+    reviewed: 2026-06-03
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: "Plan: 3.0.0 next-major doctor section"
+  what: Cut a self-contained, generic, major-agnostic "next major" doctor section in both v2 (Python stable) and v3 (TypeScript npm) so every install surfaces the next available major line without code changes between major versions. Sourced from a single `next_major` block in the existing `references/cli/update-channels.yaml` channel authority. Zero new flags. Zero version-named vocabulary. No opt-out. Renders at the head of `agentera doctor` when the running line has a non-null `next_major` successor; omitted entirely otherwise. v1 installs are treated as the v2 predecessor and render the same section shape.
+  why: v2 users currently have no in-tool signal that v3 exists on the development channel. The v2→v3 transition suffers from silent discovery (users learn about v3 only when they read release notes) and asymmetric knowledge (the v3 side knows about v2; v2 has no equivalent surface). A generic "next major" section reuses the existing channel authority, scales to v3→v4 unchanged, and stays D58-compliant by avoiding v3-named concepts in code or vocabulary.
+  constraints: No new CLI flags in either branch. No opt-out config key. No version-named vocabulary. The doctor section must read its metadata exclusively from `references/cli/update-channels.yaml`. The `next_major` block must be per-channel so v2 stable can point at v3 development and v3 development can later point at v4 stable without code changes. v2 doctor (Python) and v3 doctor (TypeScript) must render the same section from the same authority. The section is omitted entirely when the running line has no announced successor.
+  scope:
+    included:
+      - Extend `references/cli/update-channels.yaml` with a per-channel `next_major` block
+      - Implement head-of-output doctor section in v3 (TypeScript) reading the authority
+      - Backport the same section shape to v2 (Python stable) doctor reading the same authority
+      - "Treat v1 installs as the v2 predecessor: render v1→v2 section in v1 doctor"
+      - Pin the 6-line cap, "no opt-out", and "omitted-when-null" behavior with regression coverage
+    excluded:
+      - v2→v3 migration logic (already in `packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts`)
+      - v2 readiness report, state manifest for v3, coexistence detection (separate TODO items)
+      - Decision-required sunset date for v2 line
+      - v1→v2 migration content (already in the existing v1→v2 upgrade path)
+    deferred:
+      - "v3→v4 successor: enabled by populating `channels.development.next_major` later"
+      - Banner positioning in interactive shells (TTY detection)
+  design: "The channel authority owns a per-channel `next_major` block with concept, channel name, version, npm dist_tag, guide URL, preview command, and irreversible advisory. Doctor reads the running line's channel from `update.channel` config (or default `stable`) and looks up `next_major` on that channel. When non-null, the section renders six lines: current version + channel, next version + channel + npm-only advisory, guide URL, preview command, and irreversible advisory. When null, the section is omitted entirely (no header, no placeholder). v1 installs fall through to a hardcoded v1→v2 channel mapping because the channel authority was introduced in v2. Test proportionality: one pass plus one fail per touched surface (channel authority extension, v3 doctor rendering, v2 doctor rendering, v1 fallback, omitted-when-null behavior). All regressions must run in both the v3 vitest suite and the v2 pytest suite so backport parity is enforced."
+  overall_acceptance: GIVEN both `main` and `feat/v3` WHEN the 3.0 release ships THEN both `agentera doctor` invocations render the same next-major section at the head of output, sourced from `references/cli/update-channels.yaml`, with no v3-named vocabulary, no new flags, and the v1→v2 fallback for v1 installs; AND GIVEN a v3 install on the stable channel WHEN `agentera doctor` runs THEN a user reading the output sees the v3→v4 next-major section without any code change once v4 is announced in the channel authority.
+  surprises:
+    []

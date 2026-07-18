@@ -1,0 +1,12 @@
+id: qzfvxwxkgm
+artifact: plan
+record:
+  name: Retag And Reverify Release After Approval
+  depends_on:
+    - bhekeqqvnv
+  status: complete
+  acceptance:
+    - GIVEN the user explicitly approves release mutation WHEN retag and force-push commands run THEN only the approved commands are executed
+    - GIVEN mutation completes WHEN release state is checked THEN the corrected v2.1.0 tag, remote tag, branch commit, and release evidence are reverified
+    - GIVEN approval is not granted WHEN Task 7 is reached THEN the task remains pending and no remote mutation occurs
+  plan: mbjboapqeq

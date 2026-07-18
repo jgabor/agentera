@@ -1,0 +1,10 @@
+id: yslcozfjkv
+artifact: plan
+record:
+  name: EXPECTED/ACTUAL parity regression template
+  depends_on:
+    - nqskcpkwcz
+  status: complete
+  acceptance:
+    []
+  plan: okrgsbtctt

@@ -1,0 +1,15 @@
+id: cltnmznnmw
+artifact: plan
+record:
+  name: Verify and close entrypoint artifacts
+  depends_on:
+    - xljxpelhvr
+  status: complete
+  acceptance:
+    - GIVEN focused verification completes WHEN the fix is ready THEN exact focused pytest, full-suite decision if run, artifact validator, and `git diff --check` evidence is recorded in PLAN and PROGRESS.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the critical `[fix:2.5.x]` installed `hej` entrypoint TODO is resolved while the normal SKILL.md, routing/execution, Decision 57, broad regression, and 3.0.0 TODOs remain open.
+  evidence:
+    reproduction: '`tests/test_cross_capability.py::test_installed_hej_entrypoint_resolves_app_home_before_script_expansion` models shell expansion with unset `AGENTERA_HOME` and `XDG_DATA_HOME`: an inline assignment plus `"$AGENTERA_HOME/app/scripts/agentera"` expands to `/app/scripts/agentera`, while a prior `RESOLVED_AGENTERA_HOME` assignment expands to the resolved app-home script path.'
+    fix: Installed hej guidance in the Agentera skill dispatcher, hej capability, and upgrade retry path now uses `RESOLVED_AGENTERA_HOME` for executable command construction and explicitly forbids combining app-home assignment with the same shell command that expands the managed app script path.
+    verification: "`uv run pytest tests/test_cross_capability.py::test_installed_hej_entrypoint_resolves_app_home_before_script_expansion tests/test_cross_capability.py::test_routine_capability_guidance_uses_top_level_state_commands tests/test_cross_capability.py::test_master_bundle_health_gate_is_single_call tests/test_cross_capability.py::test_upgrade_guide_documents_app_home_recovery_and_artifact_backups -q` passed with 4 tests. `uv run pytest tests/test_cross_capability.py tests/test_runtime_adapters.py -q` passed with 131 tests. `uv run pytest tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej -q` passed with 89 tests. `uv run pytest -q` passed with 1143 tests. `uv run scripts/agentera validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned `status=pass`. `git diff --check` passed."
+  plan: zixugefprn

@@ -1,0 +1,13 @@
+id: bdumgatdim
+artifact: plan
+record:
+  name: Update tests, sandbox harness, and gap registry
+  depends_on:
+    - cvcpvrlwse
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/test/upgrade/ WHEN run THEN compatibility, orchestrator, doctorChannels, primeChannels, and upgradeCommands tests pass without --target-major fixtures
+    - GIVEN scripts/sandbox/v2v3-upgrade-harness.sh WHEN run on P0 fixtures THEN apply uses channel gate only and assertions still pass
+    - GIVEN gapRegistry WHEN read THEN open items no longer require --target-major in rewire constants
+    - GIVEN CI upgrade gate job WHEN triggered THEN Tier 0 passes on feat/v3
+  plan: brcxwbztnv

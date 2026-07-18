@@ -1,0 +1,12 @@
+id: oejowwhctc
+artifact: plan
+record:
+  name: Reconcile Plan State And Carry Forward Evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the previous plan is complete WHEN this plan becomes active THEN prior evidence remains available in the plan archive
+    - GIVEN critical architecture findings exist WHEN work is picked up later THEN TODO lists the install-root Module finding with concrete file anchors
+    - GIVEN this plan is loaded WHEN a caller asks what changed THEN it identifies install-root depth as the active work
+  plan: jkvutuwdzk

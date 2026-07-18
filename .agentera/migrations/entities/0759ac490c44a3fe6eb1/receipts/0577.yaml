@@ -1,0 +1,11 @@
+id: tvjbxknvno
+artifact: plan
+record:
+  name: Restore green suite for vocabulary and handoff contracts
+  depends_on:
+    - apeqvkdoms
+  status: complete
+  acceptance:
+    - GIVEN `tests/test_decision44_vocabulary.py` runs WHEN PLAN and PROGRESS evidence are updated THEN no unprotected deprecated current-state wording remains in current artifacts, and closeout evidence truthfully records the prior failed full-suite run before any new passing full-suite claim.
+    - GIVEN `tests/test_skill_dispatch_contract.py` runs WHEN routing/handoff vocabulary expectations are synchronized THEN docs and tests agree on the current canonical route/suggest/delegate/spawn/subagent-mechanism vocabulary without reintroducing deprecated ambiguous dispatch prose.
+  plan: titmyilljb

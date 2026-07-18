@@ -1,0 +1,12 @@
+id: lbbggaqxoe
+artifact: plan
+record:
+  name: Port verify gates (`check verify eval`) to TS
+  depends_on:
+    - nksxuyctff
+  status: pending
+  acceptance:
+    - GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/verify.ts` is reviewed/extended THEN the `eval` family is wired with safety wrappers (retired smoke family messaging for npm distribution per resolved-ledger TODO L43; bounded offline smoke without live model calls by default); the verify contract spec from `agent-ready-state-contract.yaml` is parity-pinned for the npm @next distribution boundary
+    - GIVEN `check verify eval` WHEN the npm `@next` path runs THEN the `eval` family is supported; the smoke family returns the retired-family message; the `agent-ready-state-contract.yaml` reflects eval-only npm guidance; the parity row is `equal` for the `verify_eval` family
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check verify eval` runs THEN the response is a valid JSON with the expected shape; the npmParityMatrix `verify_eval` family row is `equal`; per V5 the proportionality target is one pass + one fail per verify-eval path (eval + smoke-retired-message = 2 × 2 = 4 cases)
+  plan: jxawyxzbto

@@ -1,0 +1,15 @@
+id: kajhxpupgg
+artifact: plan
+record:
+  name: Align the metadata authority
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - Updated `references/cli/capability-instruction-contract.yaml` to mark CLI/schema discoverability implemented while keeping runtime enforcement false.
+    - Focused authority tests read allowed values from the contract and preserve the separate broad validation-regression TODO.
+  acceptance:
+    - GIVEN the Decision 57 instruction contract is inspected WHEN the metadata feature is specified THEN `references/cli/capability-instruction-contract.yaml` marks `first_invocation_read` CLI and schema metadata as implemented for discoverability while leaving runtime first-invocation enforcement false unless separately built.
+    - GIVEN the allowed values are consumed by tests or CLI metadata WHEN they are asserted THEN `full`, `compact_startup`, and `skip` come from the contract authority or validation tied to that authority, not from an unconnected duplicate list.
+    - GIVEN a capability has no compact-startup exception WHEN required-read metadata is resolved THEN the default future rule is `full` and the obligation names `instructions.md` as the required instruction file.
+  plan: lkrqvabygh

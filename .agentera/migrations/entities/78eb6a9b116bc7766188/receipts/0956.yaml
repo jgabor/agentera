@@ -1,0 +1,16 @@
+id: lsucadqgud
+artifact: plan
+record:
+  name: Synchronize artifacts and close TODO
+  depends_on:
+    - vlmeyvilge
+  status: complete
+  acceptance:
+    - GIVEN tests pass WHEN artifacts are updated THEN TODO records the doctor-output issue as resolved with the actual app metadata vocabulary and ready/update/repair rendering behavior.
+    - GIVEN the change affects user-facing CLI output WHEN CHANGELOG is updated THEN it names the ready doctor `Next:` fix, app metadata vocabulary choice, and command-formatting coverage.
+    - GIVEN progress is logged WHEN closeout completes THEN PROGRESS includes verification evidence and protected-state boundaries.
+  evidence:
+    - Moved the `agentera doctor` ready/healthy `Next:` issue from TODO open Annoying work to Resolved, naming the canonical app metadata vocabulary and ready/update/repair/manual-review rendering behavior.
+    - Updated `CHANGELOG.md` Unreleased Fixed notes with the ready-state `Next:` fix, hard-renamed app metadata vocabulary, preserved actionable guidance, and dry-run spacing regression coverage.
+    - Added Progress cycle 544 with Task 4-5 evidence and protected-state boundaries; Task 6 remains pending for validators, compaction, diff-check, focused tests, and live/local doctor probes.
+  plan: enrahovxla

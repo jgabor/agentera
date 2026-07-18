@@ -1,0 +1,15 @@
+id: bkwdccielw
+artifact: progress
+record:
+  timestamp: 2026-07-15 08:35
+  type: fix
+  phase: build
+  what: Fixed packages/cli/src/state/write/explain.ts so generic experiments writer discovery selects publish, and added a schema test that executes every emitted generic and per-verb explain command.
+  inspiration: Independent Task 6 audit attempt task-6-audit-1-20260715.
+  verified: "Discovery PASS: pnpm -C packages/cli exec vp test run test/cli/schema.test.ts -t 'executes every emitted writer discovery command' returned 1 passed, 7 skipped. Generic smoke PASS: node packages/cli/dist/bin/agentera.js state experiments explain --format json. Per-verb smoke PASS: node packages/cli/dist/bin/agentera.js state experiments explain --verb publish --format json. AC1 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'validates input and assigns objective-scoped identity before publication'. AC2 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'preserves active and archive bytes on identity, schema, collision, and staged publication failures'. AC3 PASS: pnpm -C packages/cli exec vp test run test/state/write/experimentPublication.test.ts -t 'retries idempotently after interruption following atomic publication'. Each AC returned 1 passed, 4 skipped. pnpm -C packages/cli test passed 182 files and 1999 tests; typecheck, build, capability-contract validation, check compact, and git diff --check passed."
+  next: Re-audit Task 6; do not begin Task 7 durable archival or Task 8 list/get in this cycle.
+  context:
+    intent: Correct Task 6's failed discovery-contract audit without changing experiment publication, archival, or retrieval scope.
+    constraints: Preserve Cycle 805, audit attempt 1, publication semantics, and pending Task 7-8 scope.
+    unknowns: Independent retry audit remains pending.
+    scope: Generic writer explain default, exhaustive discovery regression, changelog, Task 6 evidence/status, and corrective progress cycle.

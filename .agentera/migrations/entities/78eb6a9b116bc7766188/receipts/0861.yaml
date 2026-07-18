@@ -1,0 +1,13 @@
+id: nzpmjylfff
+artifact: plan
+record:
+  name: Verify Release Candidate And Prepare Retag Approval
+  depends_on:
+    - qzvmfxywyz
+  status: complete
+  acceptance:
+    - GIVEN validators run WHEN release readiness is evaluated THEN targeted CLI, hej, semantic, full pytest, capability, cross-capability, lifecycle adapter, and relevant smoke checks pass
+    - GIVEN local and remote release state are checked WHEN v2.1.0 readiness is reported THEN branch, commit, local tag, remote tag, and divergence facts are shown before any mutation
+    - GIVEN the user has not explicitly approved release mutation WHEN this task completes THEN no retag, force-push, or remote update occurs
+    - GIVEN release mutation is required WHEN this task completes THEN the exact proposed commands and risks are presented for explicit approval
+  plan: zhivqvgvcj

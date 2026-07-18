@@ -1,0 +1,10 @@
+id: mpjjqhskgz
+artifact: plan
+record:
+  name: Migrate Lifecycle Validation To Registry
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: trfrmmbocn

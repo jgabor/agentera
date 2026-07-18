@@ -1,0 +1,13 @@
+id: ozpfffsvza
+artifact: plan
+record:
+  name: Add the machine-readable bundle and skill terminology authority
+  depends_on:
+    - xbjiabnshx
+  status: complete
+  evidence:
+    - Added `references/cli/bundle-skill-vocabulary.yaml` defining Agentera app files, suite package, plugin-shipped hooks, removed `bundle-status` command, Agentera skill dispatcher, skill entry file, v1 skill entry file, and legacy hej bridge, with allowed terms, forbidden ambiguous shortcuts, compatibility identifiers, package metadata values, historical terms, and classification rules.
+  acceptance:
+    - GIVEN the authority file is loaded WHEN canonical concepts are inspected THEN it defines Agentera app files, suite package, plugin-shipped hooks, removed `bundle-status` command, Agentera skill dispatcher, skill entry file, v1 skill entry file, and legacy hej bridge with allowed terms and forbidden ambiguous shortcuts.
+    - GIVEN compatibility surfaces are inspected WHEN the authority is read THEN it preserves concrete shipped identifiers and path-like references instead of forcing mechanical renames.
+  plan: zpowcpmdaq

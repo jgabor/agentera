@@ -1,0 +1,12 @@
+id: xokrgmvagw
+artifact: plan
+record:
+  name: Shell startup files are diagnostic-only
+  depends_on:
+    - rantynvyfo
+  status: complete
+  acceptance:
+    - GIVEN shell startup files contain Agentera lines WHEN setup, doctor, upgrade preview, upgrade apply, or repair guidance runs THEN those files remain byte-for-byte unchanged.
+    - GIVEN a legacy Agentera shell startup line is detected WHEN diagnostics are rendered THEN the message says Agentera will not edit it and treats cleanup as a user-owned manual boundary.
+    - GIVEN Copilot needs Agentera app context WHEN setup or upgrade runs THEN no persistent shell startup change is made and supported per-invocation or runtime-native guidance is shown instead.
+  plan: lxpdfnzgfj

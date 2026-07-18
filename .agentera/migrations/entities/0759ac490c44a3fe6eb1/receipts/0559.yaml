@@ -1,0 +1,13 @@
+id: jcktjiqbqb
+artifact: plan
+record:
+  name: Update callers, contracts, docs, and tests
+  depends_on:
+    - zvqmpmicen
+  status: complete
+  acceptance:
+    - GIVEN CLI contracts mention capability context WHEN contract tests run THEN they describe `prime --context <capability>` as the single 3.0 `capability_context` shape and do not preserve `--context-profile full` or `hej --capability-context` as supported behavior.
+    - GIVEN capability guidance, README, UPGRADE, or docs mention JSON startup profiles WHEN documentation checks run THEN they teach the 3.0 prime shape and classify old full-profile and `hej --capability-context` examples as historical or removed.
+    - GIVEN runtime adapters or tests consume capability startup JSON WHEN they run THEN they read `capability_context` from `prime --context` directly and do not depend on legacy top-level context siblings.
+    - GIVEN public JSON inventory entries are marked change WHEN implementation completes THEN their planned actions are reflected in code, docs, and tests.
+  plan: zcmzsbifdp

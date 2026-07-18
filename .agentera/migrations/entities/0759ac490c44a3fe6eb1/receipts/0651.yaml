@@ -1,0 +1,14 @@
+id: weoqrmnivx
+artifact: plan
+record:
+  name: Connect docs and focused contract checks
+  depends_on:
+    - tfzlqmokqk
+    - fcgysmzwut
+  status: complete
+  evidence:
+    - Updated `docs/vocabulary.md`, README capability-author guidance, and `.agentera/docs.yaml` so humans and docs indexes delegate Decision 57 details to the machine-readable authority without pretending the rename, validators, runtime descriptors, CLI metadata, or first-invocation behavior already changed. Added `tests/test_capability_instruction_contract.py` for source-index wiring, docs delegation, current compatibility state, future terms, and later implementation separation.
+  acceptance:
+    - GIVEN `docs/vocabulary.md` and user-facing docs are inspected WHEN the contract is documented THEN they delegate the detailed Decision 57 boundary to the structured authority and explain the future rule without pretending the rename or CLI metadata already exists.
+    - GIVEN focused contract tests run WHEN the docs are updated THEN they prove source-index wiring, docs delegation, allowed current compatibility references, and explicit separation from later rename and metadata work.
+  plan: splciiwdtn

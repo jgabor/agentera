@@ -1,0 +1,12 @@
+id: kotzqzoolq
+artifact: plan
+record:
+  name: Fix TODO Parser
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN TODO.md with `- [fix]` items WHEN `agentera state todo --format json` THEN `open_count` matches actual open items
+    - GIVEN TODO.md with severity sections WHEN parser runs THEN each item assigned correct severity
+    - GIVEN TODO.md with Resolved section WHEN parser runs THEN resolved items excluded from open count
+  plan: swacjgsmpq

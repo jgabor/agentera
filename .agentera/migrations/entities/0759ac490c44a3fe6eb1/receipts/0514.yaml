@@ -1,0 +1,12 @@
+id: yflqhldujn
+artifact: plan
+record:
+  name: Document unknown-hash and shallow-clone skip behavior
+  depends_on:
+    - gtdqknadmp
+  status: complete
+  acceptance:
+    - GIVEN the progress schema notes (skills/agentera/schemas/artifacts/progress.yaml) and/or UPGRADE.md WHEN read THEN they explain the guard and backfill intentionally skip commit objects unknown to the local clone (cross-clone copies, shallow CI checkouts) and how to reconcile when hit
+    - GIVEN the docs change WHEN touched-artifact validation and compaction run THEN they pass and stay within budget
+    - GIVEN the schema note WHEN added THEN it matches the guard's actual behavior verified in tests
+  plan: jynhicyclu

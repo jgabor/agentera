@@ -1,0 +1,7 @@
+id: bxjguhgoui
+artifact: docs
+record:
+  document: Codex setup helper
+  path: scripts/setup_codex.py
+  last_updated: 2026-05-17
+  status: current

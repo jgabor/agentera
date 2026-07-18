@@ -1,0 +1,39 @@
+id: dmdkskyqxj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-16
+    status: archived
+    reviewed: 2026-05-16
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    title: Planera Prose Re-Read Reduction Plan
+  what: Reduce repeated reads of `skills/agentera/capabilities/planera/prose.md` during normal Planera invocation by making compact Planera workflow guidance discoverable through one existing Agentera startup/introspection seam, so agents can plan from bounded CLI-provided context instead of rereading the full prose file every time.
+  why: The latest startup benchmark reports `capability_prose_read_counts.planera=5`. The prior plan reduced raw PLAN.md artifact reads, but Planera still lacks a compact startup contract for its own workflow. If agents must reread the prose to recover planning levels, orient/specify/review/write/handoff boundaries, artifact-write exceptions, and handoff expectations, each Planera invocation pays avoidable context overhead.
+  constraints: Preserve the single bundled skill architecture and Decision 43 separation between slash routes and CLI state commands. Do not add `agentera planera`, any other capability-name CLI command, or a hidden Planera alias. Do not remove Planera prose or make it unauthoritative for detailed behavior. For normal Planera execution, start from CLI-provided compact context; read `planera/prose.md` only when editing Planera, resolving contradiction or ambiguity, validating detailed behavior not covered by the compact contract, or investigating benchmark/read-trigger evidence. Do not redesign all capabilities, solve unrelated prose-read hot spots, duplicate contract-owned planning levels/artifact names/capability vocabulary in tests when a source model can be used, mutate decision satisfaction, edit vision or objective state, refresh installed apps or profiles, publish, push, tag, or change package-manager state.
+  scope:
+    included:
+      - Classification of the benchmark source behind `capability_prose_read_counts.planera=5` into avoidable normal invocation reads versus legitimate development/test reads.
+      - Verification of existing Planera startup/introspection seams before choosing one canonical compact guidance surface.
+      - A bounded Planera startup contract or context exposed through the selected existing seam.
+      - Focused tests for the compact guidance shape, unsupported-command boundary, and focused no-prose-read startup path.
+      - Guidance alignment that points normal Planera execution at compact context while preserving prose as detailed authority.
+      - Policy-required mapped artifact closeout and version gate if the implemented change requires it.
+    excluded:
+      - Broad prompt-compression redesign or changing every capability prose surface.
+      - Deleting `prose.md` or replacing prose as the detailed source of truth.
+      - Changing the plan artifact schema or Realisera execution semantics.
+      - Solving Orkestrera, Hej, Resonera, DECISIONS.md, or AGENTERA_ARTIFACTS raw/prose-read TODOs.
+      - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, package-manager updates, or decision satisfaction changes.
+    deferred:
+      - Similar compact startup contracts for other capabilities with measured prose-read pressure.
+      - Broader artifact path discovery through `agentera describe` or hej composite output.
+      - Runtime-level prompt caching or host-specific skill-loading changes.
+  design: "Keep Planera prose as the detailed source of truth, but expose a compact normal-startup read model through exactly one existing state/introspection seam after verifying current behavior. Prefer `agentera hej --format json --capability-context planera` only if it is already the supported capability startup path; otherwise document the chosen seam before implementation. The compact payload should be bounded and stable: planning levels, step names, CLI-first orientation policy, artifact write/archive exceptions, full-plan review/self-audit requirement, and handoff rules. Tests should validate the selected structured output and stable discoverability markers, not brittle prose paragraphs."
+  overall_acceptance:
+    - GIVEN normal Planera execution starts after CLI state access WHEN the selected compact context is available THEN the agent has enough bounded workflow guidance to plan without rereading `skills/agentera/capabilities/planera/prose.md` defensively.
+    - GIVEN Planera prose remains the detailed authority WHEN behavior is ambiguous, contradictory, under test, or being edited THEN the compact contract and guidance explicitly permit reading it.
+    - GIVEN command vocabulary is reviewed WHEN the plan completes THEN Agentera keeps routine state commands and slash-route aliases separate and `agentera planera` remains unsupported.
+    - GIVEN benchmark-driven work is closed WHEN evidence is reviewed THEN measured Planera prose pressure is classified and either a focused no-prose-read startup path is proven or the remaining measurement caveat is explicit.
+  surprises:
+    - "Adversarial review found nine issues and all were addressed: verify seams before choosing one; define prose authority precisely; classify exact benchmark read sources; require mapped artifact closeout; avoid brittle prose tests; avoid duplicating contract-owned vocabulary; assert unsupported Planera command behavior; require focused no-prose-read evidence; and move guidance alignment after contract tests."

@@ -1,0 +1,29 @@
+id: ntynvndxnl
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-25
+    status: complete
+    reviewed: 2026-05-25
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    title: Profilera Cursor session corpus parity
+  what: Add read-only Cursor IDE session mining to scripts/extract_corpus.py so profilera and agentera stats refresh can normalize Cursor agent transcripts into the Section 22 corpus alongside Claude Code, Codex, OpenCode, and GitHub Copilot.
+  why: 2.7.0 shipped first-class Cursor runtime hooks and agents but left profilera without a cursor runtime in RUNTIME_STORE_GLOBS. Users on Cursor cannot contribute decision history to PROFILE.md until local ~/.cursor/projects agent-transcript stores are discoverable, parsed, and covered by fixture-backed tests.
+  constraints: Preserve Decision 55 stats consent boundaries and existing agentera stats refresh workflow. Keep extraction local-only, read-only, and privacy-safe with no transcript leakage in tests, smoke, or diagnostics. Reuse existing record families and degradation metadata patterns. Do not add agentera corpus namespace, bump versions, tag, push, or edit vision or objective state without explicit approval.
+  scope:
+    included:
+      - Cursor IDE agent-transcript discovery and extraction from ~/.cursor/projects/*/agent-transcripts/*/*.jsonl
+      - Normalized history_prompt, conversation_turn, and tool_call records where schema permits
+      - Fixture-backed tests, offline smoke parity, references/adapters/cursor.md corpus section, runtime parity doc updates
+    excluded:
+      - Live paid Cursor cloud agent sessions, remote APIs, profile scoring model changes, destructive store repair
+    deferred:
+      - cursor-agent CLI separate storage parity if it diverges from IDE transcript layout
+      - Cross-runtime deduplication beyond existing within-runtime source_id rules
+  design: Follow the 2026-05-13 profilera corpus parity pattern. Document observable Cursor storage first, add a cursor runtime extractor to the shared normalization surface, prove privacy-safe fixture parity, then extend offline smoke. Map project roots to Cursor project dirs via repo.json or path slug heuristics before scanning transcripts.
+  overall_acceptance:
+    - GIVEN Cursor agent-transcript stores exist on the host WHEN profilera corpus extraction completes THEN cursor records merge with Claude, Codex, OpenCode, and Copilot data using the same Section 22 envelope
+    - GIVEN diagnostics, tests, or smoke report extraction state WHEN inspected THEN they show counts, statuses, bounded reasons, and remediation labels, not raw transcript content
+  surprises:
+    - agentera stats refresh inherits cursor extraction automatically through default extract_corpus.py flags without a separate stats command change.

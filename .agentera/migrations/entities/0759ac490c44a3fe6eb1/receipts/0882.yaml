@@ -1,0 +1,12 @@
+id: ltauncpylu
+artifact: plan
+record:
+  name: Implement v2/v3 coexistence detection (TODO L25 → both)
+  depends_on:
+    - ayeuhkbcbv
+  status: complete
+  acceptance:
+    - 'GIVEN `feat/v3` base WHEN the symmetric v3 doctor probe is added to `packages/cli/src/setup/doctor.ts` THEN it detects v2 stable (probe the legacy v2 install root `~/.local/share/agentera/` for the Python-managed app) and warns with a user-facing message: "v2 detected alongside v3; pick one line" with three user-facing choices: complete v3 migration, uninstall v2, stay on v3 explicitly; the v3 probe is the `feat/v3` side of the `→ both` work'
+    - GIVEN the v3 probe WHEN `packages/cli/test/cli/coexistenceProbe.test.ts` runs THEN a v3 install alongside v2 install shows the symmetric warning; the new probe regression is green; per V5 the proportionality target is one pass + one fail per probe scenario (v2-detected + v3-detected + both-detected + neither = 4 × 2 = 8 cases)
+    - GIVEN the v3 probe WHEN the implementation commit lands on `feat/v3` THEN the v2-side probe (Python stable) is a separate `feat/v3-rewrite-completion-both` branch off `main` after T11; the v2-side test cannot run in this worktree's vitest, and the round-trip parity test (v3 probe reads v2 probe output) verifies the backport
+  plan: lzsuezxesf

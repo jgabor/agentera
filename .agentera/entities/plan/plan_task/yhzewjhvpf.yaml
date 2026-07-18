@@ -1,0 +1,10 @@
+id: yhzewjhvpf
+artifact: plan
+record:
+  name: Align Documentation And Validate Close
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: lqpeumgews

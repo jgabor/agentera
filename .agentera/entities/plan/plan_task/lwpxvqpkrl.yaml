@@ -1,0 +1,15 @@
+id: lwpxvqpkrl
+artifact: plan
+record:
+  name: Publish record-local amendments with recovery
+  depends_on:
+    - xxogbsqwuf
+  status: complete
+  acceptance:
+    - GIVEN a valid amendment WHEN dry-run runs THEN it reports the exact revision, effective-record, and projection effects without changing any file.
+    - GIVEN apply succeeds WHEN the decision is reread THEN immutable revision evidence, effective detail, and any full or summary projection representation agree.
+    - GIVEN unrelated records with comments, formatting, or unsupported labels WHEN one full decision is amended THEN their canonical values remain identical and their bytes remain identical; if a safe target-only change cannot be proven, apply refuses without side effects.
+    - GIVEN interruption after staging, base or revision publication, projection publication, or directory synchronization WHEN the command retries THEN stable revision identity and publication evidence converge without duplicates or mixed effective state.
+    - GIVEN concurrent projection change, stale base hash, duplicate revision conflict, or unsafe target identity WHEN publication begins THEN existing bytes remain preserved and the error provides a working retry or repair action.
+    - GIVEN every publication boundary WHEN recovery tests run THEN each boundary has pre-publication, partial-publication, retry, idempotent replay, and conflict assertions.
+  plan: sfpbprzfge

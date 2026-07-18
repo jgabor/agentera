@@ -1,0 +1,16 @@
+id: fhbmuezwzl
+artifact: plan
+record:
+  name: Update contracts, skill routing, docs, hooks, and CI references
+  depends_on:
+    - yvadqzntmf
+    - rjqjxgukmg
+    - jggbtddlgy
+  status: complete
+  evidence: SKILL.md bare `/agentera` and bare `hej` route through `agentera prime`; AGENTS.md, README, and UPGRADE prefer `state`, `check`, and `schema` namespace forms with migration alias notes; `.lefthook.yml` and CI call `agentera check compact`; planera startup contract and agent-ready-state contract point discovery to `agentera schema`; focused contract and helper-script policy tests updated.
+  acceptance:
+    - GIVEN `skills/agentera/SKILL.md` bare `/agentera` and bare `hej` routing WHEN prose is inspected THEN the installed CLI gate calls `agentera prime` and renders from that composite result.
+    - GIVEN AGENTS.md and README validation examples reference CLI commands WHEN inspected THEN they prefer namespace forms while noting migration aliases where still supported.
+    - GIVEN `.lefthook.yml` and CI workflows reference `agentera gate` WHEN updated THEN they call `agentera check compact` (or equivalent canonical form) without changing gate semantics.
+    - GIVEN `agentera prime --context planera` startup contract references `describe` WHEN updated THEN it points agents to `agentera schema` for discovery.
+  plan: jgfblycafy

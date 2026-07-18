@@ -1,0 +1,37 @@
+id: pkfbsrvrby
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-18
+    status: archived
+    reviewed: 2026-05-18
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    revised: Added explicit compatibility-fixture boundaries and split validation so the plan does not imply a blind repository-wide text replacement or require the full suite before focused contract checks have narrowed failures.
+    title: Capability Instructions File Rename
+  what: Rename the canonical capability instruction files from `skills/agentera/capabilities/*/instructions.md` to `instructions.md`, then update the Agentera skill entry point, schema contract, runtime descriptors, scripts, docs, tests, package metadata, and compatibility fixtures so `instructions.md` is the supported convention and `instructions.md` survives only where explicitly preserved for historical or compatibility evidence.
+  why: This is the highest-priority open TODO and the implementation step after Decision 57's capability instruction contract. Agents need the repository, runtime descriptors, validators, and docs to agree on the canonical file name before later `first_invocation_read` metadata and validation-regression work can be completed without ambiguous startup-read behavior.
+  constraints: Keep this plan scoped to the `instructions.md` to `instructions.md` rename and direct reference updates. Do not implement `first_invocation_read` metadata emission, do not close the later validation/regression TODO unless its explicit coverage is actually added, do not perform broad unrelated vocabulary sweeps, do not rewrite historical archives except preserving the completed prior plan, do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  scope:
+    included:
+      - "`skills/agentera/capabilities/*/instructions.md` file renames to `instructions.md`."
+      - Current references in `skills/agentera/SKILL.md`, `skills/agentera/capability_schema_contract.yaml`, runtime descriptors, scripts, docs, tests, package metadata, and compatibility fixtures.
+      - Validator and test expectations needed to treat `instructions.md` as canonical while preserving explicit historical or compatibility records.
+      - Plan, progress, TODO, and changelog closeout metadata for this rename cycle.
+    excluded:
+      - Implementing `first_invocation_read` CLI metadata behavior or compact-startup exception plumbing beyond direct references required by the rename.
+      - Broad route/router/orchestration vocabulary regression sweeps not directly caused by the instruction-file rename.
+      - Rewriting archived historical records solely to remove old `instructions.md` mentions.
+      - Runtime app/profile refreshes, package publication, version bumps beyond the repository's normal closeout requirements, protected vision/objective edits, and decision satisfaction changes.
+    deferred:
+      - The open `first_invocation_read` metadata TODO.
+      - The open validation/regression TODO proving capability directories require `instructions.md`, if its full scope is not completed as part of this implementation.
+  design: Treat the rename as a contract migration, not a string replacement. First build an inventory of canonical references, generated/package surfaces, tests, and historical fixtures. Then move the real capability files and update loaders, descriptors, validators, and docs through the contract-owned surfaces instead of duplicating directory rules. Finally, run focused capability-contract validation before the broader suite so compatibility fixture failures can be classified as intentional preservation or canonical mismatch.
+  overall_acceptance:
+    - All real Agentera capability instruction files use `instructions.md` as the canonical filename, with loaders and validators aligned to that convention.
+    - Current docs, schemas, runtime descriptors, scripts, package metadata, and tests no longer present `instructions.md` as the canonical capability instruction path.
+    - Any surviving `instructions.md` occurrence is explicitly compatibility-preserved, historical, fixture-only, generated-output evidence, or unrelated prose.
+    - The `[fix:2.4.x]` capability instruction rename TODO is resolved without implementing out-of-scope `first_invocation_read` behavior or protected artifact mutations.
+  surprises:
+    - The documented required command `agentera validate capability skills/agentera/capabilities` exposed that the CLI only validated a single capability path; it now expands the canonical capabilities root and validates all twelve capabilities.
+    - OpenCode and Codex descriptor validation had already been manually fixed for direct subagent execution; this cycle preserved that behavior while updating descriptor instruction-file paths.

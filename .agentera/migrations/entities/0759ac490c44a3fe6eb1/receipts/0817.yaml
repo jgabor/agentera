@@ -1,0 +1,13 @@
+id: pyvhjfiekf
+artifact: plan
+record:
+  name: Safe app-home precedence under stale environments
+  depends_on:
+    - mpognmijbk
+    - iosvvzmwah
+  status: complete
+  acceptance:
+    - GIVEN the host environment names the exact deprecated default app home and that app is missing or stale WHEN Agentera resolves its app home THEN the platform app home is selected when safe and the diagnostic explains the deprecated value was treated as legacy residue.
+    - GIVEN the host environment names any custom unknown app home WHEN Agentera resolves its app home THEN Agentera blocks silent fallback or overwrite and asks for an explicit safe directory decision.
+    - GIVEN a valid explicit app home is supplied WHEN repair preview or apply runs THEN that explicit value remains authoritative.
+  plan: jvhogzywxg

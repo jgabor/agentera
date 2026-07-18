@@ -1,0 +1,35 @@
+id: dqipjmhdxs
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-13
+    status: complete
+    reviewed: 2026-05-13
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    revised: "[task-8-complete] Final state sync recorded startup-overhead evidence, the recommendation gate, privacy validation, follow-up TODO handoff, and the explicit no-release-target gate. Recommendation-selected implementation is not implemented in this plan; it is captured as future CLI startup-envelope planning work. Version-bearing files remain unchanged because no release target was selected."
+    title: Quantify post-2.3 capability startup overhead
+  what: Analyze post-2.3 Agentera session logs to quantify capability startup tool calls and artifact reads before designing any startup-state envelope or capability guidance changes.
+  why: Decision 51 identified latency and cost from repeated startup reads as the real follow-up to Decision 41. A generic CLI startup envelope may help, but only if real post-2.3 sessions show broad startup overhead rather than isolated capability habits.
+  constraints: Keep analysis local-only and privacy-preserving. Do not emit raw transcript text, full local paths, raw store paths, unredacted session ids, or reconstructable debug logs in committed artifacts, stdout snapshots, reports, fixtures, or temporary outputs. Do not run live hosts by default. Do not implement a startup-state envelope, refactor capability behavior, run package updates, bump versions, push, publish, refresh installed apps, edit vision state, or touch objective state without explicit approval.
+  scope:
+    included:
+      - Post-2.3 corpus/session discovery using the existing Section 22 corpus shape where possible.
+      - Privacy-preserving startup event classification for capability startup windows.
+      - Metrics that separate CLI state calls, raw artifact reads, capability prose reads, and implementation work.
+      - Threshold derivation, recommendation report, tests, non-live validation, and state sync.
+    excluded:
+      - Implementing a CLI startup envelope or changing capability startup behavior.
+      - Uploading transcripts, storing raw transcript excerpts, or committing local path/session identifiers.
+      - Profiling unrelated repositories by default or running live paid hosts.
+      - Version bumps, package-manager updates, publication, pushes, installed app refresh, vision edits, or objective-state edits.
+    deferred:
+      - A follow-up plan for a CLI startup envelope if broad measured overhead is proven.
+      - A follow-up plan for targeted capability guidance fixes if only narrow hotspots are proven.
+  design: Anchor the work in scripts/extract_corpus.py, scripts/usage_stats.py, tests/test_extract_corpus.py, and tests/test_usage_stats.py. Preserve the existing Section 22 corpus contract unless a versioned extension is explicitly justified. Define post-2.3 from repository release evidence, classify startup windows from user turn or route trigger through capability intro until the first implementation-classified action, next user turn, or bounded event/time cap, and emit canonical labels or salted hashes instead of raw text or full paths.
+  overall_acceptance:
+    - GIVEN post-2.3 Agentera sessions exist WHEN the analysis runs THEN it quantifies capability startup overhead without storing raw transcript content or full local paths.
+    - GIVEN the report is reviewed WHEN a follow-up is chosen THEN the next step is evidence-backed: CLI envelope, targeted capability fixes, or no implementation.
+    - GIVEN validation completes WHEN results are recorded THEN all evidence is local-only, privacy-preserving, and reproducible from fixtures or local session stores.
+  surprises:
+    []

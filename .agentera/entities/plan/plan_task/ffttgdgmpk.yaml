@@ -1,0 +1,12 @@
+id: ffttgdgmpk
+artifact: plan
+record:
+  name: Py/TS extractor parity gate
+  depends_on:
+    - rvinwzsqov
+  status: complete
+  acceptance:
+    - GIVEN a seeded opencode.db fixture WHEN both extractors run THEN record_count, earliest, and latest match
+    - GIVEN TS source changes caps or discovery logic WHEN bundle:data regenerates THEN either the Python surface reflects TS output or CI fails with an explicit parity error
+    - GIVEN parity drifts without an intentional version break WHEN parityCheck runs THEN the test fails before merge
+  plan: zyisuuikti

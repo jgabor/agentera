@@ -1,0 +1,6 @@
+id: icjbcgbuuz
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[docs:3.0.0] Decide long-term editor skill-bundle role (coexist vs eventual sunset) — horizon item, not blocking mobile v1."

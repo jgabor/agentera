@@ -1,0 +1,18 @@
+id: tmptmprqrg
+artifact: plan
+record:
+  name: Focused execution-context regression coverage
+  depends_on:
+    - qexjipdauk
+    - iunldbwlbc
+    - npujkmdtzr
+  status: complete
+  acceptance:
+    - GIVEN complete synthetic plan fixtures are available WHEN focused CLI tests run THEN they assert stable execution_context top-level keys, complete source contract metadata, no unsupported command text, conservative source scope, changelog fallback coverage, and raw-read-last-resort policy.
+    - GIVEN no-plan, blocked plan, dependency-unready task, empty acceptance, completed-plan sweep, stale profile, compacted decision caveat, missing changelog, unsupported sparse field, and parser-negative scenarios are tested WHEN focused tests run THEN each case has deterministic complete, incomplete, or caveated outcomes with exact caveat and fallback assertions.
+    - GIVEN unsupported `agentera realisera` and `agentera build` probes are needed WHEN tests run THEN those probes are isolated to parser assertions and do not appear in runtime fallback guidance, source contracts, or prose startup instructions.
+    - GIVEN Decision 45 and field-selection tests run WHEN implementation is complete THEN `execution_context` is represented in the structured hej envelope for Realisera and unsupported fields still fail without partial stdout.
+  evidence:
+    - "`tests/test_query_cli.py` covers plan-driven Realisera execution context, blocked/dependency-unready incomplete fallback behavior, sparse `execution_context` field selection, and negative `realisera`/`build` parser probes."
+    - "`tests/test_decision45_cli_contract.py` asserts Decision 45 hej fields, execution-context semantics, and startup state-family registration."
+  plan: xxmtzpgjds

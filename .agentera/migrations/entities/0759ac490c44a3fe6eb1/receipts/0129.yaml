@@ -1,0 +1,7 @@
+id: sunwpdhdef
+artifact: docs
+record:
+  document: Python package manifest
+  path: pyproject.toml
+  last_updated: 2026-05-16
+  status: current

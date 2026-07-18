@@ -1,0 +1,10 @@
+id: whgjievweq
+artifact: plan
+record:
+  status: complete
+  acceptance:
+    - packages/mobile stub README; lefthook/CI paths documented or wired when code moves; standalone repo redirect note.
+  name: Monorepo integration stub and CI wiring
+  depends_on:
+    []
+  plan: mbaoufkhpc

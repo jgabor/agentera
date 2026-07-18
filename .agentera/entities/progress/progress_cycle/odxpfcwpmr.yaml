@@ -1,0 +1,16 @@
+id: odxpfcwpmr
+artifact: progress
+record:
+  timestamp: 2026-07-14 21:01
+  type: fix
+  phase: build
+  what: Made TODO resolved compaction require one section, keep a positional 10/40/50 newest-first queue, summarize rows 11-50, and report Git-only recovery without implying lossless archival.
+  inspiration: The archive-backed storage review identified TODO Resolved as the remaining destructive compaction path and the user chose explicit Git archaeology over new archive machinery.
+  discovered: The duplicate sections were not globally newest-first, body-based tier classification retained only 40 inline rows, and in-budget long rows were counted as summaries without being reformatted.
+  verified: "Full CLI suite passed: 177 files, 1,833 tests. Typecheck and build passed. TODO validation passed with one Resolved section; check compact passed with active=10, archive=40, total=50, over_limit=0; rows 11-50 are at most 15 words and fix mode is idempotent. Bundle parity and git diff checks passed."
+  next: No TODO archive machinery is planned; previously committed dropped rows remain available through git log -p -- :/TODO.md.
+  context:
+    intent: Keep TODO.md intentionally bounded and non-archived while making destructive compaction explicit, deterministic, and safe against duplicate-section blind spots.
+    constraints: Do not add stable TODO IDs, archive files, retrieval commands, migration machinery, or claim non-Git recovery.
+    unknowns: None.
+    scope: TODO compaction parser, validator, status and CLI diagnostics, apply logic, regression fixtures, TODO schema/contract, live TODO normalization, changelog, and progress evidence.

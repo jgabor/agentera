@@ -1,0 +1,7 @@
+id: jeoeiyipao
+artifact: docs
+record:
+  document: Capability contract interface tests
+  path: tests/test_capability_contract_interface_usage.py
+  last_updated: 2026-05-06
+  status: current

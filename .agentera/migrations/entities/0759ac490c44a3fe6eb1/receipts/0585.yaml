@@ -1,0 +1,15 @@
+id: rfzuprdhlq
+artifact: plan
+record:
+  name: Verify measurement and handoff
+  depends_on:
+    - gocnieoxrd
+  status: complete
+  acceptance:
+    - GIVEN implementation is complete WHEN verification runs THEN focused CLI tests, artifact-registry contract tests, cross-capability guidance tests, and mapped artifact validators pass.
+    - GIVEN benchmark or proxy evidence is available WHEN closeout records results THEN it reports whether `AGENTERA_ARTIFACTS` raw-after-CLI pressure is reduced, unavailable, or not currently reproduced, without hiding degraded runtime coverage.
+    - GIVEN the plan is handed to execution WHEN Planera exits THEN `.agentera/plan.yaml` is active, the previous complete plan is archived, `git diff --check` passes, and no excluded state was changed.
+  evidence:
+    - "Verification passed: 307 focused/relevant tests across query CLI, artifact registry contract, cross-capability guidance, Dokumentera, Planera, Orkestrera, and startup analysis; capability contract self-validation passed; `git diff --check` passed."
+    - "Proxy evidence: the new CLI surfaces directly expose mapped paths and normal read commands, addressing the historical AGENTERA_ARTIFACTS path-discovery reason. No live benchmark was run; retained history remains the baseline and legitimate raw writes/diagnostics are explicitly excluded from the reduction claim."
+  plan: dcoyjwccxs

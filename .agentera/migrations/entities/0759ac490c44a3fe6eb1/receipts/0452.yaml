@@ -1,0 +1,14 @@
+id: kkaiilxnnr
+artifact: plan
+record:
+  name: Focused regression validation
+  depends_on:
+    - qivjnjhmrs
+    - sejuntakyj
+    - hcnfakjywu
+  status: complete
+  acceptance:
+    - GIVEN app-home resolution changes are complete WHEN focused tests run THEN positive and negative coverage protects normal defaults, stale legacy residue, valid custom overrides, and unsafe selected directories.
+    - GIVEN status semantics change WHEN CLI regression tests run THEN JSON and text outputs preserve dry-run-before-write, approval text, retry commands, and read-only doctor behavior.
+    - GIVEN runtime propagation changes are complete WHEN adapter tests run THEN every modified adapter preserves custom installs and rejects stale blind propagation.
+  plan: gjjuohyorr

@@ -1,0 +1,6 @@
+id: likwfmvfny
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[refactor:3.0.0] Refactor plan levels from skip/light/full to light/normal/full. Remove skip mode so every direct plan invocation produces at least a light plan: light for trivial or localized work, normal for clear single-cycle work, and full for multi-cycle or architecture-spanning work. Update the runtime startup contract, plan instructions, schemas, validation, and tests to use the new three-level taxonomy consistently."

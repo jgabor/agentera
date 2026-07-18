@@ -1,0 +1,16 @@
+id: eqvjlmqlgu
+artifact: progress
+record:
+  timestamp: 2026-07-17 05:07
+  type: feat
+  phase: build
+  what: Cut decisions over to canonical entity authority
+  inspiration: PLAN Task 5 and Decision 94
+  discovered: Satisfaction needs one replaceable owner per decision while revisions need immutable decision-plus-base-hash ownership; generic ownership validation makes branch divergence explicit without family-specific race logic.
+  verified: "Focused decision/entity suites: 138/138 passed. Full CLI suite: 2480/2480 passed. Typecheck and build passed. State validation passed with 0 issues. Capability discuss and capability-contract validation passed. Compaction passed with 0 over-limit artifacts and 0 errors."
+  next: Proceed to Task 6 only; health, plans, objectives, TODO, docs inventory, durable apply, and global consumer cutover remain pending.
+  context:
+    intent: Execute PLAN Task 5 with isolated decision bases, satisfaction ownership, immutable revisions, and bare-ID effective reads while preserving marker-absent legacy behavior
+    constraints: Decisions family only; no migration marker, dual write, durable apply, other family cutover, TODO/docs inventory, publish, push, or vision changes.
+    unknowns: None for Task 5; later family and global consumer tasks remain pending.
+    scope: Decision entity writer/read/list, satisfaction and revision authority, shared ownership validation and exact replacement, tests, changelog, authority, plan, and progress state.

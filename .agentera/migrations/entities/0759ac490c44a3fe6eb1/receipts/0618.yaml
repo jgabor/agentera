@@ -1,0 +1,14 @@
+id: itnvrklefx
+artifact: plan
+record:
+  name: Add focused metadata regressions
+  depends_on:
+    - tpmzpdgghe
+    - tvurtcvtho
+  status: complete
+  acceptance:
+    - GIVEN the focused test suite runs WHEN doctor, hej, and upgrade emit structured app lifecycle metadata THEN tests reject deprecated aliases such as `fresh`, `stale`, `refresh_required`, `app_refresh_required`, `fixed`, `ready`, `pending`, and `noop` as canonical app lifecycle statuses while allowing documented compatibility aliases, historical fixtures, plain prose, and non-app `refresh` command names.
+    - GIVEN the lifecycle vocabulary authority changes or consumers drift WHEN tests load the authority THEN doctor/hej/upgrade allowed status sets stay synchronized with the authority's consumer ownership boundaries.
+  evidence:
+    - Extended `tests/test_lifecycle_vocabulary_authority.py` to load the authority, assert doctor and hej app metadata statuses stay inside their allowed sets, assert upgrade `lifecycleStatus` maps `pending` to `ready_to_apply` and `noop` to `no_changes_needed`, and reject the stale `bundle.get("status") != "fresh"` consumer check.
+  plan: ddnfuvslbw

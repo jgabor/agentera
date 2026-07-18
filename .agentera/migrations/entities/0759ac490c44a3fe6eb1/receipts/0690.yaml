@@ -1,0 +1,11 @@
+id: tskufkjorm
+artifact: plan
+record:
+  name: Confirm v1 Markdown artifact automation
+  depends_on:
+    - wjqviwmogo
+  status: complete
+  acceptance:
+    - GIVEN canonical v1 Markdown artifacts exist WHEN the artifacts phase previews THEN all supported Markdown sources are listed with YAML targets and backups.
+    - GIVEN artifact migration applies WHEN the v1 sources are supported THEN source Markdown files are archived and removed without touching unrelated files.
+  plan: zyszgrkwrx

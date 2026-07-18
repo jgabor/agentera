@@ -1,0 +1,12 @@
+id: wvwpozznjj
+artifact: plan
+record:
+  name: Verify and synchronize closeout
+  depends_on:
+    - guwcgoqwcr
+    - vebwkmtbpa
+  status: complete
+  acceptance:
+    - GIVEN routing and Planera guidance changed WHEN focused tests and capability validation run THEN the schema routing, Planera prose, skill dispatch, and Planera startup contract checks pass.
+    - GIVEN the batch is complete WHEN artifacts are synchronized THEN TODO, CHANGELOG, PLAN, and PROGRESS record the completed 2.5.0 items and the archived prior completed plan.
+  plan: ytxhvbmrte

@@ -1,0 +1,17 @@
+id: gfpdwrtlws
+artifact: plan
+record:
+  name: Validate namespace behavior
+  depends_on:
+    - lrpdivjlhv
+  status: complete
+  acceptance:
+    - GIVEN a valid capability validation target WHEN an agent uses the validate namespace THEN the command returns the same validation judgment available from the existing capability validator with stable text and JSON results.
+    - GIVEN a valid artifact validation target WHEN an agent uses the validate namespace THEN the command returns the same validation judgment available from the existing artifact validator with stable text and JSON results.
+    - GIVEN callers continue to use existing direct validation commands WHEN the validate namespace is present THEN those direct commands still work and their documented behavior is not broken.
+  evidence:
+    - Implemented `agentera validate` in `scripts/agentera` with supported target families `capability` and `artifact` only. Capability targets accept canonical capability names or paths and delegate to `scripts/validate_capability.py`; artifact targets accept canonical artifact labels, optional `--file`, optional `--cwd`, and delegate to `hooks/validate_artifact.py`.
+    - "Capability namespace checks passed: `uv run scripts/agentera validate capability hej` returned the existing validator text judgment `PASS: capability directory is valid`; `uv run scripts/agentera validate capability hej --format json` returned status `pass`, target_family `capability`, target `hej`, no violations, and embedded engine stdout/stderr evidence from the direct validator; `uv run scripts/agentera validate capability skills/agentera/capabilities/hej --format json` confirmed path targets return the same pass judgment."
+    - "Artifact namespace checks passed: `uv run scripts/agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format text` returned status `pass` with the same PLAN.md file/default mapping judgment as the direct hook; `uv run scripts/agentera validate artifact --artifact PLAN.md --file .agentera/plan.yaml --format json` returned status `pass`, target_family `artifact`, target `PLAN.md`, no violations, preserved artifact file/default mapping fields, and engine command `validate-artifact`."
+    - "Compatibility checks passed: `uv run scripts/validate_capability.py skills/agentera/capabilities/hej`, `uv run scripts/validate_capability.py --self-validate`, and `uv run hooks/validate_artifact.py --artifact PLAN.md --file .agentera/plan.yaml --format json` continued to return their direct pass judgments after the namespace was added. Invalid capability input was bounded with valid names, syntax, and example guidance via `uv run scripts/agentera validate capability notreal --format json`."
+  plan: nqybsfimjn

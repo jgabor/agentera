@@ -1,0 +1,13 @@
+id: rbnhnduipu
+artifact: plan
+record:
+  name: Migrate Registry Consumers
+  depends_on:
+    - hthtrftwat
+  status: complete
+  acceptance:
+    - GIVEN cross-capability validation runs WHEN artifact relationships are checked THEN names, paths, producers, consumers, and special cases come from registry facts rather than hardcoded translation or exception maps
+    - GIVEN scripts/agentera reads canonical artifact metadata WHEN bounded CLI consumers are updated THEN hej, todo, docs, query --list-artifacts, and one representative query command preserve baseline output except for intentional documented formatting-neutral differences
+    - GIVEN docs.yaml supplies runtime mapping overrides WHEN consumers resolve project-local paths THEN override precedence is applied after canonical registry identity is known
+    - GIVEN hardcoded artifact display/path/producer/consumer maps remain outside runtime docs override loading WHEN validation checks for duplication THEN the remaining duplication is removed or explicitly justified by an artifact contract
+  plan: ilsspfichd

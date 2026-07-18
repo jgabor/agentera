@@ -1,0 +1,13 @@
+id: wrphptreus
+artifact: plan
+record:
+  name: Port runtime adapter hooks (OpenCode/Codex/Cursor/Copilot) to TS
+  depends_on:
+    - dsofklgopk
+  status: pending
+  acceptance:
+    - "GIVEN T1's oracle WHEN `packages/cli/src/registries/runtimeAdapterRegistry.ts` and the per-runtime setup files (`packages/cli/src/setup/{opencode,codex,cursor,copilot}.ts`) are reviewed/extended THEN the hook surface coverage matches the Python side per `references/cli/runtime-adapters.md`: OpenCode `event`, `shell.env`, `chat.message`, `tool.execute.before/after`, `experimental.session.compacting`; Codex `hooks.state` trust hashes and PLUGIN_ROOT-safe apply_patch config; Cursor `preToolUse Write` and `session.created`/`session.idle` rejection; Copilot per-invocation AGENTERA_HOME"
+    - GIVEN per-runtime `subagent_dispatch` WHEN the TS implementation is reviewed THEN it matches the Python `RuntimeAdapter.subagent_dispatch` shape; descriptor bodies and trust hashes are parity-equivalent; the `agentera validate descriptors` check passes for all 36 descriptors (12 codex + 12 cursor + 12 opencode, per D65 plan T5 acceptance)
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check validate descriptors --format json` runs THEN all 12 codex + 12 opencode descriptors validate cleanly (cursor descriptors are validated by their own setup-time check and are not part of the runtime validate surface); the npmParityMatrix `runtime_adapter_hooks` family row is `equal`
+    - GIVEN the live-runtime smoke WHEN `node packages/cli/dist/bin/agentera.js eval_skills` runs against the OpenCode/Codex/Cursor/Copilot surfaces THEN the smoke is bounded offline and parity-equivalent to the Python oracle; per V5 the proportionality target is one pass + one fail per runtime (4 runtimes × 2 = 8 cases)
+  plan: cyhkcizqio

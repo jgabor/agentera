@@ -1,0 +1,12 @@
+id: kmafzdluwi
+artifact: plan
+record:
+  name: Lifecycle adapters — node default, legacy Python gated
+  depends_on:
+    - kyauqqpnwp
+  status: complete
+  acceptance:
+    - GIVEN agentera check validate lifecycle-adapters on npm v3 default path WHEN validation runs THEN packaged-Python-script and uv-binary probes do not run unless an explicit maintainer flag enables legacy parity.
+    - GIVEN lifecycleAdapters source is inspected WHEN module size is measured THEN node-form and legacy Python checks live in separate modules and no single file exceeds the 1000-line monolith gate.
+    - GIVEN vitest and lifecycle adapter tests run WHEN T3 lands THEN default validate path tests pass and legacy parity remains available behind the maintainer flag.
+  plan: nqyxvgtkhn

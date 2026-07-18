@@ -1,0 +1,24 @@
+id: vyvnuwirhj
+artifact: decisions
+record:
+  date: 2026-05-17
+  question: Should Agentera 3.0 rewrite the CLI core in TypeScript for Bun/npm distribution and runtime integration?
+  context: Agentera 2.x is a Python CLI/app-home implementation with bundled skills, scripts, hooks, references, and runtime manifests. OpenCode already relies on a JavaScript plugin that duplicates app-home/runtime bootstrap logic, and upcoming Codex/OpenCode/npm packaging work increases the pressure to make runtime integration and distribution JS-native. The user framed the 3.0 question around pure TypeScript, Bun single-binary compilation, and easier npm distribution, then selected runtime integration, whole CLI core, contract-first parity, and CLI JSON contracts as the rewrite constraints.
+  alternatives:
+    - name: Keep Python core and improve packaging only
+      status: rejected
+      description: Lowest rewrite risk, but preserves split-brain JS runtime glue around a Python core and leaves npm/single-binary distribution as an adapter layer.
+    - name: TypeScript runtime adapter layer only
+      status: rejected
+      description: Improves OpenCode/Codex/npm integration, but leaves the core CLI, validators, compaction, doctor, upgrade, and state commands in Python.
+    - name: Whole CLI core TypeScript rewrite with contract-first parity
+      status: chosen
+      description: Reimplement the supported `agentera` CLI core in TypeScript/Bun only after existing JSON contracts, exit behavior, artifact rules, and runtime gates are captured as parity tests.
+    - name: Clean-slate TypeScript rewrite
+      status: rejected
+      description: Attractive architecturally, but too likely to regress mature CLI state, upgrade, validation, compaction, and protected-artifact behavior.
+  choice: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as the 3.0 direction, gated by contract-first parity. The Python implementation remains the behavior oracle until the TypeScript CLI preserves supported command JSON output shapes, exit behavior, artifact validation, compaction, doctor/upgrade safety, verify/usage/stats semantics, and runtime adapter hooks. Bun/npm/single-binary distribution is the payoff, but not a reason to weaken existing Agentera contracts.
+  reasoning: The strongest argument for TypeScript is runtime integration, not language preference. Agentera increasingly meets users through JS-native hosts and npm-shaped plugin surfaces, while the current OpenCode plugin already carries runtime bootstrap logic that would be cleaner if the CLI core and distribution target shared one toolchain. A full rewrite is justified only if it reduces runtime/package complexity without sacrificing the current agent-ready CLI contract. Therefore the rewrite must start from golden CLI JSON contracts and parity fixtures, not from a clean-slate architecture rewrite.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, pyproject.toml, package manifests, runtime adapters, tests, README.md, UPGRADE.md, release planning
+  outcome: Treat a pure TypeScript/Bun rewrite of the whole Agentera CLI core as the 3.0 direction, gated by contract-first parity. The Python implementation remains the behavior oracle until the TypeScript CLI preserves supported command JSON output shapes, exit behavior, artifact validation, compaction, doctor/upgrade safety, verify/usage/stats semantics, and runtime adapter hooks. Bun/npm/single-binary distribution is the payoff, but not a reason to weaken existing Agentera contracts.

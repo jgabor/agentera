@@ -1,0 +1,57 @@
+id: lorvormcos
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-08
+    status: archived
+    reviewed: 2026-05-08
+    critic_issues: 10 found, 10 addressed, 0 dismissed
+    revised: |
+      Tightened completed-plan cleanup to completed tasks only; made CLI-visible stale context part of the lifecycle fix; required non-zero parseable critic findings for full plans; defined initial Agentera/hej question-tool gating without new persistent session state; named only the question-tool TODO for 2.2.1 retagging; split metadata sync from final verification; and fixed the Decision 46 archive path contract.
+    title: Agentera 2.2.1 Contract And Entrypoint Correctness Patch
+  what: |
+    Deliver a focused 2.2.1 patch that fixes Agentera plan-contract enforcement and entrypoint behavior after the 2.2.0 release train. The work closes the completed-plan lifecycle gap, hardens full-plan review validation, makes exact bare `hej` requests enter the Agentera brief path, and promotes the adjacent question-tool gating TODO into the same patch because it governs the same first-response and handoff surface.
+  why: |
+    TODO state records three exact 2.2.1 defects and one adjacent 2.2.x handoff gating defect. Grouping them as a single stability patch preserves release intent without turning 2.2.1 into general backlog cleanup. The plan protects the user's preference for evidence-backed, compact operational artifacts by making plan lifecycle, validation, and entrypoint routing observable through tests and CLI state.
+  constraints: |
+    Preserve canonical capability names, Decision 43 aliases, CLI command names, existing artifact schema boundaries, v2.2.0 behavior that is not explicitly in scope, existing vision and objective state, unrelated worktree changes, and current no-publication boundaries. Do not include the repeated fresh-project hej loop without a defined saved-context signal. Do not include TODO Resolved compaction in this patch. Do not claim live four-runtime install confidence, publish, tag, push, update package-manager installs, or refresh installed bundles unless a later explicit release instruction authorizes it.
+  scope:
+    included:
+      - archive the completed Decision 46 plan before replacing active plan state
+      - preserve plan lineage through `previous_plan_archived`
+      - close the completed-plan lifecycle gap for complete plans with all tasks complete
+      - keep blocked or incomplete plans from being archived as successful completion
+      - stop `agentera hej` from reporting stale complete-plan context after lifecycle cleanup
+      - enforce full-plan adversarial review fields and non-zero critic findings at artifact-validation time
+      - preserve light-plan validation behavior where full-review fields are intentionally absent
+      - make exact bare user message `hej` trigger the Agentera brief/dashboard path
+      - refine question-tool gating for initial Agentera/hej responses and bounded mid-conversation handoffs
+      - retag only the question-tool gating TODO from `[fix:2.2.x]` to `[fix:2.2.1]`
+      - update changelog, docs/progress state, and version files for 2.2.1 when implementation is complete
+      - run focused regressions plus relevant release verification before closure
+    excluded:
+      - repeated fresh-project hej loop behavior without a saved-context/session signal decision
+      - TODO.md Resolved-section compaction and generic artifact post-write normalization
+      - release-readiness live install proof as a scoped product fix
+      - optional Claude Code live model-host smoke
+      - generated JavaScript install-root contract follow-up
+      - CLI write support for decisions or plans outside the planned lifecycle behavior
+      - package publication, tag creation, remote push, package-manager update, installed-bundle refresh, vision edits, or objective edits
+    deferred:
+      - decide the saved-context signal for repeated fresh-project hej before implementation
+      - wire TODO Resolved compaction into artifact-writing path in a separate artifact-maintenance patch
+      - run opt-in live install proof only when release claims require that evidence
+      - consider generated JavaScript install-root contract only if fixture validation becomes insufficient
+  design: |
+    Treat 2.2.1 as a stability patch with two lanes. The plan-state lane makes completed-plan closure and full-plan review enforcement observable through the existing artifact and CLI surfaces, while explicitly preserving incomplete or blocked plan evidence. The entrypoint lane makes exact `hej` and initial Agentera/hej responses deterministic without adding new persistent session state. Metadata and version changes happen only after behavior and focused regressions prove the patch boundary.
+  overall_acceptance:
+    - GIVEN a completed active plan has all tasks complete WHEN realisera or orkestrera closes it THEN completion evidence and lineage are preserved before active plan state disappears
+    - GIVEN `agentera hej` runs after completed-plan cleanup WHEN no active plan remains THEN it no longer reports stale complete-plan context
+    - GIVEN a full `.agentera/plan.yaml` write skips adversarial review evidence WHEN artifact validation runs THEN the write fails with actionable errors
+    - GIVEN the user sends exactly `hej` WHEN Agentera handles the request THEN the Agentera dashboard path runs and emits the `⌂ hej` marker rather than generic greeting behavior
+    - GIVEN Agentera or hej presents an initial brief WHEN bounded choices were not requested THEN it avoids native question menus and leaves the user a free-form continuation path
+    - GIVEN 2.2.1 metadata is complete WHEN release state is inspected THEN only the approved promoted TODO joined the three exact 2.2.1 fixes, while deferred 2.2.x items remain deferred
+    - GIVEN final verification is recorded WHEN the plan closes THEN tests, validation, docs, progress, changelog, and version state support a 2.2.1 patch without claiming publication or live install evidence not actually produced
+  surprises:
+    []

@@ -1,0 +1,13 @@
+id: wsgagqnadr
+artifact: plan
+record:
+  name: Deliver active and archived plan retrieval
+  depends_on:
+    - ojbeagamug
+  status: complete
+  acceptance:
+    - GIVEN active and archived plans WHEN listed THEN deterministic recency, stable identity, lifecycle state, cursor, and omissions are returned.
+    - GIVEN a plan identity WHEN fetched THEN the intended full plan is returned without caller-side file traversal.
+    - GIVEN legacy, invalid, or missing archives WHEN tested THEN compatibility diagnostics and not-found behavior are explicit.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 4.
+  plan: hcjrszmsio

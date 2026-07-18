@@ -1,0 +1,16 @@
+id: iunldbwlbc
+artifact: plan
+record:
+  name: Boundary, safety, and lifecycle semantics
+  depends_on:
+    - qexjipdauk
+  status: complete
+  acceptance:
+    - GIVEN execution_context emits non-empty state families WHEN provenance is reported THEN each family uses stable source labels, source_provenance, non-empty evidence flags, and no raw artifact bodies or path-derived IDs.
+    - GIVEN plan task text lacks explicit source-file scope WHEN scope_boundary is returned THEN artifact-family scope remains available, source-file scope is `unspecified`, and the context does not invent allowed or prohibited paths.
+    - GIVEN completed-plan sweep is eligible WHEN execution_context is generated THEN `plan_completion_sweep` is read-only metadata with required updates, archive candidate, and mutation_allowed=false for context generation.
+    - GIVEN stale profile, missing vision/design/profile context, compacted decisions, or missing changelog evidence is present WHEN context is returned THEN those caveats are preserved and do not authorize profile refresh, vision edit, objective edit, installed app refresh, dispatch, commit, push, tag, or publication.
+  evidence:
+    - Output provenance uses stable source labels and `source_provenance` command pointers. Scope metadata reports artifact families and leaves source-file scope `unspecified` unless explicit paths are present.
+    - "`plan_completion_sweep` is read-only with `mutation_allowed=false`, and protected-action caveats explicitly avoid profile refresh, installed-app refresh, vision/objective edits, dispatch, commit, push, tag, and publication."
+  plan: xxmtzpgjds

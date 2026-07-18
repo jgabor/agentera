@@ -1,0 +1,15 @@
+id: buuigjsqqj
+artifact: plan
+record:
+  name: Tests for health fix and hybrid staleness
+  depends_on:
+    - ebuivmqqsy
+    - cipvalrrcs
+  status: complete
+  evidence:
+    - Added TestHealth ascending-order case and nine TestHej hybrid staleness regressions; 28 related tests pass
+  acceptance:
+    - GIVEN tests/test_query_cli.py WHEN executed after changes THEN profilera-style cases exist for inspektera stale and fresh audits including env overrides and invalid env fallback
+    - GIVEN a regression fixture with multiple audits WHEN hej health tests run THEN latest audit selection is covered by at least one failing-before/passing-after case
+    - GIVEN the proportionality target WHEN new tests are reviewed THEN each changed axis has one positive and one negative proof
+  plan: sebihbfeow

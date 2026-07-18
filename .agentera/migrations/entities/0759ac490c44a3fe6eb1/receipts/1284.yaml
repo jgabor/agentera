@@ -1,0 +1,16 @@
+id: qocmsmpddi
+artifact: progress
+record:
+  timestamp: 2026-07-15 12:57
+  type: chore
+  phase: build
+  what: Verified npm development metadata and package contents for the next available prerelease without publication.
+  inspiration: Replacement Plan Task 13 and the repository release contract.
+  discovered: npm agentera@next is 3.0.0-dev.20; the checkout had already prepared the available 3.0.0-dev.21, so no package or lockfile byte change was required.
+  verified: npm current 3.0.0-dev.20; next available and local 3.0.0-dev.21; suite surfaces 3.0.0; CHANGELOG.md retained Unreleased. Focused metadata/registry/prepack tests passed 41/41; full CLI tests passed 185 files and 2058/2058. Typecheck, build, bundle:data, release-metadata, capability-contract 2/2, compact, and git diff --check passed. npm pack dry-run reported 664 files and included dist/bin/agentera.js, the bundle sentinel, registry.json, and current state-storage-authority.yaml. pnpm -C packages/cli exec npm publish --tag next --dry-run completed with + agentera@3.0.0-dev.21; no publication, tag, or push occurred.
+  next: Proceed to dependency-ready Plan Task 14 only on a new explicit cycle.
+  context:
+    intent: Complete replacement Plan Task 13 under the v3 cutover hold.
+    constraints: Changed no suite version, plugin manifest, skill version, registry suite metadata, stable shim, gitRef, or changelog boundary; preserved and included the pre-existing Task 12 pass and TODO resolution.
+    unknowns: Decision satisfaction review caveats remain unchanged and are unrelated to package metadata.
+    scope: Release verification plus plan, progress, and pre-existing TODO state; package.json remained byte-identical because 3.0.0-dev.21 was already prepared.

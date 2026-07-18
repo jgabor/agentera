@@ -1,0 +1,13 @@
+id: wllbfkkjkh
+artifact: plan
+record:
+  name: Add focused wording regressions
+  depends_on:
+    - btngebkcto
+    - zqxwspfezu
+  status: complete
+  acceptance:
+    - GIVEN focused tests run WHEN current docs or diagnostics introduce new ambiguous installed-app `bundle` wording THEN the tests fail while preserving allowed compatibility identifiers, path-like references, package metadata, fixtures, and historical records from the authority.
+    - GIVEN `references/cli/bundle-skill-vocabulary.yaml` changes WHEN the tests load the authority THEN allowed app-files terms and preserved compatibility surfaces stay synchronized with the machine-readable source of truth.
+  evidence: Extended `tests/test_bundle_skill_vocabulary_authority.py` to load the authority, assert required app-files allowed terms, preserve compatibility surfaces, and reject current installed-app diagnostics that reintroduce ambiguous app-state, app-refresh, or bundle freshness/refresh wording.
+  plan: lmkbkfjlug

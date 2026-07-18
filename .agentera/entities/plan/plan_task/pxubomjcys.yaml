@@ -1,0 +1,15 @@
+id: pxubomjcys
+artifact: plan
+record:
+  name: Bound prime and orientation state at the source
+  depends_on:
+    - lgdhbmyrqv
+    - nesjfesrmz
+    - sypmxxfitz
+  status: pending
+  acceptance:
+    - GIVEN large archive-backed state WHEN prime or orientation runs THEN only declared summaries, counts, actionable IDs, and retrieval pointers fit within serialized byte budgets.
+    - GIVEN omitted historical detail WHEN startup output is consumed THEN omission counts and explicit retrieval routes replace embedded unbounded arrays.
+    - GIVEN maximum-sized valid entries WHEN startup tests run THEN payload limits hold without corrupting Unicode, identity, or status.
+    - GIVEN incomplete archive state WHEN orientation runs THEN degraded provenance is visible without raw traversal.
+  plan: snzwzclohe

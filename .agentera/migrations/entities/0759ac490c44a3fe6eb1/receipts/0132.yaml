@@ -1,0 +1,7 @@
+id: pxoiixgoce
+artifact: docs
+record:
+  document: PackageManifest interface model
+  path: references/adapters/package-manifest-interface-model.yaml
+  last_updated: 2026-05-07
+  status: current

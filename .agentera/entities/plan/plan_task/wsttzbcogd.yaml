@@ -1,0 +1,16 @@
+id: wsttzbcogd
+artifact: plan
+record:
+  name: Support legacy projects without requiring Git recovery
+  depends_on:
+    - lgdhbmyrqv
+    - nesjfesrmz
+    - sypmxxfitz
+    - vijxqetbkx
+  status: pending
+  acceptance:
+    - GIVEN inline archive summaries and no entry files WHEN the new runtime reads them THEN state remains usable with explicit incomplete provenance.
+    - GIVEN migration is previewed, applied, interrupted, or retried WHEN locally available full entries are archived THEN publication is monotonic and unrelated state remains unchanged.
+    - GIVEN non-Git, partial, complete, conflicting, and summary-only projects WHEN migration runs THEN each receives a deterministic result without rollback claims.
+    - GIVEN old and new fixtures WHEN validation and lifecycle commands run THEN both work through the declared compatibility window.
+  plan: snzwzclohe

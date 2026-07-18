@@ -1,0 +1,17 @@
+id: lgjczzripd
+artifact: plan
+record:
+  name: Land audience-namespace CLI migration phase 3
+  depends_on:
+    - tatysbtsxo
+    - vciacpieon
+  status: complete
+  blocks:
+    - "9"
+    - "10"
+  acceptance:
+    - "GIVEN `feat/v3` base WHEN the deprecated top-level parsers are removed THEN `agentera --help` lists only the canonical ~18 top-level commands per `references/cli/audience-namespace-cli-migration.yaml` `command_tree_target.top_level_count: ~18`; the deprecated aliases return a `class: removed_after_cutover` envelope (not a stderr deprecation); the dispatch switch in `packages/cli/src/cli/dispatch.ts` no longer handles the deprecated commands; the help output in `packages/cli/src/cli/help.ts` no longer mentions the deprecated commands"
+    - "GIVEN the removal WHEN the surfaces are audited THEN the deprecated aliases are: `hej` (alias for `prime`), `describe` (alias for `schema`), `gate` (alias for `check compact`), the routine-state tops (`plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments` — all already aliases for `state <name>`), `query` (alias for `state query`), `compact` (alias for `check compact`), `verify` (alias for `check verify`), `stats` (alias for `report`), `lint` (alias for `check lint`), `validate` (alias for `check validate`); each returns the `removed_after_cutover` envelope with the canonical command in `valid_values`"
+    - GIVEN the removal WHEN the parity matrix is re-run THEN it reports green; `npmParityMatrix.test.ts` reports all six D56 surface families `equal` (or `intentional_version_break` for rows explicitly marked); per V5 the proportionality target is one pass + one fail per removed alias (16 × 2 = 32 cases)
+    - GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new audience-namespace phase 3 regression is green; typecheck clean; build clean
+  plan: sgnbhadusj

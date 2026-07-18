@@ -1,0 +1,12 @@
+id: tqabfmtayj
+artifact: plan
+record:
+  name: Synchronize public retrieval contracts
+  depends_on:
+    - mxqroryujc
+  status: pending
+  acceptance:
+    - GIVEN help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN commands and semantics agree.
+    - GIVEN unsupported forms WHEN invoked THEN errors enumerate valid values and show a working correction.
+    - GIVEN capability and contract validation WHEN run THEN exposed contract examples pass and intentionally invalid examples fail.
+  plan: diigykcdod

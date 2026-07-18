@@ -1,0 +1,12 @@
+id: zkwsmqbsuw
+artifact: plan
+record:
+  name: App-home recovery and user-data-only safety
+  depends_on:
+    - sqontcyvdl
+  status: complete
+  acceptance:
+    - GIVEN the platform app home exists with only recognized Agentera user-state files and no managed app WHEN doctor or upgrade inspect it THEN doctor remains read-only and upgrade may preview installing managed app code under `app/` without deleting or overwriting user data.
+    - GIVEN the exact deprecated default is inherited through `AGENTERA_HOME` and no explicit `--install-root` was supplied WHEN upgrade previews recovery THEN it targets the platform app home, includes old-default retirement, and leaves both app homes unchanged.
+    - GIVEN `--install-root` explicitly points at the old default WHEN upgrade runs THEN the command respects that explicit override and does not silently retarget to the platform app home.
+  plan: vzcvaptlbz

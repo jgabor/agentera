@@ -1,0 +1,14 @@
+id: nagdcroaok
+artifact: plan
+record:
+  name: Update the 36 runtime descriptors and the descriptor-body validator substring
+  depends_on:
+    - sipcipqrrp
+  status: complete
+  acceptance:
+    - "GIVEN the 12 `skills/agentera/agents/<name>.toml` files WHEN each is updated THEN `developer_instructions` no longer contains the literal `capabilities/<name>/instructions.md`; instead it contains `Run agentera prime --context <name> --format json`; the existing `agentera_managed: true` marker, the permission prose (`full file write` / `file write and edit` / `read-only`), and the body ownership markers are preserved verbatim"
+    - "GIVEN the 12 `.cursor/agents/<name>.md` files and the 12 `.opencode/agents/<name>.md` files WHEN each is updated THEN the body no longer contains `Read .../capabilities/<name>/instructions.md`; instead it contains `Run agentera prime --context <name> --format json` (or `Read the agentera prime --context <name> --format json output`); the frontmatter (`name`, `mode: subagent`, `permission`) and the body markers (`<!-- agentera: managed -->`) are preserved"
+    - GIVEN `packages/cli/src/cli/commands/validate.ts` lines 371, 431 WHEN the expectedRef is updated THEN the codex check matches the new descriptor body substring (`agentera prime --context <name> --format json`) and the opencode check matches the new body substring; the validator additionally asserts the descriptor does NOT contain the legacy `capabilities/<name>/instructions.md` substring as a regression sentinel
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check validate descriptors --format json` (or the equivalent namespace command) runs THEN all 12 codex descriptors and all 12 opencode descriptors validate cleanly; the cursor descriptors are validated by their own setup-time check and are not part of the runtime validate surface
+    - GIVEN all 36 descriptors updated WHEN `rg 'capabilities/.*/instructions\.md' skills/agentera/agents .cursor/agents .opencode/agents` runs THEN zero hits remain in the descriptor bodies (the legacy substring is gone)
+  plan: kauavydlqn

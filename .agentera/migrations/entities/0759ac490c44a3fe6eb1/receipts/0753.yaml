@@ -1,0 +1,12 @@
+id: xbkvuhtwrx
+artifact: plan
+record:
+  name: Align Runtime Adapter Contract And Documentation
+  depends_on:
+    - ugqqrowqrw
+  status: complete
+  acceptance:
+    - GIVEN JavaScript runtime behavior is checked WHEN install-root fixture cases run THEN it agrees with the shared root contract without requiring cross-language executable sharing
+    - GIVEN documentation describes install roots WHEN users read setup or upgrade guidance THEN AGENTERA_HOME, default durable root, managed root, stale root, and unmanaged root semantics match the shared Interface
+    - GIVEN TODO and docs are refreshed WHEN the install-root finding is addressed THEN the finding is either resolved or narrowed to remaining JavaScript/generated-contract work
+  plan: jkvutuwdzk

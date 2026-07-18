@@ -1,0 +1,12 @@
+id: qfunfsajoh
+artifact: plan
+record:
+  name: Validator Robustness
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN satisfaction map with unknown review_needed field WHEN validator runs THEN reports unknown field violation
+    - GIVEN corrupt schema YAML file WHEN loading THEN logs warning to stderr before degrading
+    - GIVEN validator and CLI skip configurations WHEN both run THEN skip identical metadata field sets
+  plan: fcctntwhtx

@@ -1,0 +1,13 @@
+id: ciuqfpudze
+artifact: plan
+record:
+  name: Bind entity publication to validated project roots
+  status: complete
+  depends_on:
+    - gwsdydmsdf
+  acceptance:
+    - GIVEN a validated project root is replaced after mode detection or lock acquisition WHEN entity publication begins THEN publication fails before writing either root.
+    - GIVEN the state-mode marker is removed or replaced after detection WHEN a progress write reaches publication THEN the operation fails and leaves no entity, legacy, lock, or staging residue.
+    - GIVEN stable validated root and marker identities WHEN entity publication runs THEN canonical writes, replay, conflict, and durability behavior remain correct.
+    - GIVEN future entity families use shared publication WHEN root and marker race fixtures run THEN one shared boundary prevents pathname substitution without family-specific duplication.
+  plan: vllyohtcde

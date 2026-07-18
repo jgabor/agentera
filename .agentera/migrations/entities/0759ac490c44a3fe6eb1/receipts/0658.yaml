@@ -1,0 +1,13 @@
+id: qxthzjbcsk
+artifact: plan
+record:
+  name: Shim shebang/runtime validation and crash fallback
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - "GIVEN a managed app/scripts/agentera whose shebang is #!/usr/bin/env node but whose content is Python WHEN the shim resolves the app-home backend THEN the shim reports 'app-home backend unavailable: shebang/content mismatch' on stderr and falls through to the next resolution strategy (uvx or repo) instead of spawning uv run against it"
+    - "GIVEN a v2 Python PEP 723 managed script with a correct #!/usr/bin/env python3 shebang WHEN the shim resolves the app-home backend THEN the script is selected and dispatched via uv run"
+    - GIVEN the app-home backend spawns uv run <script> and the process exits non-zero (script runtime crash) WHEN spawnChecked returns THEN the shim falls through to the next resolution strategy instead of treating exit code as final
+    - 'GIVEN no AGENTERA_HOME and no repo checkout WHEN the shim resolves THEN behavior is unchanged from current (returns kind: "none" with install help)'
+  plan: qmqdxuwpuf

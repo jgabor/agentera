@@ -1,0 +1,15 @@
+id: eaivolxufk
+artifact: plan
+record:
+  name: Update Agent Guidance To Prefer Top-Level Commands
+  depends_on:
+    - bplstagjsp
+    - mvqfclfmkr
+    - qqtixcoocx
+  status: complete
+  acceptance:
+    - GIVEN bare /agentera is invoked THEN skills/agentera/SKILL.md instructs the agent to run agentera hej first
+    - GIVEN hej prose describes returning-project orientation THEN it forbids individual artifact queries and raw .agentera/*.yaml reads unless agentera hej fails or asks for fallback
+    - GIVEN another capability needs routine state THEN its prose uses agentera progress, agentera experiments, or another top-level command rather than agentera query progress
+    - GIVEN no top-level command fits a custom need THEN guidance permits agentera query
+  plan: xamnelipyx

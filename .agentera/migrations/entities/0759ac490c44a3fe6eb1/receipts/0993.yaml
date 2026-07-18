@@ -1,0 +1,16 @@
+id: ygcmptypcb
+artifact: plan
+record:
+  name: Realisera guidance and schema integration
+  depends_on:
+    - gjqudqkwhe
+    - ruqdukymbd
+  status: complete
+  acceptance:
+    - GIVEN Realisera startup begins in plan-driven mode WHEN capability prose is read THEN it instructs agents to start from `agentera hej --format json --capability-context realisera` and use complete execution_context before direct plan, progress, TODO, docs, health, decisions, or changelog reads.
+    - GIVEN execution_context is incomplete or caveated WHEN guidance continues THEN it instructs agents to run listed CLI fallbacks before last-resort raw artifact diagnostics and to preserve all caveats in cycle reporting.
+    - GIVEN Realisera schemas are validated WHEN this task completes THEN artifact descriptions declare CLI `execution_context` consumption and validation rules declare context-first, fallback-before-raw, read-only context generation, and caveat-preservation behavior without overstating machine enforcement.
+  evidence:
+    - Realisera prose now starts Step 1 from `agentera hej --format json --capability-context realisera`, tells agents to use complete `execution_context` before raw startup reads, and preserves caveats/fallbacks when context is incomplete.
+    - Realisera artifact and validation schemas now declare execution-context consumption, fallback-before-raw behavior, read-only context generation, and caveat preservation.
+  plan: hbpzaealxp

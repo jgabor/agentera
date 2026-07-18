@@ -1,0 +1,12 @@
+id: lucbolwxjp
+artifact: plan
+record:
+  name: Port doctor --smoke on npm CLI
+  depends_on:
+    - xguecrqyza
+  status: complete
+  acceptance:
+    - GIVEN agentera doctor --smoke on npm @next WHEN run with default flags THEN structured JSON or text smoke report emits without "not yet ported" error
+    - GIVEN doctor --smoke WHEN model calls are not opted in THEN smoke report marks live calls as not attempted and exits 0 when structural checks pass
+    - GIVEN packages/cli/test/setup/ or doctor tests WHEN run THEN --smoke path has regression coverage
+  plan: lggnuirqet

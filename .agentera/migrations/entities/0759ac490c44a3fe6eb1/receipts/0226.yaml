@@ -1,0 +1,14 @@
+id: zattomjddv
+artifact: plan
+record:
+  name: Add regression coverage for ambiguous routing vocabulary
+  depends_on:
+    - yrkfocchaj
+  status: complete
+  acceptance:
+    - GIVEN new user-facing or protocol text introduces unclassified dispatcher, dispatch, router, or conductor wording WHEN the focused test selection runs THEN the regression fails instead of silently accepting ambiguous vocabulary.
+    - GIVEN allowed compatibility names such as `subagent_dispatch`, historical archives, code identifiers, and fixture-only terms remain in the repository WHEN the regression runs THEN those occurrences are preserved by explicit classification rather than broad word bans.
+  evidence:
+    - Added focused scan regression coverage for dispatcher/dispatch/router/ conductor, `subagent_dispatch`, pre-dispatch, worktree dispatch, and runtime dispatch substrate occurrences.
+    - "`uv run pytest tests/test_routing_execution_vocabulary_authority.py -q` passed with 9 tests."
+  plan: fuwjgvkgre

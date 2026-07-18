@@ -1,0 +1,12 @@
+id: kjvmlavmye
+artifact: plan
+record:
+  name: Prepare the governed development release boundary
+  depends_on:
+    - jleysdafaf
+  status: pending
+  acceptance:
+    - GIVEN user-visible feature and fix work WHEN release metadata is prepared THEN only permitted development and governed release surfaces change consistently.
+    - GIVEN release notes are read cold WHEN users upgrade THEN compatibility, durability states, recovery limits, and migration commands are actionable.
+    - GIVEN package contents are inspected WHEN dry-run packaging runs THEN archive schemas, capability contracts, and documentation are present and aligned.
+  plan: snzwzclohe

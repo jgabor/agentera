@@ -1,0 +1,45 @@
+id: zhivqvgvcj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-05
+    status: archived
+    reviewed: 2026-05-05
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    revised: |
+      Split release verification from approved retag mutation, defined the dashboard contract, tightened the one-command invariant, made freshness artifacts explicit, and replaced vague evidence/version criteria.
+    title: Repair v2.1.0 Hej Dashboard Release
+  what: |
+    Repair the v2.1.0 release so bare /agentera still renders the README-style hej dashboard while gathering its state through the flat agentera hej CLI. Keep the top-level State CLI contract, but make CLI output the data source for the agent-rendered dashboard rather than the user-facing replacement.
+  why: |
+    The accepted v2.1.0 plan intended to reduce tool calls, not remove the visual briefing. README still promises the dashboard, hej prose says to render it, and the shipped tests allowed raw CLI-style output to satisfy /agentera. The corrected release must preserve visible behavior and prove the one-command state-gathering invariant.
+  constraints: |
+    Preserve top-level state commands and keep agentera query as advanced custom access. Do not reintroduce multiple routine state reads for normal /agentera. Do not mutate .agentera/vision.yaml or objective state. Do not push, retag, or force-push until the user explicitly approves release mutation after verification. Keep this repair scoped to v2.1.0 behavior, not optional token optimization or unrelated live-host work.
+  scope:
+    included:
+      - archiving the completed Flat Agentera State CLI plan before this repair plan executes
+      - root dispatcher guidance for bare /agentera
+      - skills/agentera/capabilities/hej/prose.md
+      - scripts/agentera hej output contract where fields are missing or ambiguous
+      - semantic fixtures and tests for dashboard rendering and tool budget
+      - README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, .agentera/plan.yaml, and v2.1.0 version surfaces
+      - local and remote v2.1.0 tag readiness checks
+    excluded:
+      - changing artifact schemas unless required for composite state fields
+      - changing the dashboard visual identity beyond restoring the README and hej prose contract
+      - supporting routine agentera query plan/progress/health compatibility forms
+      - remote mutation before explicit user approval
+    deferred:
+      - optional post-v2 token optimization
+      - optional Claude Code live smoke
+      - broader CLI packaging unrelated to the v2.1.0 dashboard repair
+  design: |
+    Keep scripts/agentera hej compact and suitable as a data source, but require Agentera skill execution to transform that data into the hej dashboard. Add regressions that fail when /agentera output is merely raw CLI lines, fail when required dashboard sections are omitted while source fields exist, and still fail when tool traces include individual routine state commands or raw .agentera/*.yaml reads. Split the release repair into diagnosis, implementation, executable regressions, artifact freshness, release-candidate verification, and gated release mutation. The restored dashboard contract requires the logo, conversational opener, status, attention when non-empty, next action, and hej exit marker; status must include available health, issue, plan, objective, and profile signals without inventing missing data.
+  overall_acceptance:
+    - GIVEN a user invokes bare /agentera on a returning v2 project WHEN v2.1.0 is corrected THEN the visible output matches the dashboard contract from README and hej prose
+    - GIVEN /agentera gathers state WHEN normal data is available THEN the tool trace uses agentera hej without individual routine state commands or raw artifact reads
+    - GIVEN the corrected release is ready WHEN verification completes THEN artifacts, docs, tests, versions, and tag-readiness evidence agree on the repaired v2.1.0
+    - GIVEN remote release mutation is needed WHEN verification is complete THEN it only happens after explicit user approval
+  surprises:
+    []

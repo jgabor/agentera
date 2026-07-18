@@ -1,0 +1,58 @@
+id: cqetbsrkvi
+artifact: health
+record:
+  date: 2026-07-12
+  dimensions:
+    - version_health
+    - artifact_freshness
+    - test_health
+  findings_summary:
+    critical: 1
+    warning: 0
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving; tracked release metadata and validation now agree, while host-owned runtime evidence remains unresolved.
+  grades:
+    version_health: A
+    artifact_freshness: A
+    test_health: A
+  dimension_details:
+    - name: version_health
+      grade: A
+      summary: packages/cli/package.json is 3.0.0-dev.17; suite markers and bundle sentinel remain 3.0.0.
+      findings:
+        - heading: Development package metadata is aligned
+          severity: info
+          confidence: 98
+          location: packages/cli/package.json:3
+          evidence: npm pack dry-run reports agentera@3.0.0-dev.17; registry.json and agentera.suiteVersion report 3.0.0.
+          impact: Development and suite version semantics remain distinct and explicit.
+          suggested_action: Keep future bumps governed by the canonical docs version inventory.
+          verify_command: node packages/cli/dist/bin/agentera.js --version
+    - name: artifact_freshness
+      grade: A
+      summary: Release docs and typed state surfaces describe the same lifecycle defaults and safety boundaries.
+      findings:
+        - heading: Host evidence remains release-blocking
+          severity: critical
+          confidence: 98
+          location: references/adapters/runtime-lifecycle-authority.yaml:9
+          evidence: prime and doctor report releaseBlocked=true with unknown mandatory enabled/trusted evidence.
+          impact: This checkout cannot truthfully claim the runtime support floor is host-ready.
+          suggested_action: Complete user-owned enablement and trust steps, then rerun prime and doctor.
+          verify_command: node packages/cli/dist/bin/agentera.js prime --format json
+    - name: test_health
+      grade: A
+      summary: Full CLI, typecheck, build, lint, capability, lifecycle, Astro, compact, and package gates pass.
+      findings:
+        []
+  trends:
+    improved: Dev.17 metadata, prerelease-aware lifecycle parity, release docs, and package assertions are synchronized.
+    degraded: Host-owned runtime evidence remains unknown and therefore release-blocking.
+    stable: Stable v2 channel behavior, suite version 3.0.0, and Decision 92 remain unchanged.
+    new_findings: None beyond the existing host evidence boundary.
+    resolved: Task 8 release-surface and project-state synchronization.
+    carried_forward: User-owned runtime enablement/trust and unrelated TODO backlog.
+  patterns:
+    - Typed writers own progress, health, plan completion, and archive state.
+    - Lifecycle consumers use one projection and fail closed on unknown ownership or trust.

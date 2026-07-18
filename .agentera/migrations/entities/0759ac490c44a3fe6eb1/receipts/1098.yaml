@@ -1,0 +1,50 @@
+id: vxmzhajgdo
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-08
+    status: complete
+    reviewed: 2026-05-08
+    critic_issues: 10 found, 10 addressed, 0 dismissed
+    revised: |
+      Named `agentera describe` as the introspection surface, separated the `doctor` self-check boundary from artifact health, tightened structured output and field-selection dependencies, split hardening from release proof, and made the hard `bundle-status` removal explicit for 2.2.0.
+    title: Implement Decision 45 Agent-Ready State Interface For 2.2.0
+  what: |
+    Implement Decision 45 by making Agentera's state CLI more agent-ready for the pending 2.2.0 release. Preserve routine state command names, hard-rename `agentera bundle-status` to `agentera doctor` with no compatibility alias, add structured routine output, sparse field selection, runtime describe/schema introspection, and hardened agent-facing inputs while preserving Decision 43 route aliases and stable artifact contracts.
+  why: |
+    The agent-ready interface playbook showed that Agentera already has strong schema, registry, dry-run, and multi-runtime foundations, but its main state commands remain mostly text-first and its installed-bundle diagnostic command is too narrow for future CLI/install/runtime self-checks. Decision 45 turns those findings into a coherent 2.2.0 interface cleanup rather than a set of unrelated CLI tweaks.
+  constraints: |
+    Preserve routine state command names: `hej`, `plan`, `progress`, `health`, `todo`, `decisions`, `docs`, `objective`, `experiments`, and advanced `query`. Do not add CLI commands for Decision 43 slash route aliases such as `status`, `build`, `audit`, or `document`. Treat `doctor` as Agentera CLI/install/runtime self-check vocabulary, not project artifact health. Remove `bundle-status` rather than keeping a compatibility alias. Keep the release at 2.2.0 unless version policy requires otherwise. Do not tag, push, publish, update packages, refresh the installed bundle, mutate vision/objective state, or rename stable schema fields, IDs, enums, persisted artifact shapes, canonical capability names, or Decision 43 aliases unless a deliberate migration rationale and validation path are recorded.
+  scope:
+    included:
+      - archive the completed Decision 44 plain-English vocabulary plan before replacing the active plan
+      - define the Decision 45 CLI contract and command vocabulary boundary
+      - hard-rename `agentera bundle-status` to `agentera doctor` with no compatibility alias
+      - add structured JSON/YAML output for routine state commands
+      - add sparse field selection for supported structured state output
+      - add `agentera describe` runtime introspection for commands, filters, output shapes, aliases, artifacts, and doctor self-check categories
+      - harden agent-facing artifact, field, output-format, path-like, doctor, and upgrade inputs
+      - prove compatibility and record 2.2.0 release inclusion without publication
+      - synchronize TODO, changelog, progress, docs metadata, and plan pre-closure state after verified execution
+    excluded:
+      - adding CLI commands for slash route aliases
+      - changing canonical Swedish capability names, Decision 43 aliases, routing semantics, artifact schemas, or persisted state shape without an explicit migration decision
+      - turning `doctor` into project artifact health or codebase quality audit output
+      - rewriting historical progress, changelog, archive, or decision entries solely to rename `bundle-status`
+      - publishing, tagging, pushing, updating package managers, or refreshing installed bundles
+      - optional Claude live smoke and generated install-root cross-language contract work
+      - vision or objective edits
+    deferred:
+      - response sanitization for externally ingested untrusted content
+      - typed protocol surfaces beyond the CLI, such as MCP or JSON-RPC
+  design: |
+    Treat the CLI as two layered surfaces: stable command vocabulary for humans and structured, self-describing output for agents. Keep routine state commands as the top-level state seam, add machine-readable output and fields around those commands, and expose `agentera describe` as the runtime schema/introspection surface. `doctor` becomes the single Agentera self-check entry point for install, runtime, CLI, bundle, hook, package, and schema availability over time; project artifact health remains `agentera health` and capability audits remain `inspektera`.
+  overall_acceptance:
+    - GIVEN users run routine Agentera state commands WHEN Decision 45 is complete THEN command names remain stable except the deliberate `bundle-status` to `doctor` hard rename
+    - GIVEN agents need machine-readable state WHEN routine commands, field selection, and describe are used THEN they can obtain structured, scoped, self-described data without raw artifact reads
+    - GIVEN CLI vocabulary is reviewed WHEN route aliases and state commands overlap THEN slash route aliases remain out of CLI command vocabulary
+    - GIVEN unsafe or unsupported agent-generated inputs are supplied WHEN CLI checks run THEN they fail clearly without unintended writes or ambiguous partial results
+    - GIVEN 2.2.0 readiness is checked WHEN Decision 45 is complete THEN the interface cleanup is included in 2.2.0 without unapproved tag, push, publication, package update, or installed bundle refresh
+  surprises:
+    []

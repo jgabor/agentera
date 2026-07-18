@@ -1,0 +1,16 @@
+id: cicluewnxf
+artifact: plan
+record:
+  name: Add OpenCode capability agent descriptors
+  depends_on:
+    - hbyduhpotq
+  status: complete
+  acceptance:
+    - GIVEN the bundled skill has twelve capabilities WHEN `.opencode/agents/` is inspected THEN each capability has a managed markdown descriptor with name, description, invocation behavior, and a pointer to `prose.md`.
+    - GIVEN `.opencode/plugins/agentera.js` bootstraps runtime surfaces WHEN plugin smoke tests run THEN agent descriptors are restored/refreshed when Agentera-owned and user-owned collisions are skipped.
+    - GIVEN OpenCode dispatch guidance is used WHEN a capability is invoked as a subagent THEN the documented form is `@<capability>` and same-worktree limitations are explicit.
+  evidence:
+    - Added twelve managed `.opencode/agents/*.md` descriptors with frontmatter, prose pointers, and `@<capability>` dispatch guidance.
+    - Updated `.opencode/plugins/agentera.js` to bootstrap agent descriptors into `~/.config/opencode/agents`, refresh only Agentera-managed descriptors, skip user-owned collisions, and preserve valid pre-merged app homes.
+    - "`node scripts/smoke_opencode_bootstrap.mjs` passed, covering descriptor restore, collision preservation, missing-source reporting, plugin init bootstrap, and shell env behavior."
+  plan: vrdajvaghq

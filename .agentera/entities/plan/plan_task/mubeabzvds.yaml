@@ -1,0 +1,12 @@
+id: mubeabzvds
+artifact: plan
+record:
+  name: Version And Release Readiness Check
+  depends_on:
+    - gtdyngauqm
+  status: complete
+  acceptance:
+    - GIVEN this `feat` is complete WHEN version policy is evaluated THEN required version files are updated or a no-bump rationale is recorded
+    - GIVEN version values change WHEN compatibility checks run THEN runtime and package readers agree
+    - GIVEN no release publication was approved WHEN version work completes THEN no tag, push, or package update occurs
+  plan: iyrqkhzzfp

@@ -1,0 +1,11 @@
+id: rgyeduwclh
+artifact: plan
+record:
+  name: Reproduce and classify failing evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the full-suite failures and reviewer reports are inspected WHEN the fix scope is selected THEN each issue is classified as test regression, artifact evidence inconsistency, missing regression coverage, diagnostic wording bug, or authority schema inconsistency.
+    - GIVEN adjacent open TODOs are reviewed WHEN implementation begins THEN SKILL.md prose cleanup, broad vocabulary regression work, Decision 57 implementation, and 3.0.0 work remain out of scope.
+  plan: rphgtlxiqf

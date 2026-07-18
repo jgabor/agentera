@@ -1,0 +1,12 @@
+id: feltljnwgi
+artifact: plan
+record:
+  name: Resolve lifecycle policy and evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the remaining evidence gaps WHEN first-party sources are checked THEN Copilot roots, Cursor aggregation, and Claude analytics treatment have explicit outcomes.
+    - GIVEN ownership, trust, native-operation, support-floor, and failure questions WHEN decisions are recorded THEN every later task has unambiguous behavioral constraints.
+    - GIVEN a supported runtime WHEN minimum support is defined THEN shared-skill detection and complete diagnosis are mandatory and unmet floors block release.
+  plan: ekhmbucace

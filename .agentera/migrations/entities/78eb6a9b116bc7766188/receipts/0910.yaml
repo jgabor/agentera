@@ -1,0 +1,12 @@
+id: rafnxflqco
+artifact: plan
+record:
+  name: Synchronize artifacts and hand off implementation
+  depends_on:
+    - crdaoftumt
+  status: complete
+  acceptance:
+    - GIVEN implementation evidence exists WHEN closeout happens THEN TODO, CHANGELOG, PROGRESS, and PLAN record the docs-compatibility fixes and remaining deferred routing work.
+    - GIVEN the active plan is complete WHEN artifact validation runs THEN `PLAN.md` validates and the previous dispatch plan remains archived at the recorded path.
+    - GIVEN Planera only plans work WHEN this artifact is written THEN the next handoff suggests `⧉ realisera` or `⎈ orkestrera` and waits for explicit confirmation before code changes.
+  plan: iooijalkqr

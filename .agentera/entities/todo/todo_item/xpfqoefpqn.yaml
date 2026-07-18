@@ -1,0 +1,6 @@
+id: xpfqoefpqn
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[docs:3.0.0] Update root README.md for v3. Resolved 2026-07-12: README, CLI README, upgrade guide, web lifecycle..."

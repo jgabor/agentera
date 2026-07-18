@@ -1,0 +1,20 @@
+id: hzgoyxybkc
+artifact: plan
+record:
+  name: Publish local migration inventory and mutation authority
+  depends_on:
+    - olsxqaztyb
+  status: blocked
+  acceptance:
+    - GIVEN command namespace and custom-name discovery remain undecided WHEN design begins THEN the operator confirms both before parser or schema changes, and the resulting authority tests schema-backed selectors, project bounds, formats, preview/apply/force, compatibility, backups, deterministic failures, monotonic retry, and Git-independent publication.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Schema filters still duplicate authority values; migrate runtime does not consume authority-owned invalid combinations, selector requirements, count fields, or omission metadata; truncation and deterministic omission tests are absent; Cycle 781 reports 63 focused tests where independent execution found 58 and names a nonexistent commands/errors.ts path.
+    provenance:
+      attempt_id: task2-independent-audit-2
+      source: "Independent orchestration evaluator: migration authority runtime-consumption and evidence audit"
+      recorded_at: 2026-07-14 06:31
+      writer_command: agentera state plan record-evaluation
+  plan: dejfosgnsl

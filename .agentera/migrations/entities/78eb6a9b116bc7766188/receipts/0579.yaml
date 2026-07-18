@@ -1,0 +1,12 @@
+id: rspcqbdifu
+artifact: plan
+record:
+  name: Verify and close repair artifacts
+  depends_on:
+    - puyymocekg
+    - xatnspdqch
+  status: complete
+  acceptance:
+    - GIVEN the repair is complete WHEN verification runs THEN the full pytest suite passes, focused tests for changed surfaces pass, artifact validators for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md pass, and `git diff --check` passes.
+    - GIVEN closeout artifacts are updated WHEN PLAN and PROGRESS record evidence THEN they include both the original full-suite failure summary and the final passing verification, and TODO/CHANGELOG remain scoped to repair work rather than advancing the next normal TODO.
+  plan: rphgtlxiqf

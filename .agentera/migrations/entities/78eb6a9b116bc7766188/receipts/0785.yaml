@@ -1,0 +1,16 @@
+id: yvxemwabuu
+artifact: plan
+record:
+  name: Benchmark and artifact boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the TODO cites PLAN.md raw reads WHEN the benchmark or TODO evidence is inspected THEN the plan names whether PLAN.md is a canonical artifact label, `.agentera/plan.yaml`, a root file, or another measured path.
+    - GIVEN a guidance or contract change is selected WHEN implementation starts THEN the exact instruction path or CLI contract ambiguity being closed is identified before broad prose edits are made.
+    - GIVEN raw plan access is reviewed WHEN the boundary is recorded THEN writes, archives, validation, corruption checks, and unavailable or incomplete CLI output remain valid raw-artifact cases.
+  evidence:
+    - "`references/analysis/startup-measurement-contract.yaml` lists `PLAN.md` as a canonical privacy-safe artifact label, while `.agentera/docs.yaml` maps `PLAN.md` to `.agentera/plan.yaml`; the benchmark reports canonical labels, not raw local paths."
+    - The ambiguity being closed is the combination of Planera prose that still encouraged raw orientation reads and a plan source contract that did not explicitly name the read-only startup boundary, even though `agentera plan --format json` already returned summary, task dependencies, acceptance criteria, evidence, overall acceptance, surprises, and previous-plan archive metadata.
+    - The implemented boundary preserves raw mapped plan artifact access for writes, archives, validation, corruption diagnostics, and unavailable or incomplete CLI output after CLI fallbacks.
+  plan: fuwkumrpdy

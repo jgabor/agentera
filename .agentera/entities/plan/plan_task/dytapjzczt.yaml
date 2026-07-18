@@ -1,0 +1,12 @@
+id: dytapjzczt
+artifact: plan
+record:
+  name: Reconcile Completed Plan State
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the prior Flat Agentera State CLI plan was completed WHEN this repair lane starts THEN that plan exists under .agentera/archive and .agentera/plan.yaml is this active repair plan
+    - GIVEN uv run scripts/agentera plan runs WHEN the artifact is loaded THEN it reports active v2.1.0 dashboard repair work
+    - GIVEN the archive is inspected WHEN prior v2.1.0 evidence is needed THEN the completed plan's acceptance criteria and closeout remain available
+  plan: zhivqvgvcj

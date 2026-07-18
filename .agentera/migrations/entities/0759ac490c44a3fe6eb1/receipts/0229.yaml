@@ -1,0 +1,12 @@
+id: qcdwvixkhi
+artifact: plan
+record:
+  name: Rename bundle to app in public output
+  depends_on:
+    - krbgehyqss
+  status: complete
+  acceptance:
+    - GIVEN the orientation command runs with JSON output WHEN the output is parsed THEN the top-level field previously named bundle is named app
+    - GIVEN the doctor command runs with JSON output WHEN the output is parsed THEN the top-level field previously named bundle is named app
+    - GIVEN the orientation or doctor JSON output WHEN any key name is inspected THEN no key contains the substring bundle
+  plan: gremlonjmv

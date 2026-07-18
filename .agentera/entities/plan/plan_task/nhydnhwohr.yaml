@@ -1,0 +1,13 @@
+id: nhydnhwohr
+artifact: plan
+record:
+  name: Inventory Decision 57 instruction surfaces
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - Inventory checked Decision 57 references, TODO sequencing, vocabulary docs, `capability_schema_contract.yaml`, runtime descriptor references, current `skills/agentera/capabilities/*/prose.md` surfaces, and existing authority patterns. The contract classifies `instructions.md` as future canonical, `prose.md` as current compatibility, `first_invocation_read` as future metadata, compact startup as a future exception boundary, and rename/validator behavior as later implementation work.
+  acceptance:
+    - GIVEN Decision 57, TODO sequencing, vocabulary docs, capability schema contract references, runtime descriptors, and current `prose.md` surfaces are inspected WHEN the contract boundary is designed THEN each surface is classified as future canonical `instructions.md`, current compatibility `prose.md`, startup-read metadata, compact-startup exception, or later implementation work.
+    - GIVEN adjacent TODOs are reviewed WHEN scope is recorded THEN this plan explicitly excludes the actual file rename, validator changes, descriptor rewrites, CLI metadata emission, `first_invocation_read` feature behavior, and the later validation/regression sweep.
+  plan: ffpspentli

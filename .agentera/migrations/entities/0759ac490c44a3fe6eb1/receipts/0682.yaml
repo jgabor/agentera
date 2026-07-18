@@ -1,0 +1,12 @@
+id: gwdxvgduzt
+artifact: plan
+record:
+  name: Clean realisera remnants in packages/cli/src/
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN realisera renamed to build, WHEN rg -i 'realisera' runs against packages/cli/src/, THEN zero matches remain
+    - AND capabilities/build/instructions.ts body references 'build' not 'realisera'
+    - AND vitest run passes AND tsc --noEmit clean
+  plan: hotcyckvhu

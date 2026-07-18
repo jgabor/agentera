@@ -1,0 +1,17 @@
+id: yriqhasdga
+artifact: plan
+record:
+  name: Add Python-oracle to npm parity test matrix
+  depends_on:
+    - hcpcitbmiw
+    - qousimxplc
+    - fxtjdcjgju
+    - unbifwvfpc
+    - opdccxfzxg
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/test/ parity suite WHEN run THEN prime, state plan/todo, check compact, report refresh dry-run, and upgrade --channel development dry-run are compared to Python oracle fixtures
+    - GIVEN parity tests WHEN configured THEN they do not assert uvx @feat/v3 or cross-entry-point --channel on Python stable
+    - GIVEN pnpm -C packages/cli test WHEN run THEN new parity tests pass alongside existing upgrade suite
+    - GIVEN all prior tasks complete WHEN TODO items 1–6 from this tranche are checked THEN they can be marked Resolved in the same realisera commit
+  plan: ujeqmkkqkc

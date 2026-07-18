@@ -1,0 +1,12 @@
+id: hhqahdiqyb
+artifact: plan
+record:
+  name: Update TODO.md close-out
+  depends_on:
+    - otebehwsej
+    - topayawmpa
+    - vvyafsmqgq
+  status: complete
+  acceptance:
+    - GIVEN TODO.md WHEN read THEN over-prescription audit TODO is resolved and lint-extension TODO is removed
+  plan: pkpreybxbf

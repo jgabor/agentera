@@ -1,0 +1,16 @@
+id: dgprchnsms
+artifact: plan
+record:
+  name: Final state sync and verification
+  depends_on:
+    - xczzbyusks
+    - oilfqakopd
+    - nrjvzqjkwe
+    - fzjxnhsuwi
+  status: complete
+  acceptance:
+    - GIVEN `prime --context resonera` WHEN fallback_commands are checked THEN every command starts with `agentera state`
+    - GIVEN full vitest suite WHEN run THEN no new failures beyond pre-existing appHome.test.ts env failures
+    - GIVEN `agentera check compact` WHEN run THEN all artifacts within limits
+    - GIVEN TODO.md WHEN inspected THEN the deprecated fallback commands item is marked resolved
+  plan: kunvwyrjcj

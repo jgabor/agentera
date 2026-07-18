@@ -1,0 +1,21 @@
+id: yasppenhpv
+artifact: plan
+record:
+  name: Prepare the next development package
+  depends_on:
+    - sgyretcjhx
+  status: complete
+  acceptance:
+    - GIVEN current `3.0.0-dev.20` metadata WHEN preparation runs THEN only the package version advances to `3.0.0-dev.21`, its source reference is the selected 40-character commit SHA, all suite and development-channel surfaces remain `3.0.0`, release-metadata validation passes, and nothing is published, tagged, or pushed.
+    - GIVEN the five known npm 12 parser failures WHEN package gates run THEN the demonstrated compatibility defect is repaired or this task blocks; unrelated packaging work is excluded.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: simplified-task4-audit-1
+      source: "Independent orchestration evaluator: development version, immutable source provenance, npm 12 parser, package contents, and dry-run audit"
+      recorded_at: 2026-07-14 17:22
+      writer_command: agentera state plan record-evaluation
+  plan: ffnjcuucnq

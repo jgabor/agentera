@@ -1,0 +1,16 @@
+id: xsrsaaznnl
+artifact: progress
+record:
+  timestamp: 2026-07-14 16:57
+  type: fix
+  phase: build
+  what: Repaired npm 12 npm-pack JSON parsing at the packaging test boundary, prepared the development package as 3.0.0-dev.21, pinned its immutable source reference, and folded the pre-existing Task 3 pass/status change into the release-preparation commit.
+  inspiration: Task 4 acceptance, the five npm 12 package-output parser failures, the release metadata authority, and the required no-publish development-channel hold.
+  discovered: npm 12.0.0 emits npm pack --dry-run --json as an object keyed by package name rather than the older one-item array; both shapes are now covered. Empty, malformed, unsupported, and multi-entry output receive actionable parser errors. The system npm publish dry-run cannot load sigstore, while npm 12.0.1 through npx completes the prescribed dry-run successfully.
+  verified: "pnpm -C packages/cli test: 177 files and 1803 tests passed. Typecheck, build, and bundle:data passed. Release-metadata validation passed; capability-contract passed 2/2; plan and progress artifact validation passed before this append; check compact passed with error_count=0, over_limit_count=0, protected_overflow_count=0, and changed_count=0 while retaining the five known loss-preserving progress archive refusals. npm 12.0.0 npm pack --dry-run --json --ignore-scripts passed with agentera@3.0.0-dev.21 and 642 files; required entrypoints were present and no .env, .npmrc, repository-local state, private-key, AWS-key, GitHub-token, or test-token leaks were found. npm 12.0.1 npx npm publish --tag next --dry-run passed with + agentera@3.0.0-dev.21 and no publication."
+  next: Leave Plan Task 4 pending and do not evaluate or complete it. Keep Task 5 pending; after this append, revalidate progress and compact, review the intended diff, commit once, and do not publish, tag, or push.
+  context:
+    intent: Execute simplified Agentera plan Task 4 without broadening packaging semantics or closing the task.
+    constraints: Only packages/cli/package.json version advances from dev.20 to dev.21; suite and development-channel surfaces remain 3.0.0. Keep CHANGELOG under Unreleased, exclude unrelated packaging work, preserve the selected parent source SHA rather than self-referencing the release commit, and perform no real publication, tag, or push.
+    unknowns: No Task 4 implementation unknowns remain. The system npm sigstore failure is an environment caveat covered by a successful npm 12.0.1 dry-run fallback.
+    scope: packages/cli/test/packaging/prepack.test.ts; packages/cli/package.json; .agentera/plan.yaml; .agentera/progress.yaml; generated ignored packages/cli/dist and packages/cli/bundle

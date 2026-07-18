@@ -1,0 +1,12 @@
+id: cxxwhhxcwr
+artifact: plan
+record:
+  name: Add managed capability agents and plugin metadata
+  depends_on:
+    - atftbtblds
+  status: complete
+  acceptance:
+    - GIVEN the bundled skill has twelve capabilities WHEN Cursor agent descriptors are inspected THEN each capability has a managed agent entry with invocation guidance and a pointer to the active capability instructions.
+    - GIVEN user-owned agent files already exist WHEN managed agents are installed THEN Agentera-owned targets refresh and unknown collisions are preserved.
+    - GIVEN Cursor marketplace packaging is reviewed WHEN plugin metadata is validated THEN submission-ready plugin manifest, hook references, and distribution notes exist even if external marketplace approval remains a manual follow-up.
+  plan: bizikrrbyb

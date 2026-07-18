@@ -1,0 +1,13 @@
+id: fmrgqzejlw
+artifact: plan
+record:
+  name: Add consent-gated corpus refresh
+  depends_on:
+    - byzcdbmmeq
+  status: complete
+  acceptance:
+    - GIVEN `agentera stats refresh --dry-run` runs WHEN no consent is provided THEN it reports bounded diagnostics and writes no corpus.
+    - GIVEN `agentera stats refresh` runs without `--consent local-history` WHEN extraction would be needed THEN it fails with actionable privacy guidance.
+    - GIVEN `--consent local-history` is provided WHEN refresh runs THEN the internal corpus is written at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`.
+  evidence: "`agentera stats refresh --dry-run` emits a privacy payload with `local_history_read=false` and `corpus_write=false`. Refresh without consent fails with explicit `--consent local-history` guidance. Consented refresh delegates to `scripts/extract_corpus.py --output $PROFILERA_PROFILE_DIR/intermediate/corpus.json` and reports bounded engine diagnostics."
+  plan: gxuurooesw

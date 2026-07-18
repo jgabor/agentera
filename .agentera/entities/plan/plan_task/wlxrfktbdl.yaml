@@ -1,0 +1,13 @@
+id: wlxrfktbdl
+artifact: plan
+record:
+  name: Make major-boundary gate channel-aware
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a source root where update-channels.yaml has channels.development.next_major.announced=true WHEN prime is invoked with --channel development THEN the major-boundary gate does not block the v2→v3 path
+    - GIVEN the default update-channels.yaml (development has no next_major block) WHEN isStableSuccessorAnnounced(sourceRoot, "development") is called THEN it returns false (no successor announced on dev channel), preserving current behavior
+    - GIVEN --channel stable with stable's next_major.announced=false (current state) WHEN isStableSuccessorAnnounced(sourceRoot, "stable") is called THEN it returns false, identical to pre-fix behavior
+    - GIVEN the channel parameter is omitted (legacy callers) WHEN the function is called THEN it defaults to "stable" and behavior is identical to pre-fix
+  plan: yosopjayii

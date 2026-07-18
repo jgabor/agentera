@@ -1,0 +1,17 @@
+id: ggnjhuyquc
+artifact: plan
+record:
+  name: Verify doctor output closeout
+  depends_on:
+    - dwdgjigjso
+  status: complete
+  acceptance:
+    - GIVEN implementation is complete WHEN verification runs THEN focused doctor/upgrade tests, artifact validators, compaction check or fix, and `git diff --check` pass.
+    - GIVEN live installed state is fresh WHEN a local or installed doctor probe runs THEN text output no longer asks for a required repair and dry-run command formatting remains correct where shown.
+    - GIVEN the plan completes WHEN handoff is reported THEN remaining open TODOs and any residual risks are named without refreshing installed app/profile, publishing, pushing, tagging, or changing protected state unless explicitly approved.
+  evidence:
+    - Focused verification passed with `uv run pytest tests/test_bundle_freshness.py tests/test_install_root_characterization.py tests/test_query_cli.py -q` (220 tests).
+    - Artifact validators passed for PLAN, PROGRESS, TODO, CHANGELOG, and DECISIONS. Initial compaction check reported TODO Resolved and PROGRESS over by one after closeout edits; safe `uv run scripts/agentera compact --mode fix --format json` compacted both, and the follow-up compaction check passed with zero over-limit artifacts.
+    - "`git diff --check` passed. Local `uv run scripts/agentera doctor` reports `status: up to date` and `No action needed` without a required repair sequence; local `uv run scripts/agentera doctor --json` reports `status=up_to_date`, `signals=[]`, `dryRunCommand=null`, and `applyCommand=null`."
+    - No installed app/profile refresh, publication, push, tag, package-manager state change, `.agentera/vision.yaml` edit, objective-state mutation, decision satisfaction change, or commit was performed.
+  plan: zlfqmzwpfh

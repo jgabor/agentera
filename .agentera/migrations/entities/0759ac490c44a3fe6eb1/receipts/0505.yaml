@@ -1,0 +1,18 @@
+id: tpehakpzmw
+artifact: plan
+record:
+  name: Local artifact closeout
+  depends_on:
+    - nvlvrkysfa
+    - kjikbstkii
+    - crmotjrkcu
+    - gtpwcgtrao
+  status: complete
+  acceptance:
+    - GIVEN verification passes WHEN project state is synced THEN TODO, CHANGELOG, DOCS, PROGRESS, and PLAN record the usage namespace scope and exact evidence without unrelated documentation churn.
+    - GIVEN the D48 usage namespace closes WHEN TODO is reviewed THEN the open `[feat] Implement agentera corpus or agentera usage CLI namespace for profile analytics (D48)` item is resolved and no D48 corpus extraction work is claimed.
+    - GIVEN closeout completes WHEN final checks run THEN relevant tests, artifact validators, compaction gate if needed, and `git diff --check` pass.
+  evidence:
+    - Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the 2.6.0 D48 usage namespace closeout, resolving the usage/corpus TODO while explicitly not claiming `agentera corpus` or corpus extraction work.
+    - "Final validation evidence is recorded in PROGRESS and CHANGELOG: focused usage namespace tests, direct usage stats tests, explicit CLI surface tests, package/version metadata tests, touched artifact validators, compaction if needed, and `git diff --check`."
+  plan: hfrfqlxlqx

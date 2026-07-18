@@ -1,0 +1,16 @@
+id: dhfscnarbz
+artifact: plan
+record:
+  name: Cut objectives and experiments over to entities
+  depends_on:
+    - piatorxaxp
+    - fogsvgbhqa
+    - qohrkyobow
+    - wxyfijsihp
+  status: complete
+  acceptance:
+    - GIVEN objectives and experiments WHEN published or retrieved THEN UUID, composite, and numeric identities are replaced by bare project-wide IDs.
+    - GIVEN experiment ownership WHEN migrated THEN every experiment resolves to one objective entity.
+    - GIVEN baseline and immutable experiment evidence WHEN read THEN detail, ordering, and provenance remain intact.
+    - GIVEN ambiguous ownership or duplicate identity WHEN publication is attempted THEN it fails before effects.
+  plan: pohgeeghnl

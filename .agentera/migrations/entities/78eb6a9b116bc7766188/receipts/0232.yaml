@@ -1,0 +1,12 @@
+id: tzbfnlawls
+artifact: plan
+record:
+  name: Update internal production consumers of renamed fields
+  depends_on:
+    - tscenohbeb
+    - rioaqlmjuy
+  status: complete
+  acceptance:
+    - GIVEN the production source files WHEN searched for references to the old bundle field name in JSON output construction THEN no production file reads or writes the old field name
+    - GIVEN the production source files WHEN searched for references to rootStatus in public output construction THEN no production file exposes rootStatus in public output
+  plan: fedtqulqpx

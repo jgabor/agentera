@@ -1,0 +1,15 @@
+id: ehspgvivkg
+artifact: plan
+record:
+  name: Live app-home vocabulary updates
+  depends_on:
+    - eiqgcgazhx
+  status: complete
+  evidence:
+    - Updated live app-home vocabulary across current docs, capability prose, setup/smoke diagnostics, adapter docs, lifecycle validation wording, package description text, and private package-entry helper names while preserving compatibility contracts, canonical artifact labels, CLI selectors, route/handoff boundaries, historical records, and migration examples. Independent evaluation passed all Task 2 acceptance criteria. Verification evidence included `git diff --check`, focused setup/smoke, runtime, packaged CLI, app-home contract, setup-copilot, and package registry pytest suites, lifecycle adapter validation, and validation for edited capabilities. The OpenCode bootstrap smoke still has an unrelated pre-existing environment propagation assertion failure outside the edited diagnostic wording.
+  acceptance:
+    - GIVEN an occurrence is classified `replace` WHEN updated THEN user-facing or live internal wording uses app-home vocabulary such as `app home`, `managed app`, `app refresh`, and `user data root` instead of obsolete bundle-root wording.
+    - GIVEN legacy migration behavior is documented or exercised WHEN wording changes THEN it remains clear that `agentera doctor` is read-only and `agentera upgrade` owns migration writes.
+    - GIVEN canonical artifact labels or legacy labels are touched WHEN wording changes THEN only explanatory prose is updated unless the name is purely display text; canonical artifact IDs, filenames, schema names, and CLI selectors are not renamed.
+    - GIVEN route, CLI, or capability handoff examples are touched WHEN updates are made THEN D43, D45, and D46 boundaries remain intact, including glyph plus canonical capability labels where required.
+  plan: nbvykgaapw

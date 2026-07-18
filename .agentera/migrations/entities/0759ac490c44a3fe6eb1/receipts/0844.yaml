@@ -1,0 +1,24 @@
+id: zgrjjrnwlm
+artifact: plan
+record:
+  name: Fold TODO.md entries, verify D65 plan archive, flip plan/progress metadata, run the final verification gates, and land the commit
+  depends_on:
+    - dsofklgopk
+    - pzmuekfpsi
+    - wtfdgzmpzb
+    - eosfyjjrbr
+    - wxgpqkuvsg
+    - ymxhsenxdg
+    - wrphptreus
+  status: pending
+  acceptance:
+    - GIVEN T1-T7 complete WHEN the implementation commit is staged THEN `.agentera/plan.yaml` status flips from `active` to `complete` and the new plan archives to `.agentera/archive/plan-2026-06-04-d56-parity-closeout.yaml`; the D65 plan on disk is already archived at `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml` per the D65 plan's own design note, so T8 verifies the archive presence (no-op copy); the `previous_plan_archived` line in the new plan points at the D65 archive path
+    - GIVEN the same commit WHEN `.agentera/progress.yaml` is updated THEN a new full-detail cycle entry is appended whose scope is `D56 parity closeout`; per Decision 66 (PR6/PR2 removal) the cycle omits the `commit` field and follows the post-D66 cycle shape; the commit is folded into the implementation commit per AGENTS.md `Agentera commits` rules, not a separate bookkeeping commit
+    - "GIVEN the same commit WHEN `TODO.md` is updated THEN the open L18 entry (`- [test:3.0.0] Decision 56 upgrade/migration parity on `feat/v3`...`) and the L19 entry (`- [test:3.0.0] Port artifact validation, compaction, ...`) move to the `## ✓ Resolved` section using the standard ledger form `- ~~[test:3.0.0] ...~~ · resolved on `feat/d56-parity-closeout` @ <sha>: <one-line summary of what changed>` naming the implementation commit hash once known"
+    - GIVEN the same commit WHEN `rg '^- Placeholder' TODO.md` runs THEN zero hits (the previous folds' Placeholder removals are preserved); the resolved-ledger entries sit at the top of `## ✓ Resolved`
+    - "GIVEN the implementation commit WHEN the verification gates run THEN all six must pass: (T-vitest) `pnpm -C packages/cli test` full vitest suite green with the npmParityMatrix reporting all six v3-remaining families `equal`; (T-typecheck) `pnpm -C packages/cli run typecheck` zero errors; (T-build) `pnpm -C packages/cli build` exit 0 with `dist/bin/agentera.js` present; (T-capability-contract) `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` pass; (T-capability-per-name) `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities pass; (T-npm-parity-matrix) `pnpm -C packages/cli test -- npmParityMatrix` reports all six v3-remaining families `equal` (or `intentional_version_break` for rows explicitly marked), zero `ts_smaller` or `python_smaller` rows"
+    - "GIVEN the same commit WHEN the npm `@next` version-divergence re-run fires THEN `npx -y agentera@next check validate capability-contract --format json` is re-run after any version bump (TODO L23) and reports degraded status if the matrix is invalidated; the npm @next pin is unchanged from T1 (`packages/cli/package.json` `version: 3.0.0-dev.4` until L23 lands separately)"
+    - GIVEN the commit WHEN the AGENTS.md `Agentera commits` rule is applied THEN no separate bookkeeping commit is created; the TODO.md L18+L19 fold, plan.yaml status flip, progress cycle, six gate runs, capability-contract validate, and per-name capability validate are all in a single commit
+    - "GIVEN the same commit WHEN `git diff --stat feat/v3 -- <changed paths>` runs THEN the surface delta covers: 1 new oracle fixture (`parity-remaining-families.json`), 1 new rebase script (`rebase_oracle.sh`), 1 updated parity matrix (`npmParityMatrix.test.ts`), 6+ updated CLI command/validate modules, 6+ new parity tests, 1+ gapRegistry update, the `.agentera/plan.yaml` flip, the `.agentera/progress.yaml` cycle, the TODO.md fold, the D65 archive verification — the numbers are reportable from `git diff --stat` and the resulting count matches this plan's inventory"
+    - GIVEN the post-commit state WHEN `agentera plan --format json` is queried THEN the response reports the new plan as `complete`, the previous_plan_archived is `.agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml`, and the source_contract `complete_for_plan_artifact` is `true`; the headline TODO L16 (Rewrite the supported Agentera CLI core in TypeScript) remains `open` because the v3 cutover itself is a separate planera cycle per Decision 56's `feeds_into`
+  plan: cyhkcizqio

@@ -1,0 +1,11 @@
+id: cengmxdwxc
+artifact: plan
+record:
+  name: Add plugin-bundled hook metadata
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `.codex-plugin/plugin.json` is inspected WHEN Codex plugin metadata is validated THEN it exposes a hooks entry for bundled hook discovery.
+    - GIVEN the bundled hook config is inspected WHEN command handlers are read THEN they use PLUGIN_ROOT to resolve `hooks/validate_artifact.py` and do not depend on AGENTERA_HOME.
+  plan: iqrevgmgtx

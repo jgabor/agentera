@@ -1,0 +1,13 @@
+id: ojdfymmzpi
+artifact: plan
+record:
+  name: Port v2→v3 artifact and runtime migration modules
+  depends_on:
+    - hlhaayuzyu
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts WHEN dry-run on fixture projects THEN it reports the same class of pending/noop/blocked outcomes as main's migrate_artifacts_v1_to_v2 for equivalent v2 project layouts (YAML artifacts preserved, v1 pairs still detected separately)
+    - GIVEN runtime rewire phase WHEN applied on fixtures THEN runtime config no longer points at Python managed app-home and references the npm self-contained entrypoint
+    - GIVEN cleanup phase WHEN dry-run THEN optional managed app-home removal is previewed with user-data preservation rules matching main's USER_STATE_NAMES boundaries
+    - GIVEN migration module unit tests WHEN run THEN they pass without network access using checked-in fixtures
+  plan: pcohfdsziy

@@ -1,0 +1,12 @@
+id: zpuisstbky
+artifact: plan
+record:
+  name: Validate and release handoff
+  depends_on:
+    - olyuaogasl
+    - ashlmhmjvm
+  status: complete
+  acceptance:
+    - GIVEN the follow-up is complete WHEN focused and broad validation run THEN tests, artifact validators, docs query, and whitespace checks pass.
+    - GIVEN release actions are requested WHEN validation passes THEN one follow-up commit is created, `v2.3.0` is retagged, `main` is pushed normally, and only the tag is force-updated.
+  plan: rcrgzqzojw

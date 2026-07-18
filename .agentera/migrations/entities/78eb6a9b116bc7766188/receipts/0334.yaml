@@ -1,0 +1,13 @@
+id: mufeszagtz
+artifact: plan
+record:
+  name: Record target CLI contract and alias migration policy
+  depends_on:
+    []
+  status: complete
+  evidence: Added references/cli/audience-namespace-cli-migration.yaml (target command tree, state/report/check namespaces, audience tags, migration phases, Decision 59/45 reconciliation, plan routing distinction) and linked it from references/cli/agent-ready-state-contract.yaml. Focused contract tests in tests/test_audience_namespace_cli_migration_contract.py pass.
+  acceptance:
+    - GIVEN the target command tree is documented WHEN maintainers inspect `references/cli/agent-ready-state-contract.yaml` or a linked vocabulary addendum THEN it lists top-level commands, namespace subcommands, audience tags ([agent], [user], [maintainer]), and the prime/hej/schema migration boundary.
+    - GIVEN Decision 59 and Decision 45 apply WHEN the contract is reviewed THEN it states that `prime --context` remains the capability startup seam, routine state names stay stable via aliases, and `schema` owns discovery formerly on `describe`.
+    - GIVEN slash routes and capability tops are documented WHEN an agent reads the contract THEN `/agentera plan` routing is distinguished from `state plan` artifact reads and from `planera` routing guidance.
+  plan: unmsxwomyo

@@ -1,0 +1,14 @@
+id: jjzfavrwjk
+artifact: plan
+record:
+  name: Enforce Full-Plan Adversarial Review Validation
+  depends_on:
+    - hclvucrdgy
+  status: complete
+  acceptance:
+    - "GIVEN a plan has `header.level: full` WHEN required review fields are absent or empty THEN artifact validation fails"
+    - GIVEN a full plan has missing design or missing task acceptance criteria WHEN artifact validation runs THEN validation fails
+    - GIVEN `header.critic_issues` reports zero findings or inconsistent counts WHEN artifact validation runs THEN validation fails
+    - GIVEN a light plan omits full-review-only fields WHEN artifact validation runs THEN existing light-plan behavior remains valid
+    - GIVEN validation regressions remove fields from this reviewed plan shape WHEN focused tests run THEN those regressions fail for the intended reasons
+  plan: lorvormcos

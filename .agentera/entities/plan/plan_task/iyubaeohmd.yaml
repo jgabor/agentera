@@ -1,0 +1,13 @@
+id: iyubaeohmd
+artifact: plan
+record:
+  name: Deliver experiment list and get
+  depends_on:
+    - avvfhzosdc
+  status: complete
+  acceptance:
+    - GIVEN an objective with many experiments WHEN listed THEN newest-first pages, opaque continuation, omissions, and no duplicate or skipped identities result.
+    - GIVEN experiment identity WHEN fetched THEN retained or archived detail, provenance, and detail availability are explicit.
+    - GIVEN wrong objective, experiment zero, summary-only legacy, malformed cursor, and not-found cases WHEN tested THEN behavior is structured.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 8.
+  plan: cccqoakytz

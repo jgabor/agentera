@@ -1,0 +1,15 @@
+id: glgkyyddui
+artifact: progress
+record:
+  timestamp: 2026-07-16 13:18
+  type: feat
+  phase: build
+  what: Deliver bounded default decision brief for bare prime --format json (Plan Task 3)
+  inspiration: Plan Task 3 acceptance criteria
+  discovered: available_state is pinned by sourceContractOracles assertExactKeys and must be preserved in capability_startup brief projection. Large fixture at 1000 entries fits within 12000 after trimming history counts, capping attention strings, and projecting docs.source_contract.
+  verified: Vitest 551 pass (test/cli/); typecheck clean; check compact pass; capability-contract 2/0. Real repo brief 11178 bytes (ok); large fixture 11517 bytes (ok, 483-byte margin). AC1-AC5 all pass in primeTask3Brief.test.ts.
+  next: "Task 4: Make status startup self-contained (pending). Task 5: Synchronize contracts and verify current state (pending)."
+  context:
+    intent: Make bare prime a bounded decision brief at most 12000 bytes with diagnostics on stderr, preserving consumer compatibility, missing-vs-empty semantics, and named recovery for omitted rich state
+    constraints: dashboard, fields, and context paths keep full fidelity (NOT projected). No structured attention records, stable object refs, compiled instructions, or new named summary mode.
+    scope: packages/cli/src/cli/commands/prime/briefOrientation.ts (NEW); packages/cli/src/cli/commands/prime/orientationOutput.ts; packages/cli/src/cli/commands/prime.ts; packages/cli/test/cli/primeTask3Brief.test.ts (NEW); packages/cli/test/cli/prime.test.ts; packages/cli/test/cli/primeTask3Bounds.test.ts; scripts/json_output_surface_manifest.yaml; references/artifacts/state-storage-authority.yaml; references/cli/prime-consumer-compatibility.yaml

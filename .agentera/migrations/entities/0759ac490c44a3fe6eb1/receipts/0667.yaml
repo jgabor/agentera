@@ -1,0 +1,13 @@
+id: fzhybpqjbc
+artifact: plan
+record:
+  name: Gap registry and expected-fail tests for unported migration behavior
+  depends_on:
+    - vfldtwwrut
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/test/upgrade/gapRegistry.ts or equivalent WHEN read THEN it lists tracked gaps (opencode runtime rewire, stale v1 surface cleanup, channel-aware npx dist tag in rewire constants) with stable gap ids
+    - GIVEN migrateRuntimeMatrix or dedicated gap tests for v2-runtime-opencode and v2-v1-stale-surfaces WHEN run with gap expectations enabled THEN tests are skipped or marked expected-fail with gap id until implementation closes them
+    - GIVEN gapRegistry WHEN a gap closes THEN corresponding test flips from expected-fail to required pass without removing the fixture
+    - GIVEN sandbox-report.json schema WHEN emitted THEN runtimeMatrix field records applied, blocked, not_implemented, or expected_fail per runtime id from runtime-adapter-registry.yaml
+  plan: gntadmkfrl

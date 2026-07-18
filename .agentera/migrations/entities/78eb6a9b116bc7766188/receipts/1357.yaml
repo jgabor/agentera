@@ -1,0 +1,16 @@
+id: arlcfyghes
+artifact: progress
+record:
+  timestamp: 2026-07-17 12:17
+  type: fix
+  phase: build
+  what: Fixed entity migration preview to inventory the canonical docs-mapped TODO source.
+  inspiration: Task 9 audit retry 1/2 and the existing artifact registry resolver.
+  discovered: Migration preview alone had hardcoded root TODO.md while normal state reads already honored docs mapping.
+  verified: entityMigrationPreview.test.ts passed 81 tests; full CLI passed 211 files and 2,538 tests; typecheck, build, state validation, document capability, capability contract 2/2, and compact passed.
+  next: "Task 10 remains pending: durable migration apply, resume, and rollback were not changed."
+  context:
+    intent: Close the Task 9 audit defect without changing migration apply or Task 10 behavior.
+    constraints: Reuse canonical mapping semantics; preserve docs.yaml singleton authority and zero-write preview; no apply work.
+    unknowns: None for this audit fix.
+    scope: packages/cli/src/state/entityMigrationPreview.ts and focused migration preview regressions.

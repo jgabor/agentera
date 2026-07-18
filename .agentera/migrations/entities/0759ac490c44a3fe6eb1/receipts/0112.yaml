@@ -1,0 +1,7 @@
+id: rmncfrmwiu
+artifact: docs
+record:
+  document: Shared hook utils
+  path: hooks/common.py
+  last_updated: 2026-05-05
+  status: current

@@ -1,0 +1,9 @@
+id: nfyivrsgfg
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: D71 modal vocabulary convention adopted and applied across audited capabilities (D79 status, D81 vision, D82 discuss, D83 research). Capitalized MUST/MUST NOT/SHOULD/MAY keywords carry protocol force; lowercase modal verbs remain ordinary English. Convention lives in capability_schema_contract.yaml. 8 remaining unaudited capabilities will adopt during their respective audits.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-07-09
+  decision: ijuexyxvbc

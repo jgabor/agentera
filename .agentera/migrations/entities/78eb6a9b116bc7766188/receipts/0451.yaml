@@ -1,0 +1,13 @@
+id: prgarseatn
+artifact: plan
+record:
+  name: Upgrade versus repair semantics
+  depends_on:
+    - hyqemrqrmo
+    - xuteanntzt
+  status: complete
+  acceptance:
+    - GIVEN Agentera app files are valid but older than the expected version WHEN status or recovery guidance is rendered THEN the user-facing wording presents this as an upgrade or update path, not as an old or broken local copy.
+    - GIVEN app files are missing required behavior, malformed, incomplete, or unsafe WHEN status or recovery guidance is rendered THEN safe-repair and blocked-state language remains available.
+    - GIVEN structured status is consumed by hej or doctor WHEN version mismatch is present THEN machine-readable output distinguishes update-needed from broken or unverifiable state.
+  plan: cwlpcjsftg

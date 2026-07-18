@@ -1,0 +1,11 @@
+id: kfwkknubwv
+artifact: plan
+record:
+  name: Detect - add ~/.agents/skills/agentera to bundleStatus candidates
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN ~/.agents/skills/agentera is divergent WHEN prime runs THEN bundle status surfaces staleness at that path as an attention item and never reports up_to_date
+    - GIVEN all recognized skill roots match the canonical source WHEN prime runs THEN up_to_date holds
+  plan: pzyuvhqlko

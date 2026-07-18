@@ -1,0 +1,19 @@
+id: qahdbevmug
+artifact: decisions
+record:
+  date: 2026-07-11
+  question: What lifecycle authority, runtime identity, support floor, and Claude retirement policy governs Agentera 3.0.0?
+  context: Agentera must manage lifecycle convergence across OpenCode, Codex, Cursor, and Copilot from the canonical shared skill while preserving runtime trust boundaries. Cursor IDE and cursor-agent require one identity, Cursor CLI is the prioritized surface, and Claude Code active-runtime support is being retired without discarding useful historical transcript import.
+  alternatives:
+    - name: Adopt one conservative cross-runtime lifecycle contract with explicit ownership, read-only diagnosis, idempotent Agentera-owned writes, Cursor CLI as the required Cursor surface, optional Cursor IDE integration, and opt-in Claude historical import.
+      status: chosen
+    - name: Treat Cursor IDE and cursor-agent as separate runtimes or require both surfaces for readiness.
+      status: rejected
+    - name: Delegate native runtime package installation, authentication, enablement, or trust approval to Agentera.
+      status: rejected
+    - name: Continue Claude Code as an active runtime or include Claude transcripts in default active-runtime analytics.
+      status: rejected
+  choice: Active runtime IDs are exactly opencode, codex, cursor, and copilot; Cursor CLI is required while Cursor IDE is conditional. The canonical skill is ~/.agents/skills/agentera. Managed writes require a declared destination and matching Agentera ownership manifest or ledger. Lifecycle reports host_present, installed, enabled, trusted, unknown, denied, and not_applicable without inferring trust. Probes are bounded and read-only; native install, update, authentication, and trust actions remain user-owned and are surfaced as exact remediation commands. Preview is strictly read-only. Apply outcomes are applied, noop, failed, blocked_unowned, skipped_dependency, or action_required; independent operations continue and retries converge. Claude Code is removed as an active runtime; its transcript parser remains only as an explicit consent-gated historical importer excluded from active-runtime analytics.
+  reasoning: A shared skill root makes common discovery portable, but hooks, plugins, trust, and precedence remain runtime-specific. Explicit ownership prevents destructive adoption of user state, read-only probing preserves host authority, and a complete diagnosis floor prevents unsupported unknowns from shipping. Cursor CLI priority matches current product intent without making the optional IDE a release blocker. Separating Claude historical data from runtime support preserves user value without implying lifecycle parity.
+  confidence: firm
+  feeds_into: Runtime lifecycle contract; shared operation engine; OpenCode, Codex, Cursor, and Copilot adapters; prime, doctor, and upgrade convergence; Claude Code retirement and historical importer; 3.0.0 release gates.

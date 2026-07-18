@@ -1,0 +1,12 @@
+id: tolcpbiqus
+artifact: plan
+record:
+  name: Diagnose Dashboard Contract Break
+  depends_on:
+    - dfhaapeijm
+  status: complete
+  acceptance:
+    - GIVEN README, SKILL.md, hej prose, scripts/agentera, fixtures, and tests are inspected WHEN findings are recorded THEN the diagnosis names the exact surfaces that permitted raw CLI output to count as /agentera success
+    - GIVEN the CLI output is compared to the dashboard template WHEN missing or ambiguous fields are found THEN the implementation task knows which fields need CLI or rendering contract changes
+    - GIVEN diagnosis completes WHEN findings are recorded THEN it lists each broken surface, the current behavior, the intended behavior, and the specific task that will repair or test it
+  plan: mbjboapqeq

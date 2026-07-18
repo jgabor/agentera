@@ -1,0 +1,9 @@
+id: ucxobhxglm
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: User confirmed the crystallized vision draft via multi-question deliberation (commitments 1-6 locked in round 1; demotion outcomes and borrowed-cognition framing locked in round 2; vision draft, headline, profile exposure mechanism, and vocabulary retirement confirmed in round 3 with explicit "Yes — ship as the crystallized vision" reply). Per discuss decision-satisfaction authority, the user explicitly confirmed in the current deliberation, so user_confirmed_satisfied is legitimate.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-28
+  decision: etishrsxyr

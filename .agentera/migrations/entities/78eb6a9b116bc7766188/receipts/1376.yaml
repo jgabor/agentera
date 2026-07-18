@@ -1,0 +1,16 @@
+id: ibwswrlssc
+artifact: progress
+record:
+  timestamp: 2026-07-18 03:05
+  type: fix
+  phase: build
+  what: Closed the final anchor/tag bypass in historical block-single-pair plan-scope normalization by requiring metadata-free map, pair-key, and pair-value nodes plus an unambiguous plain raw sequence prefix and safe nested ranges.
+  inspiration: Task23 retry 2/2 FINAL and the Task14 dependency gate.
+  discovered: YAML may attach an inline mapping anchor or tag to the first scalar while excluding its token from the map range, so API metadata checks and the raw source prefix are both required; anchored aliases remain objects and canonical validation blocks them.
+  verified: 35 focused and 2,654 full tests across 218 files passed; typecheck, build, state validation, 12 capability validations, capability contract 2/2, compact, exact live13 normalization coverage, and blocker-free no-effect live preview passed.
+  next: Task23 is complete. Task14 remains pending; do not apply migration or generate approval.
+  context:
+    intent: Complete Task23 retry 2/2 FINAL by fixing only the anchor/tag normalization bypass without applying or approving migration.
+    constraints: No apply, approval, Task15, version, changelog, vision, manual YAML edit, amend, push, publish, or tag.
+    unknowns: Independent Task14 apply authorization remains intentionally unresolved.
+    scope: Plan artifact YAML source-node normalization, anchor/tag regressions, storage authority, and plan/progress state.

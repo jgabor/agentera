@@ -1,0 +1,20 @@
+id: rhijsrlrxu
+artifact: plan
+record:
+  name: Synchronize state and verify lifecycle behavior
+  depends_on:
+    - pwlawcbwuf
+    - rlyhxufooy
+    - mkgogkrmpi
+    - ujqqxrambp
+    - bgepeyvcpk
+    - ixwznoaqui
+    - viozvogyrl
+  status: complete
+  acceptance:
+    - GIVEN the completed implementation WHEN full CLI tests, typecheck, build, compact, capability, and contract gates run THEN every required check passes.
+    - GIVEN current, archive-only, legacy, forced, and malformed fixtures WHEN exact prime and state plan commands run THEN lifecycle, diagnostics, and routing match the canonical contract.
+    - GIVEN repository plan surfaces WHEN searched THEN obsolete plan-level values remain only in explicit migration fixtures or immutable evidence.
+    - GIVEN task closeout WHEN state is synchronized THEN progress, TODO, and documentation evidence are updated through their owning interfaces in the implementation commit.
+  evidence: 1,577 CLI tests; typecheck, build, compact, plan and contract validation, lifecycle adapter validation, npm pack/publish dry-runs, and 68 lifecycle fixture tests passed.
+  plan: jcootkibwr

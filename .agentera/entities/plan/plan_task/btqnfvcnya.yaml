@@ -1,0 +1,10 @@
+id: btqnfvcnya
+artifact: plan
+record:
+  name: Add Common commands cheat sheet to AGENTS.md
+  depends_on:
+    - oxolclxflc
+  status: complete
+  acceptance:
+    []
+  plan: okrgsbtctt

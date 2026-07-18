@@ -1,0 +1,14 @@
+id: gaddiweivm
+artifact: plan
+record:
+  name: Fix latest audit selection and date in health state
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - _latest_health_audit selects highest audit number; health and hej JSON report Audit 20 from ascending fixtures
+  acceptance:
+    - GIVEN health.yaml lists audits 11 through 20 in ascending order WHEN agentera health --format json runs with latest-only semantics THEN the returned entry is Audit 20 with date 2026-05-05
+    - GIVEN the same fixture WHEN agentera hej --format json runs THEN health.number and days_since_audit derive from Audit 20 date, not Audit 11
+    - GIVEN a health entry with date but no timestamp WHEN health summary is built THEN the date field supplies current-state age calculations
+  plan: wzxqnespyz

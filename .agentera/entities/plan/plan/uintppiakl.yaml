@@ -1,0 +1,32 @@
+id: uintppiakl
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-09
+    status: archived
+    title: 2.2.3 release metadata sync and readiness gate
+  what: |
+    Synchronize the local checkout for the 2.2.3 patch release by updating version-bearing surfaces, changelog and docs evidence, then rerunning the release-readiness checks needed before any commit, tag, push, publication, or installed bundle refresh is requested.
+  why: |
+    The 2.2.3 implementation work is complete and verified, but release surfaces still identify 2.2.2. Cutting a release now would ship mismatched metadata and an incomplete changelog despite passing tests and live smoke evidence.
+  constraints: |
+    Keep scope to 2.2.3 metadata/readiness. Do not include 2.3.x Profilera corpus parity. Do not tag, push, publish, commit, refresh installed bundles, update package-manager installs, or modify vision/objective state without explicit user approval.
+  scope:
+    included:
+      - Version surfaces listed in .agentera/docs.yaml conventions.version_files.
+      - CHANGELOG.md 2.2.3 release notes.
+      - Release evidence in .agentera/docs.yaml, .agentera/progress.yaml, TODO.md, and plan state.
+      - Local validation gates for version alignment, tests, smoke, docs, and whitespace.
+    excluded:
+      - Git commit, tag, push, publication, package-manager update, and installed bundle refresh.
+      - 2.3.x Profilera corpus mining parity.
+      - New runtime support, architecture refactors, and v1 reconciliation work.
+    deferred:
+      - Release publication flow after explicit approval.
+      - 2.3.x Profilera corpus parity.
+  overall_acceptance:
+    - GIVEN the 2.2.3 release-prep plan is complete WHEN version, changelog, docs, progress, TODO, tests, and smoke evidence are inspected THEN the checkout is ready for an explicit commit request.
+    - GIVEN no publication authority was granted WHEN the plan completes THEN no tag, push, package publication, package-manager update, installed bundle refresh, vision edit, or objective edit has occurred.
+  surprises:
+    []

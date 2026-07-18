@@ -1,0 +1,21 @@
+id: mpexogpihy
+artifact: plan
+record:
+  name: Verify bounded retrieval end to end
+  depends_on:
+    - vwcokeooop
+    - zybubbzroj
+    - jgbatfzgbf
+    - audujsqfiw
+    - bxdjfuhaqx
+    - chexrtgced
+    - pmkchcguhl
+    - mxqroryujc
+    - tqabfmtayj
+    - lstuibtehr
+  status: pending
+  acceptance:
+    - GIVEN focused boundary fixtures WHEN run THEN cursors, omissions, exact gets, transitions, experiment zero, atomicity, retries, and legacy caveats pass.
+    - GIVEN full repository gates WHEN run THEN tests, typecheck, build, capability contract, compaction, and package dry-run pass.
+    - GIVEN live read-only smoke tests WHEN run THEN pre-existing diagnostics follow Task 1 classification without hidden repair.
+  plan: diigykcdod

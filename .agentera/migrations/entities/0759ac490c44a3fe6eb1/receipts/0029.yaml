@@ -1,0 +1,9 @@
+id: rzboebyvhp
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: "P1 shipped: bundleStatus.ts:65-66 includes ~/.agents/skills/agentera in its candidate and doctorRoots lists; runtimeMigration.ts:417-513 implements detect + symlink repair + retirement of the duplicate ~/.config/opencode/skills/agentera; verified on disk that ~/.agents/skills/agentera is a symlink to the canonical source and ~/.config/opencode/skills/agentera no longer exists. P2 shipped: RESOLVED_AGENTERA_HOME remnant stripped from packages/cli/src/capabilities/status/instructions.ts. User confirmed in discuss deliberation 2026-07-10 that the silent-stale risk is genuinely closed; broader ~/.agents/skills standardization is held as loose direction with no separate artifact."
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-07-10
+  decision: ubagpjvdzk

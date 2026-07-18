@@ -1,0 +1,14 @@
+id: rlyhxufooy
+artifact: plan
+record:
+  name: Add legacy normalization and plan diagnostics
+  depends_on:
+    - pwlawcbwuf
+  status: complete
+  acceptance:
+    - GIVEN a legacy persisted `active` status WHEN read within the compatibility boundary THEN it is normalized to `open` and reported as legacy input.
+    - GIVEN malformed current plan data WHEN state is queried THEN the invalid path and diagnostic are reported instead of treating the plan as absent.
+    - GIVEN invalid archives WHEN discovered THEN parse, schema, lifecycle, and legacy conditions are categorized consistently for all plan consumers.
+    - GIVEN an archived open plan WHEN queried THEN it remains historical and supplies no executable selected task.
+  evidence: packages/cli/src/cli/planArtifacts.ts normalizes legacy active and completed statuses and emits parse, schema, lifecycle, and legacy diagnostics; state plan keeps archived open plans non-executable. Verified focused and full CLI tests, typecheck, lint, build, capability-contract validation, compact gate, and built CLI smoke.
+  plan: jcootkibwr

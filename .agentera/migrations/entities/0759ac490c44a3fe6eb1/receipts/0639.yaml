@@ -1,0 +1,12 @@
+id: rezcbpqcnw
+artifact: plan
+record:
+  name: Decouple registry and evaluator TODO coupling
+  depends_on:
+    - lnkdswmgly
+  status: complete
+  acceptance:
+    - GIVEN packageRegistry and artifactRegistry tests WHEN they load docs mapping THEN they read fixture docs.yaml, not live .agentera/docs.yaml
+    - GIVEN evaluatorHandoffContract TODO shift test WHEN it runs THEN it mutates a fixture TODO copy in tmp, never REPO_ROOT/TODO.md
+    - GIVEN vitest on a clean clone WHEN run THEN passing does not require local orkestrera artifact edits in the working tree
+  plan: qujxqpraku

@@ -1,0 +1,10 @@
+id: cjehibbqea
+artifact: plan
+record:
+  name: All-runtime live install proof test
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a release-readiness context WHEN `scripts/smoke_live_hosts.py --live --yes` runs THEN Claude Code, OpenCode, Copilot CLI, and Codex CLI install paths validate with isolated temp state, explicit consent for live calls, and SKIP for auth/network failures
+  plan: wrbgxsiiaj

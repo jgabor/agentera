@@ -1,0 +1,14 @@
+id: xfqppcklob
+artifact: plan
+record:
+  name: Verify Patch And Close Plan State
+  depends_on:
+    - bukxlghdlj
+  status: complete
+  acceptance:
+    - GIVEN focused verification runs WHEN Task 6 completes THEN plan lifecycle, full-plan validation, exact-`hej` routing, and question-tool gating regressions pass
+    - GIVEN release verification runs WHEN the patch is ready THEN relevant capability validation, artifact validation, CLI state checks, and test suites pass or documented blockers are recorded
+    - GIVEN live install proof is not run WHEN release notes are finalized THEN the patch does not claim four-runtime live install confidence
+    - GIVEN the worktree is reviewed WHEN execution completes THEN unrelated user or agent changes are not reverted, hidden, or folded into 2.2.1 release claims
+    - GIVEN all tasks are complete WHEN final state sync runs THEN the plan is marked complete or archived according to the completed-plan lifecycle contract being enforced
+  plan: lrgibkudrd

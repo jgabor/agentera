@@ -1,0 +1,24 @@
+id: cpiastboop
+artifact: health
+record:
+  date: 2026-04-01
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - test health
+    - version health
+    - dependency health
+  findings_summary:
+    critical: 3
+    warning: 14
+    info: 6
+    filtered_by_confidence: 0
+  trajectory: first full audit (6 dimensions vs prior 2); architecture ⮋ B→C, patterns stable B→B
+  grades:
+    Architecture: C
+    Patterns: B
+    Coupling: B
+    Tests: D
+    Version: B
+    Deps: B

@@ -1,0 +1,7 @@
+id: yewdnsnvhr
+artifact: docs
+record:
+  document: Agent-ready state CLI contract
+  path: references/cli/agent-ready-state-contract.yaml
+  last_updated: 2026-05-16
+  status: current

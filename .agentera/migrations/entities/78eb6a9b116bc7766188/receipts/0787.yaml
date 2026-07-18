@@ -1,0 +1,16 @@
+id: hxmiskvrhh
+artifact: plan
+record:
+  name: Planera guidance alignment
+  depends_on:
+    - rrhswogtbl
+  status: complete
+  acceptance:
+    - GIVEN Planera startup receives complete CLI plan state WHEN the orient step is followed THEN it relies on `agentera plan --format json` summary and entries for current-plan context instead of rereading the persisted plan artifact.
+    - GIVEN Planera needs other project state WHEN the guidance is followed THEN this plan does not redesign unrelated VISION, DECISIONS, TODO, HEALTH, PROGRESS, or profile access beyond preserving CLI-first fallback ordering where already defined.
+    - GIVEN Planera must write or archive a plan WHEN artifact mutation begins THEN guidance still allows mapped raw artifact access for the write/archive operation.
+    - GIVEN capability guidance is updated WHEN tests inspect it THEN the guidance does not require installed app refresh, unsupported capability-name CLI commands, or broad artifact discovery before CLI state.
+  evidence:
+    - "`skills/agentera/capabilities/planera/prose.md` now tells Planera to use `agentera plan --format json` for read-only current-plan startup/evaluation and to skip raw `.agentera/plan.yaml` reads when `source_contract.complete_for_plan_artifact` is true, while still allowing mapped raw access for writing, archiving, validation, corruption diagnostics, or incomplete CLI state."
+    - "`skills/agentera/SKILL.md` now names overall acceptance, surprises, prior-plan archive references, and the same valid raw-read exceptions in the master CLI-first state-access guidance without requiring app refreshes, unsupported capability commands, or broad artifact discovery before CLI state."
+  plan: fuwkumrpdy

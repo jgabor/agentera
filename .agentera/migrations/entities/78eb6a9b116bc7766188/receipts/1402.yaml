@@ -1,0 +1,6 @@
+id: cybxkpsyut
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[refactor:3.0.0] Compile capability source instructions into concise validated runtime execution contracts covering objective, reads, writes, procedure, safety rails, exit conditions, output, and handoffs. Preserve full maintainer prose as authority, version/hash compiled contracts, and allow callers with a known version to avoid retransmitting an unchanged instruction body."

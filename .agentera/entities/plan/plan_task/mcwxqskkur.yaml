@@ -1,0 +1,14 @@
+id: mcwxqskkur
+artifact: plan
+record:
+  name: Port artifact-validation CLI surface to TS
+  depends_on:
+    - nksxuyctff
+  status: pending
+  acceptance:
+    - GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/validate.ts` is updated THEN the file hosts all 7 subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit); each subcommand routes to the corresponding `packages/cli/src/validate/*.ts` module and emits the same JSON shape as the Python oracle
+    - GIVEN the 7 subcommands WHEN `packages/cli/test/cli/validateParity.test.ts` (or one test file per subcommand) runs THEN every subcommand is parity-green against the Python oracle per `npmParityMatrix.test.ts` `artifact_validation` family
+    - GIVEN cross-capability validate WHEN the existing partial port is reviewed THEN the implementation is complete (the resolved-ledger TODO L83 mentions `validate_cross_capability.py`; verify the TS port covers the same surface) and the parity row is `equal`
+    - GIVEN the vocabularyAuthority subcommand WHEN it is wired THEN the TS port handles Decision 57's `first_invocation_read` vocabulary and Decision 54's `lifecycleStatus` vocabulary and matches the Python `validate_lifecycle_adapters.py` shape
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js check validate <subcommand>` runs for each of the 7 subcommands THEN each emits a valid JSON response with the expected shape and the same exit code as the Python side; `npmParityMatrix.test.ts` reports `artifact_validation` family green; per V5 the test proportionality target is one pass + one fail per subcommand (7 × 2 = 14 cases)
+  plan: jxawyxzbto

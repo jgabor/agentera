@@ -1,0 +1,17 @@
+id: sluaipbdin
+artifact: plan
+record:
+  name: Source-contract truth table
+  depends_on:
+    - cawwerldfn
+  status: complete
+  acceptance:
+    - GIVEN current `_decision_source_contract` and tests are reviewed WHEN new semantics are specified THEN the plan records a truth table for full-detail entries, compacted archive entries, missing full-detail fields, satisfaction-review entries, filtered no-match results, and missing/unavailable artifacts.
+    - GIVEN compacted or incomplete decisions are returned WHEN normal deliberation uses the JSON output THEN the truth table marks full detail as false, normal-use sufficiency as true with caveats, and raw reads as false.
+    - GIVEN the artifact is missing or the CLI reports unavailable/defective state WHEN normal decision context is requested THEN the truth table marks normal-use sufficiency false and points to fallback/diagnostic boundaries instead of inference.
+    - GIVEN existing compatibility fields remain WHEN new fields are designed THEN agents are told to key normal use off `complete_for_normal_deliberation_context`, not the legacy `complete_for_decision_context` full-detail signal.
+  evidence:
+    - "`_decision_source_contract` now exposes `decision_context_truth_table` with separate cases for full-detail entries, compacted archive entries, entries with missing full-detail fields, satisfaction-review-needed entries, filtered no-match results, and missing or unavailable artifacts."
+    - The truth table marks compacted, missing-field, and satisfaction-review cases as not full-detail complete but complete for normal deliberation with caveats and no raw read; missing or unavailable artifact state is not normal-deliberation complete and points to fallback/diagnostic boundaries.
+    - New `normal_deliberation_context` guidance tells agents to key normal use off `complete_for_normal_deliberation_context`, not the legacy `complete_for_decision_context` full-detail signal.
+  plan: srgdpftdaw

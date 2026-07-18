@@ -1,0 +1,6 @@
+id: akoxskqtqu
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[release:3.0.0] Replace `scripts/agentera` on `main` with a thin Python deprecation stub (~15 lines) that prints the v3 migration message and exits 2. **Gate: only execute when 3.0.0-stable is ready to promote and `@latest` retags to the TS bundle.** Must happen as the final commit before the v3→main merge. The full 8,528-line v2 Python CLI and all `scripts/*.py` modules get deleted; the stub preserves `uvx --from git+... agentera` and `uv run scripts/agentera` users from hard crashes, directing them to `npx -y agentera`. Also delete `src/agentera/`, `pyproject.toml`, `uv.lock`, and the 0.0.1 npm shim's Python delegation path. Migrate `.codex/hooks.json` from `uv run .../validate_artifact.py` to `npx -y agentera@next hook validate-artifact` (or `@latest` post-promotion) as part of the same commit."

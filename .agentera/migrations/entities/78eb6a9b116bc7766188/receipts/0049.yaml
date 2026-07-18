@@ -1,0 +1,24 @@
+id: riszdkltrk
+artifact: decisions
+record:
+  date: 2026-05-17
+  question: How should Agentera expose usage statistics and local-history corpus generation?
+  context: D48 exposed `agentera usage` for analytics while intentionally not adding `agentera corpus`. The helper-script inventory identified `scripts/extract_corpus.py` as a direct helper that reads local runtime history and produces an intermediate corpus consumed by `scripts/usage_stats.py` and Profilera. A follow-up deliberation considered whether clear consent semantics made a top-level corpus command safe enough, then rejected exposing the implementation artifact as product vocabulary.
+  alternatives:
+    - name: Add top-level agentera corpus
+      status: rejected
+      description: Makes a sensitive intermediate data structure user-facing vocabulary and invites users to reason about extraction artifacts instead of the analytics outcome.
+    - name: Keep agentera usage only
+      status: rejected
+      description: Preserves compatibility, but leaves the missing-corpus path less discoverable and keeps the user-facing command name weaker than the outcome.
+    - name: Add agentera stats with internal corpus refresh
+      status: chosen
+      description: Expose usage statistics as the product command while keeping corpus generation as an internal, previewable, consent-gated implementation step.
+    - name: Auto-refresh stats from runtime history
+      status: rejected
+      description: Violates the privacy boundary by making a normal stats read silently inspect local AI runtime histories.
+  choice: Add `agentera stats` as the user-facing analytics workflow and do not expose a top-level `agentera corpus` command. Plain `agentera stats` reports from existing fresh data or shows the refresh command when data is missing or stale; it must not read local runtime history. `agentera stats refresh --dry-run` previews candidate runtimes, paths, and expected actions without extraction or writes. `agentera stats refresh --consent local-history` reads bounded local runtime history, writes the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and reports stats. Preserve `agentera usage` as a compatibility surface or alias.
+  reasoning: Users want to measure Agentera usage, not operate on a corpus artifact. Keeping corpus generation internal reduces vocabulary and privacy risk while still giving agents and users a supported way to refresh analytics data. The preview plus explicit `--consent local-history` contract satisfies non-interactive CLI design, makes sensitive local-history reads intentional, and keeps `usage_stats.py` and `extract_corpus.py` as implementation seams behind a clearer product command.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, scripts/extract_corpus.py, scripts/usage_stats.py, tests, README.md, capability prose
+  outcome: Add `agentera stats` as the user-facing analytics workflow and do not expose a top-level `agentera corpus` command. Plain `agentera stats` reports from existing fresh data or shows the refresh command when data is missing or stale; it must not read local runtime history. `agentera stats refresh --dry-run` previews candidate runtimes, paths, and expected actions without extraction or writes. `agentera stats refresh --consent local-history` reads bounded local runtime history, writes the internal corpus at `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`, and reports stats. Preserve `agentera usage` as a compatibility surface or alias.

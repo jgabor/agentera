@@ -1,0 +1,13 @@
+id: vnpxxumwpm
+artifact: plan
+record:
+  name: Build whole-surface JSON measurement coverage
+  depends_on:
+    - qdjznpeypa
+  status: complete
+  acceptance:
+    - GIVEN the inventory lists public JSON outputs WHEN the measurement command runs THEN it generates each output from stable fixtures without mutating user app/profile state.
+    - GIVEN token measurement is available WHEN the measurement command runs THEN it records GPT-5 token counts using `<output> | npx tiktoken-cli -m gpt-5` or the documented successor wrapper.
+    - GIVEN network or tokenizer access is unavailable during normal unit tests WHEN tests run THEN expensive token measurement is isolated or skipped with a clear manual benchmark command.
+    - GIVEN measurement finishes WHEN the report is emitted THEN each row includes command, selector, capability/profile when relevant, bytes, tokens, and budget classification.
+  plan: zcmzsbifdp

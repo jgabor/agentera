@@ -1,0 +1,13 @@
+id: tbemcnrwfe
+artifact: plan
+record:
+  name: Harden writer-lock initialization and legacy recovery
+  status: complete
+  depends_on:
+    - piatorxaxp
+  acceptance:
+    - GIVEN a creator pauses after lock-directory creation WHEN a successor reclaims and acquires THEN the original creator cannot remove or share the successor lock.
+    - GIVEN two publishers reclaim one stale lock and target one ID WHEN they run concurrently THEN exactly one entity publishes, the loser fails explicitly, and no duplicate or residual lock remains.
+    - GIVEN a legacy writer-lock file WHEN acquisition encounters it THEN recovery is race-safe or fails with an actionable correction rather than raw ENOTDIR.
+    - GIVEN existing state writers and live, dead, malformed, reentrant, and successor lock cases WHEN verified THEN durability, bounded timeout, ownership, and project-boundary behavior remain correct.
+  plan: pohgeeghnl

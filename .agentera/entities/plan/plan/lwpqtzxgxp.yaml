@@ -1,0 +1,58 @@
+id: lwpqtzxgxp
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-23
+    status: archived
+    reviewed: 2026-06-23
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    revised: |
+      (1) L2 sandbox skip-on-npm-view-miss until first 3.0.0-next.x publishes -- addressed by sequencing Task 6 (first publish via the new pipeline) after Task 2 (renamed pin) so the gap is bounded and self-closing. (2) TODO L7 text says publish the v2 Python CLI on main, but the actual @latest npm artifact is the shim package at packages/cli/shim (version 0.0.x, suiteVersion 2.7.7) -- addressed by Task 5 investigation acceptance criterion that confirms the real publish surface before the job implementation finalizes. (3) channels.ts regex substitution /@3\.0\.0-dev/i -> /@3\.0\.0-next/i is mechanical but risks missing other literal 3.0.0-dev references outside packages/cli -- addressed by the Task 1 acceptance criterion that greps tests for zero matches and the Task 7 verification gauntlet.
+    title: "Plan: v3 npm prerelease suffix rename and dual-channel CI publish gates"
+  what: |
+    Rename the published prerelease version suffix from 3.0.0-dev.N to 3.0.0-next.N so the version string aligns with the @next dist-tag, and add two gated npm publish jobs to .github/workflows/ci.yml: one publishes packages/cli to @next on push to feat/v3 when the committed version is newer than the published @next version; one publishes the stable shim package to @latest on push to main when the committed shim version is newer than the published @latest version. Both jobs gate behind green CI and the NPM_TOKEN secret. Sweep stale -dev.N references from live source, tests, CI, and user docs; archived plans and historical health audit findings are immutable and untouched.
+  why: |
+    The npm ecosystem convention is to align a prerelease version suffix with its dist-tag: Next.js, TypeScript, Vite, and Astro all pair -next.N with @next. Agentera currently publishes 3.0.0-dev.N under @next, which mixes signals -- consumers inspecting the installed version cannot infer the channel from the version string. The TODO L7 degraded item documents that ci.yml runs no publish step at all; source fixes already shipped in 3.0.0-dev.7 never reach npx -y agentera@next consumers because npm @next is still pointing at 3.0.0-dev.6. Renaming and adding CI publish gates closes both the discoverability gap and the actual delivery gap in one plan.
+  constraints: |
+    All rename and CI work on feat/v3 only. Do not modify .agentera/archive/* or historical entries in .agentera/health.yaml -- those record past versions and are immutable history. Do not change the dist-tag vocabulary: @next and @latest are correct and stay as-is. Do not add a new @dev dist-tag. Do not touch references/cli/update-channels.yaml channel-authority definitions; the rename only affects the prerelease suffix in version fields and explicit -dev.N literals in source, tests, and docs. Do not introduce an early cutoff where @next and @latest converge -- they converge at 3.0.0 stable release, not in this plan. The L2 sandbox will skip until the first 3.0.0-next.x publishes on npm; this is an acceptable transition-window trade-off, not a regression. Tasks 1-5 are independently mergeable per-task; Task 6 requires Task 4 to have fired once via the new pipeline (or a manual equivalent) so 3.0.0-next.1 actually exists on npm.
+  scope:
+    included:
+      - "packages/cli/package.json#version: 3.0.0-dev.7 -> 3.0.0-next.1"
+      - "packages/cli/src/upgrade/channels.ts forbidden-pattern regex (line 181): /@3\\.0\\.0-dev/i -> /@3\\.0\\.0-next/i"
+      - "packages/cli/src/release/releaseMetadata.ts doc comment example (line 21): 3.0.0-dev.5 -> 3.0.0-next.5"
+      - All packages/cli/test/** fixtures using 3.0.0-dev.N string literals
+      - ".github/workflows/ci.yml AGENTERA_NPM_PIN (line 77) and npm view check (lines 79-80): 3.0.0-dev.0 -> 3.0.0-next.0"
+      - scripts/sandbox/v2v3-upgrade-harness.sh (lines 33, 139) and scripts/sandbox/README.md (line 15)
+      - README.md Version badge (line 218) and docs/packaging/v3-packaging.md (line 150)
+      - ".github/workflows/ci.yml: new publish-next job gated by NPM_TOKEN and version-newer-than-published-@next comparison"
+      - ".github/workflows/ci.yml: new publish-latest job gated by NPM_TOKEN and version-newer-than-published-@latest comparison"
+      - First publish of 3.0.0-next.1 via the new publish-next job (or a documented manual equivalent); verify runtime hook consumers resolve
+      - Verify vitest 916/916 green, typecheck, build, check compact
+      - Close TODO L7 and TODO L8 in the implementation commit per AGENTS.md fold-in
+    excluded:
+      - Archived plans under .agentera/archive/*.yaml (immutable history)
+      - Historical audit entries in .agentera/health.yaml referencing past -dev.N versions (past audit records, not live sources)
+      - "Dist-tag string vocabulary in references/cli/update-channels.yaml (already correct: next/latest)"
+      - AGENTS.md channel-name references (already use @next/@latest, no version literals to rename)
+      - Convergence of @next and @latest at 3.0.0 stable (out of scope; landed separately at release time)
+      - NPM cache advisory cleanup beyond removing the stale notice once auto-publish lands
+    deferred:
+      - Single-binary Bun distribution (separate plan; referenced in archived plan-2026-06-04-v2-v3-ts-rewrite-completion.yaml)
+      - Profile refresh (profilera is stale at 10 days; separate capability, not a plan task)
+      - Decision 71 satisfaction review (open capability-prose decision; belongs to resonera, not this plan)
+  design: |
+    Task 1 is the mechanical rename across live source and tests. The channels.ts forbidden-pattern regex /@3\.0\.0-dev/i is a stable- channel guard that rejects installing 3.0.0-dev.X on the stable channel; the renamed /@3\.0\.0-next/i preserves intent. The existing /@next\b/i and /@3\.\d/i entries cover the dist-tag and cross-major version cases and do not change.
+    Task 2 updates the CI L2 sandbox pin AGENTERA_NPM_PIN and the sandbox harness default. The sandbox runs npm view and skips L2 if the pinned version is not yet published; after rename, L2 will skip until Task 4 publishes 3.0.0-next.1 -- acceptable transition-window behavior. CI on main does not run L2, so stable-channel coverage is unaffected.
+    Task 3 keeps README.md and docs/packaging/v3-packaging.md in lockstep with the renamed version. README already shows 3.0.0-dev.6 at line 218; the new badge becomes 3.0.0-next.1 after Task 1 lands.
+    Task 4 adds publish-next job on push to feat/v3. Steps: (1) require build, typecheck, test, sandbox, and compact gates green; (2) load packages/cli/package.json#version as committed_version; (3) run `npm view agentera@next version` to read published_version; (4) if committed_version is newer (semver compare), publish: `pnpm -C packages/cli build` then `cd packages/cli && [ -f ../../.env ] && . ../../.env; npm publish --tag next`. The existing publish:dev script in packages/cli/package.json already loads .env for NPM_TOKEN. Env: NPM_TOKEN from GitHub Actions secret.
+    Task 5 adds publish-latest job on push to main. Sub-investigation: which package is published to @latest on main? The shim package at packages/cli/shim/package.json (version 0.0.1, suiteVersion 2.7.7) is the one that ships as `npx -y agentera@latest`. The existing scripts/publish-stable.mjs bumps the shim patch, then publishes with default tag (= latest). Task 5 wraps that script in a CI job gated by green CI, NPM_TOKEN, and version-newer-than-published-@latest. If investigation finds that the main-path publish surface is more complex, document the actual surface and adjust the job.
+    Task 6 confirms the pipeline end-to-end: trigger publish-next (either by a manual publish using the renamed version, or by pushing to feat/v3 with the new commit), check `npm view agentera@next version` returns 3.0.0-next.1, then run `npx -y agentera@next --version` and confirm it resolves. Verify runtime hook consumers (.cursor/hooks.json, .github/hooks/*, hooks/codex-plugin-hooks.json) -- these reference @next directly, so no string change is needed; verify they spawn cleanly.
+    Task 7 runs the full verification gauntlet: pnpm -C packages/cli test (vitest 916/916 baseline), pnpm -C packages/cli run typecheck, pnpm -C packages/cli build, and pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact. If compact trips on committed artifact budgets, fix artifacts (not tests).
+    Task 8 folds TODO L7 and L8 closed in the same implementation commit per AGENTS.md same-commit fold-in convention. Mark each as `resolved 2026-06-23` (or the actual commit date) rather than hash-backfill.
+    Parallelization: Tasks 2, 3, 4, 5 are disjoint files; they can run in parallel after Task 1 lands (Task 1 is the atomic rename across source/tests that the others depend on). Task 6 needs Task 4's job present and the first publish fired. Task 7 runs after Tasks 1-5 merge. Task 8 is the closeout fold-in after Task 7 verifies green.
+  overall_acceptance: |
+    A consumer running npx -y agentera@next --version sees 3.0.0-next.x (or a newer next-channel release), not 3.0.0-dev.x. Grep across live source, tests, CI YAML, scripts, and user docs returns zero 3.0.0-dev matches (archive and health audit findings excluded). Pushing an incremented version to feat/v3 with NPM_TOKEN set triggers an automatic publish to the @next dist-tag; pushing a bumped shim version to main triggers an automatic publish to @latest. The L2 sandbox resolves the renamed pin once 3.0.0-next.x is published. Vitest stays green at 916/916 (or the renamed-fixture equivalent). Typecheck, build, and check compact all exit 0. TODOs L7 and L8 are marked resolved in the implementation commit per the AGENTS.md same-commit fold-in convention -- no standalone bookkeeping commits. AGENTS.md and CHANGELOG.md channel-name vocabulary remains correct and unchanged.
+  surprises: |
+    publish-stable.mjs was a maintainer workflow (write-back version bump + publish + human commit), not directly CI-translatable. The CI job design shifts the maintainer workflow to "commit bump, CI publishes" (symmetric to publish-next). The maintainer-side convenience is lost but the publish path is now symmetric and automated. Task 6 (first publish smoke) stayed pending until a real push to feat/v3 with NPM_TOKEN set in repo secrets.
+    Resolution 2026-06-23: 3.0.0-next.1 is live on npm @next (verified via `npm view agentera@next version`). Task 6 marked complete. Secondary finding: the 3.0.0 CLI exposes no `--version`/`version` command, so Task 6 acceptance criterion 2 was unmeasurable as written; tracked as a new TODO rather than a task failure.

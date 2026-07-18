@@ -1,0 +1,16 @@
+id: xaeaaapkjr
+artifact: progress
+record:
+  timestamp: 2026-07-13 23:26
+  type: fix
+  phase: build
+  what: Made every bounded prime-path string truncation code-point safe and added adversarial emoji coverage across all prime output surfaces.
+  inspiration: Blocked continuation Plan Task3 evaluation identified remaining UTF-16 slicing after the prior bounded source-projection cycle.
+  discovered: The cited capability-context and orientation slices were not the only bounded prime string surfaces; stateQuery.truncate, startup projection capture, and the bounded docs header also needed the shared primitive.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/cli/primeTask3Bounds.test.ts test/cli/prime.test.ts test/cli/sourceContractOracles.test.ts test/state/archiveAuthority.test.ts test/state/listRetrieval.test.ts test/state/directRetrieval.test.ts = 6 files, 133 tests passed. Non-packaging: pnpm -C packages/cli exec vp test run --exclude test/packaging/** = 172 files, 1,742 tests passed. Full: pnpm -C packages/cli test = 173 files, 1,746 tests passed, 5 known npm 12 npm pack --dry-run --json parser failures, 1,751 total. pnpm -C packages/cli run typecheck && pnpm -C packages/cli build passed. Capability, plan, TODO, CHANGELOG validation passed; check compact passed with 0 errors, 0 over-limit, 0 protected-overflow, 0 changed counts. Built-CLI emoji smoke passed 16 outputs."
+  next: Await governed Task3 re-evaluation; do not begin Task4, alter the older blocked Task9 TODO, or change protected release state.
+  context:
+    intent: Repair the blocked Task3 Unicode continuation without changing its already-passing source bounds, classifications, provenance, routing, or source contracts.
+    constraints: Preserve the current uncommitted blocked Task3 evaluation in .agentera/plan.yaml; do not modify health, decisions, vision, profile, versions, publish, push, or tag state.
+    unknowns: The npm 12 packaging parser caveat remains; compact safely refuses five pre-existing progress projection summaries whose numbered archives are absent.
+    scope: packages/cli/src/core/text.ts; packages/cli/src/state/startupProjection.ts; packages/cli/src/cli/stateQuery.ts; packages/cli/src/cli/orientation.ts; packages/cli/src/cli/capabilityContext/slim.ts; packages/cli/test/cli/primeTask3Bounds.test.ts; TODO.md; CHANGELOG.md; .agentera/plan.yaml; .agentera/progress.yaml

@@ -1,0 +1,16 @@
+id: halohpxdia
+artifact: progress
+record:
+  timestamp: 2026-07-15 14:36
+  type: fix
+  phase: build
+  what: Reconciled experiment publication and archival authority.
+  inspiration: Audit 32 finding and active plan Task 1.
+  discovered: The schema projection exposes the full publication declaration; optimize startup introspection loads and validates the authority but does not project publication semantics, so no startup projection required synchronization. The full live-repo suite's sole failure is the expected stale agentera.gitRef owned by unstarted Task 2.
+  verified: Focused retrieval-authority, archive-authority, experiment-publication, schema, and prepack tests passed 192/192. Broad suite excluding release metadata passed 2049/2049; the full suite passed 2068/2069 with only the expected Task 2 gitRef drift failure. Typecheck and build passed. Capability contract validation passed 2/2. Compact passed with over_limit=0 and changed=0. Canonical and bundled authority bytes match at SHA-256 f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb. Built schema reports typed_state_writer, experiment_archival, objective_directory, archive_before_projection, and uniform_10_40_50. Runtime publication tests remain green; git diff --check passed.
+  next: Stop after Task 1. Task 2 may pin immutable remediation provenance in a separate cycle.
+  context:
+    intent: Complete Audit 32 remediation Plan Task 1 by removing the release-blocking authority contradiction and enforcing structured semantic parity.
+    constraints: Preserved runtime publication/archive/retrieval behavior, archive layout, 10/40/50 policy, versions, gitRef, unrelated docs, historical evidence, and the approved plan.
+    unknowns: "Resolved: only agentera schema directly projects publication semantics; optimize startup introspection validates the authority but does not expose those fields, so no startup projection bytes changed."
+    scope: Canonical state-storage authority, retrieval semantic validator, authority/schema tests, changelog, active plan Task 1 evidence/status, and progress.

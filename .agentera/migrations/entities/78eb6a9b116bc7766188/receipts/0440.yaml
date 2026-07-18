@@ -1,0 +1,12 @@
+id: vdrxbokgei
+artifact: plan
+record:
+  name: Document helper-script classification policy
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN README maintainer guidance is inspected WHEN helper scripts are discussed THEN it classifies canonical `agentera` namespaces, direct maintainer seams, internal support modules, corpus generation, and local-only analysis/generator surfaces.
+    - GIVEN corpus generation is documented WHEN policy text is inspected THEN it says normal users route through `agentera stats refresh`, not a top-level `agentera corpus` command.
+  evidence: README now includes a Helper Script Classification Policy that classifies user-facing `agentera` workflows, backward-compatible maintainer seams, internal support modules, corpus generation behind `agentera stats refresh`, and maintainer-only local analysis/generator surfaces.
+  plan: qfekyklpdj

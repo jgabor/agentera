@@ -1,0 +1,13 @@
+id: wctmnbpvwd
+artifact: plan
+record:
+  name: Doctor classification and npx platform status
+  depends_on:
+    - aamxwfecum
+    - kmafzdluwi
+  status: complete
+  acceptance:
+    - GIVEN install-root classification kinds WHEN buildDoctorStatus runs THEN root status and signals are produced by a typed classifier map, not a nested eleven-branch ladder in one function body.
+    - GIVEN an npx bundle invocation WHEN prime and projectIntegration resolve platform app-home status THEN both call one shared resolver that wraps resolvePlatformAppHome and buildDoctorStatus consistently.
+    - GIVEN doctor and projectIntegration parity fixtures WHEN tests run THEN bundle status, signals, and integration targets match pre-refactor expectations.
+  plan: nqyxvgtkhn

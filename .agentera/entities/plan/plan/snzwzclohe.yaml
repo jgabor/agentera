@@ -1,0 +1,47 @@
+id: snzwzclohe
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-13
+    status: archived
+    reviewed: 2026-07-13
+    critic_issues: 15 found, 15 addressed, 0 dismissed
+    revised: Split transaction, read, consumer, migration, and closeout work into bounded cycles; made schema, path, API, overlay, replay, byte-budget, compatibility, and failure contracts precede implementation; deferred experiments; made Git recovery optional; and moved final release gates after state synchronization.
+    title: "Plan: Lossless archive-backed state storage"
+  what: Replace destructive artifact retention with validated file-per-entry records under `.agentera/archive/<artifact-id>/<entry-number>.yaml`, while current artifacts remain bounded active and summary projections with direct, stable-ID access to complete state.
+  why: Preserve complete project memory without unbounded startup payloads, remove retention ceilings that can block valid work, and extend Agentera's existing archive convention instead of adding SQLite, custom Git refs, or a parallel history namespace.
+  constraints: Preserve typed-writer validation, retry safety, Decision 53 user-confirmed satisfaction authority, existing plan and vision archives, non-Git operation, project-boundary safety, and bounded prime output. Agentera must not create commits, contact remotes, infer missing state, overwrite immutable history, or promise recovery that available evidence cannot prove.
+  overall_acceptance: GIVEN newly archived numbered state WHEN callers append, list, retrieve, migrate, or audit it THEN complete records remain directly recoverable, current mutable state remains authoritative, outputs stay within declared byte budgets, and legacy or incomplete history reports explicit provenance without destructive loss or fabricated detail.
+  scope:
+    included:
+      - Canonical immutable records under `.agentera/archive/<artifact-id>/<entry-number>.yaml`
+      - Progress cycles, decisions, and health audits
+      - Decision current-state overlays keyed by stable decision ID
+      - Archive-before-projection publication, replay identity, locking, and crash consistency
+      - Direct get, bounded list, projection, prime, and capability source contracts
+      - Local-versus-Git durability diagnostics and best-effort historical recovery
+      - Legacy inline-summary compatibility, migration, schemas, fixtures, docs, and release
+    excluded:
+      - SQLite or another database
+      - A `.agentera/history` namespace
+      - Custom Git refs, automatic commits, pushes, tags, remote reads, or remote mutation
+      - Changing existing plan or vision archive formats
+      - Inferring decision satisfaction or absent historical content
+    deferred:
+      - Objective-scoped experiment archives until experiments have typed writer ownership and collision-free identity
+      - Archive support for unnumbered Markdown artifacts
+      - A persistent index unless measured archive enumeration exceeds the accepted response budget
+  design: Make the established project archive namespace the durable record layer and current artifacts bounded projections over it. Define identity, schema, API, compatibility, and serialized-output budgets before implementation. Publish complete records through one locked, retry-safe transaction boundary before projections may summarize them. Keep mutable decision review state in an explicit ID-keyed overlay and compose it at read time. Treat Git as optional durability evidence and legacy-recovery input, never as a prerequisite for local correctness. Migrate incrementally, preserve old reads during a declared compatibility window, and run release gates only after final state synchronization.
+  unknowns:
+    - question: Which decision fields remain mutable after archival and what overlay transitions are legal?
+      affects_task: 1
+      resolve_by: Inventory every typed decision mutation and satisfaction invariant before publishing the authority contract.
+    - question: Which exact get/list command shape best fits the existing state namespace and standard CLI vocabulary?
+      affects_task: 1
+      resolve_by: Compare current dispatch grammar with get/list conventions and lock one discoverable syntax in the authority contract.
+    - question: How much pre-migration full detail remains exactly recoverable from reachable Git history?
+      affects_task: 14
+      resolve_by: Run a read-only inventory against representative real and shallow histories before enabling publication.
+  surprises:
+    []

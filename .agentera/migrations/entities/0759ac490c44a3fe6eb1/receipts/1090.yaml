@@ -1,0 +1,24 @@
+id: jufyfvsqrq
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-16
+    status: complete
+    reviewed: 2026-05-16
+    title: Transcript Lint Threshold Analysis Plan
+  what: Analyze retained transcript and artifact evidence to determine whether linting thresholds compress or rewrite useful information unnecessarily, then adjust only the smallest proven threshold or diagnostic seam.
+  why: The TODO warned that linting thresholds might push agents to over-compress artifact content. The completed analysis corrected an initial transcript-only evidence model by including retained `.agentera/archive` markers such as `post-audit-flagged`.
+  constraints: Preserve transcript privacy, protected state boundaries, advisory/strict lint semantics, compaction gates, and per-entry snippet lint behavior.
+  overall_acceptance:
+    - Repeated false-positive evidence is addressed without blindly widening all thresholds.
+    - Raw transcript and raw retained artifact text are not emitted in evidence artifacts.
+    - Existing advisory/strict lint and compaction semantics remain bounded and test-backed.
+  surprises:
+    - The strongest evidence was not a dedicated transcript scan artifact; it was repeated archived `post-audit-flagged` PLAN.md full-plan budget pressure.
+  commit: "9916807 fix(cli): use full-file budgets for linted files"
+  scope:
+    included:
+      []
+    excluded:
+      []

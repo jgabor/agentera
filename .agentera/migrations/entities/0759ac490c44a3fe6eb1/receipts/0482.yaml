@@ -1,0 +1,13 @@
+id: ijguwnnlhj
+artifact: plan
+record:
+  name: Archive Decision 46 And Establish 2.2.1 Plan Lineage
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the Decision 46 plan is complete WHEN this plan is written THEN the completed plan is preserved at `.agentera/archive/PLAN-2026-05-08-implement-decision-46-capability-handoff-polish-for-220.yaml`
+    - GIVEN active plan state is inspected WHEN the 2.2.1 plan is active THEN `previous_plan_archived` points to the Decision 46 archive path
+    - GIVEN this plan is a full plan WHEN artifact validation is considered THEN it already includes review date, critic issues, design, task acceptance criteria, and non-zero critic findings before automated enforcement lands
+    - GIVEN release boundaries are inspected WHEN the plan is created THEN no implementation task, version bump, publication, tag, push, package update, installed-bundle refresh, vision edit, or objective edit has occurred
+  plan: lrgibkudrd

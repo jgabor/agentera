@@ -1,0 +1,15 @@
+id: eslzjqsdwn
+artifact: plan
+record:
+  name: Add Runtime Describe Introspection
+  depends_on:
+    - iclooizxob
+    - rymvwjgjrz
+    - vcugwfhhtx
+  status: complete
+  acceptance:
+    - GIVEN an agent needs runtime interface knowledge WHEN `agentera describe` is run in structured mode THEN it can discover commands, filters, output formats, structured fields, Decision 43 aliases, artifact schemas, and doctor self-check categories from one CLI surface
+    - GIVEN user-facing docs explain introspection WHEN users read the feature THEN `describe` is presented as runtime self-description rather than static prompt stuffing
+    - GIVEN command vocabulary is inspected WHEN describe exists THEN it does not add CLI commands for slash route aliases and does not rename stable routine state commands
+    - GIVEN schema or state discovery is incomplete WHEN describe runs THEN the output reports missing or unknown facts explicitly rather than fabricating capabilities
+  plan: vxmzhajgdo

@@ -1,0 +1,10 @@
+id: oigtqkqmux
+artifact: plan
+record:
+  status: complete
+  acceptance:
+    - .agentera/vision.yaml reframed as product vision with merge_target comment; README uses single brand, monorepo note, capability alias table, sidebar table filled.
+  name: Rewrite mobile vision and README
+  depends_on:
+    []
+  plan: plepyjdube

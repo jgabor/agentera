@@ -1,0 +1,10 @@
+id: ppcuarkntc
+artifact: plan
+record:
+  status: complete
+  acceptance:
+    - docs.yaml, decisions.yaml, plan.yaml, progress.yaml, AGENTS.md, DESIGN.md, TODO.md, CHANGELOG.md, LICENSE present and indexed.
+  name: Bootstrap mobile project artifacts
+  depends_on:
+    []
+  plan: plepyjdube

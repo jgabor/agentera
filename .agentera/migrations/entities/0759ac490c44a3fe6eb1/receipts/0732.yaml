@@ -1,0 +1,15 @@
+id: frdgejesmy
+artifact: plan
+record:
+  name: Fix 5 degraded validation and CLI consistency issues
+  title: Fix 5 degraded validation and CLI consistency issues
+  status: complete
+  acceptance:
+    - validate artifact returns exit code 2 when hook JSON is unparseable, not subprocess returncode
+    - _query_generic wraps output with _structured_state() matching other query handlers
+    - query dispatch emits deprecation alias warning and COMMAND_DESCRIPTIONS includes deprecation label
+    - Archive entries added to _SEQUENCE_KEYS_BY_ARTIFACT with summary and outcome as required fields
+    - user_confirmation error says 'must be a mapping with confirmed_by and confirmed_at, got <type>' when value is wrong type
+  depends_on:
+    []
+  plan: ddzrjkougr

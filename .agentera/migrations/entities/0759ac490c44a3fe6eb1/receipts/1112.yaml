@@ -1,0 +1,42 @@
+id: auxwiuozcj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-15
+    status: complete
+    reviewed: 2026-05-15
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    title: Decision Review Attention Plan
+  what: Add a bounded `agentera hej` dashboard attention item for non-confirmed decisions so open, provisional, missing-satisfaction, and review-needed decision states are visible during normal orientation without changing decision satisfaction state or dashboard routing priority.
+  why: "`agentera decisions --format json` already exposes satisfaction review caveats, but returning users usually start with `agentera hej`. If hej only surfaces TODOs while non-confirmed decisions remain hidden in decision state, stale review pressure can be missed. The dashboard should make that pressure visible without inferring user intent or turning decision review into the next executable action ahead of current TODOs."
+  constraints: Reuse the same satisfaction semantics as `agentera decisions --format json`, centered on `_decision_context_entry` and `_decision_satisfaction_context` in `scripts/agentera`. Only `satisfaction.state=user_confirmed_satisfied` with explicit `user_confirmation` counts as confirmed. Missing satisfaction objects, missing or unrecognized states, `open`, `provisionally_satisfied`, unconfirmed `user_confirmed_satisfied`, and entries with `review_needed=true` count as non-confirmed. Do not infer satisfaction from downstream references, commits, compacted history, or evidence. Do not mutate `.agentera/decisions.yaml`, change decision satisfaction, alter compaction protection, add a new decision command, redesign the hej dashboard, or change `next_action` priority. Keep top-level hej attention bounded to 6 items and include at most one decision-review attention item with bounded details. Do not publish, push, tag, refresh installed apps or profiles, edit vision state, edit objective state, or run unsupported capability-name CLI commands.
+  scope:
+    included:
+      - Decision review attention contract for `agentera hej` text and JSON output.
+      - One bounded decision-review attention item derived from decision satisfaction context.
+      - Stable structured metadata for the decision attention item when JSON output is used.
+      - Tests for open, provisional, missing legacy, unconfirmed, and confirmed decisions.
+      - Tests proving `agentera hej` remains read-only for decisions and preserves `next_action` routing.
+      - Minimal guidance or contract updates required by touched behavior.
+      - DOCS-policy version check and local artifact closeout if the implemented change remains a `feat`.
+    excluded:
+      - Editing `.agentera/decisions.yaml` satisfaction state or user confirmation metadata.
+      - Inferring satisfaction from downstream files, commits, feeds_into references, generated artifacts, or compacted history.
+      - Changing compaction protection rules or protected decision review semantics.
+      - Adding a new public decision-review CLI namespace.
+      - Broad hej dashboard redesign or TODO/plan/health next-action priority changes.
+      - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or package-manager updates.
+    deferred:
+      - A dedicated decision-review workflow for user confirmation.
+      - Richer decision dashboard sections beyond one bounded attention item.
+      - Broader DECISIONS.md source-contract completeness improvements already tracked as a separate performance TODO.
+  design: Implement this as a small decision-satisfaction summary path inside the existing hej command. The summary should derive from the same enriched decision entries used by the decisions JSON source contract, then add one attention string before TODO attention and a structured `decision_attention` payload for JSON consumers. The attention item should report counts by state and at most three decision identifiers/titles; detailed review still belongs to `agentera decisions --format json`.
+  overall_acceptance:
+    - GIVEN non-confirmed decisions exist WHEN a user runs `agentera hej` THEN the dashboard surfaces bounded decision review pressure instead of hiding it behind TODO state.
+    - GIVEN decision satisfaction authority belongs to the decision entry and user confirmation WHEN hej summarizes review pressure THEN it does not mutate, infer, or user-confirm satisfaction.
+    - GIVEN executable routing remains important WHEN decision review pressure exists THEN `next_action` priority for plan, health, objective, and TODO work is preserved.
+    - GIVEN JSON consumers rely on stable startup state WHEN decision attention appears THEN the structured payload is bounded, explicit, and compatible with existing hej output.
+  surprises:
+    - Pre-write lint passed with concrete anchors in `scripts/agentera` and `.agentera/decisions.yaml`.
+    - "Adversarial review found eight issues and all were addressed: avoid unbounded release scope, define exact attention ordering, use decision satisfaction helpers rather than legacy status/follow_up, specify JSON payload shape, bound top-level and nested details separately, require read-only decisions behavior, include legacy missing satisfaction in review pressure, and test `next_action` preservation."

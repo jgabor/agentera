@@ -1,0 +1,22 @@
+id: wawythhljo
+artifact: plan
+record:
+  name: Synchronize public retrieval contracts
+  depends_on:
+    - fyjqtqlrjo
+  status: blocked
+  acceptance:
+    - GIVEN help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN commands and semantics agree.
+    - GIVEN unsupported forms WHEN invoked THEN errors enumerate valid values and show a working correction.
+    - GIVEN capability and contract validation WHEN run THEN exposed contract examples pass and intentionally invalid examples fail.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Schema introspection still advertises nonexistent agentera gate alias, which returns unstructured stderr despite --format json.
+    provenance:
+      attempt_id: task-11-audit-2-20260715
+      source: independent Task 11 corrective acceptance audit
+      recorded_at: 2026-07-15 11:50
+      writer_command: agentera state plan record-evaluation
+  plan: juqmsmvfev

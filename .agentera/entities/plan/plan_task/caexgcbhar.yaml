@@ -1,0 +1,13 @@
+id: caexgcbhar
+artifact: plan
+record:
+  name: Repair exhaustive snapshot cursor traversal
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a bounded snapshot with more addressable rows WHEN every returned cursor is followed THEN each snapshot identity appears exactly once and traversal terminates.
+    - GIVEN a page whose normal envelope exceeds its serializer budget WHEN fallback runs THEN the response either emits an advancing row page or a terminal failure that does not promise omitted traversal.
+    - GIVEN appends, repeated cursors, tampered cursors, empty oversized pages, and JSON, YAML, or text output WHEN property tests run THEN no cursor repeats a page boundary.
+    - GIVEN repaired traversal WHEN small and large benchmarks run THEN latency, heap, and response bytes remain within authority thresholds or trigger the deferred-index decision.
+  plan: ulutbnlztj

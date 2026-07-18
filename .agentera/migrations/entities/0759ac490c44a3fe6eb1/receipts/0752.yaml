@@ -1,0 +1,13 @@
+id: ugqqrowqrw
+artifact: plan
+record:
+  name: Migrate Upgrade Last
+  depends_on:
+    - qyrniuunrz
+  status: complete
+  acceptance:
+    - GIVEN upgrade evaluates root state WHEN classification reports unsafe or stale states THEN upgrade preserves existing confirmation and dry-run safety behavior
+    - GIVEN upgrade applies writes WHEN approval or existing write flags are absent THEN no durable bundle mutation occurs
+    - GIVEN upgrade uses shared root classification WHEN stale, invalid, and current managed roots are tested THEN local checkout fallback cannot mask a stale durable bundle
+    - GIVEN upgrade migration completes WHEN duplicate root checks are searched THEN remaining caller-local logic is justified or removed
+  plan: jkvutuwdzk

@@ -1,0 +1,15 @@
+id: clyubmllow
+artifact: plan
+record:
+  name: Define artifact-location contract
+  depends_on:
+    - inodflpxjv
+  status: complete
+  acceptance:
+    - GIVEN `artifact_registry.py` already owns artifact identity and path resolution WHEN a projection is added THEN it reuses `load_artifact_registry` and `resolve_artifact_path` rather than copying default paths, docs override rules, or project-boundary checks.
+    - GIVEN an artifact appears in the registry WHEN structured discovery is emitted THEN each record includes artifact ID, display name, default path, mapped path or unresolved template, resolution source, artifact type, format, producer, consumers, existence, normal read command, schema file, and raw-access boundary.
+    - GIVEN an objective/profile/template path cannot be fully resolved from project state WHEN discovery is emitted THEN the record is truthful and caveated rather than inventing a concrete path.
+  evidence:
+    - Added a registry-backed artifact-location projection in `scripts/agentera` using `ArtifactRecord`, `load_docs_path_overrides`, and `resolve_artifact_path`, with path source, existence, routine command, schema file, and raw boundary fields per artifact.
+    - Objective/template records resolve only when `_active_objective_name()` can supply a concrete name; otherwise the output reports an unresolved template caveat instead of inventing a path.
+  plan: dcoyjwccxs

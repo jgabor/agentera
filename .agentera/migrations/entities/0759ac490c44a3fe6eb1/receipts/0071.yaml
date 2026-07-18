@@ -1,0 +1,28 @@
+id: zjrfdyorbc
+artifact: decisions
+record:
+  date: 2026-06-30
+  question: Should the probeCli flag and the in-process CLI probe in buildDoctorStatus be retired?
+  context: "The TODO 'Doctor and prime health data sources are independent and can disagree' bundled three concerns: (a) prime runs buildDoctorStatus with probeCli:false while agentera doctor uses probeCli:true, (b) doctor status and health audit are independent and can disagree, (c) stale health audits aren't surfaced. Resonera separated the concerns: doctor and health audit measure different things (app install vs codebase quality) and should remain independent. Health staleness is already surfaced via healthSummary's stale/days_since_audit fields. The probeCli flag is v2-era debt: the in-process probe (cliProbe.ts) checks whether the dispatcher command set includes expected commands via a Set lookup — it does not spawn a subprocess. It was a safety net for Python-managed installs. In v3, file/version presence is sufficient."
+  alternatives:
+    - name: Retire the probeCli flag, the cliProbe module, and the probe concept entirely
+      status: chosen
+      tradeoffs: "Removes the flag, the probe module, and the dual-path asymmetry. File/version presence and install-root classification remain as the doctor's health check. Acceptable risk: if the CLI binary exists but is corrupted in a way file checks don't catch, doctor won't detect it until the user runs a command."
+      win_condition: buildDoctorStatus no longer takes a probeCli option; cliProbe.ts is deleted; doctorClassifier no longer has the probeCli/probeRunner parameters; prime and doctor produce the same status for the same install; test suite passes.
+    - name: Keep the probe always-on, remove only the flag
+      status: rejected
+      tradeoffs: "The in-process probe is cheap, but tautological in v3: if prime is running, the dispatcher works."
+      reason_rejected: The probe checks whether the dispatcher exposes expected commands — but if prime is running, the dispatcher obviously works.
+    - name: Keep the flag, document the asymmetry as intentional
+      status: rejected
+      tradeoffs: Prime skips the probe for startup speed; the user runs agentera doctor for the full probe. Documented as by design.
+      reason_rejected: The user identified the probeCli flag as v2 debt, not as an intentional design choice. Documenting a footgun doesn't make it not a footgun.
+    - name: Cross-link doctor status and health audit
+      status: rejected
+      tradeoffs: Make prime treat a doctor failure as a health signal and a stale audit as a doctor signal.
+      reason_rejected: Doctor (app install health) and health audit (codebase quality) measure different things. Conflating them creates coupling where a stale audit pollutes the doctor status or a broken app pollutes the health grade. They should remain independent; the user reads both fields.
+  choice: Retire the probeCli flag, the cliProbe.ts module, and the probe concept entirely. File/version presence and install-root classification are sufficient to determine app install health in v3. Stale health audits are already surfaced via healthSummary fields; no elevation to attention items is needed.
+  reasoning: "The probe was a v2 safety net for Python-managed installs where the binary could exist but fail to execute. In v3, the in-process probe is tautological: it checks whether the dispatcher exposes expected commands, but if prime is running, the dispatcher works. The probeCli flag created an asymmetry where prime and doctor could produce different statuses for the same install. Removing the flag, the probe module, and the probeRunner concept eliminates the asymmetry and simplifies the doctor path."
+  confidence: firm
+  feeds_into: packages/cli/src/upgrade/doctor.ts, packages/cli/src/upgrade/cliProbe.ts, packages/cli/src/upgrade/doctorClassifier.ts, packages/cli/src/cli/commands/prime/bundleStatus.ts, packages/cli/src/upgrade/npxPlatformStatus.ts, packages/cli/src/cli/commands/doctor.ts, TODO.md
+  outcome: Retire the probeCli flag, cliProbe.ts, and the probe concept. File/version presence and install-root classification determine app install health. Doctor and health audit remain independent.

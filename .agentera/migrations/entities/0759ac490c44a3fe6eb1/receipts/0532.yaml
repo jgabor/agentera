@@ -1,0 +1,10 @@
+id: pyyfnctkqb
+artifact: plan
+record:
+  name: Characterize Routing And Exit Drift
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: aqddfogkvg

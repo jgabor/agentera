@@ -1,0 +1,13 @@
+id: ovjlsddcls
+artifact: plan
+record:
+  name: Freeze source_contract internals
+  depends_on:
+    - zavedtyvak
+  status: complete
+  acceptance:
+    - GIVEN the new TODO enumerated fields (complete_for_capability_startup, missing, cli_fallback, raw_artifact_reads_required, confidence_caveats) WHEN reconciled against the live agentera prime --format json output THEN the plan-documented field names match the actual prime keys (capability_startup_complete, missing_state, cli_fallback, raw_artifact_reads_required, confidence_caveats) and the TODO description in TODO.md is amended in the same commit.
+    - GIVEN agentera prime and agentera prime --context <capability> WHEN they emit source_contract THEN the field set, value types, and required keys match the new oracle packages/cli/test/cli/fixtures/oracle/source-contract.json.
+    - GIVEN any CLI command that emits a source_contract (state plan, state todo, state query, prime, prime --context) WHEN the parity test runs THEN each command contract matches its own oracle entry and the shared source_contract field set matches the new oracle.
+    - GIVEN a value that legitimately varies by caller (e.g. cli_fallback, confidence_caveats) WHEN the oracle is authored THEN it pins the value type and shape, not the exact string content.
+  plan: ksoncrhgli

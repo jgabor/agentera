@@ -1,0 +1,22 @@
+id: gghlqsvqaq
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Installed Hej Entrypoint Resolution Fix
+  what: Fix installed `hej` entrypoint command construction so app-home resolution happens before expanding the managed app script path. Regression-cover the unset `AGENTERA_HOME` and `XDG_DATA_HOME` path so inline assignment ordering cannot collapse the invocation to `/app/scripts/agentera` with `Failed to spawn`.
+  why: The highest-priority TODO is critical because the installed `hej` path can fail before Agentera reaches its own app-home safety gate when a command expands `$AGENTERA_HOME` before assigning or resolving it. This breaks bare `hej`/Agentera startup for users whose environment does not already export Agentera paths, and it bypasses the normal repair wording and upgrade preview flow.
+  constraints: Keep this plan scoped to installed `hej` entrypoint command construction, app-home resolution order, and regression coverage for unset `AGENTERA_HOME`/`XDG_DATA_HOME`. Do not advance SKILL.md prose cleanup, routing/execution vocabulary cleanup, Decision 57 implementation, broad vocabulary tests, 3.0.0 packaging, app/profile refresh, publication, push, tag, package-manager state changes, `.agentera/vision.yaml`, objective state, or decision satisfaction changes. Preserve compatibility identifiers and unrelated dirty state, including pre-existing `.agentera/decisions.yaml` and staged `.agentera/session.yaml`.
+  overall_acceptance:
+    - Installed `hej` command construction cannot expand to `/app/scripts/agentera` when `AGENTERA_HOME` and `XDG_DATA_HOME` are unset or empty.
+    - The fix preserves app-home precedence, valid custom homes, default app-home discovery, local checkout support, and safe repair-preview behavior.
+    - The critical TODO is closed without changing unrelated vocabulary, Decision 57, 3.0.0, publication, package-manager, protected-state, or installed-app refresh behavior.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

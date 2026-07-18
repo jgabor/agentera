@@ -1,0 +1,15 @@
+id: aqsxpcmtww
+artifact: plan
+record:
+  name: Verify consumer and distribution parity
+  depends_on:
+    - swcvthypxv
+    - juzuzrzxmt
+    - ltuqqznwvn
+  status: complete
+  acceptance:
+    - GIVEN one lifecycle scenario WHEN doctor, upgrade, project integration, prime, and status consume it THEN identities, applicability, classifications, counts, and commands agree.
+    - GIVEN source checkout, npm development, npm stable, and explicit channel contexts WHEN commands are generated THEN invocation authority and shell-safe arguments are correct while stable v2 semantics remain unchanged.
+    - GIVEN stale runtime claims or missing consumer wiring WHEN contract validation runs THEN validation fails for each active runtime.
+    - GIVEN the completed behavior WHEN repository gates run THEN CLI tests, typecheck, build, compaction, docs checks, package inspection, and whitespace checks pass.
+  plan: qzmmatwerr

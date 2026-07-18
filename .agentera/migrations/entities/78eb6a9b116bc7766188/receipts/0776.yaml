@@ -1,0 +1,12 @@
+id: mtfjtnlhxm
+artifact: plan
+record:
+  name: Replace installed-app bundle wording
+  depends_on:
+    - tuehmsfoyk
+  status: complete
+  acceptance:
+    - GIVEN current user-facing docs, CLI diagnostics, and recovery guidance describe installed app files as a `bundle` WHEN the wording means Agentera app files THEN the text uses authority-approved terms such as `Agentera app files`, `app files`, `app files directory`, `installed app`, or `managed app files`.
+    - GIVEN shipped compatibility names and historical evidence contain `bundle` WHEN the spelling is a field, flag, file name, package metadata value, fixture, command history, or archived record THEN the spelling is preserved or explicitly qualified rather than mechanically renamed.
+  evidence: Reworded current installed-app caveats from generic app-state/refresh language to authority-approved app-files language, changed missing-marker repair guidance to repair app files, and changed the approval phrase to `approve app files repair ...`. Structured compatibility identifiers, command phases/actions, package metadata, fixtures, and historical records were preserved.
+  plan: edeuluskcc

@@ -1,0 +1,14 @@
+id: tmehqdsmqg
+artifact: plan
+record:
+  name: Document Alias And Command Surfaces
+  depends_on:
+    - covnujtxgb
+    - ozkbcialms
+    - swwhoawddy
+  status: complete
+  acceptance:
+    - GIVEN a first-time user reads capability docs WHEN aliases appear THEN every canonical name has exactly one visible plain route alias
+    - GIVEN docs show slash routes and state commands together WHEN a user follows examples THEN alias names are not taught as CLI state commands
+    - GIVEN vocabulary docs define direct routes WHEN alias language appears THEN `status`, `discuss`, and the one-primary-alias rule are preserved
+  plan: sphjbaunyn

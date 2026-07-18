@@ -1,0 +1,14 @@
+id: oqaqxarvaa
+artifact: plan
+record:
+  name: Document upgrade paths and backport/cherry-pick policy
+  depends_on:
+    - kjyczflhql
+    - bswzhscazn
+  status: complete
+  acceptance:
+    - GIVEN UPGRADE.md WHEN read THEN it explains stable vs development channels, explicit v2→v3 opt-in, preview-before-apply, and that @latest/stable stays on 2.x until release retirement
+    - GIVEN README upgrade/troubleshooting sections WHEN read THEN they reference channel-aware commands and link to UPGRADE.md
+    - GIVEN a maintainer backport note in UPGRADE.md WHEN read THEN it lists safe cherry-pick order (vocabulary → guards/tests → orchestrator) and warns against enabling 3.x migration on main by default
+    - GIVEN docs validation/compaction WHEN run on touched docs THEN they pass
+  plan: pcohfdsziy

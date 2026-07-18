@@ -1,0 +1,40 @@
+id: ofscerhlpp
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-26
+    status: open
+    reviewed: 2026-06-26
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Critic flagged scope ambiguity over whether the deprecated issues alias covers the JSON output field only or also the --fields selector; addressed by task 2 acceptance requiring both the emitted issues alias and --fields issues to warn.
+    title: Prime JSON issues-to-todo field rename
+  what: |
+    Rename the prime JSON output field `issues` to the singular `todo` so the field name matches its source artifact (TODO.md), the CLI command (`agentera state todo`), and the singular field-name convention already used by `plan:`, `health:`, and `objective:`. Ship `todo:` as the primary field with `issues:` retained as a deprecated alias that emits a one-time-per-invocation stderr deprecation warning, then drop `issues:` entirely at the 3.0.0 stable cut.
+  why: |
+    The `issues` label falsely signals runtime or codebase-health problems. The counts it carries (critical, degraded, normal, annoying) are TODO.md severity buckets surfaced by `agentera state todo`, so `todo:` is the honest name. Aligning the prime field with the CLI command and the singular convention removes a naming seam that the hej/status dashboard rendering prose has to paper over. The deprecated alias keeps programmatic consumers of payload.issues working during the v3 pre-release window without blocking the rename.
+  constraints: |
+    Branch is feat/v3 (active TS rewrite); all work lands on feat/v3. The field `todo:` is the primary JSON field; `issues:` is a deprecated alias carrying the same value, dropped at the 3.0.0 stable cut (tracked in TODO.md line 32 as [refactor:3.0.0]). The deprecation warning MUST go to stderr only, never stdout, so `--format json` stdout stays a clean machine-readable stream. Do not rename the internal state.counts property, the issueCounts() helper, or the loadTodoItems() function; only the external field name. Do not touch natural-language uses of the word issues in capability prose (e.g. "The critic MUST find issues", "Critical issues" attention items, "health issues"); only the prime JSON output field name and the source-label forms that render it are in scope. Breaking change to the text briefing label `issues:` is accepted (v3 pre-release) because the text briefing is a documented source-label surface that capabilities transform before rendering. No new dependencies; no changes to .agentera/vision.yaml or objective state.
+  scope:
+    included:
+      - "packages/cli/src/cli/commands/prime/orientationOutput.ts: field construction, text label, source_contract fields list, STATUS_STRUCTURED_FIELDS"
+      - "packages/cli/src/cli/commands/schema.ts: duplicate STATUS_STRUCTURED_FIELDS used by schema introspection"
+      - "packages/cli/src/cli/startupCompletenessContract.ts: STARTUP_AVAILABLE_STATE_FIELDS"
+      - "skills/agentera/SKILL.md: hej/status dashboard rendering prose and source-label list"
+      - "packages/cli/src/capabilities/status/instructions.ts: status/hej capability prose listing issues as a source label"
+      - "packages/cli/test/cli/prime.test.ts: assertions on the field/label"
+      - "packages/cli/test/cli/orientation.test.ts: only if a test asserts the field name; the issueCounts helper name is out of scope"
+      - "references/cli/vocabulary.md: source-label field list"
+      - "references/cli/agent-ready-state-contract.yaml: field-name lists only, not natural-language issues"
+    excluded:
+      - 'packages/cli/src/cli/prime-blob.ts: PRIME_BLOB uses "open issues" as natural language, not the field name'
+      - 'packages/cli/test/hooks/sessionStart.test.ts: asserts "Critical issues" attention text, not the field name'
+      - Natural-language issues in orchestrate/profile/plan/audit/document/build/optimize/design instructions.ts
+      - "The 3.0.0 stable-cut removal of the issues alias: separate future work; this plan ships the alias, not the drop"
+    deferred:
+      - Dropping the issues alias entirely at 3.0.0 stable cut (TODO.md [refactor:3.0.0] stays open after this plan ships the alias)
+  design: |
+    Rename in place across the construction sites, then layer the deprecated alias on top. Two STATUS_STRUCTURED_FIELDS arrays exist (orientationOutput.ts and schema.ts); both own the `--fields` allowlist and must move `todo` to the canonical position together. The alias mirrors the `todo` value into an `issues` key at payload-build time and emits one deprecation line to stderr per invocation, so a single `agentera prime --format json` call produces clean JSON on stdout plus one stderr warning. `--fields issues` stays accepted as a deprecated selector with the same stderr warning; `--fields todo` is the canonical selector. Subsystems interrelate as: construction (T1) then alias (T2) then tests assert both (T4); prose and docs track the canonical name (T3, T5).
+  overall_acceptance: |
+    All tasks complete and pnpm -C packages/cli run typecheck plus pnpm -C packages/cli build both succeed. The built CLI, via node packages/cli/dist/bin/agentera.js prime --format json, emits stdout JSON with todo as the primary counts field and issues as a deprecated alias, and stderr carries one deprecation warning. The built CLI, via node packages/cli/dist/bin/agentera.js prime in text mode, renders the summary line as "todo: critical=...". The test suite, pnpm -C packages/cli test, passes in full. Capability validation passes: npx -y agentera check validate capability status and npx -y agentera check validate capability-contract --format json both pass. Artifact compaction passes: node packages/cli/dist/bin/agentera.js check compact reports no budget regression from doc/prose edits. A repo-wide search via rg -n for issues in packages/cli/src/cli/commands/prime/ shows the only remaining issues references are the deprecated-alias emission path from task 2, not the primary construction.
+  surprises: ""

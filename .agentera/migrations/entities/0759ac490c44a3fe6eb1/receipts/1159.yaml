@@ -1,0 +1,38 @@
+id: oaethqalav
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-14
+    status: complete
+    reviewed: 2026-05-14
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    revised: "[post-audit-flagged] Adversarial review strengthened the schema-repair exit condition, defined token-estimator inputs, preserved zero-record runtime compatibility, defined comparable-history savings rules, added an extraction contract matrix, avoided relying on unverified decision references, targeted the remaining PLAN.md redundant read, and recorded valid Planera statuses. Agentera lint remains advisory because full plans exceed the compact PLAN.md entry budget."
+    title: Repair Runtime Schema Coverage And Token Savings Estimates
+  what: Fix the startup benchmark's degraded Claude Code and GitHub Copilot runtime extraction and add privacy-safe estimated token-impact fields to startup benchmark reports and history, so maintainers can see both cross-runtime coverage quality and the estimated token savings from eliminating redundant raw artifact reads.
+  why: The latest benchmark reports product improvement but still marks `claude-code` and `github-copilot` as degraded by `schema_divergent`, which prevents those runtime histories from contributing normalized records. The benchmark also reports read counts and rates but not estimated token impact, so the cost and savings of redundant raw artifact reads are harder to evaluate.
+  constraints: Preserve Decision 51 startup state-access semantics and Decision 52 manual, user-local benchmark retention. Do not retain raw transcripts, raw runtime store paths, unredacted session IDs, private salts, generated salted hashes, or raw local runtime payloads. Do not make runtime-history benchmarks part of normal CI. Do not add slash-route aliases as CLI commands. Do not rewrite old `runs.jsonl` rows. Do not bump versions, publish, push, refresh installed apps, edit vision state, or edit objective state without an explicit release target.
+  scope:
+    included:
+      - Startup runtime extraction status contract and normalized record matrix.
+      - Synthetic Claude Code and GitHub Copilot schema fixtures.
+      - Claude Code and GitHub Copilot corpus adapter repairs.
+      - Estimated token-impact fields in latest JSON, latest Markdown, and new aggregate history rows.
+      - Benchmark docs, focused tests, manual rerun evidence, and final state sync.
+    excluded:
+      - Raw private transcript retention or fixture snapshots from local runtime history.
+      - CI access to local runtime stores.
+      - Non-startup benchmarks or exact tokenizer integration.
+      - Historical backfill or mutation of old benchmark history rows.
+      - Release publication, version bump, installed app refresh, vision edits, or objective-state edits.
+    deferred:
+      - Visual trend charts over benchmark history.
+      - Exact model-tokenizer integration if approximate estimates are insufficient.
+      - Broader runtime adapter namespace promotion outside this benchmark path.
+  design: "Use `scripts/extract_corpus.py`, `scripts/startup_analysis_contract.py`, `references/analysis/startup-measurement-contract.yaml`, and `tests/test_startup_analysis_contract.py` as concrete anchors. First define the extraction contract matrix: accepted runtime schema classes, normalized record fields, status mappings, and redaction rules. Then add synthetic fixtures that reproduce the current Claude Code and Copilot schema gaps without private local data, repair adapters until supported fixture schemas no longer produce `schema_divergent`, and preserve zero-record successful runtimes such as Codex as an intentional status. Token estimates use an explicit estimator version, `approx_bytes_div_4_v1`, with transient observed content byte counts aggregated by canonical artifact label during analysis and persisted only as aggregate token estimates. Savings-vs-previous is emitted only when the previous row is comparable by benchmark kind, estimator version, runtime scope, and token field availability; otherwise it is `null` with a reason."
+  overall_acceptance:
+    - GIVEN supported Claude Code and GitHub Copilot runtime schemas are measured WHEN the startup benchmark runs THEN those fixtures no longer degrade as `schema_divergent` and zero-record window outcomes remain distinguishable.
+    - GIVEN redundant raw artifact reads remain or improve WHEN benchmark reports are inspected THEN estimated token impact and savings are visible in privacy-safe aggregate fields.
+    - GIVEN this plan completes WHEN scope is audited THEN no raw private runtime data, runtime-history CI, slash-alias CLI command, release publication, installed app refresh, vision edit, or objective edit occurred.
+  surprises:
+    []

@@ -1,0 +1,13 @@
+id: mvqfclfmkr
+artifact: plan
+record:
+  name: Add agentera hej Composite Briefing Command
+  depends_on:
+    - bplstagjsp
+  status: complete
+  acceptance:
+    - GIVEN a returning v2 project WHEN agentera hej runs THEN it emits mode, profile status, health, issue counts, plan progress, active objective state, attention items, and next action
+    - GIVEN the plan is complete but TODO has open normal items THEN the composite chooses the first executable TODO before vision refresh
+    - GIVEN all optimera objectives are closed THEN agentera hej does not route to optimera for completed work
+    - GIVEN v1 Markdown artifacts without YAML counterparts exist THEN agentera hej reports the upgrade-preview notice without applying changes
+  plan: xamnelipyx

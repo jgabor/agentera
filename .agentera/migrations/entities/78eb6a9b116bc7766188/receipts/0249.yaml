@@ -1,0 +1,13 @@
+id: soyxdyhtrf
+artifact: plan
+record:
+  name: Regression tests
+  depends_on:
+    - zdznromgnn
+    - qmcrqifidp
+  status: complete
+  acceptance:
+    - GIVEN new tests for empty YAML in validator WHEN run THEN assert exit 2 and mapping-root violation message
+    - GIVEN new tests for CLI artifact load WHEN empty YAML THEN assert empty mapping behavior not None leak
+    - GIVEN full pytest suite WHEN run THEN all tests pass with no regressions
+  plan: jnhyfsboxr

@@ -1,0 +1,12 @@
+id: cgenertjfz
+artifact: plan
+record:
+  name: Design shared compaction helpers
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN hooks/common.py or compaction module layout WHEN shared helpers are added THEN 10/40/50 caps and oneline conversion contracts are defined once
+    - GIVEN session bookmark entries and artifact entries WHEN documented THEN distinct ordering rules (timestamp vs numeric ID) are explicit in the plan implementation
+    - GIVEN compaction.py decision-protection paths WHEN reviewed THEN they remain owned by the artifact compaction entry point after helper extraction
+  plan: htklvtprnu

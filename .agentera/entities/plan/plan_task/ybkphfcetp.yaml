@@ -1,0 +1,13 @@
+id: ybkphfcetp
+artifact: plan
+record:
+  name: Deliver shared entity storage and validation
+  depends_on:
+    - yilpqcbbse
+  status: complete
+  acceptance:
+    - GIVEN an entity write WHEN its ID is allocated THEN it is ten lowercase letters and unique across project state.
+    - GIVEN valid, duplicate, malformed, or unsafe entities WHEN discovered THEN reads classify them deterministically without escaping the project boundary.
+    - GIVEN independently mutable entities WHEN published THEN unrelated files remain independently mergeable and divergent same-ID content is rejected.
+    - GIVEN whole-state validation WHEN duplicate IDs, invalid artifacts, unresolved links, or conflicting ownership exist THEN validation exits nonzero with exact recovery guidance.
+  plan: vllyohtcde

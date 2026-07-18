@@ -1,0 +1,14 @@
+id: rbojxuuakp
+artifact: plan
+record:
+  name: Restore Dashboard Rendering Behavior
+  depends_on:
+    - qlnjlzqbct
+    - ipjokehrzk
+  status: complete
+  acceptance:
+    - GIVEN normal source data is available WHEN bare Agentera renders THEN the user sees the dashboard rather than a summary of source lines
+    - GIVEN the source next action names concrete work WHEN the dashboard renders THEN the next section names one concrete suggested action derived from that source
+    - GIVEN critical or degraded attention exists WHEN the dashboard renders THEN severity is visible in the attention section and the exit status reflects flagged or waiting state appropriately
+    - GIVEN the user has not approved a downstream capability WHEN orientation completes THEN the output waits for user confirmation instead of starting implementation work
+  plan: kmnryadquz

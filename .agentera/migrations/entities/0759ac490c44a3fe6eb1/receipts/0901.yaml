@@ -1,0 +1,12 @@
+id: cvcpvrlwse
+artifact: plan
+record:
+  name: Remove --target-major CLI surface
+  depends_on:
+    - ijwxibokwe
+  status: complete
+  acceptance:
+    - GIVEN agentera upgrade --help WHEN read THEN --target-major is absent
+    - GIVEN dispatch WHEN unknown --target-major is passed THEN user receives deprecation or removal message without silent ignore
+    - GIVEN packages/cli/src/upgrade/compatibility.ts WHEN searched THEN shouldIncludeCrossMajorPlanItems no longer depends on targetMajor === 3
+  plan: brcxwbztnv

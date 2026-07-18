@@ -1,0 +1,16 @@
+id: jhrlafljls
+artifact: plan
+record:
+  name: Synchronize artifacts and close TODO cluster
+  depends_on:
+    - brdrgngvnx
+  status: complete
+  acceptance:
+    - GIVEN all implementation tasks pass WHEN artifacts are updated THEN TODO.md resolves the included subagent dispatch items while leaving the direct capability-routing bug open.
+    - GIVEN user-facing behavior changes WHEN CHANGELOG is updated THEN it names Codex descriptors, OpenCode descriptors, runtime adapter dispatch docs, and capability prose dispatch guidance.
+    - GIVEN closeout verification runs WHEN the plan is complete THEN PLAN, PROGRESS, TODO, CHANGELOG, touched capability schemas/prose, compaction, `git diff --check`, and focused tests record passing evidence.
+  evidence:
+    - TODO.md resolved the included subagent dispatch cluster while leaving the direct capability-routing bug and Planera confirmation-boundary TODO open.
+    - CHANGELOG.md records Codex descriptors, OpenCode descriptors, RuntimeAdapter dispatch docs, capability prose dispatch guidance, descriptor validation, and OpenCode shell env behavior.
+    - PLAN, TODO, CHANGELOG, and PROGRESS artifacts were synchronized for closeout; validators, compaction, and diff checks are part of final verification.
+  plan: vrdajvaghq

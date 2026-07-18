@@ -1,0 +1,13 @@
+id: ceourbqvko
+artifact: plan
+record:
+  name: Define Decision 44 Replacement Boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN current preferred and deprecated wording is reviewed WHEN the Decision 44 boundary is recorded THEN every target term is classified as replacement, allowed use, or protected compatibility with a rationale
+    - GIVEN stable identifiers, enums, and persisted state shapes exist WHEN the boundary is applied THEN they are preserved unless a deliberate migration rationale and validation path are recorded
+    - GIVEN the active Decision 44 plan is read WHEN wording is reviewed THEN it uses plain English and does not teach deprecated wording as preferred protocol language
+    - GIVEN the previous route-alias plan was complete WHEN this plan becomes active THEN the previous plan is archived and the active plan tracks only Decision 44 work
+  plan: xpmuycwtqe

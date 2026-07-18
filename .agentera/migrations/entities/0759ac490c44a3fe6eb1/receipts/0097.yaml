@@ -1,0 +1,7 @@
+id: gxvhtndcod
+artifact: docs
+record:
+  document: Codex plugin manifest
+  path: .codex-plugin/plugin.json
+  last_updated: 2026-05-17
+  status: current

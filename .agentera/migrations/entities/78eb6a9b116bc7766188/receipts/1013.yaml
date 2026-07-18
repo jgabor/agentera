@@ -1,0 +1,13 @@
+id: doacsqitmx
+artifact: plan
+record:
+  name: Add Output And Runtime Regressions
+  depends_on:
+    - cireqovolm
+  status: complete
+  acceptance:
+    - GIVEN a captured or simulated bare Agentera response contains only raw source-style fields WHEN output evaluation runs THEN the check fails
+    - GIVEN a captured or simulated response renders the dashboard and includes the Hej exit marker WHEN output evaluation runs THEN the check passes
+    - GIVEN normal bare Agentera orientation is exercised WHEN the runtime trace is checked THEN exactly one composite source command is counted and individual routine state commands are absent
+    - GIVEN tests are added for this behavior WHEN proportionality is reviewed THEN each new testable unit has at least one passing and one failing case or a recorded rationale
+  plan: zbvkewyhhq

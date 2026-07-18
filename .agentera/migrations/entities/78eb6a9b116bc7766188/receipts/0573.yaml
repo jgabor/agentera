@@ -1,0 +1,12 @@
+id: urluccvrxe
+artifact: plan
+record:
+  name: Reposition trigger schema spec and routing model docs to cite Decision 76
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN references/cli/routing-model.md is read THEN Layers 3-4 describe LLM-native NL routing (not scoring engine) AND cite Decision 76
+    - GIVEN references/cli/trigger-schema-enrichment.md is read THEN the scoring algorithm sections are marked superseded by D76 AND the document is reframed as intent documentation for the LLM host
+    - GIVEN skills/agentera/capability_schema_contract.yaml is read THEN it cites Decision 76 (not Decision 75) for trigger enrichment
+  plan: fidstglvlh

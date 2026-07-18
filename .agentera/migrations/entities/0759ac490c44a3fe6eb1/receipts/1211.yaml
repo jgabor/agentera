@@ -1,0 +1,37 @@
+id: ecztvnspps
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-16
+    status: complete
+    reviewed: 2026-07-16
+    critic_issues: 11 found, 11 addressed, 0 dismissed
+    title: "Plan: Add safe decision-content amendments"
+  what: Add an explicit typed amendment operation that corrects one numbered decision while preserving its original history, synchronizing effective archive and projection state, and leaving unrelated legacy records semantically untouched.
+  why: Decision-content corrections currently require bypassing the typed writer. Whole-artifact validation and serialization can also reject or rewrite unrelated inherited semantics, preventing safe correction without an unintended migration.
+  constraints: Keep satisfaction updates separate from content amendments. Preserve every original numbered archive and record amendments as additional immutable evidence. Never coerce unsupported inherited confidence labels or claim stronger provenance than exists. Require current schema values for new or amended content. Keep the CLI as the sole write authority, make retries idempotent, preserve unrelated values always and unrelated bytes whenever a safe record-local edit is possible, retain suite metadata at 3.0.0, and do not publish, tag, or push.
+  overall_acceptance: GIVEN a numbered decision with correctable full content and unrelated legacy labels WHEN a user dry-runs and applies an amendment THEN only that decision's effective content changes, original history remains verifiable, exact reads and bounded projections agree, interrupted writes recover safely, and no unrelated semantic migration is implied or performed.
+  scope:
+    included:
+      - Amendment command, field, validation, discovery, help, and error contracts.
+      - Immutable amendment revisions and effective decision composition.
+      - Explicitly degraded bootstrapping for complete legacy projection records.
+      - Record-local projection updates, dry-run and apply behavior, replay, and recovery.
+      - Scoped legacy-label coexistence across all typed decision mutations.
+      - Focused and full regression coverage, contract synchronization, and project-state closeout.
+    excluded:
+      - Bulk migration or automatic normalization of existing decisions.
+      - Reconstructing full decisions from summaries or downstream references.
+      - Redesigning satisfaction overlays or cascading changes through feeds_into references.
+      - A general-purpose YAML formatting engine.
+      - Release, publication, tagging, pushing, or suite metadata beyond 3.0.0.
+    deferred:
+      - Bulk archival backfill for legacy decisions unrelated to a requested amendment.
+  design: Introduce a separately identified immutable revision ledger for amendable decision-content paths while retaining the original numbered archive as historical evidence. Compose the latest valid revision with the base record before applying the independent satisfaction overlay. A complete legacy projection may seed a base only with explicit degraded provenance; summaries and ambiguous records remain unamendable. Publish revision evidence before exposing a record-local projection change, and make retries detect and converge partial publication. Validate amendment inputs strictly while allowing untouched inherited labels to remain explicit legacy state. Refuse an amendment rather than reserialize unrelated records when the target boundary or unchanged-record proof is unsafe.
+  unknowns:
+    - question: Can every supported full-detail legacy projection shape expose an unambiguous target-record byte boundary for record-local replacement?
+      affects_task: 3
+      resolve_by: Exercise representative comments, quoting, block scalars, mixed legacy labels, and compacted shapes; use record-local replacement only when identity and unchanged-byte proofs hold, otherwise refuse without side effects.
+  surprises:
+    []

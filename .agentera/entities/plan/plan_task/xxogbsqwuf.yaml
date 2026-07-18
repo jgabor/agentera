@@ -1,0 +1,14 @@
+id: xxogbsqwuf
+artifact: plan
+record:
+  name: Establish revision-backed effective decision reads
+  depends_on:
+    - snrnzbkgxy
+  status: complete
+  acceptance:
+    - GIVEN a verified base and valid ordered revisions WHEN exact, list, startup, and compaction consumers read the decision THEN they receive one latest effective record with base and amendment provenance.
+    - GIVEN a complete legacy projection record without a numbered archive WHEN amendment preparation runs THEN its exact values may seed a hash-verified base marked with degraded projection provenance, never historical archive provenance.
+    - GIVEN a summary-only, conflicting, ambiguous, broken-hash, or incomplete target WHEN preparation or reading runs THEN detail is degraded or amendment is refused with a working correction rather than reconstructed.
+    - GIVEN both a content revision and satisfaction overlay WHEN decision state is read THEN each is composed within its separate authority and neither rewrites the other's evidence.
+    - GIVEN revision selection, bootstrap, and composition behavior WHEN focused tests run THEN each path has passing, malformed, conflict, and replay coverage.
+  plan: sfpbprzfge

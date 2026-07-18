@@ -1,0 +1,123 @@
+id: gzxmrmwnyp
+artifact: health
+record:
+  date: 2026-04-29
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - prose health
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: ⮋ degrading vs Audit 16. The Steelman-Informed Decision Pressure plan preserved suite architecture, contracts, tests, and release metadata. DOCS.md freshness slipped after the 511-test validation baseline.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: B
+    Prose: A
+    Security: A
+    Deps: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: Discuss remains the deliberation owner. Plan and optimize received only local effort-bias guards, matching `.agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md:16-21`.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: Pressure testing, win conditions, and effort-bias resets use existing workflow prose. `skills/discuss/SKILL.md:182-217`, `skills/plan/SKILL.md:112`, and `skills/optimize/SKILL.md:221` avoid new modes, artifacts, or confidence labels.
+      findings:
+        []
+    - name: Coupling health
+      grade: A
+      summary: DECISIONS.md compatibility stayed intact. `skills/discuss/references/templates/DECISIONS-template.md:36-38` keeps win conditions inside Alternatives bullets while preserving current top-level fields.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: A
+      summary: No new code hotspot landed. The plan changed skill prose, templates, generated schema evidence, release metadata, and artifacts; no validator or runtime implementation path grew.
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: Full verification passed with `python3 -m pytest -q` reporting 511 passed. Existing decision validation coverage remained sufficient because validation behavior did not change.
+      findings:
+        []
+    - name: Version health
+      grade: A
+      summary: 1.24.0 metadata is aligned across registry, per-skill manifests, aggregate marketplace, Copilot, Codex, and OpenCode surfaces. Post-bump commits are release-evidence and freshness chores.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: B
+      summary: ""
+      findings:
+        - heading: "⇉ DOCS.md coverage baseline is stale, warning (confidence: 92)"
+          severity: warning
+          confidence: 92
+          location: |-
+            `.agentera/DOCS.md:94`, `.agentera/DOCS.md:85`
+            - **Evidence**: DOCS reports "477 tests across 17 files" and a 2026-04-28 test-suite row. Current verification is 511 passed across 18 `tests/test*.py` files.
+            - **Impact**: Orientation consumers see stale validation scale after 1.22-1.24 work.
+            - **Suggested action**: Run document to refresh DOCS.md Index and Coverage for the 511-test baseline.
+          evidence: |-
+            DOCS reports "477 tests across 17 files" and a 2026-04-28 test-suite row. Current verification is 511 passed across 18 `tests/test*.py` files.
+            - **Impact**: Orientation consumers see stale validation scale after 1.22-1.24 work.
+            - **Suggested action**: Run document to refresh DOCS.md Index and Coverage for the 511-test baseline.
+          impact: |-
+            Orientation consumers see stale validation scale after 1.22-1.24 work.
+            - **Suggested action**: Run document to refresh DOCS.md Index and Coverage for the 511-test baseline.
+          suggested_action: Run document to refresh DOCS.md Index and Coverage for the 511-test baseline.
+    - name: Prose health
+      grade: A
+      summary: "`python3 scripts/self_audit.py .agentera/archive/PLAN-2026-04-29-steelman-informed-decision-pressure.md CHANGELOG.md .agentera/PROGRESS.md TODO.md .agentera/DOCS.md` exited 0."
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: Secret-pattern hits are limited to audit examples and prior HEALTH prose. The Steelman plan added no new executable code or shell construction.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: "No production dependencies changed. `.opencode/package-lock.json` audit returned 0 vulnerabilities, and the Python surface remains stdlib-only. ### Trends vs Audit 16 - **Improved**: Decision workflow discipline is stronger without adding a skill or artifact contract. - **Degraded**: Freshness A→B because DOCS.md coverage stayed at 477 tests after 511-test validation. - **Stable**: Architecture, patterns, coupling, complexity, tests, version, security, and dependency posture remain green. - **New findings**: DOCS.md coverage baseline stale. - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan. ### Patterns Observed - Module structure: skill behavior remains in `skills/*/SKILL.md`; artifact contracts stay in SPEC, generated contracts, and templates. - Decision pattern: discuss owns pressure testing and win-condition capture; adjacent skills receive only selection-bias guards. - Testing approach: deterministic validators and full pytest cover contracts; live eval remains blocked by external API credit. - Release pattern: feature-scoped decision workflow changes drive a minor suite bump plus plan-level freshness checkpoint."
+      findings:
+        []
+  trends:
+    improved: |-
+      Decision workflow discipline is stronger without adding a skill or artifact contract.
+      - **Degraded**: Freshness A→B because DOCS.md coverage stayed at 477 tests after 511-test validation.
+      - **Stable**: Architecture, patterns, coupling, complexity, tests, version, security, and dependency posture remain green.
+      - **New findings**: DOCS.md coverage baseline stale.
+      - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan.
+    degraded: |-
+      Freshness A→B because DOCS.md coverage stayed at 477 tests after 511-test validation.
+      - **Stable**: Architecture, patterns, coupling, complexity, tests, version, security, and dependency posture remain green.
+      - **New findings**: DOCS.md coverage baseline stale.
+      - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan.
+    stable: |-
+      Architecture, patterns, coupling, complexity, tests, version, security, and dependency posture remain green.
+      - **New findings**: DOCS.md coverage baseline stale.
+      - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan.
+    new_findings: |-
+      DOCS.md coverage baseline stale.
+      - **Resolved**: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan.
+    resolved: Audit 16 setup-doctor hotspot remains acceptable and was not touched by this plan.
+  patterns:
+    - "Module structure: skill behavior remains in `skills/*/SKILL.md`; artifact contracts stay in SPEC, generated contracts, and templates."
+    - "Decision pattern: discuss owns pressure testing and win-condition capture; adjacent skills receive only selection-bias guards."
+    - "Testing approach: deterministic validators and full pytest cover contracts; live eval remains blocked by external API credit."
+    - "Release pattern: feature-scoped decision workflow changes drive a minor suite bump plus plan-level freshness checkpoint."

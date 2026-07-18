@@ -1,0 +1,105 @@
+id: qfapbfjcdh
+artifact: health
+record:
+  date: 2026-05-23
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - dependency health
+    - version health
+    - artifact freshness
+    - prose health
+    - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 20. Health CLI now selects the latest audit by number, status exposes hybrid audit staleness, and Audit 20 stale-history warning is resolved; uncommitted feat work remains a release cleanup item.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: B
+    Tests: A
+    Deps: B
+    Version: B
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: Hybrid audit staleness extends the profile capability's profile-age seam in scripts/agentera without duplicating plan-relative artifact freshness in status.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: Audit staleness mirrors profile env-threshold parsing, structured status metadata, and attention copy.
+      findings:
+        []
+    - name: Coupling health
+      grade: A
+      summary: Latest-audit selection and staleness helpers stay inside scripts/agentera and are shared by health, status, and prime evidence state.
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: B
+      summary: scripts/agentera grew with hybrid staleness helpers, but responsibilities remain sectioned and covered by focused regressions.
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: Full pytest reported 1199 passed, 1 failed before active plan removal; nine hybrid-staleness regressions pass and Audit 20 health-selection gap is closed.
+      findings:
+        []
+    - name: Dependency health
+      grade: B
+      summary: "Python dependency surface unchanged: pyproject.toml -> pyyaml 6.0.3."
+      findings:
+        []
+    - name: Version health
+      grade: B
+      summary: Release surfaces report 2.6.1, but uncommitted hybrid-staleness feat work and post-2.6.1 fixes remain without a coordinated bump.
+      findings:
+        - heading: "⇉ Unreleased feat/fix work since 2.6.1, warning (confidence: 88)"
+          severity: warning
+          confidence: 88
+          location: "`pyproject.toml:7`, recent git history"
+          evidence: Checkout includes hybrid audit staleness CLI work and upgrade postflight fixes after 2.6.1 release surfaces were aligned.
+          impact: Installed app metadata and changelog can drift from the working tree until a release commit lands.
+          suggested_action: Fold hybrid staleness into one commit and run release metadata sync when ready.
+    - name: Artifact freshness
+      grade: A
+      summary: _latest_health_audit and schema date fields now drive health, status, and prime evidence state; status hybrid staleness surfaces overdue audits.
+      findings:
+        - heading: "⇢ Audit 20 stale health selection resolved, info (confidence: 96)"
+          severity: info
+          confidence: 96
+          location: "`scripts/agentera`, `tests/test_query_cli.py`"
+          evidence: uv run scripts/agentera health --format json returns Audit 20 from ascending-order fixtures; status reports Audit 20 with hybrid stale metadata.
+          impact: Orientation no longer misreads older audits when health.yaml lists audits ascending by number.
+          suggested_action: Treat this Audit 21 entry as the resolution marker for Audit 20 artifact-freshness warning.
+    - name: Prose health
+      grade: A
+      summary: Status and audit instruction updates stay compact and name the env-var contract explicitly.
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: Hybrid staleness changes add date parsing and progress counting only; no new secret handling paths were introduced.
+      findings:
+        []
+  trends:
+    improved: Health CLI and status now agree on latest audit number and date; hybrid audit staleness closes the orientation gap profile already covered for profiles.
+    degraded: None material beyond normal release-prep drift.
+    stable: Architecture, patterns, coupling, dependency, prose, and security remain healthy.
+    new_findings: Unreleased post-2.6.1 feat/fix work.
+    resolved: Audit 20 direct health state command stale audit history warning.
+  patterns:
+    - "Orientation staleness: the profile capability's profile age and the audit capability's audit age both surface through status attention with env-configurable thresholds."
+    - "Health state: latest audit selection by number is shared across health, status, and prime evidence context in the checkout CLI."
+    - "Testing approach: hybrid staleness adds focused status and health regressions alongside the existing query-cli contract suite."

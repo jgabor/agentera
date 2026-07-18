@@ -1,0 +1,6 @@
+id: rsplcfvosn
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Separate prime summary and diagnostic projections after the compact startup contract lands. Keep the default response bounded for orientation, and expose history, runtime lifecycle, integration provenance, and other rich diagnostics through explicit detail selection with documented bounds and recovery commands."

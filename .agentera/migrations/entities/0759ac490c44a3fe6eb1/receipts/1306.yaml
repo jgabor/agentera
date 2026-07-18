@@ -1,0 +1,10 @@
+id: lapvrdviwx
+artifact: progress
+record:
+  timestamp: 2026-07-16 06:59
+  type: feat
+  phase: build
+  what: Wired revision-backed effective decision reads across exact get, list, startup, and compaction consumers with truthful provenance; added amendment preparation that selects an amenable target, bootstraps a hash-verified degraded_projection base from a complete legacy projection, and refuses summary-only/conflicting/ambiguous/broken-hash/incomplete targets with working corrections; preserved Task 1 immutability, separate revision authority, and amend publication refusal (Task 3). Added decisionRevisionReads tests covering composition, selection, bootstrap, replay, malformed, and conflict paths.
+  inspiration: Plan task 2 acceptance criteria
+  context:
+    intent: "Implement Task 2 of the decision-amendment plan: revision-backed effective decision reads with selection, bootstrap, refusal, and replay paths."

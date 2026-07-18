@@ -1,0 +1,14 @@
+id: ngfrjevwol
+artifact: plan
+record:
+  name: Update Release And Documentation State
+  depends_on:
+    - nteizrarxc
+    - zglkgnsixd
+  status: complete
+  acceptance:
+    - GIVEN v2.2.0 release notes are reviewed WHEN the handoff polish lands THEN CHANGELOG documents the user-facing behavior without claiming publication
+    - GIVEN README is reviewed WHEN no current handoff or route wording needs changing THEN README is left untouched rather than churned for completeness
+    - GIVEN documentation metadata is synchronized WHEN docs state is queried THEN touched README, vocabulary, capability prose, tests, decisions, plan, progress, and changelog state are current where applicable
+    - GIVEN `docs/notes.md` remains ignored WHEN local notes are updated THEN tracked docs metadata does not index ignored field notes as current shipped docs
+  plan: qumcfibccu

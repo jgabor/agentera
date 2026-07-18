@@ -1,0 +1,12 @@
+id: nnqtxsbkcd
+artifact: plan
+record:
+  name: Aggregate startup overhead metrics
+  depends_on:
+    - ssglwuukuw
+  status: complete
+  acceptance:
+    - GIVEN startup events are extracted WHEN aggregation runs THEN it reports per-capability startup call counts, CLI-state-call counts, raw artifact-read counts, capability prose-read counts, repeated artifact labels, runtime coverage, and confidence caveats.
+    - GIVEN no sufficient post-2.3 sessions exist WHEN aggregation runs THEN it reports insufficient evidence and does not recommend implementation.
+    - GIVEN repeated startup reads are detected WHEN metrics render THEN the report names canonical artifact labels and counts, not raw transcript snippets or full paths.
+  plan: dqipjmhdxs

@@ -1,0 +1,7 @@
+id: uqmxjnmhcp
+artifact: docs
+record:
+  document: OpenCode bootstrap smoke runner
+  path: scripts/smoke_opencode_bootstrap.mjs
+  last_updated: 2026-04-28
+  status: current

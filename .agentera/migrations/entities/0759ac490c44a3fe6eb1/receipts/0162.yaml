@@ -1,0 +1,7 @@
+id: lktdvzibns
+artifact: docs
+record:
+  document: Usage analytics script
+  path: scripts/usage_stats.py
+  last_updated: 2026-05-05
+  status: current

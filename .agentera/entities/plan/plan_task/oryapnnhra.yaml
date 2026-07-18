@@ -1,0 +1,13 @@
+id: oryapnnhra
+artifact: plan
+record:
+  name: Fold TODO L7 and L8 closeout into the implementation commit
+  depends_on:
+    - xjukrnxywd
+    - hlfofpmvxi
+  status: complete
+  acceptance:
+    - GIVEN the rename and CI publish implementation commit WHEN TODO.md is read THEN TODO L7 (CI publish jobs) is marked resolved with a release date or semver (not a hash backfill)
+    - GIVEN the same commit WHEN TODO.md is read THEN TODO L8 (@next hook version drift) is marked resolved with a release date or semver (the publish-next job and rename together fix this drift)
+    - "GIVEN the closeout commit WHEN .agentera/plan.yaml is read THEN this plan is archived per the AGENTS.md same-commit fold-in convention (no standalone chore: plan close-out commit)"
+  plan: lwpqtzxgxp

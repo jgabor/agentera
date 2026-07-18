@@ -1,0 +1,12 @@
+id: hdfyishluh
+artifact: plan
+record:
+  name: Confirm consent and measurement parameters
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN real local runtime stores may contain private transcripts WHEN measurement setup begins THEN the operator explicitly approves which runtimes and paths may be scanned before any real history is read.
+    - GIVEN approval is absent or narrower than all runtimes WHEN setup runs THEN measurement stops or limits itself to approved inputs and records the blocked/deferred runtimes with bounded labels.
+    - GIVEN parameters are recorded WHEN the run is configured THEN they include the v2.3.0 boundary, allowed runtimes, approved scan path scope, output directory outside the repo, ephemeral salt policy, and privacy exclusions.
+  plan: qkkryvdjxx

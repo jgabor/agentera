@@ -1,0 +1,51 @@
+id: mrwqrkysth
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-07-08
+    status: archived
+    title: cliDistributionMajor secondary-signal fallback
+  what: |
+    Replace `cliDistributionMajor`'s terminal `return 2` fallback in
+    `packages/cli/src/upgrade/compatibility.ts` with a `package.json#version` read
+    as a secondary signal. When both primary (source-checkout markers, npx bundle
+    sentinel) and the new secondary (package.json version) signals miss, fall back
+    to `return 2` AND emit a one-time stderr diagnostic naming the unresolved
+    root so operators can detect the corruption. The function's return type stays
+    `number`; no caller signature changes.
+  why: |
+    A v3 install whose `registry.json` version-authority file is corrupted,
+    missing, or malformed is silently classified as v2 because `cliDistributionMajor`
+    assumes "no detectable version = v2." This breaks four downstream surfaces:
+    runtime inference (doctor retry suggestions), cross-major boundary detection
+    (migration prompts), next-major successor block rendering, and invoked-update
+    channel resolution. v3 users with asset corruption can be routed toward wrong
+    migration prompts, wrong CLI channel, or wrong runtime retry suggestions
+    without any warning. The secondary signal recovers the v3 case from
+    `package.json`, which is the versioning surface per `.agentera/docs.yaml`
+    `version_files` and survives registry-asset churn.
+  constraints: |
+    - Function return type MUST stay `number`; no signature changes for callers.
+    - MUST NOT throw from `cliDistributionMajor`. Two of four callers
+      (`crossMajorBoundaryApplies`, `resolveNextMajorDoctorLines`) feed user-facing
+      upgrade flows where throwing degrades UX.
+    - The stderr diagnostic MUST fire at most once per process (use a module-scoped
+      boolean guard) to avoid noise on repeated calls from the same invocation.
+    - Out of scope: hardening `loadSuiteVersion` (appModel.ts:72-95) to surface
+      WHY it returned null. That concern is tracked as a separate TODO entry.
+    - Out of scope: vision refresh, profile refresh, the four other v3 TODOs
+      listed alongside this one in TODO.md.
+    - Out of scope: rewriting the v1 migration or v2 install paths.
+  overall_acceptance:
+    - GIVEN a v3 install where registry.json version-authority is missing or corrupted AND package.json#version is "3.x.y" WHEN cliDistributionMajor is called THEN it returns 3 (derived from package.json) AND does not print any stderr diagnostic.
+    - GIVEN an install where both registry.json version-authority and package.json#version are missing or malformed AND the install is neither a source checkout nor an npx bundle WHEN cliDistributionMajor is called THEN it returns 2 AND prints a one-time stderr diagnostic naming the unresolved sourceRoot.
+    - GIVEN a v2 managed app-home with no package.json WHEN cliDistributionMajor is called THEN it returns 2 AND does not print a stderr diagnostic (the v2 case is the legitimate expected default).
+    - GIVEN a v3 self-contained npx bundle root WHEN cliDistributionMajor is called THEN it returns 3 via the existing isNpxBundleRoot early-return AND does not reach the new secondary-signal branch AND does not print any diagnostic.
+    - GIVEN a healthy source checkout root WHEN cliDistributionMajor is called THEN it returns 3 via the existing isSourceCheckoutRoot early-return AND does not reach the new secondary-signal branch AND does not print any diagnostic.
+    - GIVEN repeated calls to cliDistributionMajor on the same process with the same unresolved sourceRoot WHEN the second and subsequent calls execute THEN no additional stderr diagnostics are emitted (one-shot guard).
+  scope:
+    included:
+      []
+    excluded:
+      []

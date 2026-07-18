@@ -1,0 +1,12 @@
+id: mvjddbisib
+artifact: progress
+record:
+  timestamp: 2026-07-17 06:45
+  type: feat
+  phase: build
+  what: Added plans/tasks entity mode in packages/cli/src/state/planEntities.ts with independent bare-ID files, dependency validation, bounded retrieval, rollback-safe create, and Git-visible same-task conflicts.
+  verified: "pnpm -C packages/cli test: 2,507 passed; typecheck and build passed; state, plan capability, capability contract, compact, and built CLI legacy retrieval passed."
+  next: PLAN Task8 remains pending.
+  context:
+    intent: Complete PLAN Task7 without cutting over objectives, experiments, apply, or global plan consumers.
+    constraints: Preserve legacy authority while the marker is absent; no aggregate plan/archive writes in entity mode.

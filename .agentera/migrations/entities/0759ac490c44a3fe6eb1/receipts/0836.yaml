@@ -1,0 +1,14 @@
+id: mxqroryujc
+artifact: plan
+record:
+  name: Close evidenced cursor and omission gaps
+  depends_on:
+    - vwcokeooop
+    - jgbatfzgbf
+    - pmkchcguhl
+  status: pending
+  acceptance:
+    - GIVEN any Task 1 plan or experiment gap WHEN bounded by count or bytes THEN omissions and usable recovery are explicit.
+    - GIVEN stale, wrong-family, wrong-filter, or malformed cursors WHEN reused THEN deterministic snapshot or validation errors result.
+    - GIVEN text, JSON, and existing numbered-family regressions WHEN tested THEN no targeted surface silently slices or regresses.
+  plan: diigykcdod

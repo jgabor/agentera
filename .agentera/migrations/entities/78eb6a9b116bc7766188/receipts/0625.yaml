@@ -1,0 +1,12 @@
+id: quifbtafxs
+artifact: plan
+record:
+  name: Runtime metadata clarity and flag docs
+  depends_on:
+    - krmpdbmlcr
+  status: complete
+  acceptance:
+    - GIVEN SQLite runtime discovery WHEN metadata is emitted THEN file_count replaces candidate_count and never implies a single conversation when multiple records exist
+    - GIVEN agentera extract --help WHEN a user reads runtime flags THEN each --no-<runtime> flag documents that it deselects an available runtime
+    - GIVEN a regression test for the rename WHEN SQLite store has thousands of records THEN file_count and record_count are both present and non-contradictory
+  plan: zyisuuikti

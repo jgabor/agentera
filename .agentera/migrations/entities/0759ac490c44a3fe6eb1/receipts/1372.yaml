@@ -1,0 +1,16 @@
+id: detmcmcweg
+artifact: progress
+record:
+  timestamp: 2026-07-18 01:06
+  type: fix
+  phase: build
+  what: Normalized lossless legacy plan omissions and made preview validate every final canonical target through the same authority-backed envelope and graph boundary used by apply.
+  inspiration: Task14 retry2/2 FINAL after approved apply rejected a legacy plan task missing canonical required list fields.
+  discovered: "Complete target validation exposed only deterministic legacy plan representations: absent/null/empty list fields, scalar list values, one-entry YAML acceptance mappings, completed task status, and absent scope."
+  verified: Focused migration and protocol suite passed 134 tests; full CLI passed 2,622 tests across 218 files; typecheck and build passed; all 12 capabilities, capability contract 2/2, state validation, compact, and a blocker-free 1,449-target canonical validation passed.
+  next: Task14 remains pending. An independent audit must review a fresh post-commit candidate approval before any separately authorized live apply.
+  context:
+    intent: Fix only the second approved Task14 apply defect and preview/apply target parity without applying the cutover.
+    constraints: No live apply, Task14 completion, Task15, version, changelog, vision, manual YAML edit, remote, amend, push, publish, or tag.
+    unknowns: Independent audit and live apply authorization remain unresolved.
+    scope: Legacy plan migration adapters, shared canonical target validation, preview digest binding, apply defense checks, authority contract, and migration regressions.

@@ -1,0 +1,12 @@
+id: aamxwfecum
+artifact: plan
+record:
+  name: Canonical bundle and orientation contracts
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN prime, doctor, and orientation emit bundle or orientation payloads WHEN a consumer reads the structured output THEN public fields use named types (not ad-hoc string-key bags) at the module export boundary.
+    - GIVEN the shared value/JSON typing module exists WHEN new code in prime/doctor/orientation is added THEN it imports the canonical types instead of declaring a local Dict alias.
+    - GIVEN vitest runs on feat/v3 WHEN T1 lands THEN doctor, prime, and orientation test suites pass without changing JSON field names or exit codes for existing fixtures.
+  plan: nqyxvgtkhn

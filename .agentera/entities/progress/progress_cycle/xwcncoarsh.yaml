@@ -1,0 +1,16 @@
+id: xwcncoarsh
+artifact: progress
+record:
+  timestamp: 2026-07-15 11:42
+  type: fix
+  phase: build
+  what: Corrected experiment artifact introspection after Task 11 audit failure.
+  inspiration: Task 11 audit attempt 1 and its recorded failure evidence.
+  discovered: artifact_locations synthesized unsupported top-level aliases for routine state reads, and the parity test read ignored bundle output directly despite global setup generating it.
+  verified: "Focused root command: pnpm -C packages/cli exec vp test run test/state/retrievalContractParity.test.ts test/packaging/prepack.test.ts test/cli/schema.test.ts test/cli/query.test.ts; observed 4 files/41 tests passed. Scoped command: pnpm -C packages/cli exec vp test run test/state/retrievalContractParity.test.ts; observed 1 file/11 tests passed, including unsupported-form corrections. Full command: pnpm -C packages/cli test; observed 184 files/2053 tests passed. Commands pnpm -C packages/cli run typecheck and pnpm -C packages/cli build passed. Commands node packages/cli/dist/bin/agentera.js check validate capability optimize --format json, capability plan --format json, and capability-contract --format json passed; contract summary 2/2. Runtime schema plus five unsupported forms passed 6/6. node packages/cli/dist/bin/agentera.js check compact --format json and git diff --check passed."
+  next: Stop after corrective Task 11 commit; Task 12 and final plan closeout remain pending.
+  context:
+    intent: Retry Task 11 only by removing the unsupported selector-free experiment read contract and making package parity evidence pristine-checkout safe.
+    constraints: Preserved commit 5abf4c6a, Cycle 814, and Task 11 audit attempt 1; no amend, push, package metadata change, Task 12 work, publish, or tag.
+    unknowns: None for the corrective scope; pre-existing lossless compaction refusals remain non-blocking.
+    scope: packages/cli/src/cli/commands/query.ts, packages/cli/src/cli/commands/schema.ts, retrieval/schema and pristine-bundle tests, plan/progress state.

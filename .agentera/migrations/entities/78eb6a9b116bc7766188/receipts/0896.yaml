@@ -1,0 +1,12 @@
+id: ovqqpfwiwg
+artifact: plan
+record:
+  name: State sync and audit TODO closeout
+  depends_on:
+    - joquahlqtp
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN vitest, typecheck, and build run on feat/v3 THEN the full CLI suite is green.
+    - GIVEN each addressed thermo-nuclear TODO item WHEN its task commit lands THEN the item moves to Resolved with resolved date (not a follow-up chore commit).
+    - GIVEN the plan is complete WHEN closeout runs THEN plan.yaml archives to .agentera/archive/ and the active plan slot is cleared.
+  plan: trwfpgaxom

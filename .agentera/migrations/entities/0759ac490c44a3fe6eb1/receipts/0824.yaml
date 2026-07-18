@@ -1,0 +1,22 @@
+id: hsgvpyvmgx
+artifact: plan
+record:
+  name: Define retrieval authority and command grammar
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN each state collection WHEN classified THEN growth, identity, storage ownership, ordering, bounds, cursor, omission, and get behavior are explicit.
+    - GIVEN plan tasks, plans, and experiments WHEN commands are specified THEN grammar, selectors, experiment zero, and structured errors are unambiguous.
+    - GIVEN valid and invalid contract examples WHEN tested THEN at least one passing and failing case covers each rule.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Negative fixtures do not cover every enforced authority rule; Cycle 796 verification lacks reproducible commands and criterion mapping.
+    provenance:
+      attempt_id: task-1-audit-2-20260714
+      source: independent Task 1 corrective acceptance audit
+      recorded_at: 2026-07-14 22:52
+      writer_command: agentera state plan record-evaluation
+  plan: diigykcdod

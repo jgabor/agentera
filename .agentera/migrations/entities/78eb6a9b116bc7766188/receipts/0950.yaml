@@ -1,0 +1,12 @@
+id: pawsaeffnq
+artifact: plan
+record:
+  name: 2.3.1 release metadata
+  depends_on:
+    - uofnxfpnkc
+  status: complete
+  acceptance:
+    - GIVEN this is a patch release WHEN active version-bearing surfaces are inspected THEN pyproject, lockfile, registry, plugin manifests, OpenCode marker, and skill frontmatter consistently report 2.3.1.
+    - GIVEN changelog, TODO, docs, and progress are queried WHEN 2.3.1 state is inspected THEN they document runtime-injected stale env recovery and keep Profilera parity retargeted beyond 2.3.1.
+    - GIVEN historical archive or progress entries mention older app-home behavior WHEN version and wording checks run THEN historical evidence does not block release readiness.
+  plan: anedpqtccr

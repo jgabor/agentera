@@ -1,0 +1,11 @@
+id: mreocwnyxz
+artifact: plan
+record:
+  name: Rename fixtures/hej-*.md test fixtures
+  depends_on:
+    - vrvikqbjeh
+  status: complete
+  acceptance:
+    - GIVEN fixtures renamed to status-*.md, WHEN vitest runs, THEN all tests pass with updated paths
+    - AND no test fixture filename contains a Swedish verb
+  plan: hotcyckvhu

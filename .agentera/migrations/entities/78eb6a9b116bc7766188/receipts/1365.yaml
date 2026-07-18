@@ -1,0 +1,16 @@
+id: livveocowd
+artifact: progress
+record:
+  timestamp: 2026-07-17 18:05
+  type: fix
+  phase: build
+  what: Closed the audited Task 12 startup identity, bounded selection, independent bundle parity, and active protocol-surface gaps.
+  inspiration: Retry 1/2 Task 12 audit findings.
+  discovered: Prime selection paged only the first 20 unfiltered plans and objectives; the prior bundle parity test shared one executable and project; the active scan excluded broad surfaces and missed packaged README and runtime output drift.
+  verified: "CLI suite: 216 files and 2585 tests passed. Typecheck and build passed. All 12 capability validations, capability contract, state validation, compact, independent source/bundle command parity, active protocol scan, migration gate, legacy evidence writer, and lifecycle consumer tests passed."
+  next: Task 12 remains complete. Task 13 is pending; do not begin Task 14 or later work.
+  context:
+    intent: Fix only audited Task 12 gaps without readiness recovery, live migration apply, or release finalization.
+    constraints: Task 13 and later remain out of scope; preserve Cycle 898, migration/admin/evidence-writer/compact behavior, versions, vision, and immutable history.
+    unknowns: none
+    scope: Prime identity and selection, entity graph readers, package/source parity tests, active protocol manifest, canonical README commands, and exact Task 12 evidence.

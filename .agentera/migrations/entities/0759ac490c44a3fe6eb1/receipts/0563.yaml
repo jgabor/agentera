@@ -1,0 +1,15 @@
+id: gzkkoqlbcr
+artifact: plan
+record:
+  name: Execute non-Git legacy migration
+  depends_on:
+    - jtipwnefuk
+  status: pending
+  acceptance:
+    - GIVEN inline summaries and locally available full entries WHEN migration is previewed or explicitly applied THEN verified archives publish monotonically and projections remain compatible.
+    - GIVEN addressable local entries WHEN migration applies THEN exact replay identity and archive-before-projection publication prevent overwrite or renumbering.
+    - GIVEN non-Git, partial, complete, conflicting, duplicate, custom-name, corrupt, and summary-only projects WHEN migration runs THEN summary-only, unaddressable, ambiguous, and corrupt rows never synthesize archives, and each receives deterministic provenance.
+    - GIVEN migration accounting WHEN results serialize THEN physical = addressable + unaddressable + ambiguous, while mirrors, duplicates, and conflicts are explicitly non-additive.
+    - GIVEN interruption or retry WHEN immutable archives exist THEN equality checks converge without duplicate or unrelated changes.
+    - GIVEN old and new fixtures WHEN lifecycle, validation, and state reads run THEN both work through the compatibility window.
+  plan: ckzzomuyos

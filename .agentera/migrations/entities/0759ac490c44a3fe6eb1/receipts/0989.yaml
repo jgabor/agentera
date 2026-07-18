@@ -1,0 +1,21 @@
+id: nqekjqzdlu
+artifact: plan
+record:
+  name: Plan artifact and policy-gated closeout
+  depends_on:
+    - cawwerldfn
+    - sluaipbdin
+    - uhgjulyaqq
+    - nylkzicpri
+    - mwygdjqxoi
+  status: complete
+  acceptance:
+    - GIVEN this plan is created WHEN Planera exits THEN `.agentera/plan.yaml` is active, has exactly six pending tasks, records full review/self-audit evidence, and sets `previous_plan_archived` to the archived completed Planera Prose Re-Read Reduction Plan.
+    - GIVEN closeout begins WHEN artifacts are edited THEN artifact mappings are queried with `uv run scripts/agentera query --list-artifacts` and only mapped source-of-truth artifacts required by policy are updated.
+    - GIVEN the implemented change is classified under `.agentera/docs.yaml` semver policy WHEN closeout starts THEN version-bearing surfaces are updated only if policy requires it and the classification is recorded.
+    - GIVEN final verification runs WHEN the plan is ready for handoff THEN focused tests, mapped artifact validators, compaction check or fix, and `git diff --check` pass.
+  evidence:
+    - This plan archived `.agentera/archive/PLAN-2026-05-16-planera-prose-re-read-reduction.yaml`, started active with exactly six pending tasks and review/self-audit evidence, then was completed after implementation and verification.
+    - Closeout queried artifact mappings with `uv run scripts/agentera query --list-artifacts --format json`; mapped source-of-truth artifacts updated are PLAN, TODO, CHANGELOG, DOCS, and PROGRESS, plus semver-policy version-bearing package/plugin/registry/skill surfaces.
+    - "`.agentera/docs.yaml` semver policy maps `feat` to `minor`, so version metadata was aligned from 2.9.0 to 2.10.0 for this DECISIONS.md source-contract feature."
+  plan: srgdpftdaw

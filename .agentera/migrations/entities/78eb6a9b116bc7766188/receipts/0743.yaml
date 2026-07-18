@@ -1,0 +1,12 @@
+id: xawdzfufya
+artifact: plan
+record:
+  name: Staged-aware pre-commit test scripts and lefthook wiring
+  depends_on:
+    - dnafmddtyc
+  status: complete
+  acceptance:
+    - GIVEN only packages/cli/test/cli/todoMarkdown.test.ts staged on feat/v3 WHEN lefthook pre-commit runs THEN vitest executes a bounded subset that includes that file and completes faster than full-suite pnpm test
+    - GIVEN a staged change under scripts/ on main WHEN lefthook pre-commit runs THEN pytest runs targeted modules plus smoke tests without invoking the full parallel suite unless the change touches workflow or lefthook config
+    - GIVEN .lefthook.yml on each branch WHEN read THEN the tests command invokes the staged-aware script instead of unconditional full-suite commands
+  plan: efseuyrmnx

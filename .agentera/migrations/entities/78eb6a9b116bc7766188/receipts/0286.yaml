@@ -1,0 +1,13 @@
+id: xpohohpnlt
+artifact: plan
+record:
+  name: Publish the storage, path, API, and compatibility authority
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN progress, decisions, and health WHEN the authority is inspected THEN archive identity, envelope, fixed project-root location, mutable overlays, projection roles, and error classes are explicit.
+    - GIVEN direct retrieval and listing WHEN callers inspect the contract THEN command syntax, ordering, cursor snapshot behavior, limits, and structured failures are unambiguous.
+    - GIVEN new, legacy-full, legacy-summary, non-Git, shallow, ambiguous, and corrupt state WHEN compatibility is evaluated THEN each outcome is classified as complete, degraded, blocked, or unsupported.
+    - GIVEN projection and startup responses WHEN budgets are inspected THEN serialized byte limits and omission semantics are measurable and schema-owned.
+  plan: snzwzclohe

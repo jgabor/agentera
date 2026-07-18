@@ -1,0 +1,13 @@
+id: nzkebdibzl
+artifact: plan
+record:
+  name: Rename capability instruction files and update loaders
+  depends_on:
+    - veejajgpyn
+  status: complete
+  acceptance:
+    - GIVEN real capability directories under `skills/agentera/capabilities/` are inspected WHEN the rename is applied THEN each supported capability uses `instructions.md` as its instruction file and no real capability still depends on `instructions.md` as canonical.
+    - GIVEN scripts, validators, runtime loaders, and descriptor generation paths are inspected WHEN they resolve capability instructions THEN they prefer `instructions.md` and preserve only explicit compatibility fallbacks required by shipped behavior.
+  evidence:
+    - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  plan: xsmmpkxfwr

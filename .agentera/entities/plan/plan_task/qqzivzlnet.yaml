@@ -1,0 +1,18 @@
+id: qqzivzlnet
+artifact: plan
+record:
+  name: Closeout verification, measurement evidence, and handoff
+  depends_on:
+    - mufeszagtz
+    - yogxsroqak
+    - klhnkkavdn
+    - swplejqcnw
+    - jzjgfuambx
+    - pqksotajhk
+  status: complete
+  evidence: validate capability-contract --format json pass (2/2); check compact pass; alias parity 0 byte/token delta for hej→prime, describe→schema, plan→state plan, gate→check compact; canonical namespace manifest totals 51 surfaces 529515B/ 121704 GPT-5 tok; measure_json_output_surfaces --token-mode exact --enforce-budgets 67 surfaces 0 violations; 1287 passed pytest tests/ -q -n auto; plan archived.
+  acceptance:
+    - GIVEN migration is complete WHEN `agentera validate capability-contract --format json` and `agentera check compact` run THEN both pass on the migrated tree.
+    - GIVEN public JSON outputs changed WHEN measurement evidence is recorded THEN before/after byte and token counts for `prime`, `schema`, and moved namespace commands are noted in progress evidence.
+    - GIVEN the plan tasks are all complete WHEN artifacts are inspected THEN this plan is archived and `.agentera/plan.yaml` is removed per Planera closeout rules.
+  plan: unmsxwomyo

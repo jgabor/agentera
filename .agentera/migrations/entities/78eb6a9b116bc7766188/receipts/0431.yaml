@@ -1,0 +1,13 @@
+id: jgdhnphdwz
+artifact: plan
+record:
+  name: Align runtime schemas, budgets, docs, and bundles
+  depends_on:
+    - olsxqaztyb
+    - hzgoyxybkc
+    - vjblxzukqk
+    - fimgpoebqk
+  status: pending
+  acceptance:
+    - GIVEN runtime authorities, help, upgrade docs, references, and bundles WHEN lint, drift, compact, satisfaction, and parity tests run THEN one schema governs bounded I/O and state vocabulary, Decision 53 and uniform_10_40_50 protection remain, and commands, compatibility, durability, migration, irrecoverable cases, and examples agree without false deletion claims.
+  plan: dejfosgnsl

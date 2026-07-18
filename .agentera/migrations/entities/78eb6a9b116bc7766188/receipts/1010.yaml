@@ -1,0 +1,13 @@
+id: fqhcmpekvo
+artifact: plan
+record:
+  name: Define Entry-Boundary Dashboard Contract
+  depends_on:
+    - tdsgfbnook
+  status: complete
+  acceptance:
+    - GIVEN a returning project invokes bare Agentera WHEN final output is rendered THEN the output includes the README-style logo, status section, non-empty attention section when source attention exists, next section, and Hej exit marker
+    - GIVEN source fields are available WHEN final output is rendered THEN raw source field labels are not used as the user-facing briefing
+    - GIVEN future agents inspect the entry instructions WHEN they route bare Agentera THEN the instruction to render the README-style dashboard is visible before nested capability prose is required
+    - GIVEN no attention items exist WHEN final output is rendered THEN the attention section is omitted rather than filled with invented content
+  plan: zbvkewyhhq

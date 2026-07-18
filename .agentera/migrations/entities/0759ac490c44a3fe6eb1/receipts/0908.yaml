@@ -1,0 +1,12 @@
+id: qijkypswhq
+artifact: plan
+record:
+  name: Reclassify OpenCode session lifecycle events
+  depends_on:
+    - twaelwysjr
+  status: complete
+  acceptance:
+    - GIVEN official OpenCode plugin docs expose session events through `event` WHEN registry and docs are updated THEN `session.created` and `session.idle` are no longer marked unsupported or phantom.
+    - GIVEN session preload still lacks verified model-context injection WHEN limitations are updated THEN the caveat is about context injection only, not event observability.
+    - GIVEN regression tests prevent direct hook mistakes WHEN tests run THEN direct `"session.idle"` or `"session.created"` hook keys still fail while generic `event` handling passes.
+  plan: vxtjoawssx

@@ -1,0 +1,38 @@
+id: dyzartpcdu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-16
+    status: complete
+    reviewed: 2026-07-16
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    title: "Plan: Make prime startup compact and self-contained"
+  what: Make status startup a single bounded call, make bare prime a decision brief, and remove redundant or default-only startup data without hiding required diagnostics or recovery paths.
+  why: Agents currently consume about 67 KB across two calls to render a short status dashboard, while live bare-prime and audit-context payloads exceed their declared budgets. Startup should provide enough evidence to choose and begin the next action without preloading every diagnostic contract.
+  constraints: Preserve capability safety and exit behavior, structured JSON, missing-versus-empty semantics, current authoritative detail retrieval, and explicit compatibility for public consumers. Do not implement structured attention records, stable artifact references, separate diagnostic projections, or compiled instruction caching.
+  overall_acceptance: GIVEN an agent starts status WHEN it requests status context THEN one bounded response supplies the instructions and state needed to render orientation and choose the next action, while bare prime remains within its byte budget and omitted current detail is available through named authoritative commands.
+  scope:
+    included:
+      - One-call status capability startup
+      - Bounded bare-prime decision brief
+      - Removal of redundant and default-only startup data
+      - Prime field-contract parity and compatibility behavior
+      - Realistic byte-budget and regression evidence
+    excluded:
+      - Structured attention records
+      - Stable artifact identities and reference-based routing
+      - New summary-versus-diagnostic projection modes
+      - Compiled or cached capability instructions
+      - Unrelated CLI or artifact changes
+    deferred:
+      - Recommendations 4 through 7 recorded in TODO.md
+      - Further compression that requires stable snapshot identity
+      - Changes to capability behavior outside startup consumption
+  design: First establish observable consumer requirements and an approved compatibility boundary. Then publish one non-redundant startup contract and use it to produce a bounded decision brief. Finally include that bounded state with status instructions so status needs one invocation. Each behavior change carries its own contract and focused regression updates; broad verification closes the plan.
+  unknowns:
+    - question: Which public runtime consumers depend on fields proposed for omission, and what compatibility transition do they require before the compact contract can become the default?
+      affects_task: 1
+      resolve_by: Inventory in-repository and documented external consumers, classify each field as required, conditional, or diagnostic, and record the approved compatibility policy before Tasks 2 through 4 begin.
+  surprises:
+    []

@@ -1,0 +1,14 @@
+id: kryfmbnebw
+artifact: plan
+record:
+  name: Startup fixtures and validation gates
+  depends_on:
+    - xbciceuuhz
+  status: complete
+  evidence:
+    - "Final focused regression suite passed: `uv run pytest tests/test_query_cli.py tests/test_decision45_cli_contract.py tests/test_optimera_capability.py tests/test_startup_analysis_contract.py` (222 passed). Optimera capability validation, capability schema self-validation, independent evaluation review, and `git diff --check` passed. Installed app refresh and real local benchmark execution were not run."
+  acceptance:
+    - GIVEN complete Optimera benchmark context is available through CLI state WHEN deterministic startup or evaluation fixtures run THEN normal Optimera benchmark guidance introduces no raw-after-CLI reads for user-local benchmark report files.
+    - GIVEN validation runs WHEN implementation is complete THEN focused pytest targets, Optimera capability validation, self-validation, artifact validators, `agentera gate`, compaction check, and `git diff --check` pass without installed app refresh or real local benchmark execution.
+    - GIVEN independent evaluation reviews the completed implementation WHEN this task finishes THEN blocking findings are resolved and residual risks are recorded in plan evidence rather than hidden.
+  plan: dlmrrzhsvy

@@ -1,0 +1,14 @@
+id: swplejqcnw
+artifact: plan
+record:
+  name: Preserve top-level lifecycle and capability routing commands
+  depends_on:
+    - mufeszagtz
+  status: complete
+  evidence: "Added AgenteraArgumentParser with audience-grouped root help (agent: prime/schema/state/capabilities, user: upgrade/doctor/report, maintainer: check). Removed hej and migration aliases from public --help via argparse.SUPPRESS while preserving delegation. Focused coverage in tests/test_audience_help_grouping.py; updated help expectations in query, skill-dispatch, usage, validate, and verify tests."
+  acceptance:
+    - GIVEN `agentera upgrade` and `agentera doctor` run WHEN invoked THEN they remain top-level commands with unchanged flags and JSON shapes.
+    - GIVEN each of the eleven non-hej capabilities is invoked at top level WHEN output emits THEN routing guidance behavior is unchanged from today's capability-name commands.
+    - GIVEN `agentera hej` is removed from the public top-level parser WHEN `--help` is inspected THEN `hej` does not appear as a top-level command and `prime` is listed as the orientation entry.
+    - GIVEN help text is grouped by audience WHEN `agentera --help` runs THEN sections distinguish agent (`prime`, `state`, capabilities), user (`upgrade`, `doctor`, `report`), and maintainer (`check`) commands.
+  plan: unmsxwomyo

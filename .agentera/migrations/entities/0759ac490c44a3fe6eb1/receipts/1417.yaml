@@ -1,0 +1,6 @@
+id: fcqapyqlsa
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "~~[fix:3.0.0] Synchronize public bounded-retrieval contracts. Resolved 2026-07-15: runtime authority, help, schema, optimize startup/prose, capability schemas, operator docs, bundle parity, output bounds, archive ownership, and runnable structured errors now agree; focused 217/217 and full 2051/2051 tests passed.~~"

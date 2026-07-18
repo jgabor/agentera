@@ -1,0 +1,24 @@
+id: plavhefyqh
+artifact: decisions
+record:
+  date: 2026-05-23
+  question: How should Agentera adopt two-axis diff review after inspirera analysis of an external review pattern?
+  context: Inspirera analyzed an external in-progress review skill, which reviews a git diff against a fixed point on two orthogonal axes — Standards (repo documented conventions) and Spec (originating requirements) — using parallel sub-agents with isolated context, then aggregates findings side-by-side without merging them. Agentera already has holistic health audits (inspektera), plan acceptance criteria (planera), and post-realisera verification (orkestrera spawning inspektera), but nothing that performs change-scoped diff review with separate standards and spec passes. The user requires an extremely high bar for introducing a 13th capability; extend existing capabilities until the seam breaks, then add.
+  alternatives:
+    - name: Inspektera review mode
+      status: chosen
+      description: Extend inspektera with an ephemeral diff-scoped review mode that runs parallel Standards and Spec sub-agents, emits a side-by-side report without writing health.yaml, optionally files TODO items, uses plan acceptance criteria as the primary Spec source via CLI, and falls back to Standards-only when no active plan exists. Invocation routing for manual pre-merge review is deferred.
+    - name: New 13th capability
+      status: rejected
+      description: A dedicated review capability would give clean identity and routes, but the user rejected adding capabilities until an existing seam demonstrably breaks.
+    - name: Realisera verify extension
+      status: rejected
+      description: Realisera already verifies against plan acceptance criteria, but review is read-only analysis; mixing build and review safety rails blurs capability ownership.
+    - name: Orkestrera spawn recipe only
+      status: rejected
+      description: Documenting two sub-agent prompts in orkestrera alone would cover post-realisera gating but not manual pre-merge review or stable capability schemas.
+  choice: Extend audit with a diff-scoped review mode adopting a two-axis Standards-and-Spec pattern. Review output is ephemeral — side-by-side Standards and Spec reports, optional TODO filing, and no health.yaml writes — so longitudinal health audits stay separate from change-scoped review. Plan acceptance criteria from `agentera plan --format json` are the primary Spec source; when no active plan exists, run Standards-only and note that Spec was skipped. Support both orchestrate post-build spawn and manual pre-merge entry; exact invocation surface is deferred. Add a new capability only if audit's identity collapses under the combined audit and review responsibilities.
+  reasoning: Review and audit answer different questions. Audit is repo-wide and longitudinal; review is change-scoped and orthogonal. Inspektera can host both if review mode never writes audit state. The user's extend-until-it-breaks bar favors inspektera extension over a 13th capability, while ephemeral output prevents polluting health trajectory. Plan AC as Spec source is the Agentera-native adaptation of an issue-tracker hierarchy.
+  confidence: provisional
+  feeds_into: skills/agentera/capabilities/audit/instructions.md, skills/agentera/SKILL.md, skills/agentera/capabilities/orchestrate/instructions.md, scripts/agentera, tests, TODO.md
+  outcome: Extend audit with a diff-scoped review mode adopting a two-axis Standards-and-Spec pattern. Review output is ephemeral — side-by-side Standards and Spec reports, optional TODO filing, and no health.yaml writes — so longitudinal health audits stay separate from change-scoped review. Plan acceptance criteria from `agentera plan --format json` are the primary Spec source; when no active plan exists, run Standards-only and note that Spec was skipped. Support both orchestrate post-build spawn and manual pre-merge entry; exact invocation surface is deferred. Add a new capability only if audit's identity collapses under the combined audit and review responsibilities.

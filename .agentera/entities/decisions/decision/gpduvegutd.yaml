@@ -1,0 +1,31 @@
+id: gpduvegutd
+artifact: decisions
+record:
+  date: 2026-07-10
+  question: How should the orchestrate capability instructions be audited and rewritten to align with the six-section spine, direct-contract philosophy, and voice delegation, while adopting substance design improvements (WARN elimination from evaluation, test-suppression directive removal from delegation prompt, self-contained staleness check) from prior audits?
+  context: "Twelfth and final capability audit. Orchestrate is a multi-surface shape -- the meta-orchestrator that delegates capabilities as subagents, evaluates each task with audit, and loops through plans. Pre-flight grounding found v2-era ghosts: `agentera decisions` (v3: `agentera state decisions`); `agentera progress` (v3: `agentera state progress`); `agentera describe` (v3: `agentera schema`); `agentera query` (v3: `agentera state query`); canonical filenames throughout (`PLAN.md`, `PROGRESS.md`, `HEALTH.md`, `DECISIONS.md`, `VISION.md`, `DOCS.md` -- v3 uses artifact-id + CLI state); `references/contract.md` pointer (D79 removed from all audited capabilities); Contract values token enumeration (one-line ref to protocol.yaml); artifact-path-resolution subsection (SKILL.md owns); standalone \"Visual identity\" section (fold into Purpose); \"The sharp colleague\" personality section (D81 violation); \"Narration voice (riff, don't script)\" personality leaks (3x); skill introduction line; standalone Getting started section (fold into section 6); \"Keeping the orchestrator lean\" does/does-NOT table (unique constraints fold into Safety rails); runtime subagent mechanisms table (compress to brief pointer, D85 propagation); NEVER in safety rails (D71: MUST NOT); `// Source: D65` comment header tracking marker; \"Agentera v2 never writes\" v2 reference in Codex CLI row; \"/loop\" reference (explicit user request); `complete_for_normal_deliberation_context` v2-era field name (v3: `complete_for_orchestration_context`); source_contract 9-field enumeration + 4-step process (compress to 2-sentence delegation). Substance design decisions: (S1) WARN eliminated from evaluation -- audit reports PASS or FAIL per criterion only, removing the ambiguous middle state that left the overall verdict undefined when WARN criteria were present; verify_command requirement moves from WARN-only to FAIL rows with file:line citations. (S2) test-suppression directive removed from delegation prompt -- \"do not write tests unless AC requires them\" conflicted with build's own verification workflow; scope constraints are sufficient. (S3) staleness check made self-contained (3 steps, not 6) -- no longer references contract.md Section 19 (slated for retirement); states the principle directly. New length 18,497 chars (was 28,544 -- 35% reduction). references/cli/capability-instruction-structure.md orchestrate row Complete (D91)."
+  alternatives:
+    - name: Rewrite with substance improvements and drift cleanup
+      status: chosen
+      reason_chosen: WARN elimination follows the deterministic state machine principle -- the instructions say "the orchestrator follows a deterministic state machine" but WARN left the overall verdict to host interpretation. Test-suppression removal aligns with delegated-capability autonomy. Staleness check compression follows D79 direct-contract philosophy and removes the last contract.md dependency. Drift cleanup aligns with prior audit precedent across all twelve capabilities.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: Would leave the WARN ambiguity in evaluation (the state machine claims determinism but delegates WARN handling to host judgment), the test-suppression directive overriding build's own workflow, and the staleness check pointing to a document slated for retirement -- a capability that follows the spine but asks the wrong questions still fails the audit.
+  choice: Rewrite with substance improvements and drift cleanup
+  reasoning: "Prior audits (D82 discuss through D90 design) established substance findings as the highest-leverage changes. Orchestrate substance findings: WARN elimination simplifies the state machine and aligns with the evaluator_handoff machine contract; test-suppression removal respects delegated capability autonomy; staleness check compression removes the last contract.md pointer across all 12 capabilities. This completes the D80 deviation table -- all 12 capabilities now audited."
+  confidence: firm
+  feeds_into: references/cli/capability-instruction-structure.md, packages/cli/src/capabilities/orchestrate/, TODO.md
+  outcome: Rewrite with substance improvements and drift cleanup
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: references/cli/capability-instruction-structure.md
+    - source_field: feeds_into
+      reference: packages/cli/src/capabilities/orchestrate/
+    - source_field: feeds_into
+      reference: TODO.md
+  context_complete: true
+  missing_fields:
+    []
+  compacted: false
+  caveats:
+    []

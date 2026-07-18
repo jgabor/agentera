@@ -1,0 +1,12 @@
+id: pessgcgwqw
+artifact: plan
+record:
+  name: Fix the v3 cursor agent runtime surface regression
+  depends_on:
+    - ayeuhkbcbv
+  status: complete
+  acceptance:
+    - GIVEN `feat/v3` base WHEN the v3 TS upgrade orchestrator (`packages/cli/src/upgrade/runtimeMigration.ts`) is updated THEN it owns the in-tree `.cursor/agents/` directory on a v3 project (probe for the in-tree `packages/cli/src/capabilities/<name>/instructions.ts` modules as the v3 surface signal); on a v3 project, the Python upgrade orchestrator must skip the in-tree `.cursor/agents/` directory
+    - GIVEN the fix WHEN `packages/cli/test/upgrade/cursorAgentSurface.test.ts` is authored THEN it asserts the v3 cursor agent body uses the `Run agentera prime --context <name> --format json` form and rejects the legacy `Read .../capabilities/<name>/instructions.md` substring; the regression is green on `feat/v3`
+    - GIVEN the fix WHEN the v3 upgrade orchestrator runs on a v3 fixture THEN it produces the D65 form for all 12 `.cursor/agents/*.md` files; the Python-side skip-signal is documented in `references/cli/upgrade-repair-wording.md` and backported to `main` per the both-branch pattern; per V5 the proportionality target is one pass + one fail per cursor agent (12 × 2 = 24 cases)
+  plan: lzsuezxesf

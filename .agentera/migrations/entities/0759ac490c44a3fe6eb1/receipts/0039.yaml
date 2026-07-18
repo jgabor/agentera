@@ -1,0 +1,20 @@
+id: tjhrjxcfvm
+artifact: decisions
+record:
+  date: 2026-05-07
+  question: How should Agentera expose plain user-facing routes without losing canonical Swedish capability identity?
+  context: The 2026-05-07 vocabulary deliberation settled on "Brand the worldview. Boring-name the work." Users should not need to know Swedish capability names first, but Decisions 39-40 made capabilities canonical v2 protocol objects and Decision 42 routes explicit capability names through `/agentera`.
+  alternatives:
+    - name: Rename capabilities to plain English
+      status: rejected
+      description: Clearer first contact, but high churn across directories, schemas, artifacts, markers, tests, and product identity.
+    - name: Trigger phrases only
+      status: rejected
+      description: Improves natural-language routing but gives users no stable plain shortcut.
+    - name: One primary plain alias per capability
+      status: chosen
+      description: Keep canonical names and add a small documented action alias surface; colloquial variants stay in trigger schemas.
+  choice: "Keep Swedish `-era` names canonical and add one primary plain `/agentera <alias>` per capability: `status`, `vision`, `discuss`, `research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`, `design`, and `orchestrate`."
+  reasoning: Aliases reduce first-contact friction without renaming protocol objects. Exact aliases stay few and stable; secondary phrases like `brief`, `what's next`, `deliberate`, `brainstorm`, and `rubber duck` belong in trigger schemas so they do not become canonical identity.
+  confidence: firm
+  feeds_into: SKILL.md routing, schemas/triggers.yaml, README.md, docs/vocabulary.md, tests

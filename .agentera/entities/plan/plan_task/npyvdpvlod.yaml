@@ -1,0 +1,14 @@
+id: npyvdpvlod
+artifact: plan
+record:
+  name: Align evidence-context health current-state
+  depends_on:
+    - gaddiweivm
+    - lqryebqxjo
+  status: complete
+  evidence:
+    - _evidence_health_state reads health.date; prime --context inspektera matches hej latest audit
+  acceptance:
+    - GIVEN agentera prime --context inspektera --format json WHEN evidence health_state is read THEN audit_number and current_state use the same latest audit date as hej
+    - GIVEN audit age exceeds the 30-day evidence current-state threshold WHEN prime inspektera context is built THEN health_state current_state is stale with an ISO-age caveat referencing audit date
+  plan: wzxqnespyz

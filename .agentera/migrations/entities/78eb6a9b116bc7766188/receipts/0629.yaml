@@ -1,0 +1,13 @@
+id: yjwgjtbuwu
+artifact: plan
+record:
+  name: Upgrade-owned migration flow
+  depends_on:
+    - imbtwwmhwt
+    - exkdlolicu
+  status: complete
+  acceptance:
+    - GIVEN a legacy install is present WHEN upgrade runs in preview mode THEN no project or home state is changed and the planned app-home changes are explicit.
+    - GIVEN migration is approved WHEN upgrade applies the app-home migration THEN the active app model is coherent and repeated applies do not create duplicate or conflicting roots.
+    - GIVEN migration has completed WHEN doctor runs THEN it no longer reports migration_required for the migrated home.
+  plan: mpdielqjbe

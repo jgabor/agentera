@@ -1,0 +1,16 @@
+id: aswxdmroaf
+artifact: progress
+record:
+  timestamp: 2026-07-15 07:38
+  type: fix
+  phase: build
+  what: Corrected Task 4 plan-list detail metadata, YAML byte budgeting, and retrieval implementation introspection after independent audit.
+  inspiration: Independent Task 4 audit attempt task-4-audit-1-20260715.
+  discovered: JSON and YAML serialize the same plan page to different sizes, so byte-pressure retention must measure the requested encoder rather than reuse JSON sizing.
+  verified: "AC1: pnpm -C packages/cli exec vp test run test/state/planRetrieval.test.ts test/state/planTaskRetrieval.test.ts test/state/retrievalAuthority.test.ts test/state/planLifecycleContract.test.ts test/cli/schema.test.ts test/cli/help.test.ts passed 6 files/176 tests; active, archived, legacy, and mirrored entries require detail_availability. node packages/cli/dist/bin/agentera.js state plan list --limit 100 --format json measured 31757 UTF-8 bytes, returned 10, omitted 123, reason=serialized_output_byte_budget, required_fields=true, cursor=true. The same command with --format yaml measured 32319 bytes, returned 13, omitted 120, required_fields=true, cursor=true; focused YAML continuation exited 0 at 32671 bytes, returned 14, omitted 106. node packages/cli/dist/bin/agentera.js schema --format json reported plan_tasks=implemented, plans=implemented, experiments=pending. AC2: focused exact-get regressions returned full selected plans. AC3: focused legacy mirror, invalid, missing, malformed, and ambiguous tests passed. pnpm -C packages/cli test passed 180 files/1983 tests; pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; capability and capability-contract validation; check compact; git diff --check all passed."
+  next: Task 5 remains pending and must not begin without a new cycle.
+  context:
+    intent: Resolve every Task 4 audit-attempt-1 finding without changing plan storage or beginning experiment work.
+    constraints: Task 4 corrections only; preserve Cycle 802 and audit attempt 1; no experiments, package metadata, archive repair, amend, push, or publish.
+    unknowns: None for Task 4; requested-format serialization now owns each structured byte measurement.
+    scope: Plan list response metadata and budgeting, retrieval authority/introspection, parity and pressure tests, changelog, progress, and Task 4 status.

@@ -1,0 +1,12 @@
+id: avdimnaeao
+artifact: plan
+record:
+  name: Integration decision table and unified prime attention
+  depends_on:
+    - wctmnbpvwd
+  status: complete
+  acceptance:
+    - GIVEN project integration scenarios (artifacts-only, runtime-only, cross-major, needs-app-upgrade) WHEN summarizeProjectIntegration runs THEN outcome is selected from an explicit decision table with fixture coverage per scenario.
+    - GIVEN collectOrientationState builds attention WHEN upgrade guidance is needed THEN project_integration is the single upgrade-attention source and bundle-level attention forks do not contradict integration messaging.
+    - GIVEN primeAppWording and projectIntegrationWording tests WHEN they run THEN outdated, repair-needed, and cross-major scenarios assert one canonical narrative per scenario.
+  plan: nqyxvgtkhn

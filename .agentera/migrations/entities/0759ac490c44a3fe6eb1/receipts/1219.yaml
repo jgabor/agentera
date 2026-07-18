@@ -1,0 +1,16 @@
+id: nmaqkluyte
+artifact: progress
+record:
+  timestamp: 2026-07-13 12:39
+  type: feat
+  phase: build
+  what: Stored and composed current decision review state through an authority-derived ID-keyed overlay; decision updates preserve immutable archive and current projection bytes, hydration overlays only mutable satisfaction fields, Decision 53 review semantics remain explicit, and protected review pressure no longer blocks decision append storage.
+  inspiration: Active lossless archive-backed state storage plan Task 5 and state-storage authority published at 7d8c0d95; shared mutation publication from b122e79b.
+  discovered: The existing decision update rewrote current satisfaction and protected-overflow rejection also reached the throwing compactor; overlay publication can reuse the shared staged transaction, while overflow append must skip only that compaction attempt and expose pressure.
+  verified: "Focused checks: 155 tests across 9 files passed. Full pnpm -C packages/cli test: 166 files and 1622 tests passed. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli build passed. check validate capability-contract, discuss, and status passed; check validate artifact --artifact decisions --format json passed; check compact --format json passed with zero over-limit and protected-overflow counts."
+  next: Task 5 remains pending for evaluator review; do not mark it complete. Preserve missing/compacted decision caveats and explicit user-confirmed satisfaction authority. Do not broaden into projection policy, direct get, listing, migration, health, vision, profile, or release work.
+  context:
+    intent: Execute active plan Task 5 without closing the task or inferring satisfaction.
+    constraints: No vision, health, profile, unrelated TODO, version, publish, push, tag, or user-confirmation changes. Task 4 plan status remains included in the same commit.
+    unknowns: Task 5 evaluator may assess whether review pressure visibility should later be surfaced on additional bounded projection surfaces; Task 7 owns projection policy.
+    scope: packages/cli/src/state/decisionOverlay.ts; packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/state/write/transaction.ts; decision state hydration consumers; compaction result typing; focused overlay and writer tests; .agentera/plan.yaml; .agentera/progress.yaml

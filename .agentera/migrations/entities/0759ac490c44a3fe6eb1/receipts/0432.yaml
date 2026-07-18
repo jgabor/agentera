@@ -1,0 +1,14 @@
+id: xlrijjjrdv
+artifact: plan
+record:
+  name: Audit the delivered storage model
+  depends_on:
+    - hxnoywirle
+    - tikdncdewd
+    - sdjncrsjrp
+    - nqtnfdvhkh
+    - tfloqtvufl
+  status: pending
+  acceptance:
+    - GIVEN the delivered model, predecessor blockers, npm 12 failures, and any new findings WHEN a typed health audit evaluates architecture, contracts, bounded I/O, tests, compatibility, integrity, durability, and freshness THEN every dimension receives cited grades and each finding is explicitly resolved, blocked, or carried forward without inferred evidence.
+  plan: ijammdbhum

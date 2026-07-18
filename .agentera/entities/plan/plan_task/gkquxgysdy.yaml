@@ -1,0 +1,15 @@
+id: gkquxgysdy
+artifact: plan
+record:
+  name: Resume interrupted migration preparation
+  status: complete
+  depends_on:
+    - whmcsqbjhd
+    - puxejwplpf
+    - pslpwggyci
+  acceptance:
+    - GIVEN interruption while durable receipts are prepared before journal finalization WHEN the approved apply retries THEN it validates and resumes or safely replaces only the matching operation-owned preparation without new IDs or ambiguous authority.
+    - GIVEN approval cleanliness checks after an interrupted attempt WHEN operation-owned lock and preparation paths are present THEN only the exact approved operation paths are admitted; unrelated untracked or tampered content still refuses before effects.
+    - GIVEN a source or approval change WHEN stale preparation exists THEN cleanup is successor-safe and no canonical entity, marker, or unrelated evidence is removed.
+  evidence: Approval generation and apply now share one read-only strict preparation inspector. Git porcelain admits only the exact validated transient inventory; approval binds its path, operation, directory identity, receipt count, canonical inventory digest, and stale/same-operation classification. Apply revalidates before acceptance and under lock, with successor-safe identity checks. Verified by 53 focused and 2,668 full tests across 218 files, typecheck, and build.
+  plan: vllyohtcde

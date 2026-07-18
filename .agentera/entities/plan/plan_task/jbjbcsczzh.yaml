@@ -1,0 +1,14 @@
+id: jbjbcsczzh
+artifact: plan
+record:
+  name: Update tests for diagnostic output changes
+  depends_on:
+    - rxeqycvqpb
+    - tzbfnlawls
+  status: complete
+  acceptance:
+    - GIVEN a test asserting orientation JSON output WHEN the install is v2 THEN the test asserts install_track equals v2 and app.status is present
+    - GIVEN a test asserting doctor JSON output WHEN the install is v3 THEN the test asserts install_track equals v3 and no key contains the substring bundle
+    - GIVEN a test asserting orientation attention items WHEN coexistence is detected THEN the test asserts a coexistence warning is present in the attention list
+    - GIVEN the full test suite WHEN all tests execute THEN no test references the old field names in assertions or fixtures
+  plan: fedtqulqpx

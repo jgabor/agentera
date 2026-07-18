@@ -1,0 +1,14 @@
+id: mkgogkrmpi
+artifact: plan
+record:
+  name: Provide deterministic lifecycle migration
+  depends_on:
+    - rlyhxufooy
+  status: complete
+  acceptance:
+    - GIVEN legacy plans in current, archive, fixture, migrator, or docs-mapped locations WHEN migration runs THEN canonical values are produced without changing retained evidence.
+    - GIVEN migration dry-run WHEN invoked THEN proposed changes and collisions are reported without writing files.
+    - GIVEN repeated migration WHEN inputs are already canonical THEN the operation is an idempotent no-op.
+    - GIVEN archive ordering WHEN historical files are migrated THEN recency does not change merely because bytes or modification times changed.
+  evidence: packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts migrates docs-mapped current plans and archives in place, preserves all bytes beyond header.status, reports unfinished completed conflicts, and is idempotent; the v1 parser emits canonical values. planArtifacts.ts orders archives by created date. Verified 1,554 CLI tests, typecheck, lint (0 errors; 99 pre-existing warnings), build, built CLI dry-run, and compact.
+  plan: jcootkibwr

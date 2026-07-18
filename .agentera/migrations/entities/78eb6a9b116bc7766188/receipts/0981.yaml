@@ -1,0 +1,11 @@
+id: ctrwtukevw
+artifact: plan
+record:
+  name: Write 2.2.3 release evidence
+  depends_on:
+    - ldhvcncsyg
+  status: complete
+  acceptance:
+    - "GIVEN the changelog is read WHEN 2.2.3 is inspected THEN it names the patch scope: profilera staleness suggestion, all-runtime live smoke including Claude skip behavior, JS install-root contract generation, and Codex installed hook trust."
+    - GIVEN Agentera docs/progress/TODO state is queried WHEN release evidence is inspected THEN it agrees on 2.2.3 readiness without claiming tag, push, publication, package update, or installed bundle refresh.
+  plan: uintppiakl

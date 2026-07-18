@@ -1,0 +1,37 @@
+id: wbzfatnjbv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-15
+    status: archived
+    reviewed: 2026-07-15
+    critic_issues: 11 found, 10 addressed, 1 dismissed
+    title: "Plan: Authoritative lint budgets and advisory exits"
+  what: Move full-file and per-entry verbosity budgets into machine-readable owning authorities, remove duplicate and fallback budget constants, and make interactive lint advisory unless strict enforcement is requested.
+  why: Prevent schema and runtime drift while allowing automation to consume lint findings without false command failures.
+  constraints: Keep the CLI as validation authority, preserve strict publication validation, leave compaction retention behavior unchanged, and preserve finding payloads except for mode metadata and process exit behavior.
+  overall_acceptance: GIVEN an artifact lint finding WHEN lint runs interactively THEN default mode exits zero and strict mode exits nonzero, AND every enforced full-file or per-entry verbosity threshold comes from its machine-readable owner, AND internal strict validation remains blocking.
+  scope:
+    included:
+      - Machine-readable full-file and per-entry verbosity-budget authority
+      - Runtime consumption without duplicate or fallback budget constants
+      - Advisory and strict command exit semantics
+      - Focused regressions and project-state synchronization
+    excluded:
+      - Compaction thresholds and the uniform_10_40_50 retention policy
+      - Unrelated lint checks
+      - Broad artifact prose rewrites
+      - Release or version changes
+    deferred:
+      []
+  design: First distinguish authoritative budget states and validate their ownership. Then make lint derive verbosity behavior from those authorities while independently aligning interactive exits with advisory and strict modes. Finally verify both workstreams together and synchronize project state.
+  unknowns:
+    - question: Do all supported artifact authorities distinguish numeric word limits, explicit no-limit declarations, and non-word units without ambiguity?
+      affects_task: 1
+      resolve_by: Inventory supported authorities before migration. Numeric limits are enforceable, explicit no-limit or non-word-only declarations receive no word lint, and ambiguous declarations block migration pending an owner decision.
+  rejected:
+    - issue: Add a version-bump task for the fix-shaped work.
+      rationale: Planning context exposes no documentation versioning block, so the plan must not infer speculative release scope.
+  surprises:
+    []

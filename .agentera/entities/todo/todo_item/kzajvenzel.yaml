@@ -1,0 +1,6 @@
+id: kzajvenzel
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Add progress cycles tracking to more capabilities, not just `build`."

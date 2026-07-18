@@ -1,0 +1,12 @@
+id: bbawmwyvtd
+artifact: plan
+record:
+  name: Wire the invalid-input envelope across remaining CLI surfaces
+  depends_on:
+    - kswsoulsek
+  status: complete
+  acceptance:
+    - GIVEN the emitInvalidInput helper from task 1 WHEN wired into the remaining CLI surfaces (lint, backfill, state, schema, doctor, upgrade, report, verify, capability, help) THEN each surface emits the canonical envelope on --format json and the four-question template in text mode, with rc 2 for invalid input.
+    - GIVEN the parity test from task 1 WHEN extended to cover every CLI surface in the npm-cli-surface matrix THEN the envelope shape, exit code, and required keys match the oracle for every surface.
+    - GIVEN the existing tests that assert on plain-text error output for the wired surfaces (e.g. validate.test.ts, verify.test.ts) WHEN they coexist with the new json-mode envelope THEN they continue to pass without skipping; text-mode assertions stay on stderr text, json-mode assertions run against the envelope.
+  plan: buvbxpleps

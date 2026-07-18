@@ -1,0 +1,22 @@
+id: audujsqfiw
+artifact: plan
+record:
+  name: Establish objective-scoped experiment identity
+  depends_on:
+    - hsgvpyvmgx
+  status: complete
+  acceptance:
+    - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
+    - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.
+    - GIVEN scoped, renamed, zero, duplicate, and missing fixtures WHEN tested THEN valid identities pass and ambiguous publication fails.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task-5-audit-1-20260715
+      source: independent Task 5 acceptance audit
+      recorded_at: 2026-07-15 08:03
+      writer_command: agentera state plan record-evaluation
+  plan: diigykcdod

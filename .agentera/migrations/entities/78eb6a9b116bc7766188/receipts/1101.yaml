@@ -1,0 +1,39 @@
+id: wpkijuhlpy
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-08
+    status: archived
+    reviewed: 2026-05-08
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    revised: Tightened acceptance criteria to behavioral routing, retention, and release-state outcomes; removed wording that could imply failing tests or publication.
+    title: 2.2.2 Patch Release
+  what: Deliver the 2.2.2 patch release by closing the two open 2.2.x fixes, preserving 2.3.x feature scope, synchronizing release metadata, and recording verification evidence without claiming live install confidence or publication before explicit authorization.
+  why: The 2.2.1 release state is tagged locally and feature work has been retargeted to 2.3.x, so the remaining 2.2 lane should be a focused patch release. This preserves Decision 49 release targeting, follows the docs semver policy, and fixes two visible Agentera workflow defects before broader 2.3 work.
+  constraints: Keep 2.2.2 to fix-class work plus release evidence. Do not include Decision 47 app-home migration, Decision 48 agentera lint, Profilera corpus parity, optional Claude live smoke, generated JS contract work, package publication, remote push, installed app refresh, vision edits, or objective edits unless separately authorized. Convert only selected 2.2.x fix TODOs to exact 2.2.2 tags.
+  scope:
+    included:
+      - Exact 2.2.2 TODO targeting for the two fix items.
+      - Fresh-project hej repeat behavior and evidence.
+      - TODO Resolved compaction-on-write behavior and evidence.
+      - 2.2.2 version, changelog, docs, progress, and TODO release evidence.
+      - Local patch-release verification gates.
+    excluded:
+      - Decision 47 app-home migration.
+      - Decision 48 agentera lint.
+      - Profilera corpus parity and other 2.3.x feature work.
+      - Live install proof claims.
+      - Publication, push, or tag operations without explicit release authorization.
+    deferred:
+      - Profilera corpus parity.
+      - Optional Claude live smoke.
+      - Generated JavaScript install-root contract.
+      - All-runtime live install proof if a future release wants four-runtime live confidence.
+  design: "Execute the patch in evidence-first order: lock the exact 2.2.2 scope, fix the two user-visible workflow defects independently, then synchronize release metadata and verify the full suite. Keep acceptance criteria behavioral and let realisera choose implementation seams."
+  overall_acceptance:
+    - GIVEN the 2.2.2 release work is complete WHEN Agentera state is queried THEN only patch-scope fixes are included in the 2.2.2 lane.
+    - GIVEN the release artifacts are read WHEN 2.2.2 metadata is inspected THEN version, changelog, TODO, progress, and docs state agree.
+    - GIVEN no explicit publication authorization is present WHEN the plan completes THEN no remote push, package publication, installed app refresh, or release tag operation has occurred.
+  surprises:
+    []

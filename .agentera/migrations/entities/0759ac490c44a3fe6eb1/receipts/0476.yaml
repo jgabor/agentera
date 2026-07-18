@@ -1,0 +1,14 @@
+id: btigklmtzs
+artifact: plan
+record:
+  name: Deduplicate full-surface JSON measurement tests
+  depends_on:
+    - owzgvsqyqt
+  status: complete
+  acceptance:
+    - GIVEN the two primary-surface measure_json_output_surfaces tests WHEN they run in one session THEN measure_surfaces executes once via shared session-scoped fixture and both tests assert against cached results
+    - GIVEN the full pytest suite with xdist WHEN timed on the same machine class as baseline THEN wall time drops by at least 40 seconds versus the pre-change ~114s run without losing pass count
+    - GIVEN a measure_surfaces generation error WHEN either dependent test runs THEN the failure surfaces with the same diagnostic detail as today
+  evidence:
+    - tests/conftest.py primary_surface_measurements fixture; full suite 1230 passed in ~60s vs ~114s baseline
+  plan: bszbmkggss

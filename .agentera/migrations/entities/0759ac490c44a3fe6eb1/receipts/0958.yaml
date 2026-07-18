@@ -1,0 +1,13 @@
+id: hcpcitbmiw
+artifact: plan
+record:
+  name: Align update-channel authority for TS-only v3
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN references/cli/update-channels.yaml WHEN read THEN development channel resolves npm @next only and git/uvx @feat/v3 is absent or marked unsupported
+    - GIVEN UPGRADE.md and references/cli/vocabulary.md WHEN read THEN they state feat/v3 is npm-only, v2→v3 is one-way via npx @next, and uvx @main is stable Python 2.x
+    - GIVEN channel consumer tests in packages/cli/test/upgrade/ WHEN run THEN they pass without expecting uvx development resolution
+    - GIVEN TODO.md parity docs item WHEN checked THEN it can move to Resolved after this task lands
+  plan: ujeqmkkqkc

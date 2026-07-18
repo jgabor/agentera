@@ -1,0 +1,17 @@
+id: yldrwjzjsr
+artifact: plan
+record:
+  name: Add doctor output regressions
+  depends_on:
+    - dskktdnyyc
+  status: complete
+  acceptance:
+    - GIVEN a fresh app-home fixture WHEN doctor text is rendered THEN tests assert no required `Next:` block, no repair label, and a clear ready/no-required-action message.
+    - GIVEN update-needed and repairable fixtures WHEN doctor text and JSON are rendered THEN tests assert canonical vocabulary, any compatibility aliases, and preserved preview/apply/retry commands.
+    - GIVEN blocked fixtures and JSON output WHEN tests run THEN blocked safety guidance and JSON compatibility remain covered.
+  evidence:
+    - Added `test_doctor_up_to_date_text_has_no_required_next_block` in `tests/test_install_root_characterization.py`, asserting `up_to_date` JSON has no dry-run/apply commands or signals and rendered text includes `No action needed` without any `Next:`, preview, or repair wording.
+    - Added `test_doctor_actionable_text_and_json_keep_canonical_guidance`, covering `outdated` and `repair_needed` app-home fixtures with canonical JSON statuses, no legacy app-state values, preserved dry-run/apply/retry commands, correct ` --dry-run` spacing, and update-versus-repair text labels.
+    - Added `test_doctor_manual_review_text_and_json_block_automatic_repair`, covering manual-review JSON with null dry-run/apply commands and text that blocks automatic repair while preserving safer directory or checked `--force` guidance.
+    - Focused regression verification passed with `uv run pytest tests/test_install_root_characterization.py tests/test_bundle_freshness.py -q` (28 tests).
+  plan: zlfqmzwpfh

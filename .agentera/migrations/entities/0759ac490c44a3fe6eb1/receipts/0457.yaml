@@ -1,0 +1,13 @@
+id: nqomiffdvr
+artifact: plan
+record:
+  name: Fixture-backed benchmark verification
+  depends_on:
+    - wleyxkgmqi
+    - tovvqvvhoz
+  status: complete
+  acceptance:
+    - GIVEN fixture runtime stores and temporary `AGENTERA_HOME` are used WHEN benchmark tests run THEN consent refusal, successful fixture measurement, degraded or missing runtime handling, and aggregate JSONL schema are verified without reading real history.
+    - GIVEN benchmark tests run from the repository root WHEN outputs are inspected THEN no `benchmarks/`, corpus, intermediate, report, or metrics file is created under the repository, and `.gitignore` is not relied on as the privacy boundary.
+    - GIVEN existing startup analyzer tests run WHEN the benchmark wrapper is added THEN Decision 51 metric behavior remains covered by the focused analyzer suite.
+  plan: umxbxviebr

@@ -1,0 +1,11 @@
+id: jqyejuisvs
+artifact: plan
+record:
+  name: Add routing and execution vocabulary authority
+  depends_on:
+    - qqzmqxcehu
+  status: complete
+  acceptance:
+    - GIVEN the structured authority is loaded WHEN canonical concepts are inspected THEN it defines request-to-capability routing, next-action suggestion, Orkestrera task assignment, Realisera/Optimera worker launch, runtime subagent mechanism, and pre-spawn Git commit safety as separate concepts with preferred terms and forbidden ambiguous shortcuts.
+    - GIVEN compatibility surfaces are inspected WHEN the authority is read THEN it preserves qualified shipped identifiers and historical names such as `subagent_dispatch`, historical `pre-dispatch commit` records, and concrete fixture names where mechanical renames would break compatibility or evidence.
+  plan: pmsaaqnenw

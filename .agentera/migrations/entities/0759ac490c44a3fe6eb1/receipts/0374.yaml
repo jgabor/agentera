@@ -1,0 +1,13 @@
+id: wczbmrjuqx
+artifact: plan
+record:
+  name: Repo gate enforcement and regression suite
+  depends_on:
+    - vfzqltulwb
+    - tltyftkphb
+  status: complete
+  acceptance:
+    - GIVEN artifact files are changed by apply_patch, scripts, generated edits, direct edits, or runtime write/edit hooks WHEN the repository gate runs THEN over-limit compactable artifacts are detected regardless of edit path.
+    - GIVEN a gate failure is reported WHEN the user reads the message THEN it includes the exact safe check or fix command needed to repair artifact state.
+    - GIVEN focused regression tests run WHEN they cover check over-cap failure, check in-bounds success, fix mutation, explicit validator valid and invalid results, mapped paths, missing optional artifacts, gate invocation, and retained hook behavior THEN every changed boundary has at least one pass and one fail-path test.
+  plan: nlxcuhxfsh

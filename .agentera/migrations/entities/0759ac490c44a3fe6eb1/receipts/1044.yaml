@@ -1,0 +1,16 @@
+id: gnsluttgez
+artifact: plan
+record:
+  name: Synchronize contracts and verify current state
+  depends_on:
+    - bckuvgfboq
+    - ebwcpjajct
+    - thqojruljm
+    - elmuqasato
+  status: complete
+  acceptance:
+    - GIVEN the behavior is complete WHEN contracts, help, profile instructions, TODO, changelog when warranted, and progress are checked THEN they agree.
+    - GIVEN the final tree WHEN focused and full tests, typecheck, build, capability validation, and compaction run THEN every required gate passes.
+    - GIVEN oversized regression evidence WHEN closeout is reviewed THEN it records bounded artifact sizes and supported command outcomes.
+    - GIVEN the v3 cutover hold WHEN work closes THEN no release occurs and no suite version exceeds 3.0.0.
+  plan: lmggziyygs

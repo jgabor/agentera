@@ -1,0 +1,22 @@
+id: zybubbzroj
+artifact: plan
+record:
+  name: Establish stable plan identity
+  depends_on:
+    - hsgvpyvmgx
+  status: complete
+  acceptance:
+    - GIVEN a current plan WHEN archived THEN its identity remains unchanged and lifecycle provenance changes explicitly.
+    - GIVEN legacy plans WHEN identity is derived THEN results are deterministic without rewriting history; collisions return structured ambiguity.
+    - GIVEN valid transition and collision fixtures WHEN tested THEN identity continuity passes and ambiguous identity fails safely.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Cycle 800 verification commands omit required packages/cli working-directory context and are not independently runnable from repository root.
+    provenance:
+      attempt_id: task-3-audit-2-20260714
+      source: independent Task 3 corrective evidence audit
+      recorded_at: 2026-07-14 23:46
+      writer_command: agentera state plan record-evaluation
+  plan: diigykcdod

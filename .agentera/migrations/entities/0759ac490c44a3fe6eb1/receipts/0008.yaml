@@ -1,0 +1,9 @@
+id: gwygbfovay
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: "D54 app-metadata hard-rename stands with D58 governing the 3.0 live boundary: any transitional compatibility aliases from D54 are migration and upgrade-detection inputs only, not supported live protocol aliases after 3.0. Reconciled in discuss satisfaction review on 2026-05-23."
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-23
+  decision: rvwyhnuabo

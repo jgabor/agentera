@@ -1,0 +1,15 @@
+id: uzvjrxarxm
+artifact: plan
+record:
+  name: Align startup guidance without bloat
+  depends_on:
+    - kccujmzsvw
+  status: complete
+  acceptance:
+    - GIVEN `hej --format json --capability-context <capability>` returns fallback guidance WHEN artifact discovery is needed THEN it points to the structured discovery surface before any raw artifact read.
+    - GIVEN the `hej` composite output remains the startup envelope WHEN discovery is added THEN the payload stays bounded and does not duplicate every artifact field unless benchmark evidence justifies it.
+    - GIVEN dispatcher or capability prose mentions `.agentera/docs.yaml` path checks WHEN guidance is updated THEN it explains the CLI-first artifact-location contract and keeps raw docs reads as write targets or last-resort diagnostics.
+  evidence:
+    - Updated `skills/agentera/SKILL.md`, Planera, Orkestrera, and Dokumentera prose to use the CLI artifact-location contract before raw docs/path reads, with raw docs access reserved for writes, validation, corruption diagnostics, or unavailable/incomplete CLI discovery.
+    - Updated closeout/evaluation fallback command surfaces to use `agentera query --list-artifacts --format json` without duplicating every artifact record in the `hej` startup envelope.
+  plan: qzjgenwloi

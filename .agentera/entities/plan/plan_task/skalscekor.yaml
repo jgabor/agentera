@@ -1,0 +1,13 @@
+id: skalscekor
+artifact: plan
+record:
+  name: Graceful degraded row for invalid compactable YAML roots
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a compactable YAML artifact whose root is a list/scalar/malformed WHEN `agentera compact --mode check` runs THEN it exits non-zero with an action=error row naming the artifact and reason, emitting no traceback
+    - GIVEN the same corrupt artifact WHEN `agentera gate` runs THEN it surfaces the same error row and non-zero exit instead of raising
+    - GIVEN compute_compaction_status WHEN any compactable YAML (including experiments.yaml) has a non-mapping root THEN it returns an error-classified status while still classifying the remaining artifacts
+    - GIVEN a healthy project WHEN check/gate run THEN existing pass output and exit code 0 are unchanged
+  plan: krzpcqqgpt

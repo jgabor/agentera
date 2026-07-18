@@ -1,0 +1,9 @@
+id: ojlcytnwnb
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: prime --route retired (CLI rejects --route as unrecognized argument); routeEngine.ts deleted; next_action evolved into ranked recommended+alternatives structure consumed live during this session — prime output returned next_action.object, next_action.capability, and next_action.alternatives as designed. LLM-primary routing validated in practice.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-07-10
+  decision: ukmkyjkdup

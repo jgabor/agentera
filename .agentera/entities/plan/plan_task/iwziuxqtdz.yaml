@@ -1,0 +1,14 @@
+id: iwziuxqtdz
+artifact: plan
+record:
+  name: Benchmark context inventory and state contract
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - Inventory completed CLI-first through Orkestrera/plan/docs/todo/progress and decisions fallback state. Decision 51 and Decision 52 define the startup benchmark metric, retention files, manual-only benchmark rule, and privacy boundary. Implementation treated 2.3.10 plan archival as already handled.
+  acceptance:
+    - GIVEN docs, decisions, TODO, completed 2.3.10 plan state, and benchmark contracts are inventoried CLI-first WHEN inventory completes THEN implementation evidence records included state, missing state, benchmark file sources, user-local privacy boundaries, and last-resort raw fallback rules.
+    - GIVEN the completed 2.3.10 plan is archived during Planera activation WHEN implementation begins THEN implementation scope treats archival as already handled and does not make archive creation part of any product task.
+    - GIVEN user-local benchmark evidence may be available, absent, malformed, empty, degraded, or non-comparable WHEN the contract is specified THEN each case has an explicit incomplete or caveated outcome without reading real runtime stores or running the benchmark.
+  plan: dlmrrzhsvy

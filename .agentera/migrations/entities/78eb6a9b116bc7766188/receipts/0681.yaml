@@ -1,0 +1,11 @@
+id: lwadgujfce
+artifact: plan
+record:
+  name: Clean planera remnants in packages/cli/src/
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN planera renamed to plan, WHEN rg -i 'planera' runs against packages/cli/src/ excluding schema version strings, THEN zero matches remain except agentera.planeraStartup.v1
+    - AND vitest run passes AND tsc --noEmit clean
+  plan: ptxzdrxixt

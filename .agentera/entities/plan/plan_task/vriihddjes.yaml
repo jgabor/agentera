@@ -1,0 +1,13 @@
+id: vriihddjes
+artifact: plan
+record:
+  name: Rename Bundle Status To Doctor
+  depends_on:
+    - rlrylrnvwj
+  status: complete
+  acceptance:
+    - GIVEN a user runs the Agentera self-check command WHEN the CLI is inspected THEN `agentera doctor` is the primary command for Agentera CLI, install, bundle, and runtime status
+    - GIVEN `agentera bundle-status` is invoked WHEN command parsing runs THEN it is intentionally unavailable and no compatibility alias is exposed
+    - GIVEN project artifact health is needed WHEN users inspect codebase or artifact quality THEN `agentera health` and inspektera remain the health and audit surfaces rather than doctor
+    - GIVEN repository references are reviewed WHEN the rename is complete THEN current docs, tests, scripts, and help text use `doctor`, while historical references are either preserved as history or explicitly scoped
+  plan: xprbindgbm

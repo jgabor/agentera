@@ -1,0 +1,12 @@
+id: giczrlufhj
+artifact: plan
+record:
+  name: Wire vp lint and vp fmt scripts; record lint baseline; gate on non-regression not zero-findings
+  depends_on:
+    - lcacsdnmxb
+  status: complete
+  acceptance:
+    - GIVEN `packages/cli/vite.config.ts` has `lint` and `fmt` blocks mirroring `packages/web/vite.config.ts` patterns WHEN `vp lint src/` and `vp fmt src/` run THEN both commands execute without crashing; findings are recorded as a baseline file.
+    - GIVEN `package.json#scripts.lint` and `scripts.fmt` updated to `vp lint` and `vp fmt` WHEN `pnpm -C packages/cli run lint` runs THEN it exits with the same pass/fail behavior it had at baseline (non-regression; not zero-findings).
+    - GIVEN pre-existing lint findings WHEN this task closes THEN they are listed in TODO.md as a follow-up `[chore:3.0.0]` item, not addressed in-scope.
+  plan: mfpxnhogqf

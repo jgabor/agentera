@@ -1,0 +1,11 @@
+id: muurjbnvxk
+artifact: plan
+record:
+  name: OpenCode corpus parity
+  depends_on:
+    - pzpwobldbu
+  status: complete
+  acceptance:
+    - GIVEN OpenCode local conversations exist WHEN extraction runs THEN ordered turns and decision-rich prompts normalize like existing runtimes.
+    - GIVEN OpenCode storage is unavailable WHEN extraction runs THEN OpenCode degrades explicitly and other runtimes continue.
+  plan: defvwzwnfs

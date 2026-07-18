@@ -1,0 +1,22 @@
+id: mvumniyosj
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-17
+    status: complete
+    title: Helper Script Classification Policy
+  what: Make `agentera` the documented and tested entry point for user-facing helper workflows, while classifying direct helper scripts as private support modules, backward-compatible maintainer seams, or explicit local-only analysis surfaces.
+  why: The remaining 2.5.x helper cleanup should not remove useful direct helpers, but it must stop presenting them as the default path for normal users and agents. A documented classification policy lets future cleanup keep public CLI workflows stable without hiding legitimate maintainer/debug seams.
+  constraints: Retain direct script compatibility for validate, verify, usage, lint, doctor, upgrade, setup, smoke, eval, migration, and compaction seams where tests or maintainer workflows need them. Keep internal registry/support modules private. Keep corpus generation internal behind `agentera stats refresh`. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - User-facing documentation routes through `agentera` namespaces first.
+    - Direct helper scripts remain available only as documented maintainer, backward-compatible, internal, generator, or local-analysis seams.
+    - The remaining 2.5.x TODOs are closed without changing runtime config, package-manager state, version files, or protected artifacts.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

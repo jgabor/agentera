@@ -1,0 +1,39 @@
+id: mfpxnhogqf
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-28
+    status: archived
+    reviewed: 2026-06-28
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: "Plan: Upgrade vitest 2→4 and adopt the Vite+ toolchain for the CLI"
+  what: |
+    Two-phase toolchain modernization of `packages/cli`. Phase 1 bumps the vitest devDep from `^2.1.8` to `^4.1.0` and drops the v4-removed `minWorkers` field, keeping the worker-budget config that prevents OOM under multi-agent test runs. Phase 2 adopts the Vite+ (`vp`) entry point already used by `@agentera/web` and `@agentera/mobile`: the test script moves from `vitest run` to `vp test run`, vitest config migrates from `vitest.config.ts` to a `vite.config.ts` ship under `vite-plus`, and lint/fmt scripts are wired through `vp lint`/`vp fmt` against a recorded baseline.
+  why: |
+    vitest 2.x is two majors behind stable (v4.1.7) and exposes the CLI to regressions already fixed upstream. The workspace is split-brain: web/mobile run on `vite-plus ^0.1.22` (which bundles vitest 4), while the CLI still pins vitest 2.x as a direct devDep. Consolidating onto `vp` removes the double-knowledge cost and aligns the CLI with the ecosystem direction stated in `AGENTS.md` (web/mobile DX already use `vp`). No behavior change to the shipped CLI; runtime output and JSON shapes stay byte-stable.
+  constraints: |
+    No behavior change. The shipped CLI command surface, JSON output shapes, exit codes, and artifact shapes stay byte-stable where asserted by fixtures. The `tsc` build stays in place; `vp pack --exe` (single-binary replacement for `bun build --compile`) is explicitly out of scope — tracked as deferred phase 3b. Lefthook `bunx markdownlint`/`bunx prettier` replacement is deferred phase 3a. No version-bump task — toolchain-only work does not bump per DOCS semver policy unless packaging surfaces shift. Branch: `feat/v3`. No `engines.node` change: vp test does not require Node 25+ (only `vp pack --exe` does, which is out of scope).
+  scope:
+    included:
+      - "`packages/cli/package.json` vitest devDep bump and vite-plus addition."
+      - "`packages/cli/vitest.config.ts` migration to `packages/cli/vite.config.ts` under `vite-plus`."
+      - "`packages/cli` test/lint/fmt scripts moved to `vp test run`/`vp lint`/`vp fmt`."
+      - "`scripts/precommit-vitest.sh` test invocation updated to stay consistent."
+      - Verifying `.github/workflows/ci.yml` CLI test job still passes.
+    excluded:
+      - "`vp pack --exe` single-binary migration (phase 3b; requires Node 25.7+ build host)."
+      - Lefthook `bunx` → `vp` migration for markdownlint/prettier (phase 3a).
+      - "`scripts/single-binary.sh` and `docs/packaging/v3-packaging.md`."
+      - Web/mobile packages (already on vp).
+      - CLI `tsc` build replacement (build stays `tsc -p tsconfig.json`).
+      - Fixing all pre-existing lint findings surfaced by `vp lint`.
+    deferred:
+      - "Phase 3a: lefthook `bunx` → `vp` for repo-wide docs/config formatting."
+      - "Phase 3b: `bun build --compile` → `vp pack --exe` (gated on Node 25.7+ build host decision)."
+      - Addressing the full `vp lint` baseline if it surfaces a large count of findings.
+  design: |
+    Phase 1 lands first in isolation so the vitest 4 upgrade is reviewable on its own (small blast radius, easy rollback). The v4 migration guide was cross-checked against this codebase: no `poolOptions`, no `workspace`, no browser provider, no snapshots, no `vi.fn` constructor/getter usage that the v4 mocking changes affect. The only edit needed beyond the version bump is dropping `minWorkers: 1` (removed in v4 per the migration guide). `experimentalFsModuleCache` stays (still valid in v4.1.7 docs). Phase 2 then migrates the entry point: vitest config moves into `vite.config.ts` under `vite-plus`'s `defineConfig` (mirroring `packages/web/vite.config.ts`), the direct `vitest` devDep is dropped (vite-plus provides vitest transitively), and `test/lint/fmt` scripts move to `vp`. Lint is wired with a recorded baseline — the task does not attempt to fix every pre-existing finding; non-regression is the gate. The pre-commit targeted runner is updated in the same change so its filename-filter semantics stay consistent with `vp test run` forwarding to vitest.
+  overall_acceptance: |
+    GIVEN `packages/cli` WHEN its toolchain is inspected THEN vitest runs at `^4.1.0` (directly or transitively via `vite-plus`), the test script invokes `vp test run`, `vite.config.ts` is the single config ship under `vite-plus`, and `lint`/`fmt` scripts use `vp`. GIVEN the full vitest suite WHEN run from a clean build THEN 1145/1145 tests pass with no fixture drift. GIVEN the compaction gate WHEN run via the built CLI THEN it passes. GIVEN pre-commit and CI WHEN the test step runs THEN both use the new `vp test run` entry point and pass. GIVEN the worker- budget config WHEN multiple agents run the suite concurrently THEN peak RSS stays near 2.4 GiB per run (no regression vs the v2 baseline that motivated the cap).
+  surprises: "vitest 4 enforces the 5000ms default testTimeout on blocking spawnSync/DB tests where v2 did not — the extractCorpusParity Python-probe tests (~9-16s legit) timed out at 5000ms on v4 despite passing on v2. Unanticipated by the design note's cross-check (which covered pool/workspace/minWorkers/mock/snapshot but not timeout-enforcement tightening). Fixed in-scope by adding a global testTimeout: 30_000 to vitest.config.ts (restores v2 effective behavior with 2x headroom); no test file edits needed. Task 3 surprise: vp lint exits 0 even with warnings present (Oxlint treats warnings as non-fatal by default) — non-regression gate is exit 0 plus finding count stable (baseline 111 warnings / 0 errors over 339 files, unscoped `vp lint` matching `scripts.lint`). The first attempt recorded a src/-scoped baseline (101 warnings / 190 files) that did not match what `pnpm -C packages/cli run lint` actually produces; recaptured the unscoped baseline in the amend. `vp fmt --check src/` exits 1 (prettier non-zero on format issues); non-regression uses `vp fmt` in place (exit 0), not `--check`. A future cleanup pass promoting warnings to errors would change this; deferred as a [chore:3.0.0] TODO."

@@ -1,0 +1,14 @@
+id: vpgxfnvicr
+artifact: plan
+record:
+  name: Validate local-only measurement run
+  depends_on:
+    - ucibtrdeqm
+    - vsimpffzam
+    - klzjdiqgfi
+  status: complete
+  acceptance:
+    - GIVEN the measurement run completes WHEN validation runs THEN CLI reads or raw-artifact fallbacks, YAML parses, report privacy checks, report field checks, and `git diff --check` pass.
+    - GIVEN generated report files exist WHEN git status is checked THEN they are outside the repository or otherwise untracked/ignored and are not staged or committed.
+    - GIVEN protected state is checked WHEN validation completes THEN `.agentera/vision.yaml`, objective state, version-bearing files, and shell startup files are unchanged.
+  plan: idljacvake

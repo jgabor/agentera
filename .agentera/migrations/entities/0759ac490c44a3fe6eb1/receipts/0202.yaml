@@ -1,0 +1,155 @@
+id: skfqmedwpd
+artifact: health
+record:
+  date: 2026-07-14
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - test_health
+    - dependency_health
+    - artifact_freshness
+    - security_hygiene
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 10
+    filtered_by_confidence: 0
+  trajectory: stable; predecessor defects are resolved in live surfaces and only declared non-blocking caveats carry forward
+  grades:
+    architecture_alignment: A
+    pattern_consistency: A
+    coupling_health: A
+    test_health: A
+    dependency_health: B
+    artifact_freshness: B
+    security_hygiene: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: "Contract ownership and integrity are aligned: the active authority is loaded by runtime code, and exact apply revalidates project, HEAD, reachability, candidate bytes, and immutable target."
+      findings:
+        - heading: Authority owns the rollout contract
+          severity: info
+          confidence: 99
+          location: references/artifacts/state-storage-authority.yaml:8-19; packages/cli/src/state/gitBackfillAuthority.ts:126-168
+          evidence: The authority declares one source rule and the runtime rejects unsupported schema/status before projecting limits, selectors, guarantees, and recovery metadata.
+          impact: No current contract-ownership or integrity drift was found within the declared rollout scope.
+          suggested_action: Keep the authority as the only live contract source; do not add parallel selector or limit maps.
+          verify_command: rg -n 'single_source_rule|active_authority|apply_requires|maximum_(limit|commits|history_bytes)' references/artifacts/state-storage-authority.yaml packages/cli/src/state/gitBackfillAuthority.ts
+        - heading: Apply-time integrity checks are independent of preview
+          severity: info
+          confidence: 99
+          location: packages/cli/src/state/gitBackfill.ts:695-730
+          evidence: Revalidation checks the captured HEAD, allowed-ref reachability, tree blob identity, content hash, parsed stable ID, and ending HEAD immediately before publication.
+          impact: A changed local candidate is refused without archive publication or projection mutation.
+          suggested_action: Retain the current revalidation sequence and its candidate_changed/changed_head diagnostics.
+          verify_command: pnpm -C packages/cli exec vp test run test/state/gitBackfill.test.ts
+    - name: pattern_consistency
+      grade: A
+      summary: "Bounded I/O and retry behavior are consistent across authority, output, help, and tests: 100 results, 500 history units, 16 MiB history bytes, allowed refs only, and explicit omission metadata."
+      findings:
+        - heading: Local Git traversal and output remain bounded
+          severity: info
+          confidence: 99
+          location: references/artifacts/state-storage-authority.yaml:421-498; packages/cli/src/state/gitBackfill.ts:272-280,582-600; packages/cli/src/state/gitBackfillOutput.ts:228-245
+          evidence: The authority and runtime expose the same 100/500/16777216 limits, one shared history budget, one-second/4 MiB Git probes, allowed HEAD/heads/tags refs, and omitted_count/result_limit output.
+          impact: The declared local-operator bounded-I/O requirement is satisfied without remote or custom-ref traversal.
+          suggested_action: Carry the existing bounds and exact-selector continuation guidance into later release evaluation.
+          verify_command: pnpm -C packages/cli exec vp test run test/state/gitBackfill.test.ts test/cli/help.test.ts test/cli/schema.test.ts
+        - heading: Retry behavior is immutable and idempotent
+          severity: info
+          confidence: 99
+          location: packages/cli/src/state/archivePublication.ts:66-103,209-258; packages/cli/test/state/gitBackfill.test.ts:222-248
+          evidence: Exclusive publication preserves existing bytes, identical publication returns replay, and differing canonical content raises immutable conflict; direct apply converges on replay without projection changes.
+          impact: Retries do not duplicate, overwrite, or synthesize a second archive identity.
+          suggested_action: Preserve immutable equality and replay semantics; no receipt, token, ledger, or daemon is required under this threat model.
+          verify_command: pnpm -C packages/cli exec vp test run test/state/archivePublication.test.ts test/state/gitBackfill.test.ts
+    - name: coupling_health
+      grade: A
+      summary: "Compatibility is explicit and migration remains independent: legacy/current/summary/corrupt states are classified without inference, while optional Git enrichment is a separate operator invocation."
+      findings:
+        - heading: Migration compatibility preserves provenance and no-inference
+          severity: info
+          confidence: 98
+          location: references/artifacts/state-storage-authority.yaml:634-665,697-703; packages/cli/src/state/migrationEnrichment.ts:13-24
+          evidence: The compatibility window classifies legacy full, summary, ambiguous, corrupt, unsupported, and non-Git cases; the migration handoff declares separate explicit enrichment and remote_contact=false.
+          impact: Missing fields, identities, satisfaction, and history are not invented, and migration completion does not depend on Git.
+          suggested_action: Keep compatibility classification and separate enrichment ownership unchanged.
+          verify_command: pnpm -C packages/cli exec vp test run test/state/legacyMigration.test.ts test/state/simpleMigrationParity.test.ts
+    - name: test_health
+      grade: A
+      summary: Evidence covers contract ownership, bounded traversal, integrity, retries, compatibility, durability, and no-remote behavior with focused tests and current CLI gates.
+      findings:
+        - heading: Requested behavior has reproducible evidence
+          severity: info
+          confidence: 99
+          location: packages/cli/test/state/gitBackfill.test.ts:142-186,188-272,386-441,468-549; packages/cli/test/cli/primeTask3Bounds.test.ts:139-177
+          evidence: The focused current gate passed 10 files and 111 tests, including real-ref call evidence, direct apply/replay, changed candidates, shared 500-unit history bounds, malformed history provenance, and bounded startup output.
+          impact: The audit has current behavioral evidence rather than relying only on prose or historical progress claims.
+          suggested_action: Use the same focused gate when Task 4 evaluates release readiness.
+          verify_command: pnpm -C packages/cli exec vp test run test/state/gitBackfill.test.ts test/state/archiveRecovery.test.ts test/state/archivePublication.test.ts test/state/durability.test.ts test/state/legacyMigration.test.ts test/state/migrationAuthority.test.ts test/state/simpleMigrationParity.test.ts test/cli/help.test.ts test/cli/schema.test.ts test/cli/primeTask3Bounds.test.ts
+    - name: dependency_health
+      grade: B
+      summary: Compatibility is healthy for the audited runtime, with one declared npm 12 package-output caveat reserved for Task 4 release evaluation.
+      findings:
+        - heading: npm 12 packaging JSON parsing remains a release caveat
+          severity: info
+          confidence: 100
+          location: packages/cli/test/packaging/prepack.test.ts:76-89,153-191; .agentera/plan.yaml:23-26,74-81
+          evidence: npm --version is 12.0.0; the full suite passed 1793 of 1798 tests, with exactly five failures at JSON.parse of npm pack --dry-run --json output.
+          impact: Task 4 package preparation cannot claim a clean release gate until this demonstrated compatibility boundary is repaired or explicitly blocks. It is outside Task 3 behavior.
+          suggested_action: Carry this exact five-test caveat to Task 4; do not broaden Task 3 or repair packaging here.
+          verify_command: npm --version; pnpm -C packages/cli test
+    - name: artifact_freshness
+      grade: B
+      summary: Durability is loss-preserving but degraded for five known progress records; lifecycle state is current enough for Task 3 and remains explicitly pending where orchestration owns it.
+      findings:
+        - heading: Five progress archive recoveries are safely refused
+          severity: info
+          confidence: 100
+          location: .agentera/progress.yaml:70-80; packages/cli/test/state/archiveRecovery.test.ts:89-114
+          evidence: Current compact reports progress:745 through progress:749 as not_found, attempted=5, verified=0, retained_full=5, refused_count=5; each refusal keeps the full projection entry and emits recovery metadata.
+          impact: Durability is degraded and summarization is refused, but no entry is silently dropped or rewritten; this is non-blocking for Task 3.
+          suggested_action: Carry the caveat to the owning archive-recovery work; never force summary publication without validated numbered archives.
+          verify_command: node packages/cli/dist/bin/agentera.js check compact --format json
+        - heading: Malformed progress fixture remains a fixture-only caveat
+          severity: info
+          confidence: 100
+          location: packages/cli/test/fixtures/repo-state/README.md:14-18; packages/cli/test/helpers/useFixtureProject.test.ts:69-75
+          evidence: The invalid-progress-yaml fixture is intentionally broken YAML and its test asserts error classification; prior progress records that formatter caveat rather than treating it as product state corruption.
+          impact: Formatting-wide checks remain caveated by the intentional fixture, while the targeted archive and migration behavior remains testable.
+          suggested_action: Preserve the fixture and carry the formatting caveat; do not change it during this audit.
+          verify_command: pnpm -C packages/cli exec vp test run test/helpers/useFixtureProject.test.ts
+        - heading: Decision 53 and startup caveats remain explicit
+          severity: info
+          confidence: 100
+          location: references/artifacts/state-storage-authority.yaml:289-295,661-665; .agentera/progress.yaml:97-100
+          evidence: Decision satisfaction inference remains forbidden; missing or unconfirmed satisfaction stays review-needed, and stale/missing startup state is reported as a caveat rather than refreshed or inferred.
+          impact: Historical incompleteness is visible without changing protected decision, profile, vision, or startup state.
+          suggested_action: Carry Decision 53, projection policy, and stale/missing startup caveats unchanged.
+          verify_command: npx -y agentera@next prime --context audit --format json
+    - name: security_hygiene
+      grade: A
+      summary: "The declared local-operator threat model is respected: meaningful controls are explicit intent, revalidation, immutability, bounds, local-only refs, retry safety, and traceability; hostile-process defenses are out of scope."
+      findings:
+        - heading: No speculative authorization requirement was introduced
+          severity: info
+          confidence: 100
+          location: .agentera/plan.yaml:8-21; packages/cli/test/state/simpleMigrationParity.test.ts:57-69
+          evidence: The live plan excludes secrets, HMAC, tokens, expiry, ledgers, daemons, services, remote access, and hostile-local-actor defenses; live enrichment surfaces contain none of those retired terms.
+          impact: The implementation remains simple and correct for a local operator without inventing a new product requirement.
+          suggested_action: Do not add stronger authorization until a real multi-user or remote trust boundary exists.
+          verify_command: pnpm -C packages/cli exec vp test run test/state/simpleMigrationParity.test.ts
+  trends:
+    comparison_target: Audit 29
+    improved: Task 1 and Task 2 predecessor failures are resolved in live surfaces; plan preserves both failure histories and current pass evaluations.
+    degraded: No new Task 3 degradation; only the known npm 12 release caveat and five loss-preserving archive refusals remain.
+    stable: Authority ownership, bounds, local-only Git, revalidation, immutable publication, retries, compatibility classification, Decision 53, and projection policy.
+    new_findings: No current P0 or P1 finding within the declared local-operator scope.
+    resolved: Task 1 rewritten-history/shared-budget drift and Task 2 explicit-project/lossless-projection drift are resolved by current code and parity evidence.
+    carried_forward: Task 4 npm 12 parser caveat; progress:745-749 archive not_found refusals; malformed fixture; stale/missing startup caveats; Decision 53 review semantics.
+  patterns:
+    - One active authority is loaded and projected into runtime, schema, help, migration handoff, bundle, and tests.
+    - Migration owns local compatibility publication; optional Git enrichment is explicit, bounded, non-remote, and non-blocking.
+    - Immutable archives are authoritative; projections and output expose omission/recovery metadata rather than hiding loss.

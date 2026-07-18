@@ -1,0 +1,12 @@
+id: tthofuukcx
+artifact: plan
+record:
+  name: Interpret measurement recommendation
+  depends_on:
+    - loufqwdxlh
+  status: complete
+  acceptance:
+    - GIVEN the report has sufficient evidence WHEN interpretation runs THEN it records runtime coverage, state-gathering sequence count, raw-after-CLI artifact triggers, threshold rationale, recommendation action, and confidence caveats using bounded aggregate values only.
+    - GIVEN evidence is insufficient WHEN interpretation runs THEN it records that implementation must not proceed and why the evidence is insufficient.
+    - GIVEN the recommendation selects envelope, targeted guidance, or closure WHEN interpreted THEN the reasoning cites measured aggregate triggers rather than transcript excerpts or local paths.
+  plan: qkkryvdjxx

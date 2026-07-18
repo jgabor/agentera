@@ -1,0 +1,15 @@
+id: ujqqxrambp
+artifact: plan
+record:
+  name: Enforce canonical plan lifecycle writes
+  depends_on:
+    - mkgogkrmpi
+  status: complete
+  acceptance:
+    - GIVEN a newly written plan WHEN schema validation runs THEN `open` and `complete` are accepted and `active`, `completed`, and unknown values are rejected.
+    - GIVEN task status fields WHEN the plan-level enum changes THEN their existing vocabulary and behavior remain unchanged.
+    - GIVEN a legacy current plan during the bounded transition WHEN it is archived or replaced THEN normalization prevents the writer from becoming unusable.
+    - GIVEN canonical serialization WHEN output is inspected THEN no persisted field duplicates the positional meaning of `active`.
+    - GIVEN plan-level or task-level status mutation WHEN its contract is explained or invoked THEN valid values and operations are context-specific so lifecycle values cannot be applied to tasks or task values to plans.
+  evidence: packages/cli/src/state/write/operations.ts separates task set-status from set-plan-status; transaction.ts canonicalizes legacy lifecycle values before publication. Verified 1,556 CLI tests, typecheck, build, capability-contract validation, and built CLI contract smoke.
+  plan: jcootkibwr

@@ -1,0 +1,25 @@
+id: bjavrpwnjt
+artifact: plan
+record:
+  name: Deliver a bounded default decision brief
+  depends_on:
+    - vuhyzxretc
+  status: complete
+  acceptance:
+    - GIVEN returning, fresh, empty, missing, and degraded project fixtures WHEN bare prime runs THEN it reports the mode, work summary, attention, next action, and startup completeness needed for routing.
+    - GIVEN accumulated plans, history, and lifecycle findings WHEN bare prime is serialized as pretty UTF-8 JSON with a trailing newline THEN stdout is at most 12000 bytes and diagnostics remain on stderr.
+    - GIVEN state is missing versus present-but-empty WHEN an agent reads the brief THEN the two conditions remain behaviorally distinguishable.
+    - GIVEN omitted rich state WHEN an agent follows the named recovery command THEN the current authoritative detail is available without raw artifact access.
+    - GIVEN one passing and one over-budget fixture per bounded unit WHEN focused tests run THEN the byte gate accepts the former and rejects the latter.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task-3-repair-dashboard-20260716
+      source: User-authorized reopen; Task 3 dashboard repair verified by focused and full repository gates
+      recorded_at: 2026-07-16 14:18
+      writer_command: agentera state plan record-evaluation
+  evidence: agentera state progress get --number 852 --format json
+  plan: lpjgrqdyzs

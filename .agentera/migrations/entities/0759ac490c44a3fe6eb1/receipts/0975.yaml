@@ -1,0 +1,16 @@
+id: uqbomivvec
+artifact: plan
+record:
+  name: Rename issues to todo in prime output construction, text label, and field lists
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN agentera prime --format json runs WHEN the payload is parsed THEN payload.todo exists and equals the severity-counts object (critical/degraded/normal/annoying) AND payload.issues is absent from the primary path
+    - "GIVEN agentera prime runs in text mode WHEN the briefing renders THEN the summary line reads todo: critical=N | degraded=N | normal=N | annoying=N (not issues:)"
+    - GIVEN the source_contract fields list in text output WHEN inspected THEN it lists todo where issues previously appeared
+    - GIVEN agentera prime --format json --fields todo WHEN run THEN the selected payload contains only command, status, and todo (plus required sparse fields) AND the exit code is 0
+    - GIVEN STATUS_STRUCTURED_FIELDS in orientationOutput.ts and schema.ts WHEN inspected THEN both contain todo and neither contains issues as the canonical entry
+    - GIVEN STARTUP_AVAILABLE_STATE_FIELDS in startupCompletenessContract.ts WHEN inspected THEN it lists todo (available_state) and not issues
+    - GIVEN the build WHEN run via pnpm -C packages/cli build THEN it succeeds with no type errors
+  plan: ofscerhlpp

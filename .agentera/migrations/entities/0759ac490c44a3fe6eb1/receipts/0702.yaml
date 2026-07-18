@@ -1,0 +1,14 @@
+id: zxmtbfoyvl
+artifact: plan
+record:
+  name: Align schemas, help, documentation, and bundles
+  depends_on:
+    - nldqclpodg
+    - scqyocxxwz
+    - jnghcdjqzo
+  status: pending
+  acceptance:
+    - GIVEN the delivered migration and enrichment model WHEN authority, schema, help, upgrade guidance, references, and bundles are compared THEN commands, limits, counts, compatibility, durability, failures, and irrecoverable cases agree.
+    - GIVEN missing, open, provisional, user-confirmed, compact, ambiguous, and Decision 53 fixtures WHEN validation runs THEN only valid explicit user confirmation satisfies a decision; identity, detail, and satisfaction are never inferred from summaries, Git, profile, or downstream state, and projection capacity is not described as destructive retention.
+    - GIVEN cold readers and generated consumers WHEN parity checks run THEN preview, explicit apply, non-Git completion, Git refusal, and recovery examples are actionable with no stale or unclassified surface.
+  plan: nvbzrxjepf

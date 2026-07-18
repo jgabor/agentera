@@ -1,0 +1,16 @@
+id: rvkdicqjwn
+artifact: plan
+record:
+  name: Startup fixtures and validation gates
+  depends_on:
+    - tmptmprqrg
+  status: complete
+  acceptance:
+    - GIVEN complete Realisera execution context is available through CLI state WHEN deterministic startup or evaluation fixtures run THEN normal plan-driven Realisera startup introduces no raw-after-CLI reads for plan, progress, TODO, docs, health, decisions, or changelog state families covered by the context.
+    - GIVEN vision, profile, or design state is not included in the startup envelope WHEN fixtures run THEN caveat or fallback behavior is asserted rather than hidden by raw artifact reads.
+    - GIVEN validation runs WHEN implementation is complete THEN focused pytest targets, Realisera capability validation, self-validation, artifact validators, `agentera gate`, compaction check, and `git diff --check` pass without profile refresh, installed app refresh, dispatch, push, tag, or publication.
+    - GIVEN independent evaluation reviews the completed implementation WHEN this task finishes THEN blocking findings are resolved and residual risks are recorded in plan evidence rather than hidden.
+  evidence:
+    - Focused CLI/contract regression passed with `uv run pytest tests/test_query_cli.py tests/test_decision45_cli_contract.py -q` (181 tests).
+    - "`uv run scripts/validate_capability.py skills/agentera/capabilities/realisera`, `uv run scripts/validate_capability.py --self-validate`, `uv run hooks/validate_artifact.py --artifact PLAN.md --file .agentera/plan.yaml --format json`, `uv run scripts/agentera gate --format json`, `uv run scripts/agentera compact --mode check --format json`, and `git diff --check` passed. PLAN lint still fails only the pre-existing advisory verbosity budget."
+  plan: xxmtzpgjds

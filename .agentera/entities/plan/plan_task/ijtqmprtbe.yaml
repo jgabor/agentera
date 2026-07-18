@@ -1,0 +1,12 @@
+id: ijtqmprtbe
+artifact: plan
+record:
+  name: Route retention capping through the shared helper
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN compaction.compact_entries WHEN it assembles the final 10/40/50 result THEN the cap is applied via hooks/common.apply_retention_caps with numeric-ID ordering and ascending/descending handling preserved
+    - GIVEN compact_yaml_file non-decision path WHEN it truncates the archive THEN the final cap uses the shared helper while decision protected-overflow selection is unchanged
+    - GIVEN existing PROGRESS/DECISIONS/HEALTH/TODO and session-bookmark fixtures WHEN run THEN outputs match prior expectations with no changed assertions
+  plan: krzpcqqgpt

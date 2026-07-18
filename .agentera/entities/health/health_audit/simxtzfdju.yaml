@@ -1,0 +1,16 @@
+id: simxtzfdju
+artifact: health
+record:
+  date: 2026-03-31
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+  findings_summary:
+    critical: 0
+    warning: 4
+    info: 6
+    filtered_by_confidence: 4
+  trajectory: improving vs Audit 1
+  grades:
+    Architecture: B
+    Patterns: B

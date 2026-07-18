@@ -1,0 +1,13 @@
+id: ygqernrqta
+artifact: plan
+record:
+  name: Close the metadata alignment artifacts
+  depends_on:
+    - itnvrklefx
+  status: complete
+  acceptance:
+    - GIVEN focused verification completes WHEN the fix is ready THEN exact pytest, artifact validator, and `git diff --check` evidence is recorded in PLAN and PROGRESS.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the top `[fix:2.4.x]` app lifecycle metadata TODO is resolved while later bundle/SKILL.md cleanup, routing/execution cleanup, Decision 57 implementation, and broad vocabulary regression TODOs remain open.
+  evidence:
+    - "Verification before artifact closeout: `uv run pytest tests/test_lifecycle_vocabulary_authority.py tests/test_install_root_characterization.py tests/test_upgrade_cli.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract tests/test_query_cli.py::TestHej::test_version_mismatch_reports_update_needed_not_repair tests/test_query_cli.py::TestHej::test_runtime_injected_legacy_default_does_not_outrank_platform_home -q` passed with 51 tests. Final artifact validators and `git diff --check` are recorded in PROGRESS after artifact edits."
+  plan: ddnfuvslbw

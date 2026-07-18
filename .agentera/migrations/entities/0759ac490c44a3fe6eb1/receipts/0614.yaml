@@ -1,0 +1,10 @@
+id: ecrxmnvpix
+artifact: plan
+record:
+  name: Non-live smoke validation
+  depends_on:
+    - gmxahiztwx
+  status: complete
+  acceptance:
+    - GIVEN default smoke runs without live paid hosts WHEN it completes THEN fixture-backed parity is proven separately from local environment availability.
+  plan: defvwzwnfs

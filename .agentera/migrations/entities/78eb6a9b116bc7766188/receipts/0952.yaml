@@ -1,0 +1,16 @@
+id: vqbqcfabvj
+artifact: plan
+record:
+  name: Reproduce doctor ready-state output ambiguity
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - "GIVEN a fresh installed app with matching expected and marker versions WHEN `agentera doctor` runs THEN evidence records that text output currently shows `status: ready` plus a repair-looking `Next:` block."
+    - GIVEN the same state WHEN `agentera doctor --json` runs THEN evidence records `status=fresh`, an empty `signals` list, and existing dry-run/apply/retry fields without treating them as required.
+    - GIVEN command formatting is investigated WHEN dry-run commands are captured THEN the plan names where whitespace before `--dry-run` is generated or verified.
+  evidence:
+    - "Live installed CLI probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor` reproduced the ambiguity: text output prints `status: ready` and a required-looking `Next:` repair sequence with preview/apply/retry commands."
+    - Live JSON probe `uv run /home/jgabor/.local/share/agentera/app/scripts/agentera doctor --json` reports `status=fresh`, `signals=[]`, `expectedVersion=2.4.0`, and `markerVersion=2.4.0`, so the current installed app is healthy while text rendering still presents repair steps.
+    - "Command formatting seam is `scripts/agentera_upgrade.py`: `build_doctor_status` builds `preview_parts` with `--dry-run` as a separate argument and `dryRunCommand` uses `_command_text`, which joins shell-quoted parts with single spaces. The reproduced text contains a correct space before `--dry-run`."
+  plan: enrahovxla

@@ -1,0 +1,10 @@
+id: jgnnuazjvr
+artifact: plan
+record:
+  name: Reconcile Plan State And Package Scope
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: hbxnzsoths

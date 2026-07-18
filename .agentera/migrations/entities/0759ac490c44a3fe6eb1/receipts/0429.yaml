@@ -1,0 +1,10 @@
+id: sdjncrsjrp
+artifact: plan
+record:
+  name: Execute non-Git legacy migration
+  depends_on:
+    - tikdncdewd
+  status: pending
+  acceptance:
+    - GIVEN addressable, partial, duplicate, conflicting, custom-name, corrupt, summary-only, and non-Git fixtures WHEN local migration previews, applies, or retries THEN exact identity and archive-before-projection prevent overwrite or synthesis from unsafe rows, compatibility passes, provenance is deterministic, and physical accounting reconciles addressable, unaddressable, ambiguous, mirror, duplicate, and conflict classes.
+  plan: ijammdbhum

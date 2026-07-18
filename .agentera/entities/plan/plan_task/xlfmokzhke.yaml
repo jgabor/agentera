@@ -1,0 +1,14 @@
+id: xlfmokzhke
+artifact: plan
+record:
+  name: Verify selectors, ownership, safety, and convergence
+  depends_on:
+    - qfohgyylra
+    - aueicconxo
+  status: complete
+  acceptance:
+    - GIVEN OpenCode, Codex, Cursor, and Copilot scenarios WHEN tested THEN default preview, selector narrowing, shared-resource inclusion, and Cursor applicability have pass and fail coverage.
+    - GIVEN missing, corrupt, disconnected, or mismatched ownership WHEN previewed and applied THEN mutation fails closed with stable causes.
+    - GIVEN preview WHEN managed roots are compared THEN no creation, mutation, deletion, lock, journal, temporary publication, native execution, telemetry, or state write occurs.
+    - GIVEN independent failure or partial success WHEN apply retries THEN dependency skips are explained and remaining owned operations converge.
+  plan: nskpsridro

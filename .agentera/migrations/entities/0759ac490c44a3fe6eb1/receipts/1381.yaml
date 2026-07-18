@@ -1,0 +1,16 @@
+id: vkaozvrutx
+artifact: progress
+record:
+  timestamp: 2026-07-18 05:51
+  type: fix
+  phase: build
+  what: Closed the in-place write immediately-before-unlink stale-receipt race by holding and validating each receipt descriptor across unlink, stably rereading it afterward, and durably recovering exact changed bytes before refusing canonical publication.
+  inspiration: Task25 retry 1/2 reviewer reproduction for mutation of the quarantined discard inode inside unlink.
+  discovered: A receipt pathname can still name the approved inode immediately before unlink while a concurrent writer changes that same inode inside the unlink boundary; pathname successor checks cannot preserve the now-unlinked changed bytes.
+  verified: 64 focused entity migration apply tests and the full 2,679-test suite across 218 files passed; typecheck, build, and compact passed. Added exact before-unlink, held-writer after-unlink, unstable descriptor, O_EXCL collision, and recovery-fsync failure coverage.
+  next: Task25 is complete. Task14 remains pending; do not generate a live approval or apply migration without explicit authorization.
+  context:
+    intent: Fix only Task25's exact-receipt descriptor mutation window without redesigning migration cleanup or touching live preparation state.
+    constraints: No approval, apply, Task15, version, changelog, vision, manual YAML, amend, push, publish, or changes under the live .agentera/migrations preparation.
+    unknowns: Task14 apply authorization remains intentionally unresolved.
+    scope: packages/cli/src/state/entityMigrationApply.ts and packages/cli/test/state/entityMigrationApply.test.ts

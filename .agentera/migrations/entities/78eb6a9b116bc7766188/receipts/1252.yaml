@@ -1,0 +1,16 @@
+id: ajdbmhsyxe
+artifact: progress
+record:
+  timestamp: 2026-07-14 10:53
+  type: feat
+  phase: build
+  what: "Added explicit non-executing optional Git-enrichment handoff from completed local migration: exact stable artifact:number selectors now expose the existing backfill dry-run and forced-apply commands, while migration remains Git, subprocess, network, and backfill free. Added unavailable-Git, interrupted-apply, allowed-ref, selector-handoff, and zero-subprocess regression coverage without changing the guarded backfill engine."
+  inspiration: "Active continuation plan Task 3: Chain optional guarded Git enrichment, with Task 1 and Task 2 lifecycle state folded into this substantive change."
+  discovered: The existing backfill foundation already bounds traversal, captures only HEAD/heads/tags, detects shallow and rewritten history, revalidates HEAD and provenance, and converges identical archive retries. The repository-wide Git signing configuration required commit.gpgsign=false in the isolated smoke fixture; no remote access was attempted.
+  verified: "Focused migration/backfill command: 2 files, 28 tests passed. Non-packaging CLI boundary: 175 files, 1779 tests passed. Full package boundary: 176 files, 1783 passed and exactly 5 known npm 12 packaging JSON-parser tests failed. Typecheck, build, bundle:data, build capability validation, capability-contract validation, progress/plan/decisions/health artifact validation, and check compact passed; compact reported error_count=0, over_limit_count=0, protected_overflow_count=0, changed_count=0 while preserving 5 existing progress archive-recovery refusals. Temp no-Git migration smoke reported remote_contact=false and progress:1 handoff; traced local Git smoke reported preview/applied/replayed=1/1/1 across 68 Git calls and zero remote, remote-tracking, custom-ref, fetch, pull, push, or ls-remote calls."
+  next: Leave Task 3 pending and do not record an evaluation or completion. Preserve Decision 53, archive immutability, projection policy, bounded output, stale/missing startup caveats, malformed formatting fixture caveat, known npm packaging failures, and no remote access. Do not begin Task 4, broad docs/schema alignment, audit, release, profile/vision work, publication, tag, or push.
+  context:
+    intent: Execute continuation plan Task 3 by chaining completed non-Git local migration to the existing immutable local-Git backfill contract without making enrichment implicit or required.
+    constraints: Only optional migration handoff, focused migration/backfill tests, typed progress, and the existing uncommitted Task 2 lifecycle transition are in scope. Enrichment remains separately operator-invoked through agentera state backfill --artifact A --number N --dry-run followed by --apply --force.
+    unknowns: Task 3 remains pending for independent evaluation; the five known npm packaging failures, five existing archive-recovery refusals, malformed formatting fixture, and stale or missing startup caveats remain unchanged.
+    scope: packages/cli/src/state/migrationEnrichment.ts; packages/cli/src/state/legacyMigration.ts; packages/cli/src/cli/commands/migrate.ts; packages/cli/test/state/legacyMigration.test.ts; packages/cli/test/state/gitBackfill.test.ts; .agentera/plan.yaml; .agentera/progress.yaml

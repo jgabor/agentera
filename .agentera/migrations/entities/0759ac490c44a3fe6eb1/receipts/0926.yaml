@@ -1,0 +1,13 @@
+id: asqmaiinoe
+artifact: plan
+record:
+  name: Characterize Artifact Registry Duplication
+  depends_on:
+    - ksjimhwhnn
+  status: complete
+  acceptance:
+    - GIVEN current artifact metadata surfaces are inspected WHEN duplication is inventoried THEN repeated names, paths, producers, consumers, display names, and special-case rules are recorded before edits
+    - GIVEN .agentera/docs.yaml is inspected WHEN mapping data is classified THEN runtime project overrides are separated from canonical registry facts
+    - GIVEN scripts/agentera and scripts/validate_cross_capability.py are inspected WHEN consumers are characterized THEN each consumer of canonical artifact identity or path metadata is named with its observable behavior boundary
+    - GIVEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts exist WHEN special cases are classified THEN each is described as an explicit registry case or scoped path template, not a validator exception
+  plan: ilsspfichd

@@ -1,0 +1,15 @@
+id: odsdtzqcry
+artifact: plan
+record:
+  name: Validate and record closeout evidence
+  depends_on:
+    - xvkoyjreeu
+  status: complete
+  acceptance:
+    - GIVEN implementation is complete WHEN the task closes THEN the focused pytest selection for vocabulary authority passes.
+    - GIVEN plan closeout is complete WHEN validation runs THEN `uv run scripts/agentera validate artifact --artifact PLAN.md` and `git diff --check` pass.
+  evidence:
+    - "`uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q` passed with 11 tests."
+    - "`uv run scripts/agentera validate artifact --artifact PLAN.md` passed with status=pass."
+    - "`git diff --check` passed."
+  plan: uwuahelugw

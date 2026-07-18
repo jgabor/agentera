@@ -1,0 +1,10 @@
+id: thclnglghi
+artifact: plan
+record:
+  name: Define PackageManifest Interface And Ownership Model
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: vkpsqlcfro

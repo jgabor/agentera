@@ -1,0 +1,13 @@
+id: cpgijsykxf
+artifact: plan
+record:
+  name: Integrate lifecycle status and diagnosis
+  depends_on:
+    - nyiryhgkti
+    - lqlrnkqiri
+  status: complete
+  acceptance:
+    - GIVEN project orientation WHEN prime runs THEN it returns a bounded four-runtime summary from the lifecycle authority.
+    - GIVEN lifecycle diagnosis WHEN doctor runs THEN every supported runtime has detailed evidence, actionable native steps, and truthful trust or degraded states.
+    - GIVEN the same runtime state WHEN prime and doctor outputs are compared THEN their statuses agree while preserving their different detail budgets.
+  plan: uspieksgub

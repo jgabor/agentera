@@ -1,0 +1,13 @@
+id: lgvvnjugtv
+artifact: plan
+record:
+  name: Estimated token impact fields
+  depends_on:
+    - ocoeguoqkq
+  status: complete
+  acceptance:
+    - GIVEN raw artifact reads are counted WHEN startup metrics are aggregated THEN latest JSON and Markdown reports include estimator metadata, estimated raw-after-CLI tokens, estimated redundant raw tokens, and canonical-label breakdowns including the remaining `PLAN.md` pattern.
+    - GIVEN a comparable previous benchmark row exists WHEN persistence appends a new row THEN estimated tokens saved versus previous is emitted; otherwise it is `null` with a concrete reason such as `previous_missing_token_estimates`.
+    - GIVEN privacy is reviewed WHEN retained reports and history are inspected THEN token fields are aggregate estimates based on canonical artifact labels and do not emit raw paths, transcript text, private salts, or generated salted hashes.
+  evidence: "`scripts/startup_analysis_contract.py` now estimates raw-after-CLI and redundant raw tokens with estimator `approx_bytes_div_4_v1`, aggregates the values only by canonical artifact labels such as `PLAN.md`, emits the fields in latest JSON, latest Markdown, and new `runs.jsonl` rows, and calculates `estimated_tokens_saved_vs_previous` only against comparable previous rows. Focused tests verify comparable-row savings, missing previous-token-estimate null reasons, retained privacy exclusions for raw paths/transcripts/salts/salted hashes, and the `PLAN.md` breakdown. Verification: `uv run pytest tests/test_startup_analysis_contract.py -q` passed with 39 tests."
+  plan: vbepjijzmu

@@ -1,0 +1,13 @@
+id: karnadakxb
+artifact: plan
+record:
+  name: Add Sparse Field Selection
+  depends_on:
+    - vcugwfhhtx
+  status: complete
+  acceptance:
+    - GIVEN a supported structured command has documented fields WHEN a caller requests a subset THEN the response includes only requested supported fields plus required identity or status context
+    - GIVEN an unsupported field is requested WHEN the command runs THEN the error identifies the unsupported field, available fields, and avoids ambiguous partial output
+    - GIVEN field selection is reviewed WHEN docs and tests name fields THEN they come from the structured output contract rather than assumptions about raw YAML artifacts
+    - GIVEN text output is used WHEN field selection is absent THEN the default human-readable behavior remains coherent
+  plan: vxmzhajgdo

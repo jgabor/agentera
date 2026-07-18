@@ -1,0 +1,6 @@
+id: deoopdvnll
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Add `--version` / `version` command to the CLI so consumers can check the installed..."

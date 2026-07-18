@@ -1,0 +1,10 @@
+id: fvxjqsvlmh
+artifact: plan
+record:
+  name: Define Contract Loader And Bootstrap Model
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: mqbpqvuhbx

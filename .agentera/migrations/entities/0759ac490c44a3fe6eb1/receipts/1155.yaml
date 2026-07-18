@@ -1,0 +1,54 @@
+id: qumcfibccu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-08
+    status: complete
+    reviewed: 2026-05-08
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    revised: |
+      Classified slash forms into handoff labels, explicit `/agentera <alias>` route docs, and historical evidence; added explicit Decision 45 archival acceptance; defined bounded-choice confirmation semantics; scoped runtime question-tool names as current guidance rather than schema authority; and narrowed README updates to affected handoff or route wording only.
+    title: Implement Decision 46 Capability Handoff Polish For 2.2.0
+  what: |
+    Implement Decision 46 by tightening Agentera's capability handoff guidance for the pending 2.2.0 release. Capability guidance should recommend downstream capabilities with glyph plus canonical name labels, reserve `/agentera <alias>` wording for explicit route documentation, and use runtime-native question tools for bounded choices with a recommended first option, `Done`, and confirmation before invoking downstream work.
+  why: |
+    Decisions 43 and 45 clarified that slash routes and CLI commands are separate surfaces, but capability prose still teaches standalone slash-capability handoff labels and inconsistent confirmation behavior. This plan turns the `docs/notes.md` handoff-polish note into a scoped 2.2.0 cleanup without changing routing semantics or taking on broader lifecycle cleanup or CLI write support.
+  constraints: |
+    Preserve canonical capability names, Decision 43 aliases, routing behavior, CLI command names, artifact schemas, persisted state shapes, package versions, tags, remotes, installed bundles, vision state, and objective state. Preserve explicit `/agentera <alias>` route documentation and runtime-specific examples where they teach invocation rather than handoff labels. Do not rewrite historical changelog, progress, archive, or decision entries solely for wording. Keep the work attached to pending 2.2.0 without claiming release publication.
+  scope:
+    included:
+      - archive the completed Decision 45 plan before replacing the active plan
+      - define the handoff wording and runtime question-tool contract in dispatcher and vocabulary guidance
+      - classify slash forms as handoff labels, explicit `/agentera <alias>` route documentation, or historical evidence
+      - normalize current capability prose handoff labels from standalone slash-capability names to glyph plus canonical capability names where they are recommendations or cross-capability handoffs
+      - convert explicit current invocation examples to `/agentera <alias>` route examples when they should remain examples
+      - preserve `/agentera <alias>` references in route documentation and examples
+      - add tests that reject direct standalone slash-capability handoff labels in current capability prose while allowing route docs and scoped historical evidence
+      - update README only where it currently teaches affected handoff or route wording
+      - update vocabulary, changelog, docs metadata, and progress state as needed for 2.2.0 inclusion
+      - validate capability prose, routing boundaries, vocabulary, artifact state, and focused tests
+    excluded:
+      - completed-plan lifecycle archival behavior beyond archiving the existing completed plan to make room for this plan
+      - CLI write support for decisions or plans
+      - fresh-project hej/visionera loop changes
+      - runtime bundle review beyond this handoff wording surface
+      - v1 SPEC reconciliation and personality/flair restoration
+      - changing slash route aliases or adding capability CLI commands
+      - package publication, tag, push, package-manager update, or installed-bundle refresh
+      - vision or objective edits
+    deferred:
+      - completed-plan lifecycle cleanup
+      - CLI write support
+      - runtime-specific bundle audit
+      - broader v1 personality/reference restoration
+      - v1 SPEC incorporation review
+  design: |
+    Treat handoff labels and route documentation as different surfaces. User-facing route docs may keep `/agentera <alias>` examples. Capability-to-capability recommendations should use the protocol glyph plus canonical capability name so agents do not emit runtime-specific slash conventions by default. Selecting a downstream capability option in a bounded question prompt counts as confirmation to invoke that capability; selecting `Done` stops without routing. Runtime question-tool names are current host guidance, not a new schema authority. Tests should enforce the distinction without banning `/agentera <alias>` docs or historical release evidence.
+  overall_acceptance:
+    - GIVEN a capability recommends downstream Agentera work WHEN prose guidance is current THEN the recommendation uses glyph plus canonical capability naming unless documenting an explicit `/agentera <alias>` route
+    - GIVEN an agent offers bounded next-step choices WHEN runtime tools are available THEN it uses the native question tool with a recommended first option, `Done`, and clear confirmation semantics before invoking downstream work
+    - GIVEN users read v2.2.0 docs WHEN handoff polish is complete THEN route aliases, canonical capability names, CLI commands, and handoff labels remain distinct
+    - GIVEN validation runs WHEN the plan is complete THEN route behavior, capability validation, vocabulary checks, and artifact state remain green
+  surprises:
+    []

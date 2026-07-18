@@ -1,0 +1,27 @@
+id: bjkimlthjk
+artifact: plan
+record:
+  name: Routine and composite state coverage
+  depends_on:
+    - umwlqlzssn
+    - ncyrxytvsg
+  status: complete
+  acceptance:
+    - GIVEN a prioritized redundant raw read exists WHEN the owning CLI state output is used THEN the needed state is available without a raw artifact read.
+    - GIVEN no active state exists WHEN the startup result is requested THEN the response explains absence explicitly instead of forcing artifact discovery.
+    - GIVEN stale app or v1 migration conditions exist WHEN startup state is requested THEN repair or migration guidance is carried by the CLI result.
+  evidence:
+    state_coverage_added:
+      - agentera hej now includes plan, docs, progress, and state_presence in the composite startup result.
+      - agentera hej source_contract.capability_startup now reports complete_for_capability_startup=true, raw_artifact_reads_required=false, and missing_state=[].
+      - agentera docs --format json summary now carries artifact mapping entries and startup source-contract completeness metadata.
+      - agentera progress --format json already carries latest cycle verified metadata; hej now surfaces latest_verification in progress.
+      - Fresh hej structured output reports absent plan/docs/progress state explicitly through absence_reason and state_presence absence metadata.
+      - Existing bundle/app_home repair data and v1_migration dry-run/apply commands remain in hej structured output.
+    command_vocabulary:
+      routine_state_commands_preserved: true
+      slash_route_alias_cli_commands_added: false
+    verification:
+      - uv run pytest tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py
+      - python3 YAML parse check for .agentera/plan.yaml, .agentera/progress.yaml, and references/cli/agent-ready-state-contract.yaml
+  plan: wncxfohlqr

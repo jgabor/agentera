@@ -1,0 +1,17 @@
+id: jxevvhuyrw
+artifact: plan
+record:
+  name: Verify vitest, typecheck, build, and check compact all green
+  depends_on:
+    - yojsgunqzy
+    - wxeyivwrln
+    - uhvnvmrxdr
+    - bcbgzcmmuy
+    - vqkgnepeyd
+  status: complete
+  acceptance:
+    - GIVEN the rename and CI changes are committed WHEN pnpm -C packages/cli test runs THEN vitest reports 916/916 passing (or the updated green baseline if renamed fixtures shifted the count)
+    - GIVEN the same commit WHEN pnpm -C packages/cli run typecheck runs THEN it exits 0
+    - GIVEN the same commit WHEN pnpm -C packages/cli build runs THEN it exits 0 and packages/cli/dist is produced
+    - GIVEN the built CLI WHEN node packages/cli/dist/bin/agentera.js check compact runs THEN it exits 0 (committed artifact budgets still honored)
+  plan: kpuutmaoki

@@ -1,0 +1,17 @@
+id: iupiyykcaz
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-06-09
+    status: archived
+    title: Upgrade-vs-repair wording in prime and doctor
+  what: Align user-facing prime and doctor copy with Decision 54 app-lifecycle vocabulary so version-behind app files are described as an update (or upgrade workflow), while missing, incomplete, or broken app files keep repair language. Stop conflating the umbrella `agentera upgrade` command with the repair operation verb when the underlying status is `outdated`.
+  why: TODO `[fix:3.0.0]` and hej attention already surface runtime rewiring correctly, but several paths still say "repair" for `version_mismatch` / `outdated` cases or mix "repair or upgrade" in one sentence. That misleads users into thinking their install is broken when it only needs a version update, and it weakens trust in prime/doctor guidance ahead of the 3.0.0 cutover.
+  constraints: Do not rename the `agentera upgrade` CLI command or change lifecycle status enums (`outdated`, `repair_needed`, etc.). Derive prose from `references/cli/app-lifecycle-vocabulary.yaml` and `references/cli/vocabulary.md` — no parallel vocabulary. Preserve app-home-contract forbidden phrases (no "live bundle", "install root", etc.). Scope is feat/v3 (`packages/cli`); no Python main backport unless a shared authority doc change requires both branches. Do not edit vision, objective, or publish npm as part of this plan.
+  overall_acceptance: GIVEN a managed install classified outdated with version_mismatch WHEN agentera doctor renders THEN recovery copy names an update and does not say app files are broken or need repair. GIVEN the same outdated install WHEN agentera prime renders attention or next_action THEN the message uses update/upgrade framing, not repair framing, and still includes a dry-run preview command. GIVEN a managed install classified repair_needed WHEN doctor or prime renders THEN repair language remains and is distinct from update language. GIVEN summarizeProjectIntegration detects only needsAppUpgrade WHEN prime attention is built THEN the message does not conflate repair and upgrade verbs. GIVEN regression tests run on feat/v3 WHEN the wording pass completes THEN prime, doctor, projectIntegration, and installRoot tests cover outdated→update and repair_needed→repair assertions.
+  scope:
+    included:
+      []
+    excluded:
+      []

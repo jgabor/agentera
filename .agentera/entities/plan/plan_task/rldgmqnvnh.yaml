@@ -1,0 +1,16 @@
+id: rldgmqnvnh
+artifact: plan
+record:
+  name: Flip contract, vocabulary, and package metadata
+  depends_on:
+    - stdqlaefcs
+  status: complete
+  acceptance:
+    - GIVEN the capability_schema_contract.yaml ROUTE_ALIASES section WHEN inspected THEN English names are canonical and Swedish names are marked as legacy v2-stable references
+    - GIVEN the ROUTE_ALIASES description WHEN inspected THEN it states English is canonical protocol identity (not Swedish -era directory names)
+    - GIVEN the cli_boundary field WHEN inspected THEN it preserves the /agentera plan (routing) vs agentera state plan (CLI state) separation
+    - GIVEN references/cli/vocabulary.md WHEN inspected THEN the capability canonical name entry states English is canonical for v3 in present tense
+    - GIVEN references/cli/vocabulary-index.yaml WHEN inspected THEN the protected surface for v3 canonical names lists English IDs
+    - GIVEN registry.json WHEN inspected THEN the capabilities array lists English IDs
+    - GIVEN plugin.json WHEN inspected THEN the description references English capability names and bare /agentera routing (not bare hej)
+  plan: rfsasxqeop

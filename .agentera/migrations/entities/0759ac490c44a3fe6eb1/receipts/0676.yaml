@@ -1,0 +1,12 @@
+id: gdaciszmbu
+artifact: plan
+record:
+  name: Rename PROFILERA_PROFILE_DIR to AGENTERA_PROFILE_DIR with deprecated alias
+  depends_on:
+    - usgbkgoeny
+  status: complete
+  acceptance:
+    - GIVEN PROFILERA_PROFILE_DIR is renamed to AGENTERA_PROFILE_DIR in source, WHEN rg 'PROFILERA_PROFILE_DIR' runs against packages/cli/src/ and .opencode/plugins/, THEN zero matches remain except in the deprecated alias fallback
+    - AND setProfileDir reads AGENTERA_PROFILE_DIR first, falls back to PROFILERA_PROFILE_DIR with one-time stderr warning
+    - AND all tests pass AND tsc --noEmit clean
+  plan: hotcyckvhu

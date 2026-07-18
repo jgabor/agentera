@@ -1,0 +1,13 @@
+id: gzegbmvxku
+artifact: plan
+record:
+  name: Resonera startup and deliberation integration
+  depends_on:
+    - fexwwvonnp
+    - vclmiqyllo
+  status: complete
+  acceptance:
+    - GIVEN Resonera needs decision context WHEN capability startup state is requested THEN CLI fallback and source-contract guidance point to `agentera decisions --format json` as sufficient for normal deliberation.
+    - GIVEN a deliberation references previous decisions WHEN the available decision context is complete THEN capability guidance avoids defensive raw `.agentera/decisions.yaml` reads.
+    - GIVEN compacted historical context is incomplete WHEN Resonera guidance encounters it THEN the limitation is surfaced as a decision caveat instead of a raw-read or git-history instruction.
+  plan: ehnfoajqjq

@@ -1,0 +1,19 @@
+id: movialfdkq
+artifact: plan
+record:
+  name: Cut retrieval and maintenance APIs to entities
+  depends_on:
+    - njfegzvzfe
+    - wgndwmlmgp
+    - hznktnwtlg
+    - tspxgigaah
+    - dhfscnarbz
+    - rvgokeqowa
+    - rqgpsnmbor
+  status: complete
+  acceptance:
+    - GIVEN exact get, list, cursor, durability, recovery, and derived-view operations WHEN exercised THEN they use id and artifact consistently.
+    - GIVEN old numeric or stable-ID selectors WHEN invoked after cutover THEN they fail with canonical ID syntax and no compatibility alias.
+    - GIVEN aggregate views WHEN paged THEN omissions, ordering, provenance, snapshot binding, and exact recovery remain bounded and composable.
+    - GIVEN maintenance checks WHEN canonical entities are missing or conflicting THEN they fail explicitly without mutating authority.
+  plan: pohgeeghnl

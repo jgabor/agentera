@@ -1,0 +1,16 @@
+id: wvhyyyrtjy
+artifact: progress
+record:
+  timestamp: 2026-07-16 14:18
+  type: fix
+  phase: build
+  what: "Repaired reopened compact-prime Plan Task 3 full-fidelity dashboard emission: conditional top-level omission now applies only to the bare decision brief, and a regression compares the complete dashboard input/output field set and values, including inactive v1_migration, docs, and objective."
+  inspiration: User-authorized reopen after independent evaluation found that --dashboard dropped inactive defaults when no fields were selected.
+  discovered: emitPrime receives no fields for both bare brief and full surfaces; bareBrief is the root discriminator. The dashboard and --context paths must serialize the source payload unchanged, while only bareBrief may omit inactive conditional defaults before bounded projection.
+  verified: "Focused primeTask3Brief verification: 2 files and 30 tests passed. Full CLI Vitest: 197 files and 2314 tests passed. Typecheck passed; build passed; check compact passed with over_limit=0 and errors=0; capability-contract validation passed 2/2. Dashboard regression compares every top-level field and value and explicitly covers inactive defaults."
+  next: "Task 4: make status startup self-contained. Keep this cycle scoped to the authorized Task 3 repair; do not change fields, context, plan exclusions, or unrelated TODO entries."
+  context:
+    intent: Repair the reopened Plan Task 3 dashboard full-fidelity defect and close the task after verified gates.
+    constraints: Preserved prior Task 3 failures in durable progress and git history. Used only the explicit user-authorized reopen for a fresh live evaluation; no vision, release, push, or publication changes.
+    unknowns: none
+    scope: packages/cli/src/cli/commands/prime/orientationOutput.ts; packages/cli/test/cli/primeTask3Brief.test.ts; .agentera/plan.yaml; .agentera/progress.yaml; TODO.md

@@ -1,0 +1,14 @@
+id: kyhintlbsd
+artifact: plan
+record:
+  name: Synchronize release surfaces and project state
+  depends_on:
+    - cpgijsykxf
+    - nlmagdszpi
+  status: complete
+  acceptance:
+    - GIVEN active product, package, schema, documentation, analytics, evaluation, fixture, and help surfaces WHEN scanned THEN Claude is absent and cursor-agent is not an active identity.
+    - GIVEN runtime claims WHEN contract and parity validation runs THEN stale Codex, Cursor, OpenCode, or Copilot behavior cannot pass.
+    - GIVEN the completed implementation WHEN full verification runs THEN CLI tests, typecheck, build, compaction, documentation checks, packaging inspection, and whitespace checks pass without publication.
+    - GIVEN verified completion WHEN project state is synchronized THEN TODO, progress, changelog, plan, and 3.0.0 version surfaces close in the same substantive delivery.
+  plan: uspieksgub

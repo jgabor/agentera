@@ -1,0 +1,13 @@
+id: iuqsaefwyk
+artifact: plan
+record:
+  name: State sync and release-target gate
+  depends_on:
+    - fjacsuyhmu
+  status: complete
+  acceptance:
+    - GIVEN no release target is selected WHEN state sync runs THEN TODO, docs, progress, and plan evidence record completion without version-bearing file changes
+    - GIVEN a release target is selected WHEN sync runs THEN version, changelog, TODO, docs, and progress follow semver policy for the feat scope
+  evidence:
+    - Plan archived without version bump; progress cycle 599 records verification; profilera instructions updated for Cursor runtime flags
+  plan: ntynvndxnl

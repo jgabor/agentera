@@ -1,0 +1,12 @@
+id: vmdsxsixgo
+artifact: plan
+record:
+  name: Align help, documentation, and bundled surfaces
+  depends_on:
+    - rjckbxtses
+  status: pending
+  acceptance:
+    - GIVEN users inspect help, upgrade guidance, reference docs, and bundled capability data WHEN the model ships THEN commands, compatibility, durability, recovery limits, and irrecoverable cases agree.
+    - GIVEN live surfaces WHEN parity scans run THEN no current wording claims destructive deletion or permanent unavailability for recoverable records.
+    - GIVEN cold readers WHEN migration and backfill examples are followed THEN preview, explicit apply, non-Git completion, and Git refusal behavior are actionable.
+  plan: ulutbnlztj

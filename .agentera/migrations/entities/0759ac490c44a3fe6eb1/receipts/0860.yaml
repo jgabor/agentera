@@ -1,0 +1,12 @@
+id: vrjndvrlpd
+artifact: plan
+record:
+  name: Refresh Docs, Artifacts, And Version Surfaces
+  depends_on:
+    - haylqcszsw
+  status: complete
+  acceptance:
+    - GIVEN implementation and tests pass WHEN freshness is updated THEN README.md, UPGRADE.md, CHANGELOG.md, .agentera/docs.yaml, .agentera/progress.yaml, and .agentera/plan.yaml describe v2.1.0 as preserving the dashboard while sourcing state from the CLI
+    - GIVEN version surfaces are checked WHEN release metadata is inspected THEN pyproject.toml, uv.lock, plugin.json, registry.json, .claude-plugin/marketplace.json, .codex-plugin/plugin.json, .github/plugin/plugin.json, .opencode/plugins/agentera.js, CHANGELOG.md, README.md, and the local v2.1.0 tag metadata all agree or are corrected together
+    - GIVEN docs describe the State CLI WHEN a user reads them THEN they call it the data layer behind the briefing, not the briefing replacement
+  plan: mbjboapqeq

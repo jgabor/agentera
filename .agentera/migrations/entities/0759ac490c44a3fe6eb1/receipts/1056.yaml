@@ -1,0 +1,13 @@
+id: qohrkyobow
+artifact: plan
+record:
+  name: Close exact-source migration boundary escapes
+  status: complete
+  depends_on:
+    - fogsvgbhqa
+  acceptance:
+    - GIVEN an active plan path is symlinked or non-file WHEN preview runs THEN external bytes are never read and one deterministic corrupt observation reports actionable recovery.
+    - GIVEN decision overlay or revision exact paths are unsafe WHEN inventoried THEN each is explicitly accounted for as corrupt rather than followed or silently omitted.
+    - GIVEN external targets change WHEN preview, continuation, or apply preflight reruns THEN fingerprint, digest, entries, and counts remain project-bound and all paths remain zero-write.
+    - GIVEN all declared recursive and exact source paths WHEN boundary fixtures run THEN no external content enters inventory and valid in-project sources retain complete parity.
+  plan: pohgeeghnl

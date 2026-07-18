@@ -1,0 +1,17 @@
+id: lzceadlhge
+artifact: plan
+record:
+  name: Design trigger schema enrichment contract and record decision
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the enrichment spec WHEN a triggers.yaml file includes confidence_threshold THEN the field is a 0-100 integer with a documented contract default
+    - GIVEN the enrichment spec WHEN a triggers.yaml file includes disambiguates_against THEN each entry references a valid capability ID and includes a hint string
+    - GIVEN the enrichment spec WHEN a triggers.yaml file includes patterns_regex THEN each entry is a valid regex string
+    - GIVEN the enrichment spec WHEN both patterns and patterns_regex match the same input THEN the scoring algorithm defines how they combine with regex weighted higher than substring
+    - GIVEN the enrichment spec WHEN multiple capabilities score within the borderline band THEN the disambiguation behavior is defined with a contract default and per-trigger override
+    - GIVEN the enrichment spec WHEN --route is invoked THEN the output schema is mutually exclusive with state-derived next_action and does not include the next_action field
+    - GIVEN the enrichment spec WHEN triggers.yaml omits all new fields THEN the file is still valid and the routing engine applies documented defaults
+    - GIVEN the decision artifact WHEN reviewed THEN it lists each design choice, at least one alternative, and the selection rationale
+  plan: vhgknrcomu

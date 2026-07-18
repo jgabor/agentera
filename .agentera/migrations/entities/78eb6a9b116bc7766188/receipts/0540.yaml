@@ -1,0 +1,13 @@
+id: jpvgyvygww
+artifact: plan
+record:
+  name: Inventory rename surfaces and compatibility boundaries
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN current files are searched for `instructions.md`, capability prose, and instruction-file references WHEN the inventory is complete THEN each occurrence is classified as canonical code/docs, runtime/package metadata, compatibility fixture, generated output, historical archive, or unrelated prose.
+    - GIVEN Decision 57 and TODO sequencing are reviewed WHEN scope is recorded THEN `first_invocation_read` behavior, broad vocabulary sweeps, and historical archive rewrites are explicitly excluded unless directly required by the rename.
+  evidence:
+    - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  plan: pkfbsrvrby

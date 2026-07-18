@@ -1,0 +1,6 @@
+id: njbmimtlgw
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Doctor and prime health data sources are independent and can disagree. Resolved 2026-06-30: Decision..."

@@ -1,0 +1,11 @@
+id: yvsbepdyzg
+artifact: plan
+record:
+  name: Discovery contract and safety boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN runtime stores are available, absent, locked, sparse, or schema-divergent WHEN extraction runs THEN output reports bounded status/reason without blocking unrelated runtimes or leaking transcript text.
+    - GIVEN supported OS/runtime homes are tested WHEN discovery resolves inputs THEN Agentera app-home precedence is unchanged.
+  plan: kxmbqforny

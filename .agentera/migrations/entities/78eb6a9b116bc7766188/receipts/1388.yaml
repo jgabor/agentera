@@ -1,0 +1,6 @@
+id: wmxyoqjjiv
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[fix:3.0.0] Harden `loadSuiteVersion` (`appModel.ts:72-95`) to surface WHY it returned null on a corrupted/missing `registry.json` version-authority file. Current swallow-all catch at line 81 returns null silently for JSON parse failures, missing `skills` array, wrong `authority.selector`, and missing file — none of which reach the operator. Add structured diagnostic strings (e.g., `version_authority_file_missing`, `version_authority_parse_failed`, `skills_array_empty`, `selector_mismatch`) so callers like `cliDistributionMajor`'s secondary-signal fallback can distinguish \"v2 with no package.json\" from \"v3 with corrupted registry.json.\" Surfaced during the `cliDistributionMajor` plan (Step 2, scope-boundary decision: kept out of plan scope; tracks as separate concern). (Branch: `feat/v3` — implement on `feat/v3`.)"

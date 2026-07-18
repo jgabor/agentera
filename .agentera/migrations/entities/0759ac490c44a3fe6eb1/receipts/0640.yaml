@@ -1,0 +1,14 @@
+id: bjnzskoroe
+artifact: plan
+record:
+  name: Verification and closeout
+  depends_on:
+    - ggemntxcvc
+    - avmgvobtak
+    - rezcbpqcnw
+  status: complete
+  acceptance:
+    - GIVEN pnpm -C packages/cli test WHEN run on feat/v3 THEN all tests pass without running agentera compact first on a normal dev tree
+    - GIVEN agentera check compact WHEN run on committed artifacts THEN pass or fail only reflects committed state, not vitest duplication
+    - GIVEN plan closeout WHEN complete THEN archive written, active slot cleared, progress cycle records verification
+  plan: qujxqpraku

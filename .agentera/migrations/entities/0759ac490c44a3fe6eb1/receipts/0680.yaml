@@ -1,0 +1,11 @@
+id: zvzzdqtdlp
+artifact: plan
+record:
+  name: Add TODO for removing deprecated alias before v3 stable
+  depends_on:
+    - gdaciszmbu
+  status: complete
+  acceptance:
+    - GIVEN a TODO entry exists in TODO.md under Normal priority, WHEN v3 stable release approaches, THEN the deprecated PROFILERA_PROFILE_DIR fallback in setProfileDir can be removed
+    - AND the TODO references Task 12 of the D70 cleanup plan
+  plan: hotcyckvhu

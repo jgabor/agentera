@@ -1,0 +1,10 @@
+id: nqskcpkwcz
+artifact: plan
+record:
+  name: Correct branch model and inventory bookkeeping triggers
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    []
+  plan: okrgsbtctt

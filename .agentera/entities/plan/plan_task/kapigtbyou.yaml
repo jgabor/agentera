@@ -1,0 +1,17 @@
+id: kapigtbyou
+artifact: plan
+record:
+  name: Add slim capability-context envelope
+  depends_on:
+    - nhccapugjo
+  status: complete
+  acceptance:
+    - GIVEN `agentera hej --format json` is run without capability context WHEN JSON is emitted THEN the existing full dashboard envelope remains available.
+    - GIVEN capability context is requested in slim mode WHEN JSON is emitted THEN the top-level payload contains `command`, `status`, and `capability_context` as the primary startup capsule.
+    - GIVEN compatibility mode is requested WHEN JSON is emitted THEN existing top-level context keys remain available for current callers.
+    - GIVEN unsupported sparse fields are requested WHEN validation fails THEN no partial stdout is emitted.
+  evidence:
+    - "`scripts/agentera` now supports `--context-profile full|slim` for `hej`, with `full` preserving the existing dashboard envelope and `slim` emitting top-level `command`, `status`, and `capability_context`."
+    - Slim capability context includes app/profile caveats, role-aware state inventory, fallback commands, raw-read policy, and the existing compatibility context under `capability_context.context`.
+    - "Verification passed: focused hej tests for default dashboard output, slim capsule output, full compatibility output, unsupported sparse-field rejection without partial stdout, existing capability-context inventory, Planera context, slim/full CLI spot checks, and `git diff --check`."
+  plan: eodwfvjsay

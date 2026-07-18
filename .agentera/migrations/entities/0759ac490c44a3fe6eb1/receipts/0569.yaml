@@ -1,0 +1,19 @@
+id: aeinlhqioc
+artifact: plan
+record:
+  name: Synchronize final state and rerun every release gate
+  depends_on:
+    - gmbzutcvhx
+    - jtipwnefuk
+    - gzkkoqlbcr
+    - nqflecovtk
+    - eqhpzagrls
+    - xdkstsrwjo
+    - dqdwsmzkve
+    - cdhsiqgzum
+  status: pending
+  acceptance:
+    - GIVEN all prior outcomes are verified WHEN closeout mutates state THEN predecessor lineage, progress, TODO, health, docs, and changelog agree without manufactured evidence.
+    - GIVEN the synchronized final tree WHEN `pnpm -C packages/cli test`, typecheck, build, capability-contract and affected-artifact validation, `check compact`, named local/Git migration tests, `npm pack --dry-run --json --ignore-scripts`, and `npm publish --tag next --dry-run` rerun THEN every command passes with no carve-out.
+    - GIVEN final evaluation succeeds WHEN this plan completes and archives THEN no active plan survives and both incomplete predecessors remain discoverable through lineage.
+  plan: ckzzomuyos

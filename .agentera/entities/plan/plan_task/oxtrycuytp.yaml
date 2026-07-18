@@ -1,0 +1,13 @@
+id: oxtrycuytp
+artifact: plan
+record:
+  name: Fix stale YAML example, deprecated lint command, and archive reference in resonera instructions
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the YAML example in resonera instructions WHEN an agent follows it to write a decision entry THEN the entry uses status chosen or rejected (not chosen true/false), uses description (not tradeoffs), has no win_condition field, and quotes the date as a string so it passes decisions schema validation
+    - GIVEN the pre-write self-audit step in resonera instructions WHEN an agent runs the lint command from the instructions THEN it uses agentera check lint --artifact and emits no stderr deprecation warning
+    - GIVEN the decision numbering instruction in resonera instructions WHEN an agent archives a decision in YAML format THEN the instruction references the YAML archive list and ascending order by number field, not a Markdown Archived Decisions heading
+    - GIVEN the updated resonera instructions WHEN the CLI test suite runs THEN all tests pass and capability routing for resonera is unchanged
+  plan: sisazlehuh

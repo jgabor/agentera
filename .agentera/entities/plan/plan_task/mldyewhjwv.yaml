@@ -1,0 +1,13 @@
+id: mldyewhjwv
+artifact: plan
+record:
+  name: Wire session and compaction callers
+  depends_on:
+    - qiosmudmdf
+    - cgenertjfz
+  status: complete
+  acceptance:
+    - GIVEN session bookmark fixtures WHEN compacting before and after refactor THEN newest full entries and total caps match prior behavior
+    - GIVEN existing compaction tests WHEN run THEN outputs and expectations pass without weakening decision-protection behavior
+    - GIVEN session_stop and compaction imports WHEN inspected THEN duplicate compact_entries implementations are removed in favor of shared helpers and explicit entry points
+  plan: htklvtprnu

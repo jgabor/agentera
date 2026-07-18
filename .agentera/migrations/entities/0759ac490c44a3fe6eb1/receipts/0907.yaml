@@ -1,0 +1,12 @@
+id: ijseihwwhz
+artifact: plan
+record:
+  name: Constrain Codex descriptor discovery paths
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN official Codex custom agent docs WHEN `setup_codex.py` chooses a default descriptor target THEN it uses `~/.codex/agents/` for personal config or `.codex/agents/` for project config.
+    - GIVEN a caller passes an arbitrary `--config-file` outside documented config layouts WHEN setup plans descriptors THEN it requires explicit `--agents-dir` instead of writing beside that file.
+    - GIVEN setup and upgrade tests run WHEN descriptors are installed THEN managed TOML files remain idempotent, preserve user-owned files, and keep required `name`, `description`, and `developer_instructions` fields without deprecated `[agents.*]` blocks.
+  plan: vxtjoawssx

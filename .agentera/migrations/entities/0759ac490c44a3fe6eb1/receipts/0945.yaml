@@ -1,0 +1,17 @@
+id: briixybmdn
+artifact: plan
+record:
+  name: Plan-level completion review
+  depends_on:
+    - grseedfcnk
+    - aqzwjggbao
+  status: complete
+  evidence:
+    - Synchronized TODO, CHANGELOG, PROGRESS, Decision 63 provisional satisfaction, and registry/parity docs after live smoke passed; version surfaces bumped to 2.7.0 per feat semver policy.
+    - "Closeout validation passed: lifecycle-adapters, capability-contract (2/2), cross-capability, focused cursor tests (87 passed), package/runtime registry tests (17 passed), git diff --check clean."
+    - Plan archived to `.agentera/archive/PLAN-2026-05-24-cursor-first-class-runtime-v1.yaml`; active `.agentera/plan.yaml` removed. No push, tag, or publication.
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN TODO, CHANGELOG, PROGRESS, and plan evidence are synchronized THEN Decision 63 implementation status and Cursor v1 deliverables are recorded without leaving stale active-plan tasks.
+    - GIVEN feat-level runtime delivery is complete WHEN versioning policy is applied THEN version-bearing surfaces listed in project docs are bumped consistently for the Cursor runtime feature.
+    - GIVEN closeout verification runs WHEN the plan completes THEN capability validation, registry validation, focused tests, compaction, and diff checks record passing evidence for the Cursor v1 slice.
+  plan: bizikrrbyb

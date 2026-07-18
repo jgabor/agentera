@@ -1,0 +1,71 @@
+id: bvacoxfryf
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-06
+    status: archived
+    reviewed: 2026-05-06
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    revised: |
+      Added an isolated registry-contract task, bounded CLI consumers, measurable no-hardcoded-map acceptance, explicit docs.yaml override semantics, and special-case artifact coverage after adversarial review.
+    title: Deepen Artifact Registry Interface
+  what: |
+    Deepen Agentera artifact metadata into a real registry Interface. Canonical artifact schemas should own artifact identity, display names, default paths, producers, consumers, scope, and special-case classifications. Capability-local artifact schemas should reference canonical artifact IDs plus local usage role instead of repeating canonical names and paths, while validators, docs consumers, tests, and bounded CLI artifact-resolution reads consume the same registry facts.
+  why: |
+    TODO [arch-artifact-registry] identifies a shallow registry seam: scripts/validate_cross_capability.py, skills/agentera/schemas/artifacts/*.yaml, capability-local artifacts.yaml files, .agentera/docs.yaml, scripts/agentera, and tests repeat artifact names, paths, producers, consumers, display names, and exception knowledge. Canonical artifact schemas already carry metadata, but callers still need translation maps and validator exceptions, so artifact moves or renames remain broad and brittle.
+  constraints: |
+    Preserve current observable CLI behavior unless an acceptance criterion names an intentional change. Keep docs.yaml as runtime project mapping/override state, not the canonical registry. Do not implement artifact write validation, health freshness, optional live smoke, generated install-root contract, package/runtime/install-root changes, version bump, release publication, remote push, objective/vision changes, or broad migration beyond capability artifact schemas referencing canonical artifact IDs plus local usage role.
+  scope:
+    included:
+      - archive the completed routing and exit vocabulary plan with cycle 327 validation evidence
+      - characterize duplicate artifact identity, path, producer, consumer, display-name, and exception knowledge
+      - define canonical artifact registry metadata for IDs, display names, defaults, roles, scope, and explicit special cases
+      - migrate capability artifact schemas to canonical artifact ID references plus local usage role
+      - migrate cross-capability validation and bounded CLI artifact-resolution reads to registry facts while preserving observable behavior
+      - replace hardcoded relationship tests with registry-backed validation, including global/local/archive/harness/objective cases
+      - update only documentation and TODO state needed to describe artifact metadata ownership and plan completion
+    excluded:
+      - artifact write validation hook split
+      - health command freshness fix
+      - optional live model/runtime smoke
+      - generated install-root contract or install-root behavior
+      - package/runtime manifest changes
+      - version bump or release publication
+      - release metadata changes
+      - objective or vision changes
+      - remote push or commit
+    deferred:
+      - arch-artifact-write-validation
+      - audit-20-health-command-stale
+      - agentera-optional-claude-live-smoke
+      - install-root-generated-cross-language-contract
+  design: |
+    Put the seam at canonical artifact identity. The registry should answer what an artifact is and how it is named by default; capability schemas should answer how a capability uses that artifact locally; docs.yaml should answer project-local runtime mapping/override questions. Registry consumers should prove relationships through loaded registry facts, not duplicate translation tables. Explicit global, local, archive, harness, and objective path-template cases belong in the registry model rather than validator exception sets.
+  overall_acceptance:
+    - GIVEN artifact identity is needed by a validator, test, capability schema, docs consumer, or bounded CLI consumer WHEN it asks for artifact metadata THEN canonical artifact schemas and the registry Interface are the source of truth for IDs, display names, default paths, producers, consumers, scope, type, and explicit special cases
+    - GIVEN a capability declares artifact usage WHEN its artifacts.yaml is inspected THEN canonical artifact identity is expressed by artifact ID plus local usage role rather than repeated canonical paths, display names, producers, or consumers
+    - GIVEN docs.yaml is inspected after the refactor WHEN path mappings are interpreted THEN it remains project runtime mapping/override state and does not own canonical artifact IDs, producers, consumers, scope, or type
+    - GIVEN validators, tests, and bounded CLI consumers are inspected WHEN artifact translation knowledge is searched THEN display/path/producer/consumer maps are absent outside the registry model and runtime docs override loading unless explicitly justified by an artifact contract
+    - GIVEN unrelated TODOs are inspected WHEN this plan closes THEN artifact write validation, health freshness, optional live smoke, and generated install-root follow-up remain untouched unless separately planned
+  surprises:
+    []
+  validation_evidence:
+    source_artifact: .agentera/progress.yaml
+    cycle: 336
+    timestamp: 2026-05-06 20:45
+    summary: |
+      Artifact registry closure validation passed after fixing three Task 8 validation blockers: mapped plan path registry lookup in temporary AGENTERA_HOME projects, packaged-script metadata for scripts/artifact_registry.py, and the minimal query smoke bundle's missing registry helper/model files.
+    commands:
+      - uv run pytest tests/test_artifact_registry_contract.py tests/test_validate_cross_capability.py -q (10 passed)
+      - uv run scripts/validate_cross_capability.py
+      - uv run scripts/validate_capability.py --validate-protocol
+      - uv run scripts/validate_capability.py --self-validate
+      - uv run scripts/validate_capability.py for all 12 capability directories with --check-primitives
+      - uv run scripts/agentera hej
+      - uv run scripts/agentera todo
+      - uv run scripts/agentera docs
+      - uv run scripts/agentera query --list-artifacts
+      - uv run scripts/agentera query open-todos --format yaml
+      - uv run pytest -q (711 passed)
+      - python3 -m py_compile scripts/artifact_registry.py scripts/validate_cross_capability.py scripts/agentera scripts/validate_capability.py scripts/capability_contract.py scripts/smoke_live_hosts.py

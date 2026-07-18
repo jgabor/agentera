@@ -1,0 +1,13 @@
+id: cqegvprwur
+artifact: plan
+record:
+  name: Update CI L2 sandbox pin from 3.0.0-dev.0 to 3.0.0-next.0
+  depends_on:
+    - rmroepsehj
+  status: complete
+  acceptance:
+    - GIVEN .github/workflows/ci.yml is read WHEN the AGENTERA_NPM_PIN env value is inspected THEN it reports agentera@3.0.0-next.0
+    - GIVEN the L2 sandbox job in ci.yml WHEN it runs the npm view check THEN it queries agentera@3.0.0-next.0 version (skips gracefully if not yet published)
+    - GIVEN scripts/sandbox/v2v3-upgrade-harness.sh lines 33 and 139 WHEN read THEN the default AGENTERA_NPM_PIN fallback is agentera@3.0.0-next.0
+    - GIVEN scripts/sandbox/README.md line 15 WHEN read THEN the example pin is agentera@3.0.0-next.0
+  plan: lwpqtzxgxp

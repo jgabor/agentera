@@ -1,0 +1,12 @@
+id: ztrzofifnf
+artifact: plan
+record:
+  name: Make OpenCode adapter package-loadable
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `.opencode/package.json` is inspected WHEN OpenCode loads it as a package plugin THEN it exposes `.opencode/plugins/agentera.js` through package entry metadata while preserving ESM and project-local plugin file behavior.
+    - GIVEN package registry validation runs WHEN the OpenCode manifest is checked THEN the package-loadable metadata is validated without making the manifest a suite version-bearing surface.
+  evidence: "`.opencode/package.json` now exposes `./plugins/agentera.js` through `main` and `exports`, records `agentera.packageShape: npm-loadable-plugin`, and keeps `.opencode/plugins/agentera.js` as the local plugin path. Package registry/runtime tests passed with the OpenCode manifest still excluded from suite version surfaces."
+  plan: fkgfrokmhn

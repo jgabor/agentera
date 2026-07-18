@@ -1,0 +1,12 @@
+id: lqlrnkqiri
+artifact: plan
+record:
+  name: Retire Claude Code support
+  depends_on:
+    - ihgqyioypl
+  status: complete
+  acceptance:
+    - GIVEN active support discovery WHEN runtime identities are listed THEN Claude is absent and can appear only as retired migration evidence.
+    - GIVEN an Agentera-owned legacy Claude resource WHEN cleanup is previewed and approved THEN it is removed safely while user data and ambiguous files remain untouched.
+    - GIVEN the analytics-source decision from Task 1 WHEN collectors and policy are inspected THEN Claude history handling matches that decision without implying runtime support.
+  plan: uspieksgub

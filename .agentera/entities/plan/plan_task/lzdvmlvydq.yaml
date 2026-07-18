@@ -1,0 +1,13 @@
+id: lzdvmlvydq
+artifact: plan
+record:
+  name: Validate Registry Contract In Isolation
+  depends_on:
+    - hkxuivofbs
+  status: complete
+  acceptance:
+    - GIVEN registry fields are defined WHEN focused validation runs THEN canonical IDs, display names, paths, producers, consumers, scope, type, and override semantics validate before capability migration
+    - GIVEN hardcoded maps are tempting WHEN tests are added THEN tests import or load registry facts rather than duplicating expected artifact maps
+    - GIVEN capability artifact references will change WHEN the contract is checked THEN invalid artifact IDs, missing local roles, and unsupported special-case shapes fail clearly
+    - GIVEN docs.yaml remains runtime state WHEN contract validation runs THEN docs mapping overrides are accepted only as project-local mapping data, not as canonical registry definitions
+  plan: bvacoxfryf

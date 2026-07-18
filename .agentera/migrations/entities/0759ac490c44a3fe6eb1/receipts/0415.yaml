@@ -1,0 +1,13 @@
+id: nscyvuftaj
+artifact: plan
+record:
+  name: Fix fresh-project hej repeat routing
+  depends_on:
+    - yipvcrdqph
+  status: complete
+  acceptance:
+    - GIVEN a genuinely first-run empty project WHEN agentera hej is requested THEN the direction prompt still routes to visionera.
+    - GIVEN the first direction prompt was abandoned and no vision exists WHEN agentera hej repeats in the same saved context THEN the next action routes to resonera instead of visionera.
+    - GIVEN a vision-only project state WHEN agentera hej is requested THEN the response does not create a hej-to-visionera loop.
+    - GIVEN first-run, abandoned-repeat, and vision-only states WHEN hej routing is exercised THEN each state produces the expected route and rejects the prior loop behavior.
+  plan: evlwlzprps

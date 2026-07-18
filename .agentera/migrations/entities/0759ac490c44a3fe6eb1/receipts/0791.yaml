@@ -1,0 +1,17 @@
+id: aovwsutdov
+artifact: plan
+record:
+  name: Contract-preserving lint correction
+  depends_on:
+    - bbxcvadqtt
+  status: complete
+  acceptance:
+    - GIVEN a Planera plan draft includes concrete anchors WHEN artifact lint evaluates it THEN the abstraction check passes without requiring unrelated wording changes.
+    - GIVEN generic artifact prose lacks concrete anchors WHEN artifact lint evaluates it THEN the abstraction advisory is still reported.
+    - GIVEN callers use text input, file input, piped input, text output, JSON output, default advisory mode, or strict mode WHEN the lint command runs THEN the existing command contract and exit behavior remain compatible.
+  evidence:
+    - Updated the self-audit abstraction checker to recognize repo-style path anchors under concrete source/doc/test directories without changing lint CLI input handling, output fields, advisory default, or strict exit logic.
+    - '`AGENTERA_HOME="/home/jgabor/git/agentera" uv run scripts/agentera lint --artifact PLAN.md --text "Deliver queue visibility through queued-message fixture, semantic snapshots, PTY smoke, mage check, source docs, and concrete internal/runtime internal/app internal/tui boundaries." --format json` exited 0 with status=pass and abstraction detail `internal/runtime`.'
+    - '`AGENTERA_HOME="/home/jgabor/git/agentera" uv run scripts/agentera lint --artifact PLAN.md --text "This plan improves the system broadly and makes the implementation better for users." --format json` exited 0 in default advisory mode with abstraction fail `abstraction creep: no concrete anchor`; the same text with `--strict --format json` exited 1 with advisory=false.'
+    - "Contract checks preserved supported modes: text input and JSON output on the boundary sample exited 0, file input on `/tmp/opencode/aila-m13-plan.yaml` exited 0 with abstraction pass `docs/notes/PROMPT.md` and only verbosity fail, text output on generic prose exited 0 in advisory mode, piped stdin with `internal/runtime` exited 0 with source=`stdin`, and `uv run pytest tests/test_self_audit.py -q` passed with 21 tests."
+  plan: nnyclcnjcy

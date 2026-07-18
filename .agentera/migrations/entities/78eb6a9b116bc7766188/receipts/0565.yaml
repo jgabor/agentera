@@ -1,0 +1,16 @@
+id: vxiipueatp
+artifact: plan
+record:
+  name: Align runtime schemas and quality budgets
+  depends_on:
+    - iaiheclmnj
+    - ztithvjjxx
+    - updggsszct
+    - yxrsouibie
+  status: pending
+  acceptance:
+    - GIVEN growing artifacts and bounded consumers WHEN lint and validation run THEN schema-owned entry, source-work, and serialized-output checks replace contradictory whole-history constants.
+    - GIVEN archive, overlay, projection, retrieval, durability, and migration states WHEN schemas are inspected THEN identities, counts, errors, and omission semantics agree.
+    - GIVEN source and generated authorities WHEN drift tests run THEN one canonical value governs each budget and status vocabulary.
+    - GIVEN satisfaction and compaction tests WHEN they run THEN Decision 53 review protection and `uniform_10_40_50` projection policy remain unchanged.
+  plan: syhftadrcv

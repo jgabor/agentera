@@ -1,0 +1,12 @@
+id: txwffwhrpf
+artifact: plan
+record:
+  name: Managed runtime surface refresh and cleanup
+  depends_on:
+    - prxxdqjajd
+  status: complete
+  acceptance:
+    - GIVEN managed Codex runtime config or hooks are stale WHEN repair apply runs THEN managed entries are refreshed without overwriting unrelated user config.
+    - GIVEN managed OpenCode plugin, command, or skill surfaces are stale WHEN repair apply runs THEN managed surfaces are refreshed or removed according to their current Agentera ownership proof.
+    - GIVEN obsolete managed Agentera artifacts remain after app-home migration WHEN cleanup runs THEN managed remnants are removed or reported without touching shell startup files.
+  plan: lxpdfnzgfj

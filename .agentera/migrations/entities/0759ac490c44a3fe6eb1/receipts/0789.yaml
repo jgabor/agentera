@@ -1,0 +1,18 @@
+id: nfsaenartg
+artifact: plan
+record:
+  name: Policy-gated closeout
+  depends_on:
+    - ibajkhhsiu
+    - imkoolfyqz
+    - ngjmjiifcm
+    - girvypujvc
+  status: complete
+  acceptance:
+    - GIVEN the implemented change is classified under `.agentera/docs.yaml` semver policy WHEN closeout starts THEN version-bearing surfaces are updated only if the policy requires it and the chosen classification is recorded.
+    - GIVEN local state is synchronized WHEN artifacts are updated THEN only policy-required TODO, CHANGELOG, DOCS, PROGRESS, and PLAN evidence is changed, with no unrelated artifact churn.
+    - GIVEN final verification runs WHEN the plan is ready for handoff THEN focused tests, touched artifact validators, compaction check or fix, and `git diff --check` pass.
+  evidence:
+    - Classified the source-contract and guidance expansion as `feat`; per `.agentera/docs.yaml` semver policy, aligned version-bearing surfaces from 2.7.0 to 2.8.0 across `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json`.
+    - Synced TODO, CHANGELOG, DOCS, PROGRESS, and PLAN evidence for the Plan CLI source contract raw-read reduction without changing persisted plan artifact shape, decision satisfaction, vision/objective state, installed app/profile state, publication, push, tag, package-manager state, or command vocabulary.
+  plan: hrbcocrrcs

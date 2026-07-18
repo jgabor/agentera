@@ -1,0 +1,13 @@
+id: zkvxklabzd
+artifact: plan
+record:
+  name: Strengthen source-backed OpenCode hook contract coverage
+  depends_on:
+    - ztrzofifnf
+    - sjvjxppoki
+  status: complete
+  acceptance:
+    - GIVEN `@opencode-ai/plugin` types expose hook keys WHEN runtime adapter tests run THEN coverage proves Agentera registers `chat.message`, `shell.env`, `event`, tool hooks, and `experimental.session.compacting` against that source-backed interface.
+    - GIVEN public OpenCode docs omit specific hook keys WHEN docs/tests are inspected THEN the source-backed evidence and known documentation gap is recorded instead of guessing unsupported hook names.
+  evidence: Runtime adapter tests now validate `event`, `shell.env`, `chat.message`, `tool.execute.before`, `tool.execute.after`, and `experimental.session.compacting` against the installed `@opencode-ai/plugin` Hooks interface while preserving direct session-event hook rejection. Focused runtime, package, descriptor, lifecycle, and smoke checks passed.
+  plan: fkgfrokmhn

@@ -1,0 +1,13 @@
+id: vfzqltulwb
+artifact: plan
+record:
+  name: Runtime hook convergence
+  depends_on:
+    - cmrgtjfnnh
+    - nuafrgrbpg
+  status: complete
+  acceptance:
+    - GIVEN existing runtime hooks validate TODO or YAML artifacts WHEN they run after supported write/edit events THEN they use the same validation and compaction behavior as the explicit command.
+    - GIVEN a sparse or unsupported runtime hook payload is received WHEN validation cannot reconstruct the artifact safely THEN the hook allows or reports according to its existing runtime contract without claiming compaction occurred.
+    - GIVEN hook regression tests run WHEN they cover TODO Resolved, YAML validation, apply_patch parsing, and unsupported payloads THEN at least one pass and one fail path is covered for each changed hook boundary.
+  plan: nlxcuhxfsh

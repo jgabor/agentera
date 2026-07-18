@@ -1,0 +1,15 @@
+id: rewtdphvpa
+artifact: plan
+record:
+  name: Closeout verification and validation program release gate
+  depends_on:
+    - pgleddrfda
+    - pvlkkligwz
+    - kpsmicemth
+  status: complete
+  acceptance:
+    - GIVEN all P0 harness scenarios WHEN run on feat/v3 at closeout THEN sandbox-report overall pass for every non-gap scenario
+    - GIVEN stable-channel backportSafety.test.ts and parityOracle.test.ts WHEN run THEN they still pass unchanged
+    - GIVEN UPGRADE.md v2→v3 section WHEN cross-checked THEN documented phases and flags match harness commands used in P0 scenarios
+    - GIVEN progress metadata WHEN task completes THEN evidence references harness script paths and vitest suite names without standalone bookkeeping-only commit
+  plan: lwdkmjtnfe

@@ -1,0 +1,22 @@
+id: edeuluskcc
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Agentera App Files Wording Cleanup
+  what: "Replace current user-facing and diagnostic `bundle` wording that means installed Agentera app files with the canonical terms from `references/cli/bundle-skill-vocabulary.yaml`: `Agentera app files`, `app files directory`, `installed app`, or another authority-approved app-files term."
+  why: The bundle/SKILL.md vocabulary authority exists and the structured app lifecycle metadata now uses Decision 54 statuses, but current prose and diagnostics still risk describing installed app files as a `bundle`. This fix applies the authority to the installed-app wording surface while preserving shipped compatibility identifiers, historical records, package metadata, and path-like references.
+  constraints: Keep this plan scoped to user-facing and diagnostic wording where `bundle` means Agentera app files. Do not rewrite compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, `bundle.dryRunCommand`, `--only bundle`, package metadata values, fixtures, archived plans, changelog/progress history, or concrete file paths. Do not work on ambiguous `SKILL.md` prose, routing/execution vocabulary cleanup, capability `prose.md` rename, `first_invocation_read`, broad vocabulary regression coverage, 3.0.0 packaging, app/profile refresh, publication, push, tag, package-manager state, `.agentera/vision.yaml`, objective state, or decision satisfaction state.
+  overall_acceptance:
+    - Current user-facing and diagnostic wording no longer calls installed Agentera app files a `bundle` unless the occurrence is a preserved compatibility identifier, historical record, package metadata value, fixture, or concrete path.
+    - Focused tests enforce the boundary through `references/cli/bundle-skill-vocabulary.yaml` without starting the later broad vocabulary regression sweep.
+    - The top TODO is closed without changing SKILL.md terminology, routing/execution terminology, Decision 57 implementation, package/runtime state, publication state, protected artifacts, or decision satisfaction state.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

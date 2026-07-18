@@ -1,0 +1,12 @@
+id: qteagwcvse
+artifact: plan
+record:
+  name: Define retrieval authority and command grammar
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN each state collection WHEN classified THEN growth, identity, storage ownership, ordering, bounds, cursor, omission, and get behavior are explicit.
+    - GIVEN plan tasks, plans, and experiments WHEN commands are specified THEN grammar, selectors, experiment zero, and structured errors are unambiguous.
+    - GIVEN valid and invalid contract examples WHEN tested THEN at least one passing and failing case covers each rule.
+  plan: juqmsmvfev

@@ -1,0 +1,16 @@
+id: bswzhscazn
+artifact: plan
+record:
+  name: Wire phased upgrade orchestrator and CLI command
+  depends_on:
+    - lnbgjplmsh
+    - hlhaayuzyu
+    - ojdfymmzpi
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/src/upgrade/upgradeOrchestrator.ts WHEN upgrade --dry-run --project "$PWD" runs THEN it emits agentera.upgrade.v2 JSON with phases, per-item statuses, channel metadata, and dryRunCommand/applyCommand fields
+    - GIVEN --yes without prior dry-run semantics WHEN attempted with cross-major work THEN command exits non-zero with plain-language error (preview mandatory)
+    - GIVEN --only artifacts|runtime|cleanup WHEN used THEN orchestrator limits phases like main's --only flag
+    - GIVEN packages/cli/src/cli/commands/upgrade.ts WHEN rewritten THEN it delegates to orchestrator and replaces the current self-contained-only stub
+    - GIVEN schema.ts upgrade description WHEN read THEN it documents v1→v2 (legacy) and v2→v3 (explicit opt-in) boundaries accurately
+  plan: pcohfdsziy

@@ -1,0 +1,14 @@
+id: sezvujxssr
+artifact: plan
+record:
+  name: Claude Code adapter repair
+  depends_on:
+    - ocoeguoqkq
+    - uaixvflsda
+  status: complete
+  acceptance:
+    - GIVEN supported Claude Code fixture schemas are extracted WHEN corpus building runs THEN normalized records include runtime label, timestamp, conversation key, and tool or command events needed by the startup analyzer.
+    - GIVEN malformed Claude Code items are encountered WHEN extraction runs THEN degraded counts are bounded and raw payloads are not emitted.
+    - GIVEN Claude Code records do not match the benchmark window WHEN benchmark windowing runs THEN the status remains distinct from `schema_divergent`.
+  evidence: '`scripts/extract_corpus.py` now extracts Claude Code nested `message.content[].tool_use` events, carries Claude session IDs into `conversation_key`, and preserves runtime/timestamp/tool argument fields needed by `scripts/startup_analysis_contract.py`. Focused tests in `tests/test_startup_analysis_contract.py` verify supported Claude Code fixtures produce startup analyzer records and state sequences; malformed Claude JSONL produces bounded degraded `schema_divergent` counts without raw payloads; and Claude Code records filtered out by benchmark windowing remain `ok / records_extracted` with `record_count: 0`, distinct from `schema_divergent`. Verification: `uv run pytest tests/test_startup_analysis_contract.py -k "claude or schema_divergent or zero_window"` passed with 5 selected tests.'
+  plan: vbepjijzmu

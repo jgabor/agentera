@@ -1,0 +1,17 @@
+id: gtpwcgtrao
+artifact: plan
+record:
+  name: Version metadata sync
+  depends_on:
+    - nvlvrkysfa
+    - kjikbstkii
+    - crmotjrkcu
+  status: complete
+  acceptance:
+    - GIVEN the implemented change is a `feat` WHEN `.agentera/docs.yaml` version policy is reviewed THEN version-bearing surfaces follow the DOCS-owned `semver_policy` and `version_files` list.
+    - GIVEN version-bearing surfaces change WHEN package and metadata checks run THEN package registry and packaged CLI tests pass with aligned version values.
+    - GIVEN release metadata is synced WHEN scope is audited THEN no package publication, remote push, tag, installed-app refresh, profile refresh, vision edit, objective edit, or decision satisfaction change occurred.
+  evidence:
+    - "Reviewed `.agentera/docs.yaml` semver policy: `feat` maps to a minor bump and `version_files` lists the version-bearing surfaces. Aligned `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` from 2.5.0 to 2.6.0."
+    - Package metadata verification passed with `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py -q`, and no package publication, remote push, tag, installed-app refresh, profile refresh, vision edit, objective edit, or decision satisfaction change occurred.
+  plan: hfrfqlxlqx

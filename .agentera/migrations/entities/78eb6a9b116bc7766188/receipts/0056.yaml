@@ -1,0 +1,23 @@
+id: zhpdfeqvos
+artifact: decisions
+record:
+  date: 2026-05-24
+  question: How should Agentera strengthen visualisera governance for terminal-native agent output?
+  context: Agentera's visual identity lives in DESIGN.md and protocol.yaml. It governs terminal-native Markdown output, not rendered web UI. Agent-rendered surfaces such as the hej dashboard, capability introductions, and structured artifact headers can drift from declared glyphs, dividers, and constraints. Resonera review compared prose-only strengthening against near-term CLI enforcement and broader visualisera mode expansion. Decision 56 defers new CLI surfaces until contract-first parity work is ready for the 3.0 direction.
+  alternatives:
+    - name: Phase 1 prose adoption only
+      status: chosen
+      description: Extend DESIGN.md and visualisera instructions with a startup gate, brand-vs-product register rules, and expanded agent-output constraints. Defer deterministic linting and additional visualisera modes until drift is measurable or CLI parity work begins.
+    - name: Prose plus reverse-engineer mode
+      status: rejected
+      description: Adds a document-style workflow to infer tokens from observed output. Useful later, but broader than the first governance slice.
+    - name: Include deterministic design-output linting now
+      status: rejected
+      description: Would catch drift automatically, but adds a new CLI surface before recurring slop is evidenced and before Decision 56 parity constraints are satisfied.
+    - name: Defer all visualisera governance changes
+      status: rejected
+      description: Leaves agent-output drift unmanaged despite an existing design system.
+  choice: Adopt Phase 1 prose governance for design in one refine pass. Formalize `agentera prime --context design` plus DESIGN.md read as a hard Step 0 gate in design instructions. Add brand-vs-product output registers and suite-vs-project design authorities to DESIGN.md (alongside the terminal/mobile surface register on feat/v3). Expand DESIGN.md constraints with agent-output anti-patterns and a slop test. Defer deterministic design-output linting until evidence or 3.0 CLI work justifies it.
+  reasoning: Agentera already owns the token layer; the gap is explicit governance for agent-rendered output. Prose changes are contract-aligned and do not require a new CLI command. Resonera amendment 2026-06-09 separates suite design authority from project design authority so a host repo's DESIGN.md (for example a user-built coding-agent CLI) never conflates with Agentera chrome. On v3, capability prose ships in packages/cli instruction modules (D65); npm bundle does not copy suite DESIGN.md into host projects.
+  confidence: firm
+  feeds_into: DESIGN.md, packages/cli/src/capabilities/design/instructions.ts, skills/agentera/capabilities/status/schemas/artifacts.yaml, design

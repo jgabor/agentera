@@ -1,0 +1,13 @@
+id: tewkalwcgw
+artifact: plan
+record:
+  name: Add coexistence warning as orientation attention item
+  depends_on:
+    - krbgehyqss
+  status: complete
+  acceptance:
+    - GIVEN a v2 managed app is present at the resolved home AND the runtime hooks reference the v3 npm entrypoint WHEN the orientation command runs THEN the attention list includes an item warning about v2 and v3 coexistence
+    - GIVEN no v2 managed app is present WHEN the orientation command runs THEN the attention list does not include a coexistence warning
+    - GIVEN the doctor command runs WHEN the output is rendered THEN the existing coexistence section is unchanged
+    - GIVEN the test fixtures directory WHEN inspected THEN a coexistence fixture exists or is created that simulates v2 app plus v3 hooks in a temp dir
+  plan: gremlonjmv

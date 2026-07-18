@@ -1,0 +1,37 @@
+id: lmggziyygs
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-15
+    status: complete
+    reviewed: 2026-07-15
+    critic_issues: 10 found, 10 addressed, 0 dismissed
+    title: "Plan: Replace monolithic corpus with tiered extraction"
+  what: Replace the unbounded corpus dump with bounded, complete local evidence segments and a deterministic, source-linked signal tier. Move bounded consumers and the current profile synthesis path to appropriate tiers.
+  why: Real corpora safely degrade to unavailable or stale results because readers cannot analyze oversized extractor output. Tiering restores useful analysis at realistic scale while preserving complete local evidence.
+  constraints: Preserve local-history consent, source traceability, deterministic extraction, all supported source families, and compatible JSON and exit behavior unless explicitly documented. Keep suite metadata at 3.0.0. Do not publish, release, add profile levels, generate a glossary, add remote storage, or redesign unrelated analytics.
+  overall_acceptance: GIVEN extraction larger than routine consumer limits WHEN refresh and supported consumers run THEN each consumer produces useful bounded results, reports truthful coverage, and retains source-addressable complete local evidence without reading any unbounded artifact.
+  scope:
+    included:
+      - Tier contract and extraction refresh behavior.
+      - Bounded complete evidence and source-linked signals.
+      - Usage, report status, prime coverage, and startup-analysis consumers.
+      - Current profile synthesis, parity, tests, help, contracts, and state sync.
+    excluded:
+      - Profile level selection.
+      - Glossary generation.
+      - Remote storage and UI work.
+    deferred:
+      - Glossary synthesis; its declared correction, instruction and configuration, record identity, date, and evidence-anchor needs constrain the signal contract even though implementation remains deferred.
+  design: Preserve complete evidence in independently bounded units, derive a reproducible bounded signal view with resolvable evidence identities, and let each consumer use the smallest sufficient tier.
+  unknowns:
+    - question: What signal bound and selection preserve representative evidence across all supported sources while staying below consumer limits?
+      affects_task: 1
+      resolve_by: Measure real corpora, map required fields, and compare bounded results before fixing regression thresholds.
+    - question: Does bounded profile synthesis preserve useful evidence distribution compared with the current full-corpus intent?
+      affects_task: 4
+      resolve_by: Compare representative synthesis evidence and surface insufficiency instead of silently reducing confidence.
+      resolution: Resolved. The profile_sufficiency section of evidence-tier-authority.yaml defines minimum_family_retention=0.5; assessProfileSufficiency projects the contract threshold, compares per-family retention between bounded signals and the selection report's intended distribution, and flags insufficient families. Capped tiers with zero retained profile signals are flagged insufficient — no fabricated confidence. Uncapped tiers trivially meet the threshold (retained==intended). Tests verify uncapped sufficient, capped below threshold insufficient, zero-intended not a violation, and word-boundary insufficiency reporting.
+  surprises:
+    []

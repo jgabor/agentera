@@ -1,0 +1,6 @@
+id: dtacpuwwfe
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Add terminology-drift detection to audit (alongside the existing finding families) and emit findings that propose canonical terms; persist the resolved canonical set as `.agentera/glossary.yaml`. No conversation history needed — this is a structural codebase scan, independent of corpus.json and the tiered-extraction work. Audit detects drift when the same concept carries multiple names across the codebase (e.g., `Dict` vs `JsonValue` vs `Record<string, any>`), or when shipped code uses a term that diverges from any glossary the user carries in their `PROFILE.md`. Audit emits findings with proposed canonical term + list of drift variants + evidence anchors (file:line), using the existing severity/confidence vocabulary; the canonical set lands in `.agentera/glossary.yaml` only after `discuss` confirms each proposal, mirroring how audit findings flow through discuss before becoming decisions. Register `.agentera/glossary.yaml` in `.agentera/docs.yaml` artifact mapping so profilera's skip rule and other capabilities resolve it through the standard path. Add a `v1LegacyCruft` scan guard so a repo cannot reintroduce drift variants once `discuss` has confirmed the canonical term."

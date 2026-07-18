@@ -1,0 +1,28 @@
+id: ctldxvvhsp
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-23
+    status: open
+    title: Upgrade postflight and OpenCode cleanup alignment
+  what: Align upgrade postflight with the app-home doctor probe used by agentera doctor, and reconcile the OpenCode hej.md conflict where runtime copy and cleanup stale detection fight each other after a successful repair.
+  why: Successful agentera upgrade --yes can exit 0 while printing After-check failed even though agentera doctor reports up to date, which erodes trust after repair. Separately, runtime applies a managed hej.md copy and cleanup then reports still present after cleanup because detect_stale_v1 treats any managed command named hej as a v1 remnant regardless of v2 content.
+  constraints: Use Option A for postflight (build_doctor_status, not full setup_doctor migration). Do not change postflight exit code unless a regression test proves it is required. Preserve Decision 54 lifecycle vocabulary in user-facing After-check copy. No vision or objective edits. Scope cli; fold progress/plan metadata into the implementation commit per AGENTS.md.
+  scope:
+    included:
+      - Postflight helper and render_upgrade After-check alignment in scripts/agentera_upgrade.py
+      - OpenCode cleanup vs runtime coordination for legacy bridge commands such as hej.md
+      - Stale detection refinement in scripts/detect_stale_v1
+      - Focused tests in tests/test_upgrade_cli.py and related upgrade/cleanup tests
+      - Minimal vocabulary note in references/cli/vocabulary.md
+    excluded:
+      - Full setup_doctor.classify_install_root app-home migration (Option B follow-up)
+      - Package refresh (--update-packages) behavior changes
+      - Copilot shell-rc work (completed separately)
+    deferred:
+      - Unifying setup_doctor CLI with agentera doctor for standalone --install-root runs
+  design: "Postflight: replace setup_doctor.build_report(app_home) in apply_upgrade_plan with _build_upgrade_postflight that calls build_doctor_status using the same inputs as cmd_doctor; render After-check from canonical status and top signal, not setup_doctor aggregate fail counts. Cleanup/runtime: detect_opencode_stale_commands currently flags managed commands whose stem is in V1_SKILL_NAMES even when content is the current v2 legacy-bridge template; runtime then recopies hej.md from .opencode/commands while cleanup tries to remove it, yielding still present after cleanup. Fix by narrowing stale detection to commands that still reference removed v1 skill paths (or otherwise fail a v2 managed-command content check), and exclude commands the runtime phase just installed from cleanup still-present reporting in the same apply pass. Prefer keeping agentera.md as the primary managed OpenCode command; treat hej.md as optional legacy bridge consistent with test_whole_repair_apply_after_clean_preview expecting removal when it is a v1-style managed stub."
+  overall_acceptance:
+    - GIVEN a successful platform-home repair WHEN the user runs upgrade --yes THEN exit code is 0, After-check reports pass, and agentera doctor agrees on up_to_date
+    - GIVEN the same repair WHEN cleanup and runtime both touch OpenCode commands THEN output does not show contradictory fixed copy command and still present after cleanup for the same managed bridge file

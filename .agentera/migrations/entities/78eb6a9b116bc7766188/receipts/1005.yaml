@@ -1,0 +1,14 @@
+id: warctzates
+artifact: plan
+record:
+  name: Implement checkbox-aware TODO parsing on feat/v3
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a TODO.md with - [x] [fix] Resolved item under a severity section WHEN agentera state todo --format json runs THEN that entry has status resolved (or equivalent done/closed) and is omitted from default open-only output
+    - GIVEN a TODO.md with - [ ] [fix] Open item under a severity section WHEN agentera state todo --format json runs THEN that entry has status open
+    - GIVEN a TODO.md with - [fix:3.0.0] Type-only item (no leading checkbox) WHEN agentera state todo --format json runs THEN that entry remains status open
+    - GIVEN a TODO.md whose Critical section contains only - [x] [fix] resolved rows WHEN agentera prime --format json runs THEN issues.critical is 0 and next_action does not select that resolved text
+    - GIVEN the vitest suite WHEN run on feat/v3 THEN new regression tests cover checkbox+type, checkbox-only shapes, type-only control, and a failing fixture that would regress to all-open
+  plan: tbuxrlvnym

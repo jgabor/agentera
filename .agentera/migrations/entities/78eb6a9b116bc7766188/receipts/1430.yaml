@@ -1,0 +1,6 @@
+id: hikmipvutn
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[refactor:3.0.0] Separate plan-level and task-level status mutation contracts. Resolved 2026-07-12: `agentera state plan set-status --task`..."

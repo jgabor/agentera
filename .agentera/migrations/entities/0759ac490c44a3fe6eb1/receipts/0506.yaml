@@ -1,0 +1,11 @@
+id: btmehvdsnh
+artifact: plan
+record:
+  name: Map emitters to lifecycle status and operation verb
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the authority in app-lifecycle-vocabulary.yaml WHEN each prime/doctor/projectIntegration/installRoot message path is inventoried THEN each path is tagged with canonical status and the correct operation verb (update vs repair vs migrate).
+    - GIVEN the inventory WHEN mismatches are listed THEN the list includes at minimum installRoot.managedStale generic diagnostic, doctor approval phrase, projectIntegration needsAppUpgrade message, and prime appStatusAttention / next_action labels.
+  plan: galouyueud

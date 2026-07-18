@@ -1,0 +1,11 @@
+id: ouvikqgzrs
+artifact: plan
+record:
+  name: Rewrite inspirera Key Concepts and Applicability Matrix sections
+  depends_on:
+    - dkyhtzncun
+  status: complete
+  acceptance:
+    - GIVEN inspirera instructions.ts WHEN parsed THEN Key Concepts and Applicability Matrix use RFC 2119 modals for constraints and bare imperatives are replaced with noun-plus-modal forms
+    - GIVEN the file WHEN agentera check validate capability inspirera runs THEN it passes
+  plan: hhxqdmjyij

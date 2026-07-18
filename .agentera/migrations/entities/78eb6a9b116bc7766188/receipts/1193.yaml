@@ -1,0 +1,42 @@
+id: anedpqtccr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-12
+    status: archived
+    reviewed: 2026-05-12
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    revised: Removed unknowable env-provenance claims, made exact old-default recovery deterministic, bounded user-data-only app homes, scoped adapter repair to current generated/runtime surfaces, and kept v1 Markdown migration verification-only unless regressions appear.
+    title: 2.3.1 runtime-injected app-home recovery
+  what: |
+    Ship a 2.3.1 patch release that recovers when a runtime or plugin injects the deprecated old default `AGENTERA_HOME`, without requiring users to unset env vars manually. The release makes stale default recovery deterministic, repairs adapter/default guidance, accepts safe user-data-only app homes, and keeps v1 Markdown migration verified through the existing artifacts phase.
+  why: |
+    After 2.3.0, OpenCode loaded an updated visible skill but the process still inherited `AGENTERA_HOME=/home/jgabor/.agents/agentera`; the managed CLI at `$AGENTERA_HOME/app/scripts/agentera` did not exist. The user's shell config pointed elsewhere, so the bad value likely came from Agentera runtime injection or persisted runtime config. Users should not have to know to unset a stale injected value before `/agentera` can recover.
+  constraints: |
+    Keep this as a 2.3.1 patch. Doctor remains read-only and upgrade owns writes. `--install-root` stays authoritative. An inherited exact deprecated default is recoverable only when no explicit `--install-root` was supplied and the managed app is missing or stale. Preview must write nothing and apply requires approval. Do not delete arbitrary unmanaged data, redesign install-root discovery beyond this recovery path, implement Profilera corpus parity, or change v1 Markdown migration unless verification exposes a regression.
+  scope:
+    included:
+      - Deterministic reproduction of runtime-injected old default `AGENTERA_HOME`.
+      - CLI and guidance recovery for the exact deprecated default without user unsetting.
+      - Safe user-data-only platform app-home classification for install/refresh previews.
+      - OpenCode adapter/default resolver and generated contract repair for current app-home layout.
+      - AGENTERA_HOME wording in package/plugin/runtime surfaces touched by 2.3.1.
+      - Verification that v1 Markdown migration remains automated through the artifacts phase.
+      - 2.3.1 version, changelog, TODO, docs, progress, and release validation evidence.
+    excluded:
+      - Profilera corpus parity for OpenCode and GitHub Copilot.
+      - Arbitrary cleanup of unknown user-owned directories or files.
+      - Broad `agentera validate`, `verify`, `smoke`, `corpus`, or `usage` namespaces.
+      - Live package publication or installed app refresh without explicit approval.
+    deferred:
+      - Profilera corpus parity.
+      - User-specific cleanup of unknown data that requires review.
+  design: |
+    Treat the old default path as a known migration shape, not as proof of env authorship. Adapters should stop injecting `~/.agents/agentera`; the CLI should recover from the exact inherited old default only when no explicit override was supplied and the managed app is absent or stale. Safe platform app homes may contain recognized Agentera user state while managed code remains confined to `app/`. Skill guidance must work even when the installed CLI gate cannot run.
+  overall_acceptance:
+    - GIVEN a runtime injects the deprecated old default as `AGENTERA_HOME` WHEN `/agentera` or upgrade recovery runs THEN the user is guided to a safe app-home recovery path without manually unsetting environment variables.
+    - GIVEN the platform app home already contains Agentera user state WHEN managed code is missing THEN upgrade can preview a safe install under `app/` without treating the directory as arbitrary unmanaged code.
+    - GIVEN 2.3.1 is ready WHEN release state is inspected THEN versions, docs, TODO, progress, tests, and skill guidance agree on the runtime-injected stale-env fix and v1 Markdown migration remains verified.
+  surprises:
+    []

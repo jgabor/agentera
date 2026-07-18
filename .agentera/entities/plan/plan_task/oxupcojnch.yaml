@@ -1,0 +1,15 @@
+id: oxupcojnch
+artifact: plan
+record:
+  name: Parity tests, backport-safety gate, and closeout verification
+  depends_on:
+    - bswzhscazn
+    - qijfayxwwe
+    - oqaqxarvaa
+  status: complete
+  acceptance:
+    - GIVEN packages/cli vitest suite WHEN run THEN all upgrade/channel/compatibility/migration tests pass
+    - GIVEN a stable-channel backport-safety fixture test WHEN run on main-compatible vocabulary/guard code THEN dry-run payload contains zero cross-major migration operations
+    - GIVEN upgrade JSON fixtures WHEN compared to Python oracle fixtures from main (where applicable) THEN phase names, status vocabulary, and exit codes match contract-first parity expectations
+    - GIVEN Decision 56 satisfaction review WHEN migration plan lands THEN feeds_into references (UPGRADE.md, release planning) are updated in TODO or decision follow-up as appropriate
+  plan: pcohfdsziy

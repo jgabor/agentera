@@ -1,0 +1,13 @@
+id: qdjznpeypa
+artifact: plan
+record:
+  name: Inventory all public JSON output surfaces
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `scripts/agentera` parser definitions and public helper scripts are inspected WHEN the inventory is written THEN every supported `--format json` and `--json` surface is listed with command, selector, source file, and owner.
+    - GIVEN a JSON surface is historical, diagnostic, migration-only, or private WHEN classified THEN the inventory records why it is preserved or excluded from the 3.0 public-output rewrite.
+    - GIVEN public surfaces include bare `agentera prime`, prime dashboard/orientation mode, `agentera prime --context <capability> --format json`, direct capability-name commands, `agentera decisions --format json`, `agentera compact --format json`, `agentera validate artifact --format json`, `agentera upgrade --json`, and `agentera describe --format json` WHEN the inventory is reviewed THEN each has an explicit planned action.
+    - GIVEN Decision 58 and Decision 59 govern the work WHEN the inventory is complete THEN its classifications cite those decisions and the D47 inventory pattern.
+  plan: zcmzsbifdp

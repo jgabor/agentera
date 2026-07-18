@@ -1,0 +1,13 @@
+id: oxhyaqmmjp
+artifact: plan
+record:
+  name: Connect docs and tests to the authority
+  depends_on:
+    - ansjvpeqxd
+    - atgkpmkakh
+  status: complete
+  acceptance:
+    - GIVEN `docs/vocabulary.md` is inspected WHEN the app lifecycle section is read THEN it points to the machine-readable authority instead of acting as an untyped parallel source of truth.
+    - GIVEN vocabulary regression tests run WHEN the authority changes THEN they prove the canonical status list, deprecated app status aliases, scoped verbs, and consumer ownership boundaries remain synchronized.
+  evidence: "`docs/vocabulary.md` now names `references/cli/app-lifecycle-vocabulary.yaml` as the machine-readable authority instead of carrying parallel status and verb tables. `tests/test_lifecycle_vocabulary_authority.py` loads the YAML and proves canonical status order, deprecated alias mappings, scoped verbs, and closed consumer ownership boundaries."
+  plan: tdczymmacq

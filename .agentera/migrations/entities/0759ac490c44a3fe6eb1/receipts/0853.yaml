@@ -1,0 +1,12 @@
+id: didsrpgeuy
+artifact: plan
+record:
+  name: Route canonical capability prefixes
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a user request begins with a canonical capability name and topic text WHEN schema-backed routing evaluates it THEN the named capability is selected as a direct canonical route.
+    - GIVEN the direct route is `resonera <topic>` WHEN dispatcher guidance is read THEN the workflow invokes ❈ resonera and does not return a generic analysis response or run `agentera resonera`.
+    - GIVEN primary aliases exist WHEN routing examples are documented THEN slash-route aliases remain separate from CLI state commands.
+  plan: hxrfpbnhmo

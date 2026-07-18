@@ -1,0 +1,115 @@
+id: vrxakatsxj
+artifact: health
+record:
+  date: 2026-07-13
+  dimensions:
+    - architecture_alignment
+    - state_contracts
+    - test_health
+    - documentation
+    - version_health
+    - dependency_health
+    - runtime_lifecycle
+    - artifact_freshness
+  findings_summary:
+    critical: 3
+    warning: 1
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: Lifecycle correctness improved; release health remains blocked by version, dependency, and user-owned runtime evidence.
+  grades:
+    architecture_alignment: A
+    state_contracts: A
+    test_health: A
+    documentation: B
+    version_health: C
+    dependency_health: C
+    runtime_lifecycle: C
+    artifact_freshness: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: Lifecycle projection and Build routing share one positional execution boundary.
+      findings:
+        []
+    - name: state_contracts
+      grade: A
+      summary: Archive-only state is non-executable; writer replay is clean.
+      findings:
+        - heading: Historical archive diagnostics are non-executable
+          severity: info
+          confidence: 100
+          location: packages/cli/src/cli/planLifecycleState.ts:21
+          evidence: Two old archives are diagnostic-only; current_plan_degraded is false and execution_eligible is false.
+          impact: Historical inconsistencies cannot select or mutate work.
+          suggested_action: Preserve immutable evidence; repair only through plan workflow.
+          verify_command: node packages/cli/dist/bin/agentera.js state plan --format json --fields source,summary
+    - name: test_health
+      grade: A
+      summary: 1577 CLI tests, typecheck, build, capability contract, and compact gates pass.
+      findings:
+        []
+    - name: documentation
+      grade: B
+      summary: Lifecycle prose and state are aligned; a known web-doc format check still fails.
+      findings:
+        - heading: Known web documentation formatting failure persists
+          severity: warning
+          confidence: 100
+          location: packages/web/src/content/docs/docs/index.mdx:26
+          evidence: vp run web:check fails only this untouched file; progress 740 recorded it before this plan.
+          impact: The web documentation check is not fully green.
+          suggested_action: Format the file in a separately scoped documentation change.
+          verify_command: vp run web:check
+    - name: version_health
+      grade: C
+      summary: Eleven fix commits follow the latest 3.0.0-dev.18 version bump.
+      findings:
+        - heading: Development release boundary is stale
+          severity: critical
+          confidence: 100
+          location: packages/cli/package.json:3
+          evidence: git rev-list reports 15 commits, including 11 fixes, after the dev.18 bump.
+          impact: The next published package could omit shipped fixes from its versioned release boundary.
+          suggested_action: Select a release target and bump all governed version surfaces before publication.
+          verify_command: git log --oneline 9647942ba5d62d4821d00c824bf833531c679df7..HEAD
+    - name: dependency_health
+      grade: C
+      summary: Production audit reports 15 advisories, including six high severity web dependency findings.
+      findings:
+        - heading: Web dependency chain contains high severity advisories
+          severity: critical
+          confidence: 100
+          location: pnpm-lock.yaml:48
+          evidence: pnpm audit --prod reports high Astro, Vite, undici, and ws advisories.
+          impact: Deployed web dependencies retain known security exposure.
+          suggested_action: Upgrade the affected web dependency chain in a separately approved maintenance change.
+          verify_command: pnpm audit --prod --audit-level=high
+    - name: runtime_lifecycle
+      grade: C
+      summary: Host enablement and trust evidence remains user-owned and release-blocking.
+      findings:
+        - heading: Runtime support floor remains unverified
+          severity: critical
+          confidence: 98
+          location: references/adapters/runtime-lifecycle-authority.yaml:9
+          evidence: prime reports releaseBlocked=true for unknown mandatory enabled or trusted runtime evidence.
+          impact: This checkout cannot claim host-ready runtime support.
+          suggested_action: Complete user-owned enablement and trust steps, then rerun doctor.
+          verify_command: node packages/cli/dist/bin/agentera.js prime --format json
+    - name: artifact_freshness
+      grade: A
+      summary: The completed plan is archived; progress, TODO, and changelog closeout timestamps are current.
+      findings:
+        []
+  trends:
+    comparison_target: Audit 27
+    improved: Lifecycle state now derives execution eligibility from canonical location and validates final publication bytes.
+    degraded: Eleven fixes since dev.18 require a new release boundary before publication.
+    stable: Host trust and web formatting are pre-existing; historical archive diagnostics remain isolated.
+    new_findings: Production dependency audit exposed six high severity advisories in unchanged web dependencies.
+    resolved: Archive status ambiguity no longer permits execution from historical plans.
+    carried_forward: User-owned runtime trust and the known web formatting failure.
+  patterns:
+    - Typed plan writes validate canonical candidate bytes before durable publication.
+    - Plan activity is positional; archived history cannot drive execution.

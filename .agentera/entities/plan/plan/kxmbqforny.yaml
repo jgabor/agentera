@@ -1,0 +1,32 @@
+id: kxmbqforny
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-12
+    status: archived
+    reviewed: 2026-05-13
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    revised: "[post-audit-flagged] Split smoke from state sync, added discovery/contract boundary, bounded lock handling, and gated version changes on explicit release-target selection. Agentera lint still reports advisory verbosity: 535 words exceeds the 500-word plan budget."
+    title: Profilera corpus runtime parity
+  what: Add OpenCode and GitHub Copilot corpus parity in scripts/extract_corpus.py while preserving local-only, read-only, private extraction.
+  why: tests/test_extract_corpus.py currently proves Claude/Codex-shaped corpus paths only. The remaining TODO requires all-runtime Profilera parity, deferred by Decision 50 beyond the 2.3.1 reliability lane.
+  constraints: Reuse existing decision-signal classification. Preserve Decision 47 app-home semantics and Decision 48 namespace boundaries. Do not log raw transcripts, call external services, bump versions, tag, push, publish, refresh installed apps, edit vision, or touch objective state without explicit approval.
+  scope:
+    included:
+      - OpenCode and Copilot discovery, extraction, degradation metadata, fixtures, and non-live smoke parity.
+    excluded:
+      - Live paid host invocations, profile scoring changes, external APIs, new agentera corpus namespace, destructive store repair, publication.
+    deferred:
+      - Broad corpus namespace promotion, live authenticated harvest validation, profile-model tuning.
+  design: Keep scripts/extract_corpus.py as the single normalization surface; define observable runtime status and privacy behavior first, add each runtime independently, then prove fixture-backed parity in tests and scripts/smoke_live_hosts.py.
+  overall_acceptance:
+    - GIVEN any subset of supported runtime stores exists WHEN Profilera corpus extraction completes THEN available Claude, Codex, OpenCode, and Copilot data normalize consistently and unavailable stores degrade explicitly.
+    - GIVEN diagnostics are inspected WHEN extraction, tests, or smoke report state THEN they show counts, statuses, bounded reasons, and remediation labels, not raw transcript content.
+  surprises:
+    - Task 1 retry fixed the evaluator-discovered callable-shape mismatch for available OpenCode/GitHub Copilot candidate stores; extraction remains intentionally unimplemented for Tasks 2 and 3.
+    - Task 2 implements OpenCode `opencode.db` extraction only; GitHub Copilot remains the bounded `extractor_unimplemented` stub for Task 3.
+    - Task 3 replaces the GitHub Copilot stub with read-only `session-store.db` extraction and uses `/chronicle reindex` only as bounded sparse-store remediation metadata.
+    - Task 4 adds combined Claude, Codex, OpenCode, and GitHub Copilot fixture coverage plus explicit missing, locked, sparse, and schema-divergent degradation assertions without changing extractor behavior.
+    - Task 5 upgrades the default smoke harness to use explicit offline Claude Code, Codex, OpenCode, and GitHub Copilot fixtures plus an explicit missing-store degradation audit, so default smoke output stays non-live and count/status-only.
+    - Task 6 closed the completed feature scope without selecting a release target, so TODO, docs, changelog, progress, and plan state were synchronized without version-bearing file changes.

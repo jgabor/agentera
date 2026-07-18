@@ -1,0 +1,34 @@
+id: fdunohbahk
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-15
+    status: complete
+    reviewed: 2026-07-15
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    revised: Merged the mutually dependent authority and provenance work, made non-circular provenance selection explicit fog, preserved the staged boundary, and retained independent verification and closeout tasks.
+    title: "Plan: Complete Audit 32 remediation with valid provenance"
+  what: Complete the accepted Audit 32 authority correction and immutable provenance as one commit-capable outcome, prove release readiness without publication, and independently audit and synchronize final state.
+  why: The prior plan separated authority correction from provenance even though release validation requires valid provenance before the authority correction can commit. Replacing that impossible boundary preserves completed evidence while making the remaining work executable and independently verifiable.
+  constraints: Preserve the already staged authority correction, tests, bundle parity, changelog, Cycle 822, and progress bytes except for typed plan-state publication. Preserve the unstaged Task 1 pending correction in predecessor history. Keep the CLI package at 3.0.0-dev.21 and all suite-bearing surfaces at 3.0.0. Do not alter publication or retrieval behavior, storage policy, archive history, unrelated state, lockfiles, or version surfaces. Do not publish, tag, push, reset, unstage, or commit during planning. New execution evidence must be appended rather than rewriting Cycle 822.
+  scope:
+    included:
+      - Accepted authority semantic correction, tests, bundle parity, and immutable provenance
+      - Non-circular governed-source selection and commit-capable hook validation
+      - Release readiness proof without publication
+      - Independent Audit 32 closure and final state synchronization
+    excluded:
+      - Runtime publication or retrieval behavior changes
+      - Archive layout, retention, migration, or historical archive repair
+      - Package or suite version changes
+      - Unrelated documentation, TODO, release work, publication, tags, or pushes
+    deferred:
+      []
+  design: Treat the authority correction and its provenance as one lifecycle boundary because neither is independently committable. Resolve the immutable-source relationship before committing, then verify the complete release candidate without side effects, and only afterward permit independent closure and archival.
+  unknowns:
+    - question: Which existing immutable source can the combined correction name without circularity while still proving governed package inputs represent the correction?
+      affects_task: 1
+      resolve_by: Before commit, prove normalized governed package inputs equivalent to a selected substantive parent, or narrowly revise the governed-tree validation rule so a selected source commit is valid without weakening stale, source, dependency, or untracked drift detection; record the chosen proof in appended evidence.
+  overall_acceptance: GIVEN the accepted Audit 32 correction is staged but blocked by stale provenance WHEN this replacement plan completes THEN authority semantics and immutable provenance form one hook-green substantive commit, release readiness is proven without external side effects, versions remain 3.0.0-dev.21 and 3.0.0, Cycle 822 remains intact with corrective evidence appended, and independent audit state closes only after PASS.
+  surprises: The accepted authority correction passes focused tests but cannot commit because release metadata correctly rejects stale agentera.gitRef; the predecessor's separate provenance task therefore created an impossible commit boundary.

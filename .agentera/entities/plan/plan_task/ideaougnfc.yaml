@@ -1,0 +1,13 @@
+id: ideaougnfc
+artifact: plan
+record:
+  name: Synchronize release surfaces and project state
+  depends_on:
+    - rfmekkulwz
+  status: complete
+  acceptance:
+    - GIVEN accepted behavior WHEN release metadata is prepared THEN npm development advances from 3.0.0-dev.16 to 3.0.0-dev.17 while core suite surfaces remain 3.0.0.
+    - GIVEN changed command and projection contracts WHEN inspected THEN schema, help, upgrade guidance, runtime documentation, and changelog describe the same defaults and safety boundaries.
+    - GIVEN verified completion WHEN state closes THEN typed progress and plan state, relevant TODO entries, health evidence, and package-content assertions agree.
+    - GIVEN release preparation WHEN complete THEN no publication, tag, or push occurs without a separate explicit request.
+  plan: nskpsridro

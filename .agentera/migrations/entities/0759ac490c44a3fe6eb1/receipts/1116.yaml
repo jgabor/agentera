@@ -1,0 +1,37 @@
+id: sebihbfeow
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-23
+    status: complete
+    reviewed: 2026-05-23
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: Inspektera hybrid audit staleness tracker
+  what: Add a hej-visible hybrid staleness tracker for inspektera health audits, mirroring the profilera profile-age pattern. Fix health CLI state so the latest audit and its date are authoritative, then surface overdue audits through both time-based and progress-cycle signals with configurable thresholds.
+  why: Hej already nudges users when PROFILE.md is older than seven days, but it has no equivalent for health audits even though inspektera prose recommends audits every five to ten realisera cycles. Today hej can report Audit 11 while Audit 20 exists, and health state reads a missing timestamp field instead of the schema-owned date. Without a hybrid tracker, orientation misses overdue audits unless health is actively degrading.
+  constraints: "Mirror the profilera staleness contract shape in CLI and hej output; do not reimplement plan-relative artifact freshness inside hej. Scope cli and hej capability prose; fold progress/plan metadata into the implementation commit per AGENTS.md. No vision or objective edits. Default thresholds: 30 days and 10 cycles. Hybrid stale means either axis exceeds its threshold. Do not bump version until release task explicitly scoped."
+  scope:
+    included:
+      - Latest-audit selection and date-field correction in scripts/agentera health and hej summaries
+      - Time-based staleness via AGENTERA_INSPEKTERA_MAX_AGE_DAYS
+      - Cycle-based staleness via AGENTERA_INSPEKTERA_MAX_CYCLES counting progress entries after the latest audit date
+      - Hej structured health metadata, attention items, and optional next-action suggestion for stale audits
+      - Evidence-context health current-state alignment with corrected audit date
+      - Focused tests in tests/test_query_cli.py and related health/hej coverage
+      - Minimal contract notes in hej and inspektera capability instructions
+    excluded:
+      - Changes to inspektera audit dimensions or HEALTH.md write format during audits
+      - Plan-relative artifact staleness logic in hej (remains inspektera/orkestrera owned)
+      - Automatic audit dispatch or orkestrera chaining without user confirmation
+      - Package publication, tag, push, or installed bundle refresh
+    deferred:
+      - Per-project threshold profiles in PROFILE.md or docs.yaml conventions
+      - Hej attention for missing health artifact beyond a single degraded attention item
+  design: "Prerequisite: treat the highest-numbered health audit as latest and read its date field (HA2), not timestamp. Add _inspektera_stale_threshold_days() and _inspektera_stale_threshold_cycles() with the same env-parse pattern as profilera. _check_inspektera_audit_staleness() returns stale when days_since_audit >= age threshold OR cycles_since_audit >= cycle threshold; when progress is absent, use time-only; when health is absent, emit a missing-audit attention item analogous to missing PROFILE.md. Extend hej health dict with stale, days_since_audit, cycles_since_audit, stale_threshold_days, stale_threshold_cycles, triggering_axis, and suggested_action. Attention copy follows profilera wording. Next-action ranks stale audit below pending plan tasks and degrading health but above idle decision follow-ups. _evidence_health_state() and agentera health --format json must use the same latest-audit helper so prime/hej/health agree."
+  overall_acceptance:
+    - GIVEN a returning project with an old latest audit and recent progress cycles WHEN agentera hej runs THEN the dashboard surfaces a hybrid stale audit attention item and structured health metadata without misreporting an older audit number
+    - GIVEN AGENTERA_INSPEKTERA_MAX_AGE_DAYS=14 on a fixture audit 15 days old and cycles under threshold WHEN agentera hej --format json runs THEN health.stale is true via the time axis only
+    - GIVEN corrected health state WHEN agentera health and hej are compared THEN both name the same latest audit number and date
+  surprises:
+    []

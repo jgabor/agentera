@@ -1,0 +1,12 @@
+id: qrxjhxxllw
+artifact: plan
+record:
+  name: Fix TS emitters and derive approval copy from status
+  depends_on:
+    - btmehvdsnh
+  status: complete
+  acceptance:
+    - GIVEN version_mismatch evidence WHEN managedStale or doctor signals emit user-visible text THEN the message uses update wording and not need repair.
+    - GIVEN aggregate doctor status is outdated only WHEN approval and recovery fields render THEN they reference app-file update approval, not repair approval.
+    - GIVEN needsAppUpgrade without repair signals WHEN projectIntegration builds its message THEN it says the app copy is out of date and preview update via agentera upgrade, without repair or upgrade conflation.
+  plan: galouyueud

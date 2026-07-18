@@ -1,0 +1,14 @@
+id: zohzlowgvd
+artifact: plan
+record:
+  name: Resolve TODO items and sync state
+  depends_on:
+    - pndhjursht
+    - bditdqnlcd
+    - jebcylmqfs
+  status: complete
+  acceptance:
+    - GIVEN both degraded TODO items WHEN closeout runs THEN they move to Resolved in TODO.md
+    - GIVEN the change set WHEN the full pytest suite and `agentera check validate capability-contract` run THEN both pass
+    - GIVEN the release-facing fix WHEN closeout runs THEN CHANGELOG.md records the check/gate traceback fix and progress.yaml records verification evidence with a forward commit hash (never amend)
+  plan: vjoxbohhii

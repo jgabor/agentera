@@ -1,0 +1,18 @@
+id: kxzpenxbka
+artifact: plan
+record:
+  name: Prove the CLI JSON contract
+  depends_on:
+    - kajhxpupgg
+    - itexttzrgt
+  status: complete
+  evidence:
+    - Updated `tests/test_capability_instruction_contract.py` for implemented metadata and runtime non-enforcement.
+    - Updated `tests/test_query_cli.py` for Planera, default full-read, and installed-app compact-startup fixture behavior.
+    - "`uv run pytest tests/test_capability_instruction_contract.py tests/test_query_cli.py -q` passed with 202 tests."
+  acceptance:
+    - GIVEN focused capability-instruction contract tests run WHEN metadata is implemented THEN they prove the authority no longer describes CLI/schema metadata as absent and still preserves the runtime-enforcement boundary.
+    - GIVEN `tests/test_query_cli.py` focused hej capability-context tests run WHEN Planera and a default full-read capability are requested THEN the asserted JSON shape includes `source_contract.capability_context.first_invocation_read` with the expected values and provenance.
+    - GIVEN installed-app fixture tests run WHEN `planera/instructions.md` is absent from the installed app surface THEN Planera's compact startup metadata remains available through hej without raw instruction-file reads.
+    - GIVEN invalid or unknown capability context behavior is covered by existing tests WHEN metadata is added THEN error handling remains non-interactive and JSON stays parseable.
+  plan: lkrqvabygh

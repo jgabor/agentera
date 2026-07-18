@@ -1,0 +1,22 @@
+id: qdoxwgfyoo
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Decision 54 App Lifecycle Metadata Alignment
+  what: "Align `agentera doctor`, `agentera hej`, and `agentera upgrade` structured app lifecycle metadata with the canonical Decision 54 vocabulary from `references/cli/app-lifecycle-vocabulary.yaml`: `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`, `ready_to_apply`, `applied`, and `no_changes_needed`."
+  why: The Decision 54 authority now exists, but the CLI implementation and tests still contain compatibility vocabulary and upgrade workflow statuses such as `noop`, `pending`, and broad `refresh` wording. The first P1 fix is to make the shipped structured metadata follow the authority while preserving only proven compatibility aliases and non-app uses such as `agentera stats refresh`.
+  constraints: Keep this plan scoped to structured app lifecycle metadata for doctor, hej, and upgrade plus focused tests and closeout artifacts. Do not work on bundle/SKILL.md prose cleanup, routing/execution vocabulary cleanup, capability `prose.md` rename, `first_invocation_read`, 3.0.0 packaging, app/profile refresh, publication, push, tag, package-manager state, `.agentera/vision.yaml`, objective state, or decision satisfaction state. Preserve compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, `--only bundle`, historical records, and non-app `refresh` command names unless a focused compatibility alias test proves a safe migration.
+  overall_acceptance:
+    - Doctor, hej, and upgrade structured app lifecycle metadata use the Decision 54 canonical status vocabulary for current app lifecycle state.
+    - Transitional aliases are retained only where a concrete compatibility consumer or historical fixture requires them, and those boundaries are covered by focused tests.
+    - The top TODO is closed without changing unrelated vocabulary cleanup, Decision 57 implementation, package/runtime state, publication state, protected artifacts, or decision satisfaction state.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

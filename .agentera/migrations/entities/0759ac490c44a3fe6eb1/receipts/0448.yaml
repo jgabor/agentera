@@ -1,0 +1,12 @@
+id: jxeyfjsbsv
+artifact: plan
+record:
+  name: App-home override contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN no explicit Agentera directory was selected WHEN normal installed execution resolves its home THEN stale legacy environment residue does not outrank the normal platform directory.
+    - GIVEN a deliberate custom Agentera directory is valid and current WHEN it is selected through an explicit flag, hermetic test channel, or validated override THEN that directory remains authoritative.
+    - GIVEN a selected custom directory is missing, unmanaged, or unsafe WHEN Agentera evaluates it THEN Agentera blocks or asks for explicit approval without silently overwriting or falling back.
+  plan: gjjuohyorr

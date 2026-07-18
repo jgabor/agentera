@@ -1,0 +1,12 @@
+id: zwzpmjfzqs
+artifact: plan
+record:
+  name: Build redacted threshold-evidence scan
+  depends_on:
+    - uyaifkopoa
+  status: complete
+  evidence:
+    - Added `scan_threshold_evidence` with aggregate-only transcript evidence and coverage caveats.
+  acceptance:
+    []
+  plan: jufyfvsqrq

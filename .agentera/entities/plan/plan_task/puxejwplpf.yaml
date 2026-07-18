@@ -1,0 +1,12 @@
+id: puxejwplpf
+artifact: plan
+record:
+  name: Enforce canonical plan scope shape
+  status: complete
+  depends_on:
+    - whmcsqbjhd
+  acceptance:
+    - GIVEN a canonical plan entity WHEN scope is validated THEN it is a mapping with included and excluded string lists.
+    - GIVEN malformed nonempty legacy scope WHEN preview or apply runs THEN the shared validator blocks before approval or effects rather than coercing or dropping content.
+    - GIVEN normalized absent scope WHEN migrated THEN explicit empty included and excluded lists plus normalization provenance remain valid across preview, apply, resume, and ordinary state validation.
+  plan: vllyohtcde

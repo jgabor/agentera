@@ -1,0 +1,14 @@
+id: kdoixucfpp
+artifact: plan
+record:
+  name: Update the capability schema contract, the capability-instruction contract, and the contract loader
+  depends_on:
+    - mfwdpmcfhj
+  status: complete
+  acceptance:
+    - "GIVEN T1's relocation WHEN `skills/agentera/capability_schema_contract.yaml` is updated THEN `DIRECTORY_REQUIREMENTS.instruction_file` is renamed to `DIRECTORY_REQUIREMENTS.instruction_module` with `path: packages/cli/src/capabilities/<name>/instructions.ts`, `type: file`, `required: true`; the V1 rule's `checks` list updates to `instruction_module is a file`; the comment header at the top of the file and the `ARTIFACTS` A3 entry's `path: \"capabilities/<name>/instructions.md\"` text update to the new module path"
+    - GIVEN the contract rename WHEN `packages/cli/src/registries/capabilityContract.ts` line-262 check is updated THEN the bootstrap error reads `DIRECTORY_REQUIREMENTS.instruction_module.path in <sourceLabel> must be packages/cli/src/capabilities/<name>/instructions.ts` and the loader returns `directoryRules.instructionPath` equal to the new module path; the contract model gains an `instructionModulePath` field and the existing `instructionPath` field is repurposed (or renamed) consistently with the YAML
+    - "GIVEN the contract rename WHEN `references/cli/capability-instruction-contract.yaml` is updated THEN `current_state.canonical_instruction_file.path` is `packages/cli/src/capabilities/<name>/instructions.ts`, `first_invocation_read.allowed_values` collapses to `{ prime_context: { meaning, obligation } }` only, `compact_startup_exception` is removed, `implementation_state.runtime_first_invocation_behavior` flips to `true`, and `compatibility_preservation.preserve_legacy_references_only_when_classified` updates to list the new module path plus the historical `prose.md` and `instructions.md` paths as compatibility-only records"
+    - "GIVEN the contract and the loader WHEN `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` runs THEN the validator passes (status: ok, zero errors)"
+    - "GIVEN the same build WHEN `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` runs for each of the 12 capabilities THEN the validator passes; the validator's V1 error string is `V1 [error]: packages/cli/src/capabilities/<name>/instructions.ts not found in <capDir>` when the test fixture omits the new module file"
+  plan: dncagkqzrf

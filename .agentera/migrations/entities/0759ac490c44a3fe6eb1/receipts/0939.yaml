@@ -1,0 +1,12 @@
+id: sxcmrrgtht
+artifact: plan
+record:
+  name: Ship repo-native Cursor hooks and session environment
+  depends_on:
+    - atftbtblds
+  status: complete
+  acceptance:
+    - GIVEN a fresh checkout of this repository WHEN Cursor hook surfaces are inspected THEN session start, pre-tool, post-tool, and session end wrappers exist and invoke the shared Agentera hook helpers.
+    - GIVEN a Cursor session starts in this repository WHEN session bootstrap runs THEN AGENTERA_HOME is exported for subsequent tool and validation subprocesses without requiring persistent shell configuration in the default path.
+    - GIVEN a reconstructable Write or Edit candidate is submitted WHEN pre-tool validation runs in repo-native Cursor wiring THEN invalid artifact content is blocked and valid candidates are allowed, matching Copilot-class conditional hard-gate behavior.
+  plan: bizikrrbyb

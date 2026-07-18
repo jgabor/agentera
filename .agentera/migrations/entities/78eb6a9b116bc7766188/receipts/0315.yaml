@@ -1,0 +1,14 @@
+id: gcxgofnnjb
+artifact: plan
+record:
+  name: Cursor transcript extractor
+  depends_on:
+    - tnibsjmjnt
+  status: complete
+  acceptance:
+    - GIVEN fixture Cursor agent-transcript JSONL with user and assistant turns WHEN extraction runs THEN history_prompt and conversation_turn records normalize with stable source_id, session_id, project_id, and decision-signal classification like existing runtimes
+    - GIVEN assistant messages include tool blocks WHEN extraction runs THEN tool_call records emit with bounded argument metadata and no raw secrets
+    - GIVEN Cursor storage is unavailable WHEN extraction runs THEN cursor runtime degrades explicitly and other runtimes continue
+  evidence:
+    - scripts/extract_corpus.py extract_cursor_sessions with bounded tool arguments; tests/test_extract_corpus.py cursor transcript cases
+  plan: jsfkwytjzd

@@ -1,0 +1,16 @@
+id: ygavedatly
+artifact: progress
+record:
+  timestamp: 2026-07-14 01:13
+  type: fix
+  phase: build
+  what: Enforced bounded state discovery in all source capability instructions and the checked-in consumer matrix.
+  inspiration: Independent Task 1 audit found source instructions were not checked by the stale-command assertion.
+  discovered: The nine affected instruction modules are serialized source literals; bounded list discovery preserved their semantics and generated bundle parity remained unchanged after the existing build and copy-bundle path.
+  verified: "Focused matrix, Unicode prime, and orientation tests: 3 files and 35 tests passed. Non-packaging suite: 173 files and 1,745 tests passed. Typecheck, build, and bundle:data passed. Capability validation passed for audit, build, discuss, document, optimize, orchestrate, plan, profile, vision, and capability-contract; progress and plan artifact validation passed. check compact --format json passed with error_count=0, over_limit_count=0, protected_overflow_count=0, and changed_count=0; five existing progress archive-recovery refusals were retained. Source/bundle stale-command scan and raw state-read scan returned 0 matches. prime --context orchestrate --format json returned bounded decisions/progress fallbacks. state progress list/get preserved stable identity progress:778 with verified archive and current full projection; state decisions get --number 53 remained explicitly incomplete because only an irrecoverable legacy summary exists, preserving Decision 53 truth."
+  next: Keep Task 1 pending for independent re-audit; do not record another evaluation or begin Task 2.
+  context:
+    intent: Repair the independent-audit gap by migrating stale source commands and mechanically scanning source and bundled consumers without changing Task 1 evaluation state.
+    constraints: Do not modify Task 1 attempt_count, failure_count, verdict, or status; do not address Task 2, packaging failures, profile, vision, or decision satisfaction; do not push.
+    unknowns: Independent re-audit remains; Task 2 command namespace and custom-name discovery remain operator decisions.
+    scope: packages/cli/src/capabilities/*/instructions.ts; packages/cli/test/state/consumerMatrix.test.ts; generated dist and bundle refresh; typed progress cycle

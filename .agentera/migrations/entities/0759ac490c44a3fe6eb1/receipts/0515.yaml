@@ -1,0 +1,17 @@
+id: zvfmqnxeeg
+artifact: plan
+record:
+  name: Resolve TODO items, sync state, and verify
+  depends_on:
+    - goimnheppu
+    - gtdqknadmp
+    - xhinbgljlt
+    - nrcmoqxtba
+    - yflqhldujn
+  status: complete
+  acceptance:
+    - GIVEN the eight 2.7.6 progress-commit TODO items WHEN closeout runs THEN each moves to Resolved in TODO.md with a one-line resolution and commit reference
+    - GIVEN the YAML-loader robustness fix WHEN closeout runs THEN CHANGELOG.md [Unreleased] records a Fixed entry while internal refactor/test/docs items are omitted per changelog policy
+    - GIVEN the change set WHEN the full pytest suite and `agentera check validate capability-contract --format json` run THEN both pass
+    - GIVEN .agentera/progress.yaml WHEN closeout runs THEN it records verification evidence with a forward product-commit hash (never amend) and the version is bumped to 2.7.6 across version_files per semver policy
+  plan: jynhicyclu

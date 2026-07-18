@@ -1,0 +1,6 @@
+id: ahdttasete
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "~~[feat:3.0.0] Define authoritative artifact verbosity budgets. Resolved 2026-07-15: every supported artifact resolves to one owning schema; word, no-limit, and token-only declarations are machine-classified; malformed, unreadable, ambiguous, and unsupported authority fails without fallback limits.~~"

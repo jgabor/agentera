@@ -1,0 +1,21 @@
+id: infnfvazwf
+artifact: decisions
+record:
+  date: 2026-05-23
+  question: How should Agentera adapt architecture-deepening concepts from external cross-pollination?
+  context: Inspirera analyzed an external architecture-deepening pattern. Follow-up resonera review compared inspektera, inspirera, and handoff-first options. The user chose better audits and accepted a narrow inspektera-first slice. Decision 60 remains separate; it covers Standards-and-Spec diff review.
+  alternatives:
+    - name: Narrow inspektera-first slice
+      status: chosen
+      description: Add evidence-backed deepening candidates to inspektera with deletion-test evidence, interface-test signal, dependency tags, and resonera handoff for load-bearing boundaries.
+    - name: Equal split ownership
+      status: rejected
+      description: Too diffuse for the first slice after better audits became dominant.
+    - name: External skill only
+      status: rejected
+      description: Fails the cross-pollination goal.
+  choice: Keep split ownership, but implement first in audit. Research imports sources; audit names evidence-backed audit candidates; discuss decides disputed boundaries; plan and build execute concrete candidates.
+  reasoning: The selected value was better audits. Inspektera is closest to concrete deepening opportunities. Narrow evidence keeps taste out of audit findings.
+  confidence: provisional
+  feeds_into: references/cli/vocabulary.md, audit, research, discuss, PLAN.md, TODO.md
+  outcome: Keep split ownership, but implement first in audit. Research imports sources; audit names evidence-backed audit candidates; discuss decides disputed boundaries; plan and build execute concrete candidates.

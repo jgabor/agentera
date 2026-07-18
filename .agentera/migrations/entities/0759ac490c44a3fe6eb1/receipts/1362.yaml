@@ -1,0 +1,15 @@
+id: kesiqvvbre
+artifact: progress
+record:
+  timestamp: 2026-07-17 15:31
+  type: fix
+  phase: build
+  what: Corrected audited Task11 entity query, durability, migration binding, pagination, error, and identity boundaries.
+  discovered: Decision and plan entity lists measured compact JSON instead of the exact emitted pretty JSON; the current plan view also added its plan envelope after pagination.
+  verified: "Focused: 5 files, 79 tests passed. Full: 213 files, 2576 tests passed. Typecheck, build, state validation, build capability, capability contract, and compact gates passed."
+  next: Task 12 remains pending; do not begin it in this cycle.
+  context:
+    intent: Close only the audited Task11 boundary defects without entering Task12, applying live migration, or changing legacy authority where intended.
+    constraints: No Task12/13 work, live apply, manual YAML edits, amend, push, publish, or vision changes.
+    unknowns: none
+    scope: Task11 query aliases, canonical entity durability, migration marker validation, entity pagination/errors/identity, and proportional tests.

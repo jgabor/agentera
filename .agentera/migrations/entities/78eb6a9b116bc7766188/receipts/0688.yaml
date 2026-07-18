@@ -1,0 +1,16 @@
+id: yvhnsqhdyx
+artifact: plan
+record:
+  name: Update SKILL.md, capability instructions, and references
+  depends_on:
+    - pxsdqdteqs
+    - lwadgujfce
+    - geminekvjp
+    - duwqnkhbri
+    - naesfipiel
+  status: complete
+  acceptance:
+    - GIVEN SKILL.md routing tables use English names, WHEN skill loads, THEN all 12 capabilities listed by English ID
+    - GIVEN references/adapters/*.md use English names, WHEN read, THEN no Swedish verbs in active dispatch tables
+    - AND instructions.ts prose bodies reference English capability names
+  plan: ptxzdrxixt

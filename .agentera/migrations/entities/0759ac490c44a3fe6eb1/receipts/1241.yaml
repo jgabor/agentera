@@ -1,0 +1,16 @@
+id: ydypcrebfw
+artifact: progress
+record:
+  timestamp: 2026-07-13 22:55
+  type: fix
+  phase: build
+  what: "Retried bounded prime startup projections: shared list classification now drives startup conflict, duplicate, mirror, ambiguity, and corruption rows; startup entries expose provenance and detail availability; bounded strings truncate by Unicode code point."
+  inspiration: Active Plan Task3 retry after audit-task-3-attempt-1 identified hard-coded conflict and provenance metadata plus UTF-16 truncation risk.
+  discovered: Startup history now classifies every emitted row from the same classifier used by state list, while archive discovery remains retainRecords=false and current scanning remains incremental.
+  verified: Focused primeTask3Bounds suite passed 4 tests; non-packaging CLI suite passed 172 files and 1,741 tests; typecheck, build, git diff --check passed. Existing packaging failures remain the known npm 12 npm pack --dry-run --json parser incompatibility.
+  next: Keep Task3 pending for governed evaluation; do not begin Task4 migration.
+  context:
+    intent: Repair Task3 audit findings without starting Task4 consumer migration.
+    constraints: Preserve Task2 plan status/evaluation, the failed Task3 evaluator record, archive immutability, source bounds, direct retrieval routes, and all protected state.
+    unknowns: None for implementation; governed Task3 evaluation remains open.
+    scope: packages/cli/src/state/listClassification.ts; packages/cli/src/state/listRetrieval.ts; packages/cli/src/state/startupProjection.ts; packages/cli/test/cli/primeTask3Bounds.test.ts

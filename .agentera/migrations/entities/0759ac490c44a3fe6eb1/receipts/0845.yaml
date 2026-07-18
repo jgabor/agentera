@@ -1,0 +1,10 @@
+id: mrnnakltop
+artifact: plan
+record:
+  name: Reconcile Plan State And Runtime Scope
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: trfrmmbocn

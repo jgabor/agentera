@@ -1,0 +1,13 @@
+id: tvurtcvtho
+artifact: plan
+record:
+  name: Align doctor, hej, and upgrade structured statuses
+  depends_on:
+    - tpmzpdgghe
+  status: complete
+  acceptance:
+    - GIVEN doctor and hej app-home/bundle status payloads are produced WHEN the installed app is current, outdated, broken, migrated, or unsafe for automatic repair THEN structured metadata uses only `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, or `manual_review_needed` as canonical app lifecycle statuses.
+    - GIVEN upgrade preview/apply/idempotent outputs are produced WHEN work is pending, completed, or unnecessary THEN structured lifecycle metadata uses `ready_to_apply`, `applied`, `no_changes_needed`, or `manual_review_needed` where the status represents app lifecycle state, while preserving proven compatibility aliases only behind explicit compatibility fields or tests.
+  evidence:
+    - Added canonical upgrade `lifecycleStatus` values while preserving the existing top-level upgrade workflow `status` through `compatibilityStatus`; fixed hej capability contexts to treat `bundle.status=up_to_date` as healthy instead of checking the deprecated `fresh` alias.
+  plan: ddnfuvslbw

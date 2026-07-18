@@ -1,0 +1,13 @@
+id: omjotzhhhn
+artifact: plan
+record:
+  name: Preserve direct helper compatibility and update docs/tests
+  depends_on:
+    - poedgkolnm
+    - vflqvqeqna
+  status: complete
+  acceptance:
+    - GIVEN existing direct helpers are run WHEN the validate namespace is added THEN `validate_cross_capability.py`, `validate_lifecycle_adapters.py`, `validate_app_home_contract.py`, and `validate_capability.py` direct calls still pass.
+    - GIVEN TODO, changelog, docs, progress, and plan artifacts are inspected WHEN the batch is complete THEN they record the canonical validate namespace coverage and remaining 2.5.x seams.
+  evidence: "`uv run pytest tests/test_validate_namespace.py -q` passed with 9 tests. Direct helper checks for cross-capability, lifecycle adapters, app-home contract, capability contract self-validation, and protocol validation all passed."
+  plan: lhrmcundrj

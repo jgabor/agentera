@@ -1,0 +1,16 @@
+id: qllkbjmsov
+artifact: progress
+record:
+  timestamp: 2026-07-13 21:31
+  type: fix
+  phase: build
+  what: Retried Task2 attempt1 by centralizing leading-only legacy identity parsing, making explicit Dnn decision shorthand rows directly retrievable as degraded summaries, preserving canonical legacy summaries as incomplete, rejecting incidental and compound references, adding list/get parity regressions, and asserting byte-exact health duplicate repair.
+  inspiration: Task2 evaluation attempt1 recorded in the active plan after Cycle 772.
+  discovered: Direct get must distinguish explicit Dnn shorthand from canonical legacy summaries; a summary-only record is addressable only when its identity is explicit and unambiguous.
+  verified: Focused list, direct-get, and writer suites passed 132/132; CLI typecheck and build passed; capability-contract validation passed; check compact reported 0 errors, 0 over-limit, 0 protected-overflow, and 0 changed counts. Full CLI suite remains 171 files passed and 1 packaging file failed with the five known npm 12 npm pack --dry-run --json parser incompatibilities.
+  next: Keep Task2 pending for evaluation. Review the retry diff, commit it with the preserved failed evaluation and progress evidence, then do not begin Task3 or alter vision, profile, decisions, TODO, version, publish, push, or tag state.
+  context:
+    intent: Resolve the recorded Task2 parity failure without closing Task2 or changing unrelated project state.
+    constraints: Preserve Task1 completion, stable numeric get selectors, archive immutability, no inferred identity, byte-exact unrelated health evidence, and the recorded failed attempt1 metadata.
+    unknowns: none for this retry; Task3 source-work bounds remains unresolved by design.
+    scope: packages/cli/src/state/legacyIdentity.ts; packages/cli/src/state/listRetrieval.ts; packages/cli/src/state/directRetrieval.ts; packages/cli/test/state/listRetrieval.test.ts; packages/cli/test/state/directRetrieval.test.ts; packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml; .agentera/progress.yaml

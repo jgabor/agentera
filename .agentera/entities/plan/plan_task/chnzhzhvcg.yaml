@@ -1,0 +1,16 @@
+id: chnzhzhvcg
+artifact: plan
+record:
+  name: False-positive characterization
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the reported temporary Planera draft or a representative copy contains concrete anchors WHEN it is checked through the artifact lint surface THEN the no-anchor advisory is reproduced or non-reproducibility is recorded with evidence.
+    - GIVEN characterization completes WHEN evidence is recorded THEN the bad advisory is tied to observable lint input and output behavior.
+    - GIVEN generic prose lacks concrete anchors WHEN it is checked through the same lint surface THEN the abstraction advisory remains observable as the control case.
+  evidence:
+    - Exact reported file exists at `/tmp/opencode/aila-m13-plan.yaml` and includes anchors such as `ROADMAP.md:523-542`, `docs/notes/PROMPT.md`, `internal/runtime`, `internal/app`, and `internal/tui`. `uv run scripts/agentera lint --artifact PLAN.md --file "/tmp/opencode/aila-m13-plan.yaml" --format json` returned status=fail advisory=true only for verbosity (`1183 words exceeds 100 budget`); abstraction status=pass with detected anchor `docs/notes/PROMPT.md`.
+    - "Reduced boundary input with queued-message fixture, semantic snapshots, PTY smoke, mage check, source docs, and concrete `internal/runtime`, `internal/app`, and `internal/tui` boundaries returned abstraction status=fail with `abstraction creep: no concrete anchor`, tying the advisory to anchors outside the current recognized regex classes."
+    - "Recognized anchor control `ROADMAP.md:523-542` returned abstraction status=pass with detected anchor `:523`; generic prose control returned abstraction status=fail with `abstraction creep: no concrete anchor`."
+  plan: wsrzwqzvkd

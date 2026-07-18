@@ -1,0 +1,32 @@
+id: ekhmbucace
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-11
+    status: archived
+    reviewed: 2026-07-11
+    critic_issues: 16 found, 15 addressed, 1 dismissed
+    revised: Split policy, authority, and operation foundations; consolidated Cursor to one identity; moved Claude cleanup ahead of upgrade; strengthened ownership, dry-run, trust, support-floor, collision, and retry acceptance.
+    title: "Plan: Unified Runtime Lifecycle and Claude Retirement"
+  what: Establish one lifecycle contract for OpenCode, Codex, Cursor, and Copilot, with Cursor IDE and cursor-agent represented as surfaces of one Cursor runtime. Make prime, doctor, and upgrade consume that contract, then remove Claude Code from active support while retaining safe legacy cleanup.
+  why: A canonical shared Agentera skill now spans supported runtimes, but plugins, hooks, agents, trust, diagnosis, and repair remain fragmented. One lifecycle authority will make runtime status truthful, repairs predictable, and Claude retirement complete before the 3.0.0 release.
+  constraints: Active runtime IDs are opencode, codex, cursor, and copilot. cursor-agent is a Cursor surface or migration alias, never an active ID; claude is retired migration input only. ~/.agents/skills/agentera is canonical. Agentera never approves hook trust or invokes native package managers. Preview creates no files, directories, locks, caches, telemetry, or state changes. Apply touches only demonstrably owned resources, preserves collisions, and converges after partial failure. No publishing, tagging, remote pushes, or protected-state changes.
+  overall_acceptance: GIVEN runtime discovery WHEN lifecycle state is reported THEN exactly four active IDs are exposed from one authority. GIVEN any supported runtime WHEN prime, doctor, and upgrade inspect it THEN evidence and capabilities agree. GIVEN preview WHEN filesystem and state snapshots are compared THEN no mutation occurred. GIVEN owned drift or partial failure WHEN repair is approved and rerun THEN operations converge without overwriting user content. GIVEN 3.0.0 surfaces WHEN inspected THEN Claude is absent and cursor-agent is only a Cursor surface or migration input. GIVEN release verification WHEN gates run THEN runtime claims, packages, docs, tests, and state agree.
+  scope:
+    included:
+      - Lifecycle authority, evidence, operation, ownership, trust, and capability contracts.
+      - OpenCode, Codex, Cursor, and Copilot detection, diagnosis, and safe repair.
+      - Prime, doctor, and upgrade lifecycle projections.
+      - Cursor identity consolidation and Claude Code retirement and cleanup.
+      - Package, schema, documentation, analytics, evaluation, test, and release synchronization.
+    excluded:
+      - Runtime binary self-updates or native marketplace/package-manager execution.
+      - Automatic approval of runtime hook trust or organizational policy changes.
+      - Publication, marketplace submission, tags, or remote pushes.
+      - New runtime support beyond the four active runtime identities.
+    deferred:
+      - Full behavioral equivalence where a host does not expose equivalent lifecycle semantics.
+      - Automatic repair of user-owned, ambiguous, or unsupported runtime resources.
+  design: A single lifecycle authority defines active identities, supported surfaces, evidence states, ownership states, trust states, and repair capabilities. Runtime adapters contribute observations and operations to a shared planner; read-only consumers project bounded summaries and detailed diagnosis, while the mutation consumer previews and applies only approved owned operations. Retired runtimes use the same evidence and operation vocabulary but cannot appear as active support.
+  surprises: ""

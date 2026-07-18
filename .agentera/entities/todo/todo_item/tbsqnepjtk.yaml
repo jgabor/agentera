@@ -1,0 +1,6 @@
+id: tbsqnepjtk
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[refactor:3.0.0] Replace prime's delimiter-encoded attention strings with bounded structured records that expose severity, kind, object, counts, and recovery action directly. Generate human-readable terminal text from the same records so agents do not need to parse presentation strings and JSON/text behavior cannot drift."

@@ -1,0 +1,16 @@
+id: fwspeocbll
+artifact: progress
+record:
+  timestamp: 2026-07-14 00:44
+  type: feat
+  phase: build
+  what: Validated the repaired Unicode surfaces and migrated the complete bounded state consumer matrix across all 12 capabilities, generated bundle parity, runtime fallbacks, provenance pointers, and the session-start hook.
+  inspiration: Active plan Task 1 and the state-storage authority consumer matrix.
+  discovered: The live decisions listing now accounts for 50 physical candidates, including one explicit unaddressable row; compact reports the same 50 total with no overflow. Summary-only legacy hook rows remain bounded and explicitly caveated rather than promoted to complete detail.
+  verified: "Unicode suite: pnpm -C packages/cli exec vp test run test/cli/primeTask3Bounds.test.ts, 1 file and 5 tests passed before consumer edits. Focused matrix and hook tests: test/state/consumerMatrix.test.ts and test/hooks/sessionStart.test.ts, 2 files and 9 tests passed. State adjacency: listRetrieval 24, directRetrieval 47, decisionOverlay 8, archiveAuthority 9, sessionStart 7, primeTask3Bounds 5 passed. Typecheck and build passed. Capability validation passed for status, discuss, audit, document, and capability-contract. Current decisions list candidate_count=50, physical=50; check compact reports decisions total_count=50, over_limit_count=0, protected_overflow_count=0. git diff --check passed."
+  next: Keep Task 1 pending for independent orchestration audit; do not execute migration design or later plan tasks.
+  context:
+    intent: "Execute only active plan Task 1: prove the repaired prime contract, replace consumer-wide raw or unbounded state assumptions with bounded list/get paths, preserve truthful history, and reconcile the stale predecessor Task 9 TODO from current evidence."
+    constraints: Do not refresh stale profile, edit vision, infer missing decision state, or address known npm 12 packaging failures. Preserve the intentional active plan lifecycle diff and both new plan archives; do not push.
+    unknowns: Independent orchestration audit and full non-packaging gate remain before commit closeout.
+    scope: packages/cli bounded consumer contracts and hook; state-storage authority matrix; capability schemas and references; consumer matrix tests; TODO; typed progress evidence.

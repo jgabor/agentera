@@ -1,0 +1,11 @@
+id: swtfplzptk
+artifact: plan
+record:
+  name: Reproduce the unset-environment entrypoint failure
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN installed `hej` entrypoint command surfaces, OpenCode adapter behavior, dispatcher/hej guidance, and tests are inspected WHEN the failing path is classified THEN the plan identifies the command that expands the managed app script path before resolving the app home.
+    - GIVEN `AGENTERA_HOME` and `XDG_DATA_HOME` are unset or empty WHEN the reproduction is modeled THEN the expected failure mode is bounded to a premature `/app/scripts/agentera` path expansion or equivalent pre-CLI spawn failure, not to normal app repair logic.
+  plan: gghlqsvqaq

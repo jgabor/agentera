@@ -1,0 +1,13 @@
+id: grseedfcnk
+artifact: plan
+record:
+  name: Add eval runner support for cursor-agent
+  depends_on:
+    - atftbtblds
+    - eykkftvjpx
+  status: complete
+  acceptance:
+    - GIVEN the eval runner is invoked with the cursor-agent runtime WHEN a smoke prompt is dispatched THEN structured output and exit status are captured without requiring interactive host approval.
+    - GIVEN verify eval skills is run for cursor-agent WHEN documentation and CLI help are inspected THEN cursor-agent appears as a supported runtime alongside existing eval runtimes.
+    - GIVEN focused eval tests run WHEN cursor-agent dispatch is exercised THEN proportionality target is one passing dispatch case and one failing or skipped case for unavailable host conditions.
+  plan: bizikrrbyb

@@ -1,0 +1,13 @@
+id: sabbgtkubs
+artifact: plan
+record:
+  name: State sync and plan closeout
+  depends_on:
+    - bdumgatdim
+    - vcnbvinuyn
+  status: complete
+  acceptance:
+    - GIVEN full pytest and packages/cli test suites WHEN run THEN upgrade-related tests pass
+    - GIVEN agentera validate capability planera WHEN run THEN it passes
+    - GIVEN all prior tasks complete WHEN plan status reviewed THEN tasks marked complete and plan archived per Planera handoff
+  plan: brcxwbztnv

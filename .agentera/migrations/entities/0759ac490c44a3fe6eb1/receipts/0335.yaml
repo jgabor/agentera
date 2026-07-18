@@ -1,0 +1,15 @@
+id: yvadqzntmf
+artifact: plan
+record:
+  name: Implement prime default briefing and top-level schema command
+  depends_on:
+    - klpzaiijbf
+  status: complete
+  evidence: "`agentera prime` default emits composite orientation briefing (text/json); `--guidance` retains static PRIME_BLOB; `--context`/`--dashboard` unchanged. Added `agentera schema`; `hej`/`describe` print one-line stderr deprecation aliases delegating to `prime`/`schema`. `EXPECTED_STATE_COMMANDS` and doctor `--expect-command` default to `prime`. Focused coverage in tests/test_prime_schema_migration.py; suite: 1247 passed with pytest tests/ -q -n auto."
+  acceptance:
+    - GIVEN `agentera prime` runs with no mode flags WHEN output emits THEN it produces the composite orientation briefing currently owned by `hej` (app gate, health, plan, attention, next_action, source_contract).
+    - GIVEN `agentera prime --context <capability> --format json` runs WHEN output emits THEN slim `capability_context` remains the supported startup shape per Decision 59.
+    - GIVEN `agentera schema --format json` runs WHEN output emits THEN it returns the runtime CLI/schema introspection payload previously owned by `describe`.
+    - GIVEN `agentera hej` or `agentera describe` is invoked WHEN stderr is captured THEN a one-line deprecation names `prime` or `schema` and execution delegates to the canonical command.
+    - GIVEN `agentera doctor --expect-command` defaults WHEN prime migration completes THEN the default expected command is `prime`, not `hej`.
+  plan: jgfblycafy

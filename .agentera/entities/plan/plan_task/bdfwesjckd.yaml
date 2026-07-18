@@ -1,0 +1,12 @@
+id: bdfwesjckd
+artifact: plan
+record:
+  name: Manual Mage benchmark entrypoint
+  depends_on:
+    - pdcqubawkh
+  status: complete
+  acceptance:
+    - GIVEN `mage bench:startupState` is invoked without explicit runtime/path approval WHEN it starts THEN it refuses to read local history and explains the required non-interactive approval inputs.
+    - GIVEN approved runtime paths are supplied WHEN the Mage benchmark runs THEN it delegates metric extraction to the existing Python analyzer path instead of reimplementing Decision 51 metric logic.
+    - GIVEN Mage support is added WHEN validation runs THEN the benchmark target is discoverable and syntactically valid through a non-interactive Mage list or compile check.
+  plan: kztirfhynv

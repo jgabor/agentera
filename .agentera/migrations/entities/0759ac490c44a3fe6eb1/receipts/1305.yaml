@@ -1,0 +1,11 @@
+id: vzsblkxdsk
+artifact: progress
+record:
+  timestamp: 2026-07-16 05:57
+  type: feat
+  phase: build
+  what: "Defined decision amendment authority contracts and CLI discovery: revision authority in storage-authority YAML, amend verb with caller-selected --number, amend execution refusal, and legacy confidence-label coexistence classifier"
+  verified: typecheck clean; 2197 tests pass (192 files) including 14 new contract tests; build clean; check compact PASS; capability-contract validation PASS; live CLI smoke confirms amend refusal, update --number contradiction fixed, and invalid confidence rejected
+  next: "Task 2: revision-backed effective decision reads"
+  context:
+    intent: "Task 1 of the decision-content amendments plan: contracts only, no revision-backed reads or amendment publication yet"

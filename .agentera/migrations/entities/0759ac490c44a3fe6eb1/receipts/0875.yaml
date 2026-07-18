@@ -1,0 +1,17 @@
+id: ayeuhkbcbv
+artifact: plan
+record:
+  name: Bun/npm/single-binary packaging design and ship (TODO L17)
+  depends_on:
+    []
+  status: complete
+  blocks:
+    - "8"
+    - "10"
+  acceptance:
+    - "GIVEN `feat/v3` base WHEN `docs/packaging/v3-packaging.md` is authored THEN it covers (a) Bun-compiled single-binary via `bun build --compile dist/bin/agentera.js --outfile dist/agentera-single-binary` (Bun >= 1.1.x, statically linked with the Node-API shim), (b) npm package layout per `packages/cli/package.json` `files: [dist, bundle]`, (c) app-home migration: the v3 reader uses `packages/cli/src/upgrade/v3HandoffManifest.ts` (T5) to read `~/.local/share/agentera/v3-handoff.json`; the v2 writer is on `main` (T5 backport), (d) preserved direct-helper compatibility: `scripts/agentera` shim seam remains on `main` until v2 retirement, (e) `prepack` integration test coverage, (f) `single-binary.sh` script"
+    - GIVEN the same commit WHEN `packages/cli/test/packaging/prepack.test.ts` is authored THEN it runs `npm run bundle:data && npm pack` on a fixture tree and asserts the tarball contains `dist/bin/agentera.js`, `bundle/`, and the `.agentera-npx-bundle.json` sentinel; the test is green on `feat/v3`
+    - GIVEN the build WHEN `single-binary.sh` is authored THEN it builds a Bun-compiled single-binary for the npm `@next` channel; the binary's `agentera --version` matches the npm `@next` version from `packages/cli/package.json`
+    - GIVEN the npm tarball WHEN `npx -y agentera@next check validate capability-contract --format json` runs from a fresh `npx` cache with no repo checkout and no `AGENTERA_HOME` THEN the validator passes; the parity matrix is re-run after the package build and reports green
+    - GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new packaging tests are green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per packaging surface (single-binary + npm-tarball + prepack = 3 × 2 = 6 cases)
+  plan: lzsuezxesf

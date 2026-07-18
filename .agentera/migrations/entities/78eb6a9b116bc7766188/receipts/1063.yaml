@@ -1,0 +1,13 @@
+id: tuqrczllwf
+artifact: plan
+record:
+  name: Make stale preparation cleanup successor-safe
+  status: complete
+  depends_on:
+    - gkquxgysdy
+  acceptance:
+    - GIVEN an approval-bound stale receipt inventory WHEN cleanup quarantines it THEN the complete receipt count, paths, identities, sizes, modes, and content hashes are revalidated after rename before any deletion.
+    - GIVEN any receipt or directory changes before or during quarantine cleanup WHEN exact removal runs THEN the changed successor is preserved, cleanup refuses, and no canonical entity or marker is published.
+    - GIVEN an unchanged stale preparation WHEN removed THEN only exact bound receipt files and their pinned empty directories are deleted, with no recursive unverified removal.
+  evidence: "Cycle 915: exact stale receipts are opened O_RDONLY|O_NOFOLLOW and validated by held descriptor before unlink; bounded stable descriptor rereads after unlink recover exact changed bytes through O_EXCL receipt-named files durably synced inside the pinned quarantine receipts directory, while unchanged cleanup removes all owned bytes and successor paths remain independent. Reviewer races cover before-unlink and held-writer post-unlink mutation, instability, exclusive-name collision, and recovery fsync failure with honest partial mutation and no canonical publication. Verified by 64 focused and 2,679 full tests across 218 files, typecheck, build, and compact."
+  plan: vllyohtcde

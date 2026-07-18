@@ -1,0 +1,15 @@
+id: rmroepsehj
+artifact: plan
+record:
+  name: Rename prerelease suffix 3.0.0-dev.N to 3.0.0-next.N across live source and tests
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/package.json is read WHEN the version field is inspected THEN it reports 3.0.0-next.1 (not 3.0.0-dev.7)
+    - GIVEN packages/cli/src/upgrade/channels.ts:181 forbidden-pattern list WHEN read THEN it contains /@3\.0\.0-next/i (not /@3\.0\.0-dev/i)
+    - GIVEN packages/cli/src/release/releaseMetadata.ts:21 doc comment WHEN read THEN the prerelease example is 3.0.0-next.5 (not 3.0.0-dev.5)
+    - GIVEN any file under packages/cli/test/** WHEN grepped for 3.0.0-dev THEN zero matches are returned
+    - GIVEN .agentera/archive/*.yaml WHEN grepped for 3.0.0-dev THEN matches remain (immutable history, not modified)
+    - GIVEN .agentera/health.yaml WHEN grepped for 3.0.0-dev THEN historical audit findings remain (immutable audit record)
+  plan: lwpqtzxgxp

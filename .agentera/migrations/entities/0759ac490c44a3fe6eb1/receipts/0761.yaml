@@ -1,0 +1,15 @@
+id: tnxpeqdgpw
+artifact: plan
+record:
+  name: Implement prime --route CLI command
+  depends_on:
+    - xhfwaclamf
+  status: complete
+  acceptance:
+    - GIVEN the command "agentera prime --route help me decide" WHEN it runs THEN it returns JSON with capability discuss and a confidence score
+    - GIVEN the command "agentera prime --route refine the vision" WHEN it runs THEN it returns disambiguation candidates for vision and build
+    - GIVEN the command "agentera prime --route xyzzy nonsense" WHEN it runs THEN it returns fallback to status with low confidence
+    - GIVEN the command "agentera prime --route text --format json" THEN the output is valid JSON with fields capability, confidence, candidates, and fallback
+    - GIVEN the command "agentera prime --route text" THEN the output does NOT include the state-derived next_action field (mutually exclusive mode)
+    - GIVEN existing prime tests WHEN run THEN they still pass (no regression to prime without --route)
+  plan: vhgknrcomu

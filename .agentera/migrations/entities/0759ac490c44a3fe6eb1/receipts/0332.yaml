@@ -1,0 +1,12 @@
+id: dhtdlmgxcw
+artifact: plan
+record:
+  name: Add regressions and privacy tests
+  depends_on:
+    - jovutewlwa
+  status: complete
+  evidence:
+    - Added tests for transcript scan privacy, retained artifact evidence, classification outcomes, and file-versus-text PLAN.md lint behavior.
+  acceptance:
+    []
+  plan: jufyfvsqrq

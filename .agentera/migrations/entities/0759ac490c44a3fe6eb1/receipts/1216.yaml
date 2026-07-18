@@ -1,0 +1,16 @@
+id: padngsoyaq
+artifact: progress
+record:
+  timestamp: 2026-07-13 11:28
+  type: feat
+  phase: build
+  what: Published immutable numbered progress, decisions, and health archives with deterministic replay and orphan recovery.
+  inspiration: The state-storage authority and the proven immutable plan archive publication primitive.
+  discovered: Canonical record hashing must sort object keys recursively while preserving array order; hard-link publication preserves existing bytes on immutable identity collisions; an archive can safely remain orphaned when projection publication fails because retry searches validated archives by caller payload.
+  verified: "Focused archivePublication and stateWrite tests: 63 tests passed. Full pnpm -C packages/cli test: 1,606 tests passed across 165 files. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli build passed. capability-contract validation, build capability validation, and check compact --format json passed with zero over-limit artifacts."
+  next: Task 3 evaluator review; Task 4 remains pending and must unify broader writer transactions separately.
+  context:
+    intent: Preserve complete state records before bounded projections without duplicate logical entries.
+    constraints: Task 3 only. Existing plan and vision archive behavior is unchanged. Decision satisfaction and caveats, overlays, health, vision, versions, TODO, publishing, Git behavior, projection reads, migration, and experiments were not changed.
+    unknowns: Task 3 remains pending in the active plan for evaluator ownership; later transaction, overlay, projection, migration, and durability tasks remain unimplemented.
+    scope: packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/state/archivePublication.ts; packages/cli/src/state/archiveReplay.ts; packages/cli/src/state/write/transaction.ts; packages/cli/test/state/archivePublication.test.ts; packages/cli/test/state/write/stateWrite.test.ts; .agentera/plan.yaml; .agentera/progress.yaml

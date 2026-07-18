@@ -1,0 +1,12 @@
+id: dguankajyd
+artifact: plan
+record:
+  name: Final plan closure
+  depends_on:
+    - arsqtnfpba
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks pass WHEN final sync runs THEN progress, docs/TODO as appropriate, and plan state record bounded aggregate evidence, recommendation, privacy result, and next action.
+    - GIVEN a follow-up is selected WHEN this plan closes THEN the follow-up remains planning work only and no startup envelope or capability behavior change is implemented inside this plan.
+    - GIVEN no release target is selected WHEN closure completes THEN version-bearing files remain unchanged and the no-release gate is recorded.
+  plan: qkkryvdjxx

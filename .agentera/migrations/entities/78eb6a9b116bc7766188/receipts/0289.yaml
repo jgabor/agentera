@@ -1,0 +1,24 @@
+id: yevbejjnvr
+artifact: plan
+record:
+  name: Report local and Git durability without coupling writes to Git
+  depends_on:
+    - dqwsaeloke
+    - lgdhbmyrqv
+  status: complete
+  acceptance:
+    - GIVEN an archive exists locally WHEN durability is checked THEN output distinguishes verified local recovery from reachable committed recovery.
+    - GIVEN a non-Git project, dirty archive, shallow clone, rewritten history, changed head, or missing commit WHEN checked THEN the result degrades honestly without blocking local writes.
+    - GIVEN repeated checks WHEN repository state is unchanged THEN results are deterministic, read-only, and make no remote contact.
+    - GIVEN each repository condition WHEN tests run THEN successful, degraded, and unavailable diagnostics are covered.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Git probe timeouts and failed final HEAD capture can report complete durability; invalid requests emit generic envelopes instead of agentera.stateFailure.v1.
+    provenance:
+      attempt_id: task-12-attempt-2
+      source: audit-task-12-d714cba3+1efdd9f0
+      recorded_at: 2026-07-13 17:43
+      writer_command: agentera state plan record-evaluation
+  plan: snzwzclohe

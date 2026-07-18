@@ -1,0 +1,16 @@
+id: klidouziyi
+artifact: plan
+record:
+  name: Regression coverage and guidance alignment
+  depends_on:
+    - rppcucllha
+  status: complete
+  acceptance:
+    - GIVEN focused tests run WHEN fixture decisions include open, provisional, missing legacy, unconfirmed confirmed, and confirmed states THEN only the non-confirmed entries contribute to decision-review attention.
+    - GIVEN more than three non-confirmed decisions exist WHEN hej renders attention THEN structured entries are bounded and the top-level attention list remains at or below six items.
+    - GIVEN existing decisions JSON behavior is still required WHEN tests run THEN `agentera decisions --format json` source-contract semantics remain compatible.
+    - GIVEN capability or CLI guidance is touched WHEN validation runs THEN tests and validators prove no unsupported capability-name commands or satisfaction-state mutation guidance were introduced.
+  evidence:
+    - Added focused `tests/test_query_cli.py` coverage for missing legacy, open, provisional, unconfirmed user-confirmed, explicit review-needed, and explicitly confirmed decisions; tests prove bounded entries, top-level attention ordering before TODO, `next_action` preservation, and `.agentera/decisions.yaml` read-only behavior.
+    - Regression verification passed with `uv run pytest tests/test_query_cli.py -q` (185 tests) and `uv run pytest tests/test_hej_capability.py tests/test_decision_satisfaction_guidance.py -q` (15 tests), preserving existing decisions JSON and hej capability guidance behavior.
+  plan: csliqoeemb

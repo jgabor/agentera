@@ -1,0 +1,19 @@
+id: zvqmpmicen
+artifact: plan
+record:
+  name: Introduce prime context and remove startup compatibility
+  depends_on:
+    - qdjznpeypa
+    - vnpxxumwpm
+    - icalfgtedg
+  status: complete
+  acceptance:
+    - GIVEN `agentera prime --context <capability> --format json` runs WHEN output emits THEN the top-level JSON contains `command`, `status`, and `capability_context` as the supported startup shape.
+    - GIVEN `--context-profile full` is requested WHEN the command runs THEN the CLI rejects it with a clear 3.0 removal message or the flag is removed from the public parser entirely.
+    - GIVEN `agentera hej --capability-context <capability>` is requested in 3.0 mode WHEN command migration is complete THEN it is rejected or classified as historical/migration-only rather than supported behavior.
+    - GIVEN bare `agentera prime` runs WHEN command migration is complete THEN it emits static Agentera usage guidance rather than a dashboard or capability context payload.
+    - GIVEN prime dashboard/orientation mode runs WHEN command migration is complete THEN it owns the orientation/dashboard source or rendering path without requiring a separate non-capability command.
+    - GIVEN direct capability-name commands run WHEN command migration is complete THEN they route to the matching capability rather than to routine state reads.
+    - GIVEN all twelve capabilities are requested WHEN JSON emits THEN each capability context preserves the state inventory, fallback commands, raw-read policy, and capability-specific context needed for startup.
+    - GIVEN compatibility tests reference the old full envelope WHEN tests are updated THEN they either assert the new removal behavior or move old shapes into historical fixture coverage.
+  plan: zcmzsbifdp

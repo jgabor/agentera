@@ -1,0 +1,15 @@
+id: giwgdsifya
+artifact: progress
+record:
+  timestamp: 2026-07-15 22:18
+  type: feat
+  phase: audit
+  what: "Synchronized contracts and verified v3 closeout: cleaned vestigial --output/corpus_path surfaces in report/usageStats/extractCorpus (tier-output flag, tier_path in JSON payloads, deprecated --output comment, truthful corpus-too-large guidance); synced profile validation.yaml with evidence-anchor resolution (V1), sufficiency cap (V2), no-whole-corpus-load (V4), and new bounded_signal_sufficiency rule (V6); restored truncated TODO lossless-storage entry; restored Claude-import provenance test coverage (sourceClass/activeRuntime in fullRecord helper, h1 Claude entry sets historical_import, new test asserting full-shard fields plus signal-tier omissions); added oversized regression evidence test recording declared shard/signal/reader bounds, observed bounded artifact sizes, usage degradation, report status classification, startup analysis oversized reason, and profile sufficiency outcomes on capped tiers."
+  inspiration: Plan Task 5 (synchronize contracts and verify current state); Decision 55 reconciliation in evidence-tier-authority.yaml.
+  discovered: bounded_signals is a derived tier artifact, not an .agentera/ state artifact — adding it as an artifact_id in artifacts.yaml violates the artifact protocol. Removed A3 entry; validation rules V1/V4/V6 carry the bounded-signal constraints instead. fullRecord helper runtime coercion (opts.runtime ?? opencode) converted explicit null to 'opencode'; fixed to honor explicit null for Claude provenance.
+  verified: typecheck pass; build pass; full suite 191 files/2183 tests pass; check validate capability profile pass; check compact pass (over_limit:0, formatting:0, errors:0).
+  next: Plan Task 5 complete. Orchestrate capability evaluates the plan after audit. Do not archive the active plan.
+  context:
+    intent: "Plan Task 5 closeout: synchronize contracts, restore lost test collateral, record oversized regression evidence truthfully, and verify all gates pass."
+    constraints: Suite version stays 3.0.0. No push, tag, or publish. No standalone chore commits for state bookkeeping. Do not archive active plan.
+    scope: packages/cli/src/cli/commands/report.ts, packages/cli/src/analytics/usageStats.ts, packages/cli/src/analytics/extractCorpus/cli.ts, skills/agentera/capabilities/profile/schemas/validation.yaml, skills/agentera/capabilities/profile/schemas/artifacts.yaml, packages/cli/bundle/skills/agentera/capabilities/profile/schemas/, packages/cli/test/analytics/evidenceTiers.test.ts, packages/cli/test/analytics/oversizedRegression.test.ts, TODO.md

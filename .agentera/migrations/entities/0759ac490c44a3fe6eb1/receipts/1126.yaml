@@ -1,0 +1,22 @@
+id: uwuahelugw
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: complete
+    title: Bundle and SKILL.md Vocabulary Regression Coverage
+  what: Add focused regression coverage that classifies every surviving `bundle` and `SKILL.md` occurrence as canonical, compatibility-preserved, historical, fixture-only, or generic, and fails new ambiguous user-facing usage.
+  why: Decision 47 moved Agentera from bundle terminology toward app terminology, but `bundle` remains legitimate in historical records, compatibility schema fields, fixture names, and generic package-language contexts. The risk is not the word itself; the risk is new ambiguous user-facing or protocol wording that reintroduces bundle-vs-app confusion or treats `SKILL.md` as a vague bundle/suite surface.
+  constraints: Limit this to tests and the minimum fixture/authority adjustment needed to make the classification enforceable. Do not perform broad wording cleanup, package refresh, installed-app repair, publication, push, tag, `.agentera/vision.yaml` edits, objective-state mutation, decision satisfaction updates, or 3.0 compatibility removal. Preserve legitimate historical records, compatibility fields, fixture-only names, generic package vocabulary, and actual `SKILL.md` file references.
+  overall_acceptance:
+    - Every in-scope surviving `bundle` and `SKILL.md` occurrence has an explicit allowed classification or fails the focused regression with actionable context.
+    - New ambiguous user-facing or protocol vocabulary around bundle/app and `SKILL.md` cannot be introduced without updating the classification authority or rewording the text.
+    - Legitimate historical records, compatibility-preserved schema fields, fixture-only names, generic package vocabulary, and actual `SKILL.md` file references remain allowed by explicit classification.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

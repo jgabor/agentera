@@ -1,0 +1,16 @@
+id: dvkpqyvvch
+artifact: progress
+record:
+  timestamp: 2026-07-14 18:20
+  type: fix
+  phase: build
+  what: Made archived-only plan reads report verified active-plan absence with a bounded history catalog instead of promoting archived tasks into a degraded current projection.
+  inspiration: The completed rollout exposed that state plan promoted the newest archive after active-plan removal.
+  discovered: The primary archive fallback and unbounded archive path/catalog fields jointly caused the misleading current_projection omission response.
+  verified: "Focused state and source-contract tests: 2 files, 61 tests passed. Full CLI suite: 177 files, 1,805 tests passed. Typecheck and build passed. The live post-archive command now returns status=empty, entries=0, active_plan_exists=false, complete_for_plan_artifact=true, archive_count=133, and a bounded 10-entry catalog with 123 declared omissions. Archived plan and changelog validation, compact, and git diff checks passed."
+  next: Commit this fix with the completed plan archive lifecycle changes; no active plan remains.
+  context:
+    intent: Remove the post-archive state plan caveat while preserving immutable plan history and bounded output.
+    constraints: Do not restore archived plans as executable current state or add numbered plan retrieval machinery.
+    unknowns: None.
+    scope: Plan state query semantics, source-contract oracle, archived-only regressions, changelog, progress, and completed plan archive.

@@ -1,0 +1,16 @@
+id: pfdmaqieuf
+artifact: plan
+record:
+  name: Verify and close out metadata feature
+  depends_on:
+    - kxzpenxbka
+    - iqtanbcgck
+  status: complete
+  evidence:
+    - Capability-contract validation, capability directory validation, focused tests, Planera hej JSON, artifact validation, and diff whitespace checks passed.
+    - Resolved only the `[feat:2.4.x]` metadata TODO; broad validation/vocabulary TODOs remain open.
+  acceptance:
+    - GIVEN focused validation runs WHEN implementation is complete THEN `uv run scripts/agentera validate capability-contract --format json`, `uv run scripts/agentera validate capability skills/agentera/capabilities`, `uv run pytest tests/test_capability_instruction_contract.py tests/test_query_cli.py -q`, and `uv run scripts/agentera hej --format json --capability-context planera` pass or return valid JSON.
+    - GIVEN repository closeout runs WHEN feature work is complete THEN `uv run scripts/agentera validate artifact PLAN.md`, relevant changed artifact validators, and `git diff --check` pass.
+    - GIVEN TODO and versioning conventions are reviewed WHEN closeout metadata is updated THEN the `[feat:2.4.x]` metadata TODO is resolved only if the CLI metadata, docs, tests, and validation acceptance criteria are actually satisfied, and any required version/changelog updates are included.
+  plan: lkrqvabygh

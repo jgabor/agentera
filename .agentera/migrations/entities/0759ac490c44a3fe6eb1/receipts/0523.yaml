@@ -1,0 +1,13 @@
+id: jaejbxaouj
+artifact: plan
+record:
+  name: Establish canonical applicability and action projection
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN any lifecycle consumer WHEN state is requested THEN one projection supplies snapshot identity, applicability, ownership, action class, counts, and command eligibility.
+    - GIVEN Cursor CLI-only, IDE-present, or Agentera-integrated installations WHEN observed THEN CLI stays required while IDE is respectively not_applicable or conditionally expected.
+    - GIVEN mandatory evidence without a safe probe WHEN classified THEN it becomes exact manual verification or an unobservable diagnostic gap, never repairable work.
+    - GIVEN a shared resource WHEN selected THEN its applicability is invariant and required by at least one selected runtime.
+  plan: qzmmatwerr

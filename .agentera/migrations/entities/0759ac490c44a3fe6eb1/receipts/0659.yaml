@@ -1,0 +1,13 @@
+id: sgtopnlhqv
+artifact: plan
+record:
+  name: Doctor cross_major_pending advisory signal
+  depends_on:
+    - btnsmpbvai
+  status: complete
+  acceptance:
+    - 'GIVEN a v2.7.9 managed app facing a v3.0.0 CLI (cross-major boundary, successor unannounced) WHEN doctor runs THEN the emitted signals include kind: "cross_major_pending" with a non-actionable advisory message, and the final status is APP_MANUAL_REVIEW_NEEDED (not APP_UP_TO_DATE)'
+    - GIVEN the same cross-major boundary WHEN doctor runs THEN at least one signal referencing the version gap remains in the signals array (the prior suppression behavior is gone)
+    - GIVEN a non-cross-major scenario (v2.7.9 CLI facing v2.7.9 app, or v3.0.0 self-contained npx bundle) WHEN doctor runs THEN no cross_major_pending signal is emitted and behavior is identical to pre-fix
+    - GIVEN the cross-major scenario after the fix WHEN prime reads app_home.status THEN it is manual_review_needed (not up_to_date), matching the corrected doctor verdict
+  plan: qmqdxuwpuf

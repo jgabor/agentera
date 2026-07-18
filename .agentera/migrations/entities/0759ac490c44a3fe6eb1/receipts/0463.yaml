@@ -1,0 +1,16 @@
+id: iqtanbcgck
+artifact: plan
+record:
+  name: Update docs and source indexes
+  depends_on:
+    - kajhxpupgg
+    - itexttzrgt
+  status: complete
+  evidence:
+    - Updated README and vocabulary docs to describe emitted metadata and the runtime enforcement boundary.
+    - Updated CHANGELOG, TODO, and docs audit metadata for the feature closeout.
+  acceptance:
+    - GIVEN `README.md`, `docs/vocabulary.md`, `.agentera/docs.yaml`, and `CHANGELOG.md` are reviewed WHEN docs are updated THEN they no longer claim `first_invocation_read` is future or not emitted by the CLI.
+    - GIVEN docs describe the startup-read seam WHEN agents follow them THEN they point to `agentera hej --format json --capability-context <name>` and the contract authority rather than raw capability directory guessing.
+    - GIVEN documentation examples mention compact startup WHEN they are read THEN they preserve the boundary that compact startup is an explicit exception, not a default replacement for reading `instructions.md`.
+  plan: lkrqvabygh

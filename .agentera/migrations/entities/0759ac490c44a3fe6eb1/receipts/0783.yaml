@@ -1,0 +1,12 @@
+id: dljntnbeqt
+artifact: plan
+record:
+  name: Refresh Docs And Artifact State
+  depends_on:
+    - mdgufqxxke
+  status: complete
+  acceptance:
+    - GIVEN behavior and tests pass WHEN docs are refreshed THEN README, UPGRADE, CHANGELOG, DOCS, PROGRESS, and PLAN explain that package updates and durable bundle refresh are separate
+    - GIVEN docs show commands WHEN a user follows them THEN they use the clone-free uvx source, bundle-only phase, resolved install root, dry-run first, and confirmed --yes apply
+    - GIVEN the exact repro is documented WHEN codex plugin marketplace upgrade and npx skills update leave AGENTERA_HOME stale THEN /agentera owns the bundle-refresh recovery path
+  plan: zinmvprwol

@@ -1,0 +1,16 @@
+id: ypvojtgqeq
+artifact: plan
+record:
+  name: Implement next-major doctor section
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the channel authority WHEN extended with a `next_major` block per channel THEN the YAML parses and the block is reachable from `channels.<channel>.next_major`
+    - GIVEN a v3 install on the stable channel WHEN `agentera doctor` runs THEN a 6-line `next major` section renders at the head of the output sourced from `channels.stable.next_major`
+    - GIVEN a v2 install on the stable channel WHEN `agentera doctor` runs THEN the same 6-line section renders at the head of the output, sourced from the same authority file
+    - "GIVEN a v1 install WHEN `agentera doctor` runs THEN the v1→v2 section renders with current: 1.x and next: 2.x on stable, using a hardcoded v1 channel fallback"
+    - GIVEN the running line has no announced successor (e.g., v3 stable with v4 not yet announced) WHEN `agentera doctor` runs THEN the next-major section is omitted entirely; no header, no placeholder
+    - GIVEN the regression test suite WHEN run on v3 vitest and v2 pytest THEN the new section's behavior, v1 fallback, omitted-when-null, and 6-line cap each have a passing and a failing test
+    - GIVEN the vocabulary authority WHEN scanned for new doctor-section wording THEN no v3-named, v4-named, or major-version-named concept appears in code or prose
+  plan: cmdppboxha

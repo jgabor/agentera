@@ -1,0 +1,14 @@
+id: ktjechjnfb
+artifact: plan
+record:
+  name: capabilityContext & startup-analysis — alias elimination + cast narrowing
+  depends_on:
+    - kvewsaevxm
+  status: complete
+  acceptance:
+    - GIVEN the capability-context type surface WHEN its re-export becomes a thin canonical passthrough and local aliases are removed THEN every consumer compiles and the startup-context JSON shape is unchanged.
+  evidence:
+    - capabilityContext/types.ts and state/startupAnalysis/contract.ts re-exports converted to `export type Dict = JsonObject` thin passthroughs.
+    - Consumer files (startup, slim, evidence, build, contract, bespoke, closeout, benchmark, orchestration, planState, progress, records, metrics, threshold, report, index, helpers) narrowed with Array.isArray guards, local CategoryEntry interface (threshold.ts), and IO-boundary casts.
+    - evidence.ts field-access errors from task-2 coupling resolved in-scope; startup-context JSON shape unchanged.
+  plan: lazyquobjy

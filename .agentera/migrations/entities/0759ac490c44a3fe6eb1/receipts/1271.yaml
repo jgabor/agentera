@@ -1,0 +1,15 @@
+id: fgjoiilekd
+artifact: progress
+record:
+  timestamp: 2026-07-15 08:21
+  type: feat
+  phase: build
+  what: Added agentera state experiments publish in packages/cli/src/state/write/experimentPublication.ts with objective-scoped identity and schema preflight, atomic replacement, idempotent retry, collision safety, and 10/40/50 projection.
+  inspiration: Active plan Task 6 and Task 5 objective-scoped identity preflight.
+  verified: AC1-AC3 targeted commands each passed 1 test; pnpm -C packages/cli test passed 182 files and 1998 tests; pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; capability-contract validation and agentera check compact passed.
+  next: "Task 7: add durable experiment archival without changing publication identity or list/get scope."
+  context:
+    intent: Make the CLI the validated mutation authority for experiment publication without implementing durable archival or retrieval.
+    constraints: Preserve legacy readability and 10/40/50 projection; defer durable archive policy to Task 7 and list/get to Task 8.
+    unknowns: Durable recovery provenance remains intentionally deferred to Task 7.
+    scope: Experiment publication contract, schema, typed writer, compaction seam, CLI discovery/help, tests, changelog, plan, and progress.

@@ -1,0 +1,13 @@
+id: tocwctcgjj
+artifact: plan
+record:
+  name: Add upgrade migration step for env var rewire
+  depends_on:
+    - mhpaovsfab
+  status: complete
+  acceptance:
+    - GIVEN a new planEnvVarRewirePhase exists in runtimeMigration.ts, WHEN upgrade --dry-run runs on a v2 install, THEN it detects PROFILERA_PROFILE_DIR references in runtime config files and previews rewire to AGENTERA_PROFILE_DIR
+    - AND upgrade --yes applies the rewire
+    - "AND the migration item uses action: rewire-env-var"
+    - AND all tests pass
+  plan: ptxzdrxixt

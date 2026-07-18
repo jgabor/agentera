@@ -1,0 +1,13 @@
+id: nhxqirtjxr
+artifact: plan
+record:
+  name: Synchronize bounded-retrieval public contracts
+  depends_on:
+    - mdllwiwtsp
+  status: complete
+  acceptance:
+    - GIVEN retrieval help, schema introspection, agent context, capability prose, and operator docs WHEN inspected THEN bounded-retrieval commands and semantics agree.
+    - GIVEN experiment introspection WHEN queried THEN supported operations and corrections match runnable retrieval behavior.
+    - GIVEN retrieval capability and contract validation WHEN run THEN exposed retrieval examples pass and intentionally invalid retrieval examples fail.
+  evidence: Cycles 814-815 and replacement Task 12 audit PASS close the predecessor contract-parity finding.
+  plan: cccqoakytz

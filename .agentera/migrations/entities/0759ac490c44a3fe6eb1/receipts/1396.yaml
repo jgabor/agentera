@@ -1,0 +1,6 @@
+id: fxkxubobct
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[fix:3.0.0] Remove deprecated `issues` alias from prime JSON output. The resolved item (2026-06-27) kept `issues` as a deprecated alias with stderr warning; the stable-cut removal was deferred but never tracked as an open item. A public beta should not ship a deprecated field alias with no removal date."

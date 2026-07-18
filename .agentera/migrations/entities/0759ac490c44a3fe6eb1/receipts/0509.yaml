@@ -1,0 +1,12 @@
+id: odaqmvogcn
+artifact: plan
+record:
+  name: Regression tests and TODO closeout
+  depends_on:
+    - qrxjhxxllw
+    - vfxznwyibv
+  status: complete
+  acceptance:
+    - GIVEN vitest suites for doctor, prime/projectIntegration, and installRoot WHEN tests run THEN outdated fixtures assert update wording and repair_needed fixtures assert repair wording with no cross-contamination.
+    - GIVEN the fix is complete WHEN TODO.md fix:3.0.0 upgrade-vs-repair item is closed THEN it moves to Resolved with the implementation commit hash on feat/v3.
+  plan: galouyueud

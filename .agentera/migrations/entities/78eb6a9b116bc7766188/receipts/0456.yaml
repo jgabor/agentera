@@ -1,0 +1,12 @@
+id: wpvhdqtihg
+artifact: plan
+record:
+  name: Metrics persistence and latest-report retention
+  depends_on:
+    - bdfwesjckd
+  status: complete
+  acceptance:
+    - GIVEN a benchmark run succeeds WHEN persistence completes THEN one aggregate row is appended to user-local `runs.jsonl` with version, commit, dirty state, runtime scope, counts, rates, bounded degradation counts, and recommendation action.
+    - GIVEN a benchmark run succeeds WHEN latest reports are written THEN fixed latest structured and human-readable report files are replaced only after successful report generation.
+    - GIVEN a benchmark run fails WHEN persistence is inspected THEN no aggregate row is appended and the previous latest report files remain intact.
+  plan: kztirfhynv

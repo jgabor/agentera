@@ -1,0 +1,11 @@
+id: araijvdnqh
+artifact: plan
+record:
+  name: Schemas, scripts, and tests vocabulary alignment
+  depends_on:
+    - givcznbkqo
+  status: complete
+  acceptance:
+    - GIVEN trigger schemas, validation tests, and vocabulary authority tests are inspected WHEN legacy dispatch terms appear in non-archived current files THEN they are updated to canonical terms.
+    - GIVEN the vocabulary authority test passes WHEN the replacement is applied THEN `uv run pytest tests/test_bundle_skill_vocabulary_authority.py -q` succeeds.
+  plan: oakpdqdnpg

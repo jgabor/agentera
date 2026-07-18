@@ -1,0 +1,17 @@
+id: ifayruekyx
+artifact: plan
+record:
+  name: Regression and measurement evidence
+  depends_on:
+    - iflrutvgfg
+  status: complete
+  acceptance:
+    - GIVEN focused tests run WHEN full-detail, compacted, missing-field, satisfaction-review, filtered no-match, and missing-artifact cases are exercised THEN each case asserts the correct full-detail, normal-use, and raw-read semantics.
+    - GIVEN downstream caveats are emitted WHEN entries are compacted or incomplete THEN tests assert `missing_fields`, `compacted`, `caveats`, and satisfaction-review pressure remain available for planning/orchestration/handoff context.
+    - GIVEN performance evidence is required WHEN verification runs THEN the smallest available startup benchmark or focused proxy is run; if the original historical count is no longer reproduced, the exact limitation and current result are recorded.
+    - GIVEN runtime coverage is degraded WHEN benchmark results are summarized THEN degraded runtimes are separated from product behavior.
+  evidence:
+    - Focused tests passed for full-detail decisions, compacted decisions, missing-field decisions, satisfaction-review decisions, filtered no-match, missing artifact boundary, Orkestrera compacted-decision caveat preservation, Decision 45 reference contract, and DECISIONS.md consumer guidance.
+    - Full `uv run pytest tests/test_query_cli.py -q` passed with 191 tests; guidance/reference tests passed with 62 tests.
+    - "`mage bench:startupState` reran after implementation and latest report generated at `2026-05-16T02:16:13+00:00` showed `raw_artifact_access_after_cli_counts={}`, `redundant_raw_artifact_access_counts={}`, `total_raw_artifact_access_after_cli=0`, `total_redundant_raw_artifact_accesses=0`, implementation recommended false, and degraded claude-code/github-copilot runtime coverage separated from product behavior."
+  plan: tnyfrchrnl

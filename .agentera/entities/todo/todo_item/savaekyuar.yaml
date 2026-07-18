@@ -1,0 +1,6 @@
+id: savaekyuar
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Use git `user.name` and `user.email` for `confirmed_by` fields in `decisions.yaml`"

@@ -1,0 +1,10 @@
+id: cgftknjgpy
+artifact: plan
+record:
+  name: JS install-root contract generation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the shared Python/interface fixture exists WHEN the JS install-root contract generator runs THEN `.opencode/plugins/agentera.js` matches `.agentera/install_root_interface_model.yaml`
+  plan: wrbgxsiiaj

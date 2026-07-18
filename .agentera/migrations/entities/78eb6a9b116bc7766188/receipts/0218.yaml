@@ -1,0 +1,12 @@
+id: faezhdunjm
+artifact: plan
+record:
+  name: Establish runtime lifecycle authority
+  depends_on:
+    - feltljnwgi
+  status: complete
+  acceptance:
+    - GIVEN the authoritative runtime inventory WHEN validated THEN only opencode, codex, cursor, and copilot are active identities.
+    - GIVEN Cursor IDE and CLI observations WHEN lifecycle state is built THEN both appear beneath one Cursor identity without concealing expected degraded surfaces.
+    - GIVEN active claude or cursor-agent identities or duplicated runtime inventories WHEN validation runs THEN validation fails with actionable locations.
+  plan: ekhmbucace

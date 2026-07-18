@@ -1,0 +1,20 @@
+id: ojsihftqhj
+artifact: plan
+record:
+  name: Policy-gated closeout
+  depends_on:
+    - divdnkhyqn
+    - xegszkaleu
+    - wvrzhccvok
+    - mvuzeihpkg
+    - jstsroonaj
+  status: complete
+  acceptance:
+    - GIVEN closeout begins WHEN artifacts are edited THEN artifact mappings are queried with `uv run scripts/agentera query --list-artifacts` and only mapped source-of-truth artifacts required by policy are updated.
+    - GIVEN the implemented change is classified under `.agentera/docs.yaml` semver policy WHEN closeout starts THEN version-bearing surfaces are updated only if the policy requires it and the classification is recorded.
+    - GIVEN final verification runs WHEN the plan is ready for handoff THEN focused tests, mapped artifact validators, compaction check or fix, and `git diff --check` pass.
+  evidence:
+    - Closeout queried artifact mappings with `uv run scripts/agentera query --list-artifacts --format json`; mapped source-of-truth artifacts updated are PLAN, TODO, CHANGELOG, DOCS, and PROGRESS, plus policy-required version-bearing package/plugin/registry/skill surfaces.
+    - "`.agentera/docs.yaml` semver policy maps `feat` to `minor`, so version metadata was aligned from 2.8.0 to 2.9.0 for this Planera compact startup contract feature."
+    - Final verification evidence is recorded in TODO, CHANGELOG, DOCS, PROGRESS, and this plan; validators, compaction, and diff checks are run after artifact synchronization.
+  plan: dmdkskyqxj

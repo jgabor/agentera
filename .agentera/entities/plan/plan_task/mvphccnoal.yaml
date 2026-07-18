@@ -1,0 +1,12 @@
+id: mvphccnoal
+artifact: plan
+record:
+  name: Define shared YAML load contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN hooks/common.py WHEN the shared mapping loader is imported THEN empty or whitespace-only YAML text returns an empty dict without raising
+    - GIVEN the loader WHEN parse raises YAMLError THEN the error propagates or is handled per documented contract
+    - GIVEN compaction.py artifact reads WHEN updated THEN they use the shared loader instead of inline safe_load or {}
+  plan: jnhyfsboxr

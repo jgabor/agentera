@@ -1,0 +1,25 @@
+id: ejyrzrrqxl
+artifact: decisions
+record:
+  date: 2026-06-02
+  question: Should progress.yaml retain the per-cycle `commit` field or remove it entirely?
+  context: "Each full-detail cycle requires PR6 `commit` naming the product-change git hash. Build sets `commit: pending` then forward-backfills in a second commit. The TS CLI maintains `agentera check backfill` and `progressCommit.ts` (`commitToken`, `rewriteCycleCommits`, `computeBackfill`, `validateProgressCommits`) plus a validate-artifact ancestry guard. `rewriteCycleCommits` is brittle line-oriented YAML surgery (all-digit short hashes broke parsing until cycle 627 quoted values). The field duplicates `git log` scoped to cycle metadata. D58 single-source-of-truth and plan 'Reconsider the progress.yaml commit field' frame this evaluation. Cycle 629 freeze oracles omit per-cycle `commit`; audit 5b already skips change-magnitude when no hashes appear. Ripple inventory (21 files): DELETE `progressCommit.ts`, `backfill.ts`, `progressCommit.test.ts`, `backfill.test.ts`; EDIT `dispatch.ts` (parseBackfillArgs, runBackfill, check route), `validateArtifact.ts` (validateProgressCommits), `hooks/common.ts`, `core/git.ts` (ancestorState), `state.ts` (~L77), `help.ts`, `doctor.ts`, `migrateArtifactsV1ToV2.ts`; SCHEMA/PROSE progress schema PR6+PV2, build instructions, AGENTS.md, audit 5b, contract.md, UPGRADE.md, CHANGELOG; DATA `.agentera/progress.yaml`, TODO.md chore:3.0.0."
+  alternatives:
+    - name: Retain and fix the commit field
+      status: rejected
+      description: Keep PR6 required, retain backfill command and ancestry guard, continue forward-backfill ceremony. Cycle-627 quoting fixed one YAML edge case but preserves rewrite pipeline and double-commit-per-cycle cost.
+    - name: Remove the commit field from the progress schema
+      status: chosen
+      description: Drop PR6 and PV2 commit requirement, delete backfill command and progressCommit.ts, remove validate-artifact ancestry checks, strip commit from existing cycles, update AGENTS.md/build/UPGRADE/contract prose. Link cycles to product commits via git log plus timestamp/what/scope/verified.
+  choice: Remove the per-cycle `commit` field and delete backfill/rewrite/ancestry machinery. Do not retain `commit` as optional—D58 rejects parallel linkage sources. Follow-up build plan implements removal; this decision is design-only.
+  reasoning: "Field cost exceeds signal: forward-backfill forces a second commit per cycle for metadata `git log` already provides; `rewriteCycleCommits` stays fragile; ancestry guard mainly repairs amend-induced stale hashes the workflow creates. Consumers already cope: `progressVerificationSummary` never surfaced `commit`; audit 5b defaults depth without hashes; freeze oracles omit the key. Retain-and-fix perpetuates ceremony. Removal aligns with D58 and deletes a module plus command. Migration: (1) schema—drop PR6/PV2 commit; (2) delete `check backfill` surface; (3) delete `progressCommit.ts` and tests, drop `validateProgressCommits`; (4) remove commit from state progress text output; (5) strip commit from progress.yaml cycles and v1 migration; (6) update docs/prose; (7) test suite green and TODO resolved."
+  confidence: firm
+  feeds_into: TODO.md, skills/agentera/schemas/artifacts/progress.yaml, packages/cli/src/state/progressCommit.ts, packages/cli/src/cli/commands/backfill.ts, packages/cli/src/hooks/validateArtifact.ts, packages/cli/src/cli/dispatch.ts, AGENTS.md, skills/agentera/capabilities/build/instructions.md, UPGRADE.md, .agentera/progress.yaml
+  follow_up_realisera_acceptance:
+    - GIVEN the progress artifact schema WHEN removal ships THEN PR6 `commit` is absent, PV2 no longer requires it, and `.agentera/progress.yaml` cycles validate without `commit` keys.
+    - GIVEN the backfill command surface WHEN removal ships THEN `agentera check backfill` is unreachable, `progressCommit.ts` and `backfill.ts` are deleted, and `validateArtifact.ts` no longer calls `validateProgressCommits`.
+    - GIVEN `agentera progress --format json` consumers WHEN cycles lack `commit` THEN JSON payloads remain valid, CLI tests pass, and audit 5b uses default audit depth.
+    - GIVEN AGENTS.md, build instructions, UPGRADE.md, and contract.md WHEN removal ships THEN commit-field and forward-backfill ceremony prose is removed.
+    - GIVEN the full CLI test suite WHEN removal completes THEN all tests pass and freeze oracles that omit per-cycle `commit` remain green.
+    - GIVEN TODO.md chore:3.0.0 WHEN closeout runs THEN the entry moves to Resolved with decision 66 reference and the implementation commit hash.
+  outcome: Remove the per-cycle `commit` field and delete backfill/rewrite/ancestry machinery. Do not retain `commit` as optional—D58 rejects parallel linkage sources. Follow-up build plan implements removal; this decision is design-only.

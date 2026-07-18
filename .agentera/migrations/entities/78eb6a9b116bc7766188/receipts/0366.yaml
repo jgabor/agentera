@@ -1,0 +1,16 @@
+id: dhcdbsxqmp
+artifact: plan
+record:
+  name: Prove required-read capability context emission
+  depends_on:
+    - pmfhxlkrfi
+  status: complete
+  acceptance:
+    - GIVEN `agentera hej` is invoked with capability context for a capability requiring a full first read WHEN JSON output is inspected THEN `source_contract.capability_context.first_invocation_read` names `instructions.md` and the full-read obligation.
+    - GIVEN required-read metadata is emitted WHEN the instruction target is inspected THEN it includes the canonical capability `instructions.md` path and provenance authority.
+    - GIVEN unsupported capability-name CLI commands remain out of scope WHEN startup context is tested THEN no regression requires or introduces `agentera planera`, `agentera realisera`, or similar commands.
+  evidence:
+    - Strengthened hej capability-context tests for full first reads to assert `instructions.md` instruction targets, full-read obligations, existence, and Decision 57 provenance.
+    - Strengthened realisera startup context coverage to assert full `first_invocation_read` metadata through the supported `agentera hej --format json --capability-context realisera` seam.
+    - Added regression assertions that startup context does not require or introduce unsupported `agentera planera` or `agentera realisera` CLI commands.
+  plan: fmktobmnvx

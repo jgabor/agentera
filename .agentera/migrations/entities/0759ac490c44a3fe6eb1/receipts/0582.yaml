@@ -1,0 +1,15 @@
+id: bnxbzelnac
+artifact: plan
+record:
+  name: Expose structured CLI discovery
+  depends_on:
+    - clyubmllow
+  status: complete
+  acceptance:
+    - GIVEN agents run `agentera describe --format json` WHEN they inspect artifact schemas THEN they can obtain the new artifact-location contract without raw-reading `.agentera/docs.yaml` or searching `.agentera/` directories.
+    - GIVEN agents run `agentera query --list-artifacts --format json` WHEN they need advanced artifact discovery THEN structured output includes the location contract or an explicitly documented compatibility wrapper; plain text output continues to list artifact names.
+    - GIVEN routine state content is needed WHEN the discovery contract points to an artifact THEN it names the owning state command and preserves `query <artifact>` as advanced/custom inspection, not a replacement for normal state reads.
+  evidence:
+    - "`agentera describe --format json` now emits top-level `artifact_locations` and per-schema `location` records. `agentera query --list-artifacts --format json` now emits a v2 wrapper with `names`, `artifacts`, `source`, `source_contract`, and caveats; plain text output still lists names only."
+    - Routine artifacts name commands such as `agentera plan --format json`; custom artifacts keep `agentera query <artifact> --format json` as advanced inspection instead of routine content ownership.
+  plan: dcoyjwccxs

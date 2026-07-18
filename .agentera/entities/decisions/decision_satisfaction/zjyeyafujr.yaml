@@ -1,0 +1,9 @@
+id: zjyeyafujr
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: User confirmed satisfaction during discuss review on 2026-05-31. Contract-first TypeScript CLI rewrite remains the 3.0 direction; feat/v3 packages/cli work is downstream implementation.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-31
+  decision: vyvnuwirhj

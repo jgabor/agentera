@@ -1,0 +1,34 @@
+id: bszbmkggss
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-25
+    status: complete
+    reviewed: 2026-05-25
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: Pytest suite speed and coverage hygiene
+  what: Improve pytest collection safety, cut redundant full-surface measurement work, add optional slow-test markers without changing pre-commit scope, speed up vocabulary scanner tests via session caching, reduce subprocess overhead in high-frequency CLI tests, and make coverage metrics trustworthy for the main CLI and subprocess-validated scripts.
+  why: The suite runs 1,228 tests in ~114s with xdist, but two measure_json_output_surfaces tests alone consume ~110s by re-invoking every primary CLI surface twice. Bare uv run pytest from the repo root collects ~50k tests via the plugins/agentera symlink loop. Reported Python coverage is 66% but excludes scripts/agentera (~8k lines) and understates subprocess-tested modules.
+  constraints: Keep lefthook and pre-commit running the full suite with no marker exclusions. Do not consolidate per-capability test modules.
+  scope:
+    included:
+      - pyproject.toml pytest.ini_options and coverage configuration
+      - Session-scoped primary_surface_measurements fixture
+      - slow and integration markers
+      - Vocabulary scan caching
+      - Targeted query_cli and app-home contract refactors
+      - AGENTS.md pytest and coverage guidance
+    excluded:
+      - Consolidating twelve per-capability test modules
+      - Splitting pre-commit into fast vs slow tiers
+    deferred:
+      - CI matrix sharding with pytest-split
+      - Broader query_cli.py refactor beyond hot paths
+  design: Fix collection at the config layer, share one session-scoped measurement across duplicate full-surface tests, register slow markers for local runs only, cache vocabulary scans per session, import validators directly where safe, and include scripts/agentera in coverage configuration.
+  overall_acceptance:
+    - GIVEN pre-commit WHEN Python files change THEN lefthook still executes the full parallel pytest suite faster than the pre-plan ~114s baseline
+    - GIVEN bare pytest from repo root WHEN no path argument is supplied THEN collection stays bounded to tests/
+    - GIVEN documented coverage command WHEN maintainers run it THEN scripts/agentera is included in coverage scope
+  surprises:
+    - xdist schedules the two slow measure_json tests on separate workers, so session fixture deduplication saves wall time primarily via parallel setup rather than a single shared call globally.

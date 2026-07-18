@@ -1,0 +1,24 @@
+id: zjsdtiqzie
+artifact: plan
+record:
+  name: Gate projection changes on verified archive recovery
+  depends_on:
+    - znkmabindx
+    - hbikugrcwo
+  status: complete
+  acceptance:
+    - GIVEN a full entry selected for summarization WHEN its archive record and hash are verified THEN projection publication may proceed.
+    - GIVEN an absent, corrupt, conflicting, or unsupported archive WHEN projection runs THEN full detail is retained and a structured reason is reported.
+    - GIVEN publication is interrupted WHEN recovery runs THEN no caller can observe a summary whose full record is unavailable.
+    - GIVEN each recoverability state WHEN tests run THEN one successful and one refusal path are covered.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Progress Cycle 755 records 96 focused and 1,630 full tests; reproducible Task 6 suites pass 98 focused and 1,631 full tests.
+    provenance:
+      attempt_id: task-6-attempt-2
+      source: audit-task-6-24c90ada+f7a1f706
+      recorded_at: 2026-07-13 14:01
+      writer_command: agentera state plan record-evaluation
+  plan: oxisposbmm

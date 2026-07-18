@@ -1,0 +1,14 @@
+id: akfzsarggd
+artifact: plan
+record:
+  name: Remove probeCli flag, cliProbe module, and managed-script evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN buildDoctorStatus is called THEN it no longer accepts probeCli or probeRunner options AND BundleStatus is still produced with file/version presence + install-root classification
+    - GIVEN agentera prime and agentera doctor are run against the same install THEN both produce the same app_home.status (no probeCli asymmetry)
+    - GIVEN cliProbe.ts is checked THEN the file does not exist AND no source file imports ProbeResult, ProbeRunner, or inProcessProbe
+    - GIVEN doctor.ts is inspected THEN managedScriptEvidence and the runtime_mismatch signal are gone (v3 has no scripts/agentera managed script)
+    - GIVEN pnpm -C packages/cli test is run THEN all tests pass with zero failures and no test passes probeCli or references the probe module
+  plan: genblkluue

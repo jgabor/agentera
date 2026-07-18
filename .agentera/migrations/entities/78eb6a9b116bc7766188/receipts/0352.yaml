@@ -1,0 +1,24 @@
+id: ltrakrsner
+artifact: plan
+record:
+  name: Repair schema-advertised alias and runtime parity
+  depends_on:
+    - nhxqirtjxr
+  status: complete
+  acceptance:
+    - GIVEN canonical alias authority WHEN gate is assessed THEN stale advertising is removed unless an active compatibility contract requires a structured alias to the canonical command.
+    - GIVEN every schema-advertised alias WHEN exhaustively executed with structured output THEN each advertised command returns structured runnable behavior consistent with its description.
+    - GIVEN retired or unsupported aliases WHEN checked THEN each structured result names valid values and a correction that runs successfully; passing and failing parity cases cover every advertised alias.
+    - GIVEN the parity repair WHEN independently audited THEN Cycles 814-815 remain unchanged and the degraded bounded-retrieval TODO closes only after a passing verdict.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Build startup context still advertises agentera gate and check compact JSON still reports command gate.
+    provenance:
+      attempt_id: task-12-audit-2-20260715
+      source: independent alias schema-runtime parity audit
+      recorded_at: 2026-07-15 12:52
+      writer_command: agentera state plan record-evaluation
+  evidence: Independent audit task-12-audit-2-20260715 passed after preserving its first failed attempt.
+  plan: cccqoakytz

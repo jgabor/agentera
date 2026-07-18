@@ -1,0 +1,14 @@
+id: okndvlvgsm
+artifact: plan
+record:
+  name: Add Self-Healing /agentera Refresh Guidance
+  depends_on:
+    - azspqsrmsn
+  status: complete
+  acceptance:
+    - GIVEN bare /agentera sees a stale installed bundle WHEN the expected state command fails or freshness check fails THEN guidance reports the bundle freshness gap and shows the uvx dry-run preview for the resolved install root
+    - GIVEN AGENTERA_HOME is unset WHEN the bundle is otherwise discoverable at the default durable root THEN the preview targets that default durable root and reports the resolution source
+    - GIVEN AGENTERA_HOME points at an invalid or non-managed root WHEN refresh is considered THEN guidance does not overwrite it silently and requires either a managed root or explicit force guidance
+    - GIVEN no explicit approval exists WHEN stale state is detected THEN no --yes command runs
+    - GIVEN explicit approval is provided WHEN the refresh applies THEN the uvx --yes command uses the same resolved root and /agentera retries uv run <resolved-root>/scripts/agentera hej
+  plan: zinmvprwol

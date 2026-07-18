@@ -1,0 +1,12 @@
+id: kyzpbbyzum
+artifact: plan
+record:
+  name: Verify patch release readiness
+  depends_on:
+    - ijzqmywfic
+  status: complete
+  acceptance:
+    - GIVEN local release verification runs WHEN the gate completes THEN suite-level checks pass or blockers are recorded with concrete failure reasons.
+    - GIVEN Agentera CLI verification runs WHEN the gate completes THEN install diagnostics, runtime introspection, and routine state surfaces still report valid output.
+    - GIVEN no live install proof is authorized WHEN release evidence is recorded THEN no four-runtime live confidence claim is made.
+  plan: evlwlzprps

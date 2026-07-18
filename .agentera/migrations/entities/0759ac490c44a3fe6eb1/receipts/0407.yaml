@@ -1,0 +1,16 @@
+id: vdrrhoruqu
+artifact: plan
+record:
+  name: Correct archive discovery and session routing
+  depends_on:
+    - acybsmhede
+    - fxegfwjqks
+  status: complete
+  acceptance:
+    - GIVEN plan catalog output WHEN an artifact is current or archived THEN `active` and `archived` are derived exclusively from canonical location.
+    - GIVEN a normal or forced archive WHEN state is rendered THEN its lifecycle remains truthful and it is never presented as the executable current plan.
+    - GIVEN pending tasks with blocked dependencies WHEN plan state selects next work THEN it returns only a dependency-ready task or null and never labels a merely pending blocked task as next.
+    - GIVEN contradictory or malformed lifecycle data WHEN queried THEN structured degraded state is shared by status, build, and orchestration consumers.
+    - GIVEN task evaluation fails or is retried WHEN orchestration state is persisted and reloaded THEN CLI-owned attempt count, last verdict, failure evidence, and retry provenance survive restart and enforce the retry budget.
+  evidence: "Supersedes prior evidence: archive-only forced-open and completed plans now produce non-executable archive_only_history Build context with no selected task, completion sweep, or execution updates; active completed plans retain their pre-archive sweep. Verified 1,573 CLI tests, typecheck, build, capability gates, compact, and built CLI contract smoke."
+  plan: syfetglodq

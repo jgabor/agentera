@@ -1,0 +1,16 @@
+id: qsdtgdnkyz
+artifact: progress
+record:
+  timestamp: 2026-07-16 16:14
+  type: fix
+  phase: build
+  what: "Retried Plan Task 5 final synchronization: canonicalized all shipped capability descriptors and current startup guidance, replaced retired plan/docs fallback commands, and prepared authoritative evidence pointers for Tasks 1-5 without rewriting immutable Cycle 855."
+  inspiration: Plan Task 5 final retry after independent evaluation task-5-audit-1.
+  discovered: The source tree has twelve shipped capability descriptors; eleven used prose and the research descriptor used an unqualified instructions label. The generated bundle is ignored source output, so bundle:data must regenerate it and parity must be regression-tested. Cycle 855 remains immutable; its current wording is superseded by this retry and the corrected current contract guidance.
+  verified: "Descriptor vocabulary and source/bundle parity regression: 2 tests passed. Startup fallback executability regression: all three advertised commands returned structured JSON with rc=0 and no stderr. Full CLI Vitest: 200 files and 2326 tests passed. Typecheck and build passed. bundle:data passed with extract-corpus parity. Capability validation status and plan passed; capability-contract validation passed 2/2. Live pretty UTF-8 JSON: bare prime 11187/12000 bytes and status context 24176/25000 bytes. check compact passed with over_limit=0, formatting=0, protected_overflow=0, and errors=0; the known progress:793 archive recovery refusal remains preserved."
+  next: Attach progress cycle pointers to plan Tasks 1-5 through the typed plan writer, record the final Task 5 pass, mark Task 5 and the plan complete, rerun state and compact checks, and commit locally without push or publication.
+  context:
+    intent: Resolve every finding from the independent final evaluation before closing the compact-prime plan.
+    constraints: Do not modify vision or objective state, implement deferred recommendations 4 through 7, rewrite immutable Cycle 855, erase prior evaluation failures, or push and publish.
+    unknowns: none
+    scope: skills/agentera/agents/*.toml; packages/cli/src/cli/startupCompletenessContract.ts; packages/cli/src/cli/capabilityContext; packages/cli/src/cli/commands/state/plan.ts; packages/cli/src/cli/orientation.ts; references/cli/agent-ready-state-contract.yaml; packages/cli/test/cli/agentDescriptorVocabulary.test.ts; packages/cli/test/cli/startupCompletenessContract.test.ts

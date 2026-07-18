@@ -1,0 +1,7 @@
+id: ekvepyrlql
+artifact: docs
+record:
+  document: Web install and lifecycle guide
+  path: packages/web/src/content/docs/docs/getting-started/install.mdx
+  last_updated: 2026-07-12
+  status: current

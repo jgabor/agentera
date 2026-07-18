@@ -1,0 +1,16 @@
+id: snsgbtvwsh
+artifact: plan
+record:
+  name: Cut plans and tasks over to entities
+  depends_on:
+    - ybkphfcetp
+    - xnwwlycpwz
+    - prefuuwhri
+    - ciuqfpudze
+  status: complete
+  acceptance:
+    - GIVEN plans and tasks WHEN created or updated THEN each independently mutable entity uses the shared identity and writer contract.
+    - GIVEN multiple open plans WHEN queried THEN selection is deterministic when unique and requires an explicit ID when ambiguous.
+    - GIVEN task dependencies WHEN migrated or changed THEN every structured relationship resolves to an existing task entity.
+    - GIVEN concurrent changes to one task WHEN merged THEN ordinary Git exposes the same-entity conflict.
+  plan: vllyohtcde

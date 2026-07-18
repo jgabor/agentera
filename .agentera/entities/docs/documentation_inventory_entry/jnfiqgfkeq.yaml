@@ -1,0 +1,7 @@
+id: jnfiqgfkeq
+artifact: docs
+record:
+  document: Codex marketplace manifest
+  path: .agents/plugins/marketplace.json
+  last_updated: 2026-04-28
+  status: current

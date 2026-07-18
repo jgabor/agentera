@@ -1,0 +1,14 @@
+id: vgmqfqkihv
+artifact: plan
+record:
+  name: Evolve NextAction type and selectStatusNextAction into ranked readiness hint
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a project with a pending plan task WHEN selectStatusReadiness is called THEN the top-priority entry's object contains 'PLAN Task' AND its phase equals 'build' AND at least one alternative entry is returned
+    - GIVEN a project with no plan but degrading health WHEN selectStatusReadiness is called THEN the top-priority entry's capability equals 'audit' AND its phase equals 'audit'
+    - GIVEN a project with no plan, no degrading health, no objective, and no TODOs WHEN selectStatusReadiness is called THEN the top-priority entry is non-null AND at least one alternative (vision-refresh) is returned
+    - GIVEN a project with both a pending plan task and degrading health WHEN selectStatusReadiness is called THEN the top-priority entry's capability equals 'orchestrate' (plan wins) AND the health-audit entry appears in alternatives
+    - GIVEN any project state WHEN selectStatusReadiness is called THEN every returned entry has a non-empty phase field from {envision, deliberate, plan, build, audit}
+  plan: fidstglvlh

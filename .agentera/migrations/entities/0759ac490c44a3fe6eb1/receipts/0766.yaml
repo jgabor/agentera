@@ -1,0 +1,22 @@
+id: kxlywpqwyw
+artifact: plan
+record:
+  name: Synchronize final state and rerun every release gate
+  depends_on:
+    - pvgerjnbwd
+    - ddftezlftg
+    - nyfkcaqnfu
+    - lmloyrbjcn
+    - kkyxidncqb
+    - qszlacfmie
+    - qyhzsfpddh
+    - ixkqdbzuiy
+    - iuramsdjju
+    - hbratwcpxd
+    - ganrgtscle
+  status: pending
+  acceptance:
+    - GIVEN all prior outcomes are verified WHEN closeout mutates state THEN predecessor lineage, progress, blocked-list TODO, targeted health audit, docs inventory, and changelog agree without manufactured evidence.
+    - GIVEN the synchronized final tree WHEN full CLI tests, typecheck, build, capability-contract validation, artifact validation, compact, migration fixtures, and npm publish dry-run rerun THEN every governed gate passes.
+    - GIVEN final evaluation succeeds WHEN the continuation plan completes and archives THEN no active plan survives and the incomplete predecessor remains discoverable through `previous_plan_archived`.
+  plan: cqihbnzhms

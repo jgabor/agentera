@@ -1,0 +1,33 @@
+id: lxrohjluya
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-03
+    status: complete
+    reviewed: 2026-06-03
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: "Plan: TODO.md GitHub checkbox parsing"
+  what: Fix TODO.md markdown parsing so GitHub task-list checkboxes ([x] / [ ]) between the bullet and the Agentera [type] tag correctly classify items as resolved or open. Today agentera state todo --format json and prime/hej orientation treat - [x] [fix] rows as open because the bracket matcher treats x as the type token. The wrong open-set inflates critical issue counts and misroutes hej/planera toward already-finished work. Ship the fix on feat/v3 first to pin the v3 contract, then backport to main for the next v2 patch (2.7.9+); do not mark the TODO resolved until both branches pass regression and live state todo JSON on mixed checkbox TODO.md.
+  why: The bug ships in 2.7.8 and silently breaks hej routing for any project using the GitHub task-list convention (confirmed on token-economics TODO.md). Critical severity in the ledger reflects user-visible routing failure, not a cosmetic parser edge case. Dual-branch delivery is required because stable users stay on Python v2 while v3 development continues on TypeScript.
+  constraints: Preserve existing - [type:scope] description lines without a leading checkbox (still open). Preserve YAML .agentera/todo.yaml behavior (unchanged). Do not change validateMdItems empty-section policy (separate TODO). No remote push. Do not edit .agentera/vision.yaml or objective state. Shared parsing logic must stay consistent across state todo and prime orientation (same open-set). No version-named vocabulary in new code.
+  scope:
+    included:
+      - Shared markdown TODO line classifier for checkbox plus optional type tag
+      - state todo JSON and text markdown fallback path
+      - Prime/hej loadTodoItems, issueCounts, and next_action open-set
+      - Vitest regression for checkbox-plus-type and type-only lines
+      - Python stable backport on main with pytest parity
+      - CHANGELOG entries on both branches; v2 patch version bump on main only
+    excluded:
+      - TODO.md empty severity sections (separate chore TODO)
+      - Strikethrough resolved lines in open sections (unchanged behavior)
+      - validateMdItems hook validation rule changes unless required for cited ledger tests
+      - Compaction todo-resolved path (already uses [x] prefix semantics)
+    deferred:
+      - Case-insensitive X checkbox (document if unsupported)
+      - Monolith split of validateArtifact.ts or orientation.ts
+  design: "Introduce one canonical markdown TODO item parser used by both state todo and loadTodoItems. Parsing order: optional GitHub checkbox ([ ] open, [x] resolved); optional Agentera type tag [type:scope] or [type]; remainder is description. Lines with only a type tag and no checkbox keep today's open default. Resolved checkbox rows are excluded from open-only filters, issue counts, and prime next_action selection. YAML entries continue to use status field semantics. Test proportionality: one pass plus one fail per surface (checkbox-open, checkbox-resolved, type-only-without-checkbox, prime issue count drop when critical [x] present). v3 work lands on feat/v3; v2 backport mirrors behavior in the Python CLI paths referenced by the stable test suite on main."
+  overall_acceptance: GIVEN a project TODO.md mixing - [x] [type], - [ ] [type], and - [type] lines WHEN users run agentera state todo --format json or agentera prime on either feat/v3 or main THEN resolved checkboxes never inflate open issue counts or hej next_action, and the Critical TODO ledger entry can close with both branch hashes.
+  surprises:
+    []

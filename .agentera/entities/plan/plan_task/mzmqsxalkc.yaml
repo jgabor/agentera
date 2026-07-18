@@ -1,0 +1,16 @@
+id: mzmqsxalkc
+artifact: plan
+record:
+  name: Harden Agent-Facing CLI Inputs
+  depends_on:
+    - vriihddjes
+    - omhqqbzovy
+    - qmwsmqvpey
+    - bvfocwphti
+  status: complete
+  acceptance:
+    - GIVEN agent-facing inputs include artifact names, field names, output formats, path-like values, doctor roots, and upgrade roots WHEN unsupported or unsafe values are supplied THEN the CLI rejects them with clear status and no unintended writes
+    - GIVEN path or root inputs are reviewed WHEN validation runs THEN project and durable-root boundaries reject traversal, unmanaged overwrite, and unsupported target forms unless an existing explicit approval flow applies
+    - GIVEN existing valid workflows run WHEN hardening is complete THEN query, upgrade dry-run, doctor, structured state, describe, and field selection still behave as documented
+    - GIVEN exit or error behavior changes are required WHEN unsupported inputs fail THEN the evidence records whether existing CLI exit behavior was preserved or deliberately migrated
+  plan: xprbindgbm

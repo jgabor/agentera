@@ -1,0 +1,23 @@
+id: chexrtgced
+artifact: plan
+record:
+  name: Add durable experiment archival
+  depends_on:
+    - bxdjfuhaqx
+  status: complete
+  acceptance:
+    - GIVEN projection retention is crossed WHEN publication succeeds THEN newly published full detail is durably recoverable before compaction.
+    - GIVEN 10/40/50 projection compaction WHEN run THEN projection policy is unchanged and archive provenance remains explicit.
+    - GIVEN archive success, failure, and retry fixtures WHEN tested THEN no detail is silently lost or duplicated.
+  evidence: "Corrective verification: AC1 exact-full reconstruction remains recoverable after compaction (1 passed, 13 skipped). AC2 deterministic directory syscall order and sync-fault tests (each 1 passed, 7 skipped); archive durability precedes projection replacement. AC3 publication success/failure/interruption/replay/conflict/summary-only suite (14 passed). Full CLI 182 files/2011 tests; typecheck, build, capability-contract, compact passed. Exact root commands and counts: Cycle 808. Audit attempt 1 failure remains preserved."
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Fresh archive creation does not fsync the new archive parent; replay can retain projection detail without reconstructing the missing archive; Cycle 807 evidence is stale.
+    provenance:
+      attempt_id: task-7-audit-2-20260715
+      source: independent Task 7 corrective acceptance audit
+      recorded_at: 2026-07-15 09:23
+      writer_command: agentera state plan record-evaluation
+  plan: diigykcdod

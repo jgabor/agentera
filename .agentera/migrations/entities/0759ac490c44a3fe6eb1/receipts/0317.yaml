@@ -1,0 +1,14 @@
+id: knrgeyxehx
+artifact: plan
+record:
+  name: Cross-runtime fixture and degradation coverage
+  depends_on:
+    - fkmxvzvrcu
+    - bvrefcsejg
+  status: complete
+  acceptance:
+    - GIVEN Cursor fixtures plus existing runtime fixtures WHEN focused tests/test_extract_corpus.py cases run THEN cursor proves normalized families, ordering, missing, locked, sparse, and schema-divergent degradation without transcript leakage
+    - GIVEN combined extraction WHEN metadata is inspected THEN runtime_statuses includes cursor with counts and reasons aligned to other runtimes
+  evidence:
+    - 17 passing tests/test_extract_corpus.py including cross_runtime and cursor-specific degradation cases
+  plan: ntynvndxnl

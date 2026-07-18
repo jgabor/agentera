@@ -1,0 +1,12 @@
+id: cekrduuyhm
+artifact: plan
+record:
+  name: Add validated experiment publication
+  depends_on:
+    - djstpxizim
+  status: complete
+  acceptance:
+    - GIVEN a new experiment WHEN published THEN the CLI validates and assigns or enforces identity before side effects.
+    - GIVEN invalid identity or publication failure WHEN attempted THEN active and archived bytes remain unchanged.
+    - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
+  plan: zmjvhbfhpm

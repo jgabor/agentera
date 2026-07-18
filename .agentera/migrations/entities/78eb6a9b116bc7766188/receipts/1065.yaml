@@ -1,0 +1,15 @@
+id: gwsdydmsdf
+artifact: plan
+record:
+  name: Cut progress over to entities
+  depends_on:
+    - ybkphfcetp
+    - xnwwlycpwz
+    - prefuuwhri
+  status: complete
+  acceptance:
+    - GIVEN progress writes and exact reads WHEN exercised THEN each cycle uses canonical entity authority and bare IDs.
+    - GIVEN unrelated progress writes on parallel branches WHEN merged THEN ordinary Git preserves both without aggregate projection conflict.
+    - GIVEN bounded progress history WHEN paged or recovered THEN omission, provenance, and full canonical detail remain correct.
+  evidence: "Cycle 877: entity-mode progress append/get/list use one canonical file and bare IDs; replay/divergence, exact errors, deterministic bounded snapshots, omission/recovery, source mutation, mode isolation, and two-worktree merge safety passed. Full CLI 204 files/2,444 tests, typecheck, build, state validation, capability contract 2/2, compact, and CLI smoke passed."
+  plan: vllyohtcde

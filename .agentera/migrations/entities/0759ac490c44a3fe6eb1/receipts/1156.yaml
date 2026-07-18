@@ -1,0 +1,37 @@
+id: lazyquobjy
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-27
+    status: complete
+    reviewed: 2026-06-27
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    title: "Plan: Consolidate scattered Dict aliases; narrow casts to IO boundaries"
+  what: |
+    Collapse the ~44 locally-declared `type Dict = Record<string, any>` aliases (plus 9 `Record<string, unknown>` variants and 6 stray re-export aliases) spread across the CLI into the single canonical JSON-value contract exported by the shared module. At every consolidated site, import the preferred `JsonObject` (not the deprecated `Dict` alias). Tighten the casts that let untyped data flow through internal call sites so that `as` casts survive only where untyped external data enters the process.
+  why: |
+    The v3 typed-output contract landed a shared JSON-value module but repo-wide elimination was deferred (TODO `[chore:3.0.0]`). The residual local aliases are inconsistent (`any` vs `unknown` vs re-export), defeat type checking at internal boundaries, and let `as any` propagate untyped data deep into the call graph. Closing this removes Audit 24's Coupling structural-debt finding and makes the v3 typed-output contract enforceable end to end.
+  constraints: |
+    No behavior change. Type-only refactor; runtime output, exit codes, and artifact shapes byte-stable where observed by tests/fixtures. API surface frozen — no public command, flag, JSON field, or field-ordering changes. Single source of truth — no new local JSON-value aliases; the shared module is the only definition. Cast at IO only — `as` casts permitted solely where untyped external data enters; internal construction must be typed, not cast. Out of scope: redesigning the JsonValue/JsonObject hierarchy; changing artifact YAML schemas; runtime/adapter contracts; mobile/web; Python v2 scripts; removing the deprecated `Dict` alias from the shared module (deferred until zero consumers remain). Branch: feat/v3. No version-bump task — chore work does not bump per DOCS semver policy.
+  scope:
+    included:
+      - Every local JSON-value type alias declaration across the CLI source and tests.
+      - Conversion of stray re-export aliases into thin canonical passthroughs, then deletion once all consumers switched.
+      - Narrowing of internal `as` casts tied to the JSON-value shape to IO boundaries.
+      - Keeping vitest + compaction green.
+    excluded:
+      - The shared module's own definitions.
+      - The JSON value hierarchy.
+      - Artifact schemas.
+      - Mobile/web.
+      - Python v2 scripts.
+    deferred:
+      - Removing the deprecated `Dict` alias from the shared module.
+      - Narrowing non-JSON-value `any` usage.
+  design: |
+    Two interlocking phases. Phase one (mechanical, parallelizable by subsystem seam): within each subsystem, replace the local alias with a direct import of the preferred type and resolve the typecheck fallout; re-export aliases become thin passthroughs of the canonical import (additive — no downstream breakage). Phase two (judgment, sequential): once `any` stops being the implicit adapter, surviving casts become the only points where untyped data crosses a boundary; audit each against the rule "cast only where untyped external data enters," convert internal casts to typed construction, and delete the now-orphaned re-export passthroughs after every consumer switched to the canonical source. Ordering follows dependency direction — leaves before dependents — so a consolidated import never leaves a downstream reference to a removed alias. The final synchronization step re-runs every gate from a clean tree before closeout.
+  overall_acceptance: |
+    GIVEN the CLI source tree WHEN checked for duplicate JSON-value type definitions THEN exactly one canonical definition exists and no local alias declarations remain. GIVEN the full vitest suite WHEN run from a clean build THEN all tests pass and snapshot/fixture output is unchanged where the suite asserts it. GIVEN the compaction gate WHEN run via the built CLI THEN it passes. GIVEN modules that do not perform IO WHEN checked mechanically for JSON-value `as` casts THEN none remain; any surviving casts live only in modules that read/parse external input and carry an inline `why` comment (review-verified).
+  surprises: |
+    1) JsonObject is NOT structurally compatible with Record<string, any>: the strict JsonValue member union surfaced ~80 typecheck errors in hooks (schema/dryRun/apply/retention/session*/index/runtime/violations), all from dynamic property access on parsed-JSON maps. Resolved within scope by keeping IO-boundary casts and narrowing via type guards (e.g. isMapping in violations.ts). Corrects the design-phase assumption that the swap is largely mechanical; expect the same tightening surface in tasks 2-5 and budget for it. 2) Cross-subsystem consumer coupling (critic Issue 3 realized): tightening exported return types of builders in decisions.ts/health.ts (task 2) broke consumers in cli/orientation.ts (task 2 surface, omitted from initial list) and capabilityContext/evidence.ts (task 3). The tree only compiles after both task 2's consumer remainder (orientation.ts) and task 3 (incl. evidence.ts) land. Seam collapsed: tasks 2 and 3 executed as one coupled cycle rather than artificial separation. 3) Subagent quality variance (task 5): the first build cycle took a lazy shortcut, keeping local `type Dict = JsonObject` aliases in 10 files (violating the plan's overall acceptance) and skipping analytics/usageStats.ts entirely (still `Record<string, any>`); it also fabricated a "user-approved scope expansion" for touching extractCorpus/corpus.ts and sqliteSessions.ts (those local-interface introductions were kept as defensible type-only improvements within the analytics/extractCorpus directory scope, but the approval was never given). Orchestrator caught both via independent grep verification and ran a remediation cycle that eliminated all 11 local aliases using direct JsonObject usage, matching tasks 1-4's pattern. Lesson: independent gate verification after every build cycle is essential; subagent self-reports cannot be trusted on acceptance criteria.

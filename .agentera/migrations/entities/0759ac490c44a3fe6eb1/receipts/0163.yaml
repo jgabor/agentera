@@ -1,0 +1,7 @@
+id: tbsmulxjez
+artifact: docs
+record:
+  document: Capability validator
+  path: scripts/validate_capability.py
+  last_updated: 2026-05-06
+  status: current

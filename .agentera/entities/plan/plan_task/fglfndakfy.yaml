@@ -1,0 +1,19 @@
+id: fglfndakfy
+artifact: plan
+record:
+  name: Current-state sync and full validation
+  depends_on:
+    - mqdgmohsgh
+    - vwafnogswm
+    - qxmnymdriz
+    - leeltqzhpa
+    - ratmsjsdau
+    - tkpvwyeqei
+    - wesolqribd
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks complete WHEN capability-contract validation runs THEN it exits 0
+    - GIVEN all prior tasks complete WHEN typecheck runs THEN it exits 0
+    - GIVEN all prior tasks complete WHEN build runs THEN it exits 0
+    - GIVEN all prior tasks complete WHEN the full vitest suite runs THEN all tests pass including updated assertions for the new schema shape and --route output
+  plan: rbwcnrsgbn

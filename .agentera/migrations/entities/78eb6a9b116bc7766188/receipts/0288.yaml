@@ -1,0 +1,15 @@
+id: vijxqetbkx
+artifact: plan
+record:
+  name: Migrate capability consumers and decision source contracts
+  depends_on:
+    - nesjfesrmz
+    - sypmxxfitz
+    - pxubomjcys
+  status: pending
+  acceptance:
+    - GIVEN a capability needs one historical entry WHEN startup context omits it THEN the capability uses the state interface rather than raw archive or Git traversal.
+    - GIVEN archived decisions are recoverable WHEN decision context is emitted THEN completeness and provenance replace the current permanent-unavailability claim.
+    - GIVEN legacy summaries remain irrecoverable WHEN consumed THEN missing fields and satisfaction caveats remain explicit and are never inferred.
+    - GIVEN each consuming capability's representative fixture WHEN contract tests run THEN bounded startup and fallback behavior remain truthful.
+  plan: snzwzclohe

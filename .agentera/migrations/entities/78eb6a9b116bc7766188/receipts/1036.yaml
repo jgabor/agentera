@@ -1,0 +1,25 @@
+id: vuhyzxretc
+artifact: plan
+record:
+  name: Publish one non-redundant prime contract
+  depends_on:
+    - cerbdveyej
+  status: complete
+  acceptance:
+    - GIVEN schema discovery and prime output WHEN their field sets are compared THEN both derive from one authority and advertise the same behavior.
+    - GIVEN semantically duplicate startup values WHEN prime serializes them THEN the approved contract emits one canonical representation.
+    - GIVEN optional state is absent or inactive WHEN prime serializes it THEN default-only payload is omitted without making absence ambiguous.
+    - GIVEN diagnostic or writer detail is omitted WHEN an agent needs it THEN a named authoritative command returns the current detail.
+    - GIVEN compatibility pass and fail fixtures WHEN focused tests run THEN supported output remains readable and retired dependencies fail with a documented correction.
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Fresh-state prime still emits default-only top-level v1_migration, docs, and objective; AC3 tests only covered nested omission. Also correct the inaccurate selector-only description of the default-emitted issues transition alias.
+    provenance:
+      attempt_id: task-2-audit-2-20260716
+      source: "Retry after audit-1 failure: default bare prime now omits inactive top-level v1_migration (detected=false), docs (exists=false), and objective (active=false) via omitInactiveConditionalDefaults in orientationOutput.ts; state_presence preserved as missing-vs-empty authority; explicit --fields selection keeps full payload. Corrected issues selector-only language to default-emitted transition alias excluded only from canonical advertised set. Added default_emission_omission_contract + AC3 top-level omission and present-state fixtures. Vitest 2298 pass; typecheck/build/check compact/capability-contract 0 failures."
+      recorded_at: 2026-07-16 12:30
+      writer_command: agentera state plan record-evaluation
+  evidence: agentera state progress get --number 849 --format json
+  plan: lpjgrqdyzs

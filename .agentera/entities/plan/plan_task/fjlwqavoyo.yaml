@@ -1,0 +1,16 @@
+id: fjlwqavoyo
+artifact: plan
+record:
+  name: Dispatch hygiene and mechanical deduplication
+  depends_on:
+    - fsdylcplqz
+  status: complete
+  acceptance:
+    - GIVEN lifecycle, check, state, and prime dispatch parsers WHEN flags are parsed THEN a shared parser module owns repeated argv loops and each dispatch file delegates to it.
+    - GIVEN prime detects v1 artifact pairs WHEN orientation runs THEN it uses the same detector export as migrateArtifactsV2ToV3 with no duplicate pair constant.
+    - GIVEN defaultAppHome resolves on linux, macos, and windows WHEN paths are computed THEN platform-specific helpers are the single implementation source.
+    - GIVEN upgrade is invoked with --runtime, --opencode-config-dir, or --update-packages WHEN the flag is present THEN the CLI either wires it through or rejects with explicit guidance — never silent no-op.
+    - GIVEN buildDoctorStatus is called with probeCli true and no custom probe WHEN the default probe runs THEN it does not always report failure for the shipped doctor command path.
+    - GIVEN JSON output is emitted from doctor and related commands WHEN sorted stable JSON is required THEN one shared helper is used instead of parallel pyJsonIndent implementations.
+    - GIVEN npx bundle detection runs across CLI entry points WHEN source root is classified THEN isNpxBundleRoot is the single authority.
+  plan: trwfpgaxom

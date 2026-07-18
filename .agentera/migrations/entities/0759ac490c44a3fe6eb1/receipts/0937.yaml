@@ -1,0 +1,13 @@
+id: cjkqlsoiof
+artifact: plan
+record:
+  name: Tests and documentation
+  depends_on:
+    - gbkysgzlcq
+    - lwxwuvftdf
+    - jkvelnyqvl
+  status: complete
+  acceptance:
+    - GIVEN uv run pytest tests/test_upgrade_cli.py WHEN executed after changes THEN all tests pass including postflight pass on platform home and whole-repair After-check assertions
+    - GIVEN references/cli/vocabulary.md WHEN read THEN postflight authority is documented as build_doctor_status not setup_doctor.build_report
+  plan: ctldxvvhsp

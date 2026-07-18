@@ -1,0 +1,14 @@
+id: znjrbfjnbc
+artifact: plan
+record:
+  name: Preserve user cwd in npm shim app-home backend
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN any project cwd not equal to the installed app home WHEN npx -y agentera state plan --format json runs THEN the source path resolves to the project's .agentera/plan.yaml (or "not found" if absent), not a path under the app home.
+    - GIVEN a project with .agentera/docs.yaml mapping overrides WHEN the shim delegates to the Python CLI THEN those overrides load from the project root, not the app home.
+    - GIVEN the repo backend path (local clone with scripts/agentera available) WHEN the shim is invoked from inside that clone THEN the spawned Python CLI receives the repo root as cwd, matching prior behavior.
+    - GIVEN a regression test exercising the app-home backend WHEN run from a temporary cwd outside the app home THEN the spawned process is observed to receive the user's cwd, not the app home.
+    - GIVEN the project's CHANGELOG.md WHEN read THEN a note under [Unreleased] records the shim's transitional role and the 3.0 TypeScript CLI replacement.
+  plan: lcjvzykgvt

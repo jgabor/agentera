@@ -1,0 +1,14 @@
+id: cmrwlpjbsk
+artifact: plan
+record:
+  name: Integrate lifecycle repair and convergence
+  depends_on:
+    - aatfvdjhck
+    - tupqhbszez
+    - tbwdzxpguq
+  status: complete
+  acceptance:
+    - GIVEN all runtimes or a selected runtime WHEN upgrade previews lifecycle work THEN operations, ownership evidence, blocked reasons, and native actions are explicit and no writes occur.
+    - GIVEN approved owned operations WHEN upgrade applies them THEN per-operation outcomes continue safely across independent failures and produce a truthful exit status.
+    - GIVEN a successful or partially failed apply WHEN upgrade runs again THEN completed operations are no-ops and remaining operations retry safely.
+  plan: ekhmbucace

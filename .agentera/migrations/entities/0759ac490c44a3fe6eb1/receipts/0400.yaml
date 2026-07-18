@@ -1,0 +1,17 @@
+id: fenptsjogh
+artifact: plan
+record:
+  name: Prove Compatibility And 2.2.0 Release Readiness
+  depends_on:
+    - rymvwjgjrz
+    - vcugwfhhtx
+    - karnadakxb
+    - eslzjqsdwn
+    - hfrqizfcol
+  status: complete
+  acceptance:
+    - GIVEN the interface work is complete WHEN validation runs THEN routing, package and runtime version readers, docs status, capability and protocol validation, doctor, describe, structured outputs, fields, and hardening checks pass with proportional evidence
+    - GIVEN `bundle-status` is a hard rename WHEN repository references are reviewed THEN current surfaces use `doctor`, stale invocation is intentionally tested as unavailable, and historical references are treated as history only
+    - GIVEN release policy is evaluated WHEN 2.2.0 readiness is checked THEN Decision 45 evidence is attached to 2.2.0 without creating a version beyond 2.2.0 unless docs policy requires it
+    - GIVEN no publication was approved WHEN release evidence is recorded THEN local tag, remote tag, branch push, package-manager update, package publication, and installed-bundle refresh checks are recorded with scope and limitations
+  plan: vxmzhajgdo

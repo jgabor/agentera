@@ -1,0 +1,6 @@
+id: tkmnpnagks
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "~~[refactor:3.0.0] Split `lifecycleAdapters.ts` barrel — resolved 2026-07-16: moved lifecycle validation orchestration and parity checks into a dedicated module, kept the historical public re-export surface stable, removed the three obsolete lint-baseline entries, and passed the full CLI tests and quality gates.~~"

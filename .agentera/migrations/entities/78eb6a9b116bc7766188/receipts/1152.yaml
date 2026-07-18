@@ -1,0 +1,40 @@
+id: epuxwhmxgv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-14
+    status: archived
+    reviewed: 2026-07-14
+    critic_issues: 15 found, 15 addressed, 0 dismissed
+    title: "Plan: Complete migration authority and archive rollout"
+  what: Repair the blocked local-migration authority so one canonical contract drives every runtime, schema, help, and result surface; then complete local migration, optional Git enrichment, contract and documentation alignment, health evaluation, development-release preparation, and final state synchronization.
+  why: Consumer migration is complete, but two independent evaluations found that local-migration behavior still duplicates authority semantics and lacks deterministic omission evidence. Dependent migration and release work must not proceed until runtime behavior is mechanically derived from the confirmed contract and its verification record is accurate.
+  constraints: Preserve the exact blocked predecessor bytes and its writer-owned attempt count, failure count, latest verdict, latest failure evidence, and provenance through forced lineage. Keep `agentera state migrate`, bounded project-local custom-name discovery, archive immutability, archive-before-projection ordering, non-Git completion, no remote access, Decision 53 no-inference semantics, and `uniform_10_40_50`. Do not refresh profile, edit vision, publish, tag, push, promote stable, or advance suite metadata beyond `3.0.0`.
+  overall_acceptance: GIVEN legacy project state and optional local Git history WHEN users inspect, preview, apply, retry, enrich, and verify migration THEN one authority governs every observable contract, unsafe records never synthesize archives, local completion never depends on Git, provenance remains truthful, and every governed development-release gate passes.
+  scope:
+    included:
+      - Canonical migration authority consumption and truthful verification evidence
+      - Bounded project-local legacy inventory and non-Git migration
+      - Optional guarded local-Git enrichment
+      - Runtime schemas, help, documentation, bundles, health, and development-release readiness
+      - Typed state closeout with preserved predecessor lineage
+    excluded:
+      - Consumer-matrix, Unicode, listing, identity, archive, overlay, retrieval, durability, or backfill foundation rewrites
+      - SQLite, history databases, custom Git refs, automatic commits, remote access, stable promotion, or publication
+      - Experiments or unnumbered Markdown archives
+    deferred:
+      - Persistent archive indexing until measured bounds require it
+  design: Establish one executable migration contract before permitting state mutation. Execute local migration independently, then expose optional Git enrichment as a separate explicit choice. Align all observable contracts, audit the delivered model, prepare only the next development boundary, and close state after every gate passes. Task 1 repairs predecessor Task 2; Tasks 2–7 carry predecessor Tasks 3–8 without reopening completed consumer work.
+  unknowns:
+    - question: Which authority fields can be consumed directly and which require a generated runtime projection?
+      affects_task: 1
+      resolve_by: Prove one canonical source and zero unclassified duplicate semantics before completing Task 1.
+    - question: Which custom legacy names exist in representative projects and how many are safe, ambiguous, or rejected?
+      affects_task: 2
+      resolve_by: Use bounded inventory evidence before applying migration and preserve per-class counts.
+    - question: Which npm 12 package-output shape breaks the five known JSON-parser tests after synchronized packaging?
+      affects_task: 6
+      resolve_by: Run the governed package checks and block release preparation unless all five known failures are repaired.
+  surprises:
+    []

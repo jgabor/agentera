@@ -1,0 +1,25 @@
+id: dtfjwlsieh
+artifact: plan
+record:
+  name: Store and compose current decision review state
+  depends_on:
+    - xpohohpnlt
+    - dqwsaeloke
+    - ersqcjcbfs
+  status: complete
+  acceptance:
+    - GIVEN an archived decision WHEN current satisfaction or review state changes THEN the immutable decision record remains unchanged and the ID-keyed overlay updates atomically.
+    - GIVEN hydration WHEN historical and overlay values differ THEN only authority-declared mutable fields come from the overlay.
+    - GIVEN missing, open, provisional, confirmed, or invalid satisfaction WHEN read or updated THEN Decision 53 authority is preserved without inference.
+    - GIVEN review-required decisions exceed projection defaults WHEN another decision is appended THEN storage remains available while bounded review pressure remains visible.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Append and compaction pressure calculations use raw decision satisfaction instead of hydrated overlay state; overlaid open decisions can be misclassified as satisfied.
+    provenance:
+      attempt_id: task-5-attempt-2
+      source: audit-task-5-40ff149a+04afc819
+      recorded_at: 2026-07-13 13:17
+      writer_command: agentera state plan record-evaluation
+  plan: snzwzclohe

@@ -1,0 +1,16 @@
+id: ixkqdbzuiy
+artifact: plan
+record:
+  name: Align runtime schemas and quality budgets
+  depends_on:
+    - nyfkcaqnfu
+    - lmloyrbjcn
+    - kkyxidncqb
+    - qszlacfmie
+    - qyhzsfpddh
+  status: pending
+  acceptance:
+    - GIVEN growing artifacts and bounded consumers WHEN lint and validation run THEN schema-owned entry, input-work, and serialized-output checks replace contradictory whole-history constants.
+    - GIVEN list, archive, overlay, retrieval, durability, and migration states WHEN runtime schemas are inspected THEN identities, counts, compatibility, errors, and omission semantics agree.
+    - GIVEN source and generated contract authorities WHEN drift tests run THEN one canonical value governs each budget and status vocabulary.
+  plan: cqihbnzhms

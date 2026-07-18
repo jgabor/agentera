@@ -1,0 +1,13 @@
+id: rwolummqpt
+artifact: plan
+record:
+  name: Port doctor/upgrade safety rails to TS
+  depends_on:
+    - nksxuyctff
+  status: pending
+  acceptance:
+    - GIVEN T1's oracle WHEN `packages/cli/src/setup/doctor.ts` and `packages/cli/src/upgrade/{doctor,nextMajorDoctor,appModel,channels}.ts` are reviewed/extended THEN the safety-rail transitions (outdated → ready_to_apply → applied; repair_needed; manual_review_needed) match the Python `scripts/agentera` upgrade/doctor shapes; the canonical Decision 54 vocabulary is pinned in lifecycle metadata; user-facing repair wording matches the plain-language template
+    - GIVEN `doctor --smoke` WHEN the npm `runNpmSmokeChecks` path is reviewed THEN the smoke family is parity-green for the npm distribution boundary (per resolved-ledger TODO L45); the parity row is `equal` for the `doctor_upgrade_safety` family
+    - GIVEN the next-major doctor WHEN `references/cli/update-channels.yaml` is reviewed THEN per-channel `next_major` rendering matches Python; the TS `nextMajorDoctor.ts` and the Python `scripts/next_major_doctor.py` heads-of-output are parity-equivalent (per resolved-ledger TODO L37); the parity row is `equal` for the `doctor_upgrade_safety` family
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js doctor` and `node packages/cli/dist/bin/agentera.js upgrade --dry-run` run THEN each emits a valid JSON response with the expected lifecycle metadata; the user-facing repair wording matches the plain-language template; the parity row is `equal`; per V5 the proportionality target is one pass + one fail per safety-rail transition (5 transitions × 2 = 10 cases)
+  plan: jxawyxzbto

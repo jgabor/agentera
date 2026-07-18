@@ -1,0 +1,13 @@
+id: gxzfqqovuq
+artifact: plan
+record:
+  name: Replace Tests And Align Artifacts
+  depends_on:
+    - cfdhjxitnr
+  status: complete
+  acceptance:
+    - GIVEN registry-backed validation exists WHEN tests assert artifact relationships THEN they derive expected relationships from registry facts instead of re-encoding display-name or path maps
+    - GIVEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts are special cases WHEN tests run THEN validators fail if those names are special-cased directly outside the registry model
+    - GIVEN documentation is updated WHEN ownership is described THEN only artifact metadata ownership, registry fields, capability-local references, and docs.yaml override semantics are changed
+    - GIVEN TODO is updated WHEN implementation is complete THEN only [arch-artifact-registry] is resolved and only after validation and CLI preservation evidence are recorded in progress or plan artifacts
+  plan: bvacoxfryf

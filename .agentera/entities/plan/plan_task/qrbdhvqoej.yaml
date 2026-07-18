@@ -1,0 +1,12 @@
+id: qrbdhvqoej
+artifact: plan
+record:
+  name: Define Route Alias Contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the primary alias table is reviewed WHEN each alias is matched to a capability THEN all 12 aliases map to Decision 43 and no capability has zero or multiple primary aliases
+    - GIVEN canonical capability names are invoked WHEN alias routing exists THEN existing direct routes still bypass natural-language matching
+    - GIVEN slash routes and state commands share words WHEN documented THEN `/agentera plan` and `agentera plan` remain distinct
+  plan: iyrqkhzzfp

@@ -1,0 +1,10 @@
+id: xniqwncuwg
+artifact: plan
+record:
+  name: Validate Exit Vocabulary Authority
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: aqddfogkvg

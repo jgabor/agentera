@@ -1,0 +1,12 @@
+id: urogvnebbl
+artifact: plan
+record:
+  name: Inventory and test-layer policy
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN every REPO_ROOT coupling in packages/cli/test WHEN the inventory runs THEN each entry is classified as mutable-state, static-contract, or acceptable gate-deferred
+    - GIVEN AGENTS.md Package DX or test section WHEN a contributor reads it THEN it states vitest uses fixtures and `check compact` owns live-repo artifact budgets
+    - GIVEN the inventory WHEN complete THEN it lists files to migrate in tasks 2–5 with no undocumented live .agentera or TODO.md reads in vitest
+  plan: rasbpognba

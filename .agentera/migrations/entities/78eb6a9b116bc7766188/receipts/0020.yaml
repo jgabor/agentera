@@ -1,0 +1,9 @@
+id: mwjcwhqnhf
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: Discuss evaluation and orchestrate plan task 1 (2026-06-02) recorded remove with 21-file ripple inventory, seven-step migration outline, and six follow-up build acceptance criteria. User confirmed satisfaction 2026-06-02; TODO.md chore entry rewritten for implementation per D66.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-02
+  decision: whdwyzaxmp

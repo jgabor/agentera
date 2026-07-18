@@ -1,0 +1,13 @@
+id: kexgdracfv
+artifact: plan
+record:
+  name: Reshape CLI Parser Around Top-Level State Commands
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the CLI is invoked as agentera plan WHEN plan state exists THEN it returns the routine plan summary without the query prefix
+    - GIVEN agentera health, todo, decisions, docs, objective, or experiments is invoked THEN each command works without the query prefix
+    - GIVEN agentera query plan is invoked THEN it is not treated as a supported routine compatibility path
+    - GIVEN agentera --help is shown THEN preferred state commands are top-level
+  plan: pzarbidanh

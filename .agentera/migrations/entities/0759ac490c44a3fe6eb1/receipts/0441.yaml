@@ -1,0 +1,12 @@
+id: dxwkwdtbaw
+artifact: plan
+record:
+  name: Make documented checks prefer `agentera` namespaces
+  depends_on:
+    - vifzgphpco
+  status: complete
+  acceptance:
+    - GIVEN README and upgrade validation examples are inspected WHEN user-facing validation/check commands are shown THEN they use `uv run scripts/agentera` namespaces first.
+    - GIVEN AGENTS.md validation guidance is inspected WHEN agents add/modify capabilities THEN it points at canonical `agentera validate` commands while preserving direct helper compatibility as implementation detail.
+  evidence: README maintainer checks, UPGRADE validation guidance, AGENTS.md, and `skills/agentera/SKILL.md` now use `uv run scripts/agentera validate ...` examples for validation instead of direct capability validator commands.
+  plan: mvumniyosj

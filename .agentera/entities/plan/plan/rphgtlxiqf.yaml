@@ -1,0 +1,22 @@
+id: rphgtlxiqf
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Full Suite and Review Fixes
+  what: "Repair the full-suite regressions and serious uncommitted-change review findings found after the Agentera App Files Wording Cleanup work: Decision 44 vocabulary leakage in PLAN/PROGRESS evidence, stale routing/handoff vocabulary test expectations, missing lifecycle-status regression coverage, one stale-profile diagnostic wording leak, and authority docs-delegation inconsistency."
+  why: The full suite reported 1136 passing tests and 2 failures, while two independent reviewers found additional serious issues in the uncommitted changes. These fixes are gating cleanup before advancing the next normal TODO, because the current working tree should be brought back to truthful artifacts, passing tests, and authority-aligned coverage first.
+  constraints: Keep this plan scoped to the two full-suite failures and the serious review findings from Subagents A and B. Do not advance the next top SKILL.md prose cleanup TODO except for the narrow `docs/vocabulary.md`/test synchronization needed to fix the existing failing dispatch-contract test. Do not start broad vocabulary sweeps, capability `prose.md` renames, `first_invocation_read` implementation, routing/execution prose cleanup beyond the failing contract, 3.0.0 work, installed app/profile update, publication, push, tag, package-manager state changes, `.agentera/vision.yaml`, objective state, or decision satisfaction changes. Preserve unrelated dirty state, including pre-existing `.agentera/decisions.yaml` and staged `.agentera/session.yaml`.
+  overall_acceptance:
+    - The two known full-suite failures are fixed and the full suite passes.
+    - Serious review findings are either fixed or explicitly recorded as intentionally deferred with evidence and rationale; no stale passing-test claims remain.
+    - The repair stays limited to review/test-failure cleanup and does not advance unrelated vocabulary, Decision 57, 3.0.0, publication, package, protected-state, or installed-app update work.
+  surprises:
+    - The prior full suite had already found the two expected regressions with 1136 passing tests and 2 failures; after the focused repairs and coverage additions, the final full suite passed with 1142 tests.
+  scope:
+    included:
+      []
+    excluded:
+      []

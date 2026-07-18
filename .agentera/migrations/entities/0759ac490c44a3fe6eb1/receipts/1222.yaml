@@ -1,0 +1,15 @@
+id: pynuzgyskv
+artifact: progress
+record:
+  timestamp: 2026-07-13 13:54
+  type: fix
+  phase: build
+  what: Corrected Cycle 755 Task 6 test counts through an append-only supersession record
+  inspiration: Auditor reproduction of the evidence-only Task 6 evaluation failure
+  discovered: Cycle 755's behavior evidence remains valid; only its claimed focused count of 96 and full count of 1630 are superseded. The exact Task 6 focused scope is 98 tests across four files, and the full suite is 1631 tests across 167 files.
+  verified: "Focused command: pnpm -C packages/cli exec vp test run test/state/archiveRecovery.test.ts test/hooks/compaction.test.ts test/hooks/validateArtifact.test.ts test/state/write/stateWrite.test.ts: 4 files and 98 tests passed. Full command: pnpm -C packages/cli test: 167 files and 1631 tests passed."
+  next: Task 6 remains pending after evaluation attempt 1 failed only on Cycle 755 test-count evidence; preserve that failed evaluation state and do not modify Cycle 755. No code behavior changes are needed.
+  context:
+    intent: Supersede only Cycle 755's inaccurate focused and full test counts without changing its immutable bytes or Task 6 behavior evidence
+    constraints: Append-only correction. Supersedes only Cycle 755's focused/full test counts; do not rewrite or delete Cycle 755, change plan evaluation state, mark Task 6 complete, or touch health, vision, profile, decisions, TODO, version, publish, push, or tag state.
+    scope: .agentera/progress.yaml; .agentera/archive/progress/755.yaml remains immutable; .agentera/plan.yaml preserves Task 6 attempt 1 failure metadata

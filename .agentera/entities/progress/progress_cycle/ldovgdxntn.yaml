@@ -1,0 +1,16 @@
+id: ldovgdxntn
+artifact: progress
+record:
+  timestamp: 2026-07-17 07:59
+  type: feat
+  phase: build
+  what: Added bare-ID objective create/update and immutable experiment publication, exact retrieval, and bounded listing under entity authority.
+  inspiration: PLAN Task 8 and Decision 94 entity authority.
+  discovered: Existing experiment status already represented baseline semantics, so no new workflow or metric model was needed.
+  verified: "Focused objective/experiment, identity, retrieval, publication, entity-context, help, schema, and authority tests passed: 9 files, 99 tests. Full CLI passed: 210 files, 2,520 tests. Typecheck and build passed. State validation passed with 0 issues. Optimize capability and capability contract passed. Compact passed with 0 over-limit, formatting, protected-overflow, error, or changed findings."
+  next: "Task 9 remains pending: cut TODO and documentation inventory over to entities."
+  context:
+    intent: Complete PLAN Task 8 by cutting only objective and experiment behavior over when the durable entity-mode marker is active.
+    constraints: Objective and experiment entity mode only; no migration apply, global consumer cutover, TODO/docs mutation, vision, push, publish, or unrelated family changes.
+    unknowns: None. Baseline uses the existing experiment status=baseline field with authority-owned exactly-one cardinality when experiments exist.
+    scope: Entity objective create/update/get/list; immutable experiment publish/get/list; baseline and ownership validation; mode isolation; Git and root-marker regressions.

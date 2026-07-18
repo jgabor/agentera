@@ -1,0 +1,17 @@
+id: hdqqgkneoz
+artifact: decisions
+record:
+  date: 2026-07-16
+  question: How should Agentera state support ordinary Git merges across parallel branches and worktrees?
+  context: Worktree-local .agentera/.writer.lock files do not coordinate branches. packages/cli/src/state/write/assign.ts allocates max(number)+1, so branches can claim the same identity and path such as .agentera/archive/progress/857.yaml; aggregate projections also make unrelated writes conflict. Agentera 3.0 is unreleased, Decision 58 requires one final public vocabulary, and a one-off resumable project migration is acceptable.
+  alternatives:
+    - name: Writer-owned entity files with bare project-wide Nano IDs
+      status: chosen
+    - name: Numbered aggregate files with semantic merge tooling
+      status: rejected
+    - name: Type-prefixed IDs, writer shards, or full event sourcing
+      status: rejected
+  choice: Store each independently mutable entity in one canonical writer-owned file. Assign a project-wide ID of exactly ten lowercase letters from abcdefghijklmnopqrstuvwxyz. Persist public metadata as id and artifact; remove stable_id, artifact_id, entry_number, number aliases, and type prefixes. Render aggregate views through agentera state commands rather than treating projections as authority. Preserve intentional conflicts for concurrent edits to the same entity or singleton editorial artifact.
+  reasoning: Independent files let ordinary Git preserve unrelated writes without shared allocators or custom merge drivers. Random project-wide IDs remove branch-local sequence collisions, while artifact supplies classification without duplicating type information in the ID. Writer-only mutation prevents projection drift. The migration must inventory and validate source state, persist its old-to-new mapping, rewrite live relationships, stage and validate entity files, retain recovery evidence, and resume idempotently. Historical prose may retain old labels, but canonical state and selectors do not.
+  confidence: firm
+  feeds_into: references/artifacts/state-storage-authority.yaml, artifact registry, state writer, retrieval contracts, migration infrastructure, and implementation planning

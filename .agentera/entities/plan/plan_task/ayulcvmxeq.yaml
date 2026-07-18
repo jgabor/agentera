@@ -1,0 +1,15 @@
+id: ayulcvmxeq
+artifact: plan
+record:
+  name: Add L0 vitest suites for preservation, matrix, idempotency, and leftovers
+  depends_on:
+    - fndkyidoat
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/test/upgrade/dataPreservation.test.ts WHEN run THEN byte-identical checksums hold for all allowlisted paths across dry-run and apply on P0 fixtures
+    - GIVEN packages/cli/test/upgrade/migrateRuntimeMatrix.test.ts WHEN run THEN parametrized cases cover codex and cursor P0 fixtures with pending/applied rewire expectations
+    - GIVEN packages/cli/test/upgrade/idempotency.test.ts WHEN run THEN second full apply or dry-run after successful migration reports no_changes_needed lifecycle with exit code 0
+    - GIVEN packages/cli/test/upgrade/leftoverScan.test.ts WHEN run THEN post-apply configs under sandbox contain no validate_artifact.py, cursor_*.py, uv run scripts/agentera, or AGENTERA_HOME/app/scripts references on rewired surfaces
+    - GIVEN packages/cli/test/upgrade/cleanupNoisyAppHome.test.ts WHEN run THEN blocked cleanup without force and preserved checksums with force apply are both asserted
+    - GIVEN pnpm -C packages/cli test test/upgrade/ WHEN run THEN total vitest cases exceed 60 and all non-gap tests pass
+  plan: lwdkmjtnfe

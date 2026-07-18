@@ -1,0 +1,16 @@
+id: ybktovehod
+artifact: plan
+record:
+  name: Execution context inventory and state contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Planera activation has archived the completed 2.3.11 plan WHEN implementation begins THEN implementation evidence treats archival as already handled and does not make archive creation product scope.
+    - GIVEN Realisera prose, schemas, CLI startup state, Decision 45 contract, prior context implementations, TODO, progress, and decisions are inventoried CLI-first WHEN inventory completes THEN included state, missing state, fallback commands, and last-resort raw-read rules are recorded.
+    - GIVEN Realisera needs vision, decisions, profile, design, changelog, plan, progress, TODO, docs, and health WHEN the state contract is specified THEN each family is classified as required, optional, caveated, or fallback-only for plan-driven execution context.
+    - GIVEN plan-driven, no-plan, blocked/dependency-unready, empty-criteria, and completed-plan sweep modes exist WHEN the contract is specified THEN each mode has a deterministic complete, incomplete, or caveated outcome.
+  evidence:
+    - "Inventory used the supported CLI seam and existing context builders: current Realisera needs are plan/TODO/progress/docs/health through the hej startup envelope, with vision/changelog/decisions/profile/design preserved as caveats or existing CLI fallbacks."
+    - Implemented deterministic `execution_context.mode` values for `plan_driven`, `no_plan`, `blocked_or_dependency_unready`, and `completed_plan_sweep`, with empty acceptance and missing state represented through required-state flags and caveats.
+  plan: xxmtzpgjds

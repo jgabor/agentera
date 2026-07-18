@@ -1,0 +1,15 @@
+id: qgaudepvrc
+artifact: plan
+record:
+  name: Replace the on-disk loader with a module import and retire `first_invocation_read = full`
+  depends_on:
+    - xzbbnlmipg
+  status: complete
+  acceptance:
+    - "GIVEN T1's modules WHEN `packages/cli/src/cli/capabilityContext.ts` is updated THEN `capabilityInstructionTarget` no longer calls `fs.statSync`; instead the function imports the `instructions` constant from `../capabilities/<name>/instructions.js` and reports `module_target = { module, exists: true, runtime_path: <absolute-compiled-path> }` and `startup_command = \"agentera prime --context <name> --format json\"`"
+    - 'GIVEN the new loader WHEN `firstInvocationReadMetadata(capability)` is called for any of the 12 capabilities THEN the returned `value` is `"prime_context"` (the only allowed first-invocation shape), `runtime_enforcement: true`, and `obligation_summary` is `"shell out to agentera prime --context <name> --format json"`; the `full` and `compact_startup` values are no longer emitted'
+    - "GIVEN the slim `capability_context` capsule WHEN `buildPrimeCapabilityContextPayload(state, <capability>)` is called THEN the response includes a `prose: <string>` field whose value equals the loaded TS-module constant; the existing `capability_context.context` shape is preserved and the new `prose` field is the only added top-level key"
+    - GIVEN the orkestrera bespoke context (or any other capability that previously referenced `skills/agentera/capabilities/<name>/instructions.md` in its startup-contract text) WHEN the loader runs THEN the literal `skills/agentera/capabilities/.../instructions.md` substring is replaced with the prime --context command and the prose source is the loaded TS module
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js prime --context planera --format json` runs THEN the response is valid JSON, `capability_context.context.planning_context.startup_contract.canonical_surface` equals `"agentera prime --context planera --format json"`, and `capability_context.prose` is a non-empty string
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js prime --context hej --format json` runs and the same for each of the 12 capabilities THEN every response is valid JSON, every response includes a non-empty `prose` field, and the `first_invocation_read.value` is `"prime_context"` for all 12
+  plan: kauavydlqn

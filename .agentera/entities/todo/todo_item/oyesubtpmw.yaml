@@ -1,0 +1,6 @@
+id: oyesubtpmw
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Repair blocked archive-rollout Plan Task 3 after two failed evaluations. Resolved 2026-07-14: removed speculative..."

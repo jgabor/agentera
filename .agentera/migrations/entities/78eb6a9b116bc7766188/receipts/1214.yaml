@@ -1,0 +1,23 @@
+id: xpusrpuwck
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-07-15
+    status: archived
+    title: "Plan: Extract lifecycle validation orchestration"
+  what: Separate lifecycle-validation orchestration and parity checks from the public validation facade while preserving existing CLI behavior, imports, output, exit codes, and validation semantics.
+  why: The facade mixes re-export responsibility with procedural logic. Separating those concerns resolves the structural-debt TODO, reduces import and lint noise, and improves navigability without introducing new behavior.
+  constraints: Keep the work within one build cycle; preserve the lifecycleMain CLI contract, legacy-parity gating, public barrel imports, and existing diagnostics; do not modify the unrelated runtime adapter matrix or add new validation rules.
+  overall_acceptance: GIVEN the refactor is complete WHEN lifecycle validation and the repository quality gates run THEN existing behavior is preserved and all required checks pass.
+  scope:
+    included:
+      - Lifecycle-validation orchestration and parity extraction
+      - Public validation facade exports
+      - Focused regression verification and repository quality gates
+    excluded:
+      - Runtime lifecycle behavior or adapter-matrix changes
+      - New validation rules or schema changes
+      - Unrelated cleanup
+  surprises:
+    []

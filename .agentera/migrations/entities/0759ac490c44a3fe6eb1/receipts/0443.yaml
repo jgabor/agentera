@@ -1,0 +1,22 @@
+id: uadsryukgq
+artifact: plan
+record:
+  name: Remove receipts and finalize simple optional enrichment
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN optional local-Git enrichment WHEN preview runs THEN it remains read-only, and WHEN exact selectors run directly with `--apply --force` and no prior preview THEN publication or replay succeeds only after independent project, HEAD, candidate, byte, reachability, and immutable-target revalidation; no receipt machinery remains.
+    - GIVEN declined, unavailable, shallow, rewritten, ambiguous, changed, interrupted, or retried history WHEN enrichment runs THEN local migration remains complete; results stay within 100, history within 500 commits and 16 MiB, only HEAD, local heads, and tags are inspected, remote/custom refs and operations are excluded, and equality prevents duplicates or conflicts.
+    - GIVEN prior Cycle 787 overstates receipt integrity WHEN new evidence is appended THEN the correction is truthful, reconstructable, and leaves immutable prior cycles unchanged.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Rewritten-history rows are appended after the 100-result cap; reflog probing bypasses the 500-commit bound; Cycle 788 records 24 help/schema tests where its exact command runs 25.
+    provenance:
+      attempt_id: simplified-task1-audit-2
+      source: "Independent orchestration evaluator: direct apply, shared Git bounds, no-receipt simplicity, and corrected evidence audit"
+      recorded_at: 2026-07-14 14:03
+      writer_command: agentera state plan record-evaluation
+  plan: yrilfqdbdh

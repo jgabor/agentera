@@ -1,0 +1,16 @@
+id: bynekqelda
+artifact: progress
+record:
+  timestamp: 2026-07-14 23:43
+  type: test
+  phase: audit
+  what: Reproduced Task 3 acceptance evidence with exact commands runnable from the repository root.
+  inspiration: Independent Task 3 evidence audit attempt 1.
+  discovered: No product defect was exposed; the failure was limited to missing working-directory context in Cycle 800 commands.
+  verified: "AC1: pnpm -C packages/cli exec vp test run test/state/planTaskRetrieval.test.ts test/state/write/stateWrite.test.ts test/state/planLifecycleContract.test.ts test/lint/monolithLint.test.ts passed 4 files/81 tests; the stateWrite transition fixture proves persisted identity continuity and active-to-archived provenance. AC2: the same command passed deterministic read-only legacy identity, byte-preserving mirrored provenance, and structured ambiguity with every collision path. AC3: all transition/collision/legacy fixtures passed. pnpm -C packages/cli run typecheck exited 0; pnpm -C packages/cli build exited 0; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json passed 2/2; node packages/cli/dist/bin/agentera.js check compact returned status=pass with over_limit=0, formatting=0, protected_overflow=0, errors=0, changed=0."
+  next: Task 3 evidence is reproducible; leave Tasks 4 and 5 untouched.
+  context:
+    intent: Correct Cycle 800's non-root-runnable command evidence without changing its record or Task 3 product behavior.
+    constraints: Preserve Cycle 800, evaluation attempt 1, production code, Task 2 audit state, package metadata, and all later tasks.
+    unknowns: None; proportional reproduction exposed no product defect.
+    scope: Progress evidence and Task 3 plan state only.

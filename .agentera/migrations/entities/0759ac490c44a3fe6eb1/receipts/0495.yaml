@@ -1,0 +1,16 @@
+id: xnmegethaa
+artifact: plan
+record:
+  name: Add hybrid staleness helpers and env thresholds
+  depends_on:
+    - spoaxsktbs
+  status: complete
+  evidence:
+    - Added AGENTERA_INSPEKTERA_MAX_AGE_DAYS and AGENTERA_INSPEKTERA_MAX_CYCLES helpers with hybrid OR evaluation
+  acceptance:
+    - GIVEN latest audit date is 30+ days ago and cycle count since that date is below the cycle threshold WHEN staleness is evaluated THEN stale is true with triggering_axis time
+    - GIVEN latest audit date is recent but 10+ progress cycles occurred after that date WHEN staleness is evaluated THEN stale is true with triggering_axis cycles
+    - GIVEN both axes are under threshold WHEN staleness is evaluated THEN stale is false and triggering_axis is none
+    - GIVEN AGENTERA_INSPEKTERA_MAX_AGE_DAYS or AGENTERA_INSPEKTERA_MAX_CYCLES is set to a valid integer WHEN staleness is evaluated THEN the configured threshold overrides the default
+    - GIVEN progress artifact is absent WHEN staleness is evaluated THEN cycle axis is omitted and time-only evaluation still works
+  plan: sebihbfeow

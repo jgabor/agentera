@@ -1,0 +1,19 @@
+id: mnskhngeqg
+artifact: plan
+record:
+  name: Add byte and GPT-5 token budget regression coverage
+  depends_on:
+    - kapigtbyou
+    - tzmgwgwvoe
+    - ltzsholuyj
+  status: complete
+  acceptance:
+    - GIVEN all twelve capability contexts are generated WHEN the budget check runs THEN it records byte counts and GPT-5 token counts for each capability.
+    - GIVEN token counts are measured WHEN the check runs THEN it uses `<output> | npx tiktoken-cli -m gpt-5` or a documented equivalent wrapper around that command.
+    - GIVEN a payload exceeds its budget WHEN tests run THEN the failure names the capability, byte count, token count, and budget.
+    - GIVEN no `npx` network is available in normal unit tests WHEN regression coverage runs THEN the expensive tokenizer path is isolated or skipped with a clear local benchmark command.
+  evidence:
+    - Added `scripts/measure_capability_context_payloads.py`, which generates all twelve slim capability contexts, records byte counts, and measures GPT-5 tokens via `<output> | npx tiktoken-cli -m gpt-5`.
+    - Added offline-safe tests for all-capability measurement, failure diagnostics naming capability/counts/budgets, and skipped-token mode for normal tests.
+    - "Real benchmark passed with no violations: hej 2183 bytes/530 tokens, visionera 5165/1187, resonera 4324/998, inspirera 2244/549, planera 9418/1997, realisera 16144/3439, optimera 14647/2900, inspektera 20017/3953, dokumentera 15926/3385, profilera 2294/559, visualisera 4279/997, orkestrera 10941/2296."
+  plan: eodwfvjsay

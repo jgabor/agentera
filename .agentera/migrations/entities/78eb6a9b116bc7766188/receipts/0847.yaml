@@ -1,0 +1,10 @@
+id: rxppgqemhi
+artifact: plan
+record:
+  name: Define RuntimeAdapter Interface And Ownership Model
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: lqpeumgews

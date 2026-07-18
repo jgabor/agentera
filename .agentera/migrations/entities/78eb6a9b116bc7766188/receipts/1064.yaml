@@ -1,0 +1,15 @@
+id: xnwwlycpwz
+artifact: plan
+record:
+  name: Prove read-only migration inventory and parity
+  depends_on:
+    - yilpqcbbse
+    - qwtuvykpmb
+  status: complete
+  acceptance:
+    - GIVEN migration dry-run WHEN it completes THEN no lock, mapping, snapshot, directory, cache, or state file is written.
+    - GIVEN legacy state WHEN inventoried THEN every source identity, structured relationship, provenance class, and proposed target is accounted for.
+    - GIVEN verified, projection-only, summary-only, duplicate, corrupt, or conflicting inputs WHEN classified THEN exact counts and actionable recovery are reported without fabricated detail.
+    - GIVEN source state changes after preview WHEN apply is requested THEN publication is refused before effects.
+  evidence: Audit retry passed 7 focused files/72 tests and full CLI 203 files/2,378 tests, typecheck, build, state validation, capability contract 2/2, and compact. The implementation preview reproduced 1,279 verified, 55 projection-only, 90 summary-only, 17 corrupt, 66 unresolved relationships, 173 blocked, and 1,441 logical entries; keyed revision authority had zero repository records.
+  plan: vllyohtcde

@@ -1,0 +1,14 @@
+id: anttaidknq
+artifact: progress
+record:
+  timestamp: 2026-07-18 04:15
+  type: test
+  phase: build
+  what: Added explicit real-FIFO regressions proving pre-journal approval inspection rejects special files in receipt and preparation-root inventories without effects.
+  inspiration: PLAN Task24 retry 1/2
+  discovered: The existing regular-file and exact top-level inventory checks already reject both special-file placements; no production change was required.
+  verified: 48 focused and 2,663 full tests across 218 files passed; typecheck, build, state validation, 12 capability validations, capability contract 2/2, and compact passed.
+  next: Task24 is complete. Task14 remains pending; do not approve or apply the live migration.
+  context:
+    intent: Complete Task24 retry 1/2 by covering special-file preparation inspection without changing production or authorizing migration apply.
+    constraints: No approval, live apply, Task15, version, changelog, vision, manual YAML edit, amend, push, publish, or tag.

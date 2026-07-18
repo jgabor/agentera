@@ -1,0 +1,17 @@
+id: gjdlhtgodt
+artifact: plan
+record:
+  name: Focused regression and startup-state validation
+  depends_on:
+    - avacgisyjn
+    - qvyqppajwc
+    - iuyvfrnsun
+  status: complete
+  acceptance:
+    - GIVEN focused tests run WHEN closeout context is complete, missing-state, stale/caveated, or benchmark-unavailable THEN pass and fail paths cover mappings, blockers, closeout boundary, progress evidence, fallback commands, and raw-read policy with at least one pass and one fail path per testable state family.
+    - GIVEN startup-analysis fixtures run WHEN a complete Dokumentera context is available through CLI state THEN normal guidance introduces no raw-after-CLI artifact read requirement for TODO, docs, changelog, or progress.
+    - GIVEN validation runs WHEN the implementation is complete THEN `uv run scripts/validate_capability.py skills/agentera/capabilities/dokumentera`, `uv run scripts/validate_capability.py --self-validate`, focused pytest targets, artifact validators, `uv run scripts/agentera gate --format json`, `uv run scripts/agentera compact --mode check --format json`, and `git diff --check` pass without installed app refresh.
+  evidence:
+    - cycle: 493
+      note: "Completed focused regression and startup-state validation for the Dokumentera closeout context. Focused CLI tests cover complete closeout context, missing required state with fallback commands and raw-read-last-resort policy, benchmark-unavailable caveat handling, local metadata/tag versus publication boundaries, and unsupported `agentera dokumentera` rejection. Dokumentera capability tests cover closeout prose, validation rules, and artifact schema guidance. Startup-analysis now includes a complete Dokumentera closeout fixture using `agentera hej --format json --capability-context dokumentera` with no raw TODO/docs/changelog/progress reads, asserting `raw_artifact_access: 0` and no redundant raw labels. Focused suite passed with 205 tests, capability and schema validation passed, live closeout context passed, PLAN/PROGRESS validators passed, gate and compact checks passed, and `git diff --check` passed. Independent re-evaluation returned PASS with no blocking findings."
+  plan: lvxglwnurb

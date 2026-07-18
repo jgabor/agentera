@@ -1,0 +1,14 @@
+id: qijfayxwwe
+artifact: plan
+record:
+  name: Integrate channels and migration into doctor and prime
+  depends_on:
+    - lnbgjplmsh
+    - bswzhscazn
+  status: complete
+  acceptance:
+    - GIVEN doctor output WHEN app is outdated on stable channel THEN repair/update commands use stable channel resolution (2.x path), not development
+    - GIVEN prime v1_migration summary WHEN v1 artifacts detected THEN dry_run_command/apply_command use channel-aware stable entrypoints consistent with upgrade orchestrator
+    - GIVEN prime app_home gate WHEN v2 managed app-home detected on 3.x CLI THEN attention item suggests explicit v2→v3 migration preview, not silent upgrade
+    - GIVEN doctor/prime JSON/text tests WHEN run THEN command strings no longer hardcode stale uvx-only paths where npm/channel model applies
+  plan: pcohfdsziy

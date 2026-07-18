@@ -1,0 +1,13 @@
+id: vgdyavzskl
+artifact: plan
+record:
+  name: progress.yaml over-budget compaction
+  depends_on:
+    - dcwwowdlxi
+  status: complete
+  acceptance:
+    - GIVEN `.agentera/progress.yaml` cycle count WHEN the regression test runs THEN the compaction gate fails if the count exceeds 50
+    - GIVEN the TS CLI WHEN `agentera check compact --apply` runs THEN progress.yaml is brought under the 50-cycle cap with cycle data preserved by archive
+    - GIVEN the Python stable CLI WHEN the same compaction runs THEN the same enforcement holds on `main`
+    - GIVEN the orchestration session after this task WHEN `agentera check compact` runs THEN the gate passes without over_limit
+  plan: ovatptxgko

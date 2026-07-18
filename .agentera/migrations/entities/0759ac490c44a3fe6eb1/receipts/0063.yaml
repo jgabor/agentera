@@ -1,0 +1,31 @@
+id: rxvpooklyc
+artifact: decisions
+record:
+  date: 2026-06-07
+  question: What is the load-bearing invariant connecting Agentera's surfaces under Decision 68's "one fixed workflow" claim?
+  context: |
+    Decision 68 (firm) commits to one fixed twelve-capability workflow, shared `.agentera/` state, and built-in tools across mobile, web, CLI, and editor delivery surfaces. Decision 65 (firm) relocated capability prose to `packages/cli` and made `agentera prime --context` the startup contract. Prior D69 deliberation (`docs/consolidation/d69/`) explored four invariants and found no convergence until D68's implementation level was clarified. Discuss deliberation (2026-06-07) confirmed OpenCode-like architecture with `packages/cli` as foundation.
+  alternatives:
+    - name: D69-a/E — CLI capability schema + state contract
+      status: chosen
+      description: Capability schema and `.agentera/` validation in `packages/cli`; all surfaces are clients; execution routes through CLI or serve.
+    - name: D69-b — mental journey invariant
+      status: rejected
+      description: Five-phase journey as narrow waist; capability behavior may differ per surface.
+      reason_rejected: Reinterprets D68; allows observable capability divergence.
+    - name: D69-c — state-only invariant
+      status: rejected
+      description: Shared `.agentera/` schema only; behavior may differ per surface.
+      reason_rejected: Weak D68 fit.
+    - name: D69-d — brand only
+      status: rejected
+      description: Surfaces as independent products under one logo.
+      reason_rejected: Contradicts D68 by construction.
+  choice: |
+    Adopt `packages/cli` as the narrow waist. Layer A (contract) — twelve-capability schema, `.agentera/` artifact shapes, validation, and `agentera prime` / `agentera state *` JSON contracts are authoritative in CLI. Layer B (execution routing) — all agent execution routes through the CLI engine (direct or `agentera serve`). Provider runtimes (Cursor SDK first; future OpenCode SDK, Vercel AI) are Layer B adapters behind CLI. Surfaces are clients — mobile (presentation-only tiering), web (docs/inspector), editor-runtime composite (SKILL.md + hooks + CLI binary), future desktop/TUI. D68 means behavioral identity (interpretation A).
+  reasoning: |
+    OpenCode-like single engine with surface clients matches D65/D68 and prevents parallel agent loops on mobile. Editor-runtime is one delivery surface, not three workflows. Open follow-ups — serve API shape, conflict-resolution policy, schema package location — are implementation decisions, not invariant changes.
+  confidence: firm
+  feeds_into: docs/consolidation/monorepo-plan.md, docs/consolidation/d69/, docs/consolidation/mobile-open-decisions.md, packages/cli/, packages/mobile/, AGENTS.md, skills/agentera/SKILL.md, references/adapters/, hooks/, TODO.md
+  outcome: |
+    Adopt `packages/cli` as the narrow waist. Layer A (contract) — twelve-capability schema, `.agentera/` artifact shapes, validation, and `agentera prime` / `agentera state *` JSON contracts are authoritative in CLI. Layer B (execution routing) — all agent execution routes through the CLI engine (direct or `agentera serve`). Provider runtimes (Cursor SDK first; future OpenCode SDK, Vercel AI) are Layer B adapters behind CLI. Surfaces are clients — mobile (presentation-only tiering), web (docs/inspector), editor-runtime composite (SKILL.md + hooks + CLI binary), future desktop/TUI. D68 means behavioral identity (interpretation A).

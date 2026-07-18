@@ -1,0 +1,6 @@
+id: egbmmtagkk
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[refactor:3.0.0] Move `## Personality` sections out of capability instructions.ts and into the vision artifact or..."

@@ -1,0 +1,22 @@
+id: cqxhaopmcp
+artifact: plan
+record:
+  name: Deliver active and archived plan retrieval
+  depends_on:
+    - mqlzwisipk
+  status: blocked
+  acceptance:
+    - GIVEN active and archived plans WHEN listed THEN deterministic recency, stable identity, lifecycle state, cursor, and omissions are returned.
+    - GIVEN a plan identity WHEN fetched THEN the intended full plan is returned without caller-side file traversal.
+    - GIVEN legacy, invalid, or missing archives WHEN tested THEN compatibility diagnostics and not-found behavior are explicit.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Cycle 803 records a live YAML byte count that changed by two bytes at audit; use deterministic fixture evidence and a live under-budget assertion.
+    provenance:
+      attempt_id: task-4-audit-2-20260715
+      source: independent Task 4 corrective acceptance audit
+      recorded_at: 2026-07-15 07:45
+      writer_command: agentera state plan record-evaluation
+  plan: nkbaxezqtr

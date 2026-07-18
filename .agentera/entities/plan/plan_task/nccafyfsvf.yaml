@@ -1,0 +1,16 @@
+id: nccafyfsvf
+artifact: plan
+record:
+  name: Usage namespace coverage and guidance alignment
+  depends_on:
+    - eraebpnswj
+  status: complete
+  acceptance:
+    - GIVEN the usage namespace behavior exists WHEN focused tests run THEN they cover text success, JSON success, explicit corpus path, project filtering, unmatched-project empty reports, missing corpus failure, invalid format feedback, help discoverability, and direct `scripts/usage_stats.py` compatibility.
+    - GIVEN tests execute the default text write path WHEN they set up fixtures THEN `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR` point at temporary directories and no test writes the real user data home.
+    - GIVEN package or command-surface checks exist WHEN usage namespace guidance is touched THEN relevant packaged CLI, registry, explicit CLI surface, and help checks are updated without adding unsupported capability-name commands.
+    - GIVEN docs or contract guidance changes WHEN validation runs THEN affected usage namespace tests, direct script compatibility probes, artifact validators, and `git diff --check` pass.
+  evidence:
+    - Added `tests/test_usage_namespace.py` covering text success with isolated USAGE.md output, JSON success with no write, explicit corpus path, project filtering, unmatched-project empty reports, missing-corpus failure, invalid format feedback, help discoverability, and direct `scripts/usage_stats.py` JSON compatibility.
+    - Verification passed with `uv run pytest tests/test_usage_namespace.py -q`, `uv run pytest tests/test_usage_stats.py -q`, `uv run pytest tests/test_usage_namespace.py tests/test_usage_stats.py tests/test_explicit_cli_surfaces.py -q`, and invalid-format guidance probe `uv run scripts/agentera usage --format xml`.
+  plan: hzpbdwvadx

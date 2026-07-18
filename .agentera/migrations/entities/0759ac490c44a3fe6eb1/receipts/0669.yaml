@@ -1,0 +1,12 @@
+id: ansjvpeqxd
+artifact: plan
+record:
+  name: Inventory Decision 54 vocabulary sources and consumers
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Decision 54 and `docs/vocabulary.md` are inspected WHEN the structured authority is designed THEN the inventory covers canonical statuses, operation verbs, deprecated aliases, and the explicit no-broader-rename boundary.
+    - GIVEN current CLI and test consumers are inspected WHEN ownership boundaries are listed THEN doctor, hej, upgrade, docs, and tests are the only in-scope consumers for this batch.
+  evidence: Decision 54 and `docs/vocabulary.md` were inspected; the authority scope records canonical statuses, operation verbs, deprecated aliases, and the explicit no-broader-rename boundary. The in-scope consumers are closed to doctor, hej, upgrade, docs, and tests.
+  plan: tdczymmacq

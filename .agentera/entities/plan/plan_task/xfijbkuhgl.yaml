@@ -1,0 +1,12 @@
+id: xfijbkuhgl
+artifact: plan
+record:
+  name: Confirm 2.2.0 Release Inclusion Without Publication
+  depends_on:
+    - thvsjxmtoc
+  status: complete
+  acceptance:
+    - GIVEN Decision 44 work is complete WHEN release readiness is reviewed THEN its evidence is recorded under the pending 2.2.0 release rather than a later version
+    - GIVEN version policy and current release metadata are reviewed WHEN the work is classified THEN version files remain at 2.2.0 or a required bump/no-bump rationale is recorded
+    - GIVEN no release publication was approved WHEN release readiness completes THEN no tag, push, package publication, package-manager update, or installed bundle refresh occurs
+  plan: xpmuycwtqe

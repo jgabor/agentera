@@ -1,0 +1,6 @@
+id: bhdviaejwq
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[test:3.0.0] Add an end-to-end v2→v3 migration integration test that validates a representative v2 project upgrades cleanly: artifacts migrate (MD→YAML with backups), runtime hooks rewire to the npm entrypoint, no data loss, and `agentera doctor` passes post-migration. The five Degraded migration fixes address edge cases individually but no test proves the full upgrade path works for a real v2 user. (Branch: `feat/v3` — implement on `feat/v3`.)"

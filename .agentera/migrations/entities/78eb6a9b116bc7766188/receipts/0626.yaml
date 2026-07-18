@@ -1,0 +1,17 @@
+id: wvyyolewwi
+artifact: plan
+record:
+  name: State sync and plan closeout
+  depends_on:
+    - bhatcntxsg
+    - zhirjfxnml
+    - krmpdbmlcr
+    - rvinwzsqov
+    - ffttgdgmpk
+    - quifbtafxs
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks complete WHEN state sync runs THEN addressed TODO items move to Resolved with resolved dates in the same commits as their fixes
+    - GIVEN plan closeout runs WHEN archive is written THEN active plan slot is cleared and progress records verification evidence
+    - GIVEN a Full-mode profilera dry-run on a host with multiple runtimes WHEN coverage audit runs THEN coverage summary and envelope fields are present in output
+  plan: zyisuuikti

@@ -1,0 +1,17 @@
+id: osseumfhok
+artifact: plan
+record:
+  name: Verification coverage and guidance alignment
+  depends_on:
+    - juemcwbkcd
+  status: complete
+  acceptance:
+    - GIVEN the verify namespace behavior exists WHEN focused tests run THEN they cover successful smoke gate behavior, successful eval gate behavior, text output, JSON output, invalid input feedback, safety boundaries, and preserved direct-script compatibility.
+    - GIVEN help, docs, fixtures, or capability guidance are touched WHEN they are reviewed THEN they make the verify namespace discoverable while preserving existing smoke/eval script vocabulary and keeping live or long-running gates explicitly bounded.
+    - GIVEN affected guidance or artifacts change WHEN validation runs THEN relevant CLI tests, direct smoke/eval probes, artifact validation, and diff checks pass.
+  evidence:
+    - "Added focused `tests/test_verify_namespace.py` regression coverage for the `agentera verify` namespace: successful smoke text output through `installed-skills`, successful eval JSON output through `skills`, successful semantic eval JSON output with an explicit fixture, invalid family/target/format and missing-fixture diagnostics, unsafe `--live` and `--run`/`--dry-run` safety guards, help discoverability, direct Python smoke/eval script compatibility, and bounded direct OpenCode bootstrap smoke behavior when Node is available."
+    - Aligned discoverability guidance minimally by adding top-level `agentera --help` examples for `agentera verify smoke installed-skills` and `agentera verify eval skills --format json`, preserving smoke/eval vocabulary and direct script target names. Updated `references/cli/agent-ready-state-contract.yaml` from Task 1 contract-only wording to implemented-with-Task-3-coverage wording without adding `agentera smoke`, unsupported capability-name commands, live defaults, or long-running eval defaults.
+    - "Verification evidence: `uv run pytest tests/test_verify_namespace.py -q` passed (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py -q` passed (9 tests), safe verify probes passed for smoke text, smoke JSON, eval skills JSON, and semantic fixture JSON, invalid family and unsafe live probes exited nonzero with bounded guidance, direct probes for `scripts/eval_skills.py`, `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed, and `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local failure for absent OpenCode skills."
+    - "Artifact and diff evidence after Task 3 artifact updates: PROGRESS, PLAN, and DOCS validation passed with `hooks/validate_artifact.py`, and `git diff --check` passed."
+  plan: nunafrtebv

@@ -1,0 +1,11 @@
+id: usgbkgoeny
+artifact: plan
+record:
+  name: Clean profilera remnants in packages/cli/src/
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN profilera renamed to profile, WHEN rg -i 'profilera' runs against packages/cli/src/ excluding schema version strings, THEN zero matches remain except compat identifiers
+    - AND vitest run passes AND tsc --noEmit clean
+  plan: hotcyckvhu

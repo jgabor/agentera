@@ -1,0 +1,13 @@
+id: ziejwjtkvb
+artifact: plan
+record:
+  name: Enrich the twelve triggers.yaml files
+  depends_on:
+    - lzceadlhge
+  status: complete
+  acceptance:
+    - GIVEN any capability's triggers.yaml WHEN validated against the enriched contract THEN validation passes
+    - GIVEN the vision capability's triggers.yaml WHEN inspected THEN it declares disambiguates_against for build on the shared pattern
+    - GIVEN all twelve triggers.yaml files WHEN validated THEN all pass capability validation
+    - GIVEN a triggers.yaml file without enriched fields WHEN validated THEN it still passes (backward compatible)
+  plan: vhgknrcomu

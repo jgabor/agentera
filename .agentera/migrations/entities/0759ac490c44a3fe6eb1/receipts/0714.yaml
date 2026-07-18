@@ -1,0 +1,15 @@
+id: jftwncinwm
+artifact: plan
+record:
+  name: Decision context inventory and archive boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN decisions, schemas, CLI output, and Resonera usage are inspected WHEN the inventory completes THEN implementation evidence records which required decision-context fields are already available, which are missing, and which are incomplete for compacted decision entries.
+    - GIVEN 2.3.6 is complete but was still active WHEN 2.3.7 becomes active THEN the completed 2.3.6 plan is archived with complete status and the new active plan references that archive path.
+    - GIVEN compacted decision entries or existing archive entries are present WHEN the boundary is recorded THEN full-detail completeness is distinguished from compacted historical limitations without recommending raw artifact or git-history fallback.
+  evidence:
+    - cycle: 477
+      note: "Task 1 inventory inspected `uv run scripts/agentera decisions --format json`, `uv run scripts/agentera decisions --topic source-contract --format json`, `.agentera/decisions.yaml`, `skills/agentera/schemas/artifacts/decisions.yaml`, `hooks/compaction.py`, and Resonera guidance. Full-detail active decisions already retain and the current CLI already emits `number`, `date`, `question`, `context`, `alternatives`, `choice`, `reasoning`, `confidence`, and `feeds_into` for the 10 retained full entries. Missing from the current decision-context source contract are top-level `source_contract`, per-decision `context_complete` or equivalent completeness flags, `missing_fields`, `compacted`, caveats, an explicit raw-read policy, an `outcome` alias separate from `choice`, and non-inferential downstream consequence references beyond the raw `feeds_into` text. Compacted historical decision entries are present as 40 archive entries; schema DR1 and the current compaction formatter preserve only decision number, date, and chosen choice/summary, with existing archive entries mixed between structured `{summary: ...}` maps and legacy strings. Therefore compacted entries are inherently incomplete for question, context, alternatives, full reasoning, confidence, structured feeds-into, and downstream consequence references, and the boundary is to report those limitations as missing/caveated data rather than recommending raw `.agentera/decisions.yaml` reads or git-history fallback. `uv run scripts/agentera gate --format json` and `uv run scripts/agentera compact --mode check --format json` both passed before evidence edits with DECISIONS.md active_count=10, archive_count=40, total_count=50, over_limit_count=0. Archive reconciliation confirmed 2.3.6 is archived at `.agentera/archive/PLAN-2026-05-14-2-3-6-artifact-compaction-enforcement-patch.yaml` with `header.status: complete`, and this active 2.3.7 plan already references that path via `previous_plan_archived`."
+  plan: ehnfoajqjq

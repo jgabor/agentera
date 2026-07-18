@@ -1,0 +1,6 @@
+id: mytuxaoozw
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Add light/normal/full levels to research. Light handles a focused lookup with bounded evidence, normal compares multiple relevant sources, and full performs broad synthesis across competing approaches. Levels control evidence breadth, analysis depth, and verification—not prose length. Update the startup contract, instructions, schemas, and tests."

@@ -1,0 +1,15 @@
+id: gocnieoxrd
+artifact: plan
+record:
+  name: Add regressions and contract tests
+  depends_on:
+    - bouzpqfrfn
+  status: complete
+  acceptance:
+    - GIVEN docs.yaml mapping overrides exist WHEN tests run THEN structured discovery reports the mapped path, resolution source, and existence without repeating canonical registry facts in `.agentera/docs.yaml`.
+    - GIVEN describe/query JSON surfaces are emitted WHEN tests inspect them THEN tests assert artifact-location fields, routine command ownership, raw-access boundaries, and missing-schema gap behavior.
+    - GIVEN unsupported capability-name commands remain forbidden WHEN tests run THEN `agentera planera` and route/CLI separation assertions still pass.
+  evidence:
+    - Added CLI tests for the list-artifacts v2 JSON wrapper, docs.yaml mapped path resolution, describe `artifact_locations`, schema-entry `location`, missing schema behavior, routine command ownership, raw-access boundaries, and unchanged unsupported `agentera planera` route separation.
+    - Adjusted startup benchmark persistence test to assert the runtime version source instead of stale hardcoded `2.3.14`, preserving benchmark contract coverage under current `2.10.0` metadata.
+  plan: dcoyjwccxs

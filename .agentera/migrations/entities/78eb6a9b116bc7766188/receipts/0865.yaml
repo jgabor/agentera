@@ -1,0 +1,11 @@
+id: topayawmpa
+artifact: plan
+record:
+  name: Rewrite visionera principles field template and surrounding prose
+  depends_on:
+    - uavqxisida
+  status: complete
+  acceptance:
+    - GIVEN visionera instructions.ts WHEN parsed THEN principles field description excludes implementation patterns via MUST NOT
+    - GIVEN the file WHEN agentera check validate capability visionera runs THEN it passes
+  plan: pkpreybxbf

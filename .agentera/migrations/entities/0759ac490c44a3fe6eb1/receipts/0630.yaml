@@ -1,0 +1,12 @@
+id: zgugqabxiq
+artifact: plan
+record:
+  name: Lint entrypoint for self-audit
+  depends_on:
+    - spkbfyxaib
+  status: complete
+  acceptance:
+    - GIVEN an agent needs the pre-write self-audit WHEN it asks the CLI for linting THEN self-audit behavior is reachable without knowing a repository-local helper path.
+    - GIVEN a linted artifact has verbosity, abstraction, or filler problems WHEN lint runs THEN the user receives bounded, actionable diagnostics.
+    - GIVEN lint passes WHEN a capability writes an artifact THEN the capability no longer depends on a hidden installed skill-root helper.
+  plan: eugrpfgykm

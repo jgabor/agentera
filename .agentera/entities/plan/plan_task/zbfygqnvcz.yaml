@@ -1,0 +1,13 @@
+id: zbfygqnvcz
+artifact: plan
+record:
+  name: Migrate Read-Only And Setup Callers
+  depends_on:
+    - wipeccrnrd
+  status: complete
+  acceptance:
+    - GIVEN doctor and setup callers evaluate the same root shapes WHEN their commands run THEN they agree on root classification and safe action
+    - GIVEN setup callers receive invalid or unmanaged roots WHEN they report the issue THEN confirmed-write behavior and existing primary outcomes are preserved unless the plan identified a correction
+    - GIVEN duplicate caller-local bundle identity rules are removed WHEN focused tests run THEN setup behavior still passes valid, missing, file, unmanaged, and default-root cases
+    - GIVEN tests cover migrated callers WHEN they assert behavior THEN the proportionality target is at least one passing and one failing root case per migrated caller family
+  plan: elrtvewqem

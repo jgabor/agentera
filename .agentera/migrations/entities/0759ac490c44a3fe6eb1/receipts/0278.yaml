@@ -1,0 +1,13 @@
+id: bzthidhinb
+artifact: plan
+record:
+  name: Define update-channel and major-boundary vocabulary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN references/cli/update-channels.yaml WHEN read THEN it defines stable and development channels with dist-tag/git resolution, default stable, and env/config override keys
+    - GIVEN references/cli/app-lifecycle-vocabulary.yaml WHEN extended THEN it adds major_boundary_crossing status concept and channel-aware update verb scope without breaking existing canonical statuses
+    - GIVEN references/cli/vocabulary.md WHEN updated THEN it delegates to the new authority per docs_delegation pattern and does not duplicate large tables
+    - GIVEN validate lifecycle adapter or vocabulary sync tests WHEN run THEN they pass with the new fields
+  plan: prcowxktfp

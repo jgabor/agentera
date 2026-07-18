@@ -1,0 +1,16 @@
+id: vyzliqhjio
+artifact: plan
+record:
+  name: Update agents/openai.yaml and .claude-plugin/plugin.json
+  depends_on:
+    - pxsdqdteqs
+    - lwadgujfce
+    - geminekvjp
+    - duwqnkhbri
+    - naesfipiel
+  status: complete
+  acceptance:
+    - GIVEN agents/openai.yaml uses English names, WHEN loaded, THEN all 12 capabilities referenced by English IDs
+    - GIVEN .claude-plugin/plugin.json uses English names, WHEN Claude plugin loads, THEN all commands use English IDs
+    - AND validate capability-contract passes
+  plan: ptxzdrxixt

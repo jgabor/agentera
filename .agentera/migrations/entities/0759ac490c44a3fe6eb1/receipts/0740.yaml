@@ -1,0 +1,18 @@
+id: tnjvaibgvp
+artifact: plan
+record:
+  name: State sync and version gate
+  depends_on:
+    - mqkobtxxis
+    - mrwhnvxtnm
+    - oaculnfdqx
+    - phgmjcsyem
+    - puhzyawpzk
+    - xriqydrsxe
+  status: complete
+  acceptance:
+    - GIVEN the plan reaches closeout WHEN state is synchronized THEN TODO, progress, docs, and changelog record schema coverage, token-impact evidence, remaining blockers, and benchmark results.
+    - GIVEN no release target is selected WHEN closeout runs THEN version-bearing files remain unchanged and no release publication, push, tag, or installed app refresh occurs.
+    - GIVEN a future release target is selected WHEN version policy is applied THEN `.agentera/docs.yaml` `semver_policy` controls any version bump.
+  evidence: "Closeout state is synchronized across TODO, progress, docs, and changelog for the repaired runtime schema coverage and token-impact estimate work. Supported Claude Code and GitHub Copilot synthetic fixtures now extract as `ok / records_extracted`, while live local `claude-code` and `github-copilot` stores still carry `schema_divergent` runtime caveats for unsupported/current local schemas, separate from product behavior. Durable benchmark outputs include estimator `approx_bytes_div_4_v1`, `estimated_raw_after_cli_tokens: 621`, `estimated_redundant_raw_tokens: 533`, comparable-row null reason `previous_missing_token_estimates`, CLI behavior rates `0.4444`, total state sequences `18`, and retained recommendation `plan_cli_startup_envelope`. No release target was selected, so version-bearing files stayed unchanged and no release publication, push, tag, installed app refresh, vision edit, or objective-state edit occurred. Future release version changes remain governed by `.agentera/docs.yaml` `semver_policy`."
+  plan: oaethqalav

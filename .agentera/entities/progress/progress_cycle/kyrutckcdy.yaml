@@ -1,0 +1,16 @@
+id: kyrutckcdy
+artifact: progress
+record:
+  timestamp: 2026-07-13 22:26
+  type: feat
+  phase: build
+  what: "Bound prime startup source work and output: incrementally scan current projection metadata, validate archives without retaining unrelated full records, emit truthful history counts and get/list routes, and compact all capability startup contexts without touching identity, status, or continuation fields."
+  inspiration: "Active Plan Task3: Bound prime source work and serialized output; Task2 is complete and its uncommitted status/evaluation include is preserved."
+  discovered: Prime source paths previously materialized full current YAML and plan/archive detail before serialization. The schema authority needs a separate capability-context serialized bound because immutable instruction bodies plus pretty JSON exceed the 35,000-byte dashboard surface; corrupt numbered archive files remain addressable with blocked detail while malformed or unaddressable rows retain truthful counts.
+  verified: "DTC fixture test primeTask3Bounds: 1,000 current rows per progress/decisions/health plus 100 corrupt archive files per artifact; source collection 3,507.897 ms, heap delta 127,599,792 bytes, briefing 28,677 B, sparse 3,471 B, maximum capability-context selector 39,799 B. The fixture preserves identity/status and get/list routes for maximum Unicode, omitted, unaddressable, ambiguous, and corrupt history. Focused prime/archive/list/direct suites passed 156 tests; non-packaging CLI suite passed 172 files and 1,740 tests; typecheck and build passed; capability-contract validation passed; check compact passed with 0 errors, 0 over-limit, 0 protected-overflow, and 0 changed counts; git diff --check passed. The five packaging prepack failures remain the known npm 12 npm pack --dry-run --json parser incompatibility."
+  next: Keep Task3 pending for evaluation and do not begin Task4 consumer migration. Review this implementation, then run the governed final gates; do not update vision, decisions, health, TODO, version, publish, push, tag, or stable release state.
+  context:
+    intent: "Execute continuation Plan Task3 without closing it: keep dashboard, sparse, and all twelve capability prime contexts bounded on large current projections, archive directories, omitted or corrupt history, and maximum Unicode fixtures."
+    constraints: Preserve Task2 plan status/evaluation, archive immutability, source completeness, valid direct retrieval, all source-contract oracle fields, no Task4 prose migration, no protected or unrelated state, no version or publish changes, and no remote access.
+    unknowns: None for this Task3 implementation; evaluator review remains open.
+    scope: packages/cli/src/state/startupProjection.ts; packages/cli/src/state/archiveDiscovery.ts; packages/cli/src/cli/orientation.ts; packages/cli/src/cli/commands/prime/collectOrientationState.ts; packages/cli/src/cli/commands/prime/orientationOutput.ts; packages/cli/src/cli/capabilityContext/{startup,slim,bespoke,evidence}.ts; packages/cli/src/cli/contracts/orientationState.ts; packages/cli/test/cli/primeTask3Bounds.test.ts; packages/cli/test/state/archiveAuthority.test.ts; references/artifacts/state-storage-authority.yaml; .agentera/progress.yaml

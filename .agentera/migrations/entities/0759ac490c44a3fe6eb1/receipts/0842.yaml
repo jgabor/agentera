@@ -1,0 +1,13 @@
+id: ymxhsenxdg
+artifact: plan
+record:
+  name: Port usage/stats consent semantics to TS
+  depends_on:
+    - dsofklgopk
+  status: pending
+  acceptance:
+    - "GIVEN T1's oracle WHEN `packages/cli/src/analytics/usageStats.ts` is reviewed/extended THEN the consent flow matches the Python `agentera stats` semantics: no runtime-history reads from plain `stats`; explicit `--consent local-history` required for extraction; bounded size-bounded corpus reads; the v1 `agentera stats` namespace owns the surface; no top-level `agentera corpus` command is exposed (per resolved-ledger TODOs L84, L85)"
+    - GIVEN `stats refresh --dry-run` WHEN the dry-run path runs THEN no corpus is written; the privacy payload matches the Python oracle; the parity row is `equal` for the `usage_stats_consent` family
+    - GIVEN `stats refresh --consent local-history` WHEN the consented path runs THEN the corpus is extracted to `$PROFILERA_PROFILE_DIR/intermediate/corpus.json`; the bounded size-bounded read is enforced; the parity row is `equal`
+    - GIVEN the build WHEN `node packages/cli/dist/bin/agentera.js stats` and the refresh paths run THEN the responses are parity-equivalent to the Python oracle; the npmParityMatrix `usage_stats_consent` family row is `equal`; per V5 the proportionality target is one pass + one fail per consent path (plain-stats + dry-run + consent = 3 × 2 = 6 cases)
+  plan: cyhkcizqio

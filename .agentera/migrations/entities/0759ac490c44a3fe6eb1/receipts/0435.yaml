@@ -1,0 +1,12 @@
+id: nlsqwblyni
+artifact: plan
+record:
+  name: Bump vitest 2→4 in packages/cli and drop removed minWorkers field
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - "GIVEN packages/cli/devDeps WHEN `vitest` is bumped to `^4.1.0` and `minWorkers: 1` is removed from `vitest.config.ts` THEN `pnpm -C packages/cli install && pnpm -C packages/cli test` runs and 1145/1145 tests pass with no fixture drift."
+    - GIVEN the worker-budget config WHEN the suite runs on a 16-core host THEN peak RSS stays near the 2.4 GiB measured at maxWorkers=4 (no regression vs the v2 measurement).
+    - "GIVEN vitest 4's breaking-change surfaces WHEN the suite runs THEN no `poolOptions`/`workspace`/`minWorkers` errors surface and no mock/snapshot test fails (codebase cross-checked: zero exposure to v4 mock-getter, constructor, or snapshot changes)."
+  plan: xuzwfegfcx

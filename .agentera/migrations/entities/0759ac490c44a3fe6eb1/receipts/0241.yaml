@@ -1,0 +1,52 @@
+id: nhnpgmopau
+artifact: plan
+record:
+  name: State sync and version gate
+  depends_on:
+    - gkpwprmkno
+    - dcyadhrmil
+    - pvgeimhnph
+    - lodxasuocy
+    - vxfyizfaeo
+    - iuftyqefsg
+  status: complete
+  acceptance:
+    - GIVEN the plan reaches closeout WHEN state is synchronized THEN TODO, progress, docs, and changelog record the evidence and any remaining blockers.
+    - GIVEN a release target is selected WHEN version policy is applied THEN version-bearing files follow the documented semver policy.
+    - GIVEN no release target is selected WHEN closeout runs THEN version-bearing files remain unchanged and the no-release boundary is recorded.
+  evidence:
+    state_synchronized:
+      todo: The broad CLI startup state envelope follow-up was revised to the remaining `PLAN.md` redundant raw startup-read caveat. It records the Task 6 metric improvement and keeps the remaining benchmark recommendation open.
+      progress: Cycle 452 records Task 7 acceptance evidence, verification commands, the remaining benchmark caveats, and the no-release/no-version-bump boundary.
+      docs: "`.agentera/docs.yaml` audit metadata records the closeout evidence, remaining `PLAN.md` blocker, runtime caveats, and version gate outcome."
+      changelog: "`CHANGELOG.md` records the startup completeness/source contract behavior, benchmark comparison, remaining caveats, and no release-publication claim under Unreleased."
+    benchmark_closeout:
+      baseline_raw_after_cli_sequence_rate: 1
+      baseline_redundant_raw_sequence_rate: 1
+      rerun_raw_after_cli_sequence_rate: 0.2222
+      rerun_redundant_raw_sequence_rate: 0.2222
+      raw_accesses_before: 11
+      raw_accesses_after: 2
+      redundant_raw_accesses_before: 8
+      redundant_raw_accesses_after: 2
+      remaining_redundant_raw_access: PLAN.md across 2 sequences
+      remaining_recommendation: plan_cli_startup_envelope
+      runtime_caveats:
+        - claude-code degraded by schema_divergent
+        - github-copilot degraded by schema_divergent
+        - codex ok
+        - opencode ok
+    version_gate:
+      release_target_selected: false
+      policy_source: .agentera/docs.yaml conventions.semver_policy
+      version_bearing_files_unchanged: true
+      boundary: No release target was selected, so no package, lockfile, plugin, registry, OpenCode marker, skill frontmatter, tag, publication, push, or installed app refresh was performed.
+    verification:
+      - python3 YAML parse check for .agentera/plan.yaml, .agentera/progress.yaml, and .agentera/docs.yaml
+      - uv run scripts/agentera plan
+      - uv run scripts/agentera progress
+      - uv run scripts/agentera docs
+      - hooks/validate_artifact.py validation for TODO.md, CHANGELOG.md, and .agentera/docs.yaml
+      - git diff --check -- TODO.md CHANGELOG.md .agentera/plan.yaml .agentera/progress.yaml .agentera/docs.yaml
+      - git diff --name-only -- pyproject.toml uv.lock plugin.json .github/plugin/plugin.json .codex-plugin/plugin.json .claude-plugin/marketplace.json .opencode/plugins/agentera.js registry.json
+  plan: ilsmrmrchl

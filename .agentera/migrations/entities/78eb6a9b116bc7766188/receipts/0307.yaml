@@ -1,0 +1,12 @@
+id: cqivapbdsy
+artifact: plan
+record:
+  name: Align Tests Diagnostics And Safe Labels
+  depends_on:
+    - ceourbqvko
+  status: complete
+  acceptance:
+    - GIVEN maintained diagnostics, test labels, and safe labels are read WHEN Decision 44 wording is applied THEN current labels prefer mismatch, out-of-sync, status, check, or stop-condition language instead of deprecated preferred wording
+    - GIVEN compatibility cases or stable contract terms still use old words WHEN they are reviewed THEN each exception is tied back to the Task 1 boundary rather than left accidental
+    - GIVEN wording changes are user-visible WHEN validation runs THEN existing behavior, routing, CLI command semantics, and package version readers still behave as before
+  plan: xpmuycwtqe

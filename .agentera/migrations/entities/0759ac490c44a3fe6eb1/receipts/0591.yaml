@@ -1,0 +1,19 @@
+id: huqadsqwse
+artifact: plan
+record:
+  name: 2.3.9 local closeout metadata sync
+  depends_on:
+    - qvdahboqfv
+    - idpwukpros
+    - kthtttwnvd
+    - kmpdxwvzqz
+    - mghaxqvfla
+  status: complete
+  acceptance:
+    - GIVEN closeout-context validation passes WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.9 source-contract patch and the remaining deferred 2.3.10+ source-contract train.
+    - GIVEN version-bearing files are inspected WHEN local metadata is synchronized THEN the selected 2.3.9 patch-train target is recorded explicitly despite the `[feat:2.3.9]` label, future unselected feature targets remain governed by docs.yaml semver policy, and only files listed by docs.yaml version policy are changed if repository convention requires version alignment.
+    - GIVEN local metadata sync completes WHEN scope is audited THEN no publication, remote push, installed app refresh, profile refresh, vision edit, objective-state edit, or unsupported capability CLI command occurred without explicit approval.
+  evidence:
+    - cycle: 494
+      note: Completed local 2.3.9 metadata sync for the Dokumentera closeout-context source-contract patch. TODO resolves the `[feat:2.3.9]` item while keeping the 2.3.10+ Inspektera, Optimera, and Realisera source-contract train open. DOCS records the 2.3.9 audit label, version-policy resolution for the selected exact patch-train target despite the `[feat:2.3.9]` label, deferred 2.3.10+ work, and local-only no-publication/no-refresh boundaries. CHANGELOG records the 2.3.9 changed/fixed/added/verified closeout. Version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces now target 2.3.9. Focused validation passed with 219 tests; capability validation, schema self-validation, TODO/DOCS/CHANGELOG/PLAN/PROGRESS validators, live closeout context, gate, compact check, and diff whitespace check passed after safe TODO Resolved compaction. No publication, tag, remote push, installed app refresh, profile refresh, vision edit, objective-state edit, or unsupported capability CLI command occurred.
+  plan: tqlhunyjtj

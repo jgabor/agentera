@@ -1,0 +1,19 @@
+id: ezmkklxfga
+artifact: plan
+record:
+  name: 2.3.8 state and release metadata sync
+  depends_on:
+    - ffxtopltbn
+    - mmerouvzun
+    - sahqwizzop
+    - eshmefygba
+    - lhnncfmpol
+  status: complete
+  acceptance:
+    - GIVEN orchestration-context validation passes WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.8 source-contract patch and the remaining deferred source-contract train.
+    - GIVEN version-bearing files are inspected WHEN metadata is synchronized THEN the selected 2.3.8 patch-train target is recorded explicitly despite the `[feat:2.3.8]` label, and future unselected feature targets remain governed by docs.yaml semver policy.
+    - GIVEN release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, objective-state edit, or unsupported capability CLI command occurred without explicit approval.
+  evidence:
+    - cycle: 488
+      note: Task 6 synchronized the local 2.3.8 release metadata for the completed Orkestrera orchestration-context source-contract patch. TODO now resolves the `[feat:2.3.8]` item while keeping 2.3.9+ source-contract work open; progress, docs, and changelog record the completed patch, deferred train, selected 2.3.8 patch-train target, semver-policy caveat, and local-only no-release/no-refresh boundary. Version-bearing surfaces now target 2.3.8 across package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter files. Validation passed with 15 release metadata tests, 89 focused source-contract tests, Orkestrera capability validation, schema self-validation, TODO/DOCS/CHANGELOG/PLAN/PROGRESS artifact validators, live Orkestrera context, gate, compaction check, and diff whitespace check. Safe compaction ran for TODO resolved and PROGRESS after metadata additions. Inspektera evaluation returned PASS with no blocking findings. No publication, tag, remote push, installed app refresh, vision edit, objective-state edit, or unsupported capability CLI command occurred.
+  plan: vnmbzxolfo

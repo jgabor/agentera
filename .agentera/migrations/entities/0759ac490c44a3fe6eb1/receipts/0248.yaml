@@ -1,0 +1,12 @@
+id: prbuakblgj
+artifact: plan
+record:
+  name: Harden scripts and CLI
+  depends_on:
+    - sfsrpeivul
+  status: complete
+  acceptance:
+    - GIVEN _load_artifact on empty existing YAML file WHEN CLI reads artifact THEN returns empty mapping not None
+    - GIVEN production scripts in scope WHEN loading registry or contract YAML THEN no bare safe_load without None guard remains
+    - GIVEN agentera state commands on empty mapped artifacts WHEN run THEN structured output completes without None-related failure
+  plan: umgphunwbf

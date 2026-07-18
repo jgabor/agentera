@@ -1,0 +1,12 @@
+id: qyhzsfpddh
+artifact: plan
+record:
+  name: Chain optional Git enrichment after local migration
+  depends_on:
+    - qszlacfmie
+  status: pending
+  acceptance:
+    - GIVEN local migration completes WHEN operators explicitly invoke the existing guarded backfill contract THEN only exact reachable candidates enrich unresolved rows.
+    - GIVEN Git is unavailable, degraded, shallow, rewritten, ambiguous, or declined WHEN the chain runs THEN local migration remains complete and each refusal preserves deterministic provenance.
+    - GIVEN partial enrichment is interrupted or retried WHEN immutable archives exist THEN head revalidation, bounded local history, and equality checks prevent duplicate or conflicting publication.
+  plan: cqihbnzhms

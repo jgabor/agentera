@@ -1,0 +1,13 @@
+id: cblsgctlno
+artifact: plan
+record:
+  name: Update docs, descriptors, metadata, and compatibility fixtures
+  depends_on:
+    - tjqaqlykcs
+  status: complete
+  acceptance:
+    - GIVEN `skills/agentera/SKILL.md`, `capability_schema_contract.yaml`, runtime descriptors, docs, package metadata, and compatibility fixtures are inspected WHEN references are updated THEN current user-facing and protocol references name `instructions.md` as canonical.
+    - GIVEN historical or compatibility fixtures still contain `prose.md` WHEN tests classify them THEN those occurrences are justified as preserved evidence rather than unresolved canonical mismatch.
+  evidence:
+    - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  plan: pkfbsrvrby

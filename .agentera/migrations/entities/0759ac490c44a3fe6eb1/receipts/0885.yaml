@@ -1,0 +1,15 @@
+id: gbkddjhlod
+artifact: plan
+record:
+  name: Promote CHANGELOG 3.0.0 and finalize README/UPGRADE.md
+  depends_on:
+    - bxbxuthlcl
+  status: complete
+  blocks:
+    - "10"
+  acceptance:
+    - "GIVEN the cutover surface WHEN `CHANGELOG.md` is updated THEN the `## [3.0.0] · 2026-06-XX` section is authored with `### Key highlights`, `### Added`, `### Changed`, `### Removed`, `### Fixed` per AGENTS.md `Changelog` rules; surfaces in scope: 3.0.0 release title, the six D56 surface families (artifact validation, compaction, doctor/upgrade safety, verify, usage/stats consent, runtime adapter hooks) as Added (TS port of stable Python semantics), Decision 58 single-name protocol boundary as Changed, the deprecated top-level parsers as Removed, and the v3 cursor agent surface fix as Fixed"
+    - "GIVEN the cutover surface WHEN `README.md` is updated THEN the v3 install instructions are: `npx -y agentera@latest` as primary; `npx -y agentera@next` as preview; `uvx --from git+https://github.com/jgabor/agentera agentera` marked as v2 stable only; the README reflects the cutover surface"
+    - GIVEN the cutover surface WHEN `UPGRADE.md` is updated THEN the v2→v3 migration path is documented, the `v3-handoff.json` reader is referenced, the coexistence detection surface is described, and the v3.0.0 commit pin is recorded; the CHANGELOG fold is the final touches commit before T10 per AGENTS.md `Changelog` rules
+    - GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the docs regression is green; typecheck clean; build clean; the docs change is folded with the T10 cutover publish commit per AGENTS.md
+  plan: lzsuezxesf

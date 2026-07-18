@@ -1,0 +1,16 @@
+id: pigfbbmhgq
+artifact: plan
+record:
+  name: Plan-level current-state check
+  depends_on:
+    - yipvcrdqph
+    - nscyvuftaj
+    - vpgydkmfgc
+    - ijzqmywfic
+    - kyzpbbyzum
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN final state is queried THEN TODO, changelog, progress, docs, and plan state agree on 2.2.2 readiness.
+    - GIVEN release authorization has not been separately granted WHEN the plan closes THEN no remote push, package publication, installed app refresh, or release tag operation is performed.
+    - GIVEN all plan tasks are complete WHEN the plan is closed THEN the active plan is complete only after every task is complete and evidence is recorded.
+  plan: evlwlzprps

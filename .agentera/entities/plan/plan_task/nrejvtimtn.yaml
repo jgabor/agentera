@@ -1,0 +1,17 @@
+id: nrejvtimtn
+artifact: plan
+record:
+  name: Provenance, protected-state, and residual-risk semantics
+  depends_on:
+    - gfofciqxxi
+  status: complete
+  acceptance:
+    - GIVEN plan criteria, progress verification, docs state, or health state exists in CLI state WHEN evidence context is returned THEN each non-empty evidence family includes provenance pointers and non-empty evidence flags without inventing missing evidence.
+    - GIVEN protected-state or version boundary evidence is local, unavailable, or deliberately not checked WHEN the context reports the boundary THEN status values distinguish local verification, not-checked-by-design, manual-check-required, and unavailable states without contacting remotes, registries, installed apps, profile generation, vision state, or objective state.
+    - GIVEN compacted decisions, missing state, stale profile/app state, absent publication evidence, or residual task risks are present WHEN residual risks are built THEN those caveats are preserved and attributed rather than hidden, flattened, or reconstructed from raw artifacts.
+  evidence:
+    - "`evidence_context` evidence families now expose provenance and non-empty evidence flags: `plan_criteria`, `progress_verification`, `docs_state`, `health_state`, and `todo_state` report source pointers plus `non_empty_evidence_present` and non-empty field lists where meaningful, without fabricating absent evidence."
+    - Protected and version boundaries now use the explicit status vocabulary `verified_local`, `not_checked_by_design`, `requires_manual_check`, and `unavailable`. Vision and objective state are reported as protected and not checked by design; docs version policy and version files are local CLI evidence when present; publication and remote push evidence require manual check; installed app refresh remains not checked by design.
+    - Residual risks now include attributed entries with category, status, message, and provenance. Compacted decision caveats come from the same decision context summarization used by `agentera decisions --format json`; stale or missing profile/app state, missing optional state families, absent publication/remote evidence, and retry-state caveats remain attributed rather than flattened or reconstructed from raw artifacts.
+    - Focused tests cover non-empty flags, boundary status vocabulary, attributed compacted-decision and stale-profile caveats, incomplete required state, and Decision 45 contract semantics. No unsupported `agentera inspektera` command, new command surface, installed app refresh, profile refresh, vision edit, objective-state edit, publication, push, tag, commit, or remote/registry check occurred.
+  plan: awachftxab

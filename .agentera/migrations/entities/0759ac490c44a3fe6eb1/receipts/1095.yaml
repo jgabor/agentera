@@ -1,0 +1,39 @@
+id: nlxcuhxfsh
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-14
+    status: complete
+    reviewed: 2026-05-14
+    critic_issues: 12 found, 12 addressed, 0 dismissed
+    revised: Adversarial review split the command, validator, remediation, and gate work into separate cycles; made the compactable artifact set explicit; excluded objective-state mutation without approval; required contract reconciliation before behavior changes; moved current artifact remediation before gate activation; and replaced vague test and mutation criteria with observable boundaries.
+    title: 2.3.6 Artifact Compaction Enforcement Patch
+  what: Make artifact compaction a deterministic repository invariant rather than an opportunistic runtime-hook side effect. The patch adds an explicit compaction maintenance surface, makes explicit artifact validation invocations real instead of silent no-ops, enforces 10/40/50 caps for current v2 artifacts, and brings existing over-cap artifacts back inside retained-entry bounds.
+  why: "Agentera depends on bounded artifacts for CLI-first state access and cross-cycle agent performance. Today compaction depends on how a file was edited: runtime write/edit hooks can compact TODO Resolved, but apply_patch, scripts, direct edits, and manual validation commands bypass the quantity contract. YAML artifacts also declare compaction rules without reliable enforcement. That lets progress, decisions, health, and TODO state grow past the contract while validation appears green."
+  constraints: Preserve `.agentera/docs.yaml` artifact path resolution. Keep CHANGELOG as exempt public history. Keep session-stop bookmark compaction working. Use runtime hooks only as a convenience, not as the only enforcement layer. Do not mutate vision or objective state without explicit approval; objective experiment files are classified but skipped by default. Do not expand into the deferred 2.3.7+ source-contract train or richer decision-outcome retrieval beyond preserving the existing decision compaction contract. Do not tag, push, publish, refresh installed apps, edit vision, or edit objective state without explicit approval.
+  scope:
+    included:
+      - "Explicit compaction check/fix surface for TODO Resolved plus current v2 YAML growing artifacts: progress, decisions, health, and session."
+      - Classification for optional experiment artifacts, with objective-state experiment mutation skipped unless explicitly approved.
+      - Explicit validator CLI behavior for artifact/file arguments so validation commands either validate the requested artifact or fail clearly.
+      - Repo gate coverage so changed artifacts cannot bypass compaction through apply_patch, scripts, generated edits, or direct file changes.
+      - Current artifact remediation for existing over-cap TODO, progress, decisions, and health state.
+      - Focused tests and 2.3.6 metadata sync.
+    excluded:
+      - CHANGELOG compaction.
+      - Rich decision-history or decision-source-contract retrieval, deferred to 2.3.7+ TODOs.
+      - Broad runtime adapter redesign or new package formats.
+      - Publication, tag, push, installed app refresh, vision edit, or objective-state edit.
+    deferred:
+      - Source-contract feature train now targeted at 2.3.7 through 2.3.12.
+      - Objective experiment compaction mutation unless the user explicitly approves protected objective-state edits.
+      - Policy changes to make compacted decision summaries richer than the existing schema contract.
+  design: "Treat compaction as a checkable invariant with two observable modes: a read-only check mode for gates and an explicit fix mode for controlled mutation. The command reports machine-readable counts and status per artifact, resolves paths through docs mapping, and shares behavior with runtime validation hooks where those hooks already apply. Fix mode may only move entries between full-detail and compact archive regions, replace older retained entries with schema-defined summaries, or remove entries beyond the retained 50-entry boundary; it must not churn unrelated metadata, mapping, or protected state. Enforcement is activated only after the current over-cap artifacts are remediated."
+  overall_acceptance:
+    - GIVEN any compactable artifact exceeds the 10/40/50 shape WHEN the repository check runs THEN the check fails before release or push can silently proceed.
+    - GIVEN a user runs the explicit fix path WHEN artifacts are over cap THEN compactable artifacts are bounded deterministically while exempt, unsupported, and protected artifacts are left alone.
+    - GIVEN artifact validation is invoked explicitly by artifact and file WHEN no runtime JSON hook payload exists THEN the command validates the requested artifact instead of returning a false pass.
+    - GIVEN 2.3.6 closes WHEN state and metadata sync finish THEN the repository records compaction enforcement as a patch release without publication, push, tag, installed app refresh, vision edit, or objective-state edit.
+  surprises:
+    []

@@ -1,0 +1,6 @@
+id: bbkgbtdqzf
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[refactor:3.0.0] Rename `agentera app-home` command to `agentera path`"

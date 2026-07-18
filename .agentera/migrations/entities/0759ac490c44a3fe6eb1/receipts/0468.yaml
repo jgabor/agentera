@@ -1,0 +1,12 @@
+id: muxephhsca
+artifact: plan
+record:
+  name: Add safe `agentera stats` read workflow
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN no internal corpus exists WHEN `agentera stats` runs THEN it does not run extraction, does not write profile artifacts, and points to `agentera stats refresh --dry-run`.
+    - GIVEN an internal corpus already exists WHEN `agentera stats --format json` runs THEN it analyzes that corpus through the usage engine without requiring `--corpus`.
+  evidence: "`agentera stats` checks only `$PROFILERA_PROFILE_DIR/intermediate/corpus.json` before delegating to the usage engine. Missing or unusable corpus data exits with `agentera stats refresh --dry-run` guidance, while JSON mode analyzes an existing internal corpus without a caller-facing `--corpus` option."
+  plan: riprdraeks

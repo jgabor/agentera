@@ -1,0 +1,16 @@
+id: emfdznqrir
+artifact: progress
+record:
+  timestamp: 2026-07-17 02:13
+  type: fix
+  phase: build
+  what: Pinned migration reads to verified no-follow descriptors and made plan, objective, and experiment observers consume collected bytes.
+  inspiration: PLAN Task 19 retry audit, Decision 94, and the source-boundary defect report.
+  discovered: Fifteen lowercase legacy plan archives were being reread outside collected inventory and therefore omitted from the source fingerprint; the collected-byte seam now preserves their parity.
+  verified: "Focused migration/plan/objective/entity verification passed 9 files and 154 tests; full CLI passed 203 files and 2,430 tests. Typecheck and build passed. State validation reported 0 issues; capability contract passed 2/2; compact checked 10 artifacts with 0 errors or changes. Repeated pre-log previews were read-only, zero-write, and identical: 1,283 verified full, 55 projection-only, 90 summary-only, 17 corrupt, 66 unresolved relationships, 173 blockers, 1,445 logical identities, 1,466 physical records, 21 mirrors, and 2,118 relationships; source fingerprint cfdd701e13cfb001060559bdadefea387f9c55fbab974f234a26f57e7a833398 and preview digest 5e1cdb97e5aabdfb4949adec7f23970412dac506045ee9c5e971f00cd4e3e25b. Bound pre-apply returned apply_not_implemented with mutation_performed false."
+  next: Preserve complete Task 19; keep Tasks 4-9 pending and gated, and do not begin family cutover or apply.
+  context:
+    intent: Close only the Task 19 check/use replacement race and migration consumer rereads found by the retry audit.
+    constraints: No apply implementation or effects, family cutover, vision change, unrelated repair, amend, push, publish, or tag.
+    unknowns: Task 13 still owns disposition of the 173 blocked logical identities; this retry does not resolve them.
+    scope: Migration-only safe source read seam, collected plan/objective/experiment bytes, race regressions, and progress evidence.

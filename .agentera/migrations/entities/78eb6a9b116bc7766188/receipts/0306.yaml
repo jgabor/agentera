@@ -1,0 +1,12 @@
+id: lbctcibaeo
+artifact: plan
+record:
+  name: Update Capability And Protocol Instructions
+  depends_on:
+    - ceourbqvko
+  status: complete
+  acceptance:
+    - GIVEN an agent reads current capability instructions WHEN route, install, migration, evaluation, and orchestration wording appears THEN the instructions use Decision 44 terms without weakening required checks or stop conditions
+    - GIVEN hard pass/fail verification is described WHEN gate language remains THEN it names a behavioral verification gate or another explicit hard pass/fail boundary
+    - GIVEN canonical capability identity and protocol exit signals are reviewed WHEN wording changes are complete THEN capability names, exit statuses, and routing semantics are preserved
+  plan: xpmuycwtqe

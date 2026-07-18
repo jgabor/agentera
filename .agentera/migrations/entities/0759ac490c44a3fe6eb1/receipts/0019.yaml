@@ -1,0 +1,9 @@
+id: rqwdikuijv
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: Deliberation closed in resonara session on 2026-06-02 with three of three evidence-backed challenges landing. skills.sh public surface empirically verified to use SKILL.md only. CLI-over-MCP trend documented via jannikreinhard.com and justin.poehnelt.com references provided during the session. User confirmed D64-style capture and TODO filing. User confirmed satisfaction 2026-06-02 after D65 was written to `.agentera/decisions.yaml` with the schema and self_audit budget bumps in place.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-02
+  decision: ohaulavjiq

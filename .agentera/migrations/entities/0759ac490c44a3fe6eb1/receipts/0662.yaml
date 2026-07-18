@@ -1,0 +1,14 @@
+id: bfdwcqrmot
+artifact: plan
+record:
+  name: Expand P0 v2 fixtures under test/upgrade/fixtures
+  depends_on:
+    - gzenugzbuy
+  status: complete
+  acceptance:
+    - GIVEN v2-full-artifacts fixture WHEN seeded THEN it contains all AGENTERA_USER_STATE_NAMES entries plus vision.yaml and optimera/ directory under .agentera/
+    - GIVEN v2-app-home-noisy fixture WHEN seeded THEN preserved user state coexists with at least one unrecognized app-home root entry and cleanup dry-run blocks without force
+    - GIVEN v2-runtime-codex-full fixture WHEN seeded THEN config.toml, copied hooks, and plugin-enabled paths use Python managed entrypoints mirroring main templates
+    - GIVEN v2-runtime-cursor-full fixture WHEN seeded THEN project and user hooks.json reference uv run Python helpers and cursor_session_start.py paths
+    - GIVEN v2-legacy-agents-home fixture WHEN seeded THEN layout matches legacy ~/.agents/agentera bundle plus user state for retirement detection tests
+  plan: gntadmkfrl

@@ -1,0 +1,10 @@
+id: oxolclxflc
+artifact: plan
+record:
+  name: Rewrite Agentera commits and bookkeeping fold-in rules
+  depends_on:
+    - nqskcpkwcz
+  status: complete
+  acceptance:
+    []
+  plan: okrgsbtctt

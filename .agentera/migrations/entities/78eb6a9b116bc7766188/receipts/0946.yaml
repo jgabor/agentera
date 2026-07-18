@@ -1,0 +1,12 @@
+id: onacnrfcdl
+artifact: plan
+record:
+  name: Reproduce stale runtime default and define recovery rules
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN tests simulate OpenCode or runtime shell env injecting `~/.agents/agentera` independent of the developer shell WHEN the installed gate resolves app home THEN the missing `$AGENTERA_HOME/app/scripts/agentera` failure is reproduced deterministically.
+    - GIVEN `AGENTERA_HOME` is the exact deprecated default and no `--install-root` was supplied WHEN the managed app is missing or stale THEN CLI and guidance classify it as recoverable stale default, not as first requiring the user to unset `AGENTERA_HOME`.
+    - GIVEN `AGENTERA_HOME` is any non-default custom path WHEN it is invalid or unmanaged THEN diagnostics preserve normal environment override semantics and ask for explicit correction or force.
+  plan: anedpqtccr

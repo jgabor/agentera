@@ -1,0 +1,12 @@
+id: vntvgvlsis
+artifact: plan
+record:
+  name: Evaluate keep-vs-remove and draft the follow-up plan criteria
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the progress.yaml schema and its current `commit` field WHEN the evaluation runs THEN a written decision records keep vs. remove with rationale, ripple inventory, and migration outline.
+    - GIVEN the `rewriteCycleCommits` rewrite pipeline and `computeBackfill` workflow WHEN the migration outline is drafted THEN the ripple into `agentera check backfill`, progress validation, AGENTS.md, and realisera instructions is enumerated with the call sites that change.
+    - GIVEN the decision and migration outline WHEN a follow-up realisera plan is required THEN its acceptance criteria are draftable from the evaluation without re-deriving the rationale.
+  plan: odpveqcgif

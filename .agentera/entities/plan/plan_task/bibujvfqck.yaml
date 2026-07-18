@@ -1,0 +1,17 @@
+id: bibujvfqck
+artifact: plan
+record:
+  name: DECISIONS.md consumer guidance alignment
+  depends_on:
+    - ifayruekyx
+  status: complete
+  acceptance:
+    - GIVEN Task 1 identifies any specific redundant-read source WHEN guidance is edited THEN every identified source is updated to use returned decisions, source_contract, and caveats before any raw decision artifact read.
+    - GIVEN capability prose and dispatcher guidance mention DECISIONS.md reads WHEN audit runs THEN wording that tells agents to read raw decisions for normal context after CLI state is replaced or bounded by CLI-first source-contract guidance.
+    - GIVEN compacted or incomplete decisions are returned WHEN downstream capabilities plan, orchestrate, audit, document, optimize, or hand off work THEN guidance preserves `missing_fields`, `compacted`, `caveats`, and satisfaction-review pressure rather than treating compacted decisions as complete.
+    - GIVEN Resonera writes decisions WHEN guidance is changed THEN raw artifact access for decision writes/repairs remains explicitly allowed under Resonera ownership.
+  evidence:
+    - Updated `skills/agentera/SKILL.md` and DECISIONS.md consumers in Planera, Realisera, Inspektera, Dokumentera, Visionera, Optimera, Orkestrera, Resonera, and Profilera to use `agentera decisions --format json` for normal decision context and preserve `missing_fields`, `compacted`, `caveats`, and `satisfaction.review_needed` pressure.
+    - Resonera guidance preserves raw decision artifact access for explicit artifact repair, corruption work, unavailable/defective CLI state, and Resonera-owned writes/repairs.
+    - Guidance changes did not add any capability-name CLI command and did not touch unrelated AGENTERA_ARTIFACTS discovery behavior.
+  plan: tnyfrchrnl

@@ -1,0 +1,12 @@
+id: rrukhvfqhx
+artifact: plan
+record:
+  name: 2.3.0 version bump
+  depends_on:
+    - weflitvgfa
+  status: complete
+  acceptance:
+    - GIVEN the release includes feature and fix work WHEN version-bearing surfaces are inspected THEN the suite reports 2.3.0 consistently.
+    - GIVEN package and runtime manifests are queried WHEN their Agentera version is read THEN no active release surface still declares 2.2.3.
+    - GIVEN historical archive or changelog text mentions older versions WHEN version checks run THEN those historical mentions do not block release readiness.
+  plan: eugrpfgykm

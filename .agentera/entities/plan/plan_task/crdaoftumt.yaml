@@ -1,0 +1,15 @@
+id: crdaoftumt
+artifact: plan
+record:
+  name: Refresh compatibility regression coverage
+  depends_on:
+    - ankdscscvo
+    - rnoiopzdtt
+    - wpmokjckqi
+    - zlutavuhlc
+  status: complete
+  acceptance:
+    - GIVEN the five findings are fixed WHEN focused tests run THEN coverage asserts source-backed `chat.message`, documented OpenCode descriptor frontmatter, official Codex agent paths, and truthful OpenCode session event classification.
+    - GIVEN plugin smoke fixtures and installed-surface fixtures embed runtime text WHEN updated THEN they match the revised docs-compatible plugin and descriptor surfaces.
+    - GIVEN validation commands run WHEN implementation is complete THEN descriptor validation, runtime-adapter tests, Codex setup/upgrade tests, OpenCode smoke, and artifact validators pass.
+  plan: iooijalkqr

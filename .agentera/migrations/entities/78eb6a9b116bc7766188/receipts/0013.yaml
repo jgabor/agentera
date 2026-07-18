@@ -1,0 +1,9 @@
+id: baqodjztrr
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: D59 slim capability_context and unified prime control-plane direction confirmed as 3.0 policy during discuss satisfaction review on 2026-05-23. Implementation of dashboard mode, JSON surface inventory, and byte/token budgets remains downstream work.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-23
+  decision: hpahubjrqt

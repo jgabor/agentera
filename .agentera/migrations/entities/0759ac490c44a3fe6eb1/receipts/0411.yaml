@@ -1,0 +1,19 @@
+id: juemcwbkcd
+artifact: plan
+record:
+  name: Verify namespace gate behavior
+  depends_on:
+    - aorrcyayms
+  status: complete
+  acceptance:
+    - GIVEN a supported smoke gate target is requested WHEN an agent runs the verify namespace THEN the command returns a stable text or JSON result with bounded diagnostics and without requiring live network or installed-app mutation by default.
+    - GIVEN a supported eval gate target is requested WHEN an agent runs the verify namespace THEN the command returns a stable text or JSON result with bounded diagnostics and without starting long-running or host-dependent work unless explicitly opted in.
+    - GIVEN callers continue to use existing direct smoke or eval commands WHEN the verify namespace is present THEN those direct commands remain callable with their documented behavior unchanged.
+    - GIVEN unsupported families, targets, formats, or unsafe default requests are provided WHEN the command fails THEN it exits nonzero and includes valid values, correct syntax, and one concrete example.
+  evidence:
+    - Implemented `agentera verify` in `scripts/agentera` as a thin facade over existing direct smoke/eval scripts, with supported families `smoke` and `eval`, smoke targets `installed-skills`, `live-hosts`, `setup-helpers`, and `opencode-bootstrap`, eval targets `skills` and `semantic`, output formats `text` and `json`, and bounded stdout/stderr diagnostics capped at 20 lines per stream in the stable JSON/text envelope.
+    - "Smoke behavior evidence: `uv run scripts/agentera verify smoke installed-skills` passed in offline mode without real npx; `uv run scripts/agentera verify smoke installed-skills --format json` returned status `pass` with safety mode `offline`; `uv run scripts/agentera verify smoke live-hosts --format json` passed the existing offline fixture/setup/upgrade smoke path with `live=false`; `uv run scripts/agentera verify smoke setup-helpers --format json` passed; `uv run scripts/agentera verify smoke opencode-bootstrap --format json` returned a stable bounded `status=fail` result for the existing local OpenCode skills absence instead of invoking package refresh or installed-app mutation."
+    - "Eval behavior evidence: `uv run scripts/agentera verify eval skills --format json` passed by delegating to `scripts/eval_skills.py --dry-run --runtime claude`, avoiding host runtime auto-detection and long-running model work by default; `uv run scripts/agentera verify eval semantic fixtures/semantic/hej-bare-message.md` and the JSON form passed by delegating to `scripts/semantic_eval.py` with an explicit fixture path and bounded diagnostics."
+    - "Direct compatibility evidence: `uv run scripts/eval_skills.py --dry-run --runtime claude`, `uv run scripts/semantic_eval.py fixtures/semantic/hej-bare-message.md`, `uv run scripts/smoke_installed_skills.py`, `uv run scripts/smoke_live_hosts.py`, and `uv run scripts/smoke_setup_helpers.py` remained callable and passed with their existing outputs; `node scripts/smoke_opencode_bootstrap.mjs` remained callable and returned the existing bounded local failure diagnostics for absent OpenCode skills."
+    - "Invalid-input evidence: `uv run scripts/agentera verify bogus installed-skills`, `uv run scripts/agentera verify smoke nope`, `uv run scripts/agentera verify eval skills --format xml`, `uv run scripts/agentera verify smoke live-hosts --live --format json`, and `uv run scripts/agentera verify eval semantic --format json` exited nonzero with bounded diagnostics listing valid values, correct syntax, and concrete examples."
+  plan: nunafrtebv

@@ -1,0 +1,13 @@
+id: qwtuvykpmb
+artifact: plan
+record:
+  name: Treat live writer preparations as bounded contention
+  status: complete
+  depends_on:
+    - kggukeixla
+  acceptance:
+    - GIVEN a positively live peer preparation WHEN another writer acquires THEN it waits until publication, disappearance, or bounded timeout instead of reporting unknown residue.
+    - GIVEN indeterminate, PID-less, malformed unknown, or foreign preparation residue WHEN acquisition inspects it THEN the writer fails closed with actionable recovery and never deletes it by age.
+    - GIVEN repeated simultaneous stale-lock publishers targeting one ID WHEN they run THEN every repetition yields one publication, one canonical duplicate-ID loser, one entity, and zero writer residue.
+    - GIVEN lock crash, legacy, successor, timeout, reentrant, boundary, durability, entity, and state-writer suites WHEN rerun THEN all prior safety properties remain green.
+  plan: vllyohtcde

@@ -1,0 +1,141 @@
+id: irrjbndqjl
+artifact: health
+record:
+  date: 2026-04-23
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - version health
+    - artifact freshness
+    - security hygiene
+    - dependency health
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 2
+    filtered_by_confidence: 0
+  trajectory: ⮉ improving vs Audit 9. Native Copilot and Codex metadata extends the portability thesis without changing skill sources. Adapter tests raise suite evidence from 299 to 320 passing. Version health improves B→A after the 1.17.0 bump. Freshness drops A→B because DOCS.md coverage still reports the pre-plan test count.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: A
+    Complexity: A
+    Tests: A
+    Version: A
+    Freshness: B
+    Security: A
+    Deps: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: The plan matches VISION.md's "any agent CLI tomorrow" direction. Copilot and Codex metadata wrap the shared `skills/<name>/SKILL.md` source rather than forking skill behavior. Codex and Copilot correctly mark `profilera` limited until runtime session corpus collectors exist.
+      findings:
+        - heading: "⇢ Native host behavior remains unproven, info (confidence: 85)"
+          severity: info
+          confidence: 85
+          location: |-
+            `README.md:20`, `.github/plugin/plugin.json:5`, `.codex-plugin/plugin.json:18`
+            - **Evidence**: Verification covered JSON/YAML structure, paths, policies, and validators. No Copilot or Codex host executed the metadata.
+            - **Impact**: Runtime behavior could differ from schema assumptions.
+            - **Suggested action**: Keep as release caveat until live host smoke tests are available.
+          evidence: |-
+            Verification covered JSON/YAML structure, paths, policies, and validators. No Copilot or Codex host executed the metadata.
+            - **Impact**: Runtime behavior could differ from schema assumptions.
+            - **Suggested action**: Keep as release caveat until live host smoke tests are available.
+          impact: |-
+            Runtime behavior could differ from schema assumptions.
+            - **Suggested action**: Keep as release caveat until live host smoke tests are available.
+          suggested_action: Keep as release caveat until live host smoke tests are available.
+    - name: Pattern consistency
+      grade: A
+      summary: All 12 skills have per-skill Codex metadata with `interface`, `policy`, and `dependencies`. Portable skills allow implicit invocation; `profilera` disables it and names `codex_session_corpus` as unavailable. Aggregate root metadata and plugin metadata repeat the same policy without conflict.
+      findings:
+        []
+    - name: Coupling health
+      grade: A
+      summary: "Host-specific surfaces stay outside the skill core: `.github/plugin/`, `.codex-plugin/`, `agents/`, and `skills/*/agents/`. `scripts/validate_lifecycle_adapters.py` is a 130-line stdlib validator and does not import hooks or skill internals. Existing Claude Code and OpenCode checks remain in `tests/test_runtime_adapters.py`."
+      findings:
+        []
+    - name: Complexity hotspots
+      grade: A
+      summary: No new complexity hotspot found. The new lifecycle validator is linear and narrow, with separate Copilot and Codex validators. Adapter tests are branch-heavy by intent but remain organized by runtime boundary.
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: "Full suite passed: `python3 -m pytest -q` -> 320 passed. New adapter coverage adds one pass and one fail per runtime package or hook unit, plus legacy Claude Code and OpenCode compatibility checks. This is proportional to the plan's branch surface."
+      findings:
+        []
+    - name: Version health
+      grade: A
+      summary: Version audit passed. `registry.json`, all 12 per-skill Claude plugin manifests, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, and marketplace top/non-profilera entries are at 1.17.0. Marketplace `profilera` intentionally remains 2.8.0.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: B
+      summary: "Freshness is mostly current: PLAN tasks are complete, PROGRESS cycles 129-134 record retries and rollup evidence, TODO has resolved entries for Tasks 1-7, and CHANGELOG [Unreleased] summarizes the plan."
+      findings:
+        - heading: "⇉ DOCS.md coverage still reports pre-plan test count, warning (confidence: 95)"
+          severity: warning
+          confidence: 95
+          location: |-
+            `.agentera/DOCS.md:70`, `.agentera/DOCS.md:79`
+            - **Evidence**: DOCS says `Test suite | tests/ | 2026-04-13` and `263 tests across 12 files`; current verification is `320 passed`, with `tests/test_runtime_adapters.py` present.
+            - **Impact**: Documentation consumers see stale coverage evidence after a test-bearing plan.
+            - **Suggested action**: Update DOCS.md Index and Coverage to reflect 320 tests across 13 files.
+          evidence: |-
+            DOCS says `Test suite | tests/ | 2026-04-13` and `263 tests across 12 files`; current verification is `320 passed`, with `tests/test_runtime_adapters.py` present.
+            - **Impact**: Documentation consumers see stale coverage evidence after a test-bearing plan.
+            - **Suggested action**: Update DOCS.md Index and Coverage to reflect 320 tests across 13 files.
+          impact: |-
+            Documentation consumers see stale coverage evidence after a test-bearing plan.
+            - **Suggested action**: Update DOCS.md Index and Coverage to reflect 320 tests across 13 files.
+          suggested_action: Update DOCS.md Index and Coverage to reflect 320 tests across 13 files.
+        - heading: "⇢ PROGRESS.md remains over advisory word budget, info (confidence: 80)"
+          severity: info
+          confidence: 80
+          location: |-
+            `.agentera/PROGRESS.md`
+            - **Evidence**: Cycle 134 records the hook advisory: PROGRESS remains around 3114 words after compaction.
+            - **Impact**: Low. Structural validation passes; this only increases read cost slightly.
+            - **Suggested action**: Let future cycles compact naturally unless the warning persists after several entries.
+          evidence: |-
+            Cycle 134 records the hook advisory: PROGRESS remains around 3114 words after compaction.
+            - **Impact**: Low. Structural validation passes; this only increases read cost slightly.
+            - **Suggested action**: Let future cycles compact naturally unless the warning persists after several entries.
+          impact: |-
+            Low. Structural validation passes; this only increases read cost slightly.
+            - **Suggested action**: Let future cycles compact naturally unless the warning persists after several entries.
+          suggested_action: Let future cycles compact naturally unless the warning persists after several entries.
+    - name: Security hygiene
+      grade: A
+      summary: No real secret hits. Pattern scan matched only documented secret examples in inspektera instructions. Dangerous-call scan found list-form `subprocess.run` calls in hooks, tests, and scripts, with no `shell=True`, eval, SQL concatenation, or dynamic shell execution finding.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: "The plan added no Python dependencies. New validation uses stdlib JSON and pathlib. Existing OpenCode Node metadata remains isolated under `.opencode/`; runtime adapter work did not expand production dependency sprawl. ### Trends vs Audit 9 - **Improved**: Version B→A after 1.17.0. Tests A→A with stronger runtime-adapter evidence. Coupling A→A with native metadata kept outside skill sources. - **Degraded**: Freshness A→B because DOCS.md coverage was partially stale after test additions. - **Resolved**: Audit 9 version warning is closed by 1.17.0. Audit 9 OpenCode and compaction findings were addressed before this plan and remain closed. - **New findings**: DOCS.md coverage staleness warning; live-host runtime caveat info; PROGRESS word-budget advisory info. ### Patterns Observed - Module structure: shared skill sources with thin host metadata adapters for Claude Code, OpenCode, Copilot, and Codex. - Adapter strategy: claim only public host capabilities; mark unsupported lifecycle behavior explicitly. - Testing approach: schema and metadata validation first, live runtime smoke tests still absent for Copilot and Codex. - Version pattern: plan-level feature work now correctly drives runtime manifests and suite versions together."
+      findings:
+        []
+  trends:
+    improved: |-
+      Version B→A after 1.17.0. Tests A→A with stronger runtime-adapter evidence. Coupling A→A with native metadata kept outside skill sources.
+      - **Degraded**: Freshness A→B because DOCS.md coverage was partially stale after test additions.
+      - **Resolved**: Audit 9 version warning is closed by 1.17.0. Audit 9 OpenCode and compaction findings were addressed before this plan and remain closed.
+      - **New findings**: DOCS.md coverage staleness warning; live-host runtime caveat info; PROGRESS word-budget advisory info.
+    degraded: |-
+      Freshness A→B because DOCS.md coverage was partially stale after test additions.
+      - **Resolved**: Audit 9 version warning is closed by 1.17.0. Audit 9 OpenCode and compaction findings were addressed before this plan and remain closed.
+      - **New findings**: DOCS.md coverage staleness warning; live-host runtime caveat info; PROGRESS word-budget advisory info.
+    new_findings: DOCS.md coverage staleness warning; live-host runtime caveat info; PROGRESS word-budget advisory info.
+    resolved: |-
+      Audit 9 version warning is closed by 1.17.0. Audit 9 OpenCode and compaction findings were addressed before this plan and remain closed.
+      - **New findings**: DOCS.md coverage staleness warning; live-host runtime caveat info; PROGRESS word-budget advisory info.
+  patterns:
+    - "Module structure: shared skill sources with thin host metadata adapters for Claude Code, OpenCode, Copilot, and Codex."
+    - "Adapter strategy: claim only public host capabilities; mark unsupported lifecycle behavior explicitly."
+    - "Testing approach: schema and metadata validation first, live runtime smoke tests still absent for Copilot and Codex."
+    - "Version pattern: plan-level feature work now correctly drives runtime manifests and suite versions together."

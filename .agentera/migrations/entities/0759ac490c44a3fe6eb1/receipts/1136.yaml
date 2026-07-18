@@ -1,0 +1,34 @@
+id: vzexijtyqv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-20
+    status: open
+    reviewed: 2026-05-20
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Preserved full-mode compatibility as an explicit migration boundary before making slim capability context the default.
+    title: Slim Capability Context Payloads
+  what: Change `agentera hej --format json --capability-context <capability>` from a full hej dashboard envelope with optional bespoke context into a targeted capability startup capsule. Keep the full `hej --format json` dashboard source available, classify artifact needs by role, and add byte plus GPT-5 token budget coverage for every capability context.
+  why: Current capability-context payloads repeat about 20 KB and 4.9k GPT-5 tokens of dashboard state for every capability before adding useful capability-specific context. The duplication bloats runtime context windows and makes the actual startup contract harder to consume.
+  constraints: Keep `hej --format json` as the full dashboard source. Do not introduce capability-name CLI commands such as `agentera planera`. Preserve compatibility deliberately, preferably through an explicit full/slim context profile. Measure tokens with `<output> | npx tiktoken-cli -m gpt-5`. Do not bump versions, tag, publish, push, refresh app files, or edit protected vision/objective state unless explicitly approved later.
+  scope:
+    included:
+      - scripts/agentera capability-context JSON construction and field selection.
+      - Role-aware capability artifact inventory.
+      - Existing bespoke contexts for realisera, optimera, inspektera, dokumentera, and orkestrera.
+      - Slim startup capsules for visionera, resonera, inspirera, planera, profilera, and visualisera.
+      - Focused CLI contract tests and payload budget measurements.
+    excluded:
+      - Remote publication, package refresh, release tagging, or changelog promotion.
+      - New capability-name CLI commands.
+      - Profile content ingestion beyond status/path/staleness caveats.
+      - Raw artifact reads as normal startup recovery for compacted decision history.
+    deferred:
+      - Making slim mode the only supported shape after a compatibility release.
+  design: Add a v2 `capability_context` capsule that owns app/profile caveats, role-aware state inventory, fallback commands, raw-read policy, and one targeted capability-specific context. Keep the existing full hej JSON path for dashboard rendering and compatibility. Existing bespoke context builders should move under the capsule in slim mode while full mode can retain current top-level keys. Generic capabilities get small builders that expose only the context they actually need. Payload regression coverage should report both bytes and GPT-5 tokens so budget failures track context-window cost directly.
+  overall_acceptance:
+    - GIVEN `hej --format json` is run without `--capability-context` WHEN the command emits JSON THEN the full dashboard source fields remain available.
+    - GIVEN `hej --format json --capability-context <capability>` is run in slim mode WHEN JSON is emitted THEN repeated dashboard sibling summaries are absent unless explicitly requested for compatibility.
+    - GIVEN all twelve capability contexts are measured WHEN byte and GPT-5 token budgets are checked THEN generic contexts stay under 8 KB and 2k tokens, Planera under 12 KB and 3k tokens, Orkestrera under 16 KB and 4k tokens, Realisera/Optimera/Dokumentera under 20 KB and 5k tokens, and Inspektera under 28 KB and 7k tokens.
+    - GIVEN artifact schemas include produced-only artifacts WHEN startup inventory is built THEN generated/write targets are not reported as missing read state.

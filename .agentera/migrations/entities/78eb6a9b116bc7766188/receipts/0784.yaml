@@ -1,0 +1,12 @@
+id: brfdtnitnv
+artifact: plan
+record:
+  name: Validate And Close
+  depends_on:
+    - vbstshhdcs
+  status: complete
+  acceptance:
+    - GIVEN validators run THEN focused stale-bundle tests, relevant upgrade CLI tests, semantic or prose regressions, full pytest, capability validators, cross-capability validator, and lifecycle adapter validator pass
+    - GIVEN uv run scripts/agentera hej runs from the refreshed install-root fixture WHEN validation closes THEN it proves the installed bundle path, not the local checkout fallback
+    - GIVEN the plan completes THEN release/version impact is assessed and artifacts record whether this is patch-worthy
+  plan: kicyjzqrjn

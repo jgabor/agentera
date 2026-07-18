@@ -1,0 +1,16 @@
+id: bhwuejuteb
+artifact: progress
+record:
+  timestamp: 2026-07-15 15:26
+  type: test
+  phase: build
+  what: Proved Audit 32 replacement Task 2 release readiness without publication.
+  inspiration: Audit 32 replacement Plan Task 2 and the passing Task 1 independent audit.
+  discovered: The direct pnpm exec vitest attempt lacked a vitest binary and one artifact command omitted the required flag; corrected documented invocations passed. Token-substitution, npm config, SQLite, and fixture warnings were non-blocking environment, tool, or fixture diagnostics, not product defects.
+  verified: Focused five-file authority, archive, experiment-publication, schema, and prepack suite passed 192/192; full CLI passed 185 files and 2068/2068. Typecheck, build, release metadata, capability contract 2/2, compact, and PLAN/PROGRESS validation passed. Canonical and bundled authority matched SHA-256 f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb; gitRef fdd67cd9eacdd43fdbb755158f0d8e405bee1e1c matched governed inputs; package stayed 3.0.0-dev.21 and all suite surfaces stayed 3.0.0. npm pack dry-run contained 664 files including corrected authority, sentinel, bin, and package manifest; publish --tag next --dry-run reported + agentera@3.0.0-dev.21. Registry remained @next 3.0.0-dev.20 with exact dev.21 absent; pre/post npm tracked diff hash matched acdd88b75b9d7eed24e95af293ee7738367f59c620e63a2f6261ff09b8db79af.
+  next: Stop after Task 2. Task 3 remains pending; do not update health or begin independent closeout.
+  context:
+    intent: Verify corrected authority, bundle parity, provenance, package payload, and all release gates while preserving Task 1 audit state and external registry state.
+    constraints: Verification-only; no product edits, health update, amend, external publication, tag, push, reset, stash, clean, or unrelated state change.
+    unknowns: None. Registry absence was rechecked after both dry-runs; environment and tool warnings were classified separately from product results.
+    scope: Approved Task 1 evaluation, Task 2 evidence/status, and appended progress cycle only; dist and bundle regeneration remained ignored outputs.

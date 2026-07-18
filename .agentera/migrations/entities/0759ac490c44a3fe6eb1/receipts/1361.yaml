@@ -1,0 +1,13 @@
+id: hdkcjlywlg
+artifact: progress
+record:
+  timestamp: 2026-07-17 14:57
+  type: feat
+  phase: build
+  what: Task 11 cut entity-mode retrieval and maintenance APIs to canonical id and artifact identity.
+  discovered: Entity durability can recover a locally missing canonical entity by locating its exact committed boundary path in local Git without remote contact.
+  verified: "pnpm test: 213 files, 2,564 tests passed; pnpm run typecheck passed; pnpm build passed; check validate state, capability-contract, capability build, and check compact passed."
+  next: "Task 12 remains pending: clean prime, context, hooks, package, and broader command vocabulary without reopening Task 11 behavior."
+  context:
+    intent: Complete only PLAN Task 11 retrieval, durability, recovery, and read-only maintenance surfaces while preserving marker-absent behavior and deferring Task 12 vocabulary cleanup.
+    constraints: No live migration apply, repair, manual YAML edits, remote contact, publication, or Task 12/13 work.

@@ -1,0 +1,12 @@
+id: yiojbyihnf
+artifact: plan
+record:
+  name: Decisions CLI source-contract output
+  depends_on:
+    - umuwjdpwnw
+  status: complete
+  acceptance:
+    - GIVEN `agentera decisions --format json` runs WHEN full-detail decisions are returned THEN each decision exposes outcome or choice, reasoning, alternatives, confidence, feeds-into, and downstream consequence references through stable structured fields.
+    - GIVEN the decisions command emits source metadata WHEN agents consume it THEN top-level `source_contract` declares completeness, included fields, raw-read policy, caveats, and fallback behavior truthfully.
+    - GIVEN existing topic or filtered decisions output is used WHEN the output is formatted as JSON THEN the same source-contract and per-decision completeness guarantees apply to the filtered result.
+  plan: xsarkcjuwo

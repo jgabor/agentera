@@ -1,0 +1,14 @@
+id: fkbafzfbfc
+artifact: plan
+record:
+  name: Split the 8 TS monolith hotspots (TODO L22)
+  depends_on:
+    - ayeuhkbcbv
+  status: complete
+  blocks:
+    - "10"
+  acceptance:
+    - "GIVEN `feat/v3` base WHEN the 8 monolith files are split THEN each is ≤1000 lines: `capabilityContext.ts` → `capabilityContext/{prime,hej,visionera,resonera,inspirera,planera,realisera,optimera,inspektera,dokumentera,profilera,visualisera,orkestrera}.ts`; `state.ts` → `state/{plan,progress,health,todo,decisions,docs,objective,experiments}.ts`; `doctor.ts` → `setup/doctor/{npm,python,smoke,nextMajor,lifecycle}.ts`; `startupAnalysis.ts` → `state/startupAnalysis/{plan,progress,health,todo,decisions,docs,objective,experiments,index}.ts`; `extractCorpus.ts` → `analytics/extractCorpus/{read,normalize,classify,write}.ts`; `codex.ts` → `setup/codex/{plugin,setup,trust,applyPatch}.ts`; `compaction.ts` → `hooks/compaction/{status,apply,dryRun,retention}.ts`; `validateArtifact.ts` → `hooks/validateArtifact/{schema,markdown,traversal,violations}.ts`; each split file has a barrel re-exporting the public API"
+    - GIVEN the split WHEN `packages/cli/test/cli/monolithLint.test.ts` is authored THEN it fails the lint gate when any `packages/cli/src/**/*.ts` file exceeds 1000 lines, with a one-line exception comment for tests and a CI-friendly failure message naming the file and line count; the test is green on the post-split tree
+    - GIVEN the split WHEN `pnpm -C packages/cli test` runs THEN the existing 812 vitest stay green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per split file (8 × 2 = 16 cases)
+  plan: lzsuezxesf

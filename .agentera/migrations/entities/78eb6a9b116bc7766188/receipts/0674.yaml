@@ -1,0 +1,14 @@
+id: lmoihvhmok
+artifact: plan
+record:
+  name: Migrate .agentera/ runtime state to English capability IDs
+  depends_on:
+    - rfcjixuskd
+    - vyzliqhjio
+    - yvhnsqhdyx
+  status: complete
+  acceptance:
+    - GIVEN .agentera/*.yaml migrated, WHEN agentera prime runs, THEN all capability references use English IDs
+    - AND .agentera/archive/ NOT modified
+    - AND agentera state health and state decisions return valid output
+  plan: ptxzdrxixt

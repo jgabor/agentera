@@ -1,0 +1,13 @@
+id: lmloyrbjcn
+artifact: plan
+record:
+  name: Migrate the complete capability consumer matrix
+  depends_on:
+    - ddftezlftg
+    - nyfkcaqnfu
+  status: pending
+  acceptance:
+    - GIVEN every capability and bundled consumer declared to read decisions, progress, or health WHEN it needs historical detail THEN it uses bounded state get/list contracts rather than raw archive or Git traversal.
+    - GIVEN recoverable archived decisions WHEN source contracts are emitted THEN completeness and provenance replace permanent-unavailability claims.
+    - GIVEN unaddressable, ambiguous, compacted-only, or satisfaction-incomplete history WHEN consumed THEN caveats remain explicit and no absent value is inferred.
+  plan: cqihbnzhms

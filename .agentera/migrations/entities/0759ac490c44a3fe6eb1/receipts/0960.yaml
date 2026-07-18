@@ -1,0 +1,13 @@
+id: fxtjdcjgju
+artifact: plan
+record:
+  name: Retire smoke verify on npm CLI and sync contracts
+  depends_on:
+    - hcpcitbmiw
+  status: complete
+  acceptance:
+    - GIVEN agentera check verify smoke on npm @next WHEN run THEN user receives explicit retired-on-npm message pointing to eval verify or Python stable maintainer path
+    - GIVEN references/cli/agent-ready-state-contract.yaml WHEN read THEN verify namespace documents eval-only on self-contained npm distribution
+    - GIVEN CI and maintainer docs WHEN searched THEN they no longer require smoke installed-skills pass on npm @next
+    - GIVEN Python oracle fixtures WHEN run THEN smoke behavior remains documented as stable-line only
+  plan: ujeqmkkqkc

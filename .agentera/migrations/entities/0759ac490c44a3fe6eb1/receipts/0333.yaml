@@ -1,0 +1,12 @@
+id: zwwnzvpvrd
+artifact: plan
+record:
+  name: Verify and close out threshold analysis
+  depends_on:
+    - dhtdlmgxcw
+  status: complete
+  evidence:
+    - Verification passed with startup-analysis and self-audit tests, artifact validators, PLAN.md full-file lint probe, and `git diff --check` before commit `9916807`.
+  acceptance:
+    []
+  plan: jufyfvsqrq

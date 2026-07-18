@@ -1,0 +1,12 @@
+id: twaelwysjr
+artifact: plan
+record:
+  name: Reconcile OpenCode message hook evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the OpenCode plugin source defines `chat.message` on the exported Hooks interface WHEN plugin registration is updated THEN production and test surfaces keep exact bare-`hej` routing through `chat.message`.
+    - GIVEN public OpenCode docs omit `chat.message` WHEN behavior is revised THEN OpenCode docs/tests cite source-backed hook support and preserve the docs-page omission as a known compatibility gap.
+    - GIVEN the plugin still owns bootstrap and artifact validation WHEN smoke tests run THEN slash commands, skills, `shell.env`, `event`, and tool hooks keep their existing supported behavior.
+  plan: vxtjoawssx

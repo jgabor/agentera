@@ -1,0 +1,12 @@
+id: vflqvqeqna
+artifact: plan
+record:
+  name: Add structured JSON payloads for delegated validators
+  depends_on:
+    - poedgkolnm
+  status: complete
+  acceptance:
+    - GIVEN each new validate family is run with `--format json` WHEN validation passes THEN the payload includes `command`, `status`, `target_family`, delegated engine command names, exit codes, and violations.
+    - GIVEN capability contract checks run WHEN `agentera validate capability-contract --format json` is used THEN both self-validation and protocol validation results are represented without requiring direct helper invocation.
+  evidence: JSON mode returns `command`, `status`, `target_family`, delegated engine command names, exit codes, stdout/stderr lines, and violations. The `capability-contract` payload includes both `capability-contract-self` and `capability-protocol` checks.
+  plan: lhrmcundrj

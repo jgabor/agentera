@@ -1,0 +1,11 @@
+id: ldhvcncsyg
+artifact: plan
+record:
+  name: Synchronize 2.2.3 version surfaces
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the release target is 2.2.3 WHEN version-bearing surfaces are inspected THEN registry, Python, lockfile, runtime manifests, Claude marketplace metadata, and OpenCode AGENTERA_VERSION all report 2.2.3.
+    - GIVEN package registry tests read version surfaces WHEN they run THEN no 2.2.2 mismatch remains outside historical archive/evidence text.
+  plan: uintppiakl

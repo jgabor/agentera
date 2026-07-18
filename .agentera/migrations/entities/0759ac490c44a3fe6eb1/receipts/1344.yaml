@@ -1,0 +1,16 @@
+id: zuhgssztyu
+artifact: progress
+record:
+  timestamp: 2026-07-17 03:51
+  type: fix
+  phase: build
+  what: "Closed the Task 4 state-mode marker boundary: project selectors are validated before lookup, marker bytes come from one no-follow descriptor snapshot, and marker or ancestor races fail closed without activating entity mode."
+  inspiration: Task 4 retry blocking defect and the existing entity-migration safe-read proof.
+  discovered: The migration reader's path snapshot and descriptor verification could be extracted directly, avoiding a second filesystem safety implementation.
+  verified: "Focused state-mode, progress, migration, and entity tests: 4 files, 104 tests passed. Full CLI: 205 files, 2,455 tests passed. Typecheck passed. Build passed. State validation passed with 0 issues. Capability contract passed 2/2. Compact passed with 0 over-limit, formatting, protected-overflow, or error findings."
+  next: Keep Task 4 complete and Task 5 pending; do not begin decisions, apply, global, or another family cutover.
+  context:
+    intent: Fix only the reopened Task 4 state-mode boundary defect while preserving progress entity and legacy authority behavior.
+    constraints: State-mode marker boundary, proportional tests, migration safe-read extraction, and progress evidence only; no vision, apply, global consumer, other family, publish, or push changes.
+    unknowns: None; deterministic race tests prove outside marker bytes cannot activate entity mode.
+    scope: packages/cli state-mode detection, shared project-file snapshot logic, entity migration reuse, focused tests, and progress state.

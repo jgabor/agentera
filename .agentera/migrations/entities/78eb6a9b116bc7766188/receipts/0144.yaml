@@ -1,0 +1,7 @@
+id: eofazsskif
+artifact: docs
+record:
+  document: Capability instruction contract
+  path: references/cli/capability-instruction-contract.yaml
+  last_updated: 2026-05-18
+  status: current

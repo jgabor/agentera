@@ -1,0 +1,6 @@
+id: wngslaxjvo
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] `extractCorpusParity.test.ts` flaked on its 30000ms `testTimeout`; a single `it` ran both the TypeScript and..."

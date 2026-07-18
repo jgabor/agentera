@@ -1,0 +1,14 @@
+id: kvewsaevxm
+artifact: plan
+record:
+  name: Hooks subsystem — alias elimination + per-subsystem cast narrowing
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a hooks module that declared a local JSON-value alias WHEN the alias is removed and the canonical type imported THEN the module typechecks and its tests pass with no fixture output change.
+  evidence:
+    - Type-only refactor across 12 hooks modules; zero local `type Dict` remain in packages/cli/src/hooks/.
+    - pnpm -C packages/cli run typecheck passes; pnpm -C packages/cli test 1145/1145 green (138 hooks/validate/compaction subset).
+    - 14 internal casts converted to typed narrowing; ~22 IO-boundary casts kept and commented.
+  plan: lazyquobjy

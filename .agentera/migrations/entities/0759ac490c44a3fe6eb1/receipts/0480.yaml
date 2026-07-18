@@ -1,0 +1,13 @@
+id: hrqlritove
+artifact: plan
+record:
+  name: Trustworthy coverage for CLI and subprocess validators
+  depends_on:
+    - owzgvsqyqt
+  status: complete
+  acceptance:
+    - GIVEN coverage configuration WHEN scripts/agentera is included THEN import smoke attributes the CLI entry surface
+    - GIVEN validate_app_home_contract tests WHEN refactored THEN import-based unit cases remain with one integration smoke
+  evidence:
+    - pyproject.toml [tool.coverage.run] include scripts/agentera; tests/test_app_home_contract.py import validate(); tests/test_agentera_cli_coverage.py SourceFileLoader smoke
+  plan: bszbmkggss

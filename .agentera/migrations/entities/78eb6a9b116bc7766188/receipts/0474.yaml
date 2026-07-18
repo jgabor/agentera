@@ -1,0 +1,17 @@
+id: xgrewzrfmh
+artifact: plan
+record:
+  name: Policy-gated local closeout
+  depends_on:
+    - gowrrpniut
+    - rppcucllha
+    - klidouziyi
+  status: complete
+  acceptance:
+    - GIVEN the implemented change is classified as `feat` WHEN `.agentera/docs.yaml` semver policy and `version_files` are reviewed THEN local version-bearing surfaces are updated only as required by that policy.
+    - GIVEN verification passes WHEN local state is synced THEN TODO, CHANGELOG, DOCS, PROGRESS, and PLAN record exact evidence without unrelated documentation churn or decision satisfaction edits.
+    - GIVEN closeout completes WHEN final checks run THEN relevant hej/decision tests, package metadata tests if version files changed, touched artifact validators, compaction check or fix, and `git diff --check` pass.
+  evidence:
+    - Classified the implemented behavior as a `feat`; per `.agentera/docs.yaml` semver policy and `version_files`, aligned `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` from 2.6.0 to 2.7.0.
+    - Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN with exact evidence and no decision satisfaction edits, no new decision command, no publication, no push, no tag, no installed-app/profile refresh, and no vision/objective edit. Final validators, compaction, package metadata tests, and `git diff --check` are part of closeout verification.
+  plan: csliqoeemb

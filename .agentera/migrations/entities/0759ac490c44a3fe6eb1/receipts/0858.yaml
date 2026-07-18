@@ -1,0 +1,16 @@
+id: egyowvwppm
+artifact: plan
+record:
+  name: Restore /agentera Dashboard Rendering Contract
+  depends_on:
+    - tolcpbiqus
+  status: complete
+  acceptance:
+    - GIVEN a returning v2 project WHEN bare /agentera is invoked THEN the agent runs agentera hej once and renders the README/prose-style dashboard instead of relaying raw CLI output
+    - GIVEN normal hej data is available WHEN bare /agentera renders THEN it uses exactly one agentera hej state-gathering command and no individual routine state commands or raw artifact reads
+    - GIVEN a required dashboard field is absent from agentera hej WHEN implementation changes are needed THEN agentera hej output contract is extended rather than adding routine fallback commands to normal /agentera
+    - GIVEN exceptional recovery must use an owning top-level command WHEN it runs THEN the behavior is documented as fallback-only and does not weaken the normal one-command invariant
+    - GIVEN agentera hej is invoked directly as a CLI WHEN a human or test reads it THEN it remains a compact composite state source suitable for dashboard rendering
+    - GIVEN README/prose-required source fields exist WHEN the dashboard renders THEN output includes the logo, conversational opener, status lines, attention when non-empty, concrete next action, and hej exit marker
+    - GIVEN no attention items exist WHEN the dashboard renders THEN the attention section is omitted according to hej prose
+  plan: mbjboapqeq

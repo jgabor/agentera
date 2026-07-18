@@ -1,0 +1,14 @@
+id: zbyrnqfgqs
+artifact: plan
+record:
+  name: Define amendment authority and CLI behavior
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN decision storage authority WHEN amendment behavior is inspected THEN original content remains immutable historical evidence and only declared content paths may receive separately identified revisions.
+    - GIVEN command discovery WHEN decision verbs are explained THEN amend identity, editable fields, input requirements, dry-run behavior, examples, and actionable errors agree across help, schema, and introspection.
+    - GIVEN update and append discovery WHEN number ownership is described THEN update and amend require a caller-selected existing number while append remains CLI-numbered without contradictory guidance.
+    - GIVEN unsupported inherited labels WHEN compatibility rules are evaluated THEN untouched values are classified as explicit legacy state while new and amended values require the current vocabulary.
+    - GIVEN each new contract rule WHEN focused validation runs THEN at least one accepted and one rejected case prove its boundary.
+  plan: ecztvnspps

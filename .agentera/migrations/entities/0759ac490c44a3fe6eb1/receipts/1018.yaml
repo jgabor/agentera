@@ -1,0 +1,11 @@
+id: xczzbyusks
+artifact: plan
+record:
+  name: Update STATE_FAMILY_FALLBACK_COMMANDS to state forms
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN STATE_FAMILY_FALLBACK_COMMANDS in types.ts WHEN inspected THEN every value starts with `agentera state`
+    - GIVEN a capability context builder that reads from STATE_FAMILY_FALLBACK_COMMANDS WHEN fallback_commands are emitted THEN no command emits a stderr deprecation warning
+  plan: kunvwyrjcj

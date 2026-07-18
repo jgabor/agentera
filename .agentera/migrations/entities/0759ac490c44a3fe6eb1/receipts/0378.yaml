@@ -1,0 +1,12 @@
+id: jsmqkweszh
+artifact: plan
+record:
+  name: Connect vocabulary docs without doing the broad cleanup
+  depends_on:
+    - fglukrbbkt
+    - jbahtylium
+  status: complete
+  acceptance:
+    - GIVEN `docs/vocabulary.md` is inspected WHEN the routing/execution section is read THEN it delegates detailed classification to the structured authority and names the canonical terms without duplicating a parallel Markdown table.
+    - GIVEN focused synchronization checks run WHEN the docs are updated THEN they prove source-index wiring and docs delegation while leaving the later broad ambiguous-term sweep TODO open.
+  plan: fwpgooyzbh

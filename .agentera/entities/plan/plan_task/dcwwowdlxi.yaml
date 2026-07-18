@@ -1,0 +1,14 @@
+id: dcwwowdlxi
+artifact: plan
+record:
+  name: D66 drop progress.yaml commit field
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a progress.yaml cycle entry WHEN validated by the schema THEN no `commit` field is required and existing entries without it parse
+    - GIVEN the TS CLI WHEN `agentera progress --format json` runs THEN output omits per-cycle `commit` while cycles, phase, type, timestamp, status, evidence, and surprises remain intact
+    - GIVEN the Python stable CLI WHEN `agentera progress --format json` runs THEN the same omission holds on `main`
+    - GIVEN `agentera state progress` consumers (prime, orkestrera, realisera, inspektera, hej) WHEN the new progress shape loads THEN each consumer renders without regression
+    - GIVEN AGENTS.md, realisera instructions, inspektera 5b, contract.md, UPGRADE.md, CHANGELOG, and progress text output WHEN reviewed THEN guidance matches the field-less shape
+  plan: ovatptxgko

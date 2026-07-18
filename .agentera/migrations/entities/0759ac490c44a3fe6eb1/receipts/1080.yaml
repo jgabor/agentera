@@ -1,0 +1,15 @@
+id: mbaoufkhpc
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-05
+    status: complete
+    title: "Plan: Agentera mobile re-visioning — artifacts and docs"
+  what: Re-position agentera-mobile as the official Agentera product surface. Align artifacts and docs with a Pi/T3-style monorepo product model (one brand, package READMEs). Prepare both the standalone staging repo and jgabor/agentera for eventual packages/mobile integration with a merged root vision.
+  why: Agentera is pivoting from open-protocol positioning to an opinionated mobile-first coding agent. Documentation and project artifacts must reflect single-brand identity, capability alias mapping, and monorepo package layout before application code lands.
+  scope:
+    included:
+      []
+    excluded:
+      []

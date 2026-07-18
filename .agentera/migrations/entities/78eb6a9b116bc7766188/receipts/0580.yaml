@@ -1,0 +1,15 @@
+id: xoulnwhekc
+artifact: plan
+record:
+  name: Pin benchmark and discovery gap
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN retained startup benchmark history WHEN `AGENTERA_ARTIFACTS` pressure is cited THEN the plan or implementation notes name the exact rows, counts, token estimates, and current historical limitation.
+    - GIVEN current discovery output is inspected WHEN scope is finalized THEN `agentera query --list-artifacts --format json` names-only output and `agentera describe --format json` missing resolved-location/read-boundary fields are recorded as the actionable gap.
+    - GIVEN raw access categories are classified WHEN implementation begins THEN legitimate writes, archives, validation, diagnostics, CLI defects, unavailable CLI state, and benchmark analysis are explicitly separated from avoidable path-discovery reads.
+  evidence:
+    - "Planning evidence named historical `AGENTERA_ARTIFACTS` rows: 2.3.3=1 raw read, 2.3.13=4 reads/63 estimated tokens, 2.7.0=4 reads/114 estimated tokens, and 2.8.0=1 read/23 estimated tokens; current history remains retained benchmark evidence, not a freshly reproduced runtime window."
+    - "Confirmed the pre-change gap: structured `query --list-artifacts` returned names only, while `describe` exposed schema/default paths without a resolved artifact-location and read-boundary contract. Allowed raw categories remain writes, archives, validation, diagnostics, CLI defects, unavailable/incomplete CLI state, and benchmark analysis."
+  plan: qzjgenwloi

@@ -1,0 +1,37 @@
+id: tzdfruwtjr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-15
+    status: complete
+    reviewed: 2026-05-15
+    critic_issues: 13 found, 13 addressed, 0 dismissed
+    revised: "Adversarial review made the evaluated unit explicit, replaced vague completeness language with required and optional evidence state, kept previous-plan archival as a Planera activation boundary rather than implementation scope, split focused tests from validation gates, and required protected/version state to distinguish local evidence from not-checked or unavailable states without contacting remotes or registries. [post-audit-flagged: PLAN.md full-plan artifact exceeds the advisory prose budget even after revision; preserving executable criteria is more valuable than compressing the plan below the single-entry lint threshold.]"
+    title: 2.3.10 Inspektera Evidence Context Source Contract
+  what: Add an Inspektera evidence-context source contract to the existing hej capability context seam so evaluation work can receive plan criteria, progress verification, docs and health findings, protected-state and version checks, and residual risks from CLI state before any raw artifact fallback.
+  why: "Decision 51 showed that capability startup and state gathering still over-read raw artifacts after CLI state access. Decision 52 keeps benchmark evidence user-local and manual. The 2.3.8 orchestration context and 2.3.9 closeout context proved the pattern: expose complete, caveated, provenance-bearing context through existing CLI state seams rather than forcing agents to read raw YAML or Markdown. Inspektera evaluation is the next raw-heavy handoff because it compares acceptance criteria, implementation evidence, project health and docs state, protected artifact boundaries, and residual risks."
+  constraints: "Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary. Do not add `agentera inspektera`, a new top-level command, a new subcommand, or any other capability-name CLI command. The primary seam is `agentera hej --format json --capability-context inspektera`; allowed fallbacks are existing commands only: `agentera plan --format json`, `agentera progress --format json`, `agentera docs --format json`, `agentera health --format json`, `agentera todo --format json`, `agentera decisions --format json`, optional supported `agentera decisions --topic <topic> --format json` when a target topic is known, and `agentera query --list-artifacts`. Preserve docs.yaml artifact path resolution. Do not fabricate plan criteria, progress verification, docs or health findings, protected-state changes, version state, publication state, remote push state, app/profile refresh state, or residual risks. Stale app/profile state is a caveat, not approval to run upgrade, repair, installed app refresh, or profile refresh. Do not implement the Optimera benchmark-context or Realisera execution-context TODOs. Do not publish, push, tag, refresh installed apps, refresh profile, edit vision, or edit objective state without explicit approval."
+  scope:
+    included:
+      - Evidence context through `agentera hej --format json --capability-context inspektera`.
+      - Source-contract metadata declaring completeness, caveats, fallback commands, raw-read policy, provenance, and owned evaluation state.
+      - Evaluation inputs for plan criteria, progress verification, docs state, health state, protected-state checks, version checks, and residual risks.
+      - Inspektera prose and schemas that require complete `evidence_context` before raw plan, progress, docs, health, TODO, or decisions artifacts during evaluation startup.
+      - Focused tests, deterministic startup/evaluation fixtures, capability validation, artifact validation, gate and compaction checks, and 2.3.10 local metadata sync.
+    excluded:
+      - Unsupported `agentera inspektera` or other capability-name CLI commands.
+      - New top-level CLI commands, new subcommands, or renaming routine state commands.
+      - Optimera benchmark-context history and Realisera execution-context state.
+      - Live audit execution, remote checks, package publication, tag creation, installed app refresh, profile refresh, vision edit, or objective-state edit.
+    deferred:
+      - 2.3.11 Optimera benchmark-context source contract.
+      - 2.3.12 Realisera execution-context source contract.
+      - Rich evaluator-result history beyond the current CLI evidence context.
+  design: "Expose a minimal composite `evidence_context` only when capability context is `inspektera`. The context shape is intentionally small and stable: `evaluation_target`, `plan_criteria`, `progress_verification`, `docs_state`, `health_state`, `protected_state_checks`, `version_checks`, `residual_risks`, `state_family_caveats`, `fallback_commands`, and `source_contract`. The evaluated unit is selected from CLI state with an explicit reason: current in-progress plan task first, otherwise the first dependency-ready pending plan task, otherwise the most recent completed plan task with evidence, otherwise repository-level evidence context with a no-target caveat. `complete_for_evidence_context` is true only when required state for the selected unit is present; `caveated` records stale, compacted, or not-checked states that do not by themselves make the context unusable. Protected and version checks must use local evidence statuses such as `verified_local`, `not_checked_by_design`, `requires_manual_check`, or `unavailable`; they must not imply remote, publication, registry, app-refresh, or profile-refresh verification."
+  overall_acceptance:
+    - GIVEN Inspektera evaluation starts from CLI state WHEN plan, progress, docs, health, TODO, and decision evidence are available THEN the agent receives the evaluated unit, criteria, evidence, caveats, and fallback commands without normal raw artifact reads.
+    - GIVEN required evidence state is missing, stale, compacted, or not checked by design WHEN evaluation proceeds THEN the source contract names missing state, caveats, fallback commands, and last-resort raw-read policy honestly.
+    - GIVEN 2.3.10 closes WHEN validation and local metadata sync finish THEN deferred 2.3.11+ source-contract TODOs remain visible and no prohibited release, installed-app, unsupported CLI, or protected-state action occurred.
+  surprises:
+    []

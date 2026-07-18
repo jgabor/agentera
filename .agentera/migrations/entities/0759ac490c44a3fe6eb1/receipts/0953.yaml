@@ -1,0 +1,18 @@
+id: uoaiafiiex
+artifact: plan
+record:
+  name: Define doctor app metadata vocabulary
+  depends_on:
+    - xaujinyywy
+  status: complete
+  acceptance:
+    - GIVEN doctor and upgrade statuses are reviewed WHEN vocabulary is defined THEN the plan chooses a canonical app-state vocabulary and names any compatibility aliases retained for existing JSON consumers.
+    - GIVEN doctor status is fresh WHEN text rendering runs THEN output does not include a required `Next:` repair sequence and does not expose weird primary labels such as stale/fresh when a standard app term is better.
+    - GIVEN doctor status is update-needed, stale, migration-required, invalid, or blocked WHEN text rendering runs THEN update, repair, migration, or manual-review guidance remains clear, safe, non-interactive, and aligned with the canonical vocabulary.
+    - GIVEN broader vocabulary targets are encountered WHEN the app metadata contract is defined THEN capability names, artifact names or paths, exit signals, task statuses, health grades, and general prose are inventoried or deferred rather than renamed without a separate Resonera decision.
+  evidence:
+    - Reviewed `scripts/agentera_upgrade.py` doctor status construction and text rendering. Current app-state values are `fresh`, `update_needed`, `stale`, `migration_required`, and `blocked`; canonical replacements are `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, and `manual_review_needed`.
+    - Reviewed upgrade preview/apply status values. Operation-plan values map to `ready_to_apply`, `applied`, `no_changes_needed`, `manual_review_needed`, `failed`, and `skipped`; these are scoped to doctor/upgrade app repair UX and do not authorize renaming general Agentera task statuses.
+    - Compatibility aliases are not retained by default. Task 3 may add a temporary alias only for a concrete existing consumer that cannot be migrated in the same change, and any alias must be documented as transitional rather than canonical.
+    - "Broader targets are explicitly deferred: capability names, canonical artifact names and paths, exit signals, general task statuses, health grades, broad prose, and any replacement of `docs/vocabulary.md` with `vocabulary.yaml` require inventory plus a later Resonera decision."
+  plan: zlfqmzwpfh

@@ -1,0 +1,12 @@
+id: avmgvobtak
+artifact: plan
+record:
+  name: Decouple artifact validation and validate oracles
+  depends_on:
+    - lnkdswmgly
+  status: complete
+  acceptance:
+    - GIVEN validateArtifact.test.ts WHEN it validates schemas THEN it uses fixture paths under repo-state, not live REPO_ROOT .agentera files
+    - GIVEN validate.test.ts and validateVerifyOracles WHEN artifact validation runs THEN cwd points at a fixture project, not live plan presence
+    - GIVEN vitest WHEN the full suite runs THEN no test branches on fs.existsSync(REPO_ROOT/.agentera/plan.yaml) for target selection
+  plan: qujxqpraku

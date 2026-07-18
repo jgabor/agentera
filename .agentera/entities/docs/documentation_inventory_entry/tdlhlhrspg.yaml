@@ -1,0 +1,7 @@
+id: tdlhlhrspg
+artifact: docs
+record:
+  document: Decision 44 vocabulary proof tests
+  path: tests/test_decision44_vocabulary.py
+  last_updated: 2026-05-07
+  status: current

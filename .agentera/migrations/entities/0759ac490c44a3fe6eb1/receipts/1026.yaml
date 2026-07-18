@@ -1,0 +1,14 @@
+id: kceknrdbgi
+artifact: plan
+record:
+  name: Define the authoritative budget contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a supported artifact WHEN its authority is inspected THEN each verbosity dimension is classified as a numeric limit, explicit no-limit, non-word unit, or invalid declaration.
+    - GIVEN malformed, unreadable, or ambiguous authority data WHEN the contract is validated THEN validation fails explicitly without applying a fallback limit.
+    - GIVEN equivalent supported artifact identifiers WHEN their budget owner is resolved THEN they resolve to the same authority.
+    - GIVEN an unsupported artifact identifier WHEN budget ownership is requested THEN validation fails rather than applying a generic limit.
+    - GIVEN contract tests are added WHEN they are reviewed THEN each contract rule has at least one passing and one failing case.
+  plan: cjoiklkzlw

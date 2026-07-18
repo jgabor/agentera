@@ -1,0 +1,14 @@
+id: tjrnxpeeif
+artifact: plan
+record:
+  name: Final state sync and plan archive
+  depends_on:
+    - mikzkgkkay
+    - jhuqzllfjy
+    - uiccbovygr
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks complete WHEN this task runs THEN .agentera/plan.yaml archives to .agentera/archive/plan-2026-06-03-todo-checkbox-parsing.yaml and the active plan slot clears
+    - GIVEN TODO.md Critical entry for checkbox parsing WHEN reconciled THEN it moves to Resolved with feat/v3 and main commit hashes and branch note (both)
+    - GIVEN agentera prime after closeout WHEN rendered THEN critical open count reflects only unchecked or type-only open items, not [x] rows
+  plan: lxrohjluya

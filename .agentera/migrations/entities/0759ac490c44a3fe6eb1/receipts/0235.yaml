@@ -1,0 +1,40 @@
+id: gkpwprmkno
+artifact: plan
+record:
+  name: Benchmark confidence and coverage gate
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a benchmark report has zero state-gathering sequences WHEN follow-up is selected THEN product CLI work is blocked and the missing evidence reason is recorded.
+    - GIVEN runtime coverage is degraded WHEN follow-up is selected THEN each affected runtime, reason, candidate count, record count, and error count is recorded before product work proceeds.
+    - GIVEN retained benchmark history is inspected WHEN privacy is reviewed THEN it remains local aggregate evidence and excludes private raw runtime content.
+  evidence:
+    benchmark_report: /home/jgabor/.local/share/agentera/benchmarks/startup-state/latest-report.json
+    benchmark_history: /home/jgabor/.local/share/agentera/benchmarks/startup-state/runs.jsonl
+    benchmark_watermark_at: 2026-05-14T05:14:25+00:00
+    total_state_sequences: 5
+    insufficient_evidence_reason: null
+    startup_recommendation_action: plan_cli_startup_envelope
+    implementation_recommended: true
+    product_cli_work_blocked: false
+    unblocked_reason: The rerun benchmark now has five state-gathering sequences and recommends planning a CLI startup envelope, so downstream product work may proceed with degraded runtime coverage named separately.
+    degraded_runtime_coverage:
+      - runtime: claude-code
+        reason: schema_divergent
+        candidate_count: 4836
+        record_count: 0
+        error_count: 2
+      - runtime: github-copilot
+        reason: schema_divergent
+        candidate_count: 1
+        record_count: 0
+        error_count: 1
+    privacy_review:
+      retained_history_scope: user-local aggregate evidence only
+      excludes:
+        - raw transcript text
+        - full local paths
+        - raw store paths
+        - raw session ids
+  plan: ilsmrmrchl

@@ -1,0 +1,12 @@
+id: cdhsiqgzum
+artifact: plan
+record:
+  name: Prepare the governed development release boundary
+  depends_on:
+    - dqdwsmzkve
+  status: pending
+  acceptance:
+    - GIVEN current `3.0.0-dev.20` metadata WHEN prepared THEN the package advances only to `3.0.0-dev.21`, every `.agentera/docs.yaml` and package-registry version surface aligns, suite surfaces remain `3.0.0`, and `agentera.gitRef` names the selected immutable release source.
+    - GIVEN the five npm 12 package-output parser failures WHEN package verification runs THEN all are repaired; otherwise this task is blocked and release closeout cannot pass.
+    - GIVEN release notes and package contents WHEN inspected THEN commands, contracts, bundled data, docs, and immutable provenance are aligned without publishing or tagging.
+  plan: ckzzomuyos

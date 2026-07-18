@@ -1,0 +1,21 @@
+id: hjkusufprp
+artifact: decisions
+record:
+  date: 2026-05-15
+  question: How should Agentera track whether decisions are satisfied?
+  context: Current decision CLI output exposes compacted entries and downstream references, but open TODOs show decisions can be forgotten after compaction or when they fall outside normal query range. The user wants outcome tracking and compaction recovery handled together.
+  alternatives:
+    - name: Track downstream references only
+      status: rejected
+      description: Shows where a decision should feed, but does not prove the intended outcome was accepted as fulfilled.
+    - name: Store satisfaction outside decisions
+      status: rejected
+      description: Keeps the decision schema smaller, but makes decisions depend on secondary indexes and leaves compaction without a canonical preservation rule.
+    - name: Decision-entry satisfaction state
+      status: chosen
+      description: Store satisfaction on the decision entry, let automation mark provisional evidence, require user confirmation for final satisfaction, and protect unresolved decisions from compaction.
+  choice: Store decision satisfaction state on each decision entry. Agents may mark provisional satisfaction with evidence, but only the user may confirm satisfaction. Open or provisionally satisfied decisions must not be compacted; old protected decisions trigger review before compaction, during health audits, and at release closeout.
+  reasoning: Decision satisfaction is an intent state, not just evidence of a downstream write. Keeping it on the decision entry makes compaction rules and CLI source contracts preserve the outcome instead of forcing agents into memory or git-history recovery.
+  confidence: firm
+  feeds_into: TODO.md, .agentera/decisions.yaml, scripts/agentera, hooks/compaction.py, tests, capability prose
+  outcome: Store decision satisfaction state on each decision entry. Agents may mark provisional satisfaction with evidence, but only the user may confirm satisfaction. Open or provisionally satisfied decisions must not be compacted; old protected decisions trigger review before compaction, during health audits, and at release closeout.

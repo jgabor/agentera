@@ -1,0 +1,16 @@
+id: kjikbstkii
+artifact: plan
+record:
+  name: Usage namespace behavior
+  depends_on:
+    - nvlvrkysfa
+  status: complete
+  acceptance:
+    - GIVEN a corpus exists at the default or explicit path WHEN `agentera usage` runs in text mode THEN it prints the existing bounded summary and writes USAGE.md only to the existing usage report destination.
+    - GIVEN a corpus exists WHEN `agentera usage --format json` runs THEN stdout contains the existing top-level analytics payload fields and USAGE.md is not written or modified.
+    - GIVEN `--corpus PATH` or `--project VALUE` is supplied WHEN the namespace runs THEN those values are forwarded consistently with direct `scripts/usage_stats.py` behavior, including valid empty reports for unmatched projects.
+    - GIVEN no usable corpus exists WHEN the namespace runs THEN it exits nonzero with the existing actionable missing-corpus guidance and does not attempt to build corpus data, refresh profiles, or scan home directories.
+  evidence:
+    - Implemented `agentera usage` in `scripts/agentera` as a direct subprocess facade over `scripts/usage_stats.py`, forwarding `--corpus`, `--project`, and JSON mode as `--json` while text mode preserves the direct script's default USAGE.md write and stdout summary.
+    - Added bounded invalid-format guidance for unsupported `--format` values with valid formats, syntax, and a concrete example. Missing corpus behavior remains owned by the direct script and no corpus/profile refresh path was added.
+  plan: hfrfqlxlqx

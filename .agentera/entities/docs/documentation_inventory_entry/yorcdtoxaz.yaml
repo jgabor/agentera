@@ -1,0 +1,7 @@
+id: yorcdtoxaz
+artifact: docs
+record:
+  document: Lifecycle adapter validator
+  path: scripts/validate_lifecycle_adapters.py
+  last_updated: 2026-05-06
+  status: current

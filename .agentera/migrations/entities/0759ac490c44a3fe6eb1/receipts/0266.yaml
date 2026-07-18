@@ -1,0 +1,14 @@
+id: uzcejlxzwd
+artifact: plan
+record:
+  name: Benchmark provenance, privacy, and comparison semantics
+  depends_on:
+    - lyavfaretj
+  status: complete
+  evidence:
+    - Benchmark context summaries use stable source labels, non-empty evidence flags, bounded counts/rates/statuses/scalars, explicit comparison null reasons, runtime degradation caveats, and privacy-boundary omissions for unsafe retained benchmark strings or raw local paths.
+  acceptance:
+    - GIVEN benchmark metrics are present WHEN `benchmark_context` is returned THEN each non-empty evidence family includes stable source labels, non-empty evidence flags, and bounded fields without raw paths, path-derived IDs, hashes, salts, or raw transcript-derived content.
+    - GIVEN previous benchmark rows are missing, incomparable, or lack token estimate fields WHEN comparison status is reported THEN the context preserves exact null reasons such as previous-row missing, estimator mismatch, benchmark-mode mismatch, runtime-scope mismatch, or previous missing token estimates.
+    - GIVEN runtime stores are missing, sparse, locked, unreadable, or schema-divergent WHEN runtime coverage is summarized THEN those caveats are preserved as bounded degradation evidence and not treated as successful product behavior evidence.
+  plan: diqscycqjf

@@ -1,0 +1,32 @@
+id: htklvtprnu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-29
+    status: archived
+    reviewed: 2026-05-29
+    critic_issues: 3 found, 2 addressed, 1 dismissed
+    title: Hooks session compaction deduplication
+  what: Deduplicate resolve_session_path() and compact_entries() across session hooks by centralizing implementations in hooks/common.py. Preserve external behavior for runtime-local session bookmarks and artifact compaction, including decision-protection semantics owned by compaction.py.
+  why: session_start.py and session_stop.py duplicate resolve_session_path(), and session_stop.py carries a simpler compact_entries() that can drift from compaction.py. A single source of truth prevents silent behavioral skew between session bookmark compaction and artifact compaction.
+  constraints: Full pytest suite must stay green. Preserve 10/40/50 compaction limits and existing session path resolution for AGENTERA_HOME and default data home. Chore-only work (no version bump). Do not modify vision.yaml or objective state.
+  scope:
+    included:
+      - hooks/common.py
+      - hooks/session_start.py
+      - hooks/session_stop.py
+      - hooks/compaction.py
+      - compaction and session hook tests
+      - TODO.md, CHANGELOG.md, progress.yaml (final sync only)
+    excluded:
+      - v1 legacy removal
+      - Decision 58 single-name protocol sweep
+      - Bun/npm packaging and TypeScript CLI rewrite initiatives
+      - Broader hook refactors beyond these two symbols
+    deferred:
+      - Additional hook deduplication not listed in the two target TODO items
+  design: Move resolve_session_path() to common.py with identical path semantics. For compact_entries(), extract shared 10/40/50 policy helpers and keep separate entry points when timestamp-ordered session bookmarks and numeric-ID artifact compaction require different ordering rules. Wire session_stop and compaction callers to the shared layer without changing observable compaction outputs on existing fixtures and tests.
+  overall_acceptance: GIVEN the same session bookmark fixtures WHEN compacting before and after THEN entry counts and newest-full preservation match prior behavior. GIVEN existing compaction tests WHEN run THEN all pass without changed expectations. GIVEN AGENTERA_HOME and default data home WHEN resolving session path THEN paths match the pre-extraction implementation.
+  surprises:
+    []

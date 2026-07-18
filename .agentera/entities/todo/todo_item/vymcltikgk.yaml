@@ -1,0 +1,6 @@
+id: vymcltikgk
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Decide `@agentera/mobile` npm publish identity (private workspace vs npm vs deploy-only)."

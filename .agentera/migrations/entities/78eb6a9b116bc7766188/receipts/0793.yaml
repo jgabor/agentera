@@ -1,0 +1,19 @@
+id: lutsmrorcq
+artifact: plan
+record:
+  name: Version and local state sync
+  depends_on:
+    - chnzhzhvcg
+    - khhjefhqwc
+    - gvyqbfvnoa
+  status: complete
+  acceptance:
+    - GIVEN the fix is complete WHEN release metadata is reviewed THEN version-bearing surfaces are updated for a fix-level change unless the documented semver policy proves no version-bearing surface applies.
+    - GIVEN verification passes WHEN project state is synced THEN mandatory TODO, PROGRESS, and PLAN closeout records include the fix and exact verification evidence, with CHANGELOG and DOCS updated when policy or touched surfaces require them.
+    - GIVEN closeout completes WHEN scope is audited THEN no publication, push, tag, installed-app refresh, profile refresh, vision edit, objective edit, decision satisfaction change, or unsupported capability-name CLI command occurred.
+  evidence:
+    - "`.agentera/docs.yaml` `semver_policy` maps `fix` to `patch`, and `conventions.version_files` plus `references/adapters/package-registry.yaml` `docs_targets.version_files` identify the release metadata surfaces. Those surfaces were aligned from 2.3.14 to 2.3.15 in `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json`."
+    - State sync resolved the degraded TODO for the exact PLAN.md lint false-positive issue, added CHANGELOG 2.3.15 changed/fixed/verified entries, updated DOCS audit metadata, added PROGRESS cycle 516, and marked this plan complete with Task 4 evidence.
+    - "Verification evidence: `uv run pytest tests/test_self_audit.py -q` passed with 23 tests; `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py -q` passed with 13 tests; anchored PLAN.md lint probe exited 0 with status=pass and abstraction detail `internal/runtime`; generic PLAN.md lint probe exited 0 in advisory mode with abstraction fail `abstraction creep: no concrete anchor`; strict generic probe exited 1 with advisory=false; file input on `/tmp/opencode/aila-m13-plan.yaml` exited 0 with abstraction pass `docs/notes/PROMPT.md` and only verbosity fail; stdin lint input exited 0 with source=`stdin` and abstraction detail `internal/runtime`; TODO, CHANGELOG, DOCS, PROGRESS, and PLAN artifact validators passed; `git diff --check` passed."
+    - "Scope audit: no publication, push, tag, installed-app refresh, profile refresh, vision edit, objective edit, decision satisfaction change, package update, commit, or unsupported capability-name CLI command occurred."
+  plan: wsrzwqzvkd

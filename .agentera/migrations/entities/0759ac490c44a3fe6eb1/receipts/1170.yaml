@@ -1,0 +1,32 @@
+id: uitsbsollr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-03
+    status: complete
+    reviewed: 2026-06-03
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: "Plan: 2.7.7 release"
+  what: Cut 2.7.7 patch release by landing two both-branch fixes (D66 progress.yaml `commit` field removal, inspektera WARN/FAIL citation enforcement) on `feat/v3` first and `main` second, then bump version and reconcile state.
+  why: Both items are unblockers tagged [chore:2.7.7] and [fix:2.7.7] in TODO. Shipping them clears the 2.7.7 ledger, reduces inspektera false-positive noise, and drops the unmaintained progress.yaml commit-tracking flow ahead of the v3 cutover.
+  constraints: "`main` is feature-frozen for v3; only bug-fix-allowed surfaces touch main. `feat/v3` ships as @next, `main` as @latest. Do not regress any `agentera progress --format json` consumer (prime, orkestrera, realisera, inspektera, hej). The installed app is reported `outdated` at 2.7.7 by `agentera prime`; this plan does not authorize app repair or upgrade. Decision 56, Decision 58, and Decision 65 are out of scope for 2.7.x."
+  scope:
+    included:
+      - Drop the per-cycle `commit` field from progress.yaml on both branches
+      - Enforce `file:line` citations on inspektera WARN/FAIL findings on both branches
+      - Bump version to 2.7.7 and update CHANGELOG
+      - Archive this plan and refresh current-state
+    excluded:
+      - Decision 56 remaining parity surfaces (artifact validation, compaction, verify, usage/stats, full suite green)
+      - Decision 58 single-name protocol sweep
+      - Decision 65 per-capability TypeScript surface
+      - TypeScript CLI rewrite and Bun/npm packaging
+      - v1 cruft removal
+    deferred:
+      - 3.0 cutover work
+      - Remaining CLI parity surfaces per Decision 56
+  design: "Sequential both-branch implementation per task. Each fix lands on `feat/v3` first (TypeScript @next surfaces + tests) and then mirrors on `main` (Python stable slice + normative prose backport). Both slices must pass their branch-appropriate test gates before closeout. Test proportionality target: one pass plus one fail per touched surface (TS schema, TS consumer, Python schema, Python consumer, validator). Version bump and plan archive are plan-level tail tasks."
+  overall_acceptance: GIVEN `main` and `feat/v3` WHEN the 2.7.7 release ships THEN both branches pass their branch-appropriate test gates with no per-cycle `commit` field anywhere, inspektera WARN/FAIL findings carry reproducible file:line citations, and progress.yaml is under the 50-cycle cap; AND GIVEN `npx -y agentera@latest` from `main` and `npx -y agentera@next` from `feat/v3` WHEN installed on a clean machine THEN both report version 2.7.7 and the D66, WARN-citation, and progress.yaml compaction behaviors are observable end-to-end.
+  surprises:
+    []

@@ -1,0 +1,39 @@
+id: vdldazfpqw
+artifact: plan
+record:
+  name: Representative validation and benchmark comparison
+  depends_on:
+    - bjkimlthjk
+    - iiarlqojcy
+  status: complete
+  acceptance:
+    - GIVEN changed startup behavior is validated WHEN checks run THEN structured CLI output, capability startup behavior, privacy boundaries, and fallback behavior are covered with a proportionality target of one passing and one failing expectation per testable behavior.
+    - GIVEN representative startup sessions are replayed WHEN the benchmark is rerun THEN raw-after-CLI and redundant-raw sequence rates decrease or blockers are documented.
+    - GIVEN benchmark comparison is reviewed WHEN evidence is summarized THEN degraded or missing runtimes are named separately from product behavior.
+  evidence:
+    validation:
+      focused_tests: 18 passed
+      coverage: Structured CLI output, hej startup completeness, capability-context missing-state fallback behavior, fresh absent-state behavior, startup privacy redaction, and bounded degradation paths were validated with positive and negative expectations where feasible.
+      context_probe: "`agentera hej --format json --capability-context orkestrera --fields source_contract` returned complete startup state, `raw_artifact_reads_required=false`, missing families `decisions`, `vision`, and `profile`, and fallback `agentera decisions --format json` before raw artifact access."
+    benchmark_comparison:
+      before:
+        benchmark_watermark_at: 2026-05-14T05:14:25+00:00
+        total_state_sequences: 5
+        raw_after_cli_sequence_rate: 1
+        redundant_raw_sequence_rate: 1
+        total_raw_artifact_access_after_cli: 11
+        total_redundant_raw_artifact_accesses: 8
+      after:
+        benchmark_watermark_at: 2026-05-14T06:08:15+00:00
+        total_state_sequences: 9
+        raw_after_cli_sequence_rate: 0.2222
+        redundant_raw_sequence_rate: 0.2222
+        total_raw_artifact_access_after_cli: 2
+        total_redundant_raw_artifact_accesses: 2
+      result: Raw-after-CLI and redundant-raw sequence rates decreased from 1.0 to 0.2222; raw-after-CLI accesses decreased from 11 to 2; redundant raw accesses decreased from 8 to 2.
+    runtime_caveats: "Product behavior improved in the benchmarked opencode-derived records. Runtime coverage remains separate: `claude-code` and `github-copilot` are degraded by schema divergence; `codex` and `opencode` reported ok."
+  verification:
+    - uv run pytest tests/test_query_cli.py::TestHej::test_returning_v2_composite_briefing tests/test_query_cli.py::TestHej::test_hej_capability_context_names_included_and_missing_state_families tests/test_query_cli.py::TestHej::test_fresh_hej_structured_output_explains_absent_state tests/test_query_cli.py::TestRoutineStructuredOutput::test_json_output_has_agent_ready_envelope tests/test_decision45_cli_contract.py::test_startup_completeness_contract_preserves_cli_vocabulary tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access tests/test_cross_capability.py::test_master_skill_documents_route_alias_contract_boundary tests/test_startup_analysis_contract.py::test_privacy_redaction_removes_transcripts_paths_and_session_ids tests/test_startup_analysis_contract.py::test_classifier_uses_bare_capability_invocation_and_counts_raw_after_cli tests/test_startup_analysis_contract.py::test_classifier_degrades_bounded_records_and_ignores_raw_before_cli -q
+    - uv run scripts/agentera hej --format json --capability-context orkestrera --fields source_contract
+    - mage bench:startupState
+  plan: wncxfohlqr

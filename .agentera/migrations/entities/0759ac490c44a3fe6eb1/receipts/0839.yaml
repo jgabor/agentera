@@ -1,0 +1,13 @@
+id: wtfdgzmpzb
+artifact: plan
+record:
+  name: Port compaction CLI surface to TS
+  depends_on:
+    - dsofklgopk
+  status: pending
+  acceptance:
+    - GIVEN T1's oracle WHEN `packages/cli/src/cli/commands/compact.ts` is reviewed/extended THEN the `apply` and `dry-run` paths match the Python `hooks/compaction.py` + `scripts/yaml_mapping.py` shapes; the 10/40/50 retention caps are wired through the shared `apply_retention_caps` helper or an equivalent TS-side helper; `yaml.YAMLError` error classification matches the Python `compute_compaction_status` behavior (per resolved-ledger TODO L57)
+    - GIVEN the compact apply WHEN `agentera check compact --apply` (or the TS equivalent) runs on a fixture that exceeds the 10/40/50 cap THEN the cap is enforced, archives are preserved, and `over_limit` is reported as `none`; the parity row is `equal` for the `compaction` family
+    - GIVEN the size-bounded corpus reads WHEN `check compact` runs on a fixture with a large `corpus.json` THEN the read is bounded (no `Cannot create a string longer than 0x1fffffe8` traceback, per resolved-ledger TODO L44); the parity row is `equal` for the `compaction` family
+    - GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new compact parity tests are green and the test count delta from T1 is exactly +1 (one new parity test for the `compaction` family); per V5 the proportionality target is one pass + one fail per compaction path (apply + dry-run = 2 cases × 2 = 4 cases)
+  plan: cyhkcizqio

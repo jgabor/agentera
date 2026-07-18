@@ -1,0 +1,12 @@
+id: fmnwgewyzw
+artifact: plan
+record:
+  name: Postflight helper using build_doctor_status
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN platform app home with bundle under app/ WHEN postflight runs after successful bundle apply THEN postflight ok is true and status is up_to_date
+    - GIVEN missing or broken app files under app/ WHEN postflight runs THEN postflight ok is false and status reflects repair_needed, outdated, or manual_review_needed via existing doctor signals
+    - GIVEN legacy layout with bundle at app home root WHEN postflight runs on a valid install THEN postflight still passes via _doctor_roots semantics
+  plan: mzyheqitgp

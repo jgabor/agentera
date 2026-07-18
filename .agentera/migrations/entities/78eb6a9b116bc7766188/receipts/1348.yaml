@@ -1,0 +1,16 @@
+id: kcwntubaxp
+artifact: progress
+record:
+  timestamp: 2026-07-17 05:36
+  type: fix
+  phase: build
+  what: Hardened decision cursor snapshots, canonical revision validation, and satisfaction replacement rollback.
+  inspiration: PLAN Task5 retry audit.
+  discovered: The decision cursor hashed only base records, whole-state validation stopped at generic entity shape, and replacement had no descriptor-pinned rollback after rename.
+  verified: "Focused Task5/Git/legacy/entity tests: 11 files, 230 tests passed. Full CLI: 207 files, 2489 tests passed. Typecheck and build passed. State validation, discuss capability, capability contract, and compact passed."
+  next: Keep Task5 complete and proceed only when explicitly asked; Task6 remains pending.
+  context:
+    intent: Close only the three audited Task5 integrity defects without reopening the family cutover.
+    constraints: Decision family only; no apply, global cutover, other family, amend, push, publish, or vision changes.
+    unknowns: None.
+    scope: Decision entity retrieval and validation, shared entity replacement, and proportional regression tests.

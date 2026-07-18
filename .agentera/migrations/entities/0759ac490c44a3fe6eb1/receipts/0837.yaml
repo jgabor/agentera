@@ -1,0 +1,15 @@
+id: dsofklgopk
+artifact: plan
+record:
+  name: Expand the npm parity oracle with the v3-remaining CLI surface families
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN feat/v3 base WHEN `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json` is authored THEN it enumerates the six v3-remaining surface families (`artifact_validation`, `compaction`, `verify_eval`, `doctor_upgrade_safety`, `usage_stats_consent`, `runtime_adapter_hooks`) with per-family `python_commit` pin (set to the current `main` HEAD), per-family expected JSON shape, and per-family forbidden-shape sentinel (a substring the TS side MUST NOT emit because the Python side does not)
+    - GIVEN the same fixture WHEN `rebase_oracle.sh` is authored THEN it documents the rebase policy (when to re-pin the Python commit, how to detect Python-side parity-impacting changes, and the rebase procedure) and is executable; the script's `--check` mode emits a `drift` warning when the pinned commit's tree differs from the current `main` HEAD in any file under `scripts/agentera` or `agentera/`
+    - "GIVEN `packages/cli/test/cli/npmParityMatrix.test.ts` WHEN updated THEN a `normalizeEnvelope()` helper centralizes timestamp/hash/path normalization (timestamps to ISO date, hashes to `0x` + 8 hex, paths to forward-slash), the matrix is called once per family with the normalized output, and every row carries a `drift_direction: ts_smaller|python_smaller|equal|intentional_version_break` field; the test fails on `ts_smaller` or `python_smaller` unless the row's `version_break: true` flag is set, in which case it is classified as `intentional_version_break` and the suite stays green"
+    - GIVEN the matrix WHEN `pnpm -C packages/cli test -- npmParityMatrix` runs THEN all rows report `equal` (or `intentional_version_break` for rows explicitly marked) and zero rows report `ts_smaller` or `python_smaller`; the test count for this file is +6 (one per new family)
+    - "GIVEN the gap registry WHEN `packages/cli/test/upgrade/gapRegistry.ts` is updated THEN new `gapRegistry` entries are added for any Python-only surface that the TS side does not yet implement; each entry is `closed: true` once T2-T7 land and the surface is ported"
+    - GIVEN the build WHEN `pnpm -C packages/cli build` runs THEN the new fixture and helper compile cleanly; the typecheck gate stays green; per V5 the test proportionality target is one pass + one fail per testable unit (six families × 2 = 12 cases in T1; this is the default; override only with explicit rationale)
+  plan: cyhkcizqio

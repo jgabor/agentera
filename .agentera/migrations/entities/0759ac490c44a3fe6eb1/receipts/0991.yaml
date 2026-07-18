@@ -1,0 +1,16 @@
+id: gjqudqkwhe
+artifact: plan
+record:
+  name: Execution context output contract
+  depends_on:
+    - dzwqmrevev
+  status: complete
+  acceptance:
+    - GIVEN `agentera hej --format json --capability-context realisera` runs with a dependency-ready pending plan task WHEN structured output is returned THEN it includes `execution_context` with selected work, task details, acceptance criteria, constraints, verification expectations, artifact update requirements, progress logging requirements, changelog boundary, scope boundary, fallbacks, and truthful completeness metadata.
+    - GIVEN plan state is absent, blocked, dependency-unready, complete with sweep pending, or missing acceptance criteria WHEN execution context is built THEN the context reports the correct incomplete or caveated mode and lists only existing CLI fallback commands before any raw artifact diagnostic.
+    - GIVEN Decision 45 structured-output and field-selection contracts are updated WHEN this task completes THEN `execution_context` appears in hej structured fields, startup completeness metadata, sparse field selection, and contract tests without introducing a new command.
+    - GIVEN CLI parser surfaces and guidance are scanned WHEN this task completes THEN no `agentera realisera`, `agentera build`, top-level command, route-alias command, or unsupported capability-name command is introduced.
+  evidence:
+    - "`agentera hej --format json --capability-context realisera` now returns `execution_context` with selected work, task details, acceptance criteria, constraints, verification expectations, artifact update requirements, progress logging requirements, changelog boundary, conservative scope boundary, fallbacks, and truthful completeness metadata."
+    - Decision 45 and sparse field-selection contracts include `execution_context`; parser-negative tests keep Realisera capability names and slash aliases out of the CLI command surface.
+  plan: hbpzaealxp

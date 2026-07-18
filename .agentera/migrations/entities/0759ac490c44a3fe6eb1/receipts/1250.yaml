@@ -1,0 +1,16 @@
+id: xtttwkvgnf
+artifact: progress
+record:
+  timestamp: 2026-07-14 09:20
+  type: feat
+  phase: build
+  what: Implemented bounded non-Git legacy migration with strict local YAML/Markdown parsing, exact immutable archive and backup publication, bounded projection application, conflict refusal, and interruption-safe idempotent retry.
+  inspiration: Active migration rollout plan Task 2 and its confirmed Task 1 authority/inventory contract.
+  discovered: Task 2 needed a backup publication boundary and optimistic projection publication check in the existing mutation transaction. Custom candidates require exact path, artifact, and number pins; summary, ambiguous, corrupt, unsupported, unsafe, changed, and conflicting records remain non-addressable. The repository retains five known npm packaging JSON-parser failures and the existing malformed invalid-progress-yaml formatting fixture.
+  verified: "Focused migration/state transaction command: test/state/legacyMigration.test.ts, test/state/migrationAuthority.test.ts, test/state/write/stateWrite.test.ts, and test/lint/monolithLint.test.ts; 4 files, 89 tests passed. Lifecycle/read compatibility command: listRetrieval, directRetrieval, archiveDiscovery, archivePublication, projectionPolicy, and lifecycleAdapters; 6 files, 128 tests passed. Non-packaging boundary: 175 files, 1773 tests passed. Typecheck, build, bundle:data, targeted formatting, capability build, capability-contract, artifact progress/plan/decisions/health validation, compact, and temp-project dry-run/apply/retry smoke passed. Full suite retained exactly 5 known npm packaging JSON-parser failures."
+  next: Leave Task 2 pending and do not record evaluation; orchestrator owns audit/status. Preserve no Git or remote access, Decision 53 no-inference semantics, archive immutability, projection-failure recovery, startup caveats, and known packaging/formatting caveats. Do not begin Task 3, enrich Git, edit vision/profile, publish, tag, or push.
+  context:
+    intent: Execute continuation plan Task 2 without evaluating or completing it.
+    constraints: Only Task 2 local migration application, its tests, the existing transaction boundary extension, typed progress, and the uncommitted Task 1 lifecycle changes are in scope. No Git enrichment, broad docs alignment, health audit, version bump, publish, tag, push, profile refresh, vision edit, or satisfaction mutation.
+    unknowns: Independent orchestration audit and final Task 2 status remain outstanding; historical startup caveats and the known packaging harness failures remain unchanged.
+    scope: packages/cli/src/state/legacyMigration.ts; packages/cli/src/state/legacyMigrationParser.ts; packages/cli/src/state/write/mutation.ts; packages/cli/src/cli/commands/migrate.ts; packages/cli/test/state/legacyMigration.test.ts; .agentera/plan.yaml; .agentera/progress.yaml; generated dist and bundle parity

@@ -1,0 +1,13 @@
+id: azspqsrmsn
+artifact: plan
+record:
+  name: Define Bundle Freshness Contract
+  depends_on:
+    - hrprpfbbfr
+  status: complete
+  acceptance:
+    - GIVEN registry.json, pyproject.toml, plugin manifests, .agentera-bundle.json, scripts/agentera, SKILL.md, and upgrade code are inspected WHEN findings are recorded THEN one authoritative expected bundle version is named
+    - GIVEN AGENTERA_HOME is set, unset, invalid, non-managed, or points at the default durable root WHEN freshness is evaluated THEN the resolved install-root behavior is specified for each case
+    - GIVEN stale state is detected WHEN confirmation is requested THEN the exact approval phrase or equivalent explicit affirmative response is defined and ambiguous responses do not authorize writes
+    - GIVEN diagnosis closes WHEN implementation starts THEN it lists each freshness signal, current behavior, intended behavior, and task that will repair or test it
+  plan: zinmvprwol

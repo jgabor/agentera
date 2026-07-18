@@ -1,0 +1,14 @@
+id: itfqyvslny
+artifact: plan
+record:
+  name: Preserve usage compatibility and update docs/tests
+  depends_on:
+    - muxephhsca
+    - xibemrfczk
+  status: complete
+  acceptance:
+    - GIVEN `agentera usage` and `scripts/usage_stats.py` are used WHEN stats is added THEN existing text/JSON behavior remains compatible.
+    - GIVEN CLI help is inspected WHEN stats is added THEN `agentera stats` is discoverable and no top-level `agentera corpus` command is exposed.
+    - GIVEN TODO, changelog, docs, progress, and plan artifacts are inspected WHEN the batch is complete THEN they record the stats privacy/consent workflow and remaining helper-script cleanup seams.
+  evidence: "`uv run pytest tests/test_usage_namespace.py -q` passed with 13 tests, covering stats privacy, consent, existing-corpus behavior, preserved usage compatibility, and absence of a top-level `agentera corpus` command."
+  plan: riprdraeks

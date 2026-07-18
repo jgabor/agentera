@@ -1,0 +1,106 @@
+id: tcydagxkio
+artifact: health
+record:
+  date: 2026-06-07
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - dependency health
+    - version health
+    - artifact freshness
+    - prose health
+    - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 22 on mobile monorepo closeout (progress cycle 650), capabilityContext split, vitest 884/884 green, and suiteVersion 3.0.0 alignment; orientation.ts remains the prime/status hub.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: B
+    Complexity: B
+    Tests: A
+    Deps: A
+    Version: B
+    Freshness: A
+    Prose: A
+    Security: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: Decision 69 CLI narrow waist and monorepo-plan.md package table match the checkout; packages/mobile is a documented docs-only stub per D67/D68 with lefthook wired.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: vp is the workspace entrypoint for web and mobile; TODO checkbox convention aligns across TODO.md, todo.yaml, compaction dryRun, and packages/mobile/TODO.md.
+      findings:
+        []
+    - name: Coupling health
+      grade: B
+      summary: capabilityContext/ split reduced prime startup coupling, but orientation.ts still aggregates status, prime, and state summaries in one module.
+      findings:
+        - heading: "⇉ orientation.ts remains prime/status state hub, warning (confidence: 82)"
+          severity: warning
+          confidence: 82
+          location: packages/cli/src/cli/orientation.ts:407
+          evidence: orientation.ts is 650 lines; healthSummary, planSummary, docsSummary, and selectStatusNextAction share one module imported by prime.ts and capabilityContext/evidence.ts.
+          impact: Status and prime orientation changes still touch a single dense file despite capabilityContext modularization elsewhere.
+          suggested_action: Extract state-family summary builders into cli/orientation/ slices mirroring the capabilityContext split.
+          verify_command: wc -l packages/cli/src/cli/orientation.ts
+    - name: Complexity hotspots
+      grade: B
+      summary: No TS module exceeds 900 lines after capabilityContext/ and startupAnalysis/ splits; largest files are orientation.ts (650) and capabilityContext/benchmark.ts (528).
+      findings:
+        []
+    - name: Test health
+      grade: A
+      summary: Vitest reports 884/884 passed in 91 files; prior compaction and plan-validate housekeeping failures from Audit 22 are resolved.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: pnpm audit --prod reports 0 vulnerabilities; runtime deps remain yaml and smol-toml only.
+      findings:
+        []
+    - name: Version health
+      grade: B
+      summary: packages/cli/package.json carries version 3.0.0-dev.6 with agentera.suiteVersion 3.0.0; one fix commit since the dev.6 bump; stable-channel shim at 2.7.7 remains intentional per Decision 56.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: A
+      summary: progress.yaml cycle 650 and docs.yaml index updated 2026-06-07 for mobile monorepo closeout; no active plan slot.
+      findings:
+        []
+    - name: Prose health
+      grade: A
+      summary: monorepo-plan.md and mobile-open-decisions.md stay factual with concrete package paths and decision references.
+      findings:
+        []
+    - name: Security hygiene
+      grade: A
+      summary: No hardcoded secrets in scanned TS sources; RegExp.exec matches are parsing helpers, not dynamic code execution on user input.
+      findings:
+        - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
+          severity: info
+          confidence: 60
+          location: repository-wide
+          evidence: Regex hygiene scan only; pnpm audit --prod clean on packages/cli.
+          impact: Surface scan cannot replace dependency or secret-scan CI for publish.
+          suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
+  trends:
+    improved: Mobile monorepo closeout (D67/D68/D69), capabilityContext monolith split (2542 to 528 max module), startupAnalysis modularization, vitest 884/884 green, suiteVersion 3.0.0 aligned with @next dev.6, profile Validated-header fix.
+    degraded: none.
+    stable: Dependency, prose, and security posture remain healthy; stable @latest shim stays on 2.7.7 by design.
+    new_findings: orientation.ts prime/status hub density after capabilityContext split.
+    resolved: Audit 22 TS monolith hotspots (capabilityContext.ts 2542 lines); compaction and plan-validate vitest failures; npm @next dev.4 vs suiteVersion 2.7.7 release-metadata divergence.
+  patterns:
+    - "Monorepo layout: packages/mobile (flagship stub), packages/web (Starlight), packages/cli (agentera npm); CLI owns schema and .agentera/ contract per D69."
+    - "Prime startup: capabilityContext/ modules by state family with slim re-export barrel; orientation.ts still centralizes status briefing summaries."
+    - "Testing approach: 884 vitest cases including upgrade parity, prime source_contract oracles, and packaging prepack tarball gates."

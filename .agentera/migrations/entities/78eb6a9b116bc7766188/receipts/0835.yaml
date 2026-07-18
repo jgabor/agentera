@@ -1,0 +1,23 @@
+id: dxwuqbhxou
+artifact: plan
+record:
+  name: Deliver experiment list and get
+  depends_on:
+    - hnuljoztan
+  status: complete
+  acceptance:
+    - GIVEN an objective with many experiments WHEN listed THEN newest-first pages, opaque continuation, omissions, and no duplicate or skipped identities result.
+    - GIVEN experiment identity WHEN fetched THEN retained or archived detail, provenance, and detail availability are explicit.
+    - GIVEN wrong objective, experiment zero, summary-only legacy, malformed cursor, and not-found cases WHEN tested THEN behavior is structured.
+  evidence: "Corrective AC1 PASS: full-to-summary rollover (1 passed, 9 skipped), summary-to-drop plus byte traversal (2 passed, 8 skipped), and unsubstantiated/mutation/corruption/deletion failures (1 passed, 9 skipped). Audit fixture node /tmp/opencode/audit809.mjs: 14 pages, 125 unique identities, 13 byte-bound pages, rollover resumed. AC2/AC3 remain covered; focused parity 143 passed and full CLI 183 files/2020 tests passed. Typecheck, build, capability-contract, compact, and diff-check passed. Cycle 809 and audit failure preserved."
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Append across the 10-full retention boundary changes projection placement and falsely invalidates an existing cursor instead of preserving its original snapshot.
+    provenance:
+      attempt_id: task-8-audit-2-20260715
+      source: independent Task 8 corrective acceptance audit
+      recorded_at: 2026-07-15 09:59
+      writer_command: agentera state plan record-evaluation
+  plan: nkbaxezqtr

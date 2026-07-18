@@ -1,0 +1,10 @@
+id: bfdldtinpp
+artifact: plan
+record:
+  name: Reconcile Plan State And Vocabulary Scope
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: aqddfogkvg

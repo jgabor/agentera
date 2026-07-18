@@ -1,0 +1,6 @@
+id: ngwrosfgah
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[docs:3.0.0] Surface the four-question update/repair wording template (What happened / What the preview did / What the recommended fix will do / What it will not do) in `agentera prime --format json` when `app.status` is `outdated` or `repair_needed`, or document in the collapsed SKILL.md that the host must read `agentera prime --context status --format json` `prose` for the framing. The JSON provides `app.approval` (one-line) and `app.signals[].message` — not the structured four-question template or recommendation-first label convention the old SKILL.md specified. (Branch: `feat/v3` — implement on `feat/v3`.)"

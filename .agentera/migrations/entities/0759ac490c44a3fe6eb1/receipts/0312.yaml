@@ -1,0 +1,13 @@
+id: jkmukaahfk
+artifact: plan
+record:
+  name: Consolidate hasBundleRootEvidence into a shared module
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a managed install where scripts/agentera exists, skills/agentera/SKILL.md exists, and the script shebang is readable WHEN hasBundleRootEvidence is called from any of the 4 call sites THEN it returns true
+    - GIVEN a managed install where scripts/agentera exists, skills/agentera/SKILL.md exists, but the script shebang is unreadable WHEN hasBundleRootEvidence is called from any of the 4 call sites THEN it returns false (the post-Task-4 stricter check, applied uniformly)
+    - GIVEN a managed install where scripts/agentera is missing or skills/agentera/SKILL.md is missing WHEN hasBundleRootEvidence is called from any of the 4 call sites THEN it returns false
+    - GIVEN the refactor WHEN grep -rn 'function hasBundleRootEvidence' packages/cli/src/ is run THEN there is exactly one definition (in the new shared module) and four imports
+  plan: ptxfeeqxeb

@@ -1,0 +1,7 @@
+id: yugnprzdao
+artifact: docs
+record:
+  document: CI workflow
+  path: .github/workflows/ci.yml
+  last_updated: 2026-05-05
+  status: current

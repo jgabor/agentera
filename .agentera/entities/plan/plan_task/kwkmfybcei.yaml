@@ -1,0 +1,15 @@
+id: kwkmfybcei
+artifact: plan
+record:
+  name: Extend RuntimeAdapter registry and model
+  depends_on:
+    - soeduvocnd
+  status: complete
+  acceptance:
+    - GIVEN `runtime-adapter-interface-model.yaml` and `runtime-adapter-registry.yaml` are updated WHEN registry validation runs THEN `subagent_dispatch` is a typed, required runtime-owned group with approved fields.
+    - GIVEN consumers load registry views WHEN tests run THEN docs/tests consumers can read `subagent_dispatch` without absorbing package metadata or install-root ownership facts.
+    - GIVEN `references/adapters/runtime-adapter-registry.yaml` is read by humans WHEN reviewed THEN each runtime records mechanism, setup, template, invocation, and limitation facts for subagent dispatch.
+  evidence:
+    - Added required `subagent_dispatch` fields to `references/adapters/runtime-adapter-interface-model.yaml`, `references/adapters/runtime-adapter-registry.yaml`, and `scripts/runtime_adapter_registry.py`.
+    - "`uv run pytest tests/test_runtime_adapter_registry.py tests/test_runtime_adapters.py tests/test_package_registry.py` passed, proving consumer views and ownership boundaries include the new group correctly."
+  plan: jekxkxdzjd

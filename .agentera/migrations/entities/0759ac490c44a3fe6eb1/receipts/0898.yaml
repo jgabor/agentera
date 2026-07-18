@@ -1,0 +1,14 @@
+id: rixjyjmjtz
+artifact: plan
+record:
+  name: Implement version resolution and outcome classification
+  depends_on:
+    - bxudqslixp
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/src/upgrade/ WHEN resolveRunningVersion and resolveLatestOnChannel run with injectable metadata THEN they return semver strings for npx bundle, v2 managed marker, and fixture registry payloads without network in unit tests
+    - GIVEN classifyUpgradeOutcome WHEN running v3.1.3 stable and latest stable is v4.0.2 THEN outcome is forward_major_upgrade requiring preview before apply
+    - GIVEN classifyUpgradeOutcome WHEN running v2 managed layout and selected channel latest is v3.x THEN outcome is migration_to_latest_on_channel targeting that channel latest
+    - GIVEN classifyUpgradeOutcome WHEN any v3+ install attempts downgrade toward v2 THEN outcome is blocked_downgrade_to_v2 with no apply path
+    - GIVEN classifyUpgradeOutcome WHEN running v4.x on development and channel stable with latest stable v3.x THEN outcome is channel_line_mismatch without implying v2 downgrade
+  plan: brcxwbztnv

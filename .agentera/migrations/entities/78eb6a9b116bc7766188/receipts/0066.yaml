@@ -1,0 +1,31 @@
+id: kzsjogaubz
+artifact: decisions
+record:
+  date: 2026-06-24
+  question: |
+    How should Agentera consolidate three parallel install-state concepts so users never guess which v2/v3 path they are on?
+  context: |
+    The CLI has three parallel concepts for install identity that overlap and create internal confusion about which is canonical: InstallKind (compatibility.ts, 4 values: v2_managed_app_home, v3_self_contained_npm, source_checkout, unknown_foreign), Classification.kind (installRoot.ts, 7 values for root state), and rootStatus (BundleStatus, 7 public values). None surface as a unified user-facing label in prime output. Users see bundle.status (5-value health indicator) but cannot tell at a glance whether they are running v2, v3, or from source. The coexistence probe (coexistenceProbe.ts) already detects v2+v3 mixed states and warns "pick one line" via doctor, but this warning does not surface in prime. Decision 47 (firm) already decided to replace bundle terminology with app terminology; the bundle field name in public output is a D47 straggler. Decision 58 (firm) mandates one canonical name per concept. Decision 44 (firm) mandates plain English for field values.
+  alternatives:
+    - name: Promote InstallKind, retire rootStatus
+      status: chosen
+      description: |
+        Promote the existing internal InstallKind to a public install_track field in prime and doctor output. Rename values to plain English (v2, v3, source, unknown). Retire rootStatus from public output; keep Classification.kind internal for doctor classifier logic. Keep app.status (renamed from bundle.status) as an orthogonal health field. Rename bundle to app in public output (D47 straggler). Add coexistence warning as an attention item in prime via existing attention mechanism. No new composite field; no new concept.
+    - name: New composite install_track field
+      status: rejected
+      description: |
+        Add a new composite field combining lineage and health into one label (e.g. v2-stale, v3-fresh). Retire all three internal concepts. Rejected because it violates YAGNI (profile conf:80) by adding a new component when an existing internal concept already classifies installs correctly.
+    - name: Clarify roles, no new field
+      status: rejected
+      description: |
+        Keep all three concepts but document their separation. Rejected because the user identified the problem as internal confusion from overlapping concepts, not poor documentation. Adding docs does not consolidate the source of truth.
+    - name: Surface InstallKind without retiring rootStatus
+      status: rejected
+      description: |
+        Add InstallKind to public output alongside rootStatus and bundle status. Rejected because it adds a third public field answering similar questions, deepening the confusion rather than resolving it.
+  choice: |
+    Promote the existing internal InstallKind to a public install_track field in prime and doctor output. Rename values to plain English: v2, v3, source, unknown. Retire rootStatus from public output; keep Classification.kind internal for doctor classifier logic. Keep app.status (renamed from bundle.status) as an orthogonal health field alongside install_track. Rename bundle to app in public output per D47. Add coexistence warning (v2 app + v3 hooks) as an attention item in prime via the existing attention mechanism; keep the existing doctor coexistence section. The coexistence contract message stays "pick one line." install_track surfaces in prime and doctor only; upgrade output already shows the version transition. Breaking change accepted (v3 pre-release); update all consumers in the same commit.
+  reasoning: |
+    The root problem is internal confusion from three parallel concepts answering overlapping questions about install identity. InstallKind already classifies installs into the right four categories; the fix is promoting it to public, not creating a fourth concept. This satisfies D58 (one canonical name per concept) by making InstallKind the sole public identity field. YAGNI is satisfied because no new component is added; an existing internal concept is promoted. The single-source-of-truth profile pattern (conf:88) is satisfied by retiring rootStatus from public output. The D47 bundle-to-app rename folds in because touching the output contract is the natural moment to clean up the terminology straggler. Coexistence stays a warning state (not a healthy track) per the coexistence contract; install_track makes the state visible without promoting it to a target. The breaking change is acceptable because v3 is pre-release on the development channel and all consumers are internal to the repository.
+  confidence: firm
+  feeds_into: packages/cli/src/upgrade/compatibility.ts, packages/cli/src/cli/contracts/bundleStatus.ts, packages/cli/src/cli/commands/prime/, packages/cli/src/upgrade/doctor.ts, packages/cli/src/upgrade/coexistenceProbe.ts, TODO.md

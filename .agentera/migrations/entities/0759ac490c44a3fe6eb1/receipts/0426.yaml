@@ -1,0 +1,22 @@
+id: tbsdfeljwn
+artifact: plan
+record:
+  name: 2.3.10 local closeout metadata sync
+  depends_on:
+    - ncwuqasnuu
+    - tquzntqpjc
+    - syzfmsqssv
+    - uhbovddpnb
+    - zyvhcuxogj
+    - wsdphoxyrw
+  status: complete
+  acceptance:
+    - GIVEN evidence-context validation passes WHEN closeout synchronization runs THEN TODO, progress, docs, and changelog record the completed 2.3.10 source-contract patch and the remaining deferred 2.3.11+ source-contract train.
+    - GIVEN version-bearing files are inspected WHEN local metadata is synchronized THEN only files listed by docs.yaml version policy and the version-files registry are changed for 2.3.10 alignment.
+    - GIVEN local metadata sync completes WHEN scope is audited THEN no publication, remote push, tag creation, installed app refresh, profile refresh, vision edit, objective-state edit, or unsupported capability CLI command occurred without explicit approval.
+  evidence:
+    - Completed local 2.3.10 metadata sync for the Inspektera evidence-context source-contract patch. TODO resolves the `[feat:2.3.10]` item while keeping `[feat:2.3.11]` Optimera benchmark-context and `[feat:2.3.12]` Realisera execution-context source-contract TODOs open.
+    - DOCS records the 2.3.10 audit label, version-policy resolution for the selected exact patch-train target despite the `[feat:2.3.10]` label, deferred 2.3.11+ work, and local-only no-publication/no-refresh boundary. CHANGELOG records the 2.3.10 changed/fixed/added/verified closeout.
+    - Version-bearing package, plugin, registry, lockfile, OpenCode marker, and skill frontmatter surfaces now target 2.3.10. The docs `version_files` list and package registry were corrected to include the already test-enforced active and legacy skill frontmatter surfaces before alignment.
+    - Focused version and capability validation, artifact validation, gate, compaction, and diff checks passed. No publication, remote push, tag creation, installed app refresh, profile refresh, vision edit, objective-state edit, Optimera state edit, unsupported `agentera inspektera` command, or commit occurred.
+  plan: tzdfruwtjr

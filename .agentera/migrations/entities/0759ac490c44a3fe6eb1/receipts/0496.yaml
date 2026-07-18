@@ -1,0 +1,15 @@
+id: ebuivmqqsy
+artifact: plan
+record:
+  name: Wire hybrid staleness into hej output and routing
+  depends_on:
+    - xnmegethaa
+  status: complete
+  evidence:
+    - Hej attention, structured health metadata, and stale-audit next_action wired in _collect_orientation_state and _select_hej_next_action
+  acceptance:
+    - GIVEN a stale audit by either axis WHEN agentera hej runs THEN attention includes a normal-priority item naming audit number, days, cycles when available, thresholds, and suggest running inspektera
+    - GIVEN a fresh audit WHEN agentera hej runs THEN no inspektera audit stale attention item appears
+    - GIVEN stale audit, no pending plan task, and non-degrading health WHEN next_action is selected THEN capability inspektera is suggested with a concrete HEALTH object referencing the latest audit number
+    - GIVEN structured hej JSON WHEN audit is stale THEN health exposes stale metadata fields matching the profilera profile stale shape
+  plan: sebihbfeow

@@ -1,0 +1,14 @@
+id: fhyxtckxiy
+artifact: plan
+record:
+  name: Establish the entity and migration authority
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Decision 94 WHEN state contracts are inspected THEN one authority defines bare project-wide IDs, artifact classification, entity boundaries, relationships, views, and migration lifecycle.
+    - GIVEN a public state schema WHEN fields are enumerated THEN id and artifact are the only canonical identity and classification names.
+    - GIVEN collection and singleton state WHEN scope is checked THEN every included entity and intentional singleton boundary is explicit.
+    - GIVEN valid and degraded sources WHEN policy and budgets are checked THEN migration outcomes, non-fabrication rules, and measurable retrieval targets are unambiguous.
+  evidence: Decision 94 target entity and migration authority is machine-checked by entityAuthority.test.ts; full CLI suite passed 201 files/2329 tests, typecheck and build passed, capability-contract validation passed 2/2, and check compact reported zero over-limit artifacts or errors.
+  plan: pohgeeghnl

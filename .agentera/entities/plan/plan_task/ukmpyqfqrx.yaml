@@ -1,0 +1,22 @@
+id: ukmpyqfqrx
+artifact: plan
+record:
+  name: Chain optional guarded Git enrichment
+  depends_on:
+    - cghngaibvd
+  status: blocked
+  acceptance:
+    - GIVEN local migration runs WHEN enrichment is not separately requested THEN it never invokes Git or backfill; declined or unavailable Git remains a non-blocking, actionable outcome for later tasks.
+    - GIVEN enrichment is explicitly selected WHEN exact artifact and number selectors dry-run before forced apply THEN only exact reachable local candidates publish through the existing immutable contract.
+    - GIVEN shallow, rewritten, ambiguous, interrupted, or retried history WHEN evaluated THEN bounded traversal, head revalidation, and equality prevent remote access, duplicates, and conflicts.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: The preview receipt HMAC key is publicly reproducible from project/source paths, allowing forged future-dated tokens to apply without a genuine prior dry-run; Cycle 787 overstates receipt integrity and its focused command is not reconstructable.
+    provenance:
+      attempt_id: continuation-task3-audit-2
+      source: "Independent orchestration evaluator: Git enrichment receipt integrity and evidence audit"
+      recorded_at: 2026-07-14 11:57
+      writer_command: agentera state plan record-evaluation
+  plan: epuxwhmxgv

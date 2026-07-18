@@ -1,0 +1,13 @@
+id: oacytiiqhn
+artifact: plan
+record:
+  name: Runtime adapter propagation
+  depends_on:
+    - hyqemrqrmo
+    - xuteanntzt
+  status: complete
+  acceptance:
+    - GIVEN a runtime adapter that propagates `AGENTERA_HOME` inherits stale legacy residue WHEN it prepares shell-tool execution THEN it does not pass that residue as authoritative.
+    - GIVEN a runtime adapter can discover a fresh normal Agentera directory WHEN it prepares shell-tool execution THEN shell tools receive the validated home needed to run the installed CLI.
+    - GIVEN a user intentionally configured a valid custom Agentera directory WHEN runtime setup is inspected or refreshed THEN that custom directory remains preserved.
+  plan: cwlpcjsftg

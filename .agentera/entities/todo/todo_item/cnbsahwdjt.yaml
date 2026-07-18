@@ -1,0 +1,6 @@
+id: cnbsahwdjt
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[refactor:3.0.0] Rename `prose` to `instructions` and use it consistently. Resolved 2026-07-06: folded into the status..."

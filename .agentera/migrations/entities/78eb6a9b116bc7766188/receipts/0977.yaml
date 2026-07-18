@@ -1,0 +1,15 @@
+id: ezyaxznjpb
+artifact: plan
+record:
+  name: Update hej/status skill rendering prose to reference todo as the source label
+  depends_on:
+    - vjmkulnyus
+  status: complete
+  acceptance:
+    - GIVEN skills/agentera/SKILL.md WHEN inspected THEN the source-label transform list (currently mode, profile, health, issues, plan, ...) lists todo in place of issues
+    - GIVEN skills/agentera/SKILL.md WHEN inspected THEN the dashboard metric-lines marker references todo instead of issues
+    - GIVEN skills/agentera/SKILL.md WHEN inspected THEN the prose sentence describing the summary line (currently "The issues summary line uses...") references todo instead of issues
+    - GIVEN packages/cli/src/capabilities/status/instructions.ts WHEN inspected THEN the source-label list (currently mode, profile, v1_migration, health, issues, plan, ...) lists todo in place of issues
+    - GIVEN the bundle data rebuild WHEN run via pnpm -C packages/cli run bundle:data THEN it succeeds so the local CLI serves the updated skill prose
+    - GIVEN npx -y agentera check validate capability status --format json WHEN run THEN it passes (capability schema still validates after prose edit)
+  plan: ttutdsmlwe

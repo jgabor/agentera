@@ -1,0 +1,13 @@
+id: fkbaovzwgp
+artifact: plan
+record:
+  name: Verify and close out rename cycle
+  depends_on:
+    - aqehupwkxi
+  status: complete
+  acceptance:
+    - GIVEN focused validation runs WHEN implementation is complete THEN `uv run scripts/agentera validate capability-contract --format json`, `uv run scripts/agentera validate capability skills/agentera/capabilities`, and targeted rename/contract tests pass.
+    - GIVEN the full test suite and artifact validation run WHEN closeout is complete THEN `uv run pytest -q`, PLAN/TODO/CHANGELOG/PROGRESS/DOCS artifact validation, and `git diff --check` pass, and the `[fix:2.4.x]` rename TODO is resolved.
+  evidence:
+    - Completed in this Realisera cycle; see PROGRESS cycle 569 for verification evidence.
+  plan: xsmmpkxfwr

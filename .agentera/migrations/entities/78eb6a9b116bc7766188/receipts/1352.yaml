@@ -1,0 +1,14 @@
+id: fshpmmkdmz
+artifact: progress
+record:
+  timestamp: 2026-07-17 07:10
+  type: fix
+  phase: build
+  what: Fixed audited Task 7 plan entity rollback and evaluation defects.
+  verified: 12 focused and 2,511 full tests passed; typecheck, build, state validation, plan capability validation, capability-contract validation, and compact passed.
+  next: "Task 8 remains pending: cut objectives and experiments over to entities."
+  context:
+    intent: Make multi-file plan creation recover exactly after authority invalidation and preserve the legacy evaluation contract in entity mode.
+    constraints: Only audited Task 7 defects, proportional tests, and required project-state updates.
+    unknowns: None.
+    scope: packages/cli plan entity publication, evaluation validation, and tests.

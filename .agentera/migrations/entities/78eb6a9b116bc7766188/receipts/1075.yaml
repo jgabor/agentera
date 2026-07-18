@@ -1,0 +1,39 @@
+id: wncxfohlqr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-14
+    status: archived
+    reviewed: 2026-05-14
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    revised: "[post-audit-flagged] Adversarial review retitled the plan around post-CLI artifact reads, made product work contingent on benchmark evidence, added explicit local-only aggregate-history acceptance, preserved Decision 45 and Decision 43 boundaries, separated validation from final state sync, and tightened weak-evidence stop conditions. Agentera lint remains advisory because full plans exceed the compact PLAN.md entry budget."
+    title: Reduce Post-CLI Startup Artifact Reads
+  what: Plan the prioritized work that turns `mage bench:startupState` telemetry and `latest-report.json` fields into a CLI completeness contract, so Agentera capability startup can rely on CLI-provided state and avoid defensive raw artifact reads, greps, or globs after successful CLI state access.
+  why: Decisions 51 and 52 make post-CLI raw artifact access the optimization signal. The latest benchmark run is weak evidence because it found no qualifying state-gathering sequences and reported degraded runtime coverage, so the first priority is measurement confidence before product behavior changes. Once representative evidence exists, repeated post-CLI raw reads identify missing CLI output.
+  constraints: Preserve routine state command names and Decision 43 slash-route separation. Preserve the existing manual-only benchmark boundary and local-only aggregate retention. Do not make runtime history part of normal CI. Do not retain private raw runtime data. Do not require raw artifact reads for normal Agentera startup once CLI output declares itself complete. Do not push, publish, bump versions without an explicit release target, refresh installed apps, modify vision state, or modify objective state in this plan.
+  scope:
+    included:
+      - Benchmark confidence review and extraction/coverage repair when evidence is weak.
+      - Prioritized post-CLI raw artifact gap report from benchmark fields.
+      - CLI startup completeness contract for existing routine and composite state output.
+      - State coverage for the highest-ranked redundant or repeated post-CLI raw artifact reads.
+      - Capability context and agent guidance that make raw artifact access a fallback path.
+      - Representative validation, benchmark comparison, state sync, and version-policy check.
+    excluded:
+      - Runtime-history benchmarks in normal CI.
+      - New CLI commands that duplicate slash-route aliases.
+      - Broad non-startup performance benchmarking.
+      - Removing existing routine state commands.
+      - Release publication or installed app refresh.
+    deferred:
+      - Trend visualization over benchmark history.
+      - Additional benchmark surfaces outside startup/state gathering.
+      - Release metadata work until a release target is selected.
+  design: Treat `mage bench:startupState`, `${AGENTERA_HOME}/benchmarks/startup-state/latest-report.json`, and `references/cli/agent-ready-state-contract.yaml` as the concrete planning anchors, but gate product work on evidence quality. First make the measurement trustworthy enough to rank post-CLI raw artifact reads by command, artifact, redundancy, and capability. Then define a CLI source contract that tells agents whether returned state is complete for startup, what state families are included, what is missing, and which CLI fallback to try before raw access. Prefer enriching existing routine state output and the existing composite startup result over adding new command vocabulary. Use capability artifact needs to shape narrower context bundles when the gap is capability-specific. Verify with representative startup sessions and by comparing benchmark rates before and after the CLI changes.
+  overall_acceptance:
+    - GIVEN representative startup sessions exist WHEN an Agentera capability starts THEN required startup state can be obtained from CLI output without routine post-CLI raw artifact reads.
+    - GIVEN benchmark history is reviewed WHEN CLI completeness improves THEN raw-after-CLI and redundant-raw rates trend down with degraded runtime evidence reported separately.
+    - GIVEN this plan completes WHEN scope is audited THEN no runtime-history CI benchmark, slash-alias CLI command, release publication, installed app refresh, vision edit, or objective edit occurred.
+  surprises:
+    []

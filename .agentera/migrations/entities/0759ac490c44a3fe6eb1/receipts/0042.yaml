@@ -1,0 +1,24 @@
+id: tyguuvojvu
+artifact: decisions
+record:
+  date: 2026-05-08
+  question: How should Agentera rename bundle semantics and organize app, profile, and user data roots?
+  context: Current `AGENTERA_HOME` means a replaceable installed bundle root, while `PROFILE.md` lives in the platform data directory. That split makes “bundle” leak into user language and blurs mutable user data versus managed app files.
+  alternatives:
+    - name: App-home layout
+      status: chosen
+      description: "`AGENTERA_HOME` is a durable platform data home; managed app files live under `AGENTERA_HOME/app`; profile and usage data live at the home root."
+    - name: Rename only in user-facing prose
+      status: rejected
+      description: Keeps root semantics and internal contracts confusing.
+    - name: Keep current bundle root
+      status: rejected
+      description: Preserves the profile/app split and stale install-root ambiguity.
+    - name: Mutate through doctor
+      status: rejected
+      description: Makes the self-check command write state instead of preserving read-only diagnostics.
+  choice: Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data under `AGENTERA_HOME`.
+  reasoning: “Install the Agentera app” is clearer than “install the Agentera bundle,” and home/app separation protects user data from app refreshes. `agentera doctor` should detect legacy bundle-root installs and report migration_required with exact dry-run/apply commands; `agentera upgrade` owns the idempotent migration writes.
+  confidence: firm
+  feeds_into: TODO.md, PLAN.md, README.md, UPGRADE.md, scripts/install_root.py, scripts/agentera_upgrade.py, scripts/agentera, package/runtime registries, tests
+  outcome: Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, `USAGE.md`, history, and intermediate corpus data under `AGENTERA_HOME`.

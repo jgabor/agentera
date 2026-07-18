@@ -1,0 +1,13 @@
+id: qaqtbcxfem
+artifact: plan
+record:
+  name: Repair Task 4 retrieval evidence
+  depends_on:
+    - wsgagqnadr
+  status: complete
+  acceptance:
+    - GIVEN committed deterministic retrieval evidence WHEN its root-runnable command is repeated THEN stable serialized bytes and a serialized-byte count below 32768 map explicitly to the Task 4 criteria.
+    - GIVEN the live YAML response WHEN checked without mutation THEN the assertion is serialized bytes below 32768 rather than equality with Cycle 803.
+    - GIVEN the evidence repair WHEN independently audited THEN Cycle 803 remains immutable and the blocked TODO repair item closes only after a passing verdict.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:2dceb8a6c4ce17d4775e7340ec387dfa0fe6d30c8785ff4b262236c631930caf task 9.
+  plan: hcjrszmsio

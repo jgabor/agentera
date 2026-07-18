@@ -1,0 +1,15 @@
+id: xmniadmkua
+artifact: plan
+record:
+  name: Compaction contract inventory and reconciliation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Agentera artifact mappings are available WHEN compaction status is computed THEN TODO Resolved, progress, decisions, health, and session are classified with active, archive, total, and over-limit counts.
+    - GIVEN known non-compactable or protected artifacts are present WHEN compaction status is computed THEN changelog, plan, docs, vision, design, and objective-state experiment files are classified as exempt, unsupported, or protected without mutating them.
+    - GIVEN existing schema metadata is incomplete or inconsistent WHEN reconciliation finishes THEN the plan records whether minimal schema updates are required before behavior changes continue.
+  evidence:
+    - cycle: 469
+      note: "Task 1 inventory added a read-only compaction status helper that preserves `.agentera/docs.yaml` path mapping, counts TODO Resolved, progress, decisions, health, and session, and classifies changelog as exempt; plan, docs, and design as unsupported; vision and objective-scoped experiment files as protected. Current counts are TODO Resolved active=0 archive=53 total=53 over=13, progress active=225 archive=40 total=265 over=215, decisions active=12 archive=40 total=52 over=2, health active=11 archive=9 total=20 over=1, and session active=10 archive=40 total=50 over=0. Schema reconciliation found that minimal schema metadata updates are required before later behavior-changing tasks: TODO lacks explicit COMPACTION metadata for Resolved entries, and changelog/design/plan/docs budget wording still implies compaction despite their Task 1 classification as exempt or unsupported. No remediation, vision edit, objective-state edit, tag, push, publish, installed-app refresh, or plan status change was performed."
+  plan: gpurjrmtdd

@@ -1,0 +1,9 @@
+id: astqkqblaj
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: Decision 68 (2026-06-05) corrected D67 skills-as-internals ceiling to a delivery surface, removed SaaS/PaaS framing, and reaffirmed multi-surface product boundary. User confirmed D67 satisfaction 2026-06-05 in current discuss deliberation. D67 feeds_into list is satisfied.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-05
+  decision: xbjlngqjnk

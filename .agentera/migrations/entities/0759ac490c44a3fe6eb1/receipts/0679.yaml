@@ -1,0 +1,11 @@
+id: yewgthzcym
+artifact: plan
+record:
+  name: Update docs and references for AGENTERA_PROFILE_DIR
+  depends_on:
+    - gdaciszmbu
+  status: complete
+  acceptance:
+    - GIVEN references/adapters/opencode.md, contract.md, agent-ready-state-contract.yaml, artifact-registry-interface-model.yaml, .agentera/docs.yaml, and json_output_surface_manifest.yaml are updated, WHEN searched, THEN all profile-path references use AGENTERA_PROFILE_DIR
+    - AND CHANGELOG.md and .agentera/archive/ are NOT modified
+  plan: hotcyckvhu

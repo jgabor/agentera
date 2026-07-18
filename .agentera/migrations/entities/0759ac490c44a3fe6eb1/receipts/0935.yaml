@@ -1,0 +1,12 @@
+id: ockwhssfue
+artifact: plan
+record:
+  name: Narrow OpenCode stale command detection
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN managed hej.md whose body matches the current v2 legacy-bridge template without v1 skill paths WHEN detect_stale_v1 runs THEN it is not reported as stale_command
+    - GIVEN managed hej.md that references removed v1 skill paths such as skills/hej/SKILL.md WHEN detect_stale_v1 runs THEN it is reported as stale_command
+    - GIVEN user-owned hej.md without agentera_managed frontmatter WHEN detect_stale_v1 runs THEN cleanup remains blocked as user-owned
+  plan: ctldxvvhsp

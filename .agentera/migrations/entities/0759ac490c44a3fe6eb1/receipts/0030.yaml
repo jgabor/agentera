@@ -1,0 +1,8 @@
+id: pswidstggb
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-07-10
+  decision: vaeeqqdhft

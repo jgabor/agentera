@@ -1,0 +1,12 @@
+id: vawgmswoer
+artifact: plan
+record:
+  name: "Mobile: retire brief UI label for status"
+  depends_on:
+    - stdqlaefcs
+  status: complete
+  acceptance:
+    - GIVEN the packages/mobile source WHEN searched for the brief UI label THEN no surface uses brief as the orientation capability label
+    - GIVEN the mobile orientation surface WHEN inspected THEN the label is status (matching the CLI canonical name)
+    - GIVEN vp run mobile:check WHEN executed THEN it passes with zero errors
+  plan: rfsasxqeop

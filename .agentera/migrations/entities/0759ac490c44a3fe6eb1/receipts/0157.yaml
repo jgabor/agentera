@@ -1,0 +1,7 @@
+id: wuiqfdhvvg
+artifact: docs
+record:
+  document: Setup doctor and installer
+  path: scripts/setup_doctor.py
+  last_updated: 2026-05-06
+  status: current

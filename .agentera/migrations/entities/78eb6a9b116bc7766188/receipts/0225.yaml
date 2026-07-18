@@ -1,0 +1,14 @@
+id: nvhfveglia
+artifact: plan
+record:
+  name: Inventory routing vocabulary occurrences and define classifications
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the focused vocabulary scan runs WHEN it encounters surviving dispatcher, dispatch, router, or conductor occurrences in scoped current surfaces THEN each in-scope occurrence is classified as canonical, compatibility-preserved, historical, fixture-only, code identifier, or allowed generic usage.
+    - GIVEN an occurrence does not fit an allowed classification WHEN the focused test runs THEN it fails with enough path/context detail to decide whether to reword, classify, or intentionally fixture the occurrence.
+  evidence:
+    - Added `focused_scan` classifications to `references/cli/routing-execution-vocabulary.yaml` for scoped current user-facing/protocol and fixture paths, with closed classification labels covering canonical, compatibility-preserved, historical, fixture-only, code-identifier, and generic usage.
+    - "`tests/test_routing_execution_vocabulary_authority.py` now reports unclassified occurrences with `path:line: term: text` context."
+  plan: xcxfzfzokt

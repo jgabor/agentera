@@ -1,0 +1,12 @@
+id: rvinwzsqov
+artifact: plan
+record:
+  name: SQLite cap overrides and truncation warnings
+  depends_on:
+    - zhirjfxnml
+  status: complete
+  acceptance:
+    - GIVEN a SQLite store exceeds default session or row caps WHEN extraction runs THEN runtime_statuses includes truncated_at from an uncapped probe query
+    - GIVEN a maintainer passes --max-sqlite-sessions or sets AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS WHEN extraction runs THEN the configured cap is honored
+    - GIVEN truncation occurs WHEN diagnostics or coverage summary are shown THEN the user sees which runtime was truncated and at what boundary
+  plan: zyisuuikti

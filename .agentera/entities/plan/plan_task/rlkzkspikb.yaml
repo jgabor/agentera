@@ -1,0 +1,13 @@
+id: rlkzkspikb
+artifact: plan
+record:
+  name: Add publish-latest CI job on main push, gated by NPM_TOKEN and version comparison
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a push to main WHEN build, typecheck, test, and any applicable gate jobs are green AND NPM_TOKEN secret is set AND npm view agentera@latest version is older than the committed shim/stable version THEN the publish-latest job runs the existing packages/cli/shim/scripts/publish-stable.mjs (or the equivalent documented stable publish path)
+    - GIVEN a push to main WHEN any gating CI job is red OR NPM_TOKEN is unset OR the committed stable version equals or is older than the published @latest version THEN the publish-latest job is skipped (no-op)
+    - GIVEN investigation of the actual stable publish surface on main WHEN complete THEN the job implementation matches the real surface (shim-only publish via publish-stable.mjs, or a documented alternative if the surface is more complex)
+    - GIVEN a successful publish THEN the published version on npm @latest dist-tag matches the committed stable version
+  plan: lwpqtzxgxp

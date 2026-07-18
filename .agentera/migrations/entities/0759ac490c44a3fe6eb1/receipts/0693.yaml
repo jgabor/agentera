@@ -1,0 +1,12 @@
+id: ozkbcialms
+artifact: plan
+record:
+  name: Make Alias Routing Observable
+  depends_on:
+    - covnujtxgb
+  status: complete
+  acceptance:
+    - GIVEN `/agentera status`, `/agentera discuss`, and `/agentera build` are requested WHEN routing is evaluated THEN they route to hej, resonera, and realisera without disambiguation
+    - GIVEN non-exact requests such as `build everything` or `run the plan` are evaluated WHEN routing chooses a capability THEN existing concrete work intent is preserved
+    - GIVEN no alias or trigger matches WHEN routing runs THEN hej fallback is unchanged
+  plan: sphjbaunyn

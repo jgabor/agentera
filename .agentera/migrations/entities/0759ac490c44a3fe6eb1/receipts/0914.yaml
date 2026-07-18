@@ -1,0 +1,16 @@
+id: phqwtrkrqu
+artifact: plan
+record:
+  name: Orkestrera guidance integration
+  depends_on:
+    - gdmhewesvo
+    - jfbckkgxof
+  status: complete
+  acceptance:
+    - GIVEN Orkestrera starts from a complete orchestration context WHEN selecting and evaluating a task THEN capability prose directs the conductor to use the returned context before raw plan, progress, health, TODO, or decisions artifacts.
+    - GIVEN orchestration context is incomplete WHEN guidance continues THEN it instructs agents to run listed routine CLI fallbacks before any last-resort raw artifact read.
+    - GIVEN compacted decision caveats, stale health/profile/app caveats, or missing retry state are present WHEN Orkestrera hands off to Inspektera THEN those caveats are preserved rather than hidden or reconstructed.
+  evidence:
+    - cycle: 486
+      note: "Task 4 updated Orkestrera prose and schemas so normal startup uses `agentera hej --format json --capability-context orkestrera` and the returned `orchestration_context` before raw plan, progress, health, TODO, or decisions artifacts. The guidance now treats complete source contracts as authoritative for normal task selection and evaluation, requires listed routine CLI fallbacks before last-resort raw reads when context is incomplete, and preserves compacted decision caveats, stale health/profile/app caveats, missing state families, and `retry_state.status: not_recorded` or `unavailable` for Inspektera handoff. Orkestrera artifact and validation schemas now encode the context-first and fallback-before-raw-read contract. Focused validation passed with Orkestrera capability validation, schema self-validation, 40 hej/Decision45 tests, live Orkestrera context, gate, compaction check, and diff whitespace check. Inspektera evaluation returned PASS with no blocking findings and noted only that new validation rules are string-presence checks rather than behavioral fixture tests."
+  plan: urcofuuwnm

@@ -1,0 +1,13 @@
+id: kfxgfowfqb
+artifact: plan
+record:
+  name: Implement v2/v3 compatibility detection and guard rails
+  depends_on:
+    - bzthidhinb
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/src/upgrade/compatibility.ts WHEN classifyInstall() runs THEN it distinguishes v2 managed app-home, v3 self-contained npm, source checkout, and unknown/foreign layouts using signals aligned with doctor/appModel
+    - GIVEN a v2 install and stable channel WHEN upgrade --dry-run runs without --target-major THEN preview status is manual_review_needed or no_changes_needed and never ready_to_apply for cross-major migration
+    - GIVEN a v2 install and explicit --target-major 3 WHEN upgrade --dry-run runs THEN preview lists cross-major work tagged requires_explicit_major_opt_in
+    - GIVEN backport-safety tests runnable on main WHEN stable channel dry-run executes THEN no v3 migration operations appear in the plan payload
+  plan: prcowxktfp

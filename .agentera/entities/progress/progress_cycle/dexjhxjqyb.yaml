@@ -1,0 +1,16 @@
+id: dexjhxjqyb
+artifact: progress
+record:
+  timestamp: 2026-07-18 04:50
+  type: fix
+  phase: build
+  what: Bound approval generation to validated pre-journal migration preparation.
+  inspiration: PLAN Task24 retry 2/2 FINAL
+  discovered: The readiness generator required exact untracked porcelain reconciliation and a durable transient identity envelope, not a migrations-directory exception.
+  verified: 53 focused migration tests and 2,668 full CLI tests across 218 files passed; typecheck and build passed. Final compact and contract gates follow after state synchronization.
+  next: Task24 is complete. Task14 remains pending; do not generate a live approval or apply the live migration without explicit authorization.
+  context:
+    intent: Complete Task24 retry 2/2 by allowing only one strictly validated stale or same-operation preparation during approval generation and binding it through apply.
+    constraints: No live approval/apply, Task15, version, changelog, vision, manual YAML, amend, push, publish, or tag. Preserve the existing 999-receipt stale preparation.
+    unknowns: Task14 apply authorization remains intentionally unresolved.
+    scope: Approval generator, shared preparation inspection, apply validation, migration tests, Task24 evidence, and Cycle913.

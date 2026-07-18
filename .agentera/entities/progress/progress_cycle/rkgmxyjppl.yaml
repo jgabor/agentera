@@ -1,0 +1,15 @@
+id: rkgmxyjppl
+artifact: progress
+record:
+  timestamp: 2026-07-17 06:19
+  type: fix
+  phase: build
+  what: Routed health entity append through the canonical loaded input while preserving exact nested audit records and rejecting caller-owned envelopes before effects.
+  discovered: Entity tests had populated both values and input, masking that public --input requests intentionally leave values empty.
+  verified: "Focused health entity tests passed: 1 file, 10 tests. Full CLI passed: 208 files, 2,499 tests. Typecheck and build passed. State validation passed with 0 issues. Audit capability passed. Capability contract passed 2/2. Compact passed for 10 artifacts with 0 over-limit, formatting, protected-overflow, error, or changed findings."
+  next: Task 6 remains complete. Task 7 remains pending; do not begin it in this cycle.
+  context:
+    intent: Fix only Task 6 public health input routing after the entity cutover regression was identified.
+    constraints: Task 6 health public input routing only; no other entity family, apply, push, publish, vision, or unrelated changes.
+    unknowns: None within the corrected public health append path.
+    scope: One health entity input selection fix, realistic public CLI regressions, and exact cycle evidence.

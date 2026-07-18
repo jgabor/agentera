@@ -1,0 +1,17 @@
+id: nhccapugjo
+artifact: plan
+record:
+  name: Introduce role-aware capability state inventory
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - "GIVEN a capability artifact schema entry with `local_role: produces` WHEN startup read needs are computed THEN the artifact is reported as a write or generated target, not as missing startup state."
+    - GIVEN Planera declares `plan_archive` WHEN Planera context is emitted THEN `plan_archive` is absent from missing read-state families.
+    - GIVEN Optimera declares `optimera_harness` WHEN Optimera context is emitted THEN `optimera_harness` is absent from missing read-state families.
+    - GIVEN malformed or missing artifact schemas WHEN inventory is computed THEN schema errors remain explicit and do not fabricate state needs.
+  evidence:
+    - "`scripts/agentera` now builds role-aware capability artifact inventory with read needs separated from declared write targets."
+    - Focused hej context tests cover produced-only artifacts, Planera `plan_archive`, Optimera `optimera_harness`, and malformed or missing artifact schemas.
+    - "Verification passed: focused pytest targets, capability validation for all capabilities, capability-contract self-validation, Planera/Optimera context spot checks, and `git diff --check`."
+  plan: eodwfvjsay

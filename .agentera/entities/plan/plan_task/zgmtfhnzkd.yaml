@@ -1,0 +1,14 @@
+id: zgmtfhnzkd
+artifact: plan
+record:
+  name: Correct advisory command exits
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN lint findings in default mode WHEN the command completes THEN it reports the findings and exits zero.
+    - GIVEN the same lint findings with strict mode WHEN the command completes THEN it reports the same findings and exits nonzero.
+    - GIVEN no lint findings WHEN either mode completes THEN the command exits zero.
+    - GIVEN invalid input or an authority-loading failure WHEN either mode runs THEN it exits nonzero with an actionable diagnostic.
+    - GIVEN a publication candidate containing a lint finding WHEN the validated publication path evaluates it THEN publication remains rejected regardless of the interactive advisory default.
+  plan: wbzfatnjbv

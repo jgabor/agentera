@@ -1,0 +1,7 @@
+id: eckoiwctht
+artifact: docs
+record:
+  document: Semantic eval command
+  path: scripts/semantic_eval.py
+  last_updated: 2026-05-15
+  status: current

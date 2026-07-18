@@ -1,0 +1,39 @@
+id: pjewhohkcm
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-22
+    status: archived
+    reviewed: 2026-05-22
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Added required review metadata and the previous-plan archive pointer after validation found missing header fields.
+    title: Agentera 3.0 Prime Control Plane and JSON Budget
+  what: "Replace the v2 compatibility-shaped JSON context model with a single 3.0 command and JSON contract: top-level commands map directly to capabilities, `prime` is the one non-capability control plane, slim `capability_context` is the only supported capability startup shape, `--context-profile full` is removed, and every public JSON output surface is inventoried, measured, budgeted, and reviewed."
+  why: "Decision 58 removes duplicate protocol identities at the 3.0 boundary. Decision 59 applies that same clean-break principle to command and JSON output: full and slim startup shapes cannot both survive, `hej --capability-context` should not remain the context seam, and structured outputs should not keep accumulating unused context."
+  constraints: "Introduce direct capability-name CLI commands only as part of the explicit 3.0 command break, with `prime` as the only non-capability control-plane exception. Do not lock the final dashboard/orientation display label or exact flag spelling beyond the provisional prime-owned dashboard/orientation mode. Do not refresh packages, publish, tag, push, refresh installed app files, edit protected vision/objective/profile state, or bump release metadata unless separately approved. Use D47-style classification before edits: change live public surfaces, preserve historical/migration/diagnostic evidence intentionally, and measure bytes plus GPT-5 tokens for every supported public `--format json` or `--json` output."
+  scope:
+    included:
+      - "`scripts/agentera` public JSON commands and selectors."
+      - Direct top-level capability command routing for all twelve capabilities.
+      - "`prime` as static priming guide, dashboard/orientation mode, and capability context mode."
+      - Capability context JSON for all twelve Agentera capabilities.
+      - Measurement and budget tooling for public JSON output surfaces.
+      - CLI contracts, capability guidance, README, UPGRADE, docs, and tests.
+      - A public JSON inventory modeled after `docs/d47-app-home-vocabulary-inventory.md`.
+    excluded:
+      - 3.0 artifact-name or path migration outside JSON output contracts.
+      - Final branding or display spelling for the dashboard/orientation surface.
+      - Runtime/package publication, tags, pushes, package refreshes, and release bumps.
+      - Private helper internals unless they shape public JSON output.
+      - Historical decisions, changelog, archived plans, and migration examples except as classified evidence.
+  design: "First inventory the structured-output and command surface the same way the D47 app-home vocabulary work classified terms before changing them. Then make `prime` the single non-capability control plane: bare `agentera prime` prints static Agentera usage for new-session priming, prime dashboard/orientation mode replaces the long-term `hej` dashboard seam without locking the final spelling, and `agentera prime --context <capability>` replaces `agentera hej --capability-context <capability>` for capability startup context. After the inventory and budget baselines exist, remove the full-profile compatibility path for capability startup JSON, update callers to consume the single `capability_context` shape from `prime`, and enforce bytes plus GPT-5 token budgets through tests so JSON bloat fails before release."
+  overall_acceptance:
+    - GIVEN public JSON surfaces exist WHEN the inventory is complete THEN each supported output is classified as change, preserve, diagnostic, or historical.
+    - GIVEN top-level 3.0 commands are reviewed WHEN implementation completes THEN all twelve capability names route directly to their capabilities and `prime` is the only retained non-capability control-plane exception.
+    - GIVEN `agentera prime` runs without a mode WHEN output emits THEN it remains a static initial-session Agentera usage guide.
+    - GIVEN prime dashboard/orientation mode runs WHEN output emits THEN it replaces the long-term need for a separate `hej` dashboard command without locking the final dashboard/orientation spelling in this plan.
+    - GIVEN JSON measurement runs WHEN all public outputs are generated THEN bytes and GPT-5 token counts are recorded with command, selector, profile, and capability labels where relevant.
+    - GIVEN any output exceeds its budget WHEN tests run THEN the failure names the command, profile or capability where relevant, byte count, token count, and budget.
+    - GIVEN `agentera prime --context <capability> --format json` runs in 3.0 mode WHEN JSON emits THEN top-level `capability_context` is the supported startup shape and full-profile compatibility is absent.
+    - GIVEN docs, contracts, or tests mention context profiles WHEN validation runs THEN they do not teach `--context-profile full` as a supported 3.0 path.

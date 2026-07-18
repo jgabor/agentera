@@ -1,0 +1,12 @@
+id: utatrlfiay
+artifact: plan
+record:
+  name: Define Cursor runtime contract and registry records
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Decision 63 is firm WHEN the runtime contract is reviewed THEN separate IDE and CLI identities exist with mechanism, lifecycle events, validation claims, subagent dispatch, config targets, diagnostics, and documentation claims recorded for each.
+    - GIVEN existing runtime adapter validation runs WHEN Cursor records are added THEN registry order, interface model typing, and lifecycle metadata checks accept both Cursor identities without breaking existing runtimes.
+    - GIVEN a maintainer reads the Cursor adapter reference WHEN comparing against other runtimes THEN v1 support status, degraded CLI behavior, metadata-only bare hej, and unsupported cloud agents are explicit.
+  plan: eblyfjdqfm

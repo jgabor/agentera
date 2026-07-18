@@ -1,0 +1,15 @@
+id: rvlopuihnk
+artifact: plan
+record:
+  name: Build hermetic sandbox harness scripts
+  depends_on:
+    - gzenugzbuy
+    - bfdwcqrmot
+  status: complete
+  acceptance:
+    - GIVEN scripts/sandbox/seed-v2-fixture.sh WHEN invoked with fixture id THEN it materializes HOME, project, and app-home trees under a temp root without touching real user paths
+    - GIVEN scripts/sandbox/assert-v2v3-migration.sh WHEN run after apply THEN it verifies preserved checksums, app/ removal, idempotent second dry-run, and stable-channel zero cross-major ops
+    - GIVEN scripts/sandbox/scan-python-leftovers.sh WHEN run on sandbox root THEN it exits non-zero listing any forbidden Python-managed reference patterns in hook/runtime configs
+    - GIVEN scripts/sandbox/v2v3-upgrade-harness.sh WHEN run for a P0 fixture THEN it executes dry-run JSON capture, apply with development channel and target-major 3, assertions, and emits sandbox-report.json with overall pass/fail fields
+    - GIVEN harness dry-run step WHEN cross-major work pending THEN exit code matches parityOracle blockedOrFailedSummary or planWithPendingSummary rules
+  plan: gntadmkfrl

@@ -1,0 +1,16 @@
+id: ozwcbglhii
+artifact: progress
+record:
+  timestamp: 2026-07-17 04:10
+  type: fix
+  phase: build
+  what: Bound progress mode detection and publication to one validated project-root identity.
+  inspiration: Final retry 2 of 2 for plan Task 4.
+  discovered: Fresh root baselines allowed a replacement real directory to inherit marker authority between validation and mutation.
+  verified: Focused 4 files/119 tests and full 205 files/2,458 tests passed. Deterministic real-root, ancestor, marker, and lock-publication replacement tests wrote no progress state to either root and cleaned descriptors and lock residue. Typecheck, build, state validation, capability contract 2/2, and compact passed.
+  next: Task 4 remains complete. Task 5 remains pending; do not begin it in this cycle.
+  context:
+    intent: Close Task 4's root-replacement gap without beginning another artifact family or changing cutover scope.
+    constraints: Fix/tests/progress only; no other family, apply, global cutover, push, publish, or vision changes.
+    unknowns: None within Task 4 root identity binding.
+    scope: Project-root validation token, marker snapshot, progress writer lock/entity publication, and focused regression tests.

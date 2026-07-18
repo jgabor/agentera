@@ -1,0 +1,16 @@
+id: esxtrckpoi
+artifact: progress
+record:
+  timestamp: 2026-07-17 13:00
+  type: feat
+  phase: build
+  what: Delivered Task 10 durable entity migration apply, explicit resume, idempotent replay, and guarded rollback through agentera state migrate entities.
+  inspiration: Active Plan Task 10 and Decision 94 state-storage authority.
+  discovered: Nested test runners rebuilt dist concurrently; crash tests now use one built CLI worker subprocess so the full suite remains race-free.
+  verified: 138 focused migration/preview/authority/help/schema tests and full 2548-test CLI suite passed; typecheck, build, check validate state, build capability and capability-contract validation, check compact, help, and schema passed.
+  next: Task 11 remains pending. Do not apply migration to this repository or begin consumer cleanup without a new cycle.
+  context:
+    intent: Complete only Plan Task 10 with durable pre-publication evidence, deterministic resume, no-rewrite replay, and successor-safe rollback.
+    constraints: No live repository apply; no Task 11 consumer cleanup; no entity-family redesign; no blocker repair; no vision, publish, push, or tag.
+    unknowns: None within Task 10 acceptance; the live repository's blocked preview remains intentionally untouched.
+    scope: packages/cli entity migration preview/apply command, durable journal implementation, scoped schema/help/authority, and migration regressions.

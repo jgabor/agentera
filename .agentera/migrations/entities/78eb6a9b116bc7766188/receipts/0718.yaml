@@ -1,0 +1,14 @@
+id: dfqpbykicr
+artifact: plan
+record:
+  name: Focused regression and startup-state validation
+  depends_on:
+    - yiojbyihnf
+    - yuknornsjr
+    - bsitqkknso
+  status: complete
+  acceptance:
+    - GIVEN focused CLI tests run WHEN decisions are full-detail, filtered, or compacted THEN pass and fail paths cover source-contract completeness, missing-field caveats, and path-resolution behavior.
+    - GIVEN startup state-access tests run WHEN Resonera-style decision context is available through the CLI THEN no new raw-after-CLI artifact read requirement is introduced.
+    - GIVEN repository gates run WHEN the implementation is complete THEN compaction and artifact validation gates remain passing.
+  plan: xsarkcjuwo

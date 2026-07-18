@@ -1,0 +1,13 @@
+id: chqaodolkw
+artifact: plan
+record:
+  name: Doctor shebang-aware retryCommand and runtime validation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - "GIVEN a managed app/scripts/agentera whose shebang is #!/usr/bin/env python3 (Python PEP 723) WHEN doctor builds the BundleStatus THEN retryCommand starts with 'uv run <script>', not 'node <script>'"
+    - "GIVEN a managed script with #!/usr/bin/env node shebang (v3 self-contained) WHEN doctor builds the BundleStatus THEN retryCommand starts with 'node <script>' (current behavior, preserved)"
+    - GIVEN a managed script with no shebang or an unreadable shebang WHEN doctor builds the BundleStatus THEN retryCommand is omitted or set to null rather than producing an unrunnable 'node <python>' command
+    - "GIVEN a managed script with mismatched shebang/content (Node shebang + Python body, the case Task 2 catches in the shim) WHEN doctor runs with probeCli: true THEN the doctor emits a runtime_mismatch signal in signals[], so the failure surfaces in JSON output instead of silently passing"
+  plan: yosopjayii

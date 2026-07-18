@@ -1,0 +1,18 @@
+id: sesudjbjee
+artifact: plan
+record:
+  name: v3 cutover tag/publish — graduate npm `@next` to `@latest`
+  depends_on:
+    - tatysbtsxo
+    - gynrjwzeba
+    - lgjczzripd
+    - qzgctzuhwa
+  status: complete
+  blocks:
+    - "11"
+  acceptance:
+    - "GIVEN the cutover surface WHEN the cutover sequence runs THEN the sequence is: (a) `git checkout feat/v3`, (b) `pnpm -C packages/cli build && node packages/cli/scripts/copy-bundle.mjs`, (c) `npm version 3.0.0 --no-git-tag-version` to bump package.json, (d) bump the four release-metadata surfaces in lockstep (`packages/cli/package.json` `version`, `agentera.suiteVersion`, `agentera.gitRef`, `references/cli/update-channels.yaml` `offline_defaults.development`), (e) `git commit -m 'release: 3.0.0'` folding the CHANGELOG 3.0.0 entry, the version bumps, the `.opencode/package.json` lockstep, and the T9 docs promotion per AGENTS.md, (f) `git tag v3.0.0 <commit>`, (g) `git push origin feat/v3 --follow-tags`, (h) `cd packages/cli && npm publish --tag latest` (graduating `@next` to `@latest`), (i) verify `npx -y agentera@latest check validate capability-contract --format json` reports green"
+    - GIVEN the publish WHEN the npm `@latest` install runs THEN `agentera --version` reports 3.0.0; the parity matrix is re-run after the version bump and reports green; the `feat/v3` HEAD has the v3.0.0 tag; the cutover publish commit is folded with the CHANGELOG entry per AGENTS.md
+    - GIVEN the publish WHEN `references/cli/update-channels.yaml` `offline_defaults.latest` is bumped to 3.0.0 alongside the `development` default THEN the four-surface release-metadata contract is satisfied (`packages/cli/package.json` `version` 3.0.0 = `agentera.suiteVersion` 3.0.0 = `references/cli/update-channels.yaml` `offline_defaults.development` 3.0.0 = `registry.json` `skills[0].version` 3.0.0)
+    - GIVEN the publish WHEN `node packages/cli/dist/bin/agentera.js check validate release-metadata --format json` runs THEN the validator reports `release-metadata ok`; the version-divergence gate (resolved L23) is green
+  plan: sgnbhadusj

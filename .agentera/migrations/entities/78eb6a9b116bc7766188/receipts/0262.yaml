@@ -1,0 +1,10 @@
+id: rivgxzsmgh
+artifact: plan
+record:
+  status: complete
+  acceptance:
+    - docs.yaml indexes packages/mobile; vocabulary.md product grammar updated; DESIGN.md surface register for terminal vs mobile.
+  name: Docs index, vocabulary, and DESIGN surface register
+  depends_on:
+    []
+  plan: plepyjdube

@@ -1,0 +1,40 @@
+id: syhftadrcv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-13
+    status: archived
+    reviewed: 2026-07-13
+    critic_issues: 18 found, 18 addressed, 0 dismissed
+    title: "Plan: Finish archive-backed state rollout"
+  what: Complete the remaining consumer migration, local compatibility migration, optional Git enrichment, schema and documentation alignment, health evaluation, development release preparation, and final closeout after the storage, listing, and bounded-prime foundations.
+  why: Preserved predecessor lineage contains the completed storage foundation and evaluated repair history. The retry-exhausted prime task cannot accept another evaluation, but its defect was subsequently repaired and verified; replacement must preserve that stale blocked record while independently validating the repair before consumer work.
+  constraints: Publish through `state plan create --force` with exact predecessor preservation and CLI-owned lineage. Retain Decision 53 no-inference rules, archive immutability, non-Git completion, bounded reads, no remote access, and the npm 3.0 development-channel hold. No stable promotion, npm publication, tag, or push.
+  overall_acceptance: GIVEN archive-backed state is already operational WHEN capabilities consume it, legacy projects migrate, optional Git enrichment runs, and release gates evaluate synchronized state THEN provenance stays truthful, local migration remains independently complete, and every governed development-release gate passes.
+  scope:
+    included:
+      - All declared capability and bundled consumers of decisions, progress, and health
+      - Bounded local migration authority and execution
+      - Explicit optional chaining to the existing guarded Git backfill
+      - Runtime schemas, quality budgets, help, docs, and bundled parity
+      - Targeted health audit, next development boundary, and final closeout
+    excluded:
+      - Redoing archives, transactions, overlays, projections, get/list, prime bounds, durability, or Git backfill
+      - SQLite, `.agentera/history`, custom Git refs, automatic commits, or remote access
+      - Experiments, unnumbered Markdown archives, stable promotion, or npm publication
+    deferred:
+      - Persistent archive index until measured thresholds require it
+  design: Migrate every consumer before exposing mutation. Define local migration inventory and safety before applying it, then chain optional existing Git enrichment without coupling local completion to Git. Align runtime authorities before prose and bundles, audit the delivered model, prepare only the next development boundary, synchronize state, and rerun every gate.
+  unknowns:
+    - question: Are custom legacy artifact names intentionally unsupported or safely discoverable under a bounded migration inventory?
+      affects_task: 2
+      resolve_by: Reconcile the existing six-pair boundary and open custom-artifact TODO before publishing authority.
+    - question: What exact existing CLI namespace should own local archive migration?
+      affects_task: 2
+      resolve_by: Present command grammar alternatives and obtain operator confirmation before committing parser or schema changes.
+    - question: Which consumer surfaces still carry permanent-unavailability or raw-read assumptions after the prime repair?
+      affects_task: 1
+      resolve_by: Generate and validate a complete source-and-bundle consumer matrix before editing contracts.
+  surprises:
+    []

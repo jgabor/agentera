@@ -1,0 +1,14 @@
+id: sejcqsrvvx
+artifact: plan
+record:
+  name: Detect and flag runtime configs with neither v2 nor v3 entrypoint
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a runtime config file with no v2 Python patterns and no v3 npm entrypoint WHEN the migration rewire phase evaluates the file THEN a migration item is produced (not silently skipped) with a diagnostic message explaining that neither v2 nor v3 entrypoint was detected
+    - GIVEN a runtime config file that already references the v3 npm entrypoint and has no v2 patterns WHEN the migration rewire phase evaluates the file THEN the phase produces a noop item with the already-references-npm message (unchanged behavior)
+    - GIVEN a runtime config file with v2 Python patterns WHEN the migration rewire phase evaluates the file THEN the phase produces a rewire item with pending or blocked status (unchanged behavior)
+    - GIVEN a runtime config file with neither v2 nor v3 patterns WHEN agentera upgrade --dry-run runs THEN the output includes the file name and a diagnostic message visible to the user
+    - "GIVEN a project with mixed runtime configs (some v2, some v3, some neither) WHEN the migration rewire phase completes THEN every evaluated file is classified into exactly one of: noop (v3 present), pending or blocked (v2 present, rewire attempted), or a manual-review-flagged status (neither present)"
+  plan: rflvxratft

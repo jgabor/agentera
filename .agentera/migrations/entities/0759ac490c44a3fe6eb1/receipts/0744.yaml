@@ -1,0 +1,13 @@
+id: jnbkncylji
+artifact: plan
+record:
+  name: Verify hooks green without LEFTHOOK=0
+  depends_on:
+    - zkgohnodrn
+    - kjiojtyeyw
+  status: complete
+  acceptance:
+    - GIVEN a docs-only commit on feat/v3 that does not touch oracle fixtures WHEN git commit runs without LEFTHOOK=0 THEN pre-commit succeeds
+    - GIVEN a commit on main that touches only the new precommit script and lefthook config WHEN git commit runs without LEFTHOOK=0 THEN pre-commit succeeds
+    - GIVEN AGENTS.md WHEN updated THEN it states that LEFTHOOK=0 is for emergency bypass only and lists the staged pre-commit commands
+  plan: ydayxhdazr

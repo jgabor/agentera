@@ -1,0 +1,7 @@
+id: inximgsymw
+artifact: docs
+record:
+  document: Lefthook config
+  path: .lefthook.yml
+  last_updated: 2026-05-05
+  status: current

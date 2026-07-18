@@ -1,0 +1,16 @@
+id: hpktivpevc
+artifact: plan
+record:
+  name: Local metadata closeout
+  depends_on:
+    - eiqgcgazhx
+    - ehspgvivkg
+    - yiwpwlvbki
+  status: complete
+  evidence:
+    - "Task 4 local metadata closeout updated TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and this plan evidence to record the D47 app-home vocabulary cleanup. Evidence recorded from completed work: Task 1 independent evaluation passed for inventory coverage, required columns, compatibility preservation, and historical/migration/archive preservation; Task 2 independent evaluation passed for live app-home vocabulary updates while preserving compatibility contracts, canonical artifact labels, CLI selectors, route/handoff boundaries, historical records, and migration examples; Task 3 focused verification covered app-home contract behavior, doctor/upgrade behavior, package/runtime surfaces, affected textual fixtures, targeted stale-terminology audit, lifecycle adapter metadata, CLI describe metadata, schema self-validation, edited capability validation, PLAN and SESSION artifact validation, and `git diff --check`, with 346 passing tests. Task 4 closeout validation passed with `uv run hooks/validate_artifact.py --artifact TODO.md --file TODO.md --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact CHANGELOG.md --file CHANGELOG.md --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact DOCS.md --file .agentera/docs.yaml --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact PROGRESS.md --file .agentera/progress.yaml --format json` (status=pass), `uv run hooks/validate_artifact.py --artifact PLAN.md --file .agentera/plan.yaml --format json` (status=pass), and `git diff --check` (PASS). Orkestrera evaluation passed Task 4 acceptance criteria, and closeout did not touch `.agentera/decisions.yaml`, claim user-confirmed D47 satisfaction, or record publication, push, tag, installed-app refresh, profile refresh, vision edit, objective edit, package update, version bump, or unsupported capability-name CLI command."
+  acceptance:
+    - GIVEN verification passes WHEN metadata is synced THEN TODO, progress, changelog, docs audit metadata, and plan state record the D47 vocabulary cleanup and exact verification evidence.
+    - GIVEN D47 remains only provisionally satisfied WHEN decisions metadata is touched THEN user-confirmed satisfaction is not claimed and the decision satisfaction state is left unchanged unless the user explicitly confirms it.
+    - GIVEN closeout completes WHEN scope is audited THEN no publication, push, tag, installed-app refresh, profile refresh, vision edit, objective edit, or unsupported capability-name CLI command occurred.
+  plan: nbvykgaapw

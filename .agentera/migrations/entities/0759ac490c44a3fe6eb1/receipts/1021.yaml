@@ -1,0 +1,12 @@
+id: fzjxnhsuwi
+artifact: plan
+record:
+  name: "v2 backport: pyproject.toml fallback in _load_suite_version"
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a v2 install with registry.json version `current` and pyproject.toml version `2.7.9` WHEN _load_suite_version is called THEN it returns `2.7.9`
+    - GIVEN a v2 install with registry.json version `3.0.0` WHEN _load_suite_version is called THEN it returns `3.0.0`
+    - GIVEN a v2 install with no pyproject.toml and registry version `current` WHEN _load_suite_version is called THEN it returns `current`
+  plan: kunvwyrjcj

@@ -1,0 +1,11 @@
+id: givcznbkqo
+artifact: plan
+record:
+  name: Core prose and SKILL.md vocabulary replacement
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN SKILL.md, capability prose files, and dispatcher guidance are inspected WHEN legacy dispatch/conductor terms are found THEN they are replaced with the canonical route/suggest/delegate/spawn vocabulary.
+    - GIVEN compatibility identifiers exist for shipped consumers WHEN the replacement is applied THEN those qualified compatibility names are preserved intact.
+  plan: oakpdqdnpg

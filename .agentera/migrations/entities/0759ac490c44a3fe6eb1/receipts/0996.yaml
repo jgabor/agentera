@@ -1,0 +1,19 @@
+id: iuwuqfaoot
+artifact: plan
+record:
+  name: 2.3.12 local closeout metadata sync
+  depends_on:
+    - dzwqmrevev
+    - gjqudqkwhe
+    - ruqdukymbd
+    - ygcmptypcb
+    - btjczctjkr
+    - rbhrilwkzn
+  status: complete
+  acceptance:
+    - GIVEN execution-context validation passes WHEN closeout synchronization runs THEN TODO, progress, docs, and changelog record the completed 2.3.12 source-contract patch and any deferred 2.3.13+ source-contract work remains visible.
+    - GIVEN version-bearing files are inspected WHEN local metadata is synchronized THEN only files listed by docs.yaml version policy and the version-files registry are changed for 2.3.12 alignment.
+    - GIVEN local metadata sync completes WHEN scope is audited THEN no publication, remote push, tag creation, installed app refresh, profile refresh, vision edit, objective-state edit, Optimera objective-state mutation, automatic dispatch, or unsupported capability CLI command introduction occurred without explicit approval; negative parser probes are test-only evidence.
+  evidence:
+    - TODO resolves `[feat:2.3.12]`; CHANGELOG, DOCS audit metadata, PROGRESS, and version-bearing package/plugin/OpenCode/skill surfaces record local 2.3.12 alignment without publication, remote push, tag creation, installed app refresh, profile refresh, vision edit, objective-state edit, objective mutation, automatic dispatch, or unsupported CLI command introduction.
+  plan: hbpzaealxp

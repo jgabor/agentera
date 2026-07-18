@@ -1,0 +1,17 @@
+id: ulnrauxhtf
+artifact: plan
+record:
+  name: Apply the explicit repository cutover
+  depends_on:
+    - whmcsqbjhd
+    - puxejwplpf
+    - pslpwggyci
+    - gkquxgysdy
+    - tuqrczllwf
+  status: pending
+  acceptance:
+    - GIVEN an approved blocker-free preview on the selected integration checkout WHEN apply runs THEN entity authority and the migration record replace legacy authority.
+    - GIVEN migrated state WHEN exact retrieval and bounded views are compared with preview THEN every mapped entity and relationship is present once.
+    - GIVEN migration apply WHEN side effects are inspected THEN only approved project-state files change and the CLI never invokes Git.
+    - GIVEN post-apply parity failure WHEN finalization is attempted THEN cutover remains recoverable and no success is claimed.
+  plan: vllyohtcde

@@ -1,0 +1,36 @@
+id: lxpdfnzgfj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-13
+    status: archived
+    reviewed: 2026-05-13
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    revised: "[post-audit-flagged] Added explicit ownership rules, exact deprecated-default environment handling, Copilot no-shell behavior, managed-surface preview/apply boundaries, and package-update opt-in boundaries. [task-5-retry-1] Added evidence for refreshing resolving stale Agentera-owned OpenCode skill links to the current durable app home while preserving user-owned skill paths. [task-6-retry-1] Corrected active vocabulary so normal app repair means app plus managed runtime surfaces, while --only bundle is documented as a narrow app-only operation. [task-8] Closed final state sync after Tasks 1-7 passed: TODO, changelog, docs, progress, and plan state record shell-rc removal, stale-remnant handling, verification evidence, and an explicit no-release-target gate with version-bearing files unchanged. Agentera lint remains advisory: full plan exceeds the 100-word PLAN.md entry budget."
+    title: Remove shell rc mutation from runtime setup
+  what: Remove every Agentera production path that writes environment variables to shell startup files, replace shell-rc wiring with runtime-native configuration or per-invocation guidance, and make repair upgrades cover app files plus managed runtime configs, plugins, hooks, commands, cleanup, and package-surface reporting together.
+  why: Shell startup files are user-owned and off-limits. The current behavior created a stale AGENTERA_HOME export that can keep directing runtimes and repair commands to the deprecated default app path after the app moved to the platform data home. Agentera needs one safe app-home model, no shell startup mutation, and repair flows that refresh all managed runtime surfaces instead of only app files.
+  constraints: Never write shell startup files such as ~/.bashrc, ~/.zshrc, ~/.profile, or ~/.config/fish/config.fish. Doctor remains read-only. Runtime config, plugin, hook, command, and cleanup writes require Agentera ownership proof; anything else is diagnostic-only. Preserve Decision 47 app-home semantics, explicit custom app-home safety, package-update opt-in, and no push, publication, live paid host, vision, or objective-state changes without explicit approval.
+  scope:
+    included:
+      - Shell-rc write removal from setup, upgrade, repair, smoke, docs, and capability guidance.
+      - Managed runtime surface refresh for Codex config, OpenCode plugin/commands/skills, hooks, app files, stale v1 artifacts, and package-surface reporting.
+      - Exact deprecated-default app-home recovery and stale-remnant diagnostics.
+      - Regression tests, default non-live smoke evidence, docs, changelog, TODO, progress, and version-gate state sync.
+    excluded:
+      - Editing shell startup files, including removing legacy Agentera blocks.
+      - Silent overwrite of custom app-home paths or user-owned runtime config.
+      - External package-manager commands unless package update is explicitly requested.
+      - Remote publication, tags, pushes, live paid host runs by default, vision edits, or objective-state edits.
+    deferred:
+      - Optional interactive user assistance for manually removing stale shell-rc lines.
+      - Any broad new runtime setup namespace beyond the existing upgrade/doctor flow.
+  design: "Anchor the work in scripts/setup_copilot.py, scripts/agentera_upgrade.py, scripts/install_root.py, scripts/agentera, .opencode/plugins/agentera.js, UPGRADE.md, README.md, and tests/test_upgrade_cli.py. Start by making ownership explicit: managed marker, manifest entry, known generated path, trusted hook target, or exact app marker is required for mutation. Treat shell startup references as user-owned leftovers only. Then remove Copilot shell-rc setup, make exact deprecated-default AGENTERA_HOME non-authoritative only when stale or missing, and make normal repair preview/apply cover app plus managed runtime surfaces while keeping external package updates opt-in."
+  overall_acceptance:
+    - GIVEN Agentera setup, doctor, upgrade, or repair guidance reaches runtime wiring WHEN it handles environment setup THEN no shell startup file is written.
+    - GIVEN stale managed Agentera runtime surfaces exist WHEN upgrade preview and apply run with normal approval THEN app files, runtime-native configs, managed plugins, hooks, commands, and cleanup are handled together where safe.
+    - GIVEN old shell startup references still exist WHEN Agentera runs or repairs itself THEN those references cannot silently force the deprecated default app path and diagnostics explain the user-owned cleanup boundary.
+    - GIVEN custom user-owned runtime config or app-home paths are present WHEN repair runs THEN Agentera blocks or reports them instead of overwriting them silently.
+  surprises:
+    []

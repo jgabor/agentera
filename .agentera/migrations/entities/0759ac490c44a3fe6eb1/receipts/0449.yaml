@@ -1,0 +1,12 @@
+id: qivjnjhmrs
+artifact: plan
+record:
+  name: Installed CLI resolution behavior
+  depends_on:
+    - jxeyfjsbsv
+  status: complete
+  acceptance:
+    - GIVEN a runtime-injected deprecated default value exists WHEN the installed CLI starts without an explicit Agentera directory THEN the CLI reports the normal platform directory as the selected home when that is the safe path.
+    - GIVEN a hermetic test or custom-install environment supplies a valid Agentera directory WHEN the CLI starts THEN the CLI uses that directory without forcing platform defaults.
+    - GIVEN the selected Agentera directory contains only recognized user data WHEN upgrade preview runs THEN the preview separates user data from managed app files without treating the user data as unknown files.
+  plan: gjjuohyorr

@@ -1,0 +1,41 @@
+id: qzjgenwloi
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-16
+    status: archived
+    reviewed: 2026-05-16
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    revised: Narrowed the plan to a registry-backed artifact-location projection, preserved routine state-command ownership, avoided installed-app refresh and capability-name commands, required migration tests for any JSON shape change, and separated path discovery from raw artifact content recovery.
+    title: AGENTERA_ARTIFACTS Raw-Read Reduction Plan
+  what: Reduce avoidable `AGENTERA_ARTIFACTS` raw reads after CLI state by exposing a compact artifact-location contract through existing Agentera CLI discovery surfaces, so agents can find mapped artifact paths without raw-reading `.agentera/docs.yaml` or probing `.agentera/` directories defensively.
+  why: 'Retained startup benchmarks show recurring `AGENTERA_ARTIFACTS` raw-after-CLI pressure even after routine artifact source-contract work. The immediate gap is practical path discovery: `agentera query --list-artifacts --format json` currently returns only artifact IDs, while `agentera describe --format json` exposes schema paths and default artifact paths but not a concise resolved-location/read-boundary contract. Agents still lack a direct structured answer to "where is this artifact, who owns normal reads, and when is raw file access valid?"'
+  constraints: Do not broaden this into a full artifact registry redesign, do not add capability-name CLI commands, do not change routine state-command ownership, do not mutate `.agentera/vision.yaml`, objective state, decision satisfaction state, installed app/profile state, package-manager state, publication metadata, tags, or remotes. Preserve raw artifact access for explicit writes, archives, validation, corruption diagnostics, CLI defects, unavailable/incomplete CLI state after fallbacks, and benchmark analysis. Preserve text output compatibility unless a test-backed CLI contract explicitly changes a structured JSON surface.
+  scope:
+    included:
+      - Benchmark and CLI-surface evidence for the current `AGENTERA_ARTIFACTS` raw-read gap.
+      - A registry-backed artifact-location projection with mapped path, resolution source, existence, owners, and read/write boundaries.
+      - "Existing CLI discovery surfaces only: `agentera describe --format json`, `agentera query --list-artifacts --format json`, and, only if needed, a bounded `hej` source-contract pointer."
+      - Regression tests for structured discovery, fallback guidance, path override handling, and unchanged unsupported capability-name commands.
+      - Focused benchmark or proxy evidence that the new surface addresses the historical path-discovery reason without claiming to eliminate legitimate raw writes or diagnostics.
+      - Plan artifact validation and handoff to execution.
+    excluded:
+      - Redesigning artifact schemas, capability schema contracts, or the registry model beyond fields required for path discovery.
+      - Adding new top-level state commands or capability-name commands such as `agentera planera`.
+      - Replacing routine state commands with generic `query` for normal artifact content reads.
+      - Reading raw artifacts to reconstruct content already covered by complete CLI source contracts.
+      - Installed app refresh, profile refresh, publication, remote push, tags, package-manager changes, vision edits, objective-state edits, or decision satisfaction changes.
+    deferred:
+      - Token-budget optimization beyond the path-discovery projection.
+      - User-local benchmark corpus retention changes or runtime-adapter schema repair unrelated to this artifact-location seam.
+      - Closeout metadata/version bumps unless implementation classification and docs semver policy require them.
+  design: Reuse the existing `artifact_registry` authority instead of duplicating path rules. Add a small projection that combines registry identity, docs.yaml mapping overrides, resolved project paths, schema metadata, existence, routine read command ownership, and raw-access boundaries. Surface it where agents already go for discovery, with text output remaining human-readable and structured output carrying the machine contract. Keep `agentera describe` responsible for runtime and schema discovery; keep routine commands responsible for artifact content.
+  overall_acceptance:
+    - GIVEN an agent needs artifact path discovery after CLI state WHEN it uses supported Agentera CLI surfaces THEN it can identify mapped paths and normal read commands without raw-reading `.agentera/docs.yaml` or probing `.agentera/` directories.
+    - GIVEN an artifact location is unresolved, templated, missing, or outside normal routine state coverage WHEN structured discovery reports it THEN the output is explicit and caveated rather than pretending raw reads are unnecessary.
+    - GIVEN artifact content is needed WHEN a routine state command owns it THEN the guidance still prefers that command over generic query or raw file reads.
+    - GIVEN raw artifact access is needed for writes, archival, validation, diagnostics, CLI defects, unavailable CLI state, or benchmarks THEN the new contract permits it explicitly and does not misclassify those accesses as regressions.
+  surprises:
+    - "Planning evidence found four retained benchmark rows with `AGENTERA_ARTIFACTS` pressure: `2.3.3` reported 1 read without token estimates, `2.3.13` reported 4 reads and 63 estimated raw-after-CLI tokens, `2.7.0` reported 4 reads and 114 estimated tokens, and `2.8.0` reported 1 read and 23 estimated tokens. Current `query --list-artifacts --format json` returns only names, and current `describe` exposes schema/default paths but no compact resolved-location contract."
+    - "Adversarial review found five issues and all were addressed: avoid broad registry redesign; preserve text-output compatibility and route/CLI separation; do not stuff full artifact tables into every `hej` response without evidence; handle unresolved objective/profile/template paths truthfully; and keep legitimate raw writes/diagnostics out of the raw-read reduction target."

@@ -1,0 +1,22 @@
+id: spsofyzjcr
+artifact: plan
+record:
+  name: Audit only the declared rollout requirements
+  depends_on:
+    - uadsryukgq
+    - csttpmzuzm
+  status: complete
+  acceptance:
+    - GIVEN the declared local-operator threat model WHEN audit evaluates contract ownership, bounded I/O, integrity, retries, compatibility, durability, and evidence THEN cited findings cover requested behavior and do not require defenses against an actor controlling the process or repository.
+    - GIVEN predecessor failures and known caveats WHEN audit reports THEN any open P0 or P1 blocks completion; only non-blocking caveats may carry forward, and no new product requirement is invented.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Health Audit 30 declares 10 informational findings but contains 11 finding records; product requirements pass, but the immutable audit aggregate is inaccurate.
+    provenance:
+      attempt_id: simplified-task3-audit-2
+      source: "Independent orchestration evaluator: corrected Health Audit 31 aggregate, scope, citations, and caveat audit"
+      recorded_at: 2026-07-14 16:37
+      writer_command: agentera state plan record-evaluation
+  plan: yrilfqdbdh

@@ -1,0 +1,17 @@
+id: dqdwsmzkve
+artifact: plan
+record:
+  name: Audit the delivered storage model
+  depends_on:
+    - gmbzutcvhx
+    - jtipwnefuk
+    - gzkkoqlbcr
+    - nqflecovtk
+    - eqhpzagrls
+    - xdkstsrwjo
+  status: pending
+  acceptance:
+    - GIVEN the delivered runtime and migration model WHEN a targeted audit runs THEN architecture, state contracts, bounded I/O, tests, compatibility, data integrity, durability, and freshness receive cited findings and grades through the typed health writer.
+    - GIVEN predecessor blockers and npm packaging caveats WHEN audit reports THEN each is resolved, carried forward, or attributed without inferred evidence.
+    - GIVEN the npm 12 parser failures and any new critical or warning finding WHEN release preparation begins THEN each receives explicit resolved, blocked, or carried-forward disposition rather than silent health.
+  plan: ckzzomuyos

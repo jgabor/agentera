@@ -1,0 +1,6 @@
+id: bpldovnflp
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: '[refactor:3.0.0] Investigate what scenarios that can lead to "blocked by manual review" that are overly-conservative or -defensive, and could be automated or simplified to improve user experience during upgrades, migrations, etc.'

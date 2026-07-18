@@ -1,0 +1,15 @@
+id: bomttifswv
+artifact: progress
+record:
+  timestamp: 2026-07-18 06:19
+  type: fix
+  phase: build
+  what: Added archived plan lifecycle semantics for entity migration and canonical plan state.
+  inspiration: Task14 parity failure after the first successful entity apply and guarded rollback.
+  discovered: Verified archive source plans retained open lifecycle in entity targets, so 21 historical plans competed with the active plan.
+  verified: 2681 tests passed; typecheck, build, state validation, 12 capability validations, capability contract, compact, and blocker-free 1463-entity dry-run passed.
+  next: Task14 remains pending; do not apply the live migration until separately authorized.
+  context:
+    intent: Preserve verified archive plans as historical entities without making them active or rewriting their tasks.
+    constraints: No live apply, Task15, version, changelog, vision, task status, or manual YAML edits.
+    scope: Plan entity migration, lifecycle validation/writers, plan list filtering/help, shared plan authority/schema, and focused tests.

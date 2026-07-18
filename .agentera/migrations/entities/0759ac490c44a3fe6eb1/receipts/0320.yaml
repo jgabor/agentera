@@ -1,0 +1,14 @@
+id: xzbbnlmipg
+artifact: plan
+record:
+  name: Add the 12 TypeScript instruction modules and delete the Markdown counterparts
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN feat/v3 base WHEN 12 new files exist at `packages/cli/src/capabilities/{hej,visionera,resonera,inspirera,planera,realisera,optimera,inspektera,dokumentera,profilera,visualisera,orkestrera}/instructions.ts` AND each file exports a string constant named `instructions` (default export) whose value equals the body of the corresponding `skills/agentera/capabilities/<name>/instructions.md` byte-for-byte (whitespace allowed to differ at line endings only) THEN the relocation is source-of-truth complete
+    - GIVEN the same 12 TS modules WHEN the 12 corresponding `skills/agentera/capabilities/<name>/instructions.md` files are deleted from the tree THEN `rg 'capabilities/.*/instructions\.md' skills/agentera` returns zero hits (the bundled SKILL.md body and the `## Directory Structure` diagram are not yet tightened; T4 handles them)
+    - GIVEN the new modules WHEN `pnpm -C packages/cli run typecheck` runs THEN zero errors are reported (the new TS modules compile cleanly under the existing tsconfig)
+    - GIVEN the new modules WHEN `pnpm -C packages/cli build` runs THEN the build exits 0 and `dist/capabilities/<name>/instructions.js` exists for all 12 capabilities
+    - "The per-file change is mechanical: each TS module is `export const instructions: string = String.raw\\`...\\`` (or the equivalent template-literal form) with the Markdown body lifted from the deleted `instructions.md`; no wording drift in the relocation commit"
+  plan: kauavydlqn

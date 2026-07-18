@@ -1,0 +1,12 @@
+id: bffoqzbhun
+artifact: plan
+record:
+  name: Bound or stream large corpus reads in report and usage
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an oversized corpus.json fixture WHEN agentera report or usage runs on npm @next THEN exit is non-zero with degraded status and repair guidance, not an uncaught max-string exception
+    - GIVEN a normal-sized corpus WHEN report runs THEN behavior matches Python oracle envelope shape
+    - GIVEN packages/cli/test/ WHEN run THEN regression covers oversized corpus degradation path
+  plan: lggnuirqet

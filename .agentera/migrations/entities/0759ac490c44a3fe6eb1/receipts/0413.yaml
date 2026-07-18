@@ -1,0 +1,20 @@
+id: krugeolhai
+artifact: plan
+record:
+  name: Version and local state sync
+  depends_on:
+    - aorrcyayms
+    - juemcwbkcd
+    - osseumfhok
+  status: complete
+  acceptance:
+    - GIVEN the change type is `feat` WHEN release metadata is reviewed THEN version-bearing surfaces follow DOCS-owned `semver_policy` and `version_files`, or no version bump is recorded if those policies are absent.
+    - GIVEN verification passes WHEN project state is synced THEN TODO, PROGRESS, PLAN, and policy-required CHANGELOG/DOCS records include the feature scope and exact verification evidence without unrelated documentation churn.
+    - GIVEN closeout completes WHEN scope is audited THEN no publication, push, tag, installed-app refresh, profile refresh, vision edit, objective edit, decision satisfaction change, package-manager update, unsupported capability-name CLI command, or D48 validate/corpus/usage work occurred.
+  evidence:
+    - "Reviewed `.agentera/docs.yaml` semver policy and version file conventions: `feat` maps to a minor bump, current version-bearing surfaces were at 2.4.0, and the documented feature target is 2.5.0. Aligned `pyproject.toml`, `uv.lock`, `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, `skills/hej/SKILL.md`, and `registry.json` to 2.5.0."
+    - Synced TODO, CHANGELOG, DOCS audit metadata, PROGRESS, and PLAN for the D48 verify namespace feature. The D48 smoke/verify TODO is resolved with exact verification evidence, while the separate D48 corpus/usage TODO remains open and no unrelated documentation churn was added.
+    - Focused verification passed with `uv run pytest tests/test_verify_namespace.py -q` (8 tests), `uv run pytest tests/test_explicit_cli_surfaces.py -q` (9 tests), `uv run pytest tests/test_package_registry.py tests/test_packaged_cli.py -q` (13 tests), `uv run scripts/agentera verify smoke installed-skills`, `uv run scripts/agentera verify smoke installed-skills --format json`, `uv run scripts/agentera verify eval skills --format json`, and `uv run scripts/agentera verify eval semantic fixtures/semantic/hej-bare-message.md --format json`.
+    - "Direct compatibility and bounded-failure probes completed: `uv run scripts/agentera verify bogus installed-skills` and `uv run scripts/agentera verify smoke live-hosts --live --format json` exited nonzero with bounded valid values, syntax, and examples; direct probes for `scripts/eval_skills.py`, `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`, and `scripts/smoke_setup_helpers.py` passed; `node scripts/smoke_opencode_bootstrap.mjs` returned the expected bounded local failure for absent OpenCode skills."
+    - "Scope audit evidence: closeout did not publish, push, tag, commit, refresh an installed app or profile, edit vision/objective state, change decision satisfaction state, update packages through a package manager, run unsupported capability-name CLI commands, or implement D48 validate/corpus/usage work."
+  plan: nunafrtebv

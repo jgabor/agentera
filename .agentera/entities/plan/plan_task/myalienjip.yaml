@@ -1,0 +1,14 @@
+id: myalienjip
+artifact: plan
+record:
+  name: Add Regression Coverage For Handoff Grammar
+  depends_on:
+    - vttxrooria
+    - nwangmunds
+  status: complete
+  acceptance:
+    - GIVEN capability prose contains a current handoff label WHEN focused tests run THEN direct standalone slash-capability names are rejected unless they are explicit `/agentera <alias>` route docs, sanctioned invocation examples, or scoped historical evidence
+    - GIVEN dispatcher guidance is inspected WHEN tests run THEN the handoff contract names glyph/name labels, runtime question tools, recommended-first option ordering, `Done`, and confirmation semantics
+    - GIVEN a bounded question prompt presents a downstream capability WHEN the user selects that downstream option THEN the selection counts as confirmation to invoke it, while `Done` means stop without routing
+    - GIVEN routing tests run WHEN the new grammar check exists THEN canonical routes and Decision 43 aliases still route as before
+  plan: ympgbpliic

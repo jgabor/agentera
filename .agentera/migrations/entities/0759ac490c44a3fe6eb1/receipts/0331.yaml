@@ -1,0 +1,12 @@
+id: jovutewlwa
+artifact: plan
+record:
+  name: Apply minimal threshold or diagnostic change if justified
+  depends_on:
+    - mpfxlutksv
+  status: complete
+  evidence:
+    - Retained archive evidence showed repeated PLAN.md full-plan verbosity pressure. File-backed lint now uses full-file budgets while `--text` and stdin keep per-entry budgets.
+  acceptance:
+    []
+  plan: jufyfvsqrq

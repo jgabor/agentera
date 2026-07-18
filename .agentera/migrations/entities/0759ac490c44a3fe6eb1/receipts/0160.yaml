@@ -1,0 +1,7 @@
+id: oqukpsrkcc
+artifact: docs
+record:
+  document: Setup helper smoke runner
+  path: scripts/smoke_setup_helpers.py
+  last_updated: 2026-05-05
+  status: current

@@ -1,0 +1,12 @@
+id: hohxqfteac
+artifact: plan
+record:
+  name: Implement trigger schema loader
+  depends_on:
+    - jpgjdiorfo
+  status: complete
+  acceptance:
+    - GIVEN the loader is invoked WHEN all twelve triggers.yaml files exist THEN it returns a trigger model containing all entries
+    - GIVEN the loader is invoked WHEN a triggers.yaml file has a regex pattern THEN the regex is compiled and usable for matching
+    - GIVEN the loader is invoked WHEN a triggers.yaml file has disambiguates_against references THEN each reference resolves to the named capability's trigger entries
+  plan: vhgknrcomu

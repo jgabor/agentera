@@ -1,0 +1,16 @@
+id: yxkkokhiuu
+artifact: progress
+record:
+  timestamp: 2026-07-15 07:55
+  type: feat
+  phase: build
+  what: Established stable objective UUID and objective-scoped experiment identity with legacy compatibility diagnostics.
+  inspiration: Approved bounded-retrieval authority and completed retrieval Task 1 identity decisions.
+  discovered: Canonical objective schema paths still pointed at the legacy optimera root; aligned schema and registry authority to optimize while retaining optimera read compatibility.
+  verified: "AC1: objective:<UUID>/experiment:<non-negative integer> scopes experiment 0 and later numbers and rename fixtures preserve objective identity. AC2: missing/duplicate legacy entries remain visible but unaddressable with caveats; conflicting optimize/optimera candidates are structured ambiguity and fixture bytes remain unchanged. AC3: pnpm -C packages/cli exec vp test run test/registries/artifactRegistry.test.ts test/state/experimentIdentity.test.ts test/state/retrievalAuthority.test.ts (146 passed); pnpm -C packages/cli test (181 files, 1993 tests passed); pnpm -C packages/cli run typecheck (passed); pnpm -C packages/cli run build (passed); node packages/cli/dist/bin/agentera.js check validate capability-contract --format json (2 passed)."
+  next: Task 6 may add validated atomic experiment publication; Task 4 remains blocked for evidence-only repair. Do not begin Task 7 archive publication or Task 8 list/get.
+  context:
+    intent: Complete Plan Task 5 identity and compatibility acceptance without implementing experiment publication, archival, or retrieval.
+    constraints: Preserved experiment 10/40/50 projection and legacy bytes; deferred Tasks 6-8, broad omission work, package metadata, publication, tagging, and pushing.
+    unknowns: None for Task 5 identity; Task 6 still owns UUID assignment and publication side effects.
+    scope: Retrieval authority, objective/experiment schemas, registry path authority, experiment identity/discovery/preflight code, focused fixtures, changelog, progress, plan, and the unchanged pre-existing Task 4 TODO/plan evaluation state.

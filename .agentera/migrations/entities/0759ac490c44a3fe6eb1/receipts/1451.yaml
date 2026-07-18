@@ -1,0 +1,6 @@
+id: rgjozybvri
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[docs:3.0.0] Audit and review ⌂ status capability instructions from the ground up. Resolved 2026-07-06: status..."

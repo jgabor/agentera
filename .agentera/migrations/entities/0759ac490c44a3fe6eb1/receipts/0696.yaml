@@ -1,0 +1,14 @@
+id: pqghhoprnf
+artifact: plan
+record:
+  name: Prove Routing Behavior
+  depends_on:
+    - ozkbcialms
+    - swwhoawddy
+    - tmehqdsmqg
+  status: complete
+  acceptance:
+    - GIVEN the alias map is exercised WHEN validation runs THEN each alias reaches its `Decision 43` capability and target drift fails
+    - GIVEN canonical names, existing request phrases, fallback, and disambiguation are exercised WHEN validation runs THEN existing routing behavior still passes
+    - GIVEN new route checks are added WHEN proportionality is reviewed THEN each testable unit has pass/fail evidence or a recorded rationale
+  plan: sphjbaunyn

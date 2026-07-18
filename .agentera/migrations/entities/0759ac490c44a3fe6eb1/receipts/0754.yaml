@@ -1,0 +1,13 @@
+id: geuirybrmk
+artifact: plan
+record:
+  name: Validate And Close
+  depends_on:
+    - xbkvuhtwrx
+  status: complete
+  acceptance:
+    - GIVEN focused install-root tests run THEN shared Module, doctor, setup helpers, upgrade, and runtime contract fixtures pass
+    - GIVEN suite validators run THEN capability validation, cross-capability validation, lifecycle adapter validation, and relevant CLI tests pass
+    - GIVEN the plan closes WHEN artifacts are updated THEN PROGRESS, TODO, DOCS, CHANGELOG, and PLAN record what changed and what remains deferred
+    - GIVEN release impact is assessed WHEN the work changes user-visible setup or refresh behavior THEN version policy is applied or explicitly deferred with rationale
+  plan: jkvutuwdzk

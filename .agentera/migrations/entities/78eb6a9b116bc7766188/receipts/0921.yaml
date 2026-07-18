@@ -1,0 +1,16 @@
+id: sndnuirehy
+artifact: plan
+record:
+  name: Update SKILL.md dispatch and AGENTS.md scope table
+  depends_on:
+    - stdqlaefcs
+  status: complete
+  acceptance:
+    - GIVEN skills/agentera/SKILL.md frontmatter WHEN inspected THEN the capabilities list uses English IDs
+    - GIVEN the SKILL.md dispatch table WHEN inspected THEN all 12 rows use English capability names with English primary routes
+    - GIVEN the SKILL.md routing logic layer 2 WHEN inspected THEN direct-route examples use English capability names
+    - GIVEN the SKILL.md routing logic layer 5 WHEN inspected THEN the fallback references the English orientation capability name
+    - GIVEN the SKILL.md bare-routing text WHEN inspected THEN bare /agentera is the only bare form (bare hej is dropped)
+    - GIVEN AGENTS.md scope table WHEN inspected THEN 12 scope rows use English IDs with one-line definitions
+    - GIVEN the AGENTS.md scope vocabulary rule WHEN inspected THEN it reflects English scope names
+  plan: rfsasxqeop

@@ -1,0 +1,14 @@
+id: lbomarcxec
+artifact: plan
+record:
+  name: Prove Decision 44 Vocabulary Coverage
+  depends_on:
+    - ljxtdvoqqk
+    - eozhwqvted
+    - zrgdmyrmak
+  status: complete
+  acceptance:
+    - GIVEN current surfaces are scanned WHEN deprecated preferred wording appears THEN the scan fails unless the occurrence is an allowed or protected exception from the Decision 44 boundary
+    - GIVEN protected compatibility wording remains WHEN validation reviews exceptions THEN each exception has a recorded reason and does not teach the term as preferred user language
+    - GIVEN routing, package, docs, and capability checks run WHEN vocabulary validation completes THEN existing behavior still passes with proportional pass/fail evidence or a recorded rationale
+  plan: pltwboytxf

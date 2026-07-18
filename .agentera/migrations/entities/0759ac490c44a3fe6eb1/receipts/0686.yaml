@@ -1,0 +1,17 @@
+id: kauamynpkg
+artifact: plan
+record:
+  name: Update .opencode/plugins/agentera.js and .opencode/agents/*.md
+  depends_on:
+    - usgbkgoeny
+    - gvmjyymdfb
+    - gwdxvgduzt
+    - vrvikqbjeh
+    - xxwvqosxrl
+  status: complete
+  acceptance:
+    - GIVEN REQUIRED_AGENT_NAMES lists English names, WHEN plugin bootstraps, THEN it reads English-named agent files
+    - AND COMMAND_TEMPLATES keys are English
+    - AND .opencode/agents/*.md stub bodies reference English capability names
+    - AND plugin smoke test passes
+  plan: hotcyckvhu

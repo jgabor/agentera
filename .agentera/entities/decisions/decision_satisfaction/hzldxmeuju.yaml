@@ -1,0 +1,9 @@
+id: hzldxmeuju
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: "D46 handoff enforcement now has runtime-facing regression evidence: semantic fixture defaults and documentation require glyph plus canonical capability names such as `⧉ build`, status routing fixtures forbid standalone slash-capability labels such as `/build`, focused semantic/dispatch tests passed 49 tests on 2026-05-15, and semantic fixture evals passed 4 fixtures. User confirmation is still required before marking this decision user-confirmed satisfied."
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-23
+  decision: wtffqaitea

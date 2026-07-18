@@ -1,0 +1,15 @@
+id: isfkgvfvqc
+artifact: plan
+record:
+  name: Enforce legacy coexistence across decision mutations
+  depends_on:
+    - zbyrnqfgqs
+    - ixssbsaqql
+  status: complete
+  acceptance:
+    - GIVEN untouched inherited unsupported confidence labels WHEN append, satisfaction update, or amend processes the artifact THEN the labels remain unchanged and are reported as legacy caveats rather than blocking the operation.
+    - GIVEN an unsupported confidence label on new or amended content WHEN validation runs THEN the operation fails before side effects.
+    - GIVEN any implicit normalization or unrelated semantic change WHEN unchanged-record proofs run THEN publication fails and identifies the affected decision.
+    - GIVEN a current-valid decisions artifact WHEN append and satisfaction update run THEN their established behavior, archive ordering, overlay separation, and machine-readable outputs remain compatible.
+    - GIVEN legacy and current records across each decision mutation WHEN focused tests run THEN whole-artifact prevalidation, target validation, compaction, and read composition interactions have both successful and rejected cases.
+  plan: ecztvnspps

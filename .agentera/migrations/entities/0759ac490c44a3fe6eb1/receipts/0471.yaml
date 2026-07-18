@@ -1,0 +1,16 @@
+id: impterbzjh
+artifact: plan
+record:
+  name: Decision attention contract boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the hej decision-review behavior is specified WHEN non-confirmed classes are listed THEN missing satisfaction, missing or unrecognized state, `open`, `provisionally_satisfied`, unconfirmed `user_confirmed_satisfied`, and explicit `review_needed=true` entries are included while confirmed entries with explicit user confirmation are excluded.
+    - GIVEN the attention order is specified WHEN hej has app/profile/v1/health/plan/TODO context THEN the decision-review item appears after app/profile/v1/health/plan pressure but before TODO attention, subject to the existing 6-item top-level bound.
+    - GIVEN the structured JSON contract is specified WHEN decision review pressure exists THEN JSON output includes a stable bounded payload with count, states, entries, max_entries, bounded=true, and no raw unbounded decision text.
+    - GIVEN satisfaction authority is reviewed WHEN implementation starts THEN the plan explicitly forbids changing satisfaction state, inferring satisfaction, or making decision review the `next_action` ahead of current plan/health/TODO routing.
+  evidence:
+    - Added the decision attention contract to `references/cli/agent-ready-state-contract.yaml`, including the new `decision_attention` hej structured field and semantics that derive from `_decision_context_entry` and `_decision_satisfaction_context`, never infer satisfaction, never mutate `.agentera/decisions.yaml`, keep top-level attention bounded, and preserve `next_action` priority.
+    - Contract boundary is implemented in `scripts/agentera` with one bounded `decision_satisfaction_review` payload containing count, states, entries, max_entries, bounded=true, and one attention string inserted before TODO attention while leaving next-action selection unchanged.
+  plan: auxwiuozcj

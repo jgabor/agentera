@@ -1,0 +1,16 @@
+id: jvtmuulmaa
+artifact: progress
+record:
+  timestamp: 2026-07-16 02:16
+  type: refactor
+  phase: build
+  what: Moved lifecycle validation orchestration and parity checks out of the public lifecycleAdapters.ts barrel into a dedicated lifecycleMain module, preserved the historical export surface, and removed three obsolete lint-baseline entries.
+  inspiration: "Plan Task 1: Extract and verify lifecycle orchestration; Audit 24 structural-debt finding."
+  discovered: The TODO's historical 107-line and line 61-107 references were stale; the current validation barrel had grown to 237 lines and included additional parity logic.
+  verified: "pnpm -C packages/cli test passed: 191 files and 2183 tests; pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; node packages/cli/dist/bin/agentera.js check compact passed with over_limit=0, formatting=0, errors=0; node packages/cli/dist/bin/agentera.js check validate lifecycle-adapters --format json passed with exit_code=0 and lifecycle adapter metadata ok; pnpm -C packages/cli lint passed with 0 errors and 113 pre-existing warnings."
+  next: Plan Task 1 is complete; archive the completed plan, then select the next independent TODO item in a later build cycle.
+  context:
+    intent: Complete Plan Task 1 with a behavior-preserving separation of lifecycle validation orchestration from its public re-export facade.
+    constraints: No runtime adapter-matrix changes, new validation behavior, schema changes, version bump, push, tag, or publication.
+    unknowns: none
+    scope: packages/cli/src/validate/lifecycleAdapters.ts; packages/cli/src/validate/lifecycleAdapters/lifecycleMain.ts; packages/cli/.lint-baseline.txt; TODO.md; CHANGELOG.md; .agentera/plan.yaml; .agentera/progress.yaml

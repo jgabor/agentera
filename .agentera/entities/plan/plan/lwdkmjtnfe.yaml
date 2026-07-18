@@ -1,0 +1,37 @@
+id: lwdkmjtnfe
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-30
+    status: archived
+    reviewed: 2026-05-30
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: v2→v3 sandbox upgrade validation program
+  what: "Build a layered, isolated sandbox test program that validates v2→v3 upgrade automation end-to-end: no user/project data loss, no Python-managed leftovers, registry-complete runtime rewire coverage, stable-channel backport safety, and idempotent second-run behavior. Extend the existing 60 vitest cases under packages/cli/test/upgrade/ with expanded fixtures, checksum invariants, hermetic shell harnesses, and pinned @next E2E gates. Treat known migration gaps (OpenCode runtime rewire, stale-surface cleanup, noisy app-home block) as tracked expected-fail cases until separate implementation work closes them."
+  why: The v2→v3 orchestrator landed on feat/v3 with channel guards and phased migration, but real-machine dry-runs still block cleanup on unrecognized app-home entries and runtime rewire covers only Codex/Cursor hooks. Decision 56 requires contract-first parity against Python on main before 3.0 is trustworthy; a sandbox matrix is the release gate for calling upgrade seamless. Without isolated fixtures and hermetic HOME/XDG sandboxes, validation risks mutating developer machines and misses corner cases Python test_upgrade_cli.py already covers.
+  constraints: "Contract-first parity (Decision 56): Python on main remains behavior oracle for phase vocabulary, exit codes, and runtime/cleanup semantics where v3 ports exist. Stable channel must never propose cross-major migration in any test tier. Sandbox runs must never write to real ~/.local/share/agentera, ~/.codex, ~/.cursor, or project .agentera/ outside the temp root. No remote push. Do not modify vision.yaml or objective state. This plan builds validation infrastructure only; it does not land runtimeTargets expansion or cleanup-classification fixes except where a test requires a minimal seam. Tests run without network after initial npm cache seed where L2 requires published packages."
+  scope:
+    included:
+      - packages/cli/test/upgrade/fixtures/ expansion (P0 priority fixtures first)
+      - packages/cli/test/upgrade/ new vitest suites for matrix, preservation, idempotency, leftover scan
+      - scripts/sandbox/ hermetic harness (seed, assert, scan, driver)
+      - sandbox-report.json pass/fail template and P0 scenario catalog
+      - CI wiring on feat/v3 for L0 PR gate and L1 nightly/pre-release
+      - L2 pinned agentera@next E2E against published dev tag
+      - expected-fail gap registry tying red tests to migrateArtifactsV2ToV3 gaps
+    excluded:
+      - Fixing migrateArtifactsV2ToV3 runtime/cleanup implementation (separate realisera plan after validation defines done)
+      - Bun single-binary compilation and npm publish automation
+      - Decision 58 single-name protocol sweep
+      - Changing stable @latest dist-tag on main
+      - docs/testing/ standalone markdown runbook (UPGRADE.md cross-link only if needed at closeout)
+    deferred:
+      - Tier 3 anonymized real-user snapshot validation (maintainer-only, quarterly)
+      - Full 36-combination scenario matrix automation (P0 eight scenarios first, P1 combinatorial expansion later)
+      - Runtime package refresh (--update-packages) v3 path
+      - eval_skills live runtime smoke in CI (hook subprocess smoke only in harness)
+  design: "Four test tiers: L0 vitest (mkdtemp, no network), L1 hermetic shell (isolated HOME/XDG_CONFIG_HOME, dist/bin upgrade dry-run then apply), L2 pinned npx agentera@3.0.0-dev.X, L3 deferred. Snapshot workflow: seed fixture, sha256 manifest A, dry-run JSON, apply with --channel development --target-major 3 --yes, manifest B diff, teardown. P0 scenarios: happy-path clean, stable safety, v1 MD blocked, noisy app-home block/--force, legacy home retirement, codex plugin vs copied hooks, partial --only runtime, v2 Python control via uvx from main in sandbox copy. Success criteria for seamless product (tracked via tests): byte-identical preserved USER_STATE paths; zero Python managed refs in rewired configs; app/ removed with allowlisted state kept; six runtimes covered in runtimeMatrix (gaps expected-fail until ported); idempotent second dry-run; stable channel zero cross-major ops. Validation program v1 release gate: P0 harness green plus gap registry complete; product seamless gate additionally requires gap tests flipping to pass."
+  overall_acceptance: GIVEN the validation program on feat/v3 WHEN P0 sandbox scenarios run in isolated temp roots THEN preserved user and project YAML state remains byte-identical, rewired Codex/Cursor surfaces contain no Python managed entrypoints, app/ bundle removal preserves allowlisted app-home state, and second dry-run is idempotent. GIVEN stable channel WHEN exercised in any tier THEN preview payloads contain zero cross-major migration operations. GIVEN gap registry WHEN read THEN every known migration port gap has a tracked expected-fail or skip test with a flip criterion. GIVEN L0 CI and L1 harness WHEN green THEN maintainers can trust regression signal before landing runtime/cleanup implementation fixes; seamless v2→v3 product release additionally requires gap tests flipping to pass.
+  surprises:
+    []

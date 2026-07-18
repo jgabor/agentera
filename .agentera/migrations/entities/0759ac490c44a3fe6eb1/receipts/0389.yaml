@@ -1,0 +1,12 @@
+id: djstpxizim
+artifact: plan
+record:
+  name: Establish objective-scoped experiment identity
+  depends_on:
+    - eiapdtscat
+  status: complete
+  acceptance:
+    - GIVEN experiment zero or later numbers WHEN identified THEN identity is unique within stable objective scope and survives objective rename.
+    - GIVEN legacy missing or duplicate identity WHEN read THEN retained data remains visible with explicit ambiguity or compatibility caveats.
+    - GIVEN scoped, renamed, zero, duplicate, and missing fixtures WHEN tested THEN valid identities pass and ambiguous publication fails.
+  plan: zmjvhbfhpm

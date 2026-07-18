@@ -1,0 +1,14 @@
+id: ucsmoqqbtz
+artifact: plan
+record:
+  name: Final state sync
+  depends_on:
+    - rjvkyqwngu
+    - arbhnxymcn
+  status: complete
+  evidence:
+    - Plan tasks marked complete; progress cycle recorded; no release publication claimed
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN agentera plan --format json is queried THEN tasks 1-6 are marked complete with evidence recorded
+    - GIVEN the plan completes WHEN TODO, progress, and docs state are checked THEN hybrid staleness work is reflected without claiming release publication
+  plan: wzxqnespyz

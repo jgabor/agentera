@@ -1,0 +1,16 @@
+id: ouclrwhwkn
+artifact: plan
+record:
+  name: 2.3.7 state and release metadata sync
+  depends_on:
+    - jftwncinwm
+    - fexwwvonnp
+    - vclmiqyllo
+    - gzegbmvxku
+    - ccripahvdi
+  status: complete
+  acceptance:
+    - GIVEN decision-context validation passes WHEN closeout runs THEN TODO, progress, docs, and changelog record the completed 2.3.7 source-contract patch and the remaining deferred source-contract train.
+    - GIVEN version-bearing files are inspected WHEN metadata is synchronized THEN the target version follows the existing docs.yaml semver policy and release train; any mismatch with the 2.3.7 TODO label is resolved explicitly before edits.
+    - GIVEN release metadata sync completes WHEN scope is audited THEN no publication, tag, remote push, installed app refresh, vision edit, or objective-state edit occurred without explicit approval.
+  plan: ehnfoajqjq

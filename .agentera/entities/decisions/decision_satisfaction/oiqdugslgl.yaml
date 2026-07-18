@@ -1,0 +1,9 @@
+id: oiqdugslgl
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: "D55 stats/corpus privacy boundary stands with D58 governing the 3.0 live boundary: `agentera usage` as a compatibility surface or alias is migration and upgrade-detection input only, not a supported live protocol alias after 3.0. Reconciled in discuss satisfaction review on 2026-05-23."
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-23
+  decision: riszdkltrk

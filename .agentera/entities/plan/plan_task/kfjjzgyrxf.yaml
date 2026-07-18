@@ -1,0 +1,12 @@
+id: kfjjzgyrxf
+artifact: plan
+record:
+  name: Add the machine-readable lifecycle vocabulary authority
+  depends_on:
+    - mnbxosxvjh
+  status: complete
+  acceptance:
+    - GIVEN the new authority file is loaded WHEN its schema is inspected THEN it defines the canonical statuses `up_to_date`, `outdated`, `repair_needed`, `migration_needed`, `manual_review_needed`, `ready_to_apply`, `applied`, and `no_changes_needed` with concepts and deprecated aliases.
+    - GIVEN the new authority file is loaded WHEN operation verbs and consumers are inspected THEN `install`, `repair`, `update`, `migrate`, `upgrade`, and `refresh` have scoped meanings and doctor, hej, upgrade, docs, and tests have explicit ownership permissions.
+  evidence: Added `references/cli/app-lifecycle-vocabulary.yaml` with the canonical status order, definitions, deprecated aliases, scoped operation verbs, compatibility boundary, and closed consumer ownership records for doctor, hej, upgrade, docs, and tests.
+  plan: avlujsvpiv

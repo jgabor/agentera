@@ -1,0 +1,17 @@
+id: wgzipvwksb
+artifact: plan
+record:
+  name: Final State Sync, The Plan-Level Current-State Check
+  depends_on:
+    - qrbdhvqoej
+    - fgptyffzvt
+    - ivlrznywni
+    - svuxpjpueh
+    - gtdyngauqm
+    - mubeabzvds
+  status: complete
+  acceptance:
+    - GIVEN implementation is complete WHEN final state sync runs THEN TODO, CHANGELOG, PROGRESS, docs metadata, and plan state reflect Decision 43 execution evidence
+    - GIVEN the active plan closes WHEN all tasks are complete THEN future `/agentera` briefing no longer treats it as pending work
+    - GIVEN unrelated TODOs remain WHEN closure completes THEN optional live-smoke and install-root follow-ups stay separate, and vision/objective state is untouched
+  plan: iyrqkhzzfp

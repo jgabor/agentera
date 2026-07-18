@@ -1,0 +1,12 @@
+id: ehspkzpjkz
+artifact: plan
+record:
+  name: Final validation, state sync, and handoff
+  depends_on:
+    - rrukhvfqhx
+  status: complete
+  acceptance:
+    - GIVEN the release candidate is validated WHEN relevant tests, artifact validation, capability validation, docs query, and whitespace checks run THEN they pass or produce documented blockers.
+    - GIVEN all prior tasks are complete WHEN Agentera state is queried THEN plan, TODO, docs, health-relevant evidence, and progress agree on the 2.3.0 outcome.
+    - GIVEN live or package publication actions require explicit approval WHEN the handoff is produced THEN no tag, push, publication, package-manager update, installed bundle refresh, vision edit, or objective edit has occurred.
+  plan: eugrpfgykm

@@ -1,0 +1,12 @@
+id: vebwkmtbpa
+artifact: plan
+record:
+  name: Define Planera completed-plan archive consent
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an existing PLAN.md is already complete WHEN the user directly invokes ≡ planera to create a replacement plan THEN archiving the completed plan is implicit and does not require separate pre-write confirmation.
+    - GIVEN a human-initiated replacement plan is ready WHEN Planera writes it THEN normal plan approval remains required before the write.
+    - GIVEN an existing plan is active or incomplete WHEN Planera would replace, discard, or archive it THEN explicit confirmation is required before the write.
+  plan: ytxhvbmrte

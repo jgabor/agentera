@@ -1,0 +1,13 @@
+id: ivlrznywni
+artifact: plan
+record:
+  name: Preserve Secondary Request Language
+  depends_on:
+    - qrbdhvqoej
+    - fgptyffzvt
+  status: complete
+  acceptance:
+    - GIVEN accepted secondary wording such as `deliberate`, `brainstorm`, `rubber duck`, `brief`, and `what's next` is used WHEN routing is evaluated THEN it reaches the intended capability without becoming a primary alias
+    - GIVEN discussion wording appears with build, research, audit, or document intent WHEN routing runs THEN concrete work intent wins or disambiguates
+    - GIVEN supported secondary phrases are documented WHEN users read examples THEN primary aliases remain singular
+  plan: iyrqkhzzfp

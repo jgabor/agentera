@@ -1,0 +1,15 @@
+id: zrefmqdhrz
+artifact: plan
+record:
+  name: Closeout context inventory and archive boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN current TODO, docs, changelog, progress, hej Dokumentera startup state, Dokumentera guidance, and the completed 2.3.8 plan are inspected WHEN inventory completes THEN implementation evidence records available fields, missing fields, and the minimum completeness predicate for closeout context.
+    - "GIVEN 2.3.8 is complete and `v2.3.8` exists locally WHEN 2.3.9 becomes active THEN `.agentera/archive/PLAN-2026-05-14-2-3-8-orchestration-context-source-contract.yaml` contains the completed 2.3.8 plan with `header.status: complete`, and the active 2.3.9 plan references that archive path."
+    - GIVEN installed app or profile state is stale WHEN planning and validation proceed THEN stale state is recorded as a caveat and no upgrade, repair, installed app refresh, or profile refresh is run.
+  evidence:
+    - cycle: 489
+      note: "Task 1 inventory used CLI state first: Orkestrera and Dokumentera hej contexts, TODO, docs, progress, changelog query, and decisions fallback. Dokumentera startup currently includes docs/progress/health/TODO but misses vision, decisions, design, and profile; the decisions fallback reports compacted decision caveats and no raw read requirement. The changelog query returned an empty result, so raw `CHANGELOG.md` was read only as a last-resort inventory fallback and showed 2.3.8/2.3.7/2.3.6 closeout boundaries with no 2.3.9 closeout yet. Dokumentera prose/schema inventory found direct DOCS/VISION/PROGRESS/DECISIONS/profile read guidance and no closeout-context-first validation rules. The recorded minimum completeness predicate requires a CLI-owned closeout context with artifact mappings, version policy, TODO blockers, changelog/no-release boundary, latest progress evidence, supported benchmark evidence pointer or unavailable caveat, fallback commands, state caveats, raw-read policy, and a completeness flag. Archive verification confirmed the 2.3.8 archived plan exists with `header.status: complete`, the active plan references that exact archive path, and local tag `v2.3.8` exists as an annotated tag. PLAN, archived PLAN, and PROGRESS validators passed; live Orkestrera context, gate, compact check, and diff whitespace check passed after safe PROGRESS compaction. Inspektera evaluation returned PASS with no blocking findings. Installed app update-needed and stale profile caveats were preserved, and no upgrade, repair, installed app refresh, profile refresh, publish, push, new tag, vision edit, objective-state edit, unsupported capability-name CLI command, or commit occurred."
+  plan: lvxglwnurb

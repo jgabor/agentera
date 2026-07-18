@@ -1,0 +1,16 @@
+id: jghvzuprpw
+artifact: plan
+record:
+  name: Final Verification And State Sync
+  depends_on:
+    - vttxrooria
+    - nwangmunds
+    - myalienjip
+    - nedhbxlble
+  status: complete
+  acceptance:
+    - GIVEN handoff polish is complete WHEN validation runs THEN focused tests, capability validation, artifact validation, and relevant CLI state checks pass with recorded evidence
+    - GIVEN existing unrelated prior changes are present WHEN final diff is reviewed THEN Decision 46 changes are distinguishable and no unrelated work is reverted
+    - GIVEN release boundaries are checked WHEN final state is recorded THEN no tag, push, publication, package update, installed-bundle refresh, vision edit, or objective edit is claimed
+    - GIVEN all tasks are complete WHEN final state sync runs THEN plan, progress, docs metadata, and changelog agree that Decision 46 is included in pending 2.2.0 only
+  plan: ympgbpliic

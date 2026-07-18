@@ -1,0 +1,24 @@
+id: cerbdveyej
+artifact: plan
+record:
+  name: Establish the consumer and compatibility boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN every documented prime consumer WHEN the inventory is reviewed THEN each consumed field and startup command is identified with evidence.
+    - GIVEN a field proposed for omission WHEN compatibility is assessed THEN it is classified as removable, conditional, or transition-required with an explicit rationale.
+    - GIVEN the compatibility assessment WHEN approval is recorded THEN Tasks 2 through 4 have an unambiguous public-output policy.
+    - GIVEN pass and fail consumer fixtures WHEN the policy is verified THEN required consumers pass and undeclared dependencies fail visibly.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task-1-audit-3-20260716
+      source: user-authorized compact-prime Task 1 repair verification
+      recorded_at: 2026-07-16 11:27
+      writer_command: agentera state plan record-evaluation
+  evidence: agentera state progress get --number 847 --format json
+  plan: lpjgrqdyzs

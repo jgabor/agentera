@@ -1,0 +1,41 @@
+id: pzarbidanh
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-05
+    status: archived
+    reviewed: 2026-05-05
+    critic_issues: 0 found, 0 addressed, 0 dismissed
+    title: Flat Agentera State CLI
+  what: |
+    Make routine Agentera state access top-level and command-shaped: agentera hej, agentera plan, agentera progress, agentera health, agentera todo, agentera decisions, agentera docs, agentera objective, and agentera experiments. Keep agentera query as an advanced structured escape hatch for ad hoc/custom access, not as the routine state surface.
+  why: |
+    Bare /agentera should not require several tool calls just to assemble a briefing. agentera hej should become the state engine: one command, one compact composite answer, and one routing suggestion that agents can relay without reading raw artifacts or querying each artifact separately.
+  constraints: |
+    Do not preserve backward compatibility for routine forms such as agentera query plan or agentera query health. Keep query --list-artifacts or an equivalent discovery surface available for smoke tests. Preserve installed-bundle behavior through AGENTERA_HOME. Do not push to remotes.
+  scope:
+    included:
+      - scripts/agentera parser and command dispatch
+      - shared state-summary helpers reused by top-level commands and advanced query
+      - agentera hej composite briefing output
+      - skills/agentera/SKILL.md dispatcher guidance
+      - skills/agentera/capabilities/hej/prose.md
+      - capability prose that still teaches routine agentera query calls
+      - focused CLI and guidance regression tests
+      - help, prime, and documentation text affected by the CLI shape
+    excluded:
+      - supporting old agentera query plan, query progress, query health, query todo, query decisions, query docs, query objective, or query experiments compatibility forms
+      - changing artifact schemas unless required for the composite summary
+      - remote pushes or release tagging
+    deferred:
+      - broader CLI packaging or marketplace changes unrelated to this state-access surface
+  design: |
+    Reuse the existing scripts/agentera artifact loaders and summary handlers, but expose the normal state views as top-level subcommands. Add a composite hej command that performs the routing decision tree inside the CLI and emits the information needed for the hej dashboard. Keep query as the advanced schema-driven path with structured JSON/YAML output for custom artifact inspection.
+  overall_acceptance:
+    - GIVEN a user invokes bare /agentera WHEN the project has v2 state THEN the agent can serve hej from agentera hej without individual state commands or raw artifact reads
+    - GIVEN an agent needs routine state WHEN a top-level command exists THEN it uses that command before agentera query
+    - GIVEN an agent needs custom artifact inspection WHEN no top-level command fits THEN agentera query can return structured JSON or YAML
+    - GIVEN validation is complete THEN tests and docs prove the new CLI contract
+  surprises:
+    []

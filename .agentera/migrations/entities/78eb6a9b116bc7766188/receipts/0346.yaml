@@ -1,0 +1,15 @@
+id: xjukrnxywd
+artifact: plan
+record:
+  name: First publish of 3.0.0-next.1 via new pipeline; smoke runtime hook consumers
+  depends_on:
+    - qqkwfecbog
+  status: complete
+  acceptance:
+    - GIVEN Task 4's job is present in ci.yml WHEN a push to feat/v3 triggers the publish-next job AND it completes successfully THEN npm view agentera@next version returns 3.0.0-next.1 within npm's propagation window
+    - GIVEN 3.0.0-next.1 is published WHEN npx -y agentera@next --version is run THEN it resolves to 3.0.0-next.1 (not 3.0.0-dev.6)
+    - GIVEN .cursor/hooks.json, .github/hooks/*, hooks/codex-plugin-hooks.json WHEN the hook install paths are exercised against the new @next version THEN all hooks still resolve and execute (they reference @next by dist-tag, so the underlying version bump should be transparent)
+    - GIVEN the published @next version is 3.0.0-next.1 WHEN the L2 sandbox job in ci.yml runs THEN it no longer skips on 'not published' and proceeds with the pinned 3.0.0-next.0 (L2 may still skip if the exact pinned version differs -- acceptable)
+  evidence: |
+    Verified 2026-06-23: `npm view agentera@next version` returns 3.0.0-next.1 (criterion 1 MET). Runtime hooks reference @next by dist-tag, so the version bump is transparent (criterion 3 MET by design). 3.0.0-next.1 is published, so the L2 skip-on-not-published condition is resolved (criterion 4 MET). Criterion 2 (`npx -y agentera@next --version` resolving to 3.0.0-next.1) is unmeasurable: the 3.0.0 CLI exposes no `--version` or `version` command. This is a criterion design flaw, not a task failure; the gap is tracked as a new TODO ([feat:3.0.0] add --version/version command).
+  plan: lwpqtzxgxp

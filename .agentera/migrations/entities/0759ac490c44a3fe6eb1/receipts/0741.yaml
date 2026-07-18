@@ -1,0 +1,18 @@
+id: xfotbqnree
+artifact: plan
+record:
+  name: Add lifecycle status vocabulary regressions
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - Added authority-derived regression coverage in `tests/test_lifecycle_vocabulary_authority.py` that rejects deprecated aliases and non-lifecycle verbs as canonical app lifecycle statuses.
+    - The regression observes doctor/hej status metadata, upgrade `lifecycleStatus` metadata, signal statuses, and workflow-status mapping outputs while leaving workflow `status` compatibility values untouched.
+    - Allowed prose and compatibility/non-app vocabulary remain explicitly preserved, including Decision 54 compatibility text, `agentera stats refresh`, workflow `noop`, and plain-language `fixed`/`ready to fix` rendering.
+    - "`uv run pytest tests/test_lifecycle_vocabulary_authority.py -q` passed with 15 tests before task closeout; required artifact and diff checks are recorded in PROGRESS.md for this cycle."
+  acceptance:
+    - GIVEN the app lifecycle status authority and its focused tests are run WHEN any canonical app lifecycle status surface emits or permits `fresh`, `stale`, `refresh`, `fixed`, `ready`, or `noop` as status values THEN the regression fails with a clear boundary around canonical status values.
+    - GIVEN repository text contains allowed prose or unrelated vocabulary WHEN the regression scan runs THEN plain-language explanatory prose, historical records, compatibility identifiers, and non-app uses such as `agentera stats refresh` are not rejected merely because they contain those words.
+    - GIVEN the lifecycle status authority changes WHEN the focused tests run THEN the rejected and allowed values are derived from or checked against the authority rather than maintained as an unconnected duplicate list.
+    - GIVEN focused validation is complete WHEN the task is closed THEN the relevant pytest selection, `uv run scripts/agentera validate artifact PLAN.md`, and `git diff --check` pass.
+  plan: nuemlmtpvq

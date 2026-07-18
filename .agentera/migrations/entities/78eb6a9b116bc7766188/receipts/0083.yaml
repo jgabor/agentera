@@ -1,0 +1,31 @@
+id: cortchrdes
+artifact: decisions
+record:
+  date: 2026-07-10
+  question: How should the profile capability instructions be audited, improved, and rewritten for the D80 six-section spine, D79 direct-contract delegation, D71 modal vocabulary, D81 voice delegation, and v3 reality?
+  context: "Ninth capability audit. Profile is a mode-split shape — persona reconstruction with Full and Validate modes. Pre-flight grounding found v2-era ghosts: crystallized.json (does not exist in v3); effective profile script (4x in cross-capability; v3 capabilities consume status.profile); ~/.claude/profile/ migration claim (no v3 code); agentera decisions (v3: agentera state decisions); CLAUDE.md (v3: AGENTS.md); Python is unavailable in EX3 (v3 is TypeScript); $AGENTERA_PROFILE_DIR hardcoded 6x (v3 serves profile_context.profile.path); $XDG_DATA_HOME resolver flow; DECISIONS.md canonical filename (D82: artifact-id); D65 comment header marker. Spine violations: standalone Visual identity, Contract values, Artifact path resolution, contract.md pointer, Getting started, Notes on depth, Step 0 numbering. Personality leaks D81: sharp colleague, narration voice, colleague voice. NEVER in safety rails (D71: MUST NOT). npx -y agentera (audited capabilities use bare agentera). Substance design decisions: (S1) coverage audit + extraction merged into single step (6→4 Full steps, preserving multi-select and EX2 gating substance per user pushback); (S2) prediction validation folded into Generate step with low accuracy <3/5 triggering EX2 flagged (D85-D88 self-audit fold pattern); (S3) Validate V3+V4 merged (4→3 steps). New length 19567 chars (was 24219, 19% reduction). references/cli/capability-instruction-structure.md profile row Complete (D89). D78 compacted to archive for D89 entry."
+  alternatives:
+    - name: Rewrite with substance improvements and drift cleanup
+      status: chosen
+      reason_chosen: All three substance findings (extraction step compression, prediction validation fold + EX2, Validate V3+V4 merge) address real capability design gaps. Drift cleanup aligns with prior audit precedent (D79-D88). Extraction step compression respects user pushback to value each step on actual importance. Prediction validation EX2 closes the quality signal loop. Validate V3+V4 fold follows the D85-D88 self-audit fold pattern.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: Would leave extraction mechanics dominating the capability identity (3 of 6 steps are infrastructure), prediction validation as a standalone step that doesn't close the loop (low accuracy noted but not acted on), and Validate V4 as thin I/O masquerading as a step; a capability that follows the spine but asks the wrong questions still fails the audit.
+  choice: Rewrite with substance improvements and drift cleanup
+  reasoning: "Prior audits (D82 discuss, D83 research, D84 plan, D85 build, D86 optimize, D87 audit, D88 document) established substance findings as the highest-leverage changes. Profile substance findings follow the same pattern: extraction step compression, prediction validation fold + EX2, and Validate V3+V4 merge are the same class of finding. Prediction validation EX2 closes the quality signal loop — the capability asks how it knows the profile is good and now acts on the answer. Extraction compression respects the user pushback to value each step by merging only the tightly-coupled coverage+extraction flow, not all three extraction steps."
+  confidence: firm
+  feeds_into: references/cli/capability-instruction-structure.md, packages/cli/src/capabilities/profile/, TODO.md
+  outcome: Rewrite with substance improvements and drift cleanup
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: references/cli/capability-instruction-structure.md
+    - source_field: feeds_into
+      reference: packages/cli/src/capabilities/profile/
+    - source_field: feeds_into
+      reference: TODO.md
+  context_complete: true
+  missing_fields:
+    []
+  compacted: false
+  caveats:
+    []

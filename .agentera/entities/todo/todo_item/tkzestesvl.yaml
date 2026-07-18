@@ -1,0 +1,6 @@
+id: tkzestesvl
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Runtime migration regex detection misses partial hand-edits. `runtimeMigration.ts:87-92` `textUsesPythonManagedEntrypoint()` only detects exact v2 patterns..."

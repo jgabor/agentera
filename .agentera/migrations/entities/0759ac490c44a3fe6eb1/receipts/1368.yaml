@@ -1,0 +1,16 @@
+id: uknbpgncmc
+artifact: progress
+record:
+  timestamp: 2026-07-17 22:06
+  type: fix
+  phase: build
+  what: Made repository entity migration ready with exact projection recovery, historical health conversion, projection correlation, residue accounting, and legacy docs/plan adapters.
+  inspiration: Plan Task 13 and repository-local causal Git evidence.
+  discovered: The authoritative identity lists reconcile to 39 decision plus 19 health envelopes; the stated expected decision count of 40 is arithmetically inconsistent with the 32 current plus 7 archive-only identities. Staging D3+D4 remains one non-entity residue.
+  verified: Recovery dry-run and explicit apply completed with zero refusals; state validation passed; post-recovery entity preview reported 1,442 logical identities, 2,208 resolved relationships, one residue, and zero blockers.
+  next: Task 14 remains pending. Use the clean-HEAD external approval transcript; do not apply entity migration without explicit approval.
+  context:
+    intent: Complete Plan Task 13 without applying the Task 14 entity cutover.
+    constraints: No Task 14 apply, remote access, source aggregate edits, archive edits, version, changelog, vision, push, publish, tag, or amend.
+    unknowns: none
+    scope: CLI projection recovery and entity migration adapters; immutable decision/health recovery envelopes; Plan Task 13 and Cycle 902 evidence.

@@ -1,0 +1,19 @@
+id: fkarznfrqq
+artifact: plan
+record:
+  name: Update the validator tests, the orkestrera validation schema, the bundler comment, the docs, and the agent guidance
+  depends_on:
+    - kdoixucfpp
+    - enwhkxvdbr
+  status: complete
+  acceptance:
+    - "GIVEN the test surface WHEN `packages/cli/test/validate/capability.test.ts` `writeCapability` helper is updated THEN it writes `instructions.ts` instead of `instructions.md`; the `V1 [error]: instructions.md not found` strings become `V1 [error]: packages/cli/src/capabilities/<name>/instructions.ts not found`; the test count for this file is preserved (the existing 9 cases pass against the new fixture and module path)"
+    - GIVEN the contract test WHEN `packages/cli/test/registries/capabilityContract.test.ts` is updated THEN the assertion `model.directoryRules.instructionPath` becomes the new module path; the new bootstrap error for `instruction_module.path` is asserted; the test count for this file is preserved (the existing 13 cases pass against the new contract shape)
+    - GIVEN the evaluator test WHEN `packages/cli/test/cli/inspekteraEvaluationReport.test.ts` line 40 is updated THEN the orkestrera prose is loaded via the runtime loader (or by importing the compiled TS module) rather than by `readFileSync` of the deleted `instructions.md`; the test still asserts the `evaluator_handoff` shape
+    - "GIVEN `skills/agentera/capabilities/orkestrera/schemas/validation.yaml` WHEN the prose content checks are rewritten THEN each `instructions.md contains <substring>` check becomes a check against the loaded orkestrera prose from the TS module; the rule ids (`V1`-`V10`), severities, and required substrings are preserved verbatim (NEVER read implementation source code, retry budget of 2, exit marker with glyph ⎈, agentera prime --context orkestrera --format json, citation: <file>:<line>, etc.)"
+    - GIVEN `packages/cli/scripts/copy-bundle.mjs` WHEN the file header comment is updated THEN the comment notes that per-capability `instructions.md` files are no longer copied because they do not exist on disk after D65; the script body is unchanged (the `skills/` and `references/` directories are still copied, the `registry.json` file is still copied, the `.agentera-npx-bundle.json` sentinel is still written)
+    - GIVEN `README.md` WHEN the capability-author guidance is updated THEN any reference to `skills/agentera/capabilities/<name>/instructions.md` becomes `packages/cli/src/capabilities/<name>/instructions.ts`; the prime --context ownership is documented in the relevant section
+    - GIVEN `AGENTS.md` WHEN the "Adding or modifying a capability" step 1 and any other `instructions.md` reference is updated THEN the path becomes the new module path; the `npx -y agentera check validate capability` validation command is preserved; the commit-scopes table is unchanged
+    - GIVEN the test surface WHEN `pnpm -C packages/cli test` runs THEN the full suite is green and the test count delta from `feat/v3` base is exactly +N where N is the number of new `capabilityContext`/`prime --context` smoke tests added (the existing tests for the deleted `instructions.md` are retired; the new tests for the `prose` field, `prime_context` value, and `module_target` shape are added)
+    - GIVEN the orkestrera validation schema WHEN `node packages/cli/dist/bin/agentera.js check validate capability orkestrera --format json` runs THEN the orkestrera V1-V10 prose content checks all pass against the loaded TS module prose
+  plan: dncagkqzrf

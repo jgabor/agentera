@@ -1,0 +1,6 @@
+id: pxdmamkdlo
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "~~[fix:3.0.0] Only six v1 artifact pairs recognized in the legacy Markdown detector. Superseded 2026-07-14: the closed six-pair v1 Markdown→v2 parser remains a compatibility path, while current v3 `agentera state migrate` inventories arbitrary project-local YAML candidates within bounded file and byte limits, preserves custom names in normalized order, and requires exact `--path`, `--artifact`, and `--number` selectors for custom application. `packages/cli/test/state/migrationAuthority.test.ts` covers the published custom-name rule, 256-file/1 MiB/16 MiB bounds, normalized ordering, symlink rejection, and bounded output behavior.~~"

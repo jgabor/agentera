@@ -1,0 +1,11 @@
+id: zcakznlswb
+artifact: plan
+record:
+  name: Final state check and handoff
+  depends_on:
+    - dgoakdisah
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN state is queried THEN only deferred 2.3.x work remains open.
+    - "GIVEN release actions require explicit approval WHEN the handoff is produced THEN it states what remains: commit first, then tag/push/publish only if requested."
+  plan: klefqhiisv

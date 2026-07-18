@@ -1,0 +1,13 @@
+id: ayivstqese
+artifact: plan
+record:
+  name: Surface lifecycle attention and next actions
+  depends_on:
+    - fbsntctppe
+  status: complete
+  acceptance:
+    - GIVEN runtime work during prime/status WHEN rendered THEN at most two lifecycle rows summarize affected runtimes, action class, and truncation without exceeding the existing dashboard budget.
+    - GIVEN repairable owned work WHEN ranked THEN an exact authority-derived preview may outrank unrelated TODO work; warning-only blockers do not displace executable work.
+    - GIVEN manual or diagnostic-only blockers WHEN ranked THEN status presents the exact host procedure or doctor route and does not suggest an ineffective apply.
+    - GIVEN clean lifecycle state WHEN rendered THEN runtime attention is omitted while the bounded lifecycle summary remains truthful.
+  plan: nskpsridro

@@ -1,0 +1,10 @@
+id: ayjqxlngis
+artifact: plan
+record:
+  name: Validate And Close
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: vkpsqlcfro

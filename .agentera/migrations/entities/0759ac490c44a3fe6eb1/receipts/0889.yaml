@@ -1,0 +1,12 @@
+id: qbjchsbcbr
+artifact: plan
+record:
+  name: Tests and state sync
+  depends_on:
+    - pkxospakwm
+  status: complete
+  acceptance:
+    - GIVEN targeted regression tests for session path and compaction parity WHEN run THEN they pass alongside the existing suite
+    - GIVEN all tasks complete WHEN final sync runs THEN both hook consolidation TODO items are resolved in TODO.md
+    - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md and progress.yaml record the chore with verification evidence
+  plan: vhskahodyn

@@ -1,0 +1,17 @@
+id: rvgokeqowa
+artifact: plan
+record:
+  name: Cut TODO and documentation inventory over to entities
+  depends_on:
+    - piatorxaxp
+    - fogsvgbhqa
+    - qohrkyobow
+    - wxyfijsihp
+  status: complete
+  acceptance:
+    - GIVEN TODO items and documentation inventory entries WHEN mutated THEN each independent item uses the shared identity and writer contract.
+    - GIVEN unrelated item changes on parallel branches WHEN merged THEN ordinary Git preserves both without aggregate conflict.
+    - GIVEN CLI-rendered TODO and documentation views WHEN queried THEN they remain bounded, ordered, and complete through exact retrieval.
+    - GIVEN documentation mappings and singleton editorial artifacts WHEN migration runs THEN their intentional whole-document authority remains unchanged.
+  evidence: "Cycle 890: TODO/docs entity writers and bounded views; 2532 CLI tests, typecheck, build, state validation, document capability, capability contract, compact, and real-worktree merge/conflict coverage passed."
+  plan: pohgeeghnl

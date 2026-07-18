@@ -1,0 +1,17 @@
+id: whmcsqbjhd
+artifact: plan
+record:
+  name: Resolve repository migration readiness
+  depends_on:
+    - omhimgnxsv
+    - icevlfjpgb
+    - vklkgfjfte
+    - hogihtjhad
+  status: complete
+  acceptance:
+    - GIVEN this repository WHEN dry-run completes THEN every current entity and inbound structured reference has a proposed ID or exact blocker.
+    - GIVEN archive-missing or summary-only state WHEN recovery is attempted THEN only validated full detail is admitted and unresolved loss stops cutover.
+    - GIVEN readiness review WHEN apply is approved THEN repository root, clean HEAD, source digest, preview digest, and blocker disposition are explicitly recorded.
+    - GIVEN any checkout or source mismatch WHEN apply is requested THEN it refuses before publication and shows a safe correction.
+  evidence: "Recovered satisfaction remains preserved as 39 exact decision entities; 58 projection archives remain correlation-bound; the blocker-free preview maps 1,448 identities and 2,212 relationships. Approval validation now supports standard attached worktrees: HEAD/index remain worktree-local and symbolic refs resolve from worktree then common loose or packed refs, with unsafe metadata rejected and no Git invocation during apply. Verified by 35 focused and 2,615 full tests, typecheck, build, 12 capabilities, contract, state, and compact."
+  plan: vllyohtcde

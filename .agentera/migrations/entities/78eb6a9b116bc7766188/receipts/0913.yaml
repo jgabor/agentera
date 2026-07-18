@@ -1,0 +1,12 @@
+id: sahqwizzop
+artifact: plan
+record:
+  name: Progress verification and evaluator handoff contract
+  depends_on:
+    - mmerouvzun
+  status: complete
+  acceptance:
+    - GIVEN latest progress evidence exists WHEN orchestration context is returned THEN it includes a verification summary, non-empty verified detection, relevant cycle metadata, and caveats without inventing missing evidence.
+    - GIVEN retry or evaluation state is needed WHEN the data is not recorded in CLI/artifact state THEN `retry_state.status` is `not_recorded` or `unavailable` with source provenance rather than a synthetic attempt count.
+    - GIVEN Inspektera handoff is prepared WHEN a task is selected THEN the context includes the task acceptance criteria, evidence requirements, latest progress verification pointer, and evaluation caveats needed for audit without raw plan/progress reads.
+  plan: vnmbzxolfo

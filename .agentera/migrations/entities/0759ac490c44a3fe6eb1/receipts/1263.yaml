@@ -1,0 +1,16 @@
+id: nfrluzsdeg
+artifact: progress
+record:
+  timestamp: 2026-07-14 22:48
+  type: test
+  phase: build
+  what: Closed every retrieval-authority negative-test coverage gap found by the first independent Task 1 evaluation.
+  inspiration: Independent Task 1 evaluation attempt 1 failure recorded in the active plan.
+  discovered: The validator enforces 119 independently exercised rule cases across authority, envelope, identity, grammar, selectors, failures, collections, gap evidence, and archive diagnostics.
+  verified: "AC1: vp test run test/state/retrievalAuthority.test.ts -> 1 file, 122/122 tests; matrix covers all 10 collection fields and all 9 collection IDs. AC2: same command covers six plan/task/experiment grammar rules, every selector required/pattern branch, experiment identity format, and experiment zero. AC3: same command proves one canonical passing authority plus 119 uniquely named negative rule fixtures. Broad: pnpm -C packages/cli test -> 178 files, 1962/1962 tests; pnpm -C packages/cli run typecheck -> exit 0; pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check validate capability-contract --format json && node packages/cli/dist/bin/agentera.js check compact -> build exit 0, validation 2 passed/0 failed, compact status=pass with 0 errors and 0 over-limit artifacts."
+  next: Stop after recommitting Task 1; Task 2 requires a new explicit cycle.
+  context:
+    intent: Prove every enforced retrieval-authority validation rule with an explicit failing contract fixture while retaining a positive canonical authority case.
+    constraints: Retry Task 1 only; preserve evaluation attempt 1 and Cycle 796; do not amend 54cb0c03 or implement retrieval behavior.
+    unknowns: None; the audit identified test and evidence coverage gaps rather than a contract conflict.
+    scope: Retrieval-authority contract tests plus typed plan/progress closeout state.

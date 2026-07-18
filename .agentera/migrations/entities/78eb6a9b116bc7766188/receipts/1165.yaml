@@ -1,0 +1,44 @@
+id: ulutbnlztj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-13
+    status: archived
+    reviewed: 2026-07-13
+    critic_issues: 12 found, 12 addressed, 0 dismissed
+    revised: Added predecessor lineage, split traversal, identity, and migration phases, defined bounded source work and release gates, and made Git enrichment an explicit chain.
+    title: "Plan: Complete archive-backed state delivery"
+  what: Repair the blocked bounded-list contract, then finish bounded startup consumers, compatibility migration, optional Git enrichment, documentation, development release preparation, health evaluation, and final state synchronization without redoing completed storage foundations.
+  why: The predecessor delivered the storage foundation, but blocked listing correctness prevents every remaining consumer and migration outcome. The writer will preserve its completed evidence, failed Task 9 evaluations, and TODO handoff as immutable lineage.
+  constraints: Publish with `agentera state plan create --force`; the writer must assign `previous_plan_archived` and preserve the incomplete predecessor. Retain Decision 53 no-inference authority, archive immutability, non-Git operation, bounded reads, current get/durability/backfill contracts, and the npm 3.0 development-channel hold. No stable promotion, publication, tag, push, remote access, or completed-foundation rewrite is in scope.
+  overall_acceptance: GIVEN archive-backed state and legacy projections WHEN users list, start capabilities, migrate, recover, package, and verify the project THEN every physical row is accounted for, addressable rows traverse exactly once, provenance remains truthful, source work and output stay bounded, and all governed development-release gates pass from synchronized final state.
+  scope:
+    included:
+      - Typed-force replacement with immutable predecessor lineage and blocked Task 9 evidence
+      - Cursor traversal, legacy identity, physical/addressable/mirrored/duplicate/ambiguous counts, and current health duplicate repair
+      - Prime source-work and output bounds across dashboard, sparse, and capability contexts
+      - Consumer matrix for all capability and bundled decision/archive readers
+      - Local migration authority and execution, then explicit chained Git backfill enrichment
+      - Schemas, byte budgets, help, docs, generated bundle parity, targeted health audit, development version boundary, and closeout
+      - "Release gates: full CLI tests, typecheck, build, capability contract, artifact validation, compact, migration fixtures, and npm publish dry-run"
+    excluded:
+      - Redoing archive publication, transactions, overlays, projection gating, direct get, durability, or Git backfill foundations
+      - SQLite, `.agentera/history`, custom Git refs, automatic commits, or remote access
+      - Objective-scoped experiments and unnumbered Markdown artifact archives
+      - Stable `3.0.0` promotion or npm publication
+    deferred:
+      - Persistent list index unless repaired benchmarks cross the authority threshold
+  design: Repair traversal and truthful legacy counts first, then bound startup work and migrate all consumers. Define migration authority before local mutation and chain optional Git backfill afterward. Align runtime before docs, audit the result, synchronize state, and rerun all gates.
+  unknowns:
+    - question: What exact unaddressable representation preserves a genuinely unnumbered staging row without violating stable-ID schemas?
+      affects_task: 2
+      resolve_by: Choose and validate a nullable legacy identity or physical-only count row before modifying listing output.
+    - question: Which source-side heap, latency, and input bounds remain achievable across every prime context?
+      affects_task: 3
+      resolve_by: Measure large current projections and archives before retaining or revising schema-owned thresholds.
+    - question: Are custom legacy artifact names intentionally unsupported or discoverable under a bounded migration inventory?
+      affects_task: 5
+      resolve_by: Reconcile the existing six-pair migration boundary with the open custom-artifact TODO before publishing migration authority.
+  surprises:
+    []

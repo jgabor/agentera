@@ -1,0 +1,39 @@
+id: tnyfrchrnl
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-16
+    status: archived
+    reviewed: 2026-05-16
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: Decision Source Contract Raw-Read Reduction Plan
+  what: Reduce avoidable raw `.agentera/decisions.yaml` reads after `agentera decisions --format json` by making the DECISIONS.md source contract unambiguous for normal deliberation, compacted history, missing full-detail fields, filtered results, satisfaction-review caveats, and raw-read exceptions.
+  why: TODO.md records benchmark pressure for DECISIONS.md raw reads after CLI state (`2 reads`, `24 redundant tokens`). The current decision source contract already says raw decision artifact reads are not required for normal deliberation, but `complete_for_decision_context` becomes false when compacted or incomplete entries are returned. That mixes full-detail completeness with normal-use sufficiency and can lead agents to reread `.agentera/decisions.yaml` defensively even though the CLI exposes compacted/missing context boundaries and caveats.
+  constraints: Do not mutate `.agentera/decisions.yaml` or decision satisfaction state. Do not infer missing decision context from feeds_into, commits, downstream files, generated references, compacted history, or benchmark evidence. Do not expand archived compacted decisions, change compaction policy, add new CLI commands, add capability-name commands, refresh installed apps or profiles, publish, push, tag, edit vision or objective state, change package-manager state, or solve the separate AGENTERA_ARTIFACTS raw-read TODO. Raw decision artifact reads remain valid only for explicit artifact corruption/CLI defect investigation and for Resonera-owned decision writes/repairs that require the persisted artifact.
+  scope:
+    included:
+      - Benchmark and artifact-boundary review for the DECISIONS.md raw-after-CLI TODO.
+      - Source-contract truth table separating full-detail completeness from normal deliberation sufficiency.
+      - Bounded `agentera decisions --format json` source-contract fields for compacted, missing, filtered, satisfaction-review, and missing-artifact cases.
+      - Focused regression tests and smallest feasible benchmark/measurement evidence.
+      - Guidance alignment for DECISIONS.md consumers that are implicated by benchmark evidence or tell agents to raw-read decisions for normal context after CLI state.
+      - Mapped artifact closeout and semver-gated version metadata only if policy requires it.
+    excluded:
+      - Raw `.agentera/decisions.yaml` mutation or satisfaction-state changes.
+      - Rehydrating compacted archive decisions or reconstructing missing historical context.
+      - Broad artifact-discovery redesign for AGENTERA_ARTIFACTS.
+      - Adding `agentera resonera`, `agentera planera`, or any other capability-name CLI command.
+      - Installed app/profile refresh, publication, remote push, tags, package-manager updates, vision edits, or objective-state edits.
+    deferred:
+      - Broader artifact path discovery through `agentera describe` or hej composite output.
+      - Decision satisfaction review resolution that requires user confirmation.
+      - Other capability-specific raw/prose-read hot spots not tied to DECISIONS.md normal context.
+  design: Keep `agentera decisions --format json` as the single normal read model for decision context. Preserve existing fields where compatible, but add clearer machine-readable semantics so agents can distinguish "not full historical detail" from "raw read needed." Normal deliberation should key off a new explicit sufficiency signal rather than the legacy full-detail completeness flag. Missing or compacted context is carried forward as structured caveats, not repaired by raw reads or inference.
+  overall_acceptance:
+    - GIVEN decisions JSON includes compacted or incomplete entries WHEN an agent needs normal deliberation context THEN it can proceed from returned structured fields and caveats without raw `.agentera/decisions.yaml` reads or inference.
+    - GIVEN full historical detail is unavailable WHEN the source contract reports normal-use sufficiency THEN the contract still clearly marks full-detail completeness false and carries missing/compacted/satisfaction caveats forward.
+    - GIVEN raw decision artifact access is considered WHEN the plan completes THEN it remains restricted to decision writes, artifact repair/corruption diagnostics, or CLI defects, not normal post-CLI context recovery.
+    - GIVEN the separate AGENTERA_ARTIFACTS TODO remains open WHEN this work is implemented THEN artifact-path discovery redesign is not bundled into this DECISIONS.md contract change.
+  surprises:
+    - "Adversarial review found five issues and all were addressed: the contract needs an explicit truth table; missing fields, missing artifacts, filtered results, satisfaction review, and compacted history require separate boundaries; guidance alignment must audit all DECISIONS.md consumers implicated by benchmark evidence or raw-read wording; downstream handoffs must preserve caveats instead of treating compacted decisions as complete; and the plan artifact itself must explicitly validate archive linkage, active status, six pending tasks, review, and self-audit evidence."

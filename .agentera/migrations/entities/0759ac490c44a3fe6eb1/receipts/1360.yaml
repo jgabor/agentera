@@ -1,0 +1,16 @@
+id: upobwdpcgx
+artifact: progress
+record:
+  timestamp: 2026-07-17 14:16
+  type: fix
+  phase: build
+  what: Closed Task 10's final entity migration publication and rollback crash windows.
+  inspiration: Retry 2/2 final Task 10 audit requirements A-E and Decision 94 state-storage authority.
+  discovered: Publication ownership must predate the canonical target; journal updates after publication cannot establish safe rollback ownership.
+  verified: "entityMigrationApply.test.ts: 21/21; four-file migration focus: 137/137; full CLI: 212 files, 2559/2559. Typecheck, build, check validate state, build capability, capability contract 2/2, compact, migration help, and schema passed."
+  next: Task 10 remains complete. Task 11 remains pending; do not run live migration apply or begin general transaction work.
+  context:
+    intent: Prevent resume from adopting byte-identical successor inodes and prevent rollback completion after legacy source drift.
+    constraints: Only the two reproduced Task 10 crash windows; no Task 11, general transaction framework, live apply, manual YAML edit, vision change, amend, push, publish, or tag.
+    unknowns: None within the final Task 10 corrective scope.
+    scope: Operation-local migration receipts, pinned hard-link publication, descriptor-coherent evidence validation, rollback source revalidation, and adversarial subprocess tests.

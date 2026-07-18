@@ -1,0 +1,6 @@
+id: ocntbqcatr
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Detect \"You're right\", \"my mistake\", \"You're right to push back\" responses during profiling, to add generalized rules to the profile to correct the model's behavior."

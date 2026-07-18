@@ -1,0 +1,13 @@
+id: goimnheppu
+artifact: plan
+record:
+  name: Extract scripts/progress_commit.py from the CLI
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a new scripts/progress_commit.py WHEN created THEN it exposes commit_token, ancestor_state, rewrite_cycle_commits, a git wrapper, COMMIT_HASH_RE, and a pure compute_backfill, importing only stdlib + yaml_mapping (hook-safe)
+    - GIVEN scripts/agentera WHEN cmd_backfill and its helpers run THEN they import from progress_commit (agentera_upgrade.py pattern) and hold no second copy of token/ancestry/rewrite/compute logic
+    - GIVEN existing `agentera check backfill` behavior (check/fix/forward-fill, refuse non-ancestor/unknown, statuses, exit codes 0/1/2) WHEN exercised THEN outputs and exit codes are unchanged
+    - GIVEN tests/test_progress_commit_guard.py CLI cases WHEN retargeted to the module locations THEN they pass in the full suite
+  plan: jynhicyclu

@@ -1,0 +1,13 @@
+id: unrwxgxwnt
+artifact: plan
+record:
+  name: Inventory bundle and SKILL.md terminology surfaces
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - Inventory checked current vocabulary docs, the existing app lifecycle authority precedent, Decision 44 vocabulary regressions, and `bundle`/`SKILL.md` occurrence surfaces. The plan remains bounded away from routing/execution vocabulary, capability instruction-file renames, and `first_invocation_read`.
+  acceptance:
+    - GIVEN current docs, runtime adapter tests, package metadata, upgrade tests, and vocabulary references are inspected WHEN the authority scope is designed THEN surviving `bundle` and `SKILL.md` usages are classified as canonical, compatibility-preserved, historical, fixture-only, path-like, or ambiguous.
+    - GIVEN the next TODOs are reviewed WHEN boundaries are recorded THEN this plan explicitly excludes routing/execution vocabulary changes, capability instruction file renames, and `first_invocation_read` feature work.
+  plan: iotducihyh

@@ -1,0 +1,16 @@
+id: wvrzhccvok
+artifact: plan
+record:
+  name: Compact Planera startup contract
+  depends_on:
+    - xegszkaleu
+  status: complete
+  acceptance:
+    - GIVEN the selected startup/introspection output is requested WHEN Planera context is included THEN it exposes bounded guidance for planning levels, required step names, CLI-first orientation, artifact write/archive boundaries, full-plan review/self-audit requirements, and handoff expectations.
+    - GIVEN the compact contract is present WHEN detailed behavior is outside the compact payload THEN the output preserves a clear boundary that Planera prose remains the authority for ambiguous, contradictory, or capability-development cases.
+    - GIVEN command vocabulary is inspected WHEN the contract is implemented THEN no top-level capability-name command or alias is registered for Planera.
+    - GIVEN contract-owned vocabulary is surfaced WHEN tests are written THEN planning levels, artifact names, and capability names are loaded from the same source used by the CLI where feasible rather than duplicated as unrelated literals.
+  evidence:
+    - "`scripts/agentera` now adds `source_contract.capability_context.startup_contract` for Planera with schema version `agentera.planeraStartup.v1`, planning levels, required steps, CLI-first orientation, raw plan artifact boundaries, prose authority exceptions, full-plan review/self-audit flags, handoff expectations, selected seam rationale, and unsupported-command boundary."
+    - The compact contract is emitted from constants in the same CLI path that builds `capability_context`, does not read `planera/prose.md` at runtime, and preserves `/agentera plan` routing versus `agentera plan` state separation.
+  plan: dmdkskyqxj

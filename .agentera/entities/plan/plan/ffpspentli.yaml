@@ -1,0 +1,22 @@
+id: ffpspentli
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Decision 57 Capability Instruction Contract
+  what: "Document Decision 57's capability instruction contract: capability instruction files move from `prose.md` to `instructions.md`, `first_invocation_read` declares startup-read obligations, and first capability invocation reads `instructions.md` in full unless a compact-startup exception is explicitly declared."
+  why: Decision 57 is the last P0 foundation document before the rename, metadata, feature, and validation TODOs. Agents need one documented contract that separates the future instruction-file name, startup-read metadata, compact-startup exception semantics, and compatibility boundaries before implementation starts.
+  constraints: Keep this plan scoped to documentation and contract authority for Decision 57. Do not rename any `skills/agentera/capabilities/*/prose.md` files, do not update validators to require `instructions.md`, do not add or emit `first_invocation_read` metadata, and do not rewrite runtime descriptors or package metadata except for narrow docs/test delegation needed to document the contract. Preserve existing `prose.md` paths as compatibility and current-state references until the later fix TODO is selected. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - A Decision 57 capability instruction contract authority documents the future `instructions.md` convention, `first_invocation_read` semantics, full-read obligation, compact-startup exception boundary, and current compatibility state for `prose.md`.
+    - Docs and focused checks make the contract discoverable without claiming that file renames, validator behavior, runtime descriptors, or CLI metadata have already changed.
+    - The top TODO is closed without renaming capability files, adding `first_invocation_read` behavior, changing validators, rewriting descriptors, version bumps, runtime config refreshes, package-manager changes, publication, protected artifact edits, or decision satisfaction changes.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

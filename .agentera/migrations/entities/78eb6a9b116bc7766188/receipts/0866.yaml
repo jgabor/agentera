@@ -1,0 +1,11 @@
+id: vvyafsmqgq
+artifact: plan
+record:
+  name: Rewrite planera design field template and schema-list description
+  depends_on:
+    - uavqxisida
+  status: complete
+  acceptance:
+    - GIVEN planera instructions.ts WHEN parsed THEN design field states positive boundary plus MUST NOT exclusions
+    - GIVEN the file WHEN agentera check validate capability planera runs THEN it passes
+  plan: pkpreybxbf

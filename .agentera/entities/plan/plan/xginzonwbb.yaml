@@ -1,0 +1,42 @@
+id: xginzonwbb
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-15
+    status: archived
+    reviewed: 2026-07-15
+    critic_issues: 5 found, 4 addressed, 1 dismissed
+    revised: Separated canonical correction, immutable provenance, release verification, and independent closeout; made dev.21 availability explicit fog; ordered health resolution after all gates.
+    title: "Plan: Remediate Audit 32 publication-authority contradiction"
+  what: Correct the canonical experiment-publication scope so it agrees with the already-implemented objective-scoped durable archive-before-projection contract, prevent semantic regression, synchronize packaged authority, retain the governed 3.0.0-dev.21 and 3.0.0 versions, and close Audit 32 with verified provenance and state evidence.
+  why: Audit 32 found one release-blocking authority contradiction while runtime publication remains healthy. Correcting the authority and enforcing semantic parity removes misleading packaged guidance without reopening storage behavior or policy.
+  constraints: Do not change runtime publication behavior, archive layout, retention, retrieval implementation, legacy archive history, or unrelated docs. Keep packages/cli version 3.0.0-dev.21 and every suite-bearing surface at 3.0.0. Select the substantive remediation commit for agentera.gitRef. Do not publish, tag, or push. New semantic test units require at least one passing and one contradictory failing case.
+  overall_acceptance: GIVEN the healthy experiment publication runtime WHEN Audit 32 remediation is complete THEN canonical and packaged authority assign validated publication and durable objective-scoped archive-before-projection ownership consistently, semantic regression is rejected, governed provenance identifies the substantive remediation commit, all required gates and dry-runs pass without release side effects, and post-fix state records independent closure.
+  scope:
+    included:
+      - Canonical publication scope and experiment archival semantic parity
+      - Authority-derived regression coverage and directly affected introspection
+      - Packaged authority synchronization and package-content verification
+      - Immutable dev.21 provenance with suite 3.0.0 unchanged
+      - Focused, full, release, packaging, compaction, health, and closeout evidence
+    excluded:
+      - Runtime publication or retrieval behavior changes
+      - Archive layout, retention, migration, or historical archive repair
+      - Unrelated documentation, TODO, or release work
+      - Package or suite version changes, publication, tags, or pushes
+    deferred:
+      []
+  design: Treat the authority as the single semantic source. First reconcile its publication and archival claims and prove contradictions fail from parsed authority semantics. Then synchronize every package-derived projection, pin immutable provenance to the substantive correction, run release-level verification without publishing, and only afterward record an independent health verdict and final state closeout.
+  unknowns:
+    - question: Does any directly generated introspection expose publication-scope semantics beyond the canonical and bundled authority?
+      affects_task: 1
+      resolve_by: Compare authority-derived schema and startup projections before editing; synchronize only projections that actually expose the affected semantics and record a no-change result otherwise.
+    - question: Will agentera 3.0.0-dev.21 remain unpublished when release dry-runs execute?
+      affects_task: 3
+      resolve_by: Query the next dist-tag and exact version before dry-runs; if dev.21 is occupied, stop and re-plan because this plan forbids a version bump.
+  rejected:
+    - issue: Advance the CLI package to dev.22 because corrected package data changes.
+      rationale: The user explicitly requires dev.21 and suite 3.0.0 to remain unchanged; this remediation updates immutable gitRef provenance instead of expanding release scope.
+  surprises:
+    []

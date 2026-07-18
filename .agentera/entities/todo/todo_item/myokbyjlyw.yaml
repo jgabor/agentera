@@ -1,0 +1,6 @@
+id: myokbyjlyw
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Provide deterministic plan lifecycle migration. Resolved 2026-07-12: `agentera upgrade --only artifacts --dry-run|--yes` migrates legacy..."

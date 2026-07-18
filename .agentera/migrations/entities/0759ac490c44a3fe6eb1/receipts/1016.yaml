@@ -1,0 +1,12 @@
+id: sjvjxppoki
+artifact: plan
+record:
+  name: Add CLI-first compaction context hook
+  depends_on:
+    - ztrzofifnf
+  status: complete
+  acceptance:
+    - GIVEN OpenCode calls `experimental.session.compacting` WHEN Agentera state is discoverable THEN the plugin appends bounded context generated from `agentera hej --format json` summaries.
+    - GIVEN the compaction hook is inspected WHEN source reads are searched THEN it does not read `.agentera` artifacts directly for compaction context.
+  evidence: "`.opencode/plugins/agentera.js` registers `experimental.session.compacting`, calls the resolved `scripts/agentera hej --format json`, formats bounded context from the returned summaries, and smoke coverage proves the hook appends context when CLI state is available."
+  plan: fkgfrokmhn

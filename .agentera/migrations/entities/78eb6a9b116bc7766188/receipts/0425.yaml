@@ -1,0 +1,17 @@
+id: rasrdfkozj
+artifact: plan
+record:
+  name: Evaluation startup fixtures and validation gates
+  depends_on:
+    - acpybohtjb
+  status: complete
+  acceptance:
+    - GIVEN a complete Inspektera evidence context is available through CLI state WHEN deterministic startup or evaluation fixtures run THEN normal evaluation guidance introduces no raw-after-CLI reads for plan, progress, docs, health, TODO, or decisions state.
+    - GIVEN validation runs WHEN implementation is complete THEN focused pytest targets, `uv run scripts/validate_capability.py skills/agentera/capabilities/inspektera`, `uv run scripts/validate_capability.py --self-validate`, artifact validators, `uv run scripts/agentera gate --format json`, `uv run scripts/agentera compact --mode check --format json`, and `git diff --check` pass without installed app refresh.
+    - GIVEN an independent evaluation reviews the completed implementation WHEN this task finishes THEN blocking findings are resolved and any residual risks are recorded in the plan evidence rather than hidden.
+  evidence:
+    - "`tests/test_query_cli.py::TestHej::test_hej_inspektera_complete_context_keeps_startup_guidance_cli_first` now seeds a complete Inspektera `evidence_context`, requests it through `agentera hej --format json --capability-context inspektera --fields evidence_context,source_contract`, asserts `raw_artifact_reads_required: false`, CLI-only fallback commands, and verifies Step 1 guidance uses evidence-context state instead of raw plan, progress, docs, health, TODO, or decisions startup reads."
+    - "`skills/agentera/capabilities/inspektera/prose.md` Step 1 now orients from `evidence_context.health_state`, `decision_context`, `todo_state`, `progress_verification`, `evaluation_target`, and `plan_criteria`; `references/cli/agent-ready-state-contract.yaml` no longer carries the stale Task 4 raw-startup fallback rationale."
+    - "Independent review first found remaining raw Step 1 startup guidance and stale contract text; those findings were fixed and a second independent review reported no blocking Task 6 findings. Residual risk: later audit dimensions still mention raw artifact reads outside normal startup, which is outside Task 6 scope."
+    - Focused verification passed with `uv run pytest tests/test_query_cli.py::TestHej tests/test_query_cli.py::TestRoutineStructuredOutput tests/test_decision45_cli_contract.py tests/test_inspektera_capability.py` (107 tests) and `uv run scripts/validate_capability.py skills/agentera/capabilities/inspektera`. Final required gates are recorded in progress evidence. No unsupported CLI command, installed app refresh, profile refresh, vision edit, objective-state edit, publication, push, tag, or commit occurred.
+  plan: awachftxab

@@ -1,0 +1,22 @@
+id: iotducihyh
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Bundle and Skill Vocabulary Authority
+  what: Extend the machine-readable vocabulary authority to classify `bundle` and `SKILL.md` usage into canonical concepts for Agentera app files, suite package, plugin-shipped hooks, removed `bundle-status` command, Agentera skill dispatcher, skill entry file, v1 skill entry file, and legacy hej bridge.
+  why: The next vocabulary fix and regression TODOs need a structured classification boundary before replacing ambiguous `bundle` and bare `SKILL.md` prose. Without that authority, implementation agents risk broad, inconsistent renames across compatibility surfaces, package metadata, runtime descriptors, historical records, and user-facing documentation.
+  constraints: Keep the scope bounded to classification authority for `bundle` and `SKILL.md` terminology. Do not implement the later routing/execution vocabulary collapse, do not rename capability `prose.md` files, do not add `first_invocation_read`, and do not apply broad prose replacements outside authority/docs/test seams. Preserve shipped compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, `--only bundle`, and concrete package or fixture path names. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - A machine-readable vocabulary authority classifies `bundle` and `SKILL.md` usages into canonical concepts, compatibility-preserved surfaces, historical records, fixtures, path-like references, and ambiguous usages.
+    - Documentation and focused regressions prove the structured authority remains synchronized with the vocabulary contract and rejects new ambiguous user-facing terminology.
+    - The top TODO is closed without implementing routing/execution vocabulary work, capability instruction-file renames, `first_invocation_read`, version bumps, runtime config refreshes, package-manager changes, publication, protected artifact edits, or decision satisfaction changes.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

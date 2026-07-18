@@ -1,0 +1,13 @@
+id: ssglwuukuw
+artifact: plan
+record:
+  name: Local session extraction and compatibility
+  depends_on:
+    - yfcroxszlw
+    - vqlhmhjjzm
+  status: complete
+  acceptance:
+    - GIVEN local post-2.3 session stores are available WHEN extraction runs THEN startup signals can be derived without changing existing corpus records consumed by usage_stats.
+    - GIVEN a runtime store is missing, locked, sparse, or schema-divergent WHEN extraction runs THEN the affected runtime reports a bounded status and other runtimes continue.
+    - GIVEN extraction reads local runtime stores WHEN it writes intermediates THEN outputs contain counts, canonical artifact labels, runtime names, and redacted identifiers only.
+  plan: dqipjmhdxs

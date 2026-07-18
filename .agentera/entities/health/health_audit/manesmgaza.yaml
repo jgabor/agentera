@@ -1,0 +1,114 @@
+id: manesmgaza
+artifact: health
+record:
+  date: 2026-06-10
+  dimensions:
+    - architecture alignment
+    - pattern consistency
+    - coupling health
+    - complexity hotspots
+    - test health
+    - dependency health
+    - version health
+    - artifact freshness
+    - security hygiene
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 2
+    filtered_by_confidence: 0
+  trajectory: improving vs Audit 23. The v3 CLI structural-debt pass split prime (78 lines), lifecycleAdapters (107-line barrel), and doctor/integration surfaces; vitest is 916/916 green; monolith lint passes. orientation.ts hub density and a large uncommitted WIP remain the main residual debt.
+  grades:
+    Architecture: A
+    Patterns: A
+    Coupling: B
+    Complexity: B
+    Tests: A
+    Deps: A
+    Version: B
+    Freshness: B
+    Security: A
+  dimension_details:
+    - name: Architecture alignment
+      grade: A
+      summary: prime.ts delegates to cli/commands/prime/{collectOrientationState, bundleStatus, orientationOutput, v1Migration, types}; lifecycleAdapters splits nodeFormChecks and legacyPythonParity behind a thin barrel; upgrade/doctorClassifier and projectIntegrationDecision encode typed scenario tables per D69 narrow waist.
+      findings:
+        []
+    - name: Pattern consistency
+      grade: A
+      summary: Shared argvParser, npxPlatformStatus, todoSeverity, pyjson, jsonValue contracts, and DISPATCHER_COMMANDS consolidate duplicated dispatch and doctor patterns; upgrade-vs-repair wording uses lifecycle status nouns.
+      findings:
+        []
+    - name: Coupling health
+      grade: B
+      summary: Prime startup coupling dropped with prime/ and contracts/ slices, but orientation.ts still aggregates summary builders for status and prime.
+      findings:
+        - heading: "⇉ orientation.ts remains prime/status summary hub, warning (confidence: 80)"
+          severity: warning
+          confidence: 80
+          location: packages/cli/src/cli/orientation.ts:62
+          evidence: orientation.ts is 673 lines; only cli/orientation/attention.ts extracted so far; healthSummary, planSummary, docsSummary, and selectStatusNextAction still share one module.
+          impact: Status and prime orientation edits still touch a dense file despite capabilityContext/ modularization elsewhere.
+          suggested_action: Continue extracting state-family summary builders into cli/orientation/ slices mirroring capabilityContext/.
+          verify_command: wc -l packages/cli/src/cli/orientation.ts
+    - name: Complexity hotspots
+      grade: B
+      summary: No source file exceeds the 1000-line monolith gate; prime.ts is 78 lines and lifecycleAdapters.ts is 107; largest modules are packageRegistry.ts (700) and orientation.ts (673).
+      findings:
+        - heading: "⇢ Dict aliases remain in ~42 CLI modules, info (confidence: 75)"
+          severity: info
+          confidence: 75
+          location: packages/cli/src/core/jsonValue.ts:13
+          evidence: core/jsonValue.ts exports JsonObject but retains deprecated Dict; grep finds Dict usage across validate, hooks, capabilityContext, and analytics modules.
+          impact: IO boundaries stay loosely typed until repo-wide Dict elimination lands.
+          suggested_action: Continue TODO chore:3.0.0 Dict→JsonObject migration module by module.
+    - name: Test health
+      grade: A
+      summary: pnpm -C packages/cli test reports 916/916 passed in 98 files; typecheck and build clean; monolithLint green; cross-platform cursor fixture tests require non-sandbox .cursor directory creation.
+      findings:
+        []
+    - name: Dependency health
+      grade: A
+      summary: Runtime deps remain yaml and smol-toml; pnpm audit --prod reports 0 vulnerabilities on packages/cli.
+      findings:
+        []
+    - name: Version health
+      grade: B
+      summary: packages/cli/package.json is 3.0.0-dev.6 with suiteVersion 3.0.0; fix commits landed after the dev.6 bump; stable @latest shim at 2.7.7 remains per D56.
+      findings:
+        []
+    - name: Artifact freshness
+      grade: B
+      summary: progress.yaml cycle 657 records this audit; structural-debt refactors are largely uncommitted WIP while TODO Resolved lines claim 2026-06-10 closeout.
+      findings:
+        - heading: "⇉ Structural-debt pass is uncommitted WIP, warning (confidence: 88)"
+          severity: warning
+          confidence: 88
+          location: packages/cli/src/cli/commands/prime/, TODO.md @ ✓ Resolved [chore:3.0.0] Split prime.ts
+          evidence: git status shows 39 changed paths and untracked prime/, contracts/, argvParser.ts, jsonValue.ts, and orientation/attention.ts; net diff is -1711 lines but HEAD is still 606579a.
+          impact: Resolved TODO ledger can run ahead of git history until the WIP lands in one commit.
+          suggested_action: Commit the structural-debt slice with tests green before the next release-metadata bump.
+          verify_command: git status --short packages/cli/src/cli/commands/prime/
+    - name: Security hygiene
+      grade: A
+      summary: No hardcoded secrets in scanned TS sources; legacy Python parity probes are opt-in via AGENTERA_LEGACY_PYTHON_PARITY.
+      findings:
+        - heading: "⇢ Dedicated security tooling still recommended, info (confidence: 60)"
+          severity: info
+          confidence: 60
+          location: repository-wide
+          evidence: Regex hygiene scan only; pnpm audit --prod clean.
+          impact: Surface scan cannot replace secret-scan CI for publish.
+          suggested_action: Keep pnpm audit and secret scanning in release CI for 3.x.
+  trends:
+    improved: prime split (721→78 lines), lifecycleAdapters split, doctorClassifier and projectIntegrationDecision tables, typed BundleStatus/OrientationState contracts, argvParser and npxPlatformStatus dedup, vitest 884→916 green, upgrade-vs-repair wording fix, cross-platform test hardening.
+    degraded: none.
+    stable: Dependency and security posture remain healthy; stable @latest shim stays on 2.7.7 by design.
+    new_findings: Uncommitted structural-debt WIP ahead of TODO Resolved ledger; Dict alias count still open.
+    resolved: Audit 23 orientation hub finding partially addressed via orientation/attention.ts and prime/ module split; thermo-nuclear follow-ups (npx platform status, dispatcher commands, cliProbe, lifecycle argv parser, legacy Python parity gate) landed in WIP.
+    carried_forward: orientation.ts summary hub density; macOS/Windows CI jobs and Decision 70 capability rename remain open in TODO.md.
+  patterns:
+    - "Prime startup: thin cmdPrime dispatch delegates to prime/ modules and contracts/orientationState; attention assembly lives in orientation/attention.ts."
+    - "Validate path: default lifecycle adapters skip Python parity probes; maintainer parity is opt-in via --legacy-python-parity or env flag."
+    - "Upgrade surface: doctorClassifier and projectIntegrationDecision own install-root and scenario messaging; npxPlatformStatus unifies bundle probes."
+    - "Testing approach: 916 vitest cases with monolith lint gate, packaging prepack tarball regressions, and cursor fixture tests that need real .cursor directory creation."

@@ -1,0 +1,14 @@
+id: ftklthovpj
+artifact: plan
+record:
+  name: Verify suite, content gate, and changelog
+  depends_on:
+    - rxeqycvqpb
+    - jbjbcsczzh
+  status: complete
+  acceptance:
+    - GIVEN the test suite runs WHEN all tests execute THEN the suite passes with zero failures
+    - GIVEN the content gate runs WHEN the compaction check executes THEN the gate passes with no budget violations
+    - GIVEN the typecheck runs WHEN the compiler executes THEN no type errors exist
+    - GIVEN the changelog unreleased section WHEN inspected THEN the breaking JSON output change (bundle to app rename, rootStatus removal, install_track addition) is recorded
+  plan: fedtqulqpx

@@ -1,0 +1,22 @@
+id: iaijntqpdv
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-17
+    status: complete
+    title: Validate Namespace Stable Validator Coverage
+  what: "Extend the canonical `agentera validate` namespace to cover the remaining stable validator helpers: cross-capability artifact graph validation, runtime lifecycle adapter validation, app-home contract terminology validation, and capability schema contract self/protocol checks."
+  why: The direct helper scripts already pass and remain useful maintainer seams, but user-facing and agent-facing validation should route through the `agentera` namespace first. Adding thin CLI wrappers now reduces direct-helper reliance before the broader helper-script classification cleanup.
+  constraints: Preserve direct helper script compatibility and output behavior. Keep wrappers thin, non-interactive, JSON-capable, and explicit about delegated engines. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - "`agentera validate` covers every stable validator named in the 2.5.x TODO while preserving existing direct helper script behavior."
+    - Text and JSON modes are regression-tested for the new validate families.
+    - Documentation and artifacts record the new canonical validation surface.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

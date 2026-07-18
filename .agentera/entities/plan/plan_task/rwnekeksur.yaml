@@ -1,0 +1,15 @@
+id: rwnekeksur
+artifact: plan
+record:
+  name: Update tests asserting on the issues field/label name to cover todo primary and issues alias
+  depends_on:
+    - vjmkulnyus
+    - xlkxnwylyx
+  status: complete
+  acceptance:
+    - 'GIVEN packages/cli/test/cli/prime.test.ts WHEN the text-briefing test runs THEN it asserts out contains "todo: critical=" (not "issues: critical=")'
+    - GIVEN packages/cli/test/cli/prime.test.ts WHEN the JSON-payload test runs THEN it asserts payload.todo is present and equals the counts object AND payload.issues is present as the deprecated alias with the same value
+    - GIVEN a new or updated test for --fields todo WHEN run THEN selecting todo returns the counts under todo with no stderr deprecation warning
+    - GIVEN a new or updated test for --fields issues WHEN run THEN selecting issues emits the stderr deprecation warning AND returns the counts
+    - GIVEN the full CLI test suite WHEN run via pnpm -C packages/cli test THEN all tests pass with no failures
+  plan: ttutdsmlwe

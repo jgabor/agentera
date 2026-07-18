@@ -1,0 +1,13 @@
+id: mhtkabskho
+artifact: plan
+record:
+  name: Reduce subprocess overhead in hot CLI test paths
+  depends_on:
+    - btigklmtzs
+  status: complete
+  acceptance:
+    - GIVEN test_query_cli.py prime helpers WHEN refactored THEN repeated prime invocations share a class-scoped fixture
+    - GIVEN refactored tests WHEN the full suite runs THEN pass count remains equivalent
+  evidence:
+    - TestPrime class-scoped prime_result fixture; 1230 passed full suite
+  plan: bszbmkggss

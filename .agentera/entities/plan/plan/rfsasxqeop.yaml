@@ -1,0 +1,45 @@
+id: rfsasxqeop
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-06-24
+    status: archived
+    reviewed: 2026-06-24
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Found v2-era straggler provenance strings in capabilityContext/evidence.ts (lines 355, 360, 364) and closeout.ts (line 145) still referencing agentera hej --format json instead of the v3 agentera prime command. The capability name change (hej to status) and the command name fix (hej to prime) are orthogonal — conflating them would introduce an unsupported agentera status CLI command. Addressed by adding explicit task 1 acceptance criteria that provenance strings use English capability IDs AND agentera prime (not agentera hej) for the command reference.
+    title: "Plan: D70 Capability Rename (English IDs on v3 surface)"
+  what: |
+    Promote the Decision 43 English alias set to canonical capability IDs on the v3 surface. Rename 24 capability directories (12 in packages/cli/src/capabilities/ plus 12 in skills/agentera/capabilities/), update the capability barrel and internal dispatch code, update ~50 prose and schema content references inside the renamed dirs, rename and update 36 runtime descriptor files, flip the capability_schema_contract.yaml so English is canonical and Swedish is legacy, update SKILL.md dispatch and AGENTS.md scope table, add a coexistence probe naming-divergence line, retire the mobile brief UI label for status, and promote the CHANGELOG D70 entry from future to past tense.
+  why: |
+    Decision 70 (firm, satisfied 2026-06-09) decided that the D43 English aliases become the binding canonical name set for v3 and onward. One name per capability in v3 satisfies D58. English verbs compose with LLM priors on common CLI patterns (git status, kubectl plan). CLI is ground zero per D68/D69 and its naming propagates to all v3 surfaces. The decision was satisfied as policy but the mechanical rename was deferred to this implementation. v2 stable on main keeps Swedish IDs; historical artifacts are not rewritten.
+  constraints: |
+    Must not rename schema version strings (agentera.inspekteraEvaluationReport.v1, agentera.coexistenceProbe.v1, agentera.capabilityContext.v1, etc.) — they are compatibility identifiers, not capability IDs. Must not rewrite historical artifacts (archived plans, prior decisions, prior changelog entries). Must not affect the v2 stable distribution on main. Must preserve the cli_boundary in capability_schema_contract.yaml: /agentera plan routes to the capability, agentera state plan reads plan state — the rename must not surface agentera status, agentera plan, agentera document, etc. as CLI commands. Must not add new npm dependencies. Behavior-preserving mechanical rename: no functional changes to capability behavior, only naming. The orientation command stays agentera prime (not agentera status). Bare hej is dropped; bare /agentera is the only bare form.
+  scope:
+    included:
+      - Rename 24 capability directories to English IDs (hej→status, visionera→vision, resonera→discuss, inspirera→research, planera→plan, realisera→build, optimera→optimize, inspektera→audit, dokumentera→document, profilera→profile, visualisera→design, orkestrera→orchestrate)
+      - Update capability barrel (index.ts imports, CAPABILITY_INSTRUCTIONS keys, path functions) and internal dispatch code (capabilityContext/ type union, startup comparisons, guard checks, provenance strings)
+      - Update ~50 prose and schema content references inside instructions.ts headers and schemas/*.yaml files
+      - Rename and update 36 runtime descriptor files (.cursor/agents/*.md, .opencode/agents/*.md, skills/agentera/agents/*.toml)
+      - "Flip capability_schema_contract.yaml ROUTE_ALIASES: English canonical, Swedish legacy reference"
+      - Update SKILL.md dispatch table, frontmatter, and routing logic; update AGENTS.md scope table (12 rows)
+      - Update vocabulary.md, vocabulary-index.yaml, registry.json capabilities array, plugin.json description, DESIGN.md glyph table keys
+      - Add coexistence probe naming-divergence line to references/cli/coexistence-probe.yaml and corresponding test assertion
+      - Retire mobile brief UI label for status in packages/mobile
+      - Promote CHANGELOG D70 entry from future to past tense; README.md tense check
+    excluded:
+      - Schema version strings (agentera.inspekteraEvaluationReport.v1, agentera.coexistenceProbe.v1, etc.) — compatibility identifiers, not capability IDs
+      - Historical artifacts (archived plans, prior decisions, prior changelog entries) — not rewritten per D70
+      - v2 stable distribution on main — keeps Swedish IDs per D70
+      - UPGRADE.md historical command references — migration context, not rewritten
+      - agentera prime command name — orientation stays prime, not agentera status
+      - agentera state plan / agentera state docs CLI commands — state-oriented, not capability commands
+    deferred:
+      - Internal implementation file renames (capabilityContext/realisera.ts → build.ts, etc.) — internal, not v3 surface; can land separately like D72 deferred the internal classifier field name
+      - Legacy hej skill bridge at ~/.config/opencode/skills/hej — managed by upgrade, not in-repo source
+  design: |
+    Task 1 is the foundational structural rename: 24 directory renames plus all internal code that must compile against the new names. Tasks 2-7 depend on task 1 and edit disjoint file sets, so they could run in parallel after task 1 lands green. Task 8 is the verification gate that depends on all prior tasks. The plan lands as one behavior-preserving refactor commit per the AGENTS.md commit sequencing convention: the rename is behavior-preserving (no functional changes to capability behavior, only naming). The critical path is 1→2→8. The coexistence probe naming-divergence line (task 6) and mobile label change (task 7) are small auxiliary surfaces. The contract flip (task 4) is the authoritative naming declaration that all other tasks reference. Internal dispatch code in task 1 includes provenance strings that still reference the old agentera hej command name — these update to agentera prime per the v3 command surface.
+  overall_acceptance: |
+    GIVEN the v3 CLI surface WHEN a user invokes agentera prime --context status --format json THEN the capability context loads successfully and returns the orientation prose. GIVEN the capability barrel WHEN inspected THEN all 12 keys are English IDs. GIVEN the coexistence probe WHEN v2 and v3 are both installed THEN a naming-divergence line is emitted. GIVEN the AGENTS.md scope table WHEN inspected THEN 12 rows use English scope names. GIVEN the full test suite and content gate run WHEN verification completes THEN both pass with zero failures. GIVEN the CHANGELOG WHEN inspected THEN the D70 entry is past tense. Historical artifacts, schema version strings, and the v2 stable distribution are unchanged.
+  surprises:
+    []

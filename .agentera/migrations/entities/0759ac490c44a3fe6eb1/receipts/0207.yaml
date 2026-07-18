@@ -1,0 +1,64 @@
+id: zbpmellkfr
+artifact: health
+record:
+  date: 2026-07-15
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - test_health
+    - version_health
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving vs Audit 34: lint budgets now have fail-closed schema ownership and advisory exits preserve strict publication."
+  grades:
+    architecture_alignment: A
+    pattern_consistency: A
+    coupling_health: A
+    test_health: A
+    version_health: A
+    artifact_freshness: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: Artifact schemas own budget values through one machine-readable authority.
+      findings:
+        []
+    - name: pattern_consistency
+      grade: A
+      summary: Alias resolution and exit semantics use shared paths without fallback tables.
+      findings:
+        []
+    - name: coupling_health
+      grade: A
+      summary: Lint consumption is isolated from unchanged compaction authority.
+      findings:
+        []
+    - name: test_health
+      grade: A
+      summary: Focused behavior and the 2085-test suite pass.
+      findings:
+        []
+    - name: version_health
+      grade: A
+      summary: No release or suite version surface changed.
+      findings:
+        []
+    - name: artifact_freshness
+      grade: A
+      summary: Completed plan closure is archived with matching evidence.
+      findings:
+        []
+  trends:
+    improved: Budget authority and interactive exit behavior are explicit and tested.
+    degraded: None.
+    stable: Strict publication and uniform_10_40_50 remain unchanged.
+    new_findings: None.
+    resolved: None.
+    carried_forward: Historical state recovery and Decision 93 review remain caveats.
+  patterns:
+    - Schema-owned policy is resolved through fail-closed registries.

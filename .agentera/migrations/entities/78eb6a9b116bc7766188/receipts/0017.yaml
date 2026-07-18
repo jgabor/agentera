@@ -1,0 +1,9 @@
+id: vvmmfndtmw
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: Cursor v1 slice shipped with cursor and cursor-agent registry records, repo-native hooks and managed agents, upgrade/doctor/eval paths, and parity docs. Live preToolUse Write smoke passed 2026-05-24. Cross-platform app-home resolution is implemented in the TypeScript CLI (`packages/cli/src/state/installRoot.ts`). User confirmed satisfaction in discuss on 2026-06-09 after verifying macOS app-home resolves to `~/Library/Application Support/agentera`.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-09
+  decision: djnizkyrfw

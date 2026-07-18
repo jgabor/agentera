@@ -1,0 +1,14 @@
+id: okfilrfocq
+artifact: plan
+record:
+  name: Publish local migration inventory and mutation authority
+  depends_on:
+    - ajxxvjffrn
+    - lcgqhecrvp
+  status: pending
+  acceptance:
+    - GIVEN default and custom legacy artifact names WHEN inventory runs THEN supported, intentionally unsupported, ambiguous, and unsafe candidates are classified under a bounded discovery policy.
+    - GIVEN operators inspect migration help WHEN no mutation is requested THEN exact selectors, preview/apply/force requirements, compatibility window, backups, failure classes, and examples are discoverable.
+    - GIVEN interruption, retry, conflict, or partial legacy state WHEN the authority is validated THEN local publication is monotonic, typed, project-bounded, and independent of Git.
+    - GIVEN the migration contract WHEN pass/fail tests run THEN every inventory and mutation class is schema-backed rather than prose-only.
+  plan: ulutbnlztj

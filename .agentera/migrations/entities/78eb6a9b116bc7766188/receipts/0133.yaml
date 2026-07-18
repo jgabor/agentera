@@ -1,0 +1,7 @@
+id: ttfliweerq
+artifact: docs
+record:
+  document: PackageManifest registry
+  path: references/adapters/package-registry.yaml
+  last_updated: 2026-05-06
+  status: current

@@ -1,0 +1,27 @@
+id: hoznchrhbl
+artifact: decisions
+record:
+  date: 2026-05-18
+  question: What naming boundary must Agentera 3.0 enforce for artifacts, concepts, primitives, and compatibility aliases?
+  context: Agentera v2 still exposes legacy Markdown-style canonical artifact labels such as `PROGRESS.md`, `PLAN.md`, and `DECISIONS.md` while the actual v2 storage paths are YAML files such as `.agentera/progress.yaml`. Similar compatibility seams exist in vocabulary, runtime metadata, migration fixtures, direct-helper commands, schema names, and historical alias surfaces. The user explicitly decided that Agentera 3.0 must not preserve backwards-compatible or multiple names for artifacts, concepts, primitives, or any equivalent protocol identity. Follow-up deliberation clarified that primary route aliases such as `/agentera build` and `/agentera plan` are protocol identities, artifact IDs such as `plan`, `progress`, and `decisions` become canonical instead of Markdown labels such as `PLAN.md` or `DECISIONS.md`, storage paths must align with artifact IDs, and old names may remain only in upgrade detection, migration notes, and historical evidence.
+  alternatives:
+    - name: Single-name 3.0 protocol
+      status: chosen
+      description: Agentera 3.0 has exactly one canonical name for every artifact, concept, primitive, command surface, schema field, runtime metadata field, and protocol identity. Legacy names are removed or migrated; they are not retained as aliases.
+    - name: Preserve compatibility aliases after 3.0
+      status: rejected
+      description: Keeping compatibility names after the 3.0 boundary would perpetuate the current ambiguity and make agents choose between old and new protocol identities.
+    - name: Keep Markdown-style artifact labels as display names
+      status: rejected
+      description: Display names that differ from storage/protocol identities are still multiple names. They are not allowed after the 3.0 boundary.
+    - name: Decide per surface later
+      status: rejected
+      description: The policy is already decided; implementation can sequence surfaces, but cannot reopen whether aliases remain after 3.0.
+    - name: 3.x runtime warning window
+      status: rejected
+      description: Accepting old names with warnings after 3.0 would still preserve aliases as supported runtime inputs.
+  choice: Agentera 3.0 must eliminate all backwards-compatible and multiple naming surfaces. Zero artifacts, concepts, primitives, commands, schema fields, metadata fields, runtime adapter surfaces, or protocol identities may retain legacy aliases, parallel display names, compatibility names, deprecated names, or storage/protocol name splits after the 3.0 boundary. Every retained surface must have one name, and old names must be removed or migrated rather than supported alongside it. This applies to routes, artifact IDs, paths, schema fields, runtime metadata, adapters, package manifests, public docs, and command surfaces.
+  reasoning: Agentera is agent-facing infrastructure; every duplicate name becomes routing, validation, documentation, and implementation ambiguity. Compatibility aliases were acceptable during v2 migration, but the 3.0 boundary exists to end that ambiguity. A single-name protocol makes schemas, CLI output, docs, tests, and runtime adapters mechanically consistent and easier for agents to follow. Migration tooling can still recognize old names as inputs, but runtime behavior and docs must not keep them alive as supported alternatives.
+  confidence: firm
+  feeds_into: TODO.md, references/artifacts/artifact-registry-interface-model.yaml, skills/agentera/schemas/artifacts, scripts/agentera, hooks, runtime adapters, tests, README.md, UPGRADE.md, references/cli/vocabulary.md
+  outcome: Agentera 3.0 must eliminate all backwards-compatible and multiple naming surfaces. Zero artifacts, concepts, primitives, commands, schema fields, metadata fields, runtime adapter surfaces, or protocol identities may retain legacy aliases, parallel display names, compatibility names, deprecated names, or storage/protocol name splits after the 3.0 boundary. Every retained surface must have one name, and old names must be removed or migrated rather than supported alongside it. This applies to routes, artifact IDs, paths, schema fields, runtime metadata, adapters, package manifests, public docs, and command surfaces.

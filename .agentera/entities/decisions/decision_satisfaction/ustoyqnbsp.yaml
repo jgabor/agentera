@@ -1,0 +1,9 @@
+id: ustoyqnbsp
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: User refined discuss draft 2026-06-05 — drop SaaS/PaaS, keep no-extensions, skills/plugins are surfaces not extensibility.
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-06-05
+  decision: onebqqncey

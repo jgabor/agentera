@@ -1,0 +1,22 @@
+id: tdczymmacq
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: complete
+    title: Decision 54 App Lifecycle Vocabulary Authority
+  what: Create a machine-readable app lifecycle vocabulary authority for Decision 54 so doctor, hej, upgrade, docs, and tests share one canonical source for lifecycle statuses, operation verbs, deprecated aliases, and ownership boundaries.
+  why: Decision 54 made app lifecycle metadata a protocol surface. The prose section in `docs/vocabulary.md` documents the intended words, but the next fix and test work needs a structured authority that code and regressions can load instead of copying enum lists by hand.
+  constraints: Keep the scope bounded to app lifecycle vocabulary from Decision 54. Do not rename capability names, artifact names or paths, exit signals, task statuses, health grades, or general prose. Preserve compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`, `activeBundleRoot`, and `--only bundle` when they are shipped surfaces. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - A machine-readable lifecycle vocabulary authority exists and is the source of truth for Decision 54 canonical statuses, operation verbs, deprecated aliases, and ownership boundaries.
+    - Documentation and focused regressions prove the structured authority remains synchronized with the prose vocabulary contract.
+    - The top TODO is closed without broad protocol renames, version bumps, runtime config refreshes, package-manager changes, publication, protected artifact edits, or decision satisfaction changes.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

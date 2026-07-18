@@ -1,0 +1,13 @@
+id: qfohgyylra
+artifact: plan
+record:
+  name: Define default preview and explicit apply semantics
+  depends_on:
+    - mdnzcvdhdx
+  status: complete
+  acceptance:
+    - GIVEN a v3 dry-run without --runtime WHEN it executes THEN lifecycle findings for all active runtimes appear even when the app or channel phase is blocked.
+    - GIVEN v2 stable behavior or apply without --runtime WHEN invoked THEN existing app-only write semantics remain unchanged.
+    - GIVEN all-runtime apply WHEN generated THEN the command includes --runtime all and --yes; a named selector narrows runtime-specific writes.
+    - GIVEN app refresh before lifecycle apply WHEN desired content may change THEN lifecycle state is re-observed and replanned before runtime writes.
+  plan: nskpsridro

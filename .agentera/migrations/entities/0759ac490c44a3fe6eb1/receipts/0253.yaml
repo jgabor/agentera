@@ -1,0 +1,12 @@
+id: cillniljar
+artifact: plan
+record:
+  name: Document Codex hook enablement and preserve install surfaces
+  depends_on:
+    - xhyepozdch
+    - yemairlwdh
+  status: complete
+  acceptance:
+    - GIVEN users read the runtime docs WHEN they choose Codex hooks THEN the docs state that plugin-bundled hooks require `[features].plugin_hooks = true` and `/hooks` review, while copied `~/.codex/hooks.json` remains the default reliable install path.
+    - GIVEN setup and upgrade tests run WHEN the batch is complete THEN plugin hook metadata is discoverable and copied user-hook wiring is still preserved.
+  plan: qwzbfooxxw

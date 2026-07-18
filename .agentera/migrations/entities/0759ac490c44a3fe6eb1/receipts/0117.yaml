@@ -1,0 +1,7 @@
+id: csogesngdv
+artifact: docs
+record:
+  document: CLI package README
+  path: packages/cli/README.md
+  last_updated: 2026-07-15
+  status: current

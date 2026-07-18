@@ -1,0 +1,6 @@
+id: jveacbacaj
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Tune trigger patterns and thresholds so common natural-language inputs route correctly under the scoring..."

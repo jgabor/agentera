@@ -1,0 +1,14 @@
+id: pvlkkligwz
+artifact: plan
+record:
+  name: Add Tier 2 pinned @next E2E gate
+  depends_on:
+    - iysebnqffl
+    - pgleddrfda
+  status: complete
+  acceptance:
+    - GIVEN L2 harness WHEN run THEN CLI invocation uses exact pinned dev version (for example agentera@3.0.0-dev.X) not floating @next unless pin env is unset and documented as maintainer-only
+    - GIVEN published package unavailable WHEN L2 runs in CI THEN job skips with explicit skip reason rather than false pass
+    - GIVEN successful L2 run WHEN complete THEN sandbox-report.json records cliVersion from package and tier L2
+    - GIVEN L2 happy-path P0 fixture WHEN apply completes THEN post-migration hook smoke via published CLI exits 0 in sandbox when hook subcommand is available
+  plan: lwdkmjtnfe

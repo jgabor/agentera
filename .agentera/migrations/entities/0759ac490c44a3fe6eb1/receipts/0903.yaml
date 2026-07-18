@@ -1,0 +1,12 @@
+id: vcnbvinuyn
+artifact: plan
+record:
+  name: Refresh user-facing upgrade documentation
+  depends_on:
+    - cvcpvrlwse
+  status: complete
+  acceptance:
+    - GIVEN UPGRADE.md WHEN read THEN v2→v3 section explains channel selection, semver gate, preview-then-yes, latest-on-channel migration target, and permanent no-return-to-v2 policy
+    - GIVEN README troubleshooting upgrade section WHEN read THEN it no longer instructs --target-major 3
+    - GIVEN UPGRADE.md WHEN searched THEN examples use development or stable channel plus dry-run and yes only
+  plan: brcxwbztnv

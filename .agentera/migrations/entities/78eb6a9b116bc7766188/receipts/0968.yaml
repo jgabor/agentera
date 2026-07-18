@@ -1,0 +1,15 @@
+id: soeduvocnd
+artifact: plan
+record:
+  name: Define the subagent dispatch contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the current runtime surfaces are reviewed WHEN the contract is defined THEN evidence names the dispatch mechanism, setup path, descriptor template, invocation form, and limitation for Claude Code, Codex CLI, OpenCode, and Copilot CLI.
+    - GIVEN the explicit routing bug is related but separate WHEN scope is finalized THEN TODO.md line 9 remains excluded and no plan task depends on fixing direct user-message routing.
+    - GIVEN user-owned runtime files exist WHEN ownership rules are selected THEN descriptor writes require an Agentera-managed marker or absent target and preserve unknown files.
+  evidence:
+    - Defined the concrete contract across RuntimeAdapter `subagent_dispatch`, Codex descriptor installation, OpenCode descriptor bootstrap, capability prose, and adapter docs. Scope still excludes the direct `resonera ...` invocation routing bug, which remains open in TODO.md.
+    - "Ownership rules preserve unknown Codex/OpenCode descriptor files: Codex setup and upgrade refresh absent or Agentera-managed targets only, and OpenCode plugin bootstrap skips user-owned collisions."
+  plan: jekxkxdzjd

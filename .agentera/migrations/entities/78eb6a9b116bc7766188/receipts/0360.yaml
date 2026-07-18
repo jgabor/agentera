@@ -1,0 +1,13 @@
+id: awpcyicppv
+artifact: plan
+record:
+  name: Add validated experiment publication
+  depends_on:
+    - ynbtrkfftg
+  status: complete
+  acceptance:
+    - GIVEN a new experiment WHEN published THEN the CLI validates and assigns or enforces identity before side effects.
+    - GIVEN invalid identity or publication failure WHEN attempted THEN active and archived bytes remain unchanged.
+    - GIVEN a retry after interruption WHEN tested THEN publication is idempotent, with passing success and failing atomicity cases.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 6.
+  plan: cccqoakytz

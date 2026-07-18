@@ -1,0 +1,12 @@
+id: lxuleizzeb
+artifact: plan
+record:
+  name: Threshold derivation and recommendation gate
+  depends_on:
+    - nnqtxsbkcd
+  status: complete
+  acceptance:
+    - GIVEN aggregate metrics are available WHEN threshold derivation runs THEN the report records the measured distribution and explains why each action threshold was selected or why no threshold is credible.
+    - GIVEN broad repeated startup reads exceed the derived threshold WHEN recommendation renders THEN it recommends planning a CLI startup envelope and names the measured trigger.
+    - GIVEN only narrow hotspots or weak evidence appear WHEN recommendation renders THEN it recommends targeted capability guidance fixes or closing the follow-up without implementation.
+  plan: dqipjmhdxs

@@ -1,0 +1,12 @@
+id: omkibfskam
+artifact: plan
+record:
+  name: Contract test pinning intentional retention/ordering divergence
+  depends_on:
+    - ijtqmprtbe
+  status: complete
+  acceptance:
+    - GIVEN apply_retention_caps, compact_entries, and compact_session_bookmark_entries WHEN a contract test runs THEN it asserts all three honor MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, and MAX_TOTAL_ENTRIES
+    - GIVEN the same test WHEN ordering is checked THEN it documents and asserts the intentional divergence (numeric-ID recency for artifacts vs timestamp recency for session bookmarks)
+    - GIVEN the contract test WHEN run in the full suite THEN it passes
+  plan: krzpcqqgpt

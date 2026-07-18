@@ -1,0 +1,14 @@
+id: jumlpjardi
+artifact: progress
+record:
+  timestamp: 2026-07-17 08:22
+  type: fix
+  phase: build
+  what: Closed Task 8 audit defects in objective and experiment entity publication.
+  verified: Focused 27/27; full 2524/2524; typecheck, build, state validation, optimize capability, capability contract, and compact passed.
+  next: "Task 9 remains pending: cut TODO and documentation inventory over to entities."
+  context:
+    intent: Reject forbidden objective aliases before effects, correct entity explain contracts, and serialize baseline publication with exact rollback.
+    constraints: Only audited Task 8 defects, proportional tests, plan status, and progress evidence.
+    unknowns: none
+    scope: packages/cli entity storage, objective/experiment writer, explain output, and Task 8 tests.

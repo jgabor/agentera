@@ -1,0 +1,10 @@
+id: thgxpetawt
+artifact: plan
+record:
+  name: Migrate Doctor Read-Only Diagnostics
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    []
+  plan: trfrmmbocn

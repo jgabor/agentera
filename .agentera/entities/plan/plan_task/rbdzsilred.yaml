@@ -1,0 +1,14 @@
+id: rbdzsilred
+artifact: plan
+record:
+  name: Annotate slow tests without changing pre-commit scope
+  depends_on:
+    - flyitdjlqf
+  status: complete
+  acceptance:
+    - GIVEN slow-marked tests WHEN pytest tests/ -m "not slow" runs locally THEN those tests are skipped and remaining tests still pass
+    - GIVEN lefthook pre-commit test command WHEN inspected after changes THEN it still runs pytest tests/ -q -n auto with no marker filter
+    - GIVEN AGENTS.md WHEN read THEN it documents optional -m "not slow" for local iteration
+  evidence:
+    - four @pytest.mark.slow tests; pytest -m "not slow" 1225 passed in ~12.6s; .lefthook.yml unchanged
+  plan: oxvxruwbzl

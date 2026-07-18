@@ -1,0 +1,13 @@
+id: tpmzpdgghe
+artifact: plan
+record:
+  name: Inventory lifecycle metadata emitters and consumers
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN `references/cli/app-lifecycle-vocabulary.yaml`, Decision 54 context, `scripts/agentera_upgrade.py`, doctor/hej/upgrade JSON outputs, and current focused tests are inspected WHEN implementation scope is selected THEN each status-producing surface is classified as canonical metadata, transitional compatibility alias, human prose, historical fixture, or non-app vocabulary.
+    - GIVEN adjacent TODOs are reviewed WHEN the scope is recorded THEN bundle/SKILL.md cleanup, routing/execution cleanup, Decision 57 implementation, and the later broad vocabulary regression TODOs remain explicitly out of scope.
+  evidence:
+    - Inspected `references/cli/app-lifecycle-vocabulary.yaml`, doctor/hej/upgrade emitters in `scripts/agentera_upgrade.py`, capability-context consumers in `scripts/agentera`, install-root compatibility fields, focused tests, and TODO scope. Classified `bundle.status` as a preserved compatibility key, upgrade `status=pending|noop|applied` as workflow compatibility metadata, doctor/hej app status as canonical lifecycle metadata, and `agentera stats refresh` plus package/runtime refresh wording as non-app lifecycle vocabulary.
+  plan: ddnfuvslbw

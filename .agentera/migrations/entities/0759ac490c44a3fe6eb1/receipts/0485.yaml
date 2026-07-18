@@ -1,0 +1,14 @@
+id: jfdinrgpwx
+artifact: plan
+record:
+  name: Fix Bare Hej Entrypoint And Question-Tool Gating
+  depends_on:
+    - ijguwnnlhj
+  status: complete
+  acceptance:
+    - GIVEN the user message is exactly `hej` WHEN Agentera routes the request THEN it runs the Agentera brief path from `agentera hej` state and renders the `⌂ hej` dashboard marker
+    - GIVEN exact-`hej` semantic evidence is checked WHEN the response is evaluated THEN generic greeting behavior is absent
+    - GIVEN an initial Agentera or hej brief response is rendered WHEN the user did not request bounded choices THEN the response uses a free-form next prompt rather than a native question menu
+    - GIVEN mid-conversation handoff choices are offered WHEN the native question tool is used THEN there are at least two meaningful non-terminal next actions, excluding `Done` and free-form/custom answer affordances from the count
+    - GIVEN downstream labels are shown WHEN gating prose and fixtures are reviewed THEN labels remain glyph-forward, such as `⧉ realisera`, `⛶ inspektera`, or `▤ dokumentera`
+  plan: lrgibkudrd

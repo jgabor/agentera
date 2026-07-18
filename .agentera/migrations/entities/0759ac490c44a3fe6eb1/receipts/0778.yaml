@@ -1,0 +1,12 @@
+id: ehojswbtcm
+artifact: plan
+record:
+  name: Close wording cleanup artifacts
+  depends_on:
+    - wllbfkkjkh
+  status: complete
+  acceptance:
+    - GIVEN focused verification completes WHEN the cleanup is ready THEN exact pytest, artifact validator, and `git diff --check` evidence is recorded in PLAN and PROGRESS.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the top `[fix:2.4.x]` bundle wording cleanup TODO is resolved while SKILL.md wording cleanup, routing/execution cleanup, Decision 57 implementation, broad regression TODOs, and 3.0.0 work remain open.
+  evidence: "Focused tests passed: `uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py tests/test_bundle_freshness.py tests/test_query_cli.py::TestHej::test_stale_bundle_structured_output_has_repair_contract -q` (37 passed) and `uv run pytest tests/test_upgrade_cli.py tests/test_install_root_characterization.py -q` (40 passed). TODO, CHANGELOG, PLAN, and PROGRESS were synchronized for closeout. `uv run scripts/agentera validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned `status=pass`; `git diff --check` passed."
+  plan: lmkbkfjlug

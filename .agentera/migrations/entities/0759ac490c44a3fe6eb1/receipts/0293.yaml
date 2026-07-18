@@ -1,0 +1,21 @@
+id: tdmvhimdyl
+artifact: plan
+record:
+  name: Align documentation, generated surfaces, and quality budgets
+  depends_on:
+    - lptccttlhl
+    - qhtzpvbazx
+    - bwixuhkmjf
+    - kndjsmeqih
+    - qxwfwqhxmx
+    - dfffeeyjcc
+    - kxyhbywcwz
+    - mahrslvvti
+    - oimbpnsqoh
+  status: pending
+  acceptance:
+    - GIVEN users inspect schemas, help, and documentation WHEN the model ships THEN archive, overlay, projection, API, durability, migration, and compatibility behavior agree.
+    - GIVEN growing artifacts exceed obsolete whole-history word budgets WHEN lint runs THEN schema-owned entry and serialized-output quality checks apply without contradictory constants.
+    - GIVEN live surfaces and bundled package data WHEN parity checks run THEN no current wording claims destructive history deletion or permanent unavailability for recoverable records.
+    - GIVEN generated and source authorities WHEN drift tests run THEN examples, versions, and contracts remain mechanically aligned.
+  plan: oxisposbmm

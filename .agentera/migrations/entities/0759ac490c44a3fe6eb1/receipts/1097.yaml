@@ -1,0 +1,38 @@
+id: zmjvhbfhpm
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-15
+    status: open
+    reviewed: 2026-07-15
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    revised: Preserved completed product outcomes, isolated volatile Task 4 evidence repair, and rebased remaining delivery behind an independent audit gate.
+    title: "Plan: Complete bounded retrieval after evidence repair"
+  what: Complete bounded plan and experiment retrieval by preserving the verified product outcomes, repairing only the blocked Task 4 evidence path, and then finishing the already-scoped contract, metadata, verification, and state synchronization work.
+  why: Task 4 behavior satisfies its acceptance criteria, but downstream work is blocked because its recorded live YAML byte count changed after plan state changed. Deterministic fixture evidence plus a live inequality can establish the same bound without rewriting Cycle 803 or changing retrieval behavior.
+  constraints: Preserve numbered archives for progress, decisions, and health; preserve file-based plan archives; keep experiments objective-scoped; preserve legacy readability without fabricating history; retain experiment 10/40/50 projections; do not migrate numbered archives, change retention policy, touch unrelated state families, publish, tag, or push; keep suite metadata at 3.0.0. The archived predecessor owns full evaluator history. New testable units use one passing and one failing check unless no new unit is introduced.
+  overall_acceptance: GIVEN the predecessor outcomes and repaired Task 4 evidence WHEN bounded retrieval closes THEN plan and experiment identities, ordering, omissions, continuation, exact retrieval, detail availability, archive provenance, public contracts, verification gates, and current state agree without a retrieval behavior change or scope expansion.
+  scope:
+    included:
+      - Completed bounded-retrieval product outcomes from predecessor Tasks 1-8
+      - Deterministic Task 4 retrieval evidence and independent acceptance audit
+      - Remaining plan and experiment cursor and omission gap closure
+      - Help, schema introspection, agent context, capability prose, docs, and tests
+      - Permitted CLI development metadata and state closeout
+    excluded:
+      - Migrating plans or experiments into numbered archives
+      - Changing experiment 10/40/50 projection retention
+      - Repairing unrelated degraded historical archives
+      - Adding bounded retrieval to unrelated state families
+      - Retrieval behavior changes solely to repair evidence
+      - Runtime-specific adapters, publication, tags, or remote pushes
+    deferred:
+      - Search beyond identity, objective filters, and cursor traversal
+  design: "Treat predecessor Tasks 1-8 as completed product outcomes and preserve their detailed evaluator history in the archived predecessor. Place one evidence- only gate before all remaining work: deterministic evidence proves the byte boundary, a live assertion checks the current response remains below it, and independent audit controls unblocking and TODO closure. Continue the original delivery sequence only after that gate passes."
+  unknowns:
+    - question: Will independent audit accept the deterministic fixture evidence and live inequality without requesting a retrieval behavior change?
+      affects_task: 10
+      resolve_by: Task 9 records criterion-mapped evidence and independent audit; if it fails for product behavior rather than evidence quality, re-invoke plan before Task 10.
+  surprises:
+    []

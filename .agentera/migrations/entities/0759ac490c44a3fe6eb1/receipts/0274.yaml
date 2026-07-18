@@ -1,0 +1,13 @@
+id: oyyzrkpfxn
+artifact: plan
+record:
+  name: Close the bundle and SKILL.md authority TODO artifacts
+  depends_on:
+    - tfwfubablv
+  status: complete
+  evidence:
+    - "Focused verification passed: `uv run pytest tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py -q` reported 14 passed. `uv run scripts/agentera validate artifact --artifact PLAN.md`, `TODO.md`, `CHANGELOG.md`, `PROGRESS.md`, and `DOCS.md` each returned `status=pass`. `git diff --check` passed. TODO, CHANGELOG, PLAN, and PROGRESS were updated for closeout while the later routing/execution and Decision 57 TODOs remain open."
+  acceptance:
+    - GIVEN focused verification runs WHEN the batch is complete THEN the exact test, artifact validation, and diff-check evidence is recorded in plan evidence and progress.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the top `[docs:2.4.x]` bundle/SKILL.md authority TODO is resolved and later routing/execution and Decision 57 TODOs remain open.
+  plan: zpowcpmdaq

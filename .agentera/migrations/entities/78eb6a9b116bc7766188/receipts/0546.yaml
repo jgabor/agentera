@@ -1,0 +1,14 @@
+id: ypfukrmuls
+artifact: plan
+record:
+  name: Add regression coverage for ambiguous new usage
+  depends_on:
+    - cdxlqxjenr
+  status: complete
+  acceptance:
+    - GIVEN new user-facing or protocol text introduces unclassified `bundle` or `SKILL.md` wording WHEN the focused test selection runs THEN the regression fails instead of silently accepting ambiguous vocabulary.
+    - GIVEN allowed historical records, compatibility fields, fixture-only names, generic package vocabulary, and actual `SKILL.md` file references remain in the repository WHEN the regression runs THEN those occurrences are preserved by explicit classification rather than broad word bans.
+  evidence:
+    - Added focused scan regressions in tests/test_bundle_skill_vocabulary_authority.py for closed classifications, classified occurrences, and exercise of every allowed classification.
+    - The authority preserves canonical, compatibility-preserved, historical, fixture-only, and generic classifications without broad repository wording cleanup.
+  plan: pjjamrquub

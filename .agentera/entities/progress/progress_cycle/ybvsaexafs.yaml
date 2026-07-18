@@ -1,0 +1,16 @@
+id: ybvsaexafs
+artifact: progress
+record:
+  timestamp: 2026-07-15 13:09
+  type: fix
+  phase: build
+  what: Corrected dev.21 immutable source provenance and made release validation enforce governed package-tree equivalence.
+  inspiration: Task 13 audit attempt 1 and the repository release-source policy.
+  discovered: adccfc29..1a7495f4 changes only plan, progress, archive, and TODO state; governed package-content diff is empty. The first focused fixture run exposed inherited commit signing, so fixture commits now disable signing per command without changing Git configuration.
+  verified: Set gitRef to adccfc291198a108977a8e77252802db7e8d4c82. Release validation requires that local commit, compares governed package inputs and normalized package contract, permits only version/gitRef plus named release/state metadata, and rejects source, untracked, or dependency drift. Focused release/registry/prepack tests passed 43/43; full CLI tests passed 185 files and 2060/2060. Typecheck, build, bundle:data, release-metadata, capability-contract 2/2, compact, npm pack inspection, and git diff --check passed. npm @next remained 3.0.0-dev.20 and dev.21 remained available. Pack and publish dry-runs reported 664 files and + agentera@3.0.0-dev.21; pre/post status matched, proving no mutation, publication, tag, or push.
+  next: Leave Task 14 pending; begin it only in a new explicit cycle.
+  context:
+    intent: Retry Plan Task 13 after its first audit found stale immutable provenance.
+    constraints: Preserved Task 13 audit attempt 1 and Cycle 818; changed no package version, suite surface, lockfile, changelog boundary, stable shim, plugin metadata, registry suite metadata, publication, tag, or remote state.
+    unknowns: Decision satisfaction and existing archive-recovery caveats remain unchanged and unrelated.
+    scope: Package gitRef, repository-local release provenance validation and tests, release policy documentation, plan status, and Cycle 819 state.

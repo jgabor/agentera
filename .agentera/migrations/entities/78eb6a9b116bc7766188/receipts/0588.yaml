@@ -1,0 +1,15 @@
+id: qvyqppajwc
+artifact: plan
+record:
+  name: Progress and benchmark evidence provenance
+  depends_on:
+    - avacgisyjn
+  status: complete
+  acceptance:
+    - GIVEN latest progress evidence or supported benchmark evidence exists in CLI state WHEN closeout context is returned THEN it includes provenance pointers and non-empty detection without inventing missing evidence.
+    - GIVEN benchmark history is user-local or unavailable through supported CLI/state summaries WHEN closeout context is built THEN the limitation is surfaced as a caveat and normal closeout does not require raw user-local benchmark file reads.
+    - GIVEN publication, remote push, app refresh, or release state is not recorded for a closeout WHEN the context reports the boundary THEN it distinguishes local metadata or tag evidence from publication or remote state.
+  evidence:
+    - cycle: 491
+      note: "Added provenance and non-empty evidence flags to the Dokumentera closeout context. Progress evidence now reports `non_empty_evidence_present`, evidence fields, cycle pointer, and CLI provenance. Benchmark evidence now reports `summary_present`, `non_empty_evidence_present`, `history_scope`, and `user_local_benchmark_reads_required: false`, with an unavailable caveat when supported CLI/state summaries do not expose benchmark evidence. Release boundary state now separates local changelog metadata evidence and local git tag evidence from publication, remote push, package registry, and installed-app refresh state, without contacting remotes or package registries. Live context reports no 2.3.9 local closeout metadata or local tag yet, and explicitly records publication/remote/app refresh as not recorded in CLI state. Focused tests, capability validation, schema self-validation, gate, compact check, and diff whitespace check passed. Independent evaluation returned PASS with no blocking findings."
+  plan: lvxglwnurb

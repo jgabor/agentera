@@ -1,0 +1,15 @@
+id: htxkudrlcz
+artifact: progress
+record:
+  timestamp: 2026-07-15 21:04
+  type: fix
+  phase: build
+  what: "Fixed Criterion 3 audit failure: wired legacyCorpusReadable into extractStartupIntermediateFromCorpusFile so oversized legacy corpus.json is never read whole; extended BOUNDED_RUNTIME_REASONS to accept contract-projected compatibility reasons (no_evidence, legacy_monolithic_state, unreadable_or_schema_divergent, oversized) so degrade reasons survive boundedRuntimeStatus normalization instead of collapsing to schema_divergent; passed recovery guidance through boundedRuntimeStatus; added degradeEnvelope helper projecting contract reasons+recovery for missing, legacy/oversized, legacy/corrupt, and tier-level corrupt/oversized states."
+  inspiration: Task 3 independent evaluation Criterion 3 failed. The legacyCorpusReadable helper existed but was unwired; BOUNDED_RUNTIME_REASONS collapsed contract reasons to schema_divergent.
+  verified: pnpm -C packages/cli run typecheck (clean); pnpm -C packages/cli test (2160 passed, 189 files); pnpm -C packages/cli build (clean); agentera check compact (pass)
+  next: "Task 4: Move current profile synthesis to bounded signals (out of scope)."
+  context:
+    intent: "Address Criterion 3 audit failure: startup-analysis benchmark fell back to unguarded JSON.parse(fs.readFileSync) for legacy/missing tiers, allowing oversized legacy corpus to be loaded whole, and degraded missing/legacy state misleadingly as schema_divergent."
+    constraints: Profile synthesis is Task 4; corpus.json transition artifact retained for profile path. No suite version bump, release, or publish.
+    unknowns: none
+    scope: "packages/cli/src/state/startupAnalysis/benchmark.ts (legacyCorpusReadable wired, degradeEnvelope helper, contract-projected reasons+recovery); packages/cli/src/state/startupAnalysis/threshold.ts (BOUNDED_RUNTIME_REASONS extended, recovery passthrough in boundedRuntimeStatus); packages/cli/test/state/startupAnalysisBenchmark.test.ts (4 new regression tests: oversized legacy, missing, corrupt legacy reason+recovery, recovery preservation)"

@@ -1,0 +1,12 @@
+id: jsvdqlijiy
+artifact: plan
+record:
+  name: Coverage Audit pre-extraction step
+  depends_on:
+    - nonajwbflg
+  status: complete
+  acceptance:
+    - GIVEN any runtime store exists on the host WHEN profilera Full mode begins extraction THEN the first user-visible output is a coverage summary listing available runtimes with earliest and latest session timestamps
+    - GIVEN an available runtime is skipped by flags or defaults WHEN Full mode proceeds THEN the run status is flagged EX2 until the user explicitly accepts the gap
+    - GIVEN all available runtimes are selected WHEN Full mode proceeds THEN no EX2 flag is raised for coverage
+  plan: xgslmmgdlk

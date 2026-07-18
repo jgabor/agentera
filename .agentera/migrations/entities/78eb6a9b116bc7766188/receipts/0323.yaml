@@ -1,0 +1,13 @@
+id: ierfxbwdht
+artifact: plan
+record:
+  name: Tighten `skills/agentera/SKILL.md` frontmatter to a discoverability index and shorten the body to a routing stub
+  depends_on:
+    - mfwdpmcfhj
+  status: complete
+  acceptance:
+    - 'GIVEN the in-tree `skills/agentera/SKILL.md` WHEN the frontmatter is tightened THEN it keeps `name: agentera`, `description: ...` (one-paragraph summary), `version: "3.0.0"`, and `spec_sections: [...]`; an explicit `capabilities:` list of the 12 canonical capability names is added as a discoverability index; the description text is shortened to one paragraph that does not mention `instructions.md`'
+    - "GIVEN the same file WHEN the body is shortened to a routing stub THEN it preserves: the single-call CLI gate (`npx -y agentera prime`), the capability table (12 rows), the safety-rails `<critical>` block, the cross-skill integration note, and the validation commands; the body drops or condenses any section that references `skills/agentera/capabilities/<name>/instructions.md` by name and the `## Directory Structure` diagram updates to reflect the new module path"
+    - GIVEN the published-surface boundary WHEN the in-tree SKILL.md is checked THEN the frontmatter fields the skills.sh page renders (`name`, `description`) are still present and the capability table is still present; `rg '^name:' skills/agentera/SKILL.md`, `rg '^description:' skills/agentera/SKILL.md`, and `rg '\| hej \|' skills/agentera/SKILL.md` each return exactly one hit
+    - GIVEN the in-tree SKILL.md WHEN `rg 'instructions\.md' skills/agentera/SKILL.md` runs after the change THEN at most one hit remains (in the directory-structure diagram, which now references the new module path); zero hits reference a per-capability `instructions.md` file by name
+  plan: dncagkqzrf

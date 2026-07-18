@@ -1,0 +1,15 @@
+id: fbsntctppe
+artifact: plan
+record:
+  name: Drive project integration from lifecycle state
+  depends_on:
+    - qfohgyylra
+    - aueicconxo
+  status: complete
+  acceptance:
+    - GIVEN owned pending lifecycle work WHEN project integration is summarized THEN it recommends the applicable upgrade preview and names affected runtimes.
+    - GIVEN unowned collisions, user-owned native actions, or unobservable gaps WHEN summarized THEN guidance routes respectively to manual review, host action, or doctor diagnostics.
+    - GIVEN no lifecycle or app work WHEN summarized THEN recommendation remains stay.
+    - GIVEN simultaneous app and lifecycle work WHEN reported THEN phase counts, blockers, aggregate status, exit meaning, and retry guidance remain distinct.
+  evidence: "Focused Task 4 project-integration suite: 20/20 passed; prime/doctor/lifecycle/orchestrator parity suite: 57/57 passed; full CLI suite: 1494 passed and exactly 8 documented release-metadata baseline failures from top-level 3.0.0-dev.16 versus core 3.0.0; typecheck, build, lint with 0 errors, compaction, Build capability validation, capability-contract validation, built CLI smoke, and git diff --check passed."
+  plan: nskpsridro

@@ -1,0 +1,13 @@
+id: krviwngdkc
+artifact: plan
+record:
+  name: Final state sync and plan archive
+  depends_on:
+    - bdurwseadj
+    - cxbakelikv
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks complete WHEN this task runs THEN `.agentera/plan.yaml` is archived to `.agentera/archive/plan-2026-06-03-next-major-doctor.yaml` and the active plan slot is cleared
+    - GIVEN TODO.md WHEN the ledger is reconciled THEN the next-major doctor entry moves to the resolved section with the implementation commit hash
+    - GIVEN `agentera prime` WHEN rendered after closeout THEN the plan slot reports absent and the next-major doctor section appears in any subsequent `agentera doctor` run
+  plan: rprllsrrqx

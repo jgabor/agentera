@@ -1,0 +1,13 @@
+id: julldxcapf
+artifact: plan
+record:
+  name: Version bump and CHANGELOG
+  depends_on:
+    - warctzates
+    - kfdtzllwqw
+  status: complete
+  acceptance:
+    - GIVEN DOCS.md versioning policy WHEN the v2 patch ships on main THEN pyproject.toml and related version_files receive a patch bump with CHANGELOG entry documenting the fix
+    - GIVEN CHANGELOG on feat/v3 WHEN updated THEN Unreleased or 3.0.0 section records the checkbox parsing fix with both branch commit hashes once known
+    - GIVEN a live mixed TODO.md WHEN exercised after bump THEN agentera state todo --format json on both branches reports the correct open/resolved split
+  plan: tbuxrlvnym

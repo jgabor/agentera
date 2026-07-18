@@ -1,0 +1,13 @@
+id: bbedvhqbzm
+artifact: plan
+record:
+  name: Migrate CLI to vite.config.ts under vite-plus; drop direct vitest devDep; move test script to vp test run
+  depends_on:
+    - nlsqwblyni
+  status: complete
+  acceptance:
+    - GIVEN packages/cli WHEN `vite-plus` and `vite` are added as devDeps and the direct `vitest` devDep is removed THEN `pnpm -C packages/cli install` resolves cleanly and `vp test run` resolves vitest 4 transitively.
+    - GIVEN the migrated `packages/cli/vite.config.ts` (test block moved from `vitest.config.ts`, `defineConfig` imported from `vite-plus`) WHEN `vp test run` runs THEN 1145/1145 tests pass with the same maxWorkers/VITEST_MAX_WORKERS budget behavior.
+    - GIVEN `package.json#scripts.test` updated to `vp test run` WHEN `pnpm -C packages/cli test` runs THEN it invokes `vp test run` and the suite passes.
+    - GIVEN nothing in the workspace imports `packages/cli/vitest.config.ts` directly WHEN the file is renamed/deleted THEN no consumer breaks (typecheck and build clean).
+  plan: xuzwfegfcx

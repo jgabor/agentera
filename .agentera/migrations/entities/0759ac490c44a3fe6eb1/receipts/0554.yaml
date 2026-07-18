@@ -1,0 +1,17 @@
+id: oeskwbyoqk
+artifact: plan
+record:
+  name: Final State Sync
+  depends_on:
+    - kotzqzoolq
+    - rkskfujmwe
+    - qtwdnneitg
+    - efnblxhial
+    - ctowfngxmw
+    - xrmjayxfhc
+  status: complete
+  acceptance:
+    - GIVEN all tasks complete WHEN final sync runs THEN TODO.md marks all 16 degraded items resolved
+    - GIVEN all tasks complete WHEN final sync runs THEN CHANGELOG.md has Fixed entries under Unreleased
+    - GIVEN all tasks complete WHEN final sync runs THEN progress.yaml has new cycle with commit hash
+  plan: swacjgsmpq

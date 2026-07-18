@@ -1,0 +1,12 @@
+id: mpfxlutksv
+artifact: plan
+record:
+  name: Classify false positives versus legitimate pressure
+  depends_on:
+    - zwzpmjfzqs
+  status: complete
+  evidence:
+    - Added `classify_threshold_evidence` with likely false-positive, legitimate-pressure, inconclusive, and unsupported-coverage categories.
+  acceptance:
+    []
+  plan: jufyfvsqrq

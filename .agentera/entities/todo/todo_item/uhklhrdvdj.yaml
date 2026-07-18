@@ -1,0 +1,6 @@
+id: uhklhrdvdj
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "~~[fix:3.0.0] Make the typed decisions writer support safe decision-content amendments without rewriting unrelated legacy semantics. Resolved 2026-07-16: `agentera state decisions amend --number N [--question ... --context ... --alternative-chosen ... --alternative-rejected ... --choice ... --reasoning ... --confidence firm|provisional|exploratory --feeds-into ...] [--dry-run] --format json` composes a record-local revision under `.agentera/revisions/decisions.yaml` over the immutable numbered archive; the decisions projection is never rewritten, unrelated records keep their bytes (comments, block scalars, quoting, inherited legacy confidence labels), amend refuses a broken revision document or unsafe record-local boundary without side effects, retries converge on a stable revision identity, and append/update/amend tolerate untouched inherited labels as explicit legacy caveats while keeping new/amended content on the current vocabulary. The transaction candidate-builder was split into `candidateMutation.ts` to restore file headroom. Plan and progress state records the verified contract synchronization.~~"

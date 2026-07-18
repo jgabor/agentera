@@ -1,0 +1,6 @@
+id: fhfzplrlcj
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Legacy Python parity checks gated behind opt-in `--legacy-python-parity` flag. `lifecycleAdapters.ts:95-96` — default `validate lifecycle-adapters`..."

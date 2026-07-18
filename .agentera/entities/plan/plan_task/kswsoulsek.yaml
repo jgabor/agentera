@@ -1,0 +1,14 @@
+id: kswsoulsek
+artifact: plan
+record:
+  name: Define the invalid-input envelope contract (oracle + helper + one surface exemplar)
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the bundled agentera skill invalid-input guidance template WHEN the canonical envelope type is defined in TypeScript THEN it has required keys status (string, value fail), error.class (string), error.message (string), and optional keys error.valid_values (array of strings), error.syntax (string), and error.example (string), matching the valid-values / correct-syntax / concrete-example guidance.
+    - GIVEN the helper emitInvalidInput WHEN invoked with --format json THEN it writes the canonical JSON envelope to stdout and returns rc 2; WHEN invoked in text mode THEN it writes the four-question template (what happened / what the preview did / what the fix will do / what it will not do) to stderr and returns rc 2.
+    - GIVEN the oracle fixture packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json WHEN authored THEN it pins the envelope shape, exit code, and required keys.
+    - GIVEN one CLI surface (check validate) wired to emitInvalidInput as the exemplar WHEN run with --format json and a bad family THEN the envelope matches the oracle and rc is 2; WHEN run in text mode THEN the four-question template appears on stderr and rc is 2.
+    - GIVEN the existing packages/cli/test/cli/validate.test.ts assertions on plain-text error output WHEN they coexist with the new json-mode envelope THEN they continue to pass without skipping; text-mode assertions stay on stderr text, json-mode assertions run against the envelope.
+  plan: buvbxpleps

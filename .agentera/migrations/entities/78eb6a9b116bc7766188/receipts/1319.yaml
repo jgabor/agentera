@@ -1,0 +1,16 @@
+id: hvlgavsbhv
+artifact: progress
+record:
+  timestamp: 2026-07-16 14:54
+  type: fix
+  phase: build
+  what: "Made status startup self-contained: prime --context status now returns canonical bounded decision state with full status instructions, omits unrelated lifecycle diagnostics, and enforces a 25000-byte UTF-8 JSON capsule budget."
+  inspiration: Plan Task 4 acceptance and Task 3 bounded decision brief.
+  discovered: The generic capability retrieval contract and full lifecycle summary exceeded the status capsule budget; status keeps fallback metadata and aggregate lifecycle signals while omitting mutating retrieval detail and per-runtime diagnostics.
+  verified: Focused Vitest status, prime, compatibility, lifecycle, archive-authority, and source-contract tests pass; full CLI Vitest suite passes 2321 tests; typecheck, build, capability validation, capability-contract validation, compact check, and 24141-byte pretty UTF-8 status-context smoke pass.
+  next: Keep future status startup changes within the status-context contract and named recovery boundary; do not expand to excluded structured attention or diagnostic modes.
+  context:
+    intent: Complete Plan Task 4 without changing non-status capability contexts or implementing excluded projection, identity, diagnostic-mode, or instruction-cache work.
+    constraints: No raw artifact reads or second bare-prime call for dashboard rendering; other capability contexts remain stable/full; no push.
+    unknowns: none
+    scope: packages/cli status prime output and regression tests; prime compatibility/state-storage/JSON-surface contracts; Agentera SKILL and vocabulary guidance

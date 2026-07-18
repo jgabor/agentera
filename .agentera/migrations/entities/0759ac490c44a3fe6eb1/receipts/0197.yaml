@@ -1,0 +1,58 @@
+id: qgtkinqgep
+artifact: health
+record:
+  date: 2026-07-12
+  dimensions:
+    - architecture alignment
+    - runtime lifecycle integrity
+    - release readiness
+    - documentation and state alignment
+    - regression risk
+  findings_summary:
+    critical: 1
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: Improving architecture and regression coverage; release remains blocked and archived state is inconsistent.
+  grades:
+    Architecture: A
+    Lifecycle: A
+    Release: C
+    State: B
+    Regression: A
+  dimension_details:
+    - name: Release readiness
+      grade: C
+      summary: Source and package gates pass, but host evidence blocks release.
+      findings:
+        - heading: Release blocked by unknown mandatory runtime evidence
+          severity: critical
+          confidence: 98
+          location: references/adapters/runtime-lifecycle-authority.yaml:9
+          evidence: Built prime reports releaseBlocked=true; mandatory enabled/trusted evidence is unknown for all four active runtimes.
+          impact: The current environment cannot truthfully satisfy the 3.0.0 release floor.
+          suggested_action: Complete user-owned enablement and trust steps from doctor, then rerun prime.
+          verify_command: node packages/cli/dist/bin/agentera.js prime --context audit --format json
+    - name: Documentation and state alignment
+      grade: B
+      summary: Release docs and versions align; archived plan status does not.
+      findings:
+        - heading: Archived completed plan retains active status
+          severity: warning
+          confidence: 99
+          location: .agentera/archive/PLAN-2026-07-12-unified-runtime-lifecycle-and-claude-retirement.yaml:4
+          evidence: "The archived plan says status: active; four recent archives say complete."
+          impact: Archived state disagrees with completed tasks and the absent active plan.
+          suggested_action: Use the owning plan workflow to synchronize the archive header.
+          verify_command: rg -n '^  status:' .agentera/archive/PLAN-2026-07-12-unified-runtime-lifecycle-and-claude-retirement.yaml
+  trends:
+    improved: One lifecycle authority, parity validation, 1486-test evidence, and 3.0.0 convergence.
+    degraded: Release-blocking host evidence remains unknown; archive status is stale.
+    stable: Architecture contract, docs, package metadata, and focused validators.
+    new_findings: Release host-evidence blocker; stale archive status.
+    resolved: Claude active support and split Cursor identity are absent from current surfaces.
+    carried_forward: Decision 92 satisfaction remains untouched.
+  patterns:
+    - Lifecycle authority is centralized and projected by prime and validators.
+    - Runtime trust is user-owned; unknown mandatory evidence blocks release.
+    - Typed writers own retained state.

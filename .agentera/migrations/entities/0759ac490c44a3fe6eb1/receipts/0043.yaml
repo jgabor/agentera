@@ -1,0 +1,24 @@
+id: srwronomod
+artifact: decisions
+record:
+  date: 2026-05-08
+  question: How should Agentera expose self-audit and maintainer scripts through the CLI?
+  context: Agents currently call `scripts/self_audit.py` through inline Python for pre-write artifact checks. Decision 45 made the CLI an agent-ready state interface, and Decision 47 keeps `agentera doctor` read-only for install/app/runtime diagnostics while `agentera upgrade` owns writes. README still exposes several direct maintainer scripts.
+  alternatives:
+    - name: Add agentera lint first
+      status: chosen
+      description: Expose self-audit through a dedicated lint namespace with structured output, advisory default behavior, and optional strict mode.
+    - name: Fold self-audit into doctor
+      status: rejected
+      description: Blurs doctor beyond install/app/runtime health into artifact prose quality and codebase health.
+    - name: Merge all scripts now
+      status: rejected
+      description: Creates a junk-drawer CLI before stable command namespaces are defined.
+    - name: Keep scripts only
+      status: rejected
+      description: Leaves agents using ad hoc inline Python for a contractually required pre-write check.
+  choice: "Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera doctor` scoped to install/app/runtime diagnostics. Promote other maintainer scripts behind cohesive non-deferred namespaces: `agentera validate` for validators, `agentera verify` or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera usage` for profile analytics. Keep registry/model modules private."
+  reasoning: A lint command solves the immediate agent ergonomics problem without changing doctor semantics. The remaining maintainer namespaces are part of the decision's required CLI surface; their command shapes should still be cohesive, structured, and workflow-driven rather than a junk drawer of raw script wrappers.
+  confidence: firm
+  feeds_into: TODO.md, scripts/agentera, README.md, capability prose, tests
+  outcome: "Expose `scripts/self_audit.py` through `agentera lint` first. Keep `agentera doctor` scoped to install/app/runtime diagnostics. Promote other maintainer scripts behind cohesive non-deferred namespaces: `agentera validate` for validators, `agentera verify` or `agentera smoke` for eval and smoke gates, and `agentera corpus`/`agentera usage` for profile analytics. Keep registry/model modules private."

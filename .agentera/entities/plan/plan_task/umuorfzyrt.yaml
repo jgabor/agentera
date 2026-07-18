@@ -1,0 +1,13 @@
+id: umuorfzyrt
+artifact: plan
+record:
+  name: Wire TODO Resolved compaction into artifact writes
+  depends_on:
+    - kthtoaunfm
+  status: complete
+  acceptance:
+    - GIVEN resolved TODO entries exceed the retained-entry limits WHEN a TODO resolution is written THEN the Resolved section keeps 10 full entries, 40 one-line entries, and drops older resolved entries.
+    - GIVEN TODO compaction runs WHEN the file is rewritten THEN open severity sections remain unchanged.
+    - GIVEN resolved entries include type prefixes and summaries WHEN compaction runs THEN the retained output preserves those identifiers without generated IDs.
+    - GIVEN threshold, below-threshold, and identifier-preservation cases WHEN TODO resolution is written THEN compaction behavior matches the documented retention contract.
+  plan: wpkijuhlpy

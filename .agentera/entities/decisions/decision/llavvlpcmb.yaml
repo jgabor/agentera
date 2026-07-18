@@ -1,0 +1,13 @@
+id: llavvlpcmb
+artifact: decisions
+record:
+  date: 2026-07-12
+  question: What runtime integration boundary should Agentera use across Codex and other agent runtimes?
+  context: Agentera currently combines the canonical shared skill with native runtime plugins, hooks, agents, and marketplace surfaces, creating duplicate discovery paths and version skew.
+  alternatives:
+    - name: Use one portable shared skill and the Agentera CLI; retire optional native runtime adapters.
+      status: chosen
+  choice: Make ~/.agents/skills/agentera the sole canonical skill for every compatible runtime. Make the agentera CLI the sole behavioral, state, validation, installation, and lifecycle authority. Retire Agentera-native plugins, hooks, agent descriptors, commands, marketplace integrations, and other runtime-specific adapters. Define runtime compatibility by the ability to read the shared skill and execute the CLI.
+  reasoning: A single portable discovery surface and CLI authority minimizes moving parts, prevents duplicate registrations and runtime-specific drift, and provides one consistent installation, upgrade, behavior, and support contract. Runtime-native conveniences do not justify parallel lifecycle and correctness paths; invariants belong in CLI mutation and validation flows so they apply equally everywhere.
+  confidence: firm
+  feeds_into: Runtime lifecycle model; package and plugin manifests; shared skill contract; CLI installation, doctor, and upgrade; runtime support documentation; hooks and native agent retirement; release packaging and tests.

@@ -1,0 +1,12 @@
+id: duwqnkhbri
+artifact: plan
+record:
+  name: Clean hej remnants in packages/cli/src/
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN hej renamed to status, WHEN rg -i '\bhej\b' runs against packages/cli/src/ excluding fixtures, THEN zero matches remain
+    - AND provenance strings use 'agentera prime' not 'agentera hej'
+    - AND vitest run passes AND tsc --noEmit clean
+  plan: ptxzdrxixt

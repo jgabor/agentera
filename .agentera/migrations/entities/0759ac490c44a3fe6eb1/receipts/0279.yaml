@@ -1,0 +1,13 @@
+id: ugvcvrasbq
+artifact: plan
+record:
+  name: Implement channel resolution module
+  depends_on:
+    - bzthidhinb
+  status: complete
+  acceptance:
+    - GIVEN packages/cli/src/upgrade/channels.ts WHEN resolveUpdateChannel() runs THEN default is stable, AGENTERA_UPDATE_CHANNEL and --channel override are honored, and returned payload includes channel, distTag, updateCommand, and distributionMajor
+    - GIVEN stable channel WHEN updateCommand is rendered THEN it never resolves to a 3.x pre-release tag
+    - GIVEN development channel WHEN updateCommand is rendered THEN it resolves to the configured next/dev dist-tag for 3.x alphas/RCs
+    - GIVEN unit tests in packages/cli/test/upgrade/channels.test.ts WHEN run THEN stable/dev/default/override cases pass
+  plan: prcowxktfp

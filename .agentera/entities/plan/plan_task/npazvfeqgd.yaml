@@ -1,0 +1,15 @@
+id: npazvfeqgd
+artifact: plan
+record:
+  name: Focused validation and benchmark rerun
+  depends_on:
+    - sezvujxssr
+    - eoxalrmfdr
+    - lgvvnjugtv
+  status: complete
+  acceptance:
+    - GIVEN adapter and token work is complete WHEN focused validation runs THEN extraction, analyzer, persistence, docs, and privacy behavior pass with positive and negative expectations.
+    - GIVEN supported Claude Code and Copilot fixtures are benchmarked WHEN runtime coverage is summarized THEN fixture statuses no longer report `schema_divergent`; any newly discovered unsupported schema class is captured as a failing fixture and explicit blocker.
+    - GIVEN `mage bench:startupState` reruns WHEN results are compared THEN token fields appear in durable latest reports/history and runtime extraction caveats are summarized separately from CLI behavior metrics.
+  evidence: "Focused validation passed with `uv run pytest tests/test_startup_analysis_contract.py` selecting 39 startup contract tests across extraction, analyzer aggregation, report rendering, persistence, documentation contract references, token fields, and privacy exclusions. Supported Claude Code and GitHub Copilot fixtures now report `ok / records_extracted`; intentionally malformed unsupported schema fixtures remain bounded `schema_divergent` negative cases with no raw payload output. `mage bench:startupState` appended durable row 11 under `/home/jgabor/.local/share/agentera/benchmarks/startup-state/` and updated `latest-report.json`/`latest-report.md` with `token_estimator_version: approx_bytes_div_4_v1`, `estimated_raw_after_cli_tokens: 621`, `estimated_redundant_raw_tokens: 533`, canonical artifact breakdowns, and `estimated_tokens_saved_vs_previous_null_reason: previous_missing_token_estimates` because the previous comparable row lacked token fields. Live local runtime stores still show Claude Code and GitHub Copilot as `schema_divergent` extraction caveats, separate from the CLI behavior metrics: 18 state sequences, 8 raw-after-CLI sequences, 8 redundant raw sequences, and startup-envelope recommendation retained."
+  plan: vbepjijzmu

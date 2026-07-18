@@ -1,0 +1,7 @@
+id: aqwddtlokp
+artifact: docs
+record:
+  document: Schema-backed routing interface tests
+  path: tests/test_schema_backed_routing_interface.py
+  last_updated: 2026-05-17
+  status: current

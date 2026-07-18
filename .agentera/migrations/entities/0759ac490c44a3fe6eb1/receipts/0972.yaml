@@ -1,0 +1,18 @@
+id: zylaoahhtk
+artifact: plan
+record:
+  name: Align dispatch prose across capabilities
+  depends_on:
+    - hbyduhpotq
+    - kxbipomhzt
+    - cicluewnxf
+  status: complete
+  acceptance:
+    - GIVEN `orkestrera/prose.md` Step 2 Dispatch is reviewed WHEN updated THEN it contains explicit Claude Code, Codex CLI, OpenCode, and Copilot CLI instructions and removes the abstract host-adapter line.
+    - GIVEN `realisera/prose.md` Step 5 Dispatch is reviewed WHEN updated THEN it contains the same per-runtime dispatch patterns and preserves its pre-dispatch commit gate and stale-base guidance.
+    - GIVEN `optimera/prose.md` dispatch sections are audited WHEN updated THEN implementation-agent dispatch uses the same runtime patterns or records why Optimera needs a narrower variant.
+  evidence:
+    - Replaced Orkestrera's abstract host-adapter dispatch line with a runtime table for Claude Code Task, OpenCode descriptors, Codex descriptors, and Copilot `/fleet` fallback, while forbidding unsupported capability-name CLI commands.
+    - Added matching runtime dispatch substrate tables to Realisera Step 5 and Optimera Step 4 while preserving their pre-dispatch commit gate and stale-base guidance.
+    - "`uv run scripts/validate_capability.py` passed for Orkestrera, Realisera, and Optimera; focused capability prose tests also passed."
+  plan: vrdajvaghq

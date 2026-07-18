@@ -1,0 +1,6 @@
+id: imaiouneru
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[fix:3.0.0] Repair blocked lossless-storage Plan Task 9 after two failed evaluations. Resolved 2026-07-14: list/compact totals..."

@@ -1,0 +1,16 @@
+id: lavqcvqeid
+artifact: plan
+record:
+  name: Startup seam verification
+  depends_on:
+    - cxjhgznpgx
+  status: complete
+  acceptance:
+    - GIVEN current Planera startup/introspection surfaces are reviewed WHEN a compact guidance surface is chosen THEN `agentera hej --format json --capability-context planera`, `agentera describe`, and dispatcher guidance current behavior and tests are named.
+    - GIVEN multiple existing seams could carry guidance WHEN the choice is made THEN exactly one canonical startup-context surface is selected and the reason the other surfaces are not changed is recorded.
+    - GIVEN the selected seam is unavailable or incomplete WHEN implementation is considered THEN the plan records a blocker or fallback rather than inventing fields in the wrong place.
+  evidence:
+    - "`agentera hej --format json --capability-context planera` already returns the supported capability startup context with declared/included/missing state families, fallback commands, and raw-read-last-resort policy, so it was selected as the canonical compact startup surface."
+    - "`agentera describe --format json` is current runtime/schema introspection and command discovery; it was not changed because it is not a capability workflow payload."
+    - Dispatcher guidance in `skills/agentera/SKILL.md` already owns route/CLI separation; it was aligned to point Planera startup at the selected compact context rather than becoming a second structured surface.
+  plan: dfsuxktekm

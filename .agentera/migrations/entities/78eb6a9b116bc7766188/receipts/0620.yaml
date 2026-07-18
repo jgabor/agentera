@@ -1,0 +1,12 @@
+id: bhatcntxsg
+artifact: plan
+record:
+  name: Restore integration test gate
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN vitest runs on feat/v3 WHEN this task lands THEN 916/916 tests pass with no integration or app-home failures
+    - GIVEN summarizeProjectIntegration scenarios for runtime-only and artifacts-only pending work WHEN prime emits project_integration THEN upgrade_only matches the decision table expectations
+    - GIVEN npx bundle is current but platform app home is outdated WHEN summarizeProjectIntegration runs THEN recommendation is upgrade with repair-oriented wording
+  plan: zyisuuikti

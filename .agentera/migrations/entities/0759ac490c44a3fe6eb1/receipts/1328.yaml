@@ -1,0 +1,15 @@
+id: yqmfueteec
+artifact: progress
+record:
+  timestamp: 2026-07-16 19:09
+  type: docs
+  phase: build
+  what: Declared the Decision 94 entity model and explicit migration lifecycle in the single state storage authority, with focused contract tests.
+  inspiration: Decision 94 and PLAN Task 1.
+  verified: "Full CLI test suite passed: 201 files and 2329 tests; typecheck and build passed; capability-contract validation passed 2/2; check compact passed with zero over-limit artifacts or errors."
+  next: Begin Task 2 only in a later cycle; implement no shared entity storage in this commit.
+  context:
+    intent: Complete PLAN Task 1 without implementing entity storage or migration behavior.
+    constraints: Authority, contract tests, and required project-state bookkeeping only; suite metadata and vision unchanged.
+    unknowns: Repository cutover recovery remains intentionally deferred to later plan tasks.
+    scope: references/artifacts/state-storage-authority.yaml; packages/cli/test/state/entityAuthority.test.ts

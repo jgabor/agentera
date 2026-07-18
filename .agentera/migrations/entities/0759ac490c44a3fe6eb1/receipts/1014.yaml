@@ -1,0 +1,17 @@
+id: ogwwtdrglc
+artifact: plan
+record:
+  name: Plan-Level Freshness And Version Checkpoint
+  depends_on:
+    - eoeuccerue
+    - qlnjlzqbct
+    - ipjokehrzk
+    - rbojxuuakp
+    - nfgcazmlni
+  status: complete
+  acceptance:
+    - GIVEN the rendering fix is complete WHEN freshness is updated THEN required docs, changelog, progress, TODO, and plan state describe the restored dashboard behavior and verification evidence
+    - GIVEN version policy applies to this fix WHEN release readiness is assessed THEN patch-version surfaces are updated or a no-bump rationale is recorded
+    - GIVEN validation completes WHEN the plan closes THEN focused dashboard tests, relevant CLI tests, semantic fixtures, capability validation, and the practical full test suite pass or skipped checks are justified
+    - GIVEN unrelated findings remain open WHEN the plan closes THEN hook validation, health freshness, optional live smoke, and registry follow-ups remain separate work
+  plan: kmnryadquz

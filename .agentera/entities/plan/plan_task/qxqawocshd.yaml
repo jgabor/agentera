@@ -1,0 +1,12 @@
+id: qxqawocshd
+artifact: plan
+record:
+  name: CLI Consistency
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN agentera validate command family WHEN adding new validator THEN only one code path requires update
+    - GIVEN agentera doctor --format json WHEN run THEN produces structured JSON output
+    - GIVEN agentera doctor --json WHEN run THEN emits deprecation warning pointing to --format json
+  plan: fcctntwhtx

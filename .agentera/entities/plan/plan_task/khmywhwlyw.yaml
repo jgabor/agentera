@@ -1,0 +1,13 @@
+id: khmywhwlyw
+artifact: plan
+record:
+  name: Define version-resolution and irreversibility vocabulary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN references/cli/update-channels.yaml WHEN extended THEN it defines how running and latest versions are resolved per channel without duplicating channel override keys
+    - GIVEN references/cli/app-lifecycle-vocabulary.yaml WHEN updated THEN major_boundary_crossing no longer requires --target-major; it references semver forward-major confirmation and states v2 return is permanently unsupported
+    - GIVEN references/cli/vocabulary.md WHEN read THEN it delegates to the authorities and documents irreversible v2 exit and future v4→v3-only downgrade scope
+    - GIVEN vocabulary authority tests WHEN run THEN they pass without referencing --target-major as the opt-in mechanism
+  plan: vfxlyosxap

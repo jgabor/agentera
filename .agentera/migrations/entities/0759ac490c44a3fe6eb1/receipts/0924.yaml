@@ -1,0 +1,21 @@
+id: azcduqghkl
+artifact: plan
+record:
+  name: Verify suite, content gate, typecheck, CHANGELOG promotion
+  depends_on:
+    - kcmpzzyder
+    - wpyrehzpft
+    - zbroeepeyf
+    - kkpacduxdk
+    - jcmqhtglpm
+    - pzmbcoobut
+  status: complete
+  acceptance:
+    - GIVEN pnpm -C packages/cli test WHEN executed THEN the suite passes with zero failures
+    - GIVEN pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact WHEN executed THEN the content gate passes with no budget violations
+    - GIVEN pnpm -C packages/cli run typecheck WHEN executed THEN no type errors exist
+    - GIVEN the CHANGELOG.md D70 entry WHEN inspected THEN it is past tense (v3 promotes, not v3 will promote)
+    - GIVEN README.md WHEN inspected THEN the capability naming statement is consistent with the completed rename
+    - GIVEN agentera check validate capability-contract --format json WHEN executed THEN it passes
+    - GIVEN the full test suite WHEN searched for Swedish capability name hardcodes in assertions or fixtures (excluding historical/migration tests) THEN no live v3 surface test references the old Swedish IDs
+  plan: zzdkwllddt

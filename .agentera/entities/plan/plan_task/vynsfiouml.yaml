@@ -1,0 +1,13 @@
+id: vynsfiouml
+artifact: plan
+record:
+  name: Close the Decision 57 contract plan artifacts
+  depends_on:
+    - ulcfkybltt
+  status: complete
+  evidence:
+    - "Focused verification passed: `uv run pytest tests/test_capability_instruction_contract.py tests/test_routing_execution_vocabulary_authority.py tests/test_bundle_skill_vocabulary_authority.py tests/test_lifecycle_vocabulary_authority.py tests/test_decision44_vocabulary.py -q` reported 29 passed. Artifact validators for PLAN.md, TODO.md, CHANGELOG.md, PROGRESS.md, and DOCS.md returned `status=pass`. `git diff --check` passed. TODO, CHANGELOG, PLAN, and PROGRESS were updated for closeout while the later rename, metadata feature, and validation/regression TODOs remain open."
+  acceptance:
+    - GIVEN focused verification runs WHEN implementation is complete THEN exact test, artifact validation, and diff-check evidence is recorded in plan evidence and progress.
+    - GIVEN TODO, CHANGELOG, PLAN, and PROGRESS are inspected WHEN closeout is complete THEN the top `[docs:2.4.x]` Decision 57 documentation TODO is resolved while the later rename, `first_invocation_read`, and validation coverage TODOs remain open.
+  plan: ffpspentli

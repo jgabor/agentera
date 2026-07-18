@@ -1,0 +1,22 @@
+id: vwcokeooop
+artifact: plan
+record:
+  name: Deliver plan task list and get
+  depends_on:
+    - hsgvpyvmgx
+  status: complete
+  acceptance:
+    - GIVEN a large active plan WHEN tasks are listed THEN declared task-number order, limits, opaque cursors, and omission counts are stable.
+    - GIVEN a task number WHEN fetched THEN one full task or a structured not-found result is returned.
+    - GIVEN text or JSON projection limits WHEN tasks are omitted THEN a working continuation or exact command is exposed, with passing and failing tests.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Help incorrectly requires --plan for task get; Cycle 798 lacks exact per-criterion reproducible evidence.
+    provenance:
+      attempt_id: task-2-audit-2-20260714
+      source: independent Task 2 corrective acceptance audit
+      recorded_at: 2026-07-14 23:25
+      writer_command: agentera state plan record-evaluation
+  plan: diigykcdod

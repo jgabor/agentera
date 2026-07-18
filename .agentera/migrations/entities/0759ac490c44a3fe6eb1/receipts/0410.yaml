@@ -1,0 +1,18 @@
+id: aorrcyayms
+artifact: plan
+record:
+  name: Verify namespace contract definition
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an agent needs to run eval or smoke gates WHEN the verify namespace contract is reviewed THEN `agentera verify` is the recorded public command, `agentera smoke` is recorded as the rejected umbrella alternative, and the rationale is explicit.
+    - GIVEN the command contract is reviewed WHEN supported values are listed THEN gate families `smoke` and `eval`, their target values, output formats, safety requirements, and non-goals are clear without relying on unsupported capability-name commands.
+    - GIVEN current direct smoke and eval scripts already exist WHEN compatibility expectations are defined THEN their continued availability and observable behavior are preserved as acceptance constraints.
+    - GIVEN invalid verify input is possible WHEN user-facing behavior is specified THEN unknown families, targets, formats, and unsafe live defaults return bounded diagnostics with valid values, correct syntax, concrete examples, and nonzero exits.
+  evidence:
+    - "Added design-only `verify_namespace` to `references/cli/agent-ready-state-contract.yaml`: public command is `agentera verify`; rejected umbrella alternative is `agentera smoke` because smoke does not naturally describe semantic or skill eval gates; Task 1 explicitly does not implement runtime `agentera verify` behavior."
+    - Contract lists gate families `smoke` and `eval`, smoke targets `installed-skills`, `live-hosts`, `setup-helpers`, and `opencode-bootstrap`, eval targets `skills` and `semantic`, text/json output expectations, safety requirements, invalid-input behavior, examples, and non-goals without adding unsupported capability-name CLI commands.
+    - Compatibility constraints preserve direct entrypoints `scripts/eval_skills.py`, `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`, `scripts/smoke_setup_helpers.py`, and `scripts/smoke_opencode_bootstrap.mjs` with existing observable behavior.
+    - "Evidence probes: `uv run scripts/agentera --help` currently exposes no `verify` command; `uv run scripts/eval_skills.py --help`, `uv run scripts/semantic_eval.py --help`, `uv run scripts/smoke_installed_skills.py --help`, and `uv run scripts/smoke_live_hosts.py --help` documented the direct surfaces and safe opt-ins; `uv run scripts/smoke_setup_helpers.py --help` ran existing smoke checks and passed; `node scripts/smoke_opencode_bootstrap.mjs --help` ran existing bootstrap smoke checks and returned bounded local failure diagnostics for absent OpenCode skills."
+  plan: nunafrtebv

@@ -1,0 +1,14 @@
+id: krbgehyqss
+artifact: plan
+record:
+  name: Promote lineage classifier to public field
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the orientation command runs with JSON output WHEN the install is a v2 managed app THEN the app_home object includes install_track with value v2
+    - GIVEN the orientation command runs with JSON output WHEN the install is a v3 npm self-contained package THEN the app_home object includes install_track with value v3
+    - GIVEN the orientation command runs with JSON output WHEN the install is a source checkout THEN the app_home object includes install_track with value source
+    - GIVEN the orientation command runs with JSON output WHEN the install is an unknown foreign directory THEN the app_home object includes install_track with value unknown
+    - GIVEN the test fixtures directory WHEN inspected THEN install-state fixtures exist or are created for v2, v3, source, and unknown states
+  plan: gremlonjmv

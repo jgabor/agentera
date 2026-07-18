@@ -1,0 +1,15 @@
+id: kggmovpkkd
+artifact: plan
+record:
+  name: Terminology inventory and classification
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - "Created `docs/d47-app-home-vocabulary-inventory.md` and exposed it with `.gitignore` exception `!docs/d47-app-home-vocabulary-inventory.md`. Independent evaluation now passes all Task 1 criteria: required terms and surfaces are classified across scripts, hooks, skills, tests, root/docs, package/runtime manifests, `.opencode`, `.agentera/**`, and archives; the table has the required columns; compatibility identifiers are preserved by default; historical, changelog, migration, and archive records remain preserved."
+  acceptance:
+    - GIVEN repository text is searched in `scripts/`, `hooks/`, `skills/agentera/`, tests, README/UPGRADE/docs, registry/package/runtime surfaces, and Agentera-facing guidance WHEN matches for `bundle`, `bundled`, `bundle-root`, `bundle_root`, `bundle root`, `install root`, `DECISIONS.md`, `DOCS.md`, `PLAN.md`, and `PROGRESS.md` are reviewed THEN each relevant occurrence is classified as `replace`, `preserve`, or `defer`.
+    - GIVEN a relevant occurrence is classified WHEN the inventory is complete THEN the executor has a table with path, matched term, classification, rationale, and planned action available in the final closeout summary or a committed artifact.
+    - GIVEN a key, flag, JSON field, schema field, fixture key, persisted metadata key, filename, artifact ID, or CLI selector contains old wording WHEN classified THEN compatibility is checked before any rename and the default action is to preserve the identifier while updating surrounding labels or descriptions.
+    - GIVEN D47 wording appears in historical decisions, changelog entries, or explicit legacy-migration examples WHEN classified THEN the wording is not rewritten solely for vocabulary consistency.
+  plan: dcrphgvsnb

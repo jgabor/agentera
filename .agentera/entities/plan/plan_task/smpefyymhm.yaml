@@ -1,0 +1,13 @@
+id: smpefyymhm
+artifact: plan
+record:
+  name: Clarify Source Data Semantics
+  depends_on:
+    - tdsgfbnook
+  status: complete
+  acceptance:
+    - GIVEN a direct user runs the composite source command WHEN output is read THEN it remains compact source data and is not reformatted as the dashboard
+    - GIVEN source-data wording could imply rendering is complete WHEN the wording is reviewed THEN it is removed, renamed, or explicitly justified with test coverage
+    - GIVEN normal orientation data is available WHEN bare Agentera runs THEN no individual routine state command or direct artifact read is part of the normal runtime path
+    - GIVEN source wording changes are made WHEN CLI behavior is checked THEN direct source users retain the same actionable state facts
+  plan: zbvkewyhhq

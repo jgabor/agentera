@@ -1,0 +1,10 @@
+id: obtouodqit
+artifact: plan
+record:
+  status: complete
+  acceptance:
+    - jgabor/agentera/.agentera/vision.yaml product-first; open-protocol north star retired; mobile named as flagship surface.
+  name: Merge vision into monorepo root
+  depends_on:
+    []
+  plan: mbaoufkhpc

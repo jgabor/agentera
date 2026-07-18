@@ -1,0 +1,16 @@
+id: itexttzrgt
+artifact: plan
+record:
+  name: Expose capability required-read context
+  depends_on:
+    - kajhxpupgg
+  status: complete
+  evidence:
+    - Added `source_contract.capability_context.first_invocation_read` to hej capability context output with value, target, obligation, runtime boundary, and provenance.
+    - Planera reports `compact_startup`; default capabilities report `full`; no capability-name CLI command was added.
+  acceptance:
+    - GIVEN `agentera hej --format json --capability-context <name>` is run for any supported capability WHEN JSON is parsed THEN `source_contract.capability_context.first_invocation_read` exists with a value from the contract enum, an `instructions.md` read target where applicable, an obligation summary, and provenance pointing to `references/cli/capability-instruction-contract.yaml`.
+    - GIVEN `--capability-context planera` is run WHEN Planera's compact startup contract is present THEN `first_invocation_read.value` is `compact_startup`, the response identifies the compact startup contract as satisfying normal startup, and escalation rules still require reading `planera/instructions.md` for uncovered, contradictory, safety-critical, validation, or editing work.
+    - GIVEN a capability does not declare a valid compact-startup exception WHEN its context is requested THEN `first_invocation_read.value` is `full` and agents can discover that a first invocation must read that capability's `instructions.md` without raw directory guessing.
+    - GIVEN hej JSON or text output is inspected WHEN the feature is complete THEN no unsupported capability command such as `agentera planera` is introduced or recommended.
+  plan: lkrqvabygh

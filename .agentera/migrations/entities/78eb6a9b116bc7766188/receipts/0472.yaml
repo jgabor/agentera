@@ -1,0 +1,17 @@
+id: rppcucllha
+artifact: plan
+record:
+  name: Hej decision attention behavior
+  depends_on:
+    - gowrrpniut
+  status: complete
+  acceptance:
+    - GIVEN decisions contain non-confirmed satisfaction states WHEN `agentera hej` runs in text mode THEN attention includes one bounded decision-review item with counts and up to three decision references.
+    - GIVEN decisions contain non-confirmed satisfaction states WHEN `agentera hej --format json` runs THEN JSON output includes the same attention item and a structured decision-review payload with bounded entries.
+    - GIVEN decisions are all explicitly user-confirmed satisfied WHEN hej runs THEN no decision-review attention item is emitted.
+    - GIVEN TODO or health remains the highest-priority executable work WHEN decision review pressure exists THEN `next_action` remains the existing TODO/health/plan action and decision review stays attention-only.
+    - GIVEN `agentera hej` reads decision state WHEN the command exits THEN `.agentera/decisions.yaml` content is unchanged.
+  evidence:
+    - Implemented `_decision_review_attention` in `scripts/agentera`; it enriches decision entries through existing decision context helpers, includes missing legacy state, open, provisional, unconfirmed user-confirmed, unrecognized, and explicit review-needed satisfaction pressure, and excludes explicitly user-confirmed satisfied decisions unless they are explicitly marked review-needed.
+    - "`agentera hej --format json` now includes `decision_attention` and the matching attention item; the current repo output shows bounded provisional decision pressure while preserving `next_action` as the active plan task."
+  plan: csliqoeemb

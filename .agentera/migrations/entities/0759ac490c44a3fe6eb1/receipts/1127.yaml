@@ -1,0 +1,36 @@
+id: swacjgsmpq
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-26
+    status: complete
+    reviewed: 2026-05-26
+    critic_issues: 10 found, 2 addressed, 8 dismissed
+    title: Degraded validation and CLI consistency fixes
+  what: Fix 16 degraded-severity validation, parser, and CLI consistency issues spanning TODO parser bugs, schema validation gaps, validator robustness, CLI command consistency, and integration correctness.
+  why: These issues represent silent failures where validators pass when they should fail, parsers return zero when data exists, and CLI commands behave inconsistently. Each undermines the reliability that agents and humans depend on for correct artifact validation and state access.
+  constraints: Must not break existing 1287 passing tests. Must preserve exit code contracts (0=pass, 2=violation). Must maintain backward compatibility for CLI commands during migration with deprecation warnings. Must not modify protected state (vision.yaml, objective state).
+  scope:
+    included:
+      - hooks/validate_artifact.py (validation logic)
+      - scripts/agentera (CLI commands)
+      - Schema files (health.yaml, plan.yaml, experiments.yaml, progress.yaml, decisions.yaml, todo.yaml, design.yaml, changelog.yaml)
+      - .opencode/plugins/agentera.js (hook integration)
+      - TODO.md, CHANGELOG.md, progress.yaml (state artifacts)
+    excluded:
+      - Vision and objective state (protected)
+      - Runtime adapter code (separate concern)
+      - Capability prose files (separate concern)
+      - Normal and annoying severity TODO items (separate plan)
+    deferred:
+      - Subagent tool configuration (requires runtime research)
+      - Type coercion edge cases (requires broader validator refactor)
+      - 3.0.0 TypeScript rewrite work (separate initiative)
+  design: Group 16 related fixes into 7 logical tasks by concern area. Each task is one realisera cycle with independent acceptance criteria. Tasks 1-5 have no dependencies and can execute in any order. Task 6 (human-facing schema architecture) depends on Tasks 2-3 for validation infrastructure. Task 7 (final state sync) depends on all prior tasks. Full test suite runs after each task. New regression tests added per task.
+  overall_acceptance:
+    - GIVEN full test suite WHEN run THEN 1287 or more tests pass with no regressions
+    - GIVEN agentera validate artifact on any schema WHEN artifact violates required fields THEN exit code 2
+    - GIVEN agentera state todo WHEN TODO.md has open items THEN returns correct count and entries
+  surprises:
+    []

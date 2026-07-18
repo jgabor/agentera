@@ -1,0 +1,12 @@
+id: zdznromgnn
+artifact: plan
+record:
+  name: Harden hooks
+  depends_on:
+    - mvphccnoal
+  status: complete
+  acceptance:
+    - GIVEN empty or whitespace-only YAML artifact content WHEN validate_artifact validates THEN exit code 2 with root must be a mapping violation
+    - GIVEN docs.yaml override load WHEN file parses to None THEN overrides resolve to empty dict without AttributeError
+    - GIVEN schema cache load WHEN schema file is empty THEN cache stores empty dict and validation degrades predictably
+  plan: jnhyfsboxr

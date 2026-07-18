@@ -1,0 +1,11 @@
+id: jbeoriqahn
+artifact: plan
+record:
+  name: Verification and closeout
+  depends_on:
+    - araijvdnqh
+  status: complete
+  acceptance:
+    - GIVEN the full test suite runs WHEN vocabulary replacement is complete THEN `uv run pytest -q` passes with no regressions.
+    - GIVEN artifact validation and `git diff --check` pass WHEN closeout is complete THEN the `[fix:2.4.x]` routing/execution vocabulary TODO is resolved.
+  plan: oakpdqdnpg

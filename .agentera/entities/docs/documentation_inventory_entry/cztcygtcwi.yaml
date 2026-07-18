@@ -1,0 +1,7 @@
+id: cztcygtcwi
+artifact: docs
+record:
+  document: Decisions
+  path: .agentera/decisions.yaml
+  last_updated: 2026-07-12
+  status: current

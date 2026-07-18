@@ -1,0 +1,38 @@
+id: tqlhunyjtj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-14
+    status: complete
+    reviewed: 2026-05-14
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    revised: Adversarial review narrowed the plan to the minimum Dokumentera closeout-context contract, named the allowed existing CLI seams, made the 2.3.8 archive transition a hard activation boundary, replaced vague gate language with executable validation families, restricted benchmark evidence to supported CLI/state summaries, separated local target metadata from publication or remote release, defined a minimum context shape, and renamed release closeout work as local metadata sync.
+    title: 2.3.9 Dokumentera Closeout Context Source Contract
+  what: Add a Dokumentera closeout-context source contract to supported CLI state seams so final documentation and metadata synchronization can inspect TODO, docs, changelog, and progress state through CLI output before any raw artifact fallback. The context should expose artifact mappings, version policy, TODO blockers, changelog boundary, progress evidence, benchmark evidence or caveats, fallback commands, caveats, raw-read policy, and a completeness flag.
+  why: "Decision 51 showed that capability startup and state gathering still over-read raw artifacts after CLI state access. The 2.3.7 decision-context and 2.3.8 orchestration-context contracts proved the pattern: carry completeness and caveats through CLI state seams instead of forcing agents to read raw YAML or Markdown. Dokumentera closeout is the next raw-heavy handoff because it coordinates TODO, docs, changelog, progress, benchmark evidence, and no-release boundaries."
+  constraints: "Preserve Decision 45 structured CLI boundaries and Decision 44 plain vocabulary. Do not add `agentera dokumentera`, a new top-level command, a new subcommand, or any other capability-name CLI command. The primary seam is `agentera hej --format json --capability-context dokumentera`; allowed fallbacks are existing commands only: `agentera todo --format json`, `agentera docs --format json`, `agentera progress --format json`, `agentera query changelog --format json`, and `agentera query --list-artifacts`. Preserve docs.yaml artifact path resolution. Do not fabricate benchmark evidence, remaining blockers, publication state, remote push state, tag state, progress verification, changelog coverage, or release metadata. Benchmark evidence may only come from supported CLI/state summaries; if unavailable, emit a caveat instead of reading user-local benchmark files. Installed app/profile staleness is a caveat, not approval to run upgrade, repair, installed app refresh, or profile refresh. Do not implement the separate Inspektera, Optimera, or Realisera source-contract TODOs. The selected target for this patch train is 2.3.9 despite the `[feat:2.3.9]` TODO label; the final local metadata sync must record that resolution. Do not publish, push, refresh installed apps, edit vision, or edit objective state without explicit approval."
+  scope:
+    included:
+      - Dokumentera closeout context through `agentera hej --format json --capability-context dokumentera`.
+      - Source-contract metadata declaring included state families, completeness, caveats, fallback commands, and raw-read policy for closeout state.
+      - Closeout fields equivalent to artifact mappings, version policy, TODO blockers, changelog boundary, progress evidence, benchmark evidence or caveat, fallback commands, caveats, raw-read policy, and completeness.
+      - Dokumentera prose/schema guidance that prefers complete CLI context before raw TODO, docs, changelog, or progress artifacts.
+      - Focused tests, capability validation, artifact validation, gate/compaction checks, and 2.3.9 local TODO/docs/changelog/progress/version metadata sync.
+    excluded:
+      - Unsupported `agentera dokumentera` or other capability-name CLI commands.
+      - New top-level CLI commands or new subcommands.
+      - Source contracts for Inspektera, Optimera, or Realisera.
+      - Rich benchmark history or user-local benchmark report parsing beyond caveated pointers from supported CLI/state summaries.
+      - Publication, remote push, installed app refresh, profile refresh, vision edit, or objective-state edit.
+    deferred:
+      - 2.3.10+ source-contract TODOs.
+      - Rich benchmark-context history owned by the Optimera follow-up.
+      - Release automation beyond truthful local closeout metadata.
+  design: Expose a minimal composite closeout context through the existing hej capability-context seam and the already-supported routine/query fallback commands. The contract is complete only when the consumer can read artifact mappings, version policy, TODO blockers, changelog boundary, progress evidence, benchmark evidence or an explicit unavailable caveat, fallback commands, caveats, raw-read policy, and a completeness flag from CLI state. If any required state is missing or caveated, completeness must be false or caveated, and the context must name the existing fallback command before any last-resort raw read.
+  overall_acceptance:
+    - GIVEN Dokumentera closeout synchronization uses CLI state WHEN TODO, docs, changelog, progress, and supported benchmark evidence are available THEN the agent receives mappings, blockers, closeout boundary, latest evidence, caveats, and fallback commands without normal raw artifact reads.
+    - GIVEN required closeout context state is missing or caveated WHEN closeout proceeds THEN the source contract names missing state, fallback commands, and last-resort raw-read policy honestly.
+    - GIVEN 2.3.9 closes WHEN validation and local metadata sync finish THEN deferred 2.3.10+ source-contract TODOs remain visible and no prohibited release, installed-app, unsupported CLI, or protected-state action occurred.
+  surprises:
+    []

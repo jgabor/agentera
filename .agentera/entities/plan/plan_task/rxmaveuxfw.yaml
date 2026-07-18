@@ -1,0 +1,14 @@
+id: rxmaveuxfw
+artifact: plan
+record:
+  name: CLI commands & state-query surface — alias elimination + cast narrowing
+  depends_on:
+    - jjfklpiget
+  status: complete
+  acceptance:
+    - GIVEN the command/state-query surface WHEN its local aliases and the state-shared re-export are converted to a thin canonical passthrough THEN downstream consumers still compile and the command fixtures are unchanged.
+  evidence:
+    - 13 cli command/state-query files converted; state/shared.ts re-export now `export type Dict = JsonObject` thin passthrough.
+    - "Coupled consumer fix: cli/orientation.ts (omitted from initial task-2 list) narrowed with !Array.isArray guards and IO-boundary casts on latestHealthAudit/decisionContext/decisionSourceContract field access."
+    - typecheck 0 errors; 1145/1145 tests green incl. packaging tsc-gate (was broken before orientation.ts fix); 0 fixture/snapshot drift.
+  plan: fuerermwkr

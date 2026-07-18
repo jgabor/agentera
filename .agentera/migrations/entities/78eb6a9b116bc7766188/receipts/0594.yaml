@@ -1,0 +1,12 @@
+id: mtiyzdfjbn
+artifact: plan
+record:
+  name: Verify corpus input bridge
+  depends_on:
+    - natgltuoze
+  status: complete
+  acceptance:
+    - GIVEN approved inputs exist WHEN the bridge is checked THEN the plan identifies the concrete command path that will produce `--corpus-json` or `--intermediate-json` compatible input for `scripts/startup_analysis_contract.py`.
+    - GIVEN the bridge cannot prepare compatible input WHEN checked THEN the run stops with a bounded blocker instead of hand-rolling unplanned extraction logic.
+    - GIVEN compatibility is checked WHEN validation runs THEN existing Section 22 `extract_corpus.py` and `usage_stats.py` behavior remains unchanged.
+  plan: idljacvake

@@ -1,0 +1,16 @@
+id: qshfsirgcw
+artifact: progress
+record:
+  timestamp: 2026-07-15 11:24
+  type: fix
+  phase: build
+  what: Synchronized public bounded-retrieval contracts across runtime, agent, capability, documentation, package, and error surfaces.
+  inspiration: Replacement Plan Task 11 acceptance criteria and references/artifacts/state-storage-authority.yaml.
+  discovered: Optimize still instructed direct experiment append/compaction; plan-task ownership wording implied archive support; plan and experiment parser errors omitted public valid forms or runnable examples.
+  verified: "AC1: focused 217/217 and full 2051/2051 tests passed; typecheck, build, optimize/plan capability validation, and capability-contract 2/2 passed. AC2: state plan show, experiments show, invalid plan selector, missing objective, and malformed cursor returned structured <=4096-byte corrections with valid values, examples, and recovery. AC3: the canonical authority passed while 132 intentionally invalid mutations failed. bundle:data, check compact, behavioral assertions, and git diff --check passed."
+  next: Stop after Task 11. Task 12 package metadata and Tasks 13-14 final closeout remain pending.
+  context:
+    intent: Complete replacement Plan Task 11 by making the runtime retrieval authority the single public contract and correcting only observed drift.
+    constraints: Preserved suite 3.0.0 and package 3.0.0-dev.21; did not amend, publish, tag, push, start Task 12, or run final plan closeout.
+    unknowns: None for Task 11; historical plan diagnostics and pre-existing lossless compaction refusals remain visible but non-blocking.
+    scope: Retrieval authority/validator, help/parsers, prime capability context, optimize prose and experiment schema, operator docs/changelog/TODO, parity tests, plan/progress state.

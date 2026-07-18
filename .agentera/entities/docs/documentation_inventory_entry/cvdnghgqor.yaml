@@ -1,0 +1,7 @@
+id: cvdnghgqor
+artifact: docs
+record:
+  document: SessionStart hook
+  path: hooks/session_start.py
+  last_updated: 2026-05-05
+  status: current

@@ -1,0 +1,7 @@
+id: xkmfjkpgni
+artifact: docs
+record:
+  document: Live-host smoke runner
+  path: scripts/smoke_live_hosts.py
+  last_updated: 2026-05-05
+  status: current

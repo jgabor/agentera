@@ -1,0 +1,13 @@
+id: jpqsiyhscl
+artifact: plan
+record:
+  name: Establish stable plan identity
+  depends_on:
+    - rufogcejbq
+  status: complete
+  acceptance:
+    - GIVEN a current plan WHEN archived THEN its identity remains unchanged and lifecycle provenance changes explicitly.
+    - GIVEN legacy plans WHEN identity is derived THEN results are deterministic without rewriting history; collisions return structured ambiguity.
+    - GIVEN valid transition and collision fixtures WHEN tested THEN identity continuity passes and ambiguous identity fails safely.
+  evidence: Accepted outcome and audit lineage are preserved in predecessor plan legacy-plan:c09cc7bb849dc5fe96b814a2cde3146cc21bfc65135024c62569f437777016f8 task 3.
+  plan: cccqoakytz

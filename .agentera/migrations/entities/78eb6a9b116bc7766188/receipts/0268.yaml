@@ -1,0 +1,17 @@
+id: xbciceuuhz
+artifact: plan
+record:
+  name: Focused benchmark-context regression coverage
+  depends_on:
+    - lmennlaier
+    - uozuvuzvti
+    - pxvyfbxtyp
+  status: complete
+  evidence:
+    - Focused tests in `tests/test_query_cli.py` cover complete synthetic benchmark fixtures, missing retained files, malformed latest report, empty history, skipped/missing/degraded runtime coverage, non-comparable previous rows, privacy-bounded recommendation and scalar fields, sparse field selection, unsupported-field failure, and negative `agentera optimera` parser probes. Decision 45 contract tests assert benchmark_context in the structured hej envelope.
+  acceptance:
+    - GIVEN complete synthetic benchmark fixtures are available under a temp Agentera home WHEN focused CLI tests run THEN they assert stable top-level context keys, complete source-contract metadata, no unsupported command text, no raw paths, and raw-read-last-resort policy.
+    - GIVEN missing retained files, malformed latest report, empty history, degraded runtime coverage, non-comparable previous row, unsupported field selection, and negative unsupported-command probes are tested WHEN focused tests run THEN each case has deterministic complete, incomplete, or caveated outcomes with exact fallback and caveat assertions.
+    - GIVEN Decision 45 and field-selection tests run WHEN implementation is complete THEN `benchmark_context` is represented in the structured hej envelope for Optimera and unsupported fields still fail clearly.
+    - GIVEN testable state families are covered WHEN this task completes THEN coverage includes available and missing or caveated paths for latest report, history, runtime coverage, token estimates, comparison status, and recommendation state.
+  plan: dlmrrzhsvy

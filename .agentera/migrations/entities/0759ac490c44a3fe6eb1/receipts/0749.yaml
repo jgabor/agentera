@@ -1,0 +1,13 @@
+id: icuwiwgpmg
+artifact: plan
+record:
+  name: Define The Install-Root Interface And Safety Model
+  depends_on:
+    - ugskpycqqs
+  status: complete
+  acceptance:
+    - GIVEN any root is classified WHEN the result is returned THEN it includes source, kind, safe action, diagnostic, managed status, stale status, and missing evidence without writing files
+    - GIVEN a valid managed root comes from the environment WHEN it is classified THEN the result can be used by setup and upgrade callers without caller-local bundle identity rules
+    - GIVEN a missing path, file-valued path, unmanaged directory, stale managed root, or invalid bundle is classified WHEN callers inspect the result THEN each state has one unambiguous action
+    - GIVEN default-root discovery is available WHEN the environment root is unset THEN default use is explicit and lower precedence than explicit or environment roots
+  plan: jkvutuwdzk

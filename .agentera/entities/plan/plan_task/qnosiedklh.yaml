@@ -1,0 +1,17 @@
+id: qnosiedklh
+artifact: plan
+record:
+  name: Validate, report measurements, and prepare handoff
+  depends_on:
+    - ckmepvtcla
+    - qoitnpltgt
+    - qftnnvmwxd
+    - csyryxyykm
+    - ppvixlujwv
+  status: complete
+  acceptance:
+    - GIVEN implementation is complete WHEN validation runs THEN focused JSON contract tests, measurement budget tests, capability validation, artifact validation, `agentera gate`, and `git diff --check` pass.
+    - GIVEN measured results are final WHEN closeout evidence is written THEN it reports before/after bytes and GPT-5 token counts for capability startup and every public JSON surface.
+    - GIVEN release metadata or app refresh would be needed WHEN the task closes THEN those actions are deferred unless explicitly approved.
+    - GIVEN the plan is ready for execution WHEN handoff happens THEN suggest `⎈ orkestrera` and wait for confirmation.
+  plan: pjewhohkcm

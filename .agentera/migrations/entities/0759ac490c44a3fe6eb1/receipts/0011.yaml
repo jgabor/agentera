@@ -1,0 +1,9 @@
+id: skrzorwxjb
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: "D57 instructions.md rename and first_invocation_read contract stand with D59 governing the capability startup context seam: required reads are surfaced through `agentera prime --context <capability>` rather than `status --capability-context`. Reconciled in discuss satisfaction review on 2026-05-23."
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-23
+  decision: jewclprxlb

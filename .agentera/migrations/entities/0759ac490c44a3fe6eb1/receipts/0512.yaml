@@ -1,0 +1,13 @@
+id: xhinbgljlt
+artifact: plan
+record:
+  name: Centralize and document the hooks to scripts import seam
+  depends_on:
+    - goimnheppu
+    - gtdqknadmp
+  status: complete
+  acceptance:
+    - GIVEN cross-layer imports of shared modules (yaml_mapping, progress_commit) WHEN hooks need them THEN they flow through the single sanctioned hooks/common bridge, adding no new per-file sys.path insertion for this purpose
+    - GIVEN hooks/common.py WHEN read THEN a comment/docstring documents it as the sanctioned scripts→hooks bridge and states a neutral package is deferred to 3.0 packaging
+    - GIVEN the full suite (including importlib test-fixture loading of hooks) WHEN run THEN hook import behavior is unchanged and green
+  plan: jynhicyclu

@@ -1,0 +1,13 @@
+id: ggemntxcvc
+artifact: plan
+record:
+  name: Compaction tests use fixtures only
+  depends_on:
+    - cvlwhobluz
+  status: complete
+  acceptance:
+    - GIVEN vitest runs WHEN compaction.test.ts executes THEN no test calls computeCompactionStatus or checkCompaction against REPO_ROOT for budget assertions
+    - GIVEN a fixture with 46 Resolved TODO entries WHEN checkCompaction runs THEN action is over_limit with over count 6
+    - GIVEN a fixture within uniform_10_40_50 WHEN checkCompaction runs THEN all compactable artifacts report action ok
+    - GIVEN CI workflow WHEN unchanged THEN `agentera check compact` still runs after vitest
+  plan: qujxqpraku

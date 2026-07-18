@@ -1,0 +1,13 @@
+id: bdfbnhwcnz
+artifact: plan
+record:
+  name: Add Dashboard Regression Coverage
+  depends_on:
+    - uvdyrdxjuz
+  status: complete
+  acceptance:
+    - GIVEN semantic fixtures evaluate /agentera WHEN captured output is raw CLI lines without dashboard sections THEN the fixture fails
+    - GIVEN captured output contains the dashboard sections, exit marker, concrete next action, and one agentera hej tool trace THEN the fixture passes
+    - GIVEN normal hej orientation is evaluated WHEN tool traces are inspected THEN the trace contains exactly one state-gathering command, agentera hej, and no other routine state command or raw .agentera artifact read
+    - GIVEN focused tests and full pytest run THEN dashboard behavior and tool-budget behavior are both covered
+  plan: zhivqvgvcj

@@ -1,0 +1,12 @@
+id: joquahlqtp
+artifact: plan
+record:
+  name: Prime module decomposition
+  depends_on:
+    - xuaxqqfcwm
+  status: complete
+  acceptance:
+    - GIVEN prime.ts is measured WHEN T6 lands THEN v1 detection, bundle status, and orientation field assembly live in focused modules and prime.ts stays under the monolith gate with cmdPrime as thin dispatch.
+    - GIVEN TODO severity ordering is needed in prime and orientation WHEN summaries are built THEN both import the same ordering constant aligned with state/todo.ts.
+    - GIVEN monolithLint runs WHEN T6 lands THEN no packages/cli/src file exceeds 1000 lines.
+  plan: trwfpgaxom

@@ -1,0 +1,11 @@
+id: xgiwzwrqjv
+artifact: progress
+record:
+  timestamp: 2026-07-16 12:06
+  type: feat
+  phase: build
+  what: "Published one non-redundant prime contract: reconciled the four-way field drift to a single authority (PRIME_STRUCTURED_FIELDS in stateQuery.ts). schema.ts now advertises the canonical 27-field set (added project_integration and history), the bare-prime JSON source_contract.fields and the text-mode fields line derive from the same list, and both agent-ready-state-contract hej.fields lists drop retired bundle and mirror the canonical set."
+  verified: Vitest 2291/2291 pass (9 new AC1-AC4 assertions binding schema, prime, text briefing, the documented contract, state_presence, and recovery commands); pnpm typecheck clean; check compact exit 0; capability-contract validation 0 failures.
+  next: "Task 3: Deliver a bounded default decision brief (<=12000 bytes) retaining required fields plus active conditional fields."
+  context:
+    intent: "Task 2 of the compact-prime plan: make schema discovery and prime output advertise the same behavior and emit one canonical representation, while preserving the issues deprecated transition alias, missing-vs-empty semantics via state_presence, and named recovery commands."

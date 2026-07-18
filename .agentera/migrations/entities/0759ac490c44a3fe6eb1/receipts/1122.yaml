@@ -1,0 +1,31 @@
+id: qzmmatwerr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-12
+    status: complete
+    reviewed: 2026-07-12
+    critic_issues: 14 found, 14 addressed, 0 dismissed
+    revised: Added applicability and action classification, preserved explicit apply scope, separated active and retired cleanup, defined phase and routing semantics, bounded status output, and split verification.
+    title: Default Runtime Lifecycle Visibility and Repair
+  what: Make the shared runtime lifecycle projection a first-class input to upgrade, project integration, prime, and status for OpenCode, Codex, Cursor, and Copilot. Default v3 previews reveal all runtime work, explicit selectors narrow approved writes, and every blocker routes to an appropriate repair, manual-review, or diagnostic action.
+  why: The lifecycle engine currently detects real runtime drift, but default upgrade returns no lifecycle plan and status ignores release-blocking runtime state. Users therefore see up-to-date guidance while repairable, ambiguous, and manually actionable work remains hidden.
+  constraints: Preserve Decision 92. Preview performs no writes, locks, native commands, or telemetry. Runtime writes require --yes plus an explicit runtime selector and touch only declared, ledger-owned or safely claimable destinations. Native install, authentication, enablement, and trust remain user-owned. Cursor CLI is required; Cursor IDE is conditional. Claude remains retired and explicit. Stable v2 behavior and the canonical shared skill location remain unchanged. Task 1 must resolve which enabled/trusted fields are safely probed versus manual or unobservable; Task 3 must resolve whether any pre-journal resource has authoritative ownership provenance, otherwise it stays blocked_unowned.
+  overall_acceptance: GIVEN a v3 runtime lifecycle preview WHEN no runtime selector is supplied THEN actionable and blocked work for all four active runtimes is visible alongside app and channel state. GIVEN status orientation WHEN runtime work exists THEN the highest-value safe repair, manual review, or diagnostic action is surfaced with an exact command or procedure. GIVEN approved lifecycle work WHEN apply runs THEN only explicitly selected, demonstrably owned operations execute and retries converge. GIVEN unowned or native resources WHEN projected THEN they remain unchanged and receive truthful guidance.
+  scope:
+    included:
+      - Canonical lifecycle applicability, action classification, counts, and command projection.
+      - Default all-runtime v3 preview and explicitly scoped lifecycle apply.
+      - Project-integration, prime, and status attention and routing integration.
+      - Ownership-safe active-runtime repair and separate retired Claude cleanup guidance.
+      - Cross-runtime, channel, packaging, documentation, and state verification.
+      - Existing projection seams in packages/cli/src/upgrade/upgradeOrchestrator.ts and packages/cli/src/cli/orientation/attention.ts.
+    excluded:
+      - Runtime-native package installation, authentication, enablement, or trust approval.
+      - Automatic adoption, overwrite, or deletion of unowned resources.
+      - New active runtimes or a new canonical skill location.
+      - Stable v2 lifecycle behavior changes.
+    deferred:
+      - Richer host probes where no bounded machine-readable evidence currently exists.
+  design: One canonical lifecycle projection classifies surface applicability, ownership, repairability, manual action, and diagnostic gaps. Doctor, upgrade, project integration, prime, and status consume that projection without reinterpretation. App migration and lifecycle phases remain separately visible; approved app refresh precedes a fresh lifecycle plan. Preview defaults broadly for visibility, while apply remains explicitly scoped for informed approval.

@@ -1,0 +1,68 @@
+id: pfqxawrxgi
+artifact: health
+record:
+  date: 2026-07-13
+  dimensions:
+    - architecture_alignment
+    - state_contracts
+  findings_summary:
+    critical: 0
+    warning: 3
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: Stable; targeted review exposes removable planning policy and a missing bounded state-query layer.
+  grades:
+    architecture_alignment: B
+    state_contracts: C
+  dimension_details:
+    - name: architecture_alignment
+      grade: B
+      summary: Plan size policy is advisory, duplicated, and unsupported by runtime constraints.
+      findings:
+        - heading: Eight-task plan ceiling lacks a runtime invariant
+          severity: warning
+          confidence: 98
+          location: skills/agentera/capabilities/plan/schemas/validation.yaml:15
+          evidence: The critical max_8_tasks rule and startup max_full_plan_tasks metadata have no artifact-validator enforcement or recorded rationale.
+          impact: Agents split coherent dependency graphs into sequential plans without a storage, identity, or validation requirement.
+          suggested_action: Remove the ceiling from plan prose, validation metadata, and startup contract; retain task-coherence guidance.
+          verify_command: rg -n 'max_8_tasks|max_full_plan_tasks|more than 8 tasks' skills/agentera packages/cli/src
+    - name: state_contracts
+      grade: C
+      summary: Stable write IDs exist, but reads still materialize whole YAML and destructive retention supplies boundedness.
+      findings:
+        - heading: State reads are not addressable by entity ID
+          severity: warning
+          confidence: 100
+          location: packages/cli/src/cli/commands/state/decisions.ts:395
+          evidence: Decision reads load every entry and only filter by topic; plan, progress, and health likewise lack get-by-number reads.
+          impact: IDs cannot replace compaction because consumers still parse full files and may emit unbounded JSON.
+          suggested_action: Add get-by-ID and uniform limit/cursor contracts before changing retention.
+          verify_command: rg -n 'loadArtifact|args\.(number|task|audit|cycle)|args\.(limit|offset|cursor)' packages/cli/src/cli/commands/state
+        - heading: Destructive retention is a write-availability constraint
+          severity: warning
+          confidence: 100
+          location: packages/cli/src/hooks/compaction/retention.ts:192
+          evidence: The writer drops entries beyond 50 and rejects protected-decision growth when review-required entries exceed 10 full, 40 archive, or 50 total slots.
+          impact: Historical detail becomes unavailable and unresolved decisions can eventually block valid appends.
+          suggested_action: Replace destructive compaction with lossless storage plus bounded projections; preserve Decision 53 review semantics independently.
+          verify_command: rg -n 'MAX_(FULL|ONELINE|TOTAL)_ENTRIES|protected-overflow|compactYamlFile' packages/cli/src
+        - heading: The uniform_10_40_50 label matches live limits
+          severity: info
+          confidence: 100
+          location: packages/cli/src/hooks/common.ts:28
+          evidence: Live constants remain 10 full, 40 one-line, and 50 total; only a defensive regex also recognizes nonexistent 20_50_100 wording.
+          impact: Renaming the policy would hide rather than fix the destructive retention contract.
+          suggested_action: Keep the current name until policy replacement; remove the stale 20_50_100 regex alternative.
+          verify_command: rg -n '10_40_50|20_50_100|MAX_(FULL|ONELINE|TOTAL)_ENTRIES' packages/cli/src
+  trends:
+    comparison_target: Audit 28
+    improved: Plan task writes already target stable task numbers, and decision updates target stable decision numbers.
+    degraded: No regression observed; the targeted review identified latent scaling constraints.
+    stable: The 10/40/50 policy remains accurately named and writer-enforced.
+    new_findings: Plan task ceiling drift, absent read-by-ID contracts, and destructive retention coupling.
+    resolved: None in this read-only audit.
+    carried_forward: Decision 53 still protects unresolved decisions from lossy compaction.
+  patterns:
+    - Typed writers address selected entities by number but republish complete YAML documents.
+    - Prime and state reads depend on bounded projections without a shared pagination contract.

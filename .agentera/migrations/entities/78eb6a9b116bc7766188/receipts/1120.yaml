@@ -1,0 +1,22 @@
+id: opdznzagtp
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: archived
+    title: Routing/Execution Vocabulary Cleanup
+  what: Replace `master dispatcher`, `Agentera skill dispatcher`, bare `dispatch`, `runtime dispatch substrate`, `worktree dispatch`, `pre-dispatch commit gate`, and Orkestrera `conductor` metaphor with the canonical `route`/`suggest`/`delegate`/`spawn`/`subagent-mechanism` vocabulary across current docs, capability prose, schemas, scripts, tests, and SKILL.md prose. Preserve qualified compatibility names only where shipped consumers require them.
+  why: The highest-priority open TODO. Vocabulary drift between legacy dispatch terms and the Decision 46 ratified canonical terms creates confusion for agents and humans reading the skill dispatch layer. This cleanup aligns prose with the established protocol contract.
+  constraints: Keep this plan scoped to vocabulary replacement in current (non-archived) docs, capability prose, schemas, scripts, tests, SKILL.md, TODO, CHANGELOG, and PROGRESS. Do not rewrite historical archives, edit `.agentera/vision.yaml` or objective state, advance Decision 57 implementation, perform broad vocabulary regressions beyond the declared scope, or change app/profile/package state.
+  overall_acceptance:
+    - Legacy dispatch/conductor vocabulary is replaced with canonical terms in all current non-archived files.
+    - Qualification compatibility names for shipped consumers are preserved.
+    - The `[fix:2.4.x]` routing/execution vocabulary TODO is resolved.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

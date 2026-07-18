@@ -1,0 +1,12 @@
+id: urskxvrqlv
+artifact: plan
+record:
+  name: Deliver plan task list and get
+  depends_on:
+    - qteagwcvse
+  status: complete
+  acceptance:
+    - GIVEN a large active plan WHEN tasks are listed THEN declared task-number order, limits, opaque cursors, and omission counts are stable.
+    - GIVEN a task number WHEN fetched THEN one full task or a structured not-found result is returned.
+    - GIVEN text or JSON projection limits WHEN tasks are omitted THEN a working continuation or exact command is exposed, with passing and failing tests.
+  plan: juqmsmvfev

@@ -1,0 +1,13 @@
+id: kfhgsvngwt
+artifact: plan
+record:
+  name: Add the Decision 57 capability instruction contract authority
+  depends_on:
+    - nhydnhwohr
+  status: complete
+  evidence:
+    - Added `references/cli/capability-instruction-contract.yaml` defining the future canonical `instructions.md` file, current compatibility `prose.md`, `first_invocation_read` values (`full`, `compact_startup`, `skip`), full-read obligation, compact-startup escalation boundaries, unsupported implementation state, compatibility-preserved current references, later TODO separation, and surface inventory.
+  acceptance:
+    - GIVEN the structured authority is loaded WHEN Decision 57 terms are inspected THEN it defines `instructions.md`, compatibility `prose.md`, `first_invocation_read` values, full-read obligations, compact-startup exceptions, and current unsupported implementation states.
+    - GIVEN compatibility boundaries are inspected WHEN the authority is read THEN existing `prose.md` paths, archived v1/v2 migration records, descriptor pointers, fixtures, and current validator references are preserved until the later implementation TODOs explicitly migrate them.
+  plan: ffpspentli

@@ -1,0 +1,16 @@
+id: rawyugfpnm
+artifact: progress
+record:
+  timestamp: 2026-07-15 08:48
+  type: feat
+  phase: build
+  what: Added objective-scoped immutable full-detail experiment archives before projection replacement, preserving 10/40/50 compaction and byte-equivalent retry safety.
+  inspiration: Active bounded plan and experiment retrieval plan Task 7; existing immutable-file publication primitives.
+  discovered: The generic artifact validator targets the absent root experiments path when no active objective exists; focused schema and publication tests validate the objective-scoped contract.
+  verified: Focused archive success, conflict, staged failure, archive interruption, projection interruption, and retry cases passed; focused suite 40/40; full CLI 182 files and 2002 tests passed; typecheck, build, capability contract, and compact passed.
+  next: Task 8 may add experiment list/get over projection and archive records; do not add retrieval in this cycle.
+  context:
+    intent: Complete Plan Task 7 by making newly published experiment detail durably recoverable before compaction.
+    constraints: Kept experiment archives outside numbered archive authority; no migration, retrieval, broad omission cleanup, metadata, vision, or objective-state changes.
+    unknowns: Legacy dropped detail remains unavailable by design; no history was fabricated.
+    scope: Experiment archive authority/schema, publication ordering, immutable archive serialization, transaction boundary, focused fixtures, plan/progress/changelog state.

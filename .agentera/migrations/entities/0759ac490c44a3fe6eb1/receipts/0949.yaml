@@ -1,0 +1,13 @@
+id: zrymnhkfag
+artifact: plan
+record:
+  name: Skill and upgrade guidance
+  depends_on:
+    - zkwsmqbsuw
+    - xvnejobutp
+  status: complete
+  acceptance:
+    - GIVEN the installed app gate cannot execute because `AGENTERA_HOME` names the exact old default and `$AGENTERA_HOME/app/scripts/agentera` is missing WHEN Agentera guidance is read THEN it presents the platform app-home upgrade dry-run path without requiring a successful stale CLI invocation.
+    - GIVEN `npx skills` updates only the visible skill WHEN `/agentera` next runs THEN SKILL and hej guidance explain managed app refresh and old-default retirement through app-home upgrade.
+    - GIVEN supported v1 Markdown files exist WHEN docs or guidance describe upgrade THEN they say the artifacts phase migrates them to YAML with backups after preview and confirmation.
+  plan: vzcvaptlbz

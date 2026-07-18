@@ -1,0 +1,13 @@
+id: iritktcnuv
+artifact: plan
+record:
+  name: Introduce The Shared Read-Only Module
+  depends_on:
+    - icuwiwgpmg
+  status: complete
+  acceptance:
+    - GIVEN the shared Module is called by tests WHEN all characterized root shapes are evaluated THEN results match the approved behavior matrix
+    - GIVEN classification runs on a temp root WHEN the test snapshots the filesystem before and after THEN no files are created, deleted, or modified
+    - GIVEN a stale managed root is classified WHEN diagnostics are requested THEN expected and current version evidence are available without starting a refresh
+    - GIVEN a caller needs display text WHEN it asks for a diagnostic THEN structured data remains available separately from human wording
+  plan: jkvutuwdzk

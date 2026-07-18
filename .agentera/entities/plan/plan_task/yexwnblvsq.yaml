@@ -1,0 +1,13 @@
+id: yexwnblvsq
+artifact: plan
+record:
+  name: Rewire doctor, prime, and upgrade command rendering
+  depends_on:
+    - tsqjwgpmwd
+  status: complete
+  acceptance:
+    - GIVEN doctor on v2 home with v3 CLI WHEN status is emitted THEN dryRunCommand and applyCommand include channel when non-stable but never include --target-major
+    - GIVEN prime orientation WHEN v2 managed home on v3 CLI THEN attention text cites semver or channel mismatch and preview command without --target-major
+    - GIVEN buildUpgradeCommands WHEN rendered THEN flags reflect channel and --only only
+    - GIVEN schema.ts upgrade description WHEN read THEN it documents semver channel gate and irreversible v2 exit instead of --target-major 3
+  plan: vfxlyosxap

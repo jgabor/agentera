@@ -1,0 +1,16 @@
+id: znbhnzmetz
+artifact: plan
+record:
+  name: Preserve compact-startup exceptions
+  depends_on:
+    - dhcdbsxqmp
+  status: complete
+  acceptance:
+    - GIVEN Planera capability context is requested WHEN JSON output is inspected THEN `first_invocation_read` remains `compact_startup` and names the compact obligation.
+    - GIVEN Planera compact startup is available WHEN its `instructions.md` file is absent in an installed-app fixture THEN the compact startup contract still reports `instructions_runtime_read_required` as false.
+    - GIVEN a capability does not declare compact startup WHEN its context is requested THEN tests do not accidentally grant a compact-startup exception.
+  evidence:
+    - Existing Planera context coverage asserts `first_invocation_read` remains `compact_startup`, names the compact obligation, and exposes the compact startup contract.
+    - Existing installed-app fixture coverage removes Planera `instructions.md` and still verifies `instructions_runtime_read_required` remains false.
+    - Added a focused boundary regression proving realisera and orkestrera stay on `full` first reads and do not receive Planera's `startup_contract`.
+  plan: fmktobmnvx

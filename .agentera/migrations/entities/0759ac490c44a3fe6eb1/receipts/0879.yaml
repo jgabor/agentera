@@ -1,0 +1,14 @@
+id: jsrxoxytll
+artifact: plan
+record:
+  name: Enforce Decision 58's single-name protocol boundary (TODO L20)
+  depends_on:
+    - ayeuhkbcbv
+    - fkbafzfbfc
+  status: complete
+  acceptance:
+    - "GIVEN `feat/v3` base WHEN every protocol surface is audited THEN every backwards-compatible, deprecated, parallel, display-only, or storage/protocol split name is removed or migrated to the canonical name; surfaces in scope: artifact canonical names (`PROGRESS.md` → `progress.yaml` if not already; `PLAN.md` → `plan.yaml`; etc.), concept names (the `hej` capability canonical rename per Decision 59's `prime` consolidation), schema fields (`instruction_file` → `instruction_module` per D65; `version` vs `suiteVersion` vs `gitRef` per the release-metadata gate), metadata fields, runtime adapter surfaces, and protocol identities"
+    - GIVEN the audit WHEN `packages/cli/test/cli/singleNameProtocol.test.ts` is authored THEN it scans all YAML/TS surfaces for forbidden legacy substrings (`PROGRESS.md`, `PLAN.md`, `DECISIONS.md` in storage/protocol paths; `instruction_file`; pre-D58 vocabulary tokens) and fails if any are present; the test is green on the post-audit tree
+    - GIVEN the audit WHEN `references/cli/vocabulary.md` is updated THEN it is the single source of truth for canonical names; the published `npx -y agentera@next` install rejects legacy vocabulary; the contract schema `references/cli/audience-namespace-cli-migration.yaml` `migration_phases.phase_3` is satisfied for the single-name boundary
+    - GIVEN the build WHEN `pnpm -C packages/cli test` runs THEN the new single-name protocol regression is green; typecheck clean; build clean; per V5 the proportionality target is one pass + one fail per forbidden-substring class (storage paths + schema fields + concept names + metadata + runtime adapters = 5 × 2 = 10 cases)
+  plan: lzsuezxesf

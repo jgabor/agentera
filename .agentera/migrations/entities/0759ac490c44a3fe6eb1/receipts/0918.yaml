@@ -1,0 +1,13 @@
+id: kcmpzzyder
+artifact: plan
+record:
+  name: Update capability prose and schema content references
+  depends_on:
+    - reayzzjrro
+  status: complete
+  acceptance:
+    - "GIVEN each instructions.ts file WHEN inspected THEN the Markdown header uses the English name (e.g. # STATUS not # HEJ)"
+    - GIVEN each instructions.ts file WHEN inspected THEN self-references to the capability name use the English ID
+    - GIVEN each schemas/*.yaml file WHEN inspected THEN capability name references use the English ID
+    - GIVEN the instructions.ts files WHEN searched THEN no self-reference uses the Swedish -era name as the canonical capability identity (historical mentions in context are acceptable if clearly referencing the v2 stable distribution)
+  plan: zzdkwllddt

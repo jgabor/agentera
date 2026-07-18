@@ -1,0 +1,13 @@
+id: hnreicqmyc
+artifact: plan
+record:
+  name: Inventory Install-Root Behavior And Characterization Cases
+  depends_on:
+    - ksowubrnsq
+  status: complete
+  acceptance:
+    - GIVEN existing setup and upgrade paths are exercised WHEN roots are valid, missing, files, unmanaged, stale, invalid, explicit, environment-derived, or defaulted THEN current user-visible outcomes are recorded before refactor
+    - GIVEN two callers currently disagree WHEN the same root shape is evaluated THEN the intentional standardization is named before code changes
+    - GIVEN characterization tests are added WHEN they run before migration THEN they capture current behavior or explicitly document the behavior being corrected
+    - GIVEN diagnostics are inspected WHEN they are machine-readable or human-facing THEN existing exit codes and primary messages are marked preserve-or-change
+  plan: elrtvewqem

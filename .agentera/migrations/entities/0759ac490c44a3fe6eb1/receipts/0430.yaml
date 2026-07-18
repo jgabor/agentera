@@ -1,0 +1,10 @@
+id: nqtnfdvhkh
+artifact: plan
+record:
+  name: Chain optional Git enrichment after local migration
+  depends_on:
+    - sdjncrsjrp
+  status: pending
+  acceptance:
+    - GIVEN local migration completes WHEN Git enrichment is declined, unavailable, chosen, degraded, or retried THEN completion never depends on Git, skip or exact follow-up selectors emit, guarded dry-run precedes apply/force, and bounded reachable local history with head revalidation and equality prevents remote access, duplicates, and conflicts.
+  plan: ijammdbhum

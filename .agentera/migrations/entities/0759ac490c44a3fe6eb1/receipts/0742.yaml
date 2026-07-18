@@ -1,0 +1,12 @@
+id: zkgohnodrn
+artifact: plan
+record:
+  name: Decouple inspektera evaluation oracle from live TODO.md
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the sample inspektera-evaluation-report.json WHEN inspected THEN no WARN/FAIL row cites TODO.md at a line number that depends on the project ledger
+    - GIVEN a staged edit to repo TODO.md that adds or removes Critical items WHEN vitest runs evaluatorHandoffContract tests THEN they still pass without updating the oracle line number
+    - GIVEN verifyWarnCitationAtLine WHEN run for the sample WARN row THEN it validates fixture content at the cited line, not merely grep output containing a line digit
+  plan: ydayxhdazr

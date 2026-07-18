@@ -1,0 +1,16 @@
+id: nptmltnvhq
+artifact: progress
+record:
+  timestamp: 2026-07-17 07:30
+  type: fix
+  phase: build
+  what: Preserved same-path successors during plan graph rollback by retaining exact published inode identities in packages/cli/src/state/entityPublicationContext.ts.
+  inspiration: Task 7 final retry 2/2.
+  discovered: Equal bytes do not establish rollback ownership; inode identity must distinguish an attempt-owned file from its successor.
+  verified: 13 focused tests and 2,512 full tests passed; typecheck, build, state validation, plan capability validation, capability-contract validation, and compact check passed.
+  next: Keep Task 7 complete and proceed to pending Task 8 only in a later cycle.
+  context:
+    intent: Close the Task 7 rollback gap without changing stable create or replay behavior.
+    constraints: Only same-path equal-byte successor rollback, proportional tests, and required state evidence were in scope.
+    unknowns: None.
+    scope: Entity publication identity, plan multi-file rollback, and plan rollback regression tests.

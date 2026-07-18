@@ -1,0 +1,12 @@
+id: ljxtdvoqqk
+artifact: plan
+record:
+  name: Update User-Facing Documentation Language
+  depends_on:
+    - noodpsaojr
+  status: complete
+  acceptance:
+    - GIVEN a first-time user reads current Agentera docs WHEN setup, routing, state, and workflow language appears THEN plain English terms explain current status, up-to-date state, saved project context, and docs-first workflow
+    - GIVEN Git and non-Git lifecycle language appears WHEN examples are followed THEN checkpoint wording is limited to Git commit contexts and non-Git lifecycle wording uses current-state or final-sync language
+    - GIVEN canonical capability names and Decision 43 aliases appear WHEN docs are updated THEN names and aliases remain unchanged while surrounding explanation follows Decision 44
+  plan: pltwboytxf

@@ -1,0 +1,17 @@
+id: ymzshvarno
+artifact: plan
+record:
+  name: Regression and focused measurement evidence
+  depends_on:
+    - aoqxnlhovh
+  status: complete
+  acceptance:
+    - GIVEN focused tests inspect the selected structured output WHEN Planera context is requested THEN they assert the compact startup contract shape and bounded fields without brittle full-prose text matching.
+    - GIVEN unsupported command behavior is tested WHEN `uv run scripts/agentera planera` is invoked THEN it fails with the existing unsupported-command behavior and no new Planera command appears in registered command discovery.
+    - GIVEN a focused startup path is measured WHEN verification runs THEN it demonstrates the compact guidance is available without reading `planera/prose.md`; if the original benchmark cannot be rerun, that limitation is recorded separately from the focused evidence.
+    - GIVEN benchmark evidence has degraded runtime coverage WHEN results are summarized THEN degraded runtimes are separated from product behavior.
+  evidence:
+    - Focused tests passed for compact Planera startup context shape, no-prose-file availability, unsupported `agentera planera`, describe command discovery, Planera prose guidance, master dispatcher guidance, and Decision 45 reference contract.
+    - Focused no-prose evidence removes `planera/prose.md` from a copied installed app surface and still proves `agentera hej --format json --capability-context planera` returns `startup_contract`, demonstrating compact startup guidance is available without rereading the prose file.
+    - "`mage bench:startupState` reran successfully after implementation; the latest retained report shows `capability_prose_read_counts.planera=0`, implementation recommended false, startup recommendation `close_without_implementation`, and degraded claude-code/github-copilot coverage separated from product behavior."
+  plan: dfsuxktekm

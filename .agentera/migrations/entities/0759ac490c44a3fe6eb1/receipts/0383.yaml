@@ -1,0 +1,12 @@
+id: qrhsxzhhcz
+artifact: plan
+record:
+  name: Advance permitted development metadata
+  depends_on:
+    - qmvhpvuyjh
+  status: pending
+  acceptance:
+    - GIVEN the current npm next version WHEN checked THEN only the CLI package advances to the next available 3.0.0-dev.N.
+    - GIVEN suite-bearing surfaces WHEN inspected THEN they remain 3.0.0 and changelog work remains Unreleased.
+    - GIVEN package validation and dry-run WHEN executed THEN they pass without publishing, tagging, or pushing.
+  plan: zmjvhbfhpm

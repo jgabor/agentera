@@ -1,0 +1,14 @@
+id: buabccctpg
+artifact: plan
+record:
+  name: Freeze validate/verify family parity oracles
+  depends_on:
+    - zavedtyvak
+    - npvrhbkjao
+  status: complete
+  acceptance:
+    - GIVEN check validate <family> for each of the seven families (cross-capability, lifecycle-adapters, app-home-contract, capability, capability-contract, descriptors, artifact) WHEN run with --format json THEN the envelope matches the new oracle fixture packages/cli/test/cli/fixtures/oracle/validate-family.json.
+    - GIVEN check verify eval <fixture> WHEN run with --format json THEN the envelope matches packages/cli/test/cli/fixtures/oracle/verify-eval-family.json.
+    - GIVEN any new field added to a validate or verify envelope WHEN the parity test runs THEN the test fails with a diff naming the field, requiring an intentional oracle update.
+    - GIVEN the existing packages/cli/test/cli/validate.test.ts and packages/cli/test/cli/verify.test.ts regression tests WHEN they assert the new oracles THEN they continue to pass without skipping.
+  plan: ksoncrhgli

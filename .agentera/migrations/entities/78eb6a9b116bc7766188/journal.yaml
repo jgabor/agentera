@@ -1,0 +1,17 @@
+schemaVersion: agentera.entityMigrationJournal.v1
+migration_id: 78eb6a9b116bc7766188
+project: /home/jgabor/git/agentera
+source_fingerprint: a9ad31f0a39da626e00e6c6646da668e722b2280598bc6ddfea6a63e190384bb
+preview_digest: e394ce87f0b37a40638396c0afc167a530a579e25418bd94f636a8498f7057ad
+phase: cutover_complete
+phases:
+  - prepare_recovery
+  - publish_entities
+  - validate_graph
+  - cutover
+  - cutover_complete
+  - rollback_prepared
+  - rollback_cutover
+  - rolled_back
+manifest_sha256: 09119f46c0078cf03a483ed57ffc186c2f876c6753cf36940b8a765b163fc8f6
+snapshot_sha256: 8e867ca2153db04ac56040a718672803eccb44b65dd3d5533e5dda88d58fa7f1

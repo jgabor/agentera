@@ -1,0 +1,31 @@
+id: wonnzjbsar
+artifact: decisions
+record:
+  date: 2026-07-10
+  question: How should the design capability instructions be audited and rewritten to align with the six-section spine, direct-contract philosophy, and voice delegation, while adopting substance design improvements (self-audit fold into Write/Update steps, validation via agentera check lint, Step 0 fold into opening) from prior audits?
+  context: "Eleventh capability audit. Design is a mode-split shape — the visual steward of DESIGN.md with three modes: create, refine, audit. Pre-flight grounding found v2-era ghosts: `agentera describe` (v3: `agentera schema`); `agentera lint --artifact` (v3: `agentera check lint --artifact`); ghost contract Section 24 cited twice (contract ends at Section 23); `$AGENTERA_PROFILE_DIR` / `$XDG_DATA_HOME` resolver flow (v3 serves `design_context.profile.path`); `CLAUDE.md` reference (v3: `AGENTS.md`); canonical filenames (`VISION.md`, `PROGRESS.md`) as direct reads (v3 uses artifact-id + CLI state); \"One file in `.agentera/`\" (DESIGN.md is at project root); `references/contract.md` pointer (D79/D81 removed from status and vision); Contract values token enumeration (one-line ref to protocol.yaml); artifact-path-resolution subsection (SKILL.md owns); standalone \"Visual identity\" section (fold into Purpose); `AskUserQuestion` hardcoded tool name (v3: runtime's question tool); \"the sharp colleague\" personality (D81 violation); \"Narration voice (riff, don't script)\" personality leak; NEVER in safety rails (D71: MUST NOT); `// Source: D65` comment header tracking marker; standalone Getting started section (fold into §6); v2 references (\"Agentera v2 does not ship a standalone design validator\", \"no separate Agentera enforcement reference ships in v2\"); \"validation script\" in exit.yaml descriptions. Substance design decisions: (S1) pre-write self-audit and post-write validation folded into Write/Update steps -- Create 7->5 steps, Refine 4->3 steps; Audit Step 1 uses `agentera check lint --artifact design` for structural validation instead of manual inspection. New length 16,383 chars (was 20,596 -- 20% reduction). references/cli/capability-instruction-structure.md design row Complete (D90)."
+  alternatives:
+    - name: Rewrite with substance improvements and drift cleanup
+      status: chosen
+      reason_chosen: The self-audit fold follows the D85-D89 established pattern. The validation step using `agentera check lint` instead of manual inspection is a genuine process improvement. Drift cleanup aligns with prior audit precedent across nine capabilities.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: Would leave the pre-write self-audit as a standalone step duplicated between Create and Refine modes, and the validation step claiming v2 limitations when v3 has the lint tool -- a capability that follows the spine but asks the wrong questions still fails the audit.
+  choice: Rewrite with substance improvements and drift cleanup
+  reasoning: "Prior audits (D82 discuss through D89 profile) established substance findings as the highest-leverage changes. Design substance findings follow the same pattern: self-audit fold and validation via lint tool are the same class of finding as D85 self-audit fold, D86 self-audit fold, D87 self-audit fold into Report, D88 self-audit folded into write steps, D89 coverage+extraction merge. The validation step using `agentera check lint` is a process improvement unique to design."
+  confidence: firm
+  feeds_into: references/cli/capability-instruction-structure.md, packages/cli/src/capabilities/design/, TODO.md
+  outcome: Rewrite with substance improvements and drift cleanup
+  downstream_consequence_references:
+    - source_field: feeds_into
+      reference: references/cli/capability-instruction-structure.md
+    - source_field: feeds_into
+      reference: packages/cli/src/capabilities/design/
+    - source_field: feeds_into
+      reference: TODO.md
+  context_complete: true
+  missing_fields:
+    []
+  compacted: false
+  caveats:
+    []

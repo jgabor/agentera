@@ -1,0 +1,13 @@
+id: xjvbkcneni
+artifact: plan
+record:
+  name: Validate And Close
+  depends_on:
+    - momhtacspy
+  status: complete
+  acceptance:
+    - GIVEN focused validation runs WHEN the plan closes THEN registry tests, cross-capability validation, capability validation, docs CLI, TODO CLI, and bounded CLI preservation checks pass
+    - GIVEN broader validation is practical WHEN closure is attempted THEN full pytest, all capability validations, artifact query, and relevant py_compile checks pass or any skipped check is justified
+    - GIVEN future work remains WHEN this plan closes THEN artifact write validation, health freshness, optional live smoke, and generated install-root follow-up remain separate TODOs
+    - GIVEN worktree changes are reviewed WHEN validation ends THEN only artifact registry plan changes are present or unrelated changes are reported without reverting
+  plan: ilsspfichd

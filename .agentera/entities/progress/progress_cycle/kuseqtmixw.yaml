@@ -1,0 +1,16 @@
+id: kuseqtmixw
+artifact: progress
+record:
+  timestamp: 2026-07-15 15:08
+  type: fix
+  phase: build
+  what: Made immutable release provenance non-circular.
+  inspiration: The failed Cycle 822 commit exposed a circular ordinary-suite dependency between uncommitted governed inputs and agentera.gitRef.
+  discovered: Repository test policy already classified live release checks as gate-deferred, while the fixture suite comprehensively exercises provenance validation. Removing only the live REPO_ROOT test aligns implementation with that policy; the explicit release-metadata command still invokes the unchanged validator.
+  verified: "Supersedes Cycle 822's 2068/2069 ordinary-suite result: focused authority, publication, schema, prepack, and release tests passed 211/211; the ordinary full suite passed 2068/2068. Typecheck and build passed. The first normal hooked commit fdd67cd9eacdd43fdbb755158f0d8e405bee1e1c passed build, compact, docs, parity, and full-test hooks. Explicit release metadata passed after pinning gitRef to that substantive commit. Package remains 3.0.0-dev.21, suite and registry remain 3.0.0. Canonical and bundled authority bytes match at SHA-256 f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb."
+  next: Stop after replacement Task 1. Task 2 remains pending and must not begin in this cycle.
+  context:
+    intent: Complete replacement Plan Task 1 with a normal two-commit authority and provenance sequence while keeping live-checkout enforcement explicit and strong.
+    constraints: No reset, unstage, amend, hook bypass, publication, tag, push, version movement, lockfile change, runtime behavior change, or predecessor archive rewrite.
+    unknowns: "Resolved: fixture tests own validator logic; the explicit check validate release-metadata gate alone owns live-checkout governed equivalence, avoiding pre-commit self-reference without weakening release enforcement."
+    scope: Release test boundary, accepted authority correction and tests, predecessor archive, package gitRef, active plan Task 1, and appended progress evidence.

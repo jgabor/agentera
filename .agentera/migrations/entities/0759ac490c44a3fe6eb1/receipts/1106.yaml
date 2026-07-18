@@ -1,0 +1,31 @@
+id: yrilfqdbdh
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-14
+    status: complete
+    reviewed: 2026-07-14
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    title: "Plan: Finish archive rollout without speculative security"
+  what: Remove the unrequested preview-receipt mechanism, restore a simple optional local-Git enrichment flow, align shipped contracts and documentation with the completed migration model, evaluate only the declared local-operator threat model, prepare the next development package, and close the rollout.
+  why: Local migration, immutable publication, bounded traversal, and apply-time revalidation are complete. Cryptographically proving a prior local dry-run adds no useful protection when the same operator controls the process and repository. The remaining work should preserve actual safety and traceability without adding secrets, ledgers, tokens, or authorization machinery.
+  constraints: Preserve exact blocked-plan lineage. `--dry-run` is optional guidance; `--apply --force` is the mutation consent boundary. Apply must revalidate project, HEAD, candidate provenance, bytes, reachability, and immutable targets. Keep local migration Git-independent, prohibit remote access, preserve Decision 53 and `uniform_10_40_50`, and add no receipt, HMAC, key, expiry, ledger, daemon, service, or defense against an actor controlling the local process or repo. Replace through the typed plan writer with force, require its predecessor pointer, and preserve exact predecessor and progress bytes. Do not publish, tag, push, promote stable, refresh profile, or edit vision.
+  overall_acceptance: GIVEN a local operator controls the project WHEN migration and optional enrichment run THEN explicit mutation intent, immediate revalidation, immutable publication, bounded local history, truthful evidence, and Git traceability provide the requested safety without speculative authorization features, and every development-release gate passes.
+  scope:
+    included:
+      - Removal of preview receipts and restoration of simple explicit enrichment
+      - Contract, help, documentation, bundle, audit, development-package, and state closeout
+    excluded:
+      - Secrets, signing, tokens, expiry, ledgers, daemons, services, remote access, or hostile-local-actor defenses
+      - Rework of completed migration, archive, listing, retrieval, durability, or consumer foundations
+      - Stable promotion, publication, tagging, pushing, experiments, or unrelated cleanup
+    deferred:
+      - Any stronger authorization model until an actual multi-user or remote trust boundary exists
+  design: "Return enrichment to the same explicit local mutation model used elsewhere: optional preview, explicit apply and force, immediate revalidation, immutable equality, and auditable output. Synchronize observable contracts, audit only declared requirements, prepare the development package, and close state."
+  unknowns:
+    - question: Which npm 12 package-output shape causes the five remaining parser failures?
+      affects_task: 4
+      resolve_by: Repair only the demonstrated compatibility boundary or block package preparation.
+  surprises:
+    []

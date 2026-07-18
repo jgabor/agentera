@@ -1,0 +1,13 @@
+id: dzgdjnxulk
+artifact: plan
+record:
+  name: Cursor storage contract and discovery boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN references/adapters/cursor.md is updated WHEN a maintainer reads the profilera corpus section THEN it documents probe paths, transcript JSONL shape, project mapping, portable record families, and explicit gaps without relying on skill source reads
+    - GIVEN Cursor stores are available, absent, locked, sparse, or schema-divergent WHEN discovery runs THEN runtime_status reports bounded status and reason without blocking other runtimes or leaking transcript text
+  evidence:
+    - references/adapters/cursor.md Profilera session corpus section; discover_runtime_store shared with cursor runtime in extract_corpus.py
+  plan: ntynvndxnl

@@ -1,0 +1,13 @@
+id: dgoakdisah
+artifact: plan
+record:
+  name: Run release-readiness validation
+  depends_on:
+    - drlsngirms
+    - rfbupejrud
+  status: complete
+  acceptance:
+    - GIVEN the metadata sync is complete WHEN focused version/package tests run THEN version alignment passes.
+    - GIVEN the release candidate is validated WHEN full pytest, non-live smoke, docs query, and git diff --check run THEN all pass.
+    - GIVEN live smoke has already passed after explicit approval WHEN final evidence is recorded THEN Claude auth skip and Codex/Copilot/OpenCode pass outcomes remain documented without requiring another live spend.
+  plan: klefqhiisv

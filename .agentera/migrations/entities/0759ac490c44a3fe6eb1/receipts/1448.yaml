@@ -1,0 +1,6 @@
+id: hqyhkprmlz
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "[docs:3.0.0] Backfill the D82 schema-validator rule to status (D79) and vision (D81). Resolved 2026-07-09: scrubbed..."

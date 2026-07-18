@@ -1,0 +1,15 @@
+id: wvxcrlsppp
+artifact: progress
+record:
+  timestamp: 2026-07-15 09:37
+  type: feat
+  phase: build
+  what: Delivered objective-scoped experiment list/get over retained projections and immutable archives.
+  discovered: Parallel build and full-test commands raced on generated bundle setup once; sequential rerun passed all 2016 tests.
+  verified: "AC1 targeted paging/snapshot/byte cases: 3 passed, 3 skipped. AC2 archive/projection/detail: 1 passed, 5 skipped. AC3 structured failures/legacy: 2 passed, 4 skipped. Focused parity 149 passed; full CLI 183 files/2016 tests; typecheck, build, capability-contract, compact, schema parity, and built list/get smoke passed."
+  next: Task 9 may close remaining cross-family cursor and omission gaps; do not perform Task 10 contract cleanup or package metadata early.
+  context:
+    intent: Complete Plan Task 8 with bounded exact experiment retrieval and truthful compatibility state.
+    constraints: Preserved Task 7 corrective audit state, 10/40/50 projection, archive immutability, existing changes, and package metadata.
+    unknowns: None for Task 8; Task 9 retains broader retrieval-gap ownership.
+    scope: Experiment list/get runtime, tests, retrieval authority status, help/schema parity, changelog, plan, and progress.

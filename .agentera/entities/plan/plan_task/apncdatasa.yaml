@@ -1,0 +1,11 @@
+id: apncdatasa
+artifact: plan
+record:
+  name: Final state sync and validation
+  depends_on:
+    - hhqahdiqyb
+  status: complete
+  acceptance:
+    - GIVEN all touched files WHEN agentera check lint runs THEN all pass
+    - GIVEN the three capabilities WHEN agentera check validate capability runs THEN all pass
+  plan: pkpreybxbf

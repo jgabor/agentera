@@ -1,0 +1,13 @@
+id: hthtrftwat
+artifact: plan
+record:
+  name: Migrate Capability Artifact Schemas To References
+  depends_on:
+    - bqfwtzcgze
+  status: complete
+  acceptance:
+    - GIVEN capability artifacts.yaml files repeat canonical names and paths WHEN they are migrated THEN each canonical artifact use references an artifact ID and local produces/consumes role instead
+    - GIVEN local descriptions add capability intent WHEN schemas are migrated THEN useful local usage descriptions are preserved without restating canonical paths or producers/consumers
+    - GIVEN special-case artifacts are used by capabilities WHEN schemas are migrated THEN they reference explicit registry entries or scoped templates instead of relying on validator exceptions
+    - GIVEN old and new schema shapes are compared WHEN migration completes THEN no broad compatibility layer remains unless a concrete persisted or external consumer requires it
+  plan: ilsspfichd

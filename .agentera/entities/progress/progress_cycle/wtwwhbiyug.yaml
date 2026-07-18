@@ -1,0 +1,16 @@
+id: wtwwhbiyug
+artifact: progress
+record:
+  timestamp: 2026-07-13 15:40
+  type: fix
+  phase: build
+  what: "Retried Task 8 after evaluation failure: direct decision get now preserves absent outcome metadata, and text get emits complete provenance."
+  inspiration: Task 8 attempt-1 evaluator failure recorded in .agentera/plan.yaml; fix only the decision projection and text provenance gaps.
+  discovered: The normal decisions query may continue deriving outcome for existing consumers, but direct get requires a non-inferencing context projection so choice does not become historical outcome; text output must serialize the same provenance fields as structured output.
+  verified: "Focused: pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts: 1 file and 35 tests passed. Adjacent: pnpm -C packages/cli exec vp test run test/state/directRetrieval.test.ts test/state/archiveDiscovery.test.ts test/state/archiveRecovery.test.ts test/state/archiveAuthority.test.ts test/state/decisionOverlay.test.ts test/state/projectionPolicy.test.ts test/cli/state.test.ts: 7 files and 112 tests passed. Non-packaging full: pnpm -C packages/cli exec vp test run --exclude test/packaging/prepack.test.ts: 168 files and 1669 tests passed. Full: pnpm -C packages/cli test: 169 files, 1673 of 1678 tests passed; exactly 5 pre-existing npm pack --dry-run --json parsing failures in test/packaging/prepack.test.ts. pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; capability-contract and progress/decisions/health artifact validation passed; node packages/cli/dist/bin/agentera.js check compact --format json passed with zero over-limit, protected-overflow, and error counts, retaining five degraded recovery refusals for unarchived progress cycles 745-749."
+  next: Task 8 remains pending for attempt-2 evaluator review; do not implement list, prime, migration, Git durability, release, or unrelated state work.
+  context:
+    intent: Retry Task 8 attempt 1 within the maximum two evaluation attempts and correct only the reported decision get and text provenance defects.
+    constraints: Preserve the failed Task 8 evaluation in plan.yaml; do not mark Task 8 complete; do not modify health, vision, profile, decisions, TODO, version, publish, push, or tag state.
+    unknowns: The five npm12 packaging JSON parsing failures remain pre-existing and outside this change.
+    scope: packages/cli/src/cli/commands/state/decisions.ts; packages/cli/src/state/directRetrieval.ts; packages/cli/src/cli/commands/state/get.ts; packages/cli/test/state/directRetrieval.test.ts; .agentera/plan.yaml; .agentera/progress.yaml

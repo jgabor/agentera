@@ -1,0 +1,16 @@
+id: bukxlghdlj
+artifact: plan
+record:
+  name: Sync 2.2.1 Metadata And Release State
+  depends_on:
+    - clvterhhuu
+    - jrqrypufxb
+    - jfdinrgpwx
+  status: complete
+  acceptance:
+    - GIVEN TODO scope is updated WHEN the promoted item is retagged THEN only the question-tool gating TODO changes from `[fix:2.2.x]` to `[fix:2.2.1]`
+    - GIVEN deferred TODOs are reviewed WHEN metadata sync completes THEN the repeated fresh-project hej loop and TODO Resolved compaction remain `[fix:2.2.x]`
+    - GIVEN fix work is complete WHEN the documented semver policy is applied THEN version files and changelog state identify 2.2.1 as a patch release
+    - GIVEN docs and progress state are queried WHEN metadata sync completes THEN touched artifacts agree on the 2.2.1 scope and exclusions
+    - GIVEN release boundaries are recorded WHEN state sync runs THEN no publication, tag, push, package update, installed-bundle refresh, vision edit, or objective edit is claimed
+  plan: lrgibkudrd

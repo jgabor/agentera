@@ -1,0 +1,13 @@
+id: uaixvflsda
+artifact: plan
+record:
+  name: Synthetic schema fixtures
+  depends_on:
+    - ocoeguoqkq
+  status: complete
+  acceptance:
+    - GIVEN Claude Code and Copilot schema variants are needed WHEN fixtures are added THEN they are synthetic or redacted and contain no raw private transcript text, raw store paths, or unredacted session IDs.
+    - GIVEN adapters are incomplete WHEN fixture tests run THEN the failing tests reproduce bounded `schema_divergent` behavior for unsupported schema classes without emitting private payloads.
+    - GIVEN successful zero-record runtime behavior is covered WHEN fixtures run THEN the Codex-style ok-with-zero-records path is preserved or intentionally reclassified with documented compatibility impact.
+  evidence: "`tests/test_startup_analysis_contract.py` now creates only synthetic Claude Code and GitHub Copilot fixture stores with redacted session labels. The new fixture test verifies unsupported Claude JSONL and Copilot SQLite schema classes degrade to bounded `schema_divergent` runtime statuses with counts only, and asserts raw fixture paths, session labels, and schema-error payloads are absent from retained intermediate output. A separate fixture test preserves the Codex successful zero-record benchmark-window behavior as `ok` with `record_count: 0` and `error_count: 0`."
+  plan: vbepjijzmu

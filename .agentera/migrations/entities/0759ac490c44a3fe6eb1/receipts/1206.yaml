@@ -1,0 +1,60 @@
+id: kmnryadquz
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-06
+    status: complete
+    reviewed: 2026-05-06
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    revised: |
+      Added a source-field audit task, separated semantic output checks from runtime one-command checks, made the one-command invariant precise, narrowed docs/version updates, preserved direct CLI compactness, and replaced vague "impossible to miss" wording with dispatcher-boundary acceptance.
+    title: Repair Bare Agentera Hej Dashboard Rendering
+  what: |
+    Repair the bare Agentera orientation path so a returning project produces the README/pre-2.0 Hej dashboard instead of raw CLI-style source output, while preserving the v2 one-command state-source invariant.
+  why: |
+    Agentera 2.x moved from standalone /hej to bundled /agentera with a composite CLI data source. The dashboard contract remains in README.md, skills/agentera/SKILL.md, hej prose, and semantic fixtures, but the live assistant path can still miss the nested rendering contract and expose raw source data.
+  constraints: |
+    Preserve agentera hej as compact source data for direct CLI users. During normal bare /agentera orientation, the runtime path may invoke one composite Agentera state-source command and must not invoke individual routine state commands or direct artifact reads. Test fixtures may seed state. Do not mutate vision or objective state. Do not implement unrelated hook validation, health command freshness, optional live smoke, registry, remote push, commit, or release publication work. Version bump only if docs policy requires it.
+  scope:
+    included:
+      - archive the completed artifact registry plan before replacing the active plan
+      - audit current bare /agentera routing instructions and composite source fields
+      - surface the README-style dashboard rendering contract at the dispatcher boundary
+      - clarify source-data wording only if needed while preserving direct CLI behavior
+      - restore final user-facing dashboard rendering behavior for returning projects
+      - add separate output-shape and runtime/tool-trace regressions
+      - update only required docs, changelog, progress, TODO, and version surfaces
+    excluded:
+      - artifact schema redesign
+      - routine per-artifact state reads during normal orientation
+      - broad runtime adapter rewrites
+      - artifact write validation hook split
+      - health command freshness fix
+      - optional Claude live model smoke
+      - package/runtime/install-root registry work
+      - objective or vision changes
+      - remote push, commit, tag, or release publication
+    deferred:
+      - arch-artifact-write-validation
+      - audit-20-health-command-stale
+      - agentera-optional-claude-live-smoke
+  design: |
+    Keep agentera hej as the single compact state source. The skill boundary owns transforming that source into the dashboard. The source contract should expose enough state for mode, profile, health, issue counts, plan progress, objective, attention, and next action without implying the dashboard has already been rendered. Regressions should prove final user-facing output shape separately from the one-command runtime invariant.
+  overall_acceptance:
+    - GIVEN bare Agentera is invoked on a returning project WHEN normal source data is available THEN the user sees the README-style dashboard rather than raw CLI source fields
+    - GIVEN orientation gathers state WHEN normal data exists THEN the runtime path uses exactly one composite source command and no individual routine state commands or direct artifact reads
+    - GIVEN direct source users run the composite command WHEN they read its output THEN it remains compact state data and does not become the dashboard
+    - GIVEN future agents inspect the entry instructions WHEN they execute bare Agentera THEN the dashboard rendering contract and raw-source prohibition are visible at the dispatcher boundary
+  validation:
+    summary: |
+      Restored the bare /agentera dashboard contract at the dispatcher boundary, renamed the direct CLI sentinel to source_contract, preserved compact agentera hej source output, added output/runtime regressions, and bumped patch version surfaces to 2.1.1.
+    evidence:
+      - uv run pytest tests/test_hej_routing_fixture.py tests/test_query_cli.py::TestHej tests/test_cross_capability.py::test_master_skill_requires_cli_first_state_access tests/test_cross_capability.py::test_master_skill_exposes_bare_agentera_dashboard_boundary tests/test_bundle_freshness.py::test_stale_bundle_refresh_dry_run_then_apply_preserves_install_root tests/test_package_registry.py
+      - uv run scripts/validate_capability.py skills/agentera/capabilities/hej
+      - uv run scripts/validate_capability.py --self-validate
+      - uv run pytest tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_version_marker_is_documented tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_version_bearing_package_surfaces_align tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_opencode_agentera_version_reader_extracts_current_literal tests/test_runtime_adapters.py::TestLegacyRuntimeCompatibility::test_package_surface_characterization_distinguishes_non_version_opencode_manifest
+      - uv run pytest -q
+    result: 713 passed
+  surprises:
+    []

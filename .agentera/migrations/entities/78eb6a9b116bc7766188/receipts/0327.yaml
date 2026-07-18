@@ -1,0 +1,23 @@
+id: hxvccfrwlh
+artifact: plan
+record:
+  name: Fold the TODO.md entry, update plan/progress metadata, run the final verification gates, and land the commit
+  depends_on:
+    - mfwdpmcfhj
+    - gzzjpwembb
+    - kdoixucfpp
+    - ierfxbwdht
+    - enwhkxvdbr
+    - wvabbnrevb
+    - fkarznfrqq
+  status: complete
+  acceptance:
+    - "GIVEN T1-T7 complete WHEN the implementation commit is staged THEN `.agentera/plan.yaml` status flips from `active` to `complete` and `previous_plan_archived: .agentera/archive/plan-2026-06-03-d65-capability-ts-surface.yaml` is appended; the existing `previous_plan_archived` line is renamed (the 2026-06-03 D58 single-name plan) to `plan-2026-06-03-d58-single-name.yaml` so both archived plans are dated unambiguously"
+    - GIVEN the same commit WHEN `.agentera/progress.yaml` is updated THEN a new full-detail cycle entry is appended whose scope is `D65 per-capability content surface`; per Decision 66 (PR6/PR2 removal) the cycle omits the `commit` field and follows the post-D66 cycle shape; the commit is folded into the implementation commit per AGENTS.md "Agentera commits" rules, not a separate bookkeeping commit
+    - "GIVEN the same commit WHEN `TODO.md` is updated THEN the open D65 entry at line 21 (`- [chore:3.0.0] Decision 65 per-capability content surface: ...`) moves to the `## ✓ Resolved` section using the standard ledger form `- ~~[chore:3.0.0] Decision 65 per-capability content surface~~ · resolved on feat/d65-capability-ts-surface @ <sha>: <one-line summary of what changed>` naming the implementation commit hash once known"
+    - GIVEN the same commit WHEN `rg '^- Placeholder' TODO.md` runs THEN zero hits (the previous D58 fold's Placeholder removal is preserved); the resolved-ledger entry sits at the top of `## ✓ Resolved`
+    - 'GIVEN the implementation commit WHEN the verification gates run THEN all five must pass: `pnpm -C packages/cli test` (full vitest suite, T-vitest), `pnpm -C packages/cli run typecheck` (T-typecheck), `pnpm -C packages/cli build` (T-build), `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` (T-capability-contract), and `node packages/cli/dist/bin/agentera.js check validate capability <name> --format json` for each of the 12 capabilities (T-capability-per-name); a final T-prime-context-smoke runs `node packages/cli/dist/bin/agentera.js prime --context <each-of-12> --format json` and asserts each response is valid JSON with a non-empty `prose` field and `first_invocation_read.value == "prime_context"`'
+    - "GIVEN the same commit WHEN `git diff --stat feat/v3 -- <changed paths>` runs THEN the surface delta is exactly: 12 files added (TS modules), 12 files deleted (instructions.md), and ~57 files updated (CLI source ×4, contract ×1, instruction contract ×1, references ×5, SKILL.md ×1, descriptors ×36, tests ×3, validation schema ×1, docs ×2, bundler ×1, metadata ×3, changelog ×1 if folded) — the numbers are reportable from `git diff --stat` and the resulting count matches the inventory in this plan"
+    - GIVEN the same commit WHEN the publish-time smoke runs `npx -y agentera@next check validate capability-contract --format json` against the published npm channel THEN the validator passes; this is the T-published-surface-boundary gate that proves the published `npx skills` ecosystem surface is functionally equivalent (D65 brief requirement)
+    - GIVEN the commit WHEN the AGENTS.md "Agentera commits" rule is applied THEN no separate bookkeeping commit is created; the TODO.md fold, plan.yaml status flip, progress cycle, contract rename, schema updates, test updates, descriptor updates, references updates, and SKILL.md tightening are all in a single commit
+  plan: dncagkqzrf

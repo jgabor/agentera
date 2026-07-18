@@ -1,0 +1,13 @@
+id: tdsgfbnook
+artifact: plan
+record:
+  name: Audit Route And Source Fields
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a returning project invokes bare Agentera WHEN the current route is inspected THEN the source command, final rendering step, and user-facing output boundary are named before edits
+    - GIVEN the composite source output is compared to the dashboard contract WHEN required fields are listed THEN mode, profile, health, issue counts, plan progress, objective, attention, and next action are either present or recorded as source gaps
+    - GIVEN a source gap is found WHEN remediation is selected THEN the source contract is strengthened rather than adding routine fallback state reads to normal orientation
+    - GIVEN the one-command invariant is recorded WHEN tests are planned THEN test setup is separated from the normal runtime path being measured
+  plan: zbvkewyhhq

@@ -1,0 +1,16 @@
+id: niavarbrnn
+artifact: plan
+record:
+  name: Update references, vocabulary, and prose-classification files for the new module path
+  depends_on:
+    - jevrmpcpee
+  status: complete
+  acceptance:
+    - GIVEN the references files WHEN `references/cli/vocabulary.md` `Capability instruction contract` section is updated THEN it retires the `instructions.md` boundary prose and points at the new module path and the `agentera prime --context <name> --format json` ownership; a new discoverability row is added to the artifact grammar table pointing at `references/cli/capability-instruction-contract.yaml` with the new authority path
+    - "GIVEN `references/cli/vocabulary-index.yaml` WHEN it is updated THEN the `skills/agentera/capabilities/*/instructions.md` path entry becomes `packages/cli/src/capabilities/*/instructions.ts` and the `use: instructions.md plus emitted first_invocation_read` row becomes `use: instructions.ts plus emitted prime_context first_invocation_read`"
+    - "GIVEN `references/cli/routing-execution-vocabulary.yaml` lines 174-176, 225, 229, 233 WHEN updated THEN the three `skills/.../instructions.md` path references become `packages/cli/src/capabilities/<name>/instructions.ts` and the regex `path: ^skills/agentera/capabilities/<name>/instructions\\.md$` becomes `^packages/cli/src/capabilities/<name>/instructions\\.ts$` for all three"
+    - GIVEN `references/cli/bundle-skill-vocabulary.yaml` line 197 WHEN updated THEN `skills/agentera/capabilities/resonera/instructions.md` becomes `packages/cli/src/capabilities/resonera/instructions.ts`
+    - GIVEN `references/cli/agent-ready-state-contract.yaml` lines 285, 468 WHEN updated THEN the path references become the new module path
+    - GIVEN `references/v1-section-mapping.md` WHEN the file is reviewed THEN the existing path entries remain as compatibility-preserved historical records per Decision 58 (the file is a v1→v2 mapping archive and the path text is part of the historical evidence); D65 does NOT rewrite this file
+    - GIVEN all updated references WHEN `rg 'skills/agentera/capabilities/.*/instructions\.md' references/` runs THEN at most the historical `v1-section-mapping.md` and `bundle-skill-vocabulary.yaml` historical-evidence rows remain (classified as compatibility-preserved); the active `vocabulary.md`, `vocabulary-index.yaml`, `routing-execution-vocabulary.yaml`, and `agent-ready-state-contract.yaml` rows are updated
+  plan: kauavydlqn

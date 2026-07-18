@@ -1,0 +1,16 @@
+id: uktbfiwooa
+artifact: plan
+record:
+  name: Add Tool-Budget And Regression Tests
+  depends_on:
+    - bplstagjsp
+    - mvqfclfmkr
+    - qqtixcoocx
+    - eaivolxufk
+  status: complete
+  acceptance:
+    - GIVEN the /agentera or hej fixture is evaluated THEN expected tool usage includes agentera hej
+    - GIVEN that fixture is evaluated THEN it forbids agentera plan, agentera progress, agentera health, agentera todo, agentera decisions, and raw .agentera/*.yaml reads
+    - GIVEN CLI tests run THEN each preferred top-level command has focused coverage
+    - GIVEN help and prime tests run THEN they prove routine guidance no longer centers agentera query
+  plan: xamnelipyx

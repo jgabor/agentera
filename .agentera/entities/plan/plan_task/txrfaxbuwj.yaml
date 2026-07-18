@@ -1,0 +1,14 @@
+id: txrfaxbuwj
+artifact: plan
+record:
+  name: Document parity limits and AGENTS.md scope
+  depends_on:
+    - ecvzxstetp
+  status: complete
+  evidence:
+    - Parity docs, references/adapters/cursor.md, and AGENTS.md cursor scope landed with advisory hard-gate language until Task 5 live smoke passes; registry and parity docs updated after smoke passed 2026-05-24 without claiming full release readiness.
+  acceptance:
+    - GIVEN runtime parity documentation is reviewed WHEN Cursor v1 is compared with other runtimes THEN skill loading, session preload, artifact validation, bare hej behavior, subagent dispatch, eval support, and documented CLI gaps are recorded for both Cursor identities.
+    - GIVEN users read Cursor install guidance WHEN choosing IDE versus CLI surfaces THEN cloud agents are documented as unsupported in v1 and bare hej remains metadata-only.
+    - GIVEN commit scope guidance is reviewed WHEN Cursor runtime work lands THEN AGENTS.md includes a cursor scope entry for Cursor-specific runtime behavior and packaging.
+  plan: eblyfjdqfm

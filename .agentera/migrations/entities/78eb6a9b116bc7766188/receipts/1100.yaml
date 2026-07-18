@@ -1,0 +1,41 @@
+id: fqsgcseffy
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-15
+    status: archived
+    reviewed: 2026-05-15
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    title: D48 Verify Namespace Plan
+  what: Plan the next D48 CLI namespace for eval and smoke gates by adding a supported `agentera verify` surface with stable behavior for smoke and eval gate families, while preserving existing direct smoke/eval scripts as compatibility surfaces.
+  why: Agents currently have TODO-level intent for smoke or verify gates but no discoverable namespace, so they must guess direct script names and flags. A supported verify namespace should make safe gate execution explicit, bounded, non-interactive, and consistent with the new `agentera validate` pattern without broadening into unrelated D48 namespaces.
+  constraints: Select `agentera verify` as the planned public namespace before build; record why `agentera smoke` is not the umbrella command. Preserve existing direct entrypoints such as `scripts/eval_skills.py`, `scripts/semantic_eval.py`, `scripts/smoke_installed_skills.py`, `scripts/smoke_live_hosts.py`, `scripts/smoke_setup_helpers.py`, and `scripts/smoke_opencode_bootstrap.mjs`. Preserve non-interactive behavior, bounded output, text/json result expectations, and invalid-input guidance with valid values, syntax, examples, and nonzero exits. Default tests and default command examples must avoid live network, installed-app mutation, profile refresh, and long-running evals unless explicitly opted in and bounded. Do not implement D48 `validate`, `corpus`, or `usage` work; do not redesign eval/smoke harnesses broadly; do not publish, push, tag, refresh installed apps or profiles, edit vision state, edit objective state, change decision satisfaction state, or run unsupported capability-name CLI commands.
+  scope:
+    included:
+      - Public `agentera verify` command contract with gate families `smoke` and `eval`.
+      - Planned smoke gate values `installed-skills`, `live-hosts`, `setup-helpers`, and `opencode-bootstrap`, with live-host behavior explicitly opt-in and bounded.
+      - Planned eval gate values `skills` and `semantic`, with long-running or host-dependent behavior explicitly bounded or opt-in.
+      - Stable text and JSON results for success, validation failure, command failure, and invalid input.
+      - Help and invalid-input guidance that lists valid gate families, target values, correct syntax, and concrete examples.
+      - Compatibility guarantees for existing direct eval and smoke scripts.
+      - Focused regression coverage and guidance alignment for the selected namespace.
+      - Release metadata and local state sync according to `.agentera/docs.yaml` `semver_policy` and `version_files`.
+    excluded:
+      - D48 `validate`, `corpus`, or `usage` namespace work.
+      - Broad eval harness redesign, smoke harness redesign, or live-host reliability work.
+      - Renaming persisted artifact IDs, schema names, capability names, or direct script files.
+      - Publication, remote push, tagging, installed-app refresh, profile refresh, vision edits, objective edits, or decision satisfaction changes.
+    deferred:
+      - Consolidating the future D48 corpus or usage namespace.
+      - Broader smoke/eval performance tuning beyond bounded namespace behavior.
+      - Historical cleanup of older smoke/eval examples not touched by this feature.
+  design: Treat this as a user-facing verification namespace, not a rewrite of smoke or eval engines. `agentera verify` is the planned umbrella because it can contain both smoke and eval gate families; `agentera smoke` remains the rejected umbrella because it would not naturally describe semantic or skill evaluation gates. The namespace should expose supported gate families and target names directly, preserve direct scripts for compatibility, and keep live/long-running gates explicitly opt-in or bounded so default agent runs stay safe.
+  overall_acceptance:
+    - GIVEN an agent needs eval or smoke gate verification WHEN it uses the supported namespace THEN it can discover valid gate families and targets without guessing direct scripts.
+    - GIVEN safe default execution matters WHEN verify commands or tests run THEN live, host-dependent, mutating, or long-running gates are explicit opt-ins and bounded.
+    - GIVEN existing direct scripts remain part of the project WHEN the namespace lands THEN their observable behavior remains compatible.
+    - GIVEN the feature closes WHEN verification and state sync finish THEN the D48 smoke/verify TODO is resolved with exact evidence and release metadata follows `.agentera/docs.yaml` policy.
+  surprises:
+    - Pre-write `agentera lint --artifact PLAN.md --text ... --format json` passed verbosity, abstraction, and filler checks for the D48 verify namespace draft, with abstraction anchored by `scripts/eval_skills.py`.
+    - "Adversarial review found eight issues and all were addressed: select a single namespace before build, list exact supported gate values, keep anchors as context rather than HOW, add safe-default constraints, make version handling DOCS-owned, constrain artifact sync to policy and actual user-facing changes, specify bounded invalid-input behavior, and sharpen direct-script compatibility boundaries."

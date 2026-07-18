@@ -1,0 +1,14 @@
+id: icalfgtedg
+artifact: plan
+record:
+  name: Define and enforce JSON budgets
+  depends_on:
+    - qdjznpeypa
+    - vnpxxumwpm
+  status: complete
+  acceptance:
+    - GIVEN measured baselines exist WHEN budgets are defined THEN each public JSON output has an explicit byte and GPT-5 token budget or a documented exemption.
+    - GIVEN an output exceeds budget WHEN tests run THEN the failure names the command, selector, byte count, token count, and budget.
+    - GIVEN a JSON surface is exempt WHEN validation runs THEN the exemption is traceable to the inventory classification rather than hidden in test code.
+    - GIVEN budgets are updated WHEN the report changes THEN the measured result and rationale are reviewed together.
+  plan: zcmzsbifdp

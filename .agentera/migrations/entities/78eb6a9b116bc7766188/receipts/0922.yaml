@@ -1,0 +1,13 @@
+id: bvvkszhjqg
+artifact: plan
+record:
+  name: Update DESIGN.md glyph table and add coexistence probe naming-divergence line
+  depends_on:
+    - stdqlaefcs
+  status: complete
+  acceptance:
+    - GIVEN DESIGN.md glyph table WHEN inspected THEN the 12 keys use English IDs (status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate)
+    - GIVEN references/cli/coexistence-probe.yaml WHEN inspected THEN a naming-divergence dimension is present that surfaces v3 English IDs vs v2 Swedish -era IDs
+    - GIVEN the coexistence probe test WHEN run THEN it asserts the naming-divergence line is emitted when v2 and v3 are both detected
+    - GIVEN packages/cli/src/upgrade/coexistenceProbe.ts WHEN inspected THEN it supports the naming-divergence dimension
+  plan: rfsasxqeop

@@ -1,0 +1,20 @@
+id: mopclznkfl
+artifact: plan
+record:
+  name: Audit the delivered storage model
+  depends_on:
+    - caexgcbhar
+    - ajxxvjffrn
+    - tzvtfvbixj
+    - lcgqhecrvp
+    - okfilrfocq
+    - tgfbitxolg
+    - ibjbvcuwfo
+    - rjckbxtses
+    - vmdsxsixgo
+  status: pending
+  acceptance:
+    - GIVEN the delivered runtime and migration model WHEN a targeted health audit runs THEN architecture, state contracts, tests, compatibility, data integrity, and artifact freshness receive cited findings and grades.
+    - GIVEN the blocked predecessor finding and current duplicate/packaging caveats WHEN audit reports THEN each is resolved, carried forward, or attributed without inferred evidence.
+    - GIVEN any new critical or warning finding WHEN closeout begins THEN it is surfaced for explicit disposition rather than silently marked healthy.
+  plan: ulutbnlztj

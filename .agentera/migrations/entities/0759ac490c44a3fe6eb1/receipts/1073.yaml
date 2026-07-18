@@ -1,0 +1,22 @@
+id: fuwjgvkgre
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: complete
+    title: Routing and Execution Vocabulary Regression Coverage
+  what: Add focused regression coverage that rejects new ambiguous dispatcher/dispatch/router/conductor usage in user-facing and protocol prose while allowing qualified compatibility names such as `subagent_dispatch` and historical records.
+  why: The routing and execution vocabulary authority already defines canonical concepts such as Agentera router, route, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git commit. The remaining release-blocking risk is that new current prose can reintroduce ambiguous dispatcher, dispatch, router, or conductor shortcuts unless focused tests classify allowed occurrences and fail new ambiguous usage.
+  constraints: Keep scope to tests plus the minimum authority/fixture updates needed for enforceable classification. Do not perform broad wording cleanup unless a test exposes a current unclassified ambiguous occurrence that must be fixed. Do not perform package refresh, publication, push, tag, `.agentera/vision.yaml` edits, objective-state mutation, decision satisfaction updates, installed-app repair, or 3.0 compatibility removal. Preserve historical archives, code identifiers, explicit compatibility names, and current canonical vocabulary like Agentera router, route, suggest, delegate, spawn, subagent mechanism, and pre-spawn Git commit.
+  overall_acceptance:
+    - Every in-scope surviving dispatcher, dispatch, router, or conductor occurrence has an explicit allowed classification or fails the focused regression with actionable context.
+    - New ambiguous user-facing or protocol vocabulary around routing and execution cannot be introduced without updating the classification authority or rewording the text.
+    - Historical archives, compatibility-preserved names, fixture-only terms, code identifiers, and canonical route/suggest/delegate/spawn/subagent-mechanism vocabulary remain allowed by explicit classification.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

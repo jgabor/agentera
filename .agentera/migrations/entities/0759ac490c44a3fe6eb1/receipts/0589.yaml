@@ -1,0 +1,16 @@
+id: kmpdxwvzqz
+artifact: plan
+record:
+  name: Dokumentera guidance integration
+  depends_on:
+    - idpwukpros
+    - kthtttwnvd
+  status: complete
+  acceptance:
+    - GIVEN closeout context is complete WHEN Dokumentera performs final synchronization THEN capability prose directs use of the returned context before raw TODO, docs, changelog, or progress artifacts.
+    - GIVEN closeout context is incomplete WHEN guidance continues THEN it instructs agents to run listed existing CLI fallbacks before any last-resort raw artifact read.
+    - GIVEN remaining blockers, stale app/profile caveats, compacted state caveats, or missing benchmark evidence are present WHEN docs, changelog, or progress closeout is prepared THEN those caveats are preserved rather than hidden or reconstructed.
+  evidence:
+    - cycle: 492
+      note: Integrated the closeout-context contract into Dokumentera guidance. Prose now starts final synchronization from `agentera hej --format json --capability-context dokumentera`, treats complete `closeout_context` as the normal source for TODO/docs/changelog/progress closeout inputs, forbids raw reads merely to reconstruct complete context, requires listed fallback commands before any last-resort raw read when context is incomplete, and preserves stale state, compacted/missing state, missing benchmark evidence, local metadata/tag, publication/remote, and refresh caveats. Validation schema now includes critical closeout context-first, fallback-before-raw, and caveat-preservation rules; artifact schema descriptions declare closeout state consumption through CLI `closeout_context`. Focused tests, capability validation, schema self-validation, live closeout context, gate, compact check, and diff whitespace check passed. Independent evaluation returned PASS with no blocking findings.
+  plan: tqlhunyjtj

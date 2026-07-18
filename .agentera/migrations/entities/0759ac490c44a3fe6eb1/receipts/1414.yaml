@@ -1,0 +1,6 @@
+id: wqobtjaimj
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: "~~[fix:3.0.0] Make lint consume authoritative verbosity budgets. Resolved 2026-07-15: `selfAudit.ts` now uses owning schema declarations for full-file and per-entry word findings; explicit no-limit and token-only dimensions skip word findings; malformed, unavailable, and unsupported authority returns an actionable error without fallback constants.~~"

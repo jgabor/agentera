@@ -1,0 +1,22 @@
+id: fkgfrokmhn
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-17
+    status: complete
+    title: OpenCode Plugin Packaging and Compaction Context
+  what: Implement the related 2.5.x OpenCode adapter tasks by making the adapter package-loadable as an npm-style plugin while preserving the project-local `.opencode/plugins/agentera.js` install surface, adding CLI-first compaction context through `experimental.session.compacting`, and strengthening source-backed hook contract coverage against the installed `@opencode-ai/plugin` interface.
+  why: The OpenCode adapter is already the production local plugin, but OpenCode also supports plugin package loading. Packaging metadata, compaction context, and hook contract tests should converge now so the adapter remains installable both as a local file and as a package entry without diverging from OpenCode's actual hook surface.
+  constraints: Preserve `.opencode/plugins/agentera.js` as the project-local install behavior. Keep `.opencode/package.json` out of suite version authority unless the package registry explicitly changes that contract. Use `agentera` CLI summaries for compaction context; do not raw-read artifacts from the OpenCode plugin. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - OpenCode package metadata supports npm-style plugin loading while keeping the checked-in project-local `.opencode/plugins/agentera.js` installation path.
+    - OpenCode compaction receives bounded Agentera context through CLI state summaries and no direct raw artifact reads.
+    - Tests and docs cover the OpenCode hook surface from `@opencode-ai/plugin` source/types, including compaction hooks and the public-docs omission caveat.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

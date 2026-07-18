@@ -1,0 +1,12 @@
+id: kkwhaahuow
+artifact: plan
+record:
+  name: Final validation and handoff
+  depends_on:
+    - pawsaeffnq
+  status: complete
+  acceptance:
+    - GIVEN the release candidate is validated WHEN focused runtime/upgrade tests, full pytest, artifact validation, capability validation, docs query, and whitespace checks run THEN they pass or blockers are documented.
+    - GIVEN the live issue involved OpenCode and `npx skills` WHEN deterministic adapter tests or feasible smoke checks run THEN evidence covers the injected-env scenario without requiring live package publication.
+    - GIVEN release actions require approval WHEN handoff is produced THEN no commit, tag, push, publication, package-manager update, installed app refresh, vision edit, or objective-state edit has occurred unless explicitly requested.
+  plan: anedpqtccr

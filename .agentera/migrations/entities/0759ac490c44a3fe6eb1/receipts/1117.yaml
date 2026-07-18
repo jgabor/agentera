@@ -1,0 +1,42 @@
+id: hfrfqlxlqx
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-05-15
+    status: complete
+    reviewed: 2026-05-15
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    title: D48 Usage Namespace Plan
+  what: Add a supported `agentera usage` CLI namespace for profile analytics by exposing the existing suite usage report through the Agentera CLI while preserving `scripts/usage_stats.py` as the direct analytics engine.
+  why: The project already has usage analytics and a documented USAGE.md location, but agents must know the direct script to run it. A supported usage namespace makes profile analytics discoverable through the same CLI pattern as D48 validate and verify without turning usage reporting into corpus extraction or profile refresh.
+  constraints: Select `agentera usage` as the planned public namespace and record why `agentera corpus` is rejected for this plan. Preserve direct `scripts/usage_stats.py` behavior, including `--json`, `--corpus`, `--project`, default corpus lookup through `PROFILERA_PROFILE_DIR`, default report output through `AGENTERA_USAGE_DIR` then `PROFILERA_PROFILE_DIR` then platform data home, and missing-corpus guidance. JSON mode must preserve the existing top-level analytics payload and must not write USAGE.md. Tests must isolate user data paths with temporary environment variables. Unmatched `--project` filters remain valid empty reports rather than invalid input. Do not auto-build corpus data, refresh profiles, scan home directories, run live host extraction, publish, push, tag, refresh installed apps or profiles, edit vision state, edit objective state, change decision satisfaction state, or implement D48 validate, verify, or corpus work.
+  scope:
+    included:
+      - Public `agentera usage` command contract and help examples.
+      - Rejected-alternative rationale for `agentera corpus` as an extraction/lifecycle namespace.
+      - Supported usage flags `--format text|json`, `--corpus PATH`, and `--project VALUE`.
+      - Text behavior that preserves the existing USAGE.md write plus stdout summary.
+      - JSON behavior that preserves the existing analytics payload with no USAGE.md write.
+      - Missing-corpus and invalid-format diagnostics with syntax, valid values, examples, and nonzero exits.
+      - Temporary-path test isolation for `AGENTERA_USAGE_DIR` and `PROFILERA_PROFILE_DIR`.
+      - Focused namespace tests, direct script compatibility checks, package/CLI surface checks, and local artifact closeout.
+    excluded:
+      - A public `agentera corpus` command.
+      - New corpus extraction behavior or Section 22 corpus schema changes.
+      - Usage analytics algorithm redesign beyond what the facade requires.
+      - Profile refresh, installed-app refresh, live host scans, home-directory mining, publication, remote push, tagging, vision edits, objective edits, or decision satisfaction changes.
+      - Any additional D48 validate, verify, or corpus namespace implementation.
+    deferred:
+      - A future corpus extraction or corpus lifecycle namespace if profilera needs one.
+      - Broader usage analytics improvements such as new aggregation fields or report layout changes.
+      - Surfacing usage/profile analytics in hej attention items.
+  design: Treat `agentera usage` as a stable usage-reporting facade, not a new analytics engine. The command should make the already-supported `scripts/usage_stats.py` workflow discoverable through `scripts/agentera`, preserve direct script behavior for existing callers, keep JSON output unwrapped for consumers, and keep all corpus or profile generation out of scope.
+  overall_acceptance:
+    - GIVEN an agent needs usage/profile analytics WHEN it uses the supported CLI THEN `agentera usage` is discoverable and does not require guessing `scripts/usage_stats.py`.
+    - GIVEN machine consumers already rely on usage analytics JSON WHEN JSON mode is used through the namespace THEN the existing top-level analytics payload is preserved without a wrapper envelope or USAGE.md write.
+    - GIVEN default usage report generation writes a user-local artifact WHEN tests or probes run THEN write destinations are explicit, isolated where appropriate, and never caused by corpus/profile refresh side effects.
+    - GIVEN the feature closes WHEN local state is synced THEN the D48 usage TODO is resolved with exact evidence and release metadata follows `.agentera/docs.yaml` policy.
+  surprises:
+    - Pre-write lint initially flagged the draft as over the PLAN.md per-entry word budget; the revised draft passed verbosity, abstraction, and filler checks with `scripts/usage_stats.py` as the concrete anchor.
+    - "Adversarial review found six issues and all were addressed: choose pass-through JSON instead of a wrapper envelope, isolate default report writes in tests, preserve `AGENTERA_USAGE_DIR`/`PROFILERA_PROFILE_DIR` precedence, include package surface checks, treat unmatched projects as valid empty reports, and split version metadata from final artifact closeout."

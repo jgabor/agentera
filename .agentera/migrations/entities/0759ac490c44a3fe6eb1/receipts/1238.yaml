@@ -1,0 +1,16 @@
+id: asfegnwnqw
+artifact: progress
+record:
+  timestamp: 2026-07-13 21:06
+  type: fix
+  phase: build
+  what: "Made legacy state listing identity-safe and physically truthful: explicit canonical numbers and decisions Dnn shorthand are addressable; unnumbered and multi-shorthand staging rows stay list-only; current/archive mirrors, duplicate rows, and conflicts are classified. Added nullable list representation and physical accounting, typed health repair, adversarial fixtures, and live parity checks. Repaired duplicate Audit14 by retaining the canonical summary and removing only the duplicate row."
+  inspiration: Continuation plan Task2 after Task1 cursor traversal; Task1 is complete in the active plan and remains uncommitted.
+  discovered: Physical counts are raw current, summary, and numbered archive rows; addressable_ids is unique logical identity, while mirrors, duplicates, and conflicts are overlapping diagnostics. The live health archive held two Audit14 summaries; byte-preserving validated repair removed one without reserializing unrelated evidence.
+  verified: "Focused state/list, direct-get, and writer tests: 126/126 passed before final extraction; non-packaging CLI suite: 171 files and 1731/1731 tests passed; full CLI suite: 172 files and 1735/1740 passed, with five known npm 12 npm pack --dry-run --json parser failures in test/packaging/prepack.test.ts. Typecheck and build passed. Plan, capability-contract, progress, decisions, and health validation passed. check compact passed with 0 errors, 0 over-limit, 0 protected-overflow, and 0 changed counts. Live JSON/YAML parity passed for progress, decisions, and health with --limit 1."
+  next: Keep Task2 pending; do not close it. Task3 remains the next plan task. Do not update vision, profile, decisions, TODO, version, publish, push, or tag state.
+  context:
+    intent: "Execute continuation plan Task2 without closing it: make legacy identity and physical count semantics truthful, repair duplicate current health history, and preserve the stable get contract."
+    constraints: Preserve Task1 completion status, stable numeric get selectors, archive immutability, no inferred identity, no fabricated audit, unrelated health evidence, and the requested state-change exclusions.
+    unknowns: none for Task2; Task3 source-work bounds remains unresolved by design.
+    scope: packages/cli/src/state/listRetrieval.ts; packages/cli/src/state/listAccounting.ts; packages/cli/src/state/healthRepair.ts; packages/cli/src/state/write/transaction.ts; packages/cli/src/state/write/operations.ts; packages/cli/src/state/write/explain.ts; packages/cli/src/state/write/helpers.ts; packages/cli/test/state/listRetrieval.test.ts; packages/cli/test/state/directRetrieval.test.ts; packages/cli/test/state/write/stateWrite.test.ts; references/artifacts/state-storage-authority.yaml; .agentera/health.yaml; .agentera/plan.yaml; .agentera/progress.yaml

@@ -1,0 +1,15 @@
+id: avacgisyjn
+artifact: plan
+record:
+  name: Closeout context output contract
+  depends_on:
+    - zrefmqdhrz
+  status: complete
+  acceptance:
+    - GIVEN `agentera hej --format json --capability-context dokumentera` runs WHEN TODO, docs, changelog, and progress state are available THEN output includes artifact mappings, version policy, TODO blockers, changelog boundary, progress evidence, benchmark evidence or caveat, fallback commands, caveats, raw-read policy, and a truthful completeness flag.
+    - GIVEN one required closeout state family is unavailable or incomplete WHEN closeout context is built THEN completeness is false or caveated, existing fallback commands are listed, and raw artifact reads remain last-resort rather than normal closeout behavior.
+    - GIVEN command guidance and tests are scanned WHEN this task completes THEN no new `agentera dokumentera`, top-level command, subcommand, or other unsupported capability-name CLI command is introduced.
+  evidence:
+    - cycle: 490
+      note: "Added `closeout_context` to `agentera hej --format json --capability-context dokumentera` without adding `agentera dokumentera`, new top-level commands, or new subcommands. The context exposes artifact mappings, version policy, TODO blockers, changelog boundary, latest progress evidence, benchmark evidence or an unavailable caveat, fallback commands, state caveats, raw-read-last-resort policy, and a truthful `complete_for_closeout_context` flag. Missing-state tests verify required closeout state makes completeness false while keeping existing fallback commands and `raw_artifact_reads_required: false`. Live context now reports the 2.3.9 changelog boundary as not recorded because only deferred `2.3.9+` text exists. Focused CLI/contract/capability tests, capability validation, schema self-validation, gate, compact check, and `git diff --check` passed. Independent evaluation returned PASS with no blocking findings and one residual provenance caveat for future tightening: changelog boundary provenance names the existing query fallback while the CLI derives release-heading boundary text internally from `CHANGELOG.md`."
+  plan: lvxglwnurb

@@ -1,0 +1,12 @@
+id: imbtwwmhwt
+artifact: plan
+record:
+  name: App-home migration contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN Agentera state is described to a user or agent WHEN the durable install location is named THEN it is presented as an app home instead of a live bundle root.
+    - GIVEN profile, usage, history, or corpus data exists WHEN the app-home contract is described THEN user data remains home-root state and managed app code remains separate.
+    - GIVEN release validation inspects user-facing docs and CLI help or output WHEN bundle-root terminology appears for the durable install location THEN validation reports the offending surface and blocks readiness.
+  plan: mpdielqjbe

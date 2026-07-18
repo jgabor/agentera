@@ -1,0 +1,12 @@
+id: hrearhzftj
+artifact: plan
+record:
+  name: Report surfaces and docs alignment
+  depends_on:
+    - bvfblsgfmt
+  status: complete
+  acceptance:
+    - GIVEN analysis completes WHEN human-readable and structured outputs are generated THEN they include boundary source, runtime coverage, metrics, threshold rationale, recommendation, and privacy caveats.
+    - GIVEN docs mention startup-overhead analysis WHEN users follow them THEN they can run the local-only analysis without live hosts or raw transcript output.
+    - GIVEN report artifacts are written WHEN docs state is updated THEN docs link the report surface and preserve Decision 51's measure-first constraint.
+  plan: vlipdjowkj

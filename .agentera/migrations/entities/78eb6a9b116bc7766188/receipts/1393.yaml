@@ -1,0 +1,6 @@
+id: pyximxcobl
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[chore:3.0.0] Remove `packages/mobile` temporary `vite.config.ts` hook plumbing when SvelteKit scaffold lands (see `packages/mobile/TODO.md`; scaffold tracked there, not duplicated here)."

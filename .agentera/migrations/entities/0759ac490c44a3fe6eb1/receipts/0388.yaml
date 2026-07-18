@@ -1,0 +1,12 @@
+id: lgfcsilkbs
+artifact: plan
+record:
+  name: Deliver active and archived plan retrieval
+  depends_on:
+    - nbjqkklfqw
+  status: complete
+  acceptance:
+    - GIVEN active and archived plans WHEN listed THEN deterministic recency, stable identity, lifecycle state, cursor, and omissions are returned.
+    - GIVEN a plan identity WHEN fetched THEN the intended full plan is returned without caller-side file traversal.
+    - GIVEN legacy, invalid, or missing archives WHEN tested THEN compatibility diagnostics and not-found behavior are explicit.
+  plan: zmjvhbfhpm

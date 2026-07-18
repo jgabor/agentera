@@ -1,0 +1,12 @@
+id: cqrsbeyqme
+artifact: plan
+record:
+  name: Pin immutable remediation provenance without version movement
+  depends_on:
+    - ojqdyfgbqy
+  status: pending
+  acceptance:
+    - GIVEN the accepted substantive authority and parity correction WHEN provenance is selected THEN agentera.gitRef is the full SHA of that remediation commit and governed package inputs match it.
+    - GIVEN release metadata WHEN validated THEN the CLI package remains 3.0.0-dev.21, suite-bearing surfaces remain 3.0.0, and no lockfile or unrelated version surface changes.
+    - GIVEN corrected package inputs WHEN the bundle is prepared THEN the package payload contains the corrected authority and rejects a stale governed provenance reference.
+  plan: qzkefdqbsu

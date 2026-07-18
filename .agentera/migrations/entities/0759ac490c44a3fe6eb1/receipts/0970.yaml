@@ -1,0 +1,16 @@
+id: kxbipomhzt
+artifact: plan
+record:
+  name: Add Codex capability agent descriptors
+  depends_on:
+    - hbyduhpotq
+  status: complete
+  acceptance:
+    - GIVEN the bundled skill has twelve capabilities WHEN descriptor templates are inspected THEN Codex has one `.toml` descriptor per capability with `name`, `description`, and `developer_instructions` pointing to the active capability `prose.md` path.
+    - GIVEN `setup_codex.py` runs against an isolated config WHEN installation is applied THEN managed descriptors are installed under the Codex agents directory and reruns are idempotent.
+    - GIVEN Codex config is managed WHEN setup runs THEN `[agents]` contains `max_threads = 6` and `max_depth = 1` without reintroducing deprecated `[agents.*]` config blocks or unsafe sibling-key overwrites.
+  evidence:
+    - Added twelve managed `skills/agentera/agents/*.toml` descriptors with `name`, `description`, managed marker, and `developer_instructions` pointing to each capability `prose.md`.
+    - Updated `scripts/setup_codex.py` and runtime upgrade planning to install descriptors under `~/.codex/agents`, add bounded `[agents]` settings, avoid legacy `[agents.*]` blocks, and preserve user-owned files.
+    - "`uv run pytest tests/test_setup_codex.py tests/test_upgrade_cli.py` passed with Codex descriptor apply, dry-run, idempotence, and package-upgrade coverage."
+  plan: vrdajvaghq

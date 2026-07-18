@@ -1,0 +1,20 @@
+id: yteklytfwh
+artifact: decisions
+record:
+  date: 2026-07-09
+  question: How should the research capability instructions be audited and rewritten to align with D80 six-section spine, D79 direct-contract philosophy, D81 voice delegation, and runtime-agnostic tool references, while adopting design improvements from the discuss audit (D82)?
+  context: 'Fourth capability audit (D79 status, D81 vision, D82 discuss done). Research is a linear-shape capability frequently called for external pattern analysis. Pre-flight grounding found v2-era ghosts: separate "Visual identity" section and "Skill introduction" line (D79/D82 integrate glyph into Purpose); "Contract values" section with hand-enumerated VT IDs (D79 pattern: one-line reference to protocol.yaml); contract.md pointer (D79 removed from status/vision); `$AGENTERA_PROFILE_DIR` and `$XDG_DATA_HOME` resolver flows (v3 serves `research_context.profile` via prime context); full artifact-path-resolution paragraph (SKILL.md owns per D79); standalone Getting-started section (D80 spine: fold into section 6); "Notes on depth" section (not in spine); "sharp colleague" personality hardcoding (D81 violation); artifacts.yaml "effective profile script" (v2-era); research.toml `prose` field (D57/D65: field is `instructions`). Substance design decisions: (S1) Step 1 now extracts user motivation (adoption evaluation, idea extraction, comparison, curiosity) in addition to Source/Target — mirrors discuss fog-aware readiness check. (S2) Transferable concepts checkpoint elevated from buried Step 2 instruction to named boundary between source reading and target exploration. (S3) Applicability Matrix reframed toward adaptation/augmentation rather than code-line replacement — research is about getting inspired and adapting ideas, not replacing existing conventions. (S4) Source-type broadened from URL-only to accept local file paths, concept names, and verbal descriptions. Runtime-agnostic design: "GitHub MCP integration" replaced with "available remote-access tools"; "context7" with "documentation databases"; "Glob"/"Grep" with generic directory-mapping and content-search descriptions. Safety rails converted from NEVER to MUST NOT (D71). Step markers simplified from N/5 to N (no-target path skips steps). New length 12,484 chars. references/cli/capability-instruction-structure.md research row Complete (D83). TODO.md research audit marked resolved. typecheck 0 errors; capability and contract validation PASS; check compact within limits.'
+  alternatives:
+    - name: Rewrite with substance improvements, drift cleanup, runtime-agnostic tools
+      status: chosen
+      reason_chosen: |
+        All four substance findings (motivation intake, checkpoint elevation, adaptation framing, source-type broadening) address real capability design gaps. Drift cleanup aligns with D79/D81/D82 precedent. Runtime-agnostic tool references ensure the instructions work across all harnesses the user might run.
+    - name: Drift-only cleanup without substance changes
+      status: rejected
+      reason_rejected: |
+        Would leave the motivation gap, buried checkpoint, and rigid matrix in place — a capability that produces generic analysis instead of targeted, problem-focused analysis.
+  choice: Rewrite with substance improvements, drift cleanup, runtime-agnostic tools
+  reasoning: |
+    The discuss audit (D82) established that substance findings are where the highest-leverage changes live. Research motivation gap and buried checkpoint are the same class of finding. The adaptation framing reflects user feedback that research is about inspiration and augmentation, not code replacement.
+  confidence: firm
+  feeds_into: references/cli/capability-instruction-structure.md, packages/cli/src/capabilities/research/, TODO.md

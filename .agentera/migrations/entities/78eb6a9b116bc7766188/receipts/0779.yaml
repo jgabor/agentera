@@ -1,0 +1,12 @@
+id: gsqtyvserp
+artifact: plan
+record:
+  name: Reconcile Completed Plan State
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the v2.1.0 dashboard repair plan is complete WHEN this lane starts THEN that plan is archived and .agentera/plan.yaml is this active plan
+    - GIVEN uv run scripts/agentera plan runs WHEN the artifact is loaded THEN it reports active self-healing bundle refresh work
+    - GIVEN the archive is inspected WHEN prior release evidence is needed THEN the completed v2.1.0 repair plan remains available
+  plan: kicyjzqrjn

@@ -1,0 +1,13 @@
+id: zxwguiuumk
+artifact: plan
+record:
+  name: Restore bounded analytics consumers
+  depends_on:
+    - mdpmkotvdy
+  status: complete
+  acceptance:
+    - GIVEN real-scale extraction WHEN usage, report status, prime coverage, and startup analysis run THEN each produces bounded analysis instead of degrading solely because total evidence is large.
+    - GIVEN available bounded tiers WHEN coverage is reported THEN the result truthfully represents supported sources and selected evidence.
+    - GIVEN missing, corrupt, incomplete, or incompatible tiers WHEN a consumer runs THEN it fails or degrades safely with working recovery guidance.
+    - GIVEN existing machine consumers WHEN tier support ships THEN JSON and exit behavior remain compatible except for documented tier statuses.
+  plan: lgsvfenmgs

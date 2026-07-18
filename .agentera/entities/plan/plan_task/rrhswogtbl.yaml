@@ -1,0 +1,17 @@
+id: rrhswogtbl
+artifact: plan
+record:
+  name: Plan source-contract clarity
+  depends_on:
+    - yvxemwabuu
+  status: complete
+  acceptance:
+    - GIVEN `agentera plan --format json` returns an existing plan WHEN its source contract is read THEN it reports `complete_for_plan_artifact=true`, `raw_artifact_reads_required=false`, and complete read-only coverage for summary, tasks, dependencies, acceptance criteria, evidence, overall acceptance, surprises, and prior-plan archive references.
+    - GIVEN the source contract is complete WHEN an agent needs normal Planera startup or evaluation context THEN the contract says raw plan artifact reads are not required and should be skipped rather than treated as a defensive default.
+    - GIVEN the source contract is incomplete or unavailable WHEN an agent needs plan state THEN the fallback path is explicit and tries supported CLI state before last-resort raw artifact reads.
+    - GIVEN maintainers review command vocabulary WHEN the contract changes THEN no slash-route alias or capability-name command is introduced.
+  evidence:
+    - "`_plan_source_contract` in `scripts/agentera` now includes `canonical_artifact_label`, `persisted_artifact_path`, `complete_for_normal_startup_evaluation`, `complete_state`, `raw_artifact_access_boundary`, and `fallback_policy` while retaining `complete_for_plan_artifact=true` and `raw_artifact_reads_required=false` for existing plan artifacts."
+    - "`uv run scripts/agentera plan --format json --fields source_contract,summary,entries` returned complete read-only coverage for summary fields, task entries, acceptance, evidence, overall acceptance, surprises, and previous-plan archive metadata, with no new slash-route alias or capability-name CLI command."
+    - Independent evaluation found that legacy `entries`-shaped plan artifacts were overclaiming completeness; `_plan_source_contract` is now shape-aware and reports `complete_for_plan_artifact=false` plus missing current task shape for legacy entries.
+  plan: fuwkumrpdy

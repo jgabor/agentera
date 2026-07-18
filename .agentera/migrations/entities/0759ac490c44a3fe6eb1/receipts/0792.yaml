@@ -1,0 +1,16 @@
+id: wmpwsoswoy
+artifact: plan
+record:
+  name: Regression coverage and guidance alignment
+  depends_on:
+    - aovwsutdov
+  status: complete
+  acceptance:
+    - GIVEN the false-positive scenario is fixed WHEN focused regression tests run THEN they cover the anchored Planera-plan pass case and the unanchored prose failure case.
+    - GIVEN user-facing lint diagnostics or guidance changes WHEN docs or fixtures are updated THEN they keep the distinction between concrete anchors and generic prose clear.
+    - GIVEN capability or artifact guidance is touched WHEN validation runs THEN affected capability validation, artifact validation, and diff checks pass.
+  evidence:
+    - "Added focused CLI regression coverage in `tests/test_self_audit.py` for `PLAN.md` lint: the repo-style anchored boundary sample with `internal/runtime`, `internal/app`, and `internal/tui` now asserts status=pass and abstraction detail `internal/runtime`; the unanchored generic prose control now asserts advisory status=fail with `abstraction creep: no concrete anchor`."
+    - No user-facing lint diagnostics, guidance docs, or fixtures were changed for Task 3. The added tests keep the distinction explicit by naming the concrete repo-style anchor pass case separately from the unanchored generic prose failure case.
+    - "`uv run pytest tests/test_self_audit.py -q` passed with 23 tests after the regression additions. Task 3 artifact validation and diff evidence is recorded in PROGRESS cycle 515."
+  plan: nnyclcnjcy

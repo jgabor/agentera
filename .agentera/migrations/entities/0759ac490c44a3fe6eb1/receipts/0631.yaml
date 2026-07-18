@@ -1,0 +1,13 @@
+id: rbkndsllmi
+artifact: plan
+record:
+  name: Installed schema and helper discovery
+  depends_on:
+    - ghpnzakrxz
+    - zgugqabxiq
+  status: complete
+  acceptance:
+    - GIVEN a capability needs its artifact schema WHEN invoked from an installed skill THEN the CLI resolves the schema location from the active app model without requiring manual install-root search.
+    - GIVEN helper or schema surfaces are missing WHEN an installed capability starts THEN the failure points to the same root model that doctor reports.
+    - GIVEN capability prose names schema or helper access WHEN an agent follows it THEN the instructions do not require manual searching across install roots.
+  plan: eugrpfgykm

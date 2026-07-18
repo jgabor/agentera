@@ -1,0 +1,13 @@
+id: bcbgzcmmuy
+artifact: plan
+record:
+  name: Add publish-next CI job on feat/v3 push, gated by NPM_TOKEN and version comparison
+  depends_on:
+    - yojsgunqzy
+  status: complete
+  acceptance:
+    - GIVEN a push to feat/v3 WHEN build, typecheck, test, sandbox, and compact jobs are green AND NPM_TOKEN secret is set AND npm view agentera@next version is older than packages/cli/package.json#version THEN the publish-next job runs pnpm -C packages/cli build followed by npm publish --tag next from packages/cli
+    - GIVEN a push to feat/v3 WHEN any gating CI job is red OR NPM_TOKEN is unset OR the committed version equals or is older than the published @next version THEN the publish-next job is skipped (no-op)
+    - GIVEN the publish-next job WHEN it runs THEN it uses the existing .npmrc at packages/cli/.npmrc and the publish:dev script's NPM_TOKEN env loading; it does not write credentials anywhere except the transient CI env
+    - GIVEN a successful publish THEN the published version on npm @next dist-tag matches packages/cli/package.json#version exactly
+  plan: kpuutmaoki

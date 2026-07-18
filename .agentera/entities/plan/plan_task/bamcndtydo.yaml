@@ -1,0 +1,14 @@
+id: bamcndtydo
+artifact: plan
+record:
+  name: Reconcile publication authority and semantic parity
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN canonical experiment publication and archival declarations WHEN interpreted together THEN validated publication and objective-scoped durable archive-before-projection ownership agree without changing projection policy.
+    - GIVEN an authority whose publication scope contradicts its implemented archival declaration WHEN semantic parity is checked THEN the regression fails from authority fields rather than copied prose.
+    - GIVEN valid and contradictory authority cases WHEN focused tests run THEN at least one passing and one failing case prove the semantic rule.
+    - GIVEN package and introspection consumers WHEN authority is synchronized THEN bundled bytes match canonical bytes and every directly affected generated projection agrees, while runtime publication evidence remains unchanged.
+  evidence: Canonical authority declares typed validation, experiment_archival ownership, objective_directory scope, archive_before_projection order, and unchanged uniform_10_40_50 policy. Structured validator parity passes canonical input and mutation tests reject contradictions independent of prose. Focused authority/publication/schema/prepack tests passed 192/192; broad non-release suite passed 2049/2049; typecheck, build, contract 2/2, compact, and diff checks passed. Bundle copy is byte-identical at SHA-256 f84cbfad718d7c11c4dbe7f4afb9f081af6507e3919b15887d3a3c4bf9fdd0fb. Schema exposes the fields; optimize startup projection does not expose publication semantics, so no startup projection changed. Runtime publication tests remain green.
+  plan: xginzonwbb

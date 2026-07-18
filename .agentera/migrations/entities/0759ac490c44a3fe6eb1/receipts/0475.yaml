@@ -1,0 +1,14 @@
+id: owzgvsqyqt
+artifact: plan
+record:
+  name: Pytest collection safety and marker registration
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN pyproject.toml defines testpaths and norecursedirs WHEN pytest --collect-only runs from repo root THEN only tests under tests/ are collected and count stays near 1,228 not tens of thousands
+    - GIVEN slow and integration markers are registered WHEN pytest --markers runs THEN both markers appear with documented descriptions
+    - GIVEN AGENTS.md pytest guidance WHEN a contributor reads it THEN it states the collection footgun, canonical pre-commit command, and that markers are optional for local runs only
+  evidence:
+    - pyproject.toml [tool.pytest.ini_options]; repo-root collection 1230 tests; AGENTS.md Running tests section
+  plan: bszbmkggss

@@ -1,0 +1,15 @@
+id: klhnkkavdn
+artifact: plan
+record:
+  name: Add state, report, and check namespace parsers with delegation
+  depends_on:
+    - mufeszagtz
+  status: complete
+  evidence: Added `state`, `report`, and `check` namespace parsers in scripts/agentera with delegation to existing handlers; top-level `plan`, `stats`, `validate`, and `gate` print one-line stderr deprecation aliases. `check compact` default matches `gate`; `state plan --format json` matches legacy plan envelope. Focused coverage in tests/test_audience_namespace_parsers.py.
+  acceptance:
+    - GIVEN `agentera state plan --format json` runs WHEN output emits THEN it matches today's `agentera plan --format json` envelope and source_contract.
+    - GIVEN `agentera report` and `agentera report refresh --consent local-history` run WHEN invoked THEN behavior matches today's plain `stats` and `stats refresh` including consent gates.
+    - GIVEN `agentera check validate capability hej` and `agentera check verify smoke installed-skills` run WHEN invoked THEN they delegate to existing validate/verify handlers without behavior change.
+    - GIVEN `agentera check compact` runs in default mode WHEN invoked THEN it matches today's `agentera gate` check-only compaction behavior.
+    - GIVEN top-level aliases `plan`, `stats`, `validate`, `gate` remain during migration WHEN invoked THEN they delegate with stderr deprecation to the canonical namespace form.
+  plan: unmsxwomyo

@@ -1,0 +1,13 @@
+id: xadfaokgmh
+artifact: plan
+record:
+  name: Move the validator guard onto the shared module and align YAML loading
+  depends_on:
+    - mnlcjkojqp
+  status: complete
+  acceptance:
+    - GIVEN hooks/validate_artifact.py WHEN it validates progress commits THEN _validate_progress_commits/token/git/regex delegate to scripts/progress_commit (imported via hooks/common), leaving no near-copy in the hook
+    - GIVEN the guard WHEN it loads progress YAML THEN it uses load_yaml_mapping (not raw yaml.safe_load) and catches load failure to return no commit violation, with a regression test pinning the consistent failure mode on non-mapping/unparseable progress YAML
+    - GIVEN ancestor/pending/N-A/unknown-hash/non-git fixtures WHEN the guard runs THEN classifications match prior behavior with no changed assertions beyond import path and loader
+    - GIVEN a stale-hash progress fixture WHEN the validate hook and `agentera check validate` run THEN the same "not an ancestor of HEAD" violation is reported
+  plan: kqvmupxpga

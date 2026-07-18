@@ -1,0 +1,19 @@
+id: hnopxkusbu
+artifact: plan
+record:
+  name: 2.3.11 local closeout metadata sync
+  depends_on:
+    - iwziuxqtdz
+    - lmennlaier
+    - uozuvuzvti
+    - pxvyfbxtyp
+    - xbciceuuhz
+    - kryfmbnebw
+  status: complete
+  evidence:
+    - Local metadata sync records the completed 2.3.11 benchmark-context patch in TODO, progress, docs, and changelog while leaving deferred 2.3.12 Realisera execution-context work visible. Version-bearing files listed by docs.yaml are aligned to 2.3.11 only.
+  acceptance:
+    - GIVEN benchmark-context validation passes WHEN closeout synchronization runs THEN TODO, progress, docs, and changelog record the completed 2.3.11 source-contract patch and keep the deferred 2.3.12 source-contract work visible.
+    - GIVEN version-bearing files are inspected WHEN local metadata is synchronized THEN only files listed by docs.yaml version policy and the version-files registry are changed for 2.3.11 alignment.
+    - GIVEN local metadata sync completes WHEN scope is audited THEN no publication, remote push, tag creation, installed app refresh, profile refresh, vision edit, objective-state edit, Optimera objective-state mutation, real local benchmark execution, or unsupported capability CLI command introduction occurred without explicit approval; negative parser probes are allowed only as tests proving no unsupported command exists.
+  plan: dlmrrzhsvy

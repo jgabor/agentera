@@ -1,0 +1,16 @@
+id: bbyutumpeu
+artifact: progress
+record:
+  timestamp: 2026-07-14 23:07
+  type: feat
+  phase: build
+  what: Shipped bounded active-plan task list/get with numeric ordering, opaque snapshot cursors, exact task retrieval, structured failures, and explicit omission recovery.
+  inspiration: Approved Plan Task 2 and the executable state-storage retrieval authority.
+  discovered: The active plan still uses a deterministic legacy identity; persisted identity continuity remains Task 3. A parallel build initially removed dist during full-test setup, so the full suite was rerun alone and passed.
+  verified: pnpm -C packages/cli exec vp test run planLifecycleContract planTaskRetrieval retrievalAuthority projectionPolicy help schema state.test passed 9 files and 217 tests; pnpm -C packages/cli test passed 179 files and 1970 tests; pnpm -C packages/cli run typecheck and pnpm -C packages/cli build passed; live state plan tasks list --limit 2 and get --task 2 succeeded, while get --task 999 returned structured not_found with exit 1; capability-contract and plan capability validation passed; check compact passed with error_count=0 and over_limit_count=0; git diff --check passed.
+  next: Task 3 may establish persisted plan identity; plan archives and experiments remain deferred.
+  context:
+    intent: Deliver Plan Task 2 without adding plan archive or experiment retrieval.
+    constraints: Active file-based plan tasks only; no plan archive retrieval, experiments, broad omission cleanup, metadata, publication, push, or prior-history rewrite.
+    unknowns: None for Task 2; Task 3 owns persisted active-to-archive identity.
+    scope: Plan task retrieval runtime and dispatch, projection recovery, retrieval authority/validator, plan lifecycle inventory, help, tests, changelog, progress, and plan status.

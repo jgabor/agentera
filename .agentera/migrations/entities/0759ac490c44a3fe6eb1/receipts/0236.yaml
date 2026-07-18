@@ -1,0 +1,107 @@
+id: dcyadhrmil
+artifact: plan
+record:
+  name: Post-CLI state gap prioritization
+  depends_on:
+    - gkpwprmkno
+  status: complete
+  acceptance:
+    - GIVEN representative state-gathering sequences exist WHEN the gap report is prepared THEN it ranks CLI state anchors, post-CLI raw artifacts, redundant raw artifacts, and affected capabilities.
+    - GIVEN evidence remains weak WHEN the gap report is prepared THEN downstream product tasks are left blocked or deferred with the confidence caveat named.
+    - GIVEN a gap is selected WHEN it is prioritized THEN the owning existing state output and expected state family are named without adding slash-route aliases as CLI commands.
+  evidence:
+    benchmark_report: /home/jgabor/.local/share/agentera/benchmarks/startup-state/latest-report.json
+    benchmark_history: /home/jgabor/.local/share/agentera/benchmarks/startup-state/runs.jsonl
+    evidence_gate: representative_with_degraded_runtime_caveats
+    confidence_caveats:
+      - runtime_coverage_incomplete_or_degraded
+      - some_records_or_sequences_degraded
+    benchmark_watermark_at: 2026-05-14T05:14:25+00:00
+    total_state_sequences: 5
+    total_cli_state_calls: 25
+    raw_after_cli_sequence_rate: 1
+    redundant_raw_sequence_rate: 1
+    raw_artifact_access_after_cli_counts:
+      DOCS.md: 4
+      PLAN.md: 6
+      PROGRESS.md: 1
+    redundant_raw_artifact_access_counts:
+      DOCS.md: 2
+      PLAN.md: 6
+    cli_state_command_counts:
+      decisions: 4
+      docs: 3
+      health: 2
+      plan: 5
+      progress: 3
+      query: 5
+      todo: 3
+    per_capability_state_counts:
+      inspektera:
+        state_sequences: 1
+        cli_state_call: 1
+        raw_artifact_access_after_cli: 2
+        redundant_raw_artifact_access: 1
+      optimera:
+        state_sequences: 2
+        cli_state_call: 9
+        raw_artifact_access_after_cli: 5
+        redundant_raw_artifact_access: 3
+      orkestrera:
+        state_sequences: 1
+        cli_state_call: 6
+        raw_artifact_access_after_cli: 2
+        redundant_raw_artifact_access: 2
+      planera:
+        state_sequences: 1
+        cli_state_call: 9
+        raw_artifact_access_after_cli: 2
+        redundant_raw_artifact_access: 2
+    degraded_runtime_coverage:
+      - runtime: claude-code
+        reason: schema_divergent
+        candidate_count: 4836
+        record_count: 0
+        error_count: 2
+      - runtime: github-copilot
+        reason: schema_divergent
+        candidate_count: 1
+        record_count: 0
+        error_count: 1
+    gap_prioritization:
+      selected_gap: broad_startup_state_envelope
+      ranked_cli_state_anchors:
+        - plan: 5
+        - query: 5
+        - decisions: 4
+        - docs: 3
+        - progress: 3
+        - todo: 3
+        - health: 2
+      ranked_post_cli_raw_artifacts:
+        - PLAN.md: 6
+        - DOCS.md: 4
+        - PROGRESS.md: 1
+      ranked_redundant_raw_artifacts:
+        - PLAN.md: 6
+        - DOCS.md: 2
+      affected_capabilities:
+        - optimera
+        - orkestrera
+        - planera
+        - inspektera
+      owning_existing_state_output: agentera hej composite startup result plus existing routine state outputs
+      expected_state_family:
+        - plan task details, dependencies, acceptance criteria, and evidence summaries
+        - docs artifact mapping and source-contract completeness metadata
+        - latest progress verification metadata needed for Orkestrera evaluation
+      slash_route_alias_cli_commands_added: false
+      disposition: Product CLI work is now justified because the rerun benchmark observed five state-gathering sequences, raw-after-CLI and redundant-raw sequence rates of 1.0, and a `plan_cli_startup_envelope` recommendation.
+    downstream_product_tasks:
+      unblocked_tasks:
+        - 3
+        - 4
+        - 5
+        - 6
+      unblocked_reason: Representative post-CLI raw-artifact evidence now identifies PLAN.md and DOCS.md as repeated redundant reads across multiple capabilities.
+  plan: ilsmrmrchl

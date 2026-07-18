@@ -1,0 +1,13 @@
+id: phipjoaopu
+artifact: plan
+record:
+  name: Fix dead Swedish guards in schema.ts and help.ts
+  depends_on:
+    - pxsdqdteqs
+    - lwadgujfce
+  status: complete
+  acceptance:
+    - GIVEN schema.ts:171 dead Swedish guard removed, WHEN validator runs, THEN it validates against English list directly
+    - GIVEN help.ts:30 dead Swedish filter removed, WHEN help runs, THEN it lists English names with no Swedish filter
+    - AND vitest run passes
+  plan: ptxzdrxixt

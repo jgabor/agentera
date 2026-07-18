@@ -1,0 +1,22 @@
+id: fwpgooyzbh
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-05-18
+    status: complete
+    title: Routing and Execution Vocabulary Collapse
+  what: Document the routing and execution vocabulary collapse so Agentera uses `Agentera router` for request-to-capability routing, `suggest` for next-action recommendations, `delegate` for Orkestrera task assignment, `spawn` for Realisera/Optimera workers, `subagent mechanism` for runtime support, and `pre-spawn Git commit` for worker safety.
+  why: The remaining vocabulary fixes and regressions need one authoritative boundary before current prose is rewritten. Without that boundary, implementation agents will keep mixing dispatcher, dispatch, router, conductor, worktree dispatch, and pre-dispatch commit language across routing, recommendations, orchestration assignment, worker launch, runtime capability, and Git safety.
+  constraints: Keep this plan scoped to the P0 documentation/authority boundary for routing and execution vocabulary. Do not implement the later broad prose replacement TODO, do not add the later ambiguous dispatcher/dispatch/router/conductor regression sweep, do not rename capability `prose.md` files, and do not add or implement `first_invocation_read`. Preserve shipped compatibility names and code identifiers such as `subagent_dispatch` unless a concrete migration is in scope. Do not refresh installed apps/profiles, publish, push, tag, change package-manager state, edit `.agentera/vision.yaml`, mutate objective state, or change decision satisfaction state.
+  overall_acceptance:
+    - A routing/execution vocabulary authority defines and separates `Agentera router`, `suggest`, `delegate`, `spawn`, `subagent mechanism`, and `pre-spawn Git commit` while preserving compatibility and historical surfaces that must retain older names.
+    - "`docs/vocabulary.md` delegates to that authority and gives humans a short, unambiguous boundary without introducing a broad prose rewrite in this batch."
+    - The top TODO is closed without implementing broad current-prose cleanup, full ambiguous-term regressions, Decision 57 instruction-file renames, `first_invocation_read`, version bumps, runtime config refreshes, package-manager changes, publication, protected artifact edits, or decision satisfaction changes.
+  surprises:
+    []
+  scope:
+    included:
+      []
+    excluded:
+      []

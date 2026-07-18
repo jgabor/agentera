@@ -1,0 +1,15 @@
+id: vubjuhrmkf
+artifact: plan
+record:
+  name: Documentation and capability guidance alignment
+  depends_on:
+    - xokrgmvagw
+    - ososvnyalh
+    - prxxdqjajd
+    - txwffwhrpf
+  status: complete
+  acceptance:
+    - GIVEN users follow README, upgrade, and skill repair guidance WHEN they preview or apply repair THEN the documented flow covers app and managed runtime surfaces without asking Agentera to write shell startup files.
+    - GIVEN stale shell startup references are present WHEN user-facing guidance mentions them THEN it explains that Agentera will not edit those files and names the manual cleanup boundary plainly.
+    - GIVEN runtime-package updates are needed WHEN docs describe repair options THEN package-manager execution remains explicitly opt-in.
+  plan: lxpdfnzgfj

@@ -1,0 +1,12 @@
+id: vpcgomusaz
+artifact: plan
+record:
+  name: Inventory threshold and transcript surfaces
+  depends_on:
+    []
+  status: complete
+  evidence:
+    - Identified self-audit per-entry budgets, full-file budgets, anchor/filler checks, compaction limits, and transcript privacy constraints.
+  acceptance:
+    []
+  plan: qadhgryoib

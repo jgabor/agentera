@@ -1,0 +1,13 @@
+id: bjokbjfgyw
+artifact: plan
+record:
+  name: Define sandbox isolation contract and P0 fixture catalog
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN scripts/sandbox/README or inline header in seed script WHEN read THEN it documents required env vars (HOME, XDG_CONFIG_HOME, AGENTERA_BOOTSTRAP_SOURCE_ROOT, AGENTERA_UPDATE_CHANNEL, npm_config_cache), teardown policy, and never-touch real paths rule
+    - GIVEN a fixture catalog list in packages/cli/test/upgrade/fixtures/README or seed script WHEN read THEN it names P0 fixtures (v2-yaml-project, v2-app-home, v2-runtime-python extensions, v2-app-home-noisy, v2-legacy-agents-home, v2-runtime-codex-full, v2-runtime-cursor-full) with purpose and oracle source (main branch path or existing fixture)
+    - GIVEN P0 scenario table in plan design WHEN reviewed THEN eight priority scenarios map to fixture combinations without claiming full 36-combination CI coverage yet
+    - GIVEN checksum manifest format WHEN documented THEN preserved paths derive from doctor.ts USER_STATE allowlists and project .agentera YAML artifacts
+  plan: lwdkmjtnfe

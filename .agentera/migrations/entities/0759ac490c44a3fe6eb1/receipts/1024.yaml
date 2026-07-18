@@ -1,0 +1,12 @@
+id: tglaqoeitl
+artifact: plan
+record:
+  name: Repair - upgrade maintains the ~/.agents symlink and retires the opencode-specific symlink
+  depends_on:
+    - kfctanngor
+  status: complete
+  acceptance:
+    - GIVEN a divergent real directory at ~/.agents/skills/agentera WHEN upgrade runs THEN it is replaced with a symlink to the canonical source matching the agent-compatible pattern
+    - GIVEN an upgrade run WHEN ~/.config/opencode/skills/agentera exists THEN it is retired (removed) per the opencode doc's cross-location uniqueness rule
+    - GIVEN the host loads skills from ~/.agents/skills/<name>/ THEN it loads the live canonical source
+  plan: qzcscecynw

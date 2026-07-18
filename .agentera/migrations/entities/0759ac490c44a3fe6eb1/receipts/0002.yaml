@@ -1,0 +1,9 @@
+id: furopehluc
+artifact: decisions
+record:
+  state: user_confirmed_satisfied
+  evidence: "App-home implementation and tests exist: scripts/agentera_upgrade.py enforces managed app root planning/action behavior, scripts/agentera reports app_home, managedAppRoot, and userDataRoot, scripts/validate_app_home_contract.py checks public surfaces, and the focused app-home/upgrade/legacy-default test set passed 9 tests on 2026-05-15."
+  user_confirmation:
+    confirmed_by: user
+    confirmed_at: 2026-05-23
+  decision: tyguuvojvu

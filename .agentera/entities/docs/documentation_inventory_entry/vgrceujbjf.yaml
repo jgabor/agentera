@@ -1,0 +1,7 @@
+id: vgrceujbjf
+artifact: docs
+record:
+  document: Startup benchmark durable outputs
+  path: ${AGENTERA_HOME}/benchmarks/startup-state/runs.jsonl / latest-report.json / latest-report.md (user-local generated)
+  last_updated: 2026-05-13
+  status: current

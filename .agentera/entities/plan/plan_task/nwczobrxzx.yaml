@@ -1,0 +1,16 @@
+id: nwczobrxzx
+artifact: plan
+record:
+  name: Reject prose.md as a contract directory rule
+  depends_on:
+    - pmfhxlkrfi
+  status: complete
+  acceptance:
+    - GIVEN a capability schema contract whose instruction-file path is changed to `prose.md` WHEN the contract model is loaded or self-validated THEN validation fails.
+    - GIVEN the canonical capability schema contract WHEN its directory rules are loaded THEN the executable model reports `instructions.md`.
+    - GIVEN tests assert the directory rule WHEN they need expected values THEN the expected value is tied to the contract authority rather than duplicated as an independent policy table.
+  evidence:
+    - Added contract bootstrap validation rejecting any instruction-file path other than `instructions.md`, including the legacy `prose.md` fixture.
+    - Added loader and self-validation regression tests proving a mutated contract with `prose.md` fails with a directory-rule error.
+    - Tied executable model assertions to the canonical contract YAML path before asserting the loaded model reports `instructions.md`.
+  plan: fmktobmnvx

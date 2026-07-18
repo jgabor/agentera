@@ -1,0 +1,11 @@
+id: ccjkkwgphf
+artifact: plan
+record:
+  name: Fix app-home resolution before script-path expansion
+  depends_on:
+    - swtfplzptk
+  status: complete
+  acceptance:
+    - GIVEN installed `hej` is invoked from the affected adapter or command surface WHEN no Agentera env vars are exported THEN the command first resolves the normal Agentera directory/app home and only then constructs the managed app script path.
+    - GIVEN app files are missing, stale, or repair-needed WHEN the resolved script path cannot be run THEN user-facing behavior follows the existing safe repair preview path instead of surfacing a raw `Failed to spawn /app/scripts/agentera` error.
+  plan: gghlqsvqaq

@@ -1,0 +1,12 @@
+id: nyiryhgkti
+artifact: plan
+record:
+  name: Implement supported runtime adapters
+  depends_on:
+    - ihgqyioypl
+  status: complete
+  acceptance:
+    - GIVEN OpenCode, Codex, Cursor, or Copilot WHEN inspected THEN skills, plugins, hooks, agents, configuration, enablement, trust, and native actions are reported through the common contract.
+    - GIVEN drift in an Agentera-owned runtime surface WHEN repair is previewed and approved THEN the adapter converges without touching runtime caches or user-owned collisions.
+    - GIVEN unsupported or unverified host behavior WHEN capability state is reported THEN it is explicit and cannot satisfy a mandatory support floor.
+  plan: uspieksgub

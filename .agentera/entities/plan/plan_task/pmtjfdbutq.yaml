@@ -1,0 +1,13 @@
+id: pmtjfdbutq
+artifact: plan
+record:
+  name: Ship npm CLI discoverable help
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN npx -y agentera@next --help or -h WHEN run THEN exit 0 with audience-grouped command summary matching schema top-level tree
+    - GIVEN agentera upgrade --help WHEN run THEN exit 0 listing channel, dry-run, yes, only, and format flags
+    - GIVEN validate app-home-contract WHEN run THEN core commands satisfy --help expectations
+    - GIVEN packages/cli/test/cli/ WHEN extended THEN help regression tests cover top-level and upgrade subcommand help
+  plan: lggnuirqet

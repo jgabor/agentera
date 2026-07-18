@@ -1,0 +1,18 @@
+id: stdqlaefcs
+artifact: plan
+record:
+  name: Rename capability directories, barrel, and internal dispatch code
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the packages/cli/src/capabilities/ directory WHEN inspected THEN 12 directories use English IDs (status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate)
+    - GIVEN the skills/agentera/capabilities/ directory WHEN inspected THEN 12 directories use the same English IDs
+    - GIVEN the capability barrel index.ts WHEN inspected THEN all 12 imports use English module paths and CAPABILITY_INSTRUCTIONS keys are English IDs
+    - GIVEN the capabilityContext/types.ts type union WHEN inspected THEN the CapabilityName type lists the 12 English IDs
+    - GIVEN the capabilityContext/startup.ts dispatch WHEN inspected THEN all capability string comparisons use English IDs
+    - GIVEN the capabilityContext guard files (realisera, orchestration, evidence, closeout, benchmark) WHEN inspected THEN capability name checks and provenance strings use English IDs and agentera prime (not agentera hej)
+    - GIVEN the cli/help.ts example WHEN inspected THEN the --context example uses an English capability name
+    - GIVEN pnpm -C packages/cli run typecheck WHEN executed THEN it passes with zero type errors
+    - GIVEN pnpm -C packages/cli build WHEN executed THEN it passes with zero errors
+  plan: rfsasxqeop

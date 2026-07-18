@@ -1,0 +1,19 @@
+id: uwlskomonx
+artifact: plan
+record:
+  name: Final State Sync, The Plan-Level Current-State Check
+  depends_on:
+    - iclooizxob
+    - rymvwjgjrz
+    - vcugwfhhtx
+    - karnadakxb
+    - eslzjqsdwn
+    - hfrqizfcol
+    - fenptsjogh
+  status: complete
+  acceptance:
+    - GIVEN Tasks 1-7 are complete WHEN final current-state check runs THEN TODO, changelog, progress, docs metadata, and plan state reflect Decision 45 execution evidence only
+    - GIVEN the active plan is ready for conductor closure WHEN all tasks are complete THEN future `/agentera` briefing will no longer treat Decision 45 as pending work after conductor-owned closure
+    - GIVEN unrelated follow-ups remain WHEN pre-closure sync completes THEN optional Claude live-smoke and generated install-root contract work stay separate and vision/objective state is untouched
+    - GIVEN Decision 45 introduced a breaking CLI rename WHEN final docs state is reviewed THEN current docs and changelog summarize the `doctor` change without claiming release publication
+  plan: vxmzhajgdo

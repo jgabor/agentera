@@ -1,0 +1,25 @@
+id: bwixuhkmjf
+artifact: plan
+record:
+  name: Provide snapshot-stable bounded listing
+  depends_on:
+    - xbuanskzql
+    - lptccttlhl
+    - qhtzpvbazx
+  status: blocked
+  acceptance:
+    - GIVEN more entries than one response permits WHEN listing begins THEN deterministic ordering and an opaque snapshot cursor permit traversal without duplication or omission.
+    - GIVEN entries append after the first page WHEN the original cursor continues THEN results obey the authority's declared snapshot semantics.
+    - GIVEN active, summary, and archive-only entries WHEN listed THEN identity, current status, detail availability, and provenance remain distinguishable.
+    - GIVEN representative small and large archives WHEN benchmarks run THEN latency, memory, and response bytes satisfy declared thresholds or trigger the deferred-index decision.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Bounded list fallback repeats the same cursor/page; D-prefixed legacy decision summaries remain skipped; live decisions list reports 46 while compact reports 50.
+    provenance:
+      attempt_id: task-9-attempt-2
+      source: audit-task-9-121719c6+c4f5061e
+      recorded_at: 2026-07-13 16:53
+      writer_command: agentera state plan record-evaluation
+  plan: oxisposbmm

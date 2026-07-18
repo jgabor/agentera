@@ -1,0 +1,13 @@
+id: nwangmunds
+artifact: plan
+record:
+  name: Normalize Capability Handoff Prose
+  depends_on:
+    - vttxrooria
+  status: complete
+  acceptance:
+    - GIVEN capability prose recommends another capability WHEN current prose is reviewed THEN standalone slash-capability labels such as `/realisera` are replaced with glyph plus canonical capability labels such as `⧉ realisera`
+    - GIVEN prose teaches explicit current invocation or route examples WHEN current docs are reviewed THEN examples use `/agentera <alias>` rather than standalone slash-capability names
+    - GIVEN slash-form text is historical evidence WHEN normalization runs THEN it is preserved only when clearly historical or compatibility-scoped
+    - GIVEN runtime question-tool guidance is updated WHEN bounded choices are documented THEN Claude Code `AskUserQuestion`, Copilot `ask_user`, Codex `request_user_input`, and OpenCode `question` are treated as current examples of host substrates, not a new schema authority
+  plan: ympgbpliic

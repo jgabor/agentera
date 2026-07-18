@@ -1,0 +1,16 @@
+id: nkpgypxuei
+artifact: progress
+record:
+  timestamp: 2026-07-16 16:28
+  type: fix
+  phase: build
+  what: "Completed the Plan Task 5 retry closeout: corrected the remaining current contract vocabulary to use the state namespace, preserved immutable Cycle 855, and synchronized the plan with typed progress evidence for all five completed tasks before confirming plan completion."
+  inspiration: Plan Task 5 final retry closeout after cycle 857 and final gate rerun.
+  discovered: The current vocabulary index and agent-ready contract retained two stale flat plan/docs state references even after the runtime fallback repair; both now distinguish slash routing and capability guidance from agentera state plan and state docs reads. The immutable Cycle 855 archive remains untouched.
+  verified: "Full CLI Vitest: 200 files and 2326 tests passed; focused descriptor, fallback, compatibility, status, and vocabulary validation: 4 files and 89 tests passed. Typecheck passed. bundle:data passed with extract-corpus parity. Capability validation status and plan passed; capability-contract validation passed 2/2. Live pretty UTF-8 JSON: bare prime 11185/12000 bytes and status context 24174/25000 bytes. Canonical state plan --fields entries reports all five tasks complete with evidence_status=present and progress pointers 847, 849, 852, 854, and 857; plan summary evidence_status=complete and lifecycle status=complete. state todo reports 31 open entries, including deferred recommendations 4 through 7. check compact passed with over_limit=0, formatting=0, protected_overflow=0, and errors=0; progress:793 archive recovery refusal remains preserved."
+  next: Review the staged final synchronization diff and commit locally; do not push, publish, tag, modify vision/objective, or implement deferred TODO recommendations.
+  context:
+    intent: Record the final authoritative correction and closeout state after the independent final evaluation failure.
+    constraints: Do not rewrite immutable Cycle 855 or prior evaluation history. Keep the work limited to final contract, descriptor, parity, regression, and state synchronization.
+    unknowns: none
+    scope: references/cli/agent-ready-state-contract.yaml; references/cli/vocabulary-index.yaml; .agentera/plan.yaml; .agentera/progress.yaml; .agentera/archive/progress/858.yaml

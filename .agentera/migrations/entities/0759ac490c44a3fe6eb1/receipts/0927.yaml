@@ -1,0 +1,13 @@
+id: ujbynnbewl
+artifact: plan
+record:
+  name: Define Registry Interface And Identity Model
+  depends_on:
+    - asqmaiinoe
+  status: complete
+  acceptance:
+    - GIVEN canonical artifact schemas carry metadata WHEN the registry Interface is defined THEN artifact ID, display name, default path, producer, consumer, artifact type, scope, and path-template facts have one authoritative source
+    - GIVEN docs.yaml may override project-local paths WHEN precedence is defined THEN the registry owns known artifact identity and defaults while docs.yaml cannot create canonical IDs or own producers, consumers, scope, or type
+    - GIVEN capability-local schemas need local meaning WHEN their reference shape is specified THEN canonical identity is expressed by artifact ID and local usage role while role-specific descriptions remain optional
+    - GIVEN special cases are modeled WHEN registry metadata is reviewed THEN PROFILE.md, PLAN_archive, harness paths, objective paths, and global/local artifacts are represented without name-specific validator exceptions
+  plan: ilsspfichd
