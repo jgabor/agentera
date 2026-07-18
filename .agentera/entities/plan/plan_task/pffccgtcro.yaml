@@ -11,3 +11,13 @@ record:
     - GIVEN stale, rolled-back, or conflicting evidence WHEN upgrade repeats THEN it refuses further effects and retains all evidence.
     - GIVEN recovery tests WHEN they run THEN representative interruption, matching continuation, replay, and conflict refusal pass without duplicating lower-level coverage.
   plan: zqwisfegxj
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Critical: marker presence bypasses durable recovery classification. A cutover-phase interruption remains incomplete on repeated upgrade --yes, and rollback_prepared permits runtime/cleanup effects instead of refusing. See upgradeOrchestrator entity readiness marker shortcut and stateMode marker-only detection; add marker-visible cutover resume and rollback_prepared refusal integration coverage."
+    provenance:
+      attempt_id: task-pffccgtcro-audit-1
+      source: orchestrate audit evaluation for task pffccgtcro
+      recorded_at: 2026-07-18 11:28
+      writer_command: agentera state plan record-evaluation

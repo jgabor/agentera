@@ -574,7 +574,11 @@ entity_migration:
         matching operation is an idempotent no-op. Rolled-back, stale,
         unrelated, corrupt, tampered, or multiple operations refuse all further
         effects while retaining every evidence path. Selection never uses
-        recency or path order and never rolls back automatically.
+        recency or path order and never rolls back automatically. Marker
+        presence never establishes completed authority by itself: upgrade first
+        validates the owning durable operation, resumes a matching forward
+        interruption, and admits a no-op only for cutover_complete evidence
+        whose marker and canonical graph still match their receipts.
       preflight: >-
         Upgrade plans artifact normalization, entity readiness, runtime work,
         and cleanup read-only before any selected apply function runs. Any

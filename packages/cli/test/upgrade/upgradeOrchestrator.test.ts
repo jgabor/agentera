@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import { applyEntityMigration } from "../../src/state/entityMigrationApply.js";
+import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
 import {
   STATUS_MANUAL_REVIEW_NEEDED,
   STATUS_NO_CHANGES_NEEDED,
@@ -115,7 +117,7 @@ describe("buildUpgradePlan", () => {
     expect(JSON.stringify(snapshotTree(appHome))).toBe(appBefore);
   });
 
-  it("plans empty state as initialization and valid entity state as a no-op", () => {
+  it("plans empty state as initialization and only completed entity state as a no-op", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const empty = path.join(tmp, "empty-state");
@@ -123,9 +125,16 @@ describe("buildUpgradePlan", () => {
     const emptyPlan = buildUpgradePlan({ installRoot: appHome, home, project: empty, channel: "development", dryRun: true, only: ["artifacts"] });
     expect(emptyPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "pending", action: "initialize-entity-state" });
 
+    const orphaned = path.join(tmp, "orphaned-marker");
+    fs.mkdirSync(path.join(orphaned, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(orphaned, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const orphanedPlan = buildUpgradePlan({ installRoot: appHome, home, project: orphaned, channel: "development", dryRun: true, only: ["artifacts"] });
+    expect(orphanedPlan.phases.find((phase) => phase.name === "entities")?.status).toBe("blocked");
+
     const existing = path.join(tmp, "existing-entities");
-    fs.mkdirSync(path.join(existing, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(existing, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.mkdirSync(existing);
+    const preview = previewEntityMigration(existing, REPO_ROOT);
+    applyEntityMigration(existing, REPO_ROOT, preview.source_fingerprint, preview.preview_digest);
     const existingPlan = buildUpgradePlan({ installRoot: appHome, home, project: existing, channel: "development", dryRun: true, only: ["artifacts"] });
     expect(existingPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "noop", action: "entity-state-active" });
   });

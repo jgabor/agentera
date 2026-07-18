@@ -239,13 +239,29 @@ function entityReadinessPhase(
   selected: boolean,
 ): UpgradeOrchestratorPhase {
   try {
-    if (detectStateMode(project, sourceRoot) === "entities") {
+    const recovery = inspectUpgradeEntityMigration(project, sourceRoot);
+    if (recovery?.phase === "cutover_complete") {
       return summarizeOrchestratorPhase("entities", [{
         status: "noop",
         action: "entity-state-active",
         message: "validated entity authority is already active",
       }]);
     }
+    if (recovery) {
+      if (!selected) {
+        return summarizeOrchestratorPhase("entities", [{
+          status: "blocked",
+          action: "entity-cutover-required",
+          message: "an interrupted entity cutover must complete before runtime-only or cleanup-only upgrade effects; include artifacts to continue it safely",
+        }]);
+      }
+      return summarizeOrchestratorPhase("entities", [{
+        status: "pending",
+        action: "entity-cutover",
+        message: `matching interrupted entity cutover '${recovery.operationId}' is ready for automatic continuation`,
+      }]);
+    }
+    if (detectStateMode(project, sourceRoot) === "entities") throw new Error("entity-state marker has no exactly matching completed durable migration operation");
     if (!selected) {
       return summarizeOrchestratorPhase("entities", [{
         status: "blocked",
@@ -258,14 +274,6 @@ function entityReadinessPhase(
         status: "blocked",
         action: "resolve-v1-state",
         message: "pending v1 Markdown conversion cannot be used as entity input without a prerequisite write; complete the deterministic v1 conversion, then retry the upgrade",
-      }]);
-    }
-    const recoveryOperation = inspectUpgradeEntityMigration(project, sourceRoot);
-    if (recoveryOperation) {
-      return summarizeOrchestratorPhase("entities", [{
-        status: "pending",
-        action: "entity-cutover",
-        message: `matching interrupted entity cutover '${recoveryOperation}' is ready for automatic continuation`,
       }]);
     }
     const preview = previewEntityMigration(project, sourceRoot, { limit: 1 });

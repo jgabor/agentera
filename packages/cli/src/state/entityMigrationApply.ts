@@ -509,12 +509,25 @@ function matchingUpgradeOperation(project: string, sourceRoot: string, plan: Dur
   return id;
 }
 
+export interface UpgradeEntityMigrationInspection {
+  operationId: string;
+  phase: Phase;
+}
+
 /** Read-only bounded selection used by upgrade planning and repeated apply. */
-export function inspectUpgradeEntityMigration(projectRoot: string, sourceRoot: string): string | undefined {
+export function inspectUpgradeEntityMigration(projectRoot: string, sourceRoot: string): UpgradeEntityMigrationInspection | undefined {
   const project = validateRealProjectRoot(projectRoot).path;
   const plan = planEntityMigration(project, sourceRoot);
   assertPlanReady(plan, sourceRoot);
-  return matchingUpgradeOperation(project, sourceRoot, plan);
+  const operationId = matchingUpgradeOperation(project, sourceRoot, plan);
+  if (!operationId) return undefined;
+  const journal = loadJournal(project, operationId).journal;
+  if (journal.phase === "cutover_complete") {
+    const { entries, receipts } = loadEvidence(project, journal);
+    verifyManifestGraph(project, sourceRoot, entries);
+    if (!matchesReceipt(project, MARKER, receipts[MARKER])) throw new EntityMigrationOperationError("marker_diverged", "completed migration marker changed after cutover", "Retain all recovery evidence and repair no authority files manually.");
+  }
+  return { operationId, phase: journal.phase };
 }
 
 function retainedEvidenceFile(project: string, relativePath: string): RolledBackEntityMigrationEvidenceInspection["evidence"][number] {

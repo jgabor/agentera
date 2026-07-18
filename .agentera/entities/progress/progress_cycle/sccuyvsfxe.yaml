@@ -1,0 +1,16 @@
+id: sccuyvsfxe
+artifact: progress
+record:
+  timestamp: 2026-07-18 11:43
+  type: fix
+  phase: build
+  what: Retry pffccgtcro corrected marker-visible upgrade recovery classification. Upgrade now validates the owning durable operation before treating entity authority as complete, resumes matching cutover-phase work, and refuses rollback or invalid evidence before other effects.
+  context:
+    intent: Fix the audit-discovered marker short-circuit without changing downstream verification or output scope.
+    constraints: Preserved all-before-effects preflight, internal Git safety, low-level explicit recovery, marker-last cutover, and retained evidence; no release, output redesign, push, or unrelated cleanup.
+    unknowns: "Resolved: marker visibility is not completion; durable phase and evidence classification must precede no-op classification."
+    scope: Upgrade entity readiness, read-only durable operation inspection, authority text, and focused recovery/orchestrator integration tests.
+  inspiration: Persisted audit failure task-pffccgtcro-audit-1 and Decision 94 marker-last durable migration semantics.
+  discovered: The first implementation placed durable inspection after detectStateMode, making recovery unreachable once the marker was published at cutover.
+  verified: pnpm -C packages/cli exec vp test run test/upgrade/upgradeEntityCutover.test.ts test/upgrade/upgradeOrchestrator.test.ts passed 27/27; pnpm -C packages/cli test passed 2708/2708; typecheck and build passed; capability-contract validation passed 2/2; check compact passed with zero over-limit artifacts.
+  next: Task yknigjocnc still owns mandatory startup verification and broader output behavior; no downstream work was included.

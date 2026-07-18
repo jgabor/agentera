@@ -96,8 +96,15 @@ function interrupt(root: string, phase = "prepare_recovery"): string {
 function canonicalBytes(root: string): Array<[string, Buffer]> {
   const base = path.join(root, ".agentera");
   return fs.readdirSync(base, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && (entry.parentPath.includes("/entities") || entry.name === "state-mode.yaml"))
-    .map((entry) => [path.relative(root, path.join(entry.parentPath, entry.name)), fs.readFileSync(path.join(entry.parentPath, entry.name))]);
+    .filter((entry) => entry.isFile())
+    .map((entry) => [path.relative(root, path.join(entry.parentPath, entry.name)), fs.readFileSync(path.join(entry.parentPath, entry.name))] as [string, Buffer])
+    .filter(([relative]) => relative.startsWith(".agentera/entities/") || relative === ".agentera/state-mode.yaml");
+}
+
+function treeBytes(root: string): Array<[string, Buffer]> {
+  return fs.readdirSync(root, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => [path.relative(root, path.join(entry.parentPath, entry.name)), fs.readFileSync(path.join(entry.parentPath, entry.name))] as [string, Buffer]);
 }
 
 beforeEach(() => {
@@ -159,6 +166,21 @@ describe("upgrade-owned entity cutover", () => {
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
   }, 30_000);
 
+  it("continues a marker-visible cutover interruption without rewriting canonical bytes", () => {
+    const root = project();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const operation = interrupt(root, "cutover");
+    const before = canonicalBytes(root);
+
+    const resumed = applyUpgrade(root, appHome, home);
+
+    expect(resumed.code, resumed.err || resumed.out).toBe(0);
+    expect(canonicalBytes(root)).toEqual(before);
+    expect(fs.readFileSync(path.join(root, ".agentera/migrations/entities", operation, "journal.yaml"), "utf8")).toMatch(/phase: cutover_complete/);
+  }, 30_000);
+
   it("reports completed replay as a byte-preserving no-op", () => {
     const root = project();
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
@@ -208,6 +230,39 @@ describe("upgrade-owned entity cutover", () => {
     expect(refused.code).not.toBe(0);
     expect(fs.readdirSync(path.join(root, ".agentera/migrations/entities"))).toEqual([applied.migration_id]);
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  }, 30_000);
+
+  it("refuses marker-visible rollback preparation before unrelated upgrade effects", () => {
+    const root = project();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const preview = previewEntityMigration(root, SOURCE_ROOT);
+    const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+    const child = spawnSync(process.execPath, [MIGRATION_WORKER], {
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "rollback_prepared",
+        AGENTERA_ENTITY_MIGRATION_WORKER_OPERATION: "rollback",
+        AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root,
+        AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT,
+        AGENTERA_ENTITY_MIGRATION_ID: applied.migration_id,
+      },
+    });
+    expect(child.status).toBe(86);
+    fs.rmSync(path.join(root, ".agentera/.writer.lock"), { recursive: true, force: true });
+    const markerBefore = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
+    const appBefore = treeBytes(path.join(appHome, "app"));
+    const evidenceBefore = treeBytes(path.join(root, ".agentera/migrations/entities"));
+
+    const refused = applyUpgrade(root, appHome, home);
+
+    expect(refused.code).not.toBe(0);
+    expect(fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"))).toEqual(markerBefore);
+    expect(treeBytes(path.join(appHome, "app"))).toEqual(appBefore);
+    expect(treeBytes(path.join(root, ".agentera/migrations/entities"))).toEqual(evidenceBefore);
+    expect(fs.readFileSync(path.join(root, applied.evidence.journal), "utf8")).toMatch(/phase: rollback_prepared/);
   }, 30_000);
 
   it("leaves low-level Git apply behind its explicit approval seam", () => {
