@@ -5,6 +5,7 @@ import { emitStructured } from "./structured.js";
 import { detectStateMode } from "../state/stateMode.js";
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { isWriteVerb } from "../state/write/operations.js";
+import { commandText } from "../upgrade/upgradeCommands.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -65,7 +66,9 @@ export function enforceCompletedEntityCutover(
     return 1;
   }
   if (mode === "entities") return null;
-  const recovery = `npx -y agentera@next upgrade --channel development --project ${JSON.stringify(project)} --yes`;
+  const recovery = commandText([
+    "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--yes",
+  ]);
   const envelope = {
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",

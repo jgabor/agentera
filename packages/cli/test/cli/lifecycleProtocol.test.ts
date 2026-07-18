@@ -9,6 +9,7 @@ import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runSessionStart } from "../../src/hooks/sessionStart.js";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
+import { commandText } from "../../src/upgrade/upgradeCommands.js";
 
 const roots: string[] = [];
 
@@ -102,7 +103,9 @@ describe("final lifecycle protocol", () => {
       expect(result.rc).toBe(1); expect(result.err).toBe("");
       expect(JSON.parse(result.out).error).toEqual(expect.objectContaining({
         class: "migration_required",
-        recovery: `npx -y agentera@next upgrade --channel development --project ${JSON.stringify(root)} --yes`,
+        recovery: commandText([
+          "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", root, "--yes",
+        ]),
       }));
       expect(treeDigest(root)).toBe(before);
       expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);

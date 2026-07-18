@@ -6,6 +6,8 @@ import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
+import { commandText } from "../../src/upgrade/upgradeCommands.js";
+
 const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../..");
 const FIXTURE = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
 
@@ -16,12 +18,6 @@ function run(command: string, args: string[], cwd: string, env = process.env) {
 function git(root: string, ...args: string[]): void {
   const result = run("git", args, root);
   if (result.status !== 0) throw new Error(result.stderr);
-}
-
-function recoveryArgs(command: string): string[] {
-  const prefix = "npx -y agentera@next ";
-  expect(command.startsWith(prefix)).toBe(true);
-  return command.slice(prefix.length).match(/"[^"]*"|\S+/g)?.map((part) => part.replace(/^"|"$/g, "")) ?? [];
 }
 
 describe("packed v2-to-v3 upgrade", () => {
@@ -41,7 +37,7 @@ describe("packed v2-to-v3 upgrade", () => {
       const install = run("npm", ["install", "--ignore-scripts", "--omit=dev", "--no-audit", "--no-fund"], packageDir);
       expect(install.status, install.stderr).toBe(0);
 
-      const project = path.join(tmp, "project");
+      const project = path.join(tmp, "project $(touch shell-expansion-trap) `touch backtick-trap`");
       fs.cpSync(FIXTURE, project, { recursive: true });
       git(project, "init", "--quiet");
       git(project, "config", "user.name", "Packed Upgrade Test");
@@ -61,15 +57,21 @@ describe("packed v2-to-v3 upgrade", () => {
       const failure = JSON.parse(blockedPrime.stdout) as { error: { class: string; recovery: string } };
       expect(failure.error.class).toBe("migration_required");
 
-      const preview = run(process.execPath, [bin, ...recoveryArgs(failure.error.recovery).map((arg) => arg === "--yes" ? "--dry-run" : arg), "--format", "json"], project, env);
+      const preview = run(process.execPath, [bin, "upgrade", "--channel", "development", "--project", project, "--dry-run", "--format", "json"], project, env);
       const previewJson = JSON.parse(preview.stdout) as { install: { kind: string }; crossMajorBoundary: boolean; phases: Array<{ name: string; items: Array<{ action: string }> }> };
       expect(previewJson.install.kind).toBe("v3_self_contained_npm");
       expect(previewJson.crossMajorBoundary).toBe(false);
       expect(previewJson.phases.find((phase) => phase.name === "entities")?.items.some((item) => item.action === "entity-cutover")).toBe(true);
       expect(fs.existsSync(path.join(project, ".agentera/state-mode.yaml"))).toBe(false);
 
-      const upgraded = run(process.execPath, [bin, ...recoveryArgs(failure.error.recovery)], project, env);
+      expect(failure.error.recovery).toBe(commandText([
+        "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--yes",
+      ]));
+      const shellRecovery = failure.error.recovery.replace("npx -y agentera@next", commandText([process.execPath, bin]));
+      const upgraded = run("/bin/sh", ["-c", shellRecovery], tmp, env);
       expect(upgraded.status, `${upgraded.stdout}\n${upgraded.stderr}`).toBe(0);
+      expect(fs.existsSync(path.join(tmp, "shell-expansion-trap"))).toBe(false);
+      expect(fs.existsSync(path.join(tmp, "backtick-trap"))).toBe(false);
       expect(upgraded.stdout).toContain("state and startup validation passed");
       expect(YAML.parse(fs.readFileSync(path.join(project, ".agentera/state-mode.yaml"), "utf8"))).toMatchObject({ mode: "entities" });
 

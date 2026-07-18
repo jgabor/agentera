@@ -89,6 +89,7 @@
 
 ### Fixed
 
+- Fixed migration-required recovery commands to shell-quote project paths so shell substitutions remain literal and the intended project receives the v2-to-v3 cutover.
 - Fixed marker-absent v2 projects to select the entity cutover from project state under npm or source v3 execution, so the recovery command emitted by `prime` can complete the forward migration instead of reporting an unrelated no-op.
 - Fixed post-cutover routine query aliases, canonical-boundary Git recovery, migration-marker evidence binding, entity page byte caps, plan recovery guidance, and nested entity identity metadata.
 - Fixed the npm shim to diagnose a configured `AGENTERA_HOME` whose managed script is missing or not runnable before continuing through repository and `uvx` fallback resolution.

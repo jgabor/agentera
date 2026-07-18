@@ -1,0 +1,13 @@
+id: xebwjaembo
+artifact: progress
+record:
+  timestamp: 2026-07-18 19:46
+  type: fix
+  phase: build
+  what: Reused upgradeCommands.commandText for migration-required recovery commands and exercised the packed command through a shell-sensitive project path.
+  context:
+    intent: Retry Task udueghnaov criterion 2 after independent audit found unsafe JSON string quoting in the emitted recovery command.
+  inspiration: Failed evaluation udueghnaov-audit-1 from independent review ses_089b54023ffe16TnBtVn0tp4BF.
+  discovered: JSON string syntax is not shell quoting; double-quoted command substitutions remained executable in valid project paths.
+  verified: vp test run test/cli/lifecycleProtocol.test.ts test/packaging/packedUpgrade.test.ts passed 9/9; packed shell execution created no substitution trap files, activated the exact project, and prime retried successfully; pnpm run typecheck, pnpm run build, npm pack --dry-run --json --ignore-scripts, agentera check compact, and git diff --check passed.
+  next: Leave Task udueghnaov in_progress pending independent audit; do not add plan tasks.
