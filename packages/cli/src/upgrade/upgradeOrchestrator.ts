@@ -44,12 +44,7 @@ import {
   type LifecycleRuntimeSelector,
   type LifecycleUpgradeResult,
 } from "./lifecycleUpgrade.js";
-import {
-  acquireLifecycleOwnershipJournalLock,
-  lifecycleOwnershipJournalPath,
-  releaseLifecycleOwnershipJournalLock,
-} from "../runtime/lifecycleOwnershipJournal.js";
-import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
+import { acquireUpgradeLock, releaseUpgradeLock } from "./upgradeLock.js";
 import {
   applyPreparedEntityCutover,
   inspectEntityCutoverForUpgrade,
@@ -364,10 +359,30 @@ function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhas
 }
 
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
-  const sourceRoot = resolveSourceRootStrict();
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
-  const env: Record<string, string | undefined> = { ...process.env, HOME: home };
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
+  if (!args.yes) return buildUpgradePlanUnlocked(args, home, project);
+
+  const projectLock = acquireUpgradeLock(project, "project");
+  try {
+    const runtimeLock = acquireUpgradeLock(home, "runtime");
+    try {
+      return buildUpgradePlanUnlocked(args, home, project);
+    } finally {
+      releaseUpgradeLock(runtimeLock);
+    }
+  } finally {
+    releaseUpgradeLock(projectLock);
+  }
+}
+
+function buildUpgradePlanUnlocked(
+  args: UpgradeOrchestratorArgs,
+  home: string,
+  project: string,
+): UpgradePlanV2 {
+  const sourceRoot = resolveSourceRootStrict();
+  const env: Record<string, string | undefined> = { ...process.env, HOME: home };
   const [installRoot] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
   const channel = resolveInvokedUpdateChannel({
     channel: args.channel ?? null,
@@ -492,19 +507,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
 
   if (!migrationPreview && entityPhase) phases.push(entityPhase);
   if (lifecycleArgs && args.yes && !preflightBlocked) {
-    const applyArgs = { ...lifecycleArgs, apply: true };
-    if (secureLifecycleRemovalAvailable()) {
-      const lifecycleLock = acquireLifecycleOwnershipJournalLock(
-        lifecycleOwnershipJournalPath(installRoot),
-      );
-      try {
-        lifecycle = runLifecycleUpgrade(applyArgs);
-      } finally {
-        releaseLifecycleOwnershipJournalLock(lifecycleLock);
-      }
-    } else {
-      lifecycle = runLifecycleUpgrade(applyArgs);
-    }
+    lifecycle = runLifecycleUpgrade({ ...lifecycleArgs, apply: true });
   }
   if (lifecycle) {
     phases.push(lifecyclePhase(lifecycle));

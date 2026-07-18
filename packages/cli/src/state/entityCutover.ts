@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { writeFileAtomic } from "../upgrade/atomicWriter.js";
+import { upgradeLockPath } from "../upgrade/upgradeLock.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { verifyEntityCutoverGitSource } from "./entityCutoverGit.js";
 import { canonicalEntityEnvelopeBytes, validateEntityState } from "./entityStorage.js";
@@ -245,7 +246,8 @@ function inspect(projectRoot: string, sourceRoot: string, requireGit: boolean, w
 
   let head: string | undefined;
   if (requireGit) {
-    const allowedPaths = new Set<string>([FORWARD_MANIFEST, ENTITY_MODE_MARKER]);
+    const projectUpgradeLock = path.relative(project, upgradeLockPath(project, "project")).split(path.sep).join("/");
+    const allowedPaths = new Set<string>([FORWARD_MANIFEST, ENTITY_MODE_MARKER, projectUpgradeLock]);
     if (manifest) for (const target of targets) allowedPaths.add(target.path);
     const binding = verifyEntityCutoverGitSource(project, plan, { paths: allowedPaths, prefixes: [MIGRATION_STAGING, ...(writerLockHeld ? [".agentera/.writer.lock"] : [])] });
     head = binding.head;

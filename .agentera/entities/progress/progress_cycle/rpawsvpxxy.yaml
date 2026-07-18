@@ -1,0 +1,15 @@
+id: rpawsvpxxy
+artifact: progress
+record:
+  timestamp: 2026-07-18 20:08
+  type: fix
+  phase: build
+  what: Added exclusive project and shared-runtime ownership around the one-command upgrade, with token-checked release and fail-closed manual recovery.
+  context:
+    intent: Ensure overlapping upgrades cannot mutate the same project or shared runtime while independent mutation domains remain available.
+    constraints: No leases, recovery journal, stale takeover, retries, additional mutation domains, migration postconditions, cutover redesign, release, publication, or suite-version change.
+    unknowns: none
+    scope: UPGRADE.md; upgrade command/orchestrator/lock and entity-cutover Git allowance; four proportional lock tests and protocol-surface exception hash.
+  inspiration: Plan Task qrdnhmioyq and its four-case proportional test contract.
+  verified: "Criterion 1: test/upgrade/upgradeLock.test.ts passed same-project exclusion, shared-runtime exclusion, and independent project/runtime domain cases; focused upgrade suites passed 64/64. Criterion 2: the checked-release case proved a replaced owner token cannot be unlinked. Criterion 3: the stale-owner case remained locked and returned the bounded inspect/remove/rerun instruction without takeover. Full CLI tests passed 2587/2587; pnpm run typecheck and pnpm run build passed."
+  next: Keep Task qrdnhmioyq in_progress for independent audit; do not begin later plan tasks.

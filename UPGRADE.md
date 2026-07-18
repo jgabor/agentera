@@ -256,3 +256,12 @@ node packages/cli/dist/bin/agentera.js check validate release-metadata
 pnpm -C packages/cli run bundle:data
 npm pack --dry-run --json --ignore-scripts
 ```
+
+## Mutation ownership
+
+Upgrade apply holds one exclusive project lock and one exclusive shared-runtime
+lock before mutation begins. Lock creation is atomic, and release succeeds only
+for the matching ownership token. A pre-existing stale or malformed lock stops
+the upgrade: inspect the named lock file, remove only that file after confirming
+no upgrade owns it, then rerun. Agentera does not reclaim upgrade locks
+automatically.

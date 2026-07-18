@@ -4,7 +4,7 @@ record:
   name: Characterize the fixed migration and reproduce the recovery loop
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a recognized marker-absent v2 project under npm or source v3 execution WHEN preview runs THEN entity cutover is required without mutation.
     - GIVEN the recovery command emitted by prime WHEN it runs THEN retrying prime succeeds or recovery fails nonzero with a more specific handoff.
@@ -13,12 +13,12 @@ record:
   test_proportionality: One packed fixture, npm/source variants, one recovery-loop case, and one fault per durable boundary.
   plan: psmmjdmrwd
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Criterion 2: migration recovery uses JSON string quoting rather than the existing shell-quoting primitive, so valid project paths containing shell substitutions can execute or target the wrong path. Plan-task additions finding dismissed because all 13 approved task entities predated orchestration and were folded into the first implementation commit by policy."
     provenance:
-      attempt_id: udueghnaov-audit-1
-      source: independent review ses_089b54023ffe16TnBtVn0tp4BF
-      recorded_at: 2026-07-18 19:43
+      attempt_id: udueghnaov-audit-2
+      source: independent review ses_089b54023ffe16TnBtVn0tp4BF after commit 6e4c2dab
+      recorded_at: 2026-07-18 19:53
       writer_command: agentera state plan record-evaluation

@@ -15,6 +15,7 @@ import {
   type VerifyContext,
 } from "./upgradeVerify.js";
 import { detectStateMode } from "../../state/stateMode.js";
+import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -162,7 +163,9 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     }
     plan = buildUpgradePlan(orchestratorArgs);
   } catch (exc) {
-    if (fullEntityCutoverApply) {
+    if (exc instanceof UpgradeLockError) {
+      err(`upgrade error: ${exc.message}\n`);
+    } else if (fullEntityCutoverApply) {
       err("upgrade error: the v2-to-v3 upgrade did not complete. Rerun the same upgrade command to continue forward.\n");
     } else {
       err(`upgrade error: ${(exc as Error).message}\n`);

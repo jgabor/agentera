@@ -1,58 +1,80 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { pathExists } from "../core/paths.js";
-import { writeFileAtomic } from "./atomicWriter.js";
+export type UpgradeMutationDomain = "project" | "runtime";
 
-const LOCK_NAME = "upgrade.lock";
-
-export function upgradeLockPath(appHome: string): string {
-  return path.join(appHome, ".agentera", LOCK_NAME);
+interface UpgradeLockRecord {
+  pid: number;
+  token: string;
+  started: string;
 }
 
-function isProcessAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ESRCH") {
-      return false;
-    }
-    return true;
+export interface UpgradeLock {
+  domain: UpgradeMutationDomain;
+  path: string;
+  token: string;
+}
+
+const MAX_LOCK_BYTES = 4 * 1024;
+
+export class UpgradeLockError extends Error {
+  constructor(lockPath: string) {
+    super(`upgrade mutation is locked; inspect ${lockPath}, remove that file only if no upgrade owns it, then rerun`);
+    this.name = "UpgradeLockError";
   }
 }
 
-export function acquireUpgradeLock(appHome: string): void {
-  const lockDir = path.join(appHome, ".agentera");
-  fs.mkdirSync(lockDir, { recursive: true });
-  const lockPath = upgradeLockPath(appHome);
-  if (pathExists(lockPath)) {
-    let existing: { pid?: number } = {};
-    try {
-      existing = JSON.parse(fs.readFileSync(lockPath, "utf8"));
-    } catch {
-      existing = {};
-    }
-    const pid = typeof existing.pid === "number" ? existing.pid : NaN;
-    if (Number.isFinite(pid) && isProcessAlive(pid)) {
-      throw new Error(
-        `upgrade in progress (pid ${pid}); remove ${lockPath} if stale`,
-      );
-    }
-    fs.rmSync(lockPath, { force: true });
-  }
-  const payload = JSON.stringify({
-    pid: process.pid,
-    started: new Date().toISOString(),
-  });
-  writeFileAtomic(lockPath, payload);
+export function upgradeLockPath(root: string, domain: UpgradeMutationDomain): string {
+  return path.join(root, ".agentera", `upgrade-${domain}.lock`);
 }
 
-export function releaseUpgradeLock(appHome: string): void {
-  const lockPath = upgradeLockPath(appHome);
+function manualRecovery(lockPath: string): Error {
+  return new UpgradeLockError(lockPath);
+}
+
+function lockRecord(lockPath: string): UpgradeLockRecord | null {
   try {
-    fs.rmSync(lockPath, { force: true });
+    const stat = fs.lstatSync(lockPath);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_LOCK_BYTES) return null;
+    const value: unknown = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    if (
+      value === null
+      || typeof value !== "object"
+      || !Number.isSafeInteger((value as { pid?: unknown }).pid)
+      || (value as { pid: number }).pid <= 0
+      || typeof (value as { token?: unknown }).token !== "string"
+      || (value as { token: string }).token.length === 0
+      || typeof (value as { started?: unknown }).started !== "string"
+    ) return null;
+    return value as UpgradeLockRecord;
   } catch {
-    // already gone
+    return null;
   }
+}
+
+export function acquireUpgradeLock(root: string, domain: UpgradeMutationDomain): UpgradeLock {
+  const lockPath = upgradeLockPath(root, domain);
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  const token = randomUUID();
+  let fd: number;
+  try {
+    fd = fs.openSync(lockPath, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL, 0o600);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") throw manualRecovery(lockPath);
+    throw error;
+  }
+  try {
+    fs.writeFileSync(fd, `${JSON.stringify({ pid: process.pid, token, started: new Date().toISOString() })}\n`);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  return { domain, path: lockPath, token };
+}
+
+export function releaseUpgradeLock(lock: UpgradeLock): void {
+  const record = lockRecord(lock.path);
+  if (!record || record.token !== lock.token) throw manualRecovery(lock.path);
+  fs.unlinkSync(lock.path);
 }

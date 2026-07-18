@@ -12,10 +12,6 @@ import {
   AGENTERA_USER_STATE_NAMES,
 } from "./doctor.js";
 import {
-  acquireUpgradeLock,
-  releaseUpgradeLock,
-} from "./upgradeLock.js";
-import {
   applyV1ArtifactsPhase,
   planV1ArtifactsPhase,
 } from "./migrateArtifactsV1ToV2.js";
@@ -550,24 +546,19 @@ export function applyMigrationPhases(
   preview: DryRunMigrationResult,
   only: readonly MigrationPhaseName[] = ["artifacts", "runtime", "cleanup"],
 ): DryRunMigrationResult {
-  acquireUpgradeLock(ctx.appHome);
-  try {
-    const result: DryRunMigrationResult = {
-      artifacts: { ...preview.artifacts, items: preview.artifacts.items.map((item) => ({ ...item })) },
-      runtime: { ...preview.runtime, items: preview.runtime.items.map((item) => ({ ...item })) },
-      cleanup: { ...preview.cleanup, items: preview.cleanup.items.map((item) => ({ ...item })) },
-    };
-    if (only.includes("artifacts")) {
-      applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);
-    }
-    if (only.includes("runtime")) {
-      applyRuntimeRewirePhase(result.runtime, ctx);
-    }
-    if (only.includes("cleanup")) {
-      applyCleanupPhase(result.cleanup, ctx);
-    }
-    return result;
-  } finally {
-    releaseUpgradeLock(ctx.appHome);
+  const result: DryRunMigrationResult = {
+    artifacts: { ...preview.artifacts, items: preview.artifacts.items.map((item) => ({ ...item })) },
+    runtime: { ...preview.runtime, items: preview.runtime.items.map((item) => ({ ...item })) },
+    cleanup: { ...preview.cleanup, items: preview.cleanup.items.map((item) => ({ ...item })) },
+  };
+  if (only.includes("artifacts")) {
+    applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);
   }
+  if (only.includes("runtime")) {
+    applyRuntimeRewirePhase(result.runtime, ctx);
+  }
+  if (only.includes("cleanup")) {
+    applyCleanupPhase(result.cleanup, ctx);
+  }
+  return result;
 }

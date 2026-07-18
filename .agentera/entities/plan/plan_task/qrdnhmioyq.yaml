@@ -4,7 +4,7 @@ record:
   name: Establish exclusive mutation ownership
   depends_on:
     - udueghnaov
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN overlapping project or runtime mutations WHEN they start THEN only one process mutates each shared domain.
     - GIVEN a held lock WHEN another process exits THEN it cannot release the owner's lock.
