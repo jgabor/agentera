@@ -1,0 +1,13 @@
+id: uwfilxpkrh
+artifact: plan
+record:
+  name: Delegate entity cutover under upgrade consent
+  depends_on:
+    - xhxchnzrhy
+  status: pending
+  acceptance:
+    - GIVEN ready v2 state WHEN upgrade --yes runs THEN migration completes without hashes, approval files, force flags, or operation IDs.
+    - GIVEN a Git checkout WHEN cutover begins THEN existing root, source, worktree, and stale-source protections are enforced internally.
+    - GIVEN publication WHEN authority changes THEN entities and relationships have validated and legacy sources plus recovery evidence remain available.
+    - GIVEN focused tests WHEN delegation runs THEN Git and non-Git success plus stale-source refusal pass while low-level recovery remains supported.
+  plan: zqwisfegxj

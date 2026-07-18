@@ -33,6 +33,20 @@ function copyFixture(name: string, dest: string): string {
   return dest;
 }
 
+function snapshotTree(root: string): Record<string, string> {
+  const snapshot: Record<string, string> = {};
+  const visit = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      const relative = path.relative(root, absolute);
+      if (entry.isDirectory()) visit(absolute);
+      else snapshot[relative] = fs.readFileSync(absolute).toString("base64");
+    }
+  };
+  visit(root);
+  return snapshot;
+}
+
 function managedV2(appHome: string): void {
   const app = path.join(appHome, "app");
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
@@ -68,6 +82,79 @@ afterEach(() => {
 });
 
 describe("buildUpgradePlan", () => {
+  it("includes blocker-free entity readiness in full and artifacts-only v2 plans without writes", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    for (const only of [null, ["artifacts"] as const]) {
+      const project = copyFixture("v2-yaml-project", path.join(tmp, only ? "artifacts-entities" : "full-entities"));
+      const before = fs.readdirSync(path.join(project, ".agentera")).sort();
+
+      const plan = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", dryRun: true, only });
+      const entities = plan.phases.find((phase) => phase.name === "entities");
+
+      expect(entities).toMatchObject({ status: "pending", items: [expect.objectContaining({ action: "entity-cutover", status: "pending" })] });
+      expect(fs.readdirSync(path.join(project, ".agentera")).sort()).toEqual(before);
+      expect(fs.existsSync(path.join(project, ".agentera/state-mode.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(project, ".agentera/entities"))).toBe(false);
+    }
+  });
+
+  it("blocks all apply effects when entity readiness is blocked", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "blocked-entities"));
+    fs.writeFileSync(path.join(project, ".agentera/progress.yaml"), "cycles: not-a-list\n");
+    const projectBefore = JSON.stringify(snapshotTree(project));
+    const appBefore = JSON.stringify(snapshotTree(appHome));
+
+    const plan = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", yes: true });
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.phases.find((phase) => phase.name === "entities")?.status).toBe("blocked");
+    expect(JSON.stringify(snapshotTree(project))).toBe(projectBefore);
+    expect(JSON.stringify(snapshotTree(appHome))).toBe(appBefore);
+  });
+
+  it("plans empty state as initialization and valid entity state as a no-op", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const empty = path.join(tmp, "empty-state");
+    fs.mkdirSync(empty);
+    const emptyPlan = buildUpgradePlan({ installRoot: appHome, home, project: empty, channel: "development", dryRun: true, only: ["artifacts"] });
+    expect(emptyPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "pending", action: "initialize-entity-state" });
+
+    const existing = path.join(tmp, "existing-entities");
+    fs.mkdirSync(path.join(existing, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(existing, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const existingPlan = buildUpgradePlan({ installRoot: appHome, home, project: existing, channel: "development", dryRun: true, only: ["artifacts"] });
+    expect(existingPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "noop", action: "entity-state-active" });
+  });
+
+  it.each([["runtime"], ["cleanup"]] as const)("refuses marker-absent %s-only apply before effects", (only) => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, `${only}-only`));
+    const before = JSON.stringify(snapshotTree(tmp));
+
+    const plan = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", yes: true, only: [only] });
+
+    expect(plan.status).toBe("blocked");
+    expect(plan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "blocked", action: "entity-cutover-required" });
+    expect(JSON.stringify(snapshotTree(tmp))).toBe(before);
+  });
+
+  it("blocks unresolved v1 Markdown but accepts the same source after deterministic conversion is resolved", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-v1-md-project", path.join(tmp, "v1-readiness"));
+    const unresolved = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", dryRun: true, only: ["artifacts"] });
+    expect(unresolved.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "blocked", action: "resolve-v1-state" });
+
+    fs.writeFileSync(path.join(project, ".agentera/progress.yaml"), "cycles: []\n");
+    const resolved = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", dryRun: true, only: ["artifacts"] });
+    expect(resolved.phases.find((phase) => phase.name === "entities")?.status).toBe("pending");
+  });
+
   it("skips v2→v3 migration phases for v3 self-contained npm bundles", () => {
     const bundle = path.join(tmp, "npx-bundle");
     fs.mkdirSync(path.join(bundle, "skills", "agentera"), { recursive: true });
@@ -111,7 +198,7 @@ describe("buildUpgradePlan", () => {
 
     expect(plan.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(plan.channel.channel).toBe("development");
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "runtime", "cleanup", "lifecycle"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "runtime", "cleanup", "lifecycle"]);
     expect(plan.phases.every((p) => p.summary && Array.isArray(p.items))).toBe(true);
     expect(plan.dryRunCommand).toContain("--dry-run");
     expect(plan.applyCommand).toContain("--yes");
@@ -224,7 +311,7 @@ describe("buildUpgradePlan", () => {
       only: ["artifacts"],
     });
 
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities"]);
     expect(plan.phases.some((p) => p.name === "runtime")).toBe(false);
     expect(plan.phases.some((p) => p.name === "cleanup")).toBe(false);
   });

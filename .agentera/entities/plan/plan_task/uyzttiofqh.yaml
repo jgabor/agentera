@@ -1,0 +1,16 @@
+id: uyzttiofqh
+artifact: plan
+record:
+  name: Synchronize final project state
+  depends_on:
+    - xhxchnzrhy
+    - uwfilxpkrh
+    - pffccgtcro
+    - yknigjocnc
+    - wcggulwmii
+  status: pending
+  acceptance:
+    - GIVEN all gates pass WHEN state is synchronized THEN plan, progress, documentation inventory, and health evidence match the delivered behavior.
+    - GIVEN the related manual-review TODO WHEN evaluated THEN it closes only if fully satisfied; otherwise it remains open with evidence-backed scope.
+    - GIVEN final verification WHEN the plan is evaluated THEN full tests, state validation, compaction, package checks, and a clean worktree prove completion while unrelated TODOs remain unchanged.
+  plan: zqwisfegxj

@@ -1,0 +1,13 @@
+id: xhxchnzrhy
+artifact: plan
+record:
+  name: Compose upgrade readiness before effects
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN supported v2 state WHEN full or artifacts-only upgrade is planned THEN entity cutover is included without a separate workflow.
+    - GIVEN any state blocker WHEN apply is requested THEN no artifact, runtime, cleanup, entity, or authority mutation occurs.
+    - GIVEN empty or valid entity state WHEN planning runs THEN state handling is safe initialization or a no-op.
+    - GIVEN marker-absent state WHEN runtime-only or cleanup-only apply is requested THEN it refuses before effects; ready, blocked, empty, existing-entity, and resolved v1 cases have proportional tests.
+  plan: zqwisfegxj

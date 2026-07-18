@@ -49,13 +49,15 @@ import {
   releaseLifecycleOwnershipJournalLock,
 } from "../runtime/lifecycleOwnershipJournal.js";
 import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
+import { previewEntityMigration } from "../state/entityMigrationPreview.js";
+import { detectStateMode } from "../state/stateMode.js";
 
 /**
  * Phased upgrade orchestration for v2→v3 migration and project-level migration work.
  * Behavior oracle: scripts/agentera_upgrade.py (phase structure, lifecycle mapping).
  */
 
-export type UpgradePhaseName = "detect" | "artifacts" | "runtime" | "cleanup" | "lifecycle";
+export type UpgradePhaseName = "detect" | "artifacts" | "entities" | "runtime" | "cleanup" | "lifecycle";
 export type { UpgradeOnlyPhase } from "./upgradeCommands.js";
 
 const DEFAULT_PHASES: readonly UpgradePhaseName[] = ["detect", "artifacts", "runtime", "cleanup"];
@@ -223,6 +225,54 @@ function migrationPhaseToOrchestrator(phase: MigrationPhase): UpgradeOrchestrato
   };
 }
 
+function entityReadinessPhase(
+  project: string,
+  sourceRoot: string,
+  pendingV1Artifacts: boolean,
+  selected: boolean,
+): UpgradeOrchestratorPhase {
+  try {
+    if (detectStateMode(project, sourceRoot) === "entities") {
+      return summarizeOrchestratorPhase("entities", [{
+        status: "noop",
+        action: "entity-state-active",
+        message: "validated entity authority is already active",
+      }]);
+    }
+    if (!selected) {
+      return summarizeOrchestratorPhase("entities", [{
+        status: "blocked",
+        action: "entity-cutover-required",
+        message: "marker-absent projects cannot apply runtime-only or cleanup-only upgrades; include artifacts so entity readiness is composed before effects",
+      }]);
+    }
+    if (pendingV1Artifacts) {
+      return summarizeOrchestratorPhase("entities", [{
+        status: "blocked",
+        action: "resolve-v1-state",
+        message: "pending v1 Markdown conversion cannot be used as entity input without a prerequisite write; complete the deterministic v1 conversion, then retry the upgrade",
+      }]);
+    }
+    const preview = previewEntityMigration(project, sourceRoot, { limit: 1 });
+    const empty = preview.counts.total === 0;
+    return summarizeOrchestratorPhase("entities", [{
+      status: preview.status === "blocked" ? "blocked" : "pending",
+      action: empty ? "initialize-entity-state" : "entity-cutover",
+      message: preview.status === "blocked"
+        ? `${preview.counts.blockers} entity readiness blocker(s); repair the reported state through agentera state migrate entities --dry-run before retrying`
+        : empty
+          ? "empty legacy state is ready for safe entity initialization"
+          : `${preview.counts.publishable_entities} entity record(s) are ready for marker-last cutover`,
+    }]);
+  } catch (error) {
+    return summarizeOrchestratorPhase("entities", [{
+      status: "blocked",
+      action: "validate-entity-state",
+      message: (error as Error).message,
+    }]);
+  }
+}
+
 function previewLifecycleSelector(
   args: UpgradeOrchestratorArgs,
   channel: ResolvedUpdateChannel,
@@ -345,8 +395,38 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   }
 
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
+  const entitySelected = Boolean(args.only?.includes("artifacts"))
+    || (crossMajorMigration && (!args.only || args.only.length === 0));
+  const partialStateApply = Boolean(args.only?.some((phase) => phase === "runtime" || phase === "cleanup"))
+    && !args.only?.includes("artifacts");
+  const entityPhase = entitySelected || partialStateApply
+    ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected)
+    : null;
+  const lifecycleArgs = lifecycleSelector || args.legacyCleanup ? {
+    selector: lifecycleSelector,
+    home,
+    project,
+    sourceRoot,
+    appHome: installRoot,
+    env,
+    canonicalSkillTarget: path.join(installRoot, "skills", "agentera"),
+    apply: false,
+    retiredCleanup: args.legacyCleanup ?? null,
+  } : null;
+  let lifecycle = lifecycleArgs ? runLifecycleUpgrade(lifecycleArgs) : null;
 
-  if (args.yes && migrationPreview) {
+  const plannedPhases = [
+    ...phases,
+    ...(migrationPreview && phaseFilter.has("artifacts") ? [migrationPhaseToOrchestrator(migrationPreview.artifacts)] : []),
+    ...(entityPhase ? [entityPhase] : []),
+    ...(migrationPreview && phaseFilter.has("runtime") ? [migrationPhaseToOrchestrator(migrationPreview.runtime)] : []),
+    ...(migrationPreview && phaseFilter.has("cleanup") ? [migrationPhaseToOrchestrator(migrationPreview.cleanup)] : []),
+    ...(lifecycle ? [lifecyclePhase(lifecycle)] : []),
+  ];
+  const preflight = aggregateSummary(plannedPhases.filter((phase) => phase.name !== "lifecycle"));
+  const preflightBlocked = preflight.blocked > 0 || preflight.failed > 0;
+
+  if (args.yes && migrationPreview && !preflightBlocked) {
     const applyPhases = (args.only ?? MIGRATION_ONLY_PHASES)
       .filter((phase) => !(args.runtime && phase === "runtime"));
     migrationPreview = applyMigrationPhases(
@@ -360,6 +440,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     if (phaseFilter.has("artifacts")) {
       phases.push(migrationPhaseToOrchestrator(migrationPreview.artifacts));
     }
+    if (entityPhase) phases.push(entityPhase);
     if (phaseFilter.has("runtime")) {
       phases.push(migrationPhaseToOrchestrator(migrationPreview.runtime));
     }
@@ -368,41 +449,30 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
     }
   }
 
-  const appSummary = aggregateSummary(phases);
-  const appApplyBlocked = appSummary.blocked > 0 || appSummary.failed > 0;
-  let lifecycle: LifecycleUpgradeResult | null = null;
-  if (lifecycleSelector || args.legacyCleanup) {
-    // App migration, including any content refresh, is complete before this
-    // observation. Lifecycle planning must see the refreshed desired content
-    // and the filesystem state that runtime writes will actually target.
-    const lifecycleArgs = {
-      selector: lifecycleSelector,
-      home,
-      project,
-      sourceRoot,
-      appHome: installRoot,
-      env,
-      canonicalSkillTarget: path.join(installRoot, "skills", "agentera"),
-      apply: Boolean(args.yes),
-      retiredCleanup: args.legacyCleanup ?? null,
-    };
-    if (args.yes && secureLifecycleRemovalAvailable()) {
+  if (!migrationPreview && entityPhase) phases.push(entityPhase);
+  if (lifecycleArgs && args.yes && !preflightBlocked) {
+    const applyArgs = { ...lifecycleArgs, apply: true };
+    if (secureLifecycleRemovalAvailable()) {
       const lifecycleLock = acquireLifecycleOwnershipJournalLock(
         lifecycleOwnershipJournalPath(installRoot),
       );
       try {
-        lifecycle = runLifecycleUpgrade(lifecycleArgs);
+        lifecycle = runLifecycleUpgrade(applyArgs);
       } finally {
         releaseLifecycleOwnershipJournalLock(lifecycleLock);
       }
     } else {
-      lifecycle = runLifecycleUpgrade(lifecycleArgs);
+      lifecycle = runLifecycleUpgrade(applyArgs);
     }
+  }
+  if (lifecycle) {
     phases.push(lifecyclePhase(lifecycle));
   }
 
   const summary = aggregateSummary(phases);
   const status = workflowStatus(summary);
+  const appSummary = aggregateSummary(phases.filter((phase) => phase.name !== "lifecycle"));
+  const appApplyBlocked = appSummary.blocked > 0 || appSummary.failed > 0;
   const mode = args.yes ? "apply" : "plan";
   const lifecycleStatus = lifecycleStatusFromWorkflow(status, mode);
   const hasPending = summary.pending > 0;
@@ -445,6 +515,11 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
   }
   if (isBlockedUpgradeOutcome(plan.upgradeOutcome)) {
     return plan.upgradeOutcome.message ?? "upgrade blocked";
+  }
+  const appPhases = plan.phases.filter((phase) => phase.name !== "lifecycle");
+  if (appPhases.some((phase) => phase.summary.blocked > 0 || phase.summary.failed > 0)) {
+    return appPhases.flatMap((phase) => phase.items).find((item) => item.status === "blocked" || item.status === "failed")?.message
+      ?? "upgrade preflight is blocked; no changes were applied";
   }
   if (
     plan.crossMajorBoundary &&

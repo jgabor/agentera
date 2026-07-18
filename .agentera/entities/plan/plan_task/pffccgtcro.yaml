@@ -1,0 +1,13 @@
+id: pffccgtcro
+artifact: plan
+record:
+  name: Converge retries without exposed machinery
+  depends_on:
+    - uwfilxpkrh
+  status: pending
+  acceptance:
+    - GIVEN one matching interrupted operation WHEN upgrade --yes repeats THEN it resumes without reallocating or duplicating entities.
+    - GIVEN completed migration WHEN upgrade repeats THEN it reports an idempotent no-op and preserves canonical bytes.
+    - GIVEN stale, rolled-back, or conflicting evidence WHEN upgrade repeats THEN it refuses further effects and retains all evidence.
+    - GIVEN recovery tests WHEN they run THEN representative interruption, matching continuation, replay, and conflict refusal pass without duplicating lower-level coverage.
+  plan: zqwisfegxj

@@ -551,6 +551,23 @@ entity_migration:
         It verifies once before migration evidence and again under the writer
         lock immediately before the first effect. Non-Git fixtures may retain
         source-fingerprint and preview-digest-only behavior.
+    upgrade_composition:
+      owner: development_channel_v2_to_v3_upgrade
+      selected_with: [full, artifacts]
+      preflight: >-
+        Upgrade plans artifact normalization, entity readiness, runtime work,
+        and cleanup read-only before any selected apply function runs. Any
+        blocker prevents every selected effect.
+      phase_filters: >-
+        Marker-absent runtime-only and cleanup-only apply are invalid because
+        they would leave a project unusable under v3 entity authority.
+      legacy_projection: >-
+        Canonical v2 YAML and already-resolved v1 conversions are inventoried
+        directly. A pending v1 Markdown conversion is not projected through a
+        prerequisite write during planning and therefore blocks the composed
+        apply before effects.
+      empty_state: valid_empty_initialization
+      existing_entity_state: no_op
   source_scope:
     included_entities: entity_target.entities
     included_structured_relationships: entity_target.relationships.declarations

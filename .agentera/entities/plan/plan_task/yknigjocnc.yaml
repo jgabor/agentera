@@ -1,0 +1,13 @@
+id: yknigjocnc
+artifact: plan
+record:
+  name: Verify and report the completed upgrade
+  depends_on:
+    - pffccgtcro
+  status: pending
+  acceptance:
+    - GIVEN full cross-major apply WHEN authority activates THEN state validation and representative startup checks run without --verify.
+    - GIVEN mandatory verification failure WHEN the command exits THEN it is non-zero, preserves evidence, and recommends the same invocation.
+    - GIVEN success WHEN text output is shown THEN one concise v2-to-v3 result omits internal migration parameters.
+    - GIVEN structured or artifacts-only output WHEN requested THEN bounded cutover, phase, idempotency, verification, recovery, and partial-completion details are accurate.
+  plan: zqwisfegxj

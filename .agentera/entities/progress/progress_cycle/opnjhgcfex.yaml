@@ -1,0 +1,16 @@
+id: opnjhgcfex
+artifact: progress
+record:
+  timestamp: 2026-07-18 10:14
+  type: feat
+  phase: build
+  what: Composed entity readiness into development-channel full and artifacts-only upgrade preflight; state blockers and marker-absent partial applies now stop before effects.
+  context:
+    intent: Complete Task xhxchnzrhy by planning every selected upgrade phase read-only before mutation while preserving Decision 94 cutover semantics.
+    constraints: Planning/preflight and phase semantics only; no entity apply delegation, continuation, mandatory verification/output, release, publication, or vision changes.
+    unknowns: "Resolved: supported canonical v2 YAML and legacy plan lifecycle projection are read-only; unresolved v1 Markdown conversion must be completed before composed entity readiness."
+    scope: Upgrade orchestrator, state-storage authority, upgrade parity fixtures, and proportional readiness tests.
+  inspiration: Plan zqwisfegxj Task xhxchnzrhy and Decision 94.
+  discovered: Canonical v2 YAML and deterministic legacy plan lifecycle normalization are directly representable; pending v1 Markdown conversion is not valid entity input without a prerequisite write and therefore fails closed until resolved.
+  verified: pnpm -C packages/cli exec vp test run test/upgrade/upgradeOrchestrator.test.ts test/upgrade/migrateArtifactsV2ToV3.test.ts test/state/entityMigrationPreview.test.ts test/state/migrationAuthority.test.ts passed 122 tests; pnpm -C packages/cli test passed 218 files and 2,696 tests; typecheck and build passed; check validate state passed with 1,476 entities and 0 issues; capability-contract passed 2/2; check compact passed with 0 findings.
+  next: Task uwfilxpkrh may delegate blocker-free entity publication under upgrade consent; do not weaken preflight or implement continuation and mandatory verification early.

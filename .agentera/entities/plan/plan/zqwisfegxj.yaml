@@ -1,0 +1,41 @@
+id: zqwisfegxj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-18
+    status: open
+    reviewed: 2026-07-18
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    title: "Plan: Streamline v2-to-v3 Entity Cutover"
+  what: Make the existing development-channel v2-to-v3 upgrade migrate compatible legacy project state to entity authority as an internal mandatory phase, so one upgrade --yes invocation leaves the project fully usable on v3.
+  why: The runtime upgrade currently preserves legacy YAML while normal v3 commands require completed entity authority. The upgrade command should own that complexity and expose one predictable, retry-safe contract instead of an undocumented maintainer workflow.
+  constraints: Preserve Decision 94 identity, merge safety, fail-closed validation, source retention, durable recovery, and marker-last activation. Run complete read-only preflight before effects. Keep --dry-run optional and --yes as the only normal-path mutation consent. Retain low-level expert recovery. Do not guess legacy state, change stable v2, publish, tag, push, modify vision, or redesign unrelated lifecycle behavior.
+  overall_acceptance: GIVEN a supported v2 project WHEN the user runs npx -y agentera@next upgrade --channel development --project "$PWD" --yes THEN Agentera completes the runtime and entity-state transition, preserves state meaning and recovery evidence, activates validated entity authority, passes mandatory startup verification, requires no follow-up migration inputs, and converges safely when the same invocation is repeated.
+  scope:
+    included:
+      - Development-channel v2-to-v3 full upgrade and artifacts-only state cutover.
+      - Composed read-only readiness across selected upgrade phases.
+      - Internal migration approval, publication, validation, continuation, and recovery.
+      - Exact phase-filter behavior for marker-absent projects.
+      - Concise text output and bounded structured diagnostics.
+      - Active help, upgrade guidance, skills, package contracts, release metadata, and end-to-end tests.
+      - Evidence-based review of the related manual-review TODO.
+    excluded:
+      - Changes to Decision 94 identity or storage semantics.
+      - Removal of low-level entity migration, resume, or rollback commands.
+      - Automatic rollback, repair, or guessed reconstruction of unsafe state.
+      - Stable-v2 behavior changes or broad runtime lifecycle redesign.
+      - Unrelated TODO cleanup, publication, tagging, pushing, or vision changes.
+    deferred:
+      []
+  design: The cross-major upgrade becomes the single user-facing owner of state cutover. Planning composes every selected artifact, state, runtime, and cleanup outcome without mutation, and unsafe state blocks the selected operation before effects. Apply enforces the existing source, worktree, validation, and recovery guarantees internally and activates entity authority only after the graph validates. Repeated invocations resume exactly matching work or report convergence without guessing or automatic rollback. Human output describes the upgrade while structured output retains support and recovery detail.
+  unknowns:
+    - question: Can every supported legacy source be represented without prerequisite writes?
+      affects_task: 1
+      resolve_by: Exercise representative v2 YAML and v1 Markdown/lifecycle fixtures through composed read-only planning; support deterministic logical projection where defined and otherwise reject before all effects.
+    - question: Can interrupted work always be selected unambiguously from the current upgrade invocation?
+      affects_task: 3
+      resolve_by: Evaluate zero, one, completed, rolled-back, stale, and conflicting durable operations; continue automatically only when exactly one operation matches the current project, source, proposed graph, and validated evidence.
+  surprises:
+    []

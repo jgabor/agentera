@@ -1,3 +1,14 @@
 header:
+  level: light
+  created: 2026-01-01
   status: active
+  title: Supported legacy plan
+what: Exercise deterministic legacy lifecycle normalization.
+why: Preserve supported v2 state during upgrade planning.
+constraints: none
+overall_acceptance: planning succeeds without prerequisite writes
+scope:
+  included: [upgrade fixture]
+  excluded: []
 tasks: []
+surprises: []
