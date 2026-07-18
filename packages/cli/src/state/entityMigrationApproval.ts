@@ -4,6 +4,12 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 import { canonicalRecordJson } from "./archiveDiscovery.js";
+import {
+  inspectEntityMigrationPreparation,
+  type EntityMigrationPreparationInspection,
+  EntityMigrationPreparationInspectionError,
+} from "./entityMigrationPreparation.js";
+import type { DurableEntityMigrationPlan } from "./entityMigrationPreview.js";
 import { validateRealProjectRoot } from "./projectRoot.js";
 
 const SCHEMA_VERSION = "agentera.entityMigrationApproval.v1";
@@ -30,6 +36,14 @@ export interface EntityMigrationApproval {
   ignored_directory_prefixes: string[];
   ignored_paths: string[];
   untracked_baseline: string[];
+  transient_preparation?: {
+    relative_path: string;
+    operation_id: string;
+    directory: { dev: string; ino: string };
+    receipt_count: number;
+    inventory_sha256: string;
+    expected_classification: "stale" | "same_operation";
+  };
 }
 
 export class EntityMigrationApprovalError extends Error {
@@ -170,24 +184,64 @@ function zeroSeparated(bytes: Buffer): string[] {
   return bytes.toString("utf8").split("\0").filter(Boolean);
 }
 
+function inspectPreparation(project: string, current: Pick<DurableEntityMigrationPlan, "project" | "source_fingerprint" | "preview_digest" | "entries"> | { project: string; source_fingerprint: string; preview_digest: string }): EntityMigrationPreparationInspection | undefined {
+  try { return inspectEntityMigrationPreparation(project, current); }
+  catch (error) {
+    if (error instanceof EntityMigrationPreparationInspectionError) throw new EntityMigrationApprovalError(error.message);
+    throw error;
+  }
+}
+
+function approvalTransient(value: EntityMigrationPreparationInspection): NonNullable<EntityMigrationApproval["transient_preparation"]> {
+  return {
+    relative_path: value.relative_path,
+    operation_id: value.id,
+    directory: value.directory,
+    receipt_count: value.receipt_count,
+    inventory_sha256: value.inventory_sha256,
+    expected_classification: value.classification,
+  };
+}
+
+function porcelainUntracked(bytes: Buffer): string[] {
+  return zeroSeparated(bytes).map((entry) => {
+    if (!entry.startsWith("?? ")) throw new EntityMigrationApprovalError(`approval generation requires a clean tracked worktree; porcelain reported '${entry}'`);
+    const relative = entry.slice(3);
+    if (!safeRelative(relative)) throw new EntityMigrationApprovalError(`porcelain reported unsafe untracked path '${relative}'`);
+    return relative;
+  }).sort();
+}
+
+function coversPath(prefix: string, value: string): boolean {
+  return prefix === value || value.startsWith(`${prefix}/`);
+}
+
 /** Maintainer-only approval generation. Apply validation never calls Git. */
 export function generateEntityMigrationApproval(projectRoot: string, sourceFingerprint: string, previewDigest: string): EntityMigrationApproval {
   const project = validateRealProjectRoot(projectRoot).path;
   if (!SHA256.test(sourceFingerprint) || !SHA256.test(previewDigest)) throw new EntityMigrationApprovalError("source fingerprint and preview digest must be lowercase SHA-256 values");
   const layout = gitLayout(project);
   if (!layout) throw new EntityMigrationApprovalError("approval generation requires a Git checkout");
+  const binding = { project, source_fingerprint: sourceFingerprint, preview_digest: previewDigest };
+  const preparation = inspectPreparation(project, binding);
   const head = currentHead(layout);
   const gitIndexSha256 = indexHash(layout.gitDir);
   const porcelain = runGit(project, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]);
-  if (porcelain.length !== 0) throw new EntityMigrationApprovalError("approval generation requires a clean Git checkout with an empty porcelain status");
+  const untracked = porcelainUntracked(porcelain);
+  const expectedUntracked = preparation?.untracked_paths.slice().sort() ?? [];
+  if (canonicalRecordJson(untracked) !== canonicalRecordJson(expectedUntracked)) throw new EntityMigrationApprovalError(`approval generation found unvalidated untracked path '${untracked.find((value) => !expectedUntracked.includes(value)) ?? expectedUntracked.find((value) => !untracked.includes(value)) ?? "unknown"}'`);
   const tracked = zeroSeparated(runGit(project, ["ls-files", "-z"])).sort().map((relative) => trackedPath(project, relative));
   const ignored = zeroSeparated(runGit(project, ["status", "--porcelain=v1", "-z", "--ignored=matching", "--untracked-files=all"]));
-  const ignoredValues = ignored.map((entry) => {
-    if (!entry.startsWith("!! ")) throw new EntityMigrationApprovalError(`unexpected porcelain entry while collecting ignored paths: '${entry}'`);
-    return entry.slice(3);
+  const ignoredValues = ignored.flatMap((entry) => {
+    if (entry.startsWith("!! ")) return [entry.slice(3)];
+    if (entry.startsWith("?? ") && expectedUntracked.includes(entry.slice(3))) return [];
+    throw new EntityMigrationApprovalError(`unexpected porcelain entry while collecting ignored paths: '${entry}'`);
   });
   const ignoredDirectoryPrefixes = ignoredValues.filter((entry) => entry.endsWith("/")).map((entry) => entry.slice(0, -1)).filter(safeRelative).sort();
   const ignoredPaths = ignoredValues.filter((entry) => !entry.endsWith("/")).filter(safeRelative).sort();
+  if (preparation && [...ignoredDirectoryPrefixes, ...ignoredPaths].some((value) => coversPath(value, preparation.relative_path) || coversPath(preparation.relative_path, value))) throw new EntityMigrationApprovalError("approval generation cannot admit a migration preparation hidden by Git ignore rules");
+  const confirmed = inspectPreparation(project, binding);
+  if (canonicalRecordJson(confirmed ?? null) !== canonicalRecordJson(preparation ?? null)) throw new EntityMigrationApprovalError("migration preparation changed during approval generation");
   return {
     schemaVersion: SCHEMA_VERSION,
     project,
@@ -201,6 +255,7 @@ export function generateEntityMigrationApproval(projectRoot: string, sourceFinge
     ignored_directory_prefixes: ignoredDirectoryPrefixes,
     ignored_paths: ignoredPaths,
     untracked_baseline: [],
+    ...(preparation ? { transient_preparation: approvalTransient(preparation) } : {}),
   };
 }
 
@@ -233,7 +288,7 @@ function inventoryWorktree(project: string, ignoredDirectories: Set<string>): st
   return result;
 }
 
-export function assertEntityMigrationApproval(projectRoot: string, approvalFile: string, sourceFingerprint: string, previewDigest: string, writerLockHeld = false, operationTransients: readonly string[] = []): EntityMigrationApproval {
+export function assertEntityMigrationApproval(projectRoot: string, approvalFile: string, sourceFingerprint: string, previewDigest: string, writerLockHeld = false, currentPlan?: Pick<DurableEntityMigrationPlan, "project" | "source_fingerprint" | "preview_digest" | "entries">): EntityMigrationApproval {
   const project = validateRealProjectRoot(projectRoot).path;
   const approvalPath = path.resolve(approvalFile);
   if (approvalPath === project || approvalPath.startsWith(`${project}${path.sep}`)) throw new EntityMigrationApprovalError("approval file must be outside the project mutation set");
@@ -242,6 +297,9 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   if (!layout) throw new EntityMigrationApprovalError("this project is not a Git checkout and does not accept a Git approval envelope");
   if (approval.project !== project) throw new EntityMigrationApprovalError(`approval root '${approval.project}' does not match project '${project}'`);
   if (approval.source_fingerprint !== sourceFingerprint || approval.preview_digest !== previewDigest) throw new EntityMigrationApprovalError("approval source fingerprint or preview digest does not match the requested migration");
+  const preparation = inspectPreparation(project, currentPlan ?? { project, source_fingerprint: sourceFingerprint, preview_digest: previewDigest });
+  const expectedTransient = preparation ? approvalTransient(preparation) : undefined;
+  if (canonicalRecordJson(approval.transient_preparation ?? null) !== canonicalRecordJson(expectedTransient ?? null)) throw new EntityMigrationApprovalError("approved migration preparation path, operation, identity, inventory, count, or classification changed");
   const head = currentHead(layout);
   if (canonicalRecordJson(head) !== canonicalRecordJson(approval.head)) throw new EntityMigrationApprovalError("Git HEAD/ref changed after migration approval");
   if (indexHash(layout.gitDir) !== approval.git_index_sha256) throw new EntityMigrationApprovalError("Git index changed after migration approval");
@@ -257,12 +315,11 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   const allowed = new Set([...tracked.map((entry) => entry.path), ...approval.ignored_paths, ...approval.untracked_baseline]);
   const ignoredDirectories = new Set(approval.ignored_directory_prefixes);
   if (writerLockHeld) ignoredDirectories.add(".agentera/.writer.lock");
-  for (const relative of operationTransients) {
-    if (!safeRelative(relative) || !/^\.agentera\/migrations\/entities\/\.[a-f0-9]{20}\.prepare-[a-f0-9-]{36}$/.test(relative)) throw new EntityMigrationApprovalError(`operation transient path '${relative}' is unsafe or unrecognized`);
-    ignoredDirectories.add(relative);
-  }
+  if (preparation) ignoredDirectories.add(preparation.relative_path);
   const extras = inventoryWorktree(project, ignoredDirectories).filter((relative) => !allowed.has(relative));
   if (extras.length) throw new EntityMigrationApprovalError(`worktree has unapproved non-ignored path '${extras[0]}'`);
+  const confirmed = inspectPreparation(project, currentPlan ?? { project, source_fingerprint: sourceFingerprint, preview_digest: previewDigest });
+  if (canonicalRecordJson(confirmed ?? null) !== canonicalRecordJson(preparation ?? null)) throw new EntityMigrationApprovalError("migration preparation changed during approval validation");
   return approval;
 }
 

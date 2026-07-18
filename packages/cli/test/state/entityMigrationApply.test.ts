@@ -57,7 +57,14 @@ function attachedWorktree(detached = false): { common: string; root: string } {
 function approvalFile(root: string, source: string, digest: string): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-approval-envelope-")); roots.push(directory); const file = path.join(directory, "approval.json"); fs.writeFileSync(file, JSON.stringify(generateEntityMigrationApproval(root, source, digest))); return file;
 }
+function interruptPreparation(root: string, preview: ReturnType<typeof previewEntityMigration>, receiptIndex: number, approval: string): string {
+  const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: String(receiptIndex), AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: approval } });
+  expect(child.status).toBe(86);
+  fs.rmSync(path.join(root, ".agentera/.writer.lock"), { recursive: true, force: true });
+  return fs.readdirSync(path.join(root, ".agentera/migrations/entities"))[0];
+}
 function expectNoMigrationEffects(root: string): void { expect(fs.existsSync(path.join(root, ".agentera/migrations"))).toBe(false); expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false); }
+function expectNoCanonicalMigrationEffects(root: string): void { expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false); }
 
 afterEach(() => { vi.restoreAllMocks(); for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
@@ -281,9 +288,7 @@ describe("durable entity migration", () => {
       const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: approval } }); expect(child.status).toBe(86);
       const parent = path.join(root, ".agentera/migrations/entities"); const [stage] = fs.readdirSync(parent); const special = path.join(parent, stage, placement === "receipt" ? "receipts/special" : "special");
       const fifo = spawnSync("mkfifo", [special], { encoding: "utf8" }); expect(fifo.status, fifo.stderr).toBe(0); expect(fs.lstatSync(special).isFIFO()).toBe(true);
-      let failure: unknown; try { applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval); } catch (error) { failure = error; }
-      expect(failure).toMatchObject({ classification: "preparation_invalid", mutationPerformed: false, recovery: expect.stringMatching(/Preserve the preparation and canonical state.*repair or quarantine/) });
-      expect((failure as Error).message).toMatch(placement === "receipt" ? /invalid receipt inventory/ : /may contain only its receipts directory/);
+      expect(() => generateEntityMigrationApproval(root, preview.source_fingerprint, preview.preview_digest)).toThrow(placement === "receipt" ? /invalid receipt inventory/ : /may contain only its receipts directory/);
       expect(fs.existsSync(path.join(parent, stage))).toBe(true); expect(fs.lstatSync(special).isFIFO()).toBe(true); expect(fs.existsSync(path.join(parent, stage.slice(1, 21)))).toBe(false); expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
     }
   }, 60_000);
@@ -297,11 +302,62 @@ describe("durable entity migration", () => {
   it("admits only a validated same-operation preparation against the original Git approval", () => {
     const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest);
     const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: approval } }); expect(child.status).toBe(86);
-    expect(applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toMatchObject({ status: "complete", preparation: { action: "resumed" } });
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toThrow(/approved migration preparation/);
+    fs.rmSync(path.join(root, ".agentera/.writer.lock"), { recursive: true, force: true });
+    const resumedApproval = approvalFile(root, preview.source_fingerprint, preview.preview_digest);
+    expect(applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, resumedApproval)).toMatchObject({ status: "complete", preparation: { action: "resumed" } });
 
     const other = gitProject(); const otherPreview = previewEntityMigration(other, SOURCE_ROOT); const otherApproval = approvalFile(other, otherPreview.source_fingerprint, otherPreview.preview_digest);
-    const interrupted = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: other, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: otherPreview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: otherPreview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: otherApproval } }); expect(interrupted.status).toBe(86); fs.writeFileSync(path.join(other, "unrelated.txt"), "not approved\n");
-    expect(() => applyEntityMigration(other, SOURCE_ROOT, otherPreview.source_fingerprint, otherPreview.preview_digest, otherApproval)).toThrow(/unapproved/); expect(files(other, ".agentera/entities")).toEqual([]);
+    const interrupted = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: other, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: otherPreview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: otherPreview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: otherApproval } }); expect(interrupted.status).toBe(86); fs.rmSync(path.join(other, ".agentera/.writer.lock"), { recursive: true, force: true }); fs.writeFileSync(path.join(other, "unrelated.txt"), "not approved\n");
+    expect(() => generateEntityMigrationApproval(other, otherPreview.source_fingerprint, otherPreview.preview_digest)).toThrow(/unvalidated untracked path/); expect(files(other, ".agentera/entities")).toEqual([]);
+  }, 60_000);
+
+  it("generates an exact stale-preparation approval for more than one hundred receipts and replaces it after committed source change", () => {
+    const tasks = Array.from({ length: 110 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    status: pending\n    depends_on: []\n    acceptance: [pass]\n`).join("");
+    const root = gitProject();
+    fs.writeFileSync(path.join(root, ".agentera/plan.yaml"), `header:\n  level: light\n  created: 2026-07-17\n  status: open\n  title: Large migration fixture\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: migrate\nwhy: durability\nscope: { included: [state], excluded: [] }\ntasks:\n${tasks}`);
+    git(root, ["add", ".agentera/plan.yaml"]); git(root, ["commit", "--quiet", "-m", "large fixture"]);
+    const old = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 }); const oldApproval = approvalFile(root, old.source_fingerprint, old.preview_digest);
+    const stage = interruptPreparation(root, old, 100, oldApproval); const stagePath = path.join(root, ".agentera/migrations/entities", stage); const stageStat = fs.statSync(stagePath, { bigint: true });
+    fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] changed approved source.\n"); git(root, ["add", "TODO.md"]); git(root, ["commit", "--quiet", "-m", "change source"]);
+    const current = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 }); const envelope = generateEntityMigrationApproval(root, current.source_fingerprint, current.preview_digest);
+    expect(envelope.transient_preparation).toEqual({ relative_path: `.agentera/migrations/entities/${stage}`, operation_id: stage.slice(1, 21), directory: { dev: String(stageStat.dev), ino: String(stageStat.ino) }, receipt_count: 101, inventory_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), expected_classification: "stale" });
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-stale-approval-")); roots.push(directory); const approval = path.join(directory, "approval.json"); fs.writeFileSync(approval, JSON.stringify(envelope));
+    const applied = applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest, approval);
+    expect(applied).toMatchObject({ status: "complete", preparation: { action: "replaced" } }); expect(fs.existsSync(stagePath)).toBe(false);
+  }, 60_000);
+
+  it("binds same-operation preparation identity and inventory, then resumes it", () => {
+    const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const firstApproval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const stage = interruptPreparation(root, preview, 0, firstApproval);
+    const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const envelope = JSON.parse(fs.readFileSync(approval, "utf8"));
+    expect(envelope.transient_preparation).toMatchObject({ relative_path: `.agentera/migrations/entities/${stage}`, operation_id: stage.slice(1, 21), receipt_count: 1, inventory_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), expected_classification: "same_operation" });
+    expect(applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toMatchObject({ status: "complete", preparation: { action: "resumed" } });
+  }, 30_000);
+
+  it("refuses preparation tamper after approval and preserves every pre-journal byte", () => {
+    const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const firstApproval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const stage = interruptPreparation(root, preview, 0, firstApproval); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest);
+    const receipt = path.join(root, ".agentera/migrations/entities", stage, "receipts/0000.yaml"); fs.appendFileSync(receipt, "# tampered\n"); const tampered = fs.readFileSync(receipt);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toThrow(/preparation|receipt/);
+    expect(fs.readFileSync(receipt)).toEqual(tampered); expectNoCanonicalMigrationEffects(root);
+  }, 30_000);
+
+  it("refuses a byte-identical preparation successor after generation without removing it", () => {
+    const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const firstApproval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const stage = interruptPreparation(root, preview, 0, firstApproval); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest);
+    const stagePath = path.join(root, ".agentera/migrations/entities", stage); const holding = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-preparation-predecessor-")); roots.push(holding); const predecessor = path.join(holding, stage); fs.renameSync(stagePath, predecessor); fs.cpSync(predecessor, stagePath, { recursive: true }); const successor = fs.statSync(stagePath).ino; expect(successor).not.toBe(fs.statSync(predecessor).ino);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toThrow(/preparation|identity/);
+    expect(fs.statSync(stagePath).ino).toBe(successor); expectNoCanonicalMigrationEffects(root);
+  }, 30_000);
+
+  it.skipIf(process.platform === "win32")("refuses unknown, multiple, symlink, and FIFO preparation inventories during generation with zero effects", () => {
+    for (const defect of ["unknown", "multiple", "symlink", "fifo"] as const) {
+      const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const firstApproval = approvalFile(root, preview.source_fingerprint, preview.preview_digest); const stage = interruptPreparation(root, preview, 0, firstApproval); const parent = path.join(root, ".agentera/migrations/entities"); const receipts = path.join(parent, stage, "receipts");
+      if (defect === "unknown") fs.writeFileSync(path.join(parent, "unknown"), "x");
+      else if (defect === "multiple") fs.cpSync(path.join(parent, stage), path.join(parent, stage.replace(/[a-f0-9-]{36}$/, "11111111-1111-4111-8111-111111111111")), { recursive: true });
+      else if (defect === "symlink") fs.symlinkSync("0000.yaml", path.join(receipts, "0001.yaml"));
+      else expect(spawnSync("mkfifo", [path.join(receipts, "0001.yaml")]).status).toBe(0);
+      expect(() => generateEntityMigrationApproval(root, preview.source_fingerprint, preview.preview_digest), defect).toThrow(/unknown|multiple|receipt|regular file/);
+      expect(fs.existsSync(path.join(parent, stage))).toBe(true); expectNoCanonicalMigrationEffects(root);
+    }
   }, 60_000);
 
   it("resumes beyond one hundred prepared receipts without replacing existing identities", () => {

@@ -1,4 +1,28 @@
 cycles:
+  - number: 913
+    timestamp: 2026-07-18 04:50
+    type: fix
+    phase: build
+    what: Bound approval generation to validated pre-journal migration preparation.
+    inspiration: PLAN Task24 retry 2/2 FINAL
+    discovered: The readiness generator required exact untracked porcelain
+      reconciliation and a durable transient identity envelope, not a
+      migrations-directory exception.
+    verified: 53 focused migration tests and 2,668 full CLI tests across 218 files
+      passed; typecheck and build passed. Final compact and contract gates
+      follow after state synchronization.
+    next: Task24 is complete. Task14 remains pending; do not generate a live
+      approval or apply the live migration without explicit authorization.
+    context:
+      intent: Complete Task24 retry 2/2 by allowing only one strictly validated stale
+        or same-operation preparation during approval generation and binding it
+        through apply.
+      constraints: No live approval/apply, Task15, version, changelog, vision, manual
+        YAML, amend, push, publish, or tag. Preserve the existing 999-receipt
+        stale preparation.
+      unknowns: Task14 apply authorization remains intentionally unresolved.
+      scope: Approval generator, shared preparation inspection, apply validation,
+        migration tests, Task24 evidence, and Cycle913.
   - number: 912
     timestamp: 2026-07-18 04:15
     type: test
@@ -222,35 +246,6 @@ cycles:
       unknowns: Task 14 apply authorization remains intentionally unresolved.
       scope: Attached-worktree Git approval metadata resolution, focused regressions,
         and Task 13 evidence correction only.
-  - number: 903
-    timestamp: 2026-07-17 23:20
-    type: fix
-    phase: build
-    what: Closed the three Task 13 audit blockers by preserving
-      archive-authoritative decision satisfaction, binding recovered projections
-      to an immutable reviewed correlation set, and requiring a clean external
-      Git approval envelope for migration apply without invoking Git.
-    inspiration: Plan Task 13 retry and the Cycle 902 audit blockers.
-    discovered: The 39 recovered decision archives contain 35 structured
-      satisfaction records; four (D74, D76, D77, D78) were absent from the
-      compact projection and now become exact archive-provenanced entities. The
-      existing 58 recovery archives replayed byte-exactly, so publication added
-      only the correlation manifest.
-    verified: Focused migration/recovery tests passed 121; full CLI passed 2,610;
-      typecheck and build passed; all 12 capabilities, capability contract,
-      state validation, compact, blocker-free 1,447-identity/2,212-relationship
-      preview, and 58-archive replay passed.
-    next: Task 13 is complete. Task 14 remains pending; do not apply the entity
-      migration until a post-commit clean preview and matching external approval
-      envelope are explicitly approved.
-    context:
-      intent: Complete Plan Task 13 readiness recovery without applying the Task 14
-        entity cutover.
-      constraints: No Task 14 apply, version, changelog, vision, release, publication,
-        remote, or manual YAML changes.
-      unknowns: Task 14 apply authorization remains intentionally unresolved.
-      scope: Task 13 audit blockers, correlation evidence, approval preflight, tests,
-        and immutable state evidence only.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -320,6 +315,9 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 903 (2026-07-17): Closed the three Task 13 audit blockers by
+      preserving archive-authoritative decision satisfaction, binding recovered
+      projections..."
   - summary: "Cycle 902 (2026-07-17): Made repository entity migration ready with
       exact projection recovery, historical health conversion, projection
       correlation, residue..."
@@ -415,16 +413,18 @@ archive:
       reclamation and release ownership-safe."
   - summary: "Cycle 864 (2026-07-16): Audit retry 1 fixed PLAN Task 2 entity
       publication races and logical replay equality."
-  - summary: "Cycle 863 (2026-07-16): Added authority-driven entity storage,
-      project-wide ID allocation, safe discovery and publication, graph
-      validation, and agentera..."
 omitted: true
-omitted_count: 148
+omitted_count: 149
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded
