@@ -1,0 +1,17 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: progress
+entry_number: 911
+record:
+  number: 911
+  timestamp: 2026-07-18 03:39
+  type: fix
+  phase: build
+  what: Resumed interrupted entity migration preparation without replacing durable receipt identities.
+  inspiration: PLAN Task24
+  discovered: The live checkout retains one killed pre-journal preparation with 999 receipts; implementation and verification left it untouched.
+  verified: 55 focused and 2,662 full tests passed; typecheck, build, state validation, 12 capabilities, capability contract 2/2, and compact passed.
+  next: Task14 remains pending; use only an explicit tested maintenance dry-run before any live migration apply.
+  context:
+    intent: Complete Task24 by validating and resuming same-operation preparation, safely replacing stale pre-journal preparation, and keeping approval cleanliness exact.
+    constraints: No approval, live apply, Task15, version, changelog, vision, push, publish, or remote operation.
+record_sha256: f3fcb43d171946fbd49c917d2d12464f555e69725ff38564941fbdba28f5d1bd

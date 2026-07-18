@@ -184,7 +184,7 @@ export function runEntityMigrate(argv: string[], io: Io, cwd = process.cwd(), so
     if (error instanceof EntityMigrationBindingError) output({ ...preview, status: "blocked", mode: "apply_preflight", read_only: true, mutation_intent: true, mutation_performed: false, error: { class: error.classification, message: error.message, recovery: error.restartCommand } }, parsed.format, io);
     else {
       const failure = error instanceof EntityMigrationOperationError ? error : error instanceof EntityMigrationApprovalError ? new EntityMigrationOperationError(error.classification, error.message, "Regenerate the external approval from a clean checkout and fresh unpaginated dry-run, then retry with its exact root, source fingerprint, preview digest, and --approval-file path.") : new EntityMigrationOperationError("migration_failed", (error as Error).message, "Retain all durable migration evidence and retry the exact recovery command.");
-      output({ schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: false, mutation_intent: true, mutation_performed: false, error: { class: failure.classification, message: failure.message, recovery: failure.recovery } }, parsed.format, io);
+      output({ schemaVersion: "agentera.entityMigrationFailure.v1", command: "state migrate entities", status: "fail", read_only: false, mutation_intent: true, mutation_performed: failure.mutationPerformed, error: { class: failure.classification, message: failure.message, recovery: failure.recovery } }, parsed.format, io);
     }
     return 1;
   }

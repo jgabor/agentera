@@ -201,6 +201,7 @@ tasks:
       - "13"
       - "22"
       - "23"
+      - "24"
     status: pending
     acceptance:
       - GIVEN an approved blocker-free preview on the selected integration checkout WHEN apply runs THEN entity authority and the migration record replace legacy authority.
@@ -308,6 +309,18 @@ tasks:
       - GIVEN deferred or any unknown scope field with malformed content WHEN validated THEN preview and ordinary entity validation fail before effects.
       - GIVEN plan scopes without deferred WHEN validated THEN the optional field remains absent and existing canonical behavior is unchanged.
     evidence: Canonical deferred scope remains lossless, and block-single-pair normalization now rejects anchors and explicit standard or custom tags exposed on the map, pair key/value nodes, or raw sequence-item prefix; ambiguous ranges fail closed. Anchored aliases, tagged mappings, flow mappings, nested mappings, and malformed values remain objects for canonical validation with no false normalization provenance. All 13 live historical normalizations remain exact. Verified by 35 focused and 2,654 full tests across 218 files, typecheck, build, state validation, 12 capability validations, capability contract 2/2, compact, and a blocker-free no-effect live preview.
+  - number: 24
+    name: Resume interrupted migration preparation
+    status: complete
+    depends_on:
+      - "13"
+      - "22"
+      - "23"
+    acceptance:
+      - GIVEN interruption while durable receipts are prepared before journal finalization WHEN the approved apply retries THEN it validates and resumes or safely replaces only the matching operation-owned preparation without new IDs or ambiguous authority.
+      - GIVEN approval cleanliness checks after an interrupted attempt WHEN operation-owned lock and preparation paths are present THEN only the exact approved operation paths are admitted; unrelated untracked or tampered content still refuses before effects.
+      - GIVEN a source or approval change WHEN stale preparation exists THEN cleanup is successor-safe and no canonical entity, marker, or unrelated evidence is removed.
+    evidence: Interrupted pre-journal preparation now resumes exact validated receipt identities, rejects unsafe residue, and safely replaces only proven stale preparations. Verified by 55 focused and 2,662 full tests across 218 files, typecheck, build, state validation, 12 capability validations, capability contract 2/2, and compact.
 surprises: |-
   Final audit after retry 2 found an initialization-grace race and legacy lock-file recovery defect; Task 17 now gates Task 3 and downstream migration work.
   Final retry audit found positively live peer preparations were failed as unknown residue rather than retried as bounded contention; Task 18 now gates Task 3.

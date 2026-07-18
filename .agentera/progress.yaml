@@ -1,4 +1,23 @@
 cycles:
+  - number: 911
+    timestamp: 2026-07-18 03:39
+    type: fix
+    phase: build
+    what: Resumed interrupted entity migration preparation without replacing durable
+      receipt identities.
+    inspiration: PLAN Task24
+    discovered: The live checkout retains one killed pre-journal preparation with
+      999 receipts; implementation and verification left it untouched.
+    verified: 55 focused and 2,662 full tests passed; typecheck, build, state
+      validation, 12 capabilities, capability contract 2/2, and compact passed.
+    next: Task14 remains pending; use only an explicit tested maintenance dry-run
+      before any live migration apply.
+    context:
+      intent: Complete Task24 by validating and resuming same-operation preparation,
+        safely replacing stale pre-journal preparation, and keeping approval
+        cleanliness exact.
+      constraints: No approval, live apply, Task15, version, changelog, vision, push,
+        publish, or remote operation.
   - number: 910
     timestamp: 2026-07-18 03:05
     type: fix
@@ -236,32 +255,6 @@ cycles:
       unknowns: none
       scope: CLI projection recovery and entity migration adapters; immutable
         decision/health recovery envelopes; Plan Task 13 and Cycle 902 evidence.
-  - number: 901
-    timestamp: 2026-07-17 19:23
-    type: fix
-    phase: build
-    what: "Made final protocol scan exceptions and bundle inventory exact: 315
-      boolean allowances became 165 one-to-one context-bound exceptions, active
-      progress explain stopped emitting the retired selector, and all 139 bundle
-      files received exact reverse ownership (137 copied, 2 generated)."
-    inspiration: Replanned PLAN Task21 acceptance and final Task12 adversarial scan audit.
-    discovered: The state authority repeated artifact_id at one pointer, active
-      entity progress explain still emitted --number, and generated-only bundle
-      files had no authoritative ownership.
-    verified: "Focused tests passed: active protocol 9/9, decision amendment 14/14,
-      package registry 9/9, bundle parity 17/17. Full CLI suite passed: 216
-      files, 2592 tests. Typecheck and build passed. All 12 capabilities,
-      capability contract 2/2, state validation, compact, and bundle parity
-      passed."
-    next: Execute pending Task13; Task21 is complete.
-    context:
-      intent: Close Task21's final Task12 scan-proof defects without entering Task13
-        or later migration, documentation, release, or live-apply scope.
-      constraints: Kept web docs, Task13+, versions, changelog, vision, publication,
-        and live migration apply out of scope.
-      unknowns: None.
-      scope: Protocol scan reconciliation and tests, progress explain guidance,
-        package bundle ownership contract, and state authority wording.
   - number: 793
     timestamp: 2026-07-14 17:36
     type: chore
@@ -331,6 +324,8 @@ cycles:
         and backfill fixtures; package metadata and generated ignored
         dist/bundle
 archive:
+  - summary: "Cycle 901 (2026-07-17): Made final protocol scan exceptions and bundle
+      inventory exact: 315 boolean allowances became 165 one-to-one..."
   - summary: "Cycle 900 (2026-07-17): Expanded Task 12 active protocol coverage to
       the complete registry-owned references inventory and every generated..."
   - summary: "Cycle 899 (2026-07-17): Closed the audited Task 12 startup identity,
@@ -426,16 +421,18 @@ archive:
       validation, and agentera..."
   - summary: "Cycle 862 (2026-07-16): Declared the Decision 94 entity model and
       explicit migration lifecycle in the single state storage..."
-  - summary: "Cycle 861 (2026-07-16): Completed post-plan Audit 37 for compact,
-      self-contained prime startup; recorded all-A grades, improving trajectory,
-      zero..."
 omitted: true
-omitted_count: 146
+omitted_count: 147
 omission_reason: projection_capacity
 retrieval:
   available: true
   command: agentera state progress get --number N --format json
 omission_provenance:
+  - source: legacy_summary
+    detail_availability: unavailable
+    compatibility: degraded
+    archive_verified: false
+    omitted_count: 1
   - source: legacy_summary
     detail_availability: unavailable
     compatibility: degraded

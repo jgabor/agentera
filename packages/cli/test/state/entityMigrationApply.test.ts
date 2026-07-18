@@ -240,6 +240,79 @@ describe("durable entity migration", () => {
     }
   }, 120_000);
 
+  it("reuses exact prepared receipt inodes across interruption before and after receipts and the final rename", () => {
+    for (const [point, index] of [["prepare_receipt_before", "0"], ["prepare_receipt_after", "0"], ["prepare_receipt_after", "3"], ["prepare_rename_before", undefined]] as const) {
+      const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+      const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: point, ...(index === undefined ? {} : { AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: index }), AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } });
+      expect(child.status, `${point}:${index}\n${child.stdout}\n${child.stderr}`).toBe(86);
+      const [stage] = fs.readdirSync(path.join(root, ".agentera/migrations/entities")); expect(stage).toMatch(/^\.[a-f0-9]{20}\.prepare-/); expect(detectStateMode(root, SOURCE_ROOT)).toBe("legacy");
+      const receiptRoot = path.join(root, ".agentera/migrations/entities", stage, "receipts"); const before = new Map(files(root, path.relative(root, receiptRoot)).map((file) => [path.basename(file), { bytes: fs.readFileSync(file), ino: fs.statSync(file).ino }]));
+      const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest);
+      expect(applied).toMatchObject({ migration_id: stage.slice(1, 21), preparation: { action: "resumed", path: `.agentera/migrations/entities/${stage}` }, status: "complete" });
+      const finalReceipts = path.join(root, ".agentera/migrations/entities", applied.migration_id, "receipts");
+      for (const [name, observed] of before) { expect(fs.readFileSync(path.join(finalReceipts, name))).toEqual(observed.bytes); expect(fs.statSync(path.join(finalReceipts, name)).ino).toBe(observed.ino); }
+      expect(files(root, path.relative(root, finalReceipts))).toHaveLength(preview.counts.publishable_entities + 1);
+    }
+  }, 120_000);
+
+  it("resumes the same durable operation after interruption following preparation rename", () => {
+    const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    const child = spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_rename_after", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } });
+    expect(child.status).toBe(86); const [id] = fs.readdirSync(path.join(root, ".agentera/migrations/entities")); const receipt = files(root, `.agentera/migrations/entities/${id}/receipts`)[0]; const ino = fs.statSync(receipt).ino;
+    expect(resumeEntityMigration(root, SOURCE_ROOT, id)).toMatchObject({ migration_id: id, status: "complete" }); expect(fs.statSync(receipt).ino).toBe(ino);
+  });
+
+  it("refuses tampered, unknown, linked, and ambiguous preparations before canonical effects", () => {
+    for (const mutation of ["tamper", "unknown", "symlink", "multiple"] as const) {
+      const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT);
+      const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } }); expect(child.status).toBe(86);
+      const parent = path.join(root, ".agentera/migrations/entities"); const [stage] = fs.readdirSync(parent); const receipts = path.join(parent, stage, "receipts");
+      if (mutation === "tamper") fs.appendFileSync(path.join(receipts, "0000.yaml"), "# changed\n");
+      if (mutation === "unknown") fs.writeFileSync(path.join(receipts, "extra"), "x");
+      if (mutation === "symlink") fs.symlinkSync("0000.yaml", path.join(receipts, "0001.yaml"));
+      if (mutation === "multiple") fs.cpSync(path.join(parent, stage), path.join(parent, stage.replace(/[a-f0-9-]{36}$/, "11111111-1111-4111-8111-111111111111")), { recursive: true });
+      expect(() => applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest)).toThrow(/preparation|receipt/); expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    }
+  }, 120_000);
+
+  it("replaces one structurally valid stale pre-journal preparation after source change", () => {
+    const root = project(); const old = previewEntityMigration(root, SOURCE_ROOT); const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: old.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: old.preview_digest } }); expect(child.status).toBe(86);
+    const parent = path.join(root, ".agentera/migrations/entities"); const [stale] = fs.readdirSync(parent); fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] New approved item.\n"); const current = previewEntityMigration(root, SOURCE_ROOT);
+    const applied = applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest); expect(applied).toMatchObject({ status: "complete", preparation: { action: "replaced" } }); expect(fs.existsSync(path.join(parent, stale))).toBe(false); expect(fs.readdirSync(parent)).toEqual([applied.migration_id]);
+  });
+
+  it("admits only a validated same-operation preparation against the original Git approval", () => {
+    const root = gitProject(); const preview = previewEntityMigration(root, SOURCE_ROOT); const approval = approvalFile(root, preview.source_fingerprint, preview.preview_digest);
+    const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: approval } }); expect(child.status).toBe(86);
+    expect(applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest, approval)).toMatchObject({ status: "complete", preparation: { action: "resumed" } });
+
+    const other = gitProject(); const otherPreview = previewEntityMigration(other, SOURCE_ROOT); const otherApproval = approvalFile(other, otherPreview.source_fingerprint, otherPreview.preview_digest);
+    const interrupted = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: other, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: otherPreview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: otherPreview.preview_digest, AGENTERA_ENTITY_MIGRATION_APPROVAL_FILE: otherApproval } }); expect(interrupted.status).toBe(86); fs.writeFileSync(path.join(other, "unrelated.txt"), "not approved\n");
+    expect(() => applyEntityMigration(other, SOURCE_ROOT, otherPreview.source_fingerprint, otherPreview.preview_digest, otherApproval)).toThrow(/unapproved/); expect(files(other, ".agentera/entities")).toEqual([]);
+  }, 60_000);
+
+  it("resumes beyond one hundred prepared receipts without replacing existing identities", () => {
+    const tasks = Array.from({ length: 110 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    status: pending\n    depends_on: []\n    acceptance: [pass]\n`).join("");
+    const root = project({ ".agentera/plan.yaml": `header:\n  level: light\n  created: 2026-07-17\n  status: open\n  title: Large migration fixture\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: migrate\nwhy: durability\nscope: { included: [state], excluded: [] }\ntasks:\n${tasks}` }); const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 }); expect(preview.counts.publishable_entities).toBeGreaterThan(100);
+    const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "100", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } }); expect(child.status).toBe(86);
+    const [stage] = fs.readdirSync(path.join(root, ".agentera/migrations/entities")); const receipt = path.join(root, ".agentera/migrations/entities", stage, "receipts/0100.yaml"); const before = { ino: fs.statSync(receipt).ino, bytes: fs.readFileSync(receipt) };
+    const applied = applyEntityMigration(root, SOURCE_ROOT, preview.source_fingerprint, preview.preview_digest); const final = path.join(root, ".agentera/migrations/entities", applied.migration_id, "receipts/0100.yaml"); expect(fs.statSync(final).ino).toBe(before.ino); expect(fs.readFileSync(final)).toEqual(before.bytes);
+  }, 60_000);
+
+  it("preserves a stale preparation when one of its receipt inodes has a canonical target link", () => {
+    const root = project(); const old = previewEntityMigration(root, SOURCE_ROOT); const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: old.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: old.preview_digest } }); expect(child.status).toBe(86);
+    const parent = path.join(root, ".agentera/migrations/entities"); const [stage] = fs.readdirSync(parent); const target = path.join(root, old.entries[0].proposed_target!.path); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.linkSync(path.join(parent, stage, "receipts/0000.yaml"), target); fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] changed source.\n"); const current = previewEntityMigration(root, SOURCE_ROOT);
+    expect(() => applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest)).toThrow(/unlinked regular file|canonical publication/); expect(fs.existsSync(path.join(parent, stage))).toBe(true); expect(fs.existsSync(target)).toBe(true); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  });
+
+  it("refuses a successor race after stale preparation quarantine", () => {
+    const root = project(); const old = previewEntityMigration(root, SOURCE_ROOT); const child = spawnSync(process.execPath, [WORKER], { env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_receipt_after", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX: "0", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: old.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: old.preview_digest } }); expect(child.status).toBe(86);
+    const parent = path.join(root, ".agentera/migrations/entities"); const [stage] = fs.readdirSync(parent); fs.appendFileSync(path.join(root, "TODO.md"), "- [ ] changed source.\n"); const current = previewEntityMigration(root, SOURCE_ROOT); const rename = fs.renameSync.bind(fs); let raced = false;
+    vi.spyOn(fs, "renameSync").mockImplementation((source, target) => { rename(source, target); if (!raced && String(source).endsWith(stage) && String(target).includes(".discard-")) { raced = true; fs.mkdirSync(String(source)); } });
+    let failure: unknown; try { applyEntityMigration(root, SOURCE_ROOT, current.source_fingerprint, current.preview_digest); } catch (error) { failure = error; }
+    expect(failure).toMatchObject({ classification: "preparation_invalid", mutationPerformed: true }); expect(raced).toBe(true); expect(fs.existsSync(path.join(parent, stage))).toBe(true); expect(files(root, ".agentera/entities")).toEqual([]); expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  });
+
   it("refuses source drift after durable preparation before publishing any entity", () => {
     const root = project(); const preview = previewEntityMigration(root, SOURCE_ROOT);
     spawnSync(process.execPath, [WORKER], { encoding: "utf8", env: { ...process.env, NODE_ENV: "test", AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "prepare_recovery", AGENTERA_ENTITY_MIGRATION_CRASH_PROJECT: root, AGENTERA_ENTITY_MIGRATION_CRASH_SOURCE_ROOT: SOURCE_ROOT, AGENTERA_ENTITY_MIGRATION_CRASH_FINGERPRINT: preview.source_fingerprint, AGENTERA_ENTITY_MIGRATION_CRASH_DIGEST: preview.preview_digest } });

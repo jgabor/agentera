@@ -38,6 +38,7 @@ function filesUnder(
 
   return fs.readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
     const child = normalized ? path.posix.join(normalized, entry.name) : entry.name;
+    if (entry.isDirectory() && /^\.agentera\/migrations\/entities\/\.[a-f0-9]{20}\.prepare-[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(child)) return [];
     if (matchesAny(child, exclusions)) return [];
     if (entry.isSymbolicLink()) return [];
     if (entry.isDirectory() && excludedDirectoryNames.includes(entry.name)) return [];

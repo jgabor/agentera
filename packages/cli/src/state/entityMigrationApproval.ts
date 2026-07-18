@@ -233,7 +233,7 @@ function inventoryWorktree(project: string, ignoredDirectories: Set<string>): st
   return result;
 }
 
-export function assertEntityMigrationApproval(projectRoot: string, approvalFile: string, sourceFingerprint: string, previewDigest: string, writerLockHeld = false): EntityMigrationApproval {
+export function assertEntityMigrationApproval(projectRoot: string, approvalFile: string, sourceFingerprint: string, previewDigest: string, writerLockHeld = false, operationTransients: readonly string[] = []): EntityMigrationApproval {
   const project = validateRealProjectRoot(projectRoot).path;
   const approvalPath = path.resolve(approvalFile);
   if (approvalPath === project || approvalPath.startsWith(`${project}${path.sep}`)) throw new EntityMigrationApprovalError("approval file must be outside the project mutation set");
@@ -257,6 +257,10 @@ export function assertEntityMigrationApproval(projectRoot: string, approvalFile:
   const allowed = new Set([...tracked.map((entry) => entry.path), ...approval.ignored_paths, ...approval.untracked_baseline]);
   const ignoredDirectories = new Set(approval.ignored_directory_prefixes);
   if (writerLockHeld) ignoredDirectories.add(".agentera/.writer.lock");
+  for (const relative of operationTransients) {
+    if (!safeRelative(relative) || !/^\.agentera\/migrations\/entities\/\.[a-f0-9]{20}\.prepare-[a-f0-9-]{36}$/.test(relative)) throw new EntityMigrationApprovalError(`operation transient path '${relative}' is unsafe or unrecognized`);
+    ignoredDirectories.add(relative);
+  }
   const extras = inventoryWorktree(project, ignoredDirectories).filter((relative) => !allowed.has(relative));
   if (extras.length) throw new EntityMigrationApprovalError(`worktree has unapproved non-ignored path '${extras[0]}'`);
   return approval;

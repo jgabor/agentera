@@ -5,7 +5,7 @@ import path from "node:path";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { EntityPublicationContext, type PublishedTargetIdentity } from "./entityPublicationContext.js";
-import { canonicalEntityEnvelopeBytes, discoverEntities, validateEntityState } from "./entityStorage.js";
+import { canonicalEntityEnvelope, canonicalEntityEnvelopeBytes, discoverEntities, entityBoundariesForArtifact, validateEntityState } from "./entityStorage.js";
 import { planEntityMigration, validateEntityMigrationTargets, type DurableEntityMigrationEntry, type DurableEntityMigrationPlan } from "./entityMigrationPreview.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
@@ -46,10 +46,11 @@ export interface EntityMigrationResult {
   entity_count: number;
   preserved_residues: { count: number; sha256: string; provenance: string[] };
   evidence: { journal: string; manifest: string; snapshot: string };
+  preparation?: { action: "created" | "resumed" | "replaced"; path: string };
 }
 
 export class EntityMigrationOperationError extends Error {
-  constructor(readonly classification: string, message: string, readonly recovery: string) { super(message); this.name = "EntityMigrationOperationError"; }
+  constructor(readonly classification: string, message: string, readonly recovery: string, readonly mutationPerformed = false) { super(message); this.name = "EntityMigrationOperationError"; }
 }
 
 function hash(bytes: string | Buffer): string { return createHash("sha256").update(bytes).digest("hex"); }
@@ -160,6 +161,9 @@ function writeJournal(project: string, journal: Journal): Buffer {
   return Buffer.from(bytes);
 }
 function fault(point: string): void { if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === point) process.exit(86); }
+function receiptFault(timing: "before" | "after", index: number): void {
+  if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === `prepare_receipt_${timing}` && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_RECEIPT_INDEX === String(index)) process.exit(86);
+}
 
 function assertPlanReady(plan: DurableEntityMigrationPlan, sourceRoot: string): void {
   if (plan.counts.blockers > 0) throw new EntityMigrationOperationError("inventory_blocked", `entity migration inventory has ${plan.counts.blockers} blocker(s)`, `Repair every preview diagnostic, then rerun agentera state migrate entities --project '${plan.project}' --dry-run --format json; no migration journal was created.`);
@@ -175,29 +179,110 @@ function assertNoCanonicalState(project: string, sourceRoot: string): void {
   const discovered = discoverEntities(project, sourceRoot);
   if (discovered.entities.length || discovered.issues.length) throw new EntityMigrationOperationError("entity_collision", "canonical entity paths are not empty before migration apply", "Run agentera check validate state, preserve the existing entities, and resolve ownership before retrying; no journal was created.");
 }
-function prepare(plan: DurableEntityMigrationPlan): Journal {
+interface Preparation { name: string; id: string; relative: string; targets: string[] }
+
+function preparationError(message: string): never {
+  throw new EntityMigrationOperationError("preparation_invalid", message, "Preserve the preparation and canonical state; remove nothing manually, then repair or quarantine only with a tested migration maintenance path.");
+}
+
+function openPreparation(project: string, pinned: ReturnType<typeof pinnedMigrationParent>, name: string, plan?: DurableEntityMigrationPlan): Preparation {
+  const match = /^\.([a-f0-9]{20})\.prepare-([a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/.exec(name);
+  if (!match) return preparationError(`migration preparation '${name}' has an invalid operation-scoped name`);
+  let stageFd: number | undefined; let receiptsFd: number | undefined;
+  try {
+    stageFd = fs.openSync(fdPath(pinned.fd, name), DIRECTORY_FLAGS);
+    if (fs.readdirSync(fdPath(stageFd)).join("\0") !== "receipts") return preparationError(`migration preparation '${name}' may contain only its receipts directory`);
+    receiptsFd = fs.openSync(fdPath(stageFd, "receipts"), DIRECTORY_FLAGS);
+    const names = fs.readdirSync(fdPath(receiptsFd)).sort(); const entityNames = names.filter((entry) => entry !== "marker.yaml");
+    if (entityNames.some((entry, index) => entry !== `${String(index).padStart(4, "0")}.yaml`) || (names.includes("marker.yaml") && entityNames.length === 0)) return preparationError(`migration preparation '${name}' has an invalid receipt inventory`);
+    const targets: string[] = [];
+    for (const [index, receiptName] of entityNames.entries()) {
+      const file = fdPath(receiptsFd, receiptName); const stat = fs.lstatSync(file, { bigint: true });
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1n) return preparationError(`migration preparation '${name}' receipt '${receiptName}' is not an unlinked regular file`);
+      const bytes = fs.readFileSync(file, "utf8");
+      if (plan) {
+        const entry = plan.entries[index];
+        if (!entry || bytes !== canonicalEntityEnvelopeBytes({ id: entry.proposed_target!.id, artifact: entry.artifact!, record: entry.record })) return preparationError(`migration preparation '${name}' receipt '${receiptName}' does not match the approved operation`);
+        targets.push(entry.proposed_target!.path);
+      } else {
+        const document = loadYamlMapping(bytes); const id = String(document.id ?? ""); const artifact = String(document.artifact ?? "");
+        const boundaries = entityBoundariesForArtifact(artifact).filter((boundary) => { try { canonicalEntityEnvelope(bytes, { artifact, boundary, id }); return true; } catch { return false; } });
+        if (boundaries.length !== 1 || bytes !== canonicalEntityEnvelopeBytes({ id, artifact, record: document.record as never })) return preparationError(`migration preparation '${name}' receipt '${receiptName}' is not one canonical entity envelope`);
+        targets.push(`.agentera/entities/${artifact}/${boundaries[0]}/${id}.yaml`);
+      }
+    }
+    if (plan && entityNames.length > plan.entries.length) return preparationError(`migration preparation '${name}' has receipts beyond the approved operation`);
+    if (names.includes("marker.yaml")) {
+      const file = fdPath(receiptsFd, "marker.yaml"); const stat = fs.lstatSync(file, { bigint: true }); const bytes = fs.readFileSync(file, "utf8");
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1n) return preparationError(`migration preparation '${name}' marker receipt is not an unlinked regular file`);
+      if (plan ? entityNames.length !== plan.entries.length || bytes !== markerBytes(match[1], plan) : (() => { const marker = loadYamlMapping(bytes); return marker.schemaVersion !== "agentera.stateMode.v1" || marker.mode !== "entities" || marker.migration_id !== match[1] || operationId({ project, source_fingerprint: String(marker.source_fingerprint), preview_digest: String(marker.preview_digest) } as DurableEntityMigrationPlan) !== match[1]; })()) return preparationError(`migration preparation '${name}' marker receipt is invalid`);
+      targets.push(MARKER);
+    }
+    pinned.assertValid();
+    return { name, id: match[1], relative: `${ROOT}/${name}`, targets };
+  } catch (error) {
+    if (error instanceof EntityMigrationOperationError) throw error;
+    return preparationError(`migration preparation '${name}' is unsafe or changed while inspected`);
+  } finally { if (receiptsFd !== undefined) fs.closeSync(receiptsFd); if (stageFd !== undefined) fs.closeSync(stageFd); }
+}
+
+function inspectPreparations(project: string, current?: DurableEntityMigrationPlan): Preparation[] {
+  const parent = path.join(project, ROOT); if (!fs.existsSync(parent)) return [];
+  const pinned = pinnedMigrationParent(validateRealProjectRoot(project));
+  try {
+    const names = fs.readdirSync(fdPath(pinned.fd)).filter((name) => name.includes(".prepare-"));
+    if (names.length > 1) preparationError("multiple migration preparations are ambiguous and cannot be resumed or cleaned automatically");
+    return names.map((name) => openPreparation(project, pinned, name, current && name.startsWith(`.${operationId(current)}.prepare-`) ? current : undefined));
+  } finally { pinned.close(); }
+}
+
+function removeStalePreparation(project: string, preparation: Preparation, pinned: ReturnType<typeof pinnedMigrationParent>): void {
+  if (fs.existsSync(fdPath(pinned.fd, preparation.id))) preparationError(`stale preparation '${preparation.name}' has final operation evidence`);
+  for (const target of preparation.targets) if (fs.existsSync(path.join(project, target))) preparationError(`stale preparation '${preparation.name}' has canonical publication '${target}'`);
+  const quarantine = `.${preparation.id}.discard-${randomUUID()}`; let held: number | undefined; let renamed = false;
+  try {
+    held = fs.openSync(fdPath(pinned.fd, preparation.name), DIRECTORY_FLAGS); pinned.assertValid();
+    fs.renameSync(fdPath(pinned.fd, preparation.name), fdPath(pinned.fd, quarantine)); renamed = true; fs.fsyncSync(pinned.fd);
+    try { fs.lstatSync(fdPath(pinned.fd, preparation.name)); preparationError(`stale preparation '${preparation.name}' gained a successor during quarantine`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    const observed = fs.openSync(fdPath(pinned.fd, quarantine), DIRECTORY_FLAGS);
+    try { if (!sameDirectory(fs.fstatSync(held, { bigint: true }), fs.fstatSync(observed, { bigint: true }))) preparationError(`stale preparation '${preparation.name}' was replaced during quarantine`); } finally { fs.closeSync(observed); }
+    fs.rmSync(fdPath(pinned.fd, quarantine), { recursive: true }); fs.fsyncSync(pinned.fd); pinned.assertValid();
+    try { fs.lstatSync(fdPath(pinned.fd, preparation.name)); preparationError(`stale preparation '${preparation.name}' gained a successor during cleanup`); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+  } catch (error) {
+    if (renamed && error instanceof EntityMigrationOperationError && !error.mutationPerformed) throw new EntityMigrationOperationError(error.classification, error.message, error.recovery, true);
+    if (renamed && !(error instanceof EntityMigrationOperationError)) throw new EntityMigrationOperationError("preparation_cleanup_failed", (error as Error).message, "The stale preparation was quarantined but cleanup did not complete; preserve every successor and inspect the operation paths before retrying.", true);
+    throw error;
+  } finally { if (held !== undefined) fs.closeSync(held); }
+}
+
+function prepare(plan: DurableEntityMigrationPlan, preparation?: Preparation, action: "created" | "resumed" | "replaced" = "created"): { journal: Journal; preparation: NonNullable<EntityMigrationResult["preparation"]> } {
   const id = operationId(plan); const root = operationRoot(plan.project, id); const pinned = pinnedMigrationParent(validateRealProjectRoot(plan.project));
-  const stageName = `.${id}.prepare-${randomUUID()}`; const stage = fdPath(pinned.fd, stageName); let stageFd: number | undefined; let renamed = false; let published = false;
+  const stageName = preparation?.name ?? `.${id}.prepare-${randomUUID()}`; const stage = fdPath(pinned.fd, stageName); let stageFd: number | undefined; let renamed = false; let published = false;
   try { fs.lstatSync(fdPath(pinned.fd, id)); throw new EntityMigrationOperationError("migration_exists", `migration '${id}' already has durable evidence`, `Resume it explicitly with agentera state migrate entities --project '${plan.project}' --resume ${id} --force --format json.`); }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") { pinned.close(); throw error; } }
   const snapshot = snapshotBytes(plan, id);
   try {
-    fs.mkdirSync(stage, { mode: 0o700 }); fs.fsyncSync(pinned.fd); stageFd = fs.openSync(stage, DIRECTORY_FLAGS); pinned.assertValid();
-    fs.mkdirSync(fdPath(stageFd, "receipts"), { mode: 0o700 }); fs.fsyncSync(stageFd);
+    if (!preparation) { fs.mkdirSync(stage, { mode: 0o700 }); fs.fsyncSync(pinned.fd); }
+    stageFd = fs.openSync(stage, DIRECTORY_FLAGS); pinned.assertValid();
+    if (!preparation) { fs.mkdirSync(fdPath(stageFd, "receipts"), { mode: 0o700 }); fs.fsyncSync(stageFd); }
     const receiptsFd = fs.openSync(fdPath(stageFd, "receipts"), DIRECTORY_FLAGS); const receipts: Record<string, Receipt> = {};
     try {
       for (const [index, entry] of plan.entries.entries()) {
         const target = entry.proposed_target!.path; const name = `${String(index).padStart(4, "0")}.yaml`; const bytes = canonicalEntityEnvelopeBytes({ id: entry.proposed_target!.id, artifact: entry.artifact!, record: entry.record });
-        durableCreate(fdPath(receiptsFd, name), bytes); receipts[target] = { ...identity(descriptorIdentity(fdPath(receiptsFd, name))), path: `${ROOT}/${id}/receipts/${name}`, target, kind: "entity" };
+        receiptFault("before", index);
+        if (!fs.existsSync(fdPath(receiptsFd, name))) durableCreate(fdPath(receiptsFd, name), bytes);
+        const observed = descriptorIdentity(fdPath(receiptsFd, name)); const stat = fs.lstatSync(fdPath(receiptsFd, name), { bigint: true });
+        if (observed.sha256 !== hash(bytes) || observed.size !== BigInt(Buffer.byteLength(bytes)) || stat.nlink !== 1n) preparationError(`migration preparation '${stageName}' receipt '${name}' changed before finalization`);
+        receipts[target] = { ...identity(observed), path: `${ROOT}/${id}/receipts/${name}`, target, kind: "entity" }; receiptFault("after", index);
       }
-      durableCreate(fdPath(receiptsFd, "marker.yaml"), markerBytes(id, plan)); receipts[MARKER] = { ...identity(descriptorIdentity(fdPath(receiptsFd, "marker.yaml"))), path: `${ROOT}/${id}/receipts/marker.yaml`, target: MARKER, kind: "marker" };
+      const marker = markerBytes(id, plan); receiptFault("before", plan.entries.length); if (!fs.existsSync(fdPath(receiptsFd, "marker.yaml"))) durableCreate(fdPath(receiptsFd, "marker.yaml"), marker); const observedMarker = descriptorIdentity(fdPath(receiptsFd, "marker.yaml")); const markerStat = fs.lstatSync(fdPath(receiptsFd, "marker.yaml"), { bigint: true }); if (observedMarker.sha256 !== hash(marker) || observedMarker.size !== BigInt(Buffer.byteLength(marker)) || markerStat.nlink !== 1n) preparationError(`migration preparation '${stageName}' marker receipt changed before finalization`); receipts[MARKER] = { ...identity(observedMarker), path: `${ROOT}/${id}/receipts/marker.yaml`, target: MARKER, kind: "marker" }; receiptFault("after", plan.entries.length);
       fs.fsyncSync(receiptsFd);
     } finally { fs.closeSync(receiptsFd); }
-    const manifest = manifestBytes(plan, id, receipts);
+    fault("prepare_rename_before"); const manifest = manifestBytes(plan, id, receipts);
     const journal: Journal = { schemaVersion: "agentera.entityMigrationJournal.v1", migration_id: id, project: plan.project, source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest, phase: "prepare_recovery", phases: PHASES, manifest_sha256: hash(manifest), snapshot_sha256: hash(snapshot) };
     durableCreate(fdPath(stageFd, "manifest.yaml"), manifest); durableCreate(fdPath(stageFd, "snapshot.yaml"), snapshot);
     durableCreate(fdPath(stageFd, "journal.yaml"), journalBytes(journal)); fs.fsyncSync(stageFd); pinned.assertValid();
-    fs.renameSync(fdPath(pinned.fd, stageName), fdPath(pinned.fd, id)); renamed = true; fs.fsyncSync(pinned.fd); pinned.assertValid(); published = true;
+    fs.renameSync(fdPath(pinned.fd, stageName), fdPath(pinned.fd, id)); renamed = true; fs.fsyncSync(pinned.fd); pinned.assertValid(); published = true; fault("prepare_rename_after");
   } catch (error) {
     throw error;
   } finally {
@@ -206,7 +291,7 @@ function prepare(plan: DurableEntityMigrationPlan): Journal {
     pinned.close();
   }
   if (!fs.existsSync(root)) throw new Error(`migration '${id}' preparation did not publish its durable evidence directory`);
-  fault("prepare_recovery"); return loadJournal(plan.project, id).journal;
+  fault("prepare_recovery"); return { journal: loadJournal(plan.project, id).journal, preparation: { action, path: `${ROOT}/${stageName}` } };
 }
 
 function loadEvidence(project: string, journal: Journal): LoadedEvidence {
@@ -274,7 +359,7 @@ function matchesReceipt(project: string, target: string, receipt: Receipt): bool
   try { return canonicalRecordJson(identity(projectFileIdentity(project, target))) === canonicalRecordJson({ dev: receipt.dev, ino: receipt.ino, type: receipt.type, size: receipt.size, sha256: receipt.sha256 }); }
   catch { return false; }
 }
-function advance(project: string, sourceRoot: string, journal: Journal, operation: "apply" | "resume"): EntityMigrationResult {
+function advance(project: string, sourceRoot: string, journal: Journal, operation: "apply" | "resume", preparation?: EntityMigrationResult["preparation"]): EntityMigrationResult {
   const { entries, preservedResidues, receipts } = loadEvidence(project, journal); assertCurrentSource(project, sourceRoot, journal);
   const invalid = validateEntityMigrationTargets(project, entries, sourceRoot)[0];
   if (invalid) throw new EntityMigrationOperationError("target_invalid", `durable mapped record '${invalid.sourceIdentity}' does not satisfy canonical target validation: ${invalid.message}`, "Retain all recovery evidence and do not publish or modify targets; restore the exact validated manifest before resuming.");
@@ -299,27 +384,41 @@ function advance(project: string, sourceRoot: string, journal: Journal, operatio
   }
   if (journal.phase === "cutover") { verifyManifestGraph(project, sourceRoot, entries); journal.phase = "cutover_complete"; writeJournal(project, journal); fault("cutover_complete"); }
   verifyManifestGraph(project, sourceRoot, entries);
-  return { schemaVersion: "agentera.entityMigration.v1", command: "state migrate entities", status: "complete", operation, migration_id: journal.migration_id, phase: journal.phase, idempotent: operation === "resume" && journal.phase === "cutover_complete", mutation_performed: true, entity_count: entries.length, preserved_residues: residueSummary(preservedResidues), evidence: evidence(project, journal.migration_id) };
+  return { schemaVersion: "agentera.entityMigration.v1", command: "state migrate entities", status: "complete", operation, migration_id: journal.migration_id, phase: journal.phase, idempotent: operation === "resume" && journal.phase === "cutover_complete", mutation_performed: true, entity_count: entries.length, preserved_residues: residueSummary(preservedResidues), evidence: evidence(project, journal.migration_id), ...(preparation ? { preparation } : {}) };
 }
 
 export function applyEntityMigration(projectRoot: string, sourceRoot: string, fingerprint: string, digest: string, approvalFile?: string): EntityMigrationResult {
   const project = validateRealProjectRoot(projectRoot).path;
+  const first = planEntityMigration(project, sourceRoot); assertPlanReady(first, sourceRoot); assertBinding(first, fingerprint, digest);
+  inspectPreparations(project, first);
   if (projectIsGitCheckout(project)) {
     if (!approvalFile) throw new EntityMigrationOperationError("approval_required", "entity migration apply in a Git checkout requires an external approval file", "Generate a clean approval envelope, then retry with --approval-file FILE and matching source/digest values.");
-    assertEntityMigrationApproval(project, approvalFile, fingerprint, digest);
   }
-  const first = planEntityMigration(project, sourceRoot); assertPlanReady(first, sourceRoot); assertBinding(first, fingerprint, digest);
   const id = operationId(first); const existing = path.join(operationRoot(project, id), "journal.yaml");
   if (fs.existsSync(existing)) {
+    if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest);
     const loaded = loadJournal(project, id).journal;
     if (loaded.phase === "cutover_complete") return resumeEntityMigration(project, sourceRoot, id, "apply");
     throw new EntityMigrationOperationError("migration_exists", `migration '${id}' was interrupted at '${loaded.phase}'`, `Resume it explicitly with agentera state migrate entities --project '${project}' --resume ${id} --force --format json.`);
   }
   const lock = acquireWriterLock(project, 2000);
+  let staleRemoved = false;
   try {
     const current = planEntityMigration(project, sourceRoot); assertPlanReady(current, sourceRoot); assertBinding(current, fingerprint, digest); assertNoCanonicalState(project, sourceRoot);
-    if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest, true);
-    return advance(project, sourceRoot, prepare(current), "apply");
+    const preparations = inspectPreparations(project, current);
+    if (approvalFile) assertEntityMigrationApproval(project, approvalFile, fingerprint, digest, true, preparations.map(({ relative }) => relative));
+    let selected: Preparation | undefined = preparations[0]; let action: "created" | "resumed" | "replaced" = selected?.id === id ? "resumed" : "created";
+    if (selected && selected.id !== id) {
+      const pinned = pinnedMigrationParent(validateRealProjectRoot(project));
+      try { removeStalePreparation(project, selected, pinned); staleRemoved = true; } finally { pinned.close(); }
+      selected = undefined; action = "replaced";
+    }
+    const prepared = prepare(current, selected, action);
+    return advance(project, sourceRoot, prepared.journal, "apply", prepared.preparation);
+  } catch (error) {
+    if (staleRemoved && error instanceof EntityMigrationOperationError && !error.mutationPerformed) throw new EntityMigrationOperationError(error.classification, error.message, error.recovery, true);
+    if (staleRemoved && !(error instanceof EntityMigrationOperationError)) throw new EntityMigrationOperationError("migration_failed", (error as Error).message, "The stale preparation was explicitly removed, but the successor did not complete; retry the exact approved apply after inspecting current state.", true);
+    throw error;
   }
   finally { lock.release(); }
 }
