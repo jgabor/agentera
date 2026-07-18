@@ -5,8 +5,9 @@
 # per-dimension grades (A-F), per-dimension findings with confidence, and
 # trend analysis against the prior audit.
 #
-# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
-# following capability_schema_contract.yaml and protocol.yaml conventions.
+# The active authority is one health_audit entity per writer-owned file. The
+# numbered projection model below is retained only as an exact legacy migration
+# input schema; it is not an ordinary read or write contract after cutover.
 #
 # ── Field-by-field mapping: v1 HEALTH.md → v2 health.yaml ──
 #
@@ -53,9 +54,21 @@ meta:
     codebase health context.
   artifact_type: agent_facing
   path: ".agentera/health.yaml"
+  authority: legacy_migration_input_only
   producer: audit
   consumers: [document, status, audit, orchestrate, plan, build, vision]
   format: yaml
+
+ENTITY_AUTHORITY:
+  identity_fields: [id, artifact]
+  artifact: health
+  boundary: health_audit
+  retrieval:
+    list: agentera state health list --format json
+    get: agentera state health get --id ID --format json
+  mutation: agentera state health explain --verb append --format json
+  direct_file_edits: forbidden
+  legacy_schema_below: migration_input_only
 
 GROUP_PREFIXES:
   BUDGET: HB

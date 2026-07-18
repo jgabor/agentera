@@ -153,8 +153,8 @@ describe("producer capability writer integration", () => {
       expect(surface).toContain("agentera state decisions explain");
       expect(surface).toContain("--dry-run");
     }
-    expect(skill).toContain("Do not hand-edit those artifacts");
-    expect(agents).toContain("instead of hand-editing their YAML");
+    expect(skill).toContain("not edit `.agentera/entities/` directly");
+    expect(agents).toContain("instead of editing `.agentera/entities/`");
     expect(publicReference).toContain("agentera schema --format json");
   });
 });

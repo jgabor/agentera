@@ -4,8 +4,9 @@
 # one entry. Decisions are referenced by build, optimize, and profile
 # for context on why choices were made.
 #
-# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
-# following capability_schema_contract.yaml and protocol.yaml conventions.
+# The active authority uses writer-owned decision, revision, and satisfaction
+# entity files. The numbered projection model below is retained only as an exact
+# legacy migration input schema; it is not an ordinary post-cutover contract.
 #
 # ── Field-by-field mapping: v1 DECISIONS.md → v2 decisions.yaml ──
 #
@@ -38,9 +39,21 @@ meta:
     and orchestrate for context on why choices were made.
   artifact_type: agent_facing
   path: ".agentera/decisions.yaml"
+  authority: legacy_migration_input_only
   producer: discuss
   consumers: [document, status, audit, optimize, orchestrate, plan, profile, build, discuss, vision]
   format: yaml
+
+ENTITY_AUTHORITY:
+  identity_fields: [id, artifact]
+  artifact: decisions
+  boundaries: [decision, decision_revision, decision_satisfaction]
+  retrieval:
+    list: agentera state decisions list --format json
+    get: agentera state decisions get --id ID --format json
+  mutation: agentera state decisions explain --format json
+  direct_file_edits: forbidden
+  legacy_schema_below: migration_input_only
 
 GROUP_PREFIXES:
   BUDGET: DB

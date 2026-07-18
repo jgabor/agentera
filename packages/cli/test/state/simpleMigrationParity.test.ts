@@ -68,7 +68,7 @@ describe("simplified migration and enrichment parity", () => {
     }
   });
 
-  it("keeps numbered projection guidance lossless in source, bundle, and explain output", () => {
+  it("keeps legacy projection guidance in migration references while entity explain stays final", () => {
     const source = read("skills/agentera/references/contract.md");
     const bundled = fs.readFileSync(path.join(BUNDLE_ROOT, "skills/agentera/references/contract.md"), "utf8");
     const start = source.indexOf("### Compaction thresholds");
@@ -89,9 +89,12 @@ describe("simplified migration and enrichment parity", () => {
     ];
     const stale = ["drop beyond 50", "removed entirely", "older than 50", "drop the oldest"];
 
-    for (const surface of [sourceProjection, bundleProjection, explain]) {
+    for (const surface of [sourceProjection, bundleProjection]) {
       for (const phrase of required) expect(surface, phrase).toContain(phrase);
       for (const phrase of stale) expect(surface, phrase).not.toContain(phrase);
     }
+    expect(explain).toContain("each canonical progress entity is authority");
+    expect(explain).toContain("no aggregate projection or numbered archive is written");
+    for (const phrase of required) expect(explain, phrase).not.toContain(phrase);
   });
 });

@@ -43,9 +43,9 @@ export function buildExplain(
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
   const legacyEvidence = stateMode === "legacy" && ["progress", "decisions", "health", "plan"].includes(artifact);
-  const entityArtifact = !legacyEvidence && ["progress", "decisions", "health", "objective", "experiments", "todo", "docs"].includes(artifact);
+  const entityArtifact = !legacyEvidence && ["progress", "decisions", "health", "plan", "objective", "experiments", "todo", "docs"].includes(artifact);
   const resolved = entityArtifact
-    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
+    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "plan" ? ["append", "update", "set-status", "record-evaluation"].includes(verb) ? "plan_task" : "plan" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
@@ -67,10 +67,10 @@ export function buildExplain(
     .filter((field) => artifact !== "decisions" || !["update", "amend"].includes(verb) || (entityArtifact ? field.flag !== "--number" : !["--id", "--base-sha256"].includes(field.flag)))
     .filter((field) => !(entityArtifact && artifact === "experiments" && field.flag === "--number"))
     .map((field) => ({
-    flag: field.flag,
-    field: field.field,
+    flag: entityArtifact && artifact === "plan" && field.flag === "--task" ? "--id" : field.flag,
+    field: entityArtifact && artifact === "plan" && field.flag === "--task" ? "id" : field.field,
     required: Boolean(field.required || (artifact === "decisions" && ["update", "amend"].includes(verb) && (entityArtifact ? field.flag === "--id" || (verb === "amend" && field.flag === "--base-sha256") : field.flag === "--number"))),
-    type: field.kind,
+    type: entityArtifact && artifact === "plan" && field.flag === "--task" ? "string" : field.kind,
     ...(field.validValues ? { valid_values: field.validValues } : {}),
     ...(field.repeatable ? { repeatable: true } : {}),
     ...(field.description ? { description:
@@ -120,7 +120,7 @@ export function buildExplain(
         ? ["id", "artifact", "objective"]
         : entityArtifact && artifact === "objective"
           ? ["id", "artifact"]
-          : entityArtifact && ["health", "docs"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
+        : entityArtifact && ["health", "docs", "plan"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
         artifact === "health"
@@ -142,6 +142,17 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
   ];
+  if (entityArtifact && artifact === "plan" && verb === "create")
+    return [
+      "the CLI assigns bare IDs to the plan and each task and publishes one canonical file per entity",
+      ...base,
+    ];
+  if (entityArtifact && artifact === "plan" && ["update", "set-status", "record-evaluation"].includes(verb))
+    return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "append")
+    return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];
+  if (entityArtifact && artifact === "plan")
+    return ["the active plan entity is selected by lifecycle state", ...base];
   if (artifact === "plan" && verb === "create")
     return [
       "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI",
@@ -182,13 +193,17 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
   ];
   if (artifact === "decisions" && verb === "update")
     return [
-      "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
+      entityDecisions
+        ? "select an existing decision by bare ID with --id; it is caller-supplied and never assigned by the CLI"
+        : "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
       "update writes only satisfaction overlay fields; decision content is amended, not updated",
       ...base,
     ];
   if (artifact === "decisions" && verb === "amend")
     return [
-      "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
+      entityDecisions
+        ? "select an existing decision by bare ID with --id; it is caller-supplied and never assigned by the CLI"
+        : "select an existing decision number with --number; it is caller-supplied and never assigned by the CLI",
       "supply at least one amendable content field (--question, --context, --alternative-chosen, --alternative-rejected, --choice, --reasoning, --confidence, --feeds-into)",
       "--alternative-rejected is repeatable and appends one rejected alternative each time it is supplied",
       "confidence must be current vocabulary (firm, provisional, exploratory); unsupported inherited labels on untouched records stay legacy",
@@ -223,13 +238,19 @@ export function exampleFor(artifact: WritableArtifact, verb: string, entityDecis
   if (entityArtifact && artifact === "docs" && verb === "update") return "agentera state docs update --id qjtrmnpvka --input documentation.yaml --format json";
   if (verb === "create") return "agentera state plan create --input plan.yaml --format json";
   if (verb === "archive") return "agentera state plan archive --dry-run";
-  if (verb === "update") return 'agentera state plan update --task 1 --name "..." --format json';
+  if (verb === "update") return entityArtifact
+    ? 'agentera state plan update --id qjtrmnpvka --name "..." --format json'
+    : 'agentera state plan update --task 1 --name "..." --format json';
   if (verb === "set-status")
-    return "agentera state plan set-status --task 1 --status complete --format json";
+    return entityArtifact
+      ? "agentera state plan set-status --id qjtrmnpvka --status complete --format json"
+      : "agentera state plan set-status --task 1 --status complete --format json";
   if (verb === "set-plan-status")
     return "agentera state plan set-plan-status --status complete --format json";
   if (verb === "record-evaluation")
-    return 'agentera state plan record-evaluation --task 1 --attempt-id audit-1 --verdict pass --provenance "audit report" --format json';
+    return entityArtifact
+      ? 'agentera state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json'
+      : 'agentera state plan record-evaluation --task 1 --attempt-id audit-1 --verdict pass --provenance "audit report" --format json';
   if (entityArtifact && verb === "publish")
     return "agentera state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json";
   if (verb === "publish")

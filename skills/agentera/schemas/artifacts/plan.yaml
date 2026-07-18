@@ -4,8 +4,9 @@
 # why, constraints, scope boundaries, design approach, tasks with dependencies
 # and acceptance criteria, overall acceptance, and surprises.
 #
-# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
-# following capability_schema_contract.yaml and protocol.yaml conventions.
+# The active authority uses one plan or plan_task entity per writer-owned file.
+# The aggregate model and ordinal fields below are retained only as an exact
+# legacy migration input schema; they are not ordinary post-cutover contracts.
 #
 # ── Field-by-field mapping: v1 PLAN.md → v2 plan.yaml ──
 #
@@ -47,9 +48,24 @@ meta:
     Consumed by capabilities that inspect or execute plan state.
   artifact_type: agent_facing
   path: ".agentera/plan.yaml"
+  authority: legacy_migration_input_only
   producer: [orchestrate, plan, build]
   consumers: [status, audit, orchestrate, plan, build]
   format: yaml
+
+ENTITY_AUTHORITY:
+  identity_fields: [id, artifact]
+  artifact: plan
+  boundaries: [plan, plan_task]
+  relationship: plan_task.record.plan is a bare plan ID
+  retrieval:
+    list: agentera state plan list --format json
+    get: agentera state plan get --id ID --format json
+    tasks_list: agentera state plan tasks list --plan-id ID --format json
+    task_get: agentera state plan tasks get --id ID --format json
+  mutation: agentera state plan explain --format json
+  direct_file_edits: forbidden
+  legacy_schema_below: migration_input_only
 
 GROUP_PREFIXES:
   BUDGET: PB

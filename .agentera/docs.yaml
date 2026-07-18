@@ -33,22 +33,6 @@ mapping:
   path: CHANGELOG.md
   producers:
   - build
-- artifact: DECISIONS.md
-  path: .agentera/decisions.yaml
-  producers:
-  - discuss
-- artifact: PLAN.md
-  path: .agentera/plan.yaml
-  producers:
-  - plan
-- artifact: PROGRESS.md
-  path: .agentera/progress.yaml
-  producers:
-  - build
-- artifact: HEALTH.md
-  path: .agentera/health.yaml
-  producers:
-  - audit
 - artifact: DOCS.md
   path: .agentera/docs.yaml
   producers:
@@ -142,17 +126,9 @@ index:
   path: references/artifacts/state-storage-authority.yaml
   last_updated: '2026-07-15'
   status: current
-- document: Decisions
-  path: .agentera/decisions.yaml
-  last_updated: '2026-07-12'
-  status: current
 - document: Vision
   path: .agentera/vision.yaml
   last_updated: '2026-06-05'
-  status: current
-- document: Progress
-  path: .agentera/progress.yaml
-  last_updated: '2026-07-15'
   status: current
 - document: TODO
   path: TODO.md
@@ -160,14 +136,6 @@ index:
   status: current
 - document: Changelog
   path: CHANGELOG.md
-  last_updated: '2026-07-15'
-  status: current
-- document: Health
-  path: .agentera/health.yaml
-  last_updated: '2026-07-14'
-  status: current
-- document: Plan
-  path: .agentera/plan.yaml
   last_updated: '2026-07-15'
   status: current
 - document: DOCS

@@ -39,13 +39,11 @@ Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/cons
 
 ```text
 agentera/
-├── .agentera/                              # User project-state directory (CLI is canonical read path)
-│   ├── vision.yaml                        # Product north star — do not modify in execution cycles
-│   ├── plan.yaml                          # Active plan + archive
-│   ├── progress.yaml                      # Shipped work with verification evidence
-│   ├── decisions.yaml                     # Durable reasoning trail
-│   ├── health.yaml                        # Architecture and project health audits
-│   └── docs.yaml                          # Documentation inventory and drift
+├── .agentera/                              # User project state; CLI is the canonical read/write seam
+│   ├── entities/                          # One writer-owned file per mutable state entity
+│   ├── state-mode.yaml                    # Durable entity-authority marker
+│   ├── vision.yaml                        # Product north star — intentional singleton
+│   └── docs.yaml                          # Documentation policy/mappings singleton
 ├── AGENTS.md                              # This file
 ├── README.md, DESIGN.md, TODO.md, CHANGELOG.md, UPGRADE.md
 ├── package.json                           # vp-based workspace shortcuts (web:*, mobile:*)
@@ -79,11 +77,11 @@ agentera state query --list-artifacts   # Canonical artifact inventory
 
 Canonical artifact names such as `DOCS.md` may map to YAML paths such as `.agentera/docs.yaml`; use the CLI result as the source of truth.
 
-Write `progress`, `decisions`, `plan`, and `health` through the typed state
-writer instead of hand-editing their YAML during normal capability execution.
-The writer resolves docs mappings, assigns CLI-owned fields, validates the final
-bytes, and compacts where required. Discover each live mutation contract before
-constructing a write:
+Mutable state records have public `id` and `artifact` fields and one canonical
+entity file. Write `progress`, `decisions`, `plan`, and `health` through the typed
+state writer instead of editing `.agentera/entities/`. The writer assigns IDs,
+validates records, and publishes atomically. Discover each live mutation contract
+before constructing a write:
 
 ```bash
 agentera state decisions explain --format json
@@ -283,13 +281,17 @@ New scopes are closed by default. If a commit needs a new scope, add it to the t
 
 When a task touches code, tests, or user-facing docs, fold related artifact updates into **that same commit**:
 
-- `.agentera/plan.yaml` (task status, plan closeout, archive handoff)
-- `.agentera/progress.yaml` (cycle evidence for the work)
+- plan and task entities through `agentera state plan explain`
+- progress entities through `agentera state progress explain`
 - `TODO.md` (open items closed or filed)
-- `.agentera/health.yaml` (audit capability output)
-- `.agentera/decisions.yaml` (discuss satisfaction updates)
+- health entities through `agentera state health explain`
+- decision entities through `agentera state decisions explain`
 
-The principle applies to every capability that writes to `.agentera/`: `audit` writes `health.yaml`; `plan`/`orchestrate`/`build` write `plan.yaml`; `discuss` writes `decisions.yaml`. Do not leave a task "done" with artifact state committed in a follow-up chore commit. If the implementation commit already shipped, fold artifact updates into the next substantive commit on the same task — not a hash-backfill pass.
+The principle applies to every capability that writes state: `audit`, `plan`,
+`orchestrate`, `build`, and `discuss` use their typed entity writers. Do not leave
+a task "done" with state committed in a follow-up chore commit. If the
+implementation commit already shipped, fold state updates into the next
+substantive commit on the same task — not a hash-backfill pass.
 
 ### Standalone commits (narrow exceptions)
 

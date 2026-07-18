@@ -64,6 +64,19 @@ function unrelated(root: string): { file: string; bytes: string } {
 afterEach(() => { vi.restoreAllMocks(); while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true }); });
 
 describe("plan and task entity authority", () => {
+  it("explains task mutations with bare IDs in entity mode", () => {
+    const root = project();
+    for (const verb of ["update", "set-status", "record-evaluation"]) {
+      const result = capture(root, ["state", "plan", "explain", "--verb", verb, "--format", "json"]);
+      expect(result.rc, result.err || result.out).toBe(0);
+      const explanation = JSON.parse(result.out);
+      expect(explanation.path).toBe(".agentera/entities/plan/plan_task/<id>.yaml");
+      expect(explanation.fields).toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--id", field: "id", required: true, type: "string" })]));
+      expect(explanation.fields).not.toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--task" })]));
+      expect(explanation.example).toContain("--id qjtrmnpvka");
+    }
+  });
+
   it("creates one plan and independent task entities with bare dependency IDs", () => {
     const root = project(); const created = create(root, "graph", true);
     expect(created).toMatchObject({ artifact: "plan", id: expect.stringMatching(/^[a-z]{10}$/) });

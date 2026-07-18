@@ -4,8 +4,9 @@
 # in one development cycle: phase, work done, discoveries, verification,
 # next steps, and context envelope.
 #
-# Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
-# following capability_schema_contract.yaml and protocol.yaml conventions.
+# The active authority is one progress_cycle entity per writer-owned file. The
+# numbered projection model below is retained only as an exact legacy migration
+# input schema; it is not an ordinary read or write contract after cutover.
 #
 # ── Field-by-field mapping: v1 PROGRESS.md → v2 progress.yaml ──
 #
@@ -40,9 +41,21 @@ meta:
     capabilities that need recent work history and verification evidence.
   artifact_type: agent_facing
   path: ".agentera/progress.yaml"
+  authority: legacy_migration_input_only
   producer: build
   consumers: [document, status, audit, optimize, orchestrate, plan, build, vision, design]
   format: yaml
+
+ENTITY_AUTHORITY:
+  identity_fields: [id, artifact]
+  artifact: progress
+  boundary: progress_cycle
+  retrieval:
+    list: agentera state progress list --format json
+    get: agentera state progress get --id ID --format json
+  mutation: agentera state progress explain --verb append --format json
+  direct_file_edits: forbidden
+  legacy_schema_below: migration_input_only
 
 GROUP_PREFIXES:
   BUDGET: PB

@@ -29,14 +29,16 @@ You can also use plain language: `/agentera help me decide`, `/agentera plan thi
 Each capability reads what earlier ones wrote, does its work, and leaves evidence
 for the next run:
 
-| Question                                 | Answer in                  |
-| ---------------------------------------- | -------------------------- |
-| Why did we pick the repository pattern?  | `.agentera/decisions.yaml` |
-| What is task 7 waiting on?               | `.agentera/plan.yaml`      |
-| Did the auth middleware ship with tests? | `.agentera/progress.yaml`  |
+| Question                                 | Answer in                            |
+| ---------------------------------------- | ------------------------------------ |
+| Why did we pick the repository pattern?  | `agentera state decisions list`      |
+| What is the selected task waiting on?    | `agentera state plan tasks get --id` |
+| Did the auth middleware ship with tests? | `agentera state progress list`       |
 
-`resonera` records the decision, `planera` scopes the work, `realisera` ships
-with evidence, `inspektera` audits the result.
+These families use one writer-owned file per entity. Public records carry `id`
+and `artifact`; bounded `list` and exact `get --id` commands are the supported
+read seam. `resonera` records the decision, `planera` scopes the work,
+`realisera` ships with evidence, and `inspektera` audits the result.
 
 ## Validate a capability
 

@@ -1,0 +1,15 @@
+id: fxewomoqvg
+artifact: progress
+record:
+  timestamp: 2026-07-18 07:16
+  type: docs
+  phase: audit
+  what: Aligned active public contracts and bundled data with final entity authority, corrected bare-ID plan explain output, and proved entity-scale release readiness.
+  context:
+    intent: Complete original entity-migration Plan Task 15 without replanning or closing Task 16.
+    constraints: Suite metadata remains 3.0.0; only packages/cli is 3.0.0-dev.24. No vision, remote, release, or manual entity edits.
+    scope: Task 15 active contracts, performance proof, release gates, package dry-run, and typed state closeout only.
+  inspiration: Plan task pnrmrwrgam and the post-cutover state-storage authority.
+  discovered: Plan explain still projected the legacy task selector until plan joined entity-mode explain dispatch; the web formatter also exposed one pre-existing table-alignment drift required by the full web check.
+  verified: Focused final-protocol, bundle parity, six real Git family merge suites, prepack, and 100/1000 entity-scale tests passed; full CLI passed 2690 tests; typecheck, build, 12 capability validations, contract, state validation with 1466 entities, compact, web check/build, npm pack dry-run, and version audit passed.
+  next: Leave Task 16 open; do not publish, tag, push, or close the plan in this cycle.

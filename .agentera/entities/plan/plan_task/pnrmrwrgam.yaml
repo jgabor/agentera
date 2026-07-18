@@ -4,7 +4,7 @@ record:
   name: Synchronize release contracts and verify merge safety
   depends_on:
     - ulnrauxhtf
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the final protocol WHEN active help, skills, docs, schemas, changelog Unreleased, and bundled data are checked THEN they describe one state authority without rewriting historical prose.
     - GIVEN the v3 hold WHEN versions are inspected THEN suite metadata remains 3.0.0 and only the permitted next development package version is selected.

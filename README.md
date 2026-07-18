@@ -110,14 +110,15 @@ list/get is active-plan-only. Experiment retrieval merges its bounded projection
 with objective-owned immutable archives and reports detail as full, summary-only,
 or unavailable.
 
-The standard project state is:
+Ordinary mutable state uses one canonical file per entity. Every public record
+has only `id` and `artifact` identity, and is accessed through bounded `list`,
+exact `get --id`, and typed `agentera state <artifact> explain` write contracts.
+Do not edit files under `.agentera/entities/` directly.
+
+The intentional singleton project state is:
 
 - `.agentera/vision.yaml` — product direction
-- `.agentera/plan.yaml` — active and archived plans
-- `.agentera/progress.yaml` — shipped work and verification
-- `.agentera/decisions.yaml` — durable reasoning
-- `.agentera/health.yaml` — architecture and project health
-- `.agentera/docs.yaml` — documentation inventory and path/version mappings
+- `.agentera/docs.yaml` — documentation policy and path/version mappings
 - `TODO.md`, `CHANGELOG.md`, and `DESIGN.md` — human-facing project artifacts
 
 ## Capabilities

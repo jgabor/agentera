@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Cut ordinary project state over to one canonical writer-owned file per entity. Public records now use only bare `id` and `artifact` identity, bounded `list` and exact `get --id` reads, and typed writers discovered through `agentera state <artifact> explain`; aggregate state files and ordinal selectors remain migration or historical evidence only.
 - Split lifecycle validation orchestration from the public validation facade while preserving its import surface and validation behavior.
 - Eliminated the monolithic `corpus.json` publication output from the extract CLI; report dry-run diagnostics now reference tier files and the `privacy.corpus_write` field is renamed to `privacy.tier_write`.
 - Changed `agentera check lint` verbosity checks to consume schema-owned full-file and per-entry word limits, skip no-limit and token-only dimensions, and report authority failures without fallback budgets.

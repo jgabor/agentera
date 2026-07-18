@@ -145,11 +145,11 @@ Proceed/Cancel handoff.
 
 ## Artifact writes
 
-The CLI state writer is the canonical mutation path for `progress`, `decisions`,
-`plan`, and `health`. Do not hand-edit those artifacts during normal capability
-execution. The writer assigns numbers, validates schema fields, honors docs-mapped
-paths, serializes concurrent writes, compacts where required, and supports
-filesystem-safe previews.
+The CLI state writer is the canonical mutation path for entity-backed state.
+Every public record has `id` and `artifact`, lives in one writer-owned entity
+file, and is retrieved through bounded `list` or exact `get --id` commands. Do
+not edit `.agentera/entities/` directly. The writer assigns bare IDs, validates
+records, publishes atomically, and supports filesystem-safe previews.
 
 Discover the live contract before constructing a write:
 
@@ -170,7 +170,8 @@ Common mutations:
 - `agentera state decisions append ... --format json`
 - `agentera state decisions update --id ID ... --format json`
 - `agentera state plan create --input plan.yaml --format json`
-- `agentera state plan append|update|set-status|set-plan-status ... --format json`
+- `agentera state plan update|set-status --id ID ... --format json`
+- `agentera state plan set-plan-status --id ID ... --format json`
 - `agentera state plan archive --format json`
 - `agentera state health append --input audit.yaml --format json`
 
@@ -184,16 +185,15 @@ json` exposes the machine-readable writer operation matrix under
 
 ## Artifact path resolution
 
-The state writer resolves path mappings itself. Before directly reading or
-writing an artifact outside the writer contract, check if `.agentera/docs.yaml` exists.
-If it has an Artifact Mapping section, use the path specified for each canonical
-filename. If `.agentera/docs.yaml` doesn't exist or has no mapping for a given
-artifact, use the default layout:
+The state writer resolves entity storage itself. Before directly reading or
+writing an intentional singleton outside the writer contract, check whether
+`.agentera/docs.yaml` maps it to another path. If no mapping exists, use the
+default singleton layout:
 
 - Human-facing artifacts at the project root: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
-- Agent-facing artifacts in `.agentera/` as YAML: `progress.yaml`, `decisions.yaml`, `health.yaml`, `plan.yaml`, `docs.yaml`, `vision.yaml`, `objective.yaml`, `experiments.yaml`
+- Agent-facing singletons: `.agentera/docs.yaml` and `.agentera/vision.yaml`
 
-Do not silently bypass the CLI and read raw `.agentera/*.yaml` files first. If
+Do not silently bypass the CLI and read raw entity files first. If
 CLI state declares complete coverage, do not perform defensive raw artifact
 reads. Use raw artifact reads only as a last-resort fallback after CLI
 fallback commands fail or declare incomplete state.

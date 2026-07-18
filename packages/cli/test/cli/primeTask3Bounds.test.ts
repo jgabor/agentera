@@ -11,6 +11,8 @@ import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { buildOrientationJsonPayload, briefOrientationPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
+import { main } from "../../src/cli/dispatch/index.js";
+import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { boundStartupValue, startupHistorySummary } from "../../src/state/startupProjection.js";
 
@@ -77,6 +79,39 @@ function largeFixture(count = 1000, archiveCount = 100): void {
       fs.writeFileSync(path.join(directory, `${number}.yaml`), "broken: true\n");
     }
   }
+}
+
+function entityId(index: number): string {
+  let value = index;
+  const letters = Array.from({ length: 10 }, () => {
+    const letter = String.fromCharCode(97 + (value % 26));
+    value = Math.floor(value / 26);
+    return letter;
+  });
+  return letters.reverse().join("");
+}
+
+function entityFixture(count: number): string {
+  fs.rmSync(path.join(project, ".agentera"), { recursive: true, force: true });
+  const directory = path.join(project, ".agentera", "entities", "progress", "progress_cycle");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  for (let index = 0; index < count; index += 1) {
+    const id = entityId(index);
+    fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({
+      id,
+      artifact: "progress",
+      record: {
+        timestamp: `2026-07-${String((index % 28) + 1).padStart(2, "0")} 00:00`,
+        type: "test",
+        phase: "audit",
+        what: `Entity-scale fixture ${index}`,
+        verified: "Generated fixture record",
+        context: { intent: "Measure entity authority" },
+      },
+    }));
+  }
+  return entityId(Math.floor(count / 2));
 }
 
 function capture(fn: (out: (text: string) => void, err: (text: string) => void) => number): { rc: number; out: string; err: string } {
@@ -146,6 +181,60 @@ afterEach(() => {
 });
 
 describe("prime Task3 bounded source projections", () => {
+  it("keeps entity-mode startup and retrieval within authority budgets at declared scales", () => {
+    const contract = authority();
+    const measurements: Array<Record<string, number | string>> = [];
+    for (const [label, count] of [["small", 100], ["large", 1000]] as const) {
+      const exactId = entityFixture(count);
+      const target = contract.entity_target.measurement_contract.targets;
+
+      // Stabilize lazy module and YAML initialization before measuring this
+      // fixture; the thresholds remain authority-owned rather than test-tuned.
+      collectOrientationState({ home, env: process.env });
+      capture((out, err) => main(["node", "agentera", "state", "progress", "list", "--limit", "1", "--format", "json"], { out, err }));
+      capture((out, err) => main(["node", "agentera", "state", "progress", "get", "--id", exactId, "--format", "json"], { out, err }));
+
+      const startupBeforeHeap = process.memoryUsage().heapUsed;
+      const startupAt = performance.now();
+      const state = collectOrientationState({ home, env: process.env });
+      const startupMs = performance.now() - startupAt;
+      const startupHeap = Math.max(0, process.memoryUsage().heapUsed - startupBeforeHeap);
+      const startupBytes = jsonBytes(buildOrientationJsonPayload(state, "prime"));
+
+      const listBeforeHeap = process.memoryUsage().heapUsed;
+      const listAt = performance.now();
+      const listed = capture((out, err) => main(["node", "agentera", "state", "progress", "list", "--limit", "100", "--format", "json"], { out, err }));
+      const listMs = performance.now() - listAt;
+      const listHeap = Math.max(0, process.memoryUsage().heapUsed - listBeforeHeap);
+      const listBytes = Buffer.byteLength(listed.out, "utf8");
+
+      const getBeforeHeap = process.memoryUsage().heapUsed;
+      const getAt = performance.now();
+      const exact = capture((out, err) => main(["node", "agentera", "state", "progress", "get", "--id", exactId, "--format", "json"], { out, err }));
+      const getMs = performance.now() - getAt;
+      const getHeap = Math.max(0, process.memoryUsage().heapUsed - getBeforeHeap);
+      const getBytes = Buffer.byteLength(exact.out, "utf8");
+
+      const startupTarget = target[`startup_${label}`];
+      const listTarget = target[`bounded_list_${label}`];
+      expect(startupMs).toBeLessThanOrEqual(startupTarget.max_latency_ms);
+      expect(startupHeap).toBeLessThanOrEqual(startupTarget.max_heap_delta_bytes);
+      expect(startupBytes).toBeLessThanOrEqual(contract.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes);
+      expect(listed.rc).toBe(0);
+      expect(listMs).toBeLessThanOrEqual(listTarget.max_latency_ms);
+      expect(listHeap).toBeLessThanOrEqual(listTarget.max_heap_delta_bytes);
+      expect(listBytes).toBeLessThanOrEqual(listTarget.max_utf8_bytes);
+      expect(JSON.parse(listed.out).counts.total).toBe(count);
+      expect(exact.rc).toBe(0);
+      expect(getMs).toBeLessThanOrEqual(target.exact_get.max_latency_ms);
+      expect(getHeap).toBeLessThanOrEqual(target.exact_get.max_heap_delta_bytes);
+      expect(getBytes).toBeLessThanOrEqual(target.exact_get.max_utf8_bytes);
+      expect(JSON.parse(exact.out).entry.id).toBe(exactId);
+      measurements.push({ scale: label, entities: count, startupMs, startupHeap, startupBytes, listMs, listHeap, listBytes, getMs, getHeap, getBytes });
+    }
+    console.info("entity authority measurements", measurements);
+  });
+
   it("keeps large current projections and archive directories within authority budgets", () => {
     largeFixture();
     const limits = authority().budgets.startup;
