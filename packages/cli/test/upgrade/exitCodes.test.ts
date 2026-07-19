@@ -72,16 +72,10 @@ afterEach(() => {
 });
 
 describe("exitCodes", () => {
-  it("partialFailureApply: upgradeExitCode returns 1 when summary.failed > 0 after a partial-failure apply", () => {
+  it("partialFailureApply: upgradeExitCode returns 1 when safe cleanup blocks after an I/O failure", () => {
     const { appHome, project } = seedLayout(tmp);
 
-    const realRmSync = fs.rmSync.bind(fs);
-    vi.spyOn(fs, "rmSync").mockImplementation((target, options) => {
-      if (path.resolve(String(target)) === path.resolve(appHome, "app")) {
-        throw Object.assign(new Error("write ENOSPC"), { code: "ENOSPC" }) as NodeJS.ErrnoException;
-      }
-      return realRmSync(target, options);
-    });
+    process.env.AGENTERA_FAULT_INJECT_V2_CLEANUP_FAILURE = "1";
 
     const plan = buildUpgradePlan({
       installRoot: appHome,
@@ -90,8 +84,9 @@ describe("exitCodes", () => {
       channel: "development",
       yes: true,
     });
+    delete process.env.AGENTERA_FAULT_INJECT_V2_CLEANUP_FAILURE;
 
-    expect(plan.summary.failed).toBeGreaterThan(0);
+    expect(plan.summary.blocked).toBeGreaterThan(0);
     expect(upgradeExitCode(plan)).toBe(1);
   });
 });

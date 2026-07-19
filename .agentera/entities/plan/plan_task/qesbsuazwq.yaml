@@ -1,0 +1,15 @@
+id: qesbsuazwq
+artifact: plan
+record:
+  name: Retire residual normal-state routing and correction vocabulary
+  depends_on:
+    - igibjjvytl
+  status: pending
+  acceptance:
+    - GIVEN marker-active startup and state commands WHEN dispatched THEN they use entity authority without per-handler legacy normal-operation branches.
+    - GIVEN marker-absent state WHEN classified THEN upgrade owns classification and recognized v2 aggregate readers remain read-only migration inputs.
+    - GIVEN an unsupported removed command WHEN dispatched THEN its correction wins before unrelated migration diagnostics.
+    - GIVEN affected command surfaces WHEN exercised THEN arguments, streams, exits, diagnostics, and side effects agree.
+    - GIVEN specialized selectors WHEN exercised THEN identity, relationships, cursors, filters, omissions, byte bounds, and direct decision-list behavior remain unchanged.
+  test_proportionality: Active and marker-absent dispatch, correction precedence, migration discovery, and focused specialized selectors.
+  plan: ntfgalrhbm

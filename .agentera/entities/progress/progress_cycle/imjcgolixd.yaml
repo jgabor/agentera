@@ -1,0 +1,16 @@
+id: imjcgolixd
+artifact: progress
+record:
+  timestamp: 2026-07-19 22:58
+  type: fix
+  phase: build
+  what: Hardened v2 migration cleanup so only marker-owned agent files and fingerprinted symlinks into the proven managed app skills root are eligible; expanded full-migration rewiring and collision/retry coverage.
+  context:
+    intent: Isolate legacy migration and cleanup authority without changing normal active-runtime lifecycle behavior or beginning Task 3.
+    constraints: No commit, plan/task/evaluation/decision/TODO/version/release changes; no current-runtime lifecycle retirement, repository/package deletion, routing cleanup, packed work, or final closeout.
+    unknowns: None within this task; decision satisfaction remains unconfirmed and untouched.
+    scope: packages/cli/src/upgrade/{legacyAgentCleanup,migrateArtifactsV2ToV3,runtimeMigration}.ts and proportional migration tests.
+  inspiration: Plan task ltludymudj and Firm Decision llavvlpcmb.
+  discovered: Legacy Swedish-agent cleanup trusted filenames, stale OpenCode skill cleanup trusted target text or names, apply paths did not revalidate ownership fingerprints, and env-less cleanup scans could inherit the caller's XDG_CONFIG_HOME.
+  verified: "Focused migration/cleanup suite: 10 files, 127/127 passed. Explicit lifecycle/Claude route suite: 4 files, 60/60 passed. Full source suite: 213 files, 2553/2553 passed. pnpm -C packages/cli run typecheck and build passed. check validate state passed: 1557 entities, 0 issues. capability-contract passed 2/2. check compact passed: 1 artifact family, 0 over limit. Full cross-major test rewired Codex, Cursor, and Copilot v2 hooks to npx CLI commands while creating zero optional native integrations. Ownership tests preserved markerless, name/text-similar, modified, unsafe, and user-owned resources; retry omitted completed cleanup and reconsidered unfinished work. Claude cleanup tests targeted only the declared ledger-owned symlink and preserved projects, credentials, settings, conversations, caches, and stats."
+  next: Stop after this task. Task 3 current-runtime selector/lifecycle retirement and package, routing, packed, and closeout work remain deferred.

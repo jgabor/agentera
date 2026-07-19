@@ -75,7 +75,7 @@ function writeLegacyAgent(dir: string, name: string, body = "Read instructions.m
 
 function seedSwedishVerbAgents(agentsDir: string): void {
   for (const name of V2_SWEDISH_VERB_AGENT_FILES) {
-    writeLegacyAgent(agentsDir, name);
+    writeLegacyAgent(agentsDir, name, "<!-- agentera: managed -->\nRead instructions.md\n");
   }
 }
 
@@ -163,6 +163,61 @@ describe("legacy Swedish-verb agent cleanup (#20)", () => {
       expect(items.some((item) => item.source?.endsWith(path.join(".cursor", "agents", name)))).toBe(true);
       expect(items.some((item) => item.source?.endsWith(path.join("agents", name)))).toBe(true);
     }
+  });
+
+  it("preserves markerless filename collisions with actionable handoff", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "markerless"));
+    const source = path.join(project, ".cursor", "agents", "hej.md");
+    writeLegacyAgent(path.dirname(source), path.basename(source), "# user-owned hej\n");
+
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const items = planLegacyAgentCleanupItems(ctx);
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ status: "blocked", source });
+    expect(items[0]?.message).toContain("filename does not prove");
+    applyLegacyAgentCleanupItems(items, ctx);
+    expect(fs.readFileSync(source, "utf8")).toBe("# user-owned hej\n");
+  });
+
+  it("preserves unsafe legacy-name symlinks with actionable handoff", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "unsafe-link"));
+    const agentsDir = path.join(project, ".cursor", "agents");
+    const source = path.join(agentsDir, "hej.md");
+    fs.mkdirSync(agentsDir, { recursive: true });
+    fs.symlinkSync(path.join(tmp, "user-agent.md"), source);
+
+    const items = planLegacyAgentCleanupItems(migrationCtx(appHome, project, home, REPO_ROOT));
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.status).toBe("blocked");
+    expect(items[0]?.message).toContain("unsafe resource");
+    expect(fs.lstatSync(source).isSymbolicLink()).toBe(true);
+  });
+
+  it("replans only unfinished cleanup while preserving a user-owned collision", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "retry"));
+    const agentsDir = path.join(project, ".cursor", "agents");
+    seedManagedCapabilityAgent(agentsDir, "audit.md");
+    seedManagedCapabilityAgent(agentsDir, "build.md");
+    seedUnmanagedCapabilityAgent(agentsDir, "design.md");
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const first = planLegacyCapabilityAgentCleanupItems(ctx);
+    const audit = first.find((item) => item.source?.endsWith("audit.md"))!;
+    applyLegacyAgentCleanupItems([audit], ctx);
+
+    const retry = planLegacyCapabilityAgentCleanupItems(ctx);
+
+    expect(retry.some((item) => item.source?.endsWith("audit.md"))).toBe(false);
+    expect(retry.find((item) => item.source?.endsWith("build.md"))?.status).toBe("pending");
+    expect(retry.find((item) => item.source?.endsWith("design.md"))?.status).toBe("blocked");
+    expect(fs.readFileSync(path.join(agentsDir, "design.md"), "utf8")).toContain("user-authored");
   });
 
   it("apply removes exactly the closed set and preserves agentera.md, custom, and .bak agents", () => {
@@ -289,6 +344,7 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
 describe("applyLegacyAgentCleanupItems safety", () => {
   it("does not remove files outside the closed set", () => {
     const agentsDir = path.join(tmp, "safety");
+    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
     seedPreservedAgents(agentsDir);
     const items = [
       {
@@ -298,9 +354,48 @@ describe("applyLegacyAgentCleanupItems safety", () => {
         message: "should noop",
       },
     ];
-    applyLegacyAgentCleanupItems(items);
-    expect(items[0]?.status).toBe("noop");
+    applyLegacyAgentCleanupItems(items, ctx);
+    expect(items[0]?.status).toBe("blocked");
+    expect(items[0]?.message).toContain("outside the legacy agent cleanup allowlist");
     expect(fs.existsSync(path.join(agentsDir, "custom-agent.md"))).toBe(true);
+  });
+
+  it("preserves a managed agent modified after preview", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "modified"));
+    const source = path.join(project, ".cursor", "agents", "hej.md");
+    writeLegacyAgent(path.dirname(source), path.basename(source), "<!-- agentera: managed -->\noriginal\n");
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const items = planLegacyAgentCleanupItems(ctx);
+    fs.writeFileSync(source, "<!-- agentera: managed -->\nuser modification\n");
+
+    applyLegacyAgentCleanupItems(items, ctx);
+
+    expect(items[0]?.status).toBe("blocked");
+    expect(items[0]?.message).toContain("fingerprint changed");
+    expect(fs.readFileSync(source, "utf8")).toContain("user modification");
+  });
+
+  it("preserves an allowlisted agent after its parent is swapped for a symlink", () => {
+    const appHome = path.join(home, "agentera");
+    managedV2(appHome);
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "parent-swap"));
+    const agentsDir = path.join(project, ".cursor", "agents");
+    const source = path.join(agentsDir, "hej.md");
+    writeLegacyAgent(agentsDir, "hej.md", "<!-- agentera: managed -->\nowned\n");
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const items = planLegacyAgentCleanupItems(ctx);
+    const outside = path.join(tmp, "moved-agents");
+    fs.renameSync(agentsDir, outside);
+    fs.symlinkSync(outside, agentsDir);
+
+    applyLegacyAgentCleanupItems(items, ctx);
+
+    expect(items[0]?.status).toBe("blocked");
+    expect(fs.readFileSync(path.join(outside, "hej.md"), "utf8")).toContain("owned");
+    expect(fs.lstatSync(agentsDir).isSymbolicLink()).toBe(true);
+    expect(source).toBe(path.join(agentsDir, "hej.md"));
   });
 });
 
@@ -353,7 +448,7 @@ describe("legacy English per-capability agent cleanup", () => {
     expect(items.some((item) => item.source?.endsWith("agentera.md"))).toBe(false);
   });
 
-  it("planLegacyCapabilityAgentCleanupItems skips unmanaged English agents", () => {
+  it("planLegacyCapabilityAgentCleanupItems blocks unmanaged English collisions", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-unmanaged"));
@@ -363,7 +458,8 @@ describe("legacy English per-capability agent cleanup", () => {
 
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planLegacyCapabilityAgentCleanupItems(ctx);
-    expect(items).toEqual([]);
+    expect(items).toHaveLength(2);
+    expect(items.every((item) => item.status === "blocked" && item.message.includes("filename does not prove"))).toBe(true);
   });
 
   it("does not target agentera.md (primary v3 agent is preserved)", () => {
@@ -400,7 +496,8 @@ describe("legacy English per-capability agent cleanup", () => {
     expect(fs.existsSync(path.join(cursorAgents, "custom-agent.md"))).toBe(true);
 
     const legacyItems = preview.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
-    expect(legacyItems.every((item) => item.status === "applied")).toBe(true);
+    expect(legacyItems.find((item) => item.source?.endsWith("audit.md"))?.status).toBe("applied");
+    expect(legacyItems.find((item) => item.source?.endsWith("build.md"))?.status).toBe("blocked");
   });
 
   it("combine: Swedish-verb and English capability items both appear in planCleanupPhase", () => {

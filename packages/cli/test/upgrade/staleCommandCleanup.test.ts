@@ -191,6 +191,20 @@ describe("planStaleCommandCleanupItems wiring", () => {
 });
 
 describe("applyRuntimeMigrationItem remove-stale-command", () => {
+  it("preserves a marker-owned command replaced after preview", () => {
+    const commandsDir = commandsDirFor(home);
+    const command = writeCommand(commandsDir, "hej", MANAGED_HEJ);
+    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
+    const item = planRuntimeMigrationItems(ctx).find((candidate) => candidate.source === command)!;
+    fs.unlinkSync(command);
+    fs.writeFileSync(command, UNMANAGED_HEJ);
+
+    applyRuntimeMigrationItem(item, resolveNpxHookCommands(ctx));
+
+    expect(item.status).toBe("blocked");
+    expect(fs.readFileSync(command, "utf8")).toBe(UNMANAGED_HEJ);
+  });
+
   it("removes the stale managed command file and marks applied", () => {
     const commandsDir = commandsDirFor(home);
     const hejPath = writeCommand(commandsDir, "hej", MANAGED_HEJ);

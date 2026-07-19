@@ -74,6 +74,38 @@ describe("leftoverScan", () => {
 });
 
 describe("migrateRuntimeMatrix", () => {
+  it("does not claim a user hook from generic validate_artifact.py text", () => {
+    const home = path.join(tmp, "home-user-hook");
+    const project = path.join(tmp, "project-user-hook");
+    const hooks = path.join(project, ".cursor", "hooks.json");
+    fs.mkdirSync(path.dirname(hooks), { recursive: true });
+    const userText = '{"command":"python /opt/mytool/hooks/validate_artifact.py --mine"}\n';
+    fs.writeFileSync(hooks, userText);
+    const ctx = migrationCtx(path.join(home, "agentera"), project, home, REPO_ROOT);
+
+    const phase = planRuntimeRewirePhase(ctx);
+    applyRuntimeRewirePhase(phase, ctx);
+
+    expect(phase.items.some((item) => item.source === hooks && item.status !== "noop")).toBe(false);
+    expect(fs.readFileSync(hooks, "utf8")).toBe(userText);
+  });
+
+  it("preserves a proven v2 hook replaced after preview", () => {
+    const home = path.join(tmp, "home-rewire-race");
+    const project = path.join(tmp, "project-rewire-race");
+    const hooks = path.join(project, ".cursor", "hooks.json");
+    fs.mkdirSync(path.dirname(hooks), { recursive: true });
+    fs.writeFileSync(hooks, '{"command":"uv run ${AGENTERA_HOME}/hooks/validate_artifact.py"}\n');
+    const ctx = migrationCtx(path.join(home, "agentera"), project, home, REPO_ROOT);
+    const phase = planRuntimeRewirePhase(ctx);
+    fs.writeFileSync(hooks, '{"command":"user replacement"}\n');
+
+    applyRuntimeRewirePhase(phase, ctx);
+
+    expect(phase.items.find((item) => item.source === hooks)?.status).toBe("blocked");
+    expect(fs.readFileSync(hooks, "utf8")).toBe('{"command":"user replacement"}\n');
+  });
+
   it("reports pending rewire for codex-full fixture", () => {
     const home = path.join(tmp, "home-codex");
     fs.cpSync(path.join(FIXTURES, "v2-runtime-codex-full"), home, { recursive: true });
@@ -218,7 +250,7 @@ describe("runtime", () => {
 
     const pendingRuntimes = new Set(
       phase.items
-        .filter((i) => i.status === "pending" && i.action === "rewire-runtime")
+        .filter((i) => i.status === "pending" && ["rewire-runtime", "retire-hooks"].includes(i.action))
         .map((i) => i.runtime),
     );
     expect(pendingRuntimes.has("codex")).toBe(true);

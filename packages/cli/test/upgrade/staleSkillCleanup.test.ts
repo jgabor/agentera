@@ -51,15 +51,15 @@ afterEach(() => {
 });
 
 describe("planStaleSkillCleanupItems", () => {
-  it("targets dangling agentera-managed hej but skips valid agentera and user-owned", () => {
+  it("targets only symlinks into the proven v2 app skills root", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
 
     const hejTarget = path.join(agenteraApp, "hej");
     const hejLink = makeSymlink(skillsDir, "hej", hejTarget);
 
     const agenteraSource = makeSkillDir(agenteraApp, "agentera");
-    makeSymlink(skillsDir, "agentera", agenteraSource);
+    const agenteraLink = makeSymlink(skillsDir, "agentera", agenteraSource);
 
     const userSource = makeSkillDir(path.join(tmp, "user-tools"), "my-skill");
     makeSymlink(skillsDir, "my-skill", userSource);
@@ -68,18 +68,15 @@ describe("planStaleSkillCleanupItems", () => {
     const items: MigrationPhaseItem[] = [];
     planStaleSkillCleanupItems(ctx, items);
 
-    expect(items).toHaveLength(1);
-    expect(items[0]?.action).toBe("remove-stale-skill");
-    expect(items[0]?.runtime).toBe("opencode");
-    expect(items[0]?.status).toBe("pending");
-    expect(items[0]?.source).toBe(hejLink);
-    expect(items.some((item) => path.basename(item.source ?? "") === "agentera")).toBe(false);
+    expect(items).toHaveLength(2);
+    expect(items.every((item) => item.action === "remove-stale-skill" && item.status === "pending")).toBe(true);
+    expect(items.map((item) => item.source)).toEqual([agenteraLink, hejLink]);
     expect(items.some((item) => path.basename(item.source ?? "") === "my-skill")).toBe(false);
   });
 
   it("targets a non-dangling agentera-managed symlink not in OPENCODE_SKILL_NAMES", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
     const oldSkillSource = makeSkillDir(agenteraApp, "old-skill");
     const link = makeSymlink(skillsDir, "old-skill", oldSkillSource);
 
@@ -103,6 +100,21 @@ describe("planStaleSkillCleanupItems", () => {
     expect(items).toEqual([]);
   });
 
+  it("blocks name and target-text collisions without treating similarity as ownership", () => {
+    const skillsDir = skillsDirFor(home);
+    const namedCollision = makeSymlink(skillsDir, "agentera", path.join(tmp, "user-tools", "skill"));
+    const textCollision = makeSymlink(skillsDir, "old-skill", path.join(tmp, "user-agentera-copy"));
+
+    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
+    const items: MigrationPhaseItem[] = [];
+    planStaleSkillCleanupItems(ctx, items);
+
+    expect(items).toHaveLength(2);
+    expect(items.every((item) => item.status === "blocked" && item.message.includes("does not prove"))).toBe(true);
+    expect(fs.lstatSync(namedCollision).isSymbolicLink()).toBe(true);
+    expect(fs.lstatSync(textCollision).isSymbolicLink()).toBe(true);
+  });
+
   it("skips non-symlink entries (real directories)", () => {
     const skillsDir = skillsDirFor(home);
     fs.mkdirSync(path.join(skillsDir, "real-dir"), { recursive: true });
@@ -123,7 +135,7 @@ describe("planStaleSkillCleanupItems", () => {
 
   it("pushes into an existing items array without clearing it", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
     makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
@@ -140,7 +152,7 @@ describe("planStaleSkillCleanupItems", () => {
 describe("planStaleSkillCleanupItems wiring", () => {
   it("appears in planRuntimeMigrationItems under the runtime phase", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
     const hejLink = makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
@@ -163,7 +175,7 @@ describe("planStaleSkillCleanupItems wiring", () => {
 describe("applyRuntimeMigrationItem remove-stale-skill", () => {
   it("removes the dangling symlink and marks applied", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
     const hejLink = makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
@@ -180,7 +192,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
 
   it("retires the legacy agentera symlink and preserves user-owned symlinks during apply", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
 
     const hejLink = makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
     const agenteraSource = makeSkillDir(agenteraApp, "agentera");
@@ -230,7 +242,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     expect(item.message).toContain("missing source");
   });
 
-  it("removes an empty real directory and marks applied (D78 empty-dir retirement)", () => {
+  it("preserves an empty real directory because emptiness does not prove ownership", () => {
     const skillsDir = skillsDirFor(home);
     fs.mkdirSync(skillsDir, { recursive: true });
     const realDir = path.join(skillsDir, "real-dir");
@@ -248,9 +260,9 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
 
     applyRuntimeMigrationItem(item, commands);
 
-    expect(item.status).toBe("applied");
-    expect(item.message).toContain("empty skill directory");
-    expect(fs.existsSync(realDir)).toBe(false);
+    expect(item.status).toBe("blocked");
+    expect(item.message).toContain("only a fingerprinted");
+    expect(fs.existsSync(realDir)).toBe(true);
   });
 
   it("blocks when the skill path is a non-empty real directory", () => {
@@ -273,7 +285,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     applyRuntimeMigrationItem(item, commands);
 
     expect(item.status).toBe("blocked");
-    expect(item.message).toContain("non-empty");
+    expect(item.message).toContain("only a fingerprinted");
     expect(fs.existsSync(realDir)).toBe(true);
     expect(fs.existsSync(path.join(realDir, "user-file.md"))).toBe(true);
   });
@@ -299,7 +311,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
 describe("applyRuntimeMigrationItems integration", () => {
   it("removes stale skill symlinks and retires the legacy agentera duplicate", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
 
     const hejLink = makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
     const agenteraSource = makeSkillDir(agenteraApp, "agentera");
@@ -318,9 +330,25 @@ describe("applyRuntimeMigrationItems integration", () => {
     expect(stale.every((item) => item.status === "applied")).toBe(true);
   });
 
+  it("preserves a symlink replaced after preview", () => {
+    const skillsDir = skillsDirFor(home);
+    const agenteraApp = path.join(home, "agentera", "skills");
+    const link = makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
+    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
+    const item = planRuntimeMigrationItems(ctx).find((candidate) => candidate.source === link)!;
+    fs.unlinkSync(link);
+    fs.symlinkSync(path.join(tmp, "user-agentera-copy"), link);
+
+    applyRuntimeMigrationItem(item, resolveNpxHookCommands(ctx));
+
+    expect(item.status).toBe("blocked");
+    expect(item.message).toContain("ownership changed");
+    expect(fs.lstatSync(link).isSymbolicLink()).toBe(true);
+  });
+
   it("is idempotent: second run produces no pending stale-skill items", () => {
     const skillsDir = skillsDirFor(home);
-    const agenteraApp = path.join(tmp, "agentera-app", "skills");
+    const agenteraApp = path.join(home, "agentera", "skills");
     const hejLink = makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);

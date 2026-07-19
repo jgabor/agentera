@@ -93,10 +93,11 @@ describe("preserve", () => {
     fs.symlinkSync(outsideFile, path.join(appHome, "PROFILE.md"));
 
     const preview = planCleanupPhase({ appHome, project: appHome, home: tmp });
-    expect(preview.status).toBe("pending");
+    expect(preview.status).toBe("blocked");
     applyCleanupPhase(preview);
 
-    expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
+    expect(fs.existsSync(path.join(appHome, "app"))).toBe(true);
+    expect(fs.lstatSync(path.join(appHome, "app", "linked-to-outside")).isSymbolicLink()).toBe(true);
     expect(fs.readFileSync(outsideFile, "utf8")).toBe("outside-profile-content");
     expect(fs.lstatSync(path.join(appHome, "PROFILE.md")).isSymbolicLink()).toBe(true);
     expect(fs.readlinkSync(path.join(appHome, "PROFILE.md"))).toBe(outsideFile);

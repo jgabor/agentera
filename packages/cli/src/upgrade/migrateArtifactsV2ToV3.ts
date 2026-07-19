@@ -7,6 +7,11 @@ import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { BUNDLE_MARKER } from "../state/installRoot.js";
+import { hasBundleRootEvidence } from "./bundleEvidence.js";
+import {
+  applyAppContentRefreshItems,
+  planAppContentRefreshItems,
+} from "./appContentRefresh.js";
 import { doctorRoots } from "./appModel.js";
 import {
   AGENTERA_USER_STATE_NAMES,
@@ -16,10 +21,6 @@ import {
   handoffCatalogMessage,
   resolveMigrationUserStatePreflight,
 } from "../migrate/v2HandoffManifest.js";
-import {
-  applyAppContentRefreshItems,
-  planAppContentRefreshItems,
-} from "./appContentRefresh.js";
 import {
   applyLegacyAgentCleanupItems,
   planLegacyAgentCleanupItems,
@@ -32,6 +33,11 @@ import {
   rewireRuntimeText,
 } from "./runtimeMigration.js";
 import { writeFileAtomic } from "./atomicWriter.js";
+import { bindMigrationTree, cloneMigrationItem, removeBoundMigrationTree } from "./migrationPublication.js";
+import {
+  applyInstalledHooksRetirementItems,
+  planInstalledHooksRetirementItems,
+} from "./installedHooksRetirement.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
@@ -69,6 +75,12 @@ export interface MigrationPhaseItem {
   collisions?: string[];
   removedPreview?: string[];
   newText?: string;
+  ownership?: {
+    kind: "managed-marker-file" | "managed-app-symlink";
+    identity: string;
+    fingerprint: string;
+    root?: string;
+  };
 }
 
 export interface MigrationPhaseSummary {
@@ -412,15 +424,70 @@ export function applyRuntimeRewirePhase(phase: MigrationPhase, ctx?: MigrationCo
 
 /** Whether `app/` under app-home still carries a managed bundle worth removing during v2→v3 cleanup. */
 export function hasManagedBundleEvidence(managedAppRoot: string): boolean {
-  // v3 npm-managed installs write BUNDLE_MARKER at pack/refresh time.
-  if (isFile(path.join(managedAppRoot, BUNDLE_MARKER))) {
-    return true;
+  const marker = path.join(managedAppRoot, BUNDLE_MARKER);
+  if (!isFile(marker)) return false;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(marker, "utf8")) as Record<string, unknown>;
+    return parsed.schemaVersion === "agentera.bundle.v1" && typeof parsed.version === "string";
+  } catch {
+    return false;
   }
-  // Legacy v2 Python-managed installs lacked the marker but always shipped this pair.
-  return (
-    isFile(path.join(managedAppRoot, "scripts", "agentera")) &&
-    isFile(path.join(managedAppRoot, "skills", "agentera", "SKILL.md"))
-  );
+}
+
+type V2BundleEntryKind = "file" | "directory";
+
+const SUPPORTED_V2_BUNDLE_INVENTORY_BY_MAJOR: Readonly<Record<string, Readonly<Record<string, V2BundleEntryKind>>>> = {
+  "2": {
+    [BUNDLE_MARKER]: "file",
+    "registry.json": "file",
+    scripts: "directory",
+    "scripts/agentera": "file",
+    skills: "directory",
+    "skills/agentera": "directory",
+    "skills/agentera/SKILL.md": "file",
+  },
+};
+
+function markedBundleInventoryViolations(managedAppRoot: string): string[] {
+  let version: string;
+  try {
+    const marker = JSON.parse(fs.readFileSync(path.join(managedAppRoot, BUNDLE_MARKER), "utf8")) as Record<string, unknown>;
+    version = typeof marker.version === "string" ? marker.version : "";
+  } catch {
+    return ["bundle marker is unreadable"];
+  }
+  const inventory = SUPPORTED_V2_BUNDLE_INVENTORY_BY_MAJOR[version.split(".")[0] ?? ""];
+  if (!inventory) return [`bundle version ${version || "missing"} has no supported cleanup inventory`];
+
+  const actual = new Map<string, V2BundleEntryKind | "symlink" | "other">();
+  const walk = (directory: string, prefix = ""): void => {
+    for (const name of fs.readdirSync(directory).sort()) {
+      const destination = path.join(directory, name);
+      const relative = prefix ? `${prefix}/${name}` : name;
+      const stat = fs.lstatSync(destination);
+      const kind = stat.isSymbolicLink()
+        ? "symlink"
+        : stat.isFile()
+          ? "file"
+          : stat.isDirectory()
+            ? "directory"
+            : "other";
+      actual.set(relative, kind);
+      if (kind === "directory") walk(destination, relative);
+    }
+  };
+  walk(managedAppRoot);
+
+  const violations: string[] = [];
+  for (const [relative, kind] of actual) {
+    const expected = inventory[relative];
+    if (!expected) violations.push(`unknown ${kind} ${relative}`);
+    else if (expected !== kind) violations.push(`${relative} must be ${expected}, found ${kind}`);
+  }
+  for (const [relative, kind] of Object.entries(inventory)) {
+    if (!actual.has(relative)) violations.push(`missing ${kind} ${relative}`);
+  }
+  return violations.sort();
 }
 
 function listManagedBundlePreview(managedAppRoot: string, limit = 20): string[] {
@@ -457,7 +524,21 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     env: ctx.env,
   });
   const preserved = preflight.preservedAbsolutePaths;
-  const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight);
+  const installedHookItems = planInstalledHooksRetirementItems(ctx).filter((item) =>
+    item.status !== "noop"
+    && item.source !== undefined
+    && !item.source.startsWith(`${managedAppRoot}${path.sep}`)
+  );
+  const hasOwnedRootHooks = installedHookItems.some((item) =>
+    item.source?.startsWith(`${path.join(appHome, "hooks")}${path.sep}`)
+  );
+  const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight)
+    .filter((name) => !(name === "hooks" && hasOwnedRootHooks));
+  const managedBundle = hasManagedBundleEvidence(managedAppRoot);
+  const refreshAuthorized = managedBundle
+    || hasBundleRootEvidence(roots.activeBundleRoot)
+    || (pathExists(appHome) && fs.readdirSync(appHome).length === 0);
+  const appRootUnknown = managedBundle ? markedBundleInventoryViolations(managedAppRoot) : [];
   const items: MigrationPhaseItem[] = [
     ...preflight.handoffCatalog.map((entry) => ({
       status: "noop" as const,
@@ -466,9 +547,12 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
       preserved: entry.entries,
       message: handoffCatalogMessage(entry),
     })),
-    ...planAppContentRefreshItems(ctx),
     ...planLegacyAgentCleanupItems(ctx),
     ...planLegacyCapabilityAgentCleanupItems(ctx),
+    ...installedHookItems,
+    ...(refreshAuthorized
+      ? planAppContentRefreshItems(ctx).filter((item) => item.action === "refresh-app-content")
+      : []),
   ];
 
   if (unknown.length > 0 && !ctx.force) {
@@ -482,7 +566,29 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     return summarizePhase("cleanup", items);
   }
 
-  if (!hasManagedBundleEvidence(managedAppRoot)) {
+  if (appRootUnknown.length > 0) {
+    items.push({
+      status: "blocked",
+      action: "remove-managed-app-home",
+      source: managedAppRoot,
+      target: appHome,
+      preserved: [managedAppRoot],
+      message: `managed app bundle does not match the supported v2 recursive inventory (${appRootUnknown.slice(0, 10).join(", ")}${appRootUnknown.length > 10 ? `; ${appRootUnknown.length - 10} more` : ""}); cleanup preserved the entire app directory for manual review`,
+    });
+    return summarizePhase("cleanup", items);
+  }
+
+  if (!managedBundle) {
+    if (pathExists(managedAppRoot)) {
+      items.push({
+        status: "blocked",
+        action: "remove-managed-app-home",
+        source: managedAppRoot,
+        target: appHome,
+        message: `app directory preserved because ${BUNDLE_MARKER} ownership evidence is missing or invalid; review it manually`,
+      });
+      return summarizePhase("cleanup", items);
+    }
     if (items.length === 0) {
       return summarizePhase("cleanup", [], "no managed Python app-home bundle to remove");
     }
@@ -490,7 +596,7 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   }
 
   const removedPreview = listManagedBundlePreview(managedAppRoot);
-  items.push({
+  const cleanupItem: MigrationPhaseItem = {
     status: "pending",
     action: "remove-managed-app-home",
     source: managedAppRoot,
@@ -499,22 +605,22 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     removedPreview,
     message:
       "will remove managed Python app-home bundle under app/ while preserving user state at app-home root",
-  });
-  return summarizePhase("cleanup", items);
-}
-
-function removeDirectoryRecursive(dir: string): void {
-  if (!pathExists(dir)) {
-    return;
+  };
+  const evidenceError = bindMigrationTree(cleanupItem, managedAppRoot, [appHome]);
+  if (evidenceError) {
+    cleanupItem.status = "blocked";
+    cleanupItem.message = `managed app cleanup preserved the bundle: ${evidenceError}; review the unsafe path manually`;
   }
-  fs.rmSync(dir, { recursive: true, force: true });
+  items.push(cleanupItem);
+  return summarizePhase("cleanup", items);
 }
 
 export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext): void {
   if (ctx) {
+    applyLegacyAgentCleanupItems(phase.items, ctx);
+    applyInstalledHooksRetirementItems(phase.items, ctx);
     applyAppContentRefreshItems(phase.items, ctx);
   }
-  applyLegacyAgentCleanupItems(phase.items);
   for (const item of phase.items) {
     if (item.status !== "pending" || item.action !== "remove-managed-app-home" || !item.source) {
       continue;
@@ -523,12 +629,12 @@ export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext)
       if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_V2_CLEANUP_FAILURE === "1") {
         throw new Error("simulated post-marker cleanup failure");
       }
-      removeDirectoryRecursive(item.source);
+      removeBoundMigrationTree(item);
       item.status = "applied";
       item.message = "managed Python app-home bundle removed; user state preserved";
     } catch (exc) {
-      item.status = "failed";
-      item.message = `cleanup failed: ${(exc as Error).message}`;
+      item.status = "blocked";
+      item.message = `cleanup preserved the managed app bundle: ${(exc as Error).message}; rerun migration and review it manually`;
     }
   }
   const updated = summarizePhase("cleanup", phase.items, phase.message);
@@ -552,9 +658,9 @@ export function applyMigrationPhases(
   only: readonly MigrationPhaseName[] = ["artifacts", "runtime", "cleanup"],
 ): DryRunMigrationResult {
   const result: DryRunMigrationResult = {
-    artifacts: { ...preview.artifacts, items: preview.artifacts.items.map((item) => ({ ...item })) },
-    runtime: { ...preview.runtime, items: preview.runtime.items.map((item) => ({ ...item })) },
-    cleanup: { ...preview.cleanup, items: preview.cleanup.items.map((item) => ({ ...item })) },
+    artifacts: { ...preview.artifacts, items: preview.artifacts.items.map(cloneMigrationItem) },
+    runtime: { ...preview.runtime, items: preview.runtime.items.map(cloneMigrationItem) },
+    cleanup: { ...preview.cleanup, items: preview.cleanup.items.map(cloneMigrationItem) },
   };
   if (only.includes("artifacts")) {
     applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
@@ -15,13 +16,13 @@ import {
 } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
 import { resolveInvokedUpdateChannel } from "./channels.js";
-import { writeFileAtomic } from "./atomicWriter.js";
+import { doctorRoots } from "./appModel.js";
 import {
-  applyInstalledHooksRetirementItems,
-  planInstalledHooksRetirementItems,
-  RETIRE_INSTALLED_HOOKS_ACTION,
-  textReferencesV2InstalledHooks,
-} from "./installedHooksRetirement.js";
+  bindMigrationResource,
+  removeBoundMigrationResource,
+  updateBoundMigrationFile,
+  verifyBoundMigrationResource,
+} from "./migrationPublication.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 
 const PYTHON_MANAGED_PATTERNS = [
@@ -110,27 +111,18 @@ export function rewireRuntimeText(text: string, runtime: string, commands: NpxHo
     /uv run\s+\\?"?\$\{PLUGIN_ROOT\}\/hooks\/validate_artifact\.py\\?"?/g,
     commands.validate,
   );
-  next = next.replace(/uv run\s+hooks\/validate_artifact\.py/g, commands.validate);
-  if (next.includes("validate_artifact.py")) {
-    next = next.replace(
-      /["']?[^"'\n]*hooks\/validate_artifact\.py[^"'\n]*["']?/g,
-      `"${commands.validate}"`,
-    );
-  }
   next = next.replace(
-    /["']?[^"'\n]*cursor_session_start\.py[^"'\n]*["']?/g,
+    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/(?:app\/scripts|(?:app\/)?hooks)\/cursor_session_start\.py\\?"?/g,
     `"${commands.cursorSessionStart}"`,
   );
   next = next.replace(
-    /["']?[^"'\n]*cursor_pre_tool_use\.py[^"'\n]*["']?/g,
+    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/(?:app\/)?hooks\/cursor_pre_tool_use\.py\\?"?/g,
     `"${commands.cursorPreTool}"`,
   );
   next = next.replace(
-    /["']?[^"'\n]*cursor_session_stop\.py[^"'\n]*["']?/g,
+    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/(?:app\/)?hooks\/cursor_session_stop\.py\\?"?/g,
     `"${commands.cursorSessionStop}"`,
   );
-  next = next.replace(/["']?[^"'\n]*\/app\/scripts\/agentera[^"'\n]*["']?/g, `"${commands.cliEntrypoint}"`);
-  next = next.replace(/["']?[^"'\n]*scripts\/agentera[^"'\n]*["']?/g, `"${commands.cliEntrypoint}"`);
   next = next.replace(/npx -y agentera hook /g, `${commands.cliEntrypoint} hook `);
   next = next.replace(/npx -y agentera@latest hook /g, `${commands.cliEntrypoint} hook `);
   if (runtime === "codex") {
@@ -154,15 +146,27 @@ function needsChannelNpxRewire(text: string, cliEntrypoint: string): boolean {
   return false;
 }
 
+function textHasAuthoritativeV2AgenteraEvidence(text: string): boolean {
+  const variableReference = /\$\{AGENTERA_HOME\}\/(?:app\/scripts\/(?:agentera|cursor_session_start\.py)|(?:app\/)?hooks\/(?:validate_artifact|cursor_session_start|cursor_pre_tool_use|cursor_session_stop|session_start|session_stop)\.py)/;
+  if (variableReference.test(text)) return true;
+  if (/AGENTERA_HOME\s*=/.test(text)) return true;
+  if (/\[plugins\."agentera@agentera"\]/.test(text) && /AGENTERA_HOME\s*=/.test(text)) return true;
+  return false;
+}
+
 function pushRewireItem(
   items: MigrationPhaseItem[],
   runtime: string,
   filePath: string,
   commands: NpxHookCommands,
+  allowedRoot: string,
 ): void {
   const text = fs.readFileSync(filePath, "utf8");
   const needsBare = needsChannelNpxRewire(text, commands.cliEntrypoint);
-  if (!textUsesPythonManagedEntrypoint(text) && !textReferencesV2InstalledHooks(text) && !needsBare) {
+  const authoritative = hasManagedMarker(text)
+    || textHasAuthoritativeV2AgenteraEvidence(text)
+    || needsBare;
+  if (!authoritative) {
     if (textUsesV3NpmEntrypoint(text)) {
       items.push({
         status: "noop",
@@ -178,7 +182,7 @@ function pushRewireItem(
   }
   const newText = rewireRuntimeText(text, runtime, commands);
   const status: MigrationStatus = newText === text ? "blocked" : "pending";
-  items.push({
+  const item: MigrationPhaseItem = {
     status,
     action: "rewire-runtime",
     runtime,
@@ -189,7 +193,13 @@ function pushRewireItem(
       status === "pending"
         ? "will rewire runtime config from Python managed app-home to npm self-contained entrypoint"
         : "runtime config uses Python managed paths but could not be rewritten safely",
-  });
+  };
+  const evidenceError = bindMigrationResource(item, "target", filePath, [allowedRoot], "file");
+  if (evidenceError) {
+    item.status = "blocked";
+    item.message = `runtime config preserved: ${evidenceError}; review the unsafe path manually`;
+  }
+  items.push(item);
 }
 
 function planCodexItems(
@@ -197,16 +207,11 @@ function planCodexItems(
   home: string,
   project: string,
   commands: NpxHookCommands,
-  force?: boolean,
 ): void {
   for (const root of [project, home]) {
     const hooksPath = path.join(root, ".codex", "hooks", "codex-hooks.json");
     const configPath = path.join(root, ".codex", "config.toml");
-    if (isFile(hooksPath)) {
-      pushRewireItem(items, "codex", hooksPath, commands);
-    }
     if (isFile(configPath)) {
-      pushRewireItem(items, "codex", configPath, commands);
       const configText = fs.readFileSync(configPath, "utf8");
       const pluginHooks = codexPluginHooksEnabled(configText);
       if (pluginHooks && isFile(hooksPath)) {
@@ -217,17 +222,27 @@ function planCodexItems(
           hooksText = "";
         }
         if (codexCopiedHooksAreAgenteraOnly(hooksText)) {
-          items.push({
+          const rewiredConfig = rewireRuntimeText(configText, "codex", commands);
+          const item: MigrationPhaseItem = {
             status: "pending",
             action: "retire-hooks",
             runtime: "codex",
             source: hooksPath,
             target: configPath,
+            newText: retireCodexCopiedHookTrust(rewiredConfig, hooksPath),
             message: "will remove Agentera-owned copied Codex hooks because plugin hooks are enabled",
-          });
+          };
+          const sourceError = bindMigrationResource(item, "source", hooksPath, [root], "file");
+          const targetError = bindMigrationResource(item, "target", configPath, [root], "file");
+          if (sourceError || targetError) {
+            item.status = "blocked";
+            item.message = `copied Codex hooks preserved: ${sourceError ?? targetError}; review the unsafe path manually`;
+          }
+          items.push(item);
+          continue;
         } else if (hooksText.includes("validate_artifact") || hooksText.includes("hook validate-artifact")) {
           items.push({
-            status: force ? "pending" : "blocked",
+            status: "blocked",
             action: "retire-hooks",
             runtime: "codex",
             source: hooksPath,
@@ -235,8 +250,13 @@ function planCodexItems(
             message:
               "plugin hooks are enabled, but copied hook target needs manual review before retirement",
           });
+          continue;
         }
       }
+      pushRewireItem(items, "codex", configPath, commands, root);
+    }
+    if (isFile(hooksPath)) {
+      pushRewireItem(items, "codex", hooksPath, commands, root);
     }
   }
 }
@@ -247,12 +267,12 @@ function planCursorItems(
   project: string,
   commands: NpxHookCommands,
 ): void {
-  for (const hooksPath of [
-    path.join(project, ".cursor", "hooks.json"),
-    path.join(home, ".cursor", "hooks.json"),
-  ]) {
+  for (const [root, hooksPath] of [
+    [project, path.join(project, ".cursor", "hooks.json")],
+    [home, path.join(home, ".cursor", "hooks.json")],
+  ] as const) {
     if (isFile(hooksPath)) {
-      pushRewireItem(items, "cursor", hooksPath, commands);
+      pushRewireItem(items, "cursor", hooksPath, commands, root);
     }
   }
 }
@@ -270,75 +290,29 @@ function planOpencodeItems(
     path.join(configDir, "agents", "agentera.md"),
   ];
   for (const resource of existingResources) {
-    if (isFile(resource)) pushRewireItem(items, "opencode", resource, commands);
+    if (isFile(resource)) pushRewireItem(items, "opencode", resource, commands, configDir);
   }
-  // Retire only proven legacy OpenCode skill links or empty directories. The
-  // canonical shared skill is current-runtime lifecycle work and is untouched
-  // without an explicit runtime selector.
-  // ~/.agents/skills is canonical. The opencode doc requires skill names
-  // unique across its discovery locations; a skill present in both
-  // ~/.config/opencode/skills and ~/.agents/skills is the duplicate-name error
-  // that let a stale copy load.
-  const legacySkillsDir = path.join(configDir, "skills");
-  if (pathExists(legacySkillsDir) && fs.statSync(legacySkillsDir).isDirectory()) {
-    for (const name of OPENCODE_SKILL_NAMES) {
-      const legacy = path.join(legacySkillsDir, name);
-      let linkTarget: string | null = null;
-      try {
-        linkTarget = fs.readlinkSync(legacy);
-      } catch {
-        linkTarget = null;
-      }
-      if (linkTarget !== null) {
-        if (linkTarget.toLowerCase().includes("agentera") || path.basename(linkTarget) === name) {
-          items.push({
-            status: "pending",
-            action: "remove-stale-skill",
-            runtime: "opencode",
-            source: legacy,
-            message: `will retire duplicate OpenCode skill symlink ${name} (agent-compatible root ~/.agents/skills is canonical; D78)`,
-          });
-        } else {
-          items.push({
-            status: "blocked",
-            action: "remove-stale-skill",
-            runtime: "opencode",
-            source: legacy,
-            message: `legacy OpenCode skill symlink ${name} targets a non-agentera path; manual review required`,
-          });
-        }
-      } else if (pathExists(legacy)) {
-        try {
-          const dirEntries = fs.readdirSync(legacy);
-          if (dirEntries.length === 0) {
-            items.push({
-              status: "pending",
-              action: "remove-stale-skill",
-              runtime: "opencode",
-              source: legacy,
-              message: `will retire empty legacy OpenCode skill directory ${name} (agent-compatible root ~/.agents/skills is canonical; D78)`,
-            });
-          } else {
-            items.push({
-              status: "blocked",
-              action: "remove-stale-skill",
-              runtime: "opencode",
-              source: legacy,
-              message: `legacy OpenCode skill path ${name} is a non-empty real directory (entries: ${dirEntries.length}); manual review required (D78 retires agentera-managed symlinks and empty dirs only)`,
-            });
-          }
-        } catch {
-          items.push({
-            status: "blocked",
-            action: "remove-stale-skill",
-            runtime: "opencode",
-            source: legacy,
-            message: `legacy OpenCode skill path ${name} could not be inspected; manual review required`,
-          });
-        }
-      }
-    }
+}
+
+function symlinkOwnership(linkPath: string, managedSkillsRoot: string): MigrationPhaseItem["ownership"] | null {
+  let stat: fs.Stats;
+  let target: string;
+  try {
+    stat = fs.lstatSync(linkPath);
+    if (!stat.isSymbolicLink()) return null;
+    target = fs.readlinkSync(linkPath);
+  } catch {
+    return null;
   }
+  const resolvedTarget = path.resolve(path.dirname(linkPath), target);
+  const relative = path.relative(managedSkillsRoot, resolvedTarget);
+  if (relative === "" || relative.startsWith("..") || path.isAbsolute(relative)) return null;
+  return {
+    kind: "managed-app-symlink",
+    identity: `${stat.dev}:${stat.ino}`,
+    fingerprint: `sha256:${createHash("sha256").update(target).digest("hex")}`,
+    root: managedSkillsRoot,
+  };
 }
 
 export function planStaleCommandCleanupItems(
@@ -368,13 +342,19 @@ export function planStaleCommandCleanupItems(
     if (currentNames.has(name)) {
       continue;
     }
-    items.push({
+    const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-command",
       runtime: "opencode",
       source: filePath,
       message: `will remove stale managed command ${path.basename(filePath)}`,
-    });
+    };
+    const evidenceError = bindMigrationResource(item, "source", filePath, [home], "file");
+    if (evidenceError) {
+      item.status = "blocked";
+      item.message = `stale command preserved: ${evidenceError}; review the unsafe path manually`;
+    }
+    items.push(item);
   }
 }
 
@@ -385,34 +365,78 @@ export function planStaleSkillCleanupItems(
   const env = ctx.env ?? process.env;
   const home = resolvePath(ctx.home);
   const skillsDir = path.join(opencodeConfigDir(home, env), "skills");
-  if (!pathExists(skillsDir) || !fs.statSync(skillsDir).isDirectory()) {
+  let skillsDirectory: fs.Stats;
+  try {
+    skillsDirectory = fs.lstatSync(skillsDir);
+  } catch {
+    return;
+  }
+  if (!skillsDirectory.isDirectory()) {
+    items.push({
+      status: "blocked",
+      action: "remove-stale-skill",
+      runtime: "opencode",
+      source: skillsDir,
+      message: `preserved ${skillsDir}: the legacy skills path is not a real directory; replace the unsafe path or review it manually`,
+    });
     return;
   }
   const requiredNames = new Set<string>(OPENCODE_SKILL_NAMES);
+  const managedSkillsRoot = path.join(doctorRoots(resolvePath(ctx.appHome)).activeBundleRoot, "skills");
   for (const entry of fs.readdirSync(skillsDir, { withFileTypes: true })) {
+    const linkPath = path.join(skillsDir, entry.name);
     if (!entry.isSymbolicLink()) {
+      if (requiredNames.has(entry.name)) {
+        items.push({
+          status: "blocked",
+          action: "remove-stale-skill",
+          runtime: "opencode",
+          source: linkPath,
+          message: `preserved ${linkPath}: name and directory shape do not prove Agentera ownership; review and remove it manually if appropriate`,
+        });
+      }
       continue;
     }
-    const linkPath = path.join(skillsDir, entry.name);
     let linkTarget: string;
     try {
       linkTarget = fs.readlinkSync(linkPath);
     } catch {
+      items.push({
+        status: "blocked",
+        action: "remove-stale-skill",
+        runtime: "opencode",
+        source: linkPath,
+        message: `preserved ${linkPath}: the symlink target could not be inspected; review the unsafe resource manually`,
+      });
       continue;
     }
-    if (!linkTarget.toLowerCase().includes("agentera")) {
+    const ownership = symlinkOwnership(linkPath, managedSkillsRoot);
+    if (!ownership) {
+      if (requiredNames.has(entry.name) || linkTarget.toLowerCase().includes("agentera")) {
+        items.push({
+          status: "blocked",
+          action: "remove-stale-skill",
+          runtime: "opencode",
+          source: linkPath,
+          message: `preserved ${linkPath}: skill name or target text does not prove Agentera ownership; confirm ownership and remove it manually if appropriate`,
+        });
+      }
       continue;
     }
-    if (requiredNames.has(entry.name)) {
-      continue;
-    }
-    items.push({
+    const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-skill",
       runtime: "opencode",
       source: linkPath,
-      message: `will remove stale Agentera skill symlink ${entry.name}`,
-    });
+      ownership,
+      message: `will remove v2 app-owned OpenCode skill symlink ${entry.name}`,
+    };
+    const evidenceError = bindMigrationResource(item, "source", linkPath, [home], "symlink");
+    if (evidenceError) {
+      item.status = "blocked";
+      item.message = `legacy skill preserved: ${evidenceError}; review the unsafe path manually`;
+    }
+    items.push(item);
   }
 }
 
@@ -443,7 +467,7 @@ function planCopilotItems(
 ): void {
   const hooksDir = path.join(project, ".github", "hooks");
   for (const hookFile of walkJsonHookFiles(hooksDir)) {
-    pushRewireItem(items, "copilot", hookFile, commands);
+    pushRewireItem(items, "copilot", hookFile, commands, project);
   }
   if (!items.some((item) => item.runtime === "copilot")) {
     items.push({
@@ -468,16 +492,12 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   const commands = resolveNpxHookCommands({ ...ctx, home, env, sourceRoot });
   const items: MigrationPhaseItem[] = [];
 
-  planCodexItems(items, home, project, commands, ctx.force);
+  planCodexItems(items, home, project, commands);
   planCursorItems(items, home, project, commands);
   planOpencodeItems(items, home, env, commands);
   planStaleCommandCleanupItems(ctx, items);
   planStaleSkillCleanupItems(ctx, items);
   planCopilotItems(items, project, commands);
-  const hookRetirement = planInstalledHooksRetirementItems(ctx).filter((item) => item.status === "pending");
-  if (hookRetirement.length > 0 && items.some((item) => item.action === "rewire-runtime" && item.status === "pending")) {
-    items.push(...hookRetirement);
-  }
   return items;
 }
 
@@ -514,7 +534,7 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands:
           item.message = "rewire-runtime missing target or newText";
           return;
         }
-        writeFileAtomic(item.target, item.newText, "utf8");
+        updateBoundMigrationFile(item, "target", item.newText);
         item.status = "applied";
         item.message = "runtime config rewired to npm self-contained entrypoint";
         break;
@@ -525,14 +545,20 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands:
           item.message = "retire-hooks missing source";
           return;
         }
-        if (isFile(item.source)) {
-          fs.rmSync(item.source, { force: true });
+        if (!item.target) {
+          item.status = "failed";
+          item.message = "retire-hooks missing target";
+          return;
         }
-        if (item.target && isFile(item.target)) {
-          const configText = fs.readFileSync(item.target, "utf8");
-          const next = retireCodexCopiedHookTrust(configText, item.source);
-          writeFileAtomic(item.target, next, "utf8");
+        verifyBoundMigrationResource(item, "source");
+        verifyBoundMigrationResource(item, "target");
+        if (item.newText === undefined) {
+          item.status = "failed";
+          item.message = "retire-hooks missing newText";
+          return;
         }
+        updateBoundMigrationFile(item, "target", item.newText);
+        removeBoundMigrationResource(item, "source");
         item.status = "applied";
         item.message = "retired Agentera-owned copied Codex hooks";
         break;
@@ -543,13 +569,13 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands:
           item.message = "remove-stale-command missing source";
           return;
         }
-        if (isFile(item.source)) {
-          fs.rmSync(item.source, { force: true });
-          item.status = "applied";
-          item.message = `removed stale managed command ${path.basename(item.source)}`;
-        } else {
+        if (!pathExists(item.source)) {
           item.status = "noop";
           item.message = `stale command already absent at ${item.source}`;
+        } else {
+          removeBoundMigrationResource(item, "source");
+          item.status = "applied";
+          item.message = `removed stale managed command ${path.basename(item.source)}`;
         }
         break;
       }
@@ -562,26 +588,40 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands:
         try {
           const stat = fs.lstatSync(item.source);
           if (stat.isSymbolicLink()) {
-            fs.unlinkSync(item.source);
+            const target = fs.readlinkSync(item.source);
+            const identity = `${stat.dev}:${stat.ino}`;
+            const fingerprint = `sha256:${createHash("sha256").update(target).digest("hex")}`;
+            const resolvedTarget = path.resolve(path.dirname(item.source), target);
+            const relative = item.ownership?.root
+              ? path.relative(item.ownership.root, resolvedTarget)
+              : "..";
+            if (
+              item.ownership?.kind !== "managed-app-symlink"
+              || item.ownership.identity !== identity
+              || item.ownership.fingerprint !== fingerprint
+              || relative === ""
+              || relative.startsWith("..")
+              || path.isAbsolute(relative)
+            ) {
+              item.status = "blocked";
+              item.message = `preserved ${item.source}: authoritative symlink ownership changed or is missing; rerun migration and review the resource`;
+              break;
+            }
+            removeBoundMigrationResource(item, "source");
             item.status = "applied";
             item.message = `removed stale skill symlink ${path.basename(item.source)}`;
-          } else if (stat.isDirectory()) {
-            const entries = fs.readdirSync(item.source);
-            if (entries.length === 0) {
-              fs.rmdirSync(item.source);
-              item.status = "applied";
-              item.message = `removed empty skill directory ${path.basename(item.source)}`;
-            } else {
-              item.status = "blocked";
-              item.message = `skill directory ${path.basename(item.source)} is non-empty (entries: ${entries.length}); manual review required`;
-            }
           } else {
-            item.status = "noop";
-            item.message = "skill path is not a symlink or directory; skipped";
+            item.status = "blocked";
+            item.message = `preserved ${item.source}: only a fingerprinted v2 app-owned symlink is eligible; review it manually`;
           }
-        } catch {
-          item.status = "noop";
-          item.message = "stale skill already absent";
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            item.status = "noop";
+            item.message = "stale skill already absent";
+          } else {
+            item.status = "failed";
+            item.message = `remove-stale-skill failed: ${(error as Error).message}`;
+          }
         }
         break;
       }
@@ -591,8 +631,8 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands:
         break;
     }
   } catch (exc) {
-    item.status = "failed";
-    item.message = `${item.action} failed: ${(exc as Error).message}`;
+    item.status = "blocked";
+    item.message = `${item.action} preserved the resource: ${(exc as Error).message}; rerun migration and review it manually`;
   }
 }
 
@@ -607,10 +647,9 @@ export function applyRuntimeMigrationItems(
     }
     if (isRuntimeMigrationAction(item.action)) {
       applyRuntimeMigrationItem(item as RuntimeMigrationItem, commands);
-    } else if (item.action !== RETIRE_INSTALLED_HOOKS_ACTION) {
+    } else {
       item.status = "failed";
       item.message = `unsupported runtime migration action: ${item.action}`;
     }
   }
-  applyInstalledHooksRetirementItems(items, ctx);
 }

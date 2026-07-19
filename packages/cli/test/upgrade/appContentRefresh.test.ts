@@ -10,6 +10,7 @@ import { startupCompletenessContract } from "../../src/cli/startupCompletenessCo
 import {
   APP_CONTENT_REFRESH_ACTION,
   APP_CONTENT_SURFACE_LABELS,
+  applyAppContentRefreshItem,
   detectStaleAppContentSurfaces,
   skillMdLooksV2,
 } from "../../src/upgrade/appContentRefresh.js";
@@ -221,5 +222,47 @@ describe("upgrade planner integration", () => {
     expect(startupCompletenessContract({ schemaError: null }).complete_for_capability_startup).toBe(
       true,
     );
+
+    const retry = dryRunMigration(ctx);
+    const retryRefresh = retry.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
+    expect(retryRefresh.some((item) => item.status === "pending")).toBe(false);
+    applyMigrationPhases(ctx, retry);
+    expect(fs.readFileSync(installedSkill, "utf8")).toBe(fs.readFileSync(sourceSkill, "utf8"));
   });
+
+  it.each(["target", "parent"] as const)(
+    "blocks refresh when its %s directory is replaced during apply without redirecting a write",
+    (replacement) => {
+      const container = path.join(tmp, `refresh-${replacement}-swap`);
+      fs.mkdirSync(container);
+      const appHome = copyFixture("v2-app-home", path.join(container, "app-home"));
+      const project = copyFixture("v2-yaml-project", path.join(tmp, `project-${replacement}-swap`));
+      seedV2SkillMd(path.join(appHome, "app"));
+      const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+      const preview = dryRunMigration(ctx);
+      const refresh = preview.cleanup.items.find(
+        (item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "pending",
+      );
+      expect(refresh).toBeDefined();
+      const replacedPath = replacement === "target" ? appHome : container;
+      const moved = `${replacedPath}.moved`;
+      let crossedBoundary = false;
+
+      applyAppContentRefreshItem(refresh!, ctx, () => {
+        crossedBoundary = true;
+        fs.renameSync(replacedPath, moved);
+        if (replacement === "target") {
+          fs.mkdirSync(appHome);
+        } else {
+          fs.mkdirSync(appHome, { recursive: true });
+        }
+      });
+
+      expect(crossedBoundary).toBe(true);
+      expect(refresh?.status).toBe("blocked");
+      expect(fs.existsSync(path.join(appHome, "references"))).toBe(false);
+      const movedAppHome = replacement === "target" ? moved : path.join(moved, "app-home");
+      expect(fs.existsSync(path.join(movedAppHome, "references"))).toBe(false);
+    },
+  );
 });

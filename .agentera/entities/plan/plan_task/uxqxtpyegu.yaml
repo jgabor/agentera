@@ -1,0 +1,24 @@
+id: uxqxtpyegu
+artifact: plan
+record:
+  name: Close the remaining migration publication gaps
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a marked v2 app bundle WHEN cleanup is planned THEN only the supported version's closed recursive path and type inventory is eligible; any unknown nested entry preserves the whole bundle with actionable handoff.
+    - GIVEN app refresh WHEN its target or parent changes during apply THEN no write escapes or reaches the changed target and the blocked action is reported.
+    - GIVEN legitimate marked cleanup and refresh WHEN applied and retried THEN both complete and converge without repeated writes.
+    - GIVEN the adopted migration candidate WHEN verified THEN proven rewiring, prior exploit fixes, retry semantics, and explicit Claude cleanup remain intact without new product scope.
+  test_proportionality: Exact nested-user-file and parent-swap reproducers, one valid cleanup, one valid refresh, and focused prior exploit regressions; no exhaustive race matrix.
+  plan: ntfgalrhbm
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: uxqxtpyegu-audit-1
+      source: "independent review ses_0838d7c8affeHAdeUfrApe8ddC: all four acceptance criteria passed with no findings"
+      recorded_at: 2026-07-20 00:21
+      writer_command: agentera state plan record-evaluation

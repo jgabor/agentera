@@ -1,0 +1,36 @@
+id: ntfgalrhbm
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-19
+    status: open
+    reviewed: 2026-07-19
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: "Plan: Finish the shared-skill cutover from a closed migration boundary"
+  what: Adopt the current migration candidate, close its two demonstrated publication gaps, then execute the seven untouched shared-skill cutover outcomes.
+  why: Plan hqwkqcfrii cannot complete without rewriting a blocked 2/2 task. Most migration hardening is verified; only nested unknown cleanup and a refresh parent-swap remain. Preserve that evidence, finish those concrete defects once, and proceed without adding speculative safeguards.
+  constraints: Preserve the committed strict-identity task, all blocked histories, one-way v2 migration, proven rewiring, explicit Claude cleanup, user-owned resources, current uncommitted candidate, and downstream intent. Use one finite version-selected v2 bundle inventory and the existing safe publication boundary; do not create a generalized ownership framework, broaden race hardening beyond demonstrated mutation classes, add exhaustive matrices, change versions or releases, or mutate remotes.
+  overall_acceptance: GIVEN the plan completes WHEN active and packaged behavior is inspected THEN the two demonstrated migration risks are closed, one shared skill plus CLI are the only active integration, normal routing and verification lanes converge, packed upgrade passes, and state closes truthfully.
+  scope:
+    included:
+      - Closed v2 bundle cleanup and pinned app refresh publication.
+      - Runtime-native, repository-native, and package-native integration retirement.
+      - Normal-state routing, verification ownership, packed proof, and state closeout.
+    excluded:
+      - New ownership frameworks, hypothetical race matrices, host-directory deletion, generic retrieval rewrites, releases, and remote work.
+    deferred:
+      []
+  design: Finish the adopted candidate using one closed recursive inventory and one pinned refresh publication path. Then continue the reviewed runtime, repository, package, routing, verification, packed, and closeout sequence unchanged. Resolve the critical migration TODO immediately after Task 1 evaluator PASS.
+  unknowns:
+    - question: Which independently required CLI-observable behaviors are currently covered only through native-integration tests?
+      affects_task: 3
+      resolve_by: Preserve behavior only when required by the shared-skill and CLI contract; otherwise delete obsolete behavior and tests together.
+    - question: Which residual handler branches are migration-only readers rather than removable normal-state routing?
+      affects_task: 5
+      resolve_by: Trace marker-active and marker-absent dispatch before deletion and retain only declared read-only migration inputs.
+    - question: Which detailed source and package matrices lack one owner after native-surface retirement?
+      affects_task: 6
+      resolve_by: Inventory verification after Tasks 1 through 5 and assign each detailed matrix once.
+  surprises:
+    []

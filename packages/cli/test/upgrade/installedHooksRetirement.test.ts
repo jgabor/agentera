@@ -10,6 +10,7 @@ import {
   detectStaleAppContentSurfaces,
 } from "../../src/upgrade/appContentRefresh.js";
 import {
+  applyInstalledHooksRetirementItems,
   INSTALLED_HOOKS_SURFACE_LABEL,
   RETIRE_INSTALLED_HOOKS_ACTION,
   detectStaleInstalledHooksSurface,
@@ -97,6 +98,21 @@ describe("detectStaleInstalledHooksSurface", () => {
 });
 
 describe("upgrade apply retires v2 installed hooks", () => {
+  it("preserves an installed hook replaced after preview", () => {
+    const appHome = copyFixture("v2-app-home", path.join(tmp, "hook-race"));
+    seedV2InstalledHooks(appHome);
+    const ctx = migrationCtx(appHome, appHome, home, REPO_ROOT);
+    const items = planInstalledHooksRetirementItems(ctx);
+    const hook = path.join(appHome, "hooks", "validate_artifact.py");
+    fs.unlinkSync(hook);
+    fs.writeFileSync(hook, "#!/usr/bin/env python3\n# user replacement\n");
+
+    applyInstalledHooksRetirementItems(items, ctx);
+
+    expect(items.find((item) => item.source === hook)?.status).toBe("blocked");
+    expect(fs.readFileSync(hook, "utf8")).toContain("user replacement");
+  });
+
   it("detects and retires a bundle seeded with uv run hooks/*.py during apply", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "apply"));
     const project = copyFixture("v2-yaml-project", path.join(tmp, "project"));
@@ -114,18 +130,14 @@ describe("upgrade apply retires v2 installed hooks", () => {
       ...preview.cleanup.items.filter((item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION),
     ];
     const refreshItems = preview.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
-    expect(refreshItems.some((item) => item.removedPreview?.includes(INSTALLED_HOOKS_SURFACE_LABEL))).toBe(true);
+    expect(refreshItems.some((item) => item.status === "pending")).toBe(true);
     expect(hookItems.some((item) => item.status === "pending")).toBe(true);
     expect(preview.runtime.items.some((item) => item.action === "rewire-runtime" && item.status === "pending")).toBe(
       true,
     );
 
     const applied = applyMigrationPhases(ctx, preview);
-    expect(
-      [...applied.runtime.items, ...applied.cleanup.items].some(
-        (item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION && item.status === "applied",
-      ),
-    ).toBe(true);
+    expect(applied.cleanup.items.find((item) => item.action === "remove-managed-app-home")?.status).toBe("applied");
 
     expect(installedHookPathsAfterMigration(appHome)).toEqual([]);
     expect(installedBundleHasV2HookInvocationText(appHome)).toBe(false);

@@ -1,0 +1,6 @@
+id: zuayfjfjgc
+artifact: todo
+record:
+  severity: critical
+  status: resolved
+  description: "Task ltludymudj blocked after 2/2 audits: migration cleanup can recursively delete unknown nested user files beneath allowlisted app directories, and app refresh can follow a mid-apply parent swap outside the authorized target. Require per-entry cleanup ownership and pinned safe publication for every refresh write before replanning."

@@ -1,0 +1,15 @@
+id: ktxzataekb
+artifact: progress
+record:
+  timestamp: 2026-07-20 00:12
+  type: fix
+  phase: build
+  what: Closed v2 bundle cleanup over a finite recursive version inventory and pinned app-content refresh publication to the previewed target directory and parent chain. Added regressions for nested user content and apply-time target or parent replacement, plus successful retry controls.
+  context:
+    intent: Complete replacement task uxqxtpyegu without broadening migration ownership or publication scope.
+    constraints: Preserved all prior uncommitted migration work; no plan, task, decision, TODO, version, release, commit, or publication changes.
+    unknowns: none
+    scope: v2 cleanup inventory, migration publication boundary, app-content refresh, and proportional upgrade tests
+  inspiration: Plan ntfgalrhbm task uxqxtpyegu.
+  verified: Focused upgrade tests passed (16 tests); full CLI suite passed (213 files, 2563 tests); typecheck, build, lint with zero errors, git diff check, and compact gate passed.
+  next: Keep packed-package work and later migration tasks out of this correction.

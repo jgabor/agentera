@@ -279,6 +279,36 @@ function withPinnedParent<T>(
   }
 }
 
+export function withPinnedLifecycleDirectory<T>(
+  spec: LifecyclePublicationSpec,
+  observation: LifecyclePathObservation,
+  callback: (directoryPath: string) => T,
+  hook?: LifecyclePublicationBoundaryHook,
+): T {
+  return withPinnedParent(
+    observation,
+    { operationId: spec.id, destination: spec.destination, action: "update" },
+    hook,
+    (_parentFd, targetPath) => {
+      assertTargetIdentity(targetPath, observation.identity, "directory");
+      const targetFd = fs.openSync(targetPath, DIRECTORY_OPEN_FLAGS);
+      try {
+        const openedIdentity = identityOf(fs.fstatSync(targetFd, { bigint: true }));
+        if (!sameLifecycleIdentity(observation.identity, openedIdentity)) {
+          throw new LifecyclePublicationError("directory identity changed while opening publication target");
+        }
+        const result = callback(procFdPath(targetFd));
+        assertTargetIdentity(targetPath, openedIdentity, "directory");
+        for (const directory of observation.directories) assertDirectorySnapshot(directory);
+        assertTargetIdentity(spec.destination, openedIdentity, "directory");
+        return result;
+      } finally {
+        fs.closeSync(targetFd);
+      }
+    },
+  );
+}
+
 function readFileDescriptor(fd: number, stat = fs.fstatSync(fd, { bigint: true })): Buffer {
   if (stat.size > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new LifecyclePublicationError("resource is too large to fingerprint safely");

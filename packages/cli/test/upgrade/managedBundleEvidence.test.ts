@@ -49,10 +49,10 @@ describe("hasManagedBundleEvidence v3-awareness (#37)", () => {
     expect(hasManagedBundleEvidence(root)).toBe(false);
   });
 
-  it("returns true when only the v2 scripts/agentera + SKILL.md pair is present (V5 pass)", () => {
+  it("returns false when only the v2 scripts/agentera + SKILL.md filenames are present", () => {
     const root = managedRoot("v2-legacy-pair");
     writeV2LegacyPair(root);
-    expect(hasManagedBundleEvidence(root)).toBe(true);
+    expect(hasManagedBundleEvidence(root)).toBe(false);
   });
 
   it("returns false when only one half of the v2 legacy pair is present (V5 fail)", () => {

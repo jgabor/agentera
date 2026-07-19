@@ -1,0 +1,16 @@
+id: vbillfvovl
+artifact: progress
+record:
+  timestamp: 2026-07-19 23:37
+  type: fix
+  phase: build
+  what: Corrected audit ltludymudj-audit-1 by binding migration rewrites and removals to previewed resource identity, fingerprint, safe parent chains, and exact cleanup sets.
+  context:
+    intent: Fix every recorded legacy migration ownership and apply-time race without changing plan, evaluation, decision, release, or Task 3 state.
+    constraints: Preserved current changes and evaluation history. No commit, push, plan/task/evaluation/TODO/decision/version/release mutation, Task 3 work, or decision-satisfaction change.
+    unknowns: Concurrent mutation after the pinned publication boundary remains governed by the existing lifecycle publication implementation; no new general ownership registry was introduced.
+    scope: packages/cli/src/upgrade migration publication, runtime rewiring, legacy agents, stale commands/skills, installed hooks, app refresh/cleanup, and proportional tests.
+  inspiration: Retry of plan task ltludymudj after audit ltludymudj-audit-1; this supersedes the prior cycle's overclaim that all cleanup apply paths were already hardened.
+  discovered: Rewire selection still accepted generic hook text; app deletion accepted a filename pair; stale commands, installed hooks, refresh targets, and rewires lacked portable apply evidence; legacy-agent allowlists did not pin parent identities; Codex rewire and retirement competed over the same files.
+  verified: "Direct reproduction files: 5 files, 66/66 passed. Exact observations: the python /opt/mytool/hooks/validate_artifact.py --mine hook remained byte-identical; markerless scripts/agentera, skills/agentera/SKILL.md, and keep-user-data.txt remained; marker-owned app cleanup with unknown keep-user-data.txt blocked unchanged; a marker-owned hej.md replaced without its marker remained; a parent-swapped legacy agent remained in the moved outside directory; a replaced installed hook remained; and a swapped refresh target received no references. Proportional migration, mutation, ownership, retry, lifecycle, and Claude suite: 13 files, 176/176 passed. Full source suite: 213 files, 2561/2561 passed. Typecheck and build passed. State validation passed at 1558 entities and 0 issues; capability contract passed 2/2; compact passed with 0 over-limit artifacts; git diff --check passed. Proven AGENTERA_HOME Codex, Cursor, and Copilot inputs still rewired only to CLI hook commands with no optional native install; explicit Claude cleanup remained ledger-bound."
+  next: Stop after this retry. Re-evaluate ltludymudj separately; Task 3 and later package, routing, packed, and closeout work remain deferred.

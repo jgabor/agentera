@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { CAPABILITY_INSTRUCTIONS } from "../capabilities/index.js";
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
+import type { LifecyclePublicationBoundaryHook } from "../runtime/lifecyclePublication.js";
 import { doctorRoots } from "./appModel.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 import {
@@ -10,9 +11,9 @@ import {
   applyInstalledHooksRetirementItems,
   detectStaleInstalledHooksSurface,
   planInstalledHooksRetirementItems,
-  retireInstalledV2Hooks,
 } from "./installedHooksRetirement.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
+import { bindMigrationResource, withBoundMigrationDirectory } from "./migrationPublication.js";
 
 export const APP_CONTENT_REFRESH_ACTION = "refresh-app-content";
 
@@ -310,8 +311,7 @@ export function refreshAppContentTargetRoot(appHome: string): string {
   return resolvePath(appHome);
 }
 
-export function applyAppContentRefresh(appHome: string, sourceRoot: string): void {
-  const targetRoot = refreshAppContentTargetRoot(appHome);
+function applyAppContentRefreshToTarget(targetRoot: string, sourceRoot: string): void {
   const sources = resolveAppContentSources(sourceRoot);
   if (!pathExists(sources.skillsDir)) {
     throw new Error(`app content refresh: missing source skills directory at ${sources.skillsDir}`);
@@ -331,7 +331,10 @@ export function applyAppContentRefresh(appHome: string, sourceRoot: string): voi
     copyTree(sources.distCapabilities, path.join(targetRoot, "dist", "capabilities"), "dist/capabilities");
   }
 
-  retireInstalledV2Hooks(appHome);
+}
+
+export function applyAppContentRefresh(appHome: string, sourceRoot: string): void {
+  applyAppContentRefreshToTarget(refreshAppContentTargetRoot(appHome), sourceRoot);
 }
 
 function refreshItemStatus(staleSurfaces: string[]): MigrationStatus {
@@ -357,17 +360,22 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
         message: "will install stable app content required by selected lifecycle repair",
       }] : [];
     }
-    return [
-      {
-        status: "pending",
-        action: APP_CONTENT_REFRESH_ACTION,
-        runtime: "installed-app",
-        source: resolvedSourceRoot,
-        target: refreshAppContentTargetRoot(appHome),
-        message:
-          "install root has user data only; will install v3 app content (skills, references, registry, dist/capabilities)",
-      },
-    ];
+    const target = refreshAppContentTargetRoot(appHome);
+    const item: MigrationPhaseItem = {
+      status: "pending",
+      action: APP_CONTENT_REFRESH_ACTION,
+      runtime: "installed-app",
+      source: resolvedSourceRoot,
+      target,
+      message:
+        "install root has user data only; will install v3 app content (skills, references, registry, dist/capabilities)",
+    };
+    const evidenceError = bindMigrationResource(item, "target", target, [path.dirname(target)], "directory");
+    if (evidenceError) {
+      item.status = "blocked";
+      item.message = `app content refresh preserved the target: ${evidenceError}; review the unsafe path manually`;
+    }
+    return [item];
   }
 
   const staleSurfaces = detectStaleAppContentSurfaces(appHome, resolvedSourceRoot);
@@ -385,31 +393,48 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   }
 
   const targetRoot = refreshAppContentTargetRoot(appHome);
-  const refreshItems = staleSurfaces.map((surface) => ({
-    status: refreshItemStatus([surface]),
-    action: APP_CONTENT_REFRESH_ACTION,
-    runtime: "installed-app",
-    source: resolvedSourceRoot,
-    target: targetRoot,
-    message: `will refresh stale v2 surface ${surface} from sourceRoot into managed app home`,
-    preserved: [...APP_CONTENT_SURFACE_LABELS],
-    removedPreview: staleSurfaces,
-  }));
+  const refreshItems = staleSurfaces.map((surface) => {
+    const item: MigrationPhaseItem = {
+      status: refreshItemStatus([surface]),
+      action: APP_CONTENT_REFRESH_ACTION,
+      runtime: "installed-app",
+      source: resolvedSourceRoot,
+      target: targetRoot,
+      message: `will refresh stale v2 surface ${surface} from sourceRoot into managed app home`,
+      preserved: [...APP_CONTENT_SURFACE_LABELS],
+      removedPreview: staleSurfaces,
+    };
+    const evidenceError = bindMigrationResource(item, "target", targetRoot, [path.dirname(targetRoot)], "directory");
+    if (evidenceError) {
+      item.status = "blocked";
+      item.message = `app content refresh preserved the target: ${evidenceError}; review the unsafe path manually`;
+    }
+    return item;
+  });
   return [...refreshItems, ...hookItems.filter((item) => item.status !== "noop")];
 }
 
-export function applyAppContentRefreshItem(item: MigrationPhaseItem, ctx: MigrationContext): void {
+export function applyAppContentRefreshItem(
+  item: MigrationPhaseItem,
+  ctx: MigrationContext,
+  beforePublication?: LifecyclePublicationBoundaryHook,
+): void {
   if (item.status !== "pending" || item.action !== APP_CONTENT_REFRESH_ACTION) {
     return;
   }
   try {
     const sourceRoot = resolvePath(ctx.sourceRoot ?? item.source ?? "");
-    applyAppContentRefresh(ctx.appHome, sourceRoot);
+    withBoundMigrationDirectory(
+      item,
+      "target",
+      (targetRoot) => applyAppContentRefreshToTarget(targetRoot, sourceRoot),
+      beforePublication,
+    );
     item.status = "applied";
     item.message = "refreshed installed app content from v3 sourceRoot";
   } catch (exc) {
-    item.status = "failed";
-    item.message = `refresh-app-content failed: ${(exc as Error).message}`;
+    item.status = "blocked";
+    item.message = `refresh-app-content preserved the target: ${(exc as Error).message}; rerun and review it manually`;
   }
 }
 

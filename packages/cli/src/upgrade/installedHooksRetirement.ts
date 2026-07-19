@@ -3,7 +3,13 @@ import path from "node:path";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { doctorRoots } from "./appModel.js";
-import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
+import { hasBundleRootEvidence } from "./bundleEvidence.js";
+import {
+  bindMigrationResource,
+  removeBoundMigrationResource,
+  verifyBoundMigrationResource,
+} from "./migrationPublication.js";
+import type { MigrationContext, MigrationPhaseItem } from "./migrateArtifactsV2ToV3.js";
 
 export const INSTALLED_HOOKS_SURFACE_LABEL = "hooks/";
 export const RETIRE_INSTALLED_HOOKS_ACTION = "retire-installed-hooks";
@@ -16,6 +22,15 @@ const V2_HOOK_INVOCATION_PATTERNS = [
 ] as const;
 
 const SKIP_HOOK_SCAN_PARTS = new Set([".agentera", "sessions", "benchmarks", "intermediate", "backup"]);
+const V2_INSTALLED_HOOK_FILES = new Set([
+  "validate_artifact.py",
+  "cursor_session_start.py",
+  "cursor_pre_tool_use.py",
+  "cursor_session_stop.py",
+  "session_start.py",
+  "session_stop.py",
+  "codex-hooks.json",
+]);
 
 function hooksDirHasPythonFiles(hooksDir: string): boolean {
   if (!pathExists(hooksDir) || !fs.statSync(hooksDir).isDirectory()) {
@@ -98,24 +113,20 @@ export function detectStaleInstalledHooksSurface(appHome: string): boolean {
   );
 }
 
-export function retireInstalledV2Hooks(appHome: string): string[] {
-  const removed: string[] = [];
-  for (const hooksDir of listInstalledHookDirs(appHome)) {
-    fs.rmSync(hooksDir, { recursive: true, force: true });
-    removed.push(path.relative(resolvePath(appHome), hooksDir) || "hooks");
-  }
-  return removed;
-}
-
-function retireItemStatus(stale: boolean): MigrationStatus {
-  return stale ? "pending" : "noop";
-}
-
 export function planInstalledHooksRetirementItems(ctx: MigrationContext): MigrationPhaseItem[] {
   const appHome = resolvePath(ctx.appHome);
+  const roots = doctorRoots(appHome);
+  if (!hasBundleRootEvidence(roots.activeBundleRoot)) {
+    return [{
+      status: "noop",
+      action: RETIRE_INSTALLED_HOOKS_ACTION,
+      runtime: "installed-app",
+      source: appHome,
+      message: "installed hooks preserved because managed bundle ownership is unproven",
+    }];
+  }
   const hookDirs = listInstalledHookDirs(appHome);
-  const invocationHits = scanInstalledBundleForV2HookInvocations(appHome);
-  const stale = hookDirs.length > 0 || invocationHits.length > 0;
+  const stale = hookDirs.length > 0 || scanInstalledBundleForV2HookInvocations(appHome).length > 0;
   if (!stale) {
     return [
       {
@@ -130,25 +141,24 @@ export function planInstalledHooksRetirementItems(ctx: MigrationContext): Migrat
 
   const items: MigrationPhaseItem[] = [];
   for (const hooksDir of hookDirs) {
-    items.push({
-      status: "pending",
-      action: RETIRE_INSTALLED_HOOKS_ACTION,
-      runtime: "installed-app",
-      source: hooksDir,
-      target: appHome,
-      message: `will retire v2 Python hooks at ${path.relative(appHome, hooksDir) || "hooks"}`,
-      removedPreview: fs.readdirSync(hooksDir).filter((name: string) => name.endsWith(".py")),
-    });
-  }
-  if (invocationHits.length > 0) {
-    items.push({
-      status: retireItemStatus(true),
-      action: RETIRE_INSTALLED_HOOKS_ACTION,
-      runtime: "installed-app",
-      source: appHome,
-      message: `will remove installed bundle files still invoking uv run hooks/*.py (${invocationHits.join(", ")})`,
-      removedPreview: invocationHits,
-    });
+    for (const name of fs.readdirSync(hooksDir).filter((entry) => V2_INSTALLED_HOOK_FILES.has(entry))) {
+      const source = path.join(hooksDir, name);
+      const item: MigrationPhaseItem = {
+        status: "pending",
+        action: RETIRE_INSTALLED_HOOKS_ACTION,
+        runtime: "installed-app",
+        source,
+        target: appHome,
+        message: `will retire marker-owned v2 installed hook ${path.relative(appHome, source)}`,
+        removedPreview: [path.relative(appHome, source)],
+      };
+      const evidenceError = bindMigrationResource(item, "source", source, [appHome], "file");
+      if (evidenceError) {
+        item.status = "blocked";
+        item.message = `installed hook preserved: ${evidenceError}; review the unsafe path manually`;
+      }
+      items.push(item);
+    }
   }
   return items;
 }
@@ -161,18 +171,16 @@ export function applyInstalledHooksRetirementItems(items: MigrationPhaseItem[], 
     return;
   }
   try {
-    const removed = retireInstalledV2Hooks(ctx.appHome);
+    for (const item of pending) verifyBoundMigrationResource(item, "source");
     for (const item of pending) {
+      removeBoundMigrationResource(item, "source");
       item.status = "applied";
-      item.message =
-        removed.length > 0
-          ? `retired v2 Python hooks (${removed.join(", ")})`
-          : "retired v2 Python hook invocations from installed bundle";
+      item.message = `retired v2 installed hook ${path.relative(resolvePath(ctx.appHome), item.source!)}`;
     }
   } catch (exc) {
     for (const item of pending) {
-      item.status = "failed";
-      item.message = `${RETIRE_INSTALLED_HOOKS_ACTION} failed: ${(exc as Error).message}`;
+      item.status = "blocked";
+      item.message = `installed hook preserved: ${(exc as Error).message}; rerun migration and review it manually`;
     }
   }
 }

@@ -1,0 +1,15 @@
+id: qircjixshb
+artifact: progress
+record:
+  timestamp: 2026-07-20 00:13
+  type: fix
+  phase: build
+  what: Superseded progress ktxzataekb with acceptance-criterion-level evidence for replacement task uxqxtpyegu.
+  context:
+    intent: Record concrete verification for the closed recursive v2 inventory and pinned refresh publication corrections without changing implementation, tests, or task state.
+    constraints: No implementation, test, plan, TODO, evaluation, decision, version, release, commit, push, or publication change.
+    unknowns: none
+    scope: Typed progress evidence only for task uxqxtpyegu.
+  inspiration: Plan ntfgalrhbm task uxqxtpyegu; supersedes progress ktxzataekb.
+  verified: "Nested inventory reproduction: preview/apply of exact app/skills/user-custom/notes.txt produced a blocked remove-managed-app-home item with manual-review/action-required handoff; notes.txt remained byte-readable and app/registry.json remained, proving the whole marked bundle was preserved. Refresh replacement reproductions: apply-time swaps of both the refresh target and its parent returned blocked; neither the replacement app-home nor the moved original received references, proving no redirected write and no change outside the previewed target identity for the attempted surface. Legitimate version-selected 2.7.0 marked cleanup applied, removed app/, preserved .agentera/progress.yaml, and retry exposed no pending removal. Legitimate refresh applied source-equal SKILL.md plus references, registry.json, and dist/capabilities; retry exposed no pending refresh and retained source-equal content. Current focused correction run passed 2 files, 16/16; full suite passed 213 files, 2563/2563; typecheck and build passed. Prior focused exploit run passed 5 files, 66/66, and proportional migration/ownership/lifecycle/Claude run passed 13 files, 176/176: generic user hook, markerless filename bundle, replaced stale command/hook, and parent-swapped legacy agent were preserved; proven AGENTERA_HOME Codex/Cursor/Copilot inputs rewired only to CLI hook commands with no optional native install; explicit Claude cleanup remained ledger-bound and preserved user data. Prior state validation passed at 1558 entities/0 issues and capability-contract 2/2; current compact passed with 0 over-limit artifacts, lint had 0 errors, and git diff --check passed."
+  next: Continue only with separately authorized later migration tasks; packed/package work remains out of scope.

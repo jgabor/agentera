@@ -4,7 +4,7 @@ record:
   name: Isolate and harden legacy migration and cleanup
   depends_on:
     - aiymglhemf
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN a proven v2 host hook WHEN full migration runs THEN it is rewired to a CLI command without installing a current native integration.
     - GIVEN legacy runtime resources WHEN cleanup runs THEN authoritative ownership is required and name, filename, or text similarity never suffices.
@@ -13,3 +13,13 @@ record:
     - GIVEN explicit Claude cleanup WHEN requested THEN only its declared owned resource is eligible.
   test_proportionality: Representative rewiring, owned cleanup, collision matrix, retry and fault cases, and explicit Claude boundary using preserved v2 fixtures.
   plan: hqwkqcfrii
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Original exploits are fixed, but cleanup still recursively deletes unknown nested user content beneath allowlisted app directories, and app refresh performs path-based writes after one-time validation so a mid-apply parent swap can redirect writes outside the authorized target. Require per-entry ownership for recursive cleanup and pinned safe publication for every refresh write, with exact regressions.
+    provenance:
+      attempt_id: ltludymudj-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-19 23:46
+      writer_command: agentera state plan record-evaluation

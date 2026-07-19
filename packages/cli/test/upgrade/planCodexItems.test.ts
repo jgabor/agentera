@@ -27,10 +27,10 @@ function seedCodexLayout(root: string): void {
   fs.writeFileSync(path.join(root, ".codex", "config.toml"), V2_CODEX_CONFIG);
 }
 
-function codexRewireTargets(items: ReturnType<typeof planRuntimeMigrationItems>): string[] {
+function codexMutationTargets(items: ReturnType<typeof planRuntimeMigrationItems>): string[] {
   return items
-    .filter((item) => item.runtime === "codex" && item.action === "rewire-runtime")
-    .map((item) => item.target ?? item.source)
+    .filter((item) => item.runtime === "codex" && ["rewire-runtime", "retire-hooks"].includes(item.action))
+    .flatMap((item) => [item.source, item.target])
     .filter((filePath): filePath is string => Boolean(filePath));
 }
 
@@ -55,7 +55,7 @@ describe("planCodexItems project and home detection", () => {
     fs.mkdirSync(appHome, { recursive: true });
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planRuntimeMigrationItems(ctx);
-    const targets = codexRewireTargets(items);
+    const targets = codexMutationTargets(items);
 
     expect(targets).toContain(path.join(project, ".codex", "config.toml"));
     expect(targets).toContain(path.join(project, ".codex", "hooks", "codex-hooks.json"));
@@ -72,7 +72,7 @@ describe("planCodexItems project and home detection", () => {
     fs.mkdirSync(appHome, { recursive: true });
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planRuntimeMigrationItems(ctx);
-    const targets = codexRewireTargets(items);
+    const targets = codexMutationTargets(items);
 
     expect(targets).toContain(path.join(home, ".codex", "config.toml"));
     expect(targets).toContain(path.join(home, ".codex", "hooks", "codex-hooks.json"));
@@ -89,7 +89,7 @@ describe("planCodexItems project and home detection", () => {
     fs.mkdirSync(appHome, { recursive: true });
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planRuntimeMigrationItems(ctx);
-    const targets = codexRewireTargets(items);
+    const targets = codexMutationTargets(items);
 
     const expected = [
       path.join(project, ".codex", "config.toml"),

@@ -98,6 +98,54 @@ describe("planRuntimeRewirePhase", () => {
 });
 
 describe("planCleanupPhase", () => {
+  it("does not infer app ownership from scripts and skill filenames", () => {
+    const appHome = path.join(tmp, "markerless-user-app");
+    const app = path.join(appHome, "app");
+    fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
+    fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(app, "scripts", "agentera"), "user script\n");
+    fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "user skill\n");
+    fs.writeFileSync(path.join(app, "keep-user-data.txt"), "keep\n");
+    const ctx = migrationCtx(appHome, appHome, tmp, REPO_ROOT);
+
+    const phase = planCleanupPhase(ctx);
+    applyCleanupPhase(phase, ctx);
+
+    expect(phase.items.some((item) => item.action === "remove-managed-app-home" && item.status === "applied")).toBe(false);
+    expect(fs.readFileSync(path.join(app, "keep-user-data.txt"), "utf8")).toBe("keep\n");
+    expect(fs.readFileSync(path.join(app, "scripts", "agentera"), "utf8")).toBe("user script\n");
+  });
+
+  it("blocks marker-owned app cleanup when unknown content is present", () => {
+    const appHome = copyFixture("v2-app-home", path.join(tmp, "managed-with-user-data"));
+    const userFile = path.join(appHome, "app", "keep-user-data.txt");
+    fs.writeFileSync(userFile, "keep\n");
+    const ctx = migrationCtx(appHome, appHome, tmp, REPO_ROOT);
+
+    const phase = planCleanupPhase(ctx);
+    applyCleanupPhase(phase, ctx);
+
+    expect(phase.items.find((item) => item.action === "remove-managed-app-home")?.status).toBe("blocked");
+    expect(fs.readFileSync(userFile, "utf8")).toBe("keep\n");
+  });
+
+  it("preserves the whole marked bundle when nested user content is present", () => {
+    const appHome = copyFixture("v2-app-home", path.join(tmp, "managed-with-nested-user-data"));
+    const userFile = path.join(appHome, "app", "skills", "user-custom", "notes.txt");
+    fs.mkdirSync(path.dirname(userFile), { recursive: true });
+    fs.writeFileSync(userFile, "keep nested notes\n");
+    const ctx = migrationCtx(appHome, appHome, tmp, REPO_ROOT);
+
+    const phase = planCleanupPhase(ctx);
+    applyCleanupPhase(phase, ctx);
+
+    const removal = phase.items.find((item) => item.action === "remove-managed-app-home");
+    expect(removal?.status).toBe("blocked");
+    expect(removal?.message).toContain("skills/user-custom/notes.txt");
+    expect(fs.readFileSync(userFile, "utf8")).toBe("keep nested notes\n");
+    expect(fs.existsSync(path.join(appHome, "app", "registry.json"))).toBe(true);
+  });
+
   it("dry-run previews managed app-home removal with user-data preservation", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "app-home"));
     const phase = planCleanupPhase({ appHome, project: appHome, home: tmp, sourceRoot: REPO_ROOT });
@@ -117,6 +165,12 @@ describe("planCleanupPhase", () => {
     const preview = planCleanupPhase(ctx);
     applyCleanupPhase(preview, ctx);
     expect(preview.status).toBe("applied");
+    expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
+    expect(fs.existsSync(path.join(appHome, ".agentera", "progress.yaml"))).toBe(true);
+
+    const retry = planCleanupPhase(ctx);
+    applyCleanupPhase(retry, ctx);
+    expect(retry.items.some((item) => item.action === "remove-managed-app-home" && item.status === "pending")).toBe(false);
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
     expect(fs.existsSync(path.join(appHome, ".agentera", "progress.yaml"))).toBe(true);
   });

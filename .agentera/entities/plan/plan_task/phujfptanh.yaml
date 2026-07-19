@@ -1,0 +1,21 @@
+id: phujfptanh
+artifact: plan
+record:
+  name: Run final gates and synchronize project state
+  depends_on:
+    - uxqxtpyegu
+    - igibjjvytl
+    - nwaesildcl
+    - wqeazunluo
+    - qesbsuazwq
+    - tfzmuwbjhe
+    - dgipngnekk
+  status: pending
+  acceptance:
+    - GIVEN final verification WHEN run THEN canonical source, package, typecheck, validation, compaction, and web gates pass under one owner each.
+    - GIVEN active artifacts WHEN reconciled THEN docs, changelog, TODO, progress, health, and plan state describe one shared-skill and CLI contract; critical migration TODO zuayfjfjgc remains resolved.
+    - GIVEN predecessor history WHEN checked THEN prior plans remain archived and all task and evaluation records including blocked 2/2 entries remain byte-identical.
+    - GIVEN residual native paths WHEN allowlisted THEN each is immutable migration input, history, or minimum cleanup data, unreachable from normal operation and absent from package output.
+    - GIVEN repository closeout WHEN inspected THEN versions are unchanged and no release, publication, tag, push, or remote mutation occurred.
+  test_proportionality: One final gate run, closed allowlist scan, exact task and evaluation hashes, state reconciliation, and local repository check.
+  plan: ntfgalrhbm

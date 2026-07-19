@@ -278,11 +278,15 @@ describe("one-way Git entity cutover", () => {
     expect(failed.err).toContain(".codex/hooks/codex-hooks.json");
   }, 30_000);
 
-  it("rewires required v2 hooks without creating optional lifecycle resources or replacing a user skill", () => {
+  it("rewires proven Codex, Cursor, and Copilot v2 hooks without installing native integrations", () => {
     const root = project();
-    const hooks = path.join(root, ".codex/hooks/codex-hooks.json");
-    fs.mkdirSync(path.dirname(hooks), { recursive: true });
-    fs.writeFileSync(hooks, '{"command":"uv run hooks/validate_artifact.py"}\n');
+    const codexHooks = path.join(root, ".codex/hooks/codex-hooks.json");
+    const cursorHooks = path.join(root, ".cursor/hooks.json");
+    const copilotHooks = path.join(root, ".github/hooks/agentera.json");
+    for (const hooks of [codexHooks, cursorHooks, copilotHooks]) {
+      fs.mkdirSync(path.dirname(hooks), { recursive: true });
+      fs.writeFileSync(hooks, '{"command":"uv run ${AGENTERA_HOME}/hooks/validate_artifact.py"}\n');
+    }
     initializeGit(root);
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-selector-free-"));
     roots.push(home);
@@ -295,10 +299,13 @@ describe("one-way Git entity cutover", () => {
     const applied = applyUpgrade(root, appHome, home);
 
     expect(applied.code, applied.err).toBe(0);
-    expect(fs.readFileSync(hooks, "utf8")).toContain("npx -y agentera@next hook validate-artifact");
+    for (const hooks of [codexHooks, cursorHooks, copilotHooks]) {
+      expect(fs.readFileSync(hooks, "utf8")).toContain("npx -y agentera@next hook validate-artifact");
+    }
     expect(treeBytes(home, ".agents/skills/agentera")).toEqual(skillBefore);
     expect(fs.existsSync(path.join(root, ".cursor-plugin/plugin.json"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".cursor/agents/agentera.md"))).toBe(false);
+    expect(fs.existsSync(path.join(home, ".config/opencode/plugins/agentera.js"))).toBe(false);
   }, 30_000);
 
   it("names the canonical resource and required action after an explicit lifecycle collision", () => {

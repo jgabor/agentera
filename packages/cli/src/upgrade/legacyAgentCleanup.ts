@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { opencodeConfigDir } from "../setup/opencode.js";
 import type { MigrationContext, MigrationPhaseItem } from "./migrateArtifactsV2ToV3.js";
+import { bindMigrationResource, removeBoundMigrationResource } from "./migrationPublication.js";
 
 export const REMOVE_LEGACY_AGENT_ACTION = "remove-legacy-agent";
 
@@ -63,11 +65,102 @@ export interface LegacyAgentScanTarget {
   agentsDir: string;
 }
 
+function regularFileIdentity(filePath: string): string | null {
+  try {
+    const stat = fs.lstatSync(filePath);
+    return stat.isFile() ? `${stat.dev}:${stat.ino}` : null;
+  } catch {
+    return null;
+  }
+}
+
+function managedAgentOwnership(filePath: string): MigrationPhaseItem["ownership"] | null {
+  const identity = regularFileIdentity(filePath);
+  if (!identity) return null;
+  let body: string;
+  try {
+    body = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return null;
+  }
+  if (!body.includes(MANAGED_AGENT_MARKER)) return null;
+  return {
+    kind: "managed-marker-file",
+    identity,
+    fingerprint: `sha256:${createHash("sha256").update(body).digest("hex")}`,
+  };
+}
+
+function planAgentFiles(
+  ctx: MigrationContext,
+  names: readonly string[],
+  description: string,
+): MigrationPhaseItem[] {
+  const items: MigrationPhaseItem[] = [];
+  for (const { runtime, agentsDir } of legacyAgentScanTargets(ctx)) {
+    let directory: fs.Stats;
+    try {
+      directory = fs.lstatSync(agentsDir);
+    } catch {
+      continue;
+    }
+    if (!directory.isDirectory()) {
+      items.push({
+        status: "blocked",
+        action: REMOVE_LEGACY_AGENT_ACTION,
+        runtime,
+        source: agentsDir,
+        message: `preserved ${agentsDir}: the legacy agents path is not a real directory; replace the unsafe path or review it manually`,
+      });
+      continue;
+    }
+    for (const name of names) {
+      const source = path.join(agentsDir, name);
+      let candidate: fs.Stats;
+      try {
+        candidate = fs.lstatSync(source);
+      } catch {
+        continue;
+      }
+      if (!candidate.isFile()) {
+        items.push({
+          status: "blocked",
+          action: REMOVE_LEGACY_AGENT_ACTION,
+          runtime,
+          source,
+          message: `preserved ${source}: only a marker-owned regular file is eligible; review the unsafe resource manually`,
+        });
+        continue;
+      }
+      const ownership = managedAgentOwnership(source);
+      const item: MigrationPhaseItem = {
+        status: ownership ? "pending" : "blocked",
+        action: REMOVE_LEGACY_AGENT_ACTION,
+        runtime,
+        source,
+        ...(ownership ? { ownership } : {}),
+        message: ownership
+          ? `will remove marker-owned v2 ${description} ${name}`
+          : `preserved ${source}: the legacy filename does not prove Agentera ownership; confirm ownership and remove it manually if appropriate`,
+      };
+      if (ownership) {
+        const evidenceError = bindMigrationResource(item, "source", source, [agentsDir], "file");
+        if (evidenceError) {
+          item.status = "blocked";
+          item.message = `preserved ${source}: ${evidenceError}; review the unsafe path manually`;
+        }
+      }
+      items.push(item);
+    }
+  }
+  return items;
+}
+
 export function legacyAgentScanTargets(ctx: MigrationContext): LegacyAgentScanTarget[] {
   const project = resolvePath(ctx.project);
   const home = resolvePath(ctx.home);
   const appHome = resolvePath(ctx.appHome);
-  const env = ctx.env ?? process.env;
+  const env = ctx.env ?? { HOME: home };
   const targets: LegacyAgentScanTarget[] = [];
   const seen = new Set<string>();
 
@@ -150,58 +243,66 @@ export function scanLegacySwedishVerbAgentViolations(root: string): string[] {
 }
 
 export function planLegacyAgentCleanupItems(ctx: MigrationContext): MigrationPhaseItem[] {
-  const items: MigrationPhaseItem[] = [];
-  for (const { runtime, agentsDir } of legacyAgentScanTargets(ctx)) {
-    for (const source of scanLegacySwedishVerbAgentPaths(agentsDir)) {
-      items.push({
-        status: "pending",
-        action: REMOVE_LEGACY_AGENT_ACTION,
-        runtime,
-        source,
-        message: `will remove orphaned v2 Swedish-verb agent ${path.basename(source)}`,
-      });
-    }
-  }
-  return items;
+  return planAgentFiles(ctx, V2_SWEDISH_VERB_AGENT_FILES, "Swedish-verb agent");
 }
 
 export function planLegacyCapabilityAgentCleanupItems(ctx: MigrationContext): MigrationPhaseItem[] {
-  const items: MigrationPhaseItem[] = [];
-  for (const { runtime, agentsDir } of legacyAgentScanTargets(ctx)) {
-    for (const source of scanLegacyCapabilityAgentPaths(agentsDir)) {
-      items.push({
-        status: "pending",
-        action: REMOVE_LEGACY_AGENT_ACTION,
-        runtime,
-        source,
-        message: `will remove orphaned v2 per-capability agent ${path.basename(source)}`,
-      });
-    }
-  }
-  return items;
+  return planAgentFiles(ctx, V2_ENGLISH_CAPABILITY_AGENT_FILES, "per-capability agent");
 }
 
-export function applyLegacyAgentCleanupItems(items: MigrationPhaseItem[]): void {
+export function applyLegacyAgentCleanupItems(items: MigrationPhaseItem[], ctx: MigrationContext): void {
+  const allowed = new Set(legacyAgentScanTargets(ctx).map(({ agentsDir }) => path.resolve(agentsDir)));
   for (const item of items) {
     if (item.status !== "pending" || item.action !== REMOVE_LEGACY_AGENT_ACTION || !item.source) {
       continue;
     }
     const basename = path.basename(item.source);
     try {
+      if (!allowed.has(path.dirname(path.resolve(item.source)))) {
+        item.status = "blocked";
+        item.message = `preserved ${item.source}: path is outside the legacy agent cleanup allowlist; review it manually`;
+        continue;
+      }
+      const ownership = managedAgentOwnership(item.source);
+      if (!ownership) {
+        let absent = false;
+        try {
+          fs.lstatSync(item.source);
+        } catch (error) {
+          absent = (error as NodeJS.ErrnoException).code === "ENOENT";
+        }
+        if (absent) {
+          item.status = "noop";
+          item.message = `legacy agent already absent at ${item.source}`;
+        } else {
+          item.status = "blocked";
+          item.message = `preserved ${item.source}: managed marker ownership is missing or unsafe; review it manually`;
+        }
+        continue;
+      }
+      if (
+        item.ownership?.kind !== "managed-marker-file"
+        || item.ownership.identity !== ownership.identity
+        || item.ownership.fingerprint !== ownership.fingerprint
+      ) {
+        item.status = "blocked";
+        item.message = `preserved ${item.source}: ownership identity or fingerprint changed after preview; rerun migration and review the resource`;
+        continue;
+      }
       if (
         (!isV2SwedishVerbAgentFile(basename) && !isV2EnglishCapabilityAgentFile(basename)) ||
-        !isFile(item.source)
+        !regularFileIdentity(item.source)
       ) {
         item.status = "noop";
         item.message = `legacy agent already absent at ${item.source}`;
         continue;
       }
-      fs.rmSync(item.source, { force: true });
+      removeBoundMigrationResource(item, "source");
       item.status = "applied";
       item.message = `removed orphaned v2 legacy agent ${basename}`;
     } catch (exc) {
-      item.status = "failed";
-      item.message = `${REMOVE_LEGACY_AGENT_ACTION} failed: ${(exc as Error).message}`;
+      item.status = "blocked";
+      item.message = `preserved ${item.source}: ${(exc as Error).message}; rerun migration and review it manually`;
     }
   }
 }
