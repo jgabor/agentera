@@ -1,0 +1,15 @@
+id: zzxmirwxwn
+artifact: progress
+record:
+  timestamp: 2026-07-19 09:58
+  type: fix
+  phase: build
+  what: Task mnezhmizhr replaced the staging-and-manifest cutover with one deterministic forward importer in packages/cli/src/state/entityCutover.ts. It accepts exact targets, writes missing entities, validates the complete graph, publishes .agentera/state-mode.yaml last, and leaves blocked runtime resources for post-marker action-required handoff.
+  context:
+    intent: Reduce v2-to-v3 cutover to the smallest best-effort forward path while preserving source bytes, marker-last activation, deterministic retry, and user-owned runtime boundaries.
+    constraints: No staging graph, recovery journal, rollback, alternate importer, v1 conversion, remote operation, release, or later plan task. No new TODO or plan task was added.
+    unknowns: None for this task. The plan's two recorded unknowns affect later tasks 6 and 11. Decision retrieval remained degraded/bounded at 5 of 50 with 45 omitted; no omitted decision was reconstructed. Vision and profile remained missing/stale and were not refreshed.
+    scope: packages/cli entity cutover and upgrade orchestration, focused tests, state-storage authority, Unreleased changelog, and typed plan/progress state.
+  inspiration: Plan task mnezhmizhr and firm Decisions hdqqgkneoz and llavvlpcmb.
+  verified: "Criteria 1 and 3: focused success, exact-partial retry, and marker-fault tests prove all converted targets exist or match before complete graph validation and .agentera/state-mode.yaml is last; criteria 2 and 4: divergent-target, unsupported-input, and blocked-runtime tests prove source bytes/resources stay unchanged, pre-marker failures leave the marker absent and name the first unresolved path, while valid entities activate before action-required handoff. pnpm -C packages/cli test --run test/upgrade/upgradeEntityCutover.test.ts test/upgrade/upgradeOrchestrator.test.ts test/state/entityAuthority.test.ts passed 40/40; activeProtocolSurface passed 9/9; full pnpm -C packages/cli test passed 2591/2591. Typecheck, build, lint (137 warnings, 0 errors), capability-contract validation, realistic v2 dry-run preview, state validation (1512 entities, 0 issues), and root check compact passed."
+  next: Stop after this cycle; later plan tasks remain pending for the orchestrator.

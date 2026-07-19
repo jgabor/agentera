@@ -383,6 +383,15 @@ export function delegatePlanLifecycleToEntityCutover(phase: MigrationPhase): voi
 
 export function planRuntimeRewirePhase(ctx: MigrationContext): MigrationPhase {
   const items = planRuntimeMigrationItems(ctx);
+  const blockedPaths = new Set(items
+    .filter((item) => item.status === "blocked")
+    .flatMap((item) => [item.source, item.target])
+    .filter((value): value is string => typeof value === "string"));
+  for (const item of items) {
+    if (item.status !== "pending" || ![item.source, item.target].some((value) => value && blockedPaths.has(value))) continue;
+    item.status = "blocked";
+    item.message = "action required before Agentera can modify this runtime resource";
+  }
   return summarizePhase(
     "runtime",
     items,

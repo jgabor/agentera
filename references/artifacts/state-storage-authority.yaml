@@ -16,7 +16,7 @@ authority:
   implementation_boundary: >-
     Shared entity storage plus the progress, decisions, health, plan, objective,
     experiment, TODO-item, and documentation-inventory family writers and retrieval,
-    plus one-way Git cutover, are implemented but activate entity authority only
+    plus one-way forward import, are implemented but activate entity authority only
     from the durable cutover marker. The preserved
     singleton families remain legacy files. The
     current numbered archive and retrieval groups remain implemented legacy
@@ -491,7 +491,7 @@ entity_target:
       never truncate bytes, omit required identity, or fabricate detail.
 
 entity_migration:
-  status: one_way_git_cutover_implemented
+  status: one_way_forward_import_implemented
   decision: 94
   kind: single_full_upgrade_cutover
   cutover_marker:
@@ -521,9 +521,10 @@ entity_migration:
     apply_command: >-
       npx -y agentera@next upgrade --channel development --project "$PWD" --yes
     apply_boundary: >-
-      Full upgrade serializes through the project writer lock, stages and graph-
-      validates deterministic entities, publishes them without deleting a
-      canonical entity, and writes the authority marker last. There is no direct
+      Full upgrade serializes through the project writer lock, validates the
+      deterministic conversion, writes each missing canonical entity or accepts
+      an exact existing match, validates the complete graph, and writes the
+      authority marker last. There is no direct
       entity apply, public operation ID, resume, rollback, or cross-major restore.
     git_preflight:
       required: true
@@ -548,12 +549,10 @@ entity_migration:
         or additional cutover consent. Any --only apply is rejected at this
         cross-major boundary.
       interruption: >-
-        Before forward-manifest publication, a rerun may discard only the fixed
-        migration-owned staging path and recompute it from the same Git-bound
-        source. After manifest or canonical publication, a rerun validates the
-        manifest binding and every existing canonical target, republishes only
-        missing targets from recomputed staging, validates the graph, and finishes
-        the marker forward. It never deletes canonical entities.
+        A rerun recomputes the deterministic conversion from unchanged Git-bound
+        source, accepts existing canonical targets only when their bytes match,
+        writes the first missing target, validates the complete graph, and finishes
+        the marker forward. It never deletes or replaces canonical entities.
       completed: >-
         A valid entity marker makes legacy authority permanently inactive.
         Repeated upgrade validates current entity state and reports a no-op;
@@ -620,8 +619,7 @@ entity_migration:
       domain-separated SHA-256 of the complete source fingerprint and canonical
       source key. This is allocation of a new opaque target candidate, not
       reconstruction of a missing source ID. A collision is a blocker. Apply
-      preserves the deterministic mapping in staged canonical paths and the
-      bounded forward manifest before canonical publication.
+       preserves the deterministic mapping in each canonical target path.
     preview_digest: >-
       SHA-256 over canonical JSON of the complete unbounded inventory, proposed
       mapping, authority-validated final envelope byte SHA-256 values,
@@ -632,7 +630,7 @@ entity_migration:
       Before preview can be ready or produce an approvable digest, every proposed
       final envelope, record, public field vocabulary, and relationship graph is
       validated through the same authority-backed canonical target validator used
-      defensively by upgrade apply and forward continuation. A target failure is a corrupt blocker tied
+       defensively by upgrade apply and forward retry. A target failure is a corrupt blocker tied
       to its source identity and recovery action; preserved nonentity residues are
       excluded from target validation and publication.
     output:
@@ -662,9 +660,9 @@ entity_migration:
       open no writer or upgrade lock and create no directory, temporary file,
       mapping, snapshot, journal, cache, or state file.
     binding: >-
-      Before any apply effect, recompute the complete preview and require its
-      source fingerprint and preview digest to match the Git-pinned preparation
-      or retained forward manifest. A mismatch refuses every selected effect.
+       Before any apply effect, recompute the complete preview and require its
+       source fingerprint and preview digest to match the Git-pinned preparation.
+       A mismatch refuses every selected effect.
   source_outcomes:
     valid_full:
       outcome: ready
@@ -698,30 +696,18 @@ entity_migration:
       - silent dropping, deduplication, or winner selection
     partial_cutover_success: forbidden
   forward_state:
-    root: .agentera/migrations/entities
-    staging: .agentera/migrations/entities/staging
-    manifest: .agentera/migrations/entities/forward.yaml
-    manifest_schema_version: agentera.entityCutoverManifest.v1
-    manifest_fields: [schemaVersion, phase, source, targets, marker]
-    source_fields: [head, source_fingerprint, preview_digest]
-    target_fields: [path, sha256]
-    marker_fields: [path, sha256]
-    phases: [publishing_entities, entities_published]
-    forbidden_fields:
-      - operation_id
-      - migration_id
-      - snapshots
-      - source_bytes
-      - inode_receipts
-      - rollback_state
-    publication_order: staging_then_forward_manifest_then_entities_then_marker
+    persisted_recovery_state: none
+    publication_order: exact_or_missing_entities_then_graph_validation_then_marker
+    retry_rule: accept_exact_targets_and_continue_at_first_missing_path
+    divergent_target: stop_without_replacement_and_name_first_unresolved_path
+    forbidden_fields: [operation_id, migration_id, snapshots, source_bytes, inode_receipts, rollback_state]
     historical_evidence: >-
       Already committed .agentera/migrations content is inert and remains
       byte-for-byte untouched. Read-only legacy manifest parsing is retained only
       for public validation of entity markers created by the former cutover.
     fault_test_hook: >-
       Tests may set NODE_ENV=test and
-      AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE to one declared durable
+      AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE to one declared publication
       phase. Other environments ignore the variable.
   lifecycle:
     - phase: inventory
@@ -733,12 +719,9 @@ entity_migration:
     - phase: git_preflight
       mutates: false
       exit: project root, HEAD, clean checkout, source bytes, types, and modes match
-    - phase: stage_entities
-      mutates: true
-      exit: deterministic entity bytes and graph validate under the fixed staging path
     - phase: publishing_entities
       mutates: true
-      exit: one bounded forward manifest exists and every canonical target matches or is published once
+      exit: every canonical target is an exact match or is published once
     - phase: entities_published
       mutates: false
       exit: canonical source-to-target parity, uniqueness, ownership, relationships, and budgets pass

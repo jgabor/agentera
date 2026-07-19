@@ -151,7 +151,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
           } else if (preview.channel.distributionMajor < 3) {
             err("upgrade error: v2-to-v3 apply requires the development channel; preview there, then retry with --yes.\n");
           } else if (!entityAuthorityConfirmedActive(preview.project)) {
-            err("upgrade error: v2-to-v3 preflight failed. Recover the tracked v2 checkout with Git and retry.\n");
+            err(`upgrade error: v2-to-v3 preflight failed: ${applyError}. Recover the tracked v2 checkout with Git and retry.\n`);
           } else {
             err("upgrade error: v2-to-v3 preflight failed. Rerun the same upgrade command to continue forward.\n");
           }
@@ -166,7 +166,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     if (exc instanceof UpgradeLockError) {
       err(`upgrade error: ${exc.message}\n`);
     } else if (fullEntityCutoverApply) {
-      err("upgrade error: the v2-to-v3 upgrade did not complete. Rerun the same upgrade command to continue forward.\n");
+      err(`upgrade error: ${(exc as Error).message}. Rerun the same upgrade command to continue forward.\n`);
     } else {
       err(`upgrade error: ${(exc as Error).message}\n`);
     }
@@ -181,9 +181,20 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
       && verification.startup_validation.status === "passed";
     out(renderOneWayResult(verification, applyExit === 0 && authorityActive, (args.format ?? "text") === "json"));
     if (applyExit !== 0 || !authorityActive || !verificationPassed) {
-      err(!authorityActive
-        ? "Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n"
-        : "Rerun the same upgrade command to continue forward; verification is read-only and no completed effect was reversed.\n");
+      if (!authorityActive) {
+        err("Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n");
+      } else {
+        const unresolved = plan.phases
+          .filter((phase) => ["runtime", "cleanup", "lifecycle"].includes(phase.name))
+          .flatMap((phase) => phase.items)
+          .find((item) => item.status === "blocked" || item.status === "failed");
+        if (unresolved) {
+          const unresolvedPath = unresolved.source ?? unresolved.target ?? unresolved.action;
+          err(`action-required after entity activation: ${unresolvedPath}: ${unresolved.message}. Rerun the same upgrade command to continue forward.\n`);
+        } else {
+          err("Rerun the same upgrade command to continue forward; verification is read-only and no completed effect was reversed.\n");
+        }
+      }
       return 1;
     }
     return 0;

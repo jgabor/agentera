@@ -241,7 +241,7 @@ describe("Decision 94 entity authority", () => {
     const measurement = authority.entity_target.measurement_contract;
 
     expect(migration).toMatchObject({
-      status: "one_way_git_cutover_implemented",
+      status: "one_way_forward_import_implemented",
       decision: 94,
       kind: "single_full_upgrade_cutover",
       invocation: {
@@ -286,10 +286,9 @@ describe("Decision 94 entity authority", () => {
       },
       non_fabrication: { partial_cutover_success: "forbidden" },
       forward_state: {
-        staging: ".agentera/migrations/entities/staging",
-        manifest: ".agentera/migrations/entities/forward.yaml",
-        manifest_fields: ["schemaVersion", "phase", "source", "targets", "marker"],
-        phases: ["publishing_entities", "entities_published"],
+        persisted_recovery_state: "none",
+        publication_order: "exact_or_missing_entities_then_graph_validation_then_marker",
+        retry_rule: "accept_exact_targets_and_continue_at_first_missing_path",
         forbidden_fields: expect.arrayContaining(["operation_id", "snapshots", "inode_receipts", "rollback_state"]),
       },
     });
@@ -311,7 +310,6 @@ describe("Decision 94 entity authority", () => {
       "inventory",
       "preview",
       "git_preflight",
-      "stage_entities",
       "publishing_entities",
       "entities_published",
       "marker",

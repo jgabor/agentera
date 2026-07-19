@@ -147,8 +147,7 @@ describe("buildUpgradePlan", () => {
     const orphanedPlan = buildUpgradePlan({ installRoot: appHome, home, project: orphaned, channel: "development", dryRun: true, only: ["artifacts"] });
     expect(orphanedPlan.phases.find((phase) => phase.name === "entities")?.status).toBe("blocked");
 
-    const existing = path.join(tmp, "existing-entities");
-    fs.mkdirSync(existing);
+    const existing = copyFixture("v2-yaml-project", path.join(tmp, "existing-entities"));
     initializeGit(existing);
     applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(existing, REPO_ROOT));
     const existingPlan = buildUpgradePlan({ installRoot: appHome, home, project: existing, channel: "development", dryRun: true, only: ["artifacts"] });
@@ -306,7 +305,7 @@ describe("buildUpgradePlan", () => {
     );
     fs.cpSync(path.join(REPO_ROOT, "references"), path.join(bundle, "references"), { recursive: true });
 
-    const project = path.join(tmp, "cursor-project");
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "cursor-project"));
     fs.mkdirSync(path.join(project, ".cursor"), { recursive: true });
     fs.copyFileSync(
       path.join(FIXTURES, "v2-runtime-cursor-full/project/.cursor/hooks.json"),

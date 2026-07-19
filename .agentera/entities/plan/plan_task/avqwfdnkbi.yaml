@@ -5,7 +5,7 @@ record:
   depends_on:
     - udueghnaov
     - qrdnhmioyq
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN recognized v2 state under any supported v3 installation WHEN full upgrade runs THEN entity migration is selected independently of installation history.
     - GIVEN intended migration ends with legacy authority WHEN results are rendered THEN exit is nonzero and unrelated work cannot mask failure.
@@ -15,12 +15,12 @@ record:
   plan: psmmjdmrwd
   evidence: "Retry after avqwfdnkbi-audit-1: one-way verification now reuses enforceCompletedEntityCutover, and the duplicate detectAuthoritativeStateModeBinding was removed. Bare marker-absent state fails both verification checks. Existing selector, masked-success, interrupted-resume, and active pending-runtime cases pass. Focused tests 52/52; startup tests 43/43; full suite 2589/2589; typecheck, build, state validation, and compact passed. Status remains in_progress for re-audit."
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Criterion 3: one-way verification calls cmdPrime directly and uses a narrower detectAuthoritativeStateModeBinding approximation, so an empty marker-absent project passes verification while public prime fails. Reuse the existing public cutover gate and remove duplicate authority semantics."
     provenance:
-      attempt_id: avqwfdnkbi-audit-1
-      source: independent review ses_08963fa4effean122a0WeHHLm0
-      recorded_at: 2026-07-18 21:11
+      attempt_id: avqwfdnkbi-audit-2
+      source: independent review ses_08963fa4effean122a0WeHHLm0 after commit f3ac17f3
+      recorded_at: 2026-07-18 21:23
       writer_command: agentera state plan record-evaluation

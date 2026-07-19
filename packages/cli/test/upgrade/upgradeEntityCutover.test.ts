@@ -3,14 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { detectStateMode } from "../../src/state/stateMode.js";
-import { FORWARD_MANIFEST, MIGRATION_STAGING } from "../../src/state/entityCutover.js";
+import { FORWARD_MANIFEST } from "../../src/state/entityCutover.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -131,13 +130,8 @@ describe("one-way Git entity cutover", () => {
     expect(applied.out).not.toMatch(/manifest|migration|receipt|snapshot|rollback|operation[_ -]?id/i);
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
     for (const [relative, bytes] of sourceBefore) expect(fs.readFileSync(path.join(root, relative))).toEqual(bytes);
-    const manifest = YAML.parse(fs.readFileSync(path.join(root, FORWARD_MANIFEST), "utf8"));
-    expect(Object.keys(manifest).sort()).toEqual(["marker", "phase", "schemaVersion", "source", "targets"]);
-    expect(manifest.phase).toBe("entities_published");
-    expect(manifest.source).toEqual({ head: git(root, "rev-parse", "HEAD"), source_fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/), preview_digest: expect.stringMatching(/^[a-f0-9]{64}$/) });
-    expect(manifest.targets.length).toBeGreaterThan(0);
-    expect(files(path.join(root, ".agentera/migrations/entities"))).toEqual(["forward.yaml"]);
-    expect(fs.existsSync(path.join(root, MIGRATION_STAGING))).toBe(false);
+    expect(fs.existsSync(path.join(root, FORWARD_MANIFEST))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/migrations/entities"))).toBe(false);
     expect(files(root).some((file) => /(?:snapshot|journal|receipts)/.test(file))).toBe(false);
     expect(capture(root, ["state", "plan", "list", "--format", "json"])).toMatchObject({ code: 0 });
   }, 30_000);
@@ -188,53 +182,63 @@ describe("one-way Git entity cutover", () => {
     }
   }, 30_000);
 
-  it("discards only known pre-publication staging and recomputes it from HEAD", () => {
+  it("accepts exact partial targets and continues at the first missing path", () => {
     const root = project();
     initializeGit(root);
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-stage-"));
     roots.push(home);
     const appHome = managedV2(home);
-    process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE = "staging_built";
+    process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE = "entity_published";
 
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
-    expect(fs.existsSync(path.join(root, MIGRATION_STAGING))).toBe(true);
     expect(fs.existsSync(path.join(root, FORWARD_MANIFEST))).toBe(false);
-    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
-    const staged = files(path.join(root, MIGRATION_STAGING)).find((file) => file.endsWith(".yaml"))!;
-    fs.writeFileSync(path.join(root, MIGRATION_STAGING, staged), "tampered staging\n");
+    const partial = files(path.join(root, ".agentera/entities"));
+    expect(partial).toHaveLength(1);
+    const exact = path.join(root, ".agentera/entities", partial[0]);
+    const inode = fs.statSync(exact, { bigint: true }).ino;
     delete process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE;
 
     const initial = applyUpgrade(root, appHome, home);
     expect(initial.code, initial.err).toBe(0);
+    expect(fs.statSync(exact, { bigint: true }).ino).toBe(inode);
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
-    expect(fs.existsSync(path.join(root, MIGRATION_STAGING))).toBe(false);
   }, 30_000);
 
-  it("validates published canonical bytes and completes forward without replacing them", () => {
+  it("stops at a divergent target and names its path without activating", () => {
     const root = project();
     initializeGit(root);
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-forward-"));
     roots.push(home);
     const appHome = managedV2(home);
-    process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE = "entities_published";
+    const sourceBefore = fs.readFileSync(path.join(root, ".agentera/progress.yaml"));
+    process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE = "entity_published";
 
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
-    const canonical = files(path.join(root, ".agentera/entities"));
-    expect(canonical.length).toBeGreaterThan(0);
-    const identities = new Map(canonical.map((relative) => {
-      const absolute = path.join(root, ".agentera/entities", relative);
-      return [relative, { ino: fs.statSync(absolute, { bigint: true }).ino, bytes: fs.readFileSync(absolute) }];
-    }));
+    const relative = files(path.join(root, ".agentera/entities"))[0];
+    fs.writeFileSync(path.join(root, ".agentera/entities", relative), "divergent target\n");
     delete process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE;
 
-    expect(applyUpgrade(root, appHome, home).code).toBe(0);
-    for (const [relative, expected] of identities) {
-      const absolute = path.join(root, ".agentera/entities", relative);
-      expect(fs.statSync(absolute, { bigint: true }).ino).toBe(expected.ino);
-      expect(fs.readFileSync(absolute)).toEqual(expected.bytes);
-    }
-    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    const failed = applyUpgrade(root, appHome, home);
+    expect(failed.code).not.toBe(0);
+    expect(failed.err).toContain(`.agentera/entities/${relative}`);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    expect(fs.readFileSync(path.join(root, ".agentera/progress.yaml"))).toEqual(sourceBefore);
+  }, 30_000);
+
+  it("leaves the marker absent when its last publication step fails", () => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-marker-fault-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE = "before_marker";
+
+    const failed = applyUpgrade(root, appHome, home);
+
+    expect(failed.code).not.toBe(0);
+    expect(files(path.join(root, ".agentera/entities")).length).toBeGreaterThan(0);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
   }, 30_000);
 
   it("keeps recovery forward when cleanup fails after entity authority activates", () => {
@@ -253,6 +257,27 @@ describe("one-way Git entity cutover", () => {
     expect(failed.err).not.toMatch(/Recover the tracked v2 checkout with Git|no v3 authority was activated/i);
   }, 30_000);
 
+  it("activates valid entities before handing off blocked runtime work", () => {
+    const root = project();
+    const hooks = path.join(root, ".codex/hooks/codex-hooks.json");
+    fs.mkdirSync(path.dirname(hooks), { recursive: true });
+    fs.writeFileSync(path.join(root, ".codex/config.toml"), '[plugins."agentera@agentera"]\nenabled = true\n');
+    fs.writeFileSync(hooks, '{"user":"hooks/validate_artifact.py"}\n');
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-runtime-blocked-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const resourceBefore = fs.readFileSync(hooks);
+
+    const failed = applyUpgrade(root, appHome, home);
+
+    expect(failed.code).toBe(1);
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    expect(fs.readFileSync(hooks)).toEqual(resourceBefore);
+    expect(failed.err).toContain("action-required after entity activation");
+    expect(failed.err).toContain(".codex/hooks/codex-hooks.json");
+  }, 30_000);
+
   it("keeps entity authority active across normal writes and repeated upgrade", () => {
     const root = project();
     initializeGit(root);
@@ -261,7 +286,6 @@ describe("one-way Git entity cutover", () => {
     const appHome = managedV2(home);
     expect(applyUpgrade(root, appHome, home).code).toBe(0);
     const markerBefore = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
-    const manifestBefore = fs.readFileSync(path.join(root, FORWARD_MANIFEST));
 
     expect(capture(root, ["state", "progress", "append", "--type", "fix", "--phase", "build", "--what", "post-cutover write", "--intent", "prove entity authority", "--format", "json"]).code).toBe(0);
     expect(capture(root, ["state", "progress", "list", "--format", "json"]).code).toBe(0);
@@ -276,7 +300,7 @@ describe("one-way Git entity cutover", () => {
       status: "success",
     });
     expect(fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"))).toEqual(markerBefore);
-    expect(fs.readFileSync(path.join(root, FORWARD_MANIFEST))).toEqual(manifestBefore);
+    expect(fs.existsSync(path.join(root, FORWARD_MANIFEST))).toBe(false);
     expect(capture(root, ["state", "progress", "list", "--format", "json"]).out).toContain("post-cutover write");
   }, 30_000);
 

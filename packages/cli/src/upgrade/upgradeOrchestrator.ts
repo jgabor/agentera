@@ -469,11 +469,11 @@ function buildUpgradePlanUnlocked(
     ...(migrationPreview && phaseFilter.has("cleanup") ? [migrationPhaseToOrchestrator(migrationPreview.cleanup)] : []),
     ...(lifecycle ? [lifecyclePhase(lifecycle)] : []),
   ];
-  const preflight = aggregateSummary(plannedPhases.filter((phase) => phase.name !== "lifecycle"));
-  const preflightBlocked = preflight.blocked > 0 || preflight.failed > 0;
+  const entityPreflight = aggregateSummary(plannedPhases.filter((phase) => ["detect", "artifacts", "entities"].includes(phase.name)));
+  const entityPreflightBlocked = entityPreflight.blocked > 0 || entityPreflight.failed > 0;
 
   let preparedEntityMigration: PreparedEntityCutover | null = null;
-  if (args.yes && entitySelected && entityPhase?.status === "pending" && !preflightBlocked) {
+  if (args.yes && entitySelected && entityPhase?.status === "pending" && !entityPreflightBlocked) {
     preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot, activeUpgradeLockPaths);
   }
   if (preparedEntityMigration) {
@@ -485,7 +485,7 @@ function buildUpgradePlanUnlocked(
     }]);
   }
 
-  if (args.yes && migrationPreview && !preflightBlocked) {
+  if (args.yes && migrationPreview && !entityPreflightBlocked) {
     const applyPhases = (args.only ?? MIGRATION_ONLY_PHASES)
       .filter((phase) => !(args.runtime && phase === "runtime"));
     migrationPreview = applyMigrationPhases(
@@ -508,7 +508,7 @@ function buildUpgradePlanUnlocked(
   }
 
   if (!migrationPreview && entityPhase) phases.push(entityPhase);
-  if (lifecycleArgs && args.yes && !preflightBlocked) {
+  if (lifecycleArgs && args.yes && !entityPreflightBlocked) {
     lifecycle = runLifecycleUpgrade({ ...lifecycleArgs, apply: true });
   }
   if (lifecycle) {
@@ -566,8 +566,12 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
     return plan.upgradeOutcome.message ?? "upgrade blocked";
   }
   const appPhases = plan.phases.filter((phase) => phase.name !== "lifecycle");
-  if (appPhases.some((phase) => phase.summary.blocked > 0 || phase.summary.failed > 0)) {
-    return appPhases.flatMap((phase) => phase.items).find((item) => item.status === "blocked" || item.status === "failed")?.message
+  const entityImportPending = appPhases.some((phase) => phase.name === "entities" && phase.items.some((item) => item.action === "entity-cutover" && item.status === "pending"));
+  const applyBlockingPhases = entityImportPending
+    ? appPhases.filter((phase) => ["detect", "artifacts", "entities"].includes(phase.name))
+    : appPhases;
+  if (applyBlockingPhases.some((phase) => phase.summary.blocked > 0 || phase.summary.failed > 0)) {
+    return applyBlockingPhases.flatMap((phase) => phase.items).find((item) => item.status === "blocked" || item.status === "failed")?.message
       ?? "upgrade preflight is blocked; no changes were applied";
   }
   if (

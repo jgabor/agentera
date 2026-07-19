@@ -4,7 +4,7 @@ record:
   name: Reduce cutover to one best-effort forward importer
   depends_on:
     - avqwfdnkbi
-  status: pending
+  status: complete
   acceptance:
     - GIVEN recognized v2 input WHEN converted THEN all expected entities are written or accepted as exact matches before activation.
     - GIVEN conversion, graph, or target failure WHEN apply stops THEN source remains unchanged, the marker remains absent, and handoff names the first unresolved path.
