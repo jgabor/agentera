@@ -49,11 +49,9 @@ const CONSUMER_GROUPS: Record<string, readonly string[]> = {
 };
 
 const APPROVED_EXECUTABLES = new Set(["npx"]);
-const APPROVED_ACTIONS = new Set(["remove-legacy-skills", "install-agentera-skill"]);
-const APPROVED_RUNTIMES = new Set(["all", "opencode", "codex", "cursor", "copilot"]);
-const APPROVED_RUNTIME_AGENTS = new Set(["opencode"]);
+const APPROVED_ACTIONS = new Set(["remove-legacy-skills"]);
+const APPROVED_RUNTIMES = new Set(["all"]);
 const CLEANUP_ACTIONS = new Set(["remove-legacy-skills"]);
-const RUNTIME_INSTALL_ACTIONS = new Set(["install-agentera-skill"]);
 const FORBIDDEN_INSTALL_ROOT_FIELDS = new Set([
   "install_root",
   "install_root_classification",
@@ -568,7 +566,6 @@ function validatePackageCommands(prefix: string, value: JsonObject): string[] {
     yes_required_to_execute: true,
     preserve_existing_write_gates: true,
     cleanup_phase: "cleanup",
-    runtime_install_phase: "runtime-install",
   };
   if (!isMapping(safety)) {
     errors.push(`${prefix}.safety must be an object`);
@@ -624,25 +621,11 @@ function validateCommandSpec(prefix: string, command: JsonObject): string[] {
   if (!APPROVED_EXECUTABLES.has(argv[0])) {
     errors.push(`${prefix}.argv uses unapproved executable ${pyRepr(argv[0])}`);
   }
-  if (argv.length < 3 || argv[1] !== "skills" || !["remove", "add"].includes(argv[2])) {
+  if (argv.length < 3 || argv[1] !== "skills" || argv[2] !== "remove") {
     errors.push(`${prefix}.argv must use approved skills action`);
   }
   if (CLEANUP_ACTIONS.has(action) && (runtime !== "all" || phase !== "cleanup" || argv[2] !== "remove")) {
-    errors.push(`${prefix}: cleanup commands must stay separate from runtime installs`);
-  }
-  if (RUNTIME_INSTALL_ACTIONS.has(action)) {
-    if (runtime === "all" || phase !== "runtime-install" || argv[2] !== "add") {
-      errors.push(`${prefix}: runtime install commands must stay out of cleanup`);
-    }
-    if (!argv.includes("-a")) {
-      errors.push(`${prefix}: runtime install commands must declare runtime agent`);
-    } else {
-      const agentIndex = argv.indexOf("-a") + 1;
-      const agent = agentIndex < argv.length ? argv[agentIndex] : null;
-      if (agent === null || !APPROVED_RUNTIME_AGENTS.has(agent)) {
-        errors.push(`${prefix}: runtime install agent ${pyRepr(agent)} is not approved`);
-      }
-    }
+    errors.push(`${prefix}: cleanup commands must use the all-runtime cleanup phase`);
   }
   if (typeof command.skipped_without_update_packages_message !== "string") {
     errors.push(`${prefix}.skipped_without_update_packages_message must be a string`);

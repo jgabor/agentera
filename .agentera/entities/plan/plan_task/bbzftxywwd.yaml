@@ -1,0 +1,17 @@
+id: bbzftxywwd
+artifact: plan
+record:
+  name: Run final gates and synchronize project state
+  depends_on:
+    - bvyxcfnuwl
+    - jgpqvriohj
+    - bdrncihpei
+    - yomfsfnkhz
+  status: pending
+  acceptance:
+    - GIVEN final verification WHEN run THEN source, package, typecheck, validation, and compaction gates pass under their canonical owners.
+    - GIVEN completion WHEN artifacts are inspected THEN documentation, changelog, TODO, progress, health, and plan state describe the same behavior.
+    - GIVEN predecessor retrieval WHEN checked THEN psmmjdmrwd, jyritjjnyd, and xqctyflnqu remain archived with their blocked 2/2 tasks and evaluations exact.
+    - GIVEN closeout WHEN repository state is checked THEN versions remain unchanged and no publication, tag, push, or remote mutation occurred.
+  test_proportionality: One canonical gate run, exact predecessor retrieval and hashes, artifact reconciliation, and local repository check.
+  plan: gdxhejjjwn

@@ -1,0 +1,13 @@
+id: bnshcahqqq
+artifact: progress
+record:
+  timestamp: 2026-07-19 18:18
+  type: fix
+  phase: build
+  what: Corrected audit bvyxcfnuwl-audit-1 by removing runtime-specific skills-installer contracts from active web, shim, registry, and adapter guidance, and by making setup doctor validate the existing Agentera skill identity marker before passing the canonical path.
+  context:
+    intent: Retry task bvyxcfnuwl while preserving cumulative changes and closing only the audited lifecycle selector and repair-contract gaps.
+    constraints: No plan/task/evaluation mutation, package parity matrix, packed parity work, routing cleanup, compatibility system, TODO, version/release, commit, push, or remote mutation.
+  inspiration: Audit bvyxcfnuwl-audit-1, task bvyxcfnuwl, and firm Decision llavvlpcmb.
+  verified: "Focused CLI coverage passed 16 files/243 tests across registry, doctor/setup, runtime adapters, migration/lifecycle, help, schema, and active protocol; shim passed 25/25 node tests; direct retired-action fail-closed coverage passed 4/4. Direct doctor probe placed an unrelated name: unrelated SKILL.md at ~/.agents/skills/agentera and returned warn with explicit --runtime opencode remediation while preserving bytes and inode. Unsupported --update-packages reproduction exited 2, wrote no stdout, and reported the unsupported flag once. Exact rg scan for 'npx skills add jgabor/agentera|install-agentera-skill|portable-skill install' returned 0 matches across README.md, UPGRADE.md, packages/web, packages/cli/shim, references, and packages/cli/src, excluding CHANGELOG.md, .agentera/**, and packages/cli/test/**. CLI typecheck/build, web check/build, and full source suite (212 files/2538 tests) passed; state validation passed 1544 entities/0 issues before this append; capability-contract passed 2/2; compact and git diff --check passed."
+  next: Orchestrator may re-evaluate bvyxcfnuwl and commit cumulative code/tests/state only after PASS.

@@ -14,15 +14,16 @@ Status: production reference (formerly design document).
 | Package-loadable plugin metadata | Shipped | `.opencode/package.json` `main`/`exports` |
 | Bare `hej` router | Shipped | `.opencode/plugins/agentera.js` `chat.message` |
 | Eval runner support | Shipped | `scripts/eval_skills.py --runtime opencode` |
-| Skill install | Documented below | `npx skills add jgabor/agentera -g -a opencode --skill agentera -y` |
+| Shared skill | Explicit lifecycle | `~/.agents/skills/agentera` |
 | Profile path | Documented below | `~/.config/opencode/profile/PROFILE.md` |
 
 Routes exact bare text /agentera through chat.message to the bundled Agentera dashboard path. The public docs page omits this hook, but `packages/plugin/src/index.ts` defines `"chat.message"` on the exported `Hooks` interface.
 
-The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production local-file location. Install it with:
+The plugin was promoted from `references/adapters/opencode-plugin.js` to `.opencode/plugins/agentera.js` and is now the production local-file location. Preview and apply its ownership-gated lifecycle explicitly:
 
 ```bash
-cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
+npx -y agentera@next upgrade --runtime opencode --dry-run
+npx -y agentera@next upgrade --runtime opencode --yes
 ```
 
 `.opencode/package.json` exposes the same file through `main` and `exports` so
@@ -51,10 +52,12 @@ OpenCode skill search paths:
 | `~/.claude/skills/<name>/SKILL.md` | Global (Claude Code compatibility) |
 | `~/.agents/skills/<name>/SKILL.md` | Global (agent-compatible) |
 
-**Adapter approach**: Install agentera's active `skills/agentera/` directory into one of the recognized skill directories. The recommended approach:
-
-- Global install: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y`
-- Project install: symlink or copy `skills/agentera/` into `.opencode/skills/agentera/` or `.agents/skills/agentera/`
+**Adapter approach**: Use the one canonical shared skill at
+`~/.agents/skills/agentera`. Preview it with
+`npx -y agentera@next upgrade --runtime opencode --dry-run`; apply approved
+Agentera-owned work with
+`npx -y agentera@next upgrade --runtime opencode --yes`. The OpenCode plugin
+does not install or repair skill links. Existing unowned targets are preserved.
 
 Each Agentera skill entry file contains YAML frontmatter with `name` and `description`, which matches OpenCode's frontmatter requirements exactly. The OpenCode plugin adds one prompt transformation: when the complete user message is exactly bare text `/agentera`, `chat.message` rewrites it to load the bundled `agentera` skill and route through the `agentera prime` dashboard path. The match is exact except for OpenCode's CLI-added single trailing newline transport artifact, and does not apply to `/agentera plan`, `/agentera status`, attachments, or other message parts.
 
@@ -443,33 +446,18 @@ Summary of which corpus families the OpenCode adapter can produce:
 
 ## Installation
 
-Install the OpenCode-targeted Agentera suite with the skills installer:
+Agentera uses one shared skill at `~/.agents/skills/agentera` rather than an
+OpenCode-specific skill installation. Preview all OpenCode lifecycle findings,
+including the shared skill and optional plugin, before applying approved
+Agentera-owned work:
 
 ```bash
-npx skills add jgabor/agentera -g -a opencode --skill agentera -y
+npx -y agentera@next upgrade --runtime opencode --dry-run
+npx -y agentera@next upgrade --runtime opencode --yes
 ```
 
-Do not add `--skill '*'` for OpenCode. The `-a opencode` target selects the supported OpenCode skill surface without selecting every agent. The OpenCode plugin is a separate hook and command adapter; it does not install skills by itself.
-
-### Manual global fallback
-
-OpenCode discovers skills at `skills/*/SKILL.md` one level under its search directories. Because Agentera's active skill is nested at `skills/agentera/SKILL.md` within the repo, cloning the whole repo into a search directory would place it two levels deep and OpenCode would not find it. If the installer is unavailable, link the active skill directory directly.
-
-```bash
-mkdir -p ~/.config/opencode/skills
-ln -s ~/git/agentera/skills/agentera ~/.config/opencode/skills/agentera
-```
-
-OpenCode discovers the active skill from `~/.config/opencode/skills/agentera/SKILL.md`.
-
-### Project install
-
-```bash
-mkdir -p .opencode/skills
-ln -s /path/to/agentera/skills/agentera .opencode/skills/agentera
-```
-
-Or use `.agents/skills/` for the same effect (agent-compatible search path).
+The plugin does not install or repair skills. Lifecycle apply preserves any
+unowned or ambiguous target and reports the collision for manual review.
 
 ### Configuration
 
@@ -489,19 +477,26 @@ Optional: configure skill permissions if you want to gate certain skills:
 
 ### Hook plugin (optional)
 
-For artifact validation and session continuity, install the agentera hook plugin:
+For artifact validation and session continuity, preview and apply the Agentera
+hook plugin through explicit lifecycle selection:
 
 ```bash
-cp .opencode/plugins/agentera.js ~/.config/opencode/plugins/
+npx -y agentera@next upgrade --runtime opencode --dry-run
+npx -y agentera@next upgrade --runtime opencode --yes
 ```
 
 ### Install health and managed surfaces
 
-Installer update status and Agentera app validation are separate checks. `npx skills update -g -y` can report a current package while the managed app is still unhealthy, for example when a support file is missing or a skill path is broken. Agentera validation checks the app home and managed app for shared files and references; installer update status only reflects package-manager state.
+Agentera app validation and runtime lifecycle diagnosis are separate checks. App
+validation checks the app home and managed app for shared files and references;
+explicit lifecycle preview diagnoses the shared skill and OpenCode surfaces.
 
-OpenCode repair is ownership-gated. Managed slash commands include `agentera_managed: true` frontmatter, and the command directory stores `.agentera-version`. Repair may overwrite missing or stale managed command files. Same-name command files without that marker are user-owned collisions and must be skipped, not overwritten. Managed skill-path repair follows the same rule: repair Agentera-created OpenCode skill links or directories, preserve user-owned paths, and report skipped collisions.
+OpenCode repair is ownership-gated. Managed slash commands include `agentera_managed: true` frontmatter, and the command directory stores `.agentera-version`. Repair may overwrite missing or stale managed command files. Same-name command files without that marker are user-owned collisions and must be skipped, not overwritten. The plugin does not install or repair skills. The canonical shared skill at `~/.agents/skills/agentera` is managed only by an explicit `npx -y agentera@next upgrade --runtime opencode` lifecycle preview and approved apply; user-owned collisions are preserved.
 
-`scripts/setup_doctor.py` is diagnostic-only for OpenCode. It reports the plugin file, `AGENTERA_HOME` or documented default app homes, and invalid managed app roots, but it does not mutate OpenCode config or repair OpenCode skills.
+Setup doctor is diagnostic-only for OpenCode. It reports the plugin file,
+`AGENTERA_HOME` or documented default app homes, invalid managed app roots, and
+the canonical shared skill. It does not mutate OpenCode config or repair skills;
+its recovery guidance uses explicit lifecycle preview and apply commands.
 
 ---
 

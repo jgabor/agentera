@@ -13,9 +13,9 @@ not publish or retag as part of an upgrade run.
 npx -y agentera@next upgrade --dry-run --channel development
 ```
 
-On the v3 development channel, a dry-run without `--runtime` also observes all
-active runtimes so blocked app or channel phases do not hide lifecycle findings.
-The preview remains read-only. Runtime apply is explicit:
+On the v3 development channel, a dry-run without `--runtime` remains app-only.
+Runtime inspection and apply are explicit; use `--runtime all` to inspect every
+active runtime:
 
 ```bash
 npx -y agentera@next upgrade --runtime all --dry-run

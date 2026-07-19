@@ -1,34 +1,14 @@
-# Upgrade repair wording — v3 cursor agent skip
+# Upgrade repair wording
 
-When `agentera upgrade --runtime cursor` (or a full runtime phase) runs against a
-**project** directory, managed `.cursor/agents/*.md` descriptors are normally
-copied from the active app-home bundle. On a **v3 capability-surface** project
-that signal is suppressed so D65 `prime --context` bodies are not regressed to
-the retired `instructions.md` read path.
+## Runtime migration boundary
 
-## v3 surface probe
+Recognized v2-to-v3 project migration rewires existing Agentera v2 hook
+configurations to the npm CLI and retires only proven Agentera-owned legacy hook
+files. It does not copy or refresh plugins, agents, commands, or skill links.
 
-Treat the project as v3 when **all twelve** instruction modules exist:
-
-`packages/cli/src/capabilities/<name>/instructions.ts`
-
-for every routed capability (`status`, `vision`, `discuss`, `research`,
-`plan`, `build`, `optimize`, `audit`, `document`, `profile`,
-`design`, `orchestrate`).
-
-If any module is missing, preserve v2 upgrade behavior (copy/refresh managed
-agents from the bundle).
-
-## Orchestrator behavior
-
-| Orchestrator | Branch | Behavior |
-| --- | --- | --- |
-| TypeScript (`packages/cli/src/upgrade/runtimeMigration.ts`) | `feat/v3` | On v3 probe match, emit `skipped` `copy-agent` items for in-tree `.cursor/agents/` instead of copying from the bundle. |
-| Python (`scripts/agentera_upgrade.py`) | `main` (stable) | Same probe before the cursor agent copy loop; do not schedule `copy-agent` targets under the project when the probe matches. Backport per the both-branch pattern. |
-
-## User-visible skip message
-
-`v3 capability instruction modules present; in-tree .cursor/agents/ uses prime --context and is not overwritten`
+Runtime lifecycle installation and remediation are separate. Apply requires an
+explicit `--runtime` selector and `--yes`; declared ownership, collision
+remediation, and convergent retry behavior remain governed by `UPGRADE.md`.
 
 ## v2 install track successor surfacing (#32)
 

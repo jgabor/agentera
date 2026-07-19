@@ -1,0 +1,15 @@
+id: wzphojdxqq
+artifact: plan
+record:
+  name: Establish single-owner source and package verification lanes
+  depends_on:
+    - zscnoeofqx
+    - bywzblblad
+  status: pending
+  acceptance:
+    - GIVEN source verification WHEN run THEN it never constructs, installs, or invokes extracted package output.
+    - GIVEN package verification WHEN run THEN it owns construction and distribution-boundary observations through one canonical path without native matrices.
+    - GIVEN detailed behavior and failure matrices WHEN inventoried THEN each has one owner and the complementary lane keeps only minimum conjunctions.
+    - GIVEN a lane failure WHEN rendered THEN its boundary is identified without implicitly invoking the other lane.
+  test_proportionality: One independently failing source lane, one package lane, and one detailed-matrix ownership inventory.
+  plan: hqwkqcfrii

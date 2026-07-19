@@ -290,73 +290,33 @@ function entityReadinessPhase(
 
 function previewLifecycleSelector(
   args: UpgradeOrchestratorArgs,
-  channel: ResolvedUpdateChannel,
 ): LifecycleRuntimeSelector | null {
-  if (args.runtime) {
-    return args.runtime;
-  }
-  return args.dryRun && !args.yes && channel.distributionMajor >= 3 ? "all" : null;
+  return args.runtime ?? null;
 }
 
 function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhase {
-  const items: MigrationPhaseItem[] = result.operations.map((operation) => {
-    let status: MigrationStatus;
-    if (result.mode === "preview") {
-      if (operation.action === "noop") status = "noop";
-      else if (["blocked_unowned", "action_required"].includes(operation.action)) status = "blocked";
-      else status = "pending";
-    } else {
-      switch (operation.outcome) {
-        case "applied": status = "applied"; break;
-        case "noop": status = "noop"; break;
-        case "failed": status = "failed"; break;
-        default: status = "blocked"; break;
-      }
-    }
-    return {
-      status,
-      action: `lifecycle:${operation.id}`,
-      runtime: operation.runtime,
-      target: operation.destination,
-      message: operation.blockedReason ?? operation.remediation.join(" "),
-    };
-  });
-  for (const action of result.userActions) {
-    items.push({
-      status: "blocked",
-      action: `action-required:${action.id}`,
-      runtime: action.runtime,
-      message: action.command === null
-        ? action.instruction
-        : `${Array.isArray(action.command) ? action.command.join(" ") : action.command}: ${action.instruction}`,
-    });
-  }
-  const retired = result.retiredCleanup;
-  if (retired) {
-    const retiredOperations = "plan" in retired ? retired.plan.operations : retired.operations;
-    for (const operation of retiredOperations) {
-      const outcome = "status" in operation ? operation.status : null;
-      let status: MigrationStatus;
-      if (result.mode === "preview") {
-        status = operation.action === "noop" ? "noop" : operation.action === "blocked_unowned" ? "blocked" : "pending";
-      } else if (outcome === "applied") status = "applied";
-      else if (outcome === "noop") status = "noop";
-      else if (outcome === "failed") status = "failed";
-      else status = "blocked";
-      items.push({
-        status,
-        action: `legacy-cleanup:${operation.id}`,
-        runtime: "retired:claude",
-        target: operation.destination,
-        message: operation.reason,
-      });
-    }
-  }
-  return summarizeOrchestratorPhase(
-    "lifecycle",
-    items,
-    "Agentera-owned runtime lifecycle operations; native actions remain user-owned",
-  );
+  const retired = result.retiredSummary;
+  const summary: MigrationPhaseSummary = {
+    pending: result.summary.pending + (retired?.pending ?? 0),
+    applied: result.summary.applied + (retired?.applied ?? 0),
+    noop: result.summary.noop + (retired?.noop ?? 0),
+    failed: result.summary.failed + (retired?.failed ?? 0),
+    blocked: result.summary.blocked_unowned
+      + result.summary.skipped_dependency
+      + result.summary.action_required
+      + result.summary.nativeActionRequired
+      + result.summary.manualActionRequired
+      + (retired?.blocked_unowned ?? 0)
+      + (retired?.skipped_dependency ?? 0)
+      + (retired?.action_required ?? 0),
+  };
+  return {
+    name: "lifecycle",
+    status: workflowStatus(summary),
+    summary,
+    items: [],
+    message: "summary only; resource outcomes are reported once in lifecycle.operations",
+  };
 }
 
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
@@ -384,7 +344,21 @@ function buildUpgradePlanUnlocked(
   activeUpgradeLockPaths: readonly string[],
 ): UpgradePlanV2 {
   const sourceRoot = resolveSourceRootStrict();
-  const env: Record<string, string | undefined> = { ...process.env, HOME: home };
+  const inheritedXdgConfigHome = process.env.XDG_CONFIG_HOME
+    ? resolvePath(process.env.XDG_CONFIG_HOME)
+    : null;
+  const xdgRelative = inheritedXdgConfigHome ? path.relative(home, inheritedXdgConfigHome) : null;
+  const xdgConfigHome = inheritedXdgConfigHome
+    && xdgRelative !== null
+    && !xdgRelative.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(xdgRelative)
+    ? inheritedXdgConfigHome
+    : path.join(home, ".config");
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    HOME: home,
+    XDG_CONFIG_HOME: xdgConfigHome,
+  };
   const [installRoot] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
   const channel = resolveInvokedUpdateChannel({
     channel: args.channel ?? null,
@@ -400,7 +374,7 @@ function buildUpgradePlanUnlocked(
     channel,
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
-  const lifecycleSelector = previewLifecycleSelector(args, channel);
+  const lifecycleSelector = previewLifecycleSelector(args);
   const phaseFilter = selectedPhases(args.only);
   if (args.runtime) phaseFilter.delete("runtime");
   const migrationCtx = {

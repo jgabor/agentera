@@ -3,24 +3,16 @@ const runtimes = [
   {
     id: 'opencode',
     label: 'OpenCode',
-    commands: `npx skills add jgabor/agentera -g -a opencode --skill agentera -y
-mkdir -p ~/.config/opencode/plugins
-curl -fsSL https://raw.githubusercontent.com/jgabor/agentera/main/.opencode/plugins/agentera.js \\
-  -o ~/.config/opencode/plugins/agentera.js`,
-    note: 'OpenCode also routes a bare message `hej` to the same dashboard.',
+    commands: `npx -y agentera@next upgrade --runtime opencode --dry-run
+npx -y agentera@next upgrade --runtime opencode --yes`,
+    note: 'Uses the shared skill at ~/.agents/skills/agentera. OpenCode also routes bare /agentera to the dashboard.',
   },
   {
     id: 'cursor',
     label: 'Cursor',
-    commands: `# Option A — local plugin (no Marketplace listing)
-git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
-# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
-# Restart Cursor or Developer: Reload Window
-
-# Option B — portable skill + project upgrade
-npx skills add jgabor/agentera -g -a cursor --skill agentera -y
-uvx --from git+https://github.com/jgabor/agentera agentera upgrade --project "$PWD" --runtime cursor --yes`,
-    note: 'Plugin loads skills, agents, and hooks globally. Upgrade copies `.cursor/` surfaces into a project. Marketplace install is not available yet. Cloud agents are unsupported in v1.',
+    commands: `npx -y agentera@next upgrade --runtime cursor --dry-run
+npx -y agentera@next upgrade --runtime cursor --yes`,
+    note: 'Uses the shared skill and ownership-gated Cursor lifecycle resources. Cursor Agent CLI is required; IDE integration is conditional.',
   },
   {
     id: 'copilot',

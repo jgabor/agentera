@@ -278,6 +278,55 @@ describe("one-way Git entity cutover", () => {
     expect(failed.err).toContain(".codex/hooks/codex-hooks.json");
   }, 30_000);
 
+  it("rewires required v2 hooks without creating optional lifecycle resources or replacing a user skill", () => {
+    const root = project();
+    const hooks = path.join(root, ".codex/hooks/codex-hooks.json");
+    fs.mkdirSync(path.dirname(hooks), { recursive: true });
+    fs.writeFileSync(hooks, '{"command":"uv run hooks/validate_artifact.py"}\n');
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-selector-free-"));
+    roots.push(home);
+    const skill = path.join(home, ".agents/skills/agentera");
+    fs.mkdirSync(skill, { recursive: true });
+    fs.writeFileSync(path.join(skill, "keep.txt"), "user-owned\n");
+    const skillBefore = treeBytes(home, ".agents/skills/agentera");
+    const appHome = managedV2(home);
+
+    const applied = applyUpgrade(root, appHome, home);
+
+    expect(applied.code, applied.err).toBe(0);
+    expect(fs.readFileSync(hooks, "utf8")).toContain("npx -y agentera@next hook validate-artifact");
+    expect(treeBytes(home, ".agents/skills/agentera")).toEqual(skillBefore);
+    expect(fs.existsSync(path.join(root, ".cursor-plugin/plugin.json"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".cursor/agents/agentera.md"))).toBe(false);
+  }, 30_000);
+
+  it("names the canonical resource and required action after an explicit lifecycle collision", () => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-lifecycle-collision-"));
+    roots.push(home);
+    const skill = path.join(home, ".agents/skills/agentera");
+    fs.mkdirSync(skill, { recursive: true });
+    fs.writeFileSync(path.join(skill, "keep.txt"), "user-owned\n");
+    const skillBefore = treeBytes(home, ".agents/skills/agentera");
+    const appHome = managedV2(home);
+    let out = "";
+    let err = "";
+
+    const code = cmdUpgrade(
+      { installRoot: appHome, home, project: root, channel: "development", runtime: "all", yes: true },
+      { out: (value) => { out += value; }, err: (value) => { err += value; } },
+    );
+
+    expect(code, out).toBe(1);
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    expect(treeBytes(home, ".agents/skills/agentera")).toEqual(skillBefore);
+    expect(err).toContain("action-required after entity activation");
+    expect(err).toContain("canonical_skill");
+    expect(err).toContain("blocked_unowned");
+  }, 30_000);
+
   it("keeps entity authority active across normal writes and repeated upgrade", () => {
     const root = project();
     initializeGit(root);

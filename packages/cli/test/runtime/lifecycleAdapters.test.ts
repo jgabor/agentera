@@ -415,6 +415,51 @@ describe("repair ownership and publication boundaries", () => {
     expect(result.ownershipLedger.records.some((record) => record.resourceId === "opencode.plugin")).toBe(false);
   });
 
+  it("keeps metadata identity separate from path ownership and mutation authority", () => {
+    const fx = fixture();
+    const target = path.join(fx.home, ".agents", "skills", "agentera");
+    fs.mkdirSync(target);
+    const skillFile = path.join(target, "SKILL.md");
+    fs.writeFileSync(skillFile, "---\nname: agentera\ndescription: user-owned\n---\n");
+    const before = fs.readFileSync(skillFile);
+    const inode = fs.lstatSync(skillFile).ino;
+
+    const report = new OpenCodeLifecycleAdapter(CONTRACT, AUTHORITY).inspect(fx.context);
+    const operation = report.repairPlan.operations.find((candidate) => candidate.id === "canonical_skill");
+
+    expect(report.canonicalSkill.detected).toBe(true);
+    expect(operation).toMatchObject({ destination: target, ownership: "unowned", action: "blocked_unowned" });
+    const applied = applyRuntimeAdapterRepair(report);
+    expect(applied.operations.find((candidate) => candidate.id === "canonical_skill")?.status).toBe("blocked_unowned");
+    expect(applied.ownershipLedger.records.some((record) => record.resourceId === "canonical_skill")).toBe(false);
+    expect(fs.readFileSync(skillFile)).toEqual(before);
+    expect(fs.lstatSync(skillFile).ino).toBe(inode);
+  });
+
+  it("does not let a body-only Agentera marker identify or mutate an unrelated canonical target", () => {
+    const fx = fixture();
+    const target = path.join(fx.home, ".agents", "skills", "agentera");
+    fs.mkdirSync(target);
+    const skillFile = path.join(target, "SKILL.md");
+    fs.writeFileSync(skillFile, "---\nname: unrelated\ndescription: user-owned\n---\nExample:\nname: agentera\n");
+    fs.writeFileSync(path.join(target, "keep.txt"), "child\n");
+    const before = fs.readFileSync(skillFile);
+    const inode = fs.lstatSync(skillFile).ino;
+    const children = fs.readdirSync(target).sort();
+
+    const report = new OpenCodeLifecycleAdapter(CONTRACT, AUTHORITY).inspect(fx.context);
+    const operation = report.repairPlan.operations.find((candidate) => candidate.id === "canonical_skill");
+
+    expect(report.canonicalSkill.detected).toBe(false);
+    expect(operation).toMatchObject({ destination: target, ownership: "unowned", action: "blocked_unowned" });
+    expect(applyRuntimeAdapterRepair(report).operations.find((candidate) => candidate.id === "canonical_skill")?.status)
+      .toBe("blocked_unowned");
+    expect(fs.readFileSync(skillFile)).toEqual(before);
+    expect(fs.lstatSync(skillFile).ino).toBe(inode);
+    expect(fs.readdirSync(target).sort()).toEqual(children);
+    expect(fs.readFileSync(path.join(target, "keep.txt"), "utf8")).toBe("child\n");
+  });
+
   it("reports project discovery collisions as potential shadowing without claiming ownership", () => {
     const fx = fixture();
     const ledger = installCanonicalSkill(fx);

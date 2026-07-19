@@ -1,0 +1,16 @@
+id: icyvwrbsax
+artifact: progress
+record:
+  timestamp: 2026-07-19 15:20
+  type: fix
+  phase: build
+  what: Corrected task mlxfdlosxe audit failures by making lifecycle.operations the sole per-resource upgrade detail, restricting selector-free legacy migration to existing v2 rewiring and proven retirement, and restoring canonical collision handoff.
+  context:
+    intent: Satisfy the original five lifecycle acceptance criteria without discarding prior plan/evaluation history or broadening into runtime, release, or package work.
+    constraints: No commit/push, task completion, TODO, version, release, package-lane, ownership-system, or speculative lifecycle work.
+    unknowns: Independent re-audit verdict remains pending.
+    scope: packages/cli lifecycle upgrade output, legacy runtime migration selection, upgrade handoff/help/schema, and proportional lifecycle/upgrade/packed regressions.
+  inspiration: Task mlxfdlosxe and preserved evaluation mlxfdlosxe-audit-1.
+  discovered: The duplicate lifecycle phase projection was still constructed before being erased, the legacy writer still planned optional copy/link resources, and an inherited XDG_CONFIG_HOME outside --home could escape the selected runtime boundary.
+  verified: "Criterion 1: direct source probe reported 19/19 unique lifecycle operation IDs, no projection actions or duplicated operation IDs, and zero lifecycle phase items. Criterion 2: selector-free apply rewired .codex/hooks/codex-hooks.json and planned/created zero optional skill/plugin/agent resources. Criterion 3: keep.txt survived byte-for-byte and explicit collision handoff named canonical_skill plus blocked_unowned. Criterion 4: lifecycleRecovery retry/no-op tests passed. Criterion 5: packedUpgrade/prepack passed 15/15. Focused lifecycle/runtime/orchestrator/consumer tests passed 243/243; full pnpm test passed 2534/2534; typecheck and build passed."
+  next: Keep mlxfdlosxe in_progress for independent re-audit; after PASS, commit code, tests, and state together. Add no task or TODO.

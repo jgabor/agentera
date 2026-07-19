@@ -173,10 +173,7 @@ describe("Python main oracle contract parity", () => {
       dryRun: true,
     });
 
-    expect(plan.phases.map((phase) => phase.name)).toEqual([
-      ...ORACLE.typescriptV3Phases,
-      "lifecycle",
-    ]);
+    expect(plan.phases.map((phase) => phase.name)).toEqual(ORACLE.typescriptV3Phases);
     for (const phaseName of ["artifacts", "runtime", "cleanup"] as const) {
       expect(ORACLE.pythonMainPhases).toContain(phaseName);
     }

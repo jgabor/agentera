@@ -1,0 +1,13 @@
+id: tiazelvtrm
+artifact: progress
+record:
+  timestamp: 2026-07-19 17:57
+  type: fix
+  phase: build
+  what: Aligned selector-free lifecycle guidance with app-only behavior, replaced retired OpenCode skill-link diagnosis and installation guidance with the canonical shared skill plus explicit lifecycle commands, and preserved fail-closed retired-action handling.
+  context:
+    intent: Complete task bvyxcfnuwl by aligning lifecycle selector and repair contracts without changing packed parity, routing, or plan/evaluation state.
+    constraints: Only selector/repair contract scope; no packed lifecycle parity, v3CapabilitySurface cleanup, plan/task/evaluation mutation, release, commit, or remote action.
+  inspiration: Plan task bvyxcfnuwl and firm Decision llavvlpcmb.
+  verified: "Criterion 1: focused lifecycle/help/schema/active-protocol suite passed 15 files and 213 tests, including an active-guidance probe requiring --runtime all preview/apply and rejecting selector-free runtime inspection claims. Criterion 2: setup doctor tests verify ~/.agents/skills/agentera diagnosis, preservation of an invalid existing target, explicit npx -y agentera@next upgrade --runtime opencode preview/apply guidance, and absence of plugin skill repair promises; repository probes found no retired OpenCode skill-link guidance. Criterion 3: direct fail-closed regression passed 4/4 retired actions (copy-plugin, copy-agent, copy-command, link-skill), preserving target bytes/inodes and sentinels; focused migration/lifecycle/entity/atomicity/recovery tests remained green. Full source suite passed 212 files/2535 tests; typecheck and build passed; state validation passed 1543 entities/0 issues; capability-contract passed 2/2; compact passed with 0 over-limit/errors; git diff --check passed."
+  next: Orchestrator may evaluate and commit this task with cumulative state after PASS.

@@ -11,6 +11,7 @@ import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import {
   STATUS_MANUAL_REVIEW_NEEDED,
+  STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
 } from "../../src/upgrade/compatibility.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
@@ -227,17 +228,14 @@ describe("buildUpgradePlan", () => {
 
     expect(plan.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(plan.channel.channel).toBe("development");
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "runtime", "cleanup", "lifecycle"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "runtime", "cleanup"]);
     expect(plan.phases.every((p) => p.summary && Array.isArray(p.items))).toBe(true);
     expect(plan.dryRunCommand).toContain("--dry-run");
     expect(plan.applyCommand).toContain("--yes");
-    expect(plan.applyCommand).toContain("--runtime all");
+    expect(plan.applyCommand).not.toContain("--runtime");
     expect(plan.applyCommand).not.toContain("--target-major");
     expect(plan.upgradeOutcome.kind).toBe("migration_to_latest_on_channel");
-    expect(plan.lifecycle?.selection).toEqual({
-      requested: "all",
-      runtimeIds: ["opencode", "codex", "cursor", "copilot"],
-    });
+    expect(plan.lifecycle).toBeNull();
   });
 
   it("keeps lifecycle findings visible when a development-channel app phase is blocked", () => {
@@ -251,6 +249,7 @@ describe("buildUpgradePlan", () => {
       home,
       project,
       channel: "development",
+      runtime: "all",
       dryRun: true,
     });
 
@@ -394,10 +393,10 @@ describe("cmdUpgrade integration", () => {
     expect(payload.channel.distTag).toBe("next");
     expect(payload.dryRunCommand).toContain("--dry-run");
     expect(payload.applyCommand).toContain("--yes");
-    expect(payload.applyCommand).toContain("--runtime all");
-    expect(payload.lifecycle.selection.requested).toBe("all");
+    expect(payload.applyCommand).not.toContain("--runtime");
+    expect(payload.lifecycle).toBeNull();
     expect(payload.summary.pending).toBeGreaterThan(0);
-    expect(payload.lifecycleStatus).toBe(STATUS_MANUAL_REVIEW_NEEDED);
+    expect(payload.lifecycleStatus).toBe(STATUS_READY_TO_APPLY);
   });
 
   it("exits non-zero with plain-language error on --yes for stable cross-major v2 home", () => {

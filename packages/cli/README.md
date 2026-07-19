@@ -34,9 +34,9 @@ npx -y agentera@next upgrade --runtime all --dry-run
 npx -y agentera@next upgrade --runtime all --yes
 ```
 
-On v3 development, the selector-free dry-run previews all active runtimes.
-Use one active ID instead of `all` to scope runtime work. A selector-free apply
-remains app-only; runtime apply requires the selector and `--yes`. `--dry-run`
+On v3 development, selector-free preview and apply remain app-only. Use
+`--runtime all` to inspect every active runtime, or one active ID to scope
+runtime work. Runtime apply requires the selector and `--yes`. `--dry-run`
 has zero filesystem or state side effects. `--yes` approves only declared
 Agentera-owned operations; native install/update, authentication, enablement,
 and trust remain user-owned. Secure automatic apply is Linux-only and reports

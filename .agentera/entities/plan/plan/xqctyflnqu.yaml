@@ -1,0 +1,37 @@
+id: xqctyflnqu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-19
+    status: archived
+    reviewed: 2026-07-19
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: "Plan: Complete the remaining single-path upgrade work"
+  what: Finish only the residual normal-state routing, lifecycle operation, verification-lane, packed-integration, and state-closeout outcomes left after the single-path legacy-removal candidate landed directly.
+  why: The prior active plan cannot complete without falsifying Task jnwgujivkt's blocked 2/2 evaluation record. Its product deletion is landed and the complete source suite was green, but its task-level budget proof was not accepted. Archive that history without changing its status or evaluation, and continue only the five distinct pending outcomes.
+  constraints: Preserve the landed one-way v2-to-v3 importer, Git/path/source safety, bounded outputs and retrieval, budget limits, marker-last activation, user-owned resources, and one shared skill plus CLI. Entity files are the sole active-state authority; aggregate views are projections only and recognized v2 aggregates may be read solely as immutable migration inputs. Preserve the current direct decision-list and bounded startup-projection contracts without inferring a new limit from a degraded page. Do not revisit the landed deletion, add compatibility or recovery paths, perform generic retrieval or broad namespace refactors, change versions, release, publish, tag, push, or add remote work.
+  overall_acceptance: GIVEN the landed single-path upgrade WHEN the remaining plan completes THEN normal operation has one routing and vocabulary contract, lifecycle resources have one observable operation set, detailed source and package proof have one owner each, the packed upgrade converges, all canonical gates pass, and both predecessor histories remain exact.
+  scope:
+    included:
+      - Residual normal-state legacy routing and migration-adjacent vocabulary duplication.
+      - One lifecycle resource operation set across preview, apply, and retry.
+      - One source lane, one package lane, one packed fixed-path proof, and final state synchronization.
+    excluded:
+      - The landed legacy-removal and projection-contract rename.
+      - Generic retrieval rewrites, broad namespace migration, compatibility systems, new formats, release, publication, and remote work.
+    deferred:
+      []
+  design: Retire residual routing and consolidate lifecycle behavior independently. Once both stabilize, assign detailed source and package proof to one lane each, prove the packed fixed path once without duplicating source-owned matrices, then synchronize documentation and durable project state.
+  unknowns:
+    - question: Which supported entrypoints still expose normal-state aggregate routing or duplicate migration vocabulary?
+      affects_task: 1
+      resolve_by: Compare supported behavior with the landed single-path contract and change only confirmed residual duplication; if none remains, record evidence rather than invent work.
+    - question: Which lifecycle resource outcomes differ or repeat across preview, apply, retry, source, and packed invocation?
+      affects_task: 2
+      resolve_by: Compare observable operations and ownership boundaries, preserving distinct behavior and removing only confirmed duplication.
+    - question: Which detailed behavioral and failure checks lack one clear owner after Tasks 1 and 2?
+      affects_task: 3
+      resolve_by: Assign each detailed matrix to one lane while retaining only the minimal complementary integration smoke needed at distribution boundaries.
+  surprises:
+    []

@@ -1,0 +1,14 @@
+id: yomfsfnkhz
+artifact: plan
+record:
+  name: Prove the fixed packed upgrade path
+  depends_on:
+    - bdrncihpei
+  status: pending
+  acceptance:
+    - GIVEN a clean managed v2 fixture WHEN the extracted package upgrades once THEN records and relationships survive, sources remain unchanged, entity authority activates, and prime succeeds.
+    - GIVEN required cross-major rewiring WHEN packed upgrade completes THEN required changes converge while optional lifecycle resources remain unchanged without a selector.
+    - GIVEN the same extracted installation reruns WHEN state is active THEN no entities or resource writes duplicate.
+    - GIVEN source-owned failure matrices WHEN package integration runs THEN it does not recreate them.
+  test_proportionality: One extracted-package success, one idempotent rerun, explicit lifecycle parity, and minimal source-ownership evidence.
+  plan: gdxhejjjwn

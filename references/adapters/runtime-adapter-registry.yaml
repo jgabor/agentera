@@ -62,15 +62,13 @@ records:
         - .opencode/plugins/agentera.js
       environment_exports:
         - AGENTERA_HOME
-      write_safety_labels:
-        - copy-plugin
-        - copy-agent
+      write_safety_labels: []
     diagnostics:
       check_names:
         - plugin_file
         - AGENTERA_HOME
         - opencode_managed_commands
-        - opencode_skill_paths
+        - canonical_skill
         - bundled_support_references
         - profile_dir_deprecated
         - profile_dir_schema_literal
@@ -92,8 +90,8 @@ records:
         - OpenCode cannot see AGENTERA_HOME or a documented default Agentera app home
         - OpenCode managed Agentera commands are current
         - OpenCode managed Agentera commands are missing or stale
-        - OpenCode Agentera skill paths resolve to SKILL.md
-        - OpenCode Agentera skill paths are missing or broken
+        - canonical shared Agentera skill resolves to SKILL.md
+        - canonical shared Agentera skill is missing or invalid
         - bundled support references validate separately from installer status
         - bundled reference validation mismatch found despite installer status
         - profile dir env var is current
@@ -255,7 +253,6 @@ records:
       write_safety_labels:
         - configure
         - copy-hooks
-        - copy-agent
     diagnostics:
       check_names:
         - config.AGENTERA_HOME
@@ -350,8 +347,6 @@ records:
         - AGENTERA_HOME
       write_safety_labels:
         - copy-hooks
-        - copy-agent
-        - copy-plugin
     diagnostics:
       check_names:
         - AGENTERA_HOME
@@ -381,7 +376,7 @@ records:
         - Cursor sessionStart exports AGENTERA_HOME and injects bounded session context.
         - Cursor preToolUse denies invalid reconstructable artifact candidates; live preToolUse Write smoke passed 2026-05-24.
       install_claims:
-        - Repo-native .cursor/ surfaces ship in this repository; upgrade installs managed hooks and agents elsewhere.
+        - Repo-native .cursor/ surfaces ship in this repository; explicit Cursor lifecycle apply is ownership-gated.
       known_drifts:
         - Release tagging and marketplace publication remain blocked pending broader release closeout despite passed live preToolUse Write smoke.
         - Cloud agents are unsupported in v1.

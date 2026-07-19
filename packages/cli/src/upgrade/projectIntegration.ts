@@ -127,16 +127,6 @@ function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContex
   if (item.action === "rewire-runtime" || item.action === "retire-hooks") {
     return true;
   }
-  if (item.action === "copy-plugin" && item.target) {
-    try {
-      if (isFile(item.target)) {
-        return textUsesPythonManagedEntrypoint(fs.readFileSync(item.target, "utf8"));
-      }
-      return item.source ? textUsesPythonManagedEntrypoint(fs.readFileSync(item.source, "utf8")) : false;
-    } catch {
-      return false;
-    }
-  }
   return false;
 }
 

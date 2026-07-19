@@ -1,0 +1,15 @@
+id: nmuqlqdlse
+artifact: progress
+record:
+  timestamp: 2026-07-19 14:46
+  type: fix
+  phase: build
+  what: Task mlxfdlosxe removed automatic all-runtime lifecycle selection from selector-free upgrades and made lifecycle phases summary-only so lifecycle.operations exposes each selected resource once.
+  context:
+    intent: Expose one consistent lifecycle operation and outcome set while preserving required cross-major migration rewiring, ownership safety, retry convergence, and source/package parity.
+    constraints: No lifecycle framework, ownership registry, retry system, compatibility path, packed-integration change, version change, release, publication, tag, push, task, or TODO.
+    unknowns: "Resolved: repeated resource outcomes were the lifecycle phase items plus canonical lifecycle.operations; selector-free preview also selected optional all-runtime work. Existing ownership, retry, and source/package contracts already met their criteria and were preserved."
+    scope: packages/cli/src/upgrade/upgradeOrchestrator.ts and proportional upgrade tests.
+  inspiration: Plan xqctyflnqu, task mlxfdlosxe.
+  verified: "AC1: selected preview/apply tests prove unique operation IDs, one outcome field, and no repeated phase items. AC2: selector-free orchestration proves entity migration remains selected without lifecycle or --runtime. AC3: ownership/collision tests keep user-owned, ambiguous, modified, and unproven resources unchanged with remediation. AC4: fault/retry tests prove completed operations become noops and only unfinished work retries. AC5: lifecycle consumer parity, prepack, and packed-upgrade coverage prove the shared-skill and CLI contract from source and package. Focused 114/114 and full 2532/2532 tests passed; typecheck, build, state validation, capability-contract validation, and compact passed. No TODO/task added; predecessor blocked 2/2 histories remain exact."
+  next: Leave the task in_progress for independent audit; commit code, tests, evaluator state, and typed state together only after PASS.

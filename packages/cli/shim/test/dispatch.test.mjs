@@ -184,7 +184,8 @@ test("dispatch prints install help when app-home crashes and no other backend is
       stderr,
       /app-home backend crashed .* falling through to next resolution strategy/,
     );
-    assert.match(stderr, /Install Agentera/);
+    assert.match(stderr, /upgrade --runtime all --dry-run/);
+    assert.doesNotMatch(stderr, /npx skills add/);
   } finally {
     clean(appHome);
   }
@@ -228,7 +229,9 @@ test("dispatch emits the v3 deprecation banner to stderr", () => {
     assert.match(stderr, /agentera 2\.x .* is in maintenance/);
     assert.match(stderr, /npx -y agentera@next prime/);
     assert.match(stderr, /AGENTERA_NO_V3_HINT=1/);
-    assert.match(stderr, /Install Agentera/);
+    assert.match(stderr, /upgrade --runtime all --dry-run/);
+    assert.match(stderr, /upgrade --runtime all --yes/);
+    assert.doesNotMatch(stderr, /npx skills add/);
   } finally {
     clean(tmp);
   }
@@ -251,7 +254,8 @@ test("dispatch suppresses the v3 banner when AGENTERA_NO_V3_HINT=1", () => {
 
     assert.doesNotMatch(stderr, /@next/, "suppression flag must hide the @next pointer");
     assert.doesNotMatch(stderr, /in maintenance/, "suppression flag must hide the banner");
-    assert.match(stderr, /Install Agentera/, "install-help failure path still prints");
+    assert.match(stderr, /Stable 2\.x recovery from a clone/, "stable recovery path still prints");
+    assert.doesNotMatch(stderr, /npx skills add/);
   } finally {
     if (original === undefined) {
       delete process.env.AGENTERA_NO_V3_HINT;

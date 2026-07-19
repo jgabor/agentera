@@ -1,0 +1,36 @@
+id: hqwkqcfrii
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-19
+    status: open
+    reviewed: 2026-07-19
+    critic_issues: 12 found, 12 addressed, 0 dismissed
+    title: "Plan: Complete the shared-skill and CLI cutover"
+  what: Finish the carried lifecycle correction, retire current runtime-native integration surfaces while preserving bounded v2 migration and cleanup, simplify normal-state routing, establish verification ownership, prove the packed path, and close state.
+  why: Plan gdxhejjjwn cannot complete without rewriting a blocked 2/2 task. Its candidate is nearly correct, but the firm single-skill decision also reveals active native runtime and package surfaces that must retire rather than remain optional. Preserve that evidence and finish one final public contract.
+  constraints: Preserve one-way v2-to-v3 state migration, proven existing-v2 hook rewiring to CLI commands, ownership-proven legacy retirement, explicit Claude cleanup, user-owned and ambiguous resources, bounded state and retrieval, marker-last activation, archived histories, and the current candidate. Never delete host or user-project runtime directories. Do not add compatibility or recovery systems, duplicate verification matrices, broad retrieval rewrites, version changes, releases, publication, tags, pushes, or remote mutations.
+  overall_acceptance: GIVEN the cutover is complete WHEN active and packaged surfaces are inspected THEN one shared skill plus CLI are the only current integration, legacy runtime files are migration or cleanup inputs only, identity is truthful, normal operation has one authority and vocabulary, packed upgrade converges, canonical gates pass, and predecessor task evaluations remain exact.
+  scope:
+    included:
+      - Canonical skill identity, bounded legacy migration and cleanup, and current runtime lifecycle retirement.
+      - Repository-native and package-native plugin, hook, agent, command, descriptor, marketplace, and adapter surfaces.
+      - Normal-state routing, source and package verification ownership, packed upgrade proof, and state closeout.
+    excluded:
+      - Host or user-project runtime deletion, generic retrieval rewrites, new compatibility systems, releases, and remote work.
+    deferred:
+      []
+  design: Adopt and close the carried candidate first. Isolate legacy migration before removing current runtime contracts. Retire repository and package surfaces only after active behavior no longer references them. Simplify normal-state routing, assign verification lanes, prove one packed path, then reconcile state.
+  unknowns:
+    - question: Which independently required CLI-observable behaviors are currently covered only through native-integration tests?
+      affects_task: 4
+      resolve_by: Preserve behavior only when required by the shared-skill and CLI contract; otherwise delete obsolete behavior and tests together.
+    - question: Which residual handler branches are migration-only readers rather than removable normal-state routing?
+      affects_task: 6
+      resolve_by: Trace marker-active and marker-absent dispatch before deletion and retain only declared read-only migration inputs.
+    - question: Which detailed source and package matrices lack one owner after native-surface retirement?
+      affects_task: 7
+      resolve_by: Inventory verification after Tasks 1 through 6 and assign each detailed matrix once.
+  surprises:
+    []

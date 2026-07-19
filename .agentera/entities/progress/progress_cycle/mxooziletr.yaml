@@ -1,0 +1,15 @@
+id: mxooziletr
+artifact: progress
+record:
+  timestamp: 2026-07-19 16:49
+  type: fix
+  phase: build
+  what: Removed the obsolete copy-plugin, copy-agent, copy-command, and link-skill runtime writers; added direct fail-closed coverage for all four exported-boundary inputs; and removed their first active adapter and repair-wording claims.
+  context:
+    intent: Make retired runtime migration actions unable to mutate user-owned paths while preserving explicit lifecycle selection, required v2 hook rewiring, proven retirement, and the blocked task's exact 2/2 evaluation history.
+    constraints: One Code run only; no evaluator retry, task reset, commit, push, packed parity work, v3CapabilitySurface cleanup, version, release, task, or TODO.
+    scope: runtimeMigration safety boundary, direct migration tests, upgrade repair wording, runtime adapter registry, and discovered active lifecycle/OpenCode contract surfaces.
+  inspiration: Plan xqctyflnqu, blocked task mlfxdlosxe, and its second independent audit.
+  discovered: Independent review found selector-free lifecycle claims still active in README, CLI README, UPGRADE, and runtime parity docs, plus OpenCode doctor/setup references that still promise repair of the retired skill link.
+  verified: Direct regression proves all four retired actions fail before mutation and preserve target and keep.txt inode/content. Focused 158/158, full source 2534/2534, prepack 14/14, typecheck, build, npm pack dry-run, state validation 1536/0, capability contract 2/2, compact, and diff check passed. Follow-up review passed production safety but requested the remaining active contract corrections.
+  next: Archive xqctyflnqu unchanged and create a replacement whose first task owns only the remaining selector and OpenCode repair contract corrections; retain package parity and residual routing in their existing later lanes.

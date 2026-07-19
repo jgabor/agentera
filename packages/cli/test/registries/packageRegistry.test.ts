@@ -69,10 +69,7 @@ describe("package registry", () => {
       "references",
       "agents",
     ]);
-    expect(record.package_commands.commands.map((c: any) => c.id)).toEqual([
-      "remove-legacy-skills",
-      "install-agentera-skill-opencode",
-    ]);
+    expect(record.package_commands.commands.map((c: any) => c.id)).toEqual(["remove-legacy-skills"]);
     expect(record.docs_targets.version_files.at(-1)).toBe("registry.json");
   });
 
@@ -94,7 +91,7 @@ describe("package registry", () => {
     malformed.records.push(structuredClone(fixture.records[0]));
     malformed.records[0].version_surfaces.surfaces[1].id = "registry";
     malformed.records[0].version_surfaces.surfaces[2].path = "../escape.json";
-    malformed.records[0].package_commands.commands[1].argv = "not-an-array";
+    malformed.records[0].package_commands.commands[0].argv = "not-an-array";
     malformed.records[0].version_authority.install_root = "~/.agents/agentera";
     malformed.records[0].identity.lifecycle_events = [];
 
@@ -106,9 +103,26 @@ describe("package registry", () => {
     expect(errors).toContain(
       "records[0].version_surfaces.surfaces[2].path must stay inside repo root",
     );
-    expect(errors).toContain("records[0].package_commands.commands[1].argv must be a list of strings");
+    expect(errors).toContain("records[0].package_commands.commands[0].argv must be a list of strings");
     expect(errors).toContain("records[0].version_authority: forbidden install-root field install_root");
     expect(errors).toContain("records[0].identity: forbidden RuntimeAdapter field lifecycle_events");
+  });
+
+  it("rejects the retired runtime-specific skill installer contract", () => {
+    const fixture = registryFixture();
+    fixture.records[0].package_commands.commands.push({
+      id: "install-agentera-skill-opencode",
+      runtime: "opencode",
+      action: "install-agentera-skill",
+      phase: "runtime-install",
+      argv: ["npx", "skills", "add", "jgabor/agentera", "-g", "-a", "opencode", "--skill", "agentera", "-y"],
+      skipped_without_update_packages_message: "external package update skipped",
+    });
+
+    const errors = validateRegistryData(fixture, REPO_ROOT);
+    expect(errors).toContain("records[0].package_commands.commands[1].runtime 'opencode' is not approved");
+    expect(errors).toContain("records[0].package_commands.commands[1].action 'install-agentera-skill' is not approved");
+    expect(errors).toContain("records[0].package_commands.commands[1].argv must use approved skills action");
   });
 
   it("consumer views share changed fixture facts", () => {

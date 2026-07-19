@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { declaresAgenteraSkill } from "../core/skillIdentity.js";
+
 import {
   buildRuntimeLifecycleState,
   loadLifecycleAuthority,
@@ -342,7 +344,7 @@ function probeSkill(location: string, canonical: boolean, surfaces: string[]): S
       const bytes = Buffer.alloc(Math.min(stat.size, 64 * 1024));
       fs.readSync(handle, bytes, 0, bytes.length, 0);
       const text = bytes.toString("utf8");
-      if (!/^name:\s*agentera\s*$/m.test(text)) {
+      if (!declaresAgenteraSkill(text)) {
         return {
           location,
           canonical,

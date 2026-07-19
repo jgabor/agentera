@@ -29,29 +29,23 @@ describe("v3 cursor agent surface (T7)", () => {
     expect(projectUsesV3CapabilityInstructionModules(path.join(FIXTURES, "v2-yaml-project"))).toBe(false);
   });
 
-  it("skips in-tree cursor copy-agent items when upgrading a v3 project", () => {
+  it("leaves current-runtime Cursor agent publication to explicit lifecycle selection", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "t7-home-"));
     try {
       const appHome = path.join(home, "agentera");
       fs.mkdirSync(appHome, { recursive: true });
       const ctx = migrationCtx(appHome, REPO_ROOT, home, REPO_ROOT);
       const phase = planRuntimeRewirePhase(ctx);
-      const cursorAgentItems = phase.items.filter(
-        (item) => item.runtime === "cursor" && item.action === "copy-agent",
-      );
-      expect(cursorAgentItems.length).toBeGreaterThan(0);
-      expect(cursorAgentItems.every((item) => item.status === "noop")).toBe(true);
-      expect(
-        cursorAgentItems.every((item) =>
-          item.message?.includes("v3 capability instruction modules present"),
-        ),
-      ).toBe(true);
+      expect(phase.items.some(
+        (item) => item.target?.includes(`${path.sep}.cursor${path.sep}agents${path.sep}`) ||
+          item.target?.includes(`${path.sep}.cursor-plugin${path.sep}`),
+      )).toBe(false);
     } finally {
       fs.rmSync(home, { recursive: true, force: true });
     }
   });
 
-  it("still plans cursor copy-agent for non-v3 projects", () => {
+  it("does not publish Cursor agents or plugins during legacy v2 rewiring", () => {
     const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), "t7-v2-"));
     try {
       const home = path.join(sandbox, "home");
@@ -61,10 +55,10 @@ describe("v3 cursor agent surface (T7)", () => {
       fs.mkdirSync(appHome, { recursive: true });
       const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
       const phase = planRuntimeRewirePhase(ctx);
-      const pendingCopy = phase.items.filter(
-        (item) => item.runtime === "cursor" && item.action === "copy-agent" && item.status === "pending",
-      );
-      expect(pendingCopy.length).toBeGreaterThan(0);
+      expect(phase.items.some(
+        (item) => item.target?.includes(`${path.sep}.cursor${path.sep}agents${path.sep}`) ||
+          item.target?.includes(`${path.sep}.cursor-plugin${path.sep}`),
+      )).toBe(false);
     } finally {
       fs.rmSync(sandbox, { recursive: true, force: true });
     }

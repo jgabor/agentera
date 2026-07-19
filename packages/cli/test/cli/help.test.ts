@@ -45,7 +45,7 @@ describe("cli help", () => {
     expect(text).toContain("--yes");
     expect(text).toContain("--only");
     expect(text).toContain("--runtime {all,opencode,codex,cursor,copilot}");
-    expect(text).toContain("development dry-runs default to all, apply without it stays app-only");
+    expect(text).toContain("Explicitly select all or one runtime; without it preview and apply stay app-only");
     expect(text).toContain("--legacy-cleanup {claude}");
     expect(text).toContain("never native/trust actions");
     expect(text).toContain("ownership journals and malformed locks fail closed");

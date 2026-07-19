@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { expanduser, isFile, pathExists, resolvePath } from "../../core/paths.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { declaresAgenteraSkill } from "../../core/skillIdentity.js";
 import {
   pluginSourceHasUnmigratedProfileDirSchema,
   PROFILERA_PROFILE_DIR_ENV,
@@ -23,15 +24,15 @@ type Env = Record<string, string | undefined>;
 const OPENCODE_PLUGIN_CHECK = diagnosticCheckNames("opencode")[0];
 const OPENCODE_HOME_CHECK = diagnosticCheckNames("opencode")[1];
 const OPENCODE_COMMANDS_CHECK = diagnosticCheckNames("opencode")[2];
-const OPENCODE_SKILL_PATHS_CHECK = diagnosticCheckNames("opencode")[3];
+const OPENCODE_CANONICAL_SKILL_CHECK = diagnosticCheckNames("opencode")[3];
 const OPENCODE_SUPPORT_CHECK = diagnosticCheckNames("opencode")[4];
 const OPENCODE_PROFILE_DIR_CHECK = diagnosticCheckNames("opencode")[5];
 const OPENCODE_PROFILE_DIR_SCHEMA_CHECK = diagnosticCheckNames("opencode")[6];
 const OC_MSG = diagnosticMessages("opencode");
 const OPENCODE_COMMANDS_CURRENT_MESSAGE = OC_MSG[4];
 const OPENCODE_COMMANDS_DRIFT_MESSAGE = OC_MSG[5];
-const OPENCODE_SKILL_PATHS_CURRENT_MESSAGE = OC_MSG[6];
-const OPENCODE_SKILL_PATHS_DRIFT_MESSAGE = OC_MSG[7];
+const OPENCODE_CANONICAL_SKILL_CURRENT_MESSAGE = OC_MSG[6];
+const OPENCODE_CANONICAL_SKILL_DRIFT_MESSAGE = OC_MSG[7];
 const OPENCODE_SUPPORT_REFERENCES_PASS_MESSAGE = OC_MSG[8];
 const OPENCODE_SUPPORT_REFERENCES_DRIFT_MESSAGE = OC_MSG[9];
 const OPENCODE_PROFILE_DIR_CURRENT_MESSAGE = OC_MSG[10];
@@ -42,7 +43,7 @@ const OPENCODE_PASS_STATUS = diagnosticStatusLabels("opencode")[0];
 const OPENCODE_WARN_STATUS = diagnosticStatusLabels("opencode")[1];
 const OC_GAP = diagnosticGapLabels("opencode");
 const OPENCODE_COMMAND_DRIFT_GAP = OC_GAP[2];
-const OPENCODE_SKILL_PATH_DRIFT_GAP = OC_GAP[3];
+const OPENCODE_CANONICAL_SKILL_DRIFT_GAP = OC_GAP[3];
 const OPENCODE_VALIDATION_DRIFT_GAP = OC_GAP[4];
 const OPENCODE_USER_ENVIRONMENT_GAP = OC_GAP[1];
 
@@ -105,17 +106,6 @@ export function diagnoseOpencodeCommands(installRoot: string, home: string, env:
   });
 }
 
-function isAgenteraManagedSkillPath(target: string, name: string): boolean {
-  let linkTarget: string;
-  try {
-    linkTarget = fs.readlinkSync(target);
-  } catch {
-    return false;
-  }
-  const normalized = linkTarget.toLowerCase();
-  return normalized.includes("agentera") || path.basename(linkTarget) === name;
-}
-
 function isSymlink(p: string): boolean {
   try {
     return fs.lstatSync(p).isSymbolicLink();
@@ -124,38 +114,30 @@ function isSymlink(p: string): boolean {
   }
 }
 
-export function diagnoseOpencodeSkillPaths(installRoot: string, home: string, env: Env): JsonObject {
-  const skillsDir = path.join(opencodeConfigDir(home, env), "skills");
-  const missing: string[] = [];
-  const broken: string[] = [];
-  const userOwned: string[] = [];
-  for (const name of OPENCODE_SKILL_NAMES) {
-    const source = path.join(installRoot, "skills", name, "SKILL.md");
-    if (!isFile(source)) continue;
-    const target = path.join(skillsDir, name);
-    if (!pathExists(target) && !isSymlink(target)) {
-      missing.push(name);
-      continue;
-    }
-    if (isFile(path.join(target, "SKILL.md"))) continue;
-    if (isAgenteraManagedSkillPath(target, name)) broken.push(name);
-    else userOwned.push(name);
+export function diagnoseCanonicalSkill(home: string): JsonObject {
+  const target = path.join(home, ".agents", "skills", "agentera");
+  const skillFile = path.join(target, "SKILL.md");
+  if (isFile(skillFile) && declaresAgenteraSkill(fs.readFileSync(skillFile, "utf8").slice(0, 64 * 1024))) {
+    return mkCheck(
+      OPENCODE_CANONICAL_SKILL_CHECK,
+      OPENCODE_PASS_STATUS,
+      OPENCODE_CANONICAL_SKILL_CURRENT_MESSAGE,
+      { path: target },
+    );
   }
-  if (missing.length === 0 && broken.length === 0) {
-    const details = userOwned.map((name) => `user-owned skill path preserved: ${name}`);
-    return mkCheck(OPENCODE_SKILL_PATHS_CHECK, OPENCODE_PASS_STATUS, OPENCODE_SKILL_PATHS_CURRENT_MESSAGE, {
-      path: skillsDir,
-      details,
-    });
+  const details = [
+    "action: preview explicit lifecycle with `npx -y agentera@next upgrade --runtime opencode --dry-run`",
+    "action: apply approved Agentera-owned work with `npx -y agentera@next upgrade --runtime opencode --yes`",
+  ];
+  if (pathExists(target) || isSymlink(target)) {
+    details.unshift("existing target preserved; lifecycle preview will classify ownership");
   }
-  const details = [...missing.map((n) => `missing: ${n}`), ...broken.map((n) => `broken: ${n}`)];
-  details.push("action: start OpenCode with the Agentera plugin to restore managed skill paths");
-  if (userOwned.length > 0) details.push(...userOwned.map((n) => `user-owned skill path preserved: ${n}`));
-  return mkCheck(OPENCODE_SKILL_PATHS_CHECK, OPENCODE_WARN_STATUS, OPENCODE_SKILL_PATHS_DRIFT_MESSAGE, {
-    path: skillsDir,
-    gap: OPENCODE_SKILL_PATH_DRIFT_GAP,
-    details,
-  });
+  return mkCheck(
+    OPENCODE_CANONICAL_SKILL_CHECK,
+    OPENCODE_WARN_STATUS,
+    OPENCODE_CANONICAL_SKILL_DRIFT_MESSAGE,
+    { path: target, gap: OPENCODE_CANONICAL_SKILL_DRIFT_GAP, details },
+  );
 }
 
 // ── bundled reference validation ────────────────────────────────────
@@ -329,10 +311,9 @@ export function diagnoseOpencode(installRoot: string, home: string, env: Env): J
   }
 
   checks.push(diagnoseOpencodeCommands(installRoot, home, env));
-  checks.push(diagnoseOpencodeSkillPaths(installRoot, home, env));
+  checks.push(diagnoseCanonicalSkill(home));
   checks.push(diagnoseBundledReferenceValidation(installRoot));
   checks.push(diagnoseOpencodeProfileDir(installRoot, home, env));
   checks.push(diagnoseOpencodeProfileDirSchemaLiteral(home, env));
   return runtimeResult("opencode", env, checks);
 }
-

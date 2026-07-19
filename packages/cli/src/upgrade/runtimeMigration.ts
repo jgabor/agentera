@@ -1,10 +1,9 @@
-import fs, { type Stats } from "node:fs";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { loadRegistry } from "../registries/runtimeAdapterRegistry.js";
 import {
   codexCopiedHooksAreAgenteraOnly,
   codexPluginHooksEnabled,
@@ -20,10 +19,10 @@ import { writeFileAtomic } from "./atomicWriter.js";
 import {
   applyInstalledHooksRetirementItems,
   planInstalledHooksRetirementItems,
+  RETIRE_INSTALLED_HOOKS_ACTION,
   textReferencesV2InstalledHooks,
 } from "./installedHooksRetirement.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
-import { projectUsesV3CapabilityInstructionModules } from "./v3CapabilitySurface.js";
 
 const PYTHON_MANAGED_PATTERNS = [
   /hooks\/validate_artifact\.py/,
@@ -53,7 +52,6 @@ export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
 }
 
 const OPENCODE_COMMAND_NAMES = ["agentera"] as const;
-const CURSOR_AGENT_MARKER = "<!-- agentera: managed -->";
 
 export interface NpxHookCommands {
   cliEntrypoint: string;
@@ -194,27 +192,6 @@ function pushRewireItem(
   });
 }
 
-function hasCursorManagedAgentMarker(text: string): boolean {
-  return text.includes(CURSOR_AGENT_MARKER);
-}
-
-function copyIfChanged(source: string, target: string): boolean {
-  if (!isFile(source)) {
-    return false;
-  }
-  if (isFile(target)) {
-    const before = fs.readFileSync(source);
-    const after = fs.readFileSync(target);
-    if (before.equals(after)) {
-      return false;
-    }
-  }
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  const sourceBytes = fs.readFileSync(source);
-  writeFileAtomic(target, sourceBytes);
-  return true;
-}
-
 function planCodexItems(
   items: MigrationPhaseItem[],
   home: string,
@@ -268,7 +245,6 @@ function planCursorItems(
   items: MigrationPhaseItem[],
   home: string,
   project: string,
-  sourceRoot: string,
   commands: NpxHookCommands,
 ): void {
   for (const hooksPath of [
@@ -279,196 +255,26 @@ function planCursorItems(
       pushRewireItem(items, "cursor", hooksPath, commands);
     }
   }
-  const agentsSource = path.join(sourceRoot, ".cursor", "agents");
-  const pluginSource = path.join(sourceRoot, ".cursor-plugin", "plugin.json");
-  for (const root of [project]) {
-    const agentsDir = path.join(root, ".cursor", "agents");
-    if (isFile(pluginSource) && root === project) {
-      const pluginTarget = path.join(root, ".cursor-plugin", "plugin.json");
-      if (!isFile(pluginTarget)) {
-        items.push({
-          status: "pending",
-          action: "copy-plugin",
-          runtime: "cursor",
-          source: pluginSource,
-          target: pluginTarget,
-          message: "will copy managed Cursor plugin manifest",
-        });
-      } else if (!fs.readFileSync(pluginSource).equals(fs.readFileSync(pluginTarget))) {
-        items.push({
-          status: "pending",
-          action: "copy-plugin",
-          runtime: "cursor",
-          source: pluginSource,
-          target: pluginTarget,
-          message: "will refresh managed Cursor plugin manifest",
-        });
-      }
-    }
-    const skipInTreeCursorAgents =
-      root === project && projectUsesV3CapabilityInstructionModules(project);
-    if (skipInTreeCursorAgents) {
-      items.push({
-        status: "noop",
-        action: "copy-agent",
-        runtime: "cursor",
-        target: agentsDir,
-        message:
-          "v3 capability instruction modules present; in-tree .cursor/agents/ uses prime --context and is not overwritten",
-      });
-    } else if (pathExists(agentsSource)) {
-      const CURSOR_MANAGED_AGENT = "agentera.md";
-      const src = path.join(agentsSource, CURSOR_MANAGED_AGENT);
-      if (isFile(src)) {
-        const dst = path.join(agentsDir, CURSOR_MANAGED_AGENT);
-        if (!isFile(dst)) {
-          items.push({
-            status: "pending",
-            action: "copy-agent",
-            runtime: "cursor",
-            source: src,
-            target: dst,
-            message: "will copy managed Cursor Agentera agent",
-          });
-        } else {
-          const dstText = fs.readFileSync(dst, "utf8");
-          const srcText = fs.readFileSync(src, "utf8");
-          if (hasCursorManagedAgentMarker(dstText) && dstText !== srcText) {
-            items.push({
-              status: "pending",
-              action: "copy-agent",
-              runtime: "cursor",
-              source: src,
-              target: dst,
-              message: "will refresh stale managed Cursor Agentera agent",
-            });
-          }
-        }
-      }
-    }
-  }
 }
 
 function planOpencodeItems(
   items: MigrationPhaseItem[],
   home: string,
-  sourceRoot: string,
   env: Record<string, string | undefined>,
   commands: NpxHookCommands,
 ): void {
   const configDir = opencodeConfigDir(home, env);
-  const pluginSource = path.join(sourceRoot, ".opencode", "plugins", "agentera.js");
-  const pluginTarget = path.join(configDir, "plugins", "agentera.js");
-  if (isFile(pluginSource)) {
-    const targetContent = isFile(pluginTarget) ? fs.readFileSync(pluginTarget, "utf8") : "";
-    const sourceContent = fs.readFileSync(pluginSource, "utf8");
-    const needsCopy =
-      !isFile(pluginTarget) ||
-      (targetContent !== sourceContent &&
-        (textUsesPythonManagedEntrypoint(targetContent) ||
-          needsChannelNpxRewire(targetContent, commands.cliEntrypoint)));
-    items.push({
-      status: needsCopy ? "pending" : "noop",
-      action: "copy-plugin",
-      runtime: "opencode",
-      source: pluginSource,
-      target: pluginTarget,
-      message: needsCopy
-        ? "will copy current Agentera OpenCode plugin to native plugin path"
-        : "OpenCode plugin already current at native plugin path",
-    });
+  const existingResources = [
+    path.join(configDir, "plugins", "agentera.js"),
+    ...OPENCODE_COMMAND_NAMES.map((name) => path.join(configDir, "commands", `${name}.md`)),
+    path.join(configDir, "agents", "agentera.md"),
+  ];
+  for (const resource of existingResources) {
+    if (isFile(resource)) pushRewireItem(items, "opencode", resource, commands);
   }
-  const commandsSourceDir = path.join(sourceRoot, ".opencode", "commands");
-  const commandsTargetDir = path.join(configDir, "commands");
-  for (const name of OPENCODE_COMMAND_NAMES) {
-    const src = path.join(commandsSourceDir, `${name}.md`);
-    const dst = path.join(commandsTargetDir, `${name}.md`);
-    if (isFile(src)) {
-      const needsCopy = !isFile(dst) || (hasManagedMarker(fs.readFileSync(dst, "utf8")) && !fs.readFileSync(src).equals(fs.readFileSync(dst)));
-      items.push({
-        status: needsCopy ? "pending" : "noop",
-        action: "copy-command",
-        runtime: "opencode",
-        source: src,
-        target: dst,
-        message: needsCopy ? "will sync managed OpenCode command" : "OpenCode managed command already current",
-      });
-    }
-  }
-  const agentsSourceDir = path.join(sourceRoot, ".opencode", "agents");
-  const agentsTargetDir = path.join(configDir, "agents");
-  const OPENCODE_MANAGED_AGENT = "agentera.md";
-  if (pathExists(agentsSourceDir)) {
-    const src = path.join(agentsSourceDir, OPENCODE_MANAGED_AGENT);
-    if (isFile(src)) {
-      const dst = path.join(agentsTargetDir, OPENCODE_MANAGED_AGENT);
-      const needsCopy = !isFile(dst) || !fs.readFileSync(src).equals(fs.readFileSync(dst));
-      items.push({
-        status: needsCopy ? "pending" : "noop",
-        action: "copy-agent",
-        runtime: "opencode",
-        source: src,
-        target: dst,
-        message: needsCopy ? "will copy managed OpenCode Agentera agent" : "OpenCode Agentera agent already current",
-      });
-    }
-  }
-  const skillsSourceRoot = path.join(sourceRoot, "skills");
-  // D78: ~/.agents/skills is the canonical agent-compatible root (opencode loads
-  // from both ~/.config/opencode/skills and ~/.agents/skills and requires skill
-  // names unique across locations — opencode.ai/docs/skills). Maintain the link
-  // here; the legacy ~/.config/opencode/skills entry is retired below.
-  const skillsTargetDir = path.join(home, ".agents", "skills");
-  for (const name of OPENCODE_SKILL_NAMES) {
-    const src = path.join(skillsSourceRoot, name);
-    const dst = path.join(skillsTargetDir, name);
-    if (!isFile(path.join(src, "SKILL.md"))) {
-      continue;
-    }
-    if (!pathExists(dst)) {
-      items.push({
-        status: "pending",
-        action: "link-skill",
-        runtime: "opencode",
-        source: src,
-        target: dst,
-        message: "will create OpenCode skill link",
-      });
-      continue;
-    }
-    try {
-      const linkTarget = fs.readlinkSync(dst);
-      if (!linkTarget.includes("agentera") && path.basename(linkTarget) !== name) {
-        items.push({
-          status: "blocked",
-          action: "link-skill",
-          runtime: "opencode",
-          source: src,
-          target: dst,
-          message: "OpenCode skill path is user-owned; manual review required",
-        });
-      } else if (path.resolve(path.dirname(dst), linkTarget) !== path.resolve(src)) {
-        items.push({
-          status: "pending",
-          action: "link-skill",
-          runtime: "opencode",
-          source: src,
-          target: dst,
-          message: "will update stale Agentera-managed OpenCode skill link",
-        });
-      }
-    } catch {
-      items.push({
-        status: "pending",
-        action: "link-skill",
-        runtime: "opencode",
-        source: src,
-        target: dst,
-        message: "will replace non-symlink OpenCode skill path with managed link",
-      });
-    }
-  }
-  // D78: retire the legacy opencode-specific skill symlinks now that
+  // Retire only proven legacy OpenCode skill links or empty directories. The
+  // canonical shared skill is current-runtime lifecycle work and is untouched
+  // without an explicit runtime selector.
   // ~/.agents/skills is canonical. The opencode doc requires skill names
   // unique across its discovery locations; a skill present in both
   // ~/.config/opencode/skills and ~/.agents/skills is the duplicate-name error
@@ -663,8 +469,8 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   const items: MigrationPhaseItem[] = [];
 
   planCodexItems(items, home, project, commands, ctx.force);
-  planCursorItems(items, home, project, sourceRoot, commands);
-  planOpencodeItems(items, home, sourceRoot, env, commands);
+  planCursorItems(items, home, project, commands);
+  planOpencodeItems(items, home, env, commands);
   planStaleCommandCleanupItems(ctx, items);
   planStaleSkillCleanupItems(ctx, items);
   planCopilotItems(items, project, commands);
@@ -672,11 +478,31 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   if (hookRetirement.length > 0 && items.some((item) => item.action === "rewire-runtime" && item.status === "pending")) {
     items.push(...hookRetirement);
   }
-  void loadRegistry();
   return items;
 }
 
-export function applyRuntimeMigrationItem(item: MigrationPhaseItem, _commands: NpxHookCommands): void {
+export type RuntimeMigrationAction =
+  | "rewire-runtime"
+  | "retire-hooks"
+  | "remove-stale-command"
+  | "remove-stale-skill";
+
+export type RuntimeMigrationItem = Omit<MigrationPhaseItem, "action"> & {
+  action: RuntimeMigrationAction;
+};
+
+const RUNTIME_MIGRATION_ACTIONS: ReadonlySet<string> = new Set<RuntimeMigrationAction>([
+  "rewire-runtime",
+  "retire-hooks",
+  "remove-stale-command",
+  "remove-stale-skill",
+]);
+
+function isRuntimeMigrationAction(action: string): action is RuntimeMigrationAction {
+  return RUNTIME_MIGRATION_ACTIONS.has(action);
+}
+
+export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands: NpxHookCommands): void {
   if (item.status !== "pending") {
     return;
   }
@@ -691,50 +517,6 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, _commands: N
         writeFileAtomic(item.target, item.newText, "utf8");
         item.status = "applied";
         item.message = "runtime config rewired to npm self-contained entrypoint";
-        break;
-      }
-      case "copy-plugin":
-      case "copy-agent":
-      case "copy-command": {
-        if (!item.source || !item.target) {
-          item.status = "failed";
-          item.message = `${item.action} missing source or target`;
-          return;
-        }
-        copyIfChanged(item.source, item.target);
-        item.status = "applied";
-        item.message = `applied ${item.action}`;
-        break;
-      }
-      case "link-skill": {
-        if (!item.source || !item.target) {
-          item.status = "failed";
-          item.message = "link-skill missing source or target";
-          return;
-        }
-        if (!pathExists(item.source)) {
-          item.status = "failed";
-          item.message = `link-skill source disappeared between plan and apply: ${item.source}`;
-          return;
-        }
-        fs.mkdirSync(path.dirname(item.target), { recursive: true });
-        // lstat (not stat): stat follows symlinks and ENOENTs on dangling links; rmSync then fails.
-        let targetStat: Stats | null = null;
-        try {
-          targetStat = fs.lstatSync(item.target);
-        } catch {
-          /* target absent */
-        }
-        if (targetStat) {
-          if (targetStat.isSymbolicLink()) {
-            fs.unlinkSync(item.target);
-          } else {
-            fs.rmSync(item.target, { recursive: true, force: true });
-          }
-        }
-        fs.symlinkSync(item.source, item.target);
-        item.status = "applied";
-        item.message = "OpenCode skill link created";
         break;
       }
       case "retire-hooks": {
@@ -804,6 +586,8 @@ export function applyRuntimeMigrationItem(item: MigrationPhaseItem, _commands: N
         break;
       }
       default:
+        item.status = "failed";
+        item.message = `unsupported runtime migration action: ${(item as MigrationPhaseItem).action}`;
         break;
     }
   } catch (exc) {
@@ -818,7 +602,15 @@ export function applyRuntimeMigrationItems(
 ): void {
   const commands = resolveNpxHookCommands(ctx);
   for (const item of items) {
-    applyRuntimeMigrationItem(item, commands);
+    if (item.status !== "pending") {
+      continue;
+    }
+    if (isRuntimeMigrationAction(item.action)) {
+      applyRuntimeMigrationItem(item as RuntimeMigrationItem, commands);
+    } else if (item.action !== RETIRE_INSTALLED_HOOKS_ACTION) {
+      item.status = "failed";
+      item.message = `unsupported runtime migration action: ${item.action}`;
+    }
   }
   applyInstalledHooksRetirementItems(items, ctx);
 }

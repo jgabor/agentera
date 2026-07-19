@@ -1,0 +1,17 @@
+id: tpiyeoeszi
+artifact: plan
+record:
+  name: Run final gates and synchronize project state
+  depends_on:
+    - svwmtdovok
+    - mlxfdlosxe
+    - pvladkmjmb
+    - vcdzsacgbz
+  status: pending
+  acceptance:
+    - GIVEN canonical verification WHEN final gates run THEN the source lane, the package lane including its owned build and packaging checks, typecheck, validation, and compaction pass.
+    - GIVEN completion WHEN project artifacts are inspected THEN documentation, changelog, TODO, progress, health, and replacement-plan state describe the same completed behavior.
+    - GIVEN predecessor history WHEN retrieved THEN psmmjdmrwd remains archived with its original thirteen tasks including tcrhynzola blocked after two attempts and two failures, and jyritjjnyd remains archived with its original six tasks including jnwgujivkt blocked after two attempts and two failures; no predecessor task is completed, reparented, or re-evaluated.
+    - GIVEN release metadata and repository state WHEN closeout completes THEN all version-bearing values remain unchanged and no publication, tag, push, or remote mutation occurred.
+  test_proportionality: One canonical final gate run, exact predecessor-history retrieval, state-artifact reconciliation, and clean local repository check.
+  plan: xqctyflnqu

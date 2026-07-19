@@ -10,34 +10,17 @@ metadata-only like GitHub Copilot and Codex.
 
 ## Quick install
 
-**Local plugin (no Marketplace listing required)**
+Use the shared skill and explicit Cursor lifecycle selection:
 
 ```bash
-git clone https://github.com/jgabor/agentera.git ~/.cursor/plugins/local/agentera
-# or: ln -s /path/to/agentera ~/.cursor/plugins/local/agentera
-```
-
-Restart Cursor or run **Developer: Reload Window**. The plugin root must contain
-`.cursor-plugin/plugin.json`. Agentera is not published to the Cursor Marketplace
-yet; use this manual local path or Cursor's local plugin loading UI instead.
-
-The plugin loads skills, managed capability agents, and plugin hooks. When you open
-a project that is not an Agentera install root, `sessionStart` exports
-`AGENTERA_HOME` from the plugin checkout (including a plugin-root fallback when env
-and project walk-up do not resolve a managed root).
-
-**Portable skill plus project upgrade**
-
-```bash
-npx skills add jgabor/agentera -g -a cursor --skill agentera -y
 npx -y agentera@next upgrade --project "$PWD" --runtime cursor --dry-run
 npx -y agentera@next upgrade --project "$PWD" --runtime cursor --yes
 npx -y agentera@next doctor --format json
 ```
 
-Use the plugin path for a user-global install. Use upgrade when you need
-project-committed `.cursor/hooks.json` and `.cursor/agents/` copies. Both paths can
-be combined.
+The canonical skill lives at `~/.agents/skills/agentera`. Lifecycle apply manages
+only declared Agentera-owned resources; native Cursor installation, enablement,
+and trust remain user-owned.
 
 User-facing install steps also live in [`README.md`](../../README.md) and
 [`UPGRADE.md`](../../UPGRADE.md).

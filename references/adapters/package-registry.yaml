@@ -176,29 +176,12 @@ records:
             - -g
             - -y
           skipped_without_update_packages_message: legacy skill removal skipped; pass --update-packages to run
-        - id: install-agentera-skill-opencode
-          runtime: opencode
-          action: install-agentera-skill
-          phase: runtime-install
-          argv:
-            - npx
-            - skills
-            - add
-            - jgabor/agentera
-            - -g
-            - -a
-            - opencode
-            - --skill
-            - agentera
-            - -y
-          skipped_without_update_packages_message: external package update skipped; pass --update-packages to run
       safety:
         argv_only: true
         update_packages_required_to_plan: true
         yes_required_to_execute: true
         preserve_existing_write_gates: true
         cleanup_phase: cleanup
-        runtime_install_phase: runtime-install
     docs_targets:
       version_files_source: .agentera/docs.yaml conventions.version_files
       version_files:

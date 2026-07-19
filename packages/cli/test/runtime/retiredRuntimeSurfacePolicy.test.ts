@@ -56,6 +56,16 @@ const primaryLifecycleDocs = [
   "references/adapters/runtime-feature-parity.md",
 ] as const;
 
+const retiredInstallerSurfaces = [
+  "packages/web/src/content/docs/docs/getting-started/install.mdx",
+  "packages/web/src/components/InstallTabs.astro",
+  "packages/cli/shim/lib/exec.mjs",
+  "references/adapters/package-registry.yaml",
+  "references/adapters/package-manifest-interface-model.yaml",
+  "references/adapters/package-surface-characterization.md",
+  "references/adapters/cursor.md",
+] as const;
+
 const textExtensions = new Set([
   ".astro",
   ".cjs",
@@ -241,5 +251,27 @@ describe("retired runtime current-surface policy", () => {
     }
     expect(read("README.md")).toContain("Cursor Agent CLI is the required Cursor surface and Cursor IDE is conditional");
     expect(read("UPGRADE.md")).toContain("`cursor-agent` is not a selector");
+  });
+
+  it("requires explicit all-runtime selection in active lifecycle guidance", () => {
+    for (const surface of ["README.md", "packages/cli/README.md", "UPGRADE.md", "references/adapters/runtime-feature-parity.md"]) {
+      const content = read(surface);
+      expect(content, surface).toMatch(/--runtime all[^\n]*--dry-run/);
+      expect(content, surface).toMatch(/--runtime all[^\n]*--yes/);
+      expect(content, surface).not.toMatch(/(?:dry-run|preview) without (?:`--runtime`|a selector)[^\n]*(?:observes|previews)[^\n]*runtimes/i);
+      expect(content, surface).not.toMatch(/selector-free dry-run previews/i);
+    }
+  });
+
+  it("keeps active install contracts on the shared skill and explicit lifecycle path", () => {
+    for (const surface of retiredInstallerSurfaces) {
+      const content = read(surface);
+      expect(content, surface).not.toMatch(/npx\s+skills\s+add\s+jgabor\/agentera/);
+      expect(content, surface).not.toContain("install-agentera-skill");
+      expect(content, surface).not.toMatch(/OpenCode portable-skill install/i);
+    }
+    expect(read("packages/web/src/components/InstallTabs.astro")).toContain("upgrade --runtime opencode --dry-run");
+    expect(read("packages/web/src/content/docs/docs/getting-started/install.mdx")).toContain("upgrade --runtime opencode --yes");
+    expect(read("packages/cli/shim/lib/exec.mjs")).toContain("upgrade --runtime all --dry-run");
   });
 });

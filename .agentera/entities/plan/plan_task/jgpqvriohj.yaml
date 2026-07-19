@@ -1,0 +1,14 @@
+id: jgpqvriohj
+artifact: plan
+record:
+  name: Retire residual normal-state routing and migration vocabulary duplication
+  depends_on:
+    - bvyxcfnuwl
+  status: pending
+  acceptance:
+    - GIVEN normal startup and state operations WHEN dispatched THEN active entity authority is required without per-command legacy behavior.
+    - GIVEN non-active state WHEN classified THEN upgrade owns classification while declared migration discovery remains read-only.
+    - GIVEN affected startup, state, upgrade, help, schema, and correction surfaces WHEN exercised THEN arguments, streams, exits, diagnostics, and side effects agree.
+    - GIVEN confirmed dead migration compatibility probes WHEN inspected THEN remove them without altering specialized selector identity, relationships, cursors, filters, omissions, or bounds.
+  test_proportionality: Entity-mode and migration-gate matrices, affected command surfaces, and focused specialized selectors.
+  plan: gdxhejjjwn

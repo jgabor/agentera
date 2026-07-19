@@ -1,0 +1,23 @@
+id: bvyxcfnuwl
+artifact: plan
+record:
+  name: Align lifecycle selector and repair contracts
+  depends_on:
+    []
+  status: blocked
+  acceptance:
+    - GIVEN selector-free upgrade WHEN active guidance is read THEN it does not claim optional lifecycle inspection; explicit --runtime all is shown for that intent.
+    - GIVEN retired OpenCode skill-link installation WHEN doctor, setup, and adapter guidance run THEN they do not promise repair through removed machinery and direct users to canonical explicit lifecycle behavior.
+    - GIVEN retired runtime actions WHEN invoked directly THEN fail-closed coverage preserves every user-owned target while required hook rewiring, retirement, ownership, and retry behavior remain green.
+  test_proportionality: Active selector and OpenCode contract tests plus focused migration, lifecycle, ownership, and retry cases; no packed parity matrix.
+  plan: gdxhejjjwn
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "The retired installer contract is removed, but declaresAgenteraSkill searches the whole Markdown document rather than YAML frontmatter. An unrelated user-owned skill with frontmatter name: unrelated and a body example containing name: agentera is falsely classified pass by doctor and lifecycle detection. Restrict identity matching to frontmatter and add the exact body-false-positive regression without introducing a parser framework."
+    provenance:
+      attempt_id: bvyxcfnuwl-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-19 18:26
+      writer_command: agentera state plan record-evaluation

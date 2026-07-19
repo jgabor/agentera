@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 
 import { opencodeConfigDir } from "../../src/setup/doctor.js";
 import {
@@ -13,13 +13,25 @@ import {
   dryRunMigration,
   planRuntimeRewirePhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import { applyRuntimeMigrationItem } from "../../src/upgrade/runtimeMigration.js";
+import {
+  applyRuntimeMigrationItem,
+  applyRuntimeMigrationItems,
+  type NpxHookCommands,
+  type RuntimeMigrationItem,
+} from "../../src/upgrade/runtimeMigration.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 import { scanDirectoryForPythonLeftovers } from "./helpers/preservation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
+const TEST_HOOK_COMMANDS: NpxHookCommands = {
+  cliEntrypoint: "agentera",
+  validate: "agentera hook validate-artifact",
+  cursorSessionStart: "agentera hook cursor-session-start",
+  cursorSessionStop: "agentera hook session-stop",
+  cursorPreTool: "agentera hook cursor-pre-tool-use",
+};
 
 let tmp: string;
 
@@ -123,126 +135,75 @@ describe("migrationCtx env isolation", () => {
   });
 });
 
-describe("applyRuntimeMigrationItem link-skill", () => {
-  const commands = {
-    hookValidate: "npx -y agentera@next hooks validate",
-    cliEntrypoint: "npx -y agentera@next",
-    sessionStart: "npx -y agentera@next hooks session-start",
-    sessionStop: "npx -y agentera@next hooks session-stop",
-  };
-
-  it("replaces a pre-existing regular file at the target with a symlink", () => {
-    const sandbox = path.join(tmp, "link-file");
-    const source = path.join(sandbox, "skill-src");
-    const target = path.join(sandbox, "skills", "agentera");
-    fs.mkdirSync(source, { recursive: true });
-    fs.writeFileSync(path.join(source, "SKILL.md"), "# skill\n");
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, "stale file\n");
-
-    const item = {
-      status: "pending" as const,
-      action: "link-skill" as const,
-      runtime: "opencode",
-      source,
-      target,
-      message: "test",
-    };
-    applyRuntimeMigrationItem(item, commands);
-    expect(item.status).toBe("applied");
-    expect(fs.lstatSync(target).isSymbolicLink()).toBe(true);
-    expect(fs.readlinkSync(target)).toBe(source);
-  });
-
-  it("replaces a pre-existing dangling symlink at the target", () => {
-    const sandbox = path.join(tmp, "link-dangling");
-    const source = path.join(sandbox, "skill-src");
-    const target = path.join(sandbox, "skills", "agentera");
-    fs.mkdirSync(source, { recursive: true });
-    fs.writeFileSync(path.join(source, "SKILL.md"), "# skill\n");
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.symlinkSync(path.join(sandbox, "missing-skill-dir"), target);
-
-    const item = {
-      status: "pending" as const,
-      action: "link-skill" as const,
-      runtime: "opencode",
-      source,
-      target,
-      message: "test",
-    };
-    applyRuntimeMigrationItem(item, commands);
-    expect(item.status).toBe("applied");
-    expect(fs.readlinkSync(target)).toBe(source);
-    expect(fs.existsSync(path.join(source, "SKILL.md"))).toBe(true);
-  });
-});
-
-const npxCommands = {
-  cliEntrypoint: "npx -y agentera@next",
-  validate: "npx -y agentera@next hook validate-artifact",
-  cursorSessionStart: "npx -y agentera@next hook cursor-session-start",
-  cursorSessionStop: "npx -y agentera@next hook session-stop",
-  cursorPreTool: "npx -y agentera@next hook cursor-pre-tool-use",
-};
-
 describe("runtime", () => {
-  it("symlinkTargetDisappears: when symlink creation fails the link-skill item fails recoverably with no half-state", () => {
-    const sandbox = path.join(tmp, "link-disappears");
-    const source = path.join(sandbox, "skill-src");
-    const target = path.join(sandbox, "skills", "agentera");
-    fs.mkdirSync(source, { recursive: true });
-    fs.writeFileSync(path.join(source, "SKILL.md"), "# skill\n");
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-
+  it.each([
+    ["copy-plugin", "file"],
+    ["copy-agent", "file"],
+    ["copy-command", "file"],
+    ["link-skill", "directory"],
+  ] as const)("rejects retired %s at the direct apply boundary without touching user files", (action, targetKind) => {
+    const root = path.join(tmp, action);
+    const source = path.join(root, "source");
+    const target = path.join(root, "target");
+    const sentinel = path.join(root, "keep.txt");
+    fs.mkdirSync(root, { recursive: true });
+    fs.writeFileSync(sentinel, "keep\n");
+    if (targetKind === "directory") {
+      fs.mkdirSync(source);
+      fs.mkdirSync(target);
+      fs.writeFileSync(path.join(target, "owned.txt"), "owned\n");
+    } else {
+      fs.writeFileSync(source, "managed replacement\n");
+      fs.writeFileSync(target, "user target\n");
+    }
+    const targetInode = fs.lstatSync(target).ino;
+    const sentinelInode = fs.lstatSync(sentinel).ino;
     const item = {
-      status: "pending" as const,
-      action: "link-skill" as const,
-      runtime: "opencode",
+      status: "pending",
+      action,
+      runtime: "test",
       source,
       target,
       message: "test",
-    };
-    vi.spyOn(fs, "symlinkSync").mockImplementationOnce(() => {
-      const err = new Error("ENOENT: no such file or directory") as NodeJS.ErrnoException;
-      err.code = "ENOENT";
-      throw err;
-    });
+    } as unknown as RuntimeMigrationItem;
 
-    applyRuntimeMigrationItem(item, npxCommands);
+    applyRuntimeMigrationItem(item, TEST_HOOK_COMMANDS);
 
     expect(item.status).toBe("failed");
-    expect(item.message).toMatch(/link-skill failed/);
-    expect(fs.existsSync(target)).toBe(false);
+    expect(item.message).toBe(`unsupported runtime migration action: ${action}`);
+    expect(fs.readdirSync(root).sort()).toEqual(["keep.txt", "source", "target"]);
+    expect(fs.lstatSync(target).ino).toBe(targetInode);
+    expect(fs.lstatSync(target).isSymbolicLink()).toBe(false);
+    expect(fs.lstatSync(sentinel).ino).toBe(sentinelInode);
+    expect(fs.readFileSync(sentinel, "utf8")).toBe("keep\n");
+    if (targetKind === "directory") {
+      expect(fs.readdirSync(target)).toEqual(["owned.txt"]);
+      expect(fs.readFileSync(path.join(target, "owned.txt"), "utf8")).toBe("owned\n");
+    } else {
+      expect(fs.readFileSync(target, "utf8")).toBe("user target\n");
+    }
   });
 
-  it("sourceDisappearsBetweenPlanAndApply: marks item failed and leaves no symlink when source dir is gone", () => {
-    const sandbox = path.join(tmp, "link-source-gone");
-    const source = path.join(sandbox, "skill-src");
-    const target = path.join(sandbox, "skills", "agentera");
-    fs.mkdirSync(source, { recursive: true });
-    fs.writeFileSync(path.join(source, "SKILL.md"), "# skill\n");
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-
+  it("rejects an unknown pending action without touching its target", () => {
+    const home = path.join(tmp, "unknown-action-home");
+    const target = path.join(home, "owned-target");
+    fs.mkdirSync(home, { recursive: true });
+    fs.writeFileSync(target, "user content\n");
     const item = {
       status: "pending" as const,
-      action: "link-skill" as const,
-      runtime: "opencode",
-      source,
+      action: "unknown-action",
+      runtime: "test",
+      source: path.join(home, "source"),
       target,
       message: "test",
     };
-    fs.rmSync(source, { recursive: true, force: true });
 
-    const symlinkSpy = vi.spyOn(fs, "symlinkSync");
-    applyRuntimeMigrationItem(item, npxCommands);
-    symlinkSpy.mockRestore();
+    applyRuntimeMigrationItems([item], migrationCtx(path.join(home, "app"), path.join(home, "project"), home, REPO_ROOT));
 
     expect(item.status).toBe("failed");
-    expect(item.message).toBe(`link-skill source disappeared between plan and apply: ${source}`);
-    expect(fs.existsSync(target)).toBe(false);
-    expect(() => fs.lstatSync(target)).toThrow();
-    expect(symlinkSpy).not.toHaveBeenCalled();
+    expect(item.message).toBe("unsupported runtime migration action: unknown-action");
+    expect(fs.readFileSync(target, "utf8")).toBe("user content\n");
+    expectTypeOf(item.action).not.toEqualTypeOf<RuntimeMigrationItem["action"]>();
   });
 
   it("mixedVersionsReconcile: per-runtime rewire is planned independently for codex and cursor configs", () => {

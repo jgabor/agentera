@@ -1,0 +1,15 @@
+id: fqjsvuypsz
+artifact: plan
+record:
+  name: Converge runtime doctor and lifecycle contracts
+  depends_on:
+    - ltludymudj
+  status: pending
+  acceptance:
+    - GIVEN normal operation WHEN prime, doctor, schema, help, or project integration is used THEN only shared-skill and CLI state is reported.
+    - GIVEN normal active-state upgrade WHEN invoked THEN it has no current-runtime selector or native-resource operation set.
+    - GIVEN retired selector input WHEN invoked THEN it fails without mutation and explains the shared-skill path.
+    - GIVEN recognized v2 migration or explicit Claude cleanup WHEN invoked THEN its distinct supported route remains reachable and documented.
+    - GIVEN preview or apply WHEN observed THEN no current plugin, hook, agent, command, descriptor, or marketplace file is created.
+  test_proportionality: Public command surfaces, canonical ownership and retry, retired-selector failures, v2 migration, Claude cleanup, and active guidance.
+  plan: hqwkqcfrii

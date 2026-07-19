@@ -1,0 +1,37 @@
+id: gdxhejjjwn
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-19
+    status: archived
+    reviewed: 2026-07-19
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: Finish the verified single-path upgrade"
+  what: Complete the remaining lifecycle contract alignment, normal-state routing cleanup, verification-lane ownership, packed proof, and state closeout.
+  why: Plan xqctyflnqu is archived with Task mlfxdlosxe truthfully blocked after two failed evaluations. Its correction removed the unsafe legacy writers and added direct fail-closed coverage, but review found active selector and OpenCode repair promises that still contradict production. Carry forward only those concrete gaps and the four untouched downstream outcomes.
+  constraints: Preserve all archived plans and task evaluations exactly. Keep the one-way v2-to-v3 importer, required existing-v2 hook rewiring, proven retirement, explicit runtime lifecycle selection, user-owned resources, bounded outputs, marker-last activation, one shared skill plus CLI, and entity-only active-state authority. Do not add compatibility or recovery systems, duplicate source/package matrices, broaden retrieval or namespaces, change versions, release, publish, tag, push, or mutate remotes.
+  overall_acceptance: GIVEN the corrected single-path upgrade WHEN this plan completes THEN active lifecycle contracts match executable behavior, normal operation has one routing vocabulary, source and package proof each have one owner, packed upgrade converges, canonical gates pass, and all predecessor histories remain exact.
+  scope:
+    included:
+      - Active selector and OpenCode repair contracts that still describe retired lifecycle behavior.
+      - Residual normal-state routing and migration vocabulary duplication.
+      - One source lane, one package lane, one packed fixed-path proof, and final state synchronization.
+    excluded:
+      - Reimplementation of the removed legacy copy and link writers.
+      - Generic retrieval work, broad namespace refactors, new compatibility systems, releases, and remote work.
+    deferred:
+      []
+  design: Align active lifecycle promises first, then retire confirmed residual routing. Assign detailed verification to one source lane and one package lane, prove the extracted fixed path once, and close state only after all canonical gates pass.
+  unknowns:
+    - question: Which active surfaces still imply selector-free lifecycle inspection or repair of the retired OpenCode skill link?
+      affects_task: 1
+      resolve_by: Check supported help, docs, doctor, setup, and adapter surfaces against current selector and ownership behavior.
+    - question: Which supported entrypoints still expose normal-state aggregate routing or duplicate migration vocabulary?
+      affects_task: 2
+      resolve_by: Remove only confirmed executable duplication; record evidence when no duplication remains.
+    - question: Which detailed matrices lack one verification-lane owner after contract and routing cleanup?
+      affects_task: 3
+      resolve_by: Inventory source and package assertions and retain only minimal complementary boundary smoke.
+  surprises:
+    []

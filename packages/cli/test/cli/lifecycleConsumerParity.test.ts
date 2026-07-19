@@ -27,6 +27,7 @@ let previousCwd = process.cwd();
 let previousBootstrap: string | undefined;
 let previousHome: string | undefined;
 let previousPath: string | undefined;
+let previousXdgConfigHome: string | undefined;
 
 function captureDoctor(): Record<string, any> {
   let output = "";
@@ -62,9 +63,11 @@ beforeEach(() => {
   previousBootstrap = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   previousHome = process.env.HOME;
   previousPath = process.env.PATH;
+  previousXdgConfigHome = process.env.XDG_CONFIG_HOME;
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
   process.env.HOME = home;
   process.env.PATH = "";
+  process.env.XDG_CONFIG_HOME = path.join(home, ".config");
   process.chdir(project);
 });
 
@@ -76,6 +79,8 @@ afterEach(() => {
   else process.env.HOME = previousHome;
   if (previousPath === undefined) delete process.env.PATH;
   else process.env.PATH = previousPath;
+  if (previousXdgConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+  else process.env.XDG_CONFIG_HOME = previousXdgConfigHome;
   fs.rmSync(root, { recursive: true, force: true });
 });
 
@@ -116,7 +121,7 @@ describe("lifecycle consumer projection parity", () => {
       new Set(observed.actions.filter((action) => action.actionClass === "repairable_owned")
         .flatMap((action) => action.runtimeIds)).size,
     );
-    expect(upgrade.lifecycle?.projection).toEqual(observed);
+    expect(upgrade.lifecycle?.projection).toEqual(expected);
     expect(doctor.runtime_lifecycle).toEqual(observed);
     expect(state.runtime_lifecycle_snapshot).toEqual(observed);
     expect(state.runtime_lifecycle).toEqual(expected);

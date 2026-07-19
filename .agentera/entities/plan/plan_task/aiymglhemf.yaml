@@ -1,0 +1,24 @@
+id: aiymglhemf
+artifact: plan
+record:
+  name: Complete the carried lifecycle candidate at the strict identity boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN skill metadata WHEN identity is evaluated THEN one unambiguous canonical name in the first metadata block establishes identity and body text never does.
+    - GIVEN identity, path validity, and mutation authority WHEN diagnosed THEN each is reported independently and metadata never authorizes mutation.
+    - GIVEN a rejected user-owned or unsafe target WHEN inspected THEN bytes and identity remain stable with actionable CLI remediation.
+    - GIVEN the adopted candidate WHEN verified THEN selector and installer corrections plus retired-action fail-closed safety remain intact without new scope.
+  test_proportionality: Metadata truth table, exact body false-positive, valid directory and symlink, non-mutation, and focused candidate regressions.
+  plan: hqwkqcfrii
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: aiymglhemf-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-19 22:39
+      writer_command: agentera state plan record-evaluation

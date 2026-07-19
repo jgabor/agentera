@@ -35,11 +35,12 @@ same diagnosis and explicit `action_required` steps.
 ### OpenCode
 
 ```bash
-npx skills add jgabor/agentera -g -a opencode --skill agentera -y
+npx -y agentera@next upgrade --runtime opencode --dry-run
+npx -y agentera@next upgrade --runtime opencode --yes
 ```
 
-The npm bundle also ships the OpenCode plugin and Agentera agent source used by
-lifecycle repair.
+This manages the one shared skill and previews the optional OpenCode plugin and
+agent source. The OpenCode plugin does not install or repair skill links.
 
 ### Codex
 

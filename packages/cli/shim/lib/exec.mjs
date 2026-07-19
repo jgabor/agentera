@@ -157,17 +157,19 @@ export function printInstallHelp(reason) {
     reason ? `agentera: ${reason}` : "",
   ];
   if (process.env.AGENTERA_NO_V3_HINT !== "1") {
-    lines.push("", "The v3 TypeScript CLI is ready now on the @next tag:", `  ${V3_NEXT_COMMAND}`);
+    lines.push(
+      "",
+      "The v3 TypeScript CLI is ready now on the @next tag:",
+      `  ${V3_NEXT_COMMAND}`,
+      "",
+      "Preview and install the shared skill plus Agentera-owned runtime resources:",
+      "  npx -y agentera@next upgrade --runtime all --dry-run",
+      "  npx -y agentera@next upgrade --runtime all --yes",
+    );
   }
   lines.push(
     "",
-    "Install Agentera for your runtime:",
-    "  npx skills add jgabor/agentera -g -a opencode --skill agentera -y",
-    "",
-    "Upgrade / app-home CLI (requires uv):",
-    "  uvx --from git+https://github.com/jgabor/agentera agentera upgrade",
-    "",
-    "From a clone:",
+    "Stable 2.x recovery from a clone (requires uv):",
     "  uv run scripts/agentera prime",
     "",
     "https://github.com/jgabor/agentera#install",

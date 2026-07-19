@@ -41,7 +41,8 @@ import {
 } from "../runtime/lifecycleAdapters.js";
 import {
   projectRuntimeLifecycle,
-  type RuntimeLifecycleSnapshot,
+  summarizeRuntimeLifecycle,
+  type RuntimeLifecycleSummary,
 } from "../runtime/lifecycleSnapshot.js";
 
 export const LIFECYCLE_UPGRADE_SCHEMA = "agentera.lifecycleUpgrade.v1" as const;
@@ -120,8 +121,8 @@ export interface LifecycleUpgradeResult {
   ownershipJournal: LifecycleOwnershipJournalRead;
   operations: LifecycleUpgradeOperation[];
   userActions: LifecycleUpgradeUserAction[];
-  /** Canonical lifecycle projection used by doctor, prime, status, and integration. */
-  projection: RuntimeLifecycleSnapshot;
+  /** Bounded aggregate projection; operations owns per-resource lifecycle detail. */
+  projection: RuntimeLifecycleSummary;
   retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult | null;
   retiredSummary: LifecycleRetiredSummary | null;
   summary: LifecycleUpgradeSummary;
@@ -148,7 +149,7 @@ interface BuiltLifecycleUpgrade {
   journal: LifecycleOwnershipJournalRead;
   operations: LifecycleUpgradeOperation[];
   userActions: LifecycleUpgradeUserAction[];
-  projection: RuntimeLifecycleSnapshot;
+  projection: RuntimeLifecycleSummary;
   retiredPreview: RetiredRuntimeCleanupPreview | null;
 }
 
@@ -160,7 +161,7 @@ function selectedRuntimeIds(selector: LifecycleRuntimeSelector | null): ActiveRu
 function lifecycleProjection(
   args: LifecycleUpgradeArgs,
   ledger: LifecycleOwnershipJournalRead["ledger"],
-): RuntimeLifecycleSnapshot {
+): RuntimeLifecycleSummary {
   const matrix = inspectRuntimeLifecycleAdapters({
     home: args.home,
     project: args.project,
@@ -169,7 +170,7 @@ function lifecycleProjection(
     canonicalSkillTarget: args.canonicalSkillTarget,
     ledger,
   } satisfies RuntimeAdapterInspectionContext);
-  return projectRuntimeLifecycle(matrix, selectedRuntimeIds(args.selector));
+  return summarizeRuntimeLifecycle(projectRuntimeLifecycle(matrix, selectedRuntimeIds(args.selector)));
 }
 
 function resourceForOperation(
@@ -431,7 +432,9 @@ function buildLifecycleUpgrade(args: LifecycleUpgradeArgs): BuiltLifecycleUpgrad
     journal,
     operations,
     userActions: userActions(reports),
-    projection: projectRuntimeLifecycle(matrix, selectedRuntimeIds(args.selector)),
+    projection: summarizeRuntimeLifecycle(
+      projectRuntimeLifecycle(matrix, selectedRuntimeIds(args.selector)),
+    ),
     retiredPreview,
   };
 }

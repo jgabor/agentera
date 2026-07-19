@@ -70,12 +70,11 @@ are emitted as `action_required`.
 
 ## Lifecycle repair
 
-On the v3 development channel, a dry-run without `--runtime` previews all
-active runtimes. Applying without a selector remains the existing app-only
-operation; runtime apply requires an explicit selector and `--yes`:
+On the v3 development channel, preview and apply without `--runtime` remain
+app-only. Runtime inspection and apply require an explicit selector; use
+`--runtime all` for every active runtime:
 
 ```bash
-agentera upgrade --dry-run --channel development
 agentera upgrade --runtime all --dry-run
 agentera upgrade --runtime all --yes
 ```

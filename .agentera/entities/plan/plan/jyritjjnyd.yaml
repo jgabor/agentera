@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-07-19
-    status: open
+    status: archived
     reviewed: 2026-07-19
     critic_issues: 14 found, 9 addressed, 5 dismissed
     title: "Plan: Finish the single-path v2-to-v3 upgrade"

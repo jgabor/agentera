@@ -1,0 +1,13 @@
+id: kdvkfesccb
+artifact: progress
+record:
+  timestamp: 2026-07-19 22:28
+  type: fix
+  phase: build
+  what: Completed the adopted lifecycle candidate by constraining shared skill identity to one exact canonical name in the first valid Markdown frontmatter block and adding non-mutation coverage across helper, doctor, and lifecycle diagnosis.
+  context:
+    intent: Complete task aiymglhemf at the strict identity boundary without changing the adopted selector, installer, ownership, retry, or retired-action scope.
+    constraints: Adopted cumulative lifecycle candidate only; no plan/task/evaluation edits, TODO sstaqgollf resolution, packed parity, runtime-retirement follow-on, version/release, commit, push, or remote mutation.
+  inspiration: Task aiymglhemf, firm Decision llavvlpcmb, and the authoritative strict identity truth table.
+  verified: "Criterion 1: helper table passed 7/7 cases for canonical frontmatter, unrelated metadata plus body marker, body-only marker, missing name, unclosed block, malformed metadata, and duplicate canonical/unrelated names; direct exported-predicate probe observed canonical=true and exact_regression/body_only/unclosed/duplicate=false. Criterion 2: focused helper/doctor/lifecycle suite passed 3 files/75 tests; lifecycle regression observed canonical metadata identity=true while destination ownership=unowned and apply=blocked_unowned with no ownership record, and existing valid directory plus symlink diagnostics remained non-mutating. Criterion 3: direct doctor probe for the exact unrelated-frontmatter/body-marker regression returned warn with explicit --runtime opencode remediation while SKILL.md bytes, file inode, directory inode, and child listing remained stable; lifecycle regression independently preserved rejected target bytes, inode, and children. Criterion 4: focused selector/install/identity/ownership/collision/retry suite passed 18 files/274 tests; retired-action direct fail-closed coverage passed 4/4; active installer rg scan returned 0 matches in the previously bounded active roots; shim passed 25/25; web check passed 16 formatting and 4 lint files and web build completed 8 routes. CLI typecheck/build and full source suite passed 213 files/2547 tests; state validation passed 1556 entities/0 issues before this append; capability contract passed 2/2; compact and git diff --check passed."
+  next: Orchestrator may evaluate aiymglhemf and record PASS before committing the cumulative candidate.

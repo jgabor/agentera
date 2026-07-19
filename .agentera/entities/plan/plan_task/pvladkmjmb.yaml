@@ -1,0 +1,15 @@
+id: pvladkmjmb
+artifact: plan
+record:
+  name: Establish single-owner source and package gates
+  depends_on:
+    - svwmtdovok
+    - mlxfdlosxe
+  status: pending
+  acceptance:
+    - GIVEN canonical source verification WHEN run THEN it does not build, package, install, or execute extracted output.
+    - GIVEN canonical package verification WHEN run THEN shared package construction and installation occur once, after which the same extracted installation may be invoked as required by its one fixed-path scenario.
+    - GIVEN detailed behavioral and failure matrices WHEN ownership is inspected THEN each matrix has one owner; package integration asserts only the minimal end-to-end conjunction needed to prove the distribution boundary.
+    - GIVEN either lane fails WHEN diagnostics are rendered THEN its boundary is identified and the other lane is not invoked implicitly.
+  test_proportionality: One independently failing source lane, one independently failing package lane, and one ownership inventory for detailed public-effect matrices.
+  plan: xqctyflnqu

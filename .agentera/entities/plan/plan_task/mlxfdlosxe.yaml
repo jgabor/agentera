@@ -1,0 +1,25 @@
+id: mlxfdlosxe
+artifact: plan
+record:
+  name: Expose one lifecycle operation set
+  depends_on:
+    []
+  status: blocked
+  acceptance:
+    - GIVEN selected runtime resources WHEN previewed or applied THEN each resource appears once with one consistent operation and outcome per invocation.
+    - GIVEN selector-free cross-major upgrade WHEN entities activate THEN only required v2 migration rewiring runs; optional current-runtime lifecycle work still requires an explicit selector.
+    - GIVEN user-owned, ambiguous, modified, or unproven resources WHEN encountered THEN they remain unchanged and handoff identifies the required action.
+    - GIVEN retry after partial runtime work WHEN evaluated THEN completed operations are no-ops and only unfinished work is reconsidered.
+    - GIVEN source and packed invocation WHEN lifecycle behavior is observed THEN both expose the same shared-skill and CLI resource contract.
+  test_proportionality: Selected and selector-free cases, managed rewrite, ownership and collision matrix, source/packed parity, and fault/retry behavior.
+  plan: xqctyflnqu
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Public CLI behavior now passes, but the exported legacy runtimeMigration apply branch still accepts copy-plugin, copy-agent, copy-command, and link-skill. A direct production-module probe showed link-skill recursively deleting a user-owned keep.txt directory and replacing it with a symlink. Delete the obsolete copy/link apply cases, copyIfChanged helper, unused Stats import, and direct tests preserving those retired actions.
+    provenance:
+      attempt_id: mlxfdlosxe-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-19 15:36
+      writer_command: agentera state plan record-evaluation

@@ -164,23 +164,24 @@ afterEach(() => {
 });
 
 describe("upgrade lifecycle preview", () => {
-  it.each(ACTIVE_SELECTORS)("covers default all-runtime preview and narrowed %s selection", (runtime) => {
-    const defaultPreview = buildUpgradePlan({
+  it.each(ACTIVE_SELECTORS)("covers explicit all-runtime preview and narrowed %s selection", (runtime) => {
+    const allRuntimePreview = buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
+      runtime: "all",
       dryRun: true,
     });
 
-    expect(defaultPreview.lifecycle?.selection).toEqual({
+    expect(allRuntimePreview.lifecycle?.selection).toEqual({
       requested: "all",
       runtimeIds: ACTIVE_SELECTORS,
     });
-    expect(defaultPreview.lifecycle?.operations.filter((operation) => operation.id === "canonical_skill"))
+    expect(allRuntimePreview.lifecycle?.operations.filter((operation) => operation.id === "canonical_skill"))
       .toHaveLength(1);
-    expect(defaultPreview.lifecycle?.operations.some((operation) => operation.runtime === runtime)
-      || defaultPreview.lifecycle?.userActions.some((action) => action.runtime === runtime)).toBe(true);
+    expect(allRuntimePreview.lifecycle?.operations.some((operation) => operation.runtime === runtime)
+      || allRuntimePreview.lifecycle?.userActions.some((action) => action.runtime === runtime)).toBe(true);
 
     const narrowed = run(runtime, false);
     expect(narrowed.selection).toEqual({ requested: runtime, runtimeIds: [runtime] });
@@ -188,6 +189,46 @@ describe("upgrade lifecycle preview", () => {
     expect(narrowed.operations.slice(1).every((operation) => operation.id.startsWith(`${runtime}.`))).toBe(true);
     expect(narrowed.operations.some((operation) => operation.runtime === runtime)
       || narrowed.userActions.some((action) => action.runtime === runtime)).toBe(true);
+  });
+
+  it("leaves optional lifecycle resources unselected during selector-free upgrade", () => {
+    const before = treeBytes(fx.root);
+    const preview = buildUpgradePlan({
+      installRoot: fx.appHome,
+      home: fx.home,
+      project: fx.project,
+      channel: "development",
+      dryRun: true,
+    });
+
+    expect(preview.lifecycle).toBeNull();
+    expect(preview.phases.some((phase) => phase.name === "lifecycle")).toBe(false);
+    expect(preview.applyCommand).toBeNull();
+    expect(treeBytes(fx.root)).toEqual(before);
+  });
+
+  it.each([false, true])("reports each selected resource once when apply=%s", (apply) => {
+    const plan = buildUpgradePlan({
+      installRoot: fx.appHome,
+      home: fx.home,
+      project: fx.project,
+      channel: "development",
+      runtime: "opencode",
+      ...(apply ? { yes: true } : { dryRun: true }),
+    });
+    const operations = plan.lifecycle?.operations ?? [];
+
+    expect(new Set(operations.map(({ id }) => id)).size).toBe(operations.length);
+    expect(plan.phases.find((phase) => phase.name === "lifecycle")?.items).toEqual([]);
+    expect(plan.lifecycle?.projection).not.toHaveProperty("actions");
+    expect(plan.lifecycle?.projection).not.toHaveProperty("sharedResources");
+    const aggregateProjection = JSON.stringify(plan.lifecycle?.projection);
+    for (const operation of operations) {
+      expect(aggregateProjection).not.toContain(`\"${operation.id}\"`);
+    }
+    expect(operations.every((operation) => apply
+      ? operation.outcome !== null
+      : operation.outcome === null)).toBe(true);
   });
 
   it("selects all runtimes in authority order, deduplicates shared work, and performs zero writes or native execution", () => {

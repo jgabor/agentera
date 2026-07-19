@@ -5,8 +5,6 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { writeFileAtomic } from "../../src/upgrade/atomicWriter.js";
-import { type MigrationPhaseItem } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import { applyRuntimeMigrationItem } from "../../src/upgrade/runtimeMigration.js";
 
 let tmp: string;
 
@@ -24,14 +22,6 @@ function enospcError(): NodeJS.ErrnoException {
   err.code = "ENOSPC";
   return err;
 }
-
-const npxCommands = {
-  cliEntrypoint: "npx -y agentera@next",
-  validate: "npx -y agentera@next hook validate-artifact",
-  cursorSessionStart: "npx -y agentera@next hook cursor-session-start",
-  cursorSessionStop: "npx -y agentera@next hook session-stop",
-  cursorPreTool: "npx -y agentera@next hook cursor-pre-tool-use",
-};
 
 describe("atomicity", () => {
   it("renameUnderKill: a failed write leaves the existing target old-content, never partial", () => {
@@ -64,33 +54,4 @@ describe("atomicity", () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it("diskFullMidCopy: a mid-copy ENOSPC marks the item failed; a re-run after space recovers succeeds", () => {
-    const source = path.join(tmp, "plugin-src.js");
-    const target = path.join(tmp, "config", "plugins", "agentera.js");
-    fs.writeFileSync(source, "module.exports = () => {};\n");
-
-    const buildItem = (): MigrationPhaseItem => ({
-      status: "pending",
-      action: "copy-plugin",
-      runtime: "opencode",
-      source,
-      target,
-      message: "will copy managed OpenCode plugin",
-    });
-
-    const failed = buildItem();
-    vi.spyOn(fs, "writeFileSync").mockImplementationOnce(() => {
-      throw enospcError();
-    });
-    applyRuntimeMigrationItem(failed, npxCommands);
-    expect(failed.status).toBe("failed");
-    expect(failed.message).toMatch(/copy-plugin failed/);
-    expect(fs.existsSync(target)).toBe(false);
-
-    const retry = buildItem();
-    applyRuntimeMigrationItem(retry, npxCommands);
-    expect(retry.status).toBe("applied");
-    expect(fs.existsSync(target)).toBe(true);
-    expect(fs.readFileSync(target, "utf8")).toBe(fs.readFileSync(source, "utf8"));
-  });
 });

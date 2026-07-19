@@ -1,0 +1,14 @@
+id: gxacqleupe
+artifact: plan
+record:
+  name: Retire repository-native integrations and preserve CLI behavior
+  depends_on:
+    - fqjsvuypsz
+  status: pending
+  acceptance:
+    - GIVEN repository-native integration files WHEN retired THEN no production consumer or validator depends on them.
+    - GIVEN independently required CLI behavior previously covered through plugin tests WHEN integrations retire THEN that behavior remains directly covered by the CLI contract.
+    - GIVEN repository cleanup WHEN applied THEN native files and their standalone dependency boundary disappear without touching host or user-project configuration.
+    - GIVEN v2 fixtures and historical records WHEN current surfaces retire THEN they remain available and are never classified as current product.
+  test_proportionality: Independently required CLI behavior, tracked-current-surface allowlist, and preserved migration fixtures; no live host tests.
+  plan: hqwkqcfrii

@@ -8,8 +8,8 @@ const INSTRUCTION_MODULE_ROOT = path.join("packages", "cli", "src", "capabilitie
 /**
  * v3 repo signal (D65): all twelve capability instruction modules live under
  * packages/cli/src/capabilities/<name>/instructions.ts. When present, in-tree
- * .cursor/agents/ uses prime --context and must not be overwritten by upgrade
- * copy-agent from a v2 app-home bundle.
+ * .cursor/agents/ uses prime --context and must not be overwritten from a v2
+ * app-home bundle during runtime rewiring.
  */
 export function projectUsesV3CapabilityInstructionModules(projectRoot: string): boolean {
   const root = path.resolve(projectRoot);

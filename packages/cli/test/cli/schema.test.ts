@@ -154,7 +154,7 @@ describe("cli schema", () => {
     expect(payload.runtime_lifecycle.upgrade).toMatchObject({
       schema_version: "agentera.lifecycleUpgrade.v1",
       selectors: ["all", "opencode", "codex", "cursor", "copilot"],
-      projection: "lifecycle.projection is the canonical runtime lifecycle snapshot shared with doctor, prime, status, and project integration",
+      projection: "lifecycle.projection is the bounded runtime lifecycle summary; lifecycle.operations is the sole detailed resource operation and outcome set",
       default_without_runtime_selector: "app_upgrade_only",
       preview: "strictly_read_only",
       apply_requires: "--yes",

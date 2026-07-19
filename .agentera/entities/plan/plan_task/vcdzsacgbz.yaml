@@ -1,0 +1,14 @@
+id: vcdzsacgbz
+artifact: plan
+record:
+  name: Prove the fixed packed upgrade path
+  depends_on:
+    - pvladkmjmb
+  status: pending
+  acceptance:
+    - GIVEN a representative Git-clean managed v2 fixture WHEN the extracted package performs the sole upgrade THEN expected records and relationships survive, migration sources remain unchanged, valid entity authority activates, and prime succeeds.
+    - GIVEN required managed cross-major rewiring WHEN the packed upgrade completes THEN required changes converge while optional lifecycle resources remain unchanged without a selector.
+    - GIVEN the same extracted installation runs the full command again WHEN the project is already active THEN it converges without duplicate entities or repeated resource writes.
+    - GIVEN source-owned ownership-blocked and unsupported-state matrices WHEN package integration runs THEN it asserts only the minimal fixed-path conjunction and does not recreate those matrices.
+  test_proportionality: One representative extracted-package success fixture, one idempotent rerun from the same installation, and evidence that detailed failure matrices remain source-lane owned.
+  plan: xqctyflnqu

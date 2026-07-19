@@ -1,0 +1,15 @@
+id: bdrncihpei
+artifact: plan
+record:
+  name: Establish single-owner source and package gates
+  depends_on:
+    - bvyxcfnuwl
+    - jgpqvriohj
+  status: pending
+  acceptance:
+    - GIVEN source verification WHEN run THEN it does not build, package, install, or execute extracted output.
+    - GIVEN package verification WHEN run THEN construction and installation occur once before fixed extracted-package scenarios.
+    - GIVEN detailed behavior and failure matrices WHEN inventoried THEN each has one owner and package integration keeps only minimal distribution-boundary conjunctions.
+    - GIVEN a lane failure WHEN rendered THEN diagnostics identify its boundary without invoking the other lane implicitly.
+  test_proportionality: One independently failing source lane, one package lane, and one detailed-matrix ownership inventory.
+  plan: gdxhejjjwn

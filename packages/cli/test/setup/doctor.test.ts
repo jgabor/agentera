@@ -26,7 +26,7 @@ import {
   diagnoseOpencodeCommands,
   diagnoseOpencodeProfileDir,
   diagnoseOpencodeProfileDirSchemaLiteral,
-  diagnoseOpencodeSkillPaths,
+  diagnoseCanonicalSkill,
   extractReferencePaths,
   hasManagedMarker,
   normalizeReference,
@@ -293,31 +293,54 @@ describe("setup doctor: OpenCode diagnostics", () => {
     expect(c.status).toBe("pass");
   });
 
-  it("passes skill paths when both managed symlinks resolve to a SKILL.md", () => {
-    const root = path.join(tmp, "root");
-    for (const name of ["agentera", "status"]) {
-      fs.mkdirSync(path.join(root, "skills", name), { recursive: true });
-      fs.writeFileSync(path.join(root, "skills", name, "SKILL.md"), `# ${name}`);
-    }
+  it("passes when the canonical shared skill resolves to SKILL.md", () => {
     const home = path.join(tmp, "h");
-    const skills = path.join(home, ".config", "opencode", "skills");
-    fs.mkdirSync(skills, { recursive: true });
-    fs.symlinkSync(path.join(root, "skills", "agentera"), path.join(skills, "agentera"));
-    fs.symlinkSync(path.join(root, "skills", "status"), path.join(skills, "status"));
-    const c = diagnoseOpencodeSkillPaths(root, home, {});
+    const skill = path.join(home, ".agents", "skills", "agentera");
+    fs.mkdirSync(skill, { recursive: true });
+    fs.writeFileSync(path.join(skill, "SKILL.md"), "---\nname: agentera\ndescription: canonical\n---\n");
+    const c = diagnoseCanonicalSkill(home);
     expect(c.status).toBe("pass");
+    expect(c.path).toBe(skill);
   });
 
-  it("skips skill names whose source is absent rather than warning", () => {
-    const root = path.join(tmp, "root-skip");
-    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
-    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "s");
-    const home = path.join(tmp, "h-skip");
-    const skills = path.join(home, ".config", "opencode", "skills");
-    fs.mkdirSync(skills, { recursive: true });
-    fs.symlinkSync(path.join(root, "skills", "agentera"), path.join(skills, "agentera"));
-    const c = diagnoseOpencodeSkillPaths(root, home, {});
-    expect(c.status).toBe("pass");
+  it("preserves an unrelated SKILL.md and directs recovery through explicit lifecycle", () => {
+    const home = path.join(tmp, "h-collision");
+    const skill = path.join(home, ".agents", "skills", "agentera");
+    fs.mkdirSync(skill, { recursive: true });
+    const skillFile = path.join(skill, "SKILL.md");
+    fs.writeFileSync(skillFile, "---\nname: unrelated\ndescription: user-owned\n---\nExample:\nname: agentera\n");
+    fs.writeFileSync(path.join(skill, "keep.txt"), "child\n");
+    const before = fs.readFileSync(skillFile);
+    const fileInode = fs.lstatSync(skillFile).ino;
+    const directoryInode = fs.lstatSync(skill).ino;
+    const children = fs.readdirSync(skill).sort();
+
+    const c = diagnoseCanonicalSkill(home);
+
+    expect(c.status).toBe("warn");
+    expect(c.name).toBe("canonical_skill");
+    expect(c.details).toContain("existing target preserved; lifecycle preview will classify ownership");
+    expect(c.details).toContain("action: preview explicit lifecycle with `npx -y agentera@next upgrade --runtime opencode --dry-run`");
+    expect(c.details).toContain("action: apply approved Agentera-owned work with `npx -y agentera@next upgrade --runtime opencode --yes`");
+    expect(fs.readFileSync(skillFile)).toEqual(before);
+    expect(fs.lstatSync(skillFile).ino).toBe(fileInode);
+    expect(fs.lstatSync(skill).ino).toBe(directoryInode);
+    expect(fs.readdirSync(skill).sort()).toEqual(children);
+    expect(fs.readFileSync(path.join(skill, "keep.txt"), "utf8")).toBe("child\n");
+    expect(JSON.stringify(c)).not.toContain("start OpenCode");
+  });
+
+  it("accepts the canonical shared skill through the lifecycle-authority symlink shape", () => {
+    const home = path.join(tmp, "h-symlink");
+    const source = path.join(tmp, "source-skill");
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(path.join(source, "SKILL.md"), "---\nname: agentera\ndescription: canonical\n---\n");
+    const target = path.join(home, ".agents", "skills", "agentera");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.symlinkSync(source, target);
+
+    expect(diagnoseCanonicalSkill(home).status).toBe("pass");
+    expect(fs.readlinkSync(target)).toBe(source);
   });
 
   describe("profile_dir_deprecated", () => {

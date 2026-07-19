@@ -1,0 +1,15 @@
+id: zscnoeofqx
+artifact: plan
+record:
+  name: Retire native package and distribution surfaces
+  depends_on:
+    - fqjsvuypsz
+    - gxacqleupe
+  status: pending
+  acceptance:
+    - GIVEN package construction WHEN run THEN it succeeds without native runtime source directories or manifests.
+    - GIVEN package inventory WHEN inspected THEN it contains CLI, canonical skill, required schemas, references, and registry data but no current native integration path.
+    - GIVEN package and release contracts WHEN validated THEN they require no native manifest parity or native install command.
+    - GIVEN active package guidance WHEN read THEN it describes only shared skill plus CLI while historical changelog remains history.
+  test_proportionality: Registry contract, bundle surface, package inventory, and minimal CLI boot smoke; packed upgrade behavior remains Task 8 owned.
+  plan: hqwkqcfrii

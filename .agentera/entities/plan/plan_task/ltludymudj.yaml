@@ -1,0 +1,15 @@
+id: ltludymudj
+artifact: plan
+record:
+  name: Isolate and harden legacy migration and cleanup
+  depends_on:
+    - aiymglhemf
+  status: pending
+  acceptance:
+    - GIVEN a proven v2 host hook WHEN full migration runs THEN it is rewired to a CLI command without installing a current native integration.
+    - GIVEN legacy runtime resources WHEN cleanup runs THEN authoritative ownership is required and name, filename, or text similarity never suffices.
+    - GIVEN markerless, ambiguous, modified, unsafe, or user-owned resources WHEN encountered THEN they remain unchanged with actionable handoff.
+    - GIVEN failed, partial, or repeated migration WHEN retried THEN completed cleanup becomes no-op and unfinished work alone is reconsidered.
+    - GIVEN explicit Claude cleanup WHEN requested THEN only its declared owned resource is eligible.
+  test_proportionality: Representative rewiring, owned cleanup, collision matrix, retry and fault cases, and explicit Claude boundary using preserved v2 fixtures.
+  plan: hqwkqcfrii

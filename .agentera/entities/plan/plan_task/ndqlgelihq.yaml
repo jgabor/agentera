@@ -1,0 +1,14 @@
+id: ndqlgelihq
+artifact: plan
+record:
+  name: Prove the fixed packed upgrade path
+  depends_on:
+    - wzphojdxqq
+  status: pending
+  acceptance:
+    - GIVEN a clean managed v2 fixture WHEN the extracted package upgrades it THEN records, relationships, and migration sources survive, entity authority activates, and prime succeeds.
+    - GIVEN proven v2 rewiring and cleanup WHEN packed upgrade runs THEN they converge without creating current native runtime resources.
+    - GIVEN the same extracted installation WHEN rerun THEN no entities or resource writes duplicate.
+    - GIVEN packed observations WHEN compared with source THEN shared-skill, migration, cleanup, and ownership behavior agree without recreating source-owned failure matrices.
+  test_proportionality: One extracted success, one same-install rerun, bounded source and packed observations, and minimal ownership evidence.
+  plan: hqwkqcfrii

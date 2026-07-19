@@ -61,8 +61,8 @@ negative assertion.
 
 ## Package-manager boundary
 
-Lifecycle upgrade does not execute runtime-native package managers. Legacy
-portable-skill cleanup and the OpenCode portable-skill install specification
-remain argv-only package-registry records behind their existing update and
-approval gates. Native installation, enablement, authentication, and trust are
-user-owned actions.
+Lifecycle upgrade does not execute runtime-native package managers. The package
+registry retains only argv-only legacy portable-skill cleanup behind its
+existing update and approval gates. The canonical shared skill is managed by
+explicit lifecycle selection; native installation, enablement, authentication,
+and trust are user-owned actions.
