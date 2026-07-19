@@ -12,3 +12,13 @@ record:
     - GIVEN blocked runtime work WHEN entity state is valid THEN entities activate, the resource remains untouched, and action-required identifies post-marker work.
   test_proportionality: Success, exact partial retry, divergent target, unsupported record, marker fault, and pre/post-marker runtime faults.
   plan: psmmjdmrwd
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: references/artifacts/state-storage-authority.yaml still says every selected effect is blocked by any runtime or cleanup blocker, contradicting criterion 4 and the implemented post-marker action-required handoff. Runtime behavior and all four criteria otherwise passed.
+    provenance:
+      attempt_id: mnezhmizhr-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-19 10:18
+      writer_command: agentera state plan record-evaluation

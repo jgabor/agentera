@@ -256,6 +256,9 @@ describe("Decision 94 entity authority", () => {
           source: "HEAD_commit",
           ignored_or_untracked_input: "refuse",
         },
+        upgrade_composition: {
+          preflight: expect.stringMatching(/detect, artifact, or entity blocker prevents entity publication.*Runtime or cleanup blockers do not prevent valid entity activation.*resources remain untouched.*action-required work/s),
+        },
       },
       cutover_marker: {
         path: ".agentera/state-mode.yaml",

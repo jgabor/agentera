@@ -559,8 +559,11 @@ entity_migration:
         normal entity writes may evolve records without reopening cutover.
       preflight: >-
         Upgrade plans artifact normalization, entity readiness, runtime work,
-        and cleanup read-only before any selected apply function runs. Any
-        blocker prevents every selected effect.
+        and cleanup read-only before any selected apply function runs. A detect,
+        artifact, or entity blocker prevents entity publication and activation.
+        Runtime or cleanup blockers do not prevent valid entity activation; their
+        resources remain untouched and are reported after the marker as
+        action-required work.
       phase_filters: >-
         Every --only apply is invalid during a v2-to-v3 boundary. Read-only
         filtered preview may remain available.

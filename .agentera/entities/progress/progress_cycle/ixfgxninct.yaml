@@ -1,0 +1,15 @@
+id: ixfgxninct
+artifact: progress
+record:
+  timestamp: 2026-07-19 10:15
+  type: fix
+  phase: build
+  what: Retry mnezhmizhr corrected the authoritative upgrade preflight text to distinguish blockers before entity activation from post-marker runtime and cleanup action-required work.
+  context:
+    intent: Resolve only the independent audit finding that the state-storage authority contradicted criterion 4 and the implemented forward importer.
+    constraints: Prose inconsistency only; no production behavior, generalized mechanism, compatibility route, TODO, plan task, or commit.
+    unknowns: None. The recorded audit failure is preserved for independent re-audit.
+    scope: references/artifacts/state-storage-authority.yaml, its existing semantic contract test and authority hash fixture, plus typed progress state.
+  inspiration: Independent evaluation mnezhmizhr-audit-1, whose attempt_count 1 and failure_count 1 remain preserved on the in-progress task.
+  verified: "Criterion 4 contract and behavior now agree: references/artifacts/state-storage-authority.yaml says detect, artifact, and entity blockers prevent entity publication and activation, while runtime and cleanup blockers leave resources untouched and become post-marker action-required work. pnpm -C packages/cli test --run test/upgrade/upgradeEntityCutover.test.ts test/state/entityAuthority.test.ts test/cli/activeProtocolSurface.test.ts passed 33/33, including the blocked-runtime cutover case and the focused authority assertion. State validation passed with 1513 entities and 0 issues; capability-contract validation passed 2/2; root check compact passed."
+  next: Independent evaluator should re-audit mnezhmizhr; leave the task in_progress and do not commit until that audit passes.
