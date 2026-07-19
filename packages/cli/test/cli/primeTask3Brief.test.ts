@@ -4,7 +4,7 @@
  * AC1: GIVEN returning, fresh, empty, missing, and degraded project fixtures
  *      WHEN bare prime runs THEN it reports mode, work summary, attention, next
  *      action, and startup completeness needed for routing.
- * AC2: Covered by primeTask3Bounds.test.ts (large fixture ≤12000 bytes, stderr
+ * AC2: Covered by primeProjectionContract.test.ts (large fixture ≤12000 bytes, stderr
  *      separation).
  * AC3: GIVEN state is missing versus present-but-empty WHEN an agent reads the
  *      brief THEN the two conditions remain behaviorally distinguishable.

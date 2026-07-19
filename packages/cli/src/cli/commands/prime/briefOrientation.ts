@@ -27,8 +27,8 @@ import { truncateCodePoints } from "../../../core/text.js";
  *  budgets.startup.surfaces.prime_briefing.max_utf8_bytes and
  *  scripts/json_output_surface_manifest.yaml prime-briefing byte_budget.
  *  archiveAuthority.test.ts binds the authority to the manifest; the
- *  primeTask3Bounds test binds this constant to the authority so the contract
- *  and implementation cannot drift apart. */
+ *  primeProjectionContract.test.ts suite binds this constant to the authority
+ *  so the contract and implementation cannot drift apart. */
 export const PRIME_BRIEF_MAX_UTF8_BYTES = 12000;
 
 /** Deterministic pretty-JSON UTF-8 byte length (including the trailing newline)

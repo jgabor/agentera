@@ -403,7 +403,7 @@ afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-describe("prime Task3 bounded source projections", () => {
+describe("prime projection contract", () => {
   it("keeps cold entity-mode startup and retrieval within authority budgets at declared scales", async () => {
     const contract = authority();
     const measurements: Array<Record<string, number | string>> = [];
