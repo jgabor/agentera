@@ -1,0 +1,25 @@
+id: jnwgujivkt
+artifact: plan
+record:
+  name: Complete and re-evaluate the single-path legacy removal
+  depends_on:
+    []
+  status: blocked
+  acceptance:
+    - GIVEN marker-absent state WHEN an operation other than full-upgrade preview/apply or declared read-only discovery runs THEN it fails before side effects with one actionable full-upgrade command.
+    - GIVEN v1 conversion, backfill, repair, restore, downgrade, partial apply, or alternate cutover evidence WHEN requested THEN no automatic mutation path exists; active entity authority cannot fall back to aggregates.
+    - GIVEN help, schema, and upgrade guidance WHEN inspected THEN each exposes the same recognized-v2-only forward contract.
+    - GIVEN exact get, bounded list at small and large scales, and startup at small and large scales WHEN budgets are measured THEN each runs in five cold processes, every repetition records unclamped peak heap from before fixture discovery through serialized output, and every unchanged applicable latency, heap, and byte limit passes.
+    - GIVEN the candidate deletion WHEN evaluated THEN the complete source suite and an independent simplicity audit pass without restoring removed systems.
+  test_proportionality: Marker/discovery and removed-operation matrices, hostile-aggregate authority case, five repetitions for every declared budget target and scale, complete source suite, and independent simplicity audit.
+  plan: jyritjjnyd
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: The cross-boundary cold-process gate measures bare prime briefing output against its 12,000-byte limit instead of the established prime dashboard against the unchanged 35,000-byte limit. All other criteria, 2,529 source tests, authority cleanup, recovery corrections, and simplicity checks passed. Restore dashboard startup measurement and rerun five repetitions plus the source suite.
+    provenance:
+      attempt_id: jnwgujivkt-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-19 13:38
+      writer_command: agentera state plan record-evaluation

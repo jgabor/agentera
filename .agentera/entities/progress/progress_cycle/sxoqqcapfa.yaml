@@ -1,0 +1,15 @@
+id: sxoqqcapfa
+artifact: progress
+record:
+  timestamp: 2026-07-19 11:22
+  type: fix
+  phase: build
+  what: Closed audit finding 1 by reducing the marker-absent gate to explicit read-only static-discovery exemptions, so removed and unknown state mutation shapes cannot bypass the sole upgrade recovery. Reconciled audit finding 2 by migrating retained contracts from aggregate fixtures to active entity fixtures or exact marker-absent rejection assertions.
+  context:
+    intent: Correct only tcrhynzola-audit-1 findings while preserving the deletion-first implementation and evaluator state.
+    constraints: Only the two audit findings; no compatibility implementation, aggregate authority, fallback mutation, policy registry, downstream namespace work, task, TODO, vision/profile change, commit, or push.
+    unknowns: none
+    scope: Marker-absent gate and retained-contract fixtures/assertions for writer, decision, compaction, aliases, npm parity, lifecycle migration, concurrency, durability, entity preview, capability prose, help, and routing.
+  inspiration: "Independent evaluation tcrhynzola-audit-1: stale positive gate inventories and 90 unreconciled legacy-fixture failures."
+  verified: "Gate-hole regression: the built CLI returned rc=1 and identical migration_required recovery for state backfill and state unknown-repair on a marker-absent empty fixture; recovery was npx -y agentera@next upgrade --channel development --project /tmp/opencode/agentera-tcrhynzola-retry --yes and the fixture retained zero files. Focused migrated-contract run passed 289/289 across 21 suites. Full pnpm -C packages/cli test passed 2474/2474 across 212 files. pnpm typecheck and build passed; capability-contract validation passed 2/2; state validation passed with 1515 entities and 0 issues; compact passed with 0 errors/changes; git diff --check passed."
+  next: Independent re-audit; keep tcrhynzola in_progress and preserve attempt_count 1/failure_count 1 until evaluator records the next verdict.

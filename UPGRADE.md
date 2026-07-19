@@ -40,7 +40,9 @@ includes:
 
 For project-state migration, the installation and project are classified
 independently. A v3 CLI from npm or a source checkout previews the same one-way
-cutover when the project has recognized marker-absent v2 aggregate state. The
+cutover when the project has recognized marker-absent v2 aggregate state. This is
+the only supported legacy project-state input: v1 conversion, backfill, repair,
+restore, downgrade, and partial apply are not automatic mutation paths. The
 preview does not mutate that state. Pending v1 Markdown state and unknown
 marker-absent state are not converted automatically; the preview exits nonzero
 with manual recovery instructions.
@@ -186,43 +188,13 @@ supported, and cross-major apply has no rollback, restore, non-Git, or partial
 workflow. If an apply is interrupted, rerun the same full apply command to
 continue forward.
 
-## Legacy state and optional Git enrichment
+## Legacy state boundary
 
-Project-state migration and historical Git enrichment are separate local
-operations. Migration does not read Git, contact a remote, or remove its source
-files. Its default inventory and `--dry-run` are read-only; apply requires the
-exact artifact and entry selectors with `--apply --force`:
-
-```bash
-npx -y agentera@next state migrate --project "$PWD" --artifact progress --number N --dry-run --format json
-npx -y agentera@next state migrate --project "$PWD" --artifact progress --number N --apply --force --format json
-```
-
-Git enrichment is optional. A preview is useful but not required before direct
-apply. Inventory and preview may use the current working directory when
-`--project` is omitted; direct apply must name `--project PATH` explicitly.
-Apply revalidates the selected project, current `HEAD`, allowed-ref
-reachability, candidate provenance and content, and the immutable archive target
-immediately before publication:
-
-```bash
-npx -y agentera@next state backfill --project "$PWD" --artifact progress --number N --dry-run --format json
-npx -y agentera@next state backfill --project "$PWD" --artifact progress --number N --apply --force --format json
-```
-
-The backfill contract is bounded to 100 result rows, 500 history units, and
-16 MiB of Git output. It inspects only `HEAD`, local heads, and tags; remote and
-custom refs and operations are excluded. Returned provenance keeps the commit,
-path, blob ID, stable entry ID, content hash, and reachability so a result can
-be traced without adding commit fields to the archive record.
-
-`complete`, `degraded`, `blocked`, and `unavailable` are explicit outcomes.
-Changed, shallow, rewritten, ambiguous, corrupt, missing, bounded, unavailable,
-and immutable-conflict results are reported rather than guessed. Resolve the
-reported local condition and retry the same selectors; refused operations leave
-active projections and existing archives unchanged, and identical publication
-converges as a replay. The full command, limits, failure, recovery, and
-traceability contract is `references/artifacts/state-storage-authority.yaml`.
+Only recognized v2 aggregate state can move forward, through the full upgrade
+preview and apply above. `state migrate`, `state backfill`, projection repair,
+v1 conversion, restore, downgrade, and partial apply are unsupported. The
+read-only `state migrate entities --dry-run` diagnostic may inventory cutover
+input, but it cannot publish state.
 
 ## Verification and recovery
 

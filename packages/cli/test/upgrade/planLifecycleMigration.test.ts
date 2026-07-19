@@ -10,7 +10,6 @@ import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { discoverPlanArtifacts } from "../../src/cli/planArtifacts.js";
 import {
   applyMigrationPhases,
-  dryRunMigration,
   planArtifactsPhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
@@ -60,7 +59,7 @@ afterEach(() => {
 });
 
 describe("plan lifecycle migration", () => {
-  it("previews and applies docs-mapped current and archived plans without changing evidence", () => {
+  it("previews docs-mapped lifecycle work but rejects partial apply without changing evidence", () => {
     const project = path.join(tmp, "project");
     const current = path.join(project, "state", "current-plan.yaml");
     const completeArchive = path.join(project, "state", "archive", "PLAN-2026-07-11-complete.yaml");
@@ -85,12 +84,6 @@ describe("plan lifecycle migration", () => {
         notes: readPlan(target).notes,
       }]),
     );
-    const statuses = new Map([
-      [current, ["active", "open"]],
-      [completeArchive, ["completed", "complete"]],
-      [openArchive, ["active", "open"]],
-      [collisionArchive, ["completed", "open"]],
-    ]);
     let stdout = "";
     const previewExit = cmdUpgrade({
       project,
@@ -120,24 +113,12 @@ describe("plan lifecycle migration", () => {
       format: "json",
     }, { out: (text) => { stdout += text; } });
 
-    expect(applyExit).toBe(0);
-    expect(readPlan(current).header).toMatchObject({ status: "open" });
-    expect(readPlan(completeArchive).header).toMatchObject({ status: "complete" });
-    expect(readPlan(openArchive).header).toMatchObject({ status: "open" });
-    expect(readPlan(collisionArchive).header).toMatchObject({ status: "open" });
+    expect(applyExit).toBe(2);
     for (const [target, original] of originals) {
       expect(readPlan(target).tasks).toEqual(original.tasks);
       expect(readPlan(target).notes).toBe(original.notes);
-      const [before, after] = statuses.get(target)!;
-      expect(fs.readFileSync(target, "utf8")).toBe(original.bytes.replace(`status: ${before}`, `status: ${after}`));
+      expect(fs.readFileSync(target, "utf8")).toBe(original.bytes);
     }
-
-    const context = migrationCtx(project, project, tmp, REPO_ROOT);
-    const beforeRepeat = fs.statSync(current).mtimeMs;
-    const repeat = dryRunMigration(context);
-    expect(repeat.artifacts.status).toBe("noop");
-    applyMigrationPhases(context, repeat, ["artifacts"]);
-    expect(fs.statSync(current).mtimeMs).toBe(beforeRepeat);
   });
 
   it("keeps archive order stable when lifecycle writes and mtimes change", () => {
@@ -161,7 +142,7 @@ describe("plan lifecycle migration", () => {
     expect(discoverPlanArtifacts(current).archived.map((artifact) => path.basename(artifact.path))).toEqual(initialOrder);
   });
 
-  it("emits canonical lifecycle status from the v1 plan migrator", () => {
+  it("blocks v1 plan conversion without writing v2 state", () => {
     const project = path.join(tmp, "project");
     const legacyPlan = path.join(project, ".agentera", "PLAN.md");
     fs.mkdirSync(path.dirname(legacyPlan), { recursive: true });
@@ -176,13 +157,14 @@ describe("plan lifecycle migration", () => {
     ].join("\n"));
 
     const migration = planArtifactsPhase(project);
-    expect(migration.items).toContainEqual(expect.objectContaining({ action: "migrate", source: ".agentera/PLAN.md" }));
+    expect(migration.items).toContainEqual(expect.objectContaining({ action: "manual-v1-handoff", source: ".agentera/PLAN.md", status: "blocked" }));
     applyMigrationPhases(migrationCtx(project, project, tmp, REPO_ROOT), {
       artifacts: migration,
       runtime: { name: "runtime", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
       cleanup: { name: "cleanup", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
     }, ["artifacts"]);
 
-    expect(readPlan(path.join(project, ".agentera", "plan.yaml")).header).toMatchObject({ status: "complete" });
+    expect(fs.existsSync(path.join(project, ".agentera", "plan.yaml"))).toBe(false);
+    expect(fs.readFileSync(legacyPlan, "utf8")).toContain("Status: completed");
   });
 });

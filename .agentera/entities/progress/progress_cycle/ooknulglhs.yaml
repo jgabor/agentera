@@ -1,0 +1,13 @@
+id: ooknulglhs
+artifact: progress
+record:
+  timestamp: 2026-07-19 14:14
+  type: fix
+  phase: build
+  what: Reduced the full prime dashboard by replacing its duplicate full progress.latest entity with the required latest-progress summary while retaining full history evidence and exact retrieval.
+  context:
+    intent: Restore full dashboard measurement under the unchanged 35,000-byte authority ceiling without weakening semantics, fixtures, repetitions, or limits.
+    constraints: Preserved blocked task jnwgujivkt at attempt/failure 2/2, archived predecessor psmmjdmrwd, blocked predecessor tcrhynzola, active replacement plan jyritjjnyd, unchanged budgets and measurement semantics, and all version metadata.
+    scope: Current single-path legacy-removal candidate plus packages/cli/src/cli/commands/prime/collectEntityOrientation.ts, packages/cli/test/cli/primeTask3Bounds.test.ts, TODO xajedwyxks, and this progress cycle.
+  verified: "Dashboard maximum fell from 35,451 to 34,928 UTF-8 bytes. Five cold runs passed at each scale: small maxima 795.329 ms, 65,501,728-byte peak heap, 34,916 bytes; large maxima 1,287.299 ms, 94,704,200-byte peak heap, 34,928 bytes. Focused 111/111 and complete source 2,529/2,529 tests passed. Typecheck, build, state validation, capability-contract validation, compact, and git diff --check passed."
+  next: Continue only with a separately authorized active-plan task; do not reopen either blocked task.

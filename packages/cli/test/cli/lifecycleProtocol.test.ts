@@ -98,6 +98,11 @@ describe("final lifecycle protocol", () => {
       ["state", "decisions", "list", "--format", "json"],
       ["state", "todo", "create", "--severity", "normal", "--description", "x", "--format", "json"],
       ["state", "query", "progress", "--format", "json"],
+      ["state", "progress", "append", "--type", "fix", "--phase", "build", "--what", "evidence", "--intent", "test", "--format", "json"],
+      ["state", "backfill", "--apply", "--force", "--format", "json"],
+      ["state", "migrate", "--artifact", "progress", "--apply", "--force", "--format", "json"],
+      ["state", "removed-repair", "--apply", "--force", "--format", "json"],
+      ["check", "compact", "--project", root, "--mode", "fix", "--format", "json"],
     ]) {
       const result = capture(root, args);
       expect(result.rc).toBe(1); expect(result.err).toBe("");
@@ -112,18 +117,33 @@ describe("final lifecycle protocol", () => {
     }
   });
 
-  it("keeps readiness exceptions and legacy evidence writes explicit and entity-free", () => {
+  it("rejects removed mutation operations without touching marker-absent state", () => {
+    const root = project();
+    const before = treeDigest(root);
+    const recovery = commandText([
+      "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", root, "--yes",
+    ]);
+    for (const args of [
+      ["upgrade", "--project", root, "--restore", "--yes", "--format", "json"],
+      ["upgrade", "--project", root, "--only", "runtime", "--yes", "--format", "json"],
+    ]) {
+      const result = capture(root, args);
+      expect(result.rc).not.toBe(0);
+      expect(`${result.out}${result.err}`.split(recovery)).toHaveLength(2);
+      expect(treeDigest(root)).toBe(before);
+    }
+  });
+
+  it("keeps only static discovery available before cutover", () => {
     const root = project();
     expect(capture(root, ["state", "query", "--list-artifacts", "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["schema", "--format", "json"]).rc).toBe(0);
-    expect(capture(root, ["check", "compact", "--project", root, "--format", "json"]).out).not.toContain("migration_required");
-    const write = capture(root, ["state", "progress", "append", "--type", "fix", "--phase", "build", "--what", "evidence", "--intent", "Task12", "--format", "json"]);
-    expect(write.rc, write.err).toBe(0);
-    expect(fs.existsSync(path.join(root, ".agentera/progress.yaml"))).toBe(true);
+    expect(capture(root, ["schema", "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["prime", "--guidance", "--format", "json"]).rc).toBe(0);
+    const explain = capture(root, ["state", "progress", "explain", "--format", "json"]);
+    expect(explain.rc).toBe(0);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
-    const explain = capture(root, ["state", "progress", "explain", "--format", "json"]);
-    expect(JSON.parse(explain.out)).toMatchObject({ classification: "legacy_migration_evidence", recovery_only: true });
   });
 
   it("uses canonical entities for startup and compact while ignoring hostile aggregates", () => {

@@ -1094,9 +1094,10 @@ describe("entity migration read-only preview", () => {
     const before = tree(root);
     let rejected = "";
     const apply = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"], { out: (text) => (rejected += text), err: (text) => (rejected += text) });
-    expect(apply).toBe(2);
-    expect(rejected).toContain("unrecognized argument '--apply'");
+    expect(apply).toBe(1);
+    expect(rejected).toContain("upgrade --channel development");
+    expect(rejected).toContain("--yes");
     expect(tree(root)).toEqual(before);
-    expect(printStateHelp("migrate")).not.toContain("agentera state migrate entities");
+    expect(printStateHelp("migrate")).toContain("agentera state migrate entities");
   });
 });

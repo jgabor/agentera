@@ -165,42 +165,16 @@ describe("state storage authority", () => {
       remote_contact: "forbidden",
       writes_independent: true,
     });
-    expect(api.backfill).toMatchObject({
-      command: expect.stringContaining("--apply --force"),
-      default_limit: 100,
-      maximum_limit: 100,
-      maximum_commits: 500,
-      maximum_history_bytes: 16777216,
-      apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N"],
-      reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
-      excluded_refs: ["refs/remotes", "custom_refs"],
-      status_values: ["complete", "degraded", "blocked", "unavailable"],
+    expect(api).toMatchObject({
+      entity_migration_discovery: {
+        command: "agentera state migrate entities --project PATH --dry-run --format json",
+        implementation: "implemented",
+        read_only: true,
+        writes: "forbidden",
+        authority: "entity_migration.read_only_preview",
+      },
     });
-    expect(api.backfill.guarantees).toMatchObject({
-      apply_requires_force: true,
-      preview_optional: true,
-      apply_revalidation: expect.stringContaining("immutable-target"),
-      remote_contact: "forbidden",
-      projection_writes: "forbidden",
-      immutable_conflicts: "refuse_without_overwrite",
-    });
-    expect(api.backfill.response).toMatchObject({
-      required_fields: expect.arrayContaining(["scan", "entries", "source_contract"]),
-      entry_fields: expect.arrayContaining(["provenance", "operation"]),
-    });
-    expect(api.backfill.traceability).toEqual({
-      provenance_fields: ["commit", "path", "blob_id", "entry_id", "content_hash", "reachable"],
-      archive_record_forbids: ["commit", "commit_hash", "git_commit", "git_ref"],
-    });
-    expect(api.backfill.recovery).toContain("retry the same exact selectors");
-    expect(api.backfill.omission).toMatchObject({
-      fields: ["omitted", "omitted_count", "omission_reason", "continuation"],
-      complete_reason: "none",
-      bounded_reason: "result_limit",
-    });
-    expect(api.backfill.command).not.toContain("preview-token");
-    expect(api.backfill.guarantees).not.toHaveProperty("apply_requires_preview_token");
-    expect(api.backfill.guarantees).not.toHaveProperty("preview_token");
+    expect(Object.keys(api)).not.toEqual(expect.arrayContaining(["backfill", "migrate"]));
   });
 
   it("keeps Decision 53 review state non-inferential and projection capacity lossless", () => {

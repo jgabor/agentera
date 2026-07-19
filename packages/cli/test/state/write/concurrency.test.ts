@@ -103,9 +103,16 @@ function runProcess(
   });
 }
 
+function entityProject(prefix: string): string {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  fs.mkdirSync(path.join(project, ".agentera"));
+  fs.writeFileSync(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  return project;
+}
+
 describe("real-process writer serialization", () => {
-  it("serializes same-artifact writers without lost entries or duplicate numbers", async () => {
-    const project = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-writer-same-"));
+  it("serializes same-artifact entity writers without lost entries or duplicate IDs", async () => {
+    const project = entityProject("agentera-writer-same-");
     try {
       const results = await Promise.all([
         runProcess(project, "progress", "one"),
@@ -115,19 +122,20 @@ describe("real-process writer serialization", () => {
         results.map((result) => result.code),
         JSON.stringify(results),
       ).toEqual([0, 0]);
-      const doc = loadYamlMapping(
-        fs.readFileSync(path.join(project, ".agentera", "progress.yaml"), "utf8"),
-      );
-      const cycles = doc.cycles as Array<Record<string, unknown>>;
-      expect(cycles).toHaveLength(2);
-      expect(new Set(cycles.map((cycle) => cycle.number))).toEqual(new Set([1, 2]));
+      const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
+      const names = fs.readdirSync(directory);
+      expect(names).toHaveLength(2);
+      expect(new Set(names.map((name) => name.replace(/\.yaml$/, ""))).size).toBe(2);
+      const records = names.map((name) => loadYamlMapping(fs.readFileSync(path.join(directory, name), "utf8")).record as Record<string, unknown>);
+      expect(new Set(records.map((record) => record.what))).toEqual(new Set(["process one", "process two"]));
+      expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(false);
     } finally {
       fs.rmSync(project, { recursive: true, force: true });
     }
   });
 
   it("uses the project lock across different artifacts", async () => {
-    const project = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-writer-cross-"));
+    const project = entityProject("agentera-writer-cross-");
     try {
       const results = await Promise.all([
         runProcess(project, "progress", "progress"),
@@ -137,8 +145,10 @@ describe("real-process writer serialization", () => {
         results.map((result) => result.code),
         JSON.stringify(results),
       ).toEqual([0, 0]);
-      expect(fs.existsSync(path.join(project, ".agentera", "progress.yaml"))).toBe(true);
-      expect(fs.existsSync(path.join(project, ".agentera", "decisions.yaml"))).toBe(true);
+      expect(fs.readdirSync(path.join(project, ".agentera/entities/progress/progress_cycle"))).toHaveLength(1);
+      expect(fs.readdirSync(path.join(project, ".agentera/entities/decisions/decision"))).toHaveLength(1);
+      expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(project, ".agentera/decisions.yaml"))).toBe(false);
     } finally {
       fs.rmSync(project, { recursive: true, force: true });
     }

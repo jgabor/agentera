@@ -123,12 +123,16 @@ describe("producer capability writer integration", () => {
       ]);
 
       const input = path.join(root, "plan.yaml");
+      fs.mkdirSync(path.join(root, ".agentera"));
+      fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
       fs.writeFileSync(input, example);
       const published = planCreate(root, input);
       expect(published.rc, published.output).toBe(0);
 
       delete parsed.rejected;
       const withoutRejections = path.join(omittedRoot, "without-rejections.yaml");
+      fs.mkdirSync(path.join(omittedRoot, ".agentera"));
+      fs.writeFileSync(path.join(omittedRoot, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
       fs.writeFileSync(withoutRejections, YAML.stringify(parsed));
       const omitted = planCreate(omittedRoot, withoutRejections);
       expect(omitted.rc, omitted.output).toBe(0);

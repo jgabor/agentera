@@ -4,7 +4,7 @@ record:
   name: Remove alternate legacy operation and compatibility paths
   depends_on:
     - mnezhmizhr
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN marker-absent state WHEN commands other than upgrade preview/apply or static discovery run THEN they reject with the sole upgrade command.
     - GIVEN v1, backfill, repair, partial apply, restore, downgrade, or obsolete cutover evidence WHEN requested THEN no automatic mutation path exists.
@@ -12,3 +12,13 @@ record:
     - GIVEN help, schema, and upgrade guidance WHEN inspected THEN they agree on v2-only forward support.
   test_proportionality: Command rejection and manual-handoff matrices plus one retained v2 success case.
   plan: psmmjdmrwd
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: The marker gate and all 2,529 tests pass, but primeTask3Bounds changed the authority-defined peak-heap metric to post-GC retained heap and clamped negative deltas, weakening the budget to mask allocation. Remove that substitution and preserve peak measurement without changing thresholds. No new task or TODO is technically necessary.
+    provenance:
+      attempt_id: tcrhynzola-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-19 11:43
+      writer_command: agentera state plan record-evaluation

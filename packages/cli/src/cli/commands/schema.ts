@@ -31,15 +31,6 @@ import {
   ACTIVE_RUNTIME_SELECTORS,
   LIFECYCLE_UPGRADE_SCHEMA,
 } from "../../upgrade/lifecycleUpgrade.js";
-import {
-  migrationModeFlags,
-  migrationSelectorNames,
-  stateMigrationContract,
-} from "../../state/migrationAuthority.js";
-import {
-  gitBackfillContractProjection,
-  stateGitBackfillContract,
-} from "../../state/gitBackfillAuthority.js";
 import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 
@@ -149,8 +140,6 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
   upgrade:
     "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
-  migrate: "Publish the bounded local legacy-state inventory and mutation authority.",
-  backfill: "Optionally inspect or publish one immutable archive record from bounded local Git history.",
   doctor: "Check Agentera CLI, app, and runtime status.",
 };
 function availableStructuredFields(command: string): string[] {
@@ -291,19 +280,7 @@ function commandDescription(
   };
 }
 
-function migrationFilterNames(contract: ReturnType<typeof stateMigrationContract>): string[] {
-  const modeFlags = [
-    ...migrationModeFlags(contract, "preview"),
-    ...migrationModeFlags(contract, "apply"),
-  ].map((flag) => flag.replace(/^--/, "").replaceAll("-", "_"));
-  return [...new Set([...migrationSelectorNames(contract), ...modeFlags])];
-}
-
-function describeCommands(
-  migrationContract: ReturnType<typeof stateMigrationContract>,
-  backfillContract: ReturnType<typeof stateGitBackfillContract>,
-): JsonObject[] {
-  const migrationName = migrationContract.namespace.split(/\s+/).at(-1) as string;
+function describeCommands(): JsonObject[] {
   const commands: JsonObject[] = [
     commandDescription("prime", "orientation", availableStructuredFields("prime")),
   ];
@@ -355,20 +332,6 @@ function describeCommands(
       "dryRunCommand",
       "applyCommand",
     ]),
-    commandDescription(
-      migrationName,
-      "state_migration",
-      migrationContract.resultRequiredFields,
-      migrationContract.formats,
-      migrationFilterNames(migrationContract),
-    ),
-    commandDescription(
-      "backfill",
-      "state_git_backfill",
-      backfillContract.responseRequiredFields,
-      backfillContract.formats,
-      ["project", "artifact", "number", "commit", "path", "limit", "dry_run", "apply", "force"],
-    ),
     commandDescription("doctor", "self_check"),
   );
   return commands;
@@ -478,8 +441,6 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   gaps.push(...schemaGaps);
   const lifecycleAuthority = loadLifecycleAuthority();
   const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
-  const migrationAuthority = stateMigrationContract();
-  const backfillAuthority = stateGitBackfillContract();
   const retrievalAuthority = loadStateRetrievalAuthority();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
@@ -502,15 +463,10 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       schema_count: artifactSchemas.length,
       app_model: appModelPayload(appModel),
     },
-    commands: describeCommands(migrationAuthority, backfillAuthority),
+    commands: describeCommands(),
     state_writer: stateWriterContract(),
     state_retrieval: { authority: retrievalAuthority.authority, ...entityPublicRetrieval() },
-    state_migration: {
-      authority: migrationAuthority.authorityPath,
-      ...migrationAuthority.migration,
-    } as JsonObject,
     entity_migration: entityMigrationAuthorityProjection(),
-    state_backfill: gitBackfillContractProjection(backfillAuthority) as unknown as JsonObject,
     runtime_lifecycle: {
       authority: lifecycleAuthority.sourcePath,
       snapshot_schema_version: LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,

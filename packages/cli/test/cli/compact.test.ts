@@ -27,6 +27,10 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
   return { rc, out, err };
 }
 
+function activate(): void {
+  fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+}
+
 describe("cli compact", () => {
   it("reports a passing check for an empty project (text, None counts)", () => {
     const { rc, out } = capture((io) => cmdCompact({ project: tmp, mode: "check" }, io));
@@ -76,6 +80,7 @@ describe("cli compact", () => {
   });
 
   it("emits a deprecation alias for top-level compact", () => {
+    activate();
     const { err } = capture((io) => main(["node", "agentera", "compact", "--project", tmp], io));
     expect(err).toContain("Deprecation: agentera compact is deprecated; use agentera check compact");
   });
@@ -99,6 +104,7 @@ describe("cli check compact", () => {
   });
 
   it("routes check compact (check mode) to the gate and check compact --mode fix to compact", () => {
+    activate();
     const gate = capture((io) => main(["node", "agentera", "check", "compact", "--project", tmp], io));
     expect(gate.rc).toBe(0);
     expect(JSON.parse(gateJson(tmp)).command).toBe("check compact");
@@ -107,6 +113,7 @@ describe("cli check compact", () => {
   });
 
   it("routes check compact --apply to the fix path", () => {
+    activate();
     const fix = capture((io) =>
       main(["node", "agentera", "check", "compact", "--apply", "--project", tmp, "--format", "json"], io),
     );

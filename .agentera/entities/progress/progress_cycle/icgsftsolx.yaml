@@ -1,0 +1,15 @@
+id: icgsftsolx
+artifact: progress
+record:
+  timestamp: 2026-07-19 10:41
+  type: fix
+  phase: build
+  what: Deleted the state migrate, state backfill, projection-repair, and v1-conversion mutation implementations; marker-absent normal commands now stop at the shared upgrade gate while static discovery remains read-only. Help, schema, and UPGRADE.md expose only the recognized v2-to-v3 forward path.
+  context:
+    intent: Complete plan task tcrhynzola by removing alternate legacy operation and compatibility paths without adding replacement recovery machinery.
+    constraints: Only task tcrhynzola; retained the read-only entity inventory diagnostic and current full v2 importer; no rollback, generalized compatibility framework, TODO, new plan task, release, commit, or push.
+    unknowns: "The plan unknown about helpers reachable from packed upgrade resolved by source-reference tracing: runtime/app migration helpers remain; legacy migrate, backfill, projection repair, and v1 conversion had no retained production entrypoint."
+    scope: CLI dispatch/gate/help/schema, upgrade artifact classification, UPGRADE.md, and obsolete compatibility implementations/tests.
+  inspiration: Plan task tcrhynzola and firm decisions hdqqgkneoz and llavvlpcmb.
+  verified: "Criterion 1: test/cli/lifecycleProtocol.test.ts proves marker-absent startup, state reads/writes, query, and compact mutation reject with the sole full upgrade recovery while schema, list-artifacts, prime guidance, and explain stay read-only. Criterion 2: lifecycleProtocol plus migrateArtifactsV2ToV3 and v1LegacyCruft prove backfill, legacy migrate, restore, partial apply, and v1 conversion cannot mutate; the smoke fixture returned prime=1, backfill=2, schema=0 with zero files. Criterion 3: lifecycleProtocol proves active entity startup ignores hostile aggregates, and activeProtocolSurface rejects retired public selector vocabulary. Criterion 4: schema, oneCommandContract, help/state, and activeProtocolSurface prove help/schema/UPGRADE.md retain only full_upgrade_yes_only for recognized v2 aggregates. Focused Vitest passed 102/102; typecheck, build, capability-contract validation, and compact passed."
+  next: Independent audit; keep tcrhynzola in_progress until evaluator PASS.

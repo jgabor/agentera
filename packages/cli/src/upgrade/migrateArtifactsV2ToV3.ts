@@ -12,10 +12,6 @@ import {
   AGENTERA_USER_STATE_NAMES,
 } from "./doctor.js";
 import {
-  applyV1ArtifactsPhase,
-  planV1ArtifactsPhase,
-} from "./migrateArtifactsV1ToV2.js";
-import {
   appHomeHasUnrecognizedEntriesWithPreflight,
   handoffCatalogMessage,
   resolveMigrationUserStatePreflight,
@@ -39,7 +35,6 @@ import { writeFileAtomic } from "./atomicWriter.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
- * v1 Markdown→YAML migration uses detectV1ArtifactPairs (shared with prime).
  */
 
 export const MIGRATION_STATUSES = ["pending", "applied", "noop", "blocked", "failed"] as const;
@@ -311,7 +306,12 @@ export function planArtifactsPhase(project: string): MigrationPhase {
   }
 
   const v1Pairs = detectV1ArtifactPairs(root);
-  const v1Items = v1Pairs.length > 0 ? planV1ArtifactsPhase(root).items : [];
+  const v1Items = v1Pairs.map((source) => ({
+    status: "blocked" as const,
+    action: "manual-v1-handoff",
+    source,
+    message: "v1 Markdown state is unsupported; convert it with a v2 CLI before running the v2-to-v3 upgrade",
+  }));
 
   const yamlArtifacts = listV2YamlArtifacts(root);
   const lifecycleItems = lifecyclePlanArtifacts(root);
@@ -335,12 +335,8 @@ export function planArtifactsPhase(project: string): MigrationPhase {
   return summarizePhase("artifacts", items);
 }
 
-export function applyArtifactsPhase(phase: MigrationPhase, project: string, force = false): void {
+export function applyArtifactsPhase(phase: MigrationPhase, project: string, _force = false): void {
   const root = resolvePath(project);
-  const hasV1Migration = phase.items.some((item) => item.action === "migrate");
-  if (hasV1Migration) {
-    applyV1ArtifactsPhase(phase, root, force);
-  }
   for (const item of phase.items) {
     if (item.status !== "pending" || item.action !== PLAN_LIFECYCLE_ACTION || !item.source) continue;
     const sourcePath = path.join(root, item.source);

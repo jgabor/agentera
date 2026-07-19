@@ -5,6 +5,7 @@ import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 import { printUpgradeHelp } from "../../src/cli/help.js";
+import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const APPLY = 'npx -y agentera@next upgrade --channel development --project "$PWD" --yes';
@@ -24,6 +25,7 @@ describe("v2-to-v3 one-command guidance", () => {
     const guide = section("UPGRADE.md", "## Upgrading v2 to v3 development channel");
     const skill = section("skills/agentera/SKILL.md", "### Upgrade from v2 to v3 development");
     const authority = YAML.parse(fs.readFileSync(path.join(ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
+    const schema = JSON.stringify(buildSchemaPayload());
 
     for (const surface of [help, guide, skill]) {
       expect(surface).toContain(APPLY);
@@ -45,6 +47,8 @@ describe("v2-to-v3 one-command guidance", () => {
       apply_command: APPLY,
     });
     expect(authority.entity_migration.internal_migration_diagnostic).toBe(true);
+    expect(schema).toMatch(/recognized[^}]*v2/i);
+    expect(schema).not.toMatch(/state_migration|state_backfill|state migrate entities.*apply/);
   });
 
   it("ships no restore workflow in source or bundled upgrade guidance", () => {

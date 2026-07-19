@@ -1,0 +1,15 @@
+id: hkunhyeace
+artifact: plan
+record:
+  name: Expose one lifecycle operation set
+  depends_on:
+    - jnwgujivkt
+  status: pending
+  acceptance:
+    - GIVEN selected runtime resources WHEN previewed or applied THEN each resource appears once with one consistent operation and outcome per invocation.
+    - GIVEN selector-free cross-major upgrade WHEN entities activate THEN only required v2 migration rewiring runs; optional current-runtime lifecycle work still requires an explicit selector.
+    - GIVEN user-owned, ambiguous, modified, or unproven resources WHEN encountered THEN they remain unchanged and handoff identifies the required action.
+    - GIVEN retry after partial runtime work WHEN evaluated THEN completed operations are no-ops and only unfinished work is reconsidered.
+    - GIVEN source and packed invocation WHEN lifecycle behavior is observed THEN both expose the same shared-skill and CLI resource contract.
+  test_proportionality: Selected and selector-free cases, managed rewrite, ownership/collision matrix, source/packed parity, and fault/retry behavior.
+  plan: jyritjjnyd

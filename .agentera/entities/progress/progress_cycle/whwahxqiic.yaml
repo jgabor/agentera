@@ -1,0 +1,16 @@
+id: whwahxqiic
+artifact: progress
+record:
+  timestamp: 2026-07-19 11:35
+  type: fix
+  phase: build
+  what: Closed the audit retry by enforcing explicit marker-absent discovery exemptions, migrating retained tests to canonical entity state, restoring the full 62-test writer matrix, and making heap-budget checks compare collected retained memory.
+  context:
+    intent: Fix task tcrhynzola's marker-absent gate hole and all resulting test failures without restoring obsolete aggregate authority.
+    constraints: No new tasks, TODOs, compatibility implementation, aggregate authority, commits, pushes, publishing, or tags.
+    unknowns: Independent retry audit verdict remains pending.
+    scope: Marker-absent migration gate, retained CLI/entity tests, and deterministic prime heap-budget measurement.
+  inspiration: Task tcrhynzola and failed audit attempt tcrhynzola-audit-1.
+  discovered: The final heap-budget failure depended on unrelated V8 collection timing; collecting before and after each measured operation preserves the authority threshold while measuring deterministic retained heap.
+  verified: "Full CLI suite: 212 files and 2529 tests passed. Retry-focused suite: 22 files and 350 tests passed. Writer matrix: 62 tests passed. Typecheck, build, capability-contract validation, root state validation (1516 entities, 0 issues), compact, and git diff --check passed."
+  next: Re-audit task tcrhynzola. Keep the task in progress and preserve the existing failed audit record until the independent verdict.

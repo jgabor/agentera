@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import { planV1ArtifactsPhase } from "../../src/upgrade/migrateArtifactsV1ToV2.js";
 import { detectV1ArtifactPairs } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -96,13 +95,10 @@ describe("v1 legacy cruft removal (post-3.0 boundary)", () => {
     }
   });
 
-  it("pass: migrateArtifactsV1ToV2 remains for Markdown→YAML migration", () => {
+  it("pass: v1 Markdown is detectable but has no conversion implementation", () => {
     const fixture = repoPath("packages/cli/test/upgrade/fixtures/v2-v1-md-project");
-    const project = fixture;
-    expect(detectV1ArtifactPairs(project)).toEqual([".agentera/PROGRESS.md"]);
-    const phase = planV1ArtifactsPhase(project);
-    expect(phase.status).toBe("pending");
-    expect(phase.items[0]?.action).toBe("migrate");
+    expect(detectV1ArtifactPairs(fixture)).toEqual([".agentera/PROGRESS.md"]);
+    expect(fs.existsSync(repoPath("packages/cli/src/upgrade/migrateArtifactsV1ToV2.ts"))).toBe(false);
   });
 
   it("fail: scan flags marketplace hej plugin reintroduction", () => {

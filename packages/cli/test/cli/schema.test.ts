@@ -60,22 +60,11 @@ describe("cli schema", () => {
     );
     expect(prime?.description).toContain("12000 UTF-8 bytes");
     expect(prime?.description).toContain("status startup at most 25000");
-    expect(payload.state_backfill).toMatchObject({
-      authority: "references/artifacts/state-storage-authority.yaml",
-      command: expect.stringContaining("agentera state backfill"),
-      supported_artifacts: ["progress", "decisions", "health"],
-      limits: { results: 100, history_units: 500, history_bytes: 16777216 },
-      reachable_refs: ["HEAD", "refs/heads", "refs/tags"],
-      excluded_refs: ["refs/remotes", "custom_refs"],
-      consent: { preview: "optional_read_only", apply: "--apply --force" },
-      apply_requires: ["--apply", "--force", "--project PATH", "--artifact ARTIFACT", "--number N"],
-    });
-    const backfill = (payload.commands as Array<{ name: string; kind: string; structured_fields: string[] }>).find(
-      (command) => command.name === "backfill",
-    );
-    expect(backfill).toMatchObject({
-      kind: "state_git_backfill",
-      structured_fields: expect.arrayContaining(["scan", "entries", "source_contract"]),
+    expect(payload).not.toHaveProperty("state_backfill");
+    expect(payload).not.toHaveProperty("state_migration");
+    expect((payload.commands as Array<{ name: string }>).some((command) => command.name === "backfill")).toBe(false);
+    expect(payload.entity_migration).toMatchObject({
+      invocation: expect.objectContaining({ explicit_apply: "full_upgrade_yes_only" }),
     });
     const upgrade = (payload.commands as Array<{ name: string; structured_fields: string[] }>).find(
       (command) => command.name === "upgrade",

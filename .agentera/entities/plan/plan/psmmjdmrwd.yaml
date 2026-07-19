@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-07-18
-    status: open
+    status: archived
     reviewed: 2026-07-18
     critic_issues: 15 found, 15 addressed, 0 dismissed
     title: "Plan: Simplify Agentera around one best-effort v2-to-v3 upgrade"

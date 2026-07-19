@@ -25,6 +25,7 @@ import { operationSpec } from "../../src/state/write/operations.js";
 import { InjectedMutationFailure, withStateMutation } from "../../src/state/write/mutation.js";
 import { executeStateWrite, type StateWriteRequest } from "../../src/state/write/transaction.js";
 import { StateWriteInputError } from "../../src/state/write/errors.js";
+import { getDecisionEntity } from "../../src/state/decisionEntities.js";
 
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
@@ -473,33 +474,34 @@ describe("amendment publication recovery boundaries", () => {
 describe("amendment CLI dispatch", () => {
   it("applies an amendment through the typed writer and composes on re-read", () => {
     const root = project();
-    archive(root, 12, baseRecord(12));
+    fs.mkdirSync(path.join(root, ".agentera"));
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const appended = runCli(root, [
+      "decisions", "append", "--question", "CLI amendment?", "--context", "Entity authority",
+      "--alternative-chosen", "original", "--choice", "original", "--reasoning", "baseline", "--confidence", "firm", "--format", "json",
+    ]);
+    expect(appended.rc).toBe(0);
+    const id = String(appended.json?.id);
+    const baseSha256 = String((getDecisionEntity(root, id) as any).entry.effective_sha256);
 
     const dry = runCli(root, [
-      "decisions", "amend", "--number", "12", "--choice", "cli amended", "--confidence", "firm", "--dry-run", "--format", "json",
+      "decisions", "amend", "--id", id, "--base-sha256", baseSha256, "--choice", "cli amended", "--confidence", "firm", "--dry-run", "--format", "json",
     ]);
-    expect(dry.rc).toBe(0);
+    expect(dry.rc, JSON.stringify(dry)).toBe(0);
     expect(dry.json?.operation).toMatchObject({ dry_run: true });
-    expect(fs.existsSync(revisionPath(root))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/decisions/decision_revision"))).toBe(false);
 
     const applied = runCli(root, [
-      "decisions", "amend", "--number", "12", "--alternative-chosen", "cli amended",
-      "--alternative-rejected", "rejected alt", "--choice", "cli amended", "--confidence", "firm", "--format", "json",
+      "decisions", "amend", "--id", id, "--base-sha256", baseSha256,
+      "--choice", "cli amended", "--confidence", "firm", "--format", "json",
     ]);
-    expect(applied.rc).toBe(0);
+    expect(applied.rc, JSON.stringify(applied)).toBe(0);
     expect(applied.json?.operation).toMatchObject({ idempotent_replay: false });
-    expect(applied.json?.written.choice).toBe("cli amended");
-    expect(applied.json?.written.alternatives).toEqual([
-      { name: "cli amended", status: "chosen" },
-      { name: "rejected alt", status: "rejected" },
-    ]);
+    expect(applied.json?.record.changes.choice).toBe("cli amended");
 
-    const entry = effective(root, 12);
+    const entry = (getDecisionEntity(root, id) as any).entry;
     expect(entry.record.choice).toBe("cli amended");
-    expect(entry.record.alternatives).toEqual([
-      { name: "cli amended", status: "chosen" },
-      { name: "rejected alt", status: "rejected" },
-    ]);
+    expect(entry.record.alternatives).toEqual([{ name: "original", status: "chosen" }]);
   });
 });
 

@@ -55,27 +55,14 @@ describe("planArtifactsPhase", () => {
     expect(phase.items.some((item) => item.source === ".agentera/progress.yaml")).toBe(true);
   });
 
-  it("plans pending v1 Markdown migration to v2 YAML", () => {
+  it("blocks v1 Markdown without offering an automatic conversion", () => {
     const project = copyFixture("v2-v1-md-project", path.join(tmp, "v1-md"));
     const phase = planArtifactsPhase(project);
-    expect(phase.status).toBe("pending");
+    expect(phase.status).toBe("blocked");
     expect(detectV1ArtifactPairs(project)).toEqual([".agentera/PROGRESS.md"]);
-    expect(phase.items[0]?.action).toBe("migrate");
-    expect(phase.items[0]?.target).toBe(".agentera/progress.yaml");
-  });
-
-  it("applies v1 Markdown migration and archives source", () => {
-    const project = copyFixture("v2-v1-md-project", path.join(tmp, "v1-apply"));
-    const preview = planArtifactsPhase(project);
-    const applied = applyMigrationPhases({ appHome: project, project, home: tmp }, {
-      artifacts: preview,
-      runtime: { name: "runtime", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
-      cleanup: { name: "cleanup", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
-    }, ["artifacts"]);
-    expect(applied.artifacts.status).toBe("applied");
-    expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(true);
-    expect(fs.existsSync(path.join(project, ".agentera/PROGRESS.md"))).toBe(false);
-    expect(fs.existsSync(path.join(project, ".agentera/backup-v1/PROGRESS.md"))).toBe(true);
+    expect(phase.items[0]?.action).toBe("manual-v1-handoff");
+    expect(phase.items[0]?.message).toContain("v2 CLI");
+    expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(false);
   });
 });
 

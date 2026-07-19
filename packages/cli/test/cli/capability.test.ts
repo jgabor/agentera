@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { cmdCapability, CAPABILITY_ROUTING_NAMES } from "../../src/cli/commands/capability.js";
@@ -45,8 +48,14 @@ describe("cli capability routing", () => {
   });
 
   it("gates capability startup through the dispatcher before cutover", () => {
-    const { rc, err } = capture((io) => main(["node", "agentera", "vision"], io));
-    expect(rc).toBe(1);
-    expect(err).toContain("completed entity-state cutover");
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-capability-gate-"));
+    try {
+      const { rc, out } = capture((io) => main(["node", "agentera", "vision", "--project", root, "--format", "json"], io));
+      expect(rc).toBe(1);
+      expect(JSON.parse(out).error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
+      expect(fs.readdirSync(root)).toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

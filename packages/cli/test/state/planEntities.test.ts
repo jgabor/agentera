@@ -311,13 +311,14 @@ describe("plan and task entity authority", () => {
     const stale = capture(root, ["state", "plan", "list", "--limit", "1", "--cursor", page.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(JSON.parse(stale.out).error.class).toBe("cursor_snapshot_unavailable");
   });
 
-  it("keeps legacy writes isolated and rejects numeric selectors in entity mode", () => {
+  it("rejects numeric selectors in entity mode and all writes before cutover", () => {
     const entity = project(); const created = create(entity, "entity");
     expect(capture(entity, ["state", "plan", "set-status", "--task", "1", "--status", "complete", "--format", "json"]).rc).toBe(2);
     expect(capture(entity, ["state", "plan", "tasks", "get", "--task", "1", "--format", "json"]).rc).toBe(2);
     const legacy = project(false); const input = path.join(legacy, "legacy.yaml"); fs.writeFileSync(input, dumpYamlMapping(plan("legacy")));
-    expect(capture(legacy, ["state", "plan", "create", "--input", input, "--format", "json"]).rc).toBe(0);
-    expect(fs.existsSync(path.join(legacy, ".agentera/plan.yaml"))).toBe(true); expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
+    const rejected = capture(legacy, ["state", "plan", "create", "--input", input, "--format", "json"]);
+    expect(rejected.rc).toBe(1); expect(JSON.parse(rejected.out).error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
+    expect(fs.existsSync(path.join(legacy, ".agentera/plan.yaml"))).toBe(false); expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
     expect(created.id).toMatch(/^[a-z]{10}$/);
   });
 

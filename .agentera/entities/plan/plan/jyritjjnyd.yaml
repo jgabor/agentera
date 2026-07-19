@@ -1,0 +1,49 @@
+id: jyritjjnyd
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-19
+    status: open
+    reviewed: 2026-07-19
+    critic_issues: 14 found, 9 addressed, 5 dismissed
+    title: "Plan: Finish the single-path v2-to-v3 upgrade"
+  what: Land the candidate removal of alternate legacy mutation paths with an authority-compliant memory gate, then finish only the residual routing, lifecycle, verification-lane, packed-integration, and state-closeout outcomes needed for one v2-to-v3 upgrade contract.
+  why: The predecessor proved the forward importer but exhausted evaluation retries when a test workaround weakened the memory authority. Preserve the validated deletion work and durable failure history without reopening the blocked task or carrying broad refactors that no longer have an independent product outcome.
+  constraints: Preserve one forward-only v2 aggregate to v3 entity path, Git-bound clean-source validation, unchanged migration sources, dry-run, explicit consent, path and symlink boundaries, bounded output, atomic file publication, complete graph validation, marker-last activation, exclusive mutation ownership, user-owned resources, and one shared skill plus CLI correctness authority. Preserve the declared latency, memory, and serialized-byte budgets without changing their thresholds or measurement semantics. Do not add rollback, restore, v1 conversion, compatibility dispatch, generalized recovery, source backups, staging graphs, a benchmark framework, duplicate validators, generic retrieval rewrites, broad namespace migration, remote work, release, or publication.
+  overall_acceptance: GIVEN a recognized Git-clean v2 project WHEN the sole upgrade runs through source or packed v3 THEN representative records and relationships survive, valid entities activate before bounded runtime handoff, migration sources stay unchanged, normal operation has no aggregate authority or alternate mutation path, declared budgets hold, source and package proof each have one owner, and project state closes without publication.
+  scope:
+    included:
+      - The current legacy-removal candidate and an authority-compliant budget gate.
+      - Residual aggregate normal-operation routing and migration-adjacent command-vocabulary duplication.
+      - One lifecycle operation set across preview, apply, and retry.
+      - One source verification lane, one package lane, one packed fixed-path proof, and final state synchronization.
+    excluded:
+      - Generic cross-family retrieval refactors and broad command namespace migration.
+      - V1 conversion, downgrade, rollback, restore, malformed-source repair, new import formats, release, publication, and remote work.
+    deferred:
+      []
+  design: First preserve and validate the existing single-path deletion while restoring the declared performance and memory evidence. Then remove the remaining normal-operation legacy routing and consolidate lifecycle behavior as independent outcomes. After both stabilize, assign source and package proof to one lane each. Prove the fixed packed path once, then close documentation, evidence, health, TODO, and plan state in a separate final pass.
+  unknowns:
+    - question: Can the declared cold-process peak heap budget be measured without production instrumentation or changed thresholds?
+      affects_task: 1
+      resolve_by: Use the smallest faithful test-only observation; if peak cannot be observed, stop and return to planning rather than redefine the metric.
+    - question: Which aggregate readers remain reachable after the current deletion is accepted?
+      affects_task: 2
+      resolve_by: Trace supported normal and packed entrypoints after Task 1, retaining legacy parsing only for read-only migration discovery.
+    - question: Can one ownership proof preserve the user-owned runtime collision boundary?
+      affects_task: 3
+      resolve_by: Replay owned, missing, corrupt, and user-modified resources and retain the smallest proof that distinguishes ownership safely.
+  rejected:
+    - issue: Split Task 1 because the candidate touches many files.
+      rationale: The files form one already-present legacy-removal boundary; splitting would duplicate evaluation without creating a separate observable outcome.
+    - issue: Make residual routing and lifecycle consolidation sequential.
+      rationale: After Task 1, normal-state routing and runtime resource behavior are independent surfaces and can be evaluated separately.
+    - issue: Reduce the five cold-process repetitions as excessive edge-case machinery.
+      rationale: Five repetitions and peak semantics are declared authority requirements, not optional test expansion.
+    - issue: Do not rerun canonical gates during final closure.
+      rationale: Final execution of the canonical lanes is closure evidence; duplicate ownership and fixtures, not repeated execution, are excluded.
+    - issue: Add a version-bump task for the fix work.
+      rationale: Release and publication are excluded under the 3.0.0 cutover hold, so version-bearing metadata must remain unchanged.
+  surprises:
+    []

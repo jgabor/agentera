@@ -60,6 +60,7 @@ function writeOverCapProgress(dir: string, cycleCount = 55): void {
   }));
   fs.writeFileSync(path.join(agenteraDir, "progress.yaml"), YAML.stringify({ cycles, archive: [] }));
   for (const cycle of cycles) publishNumberedArchive(dir, "progress", cycle.number, cycle);
+  fs.writeFileSync(path.join(agenteraDir, "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
 }
 
 let tmp: string;
@@ -107,7 +108,7 @@ describe("compaction parity (D56 T3)", () => {
     }
   });
 
-  it("dry-run reports projection pressure without failing on an over-cap fixture", () => {
+  it("check ignores over-cap aggregate projections under entity authority", () => {
     const project = path.join(tmp, "over-cap-dry");
     writeOverCapProgress(project, 55);
     const { rc, out } = capture(["check", "compact", "--project", project, "--format", "json"]);
@@ -117,14 +118,11 @@ describe("compaction parity (D56 T3)", () => {
     const summary = payload.summary as Record<string, unknown>;
     expect(summary.mode).toBe("check");
     expect(summary.over_limit_count).toBe(0);
-    const progress = (payload.operations as Array<Record<string, unknown>>).find(
-      (op) => op.artifact === "progress",
-    );
-    expect(progress?.action).toBe("projection");
-    expect(progress?.projection_state).toBe("over_defaults");
+    expect(payload.operations).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: "entity_state", action: "skipped", classification: "canonical_entities" })]));
+    expect((payload.operations as Array<Record<string, unknown>>).some((op) => op.artifact === "progress")).toBe(false);
   });
 
-  it("apply enforces caps with archive preservation and clears over_limit (pass)", () => {
+  it("apply cannot compact aggregate projections under entity authority", () => {
     const project = path.join(tmp, "over-cap-apply");
     writeOverCapProgress(project, 55);
     const { rc, out } = capture(["check", "compact", "--apply", "--project", project, "--format", "json"]);
@@ -135,21 +133,13 @@ describe("compaction parity (D56 T3)", () => {
     expect(summary.mode).toBe("fix");
     expect(summary.over_limit_count).toBe(0);
 
-    const progress = (payload.operations as Array<Record<string, unknown>>).find(
-      (op) => op.artifact === "progress",
-    );
-    expect(progress?.action).toBe("compacted");
-    const result = progress?.result as Record<string, unknown>;
-    expect(result.active_after).toBe(MAX_FULL_ENTRIES);
-    expect(result.archive_after).toBe(MAX_TOTAL_ENTRIES - MAX_FULL_ENTRIES);
+    expect(payload.operations).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: "entity_state", action: "skipped" })]));
 
     const data = YAML.parse(
       fs.readFileSync(path.join(project, ".agentera", "progress.yaml"), "utf8"),
     ) as { cycles: unknown[]; archive: { summary: string }[] };
-    expect(data.cycles.length).toBe(MAX_FULL_ENTRIES);
-    expect(data.archive.length).toBe(MAX_TOTAL_ENTRIES - MAX_FULL_ENTRIES);
-    expect(data.cycles.length + data.archive.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
-    expect(data.archive.some((entry) => entry.summary.includes("Cycle 1"))).toBe(true);
+    expect(data.cycles.length).toBe(55);
+    expect(data.archive).toHaveLength(0);
   });
 
   it("check compact tolerates an oversized corpus.json without Node string-limit crash (pass)", () => {
@@ -162,6 +152,7 @@ describe("compaction parity (D56 T3)", () => {
 
     const project = path.join(tmp, "with-corpus");
     fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const { rc, out, err } = capture(["check", "compact", "--project", project, "--format", "json"]);
     expect(rc).toBe(0);
     const combined = out + err;

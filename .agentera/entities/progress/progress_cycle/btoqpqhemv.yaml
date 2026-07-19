@@ -1,0 +1,15 @@
+id: btoqpqhemv
+artifact: progress
+record:
+  timestamp: 2026-07-19 12:31
+  type: test
+  phase: build
+  what: Replaced the forced-GC retained-heap workaround with test-only external inspector observation of cold CLI processes.
+  context:
+    intent: Complete the preserved single-path legacy-removal candidate without weakening the authority-owned performance contract.
+    constraints: No production instrumentation, changed thresholds, compatibility restoration, commit, publication, or remote work.
+    unknowns: "Resolved: external Node inspector observation provides the faithful test-only peak interval without production machinery."
+    scope: Preserved candidate plus packages/cli/test/cli/primeTask3Bounds.test.ts and typed plan/progress state.
+  inspiration: Replacement plan jyritjjnyd task jnwgujivkt and predecessor evaluation tcrhynzola-audit-2.
+  verified: "Five repetitions each passed: exact get max 431.67 ms/36,036,472 heap bytes/952 bytes vs 1,000/67,108,864/1,048,576; bounded list small 399.18/28,999,624/32,183 vs 5,000/67,108,864/32,768; bounded list large 485.96/41,770,672/32,226 vs 15,000/268,435,456/32,768; startup small 868.08/66,404,136/32,945 vs 5,000/67,108,864/35,000; startup large 1,465.91/94,701,912/32,957 vs 15,000/268,435,456/35,000. Every cold process was sampled from before fixture discovery through serialized output without clamps or GC. Marker, removed-operation, hostile-authority, and help/schema/upgrade smokes passed 198/198; source suite 2,529/2,529; typecheck, build, state and capability-contract validation, compact, and diff check passed."
+  next: Independent simplicity evaluation; keep jnwgujivkt in progress and TODO xajedwyxks open until it passes.

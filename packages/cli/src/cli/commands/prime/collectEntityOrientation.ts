@@ -109,11 +109,20 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   } : { exists: false, active: false, status: "missing", tasks: [], complete: 0, total: 0, complete_plan: false, first_pending: null };
 
   const latestProgress = progressEntries[0];
+  const latestProgressRecord = record(latestProgress);
   const progress: ProgressSummary = latestProgress ? {
     exists: true,
     status: "available",
-    latest: latestProgress,
-    latest_verification: record(latestProgress).verified ?? null,
+    latest: {
+      id: latestProgress.id,
+      artifact: latestProgress.artifact,
+      ...Object.fromEntries(
+        ["what", "next"]
+          .filter((field) => latestProgressRecord[field] !== undefined)
+          .map((field) => [field, latestProgressRecord[field]]),
+      ),
+    },
+    ...(latestProgressRecord.verified === undefined ? {} : { latest_verification: latestProgressRecord.verified }),
     cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
   } : { exists: false, status: "missing", cycle_count: 0 };
 

@@ -1,0 +1,15 @@
+id: wohtrrdvrw
+artifact: plan
+record:
+  name: Establish single-owner source and package gates
+  depends_on:
+    - krijbfpiqt
+    - hkunhyeace
+  status: pending
+  acceptance:
+    - GIVEN ordinary source verification WHEN run THEN it does not build, pack, install, or execute packaged output.
+    - GIVEN package verification WHEN run THEN it alone owns build, bundle, pack, installation, and extracted-package execution, each once per invocation.
+    - GIVEN every retained public effect WHEN verification ownership is inspected THEN exactly one lane defines it and no second lane independently asserts the same architecture.
+    - GIVEN either lane fails WHEN diagnostics are rendered THEN the failing boundary is identified without running the other lane implicitly.
+  test_proportionality: One independently failing source lane and one independently failing package lane, with an ownership inventory for retained public effects.
+  plan: jyritjjnyd

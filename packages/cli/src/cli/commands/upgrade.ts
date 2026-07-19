@@ -16,6 +16,7 @@ import {
 } from "./upgradeVerify.js";
 import { detectStateMode } from "../../state/stateMode.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
+import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -99,6 +100,11 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
 
   if (orchestratorArgs.yes && orchestratorArgs.dryRun) {
     err("upgrade error: --yes and --dry-run are mutually exclusive\n");
+    return 2;
+  }
+
+  if (orchestratorArgs.yes && orchestratorArgs.only?.length) {
+    err(`upgrade error: --only is preview-only; apply must run as one full upgrade --yes\nRecovery: ${fullEntityUpgradeCommand(path.resolve(args.project ?? process.cwd()))}\n`);
     return 2;
   }
 
@@ -223,3 +229,4 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
 }
 
 export type { UpgradeOnlyPhase };
+import path from "node:path";

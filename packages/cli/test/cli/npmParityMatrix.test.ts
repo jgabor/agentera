@@ -251,6 +251,12 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
     it(`matches oracle envelope for ${name}`, () => {
       const envRestore: Array<[string, string | undefined]> = [];
       let appHomeTmp: string | null = null;
+      let projectTmp: string | null = null;
+      const argv = [...spec.argv];
+      if (["prime", "state_plan", "state_todo"].includes(name)) {
+        projectTmp = fs.mkdtempSync(path.join(os.tmpdir(), "npm-parity-marker-absent-"));
+        argv.push("--project", projectTmp);
+      }
       if (name === "upgrade_development_dry_run") {
         appHomeTmp = fs.mkdtempSync(path.join(os.tmpdir(), "npm-parity-apphome-"));
         fs.mkdirSync(path.join(appHomeTmp, "app", "skills", "agentera"), { recursive: true });
@@ -267,7 +273,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
       let rc: number;
       let out: string;
       try {
-        const captured = capture((io) => main(["node", "agentera", ...spec.argv], io));
+        const captured = capture((io) => main(["node", "agentera", ...argv], io));
         rc = captured.rc;
         out = captured.out;
       } finally {
@@ -276,6 +282,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
           else process.env[key] = value;
         }
         if (appHomeTmp) fs.rmSync(appHomeTmp, { recursive: true, force: true });
+        if (projectTmp) fs.rmSync(projectTmp, { recursive: true, force: true });
       }
       if (["prime", "state_plan", "state_todo"].includes(name)) {
         expect(rc).toBe(1);

@@ -80,6 +80,7 @@ describe("schema-advertised alias/runtime parity", () => {
         const project = fs.mkdtempSync(path.join(os.tmpdir(), "alias-parity-"));
         temporaryProjects.push(project);
         fs.mkdirSync(path.join(project, ".agentera"));
+        fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
         argv[argv.indexOf("PROJECT")] = project;
       }
       const legacy = capture(argv);
@@ -98,11 +99,10 @@ describe("schema-advertised alias/runtime parity", () => {
       const argv = [alias.legacy, "--alias-parity-invalid", "--format", "json"];
       const legacy = capture(argv);
       const canonical = capture(canonicalArgv(alias, argv));
-      expect(legacy.rc, alias.legacy).toBe(alias.legacy === "query" ? 1 : 2);
+      expect(legacy.rc, alias.legacy).toBe(2);
       expect(legacy.rc, alias.legacy).toBe(canonical.rc);
       expect(parseStructured(legacy, alias.legacy)).toEqual(parseStructured(canonical, alias.canonical));
-      if (alias.legacy === "query") expect(legacy.err).toBe("");
-      else expect(legacy.err).toContain(`Deprecation: agentera ${alias.legacy} is deprecated`);
+      expect(legacy.err).toContain(`Deprecation: agentera ${alias.legacy} is deprecated`);
       expect(canonical.err, alias.canonical).toBe("");
     }
   });
@@ -152,6 +152,7 @@ describe("schema-advertised alias/runtime parity", () => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "gate-retirement-"));
     temporaryProjects.push(project);
     fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const canonical = capture(["check", "compact", "--project", project, "--format", "json"]);
     const transitional = capture(["compact", "--project", project, "--format", "json"]);
     const canonicalPayload = parseStructured(canonical, "check compact");

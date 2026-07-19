@@ -170,7 +170,7 @@ describe("cli dispatch: state routing", () => {
     expect(rc).toBe(2);
     expect(err).toContain("migrate");
     expect(err).toContain("Syntax: agentera state");
-    expect(err).toContain("agentera state migrate");
+    expect(err).toContain("agentera state progress list --format json");
   });
 
   it("rejects removed top-level progress with the unknown-command envelope", () => {

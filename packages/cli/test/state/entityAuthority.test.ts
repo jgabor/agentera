@@ -324,7 +324,7 @@ describe("Decision 94 entity authority", () => {
     );
 
     expect(measurement).toMatchObject({
-      status: "target_gate_not_yet_implemented",
+      status: "implemented",
       sampling: { repetitions: 5, pass_rule: "every repetition stays within every applicable limit" },
       targets: {
         exact_get: { max_latency_ms: 1000, max_heap_delta_bytes: 67108864, max_utf8_bytes: 1048576 },

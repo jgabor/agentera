@@ -1,0 +1,15 @@
+id: ejdvncnhtm
+artifact: progress
+record:
+  timestamp: 2026-07-19 13:28
+  type: fix
+  phase: build
+  what: Closed the three independent-audit gaps in rejected-upgrade recovery, cross-boundary budget fixtures, and state-storage authority.
+  context:
+    intent: Make the preserved single-path deletion fully match its runnable recovery, measurement-fixture, and authority contracts without restoring retired systems.
+    constraints: No restored compatibility, generalized recovery, framework, threshold, version, commit, publication, or remote change.
+    unknowns: None; the audit named three bounded corrections and each is verified.
+    scope: Shared full-upgrade correction, existing lifecycle regression, existing budget test, state-storage authority, and exact authority consumers.
+  inspiration: Independent evaluation jnwgujivkt-audit-1.
+  verified: "Rejected upgrade --only runtime --yes and --restore --yes emit the same full development-channel/project correction before effects. Fixtures contain 100/1000 valid entities across all 11 boundaries with decision satisfaction/revision, plan/task/dependency, and experiment/objective edges; five cold processes per target passed unchanged limits. Maxima: exact 382.53 ms/33,484,376 heap bytes/874 bytes; list small 367.62/25,433,280/32,259; list large 420.11/36,902,840/32,308; startup small 806.56/66,031,792/10,122; startup large 1,147.53/92,405,232/10,123. Authority marks the gate implemented, removes api.backfill/api.migrate, and retains read-only entity discovery. Focused tests passed 60/60; full suite 2,529/2,529; typecheck, build, state and capability-contract validation, compact, and diff check passed."
+  next: Independent re-audit; keep jnwgujivkt in progress and TODO xajedwyxks open until PASS.

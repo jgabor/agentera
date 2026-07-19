@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { main } from "../../src/cli/dispatch.js";
 import {
   printCommandHelp,
+  stateCommandNames,
   printStateHelp,
   printTopLevelHelp,
   printUpgradeHelp,
@@ -81,14 +82,15 @@ describe("cli help", () => {
     expect(experiments).toContain("structured ambiguous error");
   });
 
-  it("documents optional preview and direct forced backfill without receipt flags", () => {
+  it("documents only the read-only entity migration diagnostic", () => {
     const backfill = printStateHelp("backfill");
-    expect(backfill).toContain("[--dry-run|--apply --force]");
-    expect(backfill).toContain("Direct --apply --force publishes one immutable archive record after fresh checks.");
-    expect(backfill).toContain("optional for inventory/preview, required for apply");
-    expect(backfill).toContain("Result limit: 100; history limit: 500 units and 16777216 bytes (16 MiB).");
-    expect(backfill).toContain("Reads only HEAD, refs/heads, refs/tags; excludes refs/remotes, custom_refs.");
-    expect(backfill).toContain("Traceability: commit, path, blob_id, entry_id, content_hash, reachable.");
+    expect(stateCommandNames()).not.toContain("backfill");
+    expect(backfill).not.toMatch(/--apply|--force/);
+    const migrate = printStateHelp("migrate");
+    expect(migrate).toContain("state migrate entities");
+    expect(migrate).toContain("--dry-run");
+    expect(migrate).toContain("Entity publication is available only through one full development-channel upgrade --yes.");
+    expect(migrate).not.toMatch(/--apply|--force|--restore/);
     expect(backfill).not.toContain("preview-token");
     expect(backfill).not.toContain("receipt");
   });

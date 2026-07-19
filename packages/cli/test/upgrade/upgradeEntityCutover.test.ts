@@ -353,7 +353,10 @@ describe("one-way Git entity cutover", () => {
     expect(entityHelp.out).toContain("--dry-run");
     expect(entityHelp.out).not.toMatch(/--(?:apply|resume|rollback)/);
     for (const args of [["--apply"], ["--resume", "deadbeef"], ["--rollback", "deadbeef"]]) {
-      expect(capture(root, ["state", "migrate", "entities", ...args]).code).toBe(2);
+      const rejected = capture(root, ["state", "migrate", "entities", ...args]);
+      expect(rejected.code).toBe(1);
+      expect(rejected.err).toContain("upgrade --channel development");
+      expect(rejected.err).toContain("--yes");
     }
     expect(capture(root, ["upgrade", "--restore"]).code).toBe(2);
   });

@@ -25,6 +25,12 @@ export function commandText(parts: string[]): string {
   return parts.map(shellQuote).join(" ");
 }
 
+export function fullEntityUpgradeCommand(project: string): string {
+  return commandText([
+    "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--yes",
+  ]);
+}
+
 /** Channel-aware upgrade preview/apply commands (doctor, prime, orchestrator). */
 export function buildUpgradeCommands(args: BuildUpgradeCommandsArgs): {
   dryRunCommand: string;

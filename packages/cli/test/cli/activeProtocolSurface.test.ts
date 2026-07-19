@@ -121,24 +121,15 @@ const STATE_STORAGE_EXACT: Array<[string, string]> = [
   ["/api/direct_get/command", "--number"], ["/api/direct_get/examples/progress", "--number"], ["/api/direct_get/examples/decisions", "--number"], ["/api/direct_get/examples/health", "--number"], ["/api/direct_get/required_selector", "--number"], ["/api/direct_get/result", "stable_id"],
   ["/api/list/response_fields/entry/0", "stable_id"], ["/api/list/response_fields/entry/1", "artifact_id"], ["/api/list/response_fields/entry/2", "entry_number"],
   ["/api/durability/command", "--number"], ["/api/durability/response_fields/entry/0", "stable_id"], ["/api/durability/response_fields/entry/1", "artifact_id"], ["/api/durability/response_fields/entry/2", "entry_number"],
-  ["/api/backfill/command", "--number"], ["/api/backfill/apply_requires/4", "--number"], ["/api/backfill/response/entry_fields/1", "artifact_id"], ["/api/backfill/response/entry_fields/2", "entry_number"], ["/api/backfill/omission/continuation", "--number"],
-  ["/api/migrate/command", "--number"], ["/api/migrate/selectors/number/flag", "--number"], ["/api/migrate/modes/apply/selectors_required/1", "--number"], ["/api/migrate/result/entry_fields/2", "artifact_id"], ["/api/migrate/result/entry_fields/3", "entry_number"], ["/api/migrate/result/omission/output_retry", "--number"],
-  ["/api/migrate/failures/classes/0/example", "--number"], ["/api/migrate/failures/classes/3/example", "--number"], ["/api/migrate/failures/classes/4/example", "--number"], ["/api/migrate/failures/classes/5/example", "--number"], ["/api/migrate/failures/classes/6/example", "--number"], ["/api/migrate/failures/classes/7/example", "--number"],
   ["/failures/envelope/error_optional_fields/0", "artifact_id"], ["/failures/envelope/error_optional_fields/1", "entry_number"], ["/failures/envelope/error_optional_fields/2", "stable_id"],
 ];
 
-const RUNTIME_EXACT: Array<[string, string, string]> = [
-  ["/schema/state_migration/command", "--number", "50202a1d2b4cbe8405be4eb3c516eb3534e5a215c1037cf99914ad23e8d09a95"], ["/schema/state_migration/selectors/number/flag", "--number", "5e23817f53a16146558ae73bab28977dcccff509f9f188465d829480263e91fa"], ["/schema/state_migration/modes/apply/selectors_required/1", "--number", "ee83192a0b8f3aca2b8c5e4834d4cb9c2fabd97d98044b413994a0cd07468ecc"], ["/schema/state_migration/result/entry_fields/2", "artifact_id", "763699b7364292b373d5ecb1b4003e26cd7c79a78df5743bf5c200761dceb0b8"], ["/schema/state_migration/result/entry_fields/3", "entry_number", "3dda1118c4b2ba1bb9de6e6901c04bb927081502b6033a9385fd34eb6be35156"], ["/schema/state_migration/result/omission/output_retry", "--number", "8a2cd997289530bd343ff1e797d6107ed90d8c8a8557839350338ec7e8773191"],
-  ["/schema/state_migration/failures/classes/0/example", "--number", "9caa5dcf473f7351de39f5cd6b043c3c76cbb34f51112096e331241f13fb3390"], ["/schema/state_migration/failures/classes/3/example", "--number", "ed4c59be7c17b813534834c0a12562f86dbad16fa53a455af5682cc3fb3fc163"], ["/schema/state_migration/failures/classes/4/example", "--number", "8fdf55a5983697e2ad0b229535e22c6c7db6ed4e38faacc53a0bbf155d8fe598"], ["/schema/state_migration/failures/classes/5/example", "--number", "183c7fc64cf75a33a8bc4c6a4cc5134dcea8863341cca58657ea6ec26e65f45b"], ["/schema/state_migration/failures/classes/6/example", "--number", "1fa387b95a84efd28a4f28e80bd18f3db24e7290154d80302f847691ec58af0a"], ["/schema/state_migration/failures/classes/7/example", "--number", "df7f6f7a0d298f1a5230bf1f52c32be2aece690f02f6b5faaf14763a612f5ef1"],
-  ["/schema/state_backfill/command", "--number", "410ef60c0ccaea5b1ec2c66fb7cb84d424100ae677a8ec353b9129e72bd647cf"], ["/schema/state_backfill/apply_requires/4", "--number", "7a223c7c06001711cd0d09cf9035b9601ad55e3c6c5e1d7c1355be6a97738167"], ["/schema/state_backfill/response/entry_fields/1", "artifact_id", "e2a1cf0621b69ce0849a52894bb860beeca7add8ecd24173e7e100ad2bd09fa5"], ["/schema/state_backfill/response/entry_fields/2", "entry_number", "22aa461515984e74dcbee25a7463ad34f7f5d6703a3f64b91f2f2e2ad4976449"], ["/schema/state_backfill/recovery/omission", "--number", "cd5e94aa96905c8c3caf1d330185e5bba3fcd874819a03755f906e5d2913ed4f"],
-  ["/legacy_explain/stdout/guidance/0", "--number", "7d6b39905d921ab5b58a5809a224098e863082f4e4e4d9f7ea3fb5a4f7f5482d"],
-];
+const RUNTIME_EXACT: Array<[string, string, string]> = [];
 
 const SOURCE_CONTEXT_HASHES: Record<string, string> = {
-  "references/artifacts/state-storage-authority.yaml": "858f12fb4192a99f4a9fcef7e75129c1ab6fcfa05a4dadc9b69b069770d27e40",
+  "references/artifacts/state-storage-authority.yaml": "d5c386de575cbfb3cedc14338d78e8da876c61b3e4995e6315c95175aa7e39b5",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
   "references/cli/prime-consumer-compatibility.yaml": "da41e21b628d9091f3bab0ddb7bdb4f86b5649f8f108b25d2dd307ff4e64c7f9",
-  "UPGRADE.md": "685487bf3511c5cff99434da1678df7e9b67b1494148b23e21923a02b985692e",
 };
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }
@@ -191,8 +182,7 @@ function fileFindings(relative: string): Finding[] {
 
 function exactExceptions(runtime: any): Exception[] {
   expect(runtime.explain.stdout.guidance).toContain("a bare ten-letter ID is assigned by the CLI; do not pass an identity");
-  expect(runtime.legacy_explain.stdout.guidance).toContain("number is assigned by the CLI; do not pass --number");
-  expect(runtime.legacy_explain.stdout).toMatchObject({ classification: "legacy_migration_evidence", recovery_only: true });
+  expect(runtime.legacy_explain.stdout).toMatchObject({ available_after_upgrade: true });
   const exceptions: Exception[] = [];
   const add = (surface: string, pointer: string, match: string, contextHash: string, reason: string): void => {
     exceptions.push({ surface, pointer, match, contextHash, reason });
@@ -207,9 +197,6 @@ function exactExceptions(runtime: any): Exception[] {
     add("skills/agentera/schemas/artifacts/experiments.yaml", pointer, match, SOURCE_CONTEXT_HASHES["skills/agentera/schemas/artifacts/experiments.yaml"], "exact legacy experiment migration source envelope");
   }
   add("references/cli/prime-consumer-compatibility.yaml", "/plan", "plan:634c092e-a7bc-48f4-80ee-2c91940e54f1", SOURCE_CONTEXT_HASHES["references/cli/prime-consumer-compatibility.yaml"], "exact immutable plan evidence reference");
-  for (const [line, text] of [[197, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [198, "npx -y agentera@next state migrate --project \"$PWD\" --artifact progress --number N --apply --force --format json"], [209, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --dry-run --format json"], [210, "npx -y agentera@next state backfill --project \"$PWD\" --artifact progress --number N --apply --force --format json"]] as Array<[number, string]>) {
-    add("UPGRADE.md", `section=Legacy state and optional Git enrichment;line=${line}`, "--number", SOURCE_CONTEXT_HASHES["UPGRADE.md"], "exact migration input/apply command");
-  }
   return exceptions;
 }
 

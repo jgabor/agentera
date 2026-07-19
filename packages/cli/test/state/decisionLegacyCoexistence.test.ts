@@ -280,6 +280,7 @@ describe("target validation rejects unsupported confidence on new/amended conten
   it("append --confidence high is rejected at parse time before side effects (CLI path)", () => {
     const root = project();
     writeProjection(root, [record(1, "firm")]);
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
 
     const result = runCli(root, [
       "decisions",

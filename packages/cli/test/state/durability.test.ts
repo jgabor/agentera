@@ -302,7 +302,7 @@ describe("read-only archive and Git durability", () => {
     });
   });
 
-  it("exposes the authority syntax through the CLI without making a diagnostic a write gate", () => {
+  it("rejects legacy durability selectors before cutover without changing state", () => {
     const root = project();
     archive(root);
     const previous = process.cwd();
@@ -314,17 +314,13 @@ describe("read-only archive and Git durability", () => {
         out: (text) => (out += text),
         err: (text) => (err += text),
       });
-      expect(rc).toBe(0);
+      expect(rc).toBe(1);
     } finally {
       process.chdir(previous);
     }
     expect(err).toBe("");
-    expect(JSON.parse(out)).toMatchObject({
-      command: "agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json",
-      read_only: true,
-      remote_contact: false,
-      source_contract: { writes_independent: true },
-    });
+    expect(JSON.parse(out).error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
   });
 
   it("uses bare entity identity after cutover and remains read-only", () => {

@@ -34,6 +34,8 @@ const roots: string[] = [];
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-decision-overlay-"));
+  fs.mkdirSync(path.join(root, ".agentera"));
+  fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   roots.push(root);
   return root;
 }
@@ -56,13 +58,12 @@ function run(root: string, args: string[]): Captured {
   return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
 }
 
-function appendDecision(root: string): void {
-  expect(
-    run(root, [
+function appendDecision(root: string, suffix = ""): Captured {
+  const result = run(root, [
       "decisions",
       "append",
       "--question",
-      "Where should review state live?",
+      `Where should review state live${suffix}?`,
       "--context",
       "The immutable archive must remain unchanged.",
       "--alternative-chosen",
@@ -77,16 +78,19 @@ function appendDecision(root: string): void {
       "firm",
       "--format",
       "json",
-    ]).rc,
-  ).toBe(0);
+    ]);
+  expect(result.rc).toBe(0);
+  return result;
 }
 
 function update(root: string, state: string, ...extra: string[]): Captured {
+  const id = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"), { withFileTypes: true })
+    .find((entry) => entry.isFile() && entry.name.endsWith(".yaml"))!.name.slice(0, -5);
   return run(root, [
     "decisions",
     "update",
-    "--number",
-    "1",
+    "--id",
+    id,
     "--satisfaction-state",
     state,
     ...extra,
@@ -98,6 +102,7 @@ function update(root: string, state: string, ...extra: string[]): Captured {
 function updateRequest(root: string, state: string): StateWriteRequest {
   const spec = operationSpec("decisions", "update");
   if (!spec) throw new Error("decision update operation is unavailable");
+  const id = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))[0].slice(0, -5);
   const satisfaction = state === "provisionally_satisfied" ? { state, evidence: "atomic evidence" } : { state };
   return {
     artifact: "decisions",
@@ -105,56 +110,39 @@ function updateRequest(root: string, state: string): StateWriteRequest {
     projectRoot: root,
     dryRun: false,
     force: false,
-    values: { number: 1, satisfaction },
-    callerPayload: { number: 1, satisfaction },
+    values: { id, satisfaction },
+    callerPayload: { id, satisfaction },
     input: null,
   };
 }
 
 describe("decision review overlays", () => {
-  it("updates an archived decision overlay without changing immutable or current bytes", () => {
+  it("publishes satisfaction separately without changing the immutable decision base", () => {
     const root = project();
     appendDecision(root);
-    expect(loadDecisionOverlay(root)).toEqual({});
-    const archivePath = path.join(root, ".agentera", "archive", "decisions", "1.yaml");
-    const projectionPath = path.join(root, ".agentera", "decisions.yaml");
-    const archiveBefore = fs.readFileSync(archivePath, "utf8");
-    const originalProjection = loadYamlMapping(fs.readFileSync(projectionPath, "utf8"));
-    const projectionBefore = dumpYamlMapping({
-      decisions: [{ ...(originalProjection.decisions as any[])[0], number: 2, question: "A second current decision?" }],
-      archive: [{ number: 1, summary: "Decision 1 (2026-07-13): [An ID-keyed overlay] - review state remains separate" }],
-    });
-    fs.writeFileSync(projectionPath, projectionBefore);
+    const basePath = path.join(root, ".agentera/entities/decisions/decision", fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))[0]);
+    const baseBefore = fs.readFileSync(basePath, "utf8");
 
     const result = update(root, "provisionally_satisfied", "--satisfaction-evidence", "tests passed");
     expect(result).toMatchObject({ rc: 0 });
-    expect(result.json?.path).toBe(path.join(root, ".agentera", "overlays", "decisions.yaml"));
-    expect(result.json?.written.satisfaction).toEqual({
-      state: "provisionally_satisfied",
-      evidence: "tests passed",
-    });
-    expect(fs.readFileSync(archivePath, "utf8")).toBe(archiveBefore);
-    expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
-    expect(loadYamlMapping(fs.readFileSync(String(result.json?.path), "utf8"))).toEqual({
-      "decisions:1": {
-        satisfaction: { state: "provisionally_satisfied", evidence: "tests passed" },
-      },
-    });
+    expect(result.json?.record).toMatchObject({ state: "provisionally_satisfied", evidence: "tests passed" });
+    expect(fs.readFileSync(basePath, "utf8")).toBe(baseBefore);
+    expect(String(result.json?.path)).toContain(".agentera/entities/decisions/decision_satisfaction/");
+    expect(fs.existsSync(path.join(root, ".agentera/decisions.yaml"))).toBe(false);
   });
 
-  it("publishes overlay bytes atomically through the shared transaction", () => {
+  it("rejects an invalid satisfaction replacement without changing published bytes", () => {
     const root = project();
     appendDecision(root);
     expect(update(root, "open").rc).toBe(0);
-    const overlayPath = decisionOverlayPath(root);
-    const before = fs.readFileSync(overlayPath, "utf8");
-
-    expect(() => executeStateWrite(updateRequest(root, "provisionally_satisfied"), { failAfter: "staged-write" })).toThrow(
-      InjectedMutationFailure,
-    );
-    expect(fs.readFileSync(overlayPath, "utf8")).toBe(before);
-    expect(fs.readdirSync(path.dirname(overlayPath)).some((name) => name.includes(".writer."))).toBe(false);
-    expect(update(root, "provisionally_satisfied", "--satisfaction-evidence", "retry evidence").rc).toBe(0);
+    const satisfactionDir = path.join(root, ".agentera/entities/decisions/decision_satisfaction");
+    const satisfactionPath = path.join(satisfactionDir, fs.readdirSync(satisfactionDir)[0]);
+    const before = fs.readFileSync(satisfactionPath, "utf8");
+    const rejected = update(root, "provisionally_satisfied");
+    expect(rejected.rc).toBe(2);
+    expect(rejected.json?.error.class).toBe("schema_violation");
+    expect(fs.readFileSync(satisfactionPath, "utf8")).toBe(before);
+    expect(fs.readdirSync(satisfactionDir).some((name) => name.includes(".tmp") || name.includes(".rollback"))).toBe(false);
   });
 
   it("rejects non-mutable and derived overlay fields and unsafe overlay paths", () => {
@@ -267,7 +255,7 @@ describe("decision review overlays", () => {
     expect(decisionContextEntry(hydrated).satisfaction).toMatchObject({ review_needed: true });
   });
 
-  it("hydrates a project overlay for review consumers and keeps pressure bounded", () => {
+  it("does not let legacy overlays affect entity review state or entity publication", () => {
     const root = project();
     appendDecision(root);
     expect(update(root, "open").rc).toBe(0);
@@ -275,7 +263,7 @@ describe("decision review overlays", () => {
       [{ number: 1, satisfaction: { state: "user_confirmed_satisfied" } }],
       root,
     );
-    expect(entries[0].satisfaction).toMatchObject({ state: "open" });
+    expect(entries[0].satisfaction).toMatchObject({ state: "user_confirmed_satisfied" });
 
     const decisions = Array.from({ length: 51 }, (_, index) => ({
       number: index + 1,
@@ -306,70 +294,20 @@ describe("decision review overlays", () => {
       "--format",
       "json",
     ]).rc).toBe(0);
-    const pressure = checkCompaction(root).find((item) => item.status.artifact === "decisions");
-    expect(pressure?.status.protected_overflow_count).toBeGreaterThan(0);
-    expect(pressure?.action).toBe("projection");
-    expect(pressure?.status.projection_state).toBe("over_defaults");
+    expect(checkCompaction(root).some((item) => item.status.artifact === "decisions")).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))).toHaveLength(2);
+    expect(loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/decisions.yaml"), "utf8")).decisions).toHaveLength(51);
   });
 
-  it("uses confirmed-to-open overlays for retention pressure and still permits append", () => {
+  it("keeps entity decisions independent of aggregate compaction limits", () => {
     const root = project();
     const agentera = path.join(root, ".agentera");
-    fs.mkdirSync(agentera, { recursive: true });
-    const decisions = Array.from({ length: 11 }, (_, index) => ({
-      number: index + 1,
-      date: "2026-07-13",
-      question: `Q${index + 1}?`,
-      context: "c",
-      alternatives: [{ name: "a", status: "chosen" }],
-      choice: "a",
-      reasoning: "r",
-      confidence: "firm",
-      satisfaction: {
-        state: "user_confirmed_satisfied",
-        user_confirmation: { confirmed_by: "user", confirmed_at: "2026-07-13" },
-      },
-    }));
-    fs.writeFileSync(path.join(agentera, "decisions.yaml"), dumpYamlMapping({ decisions }));
-    fs.mkdirSync(path.join(agentera, "overlays"), { recursive: true });
-    fs.writeFileSync(
-      path.join(agentera, "overlays", "decisions.yaml"),
-      dumpYamlMapping(
-        Object.fromEntries(
-          decisions.map((entry) => [
-            `decisions:${entry.number}`,
-            { satisfaction: { state: "open" } },
-          ]),
-        ),
-      ),
-    );
-
-    const status = checkCompaction(root).find((item) => item.status.artifact === "decisions");
-    expect(status?.status.protected_overflow_count).toBe(1);
-    expect(status?.action).toBe("projection");
-    expect(status?.status.projection_state).toBe("over_defaults");
-    expect(() => compactYamlFile(path.join(agentera, "decisions.yaml"), "decisions", root)).not.toThrow();
-
-    const appended = run(root, [
-      "decisions",
-      "append",
-      "--question",
-      "Q12?",
-      "--context",
-      "c",
-      "--alternative-chosen",
-      "a",
-      "--choice",
-      "a",
-      "--reasoning",
-      "r",
-      "--confidence",
-      "firm",
-      "--format",
-      "json",
-    ]);
+    for (let index = 1; index <= 11; index += 1) appendDecision(root, String(index));
+    expect(checkCompaction(root)).toEqual(expect.arrayContaining([expect.objectContaining({ action: "skipped", status: expect.objectContaining({ artifact: "entity_state" }) })]));
+    const appended = appendDecision(root, "12");
     expect(appended.rc).toBe(0);
-    expect(appended.json?.compaction).toMatchObject({ protected_overflow_count: 2 });
-    expect(fs.existsSync(path.join(root, ".agentera", "archive", "decisions", "12.yaml"))).toBe(true);
+    expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))).toHaveLength(12);
+    expect(fs.existsSync(path.join(agentera, "decisions.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(agentera, "archive"))).toBe(false);
   });
 });

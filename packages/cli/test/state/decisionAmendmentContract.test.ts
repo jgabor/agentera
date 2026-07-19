@@ -22,6 +22,8 @@ const roots: string[] = [];
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-decision-amend-"));
+  fs.mkdirSync(path.join(root, ".agentera"));
+  fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   roots.push(root);
   return root;
 }
@@ -179,10 +181,10 @@ describe("decision amend command discovery", () => {
     expect(result.rc).toBe(0);
     expect(result.json?.requested_verb).toBe("amend");
     expect(result.json?.verbs).toEqual(["append", "update", "amend", "explain"]);
-    const numberField = (result.json?.fields as any[]).find((f) => f.flag === "--number");
-    expect(numberField).toMatchObject({ required: true, type: "integer" });
-    expect(numberField.description).toContain("Caller-selected");
-    expect(numberField.description).toContain("never assigned by the CLI");
+    const idField = (result.json?.fields as any[]).find((f) => f.flag === "--id");
+    expect(idField).toMatchObject({ required: true, type: "string" });
+    const baseHash = (result.json?.fields as any[]).find((f) => f.flag === "--base-sha256");
+    expect(baseHash).toMatchObject({ required: true, type: "string" });
     const confidence = (result.json?.fields as any[]).find((f) => f.flag === "--confidence");
     expect(confidence.valid_values).toEqual(["firm", "provisional", "exploratory"]);
     for (const flag of [
@@ -195,13 +197,10 @@ describe("decision amend command discovery", () => {
       expect((result.json?.fields as any[]).some((f) => f.flag === flag)).toBe(true);
     }
     const guidance = result.json?.guidance as string[];
-    expect(guidance.some((g) => g.includes("caller-supplied"))).toBe(true);
-    expect(guidance.some((g) => g.includes("dry-run reports"))).toBe(true);
-    expect(guidance.some((g) => g.includes("--alternative-rejected"))).toBe(true);
-    expect(guidance.some((g) => g.includes("idempotent replay"))).toBe(true);
-    expect(guidance.some((g) => g.includes("record-local"))).toBe(true);
-    expect(result.json?.example).toContain("amend --number 53");
-    expect(result.json?.example).toContain("--dry-run");
+    expect(guidance.some((g) => g.includes("bare --id") && g.includes("--base-sha256"))).toBe(true);
+    expect(guidance.some((g) => g.includes("immutable revision entity"))).toBe(true);
+    expect(result.json?.example).toContain("amend --id qjtrmnpvka");
+    expect(result.json?.example).toContain("--base-sha256");
   });
 
   it("surfaces amend as a decisions writer mutation across schema introspection and help", () => {
@@ -222,13 +221,15 @@ describe("decision amend command discovery", () => {
     expect(help.out).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
-  it("refuses to amend a decision that has no numbered archive or projection record before side effects", () => {
+  it("refuses to amend a missing decision entity before side effects", () => {
     const root = project();
     const result = run(root, [
       "decisions",
       "amend",
-      "--number",
-      "53",
+      "--id",
+      "aaaaaaaaaa",
+      "--base-sha256",
+      "0".repeat(64),
       "--choice",
       "revised choice",
       "--reasoning",
@@ -240,27 +241,22 @@ describe("decision amend command discovery", () => {
       "json",
     ]);
 
-    expect(result.rc).toBe(2);
-    expect(result.json?.status).toBe("fail");
-    expect(result.json?.error.class).toBe("unsupported_target");
-    expect(result.json?.error.message).toContain("no numbered archive");
-    expect(result.json?.error.recovery).toContain("complete record");
-    expect(result.json?.error.example).toContain("amend --number 53");
-    // No side effects: no revision store or decision projection is created.
-    expect(fs.existsSync(path.join(root, ".agentera", "revisions", "decisions.yaml"))).toBe(false);
+    expect(result.rc).toBe(1);
+    expect(result.err).toContain("aaaaaaaaaa");
+    expect(result.err).toMatch(/not found|does not exist/);
+    // No side effects: no revision entity or decision projection is created.
+    expect(fs.existsSync(path.join(root, ".agentera", "entities", "decisions", "decision_revision"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera", "decisions.yaml"))).toBe(false);
   });
 });
 
 describe("decision number ownership across append, update, and amend", () => {
-  it("keeps append CLI-numbered while update and amend require a caller-selected existing number", () => {
+  it("assigns append IDs while update and amend require a caller-selected bare ID", () => {
     const root = project();
 
     const appendExplain = run(root, ["decisions", "explain", "--verb", "append", "--format", "json"]);
     expect(appendExplain.rc).toBe(0);
-    expect(appendExplain.json?.guidance).toContain(
-      "number is assigned by the CLI; do not pass --number",
-    );
+    expect(appendExplain.json?.guidance).toContain("a bare ten-letter ID is assigned by the CLI; do not pass an identity");
     expect(
       (appendExplain.json?.fields as any[]).some((f) => f.flag === "--number"),
     ).toBe(false);
@@ -268,16 +264,15 @@ describe("decision number ownership across append, update, and amend", () => {
     const updateExplain = run(root, ["decisions", "explain", "--verb", "update", "--format", "json"]);
     expect(updateExplain.rc).toBe(0);
     const updateGuidance = updateExplain.json?.guidance as string[];
-    expect(updateGuidance).not.toContain("number is assigned by the CLI; do not pass --number");
-    expect(updateGuidance.some((g) => g.includes("caller-supplied"))).toBe(true);
-    const updateNumber = (updateExplain.json?.fields as any[]).find((f) => f.flag === "--number");
-    expect(updateNumber.description).toContain("never assigned by the CLI");
+    expect(updateGuidance.some((g) => g.includes("bare --id"))).toBe(true);
+    expect((updateExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({ required: true, type: "string" });
+    expect((updateExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
 
     const amendExplain = run(root, ["decisions", "explain", "--verb", "amend", "--format", "json"]);
     const amendGuidance = amendExplain.json?.guidance as string[];
-    expect(amendGuidance.some((g) => g.includes("caller-supplied"))).toBe(true);
-    const amendNumber = (amendExplain.json?.fields as any[]).find((f) => f.flag === "--number");
-    expect(amendNumber.description).toContain("never assigned by the CLI");
+    expect(amendGuidance.some((g) => g.includes("bare --id"))).toBe(true);
+    expect((amendExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({ required: true, type: "string" });
+    expect((amendExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
   });
 
   it("rejects --number on append and requires --number on update", () => {

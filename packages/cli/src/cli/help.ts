@@ -1,11 +1,5 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact } from "../state/write/operations.js";
-import {
-  migrationModeFlags,
-  migrationSelectorFlag,
-  stateMigrationContract,
-} from "../state/migrationAuthority.js";
-import { stateGitBackfillContract } from "../state/gitBackfillAuthority.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
 
 const TOP_LEVEL = [
@@ -126,87 +120,8 @@ export function printDoctorHelp(): string {
 }
 
 export function printStateHelp(sub?: string): string {
-  const migration = stateMigrationContract();
-  // Public help is the final entity protocol even before repository cutover.
-  // Marker-absent legacy writers are recovery-only evidence surfaces, not a
-  // second ordinary grammar.
-  const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
-  const stateCommands = stateCommandNames(migration);
-  if (sub === migrationName) {
-    const selector = (name: string): string => migration.selectors[name].flag as string;
-    const dryRunFlag = migrationModeFlags(migration, "preview")[0];
-    const applyFlags = migrationModeFlags(migration, "apply");
-    const inventory = migration.migration.inventory as Record<string, unknown>;
-    const boundedScan = inventory.bounded_scan as Record<string, unknown>;
-    const boundary = migration.migration.project_boundary as Record<string, unknown>;
-    const exclusions = (boundedScan.excluded_relative_paths as string[]).join(", ");
-    const roots = migration.inventory.roots
-      .map((root) => `${root.path} (depth ${root.maximumDepth})`)
-      .join(", ");
-    return [
-      `usage: ${migration.command}`,
-      "",
-      "Inventory bounded, project-local legacy state under the state-storage authority.",
-      `Default inventory and ${dryRunFlag} are read-only; ${applyFlags.join(" ")} is the only mutation intent.`,
-      "This surface publishes authority and dispatch only; migration execution never contacts Git or a remote.",
-      "",
-      "options:",
-      "  -h, --help            show this help message and exit",
-      `  ${selector("project").padEnd(21)}Project directory whose local candidates are inspected`,
-      `  ${selector("artifact").padEnd(21)}Valid values: ${migration.selectorValidValues.artifact.join(", ")}`,
-      `  ${selector("number").padEnd(21)}Positive legacy entry number; requires ${migration.selectors.number.required_with}`,
-      `  ${selector("path").padEnd(21)}${migration.selectors.path.required_for_custom_apply ? "Required for custom apply" : "Optional candidate path pin"}`,
-      `  ${selector("limit").padEnd(21)}Bound returned candidates (maximum ${migration.maximumLimit})`,
-      `  ${dryRunFlag.padEnd(21)}Preview exact operations without writing`,
-      `  ${applyFlags.join(" ").padEnd(21)}Request publication with explicit mutation intent`,
-      `  ${selector("format").padEnd(21)}Output format: ${migration.selectorValidValues.format.join(", ")}`,
-      `apply selectors: ${migration.requiredSelectors.apply.join(", ")}`,
-      "",
-      `scan roots: ${roots}`,
-      `scan exclusions: ${exclusions}`,
-      `scan bounds: ${boundedScan.maximum_candidate_files} files, ${boundedScan.maximum_file_bytes} bytes/file, ${boundedScan.maximum_total_bytes} total bytes`,
-      `ordering: ${migration.inventory.ordering}`,
-      `boundary rejects: ${(boundary.reject as string[]).join(", ")}`,
-      `invalid combinations: ${migration.invalidCombinations.map((item) => item.message).join("; ")}`,
-    ].join("\n");
-  }
-  if (sub === "backfill") {
-    const backfill = stateGitBackfillContract();
-    const historyMiB = backfill.maximumHistoryBytes / (1024 * 1024);
-    const historyLimit = Number.isInteger(historyMiB)
-      ? `${backfill.maximumHistoryBytes} bytes (${historyMiB} MiB)`
-      : `${backfill.maximumHistoryBytes} bytes`;
-    return [
-      "usage: agentera state backfill [-h] [--recover-projections] [--project PATH] [--artifact ARTIFACT]",
-      "                              [--number N] [--commit HASH] [--path PATH] [--limit N]",
-      "                              [--dry-run|--apply --force] --format {text,json,yaml}",
-      "",
-      `Inventory exact ${backfill.supportedArtifacts.join(", ")} records from bounded local Git history.`,
-      "Default inventory and --dry-run are read-only; preview is optional.",
-      "Direct --apply --force publishes one immutable archive record after fresh checks.",
-      "--recover-projections selects only strict causal projection replacements and deterministic legacy health sections as one checked batch.",
-      `Revalidation: ${backfill.guarantees.applyRevalidation}`,
-      `Result limit: ${backfill.maximumLimit}; history limit: ${backfill.maximumCommits} units and ${historyLimit}.`,
-      `Reads only ${backfill.reachableRefs.join(", ")}; excludes ${backfill.excludedRefs.join(", ")}.`,
-      `Failure statuses: ${backfill.statusValues.join(", ")}; ${backfill.guarantees.failureProjectionRule.replaceAll("_", " ")}.`,
-      `Recovery: ${backfill.recovery}`,
-      `Traceability: ${backfill.traceabilityFields.join(", ")}.`,
-      "",
-      "options:",
-      "  -h, --help            show this help message and exit",
-      "  --project PATH        Project directory; optional for inventory/preview, required for apply",
-      "  --recover-projections Preview the narrow readiness-recovery batch; cannot use entry selectors",
-      `  --artifact ARTIFACT   ${backfill.supportedArtifacts.join(", ")}`,
-      "  --number N            Positive legacy entry number; requires --artifact",
-      "  --commit HASH         Pin one reachable provenance occurrence",
-      "  --path PATH           Pin one historical projection path",
-      `  --limit N             Bound returned entries (maximum ${backfill.maximumLimit})`,
-      "  --dry-run             Preview exact unique immutable archive bytes without writing",
-      "  --apply               Request publication; requires --force",
-      "  --force               Confirm the explicit immutable archive publication",
-      "  --format FORMAT       Output format: text, json, or yaml",
-    ].join("\n");
-  }
+  const stateCommands = stateCommandNames();
+  if (sub === "migrate") return entityMigrateHelp();
   if (sub === "plan") {
     return [
       "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
@@ -319,8 +234,7 @@ export function printStateHelp(sub?: string): string {
   ].join("\n");
 }
 
-export function stateCommandNames(migration = stateMigrationContract()): string[] {
-  const migrationName = migration.namespace.split(/\s+/).at(-1) as string;
+export function stateCommandNames(): string[] {
   return [
     "progress",
     "plan",
@@ -330,8 +244,7 @@ export function stateCommandNames(migration = stateMigrationContract()): string[
     "experiments",
     "todo",
     "decisions",
-    migrationName,
-    "backfill",
+    "migrate",
     "query",
   ];
 }

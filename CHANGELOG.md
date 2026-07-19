@@ -51,13 +51,6 @@
 
 ### Changed
 
-- Changed `agentera state migrate` to inventory legacy project state locally within
-  bounded file and byte limits, retain custom names with explicit provenance, and
-  require exact selectors plus `--apply --force` before immutable archive, backup,
-  and projection publication.
-- Changed `agentera state backfill` to remain optional local-Git enrichment: direct
-  `--apply --force` revalidates the project, `HEAD`, candidate, reachability, and
-  immutable target, while bounded history and no-remote behavior remain explicit.
 - Changed deterministic plan lifecycle migration to run inside the full
   development-channel v2-to-v3 upgrade. Legacy `active` and `completed` plan
   statuses become `open` and `complete` without rewriting retained task
@@ -129,6 +122,7 @@
 - Removed v1 legacy migration paths, standalone skill bundle wording, and obsolete v1 fixture assumptions from the 3.x tree after the 3.0 boundary (`packages/cli/test/cli/v1LegacyCruft.test.ts` guards against reintroduction).
 - Removed `hej`, `describe`, and `gate` from top-level `agentera --help` and dispatch; unsupported structured requests return runnable corrections to `agentera prime`, `agentera schema`, and `agentera check compact`.
 - Removed the requirement for `uv` or a git checkout on the development channel; `uvx --from git+https://github.com/jgabor/agentera@main agentera` remains the stable 2.x Python line only.
+- Removed `agentera state migrate`, `agentera state backfill`, projection repair, and automatic v1 conversion. Recognized v2 aggregate projects now have one forward mutation path: full `agentera upgrade --yes`; `state migrate entities --dry-run` remains read-only.
 
 ### Migration notes
 

@@ -20,15 +20,18 @@ import { makeArgvValueReader } from "./argvParser.js";
 import { parseCompactArgs } from "./check.js";
 import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
+import { migrationProject } from "../migrationRequired.js";
+import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
 
 function rejectUnsupportedUpgradeFlag(
   io: Io,
   format: string,
   message: string,
+  recovery?: string,
 ): number {
   return emitInvalidInput(io, {
     format: asEnvelopeFormat(format),
-    body: { class: "unsupported_target", message },
+    body: { class: "unsupported_target", message, recovery },
   });
 }
 
@@ -307,6 +310,7 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
         io,
         args.format ?? "text",
         "--target-major was removed; use --channel with dry-run preview then --yes",
+        fullEntityUpgradeCommand(migrationProject(argv)),
       );
     } else if ((v = value("--runtime")) !== null) {
       if (v === "cursor-agent") {
@@ -380,6 +384,14 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
         io,
         args.format ?? "text",
         "--update-packages is not yet supported by the TypeScript upgrade command; external package refresh is deferred for the 3.x channel model",
+      );
+    }
+    else if (["--restore", "--rollback", "--downgrade"].includes(a)) {
+      return rejectUnsupportedUpgradeFlag(
+        io,
+        args.format ?? "text",
+        `${a} was removed; v2-to-v3 upgrade is one-way and apply must run as one full upgrade --yes`,
+        fullEntityUpgradeCommand(migrationProject(argv)),
       );
     }
     else if (a === "--json") jsonFlag = true;
