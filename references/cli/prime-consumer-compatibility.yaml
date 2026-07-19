@@ -194,7 +194,7 @@ field_authorities:
     notes: >-
       Reconciled by Task 2: both hej.fields lists now mirror the canonical
       27-field set (retired `bundle` dropped; app, app_home, project_integration,
-      runtime_lifecycle, and history added).
+      shared_skill, project_integration, and history added).
 
 # ---------------------------------------------------------------------------
 # Field classification. Every field proposed for omission is classified with a
@@ -264,8 +264,8 @@ field_classification:
   - field: project_integration
     status: required
     rationale: >-
-      Status routing consumes the recommendation and aggregate lifecycle state;
-      the bounded brief retains the routing projection even when no upgrade
+      Status routing consumes the app and project-state recommendation; the
+      bounded brief retains that routing projection even when no upgrade
       recommendation is active.
   - field: attention
     status: required
@@ -276,11 +276,9 @@ field_classification:
       Startup history. The bounded brief retains counts and named retrieval
       pointers while omitting entry detail; explicit state list/get commands
       recover the current history.
-  - field: runtime_lifecycle
-    status: conditional
-    rationale: >-
-      Diagnostic. Plan constraint: unrelated lifecycle diagnostics are omitted
-      unless status declares them necessary for the current brief (Task 4).
+  - field: shared_skill
+    status: required
+    rationale: Canonical shared-skill path and read-only diagnosis.
   - field: decision_attention
     status: conditional
     rationale: Null unless returned decisions require satisfaction review.
@@ -369,9 +367,9 @@ public_output_policy:
     separate bare-prime call or raw artifact read. The `--context` capsule
     contract (command/status/capability_context) is unchanged. The status
     capsule puts the canonical Task 3 projection at
-    `capability_context.context.status_context`; unrelated per-runtime
-    lifecycle diagnostics are omitted while aggregate release-blocking state
-    remains available for routing.
+    `capability_context.context.status_context`; app/project integration and
+    shared-skill diagnosis remain available for routing while unrelated detail
+    is omitted.
   status_context_contract:
     startup_command: agentera prime --context status --format json
     state_path: capability_context.context.status_context
@@ -474,7 +472,7 @@ default_emission_omission_contract:
       only; diagnostics measured separately on stderr.
     retained_top_level_fields: >-
       Every field in never_omitted plus command, status, app_home, app, mode,
-      history, runtime_lifecycle, project_integration, decision_attention, and
+      history, shared_skill, project_integration, decision_attention, and
       the bespoke context pointers (kept null on the bare surface). The
       conditional v1_migration/docs/objective are retained when active (see
       omitted_when_default). issues ships as the deprecated transition alias.
@@ -491,9 +489,6 @@ default_emission_omission_contract:
       - field: history.{progress,decisions,health}.entries
         reason: startup_history_entries
         recovery: agentera state <artifact> list --limit 20 --format json
-      - field: runtime_lifecycle.runtimes
-        reason: lifecycle_runtime_detail
-        recovery: agentera upgrade --dry-run --format json
       - field: project_integration.phases
         reason: phase_blockers
         recovery: agentera doctor --format json
@@ -546,7 +541,7 @@ declared_available_fields:
   - project_integration
   - attention
   - history
-  - runtime_lifecycle
+  - shared_skill
   - decision_attention
   - next_action
   - orchestration_context

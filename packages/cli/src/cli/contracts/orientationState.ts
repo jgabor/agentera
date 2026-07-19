@@ -2,10 +2,6 @@ import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import type { SchemaInfo } from "../appContext.js";
 import type { BundleStatus } from "./bundleStatus.js";
 import type { ProjectIntegrationSummary } from "../../upgrade/projectIntegration.js";
-import type {
-  RuntimeLifecycleSnapshot,
-  RuntimeLifecycleSummary,
-} from "../../runtime/lifecycleSnapshot.js";
 
 export interface ProfileSummary {
   status: string;
@@ -192,9 +188,7 @@ export interface OrientationState {
   profile: string;
   v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;
-  /** Full canonical projection retained for bounded attention rendering. */
-  runtime_lifecycle_snapshot?: RuntimeLifecycleSnapshot;
-  runtime_lifecycle: RuntimeLifecycleSummary;
+  shared_skill: JsonObject;
   plan: PlanSummary;
   docs: DocsSummary;
   progress: ProgressSummary;

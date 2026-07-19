@@ -98,6 +98,15 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const orchestratorArgs = toOrchestratorArgs(args);
 
+  if (orchestratorArgs.runtime) {
+    err(
+      `upgrade error: --runtime ${orchestratorArgs.runtime} is retired; Agentera now uses the shared skill at ` +
+      "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun. " +
+      "For explicit Agentera-owned Claude cleanup, use --legacy-cleanup claude.\n",
+    );
+    return 2;
+  }
+
   if (orchestratorArgs.yes && orchestratorArgs.dryRun) {
     err("upgrade error: --yes and --dry-run are mutually exclusive\n");
     return 2;
@@ -109,11 +118,11 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   }
 
   if (
-    (orchestratorArgs.runtime || orchestratorArgs.legacyCleanup)
+    orchestratorArgs.legacyCleanup
     && orchestratorArgs.only
     && orchestratorArgs.only.length > 0
   ) {
-    err("upgrade error: --only cannot be combined with --runtime or --legacy-cleanup; lifecycle preview must include the complete app phase\n");
+    err("upgrade error: --only cannot be combined with --legacy-cleanup; cleanup preview must include the complete app phase\n");
     return 2;
   }
 
@@ -123,9 +132,9 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   }
 
   if (args.verify && !orchestratorArgs.yes && (
-    orchestratorArgs.runtime || orchestratorArgs.legacyCleanup
+    orchestratorArgs.legacyCleanup
   )) {
-    err("upgrade error: lifecycle selection with --verify requires --yes; preview lifecycle work with --dry-run instead\n");
+    err("upgrade error: legacy cleanup with --verify requires --yes; preview cleanup with --dry-run instead\n");
     return 2;
   }
 

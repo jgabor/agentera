@@ -66,11 +66,59 @@ describe("cli schema", () => {
     expect(payload.entity_migration).toMatchObject({
       invocation: expect.objectContaining({ explicit_apply: "full_upgrade_yes_only" }),
     });
-    const upgrade = (payload.commands as Array<{ name: string; structured_fields: string[] }>).find(
+    const upgrade = (payload.commands as Array<{
+      name: string;
+      description: string;
+      filters: string[];
+      structured_fields: string[];
+    }>).find(
       (command) => command.name === "upgrade",
     );
     expect(upgrade?.structured_fields).toEqual(expect.arrayContaining(["phase", "phases"]));
+    expect(upgrade?.description).toContain("app and project-state migration");
+    expect(upgrade?.description).toContain("retired Claude cleanup");
+    expect(upgrade?.description).not.toContain("runtime lifecycle repair");
+    expect(upgrade?.filters).toContain("legacy_cleanup");
+    expect(upgrade?.filters).toContain("only");
+    expect(upgrade?.filters).not.toContain("runtime");
+    const doctor = (payload.commands as Array<{
+      name: string;
+      description: string;
+    }>).find((command) => command.name === "doctor");
+    expect(doctor?.description).toBe(
+      "Check Agentera CLI, app, shared-skill, and project-integration status.",
+    );
     expect(payload.doctor.signal_kinds).toContain("missing_marker");
+    expect(payload.doctor.self_check_categories).toEqual([
+      "Agentera CLI self-check status",
+      "installed app and install-root status",
+      "canonical shared-skill diagnosis",
+      "project integration and project-state migration diagnostics",
+      "bounded offline smoke checks when requested",
+    ]);
+    expect(payload.doctor.self_check_categories).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/runtime adapter/i),
+        expect.stringMatching(/hook, package/i),
+      ]),
+    );
+    expect(payload.integration).toMatchObject({
+      authority: "references/cli/agent-ready-state-contract.yaml",
+      active_contract: "one shared skill plus the Agentera CLI",
+      shared_skill: {
+        path: "~/.agents/skills/agentera",
+        state_field: "shared_skill",
+      },
+      cli: {
+        current_runtime_selectors: [],
+        current_native_resource_operations: [],
+      },
+      supported_routes: {
+        v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
+        retired_cleanup: "agentera upgrade --legacy-cleanup claude --dry-run|--yes",
+      },
+    });
+    expect(payload.integration.authority).not.toContain("runtime-lifecycle-authority");
     expect(Array.isArray(payload.artifact_schemas)).toBe(true);
     expect(payload.artifact_locations.schemaVersion).toBe("agentera.artifact_locations.v1");
     expect(payload.state_writer).toMatchObject({
@@ -114,32 +162,17 @@ describe("cli schema", () => {
         },
       },
     });
-    expect(payload.runtime_lifecycle.active_runtime_ids).toEqual(["opencode", "codex", "cursor", "copilot"]);
-    expect(payload.runtime_lifecycle).toMatchObject({
-      snapshot_schema_version: "agentera.runtimeLifecycleSnapshot.v1",
-      projection_schema_version: "agentera.runtimeLifecycleProjection.v1",
-      summary_schema_version: "agentera.runtimeLifecycleSummary.v1",
-      status_vocabulary_version: "agentera.runtimeLifecycleStatus.v1",
-      projection: {
-        snapshot_identity: "deterministic_sha256",
-        applicability: ["required", "conditional", "not_applicable"],
-        action_classes: ["repairable_owned", "manual_verification", "unobservable_gap"],
-        command_eligibility: ["preview", "apply", "manual", "diagnostic"],
-        shared_resource_rule: "selected_and_required_by_at_least_one_selected_runtime",
-      },
-      support_floor: {
-        mandatory_evidence_fields: ["host_present", "installed", "enabled", "trusted"],
-        unknown_or_missing_mandatory_blocks: true,
-        denied_mandatory_trust_blocks: true,
-        known_false_diagnoses_degraded: ["host_present", "installed", "enabled"],
-        not_applicable_scope: "unobserved_conditional_surface_only",
+    expect(payload).not.toHaveProperty("runtime_lifecycle");
+    expect(payload.integration).toMatchObject({
+      active_contract: "one shared skill plus the Agentera CLI",
+      shared_skill: { path: "~/.agents/skills/agentera", state_field: "shared_skill" },
+      cli: { current_runtime_selectors: [], current_native_resource_operations: [] },
+      supported_routes: {
+        v2_migration: expect.stringContaining("--channel development"),
+        retired_cleanup: expect.stringContaining("--legacy-cleanup claude"),
       },
     });
-    expect(payload.runtime_lifecycle.migration_aliases["cursor-agent"]).toMatchObject({
-      runtime_id: "cursor",
-      active_runtime: false,
-    });
-    expect(payload.runtime_lifecycle.retired_runtime_inputs).toEqual([
+    expect(payload.integration.retired_runtime_inputs).toEqual([
       expect.objectContaining({
         id: "claude",
         active_runtime: false,
@@ -151,18 +184,6 @@ describe("cli schema", () => {
         }),
       }),
     ]);
-    expect(payload.runtime_lifecycle.upgrade).toMatchObject({
-      schema_version: "agentera.lifecycleUpgrade.v1",
-      selectors: ["all", "opencode", "codex", "cursor", "copilot"],
-      projection: "lifecycle.projection is the bounded runtime lifecycle summary; lifecycle.operations is the sole detailed resource operation and outcome set",
-      default_without_runtime_selector: "app_upgrade_only",
-      preview: "strictly_read_only",
-      apply_requires: "--yes",
-      journal_states: ["absent", "clean", "recoverable_terminal_tail", "corrupt"],
-      journal_publication: "fsynced_unique_temporary_then_atomic_exclusive_final_link_and_directory_fsync",
-      native_actions: "reported_action_required_never_executed",
-      exits: { success: 0, non_success: 1, usage: 2 },
-    });
     const decisions = (
       payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
     ).find((artifact) => artifact.name === "decisions");

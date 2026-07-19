@@ -197,11 +197,11 @@ describe("status capability self-contained startup", () => {
     expect(state.brief.omitted_rich_state).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ field: "plan.tasks", recovery: "agentera state plan tasks list --format json" }),
-        expect.objectContaining({ field: "runtime_lifecycle.runtimes", recovery: "agentera upgrade --dry-run --format json" }),
       ]),
     );
     expect(result.payload.runtime_lifecycle).toBeUndefined();
-    expect(state.runtime_lifecycle.runtimes).toBeUndefined();
+    expect(result.payload.shared_skill).toBeDefined();
+    expect(state.shared_skill).toBeDefined();
     expect(state.project_integration).not.toHaveProperty("phases");
     expect(state.project_integration).not.toHaveProperty("guidance");
     expect(state.project_integration).not.toHaveProperty("retry");

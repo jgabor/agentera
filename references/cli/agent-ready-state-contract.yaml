@@ -70,10 +70,10 @@ doctor:
   compatibility_alias: forbidden
   owns:
     - Agentera CLI self-check status
-    - installed bundle status
-    - install-root status
-    - runtime adapter availability and configuration diagnostics
-    - hook, package, and schema availability checks when implemented
+    - installed app and install-root status
+    - canonical shared-skill diagnosis
+    - project integration and project-state migration diagnostics
+    - bounded offline smoke checks when requested
   excludes:
     - project artifact health
     - codebase quality audit findings
@@ -83,8 +83,9 @@ doctor:
     setup_specific_diagnostics: packages/cli/src/setup/doctor.ts
   rationale: >-
     Decision 45 rejects `bundle-status` as too narrow and rejects an alias for
-     release-clean vocabulary; `doctor` is the CLI/install/runtime self-check
-     vocabulary, while artifact health and codebase audits remain separate concerns.
+     release-clean vocabulary; `doctor` is the CLI, app, shared-skill, and project
+     integration self-check vocabulary, while artifact health and codebase audits
+     remain separate concerns.
 schema:
   status: implemented_runtime_introspection
   command: schema
@@ -237,7 +238,7 @@ structured_output:
         - project_integration
         - attention
         - history
-        - runtime_lifecycle
+        - shared_skill
         - decision_attention
         - next_action
         - orchestration_context
@@ -575,7 +576,7 @@ field_selection:
         - project_integration
         - attention
         - history
-        - runtime_lifecycle
+        - shared_skill
         - decision_attention
         - next_action
         - orchestration_context

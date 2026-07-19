@@ -36,9 +36,8 @@ export const ROUTINE_STRUCTURED_FIELDS = [
  *  trimming this set. */
 export const PRIME_STRUCTURED_FIELDS = [
   "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
-  "todo", "plan", "docs", "progress", "objective", "state_presence", "project_integration", "attention",
+  "todo", "plan", "docs", "progress", "objective", "state_presence", "shared_skill", "project_integration", "attention",
   "history",
-  "runtime_lifecycle",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
   "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
 ];

@@ -26,48 +26,27 @@ Run that from a git project. In an editor runtime, invoke `/agentera`
 (`$agentera` in Codex) for the rendered status dashboard.
 
 `prime` is deliberately bounded: it summarizes current project state and the
-next useful action. Use `doctor` when you need detailed install and runtime
-evidence.
+next useful action. Use `doctor` when you need app, project-state, shared-skill,
+and CLI evidence.
 
 ```bash
 npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 
-## Supported runtimes
+## Runtime integration
 
-Agentera 3.0 has exactly four active runtime identities:
+Agentera 3.0 uses one portable integration for compatible runtimes: the shared
+skill at `~/.agents/skills/agentera` plus the Agentera CLI. Normal `upgrade`
+previews and applies only app/project migration; it has no current-runtime
+selector and creates no native plugin, hook, agent, command, descriptor, or
+marketplace file. See [UPGRADE.md](./UPGRADE.md) for the distinct one-way v2
+migration and explicit retired Claude cleanup route:
+`agentera upgrade --legacy-cleanup claude --dry-run|--yes`.
 
-- OpenCode
-- Codex
-- Cursor
-- GitHub Copilot
-
-Cursor Agent CLI is the required Cursor surface and Cursor IDE is conditional;
-both belong to the single `cursor` runtime identity. The canonical portable
-skill is `~/.agents/skills/agentera`.
-
-On the v3 development channel, lifecycle inspection requires an explicit runtime
-selector. Use `all` to preview every active runtime, then approve Agentera-owned
-runtime operations separately:
-
-```bash
-npx -y agentera@next upgrade --runtime all --dry-run
-npx -y agentera@next upgrade --runtime all --yes
-```
-
-You can replace `all` with `opencode`, `codex`, `cursor`, or `copilot`.
-Preview creates no files, directories, locks, caches, telemetry, or state
-changes. Apply writes only declared Agentera-owned resources. Native package
-installation, authentication, enablement, and trust remain user-owned and are
-reported as `action_required`.
-
-Secure automatic lifecycle apply currently requires Linux `/proc/self/fd`.
-Other platforms still receive the complete preview and explicit manual actions,
-but filesystem operations remain `action_required`.
-
-`prime`, status, and project-integration output summarize the same lifecycle
-snapshot, including runtime counts, blockers, and the recommended next action.
+`doctor` reports read-only app, project-state, shared-skill, and CLI evidence.
+`prime`, status, and project-integration output use the app/project recommendation
+and shared-skill diagnosis to select the next action.
 
 Claude Code is retired from active support. Its only lifecycle command is a
 separate, explicit cleanup of the exact Agentera-owned legacy skill link:

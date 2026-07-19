@@ -319,9 +319,9 @@ describe("setup doctor: OpenCode diagnostics", () => {
 
     expect(c.status).toBe("warn");
     expect(c.name).toBe("canonical_skill");
-    expect(c.details).toContain("existing target preserved; lifecycle preview will classify ownership");
-    expect(c.details).toContain("action: preview explicit lifecycle with `npx -y agentera@next upgrade --runtime opencode --dry-run`");
-    expect(c.details).toContain("action: apply approved Agentera-owned work with `npx -y agentera@next upgrade --runtime opencode --yes`");
+    expect(c.details).toContain("existing target preserved; review and repair the shared-skill path manually");
+    expect(c.details).toContain("action: install or repair the shared Agentera skill at `~/.agents/skills/agentera`");
+    expect(c.details).toContain("action: use the Agentera CLI directly; runtime-native installation is retired");
     expect(fs.readFileSync(skillFile)).toEqual(before);
     expect(fs.lstatSync(skillFile).ino).toBe(fileInode);
     expect(fs.lstatSync(skill).ino).toBe(directoryInode);

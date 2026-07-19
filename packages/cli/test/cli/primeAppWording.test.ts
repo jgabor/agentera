@@ -66,7 +66,7 @@ describe("prime app lifecycle wording", () => {
     expect(state.app.crossMajorBoundary).toBe(true);
 
     expect(state.project_integration.recommendation).toBe("upgrade");
-    expect(state.project_integration.pending_runtime).toBe(0);
+    expect(state.project_integration).not.toHaveProperty("pending_runtime");
     expect(state.project_integration.message).toContain("cross-major");
     expect(state.project_integration.message).toContain("Preview");
     expect(state.project_integration.update_channel).toBe("development");

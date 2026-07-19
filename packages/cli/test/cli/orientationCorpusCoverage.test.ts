@@ -279,7 +279,7 @@ describe("coexistence attention", () => {
   });
 });
 
-describe("lifecycle attention", () => {
+describe("retired lifecycle attention", () => {
   it("keeps executable and blocker lifecycle rows bounded and truthful", () => {
     const state = minimalOrientationState({
       path: "",
@@ -308,17 +308,7 @@ describe("lifecycle attention", () => {
       (item) => item === integrationRow || item.includes("lifecycle action_class="),
     );
 
-    expect(lifecyclePresentation).toHaveLength(2);
-    expect(lifecyclePresentation.filter((item) => item.includes("lifecycle action_class="))).toHaveLength(2);
-    expect(lifecyclePresentation).not.toContain(integrationRow);
-    expect(lifecyclePresentation[0]).toContain("action_class=repairable_owned");
-    expect(lifecyclePresentation[0]).toContain("preview=`npx -y agentera@next upgrade --dry-run --runtime codex`");
-    expect(lifecyclePresentation[1]).toContain("action_class=manual_verification+unobservable_gap");
-    expect(lifecyclePresentation[1]).toContain("+1 more runtimes");
-    expect(lifecyclePresentation[1]).toContain("procedure=/skills list: Run `/skills list` in the host.");
-    expect(lifecyclePresentation[1]).toContain("doctor=`agentera doctor --format json`");
-    expect(lifecyclePresentation.join("\n")).not.toContain("--yes");
-    expect(lifecyclePresentation.join(" ").split(/\s+/).length).toBeLessThanOrEqual(120);
+    expect(lifecyclePresentation).toEqual([]);
   });
 
   it("does not duplicate generic integration guidance for blocker-only lifecycle work", () => {
@@ -357,12 +347,7 @@ describe("lifecycle attention", () => {
       (item) => item === integrationRow || item.includes("lifecycle action_class="),
     );
 
-    expect(lifecyclePresentation).toHaveLength(1);
-    expect(lifecyclePresentation[0]).not.toBe(integrationRow);
-    expect(lifecyclePresentation[0]).toContain("action_class=manual_verification+unobservable_gap");
-    expect(lifecyclePresentation[0]).toContain("procedure=/skills list: Run `/skills list` in the host.");
-    expect(lifecyclePresentation[0]).toContain("doctor=`agentera doctor --format json`");
-    expect(lifecyclePresentation[0]).not.toContain("--yes");
+    expect(lifecyclePresentation).toEqual([]);
   });
 
   it("bounds long manual guidance while preserving the exact host command", () => {
@@ -380,10 +365,7 @@ describe("lifecycle attention", () => {
 
     const row = buildOrientationAttention(state).find((item) => item.includes("lifecycle action_class="));
 
-    expect(row).toBeTruthy();
-    expect(row).toContain("procedure=/skills list:");
-    expect(row).toContain("instruction-10…");
-    expect(row?.split(/\s+/).length ?? 0).toBeLessThan(120);
+    expect(row).toBeUndefined();
   });
 
   it("bounds fallback manual reasons when procedure metadata is absent", () => {
@@ -404,9 +386,7 @@ describe("lifecycle attention", () => {
 
     const row = buildOrientationAttention(state).find((item) => item.includes("lifecycle action_class="));
 
-    expect(row).toContain("procedure=reason-0");
-    expect(row).toContain("reason-10…");
-    expect(row?.split(/\s+/).length ?? 0).toBeLessThan(120);
+    expect(row).toBeUndefined();
   });
 
   it("omits lifecycle attention rows when the canonical projection is clean", () => {

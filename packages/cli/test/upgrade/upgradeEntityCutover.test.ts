@@ -308,7 +308,7 @@ describe("one-way Git entity cutover", () => {
     expect(fs.existsSync(path.join(home, ".config/opencode/plugins/agentera.js"))).toBe(false);
   }, 30_000);
 
-  it("names the canonical resource and required action after an explicit lifecycle collision", () => {
+  it("rejects an explicit retired selector before entity cutover or resource mutation", () => {
     const root = project();
     initializeGit(root);
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-lifecycle-collision-"));
@@ -326,12 +326,11 @@ describe("one-way Git entity cutover", () => {
       { out: (value) => { out += value; }, err: (value) => { err += value; } },
     );
 
-    expect(code, out).toBe(1);
-    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    expect(code, out).toBe(2);
+    expect(detectStateMode(root, SOURCE_ROOT)).not.toBe("entities");
     expect(treeBytes(home, ".agents/skills/agentera")).toEqual(skillBefore);
-    expect(err).toContain("action-required after entity activation");
-    expect(err).toContain("canonical_skill");
-    expect(err).toContain("blocked_unowned");
+    expect(err).toContain("~/.agents/skills/agentera");
+    expect(err).toContain("Remove --runtime");
   }, 30_000);
 
   it("keeps entity authority active across normal writes and repeated upgrade", () => {

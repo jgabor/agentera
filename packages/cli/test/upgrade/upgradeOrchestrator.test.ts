@@ -238,26 +238,20 @@ describe("buildUpgradePlan", () => {
     expect(plan.lifecycle).toBeNull();
   });
 
-  it("keeps lifecycle findings visible when a development-channel app phase is blocked", () => {
+  it("rejects retired runtime selection before a blocked app phase", () => {
     const appHome = path.join(home, "agentera-blocked");
     managedV2(appHome);
     fs.writeFileSync(path.join(appHome, "unrecognized-entry"), "user-owned\n");
     const project = copyFixture("v2-yaml-project", path.join(tmp, "blocked-project"));
 
-    const plan = buildUpgradePlan({
+    expect(() => buildUpgradePlan({
       installRoot: appHome,
       home,
       project,
       channel: "development",
       runtime: "all",
       dryRun: true,
-    });
-
-    expect(plan.summary.blocked).toBeGreaterThan(0);
-    expect(plan.lifecycle?.selection.runtimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
-    expect(new Set(plan.lifecycle?.operations.map((operation) => operation.runtime))).toEqual(
-      new Set(["shared", "opencode", "codex", "cursor"]),
-    );
+    })).toThrow("--runtime all is retired");
   });
 
   it("keeps stable previews and applies without a selector app-only", () => {

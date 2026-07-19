@@ -183,7 +183,7 @@ describe("summarizeProjectIntegration wording", () => {
     );
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("v1 artifacts need migration");
+    expect(summary.message).toContain("project state needs migration");
     expect(summary.dry_run_command).toContain("upgrade");
   });
 
@@ -202,10 +202,9 @@ describe("summarizeProjectIntegration wording", () => {
     );
 
     expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("runtime wiring needs sync");
-    expect(summary.pending_runtime).toBeGreaterThan(0);
-    expect(summary.pending_runtimes).toEqual(["cursor"]);
-    expect(summary.dry_run_command).toContain("--runtime cursor");
+    expect(summary.message).toContain("project state needs migration");
+    expect(summary.pending_artifacts).toBeGreaterThan(0);
+    expect(summary.dry_run_command).not.toContain("--runtime");
   });
 
   it("recommends app upgrade when npx bundle is current but platform app home is outdated", () => {
@@ -266,7 +265,7 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.message).toContain("Preview");
   });
 
-  it("routes owned lifecycle work to an affected-runtime upgrade preview", () => {
+  it("ignores retired current-runtime lifecycle input", () => {
     const project = path.join(tmp, "owned-lifecycle");
     fs.mkdirSync(project, { recursive: true });
 
@@ -279,11 +278,10 @@ describe("summarizeProjectIntegration wording", () => {
       }),
     );
 
-    expect(summary.recommendation).toBe("upgrade");
-    expect(summary.guidance.route).toBe("upgrade_preview");
-    expect(summary.guidance.runtimes).toEqual(["codex"]);
-    expect(summary.dry_run_command).toContain("--runtime codex");
-    expect(summary.phases.lifecycle.counts).toEqual({ total: 1, pending: 1, blocked: 0 });
+    expect(summary.recommendation).toBe("stay");
+    expect(summary.dry_run_command).toBeNull();
+    expect(summary.phases).toEqual({ app: expect.any(Object) });
+    expect(JSON.stringify(summary)).not.toContain("codex");
   });
 
   it.each([
@@ -305,7 +303,7 @@ describe("summarizeProjectIntegration wording", () => {
       route: "doctor",
       phrase: "doctor diagnostics",
     },
-  ])("routes $label without an ineffective upgrade", ({ action, route, phrase }) => {
+  ])("ignores retired $label lifecycle evidence", ({ action, route }) => {
     const project = path.join(tmp, route);
     fs.mkdirSync(project, { recursive: true });
 
@@ -318,9 +316,8 @@ describe("summarizeProjectIntegration wording", () => {
 
     expect(summary.recommendation).toBe("stay");
     expect(summary.dry_run_command).toBeNull();
-    expect(summary.guidance.route).toBe(route);
-    expect(summary.message).toContain(phrase);
-    expect(summary.exit.code).toBe(1);
+    expect(summary.message).toContain("No app or project-state upgrade");
+    expect(summary.exit.code).toBe(0);
   });
 
   it("keeps clean integration at stay with a zero exit meaning", () => {
@@ -340,7 +337,7 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.retry.guidance).toContain("No retry");
   });
 
-  it("keeps app and lifecycle phases distinct when both have work and blockers", () => {
+  it("keeps app work independent from retired lifecycle evidence", () => {
     const project = path.join(tmp, "simultaneous");
     fs.mkdirSync(project, { recursive: true });
 
@@ -358,12 +355,12 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.recommendation).toBe("upgrade");
     expect(summary.aggregate_status).toBe("upgrade");
     expect(summary.phases.app.counts).toEqual({ total: 1, pending: 1, blocked: 0 });
-    expect(summary.phases.lifecycle.counts).toEqual({ total: 2, pending: 1, blocked: 1 });
-    expect(summary.exit).toEqual({ code: 1, meaning: "preview_and_blockers" });
+    expect(summary.phases).toEqual({ app: expect.any(Object) });
+    expect(summary.exit).toEqual({ code: 1, meaning: "preview_required" });
     expect(summary.retry).toEqual({
       command: "npx -y agentera prime",
-      guidance: "Resolve the reported blockers, apply the approved preview, then retry Agentera.",
+      guidance: "Apply the approved preview, then retry Agentera to re-observe project integration.",
     });
-    expect(summary.guidance.runtimes).toEqual(["codex", "cursor"]);
+    expect(JSON.stringify(summary)).not.toMatch(/codex|cursor/);
   });
 });

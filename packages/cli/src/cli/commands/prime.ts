@@ -62,11 +62,6 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     if (capability === "status") {
       const capabilityContext = payload.capability_context as Record<string, unknown>;
       const context = capabilityContext.context as Record<string, unknown>;
-      // Status is the one capability whose startup state is the bounded prime
-      // decision brief itself. Do not carry the unrelated full lifecycle
-      // diagnostic projection alongside it; the brief retains the aggregate
-      // routing signal and names upgrade --dry-run for detail.
-      delete payload.runtime_lifecycle;
       // The status projection already carries the dashboard's app/profile
       // state. Keep the capsule's routing metadata and fallback pointers, but
       // do not serialize the generic capability retrieval/write contracts that

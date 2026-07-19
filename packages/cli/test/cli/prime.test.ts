@@ -41,7 +41,7 @@ describe("cli prime", () => {
     expect(out).toContain("app_home: install_track=");
     expect(out).toContain("status=");
     expect(out).toContain("mode: ");
-    expect(out).toContain("runtime_lifecycle: snapshot=agentera.runtimeLifecycleSnapshot.v1");
+    expect(out).toContain("shared_skill: status=");
     expect(out).toContain("todo: critical=");
     expect(out).toContain("next_action:");
     expect(out).toContain("| phase=");
@@ -99,7 +99,8 @@ describe("cli prime", () => {
     expect(out).not.toContain("Deprecation:");
     expect(payload.app).toBeTruthy();
     expect(payload.app_home.install_track).toBeTruthy();
-    expect(payload.runtime_lifecycle.activeRuntimeIds).toEqual(["opencode", "codex", "cursor", "copilot"]);
+    expect(payload.shared_skill.path).toContain(".agents/skills/agentera");
+    expect(payload).not.toHaveProperty("runtime_lifecycle");
     expect(typeof payload.app.status).toBe("string");
   });
 

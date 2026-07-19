@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 import statusInstructions from "../../src/capabilities/status/instructions.js";
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
 import { buildOrientationJsonPayload } from "../../src/cli/commands/prime/orientationOutput.js";
-import { buildOrientationAttention } from "../../src/cli/orientation/attention.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
 import { evaluateFixture } from "../../src/eval/semanticEval.js";
 import { loadFixture } from "../../src/eval/semanticFixtures.js";
@@ -32,7 +31,7 @@ function renderStatusContractBriefing(payload: Record<string, unknown>): string 
     // briefing when no objective is active (state_presence.active.objective is
     // the missing-vs-empty signal). Treat its absence as "none active".
     `⎘ objective ${payload.objective && (payload.objective as Record<string, unknown>).active ? String((payload.objective as Record<string, unknown>).name ?? "active") : "none active"}`,
-    "Lifecycle repair needs preview plus host verification before safety work.",
+    "Shared-skill and CLI state are the active integration contract.",
     "attention:",
     ...attention.map((item) => `→ ${item}`),
     `suggested → ${next.capability} (${next.object})`,
@@ -48,19 +47,8 @@ function statusBudget(): { briefing: number; suggestion: number } {
 describe("status dashboard contract", () => {
   it("keeps a complete worst-case rendered briefing within the canonical budget", () => {
     const baseState = collectOrientationState({ home: os.homedir(), env: process.env });
-    const snapshot = structuredClone(baseState.runtime_lifecycle_snapshot);
-    expect(snapshot).toBeTruthy();
-    const manualActions = snapshot?.actions.filter(
-      (action) => action.actionClass === "manual_verification" && action.manual !== null,
-    ) ?? [];
-    expect(manualActions.length).toBeGreaterThan(0);
-    for (const action of manualActions) {
-      action.manual!.instruction = Array.from({ length: 200 }, (_, index) => `host-instruction-${index}`).join(" ");
-    }
-
     const state: OrientationState = {
       ...baseState,
-      runtime_lifecycle_snapshot: snapshot,
       project_integration: {
         ...baseState.project_integration,
         phases: {
@@ -69,14 +57,11 @@ describe("status dashboard contract", () => {
         },
       },
     };
-    const lifecycleRows = buildOrientationAttention(state).filter((item) => item.includes("lifecycle action_class="));
-    expect(lifecycleRows).toHaveLength(1);
-
     const payload = buildOrientationJsonPayload(
       {
         ...state,
         attention: [
-          ...lifecycleRows,
+          "degraded: shared skill missing at ~/.agents/skills/agentera; install or repair that path",
           "normal: profile stale; suggest profile",
           "normal: PLAN Task 6: verify selectors and safety",
           "normal: TODO: refresh release notes",
@@ -88,8 +73,7 @@ describe("status dashboard contract", () => {
     const budget = statusBudget();
 
     expect(budget).toEqual({ briefing: 120, suggestion: 15 });
-    expect(rendered).toContain("/skills list");
-    expect(rendered).toContain("agentera doctor --format json");
+    expect(rendered).toContain("~/.agents/skills/agentera");
     expect(wordCount(rendered)).toBeLessThanOrEqual(budget.briefing);
     expect(wordCount(`suggested → ${String((payload.next_action as Record<string, string>).capability)} ` +
       `(${String((payload.next_action as Record<string, string>).object)})`)).toBeLessThanOrEqual(budget.suggestion);

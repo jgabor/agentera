@@ -288,12 +288,6 @@ function entityReadinessPhase(
   }
 }
 
-function previewLifecycleSelector(
-  args: UpgradeOrchestratorArgs,
-): LifecycleRuntimeSelector | null {
-  return args.runtime ?? null;
-}
-
 function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhase {
   const retired = result.retiredSummary;
   const summary: MigrationPhaseSummary = {
@@ -320,6 +314,11 @@ function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhas
 }
 
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
+  if (args.runtime) {
+    throw new Error(
+      `--runtime ${args.runtime} is retired; use the shared skill at ~/.agents/skills/agentera plus the CLI and remove --runtime`,
+    );
+  }
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
   if (!args.yes) return buildUpgradePlanUnlocked(args, home, project, []);
@@ -374,9 +373,7 @@ function buildUpgradePlanUnlocked(
     channel,
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
-  const lifecycleSelector = previewLifecycleSelector(args);
   const phaseFilter = selectedPhases(args.only);
-  if (args.runtime) phaseFilter.delete("runtime");
   const migrationCtx = {
     appHome: installRoot,
     project,
@@ -385,7 +382,7 @@ function buildUpgradePlanUnlocked(
     sourceRoot,
     channel: args.channel ?? null,
     env,
-    installAppContentIfMissing: Boolean(lifecycleSelector),
+    installAppContentIfMissing: false,
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
@@ -396,13 +393,12 @@ function buildUpgradePlanUnlocked(
   const projectEntityCutover = !entityAuthorityActive
     && channel.distributionMajor >= 3
     && !args.only
-    && !args.runtime
     && !args.legacyCleanup;
   const pendingCleanup =
     planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
     planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
   const runMigration =
-    crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup || Boolean(lifecycleSelector);
+    crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup;
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -422,8 +418,8 @@ function buildUpgradePlanUnlocked(
   if (args.yes && (entityCutoverPending || entityAuthorityActive)) {
     if (migrationPreview) delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
   }
-  const lifecycleArgs = lifecycleSelector || args.legacyCleanup ? {
-    selector: lifecycleSelector,
+  const lifecycleArgs = args.legacyCleanup ? {
+    selector: null,
     home,
     project,
     sourceRoot,
@@ -501,7 +497,6 @@ function buildUpgradePlanUnlocked(
     installRoot: crossMajorMigration || crossMajorBoundary ? installRoot : null,
     channel,
     only: args.only,
-    runtime: lifecycleSelector,
     legacyCleanup: args.legacyCleanup,
     cwdDefault: true,
   });

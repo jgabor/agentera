@@ -1,0 +1,15 @@
+id: kggxgubysv
+artifact: progress
+record:
+  timestamp: 2026-07-20 00:58
+  type: fix
+  phase: build
+  what: Converged runtime doctor and lifecycle contracts on the canonical shared skill plus CLI, removing current-runtime selection and native-resource projections from normal public operation while retaining v2 migration and explicit Claude cleanup.
+  context:
+    intent: Complete plan ntfgalrhbm task igibjjvytl without changing task, evaluation, TODO, or decision state.
+    constraints: Preserved commit 8897e8d0 and prior state history; did not alter task/evaluation/TODO/decision state, versions, package construction, tracked native integration files, releases, or remotes.
+    unknowns: none
+    scope: Runtime CLI command behavior, doctor/prime/schema/help/project-integration projections, active upgrade documentation, and direct tests.
+  inspiration: Active plan ntfgalrhbm task igibjjvytl and the firm shared-skill boundary in decision llavvlpcmb.
+  verified: "Criterion 1: direct built CLI prime returned shared_skill and app-only project_integration with no runtime_lifecycle; doctor, schema, help, and capability startup tests enforce the same boundary. Criterion 2: upgrade help exposes no --runtime selector; schema reports current_runtime_selectors=[] and current_native_resource_operations=[]; normal preview/apply returns lifecycle=null. Criterion 3: --runtime cursor returned exit 2 before command execution with the ~/.agents/skills/agentera and remove---runtime correction; a filesystem snapshot test observed no mutation. Criterion 4: help and UPGRADE.md retain the full one-way development-channel v2 route, while --legacy-cleanup claude remains separately previewable and Claude historical import remains independent. Criterion 5: temp-home preview/apply tests observed no current plugin, hook, agent, command, descriptor, or marketplace path. Focused public-contract tests passed; full CLI tests passed 212 files/2560 tests; typecheck and build passed; state validation passed 1571 entities/0 issues; capability-contract passed 2/2; compact passed with 0 over-limit/errors/changes; git diff --check passed."
+  next: Independent audit of igibjjvytl; repository-native and package-native retirement remain owned by later plan tasks.

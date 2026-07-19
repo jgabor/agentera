@@ -4,6 +4,7 @@ import path from "node:path";
 import { expanduser, isFile, pathExists, resolvePath } from "../../core/paths.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { declaresAgenteraSkill } from "../../core/skillIdentity.js";
+import { loadLifecycleAuthority } from "../../runtime/lifecycleAuthority.js";
 import {
   pluginSourceHasUnmigratedProfileDirSchema,
   PROFILERA_PROFILE_DIR_ENV,
@@ -115,7 +116,10 @@ function isSymlink(p: string): boolean {
 }
 
 export function diagnoseCanonicalSkill(home: string): JsonObject {
-  const target = path.join(home, ".agents", "skills", "agentera");
+  const canonicalPath = loadLifecycleAuthority().canonicalSkillPath;
+  const target = canonicalPath.startsWith("~/")
+    ? path.join(home, canonicalPath.slice(2))
+    : resolvePath(canonicalPath);
   const skillFile = path.join(target, "SKILL.md");
   if (isFile(skillFile) && declaresAgenteraSkill(fs.readFileSync(skillFile, "utf8").slice(0, 64 * 1024))) {
     return mkCheck(
@@ -126,11 +130,11 @@ export function diagnoseCanonicalSkill(home: string): JsonObject {
     );
   }
   const details = [
-    "action: preview explicit lifecycle with `npx -y agentera@next upgrade --runtime opencode --dry-run`",
-    "action: apply approved Agentera-owned work with `npx -y agentera@next upgrade --runtime opencode --yes`",
+    `action: install or repair the shared Agentera skill at \`${canonicalPath}\``,
+    "action: use the Agentera CLI directly; runtime-native installation is retired",
   ];
   if (pathExists(target) || isSymlink(target)) {
-    details.unshift("existing target preserved; lifecycle preview will classify ownership");
+    details.unshift("existing target preserved; review and repair the shared-skill path manually");
   }
   return mkCheck(
     OPENCODE_CANONICAL_SKILL_CHECK,

@@ -144,6 +144,6 @@ describe("prime channel-aware migration and app_home gates", () => {
     expect(state.project_integration.recommendation).toBe("stay");
     expect(state.project_integration.dry_run_command).toBeNull();
     expect(state.project_integration.apply_command).toBeNull();
-    expect(state.project_integration.pending_runtime).toBe(0);
+    expect(state.project_integration).not.toHaveProperty("pending_runtime");
   });
 });

@@ -313,37 +313,16 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
         fullEntityUpgradeCommand(migrationProject(argv)),
       );
     } else if ((v = value("--runtime")) !== null) {
-      if (v === "cursor-agent") {
-        return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
-          body: {
-            class: "invalid_choice",
-            message: "argument --runtime: cursor-agent is a Cursor CLI surface, not an active runtime; use --runtime cursor",
-            valid_values: ["all", "opencode", "codex", "cursor", "copilot"],
-          },
-        });
-      }
-      if (v === "claude") {
-        return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
-          body: {
-            class: "invalid_choice",
-            message: "argument --runtime: claude is retired; use --legacy-cleanup claude for explicit legacy-only cleanup",
-            valid_values: ["all", "opencode", "codex", "cursor", "copilot"],
-          },
-        });
-      }
-      if (!["all", "opencode", "codex", "cursor", "copilot"].includes(v)) {
-        return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
-          body: {
-            class: "invalid_choice",
-            message: `argument --runtime: invalid choice: '${v}' (choose from 'all', 'opencode', 'codex', 'cursor', 'copilot')`,
-            valid_values: ["all", "opencode", "codex", "cursor", "copilot"],
-          },
-        });
-      }
-      args.runtime = v as NonNullable<UpgradeArgs["runtime"]>;
+      return emitInvalidInput(io, {
+        format: detectTopLevelFormat(argv),
+        body: {
+          class: "invalid_choice",
+          message:
+            `argument --runtime ${v} is retired; Agentera now uses the shared skill at ` +
+            "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun the app/project upgrade. " +
+            "For explicit Agentera-owned Claude cleanup, use --legacy-cleanup claude.",
+        },
+      });
     } else if ((v = value("--legacy-cleanup")) !== null) {
       if (v !== "claude") {
         return emitInvalidInput(io, {

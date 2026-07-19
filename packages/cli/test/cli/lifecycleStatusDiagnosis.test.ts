@@ -393,7 +393,7 @@ describe("test-only lifecycle observer harness parity", () => {
   });
 });
 
-describe("prime and doctor lifecycle integration", () => {
+describe("retired prime and doctor lifecycle integration", () => {
   it("ignores all test environment evidence in the built CLI", () => {
     const root = tempRoot("lifecycle-production-guard-");
     const home = path.join(root, "home");
@@ -426,7 +426,7 @@ describe("prime and doctor lifecycle integration", () => {
       AGENTERA_TEST_UNUSED: "must-not-affect-lifecycle-evidence",
     };
     const before = treeSnapshot(root);
-    const primeArgs = ["prime", "--format", "json", "--fields", "runtime_lifecycle"];
+    const primeArgs = ["prime", "--format", "json", "--fields", "shared_skill"];
     const doctorArgs = ["doctor", "--home", home, "--project", project, "--format", "json"];
 
     const baselinePrime = runCli(primeArgs, project, baselineEnv);
@@ -436,22 +436,21 @@ describe("prime and doctor lifecycle integration", () => {
 
     expect(baselinePrime.status, baselinePrime.stderr).toBe(0);
     expect(spoofedPrime.status, spoofedPrime.stderr).toBe(0);
-    expect(baselineDoctor.status, baselineDoctor.stderr).toBe(1);
+    expect([0, 1]).toContain(baselineDoctor.status);
     expect(spoofedDoctor.status, spoofedDoctor.stderr).toBe(baselineDoctor.status);
     const baselineSummary = (JSON.parse(baselinePrime.stdout) as Record<string, unknown>)
-      .runtime_lifecycle as Record<string, unknown>;
+      .shared_skill as Record<string, unknown>;
     const spoofedSummary = (JSON.parse(spoofedPrime.stdout) as Record<string, unknown>)
-      .runtime_lifecycle as Record<string, unknown>;
+      .shared_skill as Record<string, unknown>;
     const baselineDiagnosis = (JSON.parse(baselineDoctor.stdout) as Record<string, unknown>)
-      .runtime_lifecycle as Record<string, unknown>;
+      .shared_skill as Record<string, unknown>;
     const spoofedDiagnosis = (JSON.parse(spoofedDoctor.stdout) as Record<string, unknown>)
-      .runtime_lifecycle as Record<string, unknown>;
+      .shared_skill as Record<string, unknown>;
     expect(spoofedSummary).toEqual(baselineSummary);
     expect(spoofedDiagnosis).toEqual(baselineDiagnosis);
-    assertProjectionParity(baselineSummary, baselineDiagnosis);
-    expect(baselineDiagnosis.releaseBlocked).toBe(true);
+    expect(baselineDiagnosis.path).toBe(baselineSummary.path);
     expect(Buffer.byteLength(JSON.stringify(baselineSummary))).toBeLessThan(4_096);
-    expect(Buffer.byteLength(baselineDoctor.stdout)).toBeGreaterThan(32_768);
+    expect(Buffer.byteLength(baselineDoctor.stdout)).toBeLessThan(32_768);
     expect(fs.existsSync(invocationMarker)).toBe(false);
     expect(treeSnapshot(root)).toEqual(before);
   });
@@ -475,14 +474,14 @@ describe("prime and doctor lifecycle integration", () => {
     const prime = runCli(["prime"], project, env);
     const doctor = runCli(["doctor", "--home", home, "--project", project], project, env);
     expect(prime.status, prime.stderr).toBe(0);
-    expect(prime.stdout).toContain("runtime_lifecycle: snapshot=agentera.runtimeLifecycleSnapshot.v1");
-    expect(prime.stdout).toContain("- cursor: status=");
+    expect(prime.stdout).toContain("shared_skill: status=");
+    expect(prime.stdout).not.toContain("runtime_lifecycle:");
     expect(prime.stdout).not.toContain("native step:");
     expect(doctor.status, doctor.stderr).toBe(1);
-    expect(doctor.stdout).toContain("Runtime lifecycle diagnosis:");
-    expect(doctor.stdout).toContain("skills: ");
-    expect(doctor.stdout).toContain("trust: unknown");
-    expect(doctor.stdout).toContain("native step: /skills reload");
+    expect(doctor.stdout).toContain("Shared skill");
+    expect(doctor.stdout).toContain(".agents/skills/agentera");
+    expect(doctor.stdout).not.toContain("Runtime lifecycle diagnosis:");
+    expect(doctor.stdout).not.toContain("native step:");
     expect(fs.existsSync(invocationMarker)).toBe(false);
     expect(treeSnapshot(root)).toEqual(before);
   });
@@ -501,10 +500,10 @@ describe("prime and doctor lifecycle integration", () => {
     });
     expect(child.status, child.stderr).toBe(0);
     const payload = JSON.parse(child.stdout) as Record<string, unknown>;
-    const lifecycle = payload.runtime_lifecycle as Record<string, unknown>;
-    expect(lifecycle.activeRuntimeIds).toEqual(EXPECTED_RUNTIME_IDS);
-    expect(Buffer.byteLength(JSON.stringify(lifecycle))).toBeLessThan(4_096);
-    expect(JSON.stringify(lifecycle)).not.toContain("nativeActions");
+    const sharedSkill = payload.shared_skill as Record<string, unknown>;
+    expect(sharedSkill.path).toContain(".agents/skills/agentera");
+    expect(Buffer.byteLength(JSON.stringify(sharedSkill))).toBeLessThan(4_096);
+    expect(payload).not.toHaveProperty("runtime_lifecycle");
   });
 });
 

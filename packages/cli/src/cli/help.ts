@@ -34,9 +34,9 @@ export function printTopLevelHelp(): string {
       ),
     ]),
     ...lines("User commands:", [
-      "upgrade             Plan or apply an idempotent upgrade with semver/channel gate",
+      "upgrade             Preview or apply app/project migration and explicit legacy cleanup",
       "app-home            Resolve the platform Agentera app-home path",
-      "doctor              Check Agentera CLI, app, and runtime status",
+      "doctor              Check Agentera CLI, app, and shared-skill status",
       "report              Privacy-gated usage analytics",
       "--version           Print the installed Agentera CLI version",
     ]),
@@ -55,7 +55,6 @@ export function printUpgradeHelp(): string {
   return [
     "usage: agentera upgrade [-h] [--project PROJECT] [--install-root INSTALL_ROOT]",
     "                        [--home HOME] [--channel {stable,development}]",
-    "                        [--runtime {all,opencode,codex,cursor,copilot}]",
     "                        [--legacy-cleanup {claude}]",
     "                        [--only {artifacts,runtime,cleanup}] [--dry-run] [--yes]",
     "                        [--force] [--verify] [--format {text,json}]",
@@ -63,16 +62,14 @@ export function printUpgradeHelp(): string {
     "options:",
     "  -h, --help            show this help message and exit",
     "  --project PROJECT     Project directory whose .agentera artifacts should be migrated",
-    "  --install-root PATH   Agentera app home to wire into runtime configs",
-    "  --home HOME           Home directory for runtime config writes/detection",
+    "  --install-root PATH   Agentera app home to inspect or update",
+    "  --home HOME           Home directory for shared-skill detection and explicit legacy cleanup",
     "  --channel CHANNEL     Update channel: stable (2.x) or development (3.x npm)",
-    "  --runtime RUNTIME     Explicitly select all or one runtime; without it preview and apply stay app-only",
     "  --legacy-cleanup ID   Explicitly include legacy-only retired Claude cleanup",
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",
-    "  --yes                 Explicitly approve declared Agentera-owned operations; never native/trust actions",
-    "                        Corrupt/disconnected ownership journals and malformed locks fail closed",
-    "  --force               Overwrite managed runtime files or conflicting backups",
+    "  --yes                 Explicitly approve app/project migration or selected legacy cleanup",
+    "  --force               Replace only where the migration contract explicitly permits it",
     "  --verify              Verify the current install; full v2-to-v3 apply verifies state and startup automatically",
     "  --format {text,json}  Structured output format",
     "",
@@ -81,6 +78,11 @@ export function printUpgradeHelp(): string {
     "  Full apply:       npx -y agentera@next upgrade --channel development --project \"$PWD\" --yes",
     "  Apply requires a Git worktree whose complete v2 migration source is tracked and unchanged at HEAD.",
     "  Cross-major apply is always full: --only cannot be used; there is no rollback, restore, or non-Git workflow.",
+    "",
+    "active integration:",
+    "  Agentera uses the shared skill at ~/.agents/skills/agentera plus the CLI.",
+    "  Current runtime selectors and native plugin, hook, agent, command, descriptor, and marketplace writes are retired.",
+    "  Claude cleanup remains explicit: agentera upgrade --legacy-cleanup claude --dry-run|--yes",
   ].join("\n");
 }
 
@@ -107,7 +109,7 @@ export function printDoctorHelp(): string {
     "options:",
     "  -h, --help              show this help message and exit",
     "  --install-root PATH     Agentera app home to diagnose",
-    "  --home HOME             Home directory for runtime detection",
+    "  --home HOME             Home directory for shared-skill diagnosis",
     "  --project PROJECT       Project directory context",
     "  --expected-version VER  Expected app files version",
     "  --expect-command CMD    Required CLI command probe; may be repeated",
@@ -115,7 +117,7 @@ export function printDoctorHelp(): string {
     "  --allow-live-model      Record permission for future live model smoke probes",
     "  --format {text,json}    Structured output format",
     "",
-    "Reports detailed read-only lifecycle evidence and manual native steps for OpenCode, Codex, Cursor, and Copilot.",
+    "Reports read-only app, project-state, shared-skill, and CLI evidence.",
   ].join("\n");
 }
 

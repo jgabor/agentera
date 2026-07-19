@@ -81,7 +81,7 @@ describe("prime major-boundary gate", () => {
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
       expect(state.project_integration.recommendation).toBe("stay");
-      expect(state.project_integration.pending_runtime).toBe(0);
+      expect(state.project_integration).not.toHaveProperty("pending_runtime");
       expect(state.project_integration.major_boundary_block).toBeTruthy();
       expect(state.project_integration.major_boundary_block).toContain("v3 successor line is not announced yet");
     });

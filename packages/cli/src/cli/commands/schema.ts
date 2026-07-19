@@ -14,23 +14,8 @@ import {
 import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
-import {
-  LIFECYCLE_ACTION_CLASS_VALUES,
-  LIFECYCLE_APPLICABILITY_VALUES,
-  LIFECYCLE_COMMAND_ELIGIBILITY_VALUES,
-  loadLifecycleAuthority,
-} from "../../runtime/lifecycleAuthority.js";
+import { loadLifecycleAuthority } from "../../runtime/lifecycleAuthority.js";
 import { loadRetiredRuntimeCleanupContract } from "../../runtime/retiredRuntimeCleanup.js";
-import {
-  LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
-  LIFECYCLE_PROJECTION_SCHEMA_VERSION,
-  LIFECYCLE_STATUS_VOCABULARY_VERSION,
-  LIFECYCLE_SUMMARY_SCHEMA_VERSION,
-} from "../../runtime/lifecycleSnapshot.js";
-import {
-  ACTIVE_RUNTIME_SELECTORS,
-  LIFECYCLE_UPGRADE_SCHEMA,
-} from "../../upgrade/lifecycleUpgrade.js";
 import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 
@@ -139,8 +124,8 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   stats: "Deprecated alias for report. Read or refresh privacy-gated usage analytics.",
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
   upgrade:
-    "Preview or apply app migration plus explicitly selected Agentera-owned runtime lifecycle repair.",
-  doctor: "Check Agentera CLI, app, and runtime status.",
+    "Preview or apply app and project-state migration, including recognized v2 rewiring, or explicit retired Claude cleanup.",
+  doctor: "Check Agentera CLI, app, shared-skill, and project-integration status.",
 };
 function availableStructuredFields(command: string): string[] {
   if (command === "prime") return [...STATUS_STRUCTURED_FIELDS, "capability_context"];
@@ -168,7 +153,6 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
     "project",
     "install_root",
     "home",
-    "runtime",
     "legacy_cleanup",
     "only",
     "dry_run",
@@ -325,7 +309,6 @@ function describeCommands(): JsonObject[] {
       "status",
       "phase",
       "phases",
-      "lifecycle",
       "summary",
       "state_validation",
       "startup_validation",
@@ -467,64 +450,21 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     state_writer: stateWriterContract(),
     state_retrieval: { authority: retrievalAuthority.authority, ...entityPublicRetrieval() },
     entity_migration: entityMigrationAuthorityProjection(),
-    runtime_lifecycle: {
-      authority: lifecycleAuthority.sourcePath,
-      snapshot_schema_version: LIFECYCLE_SNAPSHOT_SCHEMA_VERSION,
-      projection_schema_version: LIFECYCLE_PROJECTION_SCHEMA_VERSION,
-      summary_schema_version: LIFECYCLE_SUMMARY_SCHEMA_VERSION,
-      status_vocabulary_version: LIFECYCLE_STATUS_VOCABULARY_VERSION,
-      projection: {
-        snapshot_identity: "deterministic_sha256",
-        applicability: [...LIFECYCLE_APPLICABILITY_VALUES],
-        action_classes: [...LIFECYCLE_ACTION_CLASS_VALUES],
-        command_eligibility: [...LIFECYCLE_COMMAND_ELIGIBILITY_VALUES],
-        shared_resource_rule: "selected_and_required_by_at_least_one_selected_runtime",
+    integration: {
+      authority: "references/cli/agent-ready-state-contract.yaml",
+      active_contract: "one shared skill plus the Agentera CLI",
+      shared_skill: {
+        path: lifecycleAuthority.canonicalSkillPath,
+        state_field: "shared_skill",
       },
-      projections: {
-        prime: "bounded summary without category evidence or native command lists",
-        doctor:
-          "detailed surfaces, eight categories, evidence, precedence, and user-owned native steps",
-        upgrade: "explicitly selected read-only preview or approved Agentera-owned lifecycle apply",
+      cli: {
+        authority: "agentera",
+        current_runtime_selectors: [],
+        current_native_resource_operations: [],
       },
-      upgrade: {
-        schema_version: LIFECYCLE_UPGRADE_SCHEMA,
-        command: "agentera upgrade --runtime <all|runtime> --dry-run|--yes",
-        selectors: ["all", ...ACTIVE_RUNTIME_SELECTORS],
-        projection:
-          "lifecycle.projection is the bounded runtime lifecycle summary; lifecycle.operations is the sole detailed resource operation and outcome set",
-        default_without_runtime_selector: "app_upgrade_only",
-        preview: "strictly_read_only",
-        apply_requires: "--yes",
-        approval_scope: "declared_agentera_owned_operations_only",
-        native_actions: "reported_action_required_never_executed",
-        trust_actions: "reported_action_required_never_approved",
-        ownership_journal:
-          ".agentera/runtime-lifecycle/ownership-journal-v1 under the selected app home",
-        journal_states: ["absent", "clean", "recoverable_terminal_tail", "corrupt"],
-        journal_chain:
-          "strict_contiguous_sequence_and_digest_chain; only_one_incomplete_terminal_final_is_read_recoverable_but_mutation_blocking",
-        journal_publication:
-          "fsynced_unique_temporary_then_atomic_exclusive_final_link_and_directory_fsync",
-        lock: "live_preparation_blocks_contenders; atomic_complete_record_with_token_pid_linux_boot_id_and_proc_start_ticks; malformed_final_fails_closed",
-        recovery:
-          "non_authoritative_temporaries_ignored;_middle_gap_fork_digest_or_disconnection_blocks_all_mutation",
-        retired_cleanup:
-          "--legacy-cleanup claude (legacy-only, explicit, never active runtime identity)",
-        exits: { success: 0, non_success: 1, usage: 2 },
-      },
-      support_floor: {
-        mandatory_evidence_fields: lifecycleAuthority.evidenceFields,
-        unknown_or_missing_mandatory_blocks:
-          lifecycleAuthority.supportFloorPolicy.unknownOrMissingMandatoryBlocks,
-        denied_mandatory_trust_blocks:
-          lifecycleAuthority.supportFloorPolicy.deniedMandatoryTrustBlocks,
-        known_false_diagnoses_degraded:
-          lifecycleAuthority.supportFloorPolicy.knownFalseDiagnosesDegraded,
-        not_applicable_scope: lifecycleAuthority.supportFloorPolicy.notApplicableScope,
-      },
-      ["active_runtime_" + "ids"]: lifecycleAuthority.runtimes.map((runtime) => runtime.id),
-      migration_aliases: {
-        "cursor-agent": { runtime_id: "cursor", surface_id: "cli", active_runtime: false },
+      supported_routes: {
+        v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
+        retired_cleanup: "agentera upgrade --legacy-cleanup claude --dry-run|--yes",
       },
       retired_runtime_inputs: retiredRuntimeCleanup.runtimes.map((runtime) => ({
         id: runtime.id,
@@ -590,8 +530,8 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         ? (doctorContract.adjacent_surfaces ?? "unknown")
         : "unknown",
       signal_kinds: DOCTOR_SIGNAL_KINDS,
-      runtime_lifecycle_field: "runtime_lifecycle",
-      runtime_lifecycle_mode: "read_only_detailed_diagnosis",
+      shared_skill_field: "shared_skill",
+      integration_mode: "shared_skill_and_cli_only",
     },
     gaps,
   };

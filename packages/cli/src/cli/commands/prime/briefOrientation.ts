@@ -65,7 +65,6 @@ const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
   { field: "plan.archived_plans", reason: "archive_catalog", recovery: "agentera state plan list --format json" },
   { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: "agentera state plan --format json" },
   { field: "history.entries", reason: "startup_history_entries", recovery: "agentera state <artifact> list --limit 20 --format json" },
-  { field: "runtime_lifecycle.runtimes", reason: "lifecycle_runtime_detail", recovery: "agentera upgrade --dry-run --format json" },
   { field: "project_integration.phases", reason: "phase_blockers", recovery: "agentera doctor --format json" },
   { field: "source_contract.artifact_writes.artifacts", reason: "writer_contract_detail", recovery: "agentera schema --format json" },
   { field: "docs.source_contract", reason: "docs_state_families", recovery: "agentera state docs --format json" },
@@ -225,7 +224,6 @@ function briefProjectIntegration(integration: unknown): Record<string, unknown> 
     "recommendation",
     "message",
     "update_channel",
-    "pending_runtime",
     "pending_artifacts",
     "aggregate_status",
     "major_boundary_block",
@@ -476,9 +474,6 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
         break;
       case "history":
         out[key] = briefHistory(value);
-        break;
-      case "runtime_lifecycle":
-        out[key] = briefRuntimeLifecycle(value);
         break;
       case "project_integration":
         out[key] = briefProjectIntegration(value);

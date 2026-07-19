@@ -240,26 +240,50 @@ describe("retired runtime current-surface policy", () => {
     expect(vocabulary).toContain("Claude Code is a retired migration and consent-gated historical-import source");
   });
 
-  it("keeps current lifecycle docs on the npm CLI, one Cursor identity, and all four active runtimes", () => {
-    for (const surface of primaryLifecycleDocs) {
+  it("documents the shared-skill and CLI active contract", () => {
+    for (const surface of ["README.md", "UPGRADE.md"]) {
       const content = read(surface);
-      expect(content, surface).toContain("OpenCode");
-      expect(content, surface).toContain("Codex");
-      expect(content, surface).toContain("Cursor");
-      expect(content, surface).toMatch(/(?:GitHub )?Copilot/);
-      expect(content, surface).not.toMatch(/\buvx\b|uv run scripts\/agentera/);
+      expect(content, surface).toContain("~/.agents/skills/agentera");
+      expect(content, surface).toContain("CLI");
+      expect(content, surface).not.toMatch(/--runtime all/);
     }
-    expect(read("README.md")).toContain("Cursor Agent CLI is the required Cursor surface and Cursor IDE is conditional");
-    expect(read("UPGRADE.md")).toContain("`cursor-agent` is not a selector");
   });
 
-  it("requires explicit all-runtime selection in active lifecycle guidance", () => {
-    for (const surface of ["README.md", "packages/cli/README.md", "UPGRADE.md", "references/adapters/runtime-feature-parity.md"]) {
+  it("keeps active readiness surfaces on app, project, shared-skill, and CLI evidence", () => {
+    const surfaces = [
+      "README.md",
+      "packages/cli/src/cli/help.ts",
+      "references/cli/agent-ready-state-contract.yaml",
+      "references/cli/prime-consumer-compatibility.yaml",
+    ];
+    const retiredClaims = [
+      /detailed install and runtime evidence/i,
+      /home directory for runtime detection/i,
+      /same lifecycle snapshot/i,
+      /aggregate lifecycle state/i,
+      /aggregate release-blocking state/i,
+      /runtime adapter availability and configuration diagnostics/i,
+      /hook, package, and schema availability checks/i,
+      /secure automatic lifecycle apply currently requires/i,
+    ];
+    for (const surface of surfaces) {
       const content = read(surface);
-      expect(content, surface).toMatch(/--runtime all[^\n]*--dry-run/);
-      expect(content, surface).toMatch(/--runtime all[^\n]*--yes/);
-      expect(content, surface).not.toMatch(/(?:dry-run|preview) without (?:`--runtime`|a selector)[^\n]*(?:observes|previews)[^\n]*runtimes/i);
-      expect(content, surface).not.toMatch(/selector-free dry-run previews/i);
+      for (const claim of retiredClaims) expect(content, `${surface}: ${claim}`).not.toMatch(claim);
+    }
+
+    expect(read("README.md")).toContain("app, project-state, shared-skill, and CLI evidence");
+    expect(read("packages/cli/src/cli/help.ts")).toContain("Home directory for shared-skill diagnosis");
+    expect(read("references/cli/agent-ready-state-contract.yaml")).toContain("canonical shared-skill diagnosis");
+    expect(read("references/cli/prime-consumer-compatibility.yaml")).toContain(
+      "app and project-state recommendation",
+    );
+  });
+
+  it("keeps active upgrade guidance free of current runtime selectors", () => {
+    for (const surface of ["README.md", "UPGRADE.md"]) {
+      const content = read(surface);
+      expect(content, surface).not.toMatch(/--runtime\s+(?:all|opencode|codex|cursor|copilot)/);
+      expect(content, surface).toContain("--legacy-cleanup claude");
     }
   });
 

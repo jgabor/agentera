@@ -3,10 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.js";
-import {
-  observeProjectIntegrationLifecycle,
-  summarizeProjectIntegration,
-} from "../../../upgrade/projectIntegration.js";
+import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
 import { resolveSourceRootStrict } from "../../../upgrade/appModel.js";
 import { discoverSchemasDir, loadSchemas } from "../../appContext.js";
 import {
@@ -32,9 +29,7 @@ import type { NextAction, OrientationState, ProfileSummary, ReadinessHint, Start
 import { statusBundleStatus } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
-import {
-  summarizeRuntimeLifecycle,
-} from "../../../runtime/lifecycleSnapshot.js";
+import { diagnoseCanonicalSkill } from "../../../setup/doctor.js";
 import { startupHistorySummary } from "../../../state/startupProjection.js";
 import { detectStateMode } from "../../../state/stateMode.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
@@ -98,15 +93,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const decisionAttention = entity?.decisionAttention ?? decisionReviewAttention(schemas);
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
   const project = process.cwd();
-  const lifecycleSnapshot = observeProjectIntegrationLifecycle({
-    home,
-    project,
-    sourceRoot,
-    env,
-    installRoot: String(bundle.appHome),
-    bundleStatus: String(bundle.status),
-  });
-  const runtimeLifecycle = summarizeRuntimeLifecycle(lifecycleSnapshot);
+  const sharedSkill = diagnoseCanonicalSkill(home);
   const projectIntegration = summarizeProjectIntegration({
     project,
     sourceRoot,
@@ -116,7 +103,6 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     bundleStatus: String(bundle.status),
     retryCommand: bundle.retryCommand,
     crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
-    lifecycleSnapshot,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
   const nextAction = selectProjectIntegrationNextAction(readiness, projectIntegration);
@@ -131,8 +117,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
-    runtime_lifecycle_snapshot: lifecycleSnapshot,
-    runtime_lifecycle: runtimeLifecycle,
+    shared_skill: sharedSkill,
     plan,
     docs,
     progress,
@@ -158,8 +143,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
-    runtime_lifecycle_snapshot: lifecycleSnapshot,
-    runtime_lifecycle: runtimeLifecycle,
+    shared_skill: sharedSkill,
     plan,
     docs,
     progress,
@@ -190,9 +174,7 @@ export function selectProjectIntegrationNextAction(
       object:
         (projectIntegration.pending_artifacts as number) > 0
           ? "Upgrade Agentera artifacts"
-          : (projectIntegration.pending_runtime as number) > 0
-            ? "Upgrade Agentera runtime wiring"
-            : "Upgrade Agentera",
+          : "Upgrade Agentera",
       capability: "status",
       reason: projectIntegration.dry_run_command
         ? `${projectIntegration.message} Exact preview: ${projectIntegration.dry_run_command}`

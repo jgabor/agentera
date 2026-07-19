@@ -107,7 +107,7 @@ export function integrationScenarioMessage(
   }
   const reasons: string[] = [];
   if (facts.pendingRuntimeCount > 0) reasons.push("runtime wiring needs sync");
-  if (facts.pendingArtifactCount > 0) reasons.push("v1 artifacts need migration");
+  if (facts.pendingArtifactCount > 0) reasons.push("project state needs migration");
   if (facts.needsAppUpgrade) reasons.push("app bundle needs update");
   if (facts.crossMajorMigration) reasons.push("cross-major version migration needed");
   if (reasons.length === 0) reasons.push("project changes pending");

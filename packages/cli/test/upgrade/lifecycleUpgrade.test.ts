@@ -165,23 +165,14 @@ afterEach(() => {
 
 describe("upgrade lifecycle preview", () => {
   it.each(ACTIVE_SELECTORS)("covers explicit all-runtime preview and narrowed %s selection", (runtime) => {
-    const allRuntimePreview = buildUpgradePlan({
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       runtime: "all",
       dryRun: true,
-    });
-
-    expect(allRuntimePreview.lifecycle?.selection).toEqual({
-      requested: "all",
-      runtimeIds: ACTIVE_SELECTORS,
-    });
-    expect(allRuntimePreview.lifecycle?.operations.filter((operation) => operation.id === "canonical_skill"))
-      .toHaveLength(1);
-    expect(allRuntimePreview.lifecycle?.operations.some((operation) => operation.runtime === runtime)
-      || allRuntimePreview.lifecycle?.userActions.some((action) => action.runtime === runtime)).toBe(true);
+    })).toThrow("--runtime all is retired");
 
     const narrowed = run(runtime, false);
     expect(narrowed.selection).toEqual({ requested: runtime, runtimeIds: [runtime] });
@@ -207,28 +198,15 @@ describe("upgrade lifecycle preview", () => {
     expect(treeBytes(fx.root)).toEqual(before);
   });
 
-  it.each([false, true])("reports each selected resource once when apply=%s", (apply) => {
-    const plan = buildUpgradePlan({
+  it.each([false, true])("rejects current runtime selection before apply=%s", (apply) => {
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       runtime: "opencode",
       ...(apply ? { yes: true } : { dryRun: true }),
-    });
-    const operations = plan.lifecycle?.operations ?? [];
-
-    expect(new Set(operations.map(({ id }) => id)).size).toBe(operations.length);
-    expect(plan.phases.find((phase) => phase.name === "lifecycle")?.items).toEqual([]);
-    expect(plan.lifecycle?.projection).not.toHaveProperty("actions");
-    expect(plan.lifecycle?.projection).not.toHaveProperty("sharedResources");
-    const aggregateProjection = JSON.stringify(plan.lifecycle?.projection);
-    for (const operation of operations) {
-      expect(aggregateProjection).not.toContain(`\"${operation.id}\"`);
-    }
-    expect(operations.every((operation) => apply
-      ? operation.outcome !== null
-      : operation.outcome === null)).toBe(true);
+    })).toThrow("--runtime opencode is retired");
   });
 
   it("selects all runtimes in authority order, deduplicates shared work, and performs zero writes or native execution", () => {
@@ -348,45 +326,31 @@ describe("upgrade lifecycle preview", () => {
     expect(fs.readFileSync(plugin, "utf8")).toBe("leave this outside the Cursor selection\n");
   });
 
-  it("keeps app and lifecycle preview byte-read-only while exposing both phases", () => {
+  it("rejects current lifecycle preview byte-read-only", () => {
     const before = treeBytes(fx.root);
 
-    const plan = buildUpgradePlan({
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       dryRun: true,
       runtime: "all",
-    });
-
-    expect(plan.phases.some((phase) => phase.name === "detect")).toBe(true);
-    expect(plan.phases.some((phase) => phase.name === "lifecycle")).toBe(true);
-    expect(plan.lifecycle?.mode).toBe("preview");
-    expect(renderUpgradePlan(plan)).toContain("runtime lifecycle details:");
+    })).toThrow("--runtime all is retired");
     expect(treeBytes(fx.root)).toEqual(before);
     expect(fs.existsSync(fx.trap)).toBe(false);
   });
 
-  it("refreshes app content before observing and applying lifecycle state", () => {
-    const plan = buildUpgradePlan({
+  it("rejects current lifecycle apply before app refresh", () => {
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       runtime: "opencode",
       yes: true,
-    });
-
-    const refresh = plan.phases
-      .find((phase) => phase.name === "cleanup")?.items
-      .find((item) => item.action === "refresh-app-content");
-    const canonical = plan.lifecycle?.operations.find((operation) => operation.id === "canonical_skill");
-
-    expect(refresh?.status).toBe("applied");
-    expect(canonical?.outcome).toBe("applied");
-    expect(fs.existsSync(path.join(fx.appHome, "skills", "agentera", "SKILL.md"))).toBe(true);
-    expect(fs.lstatSync(path.join(fx.home, ".agents", "skills", "agentera")).isSymbolicLink()).toBe(true);
+    })).toThrow("--runtime opencode is retired");
+    expect(fs.existsSync(path.join(fx.home, ".agents", "skills", "agentera"))).toBe(false);
   });
 
   it("reports missing parents, unowned collisions, native actions, and unsupported publication explicitly", () => {
@@ -673,16 +637,9 @@ describe("upgrade lifecycle apply and convergence", () => {
     expect(fs.existsSync(fx.trap)).toBe(false);
   });
 
-  it("makes doctor consume the persisted ledger after apply", () => {
-    const applied = buildUpgradePlan({
-      installRoot: fx.appHome,
-      home: fx.home,
-      project: fx.project,
-      channel: "development",
-      runtime: "opencode",
-      yes: true,
-    });
-    expect(upgradeExitCode(applied)).toBe(0);
+  it("keeps doctor on shared-skill state after an internal lifecycle fixture apply", () => {
+    const applied = run("opencode", true);
+    expect(applied.status).toBe("success");
     let output = "";
     const code = cmdDoctor({
       installRoot: fx.appHome,
@@ -697,8 +654,8 @@ describe("upgrade lifecycle apply and convergence", () => {
     const payload = JSON.parse(output);
 
     expect(code).toBe(1);
-    expect(payload.runtime_lifecycle.runtimes.find((runtime: { runtimeId: string }) =>
-      runtime.runtimeId === "opencode").canonicalSkill.detected).toBe(true);
+    expect(payload.shared_skill.status).toBe("pass");
+    expect(payload).not.toHaveProperty("runtime_lifecycle");
     expect(readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(fx.appHome)).validEvents)
       .toBeGreaterThan(0);
   });
@@ -723,47 +680,38 @@ describe("upgrade lifecycle CLI output and exits", () => {
       maxBuffer: 2 * 1024 * 1024,
     });
 
-    expect(child.status).toBe(1);
+    expect(child.status).toBe(2);
     expect(child.stderr).toBe("");
-    expect(Buffer.byteLength(child.stdout)).toBeGreaterThan(10_000);
+    expect(Buffer.byteLength(child.stdout)).toBeGreaterThan(100);
     const payload = JSON.parse(child.stdout);
-    expect(payload.lifecycle).toMatchObject({
-      schemaVersion: "agentera.lifecycleUpgrade.v1",
-      selection: { requested: "all", runtimeIds: CASES.all_runtime_order.runtimeIds },
-    });
+    expect(payload.error.message).toContain("~/.agents/skills/agentera");
   });
 
   it("uses exit 0 for converged operations, 1 for pending or failed work, and leaves 2 to usage errors", () => {
-    const pending = buildUpgradePlan({
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       runtime: "opencode",
       dryRun: true,
-    });
-    expect(upgradeExitCode(pending)).toBe(1);
+    })).toThrow("--runtime opencode is retired");
 
-    const applied = buildUpgradePlan({
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       runtime: "opencode",
       yes: true,
-    });
-    expect(upgradeExitCode(applied)).toBe(0);
-    const converged = buildUpgradePlan({
+    })).toThrow("--runtime opencode is retired");
+    expect(() => buildUpgradePlan({
       installRoot: fx.appHome,
       home: fx.home,
       project: fx.project,
       channel: "development",
       runtime: "opencode",
       dryRun: true,
-    });
-    expect(converged.lifecycle?.operations.every((operation) => operation.action === "noop")).toBe(true);
-    expect(upgradeExitCode(converged)).toBe(0);
-    expect(converged.lifecycle?.status).toBe("noop");
-    expect(converged.lifecycle?.userActions).toEqual([]);
+    })).toThrow("--runtime opencode is retired");
   });
 });

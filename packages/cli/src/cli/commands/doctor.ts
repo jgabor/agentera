@@ -1,12 +1,10 @@
 import os from "node:os";
-import path from "node:path";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import {
   resolveDoctorInstallRoot,
   resolveSourceRootStrict,
-  doctorRoots,
 } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../../setup/smokeChecks.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -33,14 +31,8 @@ import {
   resolveNextMajorDoctorLines,
 } from "../../upgrade/nextMajorDoctor.js";
 import { emitStructured } from "../structured.js";
-import {
-  observeRuntimeLifecycle,
-  type RuntimeLifecycleSnapshot,
-} from "../../runtime/lifecycleSnapshot.js";
-import {
-  lifecycleOwnershipJournalPath,
-  readLifecycleOwnershipJournal,
-} from "../../runtime/lifecycleOwnershipJournal.js";
+import { diagnoseCanonicalSkill } from "../../setup/doctor.js";
+import type { RuntimeLifecycleSnapshot } from "../../runtime/lifecycleSnapshot.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -215,22 +207,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
   });
-  const lifecycleOwnership = readLifecycleOwnershipJournal(
-    lifecycleOwnershipJournalPath(installRoot),
-  );
-  const canonicalSkillTarget = path.join(
-    doctorRoots(installRoot).activeBundleRoot,
-    "skills",
-    "agentera",
-  );
-  const runtimeLifecycle = observeRuntimeLifecycle({
-    home,
-    project,
-    sourceRoot,
-    env: { ...process.env, HOME: home },
-    ledger: lifecycleOwnership.ledger,
-    canonicalSkillTarget,
-  });
+  const sharedSkill = diagnoseCanonicalSkill(home);
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {
     smokeReport = runNpmSmokeChecks(sourceRoot, process.env, {
@@ -239,7 +216,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   }
   if ((args.format ?? "text") === "json") {
     const payload = doctorParityJsonEnvelope(status);
-    payload.runtime_lifecycle = runtimeLifecycle;
+    payload.shared_skill = sharedSkill;
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
@@ -260,12 +237,12 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       prependCoexistenceDoctorSection(
         prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines),
         coexistenceLines,
-      ) + renderRuntimeLifecycleDiagnosis(runtimeLifecycle) + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
+      ) + `\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + "\n");
   }
   if (args.smoke) {
     const failCount = Number((smokeReport?.summary as JsonObject | undefined)?.fail ?? 0);
     if (failCount > 0) return 1;
   }
-  return status.status === APP_UP_TO_DATE && !runtimeLifecycle.releaseBlocked ? 0 : 1;
+  return status.status === APP_UP_TO_DATE && sharedSkill.status === "pass" ? 0 : 1;
 }

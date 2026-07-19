@@ -66,16 +66,13 @@ describe("prime project_integration", () => {
     const integration = state.project_integration as Record<string, unknown>;
 
     expect(state.app.status).toBe("up_to_date");
-    expect(integration.recommendation).toBe("stay");
-    expect(integration.pending_runtime).toBe(0);
-    expect(integration.pending_runtimes).toEqual([]);
-    expect(integration.dry_run_command).toBeNull();
-    expect(integration.phases).toMatchObject({
-      lifecycle: { status: "blocked" },
-    });
+    expect(integration.recommendation).toBe("upgrade");
+    expect(integration).not.toHaveProperty("pending_runtime");
+    expect(integration).not.toHaveProperty("pending_runtimes");
+    expect(integration.phases).toMatchObject({ app: { status: "pending" } });
+    expect(integration.dry_run_command).not.toContain("--runtime");
 
-    const attention = (state.attention as string[]).find((line) => line.includes("lifecycle action_class="));
-    expect(attention).toBeTruthy();
+    expect((state.attention as string[]).some((line) => line.includes("lifecycle action_class="))).toBe(false);
 
     const nextAction = state.next_action.recommended;
     expect(nextAction.object).not.toContain("Upgrade Agentera runtime wiring");

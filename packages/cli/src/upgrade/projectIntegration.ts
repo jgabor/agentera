@@ -30,11 +30,8 @@ import {
   classifyIntegrationScenario,
   integrationScenarioMessage,
   integrationExit,
-  integrationGuidance,
   integrationPhase,
-  lifecycleIntegrationPhase,
   type IntegrationExit,
-  type IntegrationGuidance,
   type IntegrationPhaseSummary,
   type IntegrationRetry,
   type LifecycleIntegrationFacts,
@@ -84,8 +81,6 @@ export interface ProjectIntegrationArgs {
 export interface ProjectIntegrationSummary {
   recommendation: "stay" | "upgrade";
   message: string;
-  pending_runtime: number;
-  pending_runtimes: string[];
   pending_artifacts: number;
   dry_run_command: string | null;
   apply_command: string | null;
@@ -94,10 +89,8 @@ export interface ProjectIntegrationSummary {
   major_boundary_block?: string | null;
   phases: {
     app: IntegrationPhaseSummary;
-    lifecycle: IntegrationPhaseSummary;
   };
   aggregate_status: "stay" | "upgrade" | "blocked";
-  guidance: IntegrationGuidance;
   exit: IntegrationExit;
   retry: IntegrationRetry;
 }
@@ -328,9 +321,26 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     channel,
   });
   const v1Artifacts = detectV1ArtifactPairs(args.project);
-  const lifecycleSnapshot =
-    args.lifecycleSnapshot ?? observeProjectIntegrationLifecycle(args, integrationTargets.installRoot);
-  const lifecycle = lifecycleIntegrationFacts(lifecycleSnapshot);
+  const pendingProjectMigration = pendingRuntimeMigrationItems({
+    appHome: integrationTargets.installRoot,
+    project: args.project,
+    home: args.home,
+    force: false,
+    sourceRoot: args.sourceRoot,
+    channel: args.channel ?? null,
+    env: args.env,
+  });
+  const lifecycle: LifecycleIntegrationFacts = {
+    pendingOwnedCount: 0,
+    pendingOwnedRuntimes: [],
+    manualReviewCount: 0,
+    manualReviewRuntimes: [],
+    hostActionCount: 0,
+    hostActionRuntimes: [],
+    doctorCount: 0,
+    doctorRuntimes: [],
+    blockers: [],
+  };
 
   const crossMajorMigration =
     crossMajor && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
@@ -346,6 +356,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
 
   const appPending =
     v1Artifacts.length +
+    pendingProjectMigration.length +
     (needsAppUpgrade ? 1 : 0) +
     (crossMajorMigration ? 1 : 0);
   const appBlockers = appPhaseBlockers(classificationBundleStatus, majorBoundaryBlock);
@@ -355,9 +366,8 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     blocked: appBlockers.length,
     blockers: appBlockers,
   });
-  const lifecyclePhase = lifecycleIntegrationPhase(lifecycle);
-  const hasUpgradeWork = appPending > 0 || lifecycle.pendingOwnedCount > 0;
-  const hasBlockers = appBlockers.length > 0 || lifecyclePhase.counts.blocked > 0;
+  const hasUpgradeWork = appPending > 0;
+  const hasBlockers = appBlockers.length > 0;
   const aggregateStatus: ProjectIntegrationSummary["aggregate_status"] = hasUpgradeWork
     ? "upgrade"
     : hasBlockers
@@ -366,21 +376,18 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   const scenarioFacts: IntegrationScenarioFacts = {
     bundleStatus: classificationBundleStatus,
     pendingRuntimeCount: lifecycle.pendingOwnedCount,
-    pendingArtifactCount: v1Artifacts.length,
+    pendingArtifactCount: v1Artifacts.length + pendingProjectMigration.length,
     crossMajor,
     crossMajorMigration,
     crossMajorNeedsPreview: Boolean(majorBoundaryBlock) || (crossMajor && !crossMajorMigration),
     needsAppUpgrade,
   };
   const scenario = classifyIntegrationScenario(scenarioFacts);
-  const pendingRuntimes = lifecycle.pendingOwnedRuntimes;
-  const runtimeSelector =
-    pendingRuntimes.length === 1 ? pendingRuntimes[0] : pendingRuntimes.length > 1 ? "all" : null;
-  const guidance = integrationGuidance(lifecycle, hasUpgradeWork);
-  if (!hasUpgradeWork && appBlockers.length > 0 && guidance.runtimes.length === 0) {
-    guidance.route = "manual_review";
-    guidance.message = appBlockers.join("; ");
-  }
+  const guidanceMessage = appBlockers.length > 0
+    ? appBlockers.join("; ")
+    : hasUpgradeWork
+      ? "Preview the app or project-state upgrade, then apply the approved command."
+      : "No app or project-state upgrade is required.";
   const exit = integrationExit(hasUpgradeWork, lifecycle, appBlockers.length > 0);
 
   const cmdsChannel = commandChannel(args, channel, crossMajor, upgradeOutcome);
@@ -390,20 +397,17 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
         installRoot: null,
         channel: cmdsChannel,
         only: null,
-        runtime: runtimeSelector,
         cwdDefault: true,
       })
     : null;
   const message = hasUpgradeWork
-    ? `${integrationScenarioMessage(scenario, scenarioFacts)} ${guidance.message}`
-    : guidance.message;
+    ? `${integrationScenarioMessage(scenario, scenarioFacts)} ${guidanceMessage}`
+    : guidanceMessage;
 
   return {
     recommendation: aggregateStatus === "upgrade" ? "upgrade" : "stay",
     message,
-    pending_runtime: pendingRuntimes.length,
-    pending_runtimes: pendingRuntimes,
-    pending_artifacts: v1Artifacts.length,
+    pending_artifacts: v1Artifacts.length + pendingProjectMigration.length,
     dry_run_command: cmds?.dryRunCommand ?? null,
     apply_command: cmds?.applyCommand ?? null,
     update_channel: hasUpgradeWork ? cmdsChannel.channel : channel.channel,
@@ -411,10 +415,8 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     major_boundary_block: majorBoundaryBlock,
     phases: {
       app: appPhase,
-      lifecycle: lifecyclePhase,
     },
     aggregate_status: aggregateStatus,
-    guidance,
     exit,
     retry: {
       command: args.retryCommand ?? null,
@@ -429,7 +431,7 @@ export function projectIntegrationAttention(summary: ProjectIntegrationSummary):
   }
   const preview = summary.dry_run_command ? `\`${summary.dry_run_command}\`` : "the preview command";
   const prefix =
-    summary.pending_artifacts > 0 || summary.pending_runtime > 0
+    summary.pending_artifacts > 0
       ? "normal"
       : "degraded";
   const previewText = summary.dry_run_command ? ` Preview ${preview}.` : "";

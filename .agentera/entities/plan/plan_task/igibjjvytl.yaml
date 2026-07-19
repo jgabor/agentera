@@ -4,7 +4,7 @@ record:
   name: Converge runtime doctor and lifecycle contracts
   depends_on:
     - uxqxtpyegu
-  status: pending
+  status: complete
   acceptance:
     - GIVEN normal operation WHEN prime, doctor, schema, help, or project integration is used THEN only shared-skill and CLI state is reported.
     - GIVEN normal active-state upgrade WHEN invoked THEN it has no current-runtime selector or native-resource operation set.
@@ -13,3 +13,13 @@ record:
     - GIVEN preview or apply WHEN observed THEN no current plugin, hook, agent, command, descriptor, or marketplace file is created.
   test_proportionality: Public command surfaces, canonical ownership and retry, retired-selector failures, v2 migration, Claude cleanup, and active guidance.
   plan: ntfgalrhbm
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Schema command metadata and integration/doctor contracts still advertise runtime lifecycle repair/filtering (packages/cli/src/cli/commands/schema.ts:126-163,454-469; references/cli/agent-ready-state-contract.yaml:66-87). Changed active README/help/prime compatibility guidance still promises runtime detection or aggregate lifecycle state (README.md:28-30,47-52; packages/cli/src/cli/help.ts:103-120; references/cli/prime-consumer-compatibility.yaml:264-269,364-372). Retired-selector safety, v2/Claude routes, no-native-write behavior, full suite, and scope boundaries passed.
+    provenance:
+      attempt_id: igibjjvytl-audit-2
+      source: "independent review ses_0834f8338ffeGzq6PSSucyDu3t: all five criteria and both attempt-1 findings passed"
+      recorded_at: 2026-07-20 01:30
+      writer_command: agentera state plan record-evaluation

@@ -171,10 +171,9 @@ function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult 
   try {
     payload = JSON.parse(out) as Record<string, unknown>;
     // The closed Python parity family owns the legacy app-status envelope.
-    // Task 6 adds an independent, additive runtime_lifecycle diagnosis while
-    // preserving every legacy key through doctorParityJsonEnvelope.
+    // Shared-skill diagnosis is additive to the legacy app-status envelope.
     const parityPayload = doctorParity ? { ...payload } : payload;
-    if (doctorParity) delete parityPayload.runtime_lifecycle;
+    if (doctorParity) delete parityPayload.shared_skill;
     normalized = normalizeEnvelope(parityPayload) as Record<string, unknown>;
     const literalPins = {
       ...(row.literalPins ?? {}),
@@ -200,8 +199,8 @@ function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult 
 }
 
 function expectedMatrixExitCode(row: ParityRow, result: MatrixResult): number {
-  const lifecycle = result.payload?.runtime_lifecycle as Record<string, unknown> | undefined;
-  if (row.argv[0] === "doctor" && lifecycle?.releaseBlocked === true) return 1;
+  const sharedSkill = result.payload?.shared_skill as Record<string, unknown> | undefined;
+  if (row.argv[0] === "doctor" && sharedSkill?.status !== "pass") return 1;
   return row.exitCode;
 }
 

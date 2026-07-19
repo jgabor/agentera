@@ -1,0 +1,15 @@
+id: ekfgdgvnul
+artifact: progress
+record:
+  timestamp: 2026-07-20 01:21
+  type: fix
+  phase: build
+  what: Correction retry after igibjjvytl-audit-1; supersedes progress kggxgubysv. Removed the remaining active-runtime claims from schema command metadata, doctor categories, README/doctor help, and prime consumer guidance, with regression assertions on each exact surface.
+  context:
+    intent: Correct every concrete igibjjvytl-audit-1 finding while preserving the original implementation, recorded failure, task state, migration and cleanup routes, and later-task boundaries.
+    constraints: Preserved all pre-retry work and kggxgubysv; did not change task/evaluation/TODO/decision status, versions, release/package construction, tracked native integration files, later-task sources, commits, or remotes.
+    unknowns: none
+    scope: Only audited schema metadata and tests, doctor authority categories, README/help wording, prime consumer guidance, and the dependent active-protocol fixture hash.
+  inspiration: Independent audit igibjjvytl-audit-1 of plan ntfgalrhbm task igibjjvytl.
+  verified: "Direct schema output describes app/project-state migration, recognized v2 rewiring, and explicit retired Claude cleanup; upgrade filters omit runtime; integration authority is references/cli/agent-ready-state-contract.yaml; doctor categories are CLI, app/install-root, canonical shared skill, project integration/project-state migration, and bounded smoke checks. Doctor help names shared-skill diagnosis and read-only app/project-state/shared-skill/CLI evidence. README and prime guidance route from app/project recommendations and shared-skill diagnosis. Criterion 1: prime/doctor/schema report shared-skill and app/project state without active runtime lifecycle. Criterion 2: normal upgrade exposes no current selector or native operation set. Criterion 3: direct --runtime cursor returned exit 2 before mutation with correction and mutation_free=true. Criterion 4: upgrade help retains the one-way v2 development migration and explicit Claude cleanup. Criterion 5: normal preview/apply no-native-write tests remain green. Focused tests passed 37/37; full CLI passed 212 files/2561 tests; typecheck and build passed; state validation passed 1572 entities/0 issues; capability-contract passed 2/2; compact and git diff --check passed."
+  next: Leave igibjjvytl in progress for a second independent audit; repository-native and package-native retirement remain later-task scope.
