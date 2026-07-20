@@ -142,10 +142,9 @@ describe("verification lane ownership", () => {
     expect(result.status, result.stderr).toBe(0);
     const inventory = JSON.parse(result.stdout);
     expect(inventory.counts.total).toBeGreaterThan(190);
-    expect(inventory.counts).toMatchObject({ stress: 0, performance: 2 });
+    expect(inventory.counts).toMatchObject({ stress: 0, performance: 3 });
     expect(inventory.mixed_files).toEqual([
       expect.objectContaining({ path: "packages/cli/test/state/entityStorage.test.ts", primary_owner: "source", separation_target: "stress" }),
-      expect.objectContaining({ path: "packages/cli/test/cli/primeProjectionContract.test.ts", primary_owner: "source", separation_target: "performance" }),
     ]);
   });
 
@@ -157,6 +156,7 @@ describe("verification lane ownership", () => {
     expect(contract).toContain("fast: [source]");
     expect(contract).toContain("path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts");
     expect(contract).toContain("path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts");
+    expect(contract).toContain("path: packages/cli/test/performance/entityAuthorityPerformance.test.ts");
     expect(contract).toContain("scheduled: [source, stress, performance]");
     expect(contract).toContain("release: [source, stress, performance, package]");
     expect(contract).not.toMatch(/^  fast:\n/m);

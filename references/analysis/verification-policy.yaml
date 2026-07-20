@@ -12,6 +12,8 @@ inventory:
       path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts
     - owner: performance
       path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts
+    - owner: performance
+      path: packages/cli/test/performance/entityAuthorityPerformance.test.ts
     - owner: package
       prefix: packages/cli/test/packaging/
 
@@ -36,12 +38,7 @@ mixed_files:
     primary_owner: source
     separation_target: stress
     reason: deterministic lock correctness and the 100-repetition stale-lock race share one file
-  - path: packages/cli/test/cli/primeProjectionContract.test.ts
-    primary_owner: source
-    separation_target: performance
-    reason: bounded startup correctness and cold five-repetition budget measurements share one file
-
-# Production-cap analytics and migration-preview wiring are intentionally
+# Production-cap analytics, entity authority, and migration-preview wiring are intentionally
 # separate from proportional source fixtures and run through performance in
 # scheduled/release.
 

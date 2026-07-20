@@ -1,0 +1,13 @@
+id: fhhgdvhovm
+artifact: progress
+record:
+  timestamp: 2026-07-20 23:07
+  type: test
+  phase: build
+  what: Separated deterministic source startup/list/get coverage from the authority-owned cold performance matrix. The performance owner now runs 25 cold-process samples at 100 and 1000 entities, preserves five repetitions and latency, heap, and output limits, and emits bounded JSON with runner conditions, fixtures, individual samples, and maxima. Inspector heap sampling remains at the existing 1 ms cadence; no overhead reduction or equivalence claim was made.
+  context:
+    intent: Complete plan task jiupbftubj by separating cold performance evidence without weakening source behavior or production measurement authority.
+  inspiration: Plan task jiupbftubj and references/artifacts/state-storage-authority.yaml measurement contract.
+  discovered: The build startup capsule omitted decisions, vision, and profile; the decisions fallback was degraded with 45 entries omitted, and task satisfaction is unavailable, so no hidden decision outcome or user satisfaction was inferred.
+  verified: Focused source and ownership tests passed 22/22; performance passed 3/3 and the explicit authority matrix passed 25/25 samples. Scheduled passed source 191 files/2245 tests, stress 0 files, and performance 3/3. Typecheck, build, lint (144 baseline warnings, 0 errors), formatting, state validation (1620 entities), capability-contract validation, and compact passed.
+  next: Continue only with the remaining plan tasks; lock separation, output isolation, parity optimization, worker tuning, duplicate cleanup, release, versioning, publishing, and pushing remain out of scope.
