@@ -1,6 +1,6 @@
 {
   "name": "agentera",
-  "version": "3.0.0-dev.25",
+  "version": "3.0.0-dev.26",
   "description": "One CLI, many capabilities: project state, artifact validation, and capability routing for AI coding agents",
   "keywords": [
     "agentera",
@@ -56,6 +56,6 @@
   },
   "agentera": {
     "suiteVersion": "3.0.0",
-    "gitRef": "967fc2fd43ef255377d304d0951d4128968c9810"
+    "gitRef": "1517670babd3475b45ba2fbee1e5673418f9aade"
   }
 }
