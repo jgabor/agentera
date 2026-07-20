@@ -1,0 +1,14 @@
+id: xhklwiwgvi
+artifact: progress
+record:
+  timestamp: 2026-07-20 21:49
+  type: feat
+  phase: build
+  what: Published references/analysis/verification-policy.yaml as the authority for 193 CLI tests, four primary owners, seven headless policy compositions, two mixed-file separation markers, conservative pre-commit routing, and owner-specific failure recovery.
+  context:
+    intent: Complete task fbgcvyeexr by publishing lane ownership and execution-policy contracts without changing test behavior, scaling fixtures, tuning workers, or separating mixed tests early.
+    constraints: Preserved baseline authority, source/package separation, existing test behavior, qifoditbva evaluator state, and the no-release/no-push boundary.
+  inspiration: Plan rmtdgltdgm task fbgcvyeexr and the independently passed qifoditbva baseline audit attempt 2.
+  discovered: The inventory has 191 source files and 2 package files. entityStorage.test.ts remains source-owned pending stress separation; primeProjectionContract.test.ts remains source-owned pending performance separation.
+  verified: pnpm run test:source passed 191 files and 2239 tests; pnpm run verify:package passed 2 files and 8 tests. Focused lane and pre-commit tests passed 31 tests. Stress and performance empty-owner commands, targeted policy, typecheck, build, lint with 0 errors, compact, markdownlint, and capability-contract validation passed.
+  next: Proceed with a dependent proportional-fixture or evidence-separation task; do not tune workers or reassign mixed files before its owning plan task.

@@ -61,6 +61,7 @@ const REFERENCE_CLASSIFICATIONS: Record<string, ReferenceClassification> = {
   "references/analysis/evidence-tier-authority.yaml": { kind: "active" },
   "references/analysis/startup-measurement-contract.yaml": { kind: "active" },
   "references/analysis/verification-baseline-2026-07-20.yaml": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/verification-policy.yaml": { kind: "active" },
   "references/artifacts/artifact-registry-interface-model.yaml": { kind: "excluded", reason: "internal adapter not public identity" },
   "references/artifacts/state-storage-authority.yaml": { kind: "active" },
   "references/artifacts/verbosity-budget-authority.yaml": { kind: "excluded", reason: "internal adapter not public identity" },

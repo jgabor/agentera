@@ -25,7 +25,7 @@ SMOKE=(
   test/cli/inspekteraEvaluationReport.test.ts
 )
 
-RUN_FULL=false
+RUN_POLICY=""
 TARGETS=()
 
 add_target() {
@@ -34,21 +34,23 @@ add_target() {
 }
 
 if [[ ${#STAGED[@]} -eq 0 ]]; then
-  RUN_FULL=true
+  RUN_POLICY=local
+fi
+
+if [[ ${#STAGED[@]} -gt 0 ]]; then
+  ROUTED_POLICY="$(node scripts/verify-lane.mjs route --policy-only "${STAGED[@]}")"
+  if [[ "$ROUTED_POLICY" == release ]]; then RUN_POLICY=release; fi
 fi
 
 for f in "${STAGED[@]}"; do
   case "$f" in
-    packages/cli/package.json|packages/cli/vite.config.ts|packages/cli/vite.package.config.ts|packages/cli/vitest.shared.ts|packages/cli/scripts/verify-lane.mjs|packages/cli/test/sourceSetup.ts|packages/cli/test/helpers/sourceSubprocess.ts|scripts/precommit-vitest.sh)
-      add_target test/verification/laneOwnership.test.ts
+    packages/cli/package.json|packages/cli/vite.config.ts|packages/cli/vite.package.config.ts|packages/cli/vitest.shared.ts|packages/cli/scripts/verify-lane.mjs|packages/cli/test/sourceSetup.ts|packages/cli/test/helpers/sourceSubprocess.ts|references/analysis/verification-policy.yaml|scripts/precommit-vitest.sh)
       ;;
     .github/workflows/*|.lefthook.yml|protocol.yaml|registry.json)
-      RUN_FULL=true
       ;;
     packages/cli/src/*|packages/cli/test/*)
       case "$f" in
         packages/cli/test/packaging/*)
-          add_target test/verification/laneOwnership.test.ts
           ;;
         *.test.ts) add_target "${f#packages/cli/}" ;;
         packages/cli/src/registries/evaluatorHandoffContract.ts)
@@ -64,15 +66,14 @@ for f in "${STAGED[@]}"; do
           add_target test/cli/inspekteraEvaluationReport.test.ts
           ;;
         *)
-          RUN_FULL=true
+          RUN_POLICY=local
           ;;
       esac
       ;;
     skills/*|references/*)
-      RUN_FULL=true
       ;;
     scripts/sandbox/*)
-      RUN_FULL=true
+      RUN_POLICY=local
       ;;
     TODO.md|CHANGELOG.md|.agentera/*)
       for smoke in "${SMOKE[@]}"; do add_target "$smoke"; done
@@ -83,13 +84,13 @@ for f in "${STAGED[@]}"; do
   esac
 done
 
-if [[ "$RUN_FULL" != true && ${#TARGETS[@]} -eq 0 ]]; then
+if [[ -z "$RUN_POLICY" && ${#TARGETS[@]} -eq 0 ]]; then
   for smoke in "${SMOKE[@]}"; do add_target "$smoke"; done
 fi
 
 if [[ -n "${PRECOMMIT_VITEST_PRINT_ROUTE:-}" ]]; then
-  if [[ "$RUN_FULL" == true ]]; then
-    echo run_full
+  if [[ -n "$RUN_POLICY" ]]; then
+    echo "run_policy $RUN_POLICY"
   else
     echo run_targeted
     if [[ -n "${PRECOMMIT_VITEST_PRINT_TARGETS:-}" ]]; then
@@ -99,10 +100,9 @@ if [[ -n "${PRECOMMIT_VITEST_PRINT_ROUTE:-}" ]]; then
   exit 0
 fi
 
-if [[ "$RUN_FULL" == true ]]; then
-  # full source suite → packages/cli#scripts.test
-  exec pnpm test
+if [[ -n "$RUN_POLICY" ]]; then
+  exec node scripts/verify-lane.mjs policy "$RUN_POLICY"
 fi
 
 echo "precommit-vitest: running ${#TARGETS[@]} file(s): ${TARGETS[*]}"
-exec vp test run --config vite.config.ts "${TARGETS[@]}"
+exec node scripts/verify-lane.mjs policy precommit -- "${TARGETS[@]}"

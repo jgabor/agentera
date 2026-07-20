@@ -5,80 +5,156 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../..");
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const PACKAGE_ROOT = path.join(REPO_ROOT, "packages/cli");
 const RUNNER = path.join(PACKAGE_ROOT, "scripts/verify-lane.mjs");
+const OWNER_NAMES = ["source", "stress", "performance", "package"] as const;
+const POLICY_OWNERS = {
+  targeted: ["source"],
+  precommit: ["source"],
+  fast: ["source"],
+  local: ["source"],
+  merge: ["source", "package"],
+  scheduled: ["source", "stress", "performance"],
+  release: ["source", "stress", "performance", "package"],
+} as const;
 
-function failedLane(lane: "source" | "package", forwarded: string[] = []) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-${lane}-lane-`));
-  const vp = path.join(root, "vp");
-  const record = path.join(root, "args.json");
-  fs.writeFileSync(vp, `#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\nexit 23\n`);
+function fixture(overrides: Record<string, unknown> = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-lanes-"));
+  for (const relative of [
+    "packages/cli/test/source.test.ts",
+    "packages/cli/test/stress.test.ts",
+    "packages/cli/test/performance.test.ts",
+    "packages/cli/test/packaging/package.test.ts",
+  ]) {
+    const file = path.join(root, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, "// fixture\n");
+  }
+  const contract = {
+    schemaVersion: "agentera.verificationPolicy.v1",
+    inventory: {
+      root: "packages/cli/test",
+      suffix: ".test.ts",
+      default_owner: "source",
+      rules: [
+        { owner: "stress", path: "packages/cli/test/stress.test.ts" },
+        { owner: "performance", path: "packages/cli/test/performance.test.ts" },
+        { owner: "package", prefix: "packages/cli/test/packaging/" },
+      ],
+    },
+    owners: Object.fromEntries(OWNER_NAMES.map((owner) => [owner, {
+      config: `packages/cli/${owner}.config.ts`,
+      correction: `run ${owner} correction`,
+    }])),
+    mixed_files: [],
+    policies: POLICY_OWNERS,
+    conservative_routing: { exact: ["central.yaml"], prefixes: ["schemas/"] },
+    ...overrides,
+  };
+  const contractPath = path.join(root, "policy.yaml");
+  fs.writeFileSync(contractPath, JSON.stringify(contract));
+  const bin = path.join(root, "bin");
+  fs.mkdirSync(bin);
+  const record = path.join(root, "runs.jsonl");
+  const vp = path.join(bin, "vp");
+  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
   fs.chmodSync(vp, 0o755);
-  const result = spawnSync(process.execPath, [RUNNER, lane, ...forwarded], {
+  return { root, contractPath, record, bin };
+}
+
+function run(args: string[], setup = fixture(), extraEnv: Record<string, string> = {}) {
+  const result = spawnSync(process.execPath, [RUNNER, ...args], {
     cwd: PACKAGE_ROOT,
     encoding: "utf8",
-    env: { ...process.env, PATH: `${root}${path.delimiter}${process.env.PATH ?? ""}` },
+    env: {
+      ...process.env,
+      PATH: `${setup.bin}${path.delimiter}${process.env.PATH ?? ""}`,
+      AGENTERA_VERIFICATION_ROOT: setup.root,
+      AGENTERA_VERIFICATION_CONTRACT: setup.contractPath,
+      ...extraEnv,
+    },
   });
-  const args = fs.readFileSync(record, "utf8").trim().split("\n");
-  fs.rmSync(root, { recursive: true, force: true });
-  return { result, args };
+  const runs = fs.existsSync(setup.record)
+    ? fs.readFileSync(setup.record, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line))
+    : [];
+  return { result, runs, setup };
 }
 
 describe("verification lane ownership", () => {
-  it.each([
-    ["source", "vite.config.ts", "package"],
-    ["package", "vite.package.config.ts", "source"],
-  ] as const)("labels an independently failing %s boundary without invoking %s", (lane, config, other) => {
-    const { result, args } = failedLane(lane);
-    expect(result.status).toBe(23);
-    expect(result.stderr).toContain(`${lane} verification boundary failed`);
-    expect(result.stderr).toContain(`the ${other} lane was not invoked`);
-    expect(args).toEqual(["test", "run", "--config", config]);
+  it.each(OWNER_NAMES)("runs the independently owned %s files headlessly", (owner) => {
+    const { result, runs } = run([owner]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ owner });
+    expect(runs[0].args).toContain(`${owner}.config.ts`);
+    expect(runs[0].args).toContain(owner === "package" ? "test/packaging/package.test.ts" : `test/${owner}.test.ts`);
   });
 
-  it("assigns package construction to one setup and package-only test glob", () => {
-    const sourceConfig = fs.readFileSync(path.join(PACKAGE_ROOT, "vite.config.ts"), "utf8");
-    const sourceSetup = fs.readFileSync(path.join(PACKAGE_ROOT, "test/sourceSetup.ts"), "utf8");
-    const packageConfig = fs.readFileSync(path.join(PACKAGE_ROOT, "vite.package.config.ts"), "utf8");
-    const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
-
-    expect(sourceConfig).toContain('exclude: ["test/packaging/**"]');
-    expect(sourceConfig).toContain('globalSetup: ["./test/sourceSetup.ts"]');
-    expect(sourceSetup).toContain('"--outDir", root');
-    expect(sourceSetup).not.toMatch(/pnpm[^\n]*build|copy-bundle|npm["'], \["(?:pack|install)/);
-    expect(packageConfig).toContain('include: ["test/packaging/*.test.ts"]');
-    expect(packageConfig).toContain('globalSetup: ["./test/packaging/packageSetup.ts"]');
-    expect(packageJson.scripts.test).toBe("pnpm run test:source");
-    expect(packageJson.scripts["verify:package"]).toBe("node scripts/verify-lane.mjs package");
+  it.each(Object.entries(POLICY_OWNERS))("composes policy %s from its named owners", (policy, owners) => {
+    const { result, runs } = run(["policy", policy]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs.map(({ owner }) => owner)).toEqual(owners);
   });
 
-  it("forwards pnpm's argument separator as a source test filter", () => {
-    const { args } = failedLane("source", ["--", "test/cli/schema.test.ts"]);
-    expect(args).toEqual([
-      "test", "run", "--config", "vite.config.ts", "test/cli/schema.test.ts",
+  it("forwards targeted filters only to the source owner", () => {
+    const { result, runs } = run(["policy", "targeted", "--", "test/source.test.ts"]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].args).toContain("test/source.test.ts");
+  });
+
+  it("rejects an ownership gap", () => {
+    const setup = fixture({ inventory: {
+      root: "packages/cli/test", suffix: ".test.ts", default_owner: null, rules: [],
+    } });
+    const { result } = run(["validate"], setup);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("ownership gap");
+    expect(result.stderr).toContain("packages/cli/test/source.test.ts");
+  });
+
+  it("rejects overlapping primary owners", () => {
+    const setup = fixture({ inventory: {
+      root: "packages/cli/test", suffix: ".test.ts", default_owner: "source", rules: [
+        { owner: "stress", path: "packages/cli/test/stress.test.ts" },
+        { owner: "performance", path: "packages/cli/test/stress.test.ts" },
+      ],
+    } });
+    const { result } = run(["validate"], setup);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("ownership overlap");
+    expect(result.stderr).toContain("stress, performance");
+  });
+
+  it("reports the failed owner and its correction path", () => {
+    const { result, runs } = run(["policy", "release"], fixture(), { FAIL_OWNER: "performance" });
+    expect(result.status).toBe(1);
+    expect(runs.map(({ owner }) => owner)).toEqual(["source", "stress", "performance"]);
+    expect(result.stderr).toContain("performance owner failed");
+    expect(result.stderr).toContain("run performance correction");
+  });
+
+  it("validates the real inventory and marks mixed files for later separation", () => {
+    const result = spawnSync(process.execPath, [RUNNER, "inventory", "--json"], {
+      cwd: PACKAGE_ROOT, encoding: "utf8",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const inventory = JSON.parse(result.stdout);
+    expect(inventory.counts.total).toBeGreaterThan(190);
+    expect(inventory.counts).toMatchObject({ stress: 0, performance: 0 });
+    expect(inventory.mixed_files).toEqual([
+      expect.objectContaining({ path: "packages/cli/test/state/entityStorage.test.ts", primary_owner: "source", separation_target: "stress" }),
+      expect.objectContaining({ path: "packages/cli/test/cli/primeProjectionContract.test.ts", primary_owner: "source", separation_target: "performance" }),
     ]);
   });
 
-  it("keeps source subprocess isolation helpers free of argument pass-through wrappers", () => {
-    const helper = fs.readFileSync(
-      path.join(PACKAGE_ROOT, "test/helpers/sourceSubprocess.ts"),
-      "utf8",
-    );
-    expect(helper).not.toContain("sourceSubprocessArgs");
-    expect(helper).toContain("AGENTERA_SOURCE_TEST_BUILD");
-  });
-
-  it("keeps detailed command and failure matrices source-owned", () => {
-    for (const relative of [
-      "test/cli/activeProtocolSurface.test.ts",
-      "test/upgrade/upgradeOrchestrator.test.ts",
-      "test/upgrade/upgradeVerify.test.ts",
-    ]) expect(fs.existsSync(path.join(PACKAGE_ROOT, relative)), relative).toBe(true);
-    const packageTest = fs.readFileSync(
-      path.join(PACKAGE_ROOT, "test/packaging/packageVerification.test.ts"),
-      "utf8",
-    );
-    expect(packageTest).not.toContain("it.each");
-    expect(packageTest).not.toMatch(/FAIL \(regression\)|failure matrix|command parity/i);
+  it("keeps package construction separate and fast policy owner-free", () => {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
+    const contract = fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8");
+    expect(packageJson.scripts.test).toBe("pnpm run test:source");
+    expect(packageJson.scripts["verify:package"]).toBe("node scripts/verify-lane.mjs package");
+    expect(contract).toContain("fast: [source]");
+    expect(contract).not.toMatch(/^  fast:\n/m);
   });
 });

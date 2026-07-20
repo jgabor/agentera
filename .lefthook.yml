@@ -53,6 +53,7 @@ pre-commit:
         - "packages/cli/vitest.shared.ts"
         - "packages/cli/scripts/verify-lane.mjs"
         - "packages/cli/test/packaging/**"
+        - "references/analysis/verification-policy.yaml"
         - "scripts/precommit-vitest.sh"
         - "skills/**/*.{yaml,yml,md}"
         - "references/**/*.{yaml,yml}"

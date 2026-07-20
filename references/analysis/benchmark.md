@@ -27,10 +27,32 @@ Verification optimization uses a separate retained baseline rather than this
 runtime-history benchmark. The 2026-07-20 source and pre-commit samples,
 production-scale ownership map, and unresolved worker/lane criteria live in
 [`verification-baseline-2026-07-20.yaml`](./verification-baseline-2026-07-20.yaml).
-It records evidence for the active optimization plan; it does not change any
-verification command, lane, worker default, or CI policy.
+That baseline remains measurement authority. Current test ownership, independent
+owner commands, mixed-file separation markers, conservative routing, and named
+execution-policy compositions live in
+[`verification-policy.yaml`](./verification-policy.yaml).
 Losslessly compressed raw reports live beside a dependency-free recomputation
 command under `references/analysis/evidence/verification-baseline-2026-07-20/`.
+
+## CLI verification owners and policies
+
+Run one primary evidence owner independently:
+
+```bash
+pnpm -C packages/cli test:source
+pnpm -C packages/cli test:stress
+pnpm -C packages/cli test:performance
+pnpm -C packages/cli verify:package
+```
+
+Run a named policy with `pnpm -C packages/cli verify:<policy>`, where policy is
+`targeted`, `precommit`, `fast`, `local`, `merge`, `scheduled`, or `release`.
+`fast` is a source-owner composition, never an evidence owner. Targeted filters
+may follow `--`. The runner validates the complete inventory before execution,
+runs owners sequentially without prompts, and reports the failed owner plus its
+owner-specific correction command. Stress and performance currently own no
+whole files: their mixed evidence remains source-owned and is explicitly marked
+for later separation in the policy contract.
 
 The startup benchmark is an optimization signal for Decision 51 and Decision 52.
 It does not implement a startup state envelope or change runtime behavior.

@@ -4,7 +4,7 @@ record:
   name: Publish lane commands and execution-policy contract
   depends_on:
     - qifoditbva
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the test inventory WHEN ownership is validated THEN every file has exactly one primary owner among source, stress, performance, and package.
     - GIVEN a mixed test file WHEN ownership is assigned THEN it is identified for separation rather than classified ambiguously.

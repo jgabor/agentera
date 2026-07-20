@@ -1,0 +1,70 @@
+schemaVersion: agentera.verificationPolicy.v1
+
+# This file is the sole authority for CLI test ownership and policy composition.
+# A matching explicit rule is required for specialized owners. Files with no
+# explicit match belong to default_owner; multiple explicit matches are invalid.
+inventory:
+  root: packages/cli/test
+  suffix: .test.ts
+  default_owner: source
+  rules:
+    - owner: package
+      prefix: packages/cli/test/packaging/
+
+owners:
+  source:
+    config: packages/cli/vite.config.ts
+    correction: Run `pnpm -C packages/cli test:source`; fix the reported source test or its source setup.
+  stress:
+    config: packages/cli/vite.config.ts
+    correction: Run `pnpm -C packages/cli test:stress`; fix the named stress invariant or its fixture.
+  performance:
+    config: packages/cli/vite.config.ts
+    correction: Run `pnpm -C packages/cli test:performance`; check runner conditions and fix the named budget regression.
+  package:
+    config: packages/cli/vite.package.config.ts
+    correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
+
+# These files still combine deterministic source evidence with evidence that a
+# later task will separate. Their one primary owner remains source until then.
+mixed_files:
+  - path: packages/cli/test/state/entityStorage.test.ts
+    primary_owner: source
+    separation_target: stress
+    reason: deterministic lock correctness and the 100-repetition stale-lock race share one file
+  - path: packages/cli/test/cli/primeProjectionContract.test.ts
+    primary_owner: source
+    separation_target: performance
+    reason: bounded startup correctness and cold five-repetition budget measurements share one file
+
+policies:
+  targeted: [source]
+  precommit: [source]
+  fast: [source]
+  local: [source]
+  merge: [source, package]
+  scheduled: [source, stress, performance]
+  release: [source, stress, performance, package]
+
+# Pre-commit routing chooses release policy for authority and verification
+# surfaces. All other paths retain the existing targeted source routing.
+conservative_routing:
+  exact:
+    - .lefthook.yml
+    - protocol.yaml
+    - registry.json
+    - packages/cli/package.json
+    - packages/cli/vite.config.ts
+    - packages/cli/vite.package.config.ts
+    - packages/cli/vitest.shared.ts
+    - packages/cli/scripts/verify-lane.mjs
+    - packages/cli/test/sourceSetup.ts
+    - packages/cli/test/helpers/sourceSubprocess.ts
+    - references/analysis/verification-policy.yaml
+    - scripts/precommit-vitest.sh
+  prefixes:
+    - .github/workflows/
+    - packages/cli/test/packaging/
+    - references/adapters/
+    - references/artifacts/
+    - skills/

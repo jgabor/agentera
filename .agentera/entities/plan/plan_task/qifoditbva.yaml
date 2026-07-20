@@ -13,12 +13,12 @@ record:
   test_proportionality: Record three warm source samples plus representative pre-commit samples; preserve raw machine-readable measurements.
   plan: rmtdgltdgm
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Criterion 1 calls the measured host 16-core although evidence shows 8 physical cores and 16 logical CPUs; clarify acceptance interpretation and runner naming. Committed baseline transcribes sample summaries but does not retain or hash raw JSON reporter and lefthook outputs, so cumulative assertion rankings and hook timings are not independently reproducible. Reconcile the exploratory 79.1-second plan motivation with the retained 81.466-second three-run median.
     provenance:
-      attempt_id: qifoditbva-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-20 21:23
+      attempt_id: qifoditbva-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-20 21:37
       writer_command: agentera state plan record-evaluation
