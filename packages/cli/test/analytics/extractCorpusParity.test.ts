@@ -8,7 +8,7 @@ const { DatabaseSync } = createRequire(import.meta.url)(
   "node:sqlite",
 ) as typeof import("node:sqlite");
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   buildExtractCorpusParityManifest,
@@ -19,10 +19,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const FIXTURE_MANIFEST = path.join(__dirname, "fixtures/extract-corpus-parity-manifest.json");
 const PYTHON_WRAPPER = path.join(REPO_ROOT, "scripts/extract_corpus.py");
-const PKG_ROOT = path.join(REPO_ROOT, "packages/cli");
-
-let tmp: string;
-
 function seedOpencodeParityFixture(dbp: string): void {
   const db = new DatabaseSync(dbp);
   db.exec("CREATE TABLE session(id TEXT, cwd TEXT, time_created INTEGER)");
@@ -77,71 +73,44 @@ function runPythonParityProbe(dbPath: string): unknown {
   return JSON.parse(proc.stdout);
 }
 
-beforeEach(() => {
-  tmp = fs.mkdtempSync(path.join(os.tmpdir(), "extract-parity-"));
-});
-
-afterEach(() => {
-  fs.rmSync(tmp, { recursive: true, force: true });
-});
-
 describe("extractCorpusParity manifest", () => {
   it("matches the committed fixture generated from TypeScript", () => {
     const live = buildExtractCorpusParityManifest();
     const committed = JSON.parse(fs.readFileSync(FIXTURE_MANIFEST, "utf8"));
     expect(live).toEqual(committed);
   });
-
-  it("fails bundle parity check when manifest would drift", () => {
-    const check = spawnSync(
-      process.execPath,
-      [path.join(PKG_ROOT, "scripts/generate-extract-corpus-parity.mjs")],
-      {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-      },
-    );
-    expect(check.status, check.stderr || check.stdout).toBe(0);
-  });
 });
 
 describe("parityCheck opencode.db", () => {
+  let refDir: string;
+  let refDb: string;
   let tsReference!: ReturnType<typeof opencodeParitySnapshot>;
 
   beforeAll(() => {
-    const refDir = fs.mkdtempSync(path.join(os.tmpdir(), "extract-parity-ref-"));
-    const refDb = path.join(refDir, "opencode.db");
+    refDir = fs.mkdtempSync(path.join(os.tmpdir(), "extract-parity-ref-"));
+    refDb = path.join(refDir, "opencode.db");
     seedOpencodeParityFixture(refDb);
     tsReference = opencodeParitySnapshot(refDb);
-    fs.rmSync(refDir, { recursive: true, force: true });
   }, 30_000);
 
+  afterAll(() => {
+    fs.rmSync(refDir, { recursive: true, force: true });
+  });
+
   it("matches record_count, earliest, and latest across probe shapes for TS", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeParityFixture(dbp);
-    const snapshot = opencodeParitySnapshot(dbp);
-    expect(snapshot.record_count).toBe(snapshot.probe_shapes.extraction.record_count);
-    expect(snapshot.earliest).toBe(snapshot.probe_shapes.coverage.earliest);
-    expect(snapshot.latest).toBe(snapshot.probe_shapes.coverage.latest);
-    expect(snapshot.probe_shapes.discovery.status).toBe("available");
-    expect(snapshot.probe_shapes.discovery.file_count).toBe(1);
-    expect(snapshot.probe_shapes.discovery).not.toHaveProperty("candidate_count");
-    expect(snapshot.record_count).toBeGreaterThan(0);
-    expect(snapshot.earliest).toMatch(/^2023-11-14T22:13:20/);
-    expect(snapshot.latest).toMatch(/^2023-11-14T22:13:20/);
+    expect(tsReference.record_count).toBe(tsReference.probe_shapes.extraction.record_count);
+    expect(tsReference.earliest).toBe(tsReference.probe_shapes.coverage.earliest);
+    expect(tsReference.latest).toBe(tsReference.probe_shapes.coverage.latest);
+    expect(tsReference.probe_shapes.discovery.status).toBe("available");
+    expect(tsReference.probe_shapes.discovery.file_count).toBe(1);
+    expect(tsReference.probe_shapes.discovery).not.toHaveProperty("candidate_count");
+    expect(tsReference.record_count).toBeGreaterThan(0);
+    expect(tsReference.earliest).toMatch(/^2023-11-14T22:13:20/);
+    expect(tsReference.latest).toMatch(/^2023-11-14T22:13:20/);
   });
 
-  it("matches TypeScript extractor probe on seeded opencode.db", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeParityFixture(dbp);
-    const tsSnapshot = opencodeParitySnapshot(dbp);
-    expect(tsSnapshot).toEqual(tsReference);
-  });
-
-  it("matches generated Python extractor probe on seeded opencode.db", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeParityFixture(dbp);
-    const pySnapshot = runPythonParityProbe(dbp);
+  it("matches generated Python extractor probe on the shared seeded opencode.db", () => {
+    const pySnapshot = runPythonParityProbe(refDb);
     expect(pySnapshot).toEqual(tsReference);
   });
 });

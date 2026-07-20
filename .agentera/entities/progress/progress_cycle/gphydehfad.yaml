@@ -1,0 +1,15 @@
+id: gphydehfad
+artifact: progress
+record:
+  timestamp: 2026-07-20 23:49
+  type: test
+  phase: build
+  what: Reduced extract-corpus parity startup by seeding one OpenCode database and computing one TypeScript snapshot for all in-process assertions while retaining the generated Python subprocess comparison. Removed the duplicate source subprocess no-drift check because package setup already runs the same generator through the build; documented that ownership.
+  context:
+    intent: Complete plan task liuqlppclk without weakening cross-runtime parity, divergent fixture coverage, failure behavior, or lane ownership.
+    constraints: Only liuqlppclk was implemented. Preserved pre-existing jiupbftubj state/TODO changes, decision compaction and unavailable satisfaction caveats, and omitted vision/profile refresh.
+    unknowns: None within this task; decision satisfaction remains unavailable and was not inferred.
+    scope: packages/cli/test/analytics/extractCorpusParity.test.ts and packages/cli/test/README.md; typed liuqlppclk plan/progress records.
+  discovered: The source parity file invoked the TypeScript snapshot three times on equivalent valid seeds and repeated the generator no-drift command already run by package verification setup.
+  verified: Comparable focused protocol used pnpm -C packages/cli exec vp test run --config vite.config.ts test/analytics/extractCorpusParity.test.ts --reporter=json, one warmup plus three retained runs. Median wall fell 26203 ms to 14625 ms (44.2%); cumulative assertion median fell 17482.952 ms to 5936.730 ms (66.0%). Source 191 files/2245 tests and package 2/8 passed; typecheck, build with manifest/Python no-drift, py-ts drift gate, compact, markdownlint, and diff checks passed.
+  next: Proceed only to the next dependency-ready plan task; leave blocked jiupbftubj and its degraded TODO item unchanged.

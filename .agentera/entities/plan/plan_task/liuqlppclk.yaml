@@ -5,7 +5,7 @@ record:
   depends_on:
     - qifoditbva
     - fbgcvyeexr
-  status: pending
+  status: complete
   acceptance:
     - GIVEN parity verification runs WHEN seeded evidence is compared THEN independent Python and TypeScript implementations remain checked end to end.
     - GIVEN multiple assertions use one valid seed WHEN no distinct process boundary is required THEN they reuse one probe result.
@@ -14,3 +14,4 @@ record:
     - GIVEN before and after measurements WHEN compared THEN the retained optimization has demonstrated value.
   test_proportionality: Preserve one cross-language success, divergent-fixture failures, and command drift detection without duplicate startup.
   plan: rmtdgltdgm
+  evidence: Focused parity protocol (one warmup, three retained JSON-reporter runs) improved median wall time from 26203 ms to 14625 ms (44.2%) and cumulative assertion time from 17482.952 ms to 5936.730 ms (66.0%). One seeded TypeScript result now serves all in-process assertions; the Python subprocess comparison remains. Package verification owns generated no-drift and passed 2 files/8 tests; source passed 191/2245.

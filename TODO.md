@@ -2,6 +2,8 @@
 
 ## ⇉ Degraded
 
+- [ ] [test:3.0.0] Repair blocked verification-lane Task `jiupbftubj` after two failed audits. The performance owner now emits bounded cold-start JSON, but its regression uses `AGENTERA_PERFORMANCE_OUTPUT_FIXTURE` to run an unowned `.fixture.ts` path outside the ownership inventory. Replace the bypass with coverage of the owned performance producer, reject forwarded filters that escape owner classification, and correct the overstated progress count before treating cold-performance separation as complete.
+
 ## → Normal
 
 - [ ] [refactor:3.0.0] Refactor plan levels from skip/light/full to light/normal/full. Remove skip mode so every direct plan invocation produces at least a light plan: light for trivial or localized work, normal for clear single-cycle work, and full for multi-cycle or architecture-spanning work. Update the runtime startup contract, plan instructions, schemas, validation, and tests to use the new three-level taxonomy consistently.
