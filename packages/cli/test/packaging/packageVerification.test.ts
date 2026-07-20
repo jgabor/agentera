@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,7 +8,10 @@ import { describe, expect, inject, it } from "vitest";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
+const V2_APP_HOME = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-app-home");
+const V2_RUNTIME = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-runtime-python");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const PLAN_ID = "plan:123e4567-e89b-42d3-a456-426614174000";
 
 function run(command: string, args: string[], cwd: string, env = process.env) {
   return spawnSync(command, args, { cwd, env, encoding: "utf8" });
@@ -58,6 +62,41 @@ function git(root: string, ...args: string[]): void {
   if (result.status !== 0) throw new Error(result.stderr);
 }
 
+function sha256(bytes: Buffer | string): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function treeHashes(root: string): Record<string, string> {
+  const hashes: Record<string, string> = {};
+  const visit = (directory: string): void => {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (entry.name === ".git") continue;
+      const absolute = path.join(directory, entry.name);
+      const relative = path.relative(root, absolute).split(path.sep).join("/");
+      if (entry.isDirectory()) visit(absolute);
+      else if (entry.isSymbolicLink()) hashes[relative] = `link:${fs.readlinkSync(absolute)}`;
+      else hashes[relative] = sha256(fs.readFileSync(absolute));
+    }
+  };
+  visit(root);
+  return hashes;
+}
+
+function entityEnvelopes(project: string): Array<{ id: string; artifact: string; record: Record<string, unknown> }> {
+  const root = path.join(project, ".agentera/entities");
+  const envelopes: Array<{ id: string; artifact: string; record: Record<string, unknown> }> = [];
+  const visit = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(absolute);
+      else if (entry.name.endsWith(".yaml")) envelopes.push(YAML.parse(fs.readFileSync(absolute, "utf8")));
+    }
+  };
+  visit(root);
+  return envelopes.sort((a, b) => a.id.localeCompare(b.id));
+}
+
 describe("npm distribution boundary", () => {
   it("constructs one self-contained CLI and shared-skill package inventory", () => {
     const files = new Set(fixture.manifest.files.map((entry) => entry.path));
@@ -83,6 +122,42 @@ describe("npm distribution boundary", () => {
       "package boundary found manifest paths outside npm metadata, compiled CLI, or bundle authority",
     )
       .toEqual([]);
+
+    for (const relative of [
+      "skills/agentera/SKILL.md",
+      "references/adapters/runtime-lifecycle-adapters.yaml",
+      "references/adapters/runtime-retired-resources.yaml",
+    ]) {
+      expect(
+        fs.readFileSync(path.join(fixture.packageRoot, "bundle", relative)),
+        `package boundary bundled ${relative} from a source other than its declared repository surface`,
+      ).toEqual(fs.readFileSync(path.join(CHECKOUT_ROOT, relative)));
+    }
+    const runtimeAuthority = YAML.parse(fs.readFileSync(
+      path.join(fixture.packageRoot, "bundle/references/adapters/runtime-lifecycle-adapters.yaml"),
+      "utf8",
+    ));
+    expect(runtimeAuthority).toMatchObject({
+      status: "migration_only_contract",
+      native_policy: { execution: "forbidden" },
+      shared_resources: [],
+      managed_resources: [],
+      adapters: [],
+    });
+    const retiredAuthority = YAML.parse(fs.readFileSync(
+      path.join(fixture.packageRoot, "bundle/references/adapters/runtime-retired-resources.yaml"),
+      "utf8",
+    ));
+    expect(retiredAuthority).toMatchObject({
+      status: "retired_migration_contract",
+      policy: {
+        preview: "strictly_read_only",
+        apply_requires: "explicit_approval",
+        ownership: "matching_whole_resource_legacy_ledger_identity_and_fingerprint",
+      },
+    });
+    expect([...files].some((file) => file.startsWith("test/") || file.includes("upgrade/fixtures/")))
+      .toBe(false);
   });
 
   it("rejects retired and otherwise unclassified top-level package surfaces", () => {
@@ -116,9 +191,21 @@ describe("npm distribution boundary", () => {
     expect(result.stdout).toContain("agentera");
   });
 
-  it("runs the public v2-to-v3 apply shape and prime through that package", () => {
+  it("upgrades one managed v2 fixture and converges on a same-install rerun", () => {
     const project = path.join(fixture.root, "project $(touch shell-expansion-trap) `touch backtick-trap`");
     fs.cpSync(V2_PROJECT, project, { recursive: true });
+    const planPath = path.join(project, ".agentera/plan.yaml");
+    const plan = YAML.parse(fs.readFileSync(planPath, "utf8"));
+    plan.header.id = PLAN_ID;
+    plan.tasks = [
+      { number: 1, name: "Preserve packed records", depends_on: [], status: "pending", acceptance: ["records remain addressable"] },
+      { number: 2, name: "Preserve packed relationships", depends_on: ["Task 1"], status: "pending", acceptance: ["dependency remains resolved"] },
+    ];
+    fs.writeFileSync(planPath, YAML.stringify(plan));
+    const sourceBefore = new Map([
+      [planPath, fs.readFileSync(planPath)],
+      [path.join(project, ".agentera/progress.yaml"), fs.readFileSync(path.join(project, ".agentera/progress.yaml"))],
+    ]);
     git(project, "init", "--quiet");
     git(project, "config", "user.name", "Package Verification Test");
     git(project, "config", "user.email", "package-verification@example.invalid");
@@ -127,7 +214,10 @@ describe("npm distribution boundary", () => {
     git(project, "commit", "--quiet", "-m", "tracked v2 fixture");
 
     const home = path.join(fixture.root, "home");
-    fs.mkdirSync(home, { recursive: true });
+    fs.cpSync(V2_RUNTIME, home, { recursive: true });
+    const appHome = path.join(home, ".local/share/agentera");
+    fs.cpSync(V2_APP_HOME, appHome, { recursive: true });
+    const preservedAppState = fs.readFileSync(path.join(appHome, ".agentera/progress.yaml"));
     const env = isolatedPackageEnv({
       HOME: home,
       XDG_DATA_HOME: path.join(home, ".local/share"),
@@ -139,14 +229,100 @@ describe("npm distribution boundary", () => {
     expect(blocked.status).toBe(1);
     const failure = JSON.parse(blocked.stdout) as { error: { recovery: string } };
     expect(failure.error.recovery).toMatch(/^npx -y agentera@next upgrade /);
-    const quotedBin = `'${bin.replaceAll("'", `'"'"'`)}'`;
-    const recovery = failure.error.recovery.replace("npx -y agentera@next", `${process.execPath} ${quotedBin}`);
-    const upgraded = run("/bin/sh", ["-c", recovery], fixture.root, env);
+
+    const migrationPreview = run(process.execPath, [
+      bin, "state", "migrate", "entities", "--project", project, "--dry-run", "--limit", "100", "--format", "json",
+    ], fixture.root, env);
+    expect(migrationPreview.status, `package boundary entity preview failed:\n${migrationPreview.stdout}\n${migrationPreview.stderr}`).toBe(0);
+    const migration = JSON.parse(migrationPreview.stdout) as any;
+    const planEntries = migration.entries.filter((entry: any) => entry.artifact === "plan");
+    expect(planEntries).toHaveLength(3);
+    expect(migration.counts).toMatchObject({ publishable_entities: 3, relationships: 3, unresolved_relationships: 0 });
+    for (const entry of planEntries) {
+      expect(entry.source_paths).toEqual([".agentera/plan.yaml"]);
+      expect(entry.provenance).toContain("current_canonical");
+      expect(entry.migration_provenance).toContainEqual(expect.objectContaining({
+        kind: "legacy_plan_normalization",
+        source_path: ".agentera/plan.yaml",
+      }));
+    }
+    const previewPlanEntity = planEntries.find((entry: any) => entry.boundary === "plan");
+    const previewEntityIds = planEntries.map((entry: any) => entry.proposed_target.id).sort();
+
+    const baseUpgradeArgs = [
+      bin, "upgrade", "--channel", "development", "--project", project,
+      "--install-root", appHome, "--force", "--format", "json",
+    ];
+    const preview = run(process.execPath, [...baseUpgradeArgs, "--dry-run"], fixture.root, env);
+    expect(preview.status, `package boundary upgrade preview failed:\n${preview.stdout}\n${preview.stderr}`).toBe(1);
+    const previewPlan = JSON.parse(preview.stdout) as any;
+    expect(previewPlan.phases.map((phase: any) => phase.name)).toEqual([
+      "detect", "artifacts", "entities", "runtime", "cleanup",
+    ]);
+    const runtimePhase = previewPlan.phases.find((phase: any) => phase.name === "runtime");
+    const legacyRewires = runtimePhase.items.filter((item: any) =>
+      item.status === "pending" && ["rewire-runtime", "retire-hooks"].includes(item.action));
+    expect(legacyRewires.map((item: any) => item.source).sort()).toEqual([
+      path.join(home, ".codex/config.toml"),
+      path.join(home, ".codex/hooks/codex-hooks.json"),
+      path.join(home, ".cursor/hooks.json"),
+    ].sort());
+    expect(JSON.stringify(previewPlan)).not.toContain(path.join(home, ".agents/skills/agentera"));
+
+    const upgraded = run(process.execPath, [...baseUpgradeArgs, "--yes"], fixture.root, env);
     expect(upgraded.status, `package boundary upgrade failed:\n${upgraded.stdout}\n${upgraded.stderr}`).toBe(0);
+    expect(JSON.parse(upgraded.stdout)).toMatchObject({
+      phase: "complete",
+      status: "success",
+      state_validation: { status: "passed", entity_count: 3, issue_count: 0 },
+      startup_validation: { status: "passed" },
+    });
     expect(fs.existsSync(path.join(fixture.root, "shell-expansion-trap"))).toBe(false);
     expect(fs.existsSync(path.join(fixture.root, "backtick-trap"))).toBe(false);
     expect(YAML.parse(fs.readFileSync(path.join(project, ".agentera/state-mode.yaml"), "utf8")))
       .toMatchObject({ mode: "entities" });
+    for (const [source, bytes] of sourceBefore) expect(fs.readFileSync(source)).toEqual(bytes);
+
+    const entities = entityEnvelopes(project);
+    expect(entities).toHaveLength(3);
+    expect(entities.map(({ id }) => id)).toEqual(previewEntityIds);
+    const planEntity = entities.find((entity) => entity.id === previewPlanEntity.proposed_target.id)!;
+    const tasks = entities.filter((entity) => entity.record.plan === planEntity.id)
+      .sort((a, b) => String(a.record.name).localeCompare(String(b.record.name)));
+    expect(planEntity.record).toMatchObject({ header: { title: "Supported legacy plan", status: "open" } });
+    expect(tasks).toHaveLength(2);
+    expect(tasks[0].record).toMatchObject({ name: "Preserve packed records", plan: planEntity.id, depends_on: [] });
+    expect(tasks[1].record).toMatchObject({ name: "Preserve packed relationships", plan: planEntity.id, depends_on: [tasks[0].id] });
+
+    expect(fs.readFileSync(path.join(appHome, ".agentera/progress.yaml"))).toEqual(preservedAppState);
+    expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
+    expect(fs.readFileSync(path.join(home, ".codex/config.toml"), "utf8")).not.toContain("AGENTERA_HOME");
+    for (const rewired of [path.join(home, ".codex/hooks/codex-hooks.json"), path.join(home, ".cursor/hooks.json")]) {
+      const text = fs.readFileSync(rewired, "utf8");
+      expect(text).toContain("npx -y agentera");
+      expect(text).not.toMatch(/validate_artifact\.py|cursor_session_start\.py/);
+    }
+    expect(fs.existsSync(path.join(home, ".agents/skills/agentera"))).toBe(false);
+
+    const projectAfterFirst = treeHashes(project);
+    const homeAfterFirst = treeHashes(home);
+    const rerunPreview = run(process.execPath, [...baseUpgradeArgs, "--dry-run"], fixture.root, env);
+    expect(rerunPreview.status, `package boundary rerun preview failed:\n${rerunPreview.stdout}\n${rerunPreview.stderr}`).toBe(0);
+    const rerunPlan = JSON.parse(rerunPreview.stdout) as any;
+    expect(rerunPlan.phases.some((phase: any) => phase.name === "lifecycle")).toBe(false);
+    expect(rerunPlan.phases.flatMap((phase: any) => phase.items).filter((item: any) => item.status === "pending"))
+      .toEqual([]);
+
+    const rerun = run(process.execPath, [...baseUpgradeArgs, "--yes"], fixture.root, env);
+    expect(rerun.status, `package boundary rerun failed:\n${rerun.stdout}\n${rerun.stderr}`).toBe(0);
+    expect(JSON.parse(rerun.stdout)).toMatchObject({
+      mode: "apply",
+      status: "noop",
+      summary: { pending: 0, failed: 0, blocked: 0 },
+    });
+    expect(treeHashes(project)).toEqual(projectAfterFirst);
+    expect(treeHashes(home)).toEqual(homeAfterFirst);
+    expect(entityEnvelopes(project).map(({ id }) => id)).toEqual(entities.map(({ id }) => id));
 
     const primed = run(process.execPath, [bin, "prime", "--format", "json"], project, env);
     expect(primed.status, `package boundary prime failed:\n${primed.stderr}`).toBe(0);

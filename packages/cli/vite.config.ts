@@ -1,5 +1,5 @@
 import { defineConfig } from "vite-plus";
-import { sharedTestConfig } from "./vitest.shared.js";
+import { sharedTestConfig } from "./vitest.shared.ts";
 
 export default defineConfig({
   // Vite+ reads this for lint/fmt/check; `vp test` reads the test block below.

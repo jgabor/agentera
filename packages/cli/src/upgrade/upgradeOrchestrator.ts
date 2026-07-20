@@ -415,8 +415,8 @@ function buildUpgradePlanUnlocked(
     ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected, Boolean(args.yes), activeUpgradeLockPaths)
     : null;
   const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;
-  if (args.yes && (entityCutoverPending || entityAuthorityActive)) {
-    if (migrationPreview) delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
+  if (migrationPreview && (entityAuthorityActive || (args.yes && entityCutoverPending))) {
+    delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
   }
   const lifecycleArgs = args.legacyCleanup ? {
     selector: null,

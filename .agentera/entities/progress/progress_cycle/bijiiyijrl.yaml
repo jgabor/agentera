@@ -1,0 +1,16 @@
+id: bijiiyijrl
+artifact: progress
+record:
+  timestamp: 2026-07-20 11:47
+  type: fix
+  phase: build
+  what: Added one extracted-package managed-v2 upgrade proof with preserved entities and relationships, legacy runtime convergence, entity authority activation, bundled prime, and byte-stable same-install rerun; corrected active-entity dry-run lifecycle delegation.
+  context:
+    intent: Prove the fixed packed upgrade path without duplicating source-owned migration failure matrices.
+    constraints: One packed success/rerun conjunction only; no copied failure matrix, version bump, publish, push, tag, or remote mutation.
+    unknowns: Package installation continues to require npm registry or cache availability by design.
+    scope: Packed upgrade verification, upgrade lifecycle preview delegation, source ownership regression coverage, and Vite shared-config resolution.
+  inspiration: Plan task dgipngnekk and the newly separated package verification lane.
+  discovered: Active entity authority suppressed legacy lifecycle writes during apply but not dry-run preview, so preserved v2 plan YAML appeared pending after a successful cutover. The shared Vite config imports also needed TypeScript-resolvable specifiers for lint.
+  verified: "Full source lane: 192 files and 2226 tests. Package lane: 2 files and 8 tests. Focused orchestrator tests, typecheck, build, compact, lint with 0 errors, diff check, and independent final review passed."
+  next: Proceed to final closeout task phujfptanh after reconciling its dependencies to immutable successor tasks.

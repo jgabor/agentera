@@ -155,6 +155,33 @@ describe("buildUpgradePlan", () => {
     expect(existingPlan.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ status: "noop", action: "entity-state-active" });
   });
 
+  it("delegates legacy plan lifecycle work on an active-entity dry-run", () => {
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "active-entity-preview"));
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, REPO_ROOT));
+    const legacyPlan = fs.readFileSync(path.join(project, ".agentera/plan.yaml"));
+
+    const plan = buildUpgradePlan({
+      installRoot: path.join(home, "agentera"),
+      home,
+      project,
+      channel: "development",
+      dryRun: true,
+      force: true,
+    });
+    const artifacts = plan.phases.find((phase) => phase.name === "artifacts");
+
+    expect(artifacts?.items.find((item) => item.action === "normalize-plan-lifecycle")).toMatchObject({
+      status: "noop",
+      message: expect.stringMatching(/entity cutover normalizes plan lifecycle/),
+    });
+    expect(artifacts?.summary.pending).toBe(0);
+    expect(plan.phases.some((phase) => phase.name === "lifecycle")).toBe(false);
+    expect(plan.lifecycle).toBeNull();
+    expect(plan.summary.pending).toBe(0);
+    expect(fs.readFileSync(path.join(project, ".agentera/plan.yaml"))).toEqual(legacyPlan);
+  });
+
   it.each([["runtime"], ["cleanup"]] as const)("refuses marker-absent %s-only apply before effects", (only) => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);

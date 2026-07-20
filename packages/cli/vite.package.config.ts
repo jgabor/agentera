@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-import { sharedTestConfig } from "./vitest.shared.js";
+import { sharedTestConfig } from "./vitest.shared.ts";
 
 export default defineConfig({
   test: {
