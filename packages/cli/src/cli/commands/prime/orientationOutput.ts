@@ -168,7 +168,7 @@ export function buildOrientationJsonPayload(
     shared_skill: state.shared_skill,
     project_integration: state.project_integration,
     health: state.health,
-    todo: state.counts,
+    todo: { ...state.counts, detail: state.todo_detail },
     issues: state.counts,
     plan: startupPlanSummary(state.plan),
     docs: state.docs,
@@ -206,12 +206,19 @@ export function buildOrientationJsonPayload(
  * bare prime. Keeping the projection here prevents a second status summary
  * implementation from drifting from the public prime contract.
  */
-export function buildStatusContextState(state: OrientationState, command = "prime"): Record<string, unknown> {
+export function buildStatusContextState(
+  state: OrientationState,
+  command = "prime",
+  options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
+): Record<string, unknown> {
   const projected = briefOrientationPayload(
     omitInactiveConditionalDefaults(
       buildOrientationJsonPayload(state, command, { capabilityContextRequiredBeforeRendering: false }),
     ),
-    { budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES },
+    {
+      budgetBytes: options.budgetBytes ?? PRIME_BRIEF_MAX_UTF8_BYTES,
+      degradedMode: options.degradedMode,
+    },
   );
   // The canonical brief contains compatibility and source metadata useful to
   // bare-prime consumers. History/source and null bespoke pointers are not

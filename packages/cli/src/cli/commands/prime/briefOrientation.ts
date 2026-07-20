@@ -415,7 +415,7 @@ function briefSourceContract(
  *  its own digit count); the gate then decides on the final form. */
 export function briefOrientationPayload(
   payload: Record<string, unknown>,
-  options: { budgetBytes?: number } = {},
+  options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
 ): Record<string, unknown> {
   const budget = options.budgetBytes ?? PRIME_BRIEF_MAX_UTF8_BYTES;
   if (!Number.isSafeInteger(budget) || budget < 0) {
@@ -431,7 +431,7 @@ export function briefOrientationPayload(
   // envelope (never emit an over-budget payload). The envelope keeps
   // command/status/mode/state_presence, a brief source_contract, and the
   // byte-budget error with a recovery command.
-  return degradedBriefEnvelope(payload, budget, gate.bytes);
+  return degradedBriefEnvelope(payload, budget, gate.bytes, options.degradedMode ?? "minimal");
 }
 
 /** Attach the brief meta block and settle `utf8_bytes` to a fixed point so the
@@ -515,6 +515,18 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   };
 }
 
+function statusRoutingDegradedBody(
+  payload: Record<string, unknown>,
+  projection: SourceContractProjection,
+): Record<string, unknown> {
+  return {
+    ...degradedBody(payload, projection),
+    todo: payload.todo,
+    attention: briefAttention(payload.attention),
+    next_action: briefNextAction(payload.next_action),
+  };
+}
+
 /** Settle the self-measuring byte field and return only at a fixed point. The
  * serialized value and the reported value therefore use the same pretty UTF-8
  * plus newline accounting as emitStructured. */
@@ -548,6 +560,7 @@ function degradedBriefEnvelope(
   payload: Record<string, unknown>,
   budget: number,
   attemptedBytes: number,
+  mode: "minimal" | "status_routing",
 ): Record<string, unknown> {
   const detailedMeta: JsonObject = {
     budget_utf8_bytes: budget,
@@ -562,7 +575,11 @@ function degradedBriefEnvelope(
         "Run `agentera prime --dashboard --format json` for the full orientation payload, or `agentera state <artifact> --format json` for a specific family.",
     },
   };
-  const detailed = settledBriefEnvelope(degradedBody(payload, "normal"), detailedMeta);
+  const body = (projection: SourceContractProjection): Record<string, unknown> =>
+    mode === "status_routing"
+      ? statusRoutingDegradedBody(payload, projection)
+      : degradedBody(payload, projection);
+  const detailed = settledBriefEnvelope(body("normal"), detailedMeta);
   if (briefByteGate(detailed, budget).accepted) return detailed;
 
   // A smaller deterministic fallback drops the recovery catalog but retains the
@@ -579,8 +596,15 @@ function degradedBriefEnvelope(
       recovery: "Run `agentera prime --dashboard --format json` for full orientation detail.",
     },
   };
-  const compact = settledBriefEnvelope(degradedBody(payload, "compact"), compactMeta);
+  const compact = settledBriefEnvelope(body("compact"), compactMeta);
   if (briefByteGate(compact, budget).accepted) return compact;
+
+  if (mode === "status_routing") {
+    const minimum = settledBriefEnvelope(body("irreducible"), compactMeta);
+    const minimumBytes = briefUtf8Bytes(minimum);
+    if (minimumBytes <= budget) return minimum;
+    throw new BriefBudgetError(budget, minimumBytes);
+  }
 
   // The irreducible form is intentionally finite and contains only the routing
   // contract. If even this cannot fit, throwing is explicit: returning an
@@ -595,7 +619,7 @@ function degradedBriefEnvelope(
       recovery: "Increase the budget or run `agentera prime --dashboard --format json`.",
     },
   };
-  const minimum = settledBriefEnvelope(degradedBody(payload, "irreducible"), minimumMeta);
+  const minimum = settledBriefEnvelope(body("irreducible"), minimumMeta);
   const minimumBytes = briefUtf8Bytes(minimum);
   if (minimumBytes <= budget) return minimum;
   throw new BriefBudgetError(budget, minimumBytes);

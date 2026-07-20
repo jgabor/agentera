@@ -13,11 +13,14 @@ import type {
   DecisionReviewAttention,
   DocsSummary,
   HealthSummary,
+  IssueCounts,
   ObjectiveSummary,
   PlanSummary,
   ProgressSummary,
   StartupHistorySummary,
+  TodoDetailSummary,
 } from "../../contracts/orientationState.js";
+import { issueCounts } from "../../orientation.js";
 
 function entries(payload: JsonObject): JsonObject[] {
   return Array.isArray(payload.entries)
@@ -70,6 +73,8 @@ export interface EntityOrientationProjection {
   health: HealthSummary;
   objective: ObjectiveSummary;
   todoItems: Array<Record<string, string>>;
+  todoCounts: IssueCounts;
+  todoDetail: TodoDetailSummary;
   decision: DecisionFollowUp | null;
   decisionAttention: DecisionReviewAttention | null;
   history: Record<string, StartupHistorySummary>;
@@ -167,6 +172,18 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     ...Object.fromEntries(Object.entries(record(entry)).map(([key, value]) => [key, String(value)])),
     text: String(record(entry).description ?? ""),
   }));
+  const todoCounts = issueCounts(
+    discovery.entities
+      .filter((entry) => entry.boundary === "todo_item" && entry.record?.status === "open")
+      .map((entry) => ({ severity: String(entry.record?.severity ?? "normal") })),
+  );
+  const todoListCounts = todoList.counts as JsonObject | undefined;
+  const todoDetail: TodoDetailSummary = {
+    total: Number(todoListCounts?.total ?? todoEntries.length),
+    returned: Number(todoListCounts?.returned ?? todoEntries.length),
+    omitted: Number(todoListCounts?.remaining ?? 0),
+    retrieval: (todoList.retrieval as JsonObject | undefined) ?? {},
+  };
   const docs: DocsSummary = {
     exists: docsEntries.length > 0,
     status: docsEntries.length ? "available" : "missing",
@@ -192,8 +209,11 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const firstDecision = reviewEntries[0];
   const decision = firstDecision ? { object: String(firstDecision.id), title: String(record(firstDecision).question ?? "Decision review") } : null;
 
-  return bounded({
-    plan, docs, progress, health, objective, todoItems, decision, decisionAttention,
+  const projection = bounded({
+    plan, docs, progress, health, objective, todoItems, todoCounts, decision, decisionAttention,
     history: { progress: progressList, decisions: decisionList, health: healthList },
   });
+  // The opaque continuation cursor is already list-budget bounded and must stay
+  // byte-exact so omitted TODO detail remains recoverable.
+  return { ...projection, todoDetail };
 }

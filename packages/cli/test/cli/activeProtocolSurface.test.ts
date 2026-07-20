@@ -134,7 +134,7 @@ const RUNTIME_EXACT: Array<[string, string, string]> = [];
 const SOURCE_CONTEXT_HASHES: Record<string, string> = {
   "references/artifacts/state-storage-authority.yaml": "d5c386de575cbfb3cedc14338d78e8da876c61b3e4995e6315c95175aa7e39b5",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
-  "references/cli/prime-consumer-compatibility.yaml": "26e439ef127f1b912c99734074e55327c9318d99bcac55dbad23834bcb451732",
+  "references/cli/prime-consumer-compatibility.yaml": "6501b072defa61a56b2fdb53fc1e67a9db8c27178c0b84e306122a16a5a3e9a8",
 };
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }

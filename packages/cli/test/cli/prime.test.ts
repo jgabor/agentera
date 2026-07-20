@@ -130,7 +130,18 @@ describe("cli prime", () => {
         annoying: expect.any(Number),
       }),
     );
-    expect(payload.issues).toEqual(payload.todo);
+    expect(payload.issues).toEqual({
+      critical: payload.todo.critical,
+      degraded: payload.todo.degraded,
+      normal: payload.todo.normal,
+      annoying: payload.todo.annoying,
+    });
+    expect(payload.issues).not.toHaveProperty("detail");
+    expect(payload.todo.detail).toMatchObject({
+      total: expect.any(Number),
+      returned: expect.any(Number),
+      omitted: expect.any(Number),
+    });
     expect(err).toContain("Deprecation: prime JSON field 'issues' is deprecated; use 'todo'");
     expect(err).toContain("3.0.0 stable cut");
     expect(out).not.toContain("Deprecation:");
@@ -224,6 +235,7 @@ describe("cli prime", () => {
         annoying: expect.any(Number),
       }),
     );
+    expect(payload.issues).not.toHaveProperty("detail");
     expect(err).toContain("Deprecation: prime JSON field 'issues' is deprecated; use 'todo'");
     expect(err).toContain("3.0.0 stable cut");
   });

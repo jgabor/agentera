@@ -112,12 +112,13 @@ consumers:
 # (public_output_policy.canonical_field_set). Each list below now derives from
 # that authority, so schema discovery, the emitted JSON source_contract.fields,
 # the text-mode fields line, and the agent-ready-state contract advertise the
-# same canonical 27-field set. The `issues` deprecated transition alias is
-# emitted by default as a duplicate of `todo` (with a stderr deprecation warning)
-# and kept until the 3.0.0 stable cut; it is excluded only from the canonical
-# advertised `source_contract.fields` set (one canonical representation — `todo`
-# is canonical). It is NOT selector-only: it ships in the default bare briefing
-# only as bounded CLI transition compatibility.
+# same canonical 27-field set. The `issues` deprecated transition field preserves
+# the four legacy severity counts (`critical`, `degraded`, `normal`, `annoying`)
+# with a stderr deprecation warning, but intentionally excludes canonical
+# `todo.detail` so bounded detail is serialized once. It remains until the 3.0.0
+# stable cut and is excluded from the canonical advertised
+# `source_contract.fields` set (`todo` is canonical). It is NOT selector-only: it
+# ships in the default bare briefing as bounded CLI transition compatibility.
 # ---------------------------------------------------------------------------
 field_authorities:
   - id: orientation_output_emission
@@ -127,9 +128,9 @@ field_authorities:
     role: actual_emission_authority
     notes: >-
       Emits PRIME_STRUCTURED_FIELDS as source_contract.fields; the keys actually
-      serialized by buildOrientationJsonPayload. `issues` is emitted as a
-      deprecated alias of `todo` with a stderr warning, not as a member of the
-      canonical set.
+      serialized by buildOrientationJsonPayload. `issues` emits only `todo`'s
+      four legacy severity counts with a stderr warning; canonical `todo.detail`
+      is not duplicated. `issues` is not a member of the canonical set.
   - id: schema_advertised
     location: packages/cli/src/cli/commands/schema.ts
     authority: packages/cli/src/cli/stateQuery.ts:PRIME_STRUCTURED_FIELDS
@@ -287,9 +288,11 @@ field_classification:
   - field: issues
     status: deprecated_transition
     rationale: >-
-      Deprecated alias of `todo`. No current consumer in this inventory reads
-      it; the alias remains only as bounded CLI transition compatibility until
-      its owning contract removes it.
+      Deprecated count-only compatibility projection of `todo`. It preserves
+      critical, degraded, normal, and annoying for legacy consumers while
+      excluding canonical `todo.detail` to prevent startup payload duplication.
+      No current consumer in this inventory reads it; the projection remains
+      until its owning contract removes it.
   - field: bundle
     status: retired
     rationale: >-
@@ -307,9 +310,21 @@ public_output_policy:
     authority for the bare prime briefing. Task 2 reconciles schema.ts, the text
     briefing hardcoded list, and agent-ready-state-contract.yaml hej.fields to
     this set, removing the four-way drift documented above.
-  deprecated_alias_rule: >-
-    `issues` remains a transition alias of `todo` with a stderr deprecation
-    warning until the 3.0.0 stable cut. No task in this plan may remove it.
+  deprecated_alias_rule:
+    field: issues
+    status: retained_until_3_0_0_stable_cut
+    retained_fields:
+      - critical
+      - degraded
+      - normal
+      - annoying
+    excluded_fields:
+      - detail
+    rationale: >-
+      `issues` preserves the four legacy severity counts with a stderr
+      deprecation warning. Canonical bounded detail belongs only to `todo.detail`
+      and is intentionally excluded to prevent duplicate startup payload. No
+      task in this plan may remove the compatibility projection before the cut.
   default_only_omission_rule: >-
     Fields classified conditional or diagnostic may be omitted by Task 2 when
     they are in their default/empty state, provided missing-versus-empty
@@ -327,17 +342,41 @@ public_output_policy:
     Task 4 folds the bounded state into one `agentera prime --context status
     --format json` response (<=25000 bytes) so the status dashboard needs no
     separate bare-prime call or raw artifact read. The `--context` capsule
-    contract (command/status/capability_context) is unchanged. The status
-    capsule puts the canonical Task 3 projection at
-    `capability_context.context.status_context`; app/project integration and
-    shared-skill diagnosis remain available for routing while unrelated detail
-    is omitted.
+    contract (command/status/capability_context) is unchanged, including
+    contract-owned state declarations, inventory, included/missing families,
+    schema diagnostics, and first-invocation reads. The status capsule assembles
+    and measures that fixed envelope first, then bounds
+    `capability_context.context.status_context` to the remaining complete-capsule
+    budget. If a projection leaves the complete envelope over budget, the next
+    allowance is set one byte below that projection's actual serialized size,
+    forcing a strictly smaller bounded form; projection continues monotonically
+    until the capsule fits or the routing-preserving irreducible form fails
+    explicitly. The status-specific degraded envelope retains TODO
+    aggregate/detail recovery, attention, and next_action rather than collapsing
+    to non-routing metadata. App/project integration and shared-skill diagnosis
+    remain available through the bounded status state while unrelated rich
+    copies are omitted.
   status_context_contract:
     startup_command: agentera prime --context status --format json
     state_path: capability_context.context.status_context
     instructions_path: capability_context.instructions
     max_utf8_bytes: 25000
     measurement: Buffer.byteLength(JSON.stringify(payload, null, 2) + "\n", "utf8")
+    budget_allocation: >-
+      Assemble contract-owned capability metadata, instructions, and context
+      keys and measure the complete envelope. When it is over budget, set the
+      next status_context allowance one byte below the current nested
+      projection's measured serialized size. Every accepted retry is therefore
+      strictly smaller; terminate only with a <=25000-byte capsule or explicit
+      irreducible routing-envelope failure.
+    required_capability_metadata:
+      - capability_context.state.declared_read_needs
+      - capability_context.state.declared_write_targets
+      - capability_context.state.artifact_inventory
+      - capability_context.state.included
+      - capability_context.state.schema_error
+      - capability_context.context.first_invocation_read
+      - capability_context.context.schema_error
     required_state:
       - health
       - todo
@@ -347,6 +386,10 @@ public_output_policy:
       - attention
       - state_presence
       - source_contract
+    budget_fallback_retains:
+      - todo
+      - attention
+      - next_action
     omitted_detail_recovery: capability_context.context.status_context.brief.omitted_rich_state
     raw_artifact_reads_required: false
   fail_visible_rule: >-
@@ -437,7 +480,8 @@ default_emission_omission_contract:
       history, shared_skill, project_integration, decision_attention, and
       the bespoke context pointers (kept null on the bare surface). The
       conditional v1_migration/docs/objective are retained when active (see
-      omitted_when_default). issues ships as the deprecated transition alias.
+      omitted_when_default). issues ships as the deprecated count-only
+      transition projection and excludes canonical todo.detail.
     projected_subdetail:
       - field: plan.tasks
         reason: plan_task_detail

@@ -74,6 +74,7 @@
 
 ### Fixed
 
+- Fixed `agentera prime --context status` to report severity totals across every open TODO while keeping attention and routing detail bounded with explicit omission recovery.
 - Fixed `agentera prime --context status` to exclude resolved entity TODOs before bounded pagination, so severity counts, attention, and next-action routing reflect only open work.
 - Fixed overlapping `upgrade --yes` runs to hold separate exclusive project and shared-runtime locks, reject stale or malformed lock state with bounded manual recovery, and release only a matching ownership token.
 - Fixed migration-required recovery commands to shell-quote project paths so shell substitutions remain literal and the intended project receives the v2-to-v3 cutover.

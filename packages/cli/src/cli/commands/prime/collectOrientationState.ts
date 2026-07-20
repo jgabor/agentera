@@ -7,7 +7,6 @@ import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration
 import type { SchemaInfo } from "../../appContext.js";
 import {
   checkProfileStaleness,
-  issueCounts,
   parseProfileHeaderDates,
   registryArtifactPath,
   selectStatusReadiness,
@@ -75,7 +74,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const objective = entity.objective;
   const presence = statePresence(plan, docs, progress, health, objective);
   const todoItems = entity.todoItems;
-  const counts = issueCounts(todoItems);
+  const counts = entity.todoCounts;
   const decision = entity.decision;
   const decisionAttention = entity.decisionAttention;
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
@@ -117,6 +116,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     state_presence: presence,
     corpus_coverage: corpusCoverage,
     todo_items: todoItems,
+    todo_detail: entity.todoDetail,
     counts,
     decision_attention: decisionAttention,
     next_action: nextAction,
@@ -143,6 +143,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     state_presence: presence,
     corpus_coverage: corpusCoverage,
     todo_items: todoItems,
+    todo_detail: entity.todoDetail,
     counts,
     decision_attention: decisionAttention,
     next_action: nextAction,

@@ -63,6 +63,13 @@ interface Policy {
   fixtures: { pass: ConsumerFixture[]; fail: ConsumerFixture[] };
   documentation_drift?: DocumentationDrift;
   default_emission_omission_contract?: DefaultEmissionOmissionContract;
+  public_output_policy: {
+    deprecated_alias_rule: {
+      field: string;
+      retained_fields: string[];
+      excluded_fields: string[];
+    };
+  };
 }
 
 function loadPolicy(): Policy {
@@ -397,14 +404,22 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
   });
 
   describe("Task 2 AC2: semantically duplicate startup values emit one canonical representation", () => {
-    it("the deprecated `issues` alias is emitted by default as a duplicate of `todo`, not a canonical field", () => {
+    it("the deprecated `issues` alias preserves TODO counts without duplicating canonical detail", () => {
       const { payload, err } = runPrimePayload("agentera prime --format json");
+      const rule = loadPolicy().public_output_policy.deprecated_alias_rule;
       const fields = (getPath(payload, "source_contract.fields") as string[]) ?? [];
       // `todo` is the canonical representation; `issues` is not a published field.
       expect(fields).toContain("todo");
       expect(fields).not.toContain("issues");
-      // `issues` is still emitted as a transition alias with a stderr deprecation warning.
-      expect(getPath(payload, "issues")).toEqual(getPath(payload, "todo"));
+      // `issues` remains a count-only transition alias. Bounded detail belongs
+      // only to canonical `todo` so the brief does not budget it twice.
+      expect(rule).toMatchObject({ field: "issues", retained_fields: ["critical", "degraded", "normal", "annoying"] });
+      expect(Object.keys(getPath(payload, "issues") as Record<string, unknown>)).toEqual(rule.retained_fields);
+      expect(getPath(payload, "issues")).toEqual(
+        Object.fromEntries(rule.retained_fields.map((field) => [field, getPath(payload, `todo.${field}`)])),
+      );
+      for (const field of rule.excluded_fields) expect(getPath(payload, `issues.${field}`)).toBeUndefined();
+      expect(getPath(payload, "todo.detail")).toBeDefined();
       expect(err).toContain("deprecated");
       expect(err).toContain("3.0.0 stable cut");
     });

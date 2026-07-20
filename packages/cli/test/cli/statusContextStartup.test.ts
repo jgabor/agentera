@@ -214,6 +214,15 @@ describe("status capability self-contained startup", () => {
     expect(result.payload.runtime_lifecycle).toBeUndefined();
     expect(result.payload.shared_skill).toBeDefined();
     expect(state.shared_skill).toBeDefined();
+    expect(capsule.state).toEqual(expect.objectContaining({
+      declared_read_needs: expect.any(Array),
+      declared_write_targets: expect.any(Array),
+      artifact_inventory: expect.any(Object),
+      included: expect.any(Array),
+    }));
+    expect(capsule.state).toHaveProperty("schema_error");
+    expect(capsule.context).toHaveProperty("first_invocation_read");
+    expect(capsule.context).toHaveProperty("schema_error");
     expect(state.project_integration).not.toHaveProperty("phases");
     expect(state.project_integration).not.toHaveProperty("guidance");
     expect(state.project_integration).not.toHaveProperty("retry");
@@ -262,11 +271,77 @@ describe("status capability self-contained startup", () => {
     const state = statusState(result.payload);
 
     expect(result.rc).toBe(0);
-    expect(state.todo).toEqual({ critical: 0, degraded: 0, normal: 1, annoying: 0 });
+    expect(state.todo).toMatchObject({ critical: 0, degraded: 0, normal: 1, annoying: 0 });
     expect(state.attention).toContain("normal: TODO: Ship open fix");
     expect(state.attention.join("\n")).not.toContain("Resolved critical");
     expect(state.attention.join("\n")).not.toContain("Resolved degraded");
     expect(state.next_action).toMatchObject({ object: "TODO: Ship open fix", capability: "build" });
+  });
+
+  it("reports complete open TODO totals while keeping detail bounded and recoverable", () => {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    writeTodoEntity("aaaaaaaaaa", "critical", "resolved", "Resolved critical must not count");
+    for (let index = 0; index < 21; index += 1) {
+      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`;
+      writeTodoEntity(`bbbbbbbb${suffix}`, "normal", "open", `Normal open ${index}`);
+    }
+    writeTodoEntity("ccccccccaa", "degraded", "open", "Degraded open");
+    writeTodoEntity("zzzzzzzzzz", "critical", "open", "Critical open");
+
+    const result = runStatus();
+    const state = statusState(result.payload);
+
+    expect(result.rc).toBe(0);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expect(state.todo).toMatchObject({
+      critical: 1,
+      degraded: 1,
+      normal: 21,
+      annoying: 0,
+      detail: { total: 23, returned: 20, omitted: 3 },
+    });
+    expect(state.attention).toContain("critical: TODO: Critical open");
+    expect(state.next_action).toMatchObject({ object: "TODO: Critical open", capability: "build" });
+
+    const recovery = state.todo.detail.retrieval.continue as string;
+    expect(recovery).toMatch(/^agentera state todo list --status 'open' --limit 20 --cursor \S+ --format json$/);
+    const cursor = recovery.match(/--cursor (\S+) --format json$/)?.[1];
+    expect(cursor).toBeTruthy();
+
+    let recoveryOut = "";
+    let recoveryErr = "";
+    const recoveryRc = runState(
+      "todo",
+      ["list", "--status", "open", "--limit", "20", "--cursor", cursor!, "--format", "json"],
+      { out: (text) => (recoveryOut += text), err: (text) => (recoveryErr += text) },
+      "agentera",
+    );
+    expect(recoveryRc).toBe(0);
+    expect(recoveryErr).toBe("");
+    expect(JSON.parse(recoveryOut)).toMatchObject({ counts: { total: 23, returned: 3, remaining: 0 } });
+  });
+
+  it("reports an exact full detail page without continuation at the 20-item bound", () => {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (let index = 0; index < 20; index += 1) {
+      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`;
+      writeTodoEntity(`dddddddd${suffix}`, "degraded", "open", `Bounded open ${index}`);
+    }
+    writeTodoEntity("eeeeeeeeaa", "critical", "resolved", "Resolved at exact bound");
+
+    const result = runStatus();
+    const state = statusState(result.payload);
+
+    expect(result.rc).toBe(0);
+    expect(state.todo).toMatchObject({
+      critical: 0,
+      degraded: 20,
+      normal: 0,
+      annoying: 0,
+      detail: { total: 20, returned: 20, omitted: 0 },
+    });
+    expect(state.todo.detail.retrieval.get).toBe("agentera state todo get --id ID --format json");
+    expect(state.todo.detail.retrieval).not.toHaveProperty("continue");
   });
 
   it("keeps fresh and returning mode, while incomplete state names CLI-first recovery", () => {

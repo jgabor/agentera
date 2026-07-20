@@ -1,0 +1,25 @@
+id: rqkpdjsxnw
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-07-20
+    status: complete
+    title: "Plan: Correct bounded TODO aggregation in status"
+  what: Make status report complete severity totals for all open TODOs while retaining bounded TODO detail for attention and routing.
+  why: The startup projection treats its bounded open-TODO detail page as the complete population, causing severity totals to undercount when more records exist.
+  constraints: Preserve bounded startup output, authoritative open-only counts, deterministic priority, and existing list pagination; do not audit TODO relevance, alter routing policy, redesign state schemas, release, or publish.
+  overall_acceptance: GIVEN status reads more open TODOs than its detail bound WHEN it reports project state THEN aggregate severity totals remain complete while detail stays bounded with explicit omission recovery.
+  scope:
+    included:
+      - Complete open-TODO severity totals
+      - Bounded detail metadata and recovery
+      - Startup completeness semantics
+      - Focused regression coverage
+    excluded:
+      - Existing TODO cleanup
+      - Routing-policy changes
+      - State schema redesign
+      - Release and publication work
+  surprises:
+    []

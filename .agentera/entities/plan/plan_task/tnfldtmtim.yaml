@@ -1,0 +1,15 @@
+id: tnfldtmtim
+artifact: plan
+record:
+  name: Correct status TODO projection
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN more than 20 open TODOs WHEN status is produced THEN severity totals represent every matching open TODO.
+    - GIVEN resolved TODOs exist WHEN totals are calculated THEN they contribute to no severity count.
+    - GIVEN TODO detail exceeds its startup bound WHEN status is produced THEN detail remains bounded and reports total, returned, omitted, and exact recovery information.
+    - GIVEN multiple severities exceed the bound WHEN attention and routing are selected THEN the highest-priority open work remains deterministically available.
+    - GIVEN 21 or more open TODO fixtures WHEN regression tests run THEN they distinguish complete aggregate counts from bounded detail entries.
+  test_proportionality: Cover exact-bound, over-bound, mixed-severity, and resolved-item exclusion cases.
+  plan: rqkpdjsxnw

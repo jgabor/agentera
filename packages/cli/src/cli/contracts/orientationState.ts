@@ -125,6 +125,13 @@ export interface IssueCounts {
   annoying: number;
 }
 
+export interface TodoDetailSummary {
+  total: number;
+  returned: number;
+  omitted: number;
+  retrieval: JsonObject;
+}
+
 export interface NextAction {
   object: string;
   capability: string;
@@ -197,6 +204,7 @@ export interface OrientationState {
   state_presence: StatePresenceSummary;
   corpus_coverage: CorpusCoverageSummary;
   todo_items: Array<Record<string, string>>;
+  todo_detail: TodoDetailSummary;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;
   next_action: ReadinessHint;

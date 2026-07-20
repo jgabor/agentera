@@ -1,0 +1,15 @@
+id: qiyyjnyyhm
+artifact: progress
+record:
+  timestamp: 2026-07-20 17:37
+  type: fix
+  phase: build
+  what: Corrected status TODO aggregation so severity totals cover every authoritative open entity while attention and routing retain a bounded 20-item detail page with explicit omission recovery.
+  context:
+    intent: Keep status summaries truthful beyond the detail-page limit without expanding startup payloads or changing routing policy.
+    constraints: Preserve resolved-item exclusion, deterministic priority, existing list pagination, deprecated count-only issues compatibility, and the 12 KB startup budget; no TODO semantic audit, release, publication, or push.
+    unknowns: None after real-project budget and recovery verification.
+    scope: Prime entity orientation, status output contracts, compatibility and budget tests, changelog, TODO closeout, plan task status, and progress evidence.
+  discovered: Duplicating detail under the deprecated issues alias crossed the realistic startup byte budget; keeping that alias count-only preserves compatibility and required canonical status fields.
+  verified: 191 source files and 2,230 tests passed; 8 package tests passed; typecheck, build, lint with zero errors, compact, and git diff checks passed; real-project status reported 31 total, 20 returned, 11 omitted, brief status ok at 11,061/12,000 bytes.
+  next: The single plan task is complete. Run the plan-completion sweep before archiving; keep release, publication, versioning, push, and unrelated TODO work separate.
