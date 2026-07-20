@@ -27,6 +27,7 @@ import {
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 import { scanDirectoryForPythonLeftovers } from "./helpers/preservation.js";
+import { sourceBuildOutputRoot } from "../helpers/sourceSubprocess.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
@@ -91,7 +92,7 @@ describe("detectStaleInstalledHooksSurface", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "detect"));
     seedV2InstalledHooks(appHome);
     expect(detectStaleInstalledHooksSurface(appHome)).toBe(true);
-    expect(detectStaleAppContentSurfaces(appHome, REPO_ROOT)).toContain(INSTALLED_HOOKS_SURFACE_LABEL);
+    expect(detectStaleAppContentSurfaces(appHome, REPO_ROOT, sourceBuildOutputRoot())).toContain(INSTALLED_HOOKS_SURFACE_LABEL);
     expect(textReferencesV2InstalledHooks("uv run hooks/validate_artifact.py")).toBe(true);
     expect(textReferencesV2InstalledHooks('uv run "${AGENTERA_HOME}/hooks/validate_artifact.py"')).toBe(true);
   });

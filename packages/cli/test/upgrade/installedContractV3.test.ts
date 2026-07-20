@@ -14,6 +14,7 @@ import {
 } from "../../src/upgrade/appContentRefresh.js";
 import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
+import { sourceBuildOutputRoot } from "../helpers/sourceSubprocess.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
@@ -145,7 +146,7 @@ describe("installed contract after upgrade refresh (B6-3, #13)", () => {
     expect(contractLooksV2(seeded.text)).toBe(true);
     expect(seeded.data.DIRECTORY_REQUIREMENTS).toHaveProperty("instruction_file");
 
-    const stale = detectStaleAppContentSurfaces(appHome, REPO_ROOT);
+    const stale = detectStaleAppContentSurfaces(appHome, REPO_ROOT, sourceBuildOutputRoot());
     expect(stale).toContain("capability_schema_contract.yaml");
   });
 

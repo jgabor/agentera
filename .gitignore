@@ -19,9 +19,11 @@ packages/web/.wrangler
 packages/cli/dist
 packages/cli/*.tgz
 packages/cli/bundle
+packages/cli/.agentera-generated
 packages/cli/.agentera-generated-publication.json
 packages/cli/.dist.agentera-backup-*
 packages/cli/.bundle.agentera-backup-*
-packages/cli/.agentera-package-build-*
+packages/cli/.agentera-launcher-*
+packages/cli/.agentera-legacy-dist-*
 *.bun-build
 sandbox-report-*.json

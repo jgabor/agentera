@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { applyAppContentRefresh, skillMdLooksV2 } from "../../src/upgrade/appContentRefresh.js";
+import { sourceBuildOutputRoot } from "../helpers/sourceSubprocess.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -148,7 +149,7 @@ describe("installed SKILL.md v3 English routing (B6-2, defect #4)", () => {
     });
 
     it("copies repo SKILL.md byte-identically with no Swedish routing verbs", () => {
-      applyAppContentRefresh(appHome, REPO_ROOT);
+      applyAppContentRefresh(appHome, REPO_ROOT, sourceBuildOutputRoot());
 
       const installedSkill = path.join(appHome, "skills", "agentera", "SKILL.md");
       const repoBytes = fs.readFileSync(REPO_SKILL);
@@ -160,7 +161,7 @@ describe("installed SKILL.md v3 English routing (B6-2, defect #4)", () => {
     });
 
     it("accepts English prime --context plan and rejects Swedish planera on the installed app home", () => {
-      applyAppContentRefresh(appHome, REPO_ROOT);
+      applyAppContentRefresh(appHome, REPO_ROOT, sourceBuildOutputRoot());
 
       const env = {
         HOME: home,

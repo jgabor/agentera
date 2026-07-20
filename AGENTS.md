@@ -173,7 +173,7 @@ pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
 node packages/cli/dist/bin/agentera.js check validate \
   capability-contract --format json
-pnpm -C packages/cli exec npm publish --tag next --dry-run
+pnpm -C packages/cli run pack:dry-run
 ```
 
 Publish only after the release commit is clean and all gates pass. The v3

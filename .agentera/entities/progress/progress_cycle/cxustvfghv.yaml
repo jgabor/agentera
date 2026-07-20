@@ -1,0 +1,16 @@
+id: cxustvfghv
+artifact: progress
+record:
+  timestamp: 2026-07-21 01:58
+  type: fix
+  phase: build
+  what: Corrected generated-output isolation after audit by making source compiled-content injection explicit, atomically selecting immutable dist-plus-bundle generations, pinning checkout readers to one validated identity, and replacing unsafe journal recovery with fail-safe generation selection.
+  context:
+    intent: Repair xlokrejoue so clean source, overlapping source/build/package commands, lock-free readers, package extraction, and every interruption state have truthful isolation and recovery evidence.
+    constraints: No worker tuning, duplicate consolidation, final proof, jiupbftubj repair, release/version/publication/tag/push, vision/profile refresh, or unrelated cleanup.
+    unknowns: The generated-output publication model is resolved. Historical completed generations are retained because deleting a generation pinned by a lock-free reader would violate safety; generated state remains disposable and recovery guidance is canonical.
+    scope: Generated build/package scripts and tests, source app-content injection, CI ordering and overlap proof, package scripts, verification routing, ignore rules, and canonical contributor guidance.
+  inspiration: "Audit xlokrejoue-audit-1: clean source found 192 files but three upgrade tests consumed checkout dist/capabilities; two directory swaps exposed missing or mixed surfaces; degraded backup and lock-owner states were unsafe."
+  discovered: The minimal reader-safe boundary is an immutable generation plus one atomic current symlink. Checkout CLI launchers pin current once; package construction remains a separate regular tree. The obsolete writer lock and rollback journal are unnecessary, while legacy residue must remain actionable rather than becoming a baseline.
+  verified: With checkout .agentera-generated, dist, and bundle removed, source passed 192 files and 2265 tests with zero failures. Deterministic generation tests passed 15 cases covering all pointer phases, incomplete/corrupt identities, corrupt/missing legacy journal or backups, live/stale/fresh-unknown locks, dead/unknown staging owners, repeated retry, concurrent publisher ownership, and a continuous pinned reader. The barrier-controlled real overlap passed source 4 files/26 tests, build generation validation and CLI 3.0.0-dev.26 invocation, and packed/extracted package 2 files/9 tests. Merge policy passed source 192/2265 and package 2/9. Typecheck, build, isolated pack dry-run with 684 files, tarball publish dry-run, lint with 150 warnings/0 errors, capability contract 2/2, and root compact passed.
+  next: Await independent evaluation of xlokrejoue; do not start later plan tasks or blocked jiupbftubj.

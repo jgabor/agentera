@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { CAPABILITY_INSTRUCTIONS } from "../capabilities/index.js";
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
@@ -79,19 +80,14 @@ function shouldSkipCapabilityFile(relFromSkills: string): boolean {
   return /capabilities\/[^/]+\/instructions\.md$/i.test(relFromSkills.replace(/\\/g, "/"));
 }
 
-export function resolveAppContentSources(sourceRoot: string): AppContentSources {
+function runtimeCompiledRoot(): string {
+  return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+export function resolveAppContentSources(sourceRoot: string, compiledRoot = runtimeCompiledRoot()): AppContentSources {
   const root = resolvePath(sourceRoot);
-  const distCandidates = [
-    path.join(root, "packages", "cli", "dist", "capabilities"),
-    path.join(root, "dist", "capabilities"),
-  ];
-  let distCapabilities: string | null = null;
-  for (const candidate of distCandidates) {
-    if (pathExists(candidate) && fs.statSync(candidate).isDirectory()) {
-      distCapabilities = candidate;
-      break;
-    }
-  }
+  const candidate = path.join(resolvePath(compiledRoot), "capabilities");
+  const distCapabilities = pathExists(candidate) && fs.statSync(candidate).isDirectory() ? candidate : null;
   return {
     skillsDir: path.join(root, "skills"),
     referencesDir: path.join(root, "references"),
@@ -226,12 +222,12 @@ function distCapabilitiesStale(installedRoot: string, sources: AppContentSources
 /**
  * Returns stale v2 app-content surface labels for gap detection during upgrade dry-run.
  */
-export function detectStaleAppContentSurfaces(appHome: string, sourceRoot: string): string[] {
+export function detectStaleAppContentSurfaces(appHome: string, sourceRoot: string, compiledRoot?: string): string[] {
   const installedRoot = installedRootForDetection(appHome);
   if (!installedRoot) {
     return [];
   }
-  const sources = resolveAppContentSources(sourceRoot);
+  const sources = resolveAppContentSources(sourceRoot, compiledRoot);
   const stale: string[] = [];
 
   const skillRel = path.join("skills", "agentera", "SKILL.md");
@@ -311,8 +307,8 @@ export function refreshAppContentTargetRoot(appHome: string): string {
   return resolvePath(appHome);
 }
 
-function applyAppContentRefreshToTarget(targetRoot: string, sourceRoot: string): void {
-  const sources = resolveAppContentSources(sourceRoot);
+function applyAppContentRefreshToTarget(targetRoot: string, sourceRoot: string, compiledRoot?: string): void {
+  const sources = resolveAppContentSources(sourceRoot, compiledRoot);
   if (!pathExists(sources.skillsDir)) {
     throw new Error(`app content refresh: missing source skills directory at ${sources.skillsDir}`);
   }
@@ -333,8 +329,8 @@ function applyAppContentRefreshToTarget(targetRoot: string, sourceRoot: string):
 
 }
 
-export function applyAppContentRefresh(appHome: string, sourceRoot: string): void {
-  applyAppContentRefreshToTarget(refreshAppContentTargetRoot(appHome), sourceRoot);
+export function applyAppContentRefresh(appHome: string, sourceRoot: string, compiledRoot?: string): void {
+  applyAppContentRefreshToTarget(refreshAppContentTargetRoot(appHome), sourceRoot, compiledRoot);
 }
 
 function refreshItemStatus(staleSurfaces: string[]): MigrationStatus {
@@ -378,7 +374,7 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
     return [item];
   }
 
-  const staleSurfaces = detectStaleAppContentSurfaces(appHome, resolvedSourceRoot);
+  const staleSurfaces = detectStaleAppContentSurfaces(appHome, resolvedSourceRoot, ctx.compiledRoot);
   const hookItems = planInstalledHooksRetirementItems(ctx);
   if (staleSurfaces.length === 0 && hookItems.every((item) => item.status === "noop")) {
     return [
@@ -427,7 +423,7 @@ export function applyAppContentRefreshItem(
     withBoundMigrationDirectory(
       item,
       "target",
-      (targetRoot) => applyAppContentRefreshToTarget(targetRoot, sourceRoot),
+      (targetRoot) => applyAppContentRefreshToTarget(targetRoot, sourceRoot, ctx.compiledRoot),
       beforePublication,
     );
     item.status = "applied";

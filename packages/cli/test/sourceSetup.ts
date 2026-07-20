@@ -5,7 +5,10 @@ import path from "node:path";
 
 import type { GlobalSetupContext } from "vitest/node";
 
+import { waitForVerificationBarrier } from "../scripts/verification-barrier.mjs";
+
 export default function setup({ provide }: GlobalSetupContext): () => void {
+  waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "..");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-verification-"));
   const result = spawnSync(

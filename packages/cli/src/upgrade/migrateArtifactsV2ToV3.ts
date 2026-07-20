@@ -236,6 +236,8 @@ export interface MigrationContext {
   home: string;
   force?: boolean;
   sourceRoot?: string;
+  /** Explicit compiled CLI root used by app-content refresh. */
+  compiledRoot?: string;
   channel?: string | null;
   env?: Record<string, string | undefined>;
   installAppContentIfMissing?: boolean;

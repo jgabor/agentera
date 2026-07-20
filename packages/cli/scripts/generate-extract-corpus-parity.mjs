@@ -23,7 +23,11 @@ const fixturePath = path.join(pkgRoot, "test/analytics/fixtures/extract-corpus-p
 const bundleManifestPath = path.join(pkgRoot, "bundle/extract-corpus-parity.json");
 const pythonPath = path.join(repoRoot, "scripts/extract_corpus.py");
 const distRootIndex = process.argv.indexOf("--dist-root");
-const distRoot = path.resolve(distRootIndex >= 0 ? process.argv[distRootIndex + 1] : path.join(pkgRoot, "dist"));
+const distRoot = path.resolve(
+  distRootIndex >= 0
+    ? process.argv[distRootIndex + 1]
+    : path.join(pkgRoot, ".agentera-generated", "current", "dist"),
+);
 const distParity = path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js");
 const writeMode = process.argv.includes("--write");
 

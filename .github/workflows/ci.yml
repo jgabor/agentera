@@ -22,6 +22,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
+      - name: Verify clean source boundary
+        run: pnpm -C packages/cli test
       - name: Verify package boundary
         run: pnpm -C packages/cli run verify:package
       - name: Typecheck CLI
@@ -30,8 +32,10 @@ jobs:
         run: git fetch origin main --depth=1
       - name: Py-TS parity drift gate (#34)
         run: bash packages/cli/scripts/py_ts_parity.sh --check --json
-      - name: Verify source boundary
-        run: pnpm -C packages/cli test
+      - name: Verify generated-output overlap
+        run: pnpm -C packages/cli run verify:generated-overlap
+      - name: Build checkout CLI
+        run: pnpm -C packages/cli build
       - name: Repository gates
         run: node packages/cli/dist/bin/agentera.js check compact
 
@@ -145,7 +149,7 @@ jobs:
             fi
           fi
           echo "should_publish=${should_publish}" >> $GITHUB_OUTPUT
-      - name: Publish (npm publish --tag next; prepack builds dist+bundle)
+      - name: Publish isolated package to npm @next
         if: steps.version-check.outputs.should_publish == 'true'
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -155,8 +159,7 @@ jobs:
             echo "NPM_TOKEN secret is not set; skipping publish"
             exit 0
           fi
-          cd packages/cli
-          npm publish --tag next --access public
+          pnpm -C packages/cli run publish:dev
 
   publish-latest:
     name: Publish stable shim to npm @latest (main)
@@ -205,4 +208,3 @@ jobs:
           fi
           cd packages/cli/shim
           npm publish --access public
-

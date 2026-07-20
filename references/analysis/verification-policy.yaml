@@ -72,6 +72,10 @@ conservative_routing:
     - packages/cli/scripts/build-package.mjs
     - packages/cli/scripts/copy-bundle.mjs
     - packages/cli/scripts/generate-extract-corpus-parity.mjs
+    - packages/cli/scripts/verification-barrier.mjs
+    - packages/cli/scripts/verify-generated-overlap.mjs
+    - packages/cli/scripts/pack-package.mjs
+    - packages/cli/scripts/reject-direct-prepack.mjs
     - packages/cli/test/sourceSetup.ts
     - packages/cli/test/helpers/sourceSubprocess.ts
     - references/analysis/verification-policy.yaml

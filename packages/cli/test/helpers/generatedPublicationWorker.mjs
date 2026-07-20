@@ -1,13 +1,13 @@
 import fs from "node:fs";
 
-import { publishGeneratedSurfaces } from "../../scripts/build-package.mjs";
+import { publishGeneratedGeneration } from "../../scripts/build-package.mjs";
 
-const [packageRoot, stagedRoot, readyPath = "", holdLockMs = "0"] = process.argv.slice(2);
+const [packageRoot, stagedRoot, generationId, readyPath = "", holdBeforePointerMs = "0"] = process.argv.slice(2);
 
 try {
-  publishGeneratedSurfaces(packageRoot, stagedRoot, {
-    holdLockMs: Number(holdLockMs),
-    onLockAcquired: readyPath ? () => fs.writeFileSync(readyPath, "ready\n") : undefined,
+  publishGeneratedGeneration(packageRoot, stagedRoot, generationId, {
+    holdBeforePointerMs: Number(holdBeforePointerMs),
+    onBeforePointer: readyPath ? () => fs.writeFileSync(readyPath, "ready\n") : undefined,
   });
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

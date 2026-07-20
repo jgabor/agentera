@@ -17,6 +17,7 @@ import {
 import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { buildUpgradePlan as buildOrchestratorPlan } from "../../src/upgrade/upgradeOrchestrator.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
+import { sourceBuildOutputRoot } from "../helpers/sourceSubprocess.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -135,7 +136,7 @@ describe("detectStaleAppContentSurfaces", () => {
     const appHome = copyFixture("v2-app-home", path.join(tmp, "detect"));
     seedV2SkillMd(path.join(appHome, "app"));
     seedV2InstalledHooks(appHome);
-    const stale = detectStaleAppContentSurfaces(appHome, REPO_ROOT);
+    const stale = detectStaleAppContentSurfaces(appHome, REPO_ROOT, sourceBuildOutputRoot());
     expect(stale).toContain("SKILL.md");
     expect(stale).toContain("protocol.yaml");
     expect(stale).toContain("capability_schema_contract.yaml");

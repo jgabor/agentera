@@ -74,6 +74,7 @@
 
 ### Fixed
 
+- Fixed overlapping source, build, and package verification to use isolated construction and one atomically selected `dist` + `bundle` generation; clean source no longer requires checkout output, package proof still runs from an extracted tarball, and `pnpm -C packages/cli run pack:dry-run` replaces direct checkout `npm pack`.
 - Fixed `agentera prime --context status` to report severity totals across every open TODO while keeping attention and routing detail bounded with explicit omission recovery.
 - Fixed `agentera prime --context status` to exclude resolved entity TODOs before bounded pagination, so severity counts, attention, and next-action routing reflect only open work.
 - Fixed overlapping `upgrade --yes` runs to hold separate exclusive project and shared-runtime locks, reject stale or malformed lock state with bounded manual recovery, and release only a matching ownership token.

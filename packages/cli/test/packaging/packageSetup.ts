@@ -5,6 +5,8 @@ import path from "node:path";
 
 import type { GlobalSetupContext } from "vitest/node";
 
+import { waitForVerificationBarrier } from "../../scripts/verification-barrier.mjs";
+
 export interface PackFile {
   path: string;
   size: number;
@@ -64,6 +66,7 @@ function parseManifest(stdout: string): PackEntry {
 }
 
 export default function setup({ provide }: GlobalSetupContext): () => void {
+  waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "../..");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-verification-"));
   const constructionRoot = path.join(root, "construction");

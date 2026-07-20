@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { sourceBuildOutputRoot } from "../../helpers/sourceSubprocess.js";
+
 /**
  * Sandbox env for v2→v3 migration tests. Do not spread process.env: a developer shell
  * with XDG_CONFIG_HOME set would route opencode migration writes to ~/.config/opencode.
@@ -25,6 +27,7 @@ export function migrationCtx(
     project,
     home,
     sourceRoot,
+    compiledRoot: sourceBuildOutputRoot(),
     channel: "development" as const,
     env: env ? { ...base, ...env } : { ...base },
   };

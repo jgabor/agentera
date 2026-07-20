@@ -30,13 +30,15 @@
   },
   "scripts": {
     "build": "node scripts/build-package.mjs",
-    "prepack": "node scripts/build-package.mjs",
+    "prepack": "node scripts/reject-direct-prepack.mjs",
     "test": "pnpm run test:source",
     "test:source": "node scripts/verify-lane.mjs source",
     "test:stress": "node scripts/verify-lane.mjs stress",
     "test:performance": "node scripts/verify-lane.mjs performance",
     "test:watch": "vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
+    "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
+    "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "verify:targeted": "node scripts/verify-lane.mjs policy targeted",
     "verify:precommit": "node scripts/verify-lane.mjs policy precommit",
     "verify:fast": "node scripts/verify-lane.mjs policy fast",
@@ -48,7 +50,7 @@
     "fmt": "vp fmt",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "bundle:data": "node scripts/build-package.mjs",
-    "publish:dev": "set -a; [ -f ../../.env ] && . ../../.env; set +a; npm run build && npm publish --tag next"
+    "publish:dev": "set -a; [ -f ../../.env ] && . ../../.env; set +a; node scripts/pack-package.mjs --publish --tag next"
   },
   "dependencies": {
     "smol-toml": "^1.3.1",
