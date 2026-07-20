@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -135,6 +136,37 @@ describe("verification lane ownership", () => {
     expect(result.stderr).toContain("run performance correction");
   });
 
+  it("emits bounded machine-readable evidence from the real performance owner command", () => {
+    const policy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
+    const result = spawnSync(process.execPath, [RUNNER, "performance", "test/fixtures/performanceOwnerOutput.fixture.ts"], {
+      cwd: PACKAGE_ROOT,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        AGENTERA_PERFORMANCE_OUTPUT_FIXTURE: "1",
+      },
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const evidence = result.stdout.split("\n").flatMap((line) => {
+      try {
+        const parsed = JSON.parse(line);
+        return parsed.schemaVersion === "agentera.entityAuthorityPerformanceEvidence.v1" ? [parsed] : [];
+      } catch {
+        return [];
+      }
+    });
+    expect(evidence).toHaveLength(1);
+    expect(Buffer.byteLength(`${JSON.stringify(evidence[0])}\n`, "utf8")).toBeLessThanOrEqual(policy.owners.performance.evidence.max_utf8_bytes);
+    expect(evidence[0]).toMatchObject({
+      status: "pass",
+      runner: { platform: expect.any(String), node: expect.any(String), logicalCpus: expect.any(Number), coldProcessPerSample: true },
+      measurement: { scales: { small: 100, large: 1000 }, repetitions: 5, heapSampling: { intervalMs: 1, cadenceChanged: false } },
+    });
+    expect(evidence[0].samples).toHaveLength(25);
+    expect(Object.keys(evidence[0].limits)).toEqual(["exact_get", "bounded_list_small", "bounded_list_large", "startup_small", "startup_large"]);
+    expect(Object.keys(evidence[0].maxima)).toEqual(Object.keys(evidence[0].limits));
+  });
+
   it("validates the real inventory and marks mixed files for later separation", () => {
     const result = spawnSync(process.execPath, [RUNNER, "inventory", "--json"], {
       cwd: PACKAGE_ROOT, encoding: "utf8",
@@ -160,5 +192,13 @@ describe("verification lane ownership", () => {
     expect(contract).toContain("scheduled: [source, stress, performance]");
     expect(contract).toContain("release: [source, stress, performance, package]");
     expect(contract).not.toMatch(/^  fast:\n/m);
+  });
+
+  it("keeps the source smoke fixture free of cold measurement dependencies", () => {
+    const sourceSmoke = fs.readFileSync(path.join(PACKAGE_ROOT, "test/cli/primeProjectionContract.test.ts"), "utf8");
+    const fixtureHelper = fs.readFileSync(path.join(PACKAGE_ROOT, "test/helpers/entityAuthorityFixture.ts"), "utf8");
+    expect(sourceSmoke).toContain('../helpers/entityAuthorityFixture.js');
+    expect(sourceSmoke).not.toContain("coldCliMeasurement");
+    expect(fixtureHelper).not.toMatch(/node:child_process|node:perf_hooks|sourceSubprocess|--inspect/);
   });
 });

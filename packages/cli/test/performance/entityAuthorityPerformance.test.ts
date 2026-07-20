@@ -6,10 +6,12 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import { createEntityAuthorityFixture, measureColdCli } from "../helpers/entityAuthorityFixture.js";
+import { measureColdCli } from "../helpers/coldCliMeasurement.js";
+import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
+const POLICY_PATH = path.join(REPO_ROOT, "references/analysis/verification-policy.yaml");
 
 let tmp: string;
 let project: string;
@@ -64,6 +66,7 @@ afterEach(() => {
 describe("entity authority performance", () => {
   it("measures every declared scale and target through five cold processes", async () => {
     const authority = YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
+    const policy = YAML.parse(fs.readFileSync(POLICY_PATH, "utf8")) as Record<string, any>;
     const measurementContract = authority.entity_target.measurement_contract;
     const targets = measurementContract.targets;
     const repetitions = measurementContract.sampling.repetitions as number;
@@ -215,40 +218,44 @@ describe("entity authority performance", () => {
     expect(Object.values(maxima).every(({ repetitions }: any) => repetitions === 5)).toBe(true);
     expect(samples).toHaveLength(25);
 
-    console.info(
-      JSON.stringify({
-        schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
-        status: "pass",
-        runner: {
-          platform: process.platform,
-          release: os.release(),
-          architecture: process.arch,
-          node: process.version,
-          logicalCpus: os.cpus().length,
-          coldProcessPerSample: true,
+    const evidence = {
+      schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
+      status: "pass",
+      runner: {
+        platform: process.platform,
+        release: os.release(),
+        architecture: process.arch,
+        node: process.version,
+        logicalCpus: os.cpus().length,
+        coldProcessPerSample: true,
+      },
+      measurement: {
+        authority:
+          "references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract",
+        scales,
+        declaredFixtures: measurementContract.fixtures,
+        repetitions,
+        elapsed: measurementContract.sampling.elapsed,
+        heap: measurementContract.sampling.heap,
+        bytes: measurementContract.sampling.bytes,
+        heapSampling: {
+          method: "Node inspector Runtime.getHeapUsage",
+          intervalMs: 1,
+          cadenceChanged: false,
+          changeRule:
+            "compare maxima and prove equivalent measurement behavior before reducing overhead",
         },
-        measurement: {
-          authority:
-            "references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract",
-          scales,
-          declaredFixtures: measurementContract.fixtures,
-          repetitions,
-          elapsed: measurementContract.sampling.elapsed,
-          heap: measurementContract.sampling.heap,
-          bytes: measurementContract.sampling.bytes,
-          heapSampling: {
-            method: "Node inspector Runtime.getHeapUsage",
-            intervalMs: 1,
-            cadenceChanged: false,
-            changeRule:
-              "compare maxima and prove equivalent measurement behavior before reducing overhead",
-          },
-        },
-        fixtures,
-        limits: targets,
-        samples,
-        maxima,
-      }),
+      },
+      fixtures,
+      limits: targets,
+      samples,
+      maxima,
+    };
+    const serializedEvidence = `${JSON.stringify(evidence)}\n`;
+    expect(evidence.schemaVersion).toBe(policy.owners.performance.evidence.schema_version);
+    expect(Buffer.byteLength(serializedEvidence, "utf8")).toBeLessThanOrEqual(
+      policy.owners.performance.evidence.max_utf8_bytes,
     );
+    process.stdout.write(serializedEvidence);
   }, 120_000);
 });

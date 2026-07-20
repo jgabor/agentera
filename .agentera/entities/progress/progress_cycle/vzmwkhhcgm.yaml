@@ -1,0 +1,13 @@
+id: vzmwkhhcgm
+artifact: progress
+record:
+  timestamp: 2026-07-20 23:29
+  type: fix
+  phase: build
+  what: "Corrected the prior progress overclaim: packages/cli/test/performance/entityAuthorityPerformance.test.ts previously constructed bounded JSON but pnpm run test:performance did not expose it. The supported command now writes one bounded agentera.entityAuthorityPerformanceEvidence.v1 line directly to stdout, with runner conditions, authority limits, all 25 samples, and maxima. laneOwnership.test.ts parses observable real-owner stdout, and primeProjectionContract.test.ts now reaches only the fixture helper, not child-process, inspector, or cold-measurement dependencies."
+  context:
+    intent: Repair audit attempt jiupbftubj-audit-1 by making default performance-owner evidence observable and proving its stdout contract without weakening authority measurements or source isolation.
+  inspiration: Independent audit attempt jiupbftubj-audit-1 and its recorded failure evidence.
+  discovered: Vitest console interception hid console.info from passing tests. Direct process stdout preserves normal interception for unrelated owner diagnostics while exposing only the declared performance evidence line. The prior progress record's output claim was therefore premature and is superseded by this correction; missing vision/profile/decision capsule state and unavailable task satisfaction remain caveats.
+  verified: The normal pnpm run test:performance command visibly emitted one bounded schema line and passed 3/3. Focused source/ownership passed 23/23. Scheduled passed source 191 files/2247 tests, stress 0 files, and performance 3/3. The matrix retained 25 passing cold samples at 100/1000 entities and 1 ms sampling. Typecheck, build, lint with 144 baseline warnings and 0 errors, ownership inventory, state validation, capability-contract validation, and compact passed.
+  next: Submit jiupbftubj for independent re-evaluation only; no other plan tasks or release work were changed.

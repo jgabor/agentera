@@ -27,6 +27,9 @@ owners:
   performance:
     config: packages/cli/vite.config.ts
     correction: Run `pnpm -C packages/cli test:performance`; check runner conditions and fix the named budget regression.
+    evidence:
+      schema_version: agentera.entityAuthorityPerformanceEvidence.v1
+      max_utf8_bytes: 65536
   package:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.

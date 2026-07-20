@@ -13,3 +13,13 @@ record:
     - GIVEN inspector sampling changes WHEN maxima are compared THEN equivalent measurement behavior is proven before reducing overhead.
   test_proportionality: Keep one source smoke and the full authority-required five-repetition performance matrix.
   plan: rmtdgltdgm
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The performance test constructs complete machine-readable JSON, but the supported test:performance owner command suppresses console output through default test interception. Evidence appears only with an undocumented disable-console-intercept flag, so normal owner output does not satisfy the machine-readable evidence criterion. Expose bounded performance JSON by default through the owner command and test observable stdout; keep source smoke free of performance-only execution cost.
+    provenance:
+      attempt_id: jiupbftubj-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-20 23:21
+      writer_command: agentera state plan record-evaluation
