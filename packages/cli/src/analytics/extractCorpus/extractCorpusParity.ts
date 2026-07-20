@@ -81,7 +81,7 @@ function boundsFromRecords(records: Array<{ timestamp?: unknown }>): { earliest:
   return { earliest, latest };
 }
 
-/** Canonical opencode parity snapshot used by TS and the generated Python wrapper. */
+/** Production opencode parity snapshot compared with the generated independent Python oracle. */
 export function opencodeParitySnapshot(dbPath: string): OpencodeParitySnapshot {
   if (!fs.existsSync(dbPath)) {
     throw new Error(`extract-corpus parity: missing opencode db at ${dbPath}`);

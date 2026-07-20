@@ -1,0 +1,16 @@
+id: skkllhojvw
+artifact: progress
+record:
+  timestamp: 2026-07-21 00:11
+  type: test
+  phase: build
+  what: Corrected liuqlppclk after audit liuqlppclk-audit-1. The contract-owned generator now emits a restricted Python sqlite3 implementation of the seeded OpenCode snapshot rather than delegating to Node. The obsolete checkout-dist Node probe was deleted. Focused parity compares one cached TypeScript result with one Python process result and checks independent missing-database failure behavior and absence of Node/dist coupling.
+  context:
+    intent: Satisfy the explicit independent Python/TypeScript end-to-end parity criterion while preserving and improving the measured startup reduction.
+    constraints: Changed only parity generation, its generated Python oracle, focused tests/docs, and typed liuqlppclk state. Kept package as no-drift owner and did not change gphydehfad.
+    unknowns: The Python oracle intentionally covers only the committed seeded parity schema, not the full production extractor; broader duplication would violate the single TypeScript production authority.
+    scope: packages/cli parity generator and test, generated scripts/extract_corpus.py, obsolete Node probe removal, ownership documentation, and liuqlppclk task/progress state.
+  inspiration: Independent orchestrate audit liuqlppclk-audit-1 found that the prior Python process called the same TypeScript opencodeParitySnapshot and therefore did not provide implementation independence.
+  discovered: The original generated architecture introduced in the corpus parity gate made TypeScript authoritative for synchronized constants but delegated Python parity computation back to checkout-local dist. A fixture-scoped stdlib sqlite3 oracle preserves one production authority while making divergence observable.
+  verified: "Final comparable protocol: pnpm -C packages/cli exec vp test run --config vite.config.ts test/analytics/extractCorpusParity.test.ts --reporter=json; one warmup, three retained runs. Retained wall samples 8758/8746/8749 ms, median 8749 ms versus original 26203 ms (66.6% lower) and first optimization 14625 ms (40.2% lower). Assertion samples 53.190/52.436/52.383 ms, median 52.436 ms versus 17482.952 and 5936.730 ms. Focused 5/5, full source 191 files/2247 tests, package 2/8, typecheck, build, generator no-drift, py-ts drift gate, compact, lint, markdownlint, Python syntax, and diff checks passed."
+  next: Return liuqlppclk for audit; do not begin later tasks or repair blocked jiupbftubj.
