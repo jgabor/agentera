@@ -5,7 +5,10 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
-import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
+import {
+  evidenceTierAuthorityPath,
+  evidenceTierBounds,
+} from "../../src/registries/evidenceTierContract.js";
 import {
   publishEvidenceTiers,
   type PublicationResult,
@@ -62,6 +65,7 @@ function representativeRecords(): JsonObject[] {
 function publish(records: JsonObject[], opts?: {
   corpusPath?: string;
   runtimeStatuses?: JsonObject[];
+  contractPath?: string;
 }): PublicationResult {
   const tiersDir = opts?.corpusPath
     ? tiersDirForCorpusPath(opts.corpusPath)
@@ -83,7 +87,20 @@ function publish(records: JsonObject[], opts?: {
     runtimeStatuses: opts?.runtimeStatuses as JsonObject[] | undefined,
     publishedAt: "2026-01-15T00:00:00.000Z",
     corpusMetadata,
-  });
+  }, opts?.contractPath);
+}
+
+const PROPORTIONAL_SHARD_BYTE_CAP = 8 * 1024;
+
+function proportionalContractPath(): string {
+  const contractPath = path.join(tmp, "proportional-evidence-tier-authority.yaml");
+  const productionCap = evidenceTierBounds().shardByteCap;
+  const authority = fs.readFileSync(evidenceTierAuthorityPath(), "utf8");
+  fs.writeFileSync(
+    contractPath,
+    authority.replaceAll(`byte_cap: ${productionCap}`, `byte_cap: ${PROPORTIONAL_SHARD_BYTE_CAP}`),
+  );
+  return contractPath;
 }
 
 // ---------------------------------------------------------------------------
@@ -160,26 +177,11 @@ describe("assessTiers", () => {
   it("reports current when tiers are published and complete", () => {
     const records = representativeRecords();
     const corpusPath = path.join(tmp, "corpus.json");
-    publish(records, { corpusPath });
+    publish(records, { corpusPath, contractPath: proportionalContractPath() });
     const a = assessTiers(tiersDirForCorpusPath(corpusPath), corpusPath);
     expect(a.state).toBe("current");
     expect(a.analyzable).toBe(true);
     expect(a.generation).toBeTruthy();
-  });
-
-  it("reports oversized with the artifact path when a shard exceeds the cap", () => {
-    // A single record larger than shard_byte_cap forms its own oversized shard.
-    const big = "x".repeat(evidenceTierBounds().shardByteCap + 1024);
-    const records = [
-      fullRecord({ sourceId: "big1", sourceProduct: "opencode", runtime: "opencode", data: { big } }),
-    ];
-    const corpusPath = path.join(tmp, "corpus.json");
-    publish(records, { corpusPath });
-    const a = assessTiers(tiersDirForCorpusPath(corpusPath), corpusPath);
-    expect(a.state).toBe("oversized");
-    expect(a.analyzable).toBe(false);
-    expect(a.artifact).toBeTruthy();
-    expect(a.recovery).not.toBeUndefined();
   });
 
   it("reports incomplete with coverage gaps when a runtime is sparse", () => {
@@ -322,9 +324,7 @@ describe("legacyCorpusReadable", () => {
 
 describe("oversized single-record retention (Task 2 audit gap)", () => {
   it("retains an oversized record in its own shard and reports oversized state", () => {
-    const bounds = evidenceTierBounds();
-    // A record whose JSON encoding exceeds the shard byte cap.
-    const big = "x".repeat(bounds.shardByteCap + 4096);
+    const big = "x".repeat(PROPORTIONAL_SHARD_BYTE_CAP + 4096);
     const records = [
       fullRecord({
         sourceId: "oversized",
@@ -341,7 +341,7 @@ describe("oversized single-record retention (Task 2 audit gap)", () => {
       }),
     ];
     const corpusPath = path.join(tmp, "corpus.json");
-    publish(records, { corpusPath });
+    publish(records, { corpusPath, contractPath: proportionalContractPath() });
     const tiersDir = tiersDirForCorpusPath(corpusPath);
 
     // The tier is reported as oversized.
@@ -359,9 +359,10 @@ describe("oversized single-record retention (Task 2 audit gap)", () => {
 
     // Find the oversized shard (its declared bytes exceed the cap).
     const oversizedShards = manifest.shards.filter(
-      (s: { bytes: number }) => s.bytes > bounds.shardByteCap,
+      (s: { bytes: number }) => s.bytes > PROPORTIONAL_SHARD_BYTE_CAP,
     );
     expect(oversizedShards.length).toBeGreaterThan(0);
+    expect(a.artifact).toBe(oversizedShards[0].path);
 
     // Verify the oversized shard file actually contains the record.
     const shardPath = path.join(tiersDir, "generations", gen.generation, oversizedShards[0].path);

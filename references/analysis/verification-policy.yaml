@@ -9,6 +9,8 @@ inventory:
   default_owner: source
   rules:
     - owner: performance
+      path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts
+    - owner: performance
       path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts
     - owner: package
       prefix: packages/cli/test/packaging/
@@ -39,8 +41,9 @@ mixed_files:
     separation_target: performance
     reason: bounded startup correctness and cold five-repetition budget measurements share one file
 
-# The production migration-preview cap is intentionally separate from the
-# proportional source fixture and runs through performance in scheduled/release.
+# Production-cap analytics and migration-preview wiring are intentionally
+# separate from proportional source fixtures and run through performance in
+# scheduled/release.
 
 policies:
   targeted: [source]

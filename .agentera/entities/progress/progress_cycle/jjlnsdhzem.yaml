@@ -1,0 +1,16 @@
+id: jjlnsdhzem
+artifact: progress
+record:
+  timestamp: 2026-07-20 22:45
+  type: test
+  phase: build
+  what: Made analytics shard-boundary fixtures proportional with one 8 KiB pass/fail source boundary, retained direct 64 MiB constant assertions, and assigned the sole dense production-wiring case to performance.
+  context:
+    intent: Reduce analytics source-test cost without weakening oversized retention, recovery, state, artifact-path, or production-cap evidence.
+    constraints: No production limit changes, lock/performance cold separation, output isolation, parity optimization, worker tuning, duplicate cleanup beyond the targeted assertion, versions, release, publish, push, vision, or profile changes.
+    unknowns: Decision retrieval remains degraded; startup omitted decisions, vision, and profile; llavvlpcmb and djmjbmruyk satisfaction remains unavailable.
+    scope: Analytics tier-reader fixtures, production-cap performance ownership, verification authority/tests, retained measurement evidence, plan task, and progress state.
+  inspiration: Plan rmtdgltdgm task dzvytxbsdt and Task 1's retained 10497ms and 8589ms analytics baselines.
+  discovered: The duplicate artifact-path case could be consolidated into the retention case; its exact artifact path, state, recovery, and retained on-disk identity remain asserted together.
+  verified: Three retained exact-test samples were 25.284901ms, 25.359614ms, and 24.883412ms versus an 8589ms baseline median, a 99.705613% reduction. Source passed 191 files/2245 tests and performance passed 2 files/2 tests. Ownership inventory/validation, focused analytics, typecheck, build, lint with 0 errors, capability-contract, and compact passed.
+  next: Proceed to the next plan task; keep dense 64 MiB analytics evidence solely in performance scheduled/release and proportional pass/fail behavior in source.

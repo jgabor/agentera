@@ -5,7 +5,7 @@ record:
   depends_on:
     - qifoditbva
     - fbgcvyeexr
-  status: pending
+  status: complete
   acceptance:
     - GIVEN oversized analytics behavior WHEN ordinary source tests run THEN they prove retention, recovery, state, and artifact-path behavior without repeatedly constructing production-sized dense payloads.
     - GIVEN production shard constants WHEN contracts are validated THEN their exact values remain directly asserted.
@@ -13,3 +13,4 @@ record:
     - GIVEN before and after measurements WHEN compared THEN analytics test cost is materially reduced without acceptance loss.
   test_proportionality: Retain one pass and one fail for each proportional boundary plus one production-constant authority assertion.
   plan: rmtdgltdgm
+  evidence: Source uses one 8 KiB pass/fail boundary to prove oversized retention, recovery, state, and exact artifact path; source directly asserts 67108864-byte production constants. Performance solely owns the dense 64 MiB wiring case through scheduled/release. Three retained samples reduced the retained assertion median from 8589ms to 25.284901ms (99.705613%) and consolidated the duplicate 10497ms artifact-path assertion. Source 191/191 and performance 2/2 passed with ownership, authority, typecheck, build, lint, capability-contract, and compact.

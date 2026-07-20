@@ -14,3 +14,13 @@ record:
   test_proportionality: Keep pass and mutation-fail coverage for pagination, with one separately owned production-cap case.
   plan: rmtdgltdgm
   evidence: Source-owned 40-entry pagination recovered all identities across multiple whole-entry pages within 32768 bytes; all five cursor-binding mutations retained rejection and restart coverage. Performance directly owns the 400-entry production-cap case through test:performance and scheduled/release policies. Three retained exact-test samples fell from a 16680ms baseline median to 178.642103ms (98.929004%). Source 191/191 files and performance 1/1 passed with ownership validation, typecheck, build, lint, capability-contract, and compact.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: cneetjywed-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-20 22:35
+      writer_command: agentera state plan record-evaluation

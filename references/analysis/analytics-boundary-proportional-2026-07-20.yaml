@@ -1,0 +1,74 @@
+schemaVersion: agentera.verificationMeasurement.v1
+status: pass
+captured: 2026-07-20
+
+comparison:
+  metric: assertion_duration_ms
+  direction: lower
+  before:
+    authority: references/analysis/verification-baseline-2026-07-20.yaml
+    production_shard_byte_cap: 67108864
+    assertions:
+      - test: reports oversized with the artifact path when a shard exceeds the cap
+        samples_ms: [13089, 10497, 10245]
+        median_ms: 10497
+        disposition: consolidated_into_retention_assertion
+      - test: retains an oversized record in its own shard and reports oversized state
+        samples_ms: [9350, 8554, 8589]
+        median_ms: 8589
+    cumulative_median_ms: 19086
+  after:
+    proportional_shard_byte_cap: 8192
+    test: retains an oversized record in its own shard and reports oversized state
+    samples_ms: [25.284901, 25.359614, 24.883412]
+    median_ms: 25.284901
+    raw_report_compression: gzip_lossless_mtime_zero
+    raw_reports:
+      - references/analysis/evidence/analytics-boundary-proportional-2026-07-20/source-focused-1.json.gz
+      - references/analysis/evidence/analytics-boundary-proportional-2026-07-20/source-focused-2.json.gz
+      - references/analysis/evidence/analytics-boundary-proportional-2026-07-20/source-focused-3.json.gz
+  retained_assertion_reduction_ms: 8563.715099
+  retained_assertion_reduction_percent: 99.705613
+  cumulative_dense_assertion_reduction_ms: 19060.715099
+  cumulative_dense_assertion_reduction_percent: 99.867521
+
+protocol:
+  inherited_from: references/analysis/verification-baseline-2026-07-20.yaml#protocol.source
+  environment:
+    VITEST_MAX_WORKERS: "4"
+  warmup_runs: 1
+  retained_runs: 3
+  command: >-
+    pnpm -C packages/cli exec vp test run --config vite.config.ts
+    test/analytics/tierReader.test.ts -t "retains an oversized record"
+    --reporter=json
+  note: >-
+    Before samples are Task 1's exact full-source assertion durations. After
+    samples isolate the retained assertion; the duplicate artifact-path case
+    was consolidated into it rather than assigned a synthetic zero duration.
+
+coverage:
+  proportional_shard_boundary:
+    owner: source
+    path: packages/cli/test/analytics/tierReader.test.ts
+    byte_cap: 8192
+    pass: reports current when tiers are published and complete
+    fail: retains an oversized record in its own shard and reports oversized state
+    guarantees: [retention, recovery, state, artifact_path]
+  production_constants:
+    owner: source
+    path: packages/cli/test/analytics/oversizedRegression.test.ts
+    shard_byte_cap: 67108864
+    signal_byte_cap: 67108864
+    reader_byte_cap: 67108864
+  production_wiring:
+    owner: performance
+    path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts
+    shard_byte_cap: 67108864
+    owner_command: pnpm -C packages/cli test:performance
+    policies: [scheduled, release]
+
+caveats:
+  - The decisions query remained degraded; omitted decision detail was not reconstructed.
+  - Build startup omitted decisions, vision, and profile state; no refresh or inferred approval was performed.
+  - Decision satisfaction remained unavailable for llavvlpcmb and djmjbmruyk.
