@@ -16,6 +16,10 @@ import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "references/adapters/package-registry.yaml");
+const INTERFACE_MODEL_PATH = path.join(
+  REPO_ROOT,
+  "references/adapters/package-manifest-interface-model.yaml",
+);
 const PACKAGE_MANIFEST_PATH = path.join(REPO_ROOT, "registry.json");
 const CLI_PACKAGE_PATH = path.join(REPO_ROOT, "packages/cli/package.json");
 const FIXTURE_DOCS_PATH = path.join(repoStateFixturePath("ok"), ".agentera/docs.yaml");
@@ -30,6 +34,15 @@ function manifestSuiteVersion(): string {
   return JSON.parse(fs.readFileSync(PACKAGE_MANIFEST_PATH, "utf8")).skills[0].version;
 }
 
+function scalarStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(scalarStrings);
+  if (value && typeof value === "object") {
+    return Object.values(value).flatMap(scalarStrings);
+  }
+  return [];
+}
+
 describe("package registry", () => {
   it("returns package facts in deterministic order without duplicate ids", () => {
     const registry = loadRegistry(REGISTRY_PATH);
@@ -41,11 +54,6 @@ describe("package registry", () => {
       "registry",
       "cli-package",
       "cli-suite-marker",
-      "copilot-root",
-      "copilot-repository",
-      "codex-plugin",
-      "cursor-plugin",
-      "opencode-plugin-marker",
       "skill-frontmatter",
     ]);
     expect(registry.versionSurfaceIds().length).toBe(new Set(registry.versionSurfaceIds()).size);
@@ -56,20 +64,13 @@ describe("package registry", () => {
     expect(new Set(Object.entries(versions)
       .filter(([surface]) => surface !== "cli-package")
       .map(([, version]) => version))).toEqual(new Set(["3.0.0"]));
-    expect(registry.runtimeManifestIds()).toEqual([
-      "copilot-root-manifest",
-      "copilot-repository-manifest",
-      "codex-plugin-manifest",
-      "cursor-plugin-manifest",
-      "opencode-package-manifest",
-    ]);
     const record = registry.get("agentera");
-    expect(record.bundle_surfaces.directories.slice(0, 3).map((d: any) => d.id)).toEqual([
+    expect(record.bundle_surfaces.directories.map((d: any) => d.id)).toEqual([
       "skills",
       "references",
-      "agents",
     ]);
-    expect(record.package_commands.commands.map((c: any) => c.id)).toEqual(["remove-legacy-skills"]);
+    expect(record).not.toHaveProperty("runtime_package_manifests");
+    expect(record).not.toHaveProperty("package_commands");
     expect(record.docs_targets.version_files.at(-1)).toBe("registry.json");
   });
 
@@ -91,7 +92,7 @@ describe("package registry", () => {
     malformed.records.push(structuredClone(fixture.records[0]));
     malformed.records[0].version_surfaces.surfaces[1].id = "registry";
     malformed.records[0].version_surfaces.surfaces[2].path = "../escape.json";
-    malformed.records[0].package_commands.commands[0].argv = "not-an-array";
+    malformed.records[0].runtime_package_manifests = { manifests: [] };
     malformed.records[0].version_authority.install_root = "~/.agents/agentera";
     malformed.records[0].identity.lifecycle_events = [];
 
@@ -103,26 +104,109 @@ describe("package registry", () => {
     expect(errors).toContain(
       "records[0].version_surfaces.surfaces[2].path must stay inside repo root",
     );
-    expect(errors).toContain("records[0].package_commands.commands[0].argv must be a list of strings");
+    expect(errors).toContain("records[0]: unknown group runtime_package_manifests");
     expect(errors).toContain("records[0].version_authority: forbidden install-root field install_root");
     expect(errors).toContain("records[0].identity: forbidden RuntimeAdapter field lifecycle_events");
   });
 
-  it("rejects the retired runtime-specific skill installer contract", () => {
+  it("rejects native manifest and package-command compatibility groups", () => {
     const fixture = registryFixture();
-    fixture.records[0].package_commands.commands.push({
-      id: "install-agentera-skill-opencode",
-      runtime: "opencode",
-      action: "install-agentera-skill",
-      phase: "runtime-install",
-      argv: ["npx", "skills", "add", "jgabor/agentera", "-g", "-a", "opencode", "--skill", "agentera", "-y"],
-      skipped_without_update_packages_message: "external package update skipped",
-    });
+    fixture.records[0].runtime_package_manifests = { manifests: [] };
+    fixture.records[0].package_commands = { commands: [] };
 
     const errors = validateRegistryData(fixture, REPO_ROOT);
-    expect(errors).toContain("records[0].package_commands.commands[1].runtime 'opencode' is not approved");
-    expect(errors).toContain("records[0].package_commands.commands[1].action 'install-agentera-skill' is not approved");
-    expect(errors).toContain("records[0].package_commands.commands[1].argv must use approved skills action");
+    expect(errors).toContain("records[0]: unknown group runtime_package_manifests");
+    expect(errors).toContain("records[0]: unknown group package_commands");
+  });
+
+  it("keeps bundle values solely in the registry and models directory/file entries structurally", () => {
+    const fixture = registryFixture();
+    const model = YAML.parse(fs.readFileSync(INTERFACE_MODEL_PATH, "utf8"));
+    const bundleModel = model.record.groups.bundle_surfaces;
+    const entryContract = bundleModel.entry_contracts.directory_and_file;
+
+    expect(model).not.toHaveProperty("sample_manifest");
+    expect(bundleModel.required_fields).toMatchObject({
+      directories: "list[object]",
+      files: "list[object]",
+    });
+    expect(entryContract).toEqual({
+      applies_to: ["directories", "files"],
+      required_fields: ["id", "path"],
+      allowed_fields: ["id", "path"],
+      field_types: { id: "string", path: "repo_relative_path" },
+      uniqueness: {
+        id: "global_across_directories_and_files",
+        path: "global_across_directories_and_files",
+      },
+      path_format: "normalized_relative_posix",
+      forbidden_path_forms: [
+        "posix_absolute",
+        "windows_absolute_or_drive_prefixed",
+        "backslash",
+        "dot_or_dot_dot_segment",
+        "leading_dot_slash",
+        "trailing_separator",
+        "noncanonical_posix_normalization",
+      ],
+    });
+    expect(bundleModel.value_authority).toBe(
+      "references/adapters/package-registry.yaml records[*].bundle_surfaces",
+    );
+
+    const registryBundle = fixture.records[0].bundle_surfaces;
+    const canonicalValues = new Set(
+      [...registryBundle.directories, ...registryBundle.files]
+        .flatMap((entry: { id: string; path: string }) => [entry.id, entry.path]),
+    );
+    expect(scalarStrings(bundleModel).filter((value) => canonicalValues.has(value))).toEqual([]);
+  });
+
+  it("rejects string-list bundle entries and undeclared entry fields", () => {
+    const fixture = registryFixture();
+    fixture.records[0].bundle_surfaces.directories = [
+      "skills",
+      { id: "references", path: "references", native_manifest: false },
+    ];
+
+    const errors = validateRegistryData(fixture, REPO_ROOT);
+    expect(errors).toContain("records[0].bundle_surfaces.directories[0] must be an object");
+    expect(errors).toContain(
+      "records[0].bundle_surfaces.directories[1]: unknown field native_manifest",
+    );
+  });
+
+  it("rejects duplicate ids and paths across bundle directories and files", () => {
+    const duplicateId = registryFixture();
+    duplicateId.records[0].bundle_surfaces.files[0].id = "skills";
+    expect(validateRegistryData(duplicateId, REPO_ROOT)).toContain(
+      'records[0].bundle_surfaces.files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across bundle directories and files',
+    );
+
+    const duplicatePath = registryFixture();
+    duplicatePath.records[0].bundle_surfaces.files[0].path = "skills";
+    expect(validateRegistryData(duplicatePath, REPO_ROOT)).toContain(
+      'records[0].bundle_surfaces.files[0].path "skills" for id "readme" duplicates records[0].bundle_surfaces.directories[0].path; correction: use a unique path across bundle directories and files',
+    );
+  });
+
+  it.each([
+    "",
+    "../outside",
+    "./README.md",
+    "/tmp/outside",
+    "C:/outside/file",
+    "C:\\outside\\file",
+    "nested\\file",
+    "README.md/",
+    "nested//file",
+  ])("rejects noncanonical bundle path %j", (invalidPath) => {
+    const fixture = registryFixture();
+    fixture.records[0].bundle_surfaces.files[0].path = invalidPath;
+
+    expect(validateRegistryData(fixture, REPO_ROOT)).toContain(
+      `records[0].bundle_surfaces.files[0].path ${JSON.stringify(invalidPath)} for id "readme" is invalid; correction: use a non-empty normalized relative POSIX path without absolute roots, drive prefixes, backslashes, leading './', trailing separators, or '.'/'..' segments`,
+    );
   });
 
   it("consumer views share changed fixture facts", () => {
@@ -161,29 +245,7 @@ describe("package registry", () => {
     expect([...observed]).toEqual(["explicit ADR plus migration plan"]);
   });
 
-  it("separates non-version-bearing runtime manifests from version surfaces", () => {
-    const registry = loadRegistry(REGISTRY_PATH);
-    const nonVersion = registry.nonVersionBearingRuntimeManifests();
-    expect(nonVersion.map((m) => m.path)).toEqual([".opencode/package.json"]);
-    expect(
-      registry.get("agentera").version_surfaces.surfaces.map((s: any) => s.path),
-    ).not.toContain(".opencode/package.json");
-    expect(validateRegistryData(registryFixture(), REPO_ROOT)).toEqual([]);
-  });
-
-  it("rejects a missing non-version-bearing runtime manifest", () => {
-    const fixture = registryFixture();
-    fixture.records[0].runtime_package_manifests.manifests =
-      fixture.records[0].runtime_package_manifests.manifests.filter(
-        (m: any) => m.version_bearing === true,
-      );
-    const errors = validateRegistryData(fixture, REPO_ROOT);
-    expect(errors).toContain(
-      "records[0].runtime_package_manifests.manifests must include non-version-bearing runtime package manifests separately",
-    );
-  });
-
-  it("manifest projections align with registry docs_targets", () => {
+  it("version projections align with registry docs_targets", () => {
     const registry = loadRegistry(REGISTRY_PATH);
     const docs = YAML.parse(fs.readFileSync(FIXTURE_DOCS_PATH, "utf8"));
     const docsView = registry.consumerView("docs");
@@ -191,9 +253,6 @@ describe("package registry", () => {
     expect(new Set(docsView.docs_targets.version_files)).toEqual(
       new Set(docs.conventions.version_files),
     );
-    const registryExcluded = new Set(docsView.docs_targets.excluded_version_files);
-    const nonVersionPaths = new Set(registry.nonVersionBearingRuntimeManifests().map((m) => m.path));
-    expect(registryExcluded).toEqual(nonVersionPaths);
     for (const target of docsView.docs_targets.index_targets) {
       expect(fs.existsSync(path.join(REPO_ROOT, target)), `index target missing: ${target}`).toBe(true);
     }

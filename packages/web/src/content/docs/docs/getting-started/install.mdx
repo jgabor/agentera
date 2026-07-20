@@ -1,12 +1,18 @@
 ---
 title: Install and lifecycle
-description: Install Agentera and inspect lifecycle state on OpenCode, Codex, Cursor, or GitHub Copilot.
+description: Run the Agentera CLI with its canonical shared skill and inspect project lifecycle state.
 ---
 
-Agentera 3.0 uses one canonical portable skill and one lifecycle authority for
-four active runtime identities: OpenCode, Codex, Cursor, and GitHub Copilot.
+Agentera 3.0 uses one portable integration: the Agentera CLI plus one canonical
+shared skill. The npm package ships no host-native plugin, hook, command, agent,
+descriptor, or marketplace surface.
 
-Before the stable npm dist-tag promotion, use `agentera@next` for CLI commands.
+Before the stable npm dist-tag promotion, use `agentera@next`:
+
+```bash
+npx -y agentera@next prime
+npx -y agentera@next doctor --format json
+```
 
 ## Canonical skill
 
@@ -16,54 +22,15 @@ The canonical skill path is:
 ~/.agents/skills/agentera
 ```
 
-Preview and apply Agentera-owned lifecycle resources with the CLI:
+Normal upgrade previews or applies app/project migration with the CLI:
 
 ```bash
-npx -y agentera@next upgrade --runtime all --dry-run
-npx -y agentera@next upgrade --runtime all --yes
+npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run
+npx -y agentera@next upgrade --channel development --project "$PWD" --yes
 ```
 
-Replace `all` with `opencode`, `codex`, `cursor`, or `copilot` to scope the
-operation. Preview has no side effects. Apply never performs native package
-installation, authentication, enablement, or trust approval.
-
-Secure automatic apply is currently Linux-only. Other platforms receive the
-same diagnosis and explicit `action_required` steps.
-
-## Runtime package entry points
-
-### OpenCode
-
-```bash
-npx -y agentera@next upgrade --runtime opencode --dry-run
-npx -y agentera@next upgrade --runtime opencode --yes
-```
-
-This manages the one shared skill and previews the optional OpenCode plugin and
-agent source. The OpenCode plugin does not install or repair skill links.
-
-### Codex
-
-Install the Agentera plugin from its marketplace entry, enable it in Codex, and
-invoke `$agentera`. The package ships the Codex plugin manifest, plugin hooks,
-copied-hook fallback, shared skill, and capability agent descriptors. Plugin
-enablement and hook trust remain user-owned.
-
-### Cursor
-
-Cursor Agent CLI and Cursor IDE are surfaces of one `cursor` identity. CLI is
-required; IDE is conditional. Lifecycle repair can install the canonical skill
-and declared Agentera-owned IDE plugin, hook, and agent sources without making
-the optional IDE a CLI support-floor requirement.
-
-### GitHub Copilot
-
-```bash
-copilot plugin marketplace add jgabor/agentera
-copilot plugin install jgabor/agentera
-```
-
-The package ships the Copilot plugin manifests and lifecycle hook files.
+Preview has no side effects. Apply is the explicit, one-way v2-to-v3 migration;
+it does not run a native package installer or create native runtime resources.
 
 ## Diagnose
 
@@ -72,8 +39,8 @@ npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 
-`prime` returns a bounded four-runtime summary. `doctor` reports detailed
-evidence, support-floor gaps, ownership state, and exact host-native actions.
+`prime` returns a bounded project brief. `doctor` reports read-only app,
+project-state, shared-skill, and CLI evidence.
 
 ## Retired Claude data
 

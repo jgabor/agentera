@@ -1,0 +1,16 @@
+id: oxvdidpahq
+artifact: progress
+record:
+  timestamp: 2026-07-20 05:30
+  type: fix
+  phase: build
+  what: "Retired the package-native cutover surfaces: plugin.json, .github/plugin/plugin.json, .codex-plugin/plugin.json, .cursor-plugin/plugin.json, .agents/plugins/marketplace.json, .opencode/package.json, .opencode/plugins/agentera.js, agents/openai.yaml, and tracked plugins/agentera. Simplified PackageManifest, bundle construction, release provenance, package guidance, and tests to the CLI plus canonical shared skill."
+  context:
+    intent: Complete plan ntfgalrhbm task wqeazunluo by making package construction and distribution independent of native runtime manifests or source trees while preserving canonical skill data, migration/history inputs, and all version values.
+    constraints: No task/evaluation/TODO/decision status changes; no commit, push, publish, tag, release, version change, changelog edit, packed upgrade implementation, migration-reader deletion, or user-owned ignored state deletion.
+    unknowns: none
+    scope: PackageManifest contracts and loader; bundle/release provenance; nine tracked package-native deletions; CLI/shim/web install guidance; package, registry, release, and retirement tests; .agentera/docs.yaml version/index provenance.
+  inspiration: Active plan ntfgalrhbm task wqeazunluo and its CLI/shared-skill-only package acceptance contract.
+  discovered: The package registry's obsolete manifest/command groups were loaded during prime, so deleting descriptors alone was insufficient; removing those APIs and consumers restored the registry boot path. Ignored .opencode/node_modules and the 12 skills/agentera/agents/*.toml files remain intact.
+  verified: "Focused package/release/runtime tests: 5 files, 63 passed; stable shim: 6 passed; full CLI: 200 files, 2351 passed. Typecheck and build passed; copy-bundle staged 8 canonical data surfaces without native source directories. npm pack --dry-run --json reported 672 files with dist/bin/agentera.js, registry.json, SKILL.md, canonical agent TOML, capability/artifact schemas, and references present; all nine retired root paths absent and nativeBundlePaths empty. A separately packed, extracted, dependency-installed tarball ran dist/bin/agentera.js --help with exit 0. State validation passed 1583 entities with 0 issues before this append; capability contract passed 2/2; compact reported 1 artifact with 0 over-limit/errors/changes; web check passed 16 formatting and 4 lint files; web build completed and indexed 8 HTML files; git diff --check passed. packages/cli/package.json remained 3.0.0-dev.25 with suite 3.0.0; skill and registry remained 3.0.0; CHANGELOG.md was unchanged."
+  next: Leave wqeazunluo in_progress for independent audit. Packed upgrade and migration behavior remain dgipngnekk; broad conceptual documentation reconciliation remains qesbsuazwq.

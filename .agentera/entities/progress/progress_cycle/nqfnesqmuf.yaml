@@ -1,0 +1,16 @@
+id: nqfnesqmuf
+artifact: progress
+record:
+  timestamp: 2026-07-20 05:53
+  type: fix
+  phase: build
+  what: Superseded progress oxvdidpahq and correction note kdbegyplyy for wqeazunluo-audit-1. Removed PackageManifest sample values, defined bundle directory/file entries structurally as {id,path}, made package-registry.yaml the sole production authority for the canonical eight source paths, changed copy-bundle to consume that authority, strengthened shape/authority regressions, and removed retired plugin-manifest wording from the AGENTS package scope.
+  context:
+    intent: Fully resolve both audit findings while preserving the accepted package cutover, failure history, task state, versions, history, and deferred scopes.
+    constraints: Preserved oxvdidpahq, kdbegyplyy, wqeazunluo-audit-1, all nine deletions, current install guidance, ignored local state, migration/history inputs, and the existing failed evaluation. No task/evaluation/TODO/decision status mutation, commit, push, publish, tag, release, version change, changelog edit, packed-upgrade work, or broad documentation change.
+    unknowns: none
+    scope: references/adapters/package-manifest-interface-model.yaml; packages/cli/scripts/copy-bundle.mjs; packages/cli/test/registries/packageRegistry.test.ts; packages/cli/test/packaging/prepack.test.ts; AGENTS.md package scope; superseding typed progress.
+  inspiration: Independent audit wqeazunluo-audit-1 and active task wqeazunluo.
+  discovered: Eliminating sample_manifest alone left the same eight bundle values hardcoded in copy-bundle.mjs, which would still permit registry/construction drift. Package construction now reads records[*].bundle_surfaces from package-registry.yaml and rejects non-{id,path} entries before copying.
+  verified: Focused registry/model/release/packaging tests passed 60/60 across 5 files. Tests reject sample_manifest value duplication, canonical bundle scalars in the structural model, string-list entries, undeclared entry fields, and malformed copy-bundle entries; they require list[object], exactly id/path required and allowed, and registry value authority. Full CLI passed 2354/2354 across 200 files. Typecheck and build passed; registry-driven copy-bundle staged 8 surfaces. npm dry-run inventory remained 672 files with required CLI/shared-skill/schema/reference/registry paths present, all nine retired paths absent, and no native bundle paths. Fresh extracted package help exited 0. State validation passed 1585 entities with 0 issues before this append; capability contract passed 2/2; compact reported 1 artifact and 0 over-limit/errors/changes; git diff --check passed. Package remained 3.0.0-dev.25, suite/skill/registry remained 3.0.0, and CHANGELOG.md remained unchanged. Shim/web files were unchanged during retry and were not rerun.
+  next: Leave wqeazunluo in_progress for final independent audit; do not record evaluation. Packed upgrade remains dgipngnekk and broad documentation remains qesbsuazwq.

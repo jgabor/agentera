@@ -23,97 +23,15 @@ records:
         - id: cli-suite-marker
           path: packages/cli/package.json
           selector: agentera.suiteVersion
-        - id: copilot-root
-          path: plugin.json
-          selector: version
-        - id: copilot-repository
-          path: .github/plugin/plugin.json
-          selector: version
-        - id: codex-plugin
-          path: .codex-plugin/plugin.json
-          selector: version
-        - id: cursor-plugin
-          path: .cursor-plugin/plugin.json
-          selector: version
-        - id: opencode-plugin-marker
-          path: .opencode/plugins/agentera.js
-          selector: AGENTERA_VERSION
         - id: skill-frontmatter
           path: skills/agentera/SKILL.md
           selector: frontmatter.version
-      excluded_runtime_manifests:
-        - .opencode/package.json
-    runtime_package_manifests:
-      manifests:
-        - id: copilot-root-manifest
-          runtime: copilot
-          path: plugin.json
-          version_bearing: true
-          package_shape: suite-bundle
-        - id: copilot-repository-manifest
-          runtime: copilot
-          path: .github/plugin/plugin.json
-          version_bearing: true
-          package_shape: suite-bundle
-        - id: codex-plugin-manifest
-          runtime: codex
-          path: .codex-plugin/plugin.json
-          version_bearing: true
-          package_shape: suite-bundle
-        - id: cursor-plugin-manifest
-          runtime: cursor
-          path: .cursor-plugin/plugin.json
-          version_bearing: true
-          package_shape: suite-bundle
-        - id: opencode-package-manifest
-          runtime: opencode
-          path: .opencode/package.json
-          version_bearing: false
-          package_shape: npm-loadable-plugin
-      shared_paths:
-        - id: skills
-          path: skills
-          kind: dir
-        - id: hooks
-          path: hooks
-          kind: dir
-        - id: registry
-          path: registry.json
-          kind: file
-        - id: copilot-root-manifest
-          path: plugin.json
-          kind: file
-        - id: readme
-          path: README.md
-          kind: file
-        - id: upgrade-guide
-          path: UPGRADE.md
-          kind: file
-      shared_paths_policy: validate minimum shared paths separately from full bundle includes
     bundle_surfaces:
       directories:
         - id: skills
           path: skills
         - id: references
           path: references
-        - id: agents
-          path: agents
-        - id: hooks
-          path: hooks
-        - id: github-hooks
-          path: .github/hooks
-        - id: codex-plugin
-          path: .codex-plugin
-        - id: cursor-plugin
-          path: .cursor-plugin
-        - id: cursor-agents
-          path: .cursor/agents
-        - id: opencode-commands
-          path: .opencode/commands
-        - id: opencode-agents
-          path: .opencode/agents
-        - id: opencode-plugins
-          path: .opencode/plugins
       files:
         - id: readme
           path: README.md
@@ -127,14 +45,6 @@ records:
           path: LICENSE
         - id: registry
           path: registry.json
-        - id: copilot-root-manifest
-          path: plugin.json
-        - id: copilot-repository-manifest
-          path: .github/plugin/plugin.json
-        - id: opencode-package-manifest
-          path: .opencode/package.json
-        - id: cursor-hooks
-          path: .cursor/hooks.json
       generated_files:
         - id: npx-bundle-marker
           path: .agentera-npx-bundle.json
@@ -151,54 +61,16 @@ records:
       skip_suffixes:
         - .pyc
         - .pyo
-    package_commands:
-      commands:
-        - id: remove-legacy-skills
-          runtime: all
-          action: remove-legacy-skills
-          phase: cleanup
-          argv:
-            - npx
-            - skills
-            - remove
-            - hej
-            - visionera
-            - resonera
-            - inspirera
-            - planera
-            - realisera
-            - inspektera
-            - optimera
-            - orkestrera
-            - visualisera
-            - dokumentera
-            - profilera
-            - -g
-            - -y
-          skipped_without_update_packages_message: legacy skill removal skipped; pass --update-packages to run
-      safety:
-        argv_only: true
-        update_packages_required_to_plan: true
-        yes_required_to_execute: true
-        preserve_existing_write_gates: true
-        cleanup_phase: cleanup
     docs_targets:
       version_files_source: .agentera/docs.yaml conventions.version_files
       version_files:
         - packages/cli/package.json
-        - plugin.json
-        - .github/plugin/plugin.json
-        - .codex-plugin/plugin.json
-        - .cursor-plugin/plugin.json
-        - .opencode/plugins/agentera.js
         - skills/agentera/SKILL.md
         - registry.json
       index_targets:
         - references/adapters/package-surface-characterization.md
         - references/adapters/package-manifest-interface-model.yaml
         - references/adapters/package-registry.yaml
-      excluded_version_files:
-        - .opencode/package.json
     release_policy:
       semver_policy_source: .agentera/docs.yaml conventions.semver_policy
       version_bump_required_for_interface_only_change: false

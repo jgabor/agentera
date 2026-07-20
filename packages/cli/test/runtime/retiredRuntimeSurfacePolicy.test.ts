@@ -9,7 +9,6 @@ import {
   capabilityInstructionModulePath,
 } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
-import { loadRegistry as loadPackageRegistry } from "../../src/registries/packageRegistry.js";
 import { loadRegistry as loadRuntimeAdapterRegistry } from "../../src/registries/runtimeAdapterRegistry.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
@@ -148,17 +147,6 @@ function declaredCurrentSurfacePaths(): string[] {
     }
   }
 
-  const packageRegistry = loadPackageRegistry(
-    path.join(repoRoot, packageRegistryPath),
-    repoRoot,
-  );
-  const packageRecord = packageRegistry.get();
-  for (const value of [
-    ...packageRecord.runtime_package_manifests.manifests.map((entry) => entry.path),
-    ...packageRecord.runtime_package_manifests.shared_paths.map((entry) => entry.path),
-  ]) {
-    collectTextSurfaces(value, surfaces);
-  }
   for (const value of publicInstallSurfaceRoots) collectTextSurfaces(value, surfaces);
   surfaces.add("references/cli/vocabulary.md");
   return [...surfaces].sort();
@@ -294,8 +282,17 @@ describe("retired runtime current-surface policy", () => {
       expect(content, surface).not.toContain("install-agentera-skill");
       expect(content, surface).not.toMatch(/OpenCode portable-skill install/i);
     }
-    expect(read("packages/web/src/components/InstallTabs.astro")).toContain("upgrade --runtime opencode --dry-run");
-    expect(read("packages/web/src/content/docs/docs/getting-started/install.mdx")).toContain("upgrade --runtime opencode --yes");
-    expect(read("packages/cli/shim/lib/exec.mjs")).toContain("upgrade --runtime all --dry-run");
+    for (const surface of [
+      "packages/cli/README.md",
+      "packages/web/src/components/InstallTabs.astro",
+      "packages/web/src/content/docs/docs/getting-started/install.mdx",
+      "packages/cli/shim/lib/exec.mjs",
+    ]) {
+      const content = read(surface);
+      expect(content, surface).toContain("shared skill");
+      expect(content, surface).toContain("CLI");
+      expect(content, surface).not.toMatch(/--runtime\s+(?:all|opencode|codex|cursor|copilot)/);
+      expect(content, surface).not.toMatch(/(?:copilot|codex) plugin (?:marketplace|install|add)/);
+    }
   });
 });

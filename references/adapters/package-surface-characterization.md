@@ -2,7 +2,8 @@
 
 Current Agentera 3.0 package behavior is owned by
 `references/adapters/package-registry.yaml` and the TypeScript
-`PackageRegistry` loader.
+`PackageRegistry` loader. The package has two product surfaces: the CLI and the
+canonical shared skill.
 
 ## Version matrix
 
@@ -13,15 +14,7 @@ development pre-release suffix, but its `X.Y.Z` core must match the suite:
 | Surface | Selector |
 | --- | --- |
 | `packages/cli/package.json` | `version` (development pre-release) and `agentera.suiteVersion` (suite) |
-| `plugin.json` | `version` |
-| `.github/plugin/plugin.json` | `version` |
-| `.codex-plugin/plugin.json` | `version` |
-| `.cursor-plugin/plugin.json` | `version` |
-| `.opencode/plugins/agentera.js` | `AGENTERA_VERSION` |
 | `skills/agentera/SKILL.md` | frontmatter `version` |
-
-`.opencode/package.json` is a runtime package manifest but intentionally has no
-suite-version field.
 
 `packages/cli/package.json#agentera.gitRef` identifies the last substantive
 package-source commit, not a later verification-only commit. Repository-local
@@ -30,39 +23,21 @@ contract, compiled-source inputs, scripts, and bundled-data inputs against it.
 Only the package version and `gitRef`, project state, and the release validator
 implementing this check are excluded, avoiding a circular source reference.
 
-## Active runtime manifests
-
-The runtime manifest set covers exactly OpenCode, Codex, Cursor, and GitHub
-Copilot. Claude has no package or marketplace manifest.
-
-| Runtime | Manifest sources |
-| --- | --- |
-| OpenCode | `.opencode/package.json` |
-| Codex | `.codex-plugin/plugin.json` |
-| Cursor | `.cursor-plugin/plugin.json` |
-| GitHub Copilot | `plugin.json`, `.github/plugin/plugin.json` |
-
 ## npm bundle
 
 The self-contained npm package ships `dist/` plus `bundle/`. Bundle data
-includes the shared skill, contracts, references, release docs, and every
-runtime lifecycle/package source declared by the registry:
-
-- `.opencode/commands`, `.opencode/agents`, `.opencode/plugins`, and package manifest;
-- `.codex-plugin` and both Codex hook sources under `hooks/`;
-- `.cursor-plugin`, `.cursor/hooks.json`, and `.cursor/agents`;
-- Copilot root/repository manifests and `.github/hooks`;
-- `skills`, `references`, `registry.json`, README, upgrade guide, changelog,
-  design, and license.
+includes the canonical `skills/` tree, required `references/`, `registry.json`,
+and package guidance. Compiled commands ship in `dist/`. The shared-skill tree
+includes its capability schemas, artifact schemas, and canonical
+`skills/agentera/agents/*.toml` descriptors.
 
 Packaging tests inspect `npm pack --dry-run --json --ignore-scripts` and fail if
-any declared runtime source disappears. The retired Claude manifest is also a
-negative assertion.
+the CLI or required bundle data disappears, or if a current host-native
+descriptor/runtime path enters the package.
 
-## Package-manager boundary
+## Native package boundary
 
-Lifecycle upgrade does not execute runtime-native package managers. The package
-registry retains only argv-only legacy portable-skill cleanup behind its
-existing update and approval gates. The canonical shared skill is managed by
-explicit lifecycle selection; native installation, enablement, authentication,
-and trust are user-owned actions.
+The package registry defines no host-native manifest parity, package-manager
+command, runtime source tree, or native install command. Historical migration
+readers and fixtures remain source-only compatibility data; they do not create a
+current integration surface in the npm inventory.

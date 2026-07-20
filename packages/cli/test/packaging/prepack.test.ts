@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { validateRegistryData } from "../../src/registries/packageRegistry.js";
 
 /**
  * T1 packaging integration test for the v3 Agentera CLI.
@@ -26,6 +29,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(__dirname, "..", "..");
+const REPO_ROOT = path.resolve(PKG_ROOT, "..", "..");
 const PKG_JSON = path.join(PKG_ROOT, "package.json");
 
 interface PackFile {
@@ -203,39 +207,83 @@ describe("v3 packaging (T1)", () => {
       expect(filePaths.has("dist/bin/agentera.js")).toBe(true);
     });
 
-    it("PASS: tarball manifest contains bundle/ data surfaces (self-contained npx install)", () => {
+    it("PASS: tarball contains only the CLI and canonical shared-skill data", () => {
       const manifest = packManifestDirect();
       const filePaths = paths(manifest);
-      expect(filePaths.has("bundle/.agentera-npx-bundle.json")).toBe(true);
-      expect(filePaths.has("bundle/registry.json")).toBe(true);
-      expect(filePaths.has("bundle/skills/agentera/SKILL.md")).toBe(true);
+      for (const required of [
+        "dist/bin/agentera.js",
+        "bundle/.agentera-npx-bundle.json",
+        "bundle/registry.json",
+        "bundle/skills/agentera/SKILL.md",
+        "bundle/skills/agentera/agents/build.toml",
+        "bundle/skills/agentera/capabilities/build/schemas/artifacts.yaml",
+        "bundle/skills/agentera/schemas/artifacts/plan.yaml",
+        "bundle/references/artifacts/state-storage-authority.yaml",
+      ]) {
+        expect(filePaths.has(required), required).toBe(true);
+      }
       expect([...filePaths].some((p) => p.startsWith("bundle/references/"))).toBe(true);
       expect([...filePaths].some((p) => p.startsWith("bundle/skills/agentera/capabilities/"))).toBe(
         true,
       );
-      for (const descriptor of [
+      for (const nativePrefix of [
         "bundle/plugin.json",
-        "bundle/.github/plugin/plugin.json",
-        "bundle/.codex-plugin/plugin.json",
-        "bundle/agents/openai.yaml",
-        "bundle/.opencode/plugins/agentera.js",
-        "bundle/.opencode/package.json",
-        "bundle/.cursor-plugin/plugin.json",
+        "bundle/.agents/",
+        "bundle/.codex-plugin/",
+        "bundle/.cursor-plugin/",
+        "bundle/.cursor/",
+        "bundle/.github/",
+        "bundle/.opencode/",
+        "bundle/agents/",
+        "bundle/hooks/",
+        "bundle/plugins/",
       ]) {
-        expect(filePaths.has(descriptor), `${descriptor} remains Task 4 package metadata`).toBe(true);
+        expect(
+          [...filePaths].some((candidate) => candidate.startsWith(nativePrefix)),
+          nativePrefix,
+        ).toBe(false);
       }
-      for (const retiredImplementation of [
-        "bundle/.github/hooks/preToolUse.json",
-        "bundle/.github/hooks/sessionStart.json",
-        "bundle/.opencode/agents/agentera.md",
-        "bundle/hooks/codex-hooks.json",
-        "bundle/hooks/codex-plugin-hooks.json",
-        "bundle/.cursor/hooks.json",
-        "bundle/.cursor/agents/agentera.md",
+      for (const nativeDescriptor of [
+        "plugin.json",
+        ".github/plugin/plugin.json",
+        ".codex-plugin/plugin.json",
+        ".cursor-plugin/plugin.json",
+        ".agents/plugins/marketplace.json",
+        ".opencode/package.json",
+        ".opencode/plugins/agentera.js",
+        "agents/openai.yaml",
+        "plugins/agentera",
       ]) {
-        expect(filePaths.has(retiredImplementation), retiredImplementation).toBe(false);
+        expect(filePaths.has(nativeDescriptor), nativeDescriptor).toBe(false);
       }
       expect([...filePaths].some((p) => p.startsWith("bundle/.claude-plugin/"))).toBe(false);
+    });
+
+    it("PASS: an extracted tarball boots the CLI directly", () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-pack-boot-"));
+      try {
+        const packed = spawnSync(
+          "npm",
+          ["pack", "--json", "--ignore-scripts", "--pack-destination", tmp],
+          { cwd: PKG_ROOT, encoding: "utf8", env: scrubbedEnv() },
+        );
+        expect(packed.status, `npm pack must succeed; stderr=${packed.stderr.slice(0, 800)}`).toBe(0);
+        const tarball = path.join(tmp, parsePackManifest(packed.stdout).filename);
+        const extracted = spawnSync("tar", ["-xzf", tarball, "-C", tmp], { encoding: "utf8" });
+        expect(extracted.status, `tar extraction must succeed; stderr=${extracted.stderr}`).toBe(0);
+        fs.symlinkSync(path.join(PKG_ROOT, "node_modules"), path.join(tmp, "package", "node_modules"));
+
+        const boot = spawnSync(
+          process.execPath,
+          [path.join(tmp, "package", "dist", "bin", "agentera.js"), "--help"],
+          { cwd: tmp, encoding: "utf8" },
+        );
+        expect(boot.status, `extracted CLI must boot; stderr=${boot.stderr.slice(0, 800)}`).toBe(0);
+        expect(boot.stdout).toContain("agentera");
+        expect(boot.stdout).toContain("prime");
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
     });
 
     it("PASS: production source and packed files contain no test environment token", () => {
@@ -313,6 +361,11 @@ describe("v3 packaging (T1)", () => {
       }
       fs.mkdirSync(path.join(fakeRoot, "references"), { recursive: true });
       fs.writeFileSync(path.join(fakeRoot, "references", "fixture.md"), "# Fixture\n");
+      fs.mkdirSync(path.join(fakeRoot, "references", "adapters"), { recursive: true });
+      fs.copyFileSync(
+        path.join(REPO_ROOT, "references", "adapters", "package-registry.yaml"),
+        path.join(fakeRoot, "references", "adapters", "package-registry.yaml"),
+      );
       fs.mkdirSync(path.join(fakeRoot, "references", "artifacts"), { recursive: true });
       fs.writeFileSync(
         path.join(fakeRoot, "references", "artifacts", "state-storage-authority.yaml"),
@@ -329,28 +382,10 @@ describe("v3 packaging (T1)", () => {
       for (const sourceFile of ["README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE"]) {
         fs.writeFileSync(path.join(fakeRoot, sourceFile), "fixture\n");
       }
-      for (const runtimeSource of [
-        "plugin.json",
-        ".github/plugin/plugin.json",
-        ".github/hooks/preToolUse.json",
-        ".github/hooks/sessionStart.json",
-        ".codex-plugin/plugin.json",
-        "agents/openai.yaml",
-        ".opencode/plugins/agentera.js",
-        ".opencode/agents/agentera.md",
-        ".opencode/package.json",
-        ".opencode/commands/agentera.md",
-        "hooks/codex-hooks.json",
-        "hooks/codex-plugin-hooks.json",
-        ".cursor-plugin/plugin.json",
-        ".cursor/hooks.json",
-        ".cursor/agents/agentera.md",
-      ]) {
-        fs.mkdirSync(path.join(fakeRoot, path.dirname(runtimeSource)), { recursive: true });
-        fs.writeFileSync(path.join(fakeRoot, runtimeSource), "fixture\n");
-      }
       const fakePkg = path.join(fakeRoot, "packages", "cli");
       fs.mkdirSync(path.join(fakePkg, "scripts"), { recursive: true });
+      fs.symlinkSync(path.join(PKG_ROOT, "node_modules"), path.join(fakePkg, "node_modules"));
+      fs.cpSync(path.join(PKG_ROOT, "dist"), path.join(fakePkg, "dist"), { recursive: true });
       fs.copyFileSync(
         path.join(PKG_ROOT, "scripts", "copy-bundle.mjs"),
         path.join(fakePkg, "scripts", "copy-bundle.mjs"),
@@ -367,19 +402,54 @@ describe("v3 packaging (T1)", () => {
       return fakeRoot;
     }
 
+    function registryPath(fakeRoot: string): string {
+      return path.join(fakeRoot, "references", "adapters", "package-registry.yaml");
+    }
+
+    function readRegistry(fakeRoot: string): any {
+      return YAML.parse(fs.readFileSync(registryPath(fakeRoot), "utf8"));
+    }
+
+    function writeRegistry(fakeRoot: string, registry: unknown): void {
+      fs.writeFileSync(registryPath(fakeRoot), YAML.stringify(registry));
+    }
+
+    function runCopyBundle(fakeRoot: string) {
+      return spawnSync(
+        "node",
+        [path.join(fakeRoot, "packages", "cli", "scripts", "copy-bundle.mjs")],
+        { cwd: fakeRoot, encoding: "utf8" },
+      );
+    }
+
+    function seedProtectedState(fakeRoot: string): { bundleFile: string; outsideFile: string } {
+      const bundleFile = path.join(fakeRoot, "packages", "cli", "bundle", "preserved.txt");
+      const outsideFile = path.join(fakeRoot, "outside-sentinel.txt");
+      fs.mkdirSync(path.dirname(bundleFile), { recursive: true });
+      fs.writeFileSync(bundleFile, "bundle-before\n");
+      fs.writeFileSync(outsideFile, "outside-before\n");
+      return { bundleFile, outsideFile };
+    }
+
+    function expectProtectedState(paths: { bundleFile: string; outsideFile: string }): void {
+      expect(fs.readFileSync(paths.bundleFile, "utf8")).toBe("bundle-before\n");
+      expect(fs.readFileSync(paths.outsideFile, "utf8")).toBe("outside-before\n");
+    }
+
     it("PASS: copy-bundle.mjs stages bundle/, sentinel, registry.json, skills/, references/", () => {
       const fakeRoot = stageFakeRepo({ omitSkills: false });
       try {
         const fakePkg = path.join(fakeRoot, "packages", "cli");
         const bundle = path.join(fakePkg, "bundle");
-        const r = spawnSync("node", [path.join(fakePkg, "scripts", "copy-bundle.mjs")], {
-          cwd: fakeRoot,
-          encoding: "utf8",
-        });
+        const r = runCopyBundle(fakeRoot);
         expect(r.status, `copy-bundle must succeed; stderr=${r.stderr}`).toBe(0);
         expect(fs.existsSync(path.join(bundle, ".agentera-npx-bundle.json"))).toBe(true);
         expect(fs.existsSync(path.join(bundle, "registry.json"))).toBe(true);
         expect(fs.existsSync(path.join(bundle, "skills", "agentera", "SKILL.md"))).toBe(true);
+        expect(fs.existsSync(path.join(bundle, ".opencode"))).toBe(false);
+        expect(fs.existsSync(path.join(bundle, ".codex-plugin"))).toBe(false);
+        expect(fs.existsSync(path.join(bundle, ".cursor-plugin"))).toBe(false);
+        expect(fs.existsSync(path.join(bundle, "plugin.json"))).toBe(false);
         expect(fs.readFileSync(
           path.join(bundle, "references", "artifacts", "state-storage-authority.yaml"),
           "utf8",
@@ -404,16 +474,133 @@ describe("v3 packaging (T1)", () => {
     it("FAIL (regression): copy-bundle.mjs fails (non-zero exit) if a data surface is missing", () => {
       const fakeRoot = stageFakeRepo({ omitSkills: true });
       try {
-        const r = spawnSync(
-          "node",
-          [path.join(fakeRoot, "packages", "cli", "scripts", "copy-bundle.mjs")],
-          { cwd: fakeRoot, encoding: "utf8" },
-        );
+        const r = runCopyBundle(fakeRoot);
         expect(
           r.status,
           `copy-bundle must fail when skills/ is missing; stderr=${r.stderr}`,
         ).not.toBe(0);
-        expect(r.stderr).toMatch(/missing data directory skills/);
+        expect(r.stderr).toContain('source id "skills" path "skills" is missing');
+      } finally {
+        fs.rmSync(fakeRoot, { recursive: true, force: true });
+      }
+    });
+
+    it("FAIL (regression): copy-bundle.mjs rejects string-list bundle entries", () => {
+      const fakeRoot = stageFakeRepo({ omitSkills: false });
+      try {
+        const registry = readRegistry(fakeRoot);
+        registry.records[0].bundle_surfaces.directories = ["skills"];
+        writeRegistry(fakeRoot, registry);
+
+        const r = runCopyBundle(fakeRoot);
+        expect(r.status).not.toBe(0);
+        expect(r.stderr).toContain(
+          "records[0].bundle_surfaces.directories[0] must be an object",
+        );
+      } finally {
+        fs.rmSync(fakeRoot, { recursive: true, force: true });
+      }
+    });
+
+    it.each([
+      {
+        label: "duplicate id across lists",
+        mutate: (registry: any) => {
+          registry.records[0].bundle_surfaces.files[0].id = "skills";
+        },
+        expected: 'files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id',
+      },
+      {
+        label: "duplicate path across lists",
+        mutate: (registry: any) => {
+          registry.records[0].bundle_surfaces.files[0].path = "skills";
+        },
+        expected: 'files[0].path "skills" for id "readme" duplicates records[0].bundle_surfaces.directories[0].path',
+      },
+      ...[
+        "",
+        "../outside",
+        "./README.md",
+        "/tmp/outside",
+        "C:/outside/file",
+        "C:\\outside\\file",
+        "nested\\file",
+        "README.md/",
+        "nested//file",
+      ].map((invalidPath) => ({
+        label: `invalid path ${JSON.stringify(invalidPath)}`,
+        mutate: (registry: any) => {
+          registry.records[0].bundle_surfaces.files[0].path = invalidPath;
+        },
+        expected: `files[0].path ${JSON.stringify(invalidPath)} for id "readme" is invalid`,
+      })),
+    ])("fails before side effects for $label and matches loader rejection", ({ mutate, expected }) => {
+      const fakeRoot = stageFakeRepo({ omitSkills: false });
+      try {
+        const protectedState = seedProtectedState(fakeRoot);
+        const registry = readRegistry(fakeRoot);
+        mutate(registry);
+        const loaderErrors = validateRegistryData(registry, fakeRoot);
+        const loaderError = loaderErrors.find((error) => error.includes(expected));
+        expect(loaderError, `loader must reject ${expected}`).toBeDefined();
+        writeRegistry(fakeRoot, registry);
+
+        const result = runCopyBundle(fakeRoot);
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain(loaderError!);
+        expectProtectedState(protectedState);
+      } finally {
+        fs.rmSync(fakeRoot, { recursive: true, force: true });
+      }
+    });
+
+    it("fails before side effects when a source symlink escapes the source root", () => {
+      const fakeRoot = stageFakeRepo({ omitSkills: false });
+      const outside = fs.mkdtempSync(path.join(os.tmpdir(), "prepack-source-escape-"));
+      try {
+        const protectedState = seedProtectedState(fakeRoot);
+        fs.writeFileSync(path.join(outside, "sentinel.txt"), "outside-source-before\n");
+        fs.rmSync(path.join(fakeRoot, "skills"), { recursive: true, force: true });
+        try {
+          fs.symlinkSync(outside, path.join(fakeRoot, "skills"), "dir");
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "EPERM") return;
+          throw error;
+        }
+
+        const result = runCopyBundle(fakeRoot);
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain(
+          'source id "skills" path "skills" resolves outside source root',
+        );
+        expectProtectedState(protectedState);
+        expect(fs.readFileSync(path.join(outside, "sentinel.txt"), "utf8")).toBe(
+          "outside-source-before\n",
+        );
+      } finally {
+        fs.rmSync(fakeRoot, { recursive: true, force: true });
+        fs.rmSync(outside, { recursive: true, force: true });
+      }
+    });
+
+    it("fails before side effects when recursive and explicit sources share a destination", () => {
+      const fakeRoot = stageFakeRepo({ omitSkills: false });
+      try {
+        const protectedState = seedProtectedState(fakeRoot);
+        const registry = readRegistry(fakeRoot);
+        registry.records[0].bundle_surfaces.files.push({
+          id: "nested-skill",
+          path: "skills/agentera/SKILL.md",
+        });
+        expect(validateRegistryData(registry, fakeRoot)).toEqual([]);
+        writeRegistry(fakeRoot, registry);
+
+        const result = runCopyBundle(fakeRoot);
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain(
+          'destination id "nested-skill" path "skills/agentera/SKILL.md" duplicates id "skills" path "skills/agentera/SKILL.md"',
+        );
+        expectProtectedState(protectedState);
       } finally {
         fs.rmSync(fakeRoot, { recursive: true, force: true });
       }

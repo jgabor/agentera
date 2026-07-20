@@ -1,0 +1,24 @@
+id: ipayvkggov
+artifact: plan
+record:
+  plan: ntfgalrhbm
+  name: Secure registry-driven package bundle entries
+  status: complete
+  depends_on:
+    - igibjjvytl
+    - fawriaumfr
+  acceptance:
+    - GIVEN package-registry bundle entries WHEN loaded THEN IDs and paths are globally unique across directories and files, and every path is relative, normalized, non-traversing, and contains no absolute-platform form.
+    - GIVEN copy-bundle source and destination paths WHEN resolved THEN every remove/read/copy target remains inside its declared root and malformed or escaping entries fail before side effects.
+    - GIVEN the loader and bundler WHEN construction runs THEN they enforce one executable bundle-entry contract without duplicating the canonical eight values or shape rules.
+    - GIVEN the complete package-retirement candidate WHEN reverified THEN the 672-file inventory, extracted CLI boot, nine deletions, shared-skill data, unchanged versions/history, and all gates remain intact.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: ipayvkggov-audit-1
+      source: "independent review ses_08240e479ffeiaThiVzfCnyWce: secure bundle contract and complete package retirement passed"
+      recorded_at: 2026-07-20 06:32
+      writer_command: agentera state plan record-evaluation

@@ -18,7 +18,7 @@ const RETIRED_CURRENT_IMPLEMENTATIONS = [
   "hooks/codex-plugin-hooks.json",
 ] as const;
 
-const TASK_4_DISTRIBUTION_BOUNDARY = [
+const RETIRED_PACKAGE_SURFACES = [
   ".agents/plugins/marketplace.json",
   ".codex-plugin/plugin.json",
   ".cursor-plugin/plugin.json",
@@ -27,6 +27,15 @@ const TASK_4_DISTRIBUTION_BOUNDARY = [
   ".opencode/plugins/agentera.js",
   "agents/openai.yaml",
   "plugin.json",
+  "plugins/agentera",
+] as const;
+
+const CANONICAL_SHARED_SKILL_DATA = [
+  "skills/agentera/SKILL.md",
+  "skills/agentera/agents/build.toml",
+  "skills/agentera/agents/status.toml",
+  "skills/agentera/capabilities/build/schemas/artifacts.yaml",
+  "skills/agentera/schemas/artifacts/plan.yaml",
 ] as const;
 
 const PRESERVED_MIGRATION_AND_HISTORY = [
@@ -48,14 +57,16 @@ describe("repository-native retirement inventory", () => {
     }
   });
 
-  it("leaves package and distribution descriptors to Task 4", () => {
-    for (const relative of TASK_4_DISTRIBUTION_BOUNDARY) {
+  it("has no current package or distribution descriptors", () => {
+    for (const relative of RETIRED_PACKAGE_SURFACES) {
+      expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(false);
+    }
+  });
+
+  it("preserves canonical shared-skill data", () => {
+    for (const relative of CANONICAL_SHARED_SKILL_DATA) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(true);
     }
-    const opencode = JSON.parse(fs.readFileSync(path.join(ROOT, ".opencode/package.json"), "utf8"));
-    expect(opencode).not.toHaveProperty("dependencies");
-    expect(opencode).not.toHaveProperty("main");
-    expect(opencode).not.toHaveProperty("exports");
   });
 
   it("preserves explicitly classified migration readers, fixtures, and history", () => {

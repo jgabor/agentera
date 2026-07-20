@@ -1,31 +1,11 @@
 ---
-const runtimes = [
+const installs = [
   {
-    id: 'opencode',
-    label: 'OpenCode',
-    commands: `npx -y agentera@next upgrade --runtime opencode --dry-run
-npx -y agentera@next upgrade --runtime opencode --yes`,
-    note: 'Uses the shared skill at ~/.agents/skills/agentera. OpenCode also routes bare /agentera to the dashboard.',
-  },
-  {
-    id: 'cursor',
-    label: 'Cursor',
-    commands: `npx -y agentera@next upgrade --runtime cursor --dry-run
-npx -y agentera@next upgrade --runtime cursor --yes`,
-    note: 'Uses the shared skill and ownership-gated Cursor lifecycle resources. Cursor Agent CLI is required; IDE integration is conditional.',
-  },
-  {
-    id: 'copilot',
-    label: 'Copilot CLI',
-    commands: `copilot plugin marketplace add jgabor/agentera
-copilot plugin install jgabor/agentera`,
-  },
-  {
-    id: 'codex',
-    label: 'Codex CLI',
-    commands: `codex plugin marketplace add jgabor/agentera
-codex plugin add agentera@agentera`,
-    note: 'Open `/plugins`, enable Agentera, then run `$agentera`.',
+    id: 'agentera',
+    label: 'Agentera CLI',
+    commands: `npx -y agentera@next prime
+npx -y agentera@next doctor --format json`,
+    note: 'Uses the Agentera CLI plus the shared skill at ~/.agents/skills/agentera. The package creates no host-native integration files.',
   },
 ];
 ---
@@ -34,7 +14,7 @@ codex plugin add agentera@agentera`,
   <div class="mx-auto max-w-3xl">
     <h2 class="mb-4 text-2xl font-semibold">Get started</h2>
     <ol class="mb-8 list-decimal space-y-2 pl-6 text-[var(--color-muted)]">
-      <li>Pick your runtime below and install.</li>
+      <li>Run the Agentera CLI below.</li>
       <li>Open a git project (existing repo or new).</li>
       <li>Run <code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">/agentera</code> (<code class="rounded bg-[var(--color-surface)] px-1.5 py-0.5">$agentera</code> in Codex).</li>
     </ol>
@@ -43,13 +23,13 @@ codex plugin add agentera@agentera`,
     </p>
 
     <div class="space-y-3">
-      {runtimes.map((runtime) => (
+      {installs.map((install) => (
         <details class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-          <summary class="cursor-pointer px-4 py-3 font-semibold">{runtime.label}</summary>
+          <summary class="cursor-pointer px-4 py-3 font-semibold">{install.label}</summary>
           <div class="border-t border-[var(--color-border)] px-4 py-4">
-            <pre class="overflow-x-auto text-xs sm:text-sm"><code>{runtime.commands}</code></pre>
-            {runtime.note && (
-              <p class="mt-3 text-sm text-[var(--color-muted)]">{runtime.note}</p>
+            <pre class="overflow-x-auto text-xs sm:text-sm"><code>{install.commands}</code></pre>
+            {install.note && (
+              <p class="mt-3 text-sm text-[var(--color-muted)]">{install.note}</p>
             )}
           </div>
         </details>

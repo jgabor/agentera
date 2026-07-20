@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   RELEASE_METADATA_ADVISORY_FILES,
   RELEASE_METADATA_AUTHORITY_FILES,
+  RELEASE_PROVENANCE_PATHS,
   readReleaseMetadata,
   releaseMetadataMain,
   validateReleaseMetadata,
@@ -317,6 +318,22 @@ describe("release-metadata", () => {
     expect(errors[0]).toContain("release-metadata drift (advisory)");
     expect(errors[0]).toContain("run `npm run bundle:data`");
     expect(RELEASE_METADATA_ADVISORY_FILES).toContain("packages/cli/bundle/.agentera-npx-bundle.json");
+  });
+
+  it("governs only CLI and shared-skill package inputs", () => {
+    expect(RELEASE_PROVENANCE_PATHS).toEqual([
+      "packages/cli/src",
+      "packages/cli/scripts",
+      "packages/cli/tsconfig.json",
+      "skills",
+      "references",
+      "README.md",
+      "UPGRADE.md",
+      "CHANGELOG.md",
+      "DESIGN.md",
+      "LICENSE",
+      "registry.json",
+    ]);
   });
 
   it("passes when the local bundle sentinel is in sync with registry.json", () => {

@@ -14,9 +14,7 @@ export const REQUIRED_GROUPS = [
   "identity",
   "version_authority",
   "version_surfaces",
-  "runtime_package_manifests",
   "bundle_surfaces",
-  "package_commands",
   "docs_targets",
   "release_policy",
 ] as const;
@@ -29,11 +27,9 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
     "access_interface",
     "future_authority_change_requires",
   ],
-  version_surfaces: ["surfaces", "excluded_runtime_manifests"],
-  runtime_package_manifests: ["manifests", "shared_paths", "shared_paths_policy"],
+  version_surfaces: ["surfaces"],
   bundle_surfaces: ["directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
-  package_commands: ["commands", "safety"],
-  docs_targets: ["version_files_source", "version_files", "index_targets", "excluded_version_files"],
+  docs_targets: ["version_files_source", "version_files", "index_targets"],
   release_policy: [
     "semver_policy_source",
     "version_bump_required_for_interface_only_change",
@@ -42,16 +38,12 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
 };
 
 const CONSUMER_GROUPS: Record<string, readonly string[]> = {
-  validator: ["identity", "version_authority", "version_surfaces", "runtime_package_manifests"],
-  upgrade: ["identity", "version_authority", "bundle_surfaces", "package_commands"],
+  validator: ["identity", "version_authority", "version_surfaces"],
+  upgrade: ["identity", "version_authority", "bundle_surfaces"],
   docs: ["identity", "version_authority", "docs_targets", "release_policy"],
   tests: REQUIRED_GROUPS,
 };
 
-const APPROVED_EXECUTABLES = new Set(["npx"]);
-const APPROVED_ACTIONS = new Set(["remove-legacy-skills"]);
-const APPROVED_RUNTIMES = new Set(["all"]);
-const CLEANUP_ACTIONS = new Set(["remove-legacy-skills"]);
 const FORBIDDEN_INSTALL_ROOT_FIELDS = new Set([
   "install_root",
   "install_root_classification",
@@ -99,20 +91,6 @@ interface PackageRegistrySurface extends JsonObject {
   selector: string;
 }
 
-interface PackageRegistryManifest extends JsonObject {
-  id: string;
-  runtime: string;
-  path: string;
-  version_bearing: boolean;
-  package_shape: string;
-}
-
-interface PackageRegistrySharedPath extends JsonObject {
-  id: string;
-  path: string;
-  kind: string;
-}
-
 interface PackageRegistryRecord extends JsonObject {
   identity: { id: string; name: string; skill_path: string; expected_capabilities: number } & JsonObject;
   version_authority: {
@@ -123,12 +101,6 @@ interface PackageRegistryRecord extends JsonObject {
   } & JsonObject;
   version_surfaces: {
     surfaces: PackageRegistrySurface[];
-    excluded_runtime_manifests: string[];
-  } & JsonObject;
-  runtime_package_manifests: {
-    manifests: PackageRegistryManifest[];
-    shared_paths: PackageRegistrySharedPath[];
-    shared_paths_policy: string;
   } & JsonObject;
 }
 
@@ -142,9 +114,6 @@ function selectorParts(selector: string): Array<string | number> {
 
 function selectedVersion(root: string, surface: PackageRegistrySurface): string | null {
   const source = fs.readFileSync(path.join(root, surface.path), "utf8");
-  if (surface.selector === "AGENTERA_VERSION") {
-    return /const\s+AGENTERA_VERSION\s*=\s*["']([^"']+)["']/.exec(source)?.[1] ?? null;
-  }
   if (surface.selector === "frontmatter.version") {
     return /^version:\s*["']?([^"'\s]+)["']?\s*$/m.exec(source)?.[1] ?? null;
   }
@@ -232,39 +201,6 @@ export class PackageRegistry {
     return values;
   }
 
-  runtimeManifestIds(packageId = "agentera"): string[] {
-    return this.get(packageId).runtime_package_manifests.manifests.map((m) => m.id);
-  }
-
-  runtimeManifestPaths(packageId = "agentera"): Record<string, string> {
-    const paths: Record<string, string> = {};
-    for (const manifest of this.get(packageId).runtime_package_manifests.manifests) {
-      if (!(manifest.runtime in paths)) {
-        paths[manifest.runtime] = manifest.path;
-      }
-    }
-    return paths;
-  }
-
-  runtimePackageShapes(packageId = "agentera"): Record<string, string> {
-    const shapes: Record<string, string> = {};
-    for (const manifest of this.get(packageId).runtime_package_manifests.manifests) {
-      shapes[manifest.runtime] = manifest.package_shape;
-    }
-    return shapes;
-  }
-
-  sharedPathRequirements(packageId = "agentera"): Record<string, string> {
-    const requirements: Record<string, string> = {};
-    for (const entry of this.get(packageId).runtime_package_manifests.shared_paths) {
-      requirements[entry.path] = entry.kind;
-    }
-    return requirements;
-  }
-
-  nonVersionBearingRuntimeManifests(packageId = "agentera"): JsonObject[] {
-    return this.get(packageId).runtime_package_manifests.manifests.filter((m) => m.version_bearing === false);
-  }
 }
 
 export function loadRegistry(
@@ -376,14 +312,8 @@ function validateGroup(prefix: string, group: string, value: JsonObject, root: s
     case "version_surfaces":
       errors.push(...validateVersionSurfaces(prefix, value, root));
       break;
-    case "runtime_package_manifests":
-      errors.push(...validateRuntimeManifests(prefix, value, root));
-      break;
     case "bundle_surfaces":
-      errors.push(...validateBundleSurfaces(prefix, value, root));
-      break;
-    case "package_commands":
-      errors.push(...validatePackageCommands(prefix, value));
+      errors.push(...validateBundleSurfaces(prefix, value));
       break;
     case "docs_targets":
       errors.push(...validateDocsTargets(prefix, value, root));
@@ -440,81 +370,19 @@ function validateVersionSurfaces(prefix: string, value: JsonObject, root: string
       errors.push(...validateRepoPath(`${surfacePrefix}.path`, surface.path, root));
     });
   }
-  errors.push(
-    ...validatePathList(`${prefix}.excluded_runtime_manifests`, value.excluded_runtime_manifests, root),
-  );
   return errors;
 }
 
-function validateRuntimeManifests(prefix: string, value: JsonObject, root: string): string[] {
+function validateBundleSurfaces(prefix: string, value: JsonObject): string[] {
   const errors: string[] = [];
-  const manifests = value.manifests;
-  if (!Array.isArray(manifests)) {
-    errors.push(`${prefix}.manifests must be a list`);
-  } else {
-    errors.push(...validateIdList(`${prefix}.manifests`, manifests));
-    let nonVersionBearing = 0;
-    manifests.forEach((manifest, index) => {
-      const manifestPrefix = `${prefix}.manifests[${index}]`;
-      if (!isMapping(manifest)) {
-        errors.push(`${manifestPrefix} must be an object`);
-        return;
-      }
-      errors.push(
-        ...validateRequiredObjectFields(manifestPrefix, manifest, [
-          "id",
-          "runtime",
-          "path",
-          "version_bearing",
-          "package_shape",
-        ]),
-      );
-      errors.push(...validateRepoPath(`${manifestPrefix}.path`, manifest.path, root));
-      if (typeof manifest.version_bearing !== "boolean") {
-        errors.push(`${manifestPrefix}.version_bearing must be a boolean`);
-      } else if (manifest.version_bearing === false) {
-        nonVersionBearing += 1;
-      }
-    });
-    if (nonVersionBearing === 0) {
-      errors.push(
-        `${prefix}.manifests must include non-version-bearing runtime package manifests separately`,
-      );
-    }
-  }
-  const sharedPaths = value.shared_paths;
-  if (!Array.isArray(sharedPaths)) {
-    errors.push(`${prefix}.shared_paths must be a list`);
-  } else {
-    errors.push(...validateIdList(`${prefix}.shared_paths`, sharedPaths));
-    sharedPaths.forEach((entry, index) => {
-      const entryPrefix = `${prefix}.shared_paths[${index}]`;
-      if (!isMapping(entry)) {
-        errors.push(`${entryPrefix} must be an object`);
-        return;
-      }
-      errors.push(...validateRequiredObjectFields(entryPrefix, entry, ["id", "path", "kind"]));
-      errors.push(...validateRepoPath(`${entryPrefix}.path`, entry.path, root));
-      if (entry.kind !== "dir" && entry.kind !== "file") {
-        errors.push(`${entryPrefix}.kind must be dir or file`);
-      }
-    });
-  }
-  if (typeof value.shared_paths_policy !== "string" || !value.shared_paths_policy) {
-    errors.push(`${prefix}.shared_paths_policy must be a non-empty string`);
-  }
-  return errors;
-}
-
-function validateBundleSurfaces(prefix: string, value: JsonObject, root: string): string[] {
-  const errors: string[] = [];
+  const ids = new Map<string, string>();
+  const paths = new Map<string, string>();
   for (const field of ["directories", "files"]) {
     const entries = value[field];
     if (!Array.isArray(entries)) {
       errors.push(`${prefix}.${field} must be a list`);
       continue;
     }
-    errors.push(...validateIdList(`${prefix}.${field}`, entries));
     entries.forEach((entry, index) => {
       const entryPrefix = `${prefix}.${field}[${index}]`;
       if (!isMapping(entry)) {
@@ -522,7 +390,31 @@ function validateBundleSurfaces(prefix: string, value: JsonObject, root: string)
         return;
       }
       errors.push(...validateRequiredObjectFields(entryPrefix, entry, ["id", "path"]));
-      errors.push(...validateRepoPath(`${entryPrefix}.path`, entry.path, root));
+      const entryId = entry.id;
+      if (typeof entryId === "string" && entryId.length > 0) {
+        const previous = ids.get(entryId);
+        if (previous !== undefined) {
+          errors.push(
+            `${entryPrefix}.id ${JSON.stringify(entryId)} duplicates ${previous}.id; ` +
+              "correction: use a unique id across bundle directories and files",
+          );
+        } else {
+          ids.set(entryId, entryPrefix);
+        }
+      }
+      const entryPath = entry.path;
+      errors.push(...validateBundlePath(entryPrefix, entryId, entryPath));
+      if (typeof entryPath === "string" && entryPath.length > 0) {
+        const previous = paths.get(entryPath);
+        if (previous !== undefined) {
+          errors.push(
+            `${entryPrefix}.path ${JSON.stringify(entryPath)} for id ${JSON.stringify(entryId)} ` +
+              `duplicates ${previous}.path; correction: use a unique path across bundle directories and files`,
+          );
+        } else {
+          paths.set(entryPath, entryPrefix);
+        }
+      }
     });
   }
   for (const field of ["skip_parts", "skip_suffixes"]) {
@@ -533,46 +425,26 @@ function validateBundleSurfaces(prefix: string, value: JsonObject, root: string)
   return errors;
 }
 
-function validatePackageCommands(prefix: string, value: JsonObject): string[] {
-  const errors: string[] = [];
-  const commands = value.commands;
-  if (!Array.isArray(commands)) {
-    errors.push(`${prefix}.commands must be a list`);
-  } else {
-    errors.push(...validateIdList(`${prefix}.commands`, commands));
-    commands.forEach((command, index) => {
-      const commandPrefix = `${prefix}.commands[${index}]`;
-      if (!isMapping(command)) {
-        errors.push(`${commandPrefix} must be an object`);
-        return;
-      }
-      errors.push(
-        ...validateRequiredObjectFields(commandPrefix, command, [
-          "id",
-          "runtime",
-          "action",
-          "phase",
-          "argv",
-          "skipped_without_update_packages_message",
-        ]),
-      );
-      errors.push(...validateCommandSpec(commandPrefix, command));
-    });
-  }
-  const safety = value.safety;
-  const expectedSafety: JsonObject = {
-    argv_only: true,
-    update_packages_required_to_plan: true,
-    yes_required_to_execute: true,
-    preserve_existing_write_gates: true,
-    cleanup_phase: "cleanup",
-  };
-  if (!isMapping(safety)) {
-    errors.push(`${prefix}.safety must be an object`);
-  } else if (!shallowEqual(safety, expectedSafety)) {
-    errors.push(`${prefix}.safety must preserve approved write gates and phase names`);
-  }
-  return errors;
+function validateBundlePath(prefix: string, id: unknown, value: unknown): string[] {
+  const segments = typeof value === "string" ? value.split("/") : [];
+  const invalid =
+    typeof value !== "string" ||
+    value.length === 0 ||
+    path.posix.isAbsolute(value) ||
+    path.win32.isAbsolute(value) ||
+    /^[A-Za-z]:/.test(value) ||
+    value.includes("\\") ||
+    value.startsWith("./") ||
+    value.endsWith("/") ||
+    segments.includes(".") ||
+    segments.includes("..") ||
+    path.posix.normalize(value) !== value;
+  if (!invalid) return [];
+  return [
+    `${prefix}.path ${JSON.stringify(value)} for id ${JSON.stringify(id)} is invalid; ` +
+      "correction: use a non-empty normalized relative POSIX path without absolute roots, " +
+      "drive prefixes, backslashes, leading './', trailing separators, or '.'/'..' segments",
+  ];
 }
 
 function validateDocsTargets(prefix: string, value: JsonObject, root: string): string[] {
@@ -580,7 +452,7 @@ function validateDocsTargets(prefix: string, value: JsonObject, root: string): s
   if (typeof value.version_files_source !== "string" || !value.version_files_source) {
     errors.push(`${prefix}.version_files_source must be a non-empty string`);
   }
-  for (const field of ["version_files", "index_targets", "excluded_version_files"]) {
+  for (const field of ["version_files", "index_targets"]) {
     errors.push(...validatePathList(`${prefix}.${field}`, value[field], root));
   }
   return errors;
@@ -602,37 +474,6 @@ function validateReleasePolicy(prefix: string, value: JsonObject): string[] {
   return errors;
 }
 
-function validateCommandSpec(prefix: string, command: JsonObject): string[] {
-  const errors: string[] = [];
-  const runtime = command.runtime as string; // cast: parsed registry IO data
-  const action = command.action as string;
-  const phase = command.phase as string;
-  const argv = command.argv as string[];
-  if (!APPROVED_RUNTIMES.has(runtime)) {
-    errors.push(`${prefix}.runtime ${pyRepr(runtime)} is not approved`);
-  }
-  if (!APPROVED_ACTIONS.has(action)) {
-    errors.push(`${prefix}.action ${pyRepr(action)} is not approved`);
-  }
-  if (!Array.isArray(argv) || argv.length === 0 || !argv.every((part) => typeof part === "string")) {
-    errors.push(`${prefix}.argv must be a list of strings`);
-    return errors;
-  }
-  if (!APPROVED_EXECUTABLES.has(argv[0])) {
-    errors.push(`${prefix}.argv uses unapproved executable ${pyRepr(argv[0])}`);
-  }
-  if (argv.length < 3 || argv[1] !== "skills" || argv[2] !== "remove") {
-    errors.push(`${prefix}.argv must use approved skills action`);
-  }
-  if (CLEANUP_ACTIONS.has(action) && (runtime !== "all" || phase !== "cleanup" || argv[2] !== "remove")) {
-    errors.push(`${prefix}: cleanup commands must use the all-runtime cleanup phase`);
-  }
-  if (typeof command.skipped_without_update_packages_message !== "string") {
-    errors.push(`${prefix}.skipped_without_update_packages_message must be a string`);
-  }
-  return errors;
-}
-
 function validateRequiredObjectFields(prefix: string, value: JsonObject, expected: string[]): string[] {
   const errors: string[] = [];
   for (const field of expected) {
@@ -645,7 +486,7 @@ function validateRequiredObjectFields(prefix: string, value: JsonObject, expecte
       errors.push(`${prefix}: unknown field ${field}`);
     }
   }
-  for (const field of ["id", "runtime", "action", "phase", "selector", "package_shape"]) {
+  for (const field of ["id", "selector"]) {
     if (field in value && (typeof value[field] !== "string" || !value[field])) {
       errors.push(`${prefix}.${field} must be a non-empty string`);
     }
@@ -697,11 +538,10 @@ function validateRepoPath(prefix: string, value: unknown, root: string): string[
   if (rel !== "" && (rel.startsWith("..") || path.isAbsolute(rel))) {
     return [`${prefix} must stay inside repo root`];
   }
-  // Existence is advisory for a package DISTRIBUTION spec: surfaces such as
-  // version files, plugin manifests, and build outputs may be generated at
-  // build/release time or be runtime-specific, and need not be present in every
-  // checkout (e.g. a node-only tree without the Python build files). Structural
-  // and traversal safety above still apply.
+  // Existence is advisory for a package distribution spec: version files and
+  // build outputs may be generated at build/release time and need not be
+  // present in every checkout. Structural and traversal safety above still
+  // apply.
   return [];
 }
 
@@ -726,29 +566,4 @@ function validateForbiddenFields(prefix: string, value: JsonObject): string[] {
     }
   }
   return errors;
-}
-
-function shallowEqual(a: JsonObject, b: JsonObject): boolean {
-  const ak = Object.keys(a);
-  const bk = Object.keys(b);
-  if (ak.length !== bk.length) {
-    return false;
-  }
-  for (const k of ak) {
-    if (a[k] !== b[k]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/** Mirror Python repr() for the scalar values used in validator messages. */
-function pyRepr(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "None";
-  }
-  if (typeof value === "string") {
-    return `'${value}'`;
-  }
-  return String(value);
 }

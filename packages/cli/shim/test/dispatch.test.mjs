@@ -184,7 +184,7 @@ test("dispatch prints install help when app-home crashes and no other backend is
       stderr,
       /app-home backend crashed .* falling through to next resolution strategy/,
     );
-    assert.match(stderr, /upgrade --runtime all --dry-run/);
+    assert.match(stderr, /upgrade --channel development --project "\$PWD" --dry-run/);
     assert.doesNotMatch(stderr, /npx skills add/);
   } finally {
     clean(appHome);
@@ -229,8 +229,8 @@ test("dispatch emits the v3 deprecation banner to stderr", () => {
     assert.match(stderr, /agentera 2\.x .* is in maintenance/);
     assert.match(stderr, /npx -y agentera@next prime/);
     assert.match(stderr, /AGENTERA_NO_V3_HINT=1/);
-    assert.match(stderr, /upgrade --runtime all --dry-run/);
-    assert.match(stderr, /upgrade --runtime all --yes/);
+    assert.match(stderr, /upgrade --channel development --project "\$PWD" --dry-run/);
+    assert.match(stderr, /upgrade --channel development --project "\$PWD" --yes/);
     assert.doesNotMatch(stderr, /npx skills add/);
   } finally {
     clean(tmp);

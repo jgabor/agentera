@@ -1,8 +1,0 @@
-{
-  "private": true,
-  "type": "module",
-  "agentera": {
-    "packageShape": "retired-native-descriptor",
-    "standaloneDependencyBoundary": false
-  }
-}

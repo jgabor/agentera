@@ -6,11 +6,6 @@ conventions:
   - none
   version_files:
   - packages/cli/package.json
-  - plugin.json
-  - .github/plugin/plugin.json
-  - .codex-plugin/plugin.json
-  - .cursor-plugin/plugin.json
-  - .opencode/plugins/agentera.js
   - skills/agentera/SKILL.md
   - registry.json
   semver_policy:

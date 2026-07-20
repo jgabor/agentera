@@ -36,7 +36,7 @@
     "lint": "vp lint",
     "fmt": "vp fmt",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "bundle:data": "node scripts/copy-bundle.mjs",
+    "bundle:data": "tsc -p tsconfig.json && node scripts/copy-bundle.mjs",
     "publish:dev": "set -a; [ -f ../../.env ] && . ../../.env; set +a; npm run build && npm run bundle:data && npm publish --tag next"
   },
   "dependencies": {

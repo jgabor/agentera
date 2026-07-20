@@ -1,7 +1,0 @@
-{
-  "name": "agentera",
-  "version": "3.0.0",
-  "description": "Agentera 3.0.0 for GitHub Copilot CLI: one portable skill, twelve capabilities, shared project state, lifecycle hooks, and exact /agentera dashboard routing. profile uses bounded Copilot corpus metadata when present and reports missing source families. Runtime installation, enablement, authentication, and trust remain user-owned.",
-  "skills": "../../skills",
-  "hooks": "../hooks"
-}

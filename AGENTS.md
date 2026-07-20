@@ -152,14 +152,13 @@ bump a version. For a release, update every path in
 `conventions.version_files` together with the matching `CHANGELOG.md` entry:
 
 - `packages/cli/package.json`
-- `plugin.json`, `.github/plugin/plugin.json`, `.codex-plugin/plugin.json`,
-  `.cursor-plugin/plugin.json`
-- `.opencode/plugins/agentera.js`, `skills/agentera/SKILL.md`, and `registry.json`
+- `skills/agentera/SKILL.md`
+- `registry.json`
 
 The development npm package and suite metadata have distinct versions:
 `packages/cli/package.json#version` uses the publishable `X.Y.Z-dev.N`
-version, while `agentera.suiteVersion`, plugin metadata, the skill frontmatter,
-and `registry.json` use the release `X.Y.Z` version. Set
+version, while `agentera.suiteVersion`, the skill frontmatter, and
+`registry.json` use the release `X.Y.Z` version. Set
 `packages/cli/package.json#agentera.gitRef` to the immutable commit selected
 for that release. Keep the version-file list synchronized with
 `references/adapters/package-registry.yaml` rather than adding ad hoc version
@@ -264,7 +263,7 @@ Conventional Commits: `feat(scope): …`, `fix(scope): …`, `docs(scope): …`,
 | `schemas` | `protocol.yaml`, `capability_schema_contract.yaml`, artifact schemas, schema contracts |
 | `eval` | Semantic eval runner, fixtures, evaluation harnesses |
 | `install` | App home, upgrade, app refresh, setup, doctor install behavior |
-| `package` | `registry.json`, plugin manifests, lockfiles, version-bearing package surfaces |
+| `package` | `packages/cli/package.json`, `registry.json`, lockfiles, and current version-bearing package surfaces |
 | `runtime` | Cross-runtime behavior or shared adapter contracts |
 | `opencode` | OpenCode-specific runtime behavior or packaging |
 | `claude` | Retired Claude migration or historical-import behavior only |

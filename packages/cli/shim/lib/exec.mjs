@@ -162,9 +162,9 @@ export function printInstallHelp(reason) {
       "The v3 TypeScript CLI is ready now on the @next tag:",
       `  ${V3_NEXT_COMMAND}`,
       "",
-      "Preview and install the shared skill plus Agentera-owned runtime resources:",
-      "  npx -y agentera@next upgrade --runtime all --dry-run",
-      "  npx -y agentera@next upgrade --runtime all --yes",
+      "Agentera v3 uses the shared skill plus CLI; preview or apply app/project migration:",
+      "  npx -y agentera@next upgrade --channel development --project \"$PWD\" --dry-run",
+      "  npx -y agentera@next upgrade --channel development --project \"$PWD\" --yes",
     );
   }
   lines.push(

@@ -6,11 +6,6 @@ conventions:
   - none
   version_files:
   - packages/cli/package.json
-  - plugin.json
-  - .github/plugin/plugin.json
-  - .codex-plugin/plugin.json
-  - .cursor-plugin/plugin.json
-  - .opencode/plugins/agentera.js
   - skills/agentera/SKILL.md
   - registry.json
   version_files_registry: references/adapters/package-registry.yaml docs_targets.version_files
@@ -170,26 +165,6 @@ index:
   path: registry.json
   last_updated: '2026-05-16'
   status: current
-- document: Codex marketplace manifest
-  path: .agents/plugins/marketplace.json
-  last_updated: '2026-04-28'
-  status: current
-- document: Copilot plugin manifest
-  path: plugin.json
-  last_updated: '2026-05-16'
-  status: current
-- document: Copilot repo plugin manifest
-  path: .github/plugin/plugin.json
-  last_updated: '2026-05-16'
-  status: current
-- document: Codex plugin manifest
-  path: .codex-plugin/plugin.json
-  last_updated: '2026-05-17'
-  status: current
-- document: OpenCode plugin adapter
-  path: .opencode/plugins/agentera.js
-  last_updated: '2026-05-16'
-  status: current
 - document: OpenCode adapter reference
   path: references/adapters/opencode.md
   last_updated: '2026-05-07'
@@ -249,10 +224,6 @@ index:
 - document: RuntimeAdapter registry
   path: references/adapters/runtime-adapter-registry.yaml
   last_updated: '2026-05-07'
-  status: current
-- document: Codex UI metadata
-  path: agents/openai.yaml
-  last_updated: '2026-05-05'
   status: current
 - document: Hooks registry
   path: hooks/hooks.json

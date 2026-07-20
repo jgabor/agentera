@@ -5,7 +5,7 @@ record:
   depends_on:
     - igibjjvytl
     - fawriaumfr
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN package construction WHEN run THEN it succeeds without native runtime source directories or manifests.
     - GIVEN package inventory WHEN inspected THEN it contains CLI, canonical skill, required schemas, references, and registry data but no current native integration path.
@@ -13,3 +13,15 @@ record:
     - GIVEN active package guidance WHEN read THEN it describes only shared skill plus CLI while historical changelog remains history.
   test_proportionality: Registry contract, bundle surface, package inventory, and minimal CLI boot smoke; packed upgrade behavior remains Task 7 owned.
   plan: ntfgalrhbm
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "All package retirement criteria and attempt-1 findings passed, but registry-driven bundle entries are unsafe: copy-bundle accepts duplicate IDs and ../ traversal and can read/write outside source/bundle roots; packageRegistry validation allows cross-directory/file duplicate IDs and non-normalized paths. Add one shared contract for unique IDs/paths, relative normalized non-traversing paths, contained resolved source/destination, and negative tests."
+    provenance:
+      attempt_id: wqeazunluo-audit-2
+      source: independent review ses_082573eccffe1BO7UQeKSMvOHm
+      recorded_at: 2026-07-20 06:03
+      writer_command: agentera state plan record-evaluation
+  evidence: wqeazunluo-audit-2 confirmed all nine deletions, inventory, boot, guidance, versions, and prior corrections, then reproduced unsafe duplicate/traversing bundle entries. Preserve both audits and complete one shared bundle-entry safety contract in a successor task.
+  blocked_reason: "Blocked after 2/2 audits: registry-driven package bundle entries permit duplicate identity and path traversal outside source/bundle roots."

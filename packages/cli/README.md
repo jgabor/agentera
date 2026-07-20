@@ -2,8 +2,10 @@
 
 Native TypeScript CLI for Agentera 3.0, published as
 [`agentera`](https://www.npmjs.com/package/agentera). The npm package is
-self-contained: compiled commands live in `dist/` and runtime data, manifests,
-hooks, agents, skills, contracts, and documentation live in `bundle/`.
+self-contained: compiled commands live in `dist/`; the canonical shared skill,
+its schemas, required references, and `registry.json` live in `bundle/`. It
+ships no host-native plugin, hook, command, agent, descriptor, or marketplace
+surface.
 
 Until the stable dist-tag is promoted, run 3.0 through `@next`:
 
@@ -20,27 +22,21 @@ Status startup is one call: `prime --context status --format json` returns
 bytes). Omitted detail names its authoritative recovery command. `doctor`
 returns detailed read-only evidence and exact user actions.
 
-## Runtime lifecycle
+## Shared-skill integration
 
-The four active runtimes are OpenCode, Codex, Cursor, and GitHub Copilot; their
-IDs are exactly `opencode`, `codex`, `cursor`, and `copilot`.
-Cursor Agent CLI and Cursor IDE are surfaces of one `cursor` identity; CLI is
-required and IDE is conditional. The canonical shared skill path is
-`~/.agents/skills/agentera`.
+Agentera uses one portable integration: the Agentera CLI plus the shared skill
+at `~/.agents/skills/agentera`. Normal upgrade previews and applies app/project
+migration only. It has no current-runtime selector and does not create native
+runtime resources.
 
 ```bash
-npx -y agentera@next upgrade --dry-run --channel development
-npx -y agentera@next upgrade --runtime all --dry-run
-npx -y agentera@next upgrade --runtime all --yes
+npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run
+npx -y agentera@next upgrade --channel development --project "$PWD" --yes
 ```
 
-On v3 development, selector-free preview and apply remain app-only. Use
-`--runtime all` to inspect every active runtime, or one active ID to scope
-runtime work. Runtime apply requires the selector and `--yes`. `--dry-run`
-has zero filesystem or state side effects. `--yes` approves only declared
-Agentera-owned operations; native install/update, authentication, enablement,
-and trust remain user-owned. Secure automatic apply is Linux-only and reports
-`action_required` elsewhere.
+Preview has no side effects. The apply path is the explicit, one-way v2-to-v3
+migration described in [UPGRADE.md](../../UPGRADE.md); it does not run a native
+package installer.
 
 Retired Claude cleanup is intentionally separate:
 
@@ -72,8 +68,7 @@ plan task retrieval is active-only. Experiment history is objective-scoped and
 reports full, summary-only, or unavailable detail without fabricating archives.
 
 See [UPGRADE.md](../../UPGRADE.md) for ownership, recovery, and migration
-details and [runtime feature parity](../../references/adapters/runtime-feature-parity.md)
-for host-specific behavior.
+details.
 
 ## Contributors
 

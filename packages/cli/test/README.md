@@ -21,7 +21,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Class | Meaning |
 | ----- | ------- |
 | **mutable-state** | Reads or mutates live session artifacts (`.agentera/*`, `TODO.md`) whose content changes with capability runs — vitest must not depend on them (migrate to `fixtures/repo-state/`). |
-| **static-contract** | Reads checked-in repo sources (`skills/`, `references/`, `registry.json`, install-root model YAML, plugin manifests) — stable between sessions. |
+| **static-contract** | Reads checked-in repo sources (`skills/`, `references/`, `registry.json`, install-root and package-surface contracts) — stable between sessions. |
 | **gate-deferred** | Intentionally validates the live checkout as a CI-style gate; keep out of vitest unit paths or accept as explicit repo gate. |
 
 ## Mutable-state couplings (migrated — tasks 2–5 complete)
@@ -58,7 +58,7 @@ mutable agent session state.
 | Registry & packaging | `registries/packageRegistry.test.ts` (registry.json paths), `upgrade/appModel.test.ts`, `packaging/prepack.test.ts`, `cli/npxBundle.test.ts` | `registry.json`, `packages/cli/**`, `scripts/**` |
 | Install-root models | `state/installRoot.test.ts` | `.agentera/install_root_interface_model.yaml`, `.agentera/install_root_behavior_inventory.yaml` (checked-in contract fixtures) |
 | Upgrade / doctor bootstrap | `upgrade/*.test.ts`, `cli/doctorUpgradeParity.test.ts`, `cli/primeAppWording.test.ts`, `cli/primeChannels.test.ts`, `cli/primeProjectIntegration.test.ts`, `cli/prime.test.ts`, `setup/copilot.test.ts` | `sourceRoot` / `AGENTERA_BOOTSTRAP_SOURCE_ROOT` → `references/`, `registry.json` (tests use tmp project trees for `.agentera/` writes) |
-| Runtime plugin layout | `cli/runtimeAdapterHooksParity.test.ts`, `upgrade/cursorAgentSurface.test.ts` | `.cursor-plugin/`, `.codex-plugin/`, `plugin.json`, `.cursor/agents/` |
+| Package-surface retirement | `cli/repositoryNativeRetirement.test.ts`, `packaging/prepack.test.ts` | canonical `skills/` and `references/`; deleted native descriptor paths |
 | Repo hygiene scans | `cli/v1LegacyCruft.test.ts` | Whole-tree scan for post-3.0 cruft (stable source contract) |
 | Analytics parity | `analytics/extractCorpusParity.test.ts` | `scripts/extract_corpus.py`, `packages/cli` (maintainer parity probe) |
 
