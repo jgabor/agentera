@@ -1,11 +1,13 @@
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
-import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
+import {
+  concurrentPublication,
+  publicationProcess,
+  waitForFiles,
+} from "../helpers/entityPublicationRace.js";
 
 import {
   allocateEntityId,
@@ -15,7 +17,6 @@ import {
 } from "../../src/state/entityStorage.js";
 
 const roots: string[] = [];
-const publicationWorker = fileURLToPath(new URL("./entityPublicationWorker.mjs", import.meta.url));
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-entities-"));
@@ -26,64 +27,6 @@ function project(): string {
     "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
   );
   return root;
-}
-
-function publicationProcess(
-  root: string,
-  artifact: string,
-  boundary: string,
-  resultPath: string,
-  readyPath: string,
-  startPath: string,
-  controls: { ownerOpenedPath?: string; continuePath?: string; waitingPath?: string } = {},
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [publicationWorker], {
-      cwd: path.resolve(import.meta.dirname, "../.."),
-      env: {
-        ...sourceSubprocessEnv(),
-        AGENTERA_ENTITY_TEST_ROOT: root,
-        AGENTERA_ENTITY_TEST_ARTIFACT: artifact,
-        AGENTERA_ENTITY_TEST_BOUNDARY: boundary,
-        AGENTERA_ENTITY_TEST_RESULT: resultPath,
-        AGENTERA_ENTITY_TEST_READY: readyPath,
-        AGENTERA_ENTITY_TEST_START: startPath,
-        AGENTERA_ENTITY_TEST_OWNER_OPENED: controls.ownerOpenedPath,
-        AGENTERA_ENTITY_TEST_CONTINUE: controls.continuePath,
-        AGENTERA_ENTITY_TEST_WAITING: controls.waitingPath,
-      },
-      stdio: "pipe",
-    });
-    let stderr = "";
-    child.stderr.setEncoding("utf8");
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
-    child.on("error", reject);
-    child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`publication worker exited ${code}: ${stderr}`)));
-  });
-}
-
-async function waitForFiles(paths: string[], timeoutMs = 10_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (!paths.every((candidate) => fs.existsSync(candidate))) {
-    if (Date.now() >= deadline) throw new Error(`publication workers did not become ready: ${paths.join(", ")}`);
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-}
-
-async function concurrentPublication(root: string, suffix = ""): Promise<Array<{ published: boolean; error?: string }>> {
-  const healthResult = path.join(root, `health${suffix}-result.json`);
-  const decisionsResult = path.join(root, `decisions${suffix}-result.json`);
-  const healthReady = path.join(root, `health${suffix}.ready`);
-  const decisionsReady = path.join(root, `decisions${suffix}.ready`);
-  const startPath = path.join(root, `publication${suffix}.start`);
-  const workers = [
-    publicationProcess(root, "health", "health_audit", healthResult, healthReady, startPath),
-    publicationProcess(root, "decisions", "decision", decisionsResult, decisionsReady, startPath),
-  ];
-  await waitForFiles([healthReady, decisionsReady]);
-  fs.writeFileSync(startPath, "start\n");
-  await Promise.all(workers);
-  return [healthResult, decisionsResult].map((file) => JSON.parse(fs.readFileSync(file, "utf8")) as { published: boolean; error?: string });
 }
 
 afterEach(() => {
@@ -257,29 +200,24 @@ describe("entity discovery and publication", () => {
     expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
   }, 30_000);
 
-  it("repeatedly gives simultaneous stale-lock reclaimers one publisher and one explicit loser", async () => {
-    for (const repeat of Array.from({ length: 100 }, (_, index) => index + 1)) {
-      const root = project();
-      const lockPath = path.join(root, ".agentera/.writer.lock");
-      fs.mkdirSync(lockPath, { recursive: true });
-      fs.writeFileSync(path.join(lockPath, "owner.json"), JSON.stringify({
-        pid: 999_999_999,
-        token: "seeded-dead-owner",
-        created_at: "2020-01-01T00:00:00Z",
-      }));
-      const results = await concurrentPublication(root, `-stale-${repeat}`);
-      expect(results.filter(({ published }) => published), `repeat ${repeat}`).toHaveLength(1);
-      expect(results.filter(({ published }) => !published), `repeat ${repeat}`).toEqual([
-        expect.objectContaining({ published: false, error: expect.stringMatching(/entity ID 'zzzzzzzzzz' already exists.*owned by boundary/) }),
-      ]);
-      expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz"), `repeat ${repeat}`).toHaveLength(1);
-      expect(fs.existsSync(lockPath), `repeat ${repeat}`).toBe(false);
-      expect(
-        fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer.")),
-        `repeat ${repeat}`,
-      ).toEqual([]);
-    }
-  }, 180_000);
+  it("gives simultaneous stale-lock reclaimers one publisher, one explicit loser, and no residue", async () => {
+    const root = project();
+    const lockPath = path.join(root, ".agentera/.writer.lock");
+    fs.mkdirSync(lockPath, { recursive: true });
+    fs.writeFileSync(path.join(lockPath, "owner.json"), JSON.stringify({
+      pid: 999_999_999,
+      token: "seeded-dead-owner",
+      created_at: "2020-01-01T00:00:00Z",
+    }));
+    const results = await concurrentPublication(root, "-stale-source");
+    expect(results.filter(({ published }) => published)).toHaveLength(1);
+    expect(results.filter(({ published }) => !published)).toEqual([
+      expect.objectContaining({ published: false, error: expect.stringMatching(/entity ID 'zzzzzzzzzz' already exists.*owned by boundary/) }),
+    ]);
+    expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz")).toHaveLength(1);
+    expect(fs.existsSync(lockPath)).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
+  }, 30_000);
 
   it("cleans the project-wide claim after publication fails and permits recovery", () => {
     const root = project();

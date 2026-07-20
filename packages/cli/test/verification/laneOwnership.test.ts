@@ -167,17 +167,15 @@ describe("verification lane ownership", () => {
     expect(Object.keys(evidence[0].maxima)).toEqual(Object.keys(evidence[0].limits));
   });
 
-  it("validates the real inventory and marks mixed files for later separation", () => {
+  it("validates exclusive real ownership after lock evidence separation", () => {
     const result = spawnSync(process.execPath, [RUNNER, "inventory", "--json"], {
       cwd: PACKAGE_ROOT, encoding: "utf8",
     });
     expect(result.status, result.stderr).toBe(0);
     const inventory = JSON.parse(result.stdout);
     expect(inventory.counts.total).toBeGreaterThan(190);
-    expect(inventory.counts).toMatchObject({ stress: 0, performance: 3 });
-    expect(inventory.mixed_files).toEqual([
-      expect.objectContaining({ path: "packages/cli/test/state/entityStorage.test.ts", primary_owner: "source", separation_target: "stress" }),
-    ]);
+    expect(inventory.counts).toMatchObject({ stress: 1, performance: 3 });
+    expect(inventory.mixed_files).toEqual([]);
   });
 
   it("keeps package construction separate and fast policy owner-free", () => {
@@ -189,6 +187,8 @@ describe("verification lane ownership", () => {
     expect(contract).toContain("path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts");
     expect(contract).toContain("path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts");
     expect(contract).toContain("path: packages/cli/test/performance/entityAuthorityPerformance.test.ts");
+    expect(contract).toContain("path: packages/cli/test/stress/entityStorageStress.test.ts");
+    expect(contract).toContain("merge: [source, package]");
     expect(contract).toContain("scheduled: [source, stress, performance]");
     expect(contract).toContain("release: [source, stress, performance, package]");
     expect(contract).not.toMatch(/^  fast:\n/m);

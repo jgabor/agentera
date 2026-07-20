@@ -1,0 +1,15 @@
+id: ngucsixpop
+artifact: progress
+record:
+  timestamp: 2026-07-21 00:28
+  type: test
+  phase: build
+  what: Separated deterministic simultaneous-publication and stale-lock recovery proof into the source owner from the 100-repetition probabilistic stale-lock race in the stress owner, with invariant-specific bounded failure diagnostics and exclusive ownership policy.
+  context:
+    intent: Complete plan task vuijkygctf without weakening lock atomicity or running probabilistic stress in merge policy.
+    constraints: Only vuijkygctf; preserved the liuqlppclk evaluation update and left blocked jiupbftubj unchanged.
+    unknowns: None; Task 1 requires deterministic source lock evidence at merge and probabilistic stress at scheduled and release.
+    scope: Lock publication test ownership, shared test synchronization helper, verification policy, and lane ownership regression.
+  inspiration: Plan rmtdgltdgm Task vuijkygctf and Task 1 risk classification.
+  verified: "Source passed 191 files and 2,247 tests in both merge and scheduled policies. Stress passed 1 file and 2 tests, including 100 stale-lock races. Merge selected source plus package, whose 2 files and 8 tests passed; scheduled selected source, stress, and performance, whose 3 files and 3 tests passed. Inventory assigned 197 files exclusively: source 191, stress 1, performance 3, package 2, with no mixed files. Focused source tests passed 2 files and 32 tests. Typecheck and build passed. Lint passed with 144 baseline warnings and 0 errors. State validation, capability-contract validation, and compact passed."
+  next: Continue only with a separately requested plan task; do not repair jiupbftubj as part of this cycle.

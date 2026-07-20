@@ -8,6 +8,8 @@ inventory:
   suffix: .test.ts
   default_owner: source
   rules:
+    - owner: stress
+      path: packages/cli/test/stress/entityStorageStress.test.ts
     - owner: performance
       path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts
     - owner: performance
@@ -34,13 +36,9 @@ owners:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
 
-# These files still combine deterministic source evidence with evidence that a
-# later task will separate. Their one primary owner remains source until then.
-mixed_files:
-  - path: packages/cli/test/state/entityStorage.test.ts
-    primary_owner: source
-    separation_target: stress
-    reason: deterministic lock correctness and the 100-repetition stale-lock race share one file
+# Deterministic simultaneous-publication and stale-lock recovery evidence remains
+# source-owned. The independent 100-repetition stale-lock race is stress-owned.
+mixed_files: []
 # Production-cap analytics, entity authority, and migration-preview wiring are intentionally
 # separate from proportional source fixtures and run through performance in
 # scheduled/release.
@@ -53,6 +51,11 @@ policies:
   merge: [source, package]
   scheduled: [source, stress, performance]
   release: [source, stress, performance, package]
+
+# Task 1 classified probabilistic stale-lock repetition as scheduled/release
+# evidence after proportional deterministic lock correctness remained in source.
+# Therefore merge receives lock evidence through source, while scheduled also
+# executes the stress owner.
 
 # Pre-commit routing chooses release policy for authority and verification
 # surfaces. All other paths retain the existing targeted source routing.

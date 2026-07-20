@@ -5,7 +5,7 @@ record:
   depends_on:
     - qifoditbva
     - fbgcvyeexr
-  status: pending
+  status: complete
   acceptance:
     - GIVEN simultaneous publishers and stale locks WHEN the source owner runs THEN deterministic one-winner, explicit-loser, and cleanup behavior remains proven.
     - GIVEN the stress owner runs WHEN 100 stale-lock races execute THEN every repetition preserves atomicity and cleanup.

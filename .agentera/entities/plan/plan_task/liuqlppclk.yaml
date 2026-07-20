@@ -16,12 +16,12 @@ record:
   plan: rmtdgltdgm
   evidence: Audit retry liuqlppclk-audit-1 replaced the Node-delegating wrapper with a generated, restricted Python sqlite3 oracle independent of TypeScript and checkout dist. One warmup plus three retained focused runs improved median wall time from the original 26203 ms and first optimization 14625 ms to 8749 ms (66.6% and 40.2%). Equality, no-Node/dist, and shared missing-database failure checks passed; source passed 191/2247 and package 2/8.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: The optimized test retains a Python subprocess, but scripts/extract_corpus.py delegates parity extraction to a Node probe that invokes the same TypeScript opencodeParitySnapshot implementation used by the in-process reference. This is not the acceptance criterion's independent Python and TypeScript end-to-end comparison. Preserve the measured optimization while restoring a genuinely independent Python extraction path and testing its divergence/failure behavior.
     provenance:
-      attempt_id: liuqlppclk-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 00:00
+      attempt_id: liuqlppclk-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 00:20
       writer_command: agentera state plan record-evaluation
