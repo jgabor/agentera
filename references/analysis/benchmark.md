@@ -29,6 +29,8 @@ production-scale ownership map, and unresolved worker/lane criteria live in
 [`verification-baseline-2026-07-20.yaml`](./verification-baseline-2026-07-20.yaml).
 It records evidence for the active optimization plan; it does not change any
 verification command, lane, worker default, or CI policy.
+Losslessly compressed raw reports live beside a dependency-free recomputation
+command under `references/analysis/evidence/verification-baseline-2026-07-20/`.
 
 The startup benchmark is an optimization signal for Decision 51 and Decision 52.
 It does not implement a startup state envelope or change runtime behavior.

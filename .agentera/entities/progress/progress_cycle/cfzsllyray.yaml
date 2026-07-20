@@ -1,0 +1,16 @@
+id: cfzsllyray
+artifact: progress
+record:
+  timestamp: 2026-07-20 21:30
+  type: test
+  phase: build
+  what: Repaired Task 1 audit evidence with truthful runner labeling, retained raw source and hook outputs, hashes, and dependency-free recomputation.
+  context:
+    intent: Resolve independent audit attempt 1 for qifoditbva without changing acceptance, production behavior, lanes, workers, fixtures, or later tasks.
+    constraints: Preserve failed evaluation provenance and immutable plan intent; no production behavior, lane, worker, fixture, version, release, publication, push, profile, vision, or unrelated changes.
+    unknowns: Worker and lane decisions remain unresolved under the recorded criteria. Decision retrieval remains degraded and llavvlpcmb/djmjbmruyk satisfaction remains unavailable.
+    scope: Verification baseline, retained evidence, recomputation helper, copied-reference classification, task status, and progress evidence only.
+  inspiration: Independent orchestrate audit qifoditbva-audit-1.
+  discovered: The plan's 16-core label maps to 16 logical scheduling CPUs on an 8-physical-core CPU. The original three Vitest JSON reports remained available; hook logs did not and were faithfully rerun.
+  verified: Three gzip reports passed hash/size integrity and recomputed 191 files, 2,230 tests, 280977.930ms median cumulative assertions, 80904.892ms JSON elapsed median, and the slowest ranking. Rerun CLI/docs hooks passed at 6227ms/3421ms wall and 5900ms/3100ms lefthook. Focused activeProtocolSurface 10/10, typecheck, build, markdownlint, format, gzip, YAML/hash integrity, recomputation, and diff checks passed.
+  next: Return qifoditbva for independent re-evaluation; do not begin Task 2 until it passes.

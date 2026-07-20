@@ -28,7 +28,7 @@ function files(patternRoot: string, suffix?: string): string[] {
     }
   };
   walk(path.join(ROOT, patternRoot));
-  return found;
+  return found.sort();
 }
 
 const ALWAYS_ACTIVE_SOURCE_MANIFEST = [
@@ -51,6 +51,13 @@ const REFERENCE_CLASSIFICATIONS: Record<string, ReferenceClassification> = {
   "references/adapters/runtime-lifecycle-operation-contract.yaml": { kind: "excluded", reason: "migration input/apply internals" },
   "references/adapters/runtime-retired-resources.yaml": { kind: "excluded", reason: "migration input/apply internals" },
   "references/analysis/benchmark.md": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/precommit-cli-route.log.gz": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/precommit-cli.log.gz": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/precommit-documentation.log.gz": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/recompute.mjs": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/source-1.json.gz": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/source-2.json.gz": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/evidence/verification-baseline-2026-07-20/source-3.json.gz": { kind: "excluded", reason: "evaluator fixture" },
   "references/analysis/evidence-tier-authority.yaml": { kind: "active" },
   "references/analysis/startup-measurement-contract.yaml": { kind: "active" },
   "references/analysis/verification-baseline-2026-07-20.yaml": { kind: "excluded", reason: "evaluator fixture" },
