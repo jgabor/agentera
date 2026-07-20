@@ -11,8 +11,8 @@ const PRECOMMIT_SCRIPT = path.join(REPO_ROOT, "scripts", "precommit-vitest.sh");
 
 type Route = { mode: "policy" | "targeted"; policy?: string; targets: string[] };
 
-function runPrecommitVitest(stagedPath: string): Route {
-  const result = spawnSync("bash", [PRECOMMIT_SCRIPT, stagedPath], {
+function runPrecommitVitest(...stagedPaths: string[]): Route {
+  const result = spawnSync("bash", [PRECOMMIT_SCRIPT, ...stagedPaths], {
     cwd: REPO_ROOT,
     env: {
       ...process.env,
@@ -68,6 +68,33 @@ describe("scripts/precommit-vitest.sh staged routing", () => {
     for (const path of ["skills/agentera/SKILL.md", "references/artifacts/state-storage-authority.yaml", ".github/workflows/verify.yml"]) {
       expect(runPrecommitVitest(path)).toEqual({ mode: "policy", policy: "release", targets: [] });
     }
+  });
+
+  it.each([
+    ["references/analysis/verification-policy.yaml", "packages/cli/src/cli/prime.ts"],
+    ["packages/cli/src/cli/prime.ts", "references/analysis/verification-policy.yaml"],
+    ["references/analysis/verification-policy.yaml", "references/analysis/verification-policy.yaml", "packages/cli/src/cli/prime.ts"],
+    ["packages/cli/test/cli/help.test.ts", "references/analysis/verification-policy.yaml"],
+  ])("keeps release routing monotonic for mixed staged paths: %s", (...paths) => {
+    expect(runPrecommitVitest(...paths)).toEqual({ mode: "policy", policy: "release", targets: [] });
+  });
+
+  it.each([
+    ["packages/cli/src/cli/prime.ts", "packages/cli/test/cli/help.test.ts"],
+    ["packages/cli/test/cli/help.test.ts", "packages/cli/src/cli/prime.ts"],
+  ])("does not retain targeted filters after local policy wins: %s", (...paths) => {
+    expect(runPrecommitVitest(...paths)).toEqual({ mode: "policy", policy: "local", targets: [] });
+  });
+
+  it("deduplicates filters when targeted routing remains valid", () => {
+    expect(runPrecommitVitest(
+      "packages/cli/test/cli/help.test.ts",
+      "packages/cli/test/cli/help.test.ts",
+      "packages/cli/test/cli/schema.test.ts",
+    )).toEqual({
+      mode: "targeted",
+      targets: ["test/cli/help.test.ts", "test/cli/schema.test.ts"],
+    });
   });
 
   it("falls back to targeted smoke tests for unrelated staged paths", () => {

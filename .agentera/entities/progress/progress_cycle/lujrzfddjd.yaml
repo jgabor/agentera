@@ -1,0 +1,14 @@
+id: lujrzfddjd
+artifact: progress
+record:
+  timestamp: 2026-07-20 22:03
+  type: fix
+  phase: build
+  what: "Corrected progress xhklwiwgvi's overclaim: its conservative-routing evidence omitted mixed staged paths. Made pre-commit policy selection monotonic so JavaScript-authority release routing cannot be downgraded by later ordinary paths."
+  context:
+    intent: Repair independent audit attempt fbgcvyeexr-audit-1 without changing lane ownership, policy composition, fixtures, workers, generated outputs, tests, versions, or release state.
+    constraints: "Preserved audit evaluation state and Task 2 scope: no stress/performance separation, fixture scaling, worker tuning, output redesign, parity optimization, deletion, version/release mutation, publication, or push."
+  inspiration: The audit reproduction staged references/analysis/verification-policy.yaml before packages/cli/src/cli/prime.ts and observed local instead of required release.
+  discovered: The JavaScript authority selected release once for the complete path set, but the shell loop later assigned local unconditionally. Target filters could also remain accumulated after a broader policy was selected.
+  verified: The exact audit reproduction and reversed order both emit run_policy release. Regression coverage passes central plus ordinary in both orders, duplicate central paths, central plus targeted, local plus targeted in both orders, and targeted deduplication. Focused owner/policy tests passed 38 tests; source passed 191 files/2246 tests; package passed 2 files/8 tests; stress and performance empty-owner commands, targeted policy, typecheck, build, lint with 0 errors, compact, and capability-contract validation passed.
+  next: Return fbgcvyeexr for independent re-evaluation; retain source ownership for mixed stress/performance files until their later separation tasks.

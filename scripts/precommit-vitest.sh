@@ -33,6 +33,12 @@ add_target() {
   [[ " ${TARGETS[*]} " == *" $t "* ]] || TARGETS+=("$t")
 }
 
+select_local_policy() {
+  # The JavaScript authority may already have selected conservative release.
+  # Ordinary-path routing can broaden targeted checks, but never downgrade it.
+  [[ -n "$RUN_POLICY" ]] || RUN_POLICY=local
+}
+
 if [[ ${#STAGED[@]} -eq 0 ]]; then
   RUN_POLICY=local
 fi
@@ -66,14 +72,14 @@ for f in "${STAGED[@]}"; do
           add_target test/cli/inspekteraEvaluationReport.test.ts
           ;;
         *)
-          RUN_POLICY=local
+          select_local_policy
           ;;
       esac
       ;;
     skills/*|references/*)
       ;;
     scripts/sandbox/*)
-      RUN_POLICY=local
+      select_local_policy
       ;;
     TODO.md|CHANGELOG.md|.agentera/*)
       for smoke in "${SMOKE[@]}"; do add_target "$smoke"; done
@@ -83,6 +89,10 @@ for f in "${STAGED[@]}"; do
       ;;
   esac
 done
+
+if [[ -n "$RUN_POLICY" ]]; then
+  TARGETS=()
+fi
 
 if [[ -z "$RUN_POLICY" && ${#TARGETS[@]} -eq 0 ]]; then
   for smoke in "${SMOKE[@]}"; do add_target "$smoke"; done
