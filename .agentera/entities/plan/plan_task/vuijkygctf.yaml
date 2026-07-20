@@ -13,3 +13,13 @@ record:
     - GIVEN merge and scheduled policies run WHEN lock evidence is selected THEN they follow the risk decision recorded in Task 1.
   test_proportionality: Use a small deterministic source sample and preserve all 100 probabilistic repetitions in stress.
   plan: rmtdgltdgm
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The source stale-lock test gates worker start but does not deterministically hold both reclaimers at the stale-lock contention point, so one worker may complete before the other enters reclamation. The stress loop's postcondition failures are bounded and named, but worker spawn/exit, readiness timeout, JSON parse, and hung-worker failures bypass repetition/invariant formatting and may leave sibling work unsettled. Add controlled stale-reclaim overlap and bounded lifecycle diagnostics for every repetition failure path without weakening the 100-race stress or policy split.
+    provenance:
+      attempt_id: vuijkygctf-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 00:42
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,16 @@
+id: ixomhkxvwd
+artifact: progress
+record:
+  timestamp: 2026-07-21 00:54
+  type: fix
+  phase: build
+  what: Corrected vuijkygctf after audit vuijkygctf-audit-1 with exact stale-reclamation overlap and bounded, leak-free race diagnostics.
+  context:
+    intent: Repair deterministic synchronization and every repetition-level infrastructure diagnostic path without changing production locking or verification policy.
+    constraints: Only vuijkygctf retry; preserved audit state, immutable ngucsixpop, owner exclusivity, Task 1 policy composition, blocked jiupbftubj, and release boundaries.
+    unknowns: None within the correction; independent audit satisfaction remains pending.
+    scope: Test-only entity publication worker instrumentation, shared race lifecycle helper, source regressions, stress diagnostic reuse, and typed task/progress state.
+  inspiration: Independent audit vuijkygctf-audit-1 identified scheduler-dependent source evidence and unwrapped race-helper failures.
+  discovered: A contender can observe another worker's private preparation before reaching stale reclamation. The deterministic proof therefore requires a preparation barrier before private state exists and a second barrier immediately before the exclusive reclaim link.
+  verified: The source proof now holds both contenders after their initial recovery scan and again immediately before .reclaim.json link creation; only then does the parent release reclamation. Focused source passed 16 tests, including injected nonzero with 10,000-byte stderr, malformed result, and hung-worker timeout diagnostics with zero lock residue. Stress passed three owner executions, totaling 300 fresh races. Merge passed source 191 files/2,250 tests and package 2/8; scheduled passed source, stress 1/2, and performance 3/3. Inventory remained source 191, stress 1, performance 3, package 2 with no mixed files. Typecheck, build, lint with 150 baseline warnings and 0 errors, state validation, capability-contract validation, and compact passed.
+  next: Return vuijkygctf for independent re-audit; do not start later tasks or repair jiupbftubj.

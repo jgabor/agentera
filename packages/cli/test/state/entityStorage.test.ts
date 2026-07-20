@@ -135,7 +135,7 @@ describe("entity discovery and publication", () => {
 
   it("serializes multiprocess cross-artifact publication so exactly one writer wins", async () => {
     const root = project();
-    const results = await concurrentPublication(root);
+    const { results } = await concurrentPublication(root);
     expect(results.filter(({ published }) => published)).toHaveLength(1);
     expect(results.filter(({ published }) => !published)).toEqual([
       expect.objectContaining({ published: false, error: expect.stringMatching(/already exists.*owned by boundary/) }),
@@ -209,7 +209,9 @@ describe("entity discovery and publication", () => {
       token: "seeded-dead-owner",
       created_at: "2020-01-01T00:00:00Z",
     }));
-    const results = await concurrentPublication(root, "-stale-source");
+    const race = await concurrentPublication(root, "-stale-source", { reclaimBarrier: true });
+    const { results } = race;
+    expect(race.reclaimOverlap).toBe(true);
     expect(results.filter(({ published }) => published)).toHaveLength(1);
     expect(results.filter(({ published }) => !published)).toEqual([
       expect.objectContaining({ published: false, error: expect.stringMatching(/entity ID 'zzzzzzzzzz' already exists.*owned by boundary/) }),
@@ -218,6 +220,25 @@ describe("entity discovery and publication", () => {
     expect(fs.existsSync(lockPath)).toBe(false);
     expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
   }, 30_000);
+
+  it.each([
+    ["nonzero", "worker completion", "injected worker failure"],
+    ["malformed", "valid worker result", "malformed result"],
+    ["timeout", "worker timeout", '"timedOut":true'],
+  ] as const)("bounds and names %s worker infrastructure failures", async (fault, invariant, detail) => {
+    const root = project();
+    let failure: Error | undefined;
+    try {
+      await concurrentPublication(root, `-${fault}`, { repetition: 17, fault, timeoutMs: fault === "timeout" ? 100 : 2_000 });
+    } catch (error) {
+      failure = error as Error;
+    }
+    expect(failure?.message).toContain(`stale-lock race repetition 17 violated invariant '${invariant}'`);
+    expect(failure?.message).toContain(detail);
+    expect(Buffer.byteLength(failure?.message ?? "", "utf8")).toBeLessThanOrEqual(1_200);
+    expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
+  });
 
   it("cleans the project-wide claim after publication fails and permits recovery", () => {
     const root = project();
