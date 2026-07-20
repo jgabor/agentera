@@ -1,0 +1,16 @@
+id: krmhdgsuoo
+artifact: progress
+record:
+  timestamp: 2026-07-20 15:58
+  type: fix
+  phase: build
+  what: Filtered entity-mode prime TODO retrieval to open records before pagination, preventing resolved items from contaminating status counts, attention, and routing; added pre-bound regression coverage.
+  context:
+    intent: Keep status summaries and next actions aligned with executable TODO work.
+    constraints: Preserve entity authority, historical task evidence, migration behavior, the 20-item bound, and docs retrieval; no release, version, publication, push, or unrelated cleanup.
+    unknowns: None after verifying reader filtering precedes pagination.
+    scope: Prime entity orientation retrieval, status startup regression coverage, TODO closeout, changelog, and typed progress evidence.
+  inspiration: Status routed from resolved TODO zuayfjfjgc even though replacement task uxqxtpyegu had passed.
+  discovered: The migration-safety finding was already resolved; the remaining defect was the entity orientation reader's unfiltered bounded TODO page.
+  verified: 48 focused tests; 191 files and 2227 full-suite tests; isolated 82-test pagination suite; typecheck; build; lint with 0 errors; compact; git diff --check; local prime reported 0 critical and 0 degraded TODOs and routed to open work; independent review accepted.
+  next: No follow-up is required for this cycle; keep release, publication, versioning, push, and unrelated TODO work separate.

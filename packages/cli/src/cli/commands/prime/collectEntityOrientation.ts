@@ -84,7 +84,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const planList = listPlanEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
   const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
   const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, { sourceRoot, format: "json", statuses: ["closed"], discovery });
-  const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, {}, { sourceRoot, format: "json", discovery });
+  const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, { status: "open" }, { sourceRoot, format: "json", discovery });
   const docsList = listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json", discovery });
 
   const progressEntries = entries(progressList);

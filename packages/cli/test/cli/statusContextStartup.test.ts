@@ -73,6 +73,18 @@ function writeProjectFile(relativePath: string, contents: string): void {
   fs.writeFileSync(target, contents);
 }
 
+function writeTodoEntity(id: string, severity: string, status: string, description: string): void {
+  writeProjectFile(`.agentera/entities/todo/todo_item/${id}.yaml`, [
+    `id: ${id}`,
+    "artifact: todo",
+    "record:",
+    `  severity: ${severity}`,
+    `  status: ${status}`,
+    `  description: ${description}`,
+    "",
+  ].join("\n"));
+}
+
 function runStatus(): { rc: number; out: string; err: string; payload: Record<string, any> } {
   let out = "";
   let err = "";
@@ -236,6 +248,25 @@ describe("status capability self-contained startup", () => {
       expect(fallbackErr).toBe("");
       expect(JSON.parse(fallbackOut)).toMatchObject({ command: "state decisions list" });
     }
+  });
+
+  it("projects only open entity TODOs before applying the 20-item bound", () => {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (let index = 0; index < 19; index += 1) {
+      writeTodoEntity(`aaaaaaaa${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`, "critical", "resolved", `Resolved critical ${index}`);
+    }
+    writeTodoEntity("aaaaaaaaba", "degraded", "resolved", "Resolved degraded");
+    writeTodoEntity("aaaaaaaabb", "normal", "open", "Ship open fix");
+
+    const result = runStatus();
+    const state = statusState(result.payload);
+
+    expect(result.rc).toBe(0);
+    expect(state.todo).toEqual({ critical: 0, degraded: 0, normal: 1, annoying: 0 });
+    expect(state.attention).toContain("normal: TODO: Ship open fix");
+    expect(state.attention.join("\n")).not.toContain("Resolved critical");
+    expect(state.attention.join("\n")).not.toContain("Resolved degraded");
+    expect(state.next_action).toMatchObject({ object: "TODO: Ship open fix", capability: "build" });
   });
 
   it("keeps fresh and returning mode, while incomplete state names CLI-first recovery", () => {
