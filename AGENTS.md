@@ -129,7 +129,8 @@ Invocation convention: during the v3 rewrite, `npx -y agentera@next <cmd>` invok
 | Inspect writer operation matrix | `npx -y agentera@next schema --format json` |
 | Artifact inventory | `npx -y agentera@next state query --list-artifacts` |
 | Validate capability or contract | `npx -y agentera@next check validate capability <name>` · `check validate capability-contract` |
-| CLI tests | `pnpm -C packages/cli test` |
+| CLI source tests | `pnpm -C packages/cli test` |
+| CLI package boundary | `pnpm -C packages/cli run verify:package` |
 | CLI typecheck / build | `pnpm -C packages/cli run typecheck` · `pnpm -C packages/cli build` |
 | Compaction gate | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
 | Web check / build | `vp run web:check` · `vp run web:build` |

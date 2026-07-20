@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
+import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import {
   allocateEntityId,
@@ -40,7 +41,7 @@ function publicationProcess(
     const child = spawn(process.execPath, [publicationWorker], {
       cwd: path.resolve(import.meta.dirname, "../.."),
       env: {
-        ...process.env,
+        ...sourceSubprocessEnv(),
         AGENTERA_ENTITY_TEST_ROOT: root,
         AGENTERA_ENTITY_TEST_ARTIFACT: artifact,
         AGENTERA_ENTITY_TEST_BOUNDARY: boundary,

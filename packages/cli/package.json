@@ -31,8 +31,10 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json && node scripts/copy-bundle.mjs",
     "prepack": "rm -rf dist && tsc -p tsconfig.json && node scripts/copy-bundle.mjs",
-    "test": "vp test run",
-    "test:watch": "vp test watch",
+    "test": "pnpm run test:source",
+    "test:source": "node scripts/verify-lane.mjs source",
+    "test:watch": "vp test watch --config vite.config.ts",
+    "verify:package": "node scripts/verify-lane.mjs package",
     "lint": "vp lint",
     "fmt": "vp fmt",
     "typecheck": "tsc -p tsconfig.json --noEmit",

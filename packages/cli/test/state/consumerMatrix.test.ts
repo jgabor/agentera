@@ -11,7 +11,6 @@ import { progressVerificationSummary } from "../../src/cli/capabilityContext/pro
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
-const BUNDLE_ROOT = path.join(REPO_ROOT, "packages/cli/bundle");
 const STATE_ARTIFACTS = new Set(["decisions", "progress", "health"]);
 const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
 
@@ -28,14 +27,8 @@ function schemaConsumers(relativePath: string): string[] {
     .filter((artifact) => STATE_ARTIFACTS.has(artifact));
 }
 
-function sourceAndBundle(relativePath: string): [string, string] {
-  const source = fs.readFileSync(path.join(REPO_ROOT, relativePath), "utf8");
-  const bundled = fs.readFileSync(path.join(BUNDLE_ROOT, relativePath), "utf8");
-  return [source, bundled];
-}
-
 describe("state consumer matrix", () => {
-  it("covers all 12 source and bundled capability consumers with generated parity", () => {
+  it("covers all 12 source capability consumers", () => {
     const authority = readYaml("references/artifacts/state-storage-authority.yaml");
     const matrix = authority.consumer_matrix;
     const consumers = matrix.capabilities as Array<Record<string, any>>;
@@ -54,12 +47,10 @@ describe("state consumer matrix", () => {
       const bundlePath = String(entry.bundle);
       expect(fs.existsSync(path.join(REPO_ROOT, sourcePath)), sourcePath).toBe(true);
       expect(fs.existsSync(path.join(REPO_ROOT, bundlePath)), bundlePath).toBe(true);
-      expect(fs.existsSync(path.join(BUNDLE_ROOT, bundlePath)), `generated ${bundlePath}`).toBe(true);
 
       const schemaStateConsumers = schemaConsumers(bundlePath);
       expect(schemaStateConsumers.sort(), entry.name).toEqual([...entry.state_consumers].sort());
-      const [bundleSource, generatedBundle] = sourceAndBundle(bundlePath);
-      expect(generatedBundle, `generated parity for ${bundlePath}`).toBe(bundleSource);
+      const bundleSource = fs.readFileSync(path.join(REPO_ROOT, bundlePath), "utf8");
 
       const instruction = CAPABILITY_INSTRUCTIONS[String(entry.name)] ?? "";
       expect(instruction, entry.name).not.toMatch(staleCommandPattern);

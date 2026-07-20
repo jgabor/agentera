@@ -9,28 +9,30 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..", "..");
 const PRECOMMIT_SCRIPT = path.join(REPO_ROOT, "scripts", "precommit-vitest.sh");
 
-type RouteMode = "full" | "targeted";
+type Route = { mode: "full" | "targeted"; targets: string[] };
 
-function runPrecommitVitest(stagedPath: string): RouteMode {
+function runPrecommitVitest(stagedPath: string): Route {
   const result = spawnSync("bash", [PRECOMMIT_SCRIPT, stagedPath], {
     cwd: REPO_ROOT,
     env: {
       ...process.env,
       PRECOMMIT_VITEST_PRINT_ROUTE: "1",
+      PRECOMMIT_VITEST_PRINT_TARGETS: "1",
     },
     encoding: "utf8",
   });
 
   expect(result.status, result.stderr || result.stdout).toBe(0);
-  const route = result.stdout.trim();
-  if (route === "run_full") return "full";
-  if (route === "run_targeted") return "targeted";
-  throw new Error(`unexpected route: ${route}`);
+  const [route, ...targetLines] = result.stdout.trim().split("\n");
+  const targets = targetLines.map((line) => line.replace(/^target /, ""));
+  if (route === "run_full") return { mode: "full", targets };
+  if (route === "run_targeted") return { mode: "targeted", targets };
+  throw new Error(`unexpected route: ${result.stdout.trim()}`);
 }
 
 describe("scripts/precommit-vitest.sh staged routing", () => {
   it("routes scripts/sandbox/* to the full vitest suite", () => {
-    expect(runPrecommitVitest("scripts/sandbox/v2v3-upgrade-harness.sh")).toBe("full");
+    expect(runPrecommitVitest("scripts/sandbox/v2v3-upgrade-harness.sh").mode).toBe("full");
   });
 
   it("has an explicit scripts/sandbox case in the routing script", () => {
@@ -39,14 +41,48 @@ describe("scripts/precommit-vitest.sh staged routing", () => {
   });
 
   it("preserves full-suite routing for packages/cli/src changes", () => {
-    expect(runPrecommitVitest("packages/cli/src/cli/prime.ts")).toBe("full");
+    expect(runPrecommitVitest("packages/cli/src/cli/prime.ts").mode).toBe("full");
+  });
+
+  it.each([
+    "packages/cli/package.json",
+    "packages/cli/vite.config.ts",
+    "packages/cli/vite.package.config.ts",
+    "packages/cli/vitest.shared.ts",
+    "packages/cli/scripts/verify-lane.mjs",
+    "packages/cli/test/sourceSetup.ts",
+    "packages/cli/test/packaging/packageSetup.ts",
+    "packages/cli/test/packaging/packageVerification.test.ts",
+    "packages/cli/test/packaging/copyBundleSafety.test.ts",
+    "scripts/precommit-vitest.sh",
+  ])("routes lane-defining surface %s to the ownership test", (surface) => {
+    expect(runPrecommitVitest(surface)).toEqual({
+      mode: "targeted",
+      targets: ["test/verification/laneOwnership.test.ts"],
+    });
+  });
+
+  it("declares every non-TypeScript lane surface in the lefthook test glob", () => {
+    const lefthook = fs.readFileSync(path.join(REPO_ROOT, ".lefthook.yml"), "utf8");
+    for (const surface of [
+      "packages/cli/package.json",
+      "packages/cli/scripts/verify-lane.mjs",
+      "packages/cli/test/packaging/**",
+      "scripts/precommit-vitest.sh",
+    ]) expect(lefthook, surface).toContain(`- \"${surface}\"`);
   });
 
   it("preserves full-suite routing for skills/* changes", () => {
-    expect(runPrecommitVitest("skills/agentera/SKILL.md")).toBe("full");
+    expect(runPrecommitVitest("skills/agentera/SKILL.md").mode).toBe("full");
   });
 
   it("falls back to targeted smoke tests for unrelated staged paths", () => {
-    expect(runPrecommitVitest("README.md")).toBe("targeted");
+    expect(runPrecommitVitest("README.md")).toEqual({
+      mode: "targeted",
+      targets: [
+        "test/registries/evaluatorHandoffContract.test.ts",
+        "test/cli/inspekteraEvaluationReport.test.ts",
+      ],
+    });
   });
 });

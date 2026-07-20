@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sourceSubprocessEnv } from "../../helpers/sourceSubprocess.js";
 
 import { acquireWriterLock } from "../../../src/state/write/lock.js";
 import { StateWriteInputError } from "../../../src/state/write/errors.js";
@@ -35,7 +36,7 @@ function crashAt(project: string, point: string): Promise<number | null> {
     const child = spawn(process.execPath, [crashWorker], {
       cwd: path.resolve(import.meta.dirname, "../../.."),
       env: {
-        ...process.env,
+        ...sourceSubprocessEnv(),
         AGENTERA_LOCK_CRASH_ROOT: project,
         AGENTERA_LOCK_CRASH_POINT: point,
       },

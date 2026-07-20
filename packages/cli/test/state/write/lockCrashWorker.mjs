@@ -1,6 +1,10 @@
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { acquireWriterLock } from "../../../dist/state/write/lock.js";
+const buildRoot = process.env.AGENTERA_SOURCE_TEST_BUILD;
+if (!buildRoot) throw new Error("lock crash worker requires the source test build");
+const { acquireWriterLock } = await import(pathToFileURL(path.join(buildRoot, "state/write/lock.js")));
 
 const project = process.env.AGENTERA_LOCK_CRASH_ROOT;
 const crashPoint = process.env.AGENTERA_LOCK_CRASH_POINT;

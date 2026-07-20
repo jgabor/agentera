@@ -2,9 +2,10 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sourceModuleUrl, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import {
   acquireLifecycleOwnershipJournalLock,
@@ -20,10 +21,7 @@ import {
 } from "../../src/runtime/lifecycleOperations.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DIST_JOURNAL_MODULE = pathToFileURL(path.resolve(
-  __dirname,
-  "../../dist/runtime/lifecycleOwnershipJournal.js",
-)).href;
+const SOURCE_JOURNAL_MODULE = sourceModuleUrl("runtime/lifecycleOwnershipJournal.js");
 
 let root: string;
 let appHome: string;
@@ -257,7 +255,7 @@ describe("lifecycle ownership journal lock", () => {
       import {
         acquireLifecycleOwnershipJournalLock,
         releaseLifecycleOwnershipJournalLock,
-      } from ${JSON.stringify(DIST_JOURNAL_MODULE)};
+      } from ${JSON.stringify(SOURCE_JOURNAL_MODULE)};
       const lock = acquireLifecycleOwnershipJournalLock(${JSON.stringify(journalPath)});
       process.stdout.write(JSON.stringify(lock) + "\\n");
       process.stdin.once("data", () => {
@@ -265,7 +263,7 @@ describe("lifecycle ownership journal lock", () => {
         process.exit(0);
       });
     `;
-    const owner = spawn(process.execPath, ["--input-type=module", "-e", script]);
+    const owner = spawn(process.execPath, ["--input-type=module", "-e", script], { env: sourceSubprocessEnv() });
     try {
       const published = JSON.parse(await waitForLine(owner));
       expect(published.token).toBeTruthy();
@@ -295,7 +293,7 @@ describe("lifecycle ownership journal lock", () => {
       import {
         acquireLifecycleOwnershipJournalLock,
         releaseLifecycleOwnershipJournalLock,
-      } from ${JSON.stringify(DIST_JOURNAL_MODULE)};
+      } from ${JSON.stringify(SOURCE_JOURNAL_MODULE)};
       process.stdin.once("data", () => {
         try {
           const lock = acquireLifecycleOwnershipJournalLock(${JSON.stringify(journalPath)});
@@ -311,8 +309,8 @@ describe("lifecycle ownership journal lock", () => {
       });
     `;
     const contenders = [
-      spawn(process.execPath, ["--input-type=module", "-e", script]),
-      spawn(process.execPath, ["--input-type=module", "-e", script]),
+      spawn(process.execPath, ["--input-type=module", "-e", script], { env: sourceSubprocessEnv() }),
+      spawn(process.execPath, ["--input-type=module", "-e", script], { env: sourceSubprocessEnv() }),
     ];
     try {
       const lines = contenders.map((child) => waitForLine(child));

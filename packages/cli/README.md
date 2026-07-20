@@ -76,6 +76,7 @@ Requires Node.js 22+ and pnpm 10.30.3.
 
 ```bash
 pnpm -C packages/cli test
+pnpm -C packages/cli run verify:package
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
 pnpm -C packages/cli run lint

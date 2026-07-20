@@ -1,7 +1,11 @@
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { main } from "../../dist/cli/dispatch/index.js";
-import { dumpYamlMapping } from "../../dist/core/yaml.js";
+const buildRoot = process.env.AGENTERA_SOURCE_TEST_BUILD;
+if (!buildRoot) throw new Error("baseline worker requires the source test build");
+const { main } = await import(pathToFileURL(path.join(buildRoot, "cli/dispatch/index.js")));
+const { dumpYamlMapping } = await import(pathToFileURL(path.join(buildRoot, "core/yaml.js")));
 
 const root = process.env.AGENTERA_BASELINE_ROOT;
 const objective = process.env.AGENTERA_BASELINE_OBJECTIVE;

@@ -5,7 +5,7 @@ record:
   depends_on:
     - ipayvkggov
     - wtoanuxcsl
-  status: pending
+  status: complete
   acceptance:
     - GIVEN source verification WHEN run THEN it never constructs, installs, or invokes extracted package output.
     - GIVEN package verification WHEN run THEN it owns construction and distribution-boundary observations through one canonical path without native matrices.
@@ -13,3 +13,13 @@ record:
     - GIVEN a lane failure WHEN rendered THEN its boundary is identified without implicitly invoking the other lane.
   test_proportionality: One independently failing source lane, one package lane, and one detailed-matrix ownership inventory.
   plan: ntfgalrhbm
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: tfzmuwbjhe-audit-1
+      source: Independent final review of the full lane-separation diff and verification evidence
+      recorded_at: 2026-07-20 10:50
+      writer_command: agentera state plan record-evaluation

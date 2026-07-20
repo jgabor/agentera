@@ -9,7 +9,7 @@ on:
 
 jobs:
   cli:
-    name: CLI (build, typecheck, test)
+    name: CLI (package, source, typecheck)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,24 +20,18 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3"
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - name: Build CLI
-        run: pnpm -C packages/cli build
+      - name: Verify package boundary
+        run: pnpm -C packages/cli run verify:package
       - name: Typecheck CLI
         run: pnpm -C packages/cli run typecheck
       - name: Fetch main for py-ts parity drift gate
         run: git fetch origin main --depth=1
       - name: Py-TS parity drift gate (#34)
         run: bash packages/cli/scripts/py_ts_parity.sh --check --json
-      - name: Test CLI
+      - name: Verify source boundary
         run: pnpm -C packages/cli test
-      - name: Upgrade L0 gate
-        run: pnpm -C packages/cli test test/upgrade/
       - name: Repository gates
         run: node packages/cli/dist/bin/agentera.js check compact
 
@@ -211,5 +205,4 @@ jobs:
           fi
           cd packages/cli/shim
           npm publish --access public
-
 

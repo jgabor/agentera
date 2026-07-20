@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
@@ -12,6 +12,7 @@ import { main } from "../../../src/cli/dispatch.js";
 import discussInstructions from "../../../src/capabilities/discuss/instructions.js";
 import orchestrateInstructions from "../../../src/capabilities/orchestrate/instructions.js";
 import planInstructions from "../../../src/capabilities/plan/instructions.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../../src/capabilities/index.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
 
@@ -96,18 +97,8 @@ describe("producer capability writer integration", () => {
     expect(planInstructions).not.toMatch(/more than \d+ tasks/i);
   });
 
-  it("keeps source and bundled plan capability instructions identical", async () => {
-    const compiled = await import(
-      pathToFileURL(
-        path.join(REPO_ROOT, "packages/cli/dist/capabilities/plan/instructions.js"),
-      ).href,
-    );
-    const compiledIndex = await import(
-      pathToFileURL(path.join(REPO_ROOT, "packages/cli/dist/capabilities/index.js")).href,
-    );
-
-    expect(compiled.default).toBe(planInstructions);
-    expect(compiledIndex.CAPABILITY_INSTRUCTIONS.plan).toBe(planInstructions);
+  it("keeps the source capability index aligned with plan instructions", () => {
+    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(planInstructions);
   });
 
   it("publishes the documented full plan YAML through the typed writer", () => {

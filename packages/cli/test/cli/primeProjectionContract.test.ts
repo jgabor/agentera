@@ -3,11 +3,12 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { performance } from "node:perf_hooks";
 
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sourceModuleUrl, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
@@ -20,7 +21,7 @@ import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { boundStartupValue, startupHistorySummary } from "../../src/state/startupProjection.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const CLI_DISPATCH_URL = pathToFileURL(path.join(REPO_ROOT, "packages/cli/dist/cli/dispatch.js")).href;
+const CLI_DISPATCH_URL = sourceModuleUrl("cli/dispatch.js");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
 
 type ColdMeasurement = {
@@ -39,7 +40,7 @@ function measureColdCli(args: string[]): Promise<ColdMeasurement> {
     const child = spawn(process.execPath, ["--inspect-brk=127.0.0.1:0", "--input-type=module", "--eval", runner], {
       cwd: project,
       env: {
-        ...process.env,
+        ...sourceSubprocessEnv(),
         AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
         AGENTERA_HOME: path.join(home, "agentera"),
         HOME: home,

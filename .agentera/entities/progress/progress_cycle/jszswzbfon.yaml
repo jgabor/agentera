@@ -1,0 +1,16 @@
+id: jszswzbfon
+artifact: progress
+record:
+  timestamp: 2026-07-20 10:51
+  type: test
+  phase: build
+  what: Separated source and package verification into independently runnable lanes with one package fixture, source-only behavior matrices, package filesystem-safety coverage, boundary-labelled failures, and pre-commit ownership guards.
+  context:
+    intent: Give source behavior and npm distribution verification one explicit owner each without implicit package construction in normal tests.
+    constraints: No version bump, publish, push, tag, remote mutation, or retired native runtime matrix.
+    unknowns: Package installation remains dependent on npm registry or cache availability by design.
+    scope: CLI test configuration, package verification fixtures, source subprocess isolation, CI/pre-commit routing, packaging docs, and retired single-binary test machinery.
+  inspiration: Plan task tfzmuwbjhe and the entity-only runtime cutover.
+  discovered: The former global test setup built package output for every source test; initial consolidation also exposed unowned copy-bundle containment checks and incomplete top-level npm manifest classification, which were restored under the package lane.
+  verified: "Source lane: 192 files and 2225 tests passed. Package lane: 2 files and 8 tests passed. Typecheck, build, compact, focused ownership/pre-commit/schema checks, markdownlint, diff check, and independent final review passed."
+  next: Proceed to dgipngnekk; keep detailed behavior matrices source-owned and package conjunctions minimal.

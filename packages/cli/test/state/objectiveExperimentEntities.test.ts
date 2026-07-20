@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
@@ -53,7 +54,7 @@ async function concurrentBaselines(root: string, objectiveId: string): Promise<A
   const ready = ["a", "b"].map((name) => path.join(root, `${name}.ready`));
   const results = ["a", "b"].map((name) => path.join(root, `${name}.json`));
   const children = results.map((result, index) => new Promise<void>((resolve, reject) => {
-    const child = spawn(process.execPath, [baselineWorker], { cwd: path.resolve(import.meta.dirname, "../.."), env: { ...process.env, AGENTERA_BASELINE_ROOT: root, AGENTERA_BASELINE_OBJECTIVE: objectiveId, AGENTERA_BASELINE_READY: ready[index], AGENTERA_BASELINE_START: start, AGENTERA_BASELINE_RESULT: result }, stdio: "pipe" });
+    const child = spawn(process.execPath, [baselineWorker], { cwd: path.resolve(import.meta.dirname, "../.."), env: { ...sourceSubprocessEnv(), AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."), AGENTERA_BASELINE_ROOT: root, AGENTERA_BASELINE_OBJECTIVE: objectiveId, AGENTERA_BASELINE_READY: ready[index], AGENTERA_BASELINE_START: start, AGENTERA_BASELINE_RESULT: result }, stdio: "pipe" });
     let stderr = ""; child.stderr.setEncoding("utf8"); child.stderr.on("data", (chunk) => { stderr += chunk; }); child.on("error", reject); child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`baseline worker exited ${code}: ${stderr}`)));
   }));
   const deadline = Date.now() + 10_000; while (!ready.every((file) => fs.existsSync(file))) { if (Date.now() > deadline) throw new Error("baseline workers did not become ready"); await new Promise((resolve) => setTimeout(resolve, 10)); }

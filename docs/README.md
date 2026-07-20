@@ -17,11 +17,9 @@ Authoritative Agentera documentation lives elsewhere:
 | Mobile product README | [`packages/mobile/README.md`](../packages/mobile/README.md) |
 
 Authoritative exception: `docs/packaging/` is the design-doc home for the
-v3 packaging contract (T1 of `.agentera/plan.yaml`). See
+v3 packaging contract. See
 [`docs/packaging/v3-packaging.md`](./packaging/v3-packaging.md) for the v3
-distribution surface contract (Bun single-binary, npm tarball, app-home
-migration). The packaging design doc is referenced by the v3 cutover plan
-and the T1 acceptance criteria.
+npm distribution and verification-lane contract.
 
 Authoritative exception: `docs/consolidation/` is the design-doc home for the
 product pivot and monorepo consolidation. See

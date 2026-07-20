@@ -64,20 +64,18 @@ consumers:
       payload contains `capability_context.instructions` and NOT `prose`.
   - id: packaging_distribution_gate
     startup_command: agentera prime --format json
-    evidence: docs/packaging/v3-packaging.md:130-139
+    evidence: packages/cli/test/packaging/packageVerification.test.ts
     consumed_fields:
       - command
       - status
       - app_home
       - app_home.source
     notes: >-
-      Distribution/packaging verification matrix consumer. The Prime gate
-      (line 136) asserts `command: "prime"`, `status: "ok"`, and that
-      `app_home.source` reflects resolution; the Bun smoke gate (line 139)
-      asserts the published single binary runs `agentera prime --format json`
-      and exits 0 with the same JSON shape. Tasks 2-4 must keep the published
-      prime JSON shape stable so packaged binaries and fresh-cache npx gates
-      keep passing. Not a dashboard consumer; does not read state families.
+      Distribution-boundary consumer. The one extracted-package conjunction
+      asserts `command: "prime"`, `status: "ok"`, and that `app_home.source`
+      reflects resolution after the packed upgrade path. Tasks 2-4 must keep
+      the published prime JSON shape stable so fresh-cache npx gates keep
+      passing. Not a dashboard consumer; does not read state families.
   - id: json_output_surface_manifest
     startup_command: agentera prime [ --dashboard | --context <capability> ] --format json
     evidence: scripts/json_output_surface_manifest.yaml:47-161

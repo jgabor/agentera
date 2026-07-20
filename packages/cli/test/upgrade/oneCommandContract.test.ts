@@ -51,11 +51,9 @@ describe("v2-to-v3 one-command guidance", () => {
     expect(schema).not.toMatch(/state_migration|state_backfill|state migrate entities.*apply/);
   });
 
-  it("ships no restore workflow in source or bundled upgrade guidance", () => {
+  it("ships no restore workflow in source upgrade guidance", () => {
     const source = fs.readFileSync(path.join(ROOT, "UPGRADE.md"), "utf8");
-    const bundled = fs.readFileSync(path.join(ROOT, "packages/cli/bundle/UPGRADE.md"), "utf8");
 
-    expect(bundled).toBe(source);
     expect(source).not.toContain("upgrade --restore");
     expect(section("UPGRADE.md", "## Upgrading v2 to v3 development channel"))
       .toMatch(/no rollback, restore, non-Git, or partial\s+workflow/);

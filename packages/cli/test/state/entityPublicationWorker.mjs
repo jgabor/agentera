@@ -1,6 +1,10 @@
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { publishEntity } from "../../dist/state/entityStorage.js";
+const buildRoot = process.env.AGENTERA_SOURCE_TEST_BUILD;
+if (!buildRoot) throw new Error("entity publication worker requires the source test build");
+const { publishEntity } = await import(pathToFileURL(path.join(buildRoot, "state/entityStorage.js")));
 
 const root = process.env.AGENTERA_ENTITY_TEST_ROOT;
 const artifact = process.env.AGENTERA_ENTITY_TEST_ARTIFACT;

@@ -10,7 +10,7 @@ guides — not under `docs/`.
 
 | Path | Topic |
 | ---- | ----- |
-| `docs/packaging/v3-packaging.md` | v3 CLI npm/Bun distribution contract |
+| `docs/packaging/v3-packaging.md` | v3 CLI npm distribution and verification-lane contract |
 | `docs/consolidation/monorepo-plan.md` | Product pivot, `@agentera/*` package layout, migration checklist (D67) |
 
 ## Authority stack

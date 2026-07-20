@@ -47,6 +47,13 @@ pre-commit:
       run: bash scripts/precommit-vitest.sh {staged_files}
       glob:
         - "packages/cli/**/*.ts"
+        - "packages/cli/package.json"
+        - "packages/cli/vite.config.ts"
+        - "packages/cli/vite.package.config.ts"
+        - "packages/cli/vitest.shared.ts"
+        - "packages/cli/scripts/verify-lane.mjs"
+        - "packages/cli/test/packaging/**"
+        - "scripts/precommit-vitest.sh"
         - "skills/**/*.{yaml,yml,md}"
         - "references/**/*.{yaml,yml}"
         - "registry.json"

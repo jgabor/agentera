@@ -29,7 +29,6 @@ import {
 } from "../../src/registries/evidenceTierContract.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const BUNDLE_ROOT = path.join(REPO_ROOT, "packages", "cli", "bundle");
 const PRODUCTION_CONTRACT = evidenceTierAuthorityPath();
 const RELATIVE_CONTRACT = "references/analysis/evidence-tier-authority.yaml";
 
@@ -159,12 +158,6 @@ describe("evidence tier authority — production contract", () => {
     expect(validateEvidenceTierContract(PRODUCTION_CONTRACT)).toEqual([]);
   });
 
-  it("is bundled into the self-contained npm app data (parity with source)", () => {
-    const source = fs.readFileSync(PRODUCTION_CONTRACT, "utf8");
-    const bundled = path.join(BUNDLE_ROOT, RELATIVE_CONTRACT);
-    expect(fs.existsSync(bundled), `bundled ${bundled}`).toBe(true);
-    expect(fs.readFileSync(bundled, "utf8"), `bundle parity for ${RELATIVE_CONTRACT}`).toBe(source);
-  });
 });
 
 describe("AC1 — one bounded input contract supplies every required field with source identity", () => {

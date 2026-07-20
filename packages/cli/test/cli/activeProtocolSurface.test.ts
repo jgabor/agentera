@@ -12,7 +12,6 @@ import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import { main } from "../../src/cli/dispatch/index.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
-const BUNDLE = path.join(ROOT, "packages/cli/bundle");
 const RETIRED = /\b(?:stable_id|artifact_id|entry_number|task_number|experiment_number|plan_id|objective_id)\b|--(?:number|plan|task)(?=$|[\s=])|\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b|\b(?:plan|task|objective|experiment|progress|decision|health):(?:[a-z]{10}|\d+|[0-9a-f]{8}-[0-9a-f-]{27,})\b|\b[a-z]{10}\/experiment:\d+\b/g;
 
 interface Finding { surface: string; pointer: string; match: string; excerpt: string; contextHash: string }
@@ -129,7 +128,7 @@ const RUNTIME_EXACT: Array<[string, string, string]> = [];
 const SOURCE_CONTEXT_HASHES: Record<string, string> = {
   "references/artifacts/state-storage-authority.yaml": "d5c386de575cbfb3cedc14338d78e8da876c61b3e4995e6315c95175aa7e39b5",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
-  "references/cli/prime-consumer-compatibility.yaml": "47cbd3b679bc3b5b9de549f4e1d9da9f4f0c67d9bce9c334032e1a68e4251e0e",
+  "references/cli/prime-consumer-compatibility.yaml": "26e439ef127f1b912c99734074e55327c9318d99bcac55dbad23834bcb451732",
 };
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }
@@ -276,31 +275,6 @@ function bundleSurfaces(): any {
   return registry.records.find((entry: any) => entry.identity.id === "agentera").bundle_surfaces;
 }
 
-function treeFiles(root: string): string[] {
-  const result: string[] = [];
-  const walk = (directory: string): void => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-      const absolute = path.join(directory, entry.name);
-      if (entry.isDirectory()) walk(absolute);
-      else if (entry.isFile()) result.push(path.relative(root, absolute).split(path.sep).join("/"));
-    }
-  };
-  walk(root);
-  return result;
-}
-
-function bundleInventoryErrors(bundleRoot: string, expected: string[]): string[] {
-  const duplicates = [...new Set(expected.filter((entry, index) => expected.indexOf(entry) !== index))];
-  const actual = treeFiles(bundleRoot);
-  const expectedSet = new Set(expected);
-  const actualSet = new Set(actual);
-  return [
-    ...duplicates.map((entry) => `duplicate ownership: ${entry}`),
-    ...actual.filter((entry) => !expectedSet.has(entry)).map((entry) => `unclassified bundle file: ${entry}`),
-    ...expected.filter((entry) => !actualSet.has(entry)).map((entry) => `missing bundle file: ${entry}`),
-  ];
-}
-
 let project = "", legacyProject = "";
 function entity(artifact: string, boundary: string, id: string, record: Record<string, unknown>): void {
   const file = path.join(project, ".agentera/entities", artifact, boundary, `${id}.yaml`);
@@ -341,7 +315,7 @@ describe("authoritative active final-protocol surfaces", () => {
     expect((buildSchemaPayload().doctor as Record<string, unknown>).adjacent_surfaces).toEqual(adjacentSurfaces);
   });
 
-  it("classifies the complete registry-owned reference inventory and keeps every generated copy byte-equal", () => {
+  it("classifies the complete registry-owned source inventory", () => {
     const pairs = copyOwnedPairs();
     const references = pairs.map(([source]) => source).filter((source) => source.startsWith("references/"));
     expect(references).toEqual(files("references"));
@@ -355,50 +329,21 @@ describe("authoritative active final-protocol surfaces", () => {
     expect(ALWAYS_ACTIVE_SOURCE_MANIFEST.filter((file) => file.endsWith("/instructions.ts"))).toHaveLength(CAPABILITY_NAMES.length);
     expect(ALWAYS_ACTIVE_SOURCE_MANIFEST.filter((file) => /skills\/agentera\/capabilities\/[^/]+\/schemas\/.+\.yaml$/.test(file))).toHaveLength(CAPABILITY_NAMES.length * 4);
     for (const source of references) expect(classifyReference(source)).toBeDefined();
-    for (const [source, generated] of pairs) {
+    for (const [source] of pairs) {
       const classification = classifyCopiedSurface(source);
-      expect(["active", "excluded"], `${source} and ${generated}`).toContain(classification.kind);
-      expect(fs.readFileSync(path.join(ROOT, generated)), generated).toEqual(fs.readFileSync(path.join(ROOT, source)));
+      expect(["active", "excluded"], source).toContain(classification.kind);
     }
     const generated = bundleSurfaces().generated_files as Array<{ path: string; format: string; classification: string }>;
-    const expected = [...pairs.map(([, target]) => path.relative(BUNDLE, path.join(ROOT, target)).split(path.sep).join("/")), ...generated.map((entry) => entry.path)];
-    expect(bundleInventoryErrors(BUNDLE, expected)).toEqual([]);
-    expect(new Set(expected).size).toBe(expected.length);
     for (const output of generated) {
       expect(output.format, output.path).toBe("json");
       expect(output.classification, output.path).toBe("active");
-      expect(() => JSON.parse(fs.readFileSync(path.join(BUNDLE, output.path), "utf8")), output.path).not.toThrow();
-      expect(fileFindings(`packages/cli/bundle/${output.path}`), output.path).toEqual([]);
     }
   });
 
-  it("rejects an undeclared generated-only bundle file", () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-bundle-inventory-"));
-    try {
-      const expected = treeFiles(BUNDLE);
-      for (const relative of expected) {
-        const target = path.join(tmp, relative);
-        fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.writeFileSync(target, "");
-      }
-      fs.writeFileSync(path.join(tmp, ".bundle-generated"), "sentinel\n");
-      expect(bundleInventoryErrors(tmp, expected)).toEqual(["unclassified bundle file: .bundle-generated"]);
-    } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
-  });
-
-  it("rejects retired public identity and selector vocabulary on source, generated, and runtime surfaces", () => {
+  it("rejects retired public identity and selector vocabulary on source and runtime surfaces", () => {
     const activeCopiedSources = copyOwnedPairs().map(([source]) => source).filter((source) => classifyCopiedSurface(source).kind === "active");
     const activeSources = [...new Set([...ALWAYS_ACTIVE_SOURCE_MANIFEST.filter((file) => !file.endsWith("/instructions.ts")), ...activeCopiedSources])].sort();
     const findings = activeSources.flatMap(fileFindings);
-    const copied = new Map(copyOwnedPairs());
-    for (const source of activeSources) {
-      const generated = copied.get(source);
-      if (generated) {
-        const sourceFindings = fileFindings(source);
-        const generatedFindings = fileFindings(generated);
-        expect(generatedFindings.map(({ pointer, match, excerpt }) => ({ pointer, match, excerpt })), generated).toEqual(sourceFindings.map(({ pointer, match, excerpt }) => ({ pointer, match, excerpt })));
-      }
-    }
     const runtime = {
       help: ["progress", "decisions", "health", "plan", "objective", "experiments", "todo", "docs"].map(printStateHelp),
       schema: buildSchemaPayload(),
