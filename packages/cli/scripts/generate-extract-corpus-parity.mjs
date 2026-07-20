@@ -13,6 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -21,7 +22,9 @@ const repoRoot = path.resolve(pkgRoot, "..", "..");
 const fixturePath = path.join(pkgRoot, "test/analytics/fixtures/extract-corpus-parity-manifest.json");
 const bundleManifestPath = path.join(pkgRoot, "bundle/extract-corpus-parity.json");
 const pythonPath = path.join(repoRoot, "scripts/extract_corpus.py");
-const distParity = path.join(pkgRoot, "dist/analytics/extractCorpus/extractCorpusParity.js");
+const distRootIndex = process.argv.indexOf("--dist-root");
+const distRoot = path.resolve(distRootIndex >= 0 ? process.argv[distRootIndex + 1] : path.join(pkgRoot, "dist"));
+const distParity = path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js");
 const writeMode = process.argv.includes("--write");
 
 function stableJson(value) {
@@ -43,7 +46,7 @@ function loadManifest() {
 }
 
 function pathToFileUrl(p) {
-  return new URL(`file://${p.split(path.sep).join("/")}`).href;
+  return pathToFileURL(p).href;
 }
 
 function renderPythonWrapper(manifest) {

@@ -74,6 +74,25 @@ details.
 
 Requires Node.js 22+ and pnpm 10.30.3.
 
+### Generated-output ownership and recovery
+
+`test:source` owns a disposable TypeScript compilation under the operating
+system temporary directory and never reads checkout `dist/` or `bundle/`.
+`build`, `prepack`, and `bundle:data` are the only publishers of checkout
+`dist/` and `bundle/`: they construct both in a unique staging directory and
+publish complete directories under one short publication lock. Package
+verification constructs a separate package tree, packs it, extracts it, and
+tests only that extracted installation.
+
+An interrupted checkout publication may leave
+`packages/cli/.agentera-generated-publication.json`. Do not consume checkout
+generated output while that recovery journal exists. Rerun
+`pnpm -C packages/cli build`; the publisher first restores the previous
+complete directories, then retries construction. If recovery cannot complete,
+the command reports the journal and backup paths it preserved. Generated
+directories and recovery files are disposable; source files and the package
+registry remain authoritative.
+
 ```bash
 pnpm -C packages/cli test
 pnpm -C packages/cli run verify:package
@@ -82,6 +101,6 @@ pnpm -C packages/cli build
 pnpm -C packages/cli run lint
 ```
 
-Use `npm pack --dry-run --json --ignore-scripts` after `build` and
-`bundle:data` to inspect the exact publication surface. Do not publish from a
-normal development or capability cycle.
+Use `npm pack --dry-run --json --ignore-scripts` after `build` to inspect the
+exact publication surface. Do not publish from a normal development or
+capability cycle.

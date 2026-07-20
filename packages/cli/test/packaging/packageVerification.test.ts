@@ -98,6 +98,15 @@ function entityEnvelopes(project: string): Array<{ id: string; artifact: string;
 }
 
 describe("npm distribution boundary", () => {
+  it("tests a packed and extracted installation built outside checkout outputs", () => {
+    expect(isContained(fixture.root, fixture.constructionRoot)).toBe(true);
+    expect(isContained(fixture.root, fixture.packageRoot)).toBe(true);
+    expect(isContained(fixture.constructionRoot, fixture.packageRoot)).toBe(false);
+    expect(isContained(CHECKOUT_ROOT, fixture.constructionRoot)).toBe(false);
+    expect(fs.realpathSync(path.join(fixture.packageRoot, "dist/bin/agentera.js")))
+      .toMatch(`${path.sep}package${path.sep}dist${path.sep}bin${path.sep}agentera.js`);
+  });
+
   it("constructs one self-contained CLI and shared-skill package inventory", () => {
     const files = new Set(fixture.manifest.files.map((entry) => entry.path));
     for (const required of [

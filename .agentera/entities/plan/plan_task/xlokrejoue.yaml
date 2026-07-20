@@ -4,7 +4,7 @@ record:
   name: Eliminate generated-output races
   depends_on:
     - fbgcvyeexr
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a clean checkout WHEN source verification runs THEN no prior generated checkout output is required.
     - GIVEN source, build, and package commands overlap WHEN outputs are consumed THEN no command observes a partial generated surface.

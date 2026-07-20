@@ -1,0 +1,15 @@
+id: ywtaivjxvs
+artifact: progress
+record:
+  timestamp: 2026-07-21 01:15
+  type: fix
+  phase: build
+  what: Eliminated generated-output races by isolating source compilation and package construction, publishing complete checkout directories under one recovery journal and lock, and retaining extracted-install package proof.
+  context:
+    intent: Make source, build, and package verification safe from clean checkout through overlap and interrupted generation without changing verification-lane ownership.
+    constraints: No worker tuning, duplicate consolidation, final proof, blocked-task repair, release, version, publish, tag, push, vision, or profile changes.
+    unknowns: Resolved the publication-model unknown with isolated construction and a short journaled publication lock; runner worker-count unknown remains outside this task.
+    scope: CLI generated-output scripts, package/source setup tests, contributor guidance, ignore rules, and verification-policy conservative routing.
+  inspiration: Agentera plan rmtdgltdgm task xlokrejoue and dependency fbgcvyeexr.
+  verified: "Clean-output source plus concurrent build/package passed: source 192 files and 2253 tests, build passed, package 2 files and 9 tests. Final merge policy passed source 192 files and 2254 tests plus package 2 files and 9 tests. Publication unit tests covered complete publish, rollback, journal recovery, and deterministic overlap. Typecheck, build, lint with 0 errors, capability-contract validation, and root compact passed."
+  next: Continue only with another eligible rmtdgltdgm task; jiupbftubj remains blocked and final proof remains out of scope.

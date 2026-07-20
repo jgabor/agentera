@@ -8,15 +8,23 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-
-import { buildExtractCorpusParityManifest } from "../dist/analytics/extractCorpus/extractCorpusParity.js";
-import { loadRegistry } from "../dist/registries/packageRegistry.js";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pkgRoot = path.resolve(here, "..");
 const repoRoot = path.resolve(pkgRoot, "..", "..");
-const bundleRoot = path.join(pkgRoot, "bundle");
+const argument = (name, fallback) => {
+  const index = process.argv.indexOf(name);
+  return path.resolve(index >= 0 ? process.argv[index + 1] : fallback);
+};
+const distRoot = argument("--dist-root", path.join(pkgRoot, "dist"));
+const bundleRoot = argument("--bundle-root", path.join(pkgRoot, "bundle"));
+const { buildExtractCorpusParityManifest } = await import(
+  pathToFileURL(path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js")).href
+);
+const { loadRegistry } = await import(
+  pathToFileURL(path.join(distRoot, "registries/packageRegistry.js")).href
+);
 const registryPath = path.join(repoRoot, "references/adapters/package-registry.yaml");
 const SKIP_PARTS = new Set(["__pycache__", ".pytest_cache", "node_modules"]);
 const SKIP_SUFFIXES = new Set([".pyc", ".pyo"]);
@@ -46,7 +54,7 @@ function shouldSkip(name) {
 function runExtractCorpusParityCheck() {
   const generator = path.join(here, "generate-extract-corpus-parity.mjs");
   if (!fs.existsSync(generator)) return;
-  const result = spawnSync(process.execPath, [generator], { stdio: "inherit" });
+  const result = spawnSync(process.execPath, [generator, "--dist-root", distRoot], { stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
@@ -65,26 +73,25 @@ function loadBundleEntries() {
 
 function preflight(entries) {
   let repoRootReal;
-  let pkgRootReal;
+  let bundleParentReal;
   try {
     repoRootReal = fs.realpathSync(repoRoot);
-    pkgRootReal = fs.realpathSync(pkgRoot);
+    fs.mkdirSync(path.dirname(bundleRoot), { recursive: true });
+    bundleParentReal = fs.realpathSync(path.dirname(bundleRoot));
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     abort(`cannot resolve package roots: ${detail}; correction: restore the repository checkout`);
   }
 
-  if (!inside(pkgRoot, bundleRoot)) {
-    abort(`bundle root ${JSON.stringify(bundleRoot)} escapes package root; correction: restore packages/cli/bundle`);
-  }
+  if (!inside(bundleParentReal, bundleRoot)) abort(`bundle root ${JSON.stringify(bundleRoot)} escapes its output root`);
   if (fs.existsSync(bundleRoot)) {
     const bundleStat = fs.lstatSync(bundleRoot);
     if (bundleStat.isSymbolicLink()) {
       abort(`bundle root ${JSON.stringify(bundleRoot)} is a symlink; correction: replace it with an in-package directory`);
     }
     const bundleReal = fs.realpathSync(bundleRoot);
-    if (!inside(pkgRootReal, bundleReal)) {
-      abort(`bundle root ${JSON.stringify(bundleRoot)} resolves outside package root; correction: restore packages/cli/bundle`);
+    if (!inside(bundleParentReal, bundleReal)) {
+      abort(`bundle root ${JSON.stringify(bundleRoot)} resolves outside its output root; correction: replace it with an in-root directory`);
     }
   }
 

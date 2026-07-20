@@ -18,6 +18,7 @@ export interface PackEntry {
 
 export interface PackageFixture {
   root: string;
+  constructionRoot: string;
   packageRoot: string;
   manifest: PackEntry;
 }
@@ -65,13 +66,23 @@ function parseManifest(stdout: string): PackEntry {
 export default function setup({ provide }: GlobalSetupContext): () => void {
   const packageRoot = path.resolve(import.meta.dirname, "../..");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-verification-"));
+  const constructionRoot = path.join(root, "construction");
   try {
-    run("pnpm", ["run", "build"], packageRoot);
+    fs.mkdirSync(constructionRoot);
+    for (const file of ["package.json", "README.md"]) {
+      fs.copyFileSync(path.join(packageRoot, file), path.join(constructionRoot, file));
+    }
+    fs.copyFileSync(path.resolve(packageRoot, "../..", "LICENSE"), path.join(constructionRoot, "LICENSE"));
+    run(
+      process.execPath,
+      ["scripts/build-package.mjs", "--output-root", constructionRoot],
+      packageRoot,
+    );
     const manifest = parseManifest(
       run(
         "npm",
         ["pack", "--json", "--ignore-scripts", "--pack-destination", root],
-        packageRoot,
+        constructionRoot,
       ),
     );
     run("tar", ["-xzf", path.join(root, manifest.filename), "-C", root], root);
@@ -81,7 +92,7 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
       ["install", "--ignore-scripts", "--omit=dev", "--no-audit", "--no-fund"],
       extractedPackage,
     );
-    provide("packageFixture", { root, packageRoot: extractedPackage, manifest });
+    provide("packageFixture", { root, constructionRoot, packageRoot: extractedPackage, manifest });
   } catch (error) {
     fs.rmSync(root, { recursive: true, force: true });
     throw error;

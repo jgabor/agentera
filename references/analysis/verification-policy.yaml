@@ -69,6 +69,9 @@ conservative_routing:
     - packages/cli/vite.package.config.ts
     - packages/cli/vitest.shared.ts
     - packages/cli/scripts/verify-lane.mjs
+    - packages/cli/scripts/build-package.mjs
+    - packages/cli/scripts/copy-bundle.mjs
+    - packages/cli/scripts/generate-extract-corpus-parity.mjs
     - packages/cli/test/sourceSetup.ts
     - packages/cli/test/helpers/sourceSubprocess.ts
     - references/analysis/verification-policy.yaml
