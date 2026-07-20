@@ -14,12 +14,12 @@ record:
   test_proportionality: Cover each owner command, each policy composition, one ownership gap, and one overlap failure.
   plan: rmtdgltdgm
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Multi-file pre-commit routing is not conservatively monotonic: staging a central authority such as references/analysis/verification-policy.yaml selects release, but a later ordinary source path overwrites it with local. Existing tests cover only one staged path and miss the downgrade. Make release sticky, add mixed-path order-independent regression coverage, and correct progress evidence that overclaimed conservative routing."
     provenance:
-      attempt_id: fbgcvyeexr-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-20 21:59
+      attempt_id: fbgcvyeexr-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-20 22:10
       writer_command: agentera state plan record-evaluation

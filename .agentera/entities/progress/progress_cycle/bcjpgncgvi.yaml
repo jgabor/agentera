@@ -1,0 +1,16 @@
+id: bcjpgncgvi
+artifact: progress
+record:
+  timestamp: 2026-07-20 22:21
+  type: test
+  phase: build
+  what: Scaled source-owned migration pagination to a 40-entry multi-page fixture, retained every cursor-mutation rejection, and assigned the 400-entry 32768-byte cap case to the performance owner.
+  context:
+    intent: Make migration pagination verification proportional without weakening the production response cap or continuation semantics.
+    constraints: No production limit changes, analytics scaling, lock/performance separation, output isolation, parity optimization, worker tuning, cleanup, versions, release, publish, push, vision, or profile changes.
+    unknowns: Decision retrieval remains degraded; startup omitted decisions, vision, and profile; llavvlpcmb and djmjbmruyk satisfaction remains unavailable.
+    scope: Migration pagination test helper and fixtures, verification ownership authority/tests, retained focused measurement evidence, plan task, and progress state.
+  inspiration: Plan rmtdgltdgm task cneetjywed and Task 1's retained 16680ms migration-pagination baseline.
+  discovered: The proportional assertion preserves multiple byte-bounded pages at 40 entries and runs at a 178.642103ms median; the production-scale case remains deterministic but now runs only through its named performance owner.
+  verified: The exact pagination assertion fell from 16680ms to 178.642103ms median (98.929004%) over three retained samples. Source passed 191 files/2246 tests; performance passed 1 file/1 test. Ownership inventory, cursor mutation coverage, typecheck, build, lint with 0 errors, capability-contract, and compact passed.
+  next: Proceed to the next plan task; keep production-cap evidence in performance scheduled/release and proportional continuation/mutation evidence in source.

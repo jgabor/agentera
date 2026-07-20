@@ -143,7 +143,7 @@ type SourceFile =
   | { relative: string; bytes: Buffer; kind: "file"; dev: bigint; ino: bigint; type: "file"; mode: number }
   | { relative: string; bytes: null; kind: "missing" | "unsafe" };
 
-const MAX_OUTPUT_BYTES = 32_768;
+export const ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES = 32_768;
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 1000;
 const NUMBERED = {
@@ -851,11 +851,11 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
     const body = { ...base, entries, diagnostics: pageDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - pageDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval: { command } };
     return Math.max(Buffer.byteLength(JSON.stringify(body, null, 2), "utf8"), Buffer.byteLength(YAML.stringify(body), "utf8"));
   };
-  while (entries.length > 0 && serializedBytes() > MAX_OUTPUT_BYTES) {
+  while (entries.length > 0 && serializedBytes() > ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES) {
     entries = entries.slice(0, -1);
     omissionReason = "output_byte_budget";
   }
-  if (entries.length === 0 && start < completeEntries.length) throw new Error("the next whole migration entry exceeds the 32768-byte output budget; repair that source before retrying");
+  if (entries.length === 0 && start < completeEntries.length) throw new Error(`the next whole migration entry exceeds the ${ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES}-byte output budget; repair that source before retrying`);
   const outputDiagnostics = diagnosticsForEntries();
   const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
   const retrieval = { command: nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --source-fingerprint ${fingerprint} --preview-digest ${previewDigest} --limit ${requestedLimit} --dry-run --format json` : restartCommand };

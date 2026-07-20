@@ -9,8 +9,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { main } from "../../src/cli/dispatch.js";
 import { printStateHelp } from "../../src/cli/help.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
+import { collectMigrationPreviewPages } from "../helpers/entityMigrationPagination.js";
 import {
   assertEntityMigrationBinding,
+  ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES,
   planEntityMigration,
   previewEntityMigration,
   validateEntityMigrationTargets,
@@ -976,26 +978,19 @@ describe("entity migration read-only preview", () => {
 
   it("uses snapshot-bound whole-entry pagination to recover every entry without gaps or duplicates", () => {
     const root = project();
-    write(root, "TODO.md", `# TODO\n\n## → Normal\n${Array.from({ length: 400 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(200)}`).join("\n")}\n`);
-    const recovered: string[] = [];
-    let after: string | undefined;
-    let sourceFingerprint: string | undefined;
-    let previewDigest: string | undefined;
-    do {
-      const page = previewEntityMigration(root, REPO_ROOT, { limit: 1000, after, sourceFingerprint, previewDigest });
-      expect(Buffer.byteLength(JSON.stringify(page, null, 2), "utf8")).toBeLessThanOrEqual(32_768);
-      recovered.push(...page.entries.map((entry) => entry.source_identity));
-      after = page.next_after ?? undefined;
-      sourceFingerprint = page.source_fingerprint;
-      previewDigest = page.preview_digest;
+    write(root, "TODO.md", `# TODO\n\n## → Normal\n${Array.from({ length: 40 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(200)}`).join("\n")}\n`);
+    const { identities: recovered, pages } = collectMigrationPreviewPages(root, REPO_ROOT);
+    expect(pages.length).toBeGreaterThan(1);
+    for (const page of pages) {
+      expect(Buffer.byteLength(JSON.stringify(page, null, 2), "utf8")).toBeLessThanOrEqual(ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES);
       if (page.next_after) {
-        expect(page.retrieval.command).toContain(`--after '${after?.replaceAll("'", "'\\''")}'`);
-        expect(page.retrieval.command).toContain(`--source-fingerprint ${sourceFingerprint}`);
-        expect(page.retrieval.command).toContain(`--preview-digest ${previewDigest}`);
+        expect(page.retrieval.command).toContain(`--after '${page.next_after.replaceAll("'", "'\\''")}'`);
+        expect(page.retrieval.command).toContain(`--source-fingerprint ${page.source_fingerprint}`);
+        expect(page.retrieval.command).toContain(`--preview-digest ${page.preview_digest}`);
       }
-    } while (after);
-    expect(new Set(recovered).size).toBe(400);
-    expect(recovered).toHaveLength(400);
+    }
+    expect(new Set(recovered).size).toBe(40);
+    expect(recovered).toHaveLength(40);
   });
 
   it.each(["source", "authority", "filter", "order", "project"])("refuses a continuation after %s binding mutation with restart guidance", (mutation) => {
