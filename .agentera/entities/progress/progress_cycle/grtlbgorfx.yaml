@@ -1,0 +1,16 @@
+id: grtlbgorfx
+artifact: progress
+record:
+  timestamp: 2026-07-20 02:51
+  type: fix
+  phase: build
+  what: For vuzlehhwsz, removed the retired setup-specific doctor source from the active contract while retaining codebase-audit adjacency, and added a direct active-protocol assertion that the retained contract and schema output have the same exact adjacency.
+  context:
+    intent: Stop agentera schema from advertising the deleted native doctor path without changing the complete repository-native retirement candidate or its state history.
+    constraints: No branch or worktree; no commit, push, publish, tag, release, version, package/distribution, broad-docs, evaluation, task, TODO, or decision status changes.
+    unknowns: Independent evaluation remains intentionally pending.
+    scope: references/cli/agent-ready-state-contract.yaml and packages/cli/test/cli/activeProtocolSurface.test.ts only; preserved all prior retirement work and state history.
+  inspiration: Active successor task vuzlehhwsz and its independent-review acceptance criteria.
+  discovered: Built agentera schema emitted doctor.adjacent_surfaces exactly as {"codebase_audit":"/agentera audit routes to inspektera"}; packages/cli/src/setup/doctor.ts is absent. The direct exact-shape assertion rejects reintroducing that deleted source through the retained contract and runtime schema.
+  verified: "Focused schema, active-protocol, and retirement run: 5 files and 41 tests passed. Full CLI run: 199 files and 2343 tests passed. Typecheck and build passed. State validation passed with 1576 entities and 0 issues. Capability-contract validation passed 2 of 2 checks. Compact passed with 1 artifact, 0 over-limit, 0 errors, and 0 changed. git diff --check passed. The full candidate remains covered: five direct hooks, shared-skill diagnosis tests, install/environment precedence, migration-only lifecycle contracts, current plan lifecycle, v2 and Claude routes, inert Task-4 descriptors, and temporary-home non-mutation."
+  next: Leave vuzlehhwsz in_progress for independent Review; do not record an evaluation or alter task, TODO, or decision status.

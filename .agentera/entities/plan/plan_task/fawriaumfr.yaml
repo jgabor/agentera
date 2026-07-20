@@ -1,0 +1,23 @@
+id: fawriaumfr
+artifact: plan
+record:
+  plan: ntfgalrhbm
+  name: Reuse one entity discovery across prime
+  status: complete
+  depends_on:
+    - vuzlehhwsz
+  acceptance:
+    - GIVEN entity-mode prime WHEN canonical state is projected THEN the entity tree is discovered and parsed once, and every startup reader consumes that same immutable discovery.
+    - GIVEN direct state list/get callers WHEN no discovery is supplied THEN standalone filtering, ordering, counts, snapshots, cursors, and error behavior remain unchanged.
+    - GIVEN entity prime output WHEN compared before and after reuse THEN plan, tasks, objective/experiments, TODO, docs, progress, decisions, health, history, and public projection remain equivalent.
+    - GIVEN the unchanged cold-start and full-suite gates WHEN run repeatedly and through pre-commit THEN every threshold passes with substantial margin and no authority, fixture, sampling, runner, GC, retry, or assertion change.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Single discovery, output equivalence, retirement, full suite, and cold budget passed with startup-small max 48,005,872 bytes. Supplied EntityDiscoveryResult is origin-blind: it records no project/source roots, validation cannot reject a snapshot from root A passed to root B, and several optional readers trust it directly. Bind snapshots to resolved project and source authority, reject foreign roots in every optional-reader path, and add foreign-root/source plus corruption/duplicate coverage."
+    provenance:
+      attempt_id: fawriaumfr-audit-2
+      source: "independent review ses_0829309ccffeJ5EpvVmPl2uvUF: origin-bound single discovery and unchanged cold/full gates passed"
+      recorded_at: 2026-07-20 04:57
+      writer_command: agentera state plan record-evaluation

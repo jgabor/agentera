@@ -81,6 +81,10 @@ export interface DiscoveredEntity {
 }
 
 export interface EntityDiscoveryResult {
+  origin: {
+    projectRoot: string;
+    sourceRoot: string;
+  };
   entities: DiscoveredEntity[];
   issues: EntityDiagnostic[];
   validArtifactValues: string[];
@@ -519,16 +523,18 @@ function discoverFile(
 
 export function discoverEntities(projectRoot: string, sourceRoot?: string): EntityDiscoveryResult {
   const root = path.resolve(projectRoot);
-  const model = authority(sourceRoot);
+  const resolvedSourceRoot = path.resolve(sourceRoot ?? resolveSourceRoot());
+  const origin = { projectRoot: root, sourceRoot: resolvedSourceRoot };
+  const model = authority(resolvedSourceRoot);
   const storageRoot = path.join(root, model.entityRoot);
   const entities: DiscoveredEntity[] = [];
   const issues: EntityDiagnostic[] = [];
   const unsafePrefix = noSymlinkPrefix(root, storageRoot);
-  if (unsafePrefix) return { entities: [unsafeEntity(root, unsafePrefix)], issues: [unsafeIssue(root, unsafePrefix)], validArtifactValues: model.artifacts };
-  if (!fs.existsSync(storageRoot)) return { entities, issues, validArtifactValues: model.artifacts };
+  if (unsafePrefix) return { origin, entities: [unsafeEntity(root, unsafePrefix)], issues: [unsafeIssue(root, unsafePrefix)], validArtifactValues: model.artifacts };
+  if (!fs.existsSync(storageRoot)) return { origin, entities, issues, validArtifactValues: model.artifacts };
   if (!fs.statSync(storageRoot).isDirectory()) {
     issues.push({ code: "malformed_entity", path: relative(root, storageRoot), message: `entity root '${relative(root, storageRoot)}' is not a directory`, recovery: recovery(root, `replace '${relative(root, storageRoot)}' with a directory`) });
-    return { entities, issues, validArtifactValues: model.artifacts };
+    return { origin, entities, issues, validArtifactValues: model.artifacts };
   }
 
   for (const artifactEntry of listDirectories(storageRoot)) {
@@ -552,7 +558,7 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string): Enti
           issues.push({ code: "malformed_entity", path: relative(root, file), message: `entity path '${relative(root, file)}' is not a canonical YAML file`, recovery: recovery(root, `remove '${relative(root, file)}' or replace it with <ten-lowercase-letter-id>.yaml`) });
           continue;
         }
-        entities.push(discoverFile(root, file, artifactEntry.name, boundaryEntry.name, model, issues, sourceRoot));
+        entities.push(discoverFile(root, file, artifactEntry.name, boundaryEntry.name, model, issues, resolvedSourceRoot));
       }
     }
   }
@@ -579,7 +585,20 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string): Enti
   const rank: Record<EntityClassification, number> = { duplicate: 0, malformed: 1, unsafe: 2, valid: 3 };
   entities.sort((left, right) => rank[left.classification] - rank[right.classification] || left.relativePath.localeCompare(right.relativePath));
   issues.sort(diagnosticSort);
-  return { entities, issues, validArtifactValues: model.artifacts };
+  return { origin, entities, issues, validArtifactValues: model.artifacts };
+}
+
+export function assertEntityDiscoveryOrigin(projectRoot: string, sourceRoot: string | undefined, discovery: EntityDiscoveryResult): void {
+  const expected = {
+    projectRoot: path.resolve(projectRoot),
+    sourceRoot: path.resolve(sourceRoot ?? resolveSourceRoot()),
+  };
+  const actualProjectRoot = discovery.origin?.projectRoot ?? "<missing>";
+  const actualSourceRoot = discovery.origin?.sourceRoot ?? "<missing>";
+  if (actualProjectRoot === expected.projectRoot && actualSourceRoot === expected.sourceRoot) return;
+  throw new Error(
+    `supplied entity discovery origin does not match this request (expected project '${expected.projectRoot}' and source authority '${expected.sourceRoot}', received project '${actualProjectRoot}' and source authority '${actualSourceRoot}'); call discoverEntities with this request's project and source roots, then retry`,
+  );
 }
 
 function relationTargets(entity: DiscoveredEntity, relation: RelationshipDefinition): string[] | null {
@@ -589,7 +608,8 @@ function relationTargets(entity: DiscoveredEntity, relation: RelationshipDefinit
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
 }
 
-function validateEntityDiscovery(projectRoot: string, sourceRoot: string | undefined, discovery: EntityDiscoveryResult, boundIssues = true): EntityValidationResult {
+export function validateEntityDiscovery(projectRoot: string, sourceRoot: string | undefined, discovery: EntityDiscoveryResult, boundIssues = true): EntityValidationResult {
+  assertEntityDiscoveryOrigin(projectRoot, sourceRoot, discovery);
   const model = authority(sourceRoot);
   const issues = [...discovery.issues];
   const byId = new Map<string, DiscoveredEntity[]>();
@@ -728,7 +748,12 @@ export function validateCanonicalEntityTargets(projectRoot: string, targets: Can
     if (duplicates.length < 2) continue;
     for (const target of duplicates) issues.push({ code: "duplicate_id", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message: `entity ID '${target.id}' appears ${duplicates.length} times across proposed canonical targets`, recovery: recovery(projectRoot, `repair migration identity allocation for '${target.sourceIdentity}'`) });
   }
-  const validation = validateEntityDiscovery(projectRoot, sourceRoot, { entities, issues, validArtifactValues: model.artifacts }, false);
+  const validation = validateEntityDiscovery(projectRoot, sourceRoot, {
+    origin: { projectRoot: path.resolve(projectRoot), sourceRoot: path.resolve(sourceRoot ?? resolveSourceRoot()) },
+    entities,
+    issues,
+    validArtifactValues: model.artifacts,
+  }, false);
   return validation.issues.map((issue) => ({ sourceIdentity: sourceByPath.get(issue.path) ?? issue.id ?? issue.path, path: issue.path, message: issue.message }));
 }
 

@@ -12,6 +12,7 @@ import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval
 import {
   allocateAndPublishEntity,
   allocateEntityId,
+  assertEntityDiscoveryOrigin,
   discoverEntities,
   publishEntity,
   type DiscoveredEntity,
@@ -45,6 +46,7 @@ interface ProgressCursor {
 export interface ProgressEntityListOptions {
   sourceRoot?: string;
   format?: "text" | "json" | "yaml";
+  discovery?: ReturnType<typeof discoverEntities>;
 }
 
 export interface AppendProgressEntityOptions {
@@ -462,7 +464,8 @@ export function listProgressEntities(
       2,
     );
   }
-  const all = sortedProgress(discoverEntities(projectRoot, sourceRoot));
+  if (options.discovery) assertEntityDiscoveryOrigin(projectRoot, sourceRoot, options.discovery);
+  const all = sortedProgress(options.discovery ?? discoverEntities(projectRoot, sourceRoot));
   const snapshot = snapshotId(all);
   const filterState = filtersObject(filters);
   let afterKey = "";

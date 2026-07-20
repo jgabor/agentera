@@ -1,0 +1,14 @@
+id: mgrwtgqcpp
+artifact: progress
+record:
+  timestamp: 2026-07-20 02:06
+  type: fix
+  phase: build
+  what: Retired repository-native hook, agent, command, plugin implementation, setup/doctor, and lifecycle-validator surfaces for task nwaesildcl while preserving direct CLI hooks and shared-skill diagnosis.
+  context:
+    intent: Make the shared skill plus CLI the only current integration without changing task, evaluation, TODO, or decision state.
+    constraints: No commits, pushes, publishing, tags, releases, versions, live-host tests, host configuration, user-project configuration, task/evaluation/TODO/decision state, migration readers, v2 fixtures, archives, migrations, or historical changelog entries were changed.
+    scope: .cursor and .github hook implementations; hooks/codex JSON; .opencode implementation and inert descriptor boundary; packages/cli setup, smoke, validator, CLI validation dispatch, direct contract tests, current-surface classification, and the minimal copy-bundle exclusions required for a green build.
+  discovered: The inert OpenCode package and version descriptors are still consumed by package/release contracts owned by Task 4; their executable plugin and standalone dependency boundary were removed, while the minimum descriptors remain explicitly classified as deferred distribution metadata.
+  verified: "Deleted tracked Cursor hooks/agent, Copilot hook JSON, Codex hook JSON, OpenCode agent/command implementation, native setup/doctor code, lifecycle adapter validator code, and obsolete native tests. Direct CLI tests cover session-start, session-stop, cursor-session-start, cursor-pre-tool-use, and validate-artifact; install-root observations proved explicit > AGENTERA_HOME > AGENTERA_PROFILE_DIR or PROFILERA_PROFILE_DIR > platform default. The tracked-surface allowlist preserves v2 Codex/Cursor fixtures, upgrade migration readers, .agentera/archive, .agentera/migrations, and historical CHANGELOG records. No live host probe ran; mutation tests use temporary homes/projects and assert retired selectors and normal upgrades do not create native resources. Gates: focused DTC run established the expected retirement failure; final full CLI suite 197 files and 2345 tests passed, typecheck passed, build staged 15 data surfaces, state validation passed with 1573 entities and 0 issues, capability-contract passed 2/2, compact passed with 0 over-limit and 0 errors, and git diff --check passed."
+  next: Independent audit should evaluate task nwaesildcl while leaving it in progress. Task wqeazunluo should remove the retained native package descriptors and reconcile package-registry, package-manifest, release metadata, and broader package/install guidance.

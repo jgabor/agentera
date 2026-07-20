@@ -216,12 +216,10 @@ function runDispatch(argv: string[]): { rc: number; payload: Record<string, unkn
 describe("validate family envelope (oracle parity)", () => {
   const familyNames = Object.keys(VALIDATE_FAMILY_ORACLE.families);
 
-  it("declares the seven families in the oracle", () => {
-    // The seven pinned families must stay in lockstep with `check validate` routing.
+  it("declares the current families in the oracle", () => {
     expect(new Set(familyNames)).toEqual(
       new Set([
         "cross-capability",
-        "lifecycle-adapters",
         "app-home-contract",
         "capability",
         "capability-contract",
@@ -236,7 +234,7 @@ describe("validate family envelope (oracle parity)", () => {
   // resolves to packages/cli at vitest time; the cmd* helpers walk up to the
   // repo source root). The dispatch wiring is covered separately below.
   function capturePassEnvelope(family: string): { rc: number; payload: Record<string, unknown> } {
-    if (family === "cross-capability" || family === "lifecycle-adapters" || family === "app-home-contract") {
+    if (family === "cross-capability" || family === "app-home-contract") {
       const { rc, out } = capture((io) => cmdValidate(family, { format: "json" }, io));
       return { rc, payload: readJson(out) };
     }
@@ -297,7 +295,7 @@ describe("validate family envelope (oracle parity)", () => {
   });
 
   it("delegated families expose the engine.command script name", () => {
-    for (const family of ["cross-capability", "lifecycle-adapters", "app-home-contract"]) {
+    for (const family of ["cross-capability", "app-home-contract"]) {
       const spec = VALIDATE_FAMILY_ORACLE.families[family];
       const { payload } = capturePassEnvelope(family);
       const engine = payload.engine as Record<string, unknown>;

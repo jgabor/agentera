@@ -6,6 +6,7 @@ import { listPlanEntities, listPlanTaskEntities } from "../../../state/planEntit
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
+import { discoverEntities } from "../../../state/entityStorage.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -71,14 +72,15 @@ export interface EntityOrientationProjection {
 
 /** Bounded startup projection built only from canonical entity readers. */
 export function collectEntityOrientation(projectRoot: string, sourceRoot: string): EntityOrientationProjection {
-  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, { sourceRoot, format: "json" });
-  const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json" });
-  const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json" });
-  const planList = listPlanEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"] });
-  const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"] });
-  const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, { sourceRoot, format: "json", statuses: ["closed"] });
-  const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, {}, { sourceRoot, format: "json" });
-  const docsList = listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json" });
+  const discovery = discoverEntities(projectRoot, sourceRoot);
+  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, { sourceRoot, format: "json", discovery });
+  const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json", discovery });
+  const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json", discovery });
+  const planList = listPlanEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
+  const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
+  const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, { sourceRoot, format: "json", statuses: ["closed"], discovery });
+  const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, {}, { sourceRoot, format: "json", discovery });
+  const docsList = listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json", discovery });
 
   const progressEntries = entries(progressList);
   const healthEntries = entries(healthList);
@@ -90,7 +92,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
 
   const selectedPlan = selected(planEntries, "plan");
   const taskEntries = (selectedPlan
-    ? entries(listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json" }))
+    ? entries(listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json", discovery }))
     : []).map((entry): JsonObject => ({ ...record(entry), id: entry.id, artifact: entry.artifact, provenance: entry.provenance }));
   const firstPending = taskEntries.find((entry) => !complete(entry.status));
   const plan: PlanSummary = selectedPlan ? {
@@ -151,7 +153,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     title: String(header(activeObjective).title ?? ""),
     status: String(header(activeObjective).status ?? "open"),
     metric: String((objectiveRecord.metric as JsonObject | undefined)?.description ?? ""),
-    experiments: entries(listExperimentEntities(projectRoot, String(activeObjective.id), 20, undefined, { sourceRoot, format: "json" })),
+    experiments: entries(listExperimentEntities(projectRoot, String(activeObjective.id), 20, undefined, { sourceRoot, format: "json", discovery })),
     closed_count: closedObjectiveCount,
   } : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
 

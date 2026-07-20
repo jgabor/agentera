@@ -1,0 +1,16 @@
+id: fzhlarckiv
+artifact: progress
+record:
+  timestamp: 2026-07-20 03:28
+  type: fix
+  phase: build
+  what: For mrlbcfycbd, moved state-mode detection ahead of schema loading, reused a module-scoped frozen typed empty schema map in entity mode, retained loadSchemas(schemasDir) in legacy mode, removed the later duplicate detection, and added direct entity-versus-legacy prime coverage.
+  context:
+    intent: Remove legacy schema parsing from measured entity-mode prime without changing public output, legacy behavior, retirement work, or any cold-start gate definition.
+    constraints: No commit, push, publish, tag, release, version, evaluation, TODO, decision, threshold, repetition, fixture-size, sampling, peak-delta, GC, parallelism, retry, or assertion changes.
+    unknowns: Independent evaluation remains intentionally pending.
+    scope: packages/cli/src/cli/commands/prime/collectOrientationState.ts and packages/cli/test/cli/prime.test.ts only; all existing retirement work and task history were preserved.
+  inspiration: Active gate task mrlbcfycbd and its unchanged cold-process peak-delta acceptance contract.
+  discovered: Direct built-code observation was entity_schema_count=0, legacy_schema_count=11, public_has_schemas=false, and public_unchanged=true when the entity state was projected with the legacy map. A per-call empty object still crossed the unchanged 64 MiB peak in full-suite sampling by 870080 and 77528 bytes; moving that typed frozen empty map to module scope removed the measured-call allocation, after which the unchanged exact and full gates passed.
+  verified: Final exact primeProjectionContract run passed 1 file and 6 tests with all existing repetitions. Final focused prime/orientation/state-mode run passed 3 files and 61 tests. Final full CLI run passed 199 files and 2344 tests. Typecheck and build passed. State validation passed with 1578 entities and 0 issues. Capability-contract validation passed 2 of 2 checks. Compact passed with 1 artifact, 0 over-limit, 0 errors, and 0 changed. git diff --check passed. No budget, measurement, authority, fixture, sampling, peak-delta, GC, Vitest parallelism, retry, or gate-assertion file changed. The complete retirement candidate remained green through the full suite.
+  next: Leave mrlbcfycbd in_progress for independent Review; do not record an evaluation or alter task, TODO, or decision status.

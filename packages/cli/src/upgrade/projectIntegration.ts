@@ -9,7 +9,7 @@ import {
 } from "./doctor.js";
 import { doctorRoots } from "./appModel.js";
 import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
-import { classifyInstall, crossMajorBoundaryApplies } from "./compatibility.js";
+import { classifyInstall, crossMajorBoundaryApplies, type InstallClassification } from "./compatibility.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -72,6 +72,14 @@ export interface ProjectIntegrationArgs {
   crossMajorBoundaryDetected?: boolean;
   /** CLI `--channel` override; otherwise resolved from env/config/bundle authority. */
   channel?: string | null;
+  /** Channel already resolved by an enclosing status collection. */
+  resolvedChannel?: ResolvedUpdateChannel;
+  /** App classification already observed by an enclosing doctor status. */
+  installClassification?: InstallClassification;
+  /** Successor gate already observed by an enclosing doctor status. */
+  successorAnnounced?: boolean;
+  /** V1 artifact scan already performed by an enclosing orientation collection. */
+  precomputedV1Artifacts?: readonly string[];
   /** Canonical lifecycle projection; callers should reuse one observation across consumers. */
   lifecycleSnapshot?: RuntimeLifecycleSnapshot;
   /** App retry command from doctor; retained separately from lifecycle guidance. */
@@ -123,8 +131,11 @@ function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContex
   return false;
 }
 
-export function pendingRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
-  const phase = planRuntimeRewirePhase(ctx);
+export function pendingRuntimeMigrationItems(
+  ctx: MigrationContext,
+  resolvedChannel?: ResolvedUpdateChannel,
+): MigrationPhaseItem[] {
+  const phase = planRuntimeRewirePhase(ctx, resolvedChannel);
   const projectRoot = resolvePath(ctx.project);
   const hasProjectHooks = projectHasProjectLevelRuntimeHooks(ctx.project);
   return phase.items.filter((item) => {
@@ -206,9 +217,9 @@ function commandChannel(
   args: ProjectIntegrationArgs,
   channel: ResolvedUpdateChannel,
   crossMajor: boolean,
-  upgradeOutcome: ReturnType<typeof classifyUpgradeOutcome>,
+  upgradeOutcome: ReturnType<typeof classifyUpgradeOutcome> | null,
 ): ResolvedUpdateChannel {
-  if (crossMajor && !shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)) {
+  if (crossMajor && upgradeOutcome && !shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)) {
     return resolveInvokedUpdateChannel({
       channel: "development",
       env: args.env,
@@ -289,38 +300,41 @@ function retryGuidance(exit: IntegrationExit): string {
 }
 
 export function summarizeProjectIntegration(args: ProjectIntegrationArgs): ProjectIntegrationSummary {
-  const channel = resolveInvokedUpdateChannel({
+  const channel = args.resolvedChannel ?? resolveInvokedUpdateChannel({
     channel: args.channel ?? null,
     env: args.env,
     home: args.home,
     sourceRoot: args.sourceRoot,
   });
   const integrationTargets = resolveIntegrationTargets(args);
-  const install = classifyInstall({ appHome: integrationTargets.installRoot, sourceRoot: args.sourceRoot });
+  const install = args.installClassification ?? classifyInstall({ appHome: integrationTargets.installRoot, sourceRoot: args.sourceRoot });
   const crossMajorDetected =
     args.crossMajorBoundaryDetected ??
     crossMajorBoundaryApplies(install, args.sourceRoot);
-  const successorAnnounced = isStableSuccessorAnnounced(args.sourceRoot, "stable");
+  const successorAnnounced = args.successorAnnounced ?? isStableSuccessorAnnounced(args.sourceRoot, "stable");
   const crossMajor = crossMajorDetected && successorAnnounced;
-  const runningMajor =
-    parseSemverMajor(
-      resolveRunningVersion({
-        appHome: integrationTargets.installRoot,
-        sourceRoot: args.sourceRoot,
-        install,
-      }),
-    ) ?? 0;
+  const runningMajor = crossMajorDetected
+    ? parseSemverMajor(
+        resolveRunningVersion({
+          appHome: integrationTargets.installRoot,
+          sourceRoot: args.sourceRoot,
+          install,
+        }),
+      ) ?? 0
+    : 0;
   const majorBoundaryBlock =
     crossMajorDetected && !successorAnnounced && runningMajor > 0 && runningMajor < 3
       ? majorBoundaryBlockMessage(channel.channel)
       : null;
-  const upgradeOutcome = classifyUpgradeOutcome({
-    appHome: integrationTargets.installRoot,
-    sourceRoot: args.sourceRoot,
-    install,
-    channel,
-  });
-  const v1Artifacts = detectV1ArtifactPairs(args.project);
+  const upgradeOutcome = crossMajor
+    ? classifyUpgradeOutcome({
+        appHome: integrationTargets.installRoot,
+        sourceRoot: args.sourceRoot,
+        install,
+        channel,
+      })
+    : null;
+  const v1Artifacts = args.precomputedV1Artifacts ?? detectV1ArtifactPairs(args.project);
   const pendingProjectMigration = pendingRuntimeMigrationItems({
     appHome: integrationTargets.installRoot,
     project: args.project,
@@ -329,7 +343,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     sourceRoot: args.sourceRoot,
     channel: args.channel ?? null,
     env: args.env,
-  });
+  }, channel);
   const lifecycle: LifecycleIntegrationFacts = {
     pendingOwnedCount: 0,
     pendingOwnedRuntimes: [],
@@ -343,7 +357,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   };
 
   const crossMajorMigration =
-    crossMajor && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
+    crossMajor && upgradeOutcome !== null && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const isNpx = isNpxBundleRoot(args.sourceRoot);
   const classificationBundleStatus =
     isNpx && integrationTargets.platformBundleStatus !== undefined

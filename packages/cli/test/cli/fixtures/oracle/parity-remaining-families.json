@@ -45,7 +45,7 @@
   },
   "families": {
     "artifact_validation": {
-      "description": "The seven `check validate <family> --format json` subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit). T2 ports the 7 surfaces; T1 pins the structural contract and marks the row as `intentional_version_break`.",
+      "description": "The current `check validate <family> --format json` subcommands. The retired repository-native lifecycle-adapters family is not a current product surface.",
       "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
       "argv": ["check", "validate", "capability-contract", "--format", "json"],
       "exitCode": 0,

@@ -12,6 +12,7 @@ import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval
 import {
   allocateAndPublishEntity,
   allocateEntityId,
+  assertEntityDiscoveryOrigin,
   discoverEntities,
   publishEntity,
   type DiscoveredEntity,
@@ -139,8 +140,10 @@ function relative(root: string, candidate: string): string {
   return path.relative(path.resolve(root), candidate).split(path.sep).join("/");
 }
 
-function healthEntities(root: string, sourceRoot: string): DiscoveredEntity[] {
-  const relevant = discoverEntities(root, sourceRoot).entities.filter((entity) => entity.artifact === ARTIFACT || entity.boundary === BOUNDARY);
+function healthEntities(root: string, sourceRoot: string, supplied?: ReturnType<typeof discoverEntities>): DiscoveredEntity[] {
+  if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
+  const discovery = supplied ?? discoverEntities(root, sourceRoot);
+  const relevant = discovery.entities.filter((entity) => entity.artifact === ARTIFACT || entity.boundary === BOUNDARY);
   const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record || healthEntityViolations(entity.record).length > 0);
   if (bad) throw listFailure(
     bad.classification === "duplicate" ? "ambiguous" : "corrupt",
@@ -202,10 +205,10 @@ function decode(token: string, root: string, authorityPath: string): JsonObject 
 }
 function serializedBytes(value: JsonObject, format: string): number { return Buffer.byteLength(format === "json" ? `${JSON.stringify(value, null, 2)}\n` : YAML.stringify(value)); }
 
-export function listHealthEntities(root: string, limit?: number, dimension?: string, cursor?: string, options: { sourceRoot?: string; format?: string } = {}): JsonObject {
+export function listHealthEntities(root: string, limit?: number, dimension?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities> } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw listFailure("invalid_request", `health list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", 2);
-  const all = healthEntities(root, sourceRoot);
+  const all = healthEntities(root, sourceRoot, options.discovery);
   let filtered = [...all].sort((a, b) => String(b.record!.date).localeCompare(String(a.record!.date)) || a.id!.localeCompare(b.id!));
   if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
   const snap = snapshot(root, all); let start = 0;

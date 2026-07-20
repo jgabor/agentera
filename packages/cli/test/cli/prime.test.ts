@@ -7,11 +7,49 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
+import { buildOrientationJsonPayload } from "../../src/cli/commands/prime/orientationOutput.js";
 import { planSummary } from "../../src/cli/orientation.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+
+describe("prime schema loading", () => {
+  it("keeps entity schemas internal and empty while preserving legacy loading and public output", () => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-schema-loading-"));
+    const home = path.join(project, "home");
+    const previousCwd = process.cwd();
+    const previousSourceRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.mkdirSync(home);
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
+    process.chdir(project);
+
+    try {
+      fs.writeFileSync(
+        path.join(project, ".agentera/state-mode.yaml"),
+        "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
+      );
+      const entityState = collectOrientationState({ home, env: process.env });
+      const entityPayload = buildOrientationJsonPayload(entityState, "prime");
+      expect(entityState.schemas).toEqual({});
+      expect(entityState.schemas_dir).toBe(path.join(REPO_ROOT, "skills/agentera/schemas/artifacts"));
+      expect(entityPayload).not.toHaveProperty("schemas");
+
+      fs.rmSync(path.join(project, ".agentera/state-mode.yaml"));
+      const legacyState = collectOrientationState({ home, env: process.env });
+      expect(Object.keys(legacyState.schemas).length).toBeGreaterThan(0);
+      expect(legacyState.schemas_dir).toBe(entityState.schemas_dir);
+      expect(buildOrientationJsonPayload({ ...entityState, schemas: legacyState.schemas }, "prime"))
+        .toEqual(entityPayload);
+    } finally {
+      process.chdir(previousCwd);
+      if (previousSourceRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previousSourceRoot;
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+});
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;

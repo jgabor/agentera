@@ -22,34 +22,6 @@ exclusions:
 # Tasks 2-4 MUST keep every consumed field resolvable from a declared surface.
 # ---------------------------------------------------------------------------
 consumers:
-  - id: opencode_compaction_context
-    startup_command: agentera prime --format json
-    evidence: .opencode/plugins/agentera.js:502-517
-    consumed_fields:
-      - mode
-      - profile.status
-      - profile
-      - health.grade
-      - health.trajectory
-      - health
-      - issues
-      - plan
-      - plan.exists
-      - plan.status
-      - plan.title
-      - plan.first_pending.name
-      - progress
-      - progress.latest
-      - progress.latest.id
-      - progress.latest.what
-      - progress.latest.next
-      - next_action
-      - next_action.object
-      - attention
-    notes: >-
-      Reads the deprecated `issues` alias instead of `todo` (lines 480-486).
-      This is the only documented runtime consumer of the deprecated alias, so
-      `issues` is transition-required until the stable cut.
   - id: status_dashboard_renderer
     startup_command: agentera prime --context status --format json
     evidence: skills/agentera/SKILL.md:68
@@ -75,24 +47,18 @@ consumers:
       through the named command in the status context, never by raw artifact read.
   - id: capability_context_dispatcher
     startup_command: agentera prime --context <capability> --format json
-    evidence: .opencode/agents/agentera.md:12
-    alt_evidence: .cursor/agents/agentera.md:7
-    runtime_evidence: packages/cli/src/cli/capabilityContext/startup.ts:250
+    evidence: packages/cli/src/cli/capabilityContext/startup.ts:250
+    skill_evidence: skills/agentera/SKILL.md:68-103
     consumed_fields:
       - command
       - status
       - capability_context
       - capability_context.instructions
     notes: >-
-      Per-capability startup capsule. The runtime emits
+      Per-capability startup capsule. The CLI emits
       `capability_context.instructions` (the capability's instructions module),
-      not `prose`. The agent descriptors (.opencode/agents/agentera.md and
-      .cursor/agents/agentera.md) formerly documented a `prose` field that the
-      v3 runtime never emits; they were reconciled to
-      `capability_context.instructions` to match
-      packages/cli/src/cli/capabilityContext/startup.ts:250 and
-      skills/agentera/SKILL.md (lines 68, 103), which already documented
-      `capability_context.instructions`. This consumer governs the `--context`
+      not `prose`; the shared skill consumes that field directly. This consumer
+      governs the `--context`
       surface, not the bare briefing; the bounded decision brief (Task 3) must
       not break the `--context` capsule. Executable fixture proves the emitted
       payload contains `capability_context.instructions` and NOT `prose`.
@@ -136,9 +102,8 @@ consumers:
       from the retired `prose` field to the v3 `capability_context.instructions`
       field after the second Task 1 evaluation found this guidance was the one
       remaining live consumer contradiction. Runtime authority
-      (capabilityContext/startup.ts:250), SKILL.md (lines 68, 103), and the
-      agent descriptors (.opencode/agents/agentera.md, .cursor/agents/agentera.md)
-      all already used `capability_context.instructions`. The
+      (capabilityContext/startup.ts:250) and SKILL.md (lines 68, 103) both use
+      `capability_context.instructions`. The
       `documentation_drift` guard below prevents this guidance from drifting
       back to `prose`; it does not execute a prime command.
 
@@ -154,7 +119,7 @@ consumers:
 # and kept until the 3.0.0 stable cut; it is excluded only from the canonical
 # advertised `source_contract.fields` set (one canonical representation — `todo`
 # is canonical). It is NOT selector-only: it ships in the default bare briefing
-# for the opencode_compaction_context consumer that still reads it.
+# only as bounded CLI transition compatibility.
 # ---------------------------------------------------------------------------
 field_authorities:
   - id: orientation_output_emission
@@ -324,10 +289,9 @@ field_classification:
   - field: issues
     status: deprecated_transition
     rationale: >-
-      Deprecated alias of `todo`. opencode_compaction_context reads it
-      (.opencode/plugins/agentera.js:480-486). Removable at the 3.0.0 stable cut
-      only; tracked in TODO.md [fix:3.0.0]. Tasks 2-4 must keep the alias and
-      the stderr deprecation warning.
+      Deprecated alias of `todo`. No current consumer in this inventory reads
+      it; the alias remains only as bounded CLI transition compatibility until
+      its owning contract removes it.
   - field: bundle
     status: retired
     rationale: >-
@@ -555,33 +519,6 @@ declared_available_fields:
   - issues
 fixtures:
   pass:
-    - consumer: opencode_compaction_context
-      executable_command: agentera prime --format json
-      depends_on:
-        - mode
-        - profile
-        - health
-        - issues
-        - plan
-        - progress
-        - next_action
-        - attention
-      nested_fields:
-        - profile.status
-        - next_action.object
-      conditional_nested_fields:
-        - path: health.grade
-          present_when: health.exists
-        - path: health.trajectory
-          present_when: health.exists
-        - path: plan.first_pending.name
-          present_when: plan.first_pending
-        - path: progress.latest.id
-          present_when: progress.latest
-        - path: progress.latest.what
-          present_when: progress.latest
-        - path: progress.latest.next
-          present_when: progress.latest
     - consumer: status_dashboard_renderer
       executable_command: agentera prime --context status --format json
       depends_on:

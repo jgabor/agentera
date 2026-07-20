@@ -31,7 +31,7 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
 describe("cli validate (delegated families)", () => {
   it("recognizes the delegated families", () => {
     expect(isDelegatedValidateFamily("cross-capability")).toBe(true);
-    expect(isDelegatedValidateFamily("lifecycle-adapters")).toBe(true);
+    expect(isDelegatedValidateFamily("lifecycle-adapters")).toBe(false);
     expect(isDelegatedValidateFamily("app-home-contract")).toBe(true);
     expect(isDelegatedValidateFamily("vocabularyAuthority")).toBe(true);
     expect(isDelegatedValidateFamily("selfAudit")).toBe(true);
@@ -53,19 +53,6 @@ describe("cli validate (delegated families)", () => {
     expect(payload.target_family).toBe("cross-capability");
     expect(payload.engine.command).toBe("validate_cross_capability.py");
     expect(payload.engine.stdout).toContain("cross-capability artifact graph ok");
-  });
-
-  it("validates lifecycle adapters against the repo", () => {
-    const { rc, out } = capture((io) => cmdValidate("lifecycle-adapters", {}, io));
-    expect(rc).toBe(0);
-    expect(out.trim()).toBe("lifecycle adapter metadata ok");
-  });
-
-  it("accepts --legacy-python-parity on lifecycle-adapters via dispatch", () => {
-    const { rc } = capture((io) =>
-      main(["node", "agentera", "check", "validate", "lifecycle-adapters", "--legacy-python-parity"], io),
-    );
-    expect(rc).toBe(0);
   });
 
   it("validates the app-home contract against the repo", () => {

@@ -1,31 +1,8 @@
 {
-  "files": [
-    "plugins/agentera.js",
-    "commands",
-    "agents",
-    "package.json"
-  ],
+  "private": true,
   "type": "module",
-  "main": "./plugins/agentera.js",
-  "exports": {
-    ".": "./plugins/agentera.js"
-  },
-  "dependencies": {
-    "@opencode-ai/plugin": "1.14.33"
-  },
   "agentera": {
-    "packageShape": "npm-loadable-plugin",
-    "opencodePlugin": "./plugins/agentera.js",
-    "localPluginPath": ".opencode/plugins/agentera.js",
-    "installRoot": "..",
-    "sharedPaths": [
-      "skills",
-      "hooks",
-      "registry.json",
-      "plugin.json",
-      "README.md",
-      "UPGRADE.md"
-    ],
-    "singleSkillInstall": "Single-skill installs keep core SKILL.md workflow behavior; suite tools are bundle-only enhancements."
+    "packageShape": "retired-native-descriptor",
+    "standaloneDependencyBoundary": false
   }
 }

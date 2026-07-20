@@ -15,7 +15,7 @@ import {
   opencodeConfigDir,
 } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
-import { resolveInvokedUpdateChannel } from "./channels.js";
+import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { doctorRoots } from "./appModel.js";
 import {
   bindMigrationResource,
@@ -64,11 +64,12 @@ export interface NpxHookCommands {
 
 export function resolveNpxHookCommands(
   ctx: Pick<MigrationContext, "channel" | "env" | "home" | "sourceRoot">,
+  resolvedChannel?: ResolvedUpdateChannel,
 ): NpxHookCommands {
   const env = ctx.env ?? process.env;
   const home = ctx.home ?? env.HOME ?? os.homedir();
   const sourceRoot = ctx.sourceRoot ?? resolveSourceRoot(env);
-  const channel = resolveInvokedUpdateChannel({
+  const channel = resolvedChannel ?? resolveInvokedUpdateChannel({
     channel: ctx.channel ?? null,
     env,
     home,
@@ -479,7 +480,10 @@ function planCopilotItems(
   }
 }
 
-export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
+export function planRuntimeMigrationItems(
+  ctx: MigrationContext,
+  resolvedChannel?: ResolvedUpdateChannel,
+): MigrationPhaseItem[] {
   if (!ctx.env) {
     throw new Error(
       "MigrationContext.env is required for runtime migration planning; pass sandboxMigrationEnv(home, sourceRoot) in tests or an explicit env in callers.",
@@ -489,7 +493,7 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   const project = resolvePath(ctx.project);
   const env = ctx.env;
   const sourceRoot = resolvePath(ctx.sourceRoot ?? resolveSourceRoot(env));
-  const commands = resolveNpxHookCommands({ ...ctx, home, env, sourceRoot });
+  const commands = resolveNpxHookCommands({ ...ctx, home, env, sourceRoot }, resolvedChannel);
   const items: MigrationPhaseItem[] = [];
 
   planCodexItems(items, home, project, commands);

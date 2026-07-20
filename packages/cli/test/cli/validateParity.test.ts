@@ -53,7 +53,6 @@ const D56_SUBCOMMANDS = [
   "capability",
   "capability-contract",
   "cross-capability",
-  "lifecycle-adapters",
   "app-home-contract",
   "vocabularyAuthority",
   "selfAudit",
@@ -61,7 +60,6 @@ const D56_SUBCOMMANDS = [
 
 const DELEGATED_ENGINE_COMMANDS: Record<string, string> = {
   "cross-capability": "validate_cross_capability.py",
-  "lifecycle-adapters": "validate_lifecycle_adapters.py",
   "app-home-contract": "validate_app_home_contract.py",
   vocabularyAuthority: "validate_vocabulary_authority.py",
   selfAudit: "self_audit.py",
@@ -100,17 +98,16 @@ function passEnvelope(subcommand: (typeof D56_SUBCOMMANDS)[number]): {
 }
 
 describe("validateParity (D56 artifact-validation surface)", () => {
-  it("hosts all seven validate subcommands in delegated routing", () => {
+  it("hosts the remaining validate subcommands in delegated routing", () => {
     for (const family of [
       "cross-capability",
-      "lifecycle-adapters",
       "app-home-contract",
       "vocabularyAuthority",
       "selfAudit",
     ]) {
       expect(isDelegatedValidateFamily(family)).toBe(true);
     }
-    expect(D56_SUBCOMMANDS).toHaveLength(7);
+    expect(D56_SUBCOMMANDS).toHaveLength(6);
   });
 
   it.each(D56_SUBCOMMANDS.map((name) => [name, name] as const))(

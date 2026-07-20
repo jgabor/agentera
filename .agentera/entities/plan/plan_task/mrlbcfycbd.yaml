@@ -1,0 +1,25 @@
+id: mrlbcfycbd
+artifact: plan
+record:
+  plan: ntfgalrhbm
+  name: Skip unused schema loading in entity-mode prime
+  status: blocked
+  depends_on:
+    - vuzlehhwsz
+  acceptance:
+    - GIVEN an entity-state project WHEN prime collects orientation THEN it does not parse legacy artifact schemas and its public output is unchanged.
+    - GIVEN a legacy-state project WHEN prime collects orientation THEN schema loading and legacy behavior remain unchanged.
+    - GIVEN the cold-start contract WHEN verified THEN every existing fixture, repetition, peak-heap metric, and authority threshold remains unchanged and passes.
+    - GIVEN the complete retirement candidate WHEN reverified THEN full tests, typecheck, build, state validation, and compaction remain green.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Entity and legacy semantics passed, but the unchanged exact cold-start gate independently measured startup-small repetition 4 at 67,427,928 bytes versus the 67,108,864 authority limit. A rerun/full suite passed, proving intermittent threshold crossing remains. Reduce entity-mode peak allocation further without changing authority, fixture, sampling, repetitions, runner, GC, or assertions.
+    provenance:
+      attempt_id: mrlbcfycbd-audit-2
+      source: "independent review ses_082b6806affeD42f73So210wEa: two exact cold-budget runs and complete retirement candidate passed"
+      recorded_at: 2026-07-20 04:17
+      writer_command: agentera state plan record-evaluation
+  evidence: mrlbcfycbd-audit-2 passed two independent exact runs, but the subsequent required pre-commit hook failed the unchanged peak-heap assertion by 565,624 bytes while all other 2,344 tests passed. Preserve both evaluations; a successor must remove a substantially larger allocation source without changing measurement semantics.
+  blocked_reason: After both evaluation slots were consumed, the normal pre-commit full suite measured startup-small repetition 1 at 67,674,488 bytes against the unchanged 67,108,864 limit. The optimization is correct but lacks reliable margin under the authoritative gate.

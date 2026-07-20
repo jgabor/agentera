@@ -1,0 +1,23 @@
+id: vuzlehhwsz
+artifact: plan
+record:
+  plan: ntfgalrhbm
+  name: Remove the stale retired-doctor schema reference
+  status: complete
+  depends_on:
+    - igibjjvytl
+  acceptance:
+    - GIVEN agentera schema WHEN doctor adjacent surfaces are emitted THEN every referenced source exists and no deleted native doctor path is advertised.
+    - GIVEN active protocol validation WHEN a retained contract names a deleted current source THEN the direct contract test fails.
+    - GIVEN the repository-native retirement candidate WHEN reverified THEN direct CLI behavior, migration-only contracts, v2 and Claude routes, inert Task 4 descriptors, and host/project non-mutation remain intact.
+    - GIVEN independent evaluation WHEN the successor is reviewed THEN the complete retirement candidate passes without entering package/distribution or broad documentation scope.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: vuzlehhwsz-audit-1
+      source: "independent review ses_082fd2113ffeqzsbnInfeJvS7R: successor and complete repository-native retirement candidate passed"
+      recorded_at: 2026-07-20 03:00
+      writer_command: agentera state plan record-evaluation

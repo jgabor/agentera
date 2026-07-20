@@ -7,6 +7,7 @@ import { doctorRoots, loadSuiteVersion, resolveDoctorInstallRoot, resolveSourceR
 import { isNpxBundleRoot } from "../../../core/sourceRoot.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "../../../upgrade/channels.js";
 import { classifyResolvedRoot } from "../../../state/installRoot.js";
+import type { InstallClassification } from "../../../upgrade/compatibility.js";
 import { resolveLatestOnChannel } from "../../../upgrade/versionResolution.js";
 import { resolveNpxPlatformStatus } from "../../../upgrade/npxPlatformStatus.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
@@ -144,7 +145,12 @@ function statusExpectedVersion(
   return [sourceVersion, "source registry"];
 }
 
-export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
+export function statusBundleContext(opts: PrimeOpts): {
+  bundle: BundleStatus;
+  channel: ResolvedUpdateChannel;
+  install?: InstallClassification;
+  successorAnnounced?: boolean;
+} {
   const env = opts.env ?? process.env;
   const home = opts.home ? opts.home : os.homedir();
   const sourceRoot = resolveSourceRootStrict(env);
@@ -155,6 +161,10 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
     sourceRoot,
   });
   const [expected, expectedSource] = statusExpectedVersion(opts, sourceRoot, home, env, installRoot, channel);
+  const observation: {
+    install?: InstallClassification;
+    successorAnnounced?: boolean;
+  } = {};
   const status = buildDoctorStatus(installRoot, {
     rootSource,
     sourceRoot,
@@ -163,6 +173,8 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
     expectedVersion: expected,
     expectedCommands: ["prime"],
     channel: channel.channel,
+    resolvedChannel: channel,
+    observation,
     env,
   });
   status.expectedVersionSource = expectedSource;
@@ -201,5 +213,9 @@ export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
       });
     }
   }
-  return status;
+  return { bundle: status, channel, ...observation };
+}
+
+export function statusBundleStatus(opts: PrimeOpts): BundleStatus {
+  return statusBundleContext(opts).bundle;
 }

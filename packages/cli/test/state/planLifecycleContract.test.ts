@@ -178,7 +178,6 @@ describe("plan lifecycle contract", () => {
     expect(
       matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators),
     ).toBe(true);
-    expect(matchesAny(".opencode/plugins/agentera.js", inventory.readers)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-cli-budget.md", inventory.fixtures)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-bare-message.md", inventory.fixtures)).toBe(true);
     expect(matchesAny(".agentera/docs.yaml", inventory.adapters)).toBe(true);
@@ -191,7 +190,6 @@ describe("plan lifecycle contract", () => {
         ".agentera/docs.yaml",
         "scripts/schemas/contracts.json",
         "scripts/json_output_surface_manifest.yaml",
-        ".opencode/plugins/agentera.js",
       ]),
     );
     expect(filesUnder(REPO_ROOT, "node_modules", exclusions, excludedDirectoryNames)).toEqual([]);

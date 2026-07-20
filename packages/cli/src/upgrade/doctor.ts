@@ -11,6 +11,7 @@ import {
   classifyInstall,
   cliDistributionMajor,
   crossMajorBoundaryApplies,
+  type InstallClassification,
   isSourceCheckoutRoot,
   projectInstallTrack,
 } from "./compatibility.js";
@@ -198,6 +199,13 @@ export interface BuildDoctorStatusOptions {
   expectedCommands?: readonly string[];
   /** Override update channel (tests); default stable via resolveUpdateChannel. */
   channel?: string | null;
+  /** Channel already resolved by an enclosing status collection. */
+  resolvedChannel?: ResolvedUpdateChannel;
+  /** Receives app facts already observed while building this status. */
+  observation?: {
+    install?: InstallClassification;
+    successorAnnounced?: boolean;
+  };
   env?: Record<string, string | undefined>;
   /** Evaluate installRoot even when sourceRoot is a self-contained npx bundle. */
   skipNpxBundleShortCircuit?: boolean;
@@ -210,7 +218,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const project = opts.project;
   const expectedCommands = opts.expectedCommands ?? EXPECTED_STATE_COMMANDS;
   const env = { ...(opts.env ?? process.env), HOME: home };
-  const channel = resolveInvokedUpdateChannel({
+  const channel = opts.resolvedChannel ?? resolveInvokedUpdateChannel({
     channel: opts.channel ?? null,
     env,
     home,
@@ -321,6 +329,10 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
   const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
   const successorAnnounced = isStableSuccessorAnnounced(sourceRoot, "stable");
+  if (opts.observation) {
+    opts.observation.install = install;
+    opts.observation.successorAnnounced = successorAnnounced;
+  }
   const crossMajorBoundary = crossMajorDetected && successorAnnounced;
   let crossMajorPending = false;
   if (crossMajorDetected && !successorAnnounced) {

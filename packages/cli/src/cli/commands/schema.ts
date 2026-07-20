@@ -14,7 +14,7 @@ import {
 import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
-import { loadLifecycleAuthority } from "../../runtime/lifecycleAuthority.js";
+import { CANONICAL_SHARED_SKILL_PATH } from "../../setup/sharedSkill.js";
 import { loadRetiredRuntimeCleanupContract } from "../../runtime/retiredRuntimeCleanup.js";
 import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
@@ -422,7 +422,6 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     artifactLocations,
   );
   gaps.push(...schemaGaps);
-  const lifecycleAuthority = loadLifecycleAuthority();
   const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
   const retrievalAuthority = loadStateRetrievalAuthority();
 
@@ -454,7 +453,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       authority: "references/cli/agent-ready-state-contract.yaml",
       active_contract: "one shared skill plus the Agentera CLI",
       shared_skill: {
-        path: lifecycleAuthority.canonicalSkillPath,
+        path: CANONICAL_SHARED_SKILL_PATH,
         state_field: "shared_skill",
       },
       cli: {

@@ -80,7 +80,6 @@ doctor:
     - inspektera architecture, test, dependency, or documentation audit output
   adjacent_surfaces:
     codebase_audit: /agentera audit routes to inspektera
-    setup_specific_diagnostics: packages/cli/src/setup/doctor.ts
   rationale: >-
     Decision 45 rejects `bundle-status` as too narrow and rejects an alias for
      release-clean vocabulary; `doctor` is the CLI, app, shared-skill, and project

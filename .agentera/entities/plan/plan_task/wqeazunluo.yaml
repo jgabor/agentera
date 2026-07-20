@@ -4,7 +4,7 @@ record:
   name: Retire native package and distribution surfaces
   depends_on:
     - igibjjvytl
-    - nwaesildcl
+    - fawriaumfr
   status: pending
   acceptance:
     - GIVEN package construction WHEN run THEN it succeeds without native runtime source directories or manifests.

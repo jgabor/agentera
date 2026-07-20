@@ -9,7 +9,6 @@ import { validateCapability, validateContractSelf, validateProtocolSelf } from "
 import { loadYamlMapping } from "../../core/yaml.js";
 import { parseToml as parseTomlValidate } from "../../core/toml.js";
 import { validateGraph } from "../../validate/crossCapability.js";
-import { lifecycleMain } from "../../validate/lifecycleAdapters.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
 import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
@@ -38,7 +37,6 @@ interface ProcResult {
 
 const VALIDATE_DELEGATED_SCRIPTS: Record<string, string> = {
   "cross-capability": "validate_cross_capability.py",
-  "lifecycle-adapters": "validate_lifecycle_adapters.py",
   "app-home-contract": "validate_app_home_contract.py",
   vocabularyAuthority: "validate_vocabulary_authority.py",
   selfAudit: "self_audit.py",
@@ -58,12 +56,6 @@ function runCrossCapability(): ProcResult {
     return { stdout: errors.map((e) => `FAIL: ${e}\n`).join(""), stderr: "", returncode: 1 };
   }
   return { stdout: "cross-capability artifact graph ok\n", stderr: "", returncode: 0 };
-}
-
-function runLifecycleAdapters(legacyPythonParity = false): ProcResult {
-  const lines: string[] = [];
-  const rc = lifecycleMain({ legacyPythonParity, out: (line) => lines.push(line) });
-  return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
 }
 
 function runAppHomeContract(): ProcResult {
@@ -103,12 +95,10 @@ function repoRoot(): string {
 
 export interface DelegatedValidateArgs {
   format?: string;
-  legacyPythonParity?: boolean;
 }
 
 const DELEGATED_RUNNERS: Record<string, (args: DelegatedValidateArgs) => ProcResult> = {
   "cross-capability": () => runCrossCapability(),
-  "lifecycle-adapters": (args) => runLifecycleAdapters(Boolean(args.legacyPythonParity)),
   "app-home-contract": () => runAppHomeContract(),
   vocabularyAuthority: () => runVocabularyAuthority(),
   selfAudit: () => runSelfAudit(),
@@ -152,7 +142,7 @@ export function cmdValidate(family: string, args: DelegatedValidateArgs, io: Io)
   if (!(family in DELEGATED_RUNNERS)) {
     throw new Error(
       "unsupported validate target family; valid families: capability, artifact, descriptors, " +
-        "cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit, release-metadata, capability-contract.",
+        "cross-capability, app-home-contract, vocabularyAuthority, selfAudit, release-metadata, capability-contract.",
     );
   }
   const result = DELEGATED_RUNNERS[family](args);

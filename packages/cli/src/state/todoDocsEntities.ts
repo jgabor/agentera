@@ -10,6 +10,7 @@ import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import {
   allocateEntityId,
+  assertEntityDiscoveryOrigin,
   canonicalEntityRecordViolations,
   discoverEntities,
   publishEntityUnderLock,
@@ -17,6 +18,7 @@ import {
   validateEntityState,
   withEntityWriterLock,
   type DiscoveredEntity,
+  type EntityDiscoveryResult,
 } from "./entityStorage.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
@@ -53,8 +55,9 @@ function failure(kind: StateFailureClass, artifact: string, message: string, rec
   return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: `agentera state ${artifact} get --id ID --format json`, example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
 }
 
-function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs"): DiscoveredEntity[] {
-  const discovery = discoverEntities(root, sourceRoot);
+function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult): DiscoveredEntity[] {
+  if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
+  const discovery = supplied ?? discoverEntities(root, sourceRoot);
   const selected = discovery.entities.filter((entity) => [TODO.boundary, DOCS.boundary].includes(entity.boundary as typeof TODO.boundary) || [TODO.artifact, DOCS.artifact].includes(entity.artifact as typeof TODO.artifact));
   const bad = selected.find(({ classification, id, record }) => classification !== "valid" || !id || !record);
   if (bad) throw failure(bad.classification === "duplicate" ? "ambiguous" : "corrupt", artifact ?? bad.artifact ?? "todo", `entity '${bad.relativePath}' is not canonical`, "Run agentera check validate state and resolve every invalid identity or record before retrying.", bad.id ?? undefined);
@@ -145,10 +148,10 @@ export function getTodoDocsEntity(root: string, artifact: "todo" | "docs", id: s
   const entity = selectedById(relevant(root, sourceRoot, artifact), artifact, id); return { schemaVersion: "agentera.stateGet.v1", command: `state ${artifact} get`, status: "ok", entry: entry(root, entity), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entity" } };
 }
 
-export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", limit?: number, cursor?: string, filters: JsonObject = {}, options: { sourceRoot?: string; format?: string; reservedUtf8Bytes?: number } = {}): JsonObject {
+export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", limit?: number, cursor?: string, filters: JsonObject = {}, options: { sourceRoot?: string; format?: string; reservedUtf8Bytes?: number; discovery?: EntityDiscoveryResult } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(definition(artifact).boundary, sourceRoot); const take = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(take) || take < 1 || take > declared.maximumLimit) throw failure("invalid_request", artifact, `${artifact} list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", undefined, 2);
-  const all = relevant(root, sourceRoot, artifact).filter(({ boundary }) => boundary === definition(artifact).boundary); let selected = sorted(artifact, all);
+  const all = relevant(root, sourceRoot, artifact, options.discovery).filter(({ boundary }) => boundary === definition(artifact).boundary); let selected = sorted(artifact, all);
   if (artifact === "todo") selected = selected.filter((entity) => (!filters.severity || entity.record!.severity === filters.severity) && (!filters.status || entity.record!.status === filters.status));
   if (artifact === "docs") selected = selected.filter((entity) => (!filters.status || entity.record!.status === filters.status) && (!filters.topic || [entity.record!.document, entity.record!.path, entity.record!.status].some((value) => String(value).toLowerCase().includes(String(filters.topic).toLowerCase()))));
   const snap = snapshot(root, all); let start = 0;

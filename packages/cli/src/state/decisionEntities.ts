@@ -11,7 +11,7 @@ import { serializedProjectionBytes } from "./projectionPolicy.js";
 import { requestedSatisfaction, validateTransition } from "./decisionOverlay.js";
 import { decisionRevisionContract } from "./decisionRevision.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateAndPublishEntity, allocateEntityId, discoverEntities, publishEntity, replaceEntity, type DiscoveredEntity } from "./entityStorage.js";
+import { allocateAndPublishEntity, allocateEntityId, assertEntityDiscoveryOrigin, discoverEntities, publishEntity, replaceEntity, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
@@ -80,8 +80,10 @@ function publish(req: StateWriteRequest, boundary: string, record: JsonObject, o
 }
 export function appendDecisionEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope { return publish(req, BASE, entityRecord(req.values), options); }
 
-function decisionEntities(root: string, sourceRoot: string): DiscoveredEntity[] {
-  const relevant = discoverEntities(root, sourceRoot).entities.filter((entity) => entity.artifact === ARTIFACT || [BASE, SATISFACTION, REVISION].includes(entity.boundary ?? ""));
+function decisionEntities(root: string, sourceRoot: string, supplied?: ReturnType<typeof discoverEntities>): DiscoveredEntity[] {
+  if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
+  const discovery = supplied ?? discoverEntities(root, sourceRoot);
+  const relevant = discovery.entities.filter((entity) => entity.artifact === ARTIFACT || [BASE, SATISFACTION, REVISION].includes(entity.boundary ?? ""));
   const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record);
   if (bad) throw failure(bad.classification === "duplicate" ? "ambiguous" : "corrupt", `decision entity '${bad.relativePath}' is not canonical`, "Run agentera check validate state, preserve conflicting values, and repair the entity files.", bad.id ?? undefined);
   return relevant;
@@ -211,10 +213,10 @@ function decode(token: string, root: string, authorityPath: string): JsonObject 
     const value = JSON.parse(bytes.toString()); if (!mapping(value)) throw new Error(); return value;
   } catch { throw failure("cursor_invalid", "decisions cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
 }
-export function listDecisionEntities(root: string, limit?: number, topic?: string, cursor?: string, options: { sourceRoot?: string; format?: string } = {}): JsonObject {
+export function listDecisionEntities(root: string, limit?: number, topic?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities> } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw failure("invalid_request", `decisions list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.");
-  const all = decisionEntities(root, sourceRoot); let bases = all.filter((entity) => entity.boundary === BASE).sort((a, b) => String(b.record!.date).localeCompare(String(a.record!.date)) || a.id!.localeCompare(b.id!));
+  const all = decisionEntities(root, sourceRoot, options.discovery); let bases = all.filter((entity) => entity.boundary === BASE).sort((a, b) => String(b.record!.date).localeCompare(String(a.record!.date)) || a.id!.localeCompare(b.id!));
   if (topic) { const needle = topic.toLowerCase(); bases = bases.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
   const snap = snapshot(root, all); let start = 0;
   if (cursor) { const value = decode(cursor, root, declared.authorityPath); if (value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null)) throw failure("cursor_snapshot_unavailable", "decisions changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot."); const found = bases.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1; }

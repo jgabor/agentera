@@ -1,19 +1,22 @@
-/**
- * OpenCode runtime adapter setup and diagnostics.
- *
- * OpenCode hook surfaces (event, shell.env, tool.execute.before/after,
- * experimental.session.compacting) ship in `.opencode/plugins/agentera.js` and are
- * validated by `validate/lifecycleAdapters.ts`. Managed commands, agents, and
- * the canonical shared skill is diagnosed here and managed only through an
- * explicitly selected lifecycle upgrade.
- *
- * Implementations currently live in `doctor.ts` (slice-2/3 extraction); this module
- * is the canonical import surface for OpenCode-specific setup helpers.
- */
-export {
-  opencodeConfigDir,
-  hasManagedMarker,
-  diagnoseOpencodeCommands,
-  diagnoseCanonicalSkill,
-  diagnoseOpencode,
-} from "./doctor.js";
+import path from "node:path";
+
+import { expanduser, resolvePath } from "../core/paths.js";
+
+type Env = Record<string, string | undefined>;
+
+/** Migration-only resolver for previously installed OpenCode resources. */
+export function opencodeConfigDir(home: string, env: Env): string {
+  const explicit = env.OPENCODE_CONFIG_DIR;
+  if (explicit) return resolvePath(expanduser(explicit));
+  const xdg = env.XDG_CONFIG_HOME;
+  if (xdg) return path.join(resolvePath(expanduser(xdg)), "opencode");
+  return path.join(home, ".config", "opencode");
+}
+
+/** Migration-only ownership marker reader. */
+export function hasManagedMarker(text: string): boolean {
+  const lines = text.split("\n");
+  if (lines[0] !== "---") return false;
+  const closing = lines.indexOf("---", 1);
+  return closing !== -1 && lines.slice(1, closing).some((line) => line.trim() === "agentera_managed: true");
+}

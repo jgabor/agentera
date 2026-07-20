@@ -1,0 +1,16 @@
+id: dmmfsuhjek
+artifact: progress
+record:
+  timestamp: 2026-07-20 04:30
+  type: fix
+  phase: build
+  what: For fawriaumfr, extended the existing optional entity discovery input to plan/task, objective/experiment, and TODO/docs list readers, then made entity orientation pass one shared discovery to every unconditional and conditional startup list call while retaining each reader validation and standalone fallback.
+  context:
+    intent: Ensure entity-mode prime discovers and parses the canonical entity tree exactly once without changing direct reader behavior, public output, legacy behavior, or any measurement contract.
+    constraints: No commit, push, publish, tag, release, version, authority, threshold, fixture, runner, later-task, evaluation, TODO, decision, or task-status changes; no repository cache abstraction and no work moved before the inspector baseline.
+    unknowns: Independent evaluation remains intentionally pending; numeric passing maxima are unavailable because the unchanged runner suppresses captured console measurements on success.
+    scope: collectEntityOrientation, existing plan/objective/TODO list options and validation of supplied discovery, plus one proportional reader-equivalence and read-count test.
+  inspiration: Active successor task fawriaumfr and the measured finding that remaining plan, objective, experiment, TODO, and docs readers independently reparsed the full entity tree.
+  discovered: The direct prime-path probe observed 18 canonical entity files and exactly one read for every file. Nine standalone-versus-supplied reader pairs were byte-structurally equal across progress, decisions, health, plans, tasks, objectives, experiments, TODO, and docs, including filters, counts, snapshots, first-page flags, omissions, and next cursors. Omitted discovery still invokes each reader original discovery/validation path. Passing gate output did not expose numeric maxima, but every sampled peak was below the unchanged 67108864-byte limit.
+  verified: The unchanged exact projection contract passed three consecutive runs, each 1 file/6 tests, covering 15 startup-small repetitions plus every other declared operation. Focused reader/prime verification passed 8 files/88 tests; the direct equivalence and one-discovery file passed 2/2. Full CLI passed 200 files/2347 tests. Typecheck and build passed. State validation passed with 1581 entities and 0 issues; capability-contract passed 2/2; compact passed with 1 artifact, 0 over-limit, 0 errors, 0 changed; git diff --check passed. Authority, threshold, fixture, repetition, sampling, peak-delta, GC, Vitest parallelism, retry, and gate-assertion files are unchanged.
+  next: Leave fawriaumfr in_progress for independent Review; preserve nwaesildcl, mrlbcfycbd, vuzlehhwsz, all evaluation history, and prior progress without recording an evaluation or changing status.

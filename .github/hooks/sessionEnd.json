@@ -1,8 +1,0 @@
-{
-  "description": "agentera v3 GitHub Copilot CLI hook (camelCase name field sessionEnd): session bookmark persistence",
-  "name": "sessionEnd",
-  "type": "command",
-  "bash": "npx -y agentera@next hook session-stop",
-  "powershell": "npx -y agentera@next hook session-stop",
-  "timeoutSec": 10
-}

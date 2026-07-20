@@ -31,8 +31,7 @@ import {
   resolveNextMajorDoctorLines,
 } from "../../upgrade/nextMajorDoctor.js";
 import { emitStructured } from "../structured.js";
-import { diagnoseCanonicalSkill } from "../../setup/doctor.js";
-import type { RuntimeLifecycleSnapshot } from "../../runtime/lifecycleSnapshot.js";
+import { diagnoseCanonicalSkill } from "../../setup/sharedSkill.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -125,62 +124,6 @@ function renderDoctorSmoke(smoke: JsonObject): string {
   ];
   for (const check of (smoke.checks ?? []) as JsonObject[]) {
     lines.push(`  - ${check.name}: ${check.status} - ${check.message}`);
-  }
-  return lines.join("\n");
-}
-
-export function renderRuntimeLifecycleDiagnosis(snapshot: RuntimeLifecycleSnapshot): string {
-  const lines = [
-    "",
-    "Runtime lifecycle diagnosis:",
-    `  snapshot: ${snapshot.schemaVersion}`,
-    `  status vocabulary: ${snapshot.statusVocabularyVersion}`,
-    `  release blocked: ${snapshot.releaseBlocked ? "yes" : "no"}`,
-  ];
-  for (const runtime of snapshot.runtimes) {
-    lines.push(`${runtime.runtimeId}: ${runtime.status}`);
-    lines.push(
-      `  support floor: ${runtime.supportFloor.met ? "met" : "unmet"}; ` +
-        `blockers=${runtime.blockers.length}; actions=${runtime.actionCount}`,
-    );
-    for (const blocker of runtime.blockers) {
-      const evidence = blocker.evidence
-        ? `; evidence=${blocker.evidence.field}:${String(blocker.evidence.observed)}`
-        : "";
-      lines.push(`  blocker: ${blocker.code} - ${blocker.detail}${evidence}`);
-    }
-    lines.push(`  canonical skill: ${String(runtime.canonicalSkill.detected)} at ${runtime.canonicalSkill.path}`);
-    for (const surface of runtime.surfaces) {
-      lines.push(
-        `  surface ${surface.id}: ${surface.status}; expected=${surface.expected ? "yes" : "no"}; ` +
-          `installed=${String(surface.evidence.installed ?? "unknown")}; ` +
-          `enabled=${String(surface.evidence.enabled ?? "unknown")}; ` +
-          `trusted=${String(surface.evidence.trusted ?? "unknown")}`,
-      );
-      for (const category of surface.categories) {
-        lines.push(
-          `    ${category.category}: ${category.state}; capability=${category.capability}; source=${category.source}`,
-        );
-        for (const evidence of category.evidence) {
-          lines.push(
-            `      evidence: ${evidence.state} - ${evidence.detail}` +
-              (evidence.path ? ` (${evidence.path})` : ""),
-          );
-        }
-        if (category.precedence) {
-          const winner = category.precedence.winner?.path ?? "none";
-          const shadowing = category.precedence.shadowing.map((entry) => entry.path).join(", ") || "none";
-          lines.push(`      precedence: winner=${winner}; shadowing=${shadowing}`);
-        }
-        if (category.remediation.kind !== "none") {
-          lines.push(`      action: ${category.remediation.kind} - ${category.remediation.summary}`);
-          for (const action of category.remediation.nativeActions) {
-            const command = Array.isArray(action.command) ? action.command.join(" ") : action.command;
-            lines.push(`      native step: ${command} - ${action.instruction}`);
-          }
-        }
-      }
-    }
   }
   return lines.join("\n");
 }

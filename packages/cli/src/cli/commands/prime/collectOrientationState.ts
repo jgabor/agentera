@@ -4,8 +4,7 @@ import path from "node:path";
 
 import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.js";
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
-import { resolveSourceRootStrict } from "../../../upgrade/appModel.js";
-import { discoverSchemasDir, loadSchemas } from "../../appContext.js";
+import { loadSchemas, type SchemaInfo } from "../../appContext.js";
 import {
   activeObjectiveSummary,
   checkProfileStaleness,
@@ -26,24 +25,28 @@ import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
 import { profileSignalsStatus } from "../../../analytics/profileSignals.js";
 import type { NextAction, OrientationState, ProfileSummary, ReadinessHint, StartupHistorySummary } from "../../contracts/orientationState.js";
-import { statusBundleStatus } from "./bundleStatus.js";
+import { statusBundleContext } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
-import { diagnoseCanonicalSkill } from "../../../setup/doctor.js";
+import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
 import { startupHistorySummary } from "../../../state/startupProjection.js";
 import { detectStateMode } from "../../../state/stateMode.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 
+const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
+
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
   const home = opts.home ? opts.home : os.homedir();
-  const sourceRoot = resolveSourceRootStrict(env);
-  const schemasDir = discoverSchemasDir();
-  const schemas = loadSchemas(schemasDir);
-  const bundle = statusBundleStatus(opts);
+  const project = process.cwd();
+  const { bundle, channel, install, successorAnnounced } = statusBundleContext(opts);
+  const sourceRoot = bundle.sourceRoot;
+  const entityMode = detectStateMode(project, sourceRoot) === "entities";
+  const schemasDir = path.join(sourceRoot, "skills", "agentera", "schemas", "artifacts");
+  const schemas = entityMode ? EMPTY_SCHEMAS : loadSchemas(schemasDir);
   let savedContext = false;
   try {
-    savedContext = fs.readdirSync(path.join(process.cwd(), ".agentera")).some((f) => f.endsWith(".yaml"));
+    savedContext = fs.readdirSync(path.join(project, ".agentera")).some((f) => f.endsWith(".yaml"));
   } catch {
     savedContext = false;
   }
@@ -72,17 +75,16 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   }
   const boundedSignals = profileSignalsStatus(env, process.platform);
   profileDict.bounded_signals = boundedSignals as unknown as ProfileSummary["bounded_signals"];
-  const v1Artifacts = detectV1ArtifactPairs(process.cwd());
+  const v1Artifacts = detectV1ArtifactPairs(project);
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
-  const entityMode = detectStateMode(process.cwd(), sourceRoot) === "entities";
-  const entity = entityMode ? collectEntityOrientation(process.cwd(), sourceRoot) : null;
+  const entity = entityMode ? collectEntityOrientation(project, sourceRoot) : null;
   const plan = entity?.plan ?? planSummary(schemas);
   const docs = entity?.docs ?? docsSummary(schemas, { profileStatus });
   const progress = entity?.progress ?? progressSummary(schemas);
   const health = entity?.health ?? healthSummary(schemas, env);
   const history: Record<string, StartupHistorySummary> = entity?.history ?? {};
   if (!entityMode) for (const artifactId of ["progress", "decisions", "health"] as const) {
-    try { history[artifactId] = startupHistorySummary(process.cwd(), artifactId, sourceRoot); }
+    try { history[artifactId] = startupHistorySummary(project, artifactId, sourceRoot); }
     catch (error) { history[artifactId] = { artifact: artifactId, status: "degraded", counts: {}, entries: [], source: { error: (error as Error).message }, retrieval: { list: `agentera state ${artifactId} list --limit 20 --format json`, get: `agentera state ${artifactId} get --id ID --format json` }, omission: { omitted: false, omitted_count: 0, omission_reason: "source_scan_failed", retrieval: {} } } as StartupHistorySummary; }
   }
   const objective = entity?.objective ?? activeObjectiveSummary();
@@ -92,7 +94,6 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const decision = entity?.decision ?? decisionFollowUp(schemas);
   const decisionAttention = entity?.decisionAttention ?? decisionReviewAttention(schemas);
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
-  const project = process.cwd();
   const sharedSkill = diagnoseCanonicalSkill(home);
   const projectIntegration = summarizeProjectIntegration({
     project,
@@ -103,6 +104,11 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     bundleStatus: String(bundle.status),
     retryCommand: bundle.retryCommand,
     crossMajorBoundaryDetected: bundle.crossMajorBoundaryDetected ?? false,
+    channel: bundle.updateChannel ?? null,
+    resolvedChannel: channel,
+    installClassification: install,
+    successorAnnounced,
+    precomputedV1Artifacts: v1Artifacts,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
   const nextAction = selectProjectIntegrationNextAction(readiness, projectIntegration);

@@ -1,5 +1,26 @@
-import { describe, it, expect, vi } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { main } from "../../src/cli/dispatch.js";
+
+const roots: string[] = [];
+
+afterEach(() => {
+  for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
+
+function entityProject(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hook-cli-"));
+  roots.push(root);
+  fs.mkdirSync(path.join(root, ".agentera"));
+  fs.writeFileSync(
+    path.join(root, ".agentera", "state-mode.yaml"),
+    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
+  );
+  return root;
+}
 
 const DENY_PAYLOAD = JSON.stringify({
   runtime: "opencode",
@@ -33,6 +54,37 @@ describe("agentera hook dispatch", () => {
       stdin: () => DENY_PAYLOAD,
     });
     expect(rc).toBe(2);
+    expect(err).toContain("missing severity sections");
+  });
+
+  it("dispatches all five supported hook names through the CLI contract", () => {
+    const cwd = entityProject();
+    const event = JSON.stringify({ cwd, workspace_roots: [cwd] });
+    for (const name of ["session-start", "session-stop", "cursor-session-start"] as const) {
+      let err = "";
+      const rc = main(["node", "agentera", "hook", name], {
+        err: (text) => { err += text; },
+        out: () => {},
+        stdin: () => event,
+      });
+      expect(rc, name).toBe(0);
+      expect(err, name).not.toContain("unknown hook");
+    }
+
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      expect(main(["node", "agentera", "hook", "cursor-pre-tool-use"], {
+        stdin: () => DENY_PAYLOAD,
+      })).toBe(0);
+    } finally {
+      spy.mockRestore();
+    }
+
+    let err = "";
+    expect(main(["node", "agentera", "hook", "validate-artifact"], {
+      err: (text) => { err += text; },
+      stdin: () => DENY_PAYLOAD,
+    })).toBe(2);
     expect(err).toContain("missing severity sections");
   });
 

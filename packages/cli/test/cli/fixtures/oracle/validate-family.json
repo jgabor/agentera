@@ -1,6 +1,6 @@
 {
   "schemaVersion": "agentera.validateFamilyOracle.v1",
-  "notes": "Frozen contract for the canonical `check validate <family> --format json` envelope across the seven families (cross-capability, lifecycle-adapters, app-home-contract, capability, capability-contract, descriptors, artifact). Pin is structural: required keys, value types, and the small set of literal values (command='validate', status union, target_family values). Field content that legitimately varies by family/fixture (target strings, violation messages, summary counts, resolved file paths) is not pinned; see the live envelope test in packages/cli/test/cli/validateVerifyOracles.test.ts for the canonical pass shape and packages/cli/test/cli/validate.test.ts for the existing per-family assertions. The fail path on `--format json` reuses the canonical invalid-input envelope (status='fail', error.{class,message,valid_values?,syntax?,example?}); see packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json for that contract. The npm-cli-surface.json oracle (packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json) covers the cross-cutting npm exit-code matrix and is referenced, not duplicated.",
+  "notes": "Frozen contract for the canonical current `check validate <family> --format json` envelope. Repository-native lifecycle adapter validation is retired and is not a current family. Pin is structural: required keys, value types, and the small set of literal values (command='validate', status union, target_family values). Field content that legitimately varies by family/fixture is not pinned; see the live envelope test in packages/cli/test/cli/validateVerifyOracles.test.ts.",
   "format": "json",
   "commandValue": "validate",
   "statusUnion": ["pass", "fail"],
@@ -23,28 +23,6 @@
         "requiredKeys": ["command", "exit_code", "stdout", "stderr"],
         "commandValueType": "string",
         "commandValue": "validate_cross_capability.py",
-        "exitCodeValueType": "number",
-        "stdoutValueType": "array<string>",
-        "stderrValueType": "array<string>"
-      }
-    },
-    "lifecycle-adapters": {
-      "argv": ["check", "validate", "lifecycle-adapters", "--format", "json"],
-      "exitCode": 0,
-      "requiredTopLevelKeys": [
-        "command",
-        "status",
-        "target_family",
-        "target",
-        "violations",
-        "engine"
-      ],
-      "targetFamilyValue": "lifecycle-adapters",
-      "targetValueType": "string",
-      "engine": {
-        "requiredKeys": ["command", "exit_code", "stdout", "stderr"],
-        "commandValueType": "string",
-        "commandValue": "validate_lifecycle_adapters.py",
         "exitCodeValueType": "number",
         "stdoutValueType": "array<string>",
         "stderrValueType": "array<string>"

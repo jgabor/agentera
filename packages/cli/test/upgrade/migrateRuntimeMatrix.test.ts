@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 
-import { opencodeConfigDir } from "../../src/setup/doctor.js";
+import { opencodeConfigDir } from "../../src/setup/opencode.js";
 import {
   NPX_HOOK_VALIDATE,
   applyMigrationPhases,

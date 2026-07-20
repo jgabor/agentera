@@ -213,23 +213,27 @@ describe("v3 packaging (T1)", () => {
       expect([...filePaths].some((p) => p.startsWith("bundle/skills/agentera/capabilities/"))).toBe(
         true,
       );
-      for (const runtimeSource of [
+      for (const descriptor of [
         "bundle/plugin.json",
         "bundle/.github/plugin/plugin.json",
-        "bundle/.github/hooks/preToolUse.json",
-        "bundle/.github/hooks/sessionStart.json",
         "bundle/.codex-plugin/plugin.json",
         "bundle/agents/openai.yaml",
         "bundle/.opencode/plugins/agentera.js",
-        "bundle/.opencode/agents/agentera.md",
         "bundle/.opencode/package.json",
+        "bundle/.cursor-plugin/plugin.json",
+      ]) {
+        expect(filePaths.has(descriptor), `${descriptor} remains Task 4 package metadata`).toBe(true);
+      }
+      for (const retiredImplementation of [
+        "bundle/.github/hooks/preToolUse.json",
+        "bundle/.github/hooks/sessionStart.json",
+        "bundle/.opencode/agents/agentera.md",
         "bundle/hooks/codex-hooks.json",
         "bundle/hooks/codex-plugin-hooks.json",
-        "bundle/.cursor-plugin/plugin.json",
         "bundle/.cursor/hooks.json",
         "bundle/.cursor/agents/agentera.md",
       ]) {
-        expect(filePaths.has(runtimeSource), `${runtimeSource} must ship for lifecycle repair`).toBe(true);
+        expect(filePaths.has(retiredImplementation), retiredImplementation).toBe(false);
       }
       expect([...filePaths].some((p) => p.startsWith("bundle/.claude-plugin/"))).toBe(false);
     });

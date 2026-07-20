@@ -10,7 +10,6 @@ import {
   cmdValidateState,
   isDelegatedValidateFamily,
 } from "../commands/validate.js";
-import { LEGACY_PYTHON_PARITY_FLAG } from "../../validate/lifecycleAdapters.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
@@ -203,13 +202,10 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
   let artifactFlag: string | null = null;
   let fileFlag: string | null = null;
   let cwdFlag: string | null = null;
-  let legacyPythonParity = false;
   let format: "text" | "json" = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === LEGACY_PYTHON_PARITY_FLAG) {
-      legacyPythonParity = true;
-    } else if (a === "--format") {
+    if (a === "--format") {
       const v = argv[++i];
       if (v !== "text" && v !== "json") {
         return emitInvalidInput(io, {
@@ -271,7 +267,6 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
         message: "the following arguments are required: validate_family",
         valid_values: [
           "cross-capability",
-          "lifecycle-adapters",
           "app-home-contract",
           "vocabularyAuthority",
           "selfAudit",
@@ -323,7 +318,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       return cmdValidateState({ cwd: cwdFlag, format }, io);
     }
     if (isDelegatedValidateFamily(family)) {
-      return cmdValidate(family, { format, legacyPythonParity }, io);
+      return cmdValidate(family, { format }, io);
     }
     return emitInvalidInput(io, {
       format,
@@ -332,7 +327,6 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
         message: `validate family not yet ported: ${family}`,
         valid_values: [
           "cross-capability",
-          "lifecycle-adapters",
           "app-home-contract",
           "vocabularyAuthority",
           "selfAudit",

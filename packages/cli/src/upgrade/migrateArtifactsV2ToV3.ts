@@ -38,6 +38,7 @@ import {
   applyInstalledHooksRetirementItems,
   planInstalledHooksRetirementItems,
 } from "./installedHooksRetirement.js";
+import type { ResolvedUpdateChannel } from "./channels.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
@@ -389,8 +390,11 @@ export function delegatePlanLifecycleToEntityCutover(phase: MigrationPhase): voi
   phase.summary = updated.summary;
 }
 
-export function planRuntimeRewirePhase(ctx: MigrationContext): MigrationPhase {
-  const items = planRuntimeMigrationItems(ctx);
+export function planRuntimeRewirePhase(
+  ctx: MigrationContext,
+  resolvedChannel?: ResolvedUpdateChannel,
+): MigrationPhase {
+  const items = planRuntimeMigrationItems(ctx, resolvedChannel);
   const blockedPaths = new Set(items
     .filter((item) => item.status === "blocked")
     .flatMap((item) => [item.source, item.target])

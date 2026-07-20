@@ -929,7 +929,20 @@ export class CopilotLifecycleAdapter extends RuntimeLifecycleAdapter {
 }
 
 export function runtimeLifecycleAdapters(contract = loadRuntimeLifecycleAdapterContract(), authority = loadLifecycleAuthority()): RuntimeLifecycleAdapter[] {
-  return [new OpenCodeLifecycleAdapter(contract, authority), new CodexLifecycleAdapter(contract, authority), new CursorLifecycleAdapter(contract, authority), new CopilotLifecycleAdapter(contract, authority)];
+  const constructors: Record<string, new (
+    contract?: RuntimeLifecycleAdapterContract,
+    authority?: RuntimeLifecycleAuthority,
+  ) => RuntimeLifecycleAdapter> = {
+    opencode: OpenCodeLifecycleAdapter,
+    codex: CodexLifecycleAdapter,
+    cursor: CursorLifecycleAdapter,
+    copilot: CopilotLifecycleAdapter,
+  };
+  return authority.runtimes.map((runtime) => {
+    const Adapter = constructors[runtime.id];
+    if (!Adapter) throw new Error(`unsupported lifecycle adapter identity: ${runtime.id}`);
+    return new Adapter(contract, authority);
+  });
 }
 
 export function inspectRuntimeLifecycleAdapters(context: RuntimeAdapterInspectionContext, contract = loadRuntimeLifecycleAdapterContract(), authority = loadLifecycleAuthority()): RuntimeAdapterMatrixReport {

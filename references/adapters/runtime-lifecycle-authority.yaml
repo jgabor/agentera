@@ -1,5 +1,5 @@
 schema_version: agentera.runtimeLifecycleAuthority.v1
-status: active_authority
+status: migration_only_authority
 decision: 92
 operation_contract: references/adapters/runtime-lifecycle-operation-contract.yaml
 adapter_contract: references/adapters/runtime-lifecycle-adapters.yaml
@@ -51,34 +51,7 @@ support_floor:
       - enabled
     not_applicable_scope: unobserved_conditional_surface_only
   unmet_blocks_release: true
-active_runtimes:
-  - id: opencode
-    display_name: OpenCode
-    surfaces:
-      - id: host
-        display_name: OpenCode host
-        presence: required
-  - id: codex
-    display_name: Codex
-    surfaces:
-      - id: cli
-        display_name: Codex CLI
-        presence: required
-  - id: cursor
-    display_name: Cursor
-    surfaces:
-      - id: cli
-        display_name: Cursor Agent CLI
-        presence: required
-      - id: ide
-        display_name: Cursor IDE
-        presence: conditional
-  - id: copilot
-    display_name: GitHub Copilot
-    surfaces:
-      - id: cli
-        display_name: Copilot CLI
-        presence: required
+active_runtimes: []
 retired_runtime_inputs:
   - id: claude
     purposes:

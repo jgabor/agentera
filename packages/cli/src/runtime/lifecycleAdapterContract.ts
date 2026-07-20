@@ -209,8 +209,8 @@ export function validateRuntimeLifecycleAdapterContractData(
       sourceError(sourcePath, "schema_version", "must be agentera.runtimeLifecycleAdapters.v1"),
     );
   }
-  if (data.status !== "active_contract") {
-    errors.push(sourceError(sourcePath, "status", "must be active_contract"));
+  if (data.status !== "migration_only_contract") {
+    errors.push(sourceError(sourcePath, "status", "must be migration_only_contract"));
   }
   if (data.decision !== 92)
     errors.push(sourceError(sourcePath, "decision", "must cite Decision 92"));
@@ -382,13 +382,13 @@ export function validateRuntimeLifecycleAdapterContractData(
   const canonical = sharedResources.find(
     (resource) => isMapping(resource) && resource.id === "canonical_skill",
   );
-  if (
+  if (authority.runtimes.length > 0 && (
     !isMapping(canonical) ||
     canonical.destination !== "{home}/.agents/skills/agentera" ||
     canonical.source !== "{source_root}/skills/agentera" ||
     canonical.kind !== "symlink" ||
     canonical.required !== true
-  ) {
+  )) {
     errors.push(
       sourceError(
         sourcePath,

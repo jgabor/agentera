@@ -11,7 +11,7 @@
  *                     capabilities/*, schemas/*)
  *   - references/    (artifact-registry interface model + reference paths)
  *   - registry.json  (artifact registry at the source root)
- *   - every declared OpenCode, Codex, Cursor, and Copilot package/lifecycle source
+ *   - package descriptors retained for the package-surface cleanup task
  *
  * D65: per-capability instructions.md files are no longer copied because
  * they do not exist on disk. The per-capability prose ships via the
@@ -38,13 +38,8 @@ const DIRS = [
   "skills",
   "references",
   "agents",
-  "hooks",
-  ".github/hooks",
   ".codex-plugin",
   ".cursor-plugin",
-  ".cursor/agents",
-  ".opencode/commands",
-  ".opencode/agents",
   ".opencode/plugins",
 ];
 const FILES = [
@@ -57,7 +52,6 @@ const FILES = [
   "plugin.json",
   ".github/plugin/plugin.json",
   ".opencode/package.json",
-  ".cursor/hooks.json",
 ];
 const SKIP_PARTS = new Set(["__pycache__", ".pytest_cache", "node_modules"]);
 const SKIP_SUFFIXES = new Set([".pyc", ".pyo"]);

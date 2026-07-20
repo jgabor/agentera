@@ -44,19 +44,19 @@ const ALWAYS_ACTIVE_SOURCE_MANIFEST = [
 ].sort();
 
 const REFERENCE_CLASSIFICATIONS: Record<string, ReferenceClassification> = {
-  "references/adapters/cursor.md": { kind: "active" },
-  "references/adapters/opencode.md": { kind: "active" },
+  "references/adapters/cursor.md": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/opencode.md": { kind: "excluded", reason: "migration input/apply internals" },
   "references/adapters/package-manifest-interface-model.yaml": { kind: "active" },
   "references/adapters/package-registry.yaml": { kind: "active" },
   "references/adapters/package-surface-characterization.md": { kind: "active" },
-  "references/adapters/runtime-adapter-characterization.md": { kind: "active" },
-  "references/adapters/runtime-adapter-interface-model.yaml": { kind: "active" },
-  "references/adapters/runtime-adapter-registry.yaml": { kind: "active" },
-  "references/adapters/runtime-feature-parity.md": { kind: "active" },
-  "references/adapters/runtime-lifecycle-adapters.yaml": { kind: "active" },
-  "references/adapters/runtime-lifecycle-authority.yaml": { kind: "active" },
-  "references/adapters/runtime-lifecycle-operation-contract.yaml": { kind: "active" },
-  "references/adapters/runtime-retired-resources.yaml": { kind: "active" },
+  "references/adapters/runtime-adapter-characterization.md": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-adapter-interface-model.yaml": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-adapter-registry.yaml": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-feature-parity.md": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-lifecycle-adapters.yaml": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-lifecycle-authority.yaml": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-lifecycle-operation-contract.yaml": { kind: "excluded", reason: "migration input/apply internals" },
+  "references/adapters/runtime-retired-resources.yaml": { kind: "excluded", reason: "migration input/apply internals" },
   "references/analysis/benchmark.md": { kind: "excluded", reason: "evaluator fixture" },
   "references/analysis/evidence-tier-authority.yaml": { kind: "active" },
   "references/analysis/startup-measurement-contract.yaml": { kind: "active" },
@@ -129,7 +129,7 @@ const RUNTIME_EXACT: Array<[string, string, string]> = [];
 const SOURCE_CONTEXT_HASHES: Record<string, string> = {
   "references/artifacts/state-storage-authority.yaml": "d5c386de575cbfb3cedc14338d78e8da876c61b3e4995e6315c95175aa7e39b5",
   "skills/agentera/schemas/artifacts/experiments.yaml": "d4785335dad4babfa3d19c1d995f1505df19605970d3863f4bed656101cfd0ce",
-  "references/cli/prime-consumer-compatibility.yaml": "e2268406d3a051fde50d837fb415cb2744a091628cb606bf3736ca20e17c6bd8",
+  "references/cli/prime-consumer-compatibility.yaml": "47cbd3b679bc3b5b9de549f4e1d9da9f4f0c67d9bce9c334032e1a68e4251e0e",
 };
 
 function pointerEscape(value: string): string { return value.replaceAll("~", "~0").replaceAll("/", "~1"); }
@@ -233,10 +233,38 @@ function classifyCopiedSurface(relative: string): ReferenceClassification {
   return { kind: "active" };
 }
 
+function expectMigrationOnlyLifecycleContracts(): void {
+  const authority = parseYaml(fs.readFileSync(
+    path.join(ROOT, "references/adapters/runtime-lifecycle-authority.yaml"),
+    "utf8",
+  )) as Record<string, unknown>;
+  expect(authority.status).toBe("migration_only_authority");
+  expect(authority.active_runtimes).toEqual([]);
+
+  const adaptersPath = path.join(ROOT, "references/adapters/runtime-lifecycle-adapters.yaml");
+  const adaptersText = fs.readFileSync(adaptersPath, "utf8");
+  const adapters = parseYaml(adaptersText) as Record<string, unknown>;
+  expect(adapters.status).toBe("migration_only_contract");
+  expect(adapters.shared_resources).toEqual([]);
+  expect(adapters.managed_resources).toEqual([]);
+  expect(adapters.adapters).toEqual([]);
+  for (const retiredSource of [
+    ".opencode/plugins/agentera.js",
+    ".opencode/agents/agentera.md",
+    "hooks/codex-hooks.json",
+    ".cursor/hooks.json",
+    ".cursor/agents/agentera.md",
+  ]) expect(adaptersText, retiredSource).not.toContain(retiredSource);
+}
+
 function copyOwnedPairs(): Array<[string, string]> {
   const surfaces = bundleSurfaces();
   const pairs: Array<[string, string]> = [];
-  for (const file of surfaces.files) pairs.push([file.path, `packages/cli/bundle/${file.path}`]);
+  for (const file of surfaces.files) {
+    if (fs.existsSync(path.join(ROOT, file.path))) {
+      pairs.push([file.path, `packages/cli/bundle/${file.path}`]);
+    }
+  }
   for (const directory of surfaces.directories) {
     for (const source of files(directory.path).filter((file) => !file.split("/").some((part) => surfaces.skip_parts.includes(part)) && !surfaces.skip_suffixes.some((suffix: string) => file.endsWith(suffix)))) pairs.push([source, `packages/cli/bundle/${source}`]);
   }
@@ -300,6 +328,19 @@ beforeAll(() => {
 afterAll(() => { fs.rmSync(project, { recursive: true, force: true }); fs.rmSync(legacyProject, { recursive: true, force: true }); });
 
 describe("authoritative active final-protocol surfaces", () => {
+  it("emits only the retained doctor adjacency from the active contract", () => {
+    const contract = parseYaml(fs.readFileSync(
+      path.join(ROOT, "references/cli/agent-ready-state-contract.yaml"),
+      "utf8",
+    )) as { doctor: { adjacent_surfaces: Record<string, string> } };
+    const adjacentSurfaces = {
+      codebase_audit: "/agentera audit routes to inspektera",
+    };
+
+    expect(contract.doctor.adjacent_surfaces).toEqual(adjacentSurfaces);
+    expect((buildSchemaPayload().doctor as Record<string, unknown>).adjacent_surfaces).toEqual(adjacentSurfaces);
+  });
+
   it("classifies the complete registry-owned reference inventory and keeps every generated copy byte-equal", () => {
     const pairs = copyOwnedPairs();
     const references = pairs.map(([source]) => source).filter((source) => source.startsWith("references/"));
@@ -308,6 +349,7 @@ describe("authoritative active final-protocol surfaces", () => {
     expect(() => classifyReference("references/cli/new-contract.yaml")).toThrow("unclassified copied reference");
     expect(classifyReference("references/cli/vocabulary.md")).toEqual({ kind: "active" });
     expect(classifyReference("references/cli/prime-consumer-compatibility.yaml")).toEqual({ kind: "active" });
+    expectMigrationOnlyLifecycleContracts();
     expect(ALWAYS_ACTIVE_SOURCE_MANIFEST).toContain("README.md");
     expect(ALWAYS_ACTIVE_SOURCE_MANIFEST).toContain("packages/cli/README.md");
     expect(ALWAYS_ACTIVE_SOURCE_MANIFEST.filter((file) => file.endsWith("/instructions.ts"))).toHaveLength(CAPABILITY_NAMES.length);

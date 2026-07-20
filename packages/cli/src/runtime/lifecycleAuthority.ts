@@ -14,7 +14,6 @@ export const LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH =
 export const RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH =
   "references/adapters/runtime-retired-resources.yaml";
 
-const EXPECTED_ACTIVE_RUNTIME_ORDER = "opencode,codex,cursor,copilot";
 const EXPECTED_EVIDENCE_FIELDS = ["host_present", "installed", "enabled", "trusted"] as const;
 export const LIFECYCLE_APPLICABILITY_VALUES = [
   "required",
@@ -179,13 +178,15 @@ export function validateLifecycleAuthorityData(
 ): string[] {
   if (!isMapping(data)) return [sourceError(sourcePath, "1", "authority must be a YAML object")];
   const errors: string[] = [];
+  if (data.status !== "migration_only_authority") {
+    errors.push(
+      sourceError(sourcePath, "status", "must be migration_only_authority"),
+    );
+  }
   if (data.schema_version !== "agentera.runtimeLifecycleAuthority.v1") {
     errors.push(
       sourceError(sourcePath, "schema_version", "must be agentera.runtimeLifecycleAuthority.v1"),
     );
-  }
-  if (data.status !== "active_authority") {
-    errors.push(sourceError(sourcePath, "status", "must be active_authority"));
   }
   if (data.decision !== 92) {
     errors.push(sourceError(sourcePath, "decision", "must cite approved Decision 92"));
@@ -382,91 +383,12 @@ export function validateLifecycleAuthorityData(
   if (!Array.isArray(runtimes)) {
     return [...errors, sourceError(sourcePath, "active_runtimes", "must be a list")];
   }
-  const ids = runtimes.map((runtime) => (isMapping(runtime) ? stringField(runtime, "id") : ""));
-  if (ids.join(",") !== EXPECTED_ACTIVE_RUNTIME_ORDER) {
+  if (runtimes.length !== 0) {
     errors.push(
       sourceError(
         sourcePath,
         "active_runtimes",
-        "active runtime IDs must be exactly opencode, codex, cursor, copilot in that order",
-      ),
-    );
-  }
-  ids.forEach((id, index) => {
-    if (id === "claude" || id === "cursor-agent") {
-      errors.push(
-        sourceError(
-          sourcePath,
-          `active_runtimes[${index}].id`,
-          `${id} cannot be an active runtime identity`,
-        ),
-      );
-    }
-  });
-
-  runtimes.forEach((runtime, runtimeIndex) => {
-    if (!isMapping(runtime)) {
-      errors.push(sourceError(sourcePath, `active_runtimes[${runtimeIndex}]`, "must be an object"));
-      return;
-    }
-    const surfaces = runtime.surfaces;
-    if (!Array.isArray(surfaces) || surfaces.length === 0) {
-      errors.push(
-        sourceError(
-          sourcePath,
-          `active_runtimes[${runtimeIndex}].surfaces`,
-          "must be a non-empty list",
-        ),
-      );
-      return;
-    }
-    const surfaceIds = surfaces.map((surface) =>
-      isMapping(surface) ? stringField(surface, "id") : "",
-    );
-    if (new Set(surfaceIds).size !== surfaceIds.length) {
-      errors.push(
-        sourceError(
-          sourcePath,
-          `active_runtimes[${runtimeIndex}].surfaces`,
-          "surface IDs must be unique",
-        ),
-      );
-    }
-    surfaces.forEach((surface, surfaceIndex) => {
-      if (!isMapping(surface)) {
-        errors.push(
-          sourceError(
-            sourcePath,
-            `active_runtimes[${runtimeIndex}].surfaces[${surfaceIndex}]`,
-            "must be an object",
-          ),
-        );
-        return;
-      }
-      if (surface.presence !== "required" && surface.presence !== "conditional") {
-        errors.push(
-          sourceError(
-            sourcePath,
-            `active_runtimes[${runtimeIndex}].surfaces[${surfaceIndex}].presence`,
-            "must be required or conditional",
-          ),
-        );
-      }
-    });
-  });
-
-  const cursorIndex = ids.indexOf("cursor");
-  const cursor = cursorIndex >= 0 ? runtimes[cursorIndex] : null;
-  const cursorSurfaces = isMapping(cursor) && Array.isArray(cursor.surfaces) ? cursor.surfaces : [];
-  const cursorSurfaceShape = cursorSurfaces.map((surface) =>
-    isMapping(surface) ? `${stringField(surface, "id")}:${String(surface.presence)}` : "",
-  );
-  if (cursorSurfaceShape.join(",") !== "cli:required,ide:conditional") {
-    errors.push(
-      sourceError(
-        sourcePath,
-        `active_runtimes[${cursorIndex < 0 ? "cursor" : cursorIndex}].surfaces`,
-        "Cursor surfaces must be cli:required and ide:conditional beneath runtime cursor",
+        "must be empty because repository-native runtime integrations are retired",
       ),
     );
   }
