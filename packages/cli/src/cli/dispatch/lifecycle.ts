@@ -22,6 +22,7 @@ import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, emitDepreca
 import { emitInvalidInput } from "../errors.js";
 import { migrationProject } from "../migrationRequired.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
+import type { ParsedProjectHookInput } from "../../hooks/projectHookInput.js";
 
 function rejectUnsupportedUpgradeFlag(
   io: Io,
@@ -176,17 +177,22 @@ export function readStdin(): string {
   }
 }
 
-export function runHook(name: string, argv: string[], io: Io): number {
+export function runHook(
+  name: string,
+  argv: string[],
+  io: Io,
+  projectInput?: ParsedProjectHookInput,
+): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
-  const raw = io.stdin ? io.stdin() : readStdin();
+  const raw = projectInput?.raw ?? (io.stdin ? io.stdin() : readStdin());
   // Each hook owns its own stdout newline convention; do not wrap stdout here.
   switch (name) {
     case "session-start":
-      return runSessionStart(raw, { out: io.out, err: io.err });
+      return runSessionStart(projectInput ?? raw, { out: io.out, err: io.err });
     case "session-stop":
-      return runSessionStop(raw);
+      return runSessionStop(projectInput ?? raw);
     case "cursor-session-start":
-      return runCursorSessionStart(raw, { out: io.out, err: io.err });
+      return runCursorSessionStart(projectInput ?? raw, { out: io.out, err: io.err });
     case "cursor-pre-tool-use":
       return runCursorPreToolUse(raw);
     case "validate-artifact": {

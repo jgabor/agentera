@@ -174,7 +174,7 @@ export function resolveArtifactPath(
 }
 
 export function loadArtifactOverrides(projectRoot: string): Record<string, string> | null {
-  const yamlPath = path.join(projectRoot, ".agentera", "docs.yaml");
+  const yamlPath = path.join(projectRoot, ARTIFACT_PROTOCOL_PATHS.docs);
   if (fs.existsSync(yamlPath)) {
     const mapping = parseDocsYamlMapping(fs.readFileSync(yamlPath, "utf8"));
     if (Object.keys(mapping).length > 0) {

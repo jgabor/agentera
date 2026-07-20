@@ -350,7 +350,7 @@ export function scanYamlCollection(
   return { path: filePath, exists: true, collection_found: collectionFound, bytes_scanned: bytesScanned, entries };
 }
 
-export function scanStartupArtifact(
+function scanLegacyStartupArtifact(
   projectRoot: string,
   artifactId: "progress" | "decisions" | "health",
   sourceRoot: string = resolveSourceRoot(),
@@ -363,6 +363,8 @@ export function scanStartupArtifact(
     archive: scanYamlCollection(currentPath, "archive", artifactId, contract.entryNumberField, "summary"),
   };
 }
+
+export const scanStartupArtifact = scanLegacyStartupArtifact;
 
 function archiveNumber(rejection: ArchiveRejection, artifactId: string): number | null {
   if (!rejection.path.includes(path.join(`${path.sep}${artifactId}`, ""))) return null;
@@ -594,7 +596,7 @@ export function startupHistorySummary(
   artifactId: "progress" | "decisions" | "health",
   sourceRoot: string = resolveSourceRoot(),
 ): StartupHistorySummary {
-  const scans = scanStartupArtifact(projectRoot, artifactId, sourceRoot);
+  const scans = scanLegacyStartupArtifact(projectRoot, artifactId, sourceRoot);
   const currentPath = scans.active.path;
   const scan = {
     ...scans.active,

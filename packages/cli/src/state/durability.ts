@@ -5,14 +5,9 @@ import { spawnSync } from "node:child_process";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
-  discoverNumberedArchives,
-  numberedArchiveContract,
   stateDurabilityContract,
-  type ArchiveRejection,
-  type NumberedArchiveContract,
   type StateDurabilityContract,
 } from "./archiveDiscovery.js";
-import { detectStateMode } from "./stateMode.js";
 import { canonicalEntityEnvelope, discoverEntities, entityBoundariesForArtifact } from "./entityStorage.js";
 
 const GIT_TIMEOUT_MS = 1_000;
@@ -283,98 +278,6 @@ function historyWasRewritten(
   return false;
 }
 
-function archiveTarget(
-  projectRoot: string,
-  contract: NumberedArchiveContract,
-  artifactId: string,
-  entryNumber: number,
-): string {
-  return path.resolve(
-    projectRoot,
-    contract.archiveRoot,
-    artifactId,
-    `${entryNumber}${contract.archiveExtension}`,
-  );
-}
-
-function selectedCandidate(
-  projectRoot: string,
-  contract: NumberedArchiveContract,
-  artifactId: string,
-  entryNumber: number,
-  discovery: ReturnType<typeof discoverNumberedArchives>,
-): Candidate {
-  const target = archiveTarget(projectRoot, contract, artifactId, entryNumber);
-  const entry = discovery.entries.find((candidate) => candidate.path === target);
-  if (entry) {
-    try {
-      return {
-        path: target,
-        stableId: entry.stableId,
-        artifactId,
-        entryNumber,
-        local: "verified",
-        bytes: fs.readFileSync(target, "utf8"),
-      };
-    } catch (error) {
-      return {
-        path: target,
-        stableId: `${artifactId}:${entryNumber}`,
-        artifactId,
-        entryNumber,
-        local: "corrupt",
-        localMessage: `cannot read validated archive: ${(error as Error).message}`,
-      };
-    }
-  }
-  const rejection = discovery.rejected.find((candidate) => path.resolve(candidate.path) === target);
-  if (rejection) {
-    return {
-      path: target,
-      stableId: `${artifactId}:${entryNumber}`,
-      artifactId,
-      entryNumber,
-      local: "corrupt",
-      localMessage: rejection.message,
-    };
-  }
-  return {
-    path: target,
-    stableId: `${artifactId}:${entryNumber}`,
-    artifactId,
-    entryNumber,
-    local: "unavailable",
-  };
-}
-
-function diagnosticsFor(
-  candidate: Candidate,
-  git: GitEvidence,
-): Array<{ class: string; message: string; recovery: string }> {
-  const diagnostics: Array<{ class: string; message: string; recovery: string }> = [];
-  if (candidate.local === "unavailable") {
-    diagnostics.push({
-      class: "local_recovery_unavailable",
-      message: `${candidate.stableId} has no validated local archive record`,
-      recovery: "Restore or publish the numbered archive locally; committed recovery is reported separately.",
-    });
-  } else if (candidate.local === "corrupt") {
-    diagnostics.push({
-      class: "local_archive_corrupt",
-      message: candidate.localMessage ?? `${candidate.stableId} is not a valid local archive record`,
-      recovery: "Preserve the archive bytes, repair the numbered record, and rerun the read-only check.",
-    });
-  }
-  if (git.status !== "verified") {
-    diagnostics.push({
-      class: git.reason,
-      message: `${candidate.stableId} has no verified committed recovery (${git.reason})`,
-      recovery: "Treat local archive evidence as authoritative and do not require Git for state writes.",
-    });
-  }
-  return diagnostics;
-}
-
 function entryStatus(local: LocalDurabilityStatus, git: GitEvidence): DurabilityStatus {
   if (local === "verified" && (git.status === "verified" || git.reason === "non_git")) return "complete";
   if (local === "unavailable" && git.status === "unavailable") return "unavailable";
@@ -425,49 +328,6 @@ function buildGitEvidence(
   if (context.shallow) return { status: "degraded", reason: "shallow_history", reachableRecovery: reachable };
   if (workingTreeStatus !== "") return { status: "degraded", reason: "dirty_archive", reachableRecovery: reachable };
   return { status: "unavailable", reason: reachable ? "committed_content_mismatch" : "not_committed", reachableRecovery: reachable };
-}
-
-function orderedCandidates(
-  projectRoot: string,
-  contract: NumberedArchiveContract,
-  artifact: string | null | undefined,
-  number: number | undefined,
-  limit: number,
-  sourceRoot: string,
-): { candidates: Candidate[]; rejected: ArchiveRejection[]; discovered: number } {
-  const discovery = discoverNumberedArchives(projectRoot, { sourceRoot, artifactId: artifact ?? undefined });
-  if (artifact && number !== undefined) {
-    return { candidates: [selectedCandidate(projectRoot, contract, artifact, number, discovery)], rejected: [], discovered: 1 };
-  }
-  const candidates = discovery.entries
-    .filter((entry) => !artifact || entry.artifactId === artifact)
-    .map((entry) => {
-      try {
-        return {
-          path: entry.path,
-          stableId: entry.stableId,
-          artifactId: entry.artifactId,
-          entryNumber: entry.entryNumber,
-          local: "verified" as const,
-          bytes: fs.readFileSync(entry.path, "utf8"),
-        };
-      } catch (error) {
-        return {
-          path: entry.path,
-          stableId: entry.stableId,
-          artifactId: entry.artifactId,
-          entryNumber: entry.entryNumber,
-          local: "corrupt" as const,
-          localMessage: `cannot read validated archive: ${(error as Error).message}`,
-        };
-      }
-    });
-  candidates.sort((a, b) => a.artifactId.localeCompare(b.artifactId) || b.entryNumber - a.entryNumber);
-  return {
-    candidates: candidates.slice(0, limit),
-    rejected: discovery.rejected,
-    discovered: candidates.length,
-  };
 }
 
 function inspectEntityDurability(
@@ -549,132 +409,8 @@ export function inspectDurability(
   const contract = stateDurabilityContract(sourceRoot);
   const projectRoot = resolvePath(project);
   const run = options.runGit ?? defaultGitRunner;
-  if (detectStateMode(projectRoot, sourceRoot) === "entities") {
-    if (!args.artifact || !args.id) throw new Error("entity-mode durability requires --artifact ARTIFACT --id ID");
-    return inspectEntityDurability(projectRoot, args.artifact, args.id, contract, run, sourceRoot);
-  }
-  const git = gitContext(projectRoot, run);
-  const artifact = args.artifact ?? null;
-  const number = args.number;
-  const limit = args.limit ?? contract.defaultLimit;
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > contract.maximumLimit) {
-    throw new Error(`durability limit must be between 1 and ${contract.maximumLimit}`);
-  }
-  if (number !== undefined && (!Number.isSafeInteger(number) || number < 1)) {
-    throw new Error("durability number must be a positive integer");
-  }
-  const archiveContract = artifact
-    ? numberedArchiveContract(artifact, sourceRoot)
-    : undefined;
-  const fallbackContract = archiveContract ?? numberedArchiveContract("progress", sourceRoot);
-  const selected = orderedCandidates(projectRoot, fallbackContract, artifact, number, limit, sourceRoot);
-  const entries: DurabilityEntry[] = [];
-  const diagnostics: DurabilityResponse["diagnostics"] = [];
-  for (const candidate of selected.candidates) {
-    const evidence = buildGitEvidence(candidate, git, git.before, false);
-    const status = entryStatus(candidate.local, evidence);
-    entries.push({
-      stable_id: candidate.stableId,
-      artifact_id: candidate.artifactId,
-      entry_number: candidate.entryNumber,
-      status,
-      local: {
-        status: candidate.local,
-        detail_availability: candidate.local === "verified" ? "full" : "unavailable",
-        ...(candidate.localMessage ? { message: candidate.localMessage } : {}),
-      },
-      git: {
-        status: evidence.status,
-        reason: evidence.reason,
-        reachable_recovery: evidence.reachableRecovery,
-      },
-    });
-    diagnostics.push(...diagnosticsFor(candidate, evidence));
-  }
-  const ending = git.available && git.root ? readHead(run, git.root) : undefined;
-  const after = ending?.value;
-  const headChanged = Boolean(git.before && after && git.before !== after);
-  const finalHeadUnavailable = Boolean(git.available && git.before && !after);
-  if (finalHeadUnavailable) {
-    for (const entry of entries) {
-      entry.status = "degraded";
-      entry.git = { status: "degraded", reason: "final_head_unavailable", reachable_recovery: false };
-    }
-    diagnostics.push({
-      class: "final_head_unavailable",
-      message: "repository HEAD could not be captured after the read-only durability check",
-      recovery: "Retry the diagnostic after repository activity stops; no committed recovery was claimed.",
-    });
-  }
-  if (headChanged && !finalHeadUnavailable) {
-    for (const entry of entries) {
-      entry.status = "degraded";
-      entry.git = { status: "degraded", reason: "changed_head", reachable_recovery: false };
-    }
-    diagnostics.push({
-      class: "changed_head",
-      message: "repository HEAD changed during the read-only durability check",
-      recovery: "Retry the diagnostic after repository activity stops; no state was changed.",
-    });
-  }
-  if (selected.candidates.length === 0) {
-    diagnostics.push({
-      class: "local_recovery_unavailable",
-      message: "no numbered archive records matched the durability selection",
-      recovery: "Publish or restore a validated numbered archive, then rerun the check.",
-    });
-  }
-  for (const rejection of selected.rejected) {
-    if (!artifact || rejection.path.includes(`${path.sep}${artifact}${path.sep}`)) {
-      diagnostics.push({
-        class: rejection.reason,
-        message: rejection.message,
-        recovery: "Preserve the bytes, repair the affected archive record, and rerun the read-only check.",
-      });
-    }
-  }
-  diagnostics.sort((a, b) => a.class.localeCompare(b.class) || a.message.localeCompare(b.message));
-  const localVerified = entries.filter((entry) => entry.local.status === "verified").length;
-  const localUnavailable = entries.filter((entry) => entry.local.status === "unavailable").length;
-  const localCorrupt = entries.filter((entry) => entry.local.status === "corrupt").length;
-  const reachableRecovery = entries.filter((entry) => entry.git.reachable_recovery).length;
-  const statuses = entries.map((entry) => entry.status);
-  let status: DurabilityStatus;
-  if (entries.length === 0 || statuses.every((value) => value === "unavailable")) status = "unavailable";
-  else if (statuses.some((value) => value === "degraded" || value === "unavailable")) status = "degraded";
-  else status = "complete";
-  const headStatus: DurabilityResponse["head"]["status"] = !git.available || !git.before || !after
-    ? "unavailable"
-    : headChanged
-      ? "changed"
-      : "stable";
-  return {
-    command: contract.command,
-    status,
-    project: projectRoot,
-    read_only: true,
-    remote_contact: false,
-    head: { status: headStatus },
-    counts: {
-      discovered: selected.discovered,
-      returned: entries.length,
-      local_verified: localVerified,
-      local_unavailable: localUnavailable,
-      local_corrupt: localCorrupt,
-      reachable_recovery: reachableRecovery,
-    },
-    entries,
-    diagnostics,
-    source_contract: {
-      syntax: contract.command,
-      status_values: contract.statusValues,
-      local_values: contract.localValues,
-      git_values: contract.gitValues,
-      read_only: true,
-      remote_contact: false,
-      writes_independent: true,
-    },
-  };
+  if (!args.artifact || !args.id) throw new Error("entity-mode durability requires --artifact ARTIFACT --id ID");
+  return inspectEntityDurability(projectRoot, args.artifact, args.id, contract, run, sourceRoot);
 }
 
 export function renderDurabilityText(response: DurabilityResponse, out: (text: string) => void): void {

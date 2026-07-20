@@ -1,0 +1,16 @@
+id: qwpcekisye
+artifact: progress
+record:
+  timestamp: 2026-07-20 09:24
+  type: fix
+  phase: build
+  what: Superseded progress ezksrsmwzx after wtoanuxcsl-audit-1 by extending the closed current-authority guard from selected call bodies to deterministic full-file literal scanning while retaining segmented path and named legacy-reader detection.
+  context:
+    intent: Close the final aggregate-consumer guard hole without changing production behavior or disturbing cursor, routing, selector, migration, writer, or startup behavior.
+    constraints: No commit, push, publication, tag, release, version, package, packed-path, broad documentation, production behavior, evaluation, task-status, TODO-status, or decision-status changes.
+    unknowns: None after full production scan and verification.
+    scope: packages/cli/test/state/currentAuthorityConsumers.test.ts and this typed progress record only.
+  inspiration: Active task wtoanuxcsl and independent failure wtoanuxcsl-audit-1; this correction explicitly supersedes ezksrsmwzx.
+  discovered: No real stale production consumer was exposed. A small source-literal scanner can inspect every production TypeScript file, skip comments, identify standalone bindings and dynamic templates, and compose with the existing balanced path-call scanner without introducing a general AST framework.
+  verified: "Hostile self-tests detect standalone bindings for all declared aggregates, explicit .agentera/decisions.yaml, dynamic , compact double-quoted and spaced single-quoted path.join segments, and retrieveStateEntry(); .agentera/entities/decisions/decision/abcdefghij.yaml remains allowed. Only packages/cli/src/state/entityMigrationPreview.ts, packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts, and packages/cli/src/migrate/v2HandoffManifest.ts are excluded. Built CLI preserved active ntfgalrhbm continuation with 12 omitted and archived gdxhejjjwn continuation with 4 omitted; each continuation returned its original plan identity. Focused consumer/continuation/routing suite: 18 files, 258 tests passed. Full CLI: 194 files, 2243 tests passed. Typecheck and build passed. State validation passed with 1592 entities and 0 issues; capability contract passed 2 checks; compact passed with 0 over-limit artifacts; git diff --check passed."
+  next: Leave wtoanuxcsl in progress for final independent audit; preserve wtoanuxcsl-audit-1, blocked qesbsuazwq 2/2, and all prior progress. Do not commit, evaluate, release, or mutate task/TODO/decision status.

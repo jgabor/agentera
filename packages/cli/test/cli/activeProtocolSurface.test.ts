@@ -182,7 +182,7 @@ function fileFindings(relative: string): Finding[] {
 
 function exactExceptions(runtime: any): Exception[] {
   expect(runtime.explain.stdout.guidance).toContain("a bare ten-letter ID is assigned by the CLI; do not pass an identity");
-  expect(runtime.legacy_explain.stdout).toMatchObject({ available_after_upgrade: true });
+  expect(runtime.marker_absent_explain.stdout).toMatchObject({ artifact: "progress", command: "state progress explain" });
   const exceptions: Exception[] = [];
   const add = (surface: string, pointer: string, match: string, contextHash: string, reason: string): void => {
     exceptions.push({ surface, pointer, match, contextHash, reason });
@@ -404,7 +404,7 @@ describe("authoritative active final-protocol surfaces", () => {
       schema: buildSchemaPayload(),
       instructions: CAPABILITY_INSTRUCTIONS,
       explain: capture(["state", "progress", "explain", "--format", "json"]),
-      legacy_explain: capture(["state", "progress", "explain", "--format", "json"], legacyProject),
+      marker_absent_explain: capture(["state", "progress", "explain", "--format", "json"], legacyProject),
       error: capture(["state", "plan", "get", "--id", "zzzzzzzzzz", "--format", "json"]),
       prime: capture(["prime", "--format", "json"]),
       contexts: Object.fromEntries(CAPABILITY_NAMES.map((name) => [name, capture(["prime", "--context", name, "--format", "json"])])),

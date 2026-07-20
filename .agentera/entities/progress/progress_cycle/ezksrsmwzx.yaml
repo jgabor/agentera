@@ -1,0 +1,16 @@
+id: ezksrsmwzx
+artifact: progress
+record:
+  timestamp: 2026-07-20 08:44
+  type: fix
+  phase: build
+  what: "Closed successor task wtoanuxcsl's two implementation defects: plan-task cursors now authenticate once and recover their bound plan before default selection, while the current-authority guard scans every production TypeScript file for named legacy readers and direct, segmented, or template aggregate-path construction."
+  context:
+    intent: Make active and archived plan-task continuations runnable unchanged and close aggregate-consumer coverage without disturbing the complete entity-only routing candidate or blocked predecessor history.
+    constraints: No commit, push, publication, tag, release, version, package, packed-path, broad documentation, evaluation, task-status, TODO-status, or decision-status changes.
+    unknowns: None after active and archived built-CLI reproduction.
+    scope: packages/cli plan-task parser/cursor retrieval and help; production-wide aggregate consumer guard; narrow canonical docs-path indirection; proportional plan, help, bundle-parity, routing, and selector tests; plan retrieval schema command example.
+  inspiration: Plan ntfgalrhbm task wtoanuxcsl, carrying only the two final defects from blocked qesbsuazwq audit 2/2.
+  discovered: "A cursor continuation can remain selector-free when its authenticated filter supplies plan identity before selection. The closed guard needs no AST framework: balanced call extraction plus exact retired reader names catches hostile literals and path segments while a three-file allowlist preserves intentional v2 inputs."
+  verified: "Built CLI observation: active ntfgalrhbm first page omitted 12 and its emitted continuation returned ntfgalrhbm; archived gdxhejjjwn first page omitted 4 and its unchanged selector-free continuation returned gdxhejjjwn, not the active plan. No stale rejected plan selector flag remains in packages/cli/src, packages/cli/test, or skills schemas. Guard self-test catches named, direct, segmented, and template hostile examples; exact allowlist is packages/cli/src/state/entityMigrationPreview.ts, packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts, and packages/cli/src/migrate/v2HandoffManifest.ts. Focused routing/selector suite: 18 files, 257 tests passed. Full CLI: 194 files, 2242 tests passed. Typecheck and build passed. State validation passed with 1591 entities and 0 issues; capability contract passed 2 checks; compact passed with 0 over-limit artifacts; git diff --check passed."
+  next: Leave wtoanuxcsl in progress for independent evaluation; preserve blocked qesbsuazwq 2/2 history and all earlier progress. Do not commit, evaluate, release, or mutate task/TODO/decision status.

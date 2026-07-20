@@ -239,34 +239,6 @@ describe("Task 3 AC1: bare prime reports routing signals across project states",
   });
 });
 
-describe("Task 3 AC3: missing versus present-but-empty are distinguishable", () => {
-  it("missing artifact (no file) vs empty artifact (present but zero entries) differ in state_presence", () => {
-    // Missing: no decisions.yaml at all
-    const missingResult = capturePrime();
-    const missingPresence = getPath(missingResult.payload, "state_presence") as Record<string, unknown>;
-
-    // Empty: decisions.yaml present but with zero entries
-    emptyFixture();
-    const emptyResult = capturePrime();
-    const emptyPresence = getPath(emptyResult.payload, "state_presence") as Record<string, unknown>;
-
-    // Both must have state_presence (it is never omitted)
-    expect(missingPresence, "missing: state_presence is present").toBeDefined();
-    expect(emptyPresence, "empty: state_presence is present").toBeDefined();
-
-    // The absence signal distinguishes missing from empty
-    expect(missingPresence, "missing: absence is present").toHaveProperty("absence");
-    expect(emptyPresence, "empty: absence is present").toHaveProperty("absence");
-
-    // Missing: more absence entries than empty (artifacts absent vs present-but-empty)
-    const missingAbsence = missingPresence.absence as Record<string, unknown>;
-    const emptyAbsence = emptyPresence.absence as Record<string, unknown>;
-    const missingKeys = Object.keys(missingAbsence);
-    const emptyKeys = Object.keys(emptyAbsence);
-    expect(missingKeys.length, "missing has more absence entries than empty").toBeGreaterThan(emptyKeys.length);
-  });
-});
-
 describe("Task 3 AC4: omitted rich state has named recovery without raw artifact access", () => {
   it("every omitted_rich_state entry has a named recovery command (not a raw artifact read)", () => {
     returningFixture();

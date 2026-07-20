@@ -7,6 +7,7 @@ import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { resolveCandidate } from "../state/installRoot.js";
+import { ARTIFACT_PROTOCOL_PATHS } from "./artifactProtocolIds.js";
 
 /**
  * Registry-backed artifact identity projection. Faithful TS port of
@@ -361,7 +362,7 @@ export function docsPathOverridesFromBytes(bytes: string | Buffer, strict = fals
 }
 
 export function loadDocsPathOverrides(projectRoot: string, strict = false): Record<string, string> {
-  const docsPath = path.join(projectRoot, ".agentera", "docs.yaml");
+  const docsPath = path.join(projectRoot, ARTIFACT_PROTOCOL_PATHS.docs);
   if (!fs.existsSync(docsPath)) {
     return {};
   }

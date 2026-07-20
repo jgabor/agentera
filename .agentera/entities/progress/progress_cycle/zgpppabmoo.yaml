@@ -1,0 +1,16 @@
+id: zgpppabmoo
+artifact: progress
+record:
+  timestamp: 2026-07-20 07:27
+  type: fix
+  phase: build
+  what: Centralized current state commands, startup projections, writers, and durability checks on canonical entity authority; moved removed-command corrections ahead of migration gating; retired normal aggregate routing while retaining bounded read-only migration fixtures and bare-ID selectors.
+  context:
+    intent: Complete plan task qesbsuazwq by making entity files the sole normal runtime authority without weakening migration safety or specialized retrieval contracts.
+    constraints: No commit, push, publish, tag, release, version, evaluation, TODO, decision-status, or task-status closeout changes.
+    unknowns: None after verification.
+    scope: CLI dispatch and state handlers, entity startup/session consumers, durability and writer routing, and proportional authority-cutover tests.
+  inspiration: Plan ntfgalrhbm task qesbsuazwq.
+  discovered: Entity startup history initially exposed full Unicode-rich records; applying the existing startup projection bound at the entity orientation boundary preserved identities and routes while bounding optional detail.
+  verified: pnpm -C packages/cli test (194 files, 2226 tests); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; check validate state; check validate capability-contract; check compact; git diff --check.
+  next: Keep task qesbsuazwq in progress for review; do not commit, release, evaluate, or mutate task/TODO/decision status in this cycle.

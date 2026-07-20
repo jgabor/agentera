@@ -6,6 +6,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../../src/cli/commands/schema.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runSessionStart } from "../../src/hooks/sessionStart.js";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
@@ -114,6 +115,31 @@ describe("final lifecycle protocol", () => {
       }));
       expect(treeDigest(root)).toBe(before);
       expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
+    }
+  });
+
+  it("returns exact removed-command corrections before marker-absent migration diagnostics", () => {
+    const root = project();
+    fs.writeFileSync(path.join(root, "legacy.txt"), "unchanged\n");
+    const before = treeDigest(root);
+    for (const [removed, canonical] of Object.entries(REMOVED_TOP_LEVEL_CORRECTIONS)) {
+      const result = capture(root, [removed, "--format", "json"]);
+      expect(result.rc, removed).toBe(2);
+      expect(result.err, removed).toBe("");
+      expect(JSON.parse(result.out), removed).toEqual({
+        schemaVersion: "agentera.invalidInputEnvelope.v2",
+        status: "fail",
+        error: {
+          class: "unsupported_target",
+          message: `unknown or not-yet-ported command: ${removed}; this top-level name was removed, use '${canonical}'`,
+          valid_values: [canonical],
+          syntax: `agentera ${canonical} [options]`,
+          example: `agentera ${canonical} --format json`,
+          recovery: `Run agentera ${canonical} --format json; no state was changed by the rejected command.`,
+        },
+      });
+      expect(treeDigest(root), removed).toBe(before);
+      expect(fs.existsSync(path.join(root, ".agentera")), removed).toBe(false);
     }
   });
 

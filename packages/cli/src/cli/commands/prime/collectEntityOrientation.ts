@@ -1,4 +1,4 @@
-import type { JsonObject } from "../../../core/jsonValue.js";
+import type { JsonObject, JsonValue } from "../../../core/jsonValue.js";
 import { listProgressEntities } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
@@ -7,6 +7,7 @@ import { listObjectiveEntities, listExperimentEntities } from "../../../state/ob
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
+import { boundStartupValue } from "../../../state/startupProjection.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -22,6 +23,10 @@ function entries(payload: JsonObject): JsonObject[] {
   return Array.isArray(payload.entries)
     ? payload.entries.filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
     : [];
+}
+
+function bounded<T>(value: T): T {
+  return boundStartupValue(value as unknown as JsonValue) as unknown as T;
 }
 
 function record(entry: JsonObject | undefined): JsonObject {
@@ -187,8 +192,8 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const firstDecision = reviewEntries[0];
   const decision = firstDecision ? { object: String(firstDecision.id), title: String(record(firstDecision).question ?? "Decision review") } : null;
 
-  return {
+  return bounded({
     plan, docs, progress, health, objective, todoItems, decision, decisionAttention,
     history: { progress: progressList, decisions: decisionList, health: healthList },
-  };
+  });
 }

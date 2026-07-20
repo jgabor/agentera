@@ -244,10 +244,7 @@ function runDispatch(argv: string[]): { rc: number; payload: Record<string, unkn
 }
 
 describe("source_contract oracle (parity)", () => {
-  it("declares the five source_contract emissions in the oracle", () => {
-    // The five pinned emissions must stay in lockstep with the CLI surface
-    // inventory: prime, prime --context, state plan, state todo (no source_contract),
-    // state query --list-artifacts.
+  it("retains the frozen source-contract inventory, including retired aggregate shapes", () => {
     expect(new Set(Object.keys(SOURCE_CONTRACT_ORACLE.commands))).toEqual(
       new Set(["prime", "prime_context", "state_plan", "state_todo", "state_query_list_artifacts"]),
     );
@@ -452,70 +449,6 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
   });
 });
 
-describe("state plan source_contract (oracle parity)", () => {
-  function captureStatePlan(): { rc: number; payload: Record<string, unknown> } {
-    return runDispatch(["state", "plan", "--format", "json"]);
-  }
-
-  it("state plan top-level source_contract matches the oracle", () => {
-    const spec = SOURCE_CONTRACT_ORACLE.commands.state_plan;
-    const { rc, payload } = captureStatePlan();
-    expect(rc, "state plan rc").toBe(spec.exitCode);
-    const sc = payload.source_contract as Record<string, unknown>;
-    expect(typeof sc, "state plan source_contract is an object").toBe("object");
-    assertRequiredKeys(sc, spec.requiredTopLevelKeys, "state_plan", "source-contract.json");
-    assertExactKeys(sc, spec.requiredTopLevelKeys, "state_plan", "source-contract.json");
-    assertValueTypes(sc, spec.fieldTypes, "state_plan", "source-contract.json");
-    expect(sc.artifact, "state plan artifact literal").toBe(spec.artifactValue);
-    expect(sc.canonical_artifact_label, "state plan canonical_artifact_label literal").toBe(
-      spec.canonicalArtifactLabelValue,
-    );
-  });
-
-  it("state plan complete_state and raw_artifact_access_boundary sub-objects match the oracle", () => {
-    const spec = SOURCE_CONTRACT_ORACLE.commands.state_plan;
-    const { payload } = captureStatePlan();
-    const sc = payload.source_contract as Record<string, unknown>;
-    const cs = sc.complete_state as Record<string, unknown>;
-    expect(typeof cs, "complete_state is an object").toBe("object");
-    assertRequiredKeys(cs, spec.completeStateRequiredKeys, "state_plan.complete_state", "source-contract.json");
-    assertValueTypes(cs, spec.completeStateFieldTypes, "state_plan.complete_state", "source-contract.json");
-    const rab = sc.raw_artifact_access_boundary as Record<string, unknown>;
-    expect(typeof rab, "raw_artifact_access_boundary is an object").toBe("object");
-    assertRequiredKeys(
-      rab,
-      spec.rawArtifactAccessBoundaryRequiredKeys,
-      "state_plan.raw_artifact_access_boundary",
-      "source-contract.json",
-    );
-    assertValueTypes(
-      rab,
-      spec.rawArtifactAccessBoundaryFieldTypes,
-      "state_plan.raw_artifact_access_boundary",
-      "source-contract.json",
-    );
-    // The raw_artifact_reads_required default is false in normal operation.
-    expect(sc.raw_artifact_reads_required, "raw_artifact_reads_required default").toBe(false);
-  });
-});
-
-describe("state todo (no source_contract) (oracle parity)", () => {
-  function captureStateTodo(): { rc: number; payload: Record<string, unknown> } {
-    return runDispatch(["state", "todo", "--format", "json"]);
-  }
-
-  it("state todo does NOT emit a source_contract (documented exclusion)", () => {
-    const spec = SOURCE_CONTRACT_ORACLE.commands.state_todo;
-    const { rc, payload } = captureStateTodo();
-    expect(rc, "state todo rc").toBe(spec.exitCode);
-    expect("source_contract" in payload, "state todo has NO source_contract key").toBe(false);
-    // The standard state envelope is still emitted; pin the npm-cli-surface required keys.
-    for (const key of spec.requiredTopLevelKeys) {
-      expect(payload, `state todo has top-level key '${key}'`).toHaveProperty(key);
-    }
-  });
-});
-
 describe("state query --list-artifacts source_contract (oracle parity)", () => {
   function captureStateQueryListArtifacts(): { rc: number; payload: Record<string, unknown> } {
     return runDispatch(["state", "query", "--list-artifacts", "--format", "json"]);
@@ -563,11 +496,6 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
         readsRequiredKey: "raw_artifact_reads_required",
       },
       {
-        label: "state_plan",
-        payload: runDispatch(["state", "plan", "--format", "json"]).payload.source_contract as Record<string, unknown>,
-        readsRequiredKey: "raw_artifact_reads_required",
-      },
-      {
         label: "state_query_list_artifacts",
         payload: runDispatch(["state", "query", "--list-artifacts", "--format", "json"]).payload.source_contract as Record<string, unknown>,
         readsRequiredKey: "raw_artifact_reads_required_for_discovery",
@@ -596,11 +524,6 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
       {
         label: "prime_context.orkestrera",
         payload: readBespokeInPayload(runDispatch(["prime", "--context", "orchestrate", "--format", "json"]).payload),
-        policyKey: "raw_artifact_read_policy",
-      },
-      {
-        label: "state_plan",
-        payload: runDispatch(["state", "plan", "--format", "json"]).payload.source_contract as Record<string, unknown>,
         policyKey: "raw_artifact_read_policy",
       },
       {

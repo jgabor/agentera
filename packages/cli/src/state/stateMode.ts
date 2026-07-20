@@ -112,3 +112,14 @@ export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceR
   if (binding.mode === "entities") binding.publicationContext.close();
   return binding.mode;
 }
+
+export function requireEntityStateBinding(
+  projectRoot: string,
+  sourceRoot = resolveSourceRoot(),
+): Extract<StateModeBinding, { mode: "entities" }> {
+  const binding = detectStateModeBinding(projectRoot, sourceRoot);
+  if (binding.mode === "legacy") {
+    throw new Error("state writes require the durable entity-state marker; legacy aggregates are read-only migration input");
+  }
+  return binding;
+}

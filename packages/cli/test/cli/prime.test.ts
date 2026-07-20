@@ -15,7 +15,7 @@ import type { SchemaInfo } from "../../src/cli/appContext.js";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 describe("prime schema loading", () => {
-  it("keeps entity schemas internal and empty while preserving legacy loading and public output", () => {
+  it("keeps current-state schemas internal without marker-dependent fallback", () => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-schema-loading-"));
     const home = path.join(project, "home");
     const previousCwd = process.cwd();
@@ -37,11 +37,10 @@ describe("prime schema loading", () => {
       expect(entityPayload).not.toHaveProperty("schemas");
 
       fs.rmSync(path.join(project, ".agentera/state-mode.yaml"));
-      const legacyState = collectOrientationState({ home, env: process.env });
-      expect(Object.keys(legacyState.schemas).length).toBeGreaterThan(0);
-      expect(legacyState.schemas_dir).toBe(entityState.schemas_dir);
-      expect(buildOrientationJsonPayload({ ...entityState, schemas: legacyState.schemas }, "prime"))
-        .toEqual(entityPayload);
+      const markerAbsentDirectState = collectOrientationState({ home, env: process.env });
+      expect(markerAbsentDirectState.schemas).toEqual({});
+      expect(markerAbsentDirectState.schemas_dir).toBe(entityState.schemas_dir);
+      expect(buildOrientationJsonPayload(markerAbsentDirectState, "prime")).not.toHaveProperty("schemas");
     } finally {
       process.chdir(previousCwd);
       if (previousSourceRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
@@ -314,6 +313,82 @@ describe("cli prime", () => {
     expect(ctx.closeout_context.capability).toBe("document");
     expect(ctx.closeout_context.release_boundary).toBeTruthy();
     expect(ctx.closeout_context.version_policy).toBeTruthy();
+  });
+
+  it("derives audit and document decision pressure only from bounded decision entities", () => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-entity-decisions-"));
+    const previousCwd = process.cwd();
+    const previousSourceRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    const decisionDir = path.join(project, ".agentera/entities/decisions/decision");
+    const satisfactionDir = path.join(project, ".agentera/entities/decisions/decision_satisfaction");
+    fs.mkdirSync(decisionDir, { recursive: true });
+    fs.mkdirSync(satisfactionDir, { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.writeFileSync(path.join(decisionDir, "aaaaaaaaaa.yaml"), [
+      "id: aaaaaaaaaa",
+      "artifact: decisions",
+      "record:",
+      "  date: 2026-07-01",
+      "  question: Entity authority?",
+      "  context: Audit startup",
+      "  alternatives:",
+      "    - name: entities",
+      "      status: chosen",
+      "  choice: entities",
+      "  reasoning: Canonical ownership",
+      "  confidence: firm",
+      "",
+    ].join("\n"));
+    fs.writeFileSync(path.join(satisfactionDir, "bbbbbbbbbb.yaml"), [
+      "id: bbbbbbbbbb",
+      "artifact: decisions",
+      "record:",
+      "  decision: aaaaaaaaaa",
+      "  state: open",
+      "  review_needed: true",
+      "  review_due: 2026-07-01",
+      "",
+    ].join("\n"));
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
+    process.chdir(project);
+    try {
+      const context = (capability: "audit" | "document") => {
+        const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: capability, format: "json" }, io));
+        expect(rc).toBe(0);
+        return JSON.parse(out).capability_context.context;
+      };
+      const auditBefore = context("audit").evidence_context;
+      const documentBefore = context("document").closeout_context;
+      fs.writeFileSync(path.join(project, ".agentera/decisions.yaml"), [
+        "decisions:",
+        "  - number: 999",
+        "    question: HOSTILE LEGACY DECISION",
+        "    satisfaction:",
+        "      review_needed: true",
+        "      review_due: 1999-01-01",
+        "",
+      ].join("\n"));
+      const auditAfter = context("audit").evidence_context;
+      const documentAfter = context("document").closeout_context;
+      expect(auditAfter).toEqual(auditBefore);
+      expect(documentAfter).toEqual(documentBefore);
+      expect(auditAfter.decision_context).toMatchObject({
+        status: "available",
+        summary: { total_entries: 1, returned_entries: 1, omitted_entries: 0, authority: "canonical_entity_files" },
+      });
+      expect(auditAfter.decision_review_pressure).toMatchObject({
+        status: "review_required",
+        summary: { protected_active_decisions: 1, total_decisions: 1, omitted_decisions: 0 },
+        stale_protected_decisions: [{ label: "Decision aaaaaaaaaa", source_field: "satisfaction.review_due" }],
+        source_provenance: { command: "agentera state decisions list --limit 20 --format json" },
+      });
+      expect(JSON.stringify(auditAfter)).not.toContain("HOSTILE LEGACY DECISION");
+    } finally {
+      process.chdir(previousCwd);
+      if (previousSourceRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previousSourceRoot;
+      fs.rmSync(project, { recursive: true, force: true });
+    }
   });
 
   it("serves --context for all 12 capabilities (no gate)", () => {

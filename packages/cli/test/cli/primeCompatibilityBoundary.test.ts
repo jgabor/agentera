@@ -539,23 +539,6 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
       fs.mkdirSync(agenteraDir, { recursive: true });
       fs.writeFileSync(path.join(agenteraDir, "PROGRESS.md"), "# progress\n");
     }
-    function writeDocsMapping(): void {
-      const agenteraDir = path.join(process.cwd(), ".agentera");
-      fs.mkdirSync(agenteraDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(agenteraDir, "docs.yaml"),
-        "version: 1\nlast_audit: '2026-07-01'\nmapping: []\n",
-      );
-    }
-    function writeActiveObjective(): void {
-      const objectiveDir = path.join(process.cwd(), ".agentera", "optimize", "reliability");
-      fs.mkdirSync(objectiveDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(objectiveDir, "objective.yaml"),
-        "header:\n  title: reliability\n  status: active\nobjective:\n  measurement: p99 latency\n  target: '<70ms'\n",
-      );
-    }
-
     it("present v1 migration is emitted (detected=true) and state recovers it directly", () => {
       writeV1Artifact();
       const { payload } = runPrimePayload("agentera prime --format json");
@@ -564,26 +547,6 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
       expect(v1.detected, "v1_migration.detected is true when v1 artifacts present").toBe(true);
     });
 
-    it("present docs mapping is emitted (exists=true) and available.docs disambiguates", () => {
-      writeDocsMapping();
-      const { payload } = runPrimePayload("agentera prime --format json");
-      const docs = getPath(payload, "docs") as Record<string, unknown>;
-      expect(docs, "docs emitted when mapping exists").toBeDefined();
-      expect(docs.exists, "docs.exists is true when a docs mapping is present").toBe(true);
-      const presence = getPath(payload, "state_presence") as Record<string, unknown>;
-      expect((presence.available as Record<string, boolean>).docs, "state_presence.available.docs=true").toBe(true);
-    });
-
-    it("active objective is emitted (active=true) and state_presence.active.objective is true", () => {
-      writeActiveObjective();
-      const { payload } = runPrimePayload("agentera prime --format json");
-      const objective = getPath(payload, "objective") as Record<string, unknown>;
-      expect(objective, "objective emitted when active").toBeDefined();
-      expect(objective.active, "objective.active is true when an objective is running").toBe(true);
-      expect(objective.name, "active objective carries its name").toBe("reliability");
-      const presence = getPath(payload, "state_presence") as Record<string, unknown>;
-      expect((presence.active as Record<string, boolean>).objective, "state_presence.active.objective=true").toBe(true);
-    });
   });
 
   describe("Task 2 AC4: omitted diagnostic/writer detail has a named authoritative recovery command", () => {

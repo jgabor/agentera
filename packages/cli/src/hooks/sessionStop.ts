@@ -28,6 +28,7 @@ type Env = Record<string, string | undefined>;
 export { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES };
 
 import { TRACKED_ARTIFACT_IDS } from "../registries/artifactProtocolIds.js";
+import { parseProjectHookInput, type ParsedProjectHookInput } from "./projectHookInput.js";
 
 export { TRACKED_ARTIFACT_IDS as TRACKED_ARTIFACTS } from "../registries/artifactProtocolIds.js";
 
@@ -228,18 +229,13 @@ export interface HookRunOptions {
   env?: Env;
 }
 
-export function runSessionStop(rawStdin: string, opts: HookRunOptions = {}): number {
+export function runSessionStop(
+  input: string | ParsedProjectHookInput,
+  opts: HookRunOptions = {},
+): number {
   const env = opts.env ?? process.env;
-  let cwd = ".";
-  try {
-    if (rawStdin.trim()) {
-      const hookInput = JSON.parse(rawStdin);
-      cwd = hookInput.cwd ?? ".";
-    }
-  } catch {
-    cwd = ".";
-  }
-  const projectRoot = resolvePath(cwd);
+  const parsed = typeof input === "string" ? parseProjectHookInput("session-stop", input) : input;
+  const projectRoot = parsed.projectRoot;
   const overrides = loadArtifactOverrides(projectRoot);
   const modified = detectModifiedArtifacts(projectRoot, overrides);
   if (modified.length === 0) {

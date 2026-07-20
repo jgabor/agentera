@@ -65,12 +65,12 @@ describe("cli help", () => {
 
   it("documents executable plan and plan-task retrieval grammar", () => {
     const plan = printStateHelp("plan");
-    expect(plan).toContain("agentera state plan tasks list [--limit N]");
+    expect(plan).toContain("agentera state plan tasks list [PLAN_ID] [--limit N]");
     expect(plan).toContain("agentera state plan tasks get --id ID");
     expect(plan).toContain("agentera state plan get --id ID --format json");
     expect(plan).toContain("Plan and task reads use bare canonical IDs");
     expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
-    expect(plan).toContain("Task list defaults to the sole open plan");
+    expect(plan).toContain("Task list accepts an optional bare plan ID");
 
     const experiments = printStateHelp("experiments");
     expect(experiments).toContain("agentera state experiments list --objective ID");

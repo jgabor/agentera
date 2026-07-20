@@ -1,25 +1,16 @@
 import YAML from "yaml";
 
-import { emitStructured } from "../../structured.js";
 import { resolveSourceRoot } from "../../../core/sourceRoot.js";
-import {
-  type StateFailureBody,
-  retrieveStateEntry,
-  StateRetrievalFailure,
-} from "../../../state/directRetrieval.js";
-import { numberedArchiveArtifacts } from "../../../state/archiveDiscovery.js";
-import type { Io } from "../../dispatch/shared.js";
-import { detectStateMode } from "../../../state/stateMode.js";
-import { getProgressEntity } from "../../../state/progressEntities.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getDecisionEntity } from "../../../state/decisionEntities.js";
 import { getHealthEntity } from "../../../state/healthEntities.js";
 import { getObjectiveEntity } from "../../../state/objectiveExperimentEntities.js";
+import { getProgressEntity } from "../../../state/progressEntities.js";
 import { getTodoDocsEntity } from "../../../state/todoDocsEntities.js";
+import type { Io } from "../../dispatch/shared.js";
+import { emitStructured } from "../../structured.js";
 
-interface StateGetArgs {
-  number: number;
-  format: "text" | "json" | "yaml";
-}
+const ENTITY_GET_ARTIFACTS = ["progress", "decisions", "health", "objective", "todo", "docs"];
 
 function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -36,35 +27,7 @@ function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
   return "text";
 }
 
-function parseFailure(
-  className: StateFailureBody["error"]["class"],
-  message: string,
-  artifactId?: string,
-  entryNumber?: number,
-  validValues?: string[],
-): StateRetrievalFailure {
-  const syntax = `agentera state ${artifactId ?? "<artifact-id>"} get --number N --format json`;
-  const example = `agentera state ${artifactId ?? "progress"} get --number ${entryNumber ?? 1} --format json`;
-  return new StateRetrievalFailure(
-    {
-      schemaVersion: "agentera.stateFailure.v1",
-      status: "fail",
-      error: {
-        class: className,
-        message,
-        syntax,
-        example,
-        recovery: "Correct the command using the valid syntax and retry; no state was changed.",
-        ...(artifactId ? { artifact_id: artifactId } : {}),
-        ...(entryNumber ? { entry_number: entryNumber, stable_id: `${artifactId}:${entryNumber}` } : {}),
-        ...(validValues ? { valid_values: validValues } : {}),
-      },
-    },
-    2,
-  );
-}
-
-function entityParseFailure(message: string, id?: string, artifact = "progress"): StateRetrievalFailure {
+function failure(message: string, id?: string, artifact = "progress"): StateRetrievalFailure {
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
@@ -88,76 +51,19 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parseGetArgs(artifactId: string, argv: string[], sourceRoot: string): StateGetArgs {
-  const validValues = numberedArchiveArtifacts(sourceRoot);
-  if (!validValues.includes(artifactId)) {
-    throw parseFailure(
-      "unsupported_artifact",
-      `unsupported state artifact '${artifactId}'`,
-      artifactId,
-      undefined,
-      validValues,
-    );
-  }
-  let number: number | undefined;
-  let format: StateGetArgs["format"] = "text";
-  for (let index = 0; index < argv.length; ) {
-    const token = argv[index];
-    if (token !== "--number" && !token.startsWith("--number=") && token !== "--format" && !token.startsWith("--format=")) {
-      throw parseFailure("invalid_request", `unrecognized argument '${token}'`, artifactId, number);
-    }
-    const name = token.startsWith("--number") ? "--number" : "--format";
-    let parsed: { value: string; next: number };
-    try {
-      parsed = readValue(argv, index, name);
-    } catch (error) {
-      throw parseFailure("invalid_request", (error as Error).message, artifactId, number);
-    }
-    index = parsed.next;
-    if (name === "--number") {
-      if (number !== undefined) throw parseFailure("invalid_request", "--number may only be supplied once", artifactId, number);
-      if (!/^[1-9][0-9]*$/.test(parsed.value)) {
-        throw parseFailure("invalid_request", `argument --number: expected a positive canonical integer, got '${parsed.value}'`, artifactId);
-      }
-      const parsedNumber = Number(parsed.value);
-      if (!Number.isSafeInteger(parsedNumber) || parsedNumber < 1) {
-        throw parseFailure("invalid_request", `argument --number is outside the supported safe integer range: '${parsed.value}'`, artifactId);
-      }
-      number = parsedNumber;
-    } else {
-      if (parsed.value !== "text" && parsed.value !== "json" && parsed.value !== "yaml") {
-        throw parseFailure(
-          "invalid_request",
-          `argument --format: invalid choice: '${parsed.value}'`,
-          artifactId,
-          number,
-          ["text", "json", "yaml"],
-        );
-      }
-      format = parsed.value;
-    }
-  }
-  if (number === undefined) throw parseFailure("invalid_request", "the required selector --number N is missing", artifactId);
-  return { number, format };
-}
-
-function emitFailure(failure: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
-  const out = io.out ?? ((text: string) => process.stdout.write(text));
-  const err = io.err ?? ((text: string) => process.stderr.write(text));
+function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
   if (format === "json" || format === "yaml") {
-    emitStructured(failure.body, format, out);
+    emitStructured(error.body, format, io.out ?? ((text) => process.stdout.write(text)));
   } else {
-    const details = failure.body.error;
-    err(
-      [
-        `Error: ${details.message}`,
-        `Syntax: ${details.syntax}`,
-        `Example: ${details.example}`,
-        `Recovery: ${details.recovery}`,
-      ].join("\n") + "\n",
-    );
+    const detail = error.body.error;
+    (io.err ?? ((text) => process.stderr.write(text)))([
+      `Error: ${detail.message}`,
+      `Syntax: ${detail.syntax}`,
+      `Example: ${detail.example}`,
+      `Recovery: ${detail.recovery}`,
+    ].join("\n") + "\n");
   }
-  return failure.exitCode;
+  return error.exitCode;
 }
 
 export function runStateGet(
@@ -169,73 +75,46 @@ export function runStateGet(
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
   try {
-    if (["progress", "decisions", "health", "objective", "todo", "docs"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities") {
-      let id: string | undefined;
-      let entityFormat: "text" | "json" | "yaml" = "text";
-      for (let index = 0; index < argv.length; ) {
-        const token = argv[index];
-        if (token !== "--id" && !token.startsWith("--id=") && token !== "--format" && !token.startsWith("--format=")) {
-          throw entityParseFailure(`unrecognized argument '${token}'; entity-mode ${artifactId} retrieval requires --id ID`, id, artifactId);
-        }
-        const name = token.startsWith("--id") ? "--id" : "--format";
-        let parsed: { value: string; next: number };
-        try {
-          parsed = readValue(argv, index, name);
-        } catch (error) {
-          throw entityParseFailure((error as Error).message, id, artifactId);
-        }
-        index = parsed.next;
-        if (name === "--id") {
-          if (id !== undefined) throw entityParseFailure("--id may only be supplied once", id, artifactId);
-          id = parsed.value;
-        } else {
-          if (parsed.value !== "text" && parsed.value !== "json" && parsed.value !== "yaml") throw entityParseFailure(`invalid --format '${parsed.value}'`, id, artifactId);
-          entityFormat = parsed.value;
-        }
+    if (!ENTITY_GET_ARTIFACTS.includes(artifactId)) throw failure(`unsupported state artifact '${artifactId}'`, undefined, artifactId);
+    let id: string | undefined;
+    let entityFormat: "text" | "json" | "yaml" = "text";
+    let formatSupplied = false;
+    for (let index = 0; index < argv.length; ) {
+      const token = argv[index];
+      if (token !== "--id" && !token.startsWith("--id=") && token !== "--format" && !token.startsWith("--format=")) {
+        throw failure(`unrecognized argument '${token}'; entity-mode ${artifactId} retrieval requires --id ID`, id, artifactId);
       }
-      if (!id) throw entityParseFailure(`--id is required for entity-mode ${artifactId} retrieval`, id, artifactId);
-      const response = artifactId === "progress"
-        ? getProgressEntity(projectRoot, id, sourceRoot)
-        : artifactId === "decisions"
-          ? getDecisionEntity(projectRoot, id, sourceRoot)
-          : artifactId === "health"
-            ? getHealthEntity(projectRoot, id, sourceRoot)
-            : artifactId === "objective"
-              ? getObjectiveEntity(projectRoot, id, sourceRoot)
-              : getTodoDocsEntity(projectRoot, artifactId as "todo" | "docs", id, sourceRoot);
-      const output = io.out ?? ((text: string) => process.stdout.write(text));
-      if (entityFormat === "json" || entityFormat === "yaml") emitStructured(response, entityFormat, output);
-      else output(YAML.stringify(response));
-      return 0;
+      const name = token.startsWith("--id") ? "--id" : "--format";
+      let parsed: { value: string; next: number };
+      try { parsed = readValue(argv, index, name); }
+      catch (error) { throw failure((error as Error).message, id, artifactId); }
+      index = parsed.next;
+      if (name === "--id") {
+        if (id !== undefined) throw failure("--id may only be supplied once", id, artifactId);
+        id = parsed.value;
+      } else {
+        if (formatSupplied) throw failure("--format may only be supplied once", id, artifactId);
+        formatSupplied = true;
+        if (parsed.value !== "text" && parsed.value !== "json" && parsed.value !== "yaml") throw failure(`invalid --format '${parsed.value}'`, id, artifactId);
+        entityFormat = parsed.value;
+      }
     }
-    const args = parseGetArgs(artifactId, argv, sourceRoot);
-    const response = retrieveStateEntry(projectRoot, artifactId, args.number, { sourceRoot });
-    if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, io.out ?? ((text: string) => process.stdout.write(text)));
-    else {
-      const out = io.out ?? ((text: string) => process.stdout.write(text));
-      out(`command: ${response.command}\nstatus: ${response.status}\n`);
-      out(YAML.stringify(response.entry));
-    }
+    if (!id) throw failure(`--id is required for entity-mode ${artifactId} retrieval`, id, artifactId);
+    const response = artifactId === "progress"
+      ? getProgressEntity(projectRoot, id, sourceRoot)
+      : artifactId === "decisions"
+        ? getDecisionEntity(projectRoot, id, sourceRoot)
+        : artifactId === "health"
+          ? getHealthEntity(projectRoot, id, sourceRoot)
+          : artifactId === "objective"
+            ? getObjectiveEntity(projectRoot, id, sourceRoot)
+            : getTodoDocsEntity(projectRoot, artifactId as "todo" | "docs", id, sourceRoot);
+    const output = io.out ?? ((text: string) => process.stdout.write(text));
+    if (entityFormat === "json" || entityFormat === "yaml") emitStructured(response, entityFormat, output);
+    else output(YAML.stringify(response));
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) return emitFailure(error, format, io);
-    return emitFailure(
-      new StateRetrievalFailure(
-        {
-          schemaVersion: "agentera.stateFailure.v1",
-          status: "fail",
-          error: {
-            class: "unsupported_state",
-            message: (error as Error).message,
-            syntax: `agentera state ${artifactId} get --number N --format json`,
-            example: `agentera state ${artifactId} get --number 1 --format json`,
-            recovery: "Use a state format supported by the storage authority, then retry.",
-          },
-        },
-        1,
-      ),
-      format,
-      io,
-    );
+    return emitFailure(failure((error as Error).message, undefined, artifactId), format, io);
   }
 }

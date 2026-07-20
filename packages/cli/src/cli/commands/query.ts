@@ -11,7 +11,6 @@ import {
   SchemaInfo,
 } from "../appContext.js";
 import { validateAgentString } from "../argvalidate.js";
-import { loadDocsPathOverrides } from "../../registries/artifactRegistry.js";
 import { emitStructured } from "../structured.js";
 import {
   COMMAND_FILTERS,
@@ -31,7 +30,6 @@ import { displayFields, queryTodo, StateArgs } from "./state/index.js";
 import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { entityPublicRetrieval } from "../../state/retrievalAuthority.js";
-import { detectStateMode } from "../../state/stateMode.js";
 import { listProgressEntities } from "../../state/progressEntities.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -123,7 +121,6 @@ function artifactLocationRecord(
   name: string,
   info: SchemaInfo,
   schemasDir: string,
-  docsOverrides: Record<string, string>,
 ): JsonObject {
   const record = info.record ?? null;
   const schema = info.schema && typeof info.schema === "object" ? info.schema : {};
@@ -133,13 +130,9 @@ function artifactLocationRecord(
   const artifactId = record !== null ? record.artifactId : name;
   const displayName = record !== null ? record.displayName : String(meta.name ?? name);
   const defaultPath = record !== null ? record.defaultPath : String(info.path ?? "");
-  let mappedPath = defaultPath;
-  let resolutionSource = record !== null ? "registry default" : "schema metadata";
+  const mappedPath = defaultPath;
+  const resolutionSource = record !== null ? "registry default" : "schema metadata";
   const caveats: string[] = [];
-  if (record !== null && record.docsYamlCanOverridePath && record.displayName in docsOverrides) {
-    mappedPath = docsOverrides[record.displayName];
-    resolutionSource = ".agentera/docs.yaml mapping";
-  }
   const objectiveName = activeObjectiveName();
   let resolvedPath: string | null = null;
   if (record !== null && record.pathTemplate && mappedPath.includes("<name>") && !objectiveName) {
@@ -159,7 +152,7 @@ function artifactLocationRecord(
     display_path: resolvedPath !== null ? projectRelativeOrAbsolute(resolvedPath) : mappedPath,
     resolution_source: resolutionSource,
     exists: resolvedPath !== null ? fs.existsSync(resolvedPath) : false,
-    docs_yaml_can_override_path: record !== null ? record.docsYamlCanOverridePath : false,
+    docs_yaml_can_override_path: false,
     project_boundary_check: resolvedPath !== null ? "enforced" : "not_resolved",
   };
   return {
@@ -186,9 +179,8 @@ function fileExists(p: string): boolean {
 }
 
 export function artifactLocationContract(schemasDir: string, schemas: Record<string, SchemaInfo>): JsonObject {
-  const docsOverrides = loadDocsPathOverrides(process.cwd());
   const names = Object.keys(schemas).sort();
-  const records = names.map((name) => artifactLocationRecord(name, schemas[name], schemasDir, docsOverrides));
+  const records = names.map((name) => artifactLocationRecord(name, schemas[name], schemasDir));
   // cast: record.caveats is built from schema/registry path resolution (IO boundary)
   const caveats = records.flatMap((record) => record.caveats as string[]);
   return {
@@ -196,8 +188,7 @@ export function artifactLocationContract(schemasDir: string, schemas: Record<str
     status: dirExists(schemasDir) ? "complete" : "missing_schemas",
     source: {
       schemas_dir: schemasDir,
-      docs_yaml_path: path.join(process.cwd(), ".agentera", "docs.yaml"),
-      docs_yaml_overrides_loaded: Object.keys(docsOverrides).length > 0,
+      path_overrides: "disabled_for_entity_authority",
     },
     source_contract: {
       raw_artifact_reads_required_for_discovery: false,
@@ -288,35 +279,13 @@ function rejectEntityAggregateQuery(args: QueryArgs, name: string, query: string
 
 function queryLastPhase(args: QueryArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
-  const e = err(io);
   const format = args.format ?? "text";
-  if (detectStateMode(process.cwd()) === "entities") {
-    const response = listProgressEntities(process.cwd(), 1, {}, undefined, { format: format as "text" | "json" | "yaml" });
-    const entry = Array.isArray(response.entries) ? response.entries[0] as JsonObject | undefined : undefined;
-    const record = entry?.record as JsonObject | undefined;
-    const phase = String(record?.phase ?? "");
-    if (format === "text") { if (phase) o(`${phase}\n`); }
-    else emitStructured(entry ? { phase, id: entry.id, artifact: entry.artifact, provenance: entry.provenance, snapshot: response.snapshot, retrieval: { get: `agentera state progress get --id ${entry.id} --format json` } } : null, format, o);
-    return 0;
-  }
-  const info = schemas.progress;
-  if (!info) {
-    e(missingSchemaError("progress") + "\n");
-    return 1;
-  }
-  const data = loadArtifact(artifactPath(info, "progress"));
-  const entries = extractEntries(data);
-  if (entries.length === 0) {
-    if (format !== "text") emitStructured(null, format, o);
-    return 0;
-  }
-  const last = recentCycles(entries, 1)[0];
-  const phase = last.phase ?? "";
-  if (format !== "text") {
-    emitStructured({ phase }, format, o);
-    return 0;
-  }
-  if (phase) o(phase + "\n");
+  const response = listProgressEntities(process.cwd(), 1, {}, undefined, { format: format as "text" | "json" | "yaml" });
+  const entry = Array.isArray(response.entries) ? response.entries[0] as JsonObject | undefined : undefined;
+  const record = entry?.record as JsonObject | undefined;
+  const phase = String(record?.phase ?? "");
+  if (format === "text") { if (phase) o(`${phase}\n`); }
+  else emitStructured(entry ? { phase, id: entry.id, artifact: entry.artifact, provenance: entry.provenance, snapshot: response.snapshot, retrieval: { get: `agentera state progress get --id ${entry.id} --format json` } } : null, format, o);
   return 0;
 }
 
@@ -410,7 +379,7 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
   }
   const name = matchedSchemaName(schemas, query);
   if (name !== null) {
-    if (detectStateMode(process.cwd()) === "entities" && STATE_COMMAND_NAMES.has(name)) {
+    if (STATE_COMMAND_NAMES.has(name)) {
       return rejectEntityAggregateQuery(args, name, query, io);
     }
     return queryGeneric(args, schemas, name, io);

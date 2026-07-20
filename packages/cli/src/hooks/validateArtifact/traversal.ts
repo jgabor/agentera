@@ -30,7 +30,7 @@ function resolvePathRel(fp: string, cwd: string): string {
 }
 
 function docsPathOverrides(cwd: string): Record<string, string> {
-  const docsPath = path.join(cwd, ".agentera", "docs.yaml");
+  const docsPath = path.join(cwd, ARTIFACT_PROTOCOL_PATHS.docs);
   if (!fs.existsSync(docsPath) || !fs.statSync(docsPath).isFile()) return {};
   let data: JsonObject;
   try {

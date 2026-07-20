@@ -4,19 +4,11 @@ import path from "node:path";
 
 import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.js";
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
-import { loadSchemas, type SchemaInfo } from "../../appContext.js";
+import type { SchemaInfo } from "../../appContext.js";
 import {
-  activeObjectiveSummary,
   checkProfileStaleness,
-  decisionFollowUp,
-  decisionReviewAttention,
-  docsSummary,
-  healthSummary,
   issueCounts,
-  loadTodoItems,
   parseProfileHeaderDates,
-  planSummary,
-  progressSummary,
   registryArtifactPath,
   selectStatusReadiness,
   statePresence,
@@ -24,13 +16,11 @@ import {
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
 import { profileSignalsStatus } from "../../../analytics/profileSignals.js";
-import type { NextAction, OrientationState, ProfileSummary, ReadinessHint, StartupHistorySummary } from "../../contracts/orientationState.js";
+import type { NextAction, OrientationState, ProfileSummary, ReadinessHint } from "../../contracts/orientationState.js";
 import { statusBundleContext } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
 import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
-import { startupHistorySummary } from "../../../state/startupProjection.js";
-import { detectStateMode } from "../../../state/stateMode.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
@@ -41,9 +31,8 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const project = process.cwd();
   const { bundle, channel, install, successorAnnounced } = statusBundleContext(opts);
   const sourceRoot = bundle.sourceRoot;
-  const entityMode = detectStateMode(project, sourceRoot) === "entities";
   const schemasDir = path.join(sourceRoot, "skills", "agentera", "schemas", "artifacts");
-  const schemas = entityMode ? EMPTY_SCHEMAS : loadSchemas(schemasDir);
+  const schemas = EMPTY_SCHEMAS;
   let savedContext = false;
   try {
     savedContext = fs.readdirSync(path.join(project, ".agentera")).some((f) => f.endsWith(".yaml"));
@@ -77,22 +66,18 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   profileDict.bounded_signals = boundedSignals as unknown as ProfileSummary["bounded_signals"];
   const v1Artifacts = detectV1ArtifactPairs(project);
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
-  const entity = entityMode ? collectEntityOrientation(project, sourceRoot) : null;
-  const plan = entity?.plan ?? planSummary(schemas);
-  const docs = entity?.docs ?? docsSummary(schemas, { profileStatus });
-  const progress = entity?.progress ?? progressSummary(schemas);
-  const health = entity?.health ?? healthSummary(schemas, env);
-  const history: Record<string, StartupHistorySummary> = entity?.history ?? {};
-  if (!entityMode) for (const artifactId of ["progress", "decisions", "health"] as const) {
-    try { history[artifactId] = startupHistorySummary(project, artifactId, sourceRoot); }
-    catch (error) { history[artifactId] = { artifact: artifactId, status: "degraded", counts: {}, entries: [], source: { error: (error as Error).message }, retrieval: { list: `agentera state ${artifactId} list --limit 20 --format json`, get: `agentera state ${artifactId} get --id ID --format json` }, omission: { omitted: false, omitted_count: 0, omission_reason: "source_scan_failed", retrieval: {} } } as StartupHistorySummary; }
-  }
-  const objective = entity?.objective ?? activeObjectiveSummary();
+  const entity = collectEntityOrientation(project, sourceRoot);
+  const plan = entity.plan;
+  const docs = entity.docs;
+  const progress = entity.progress;
+  const health = entity.health;
+  const history = entity.history;
+  const objective = entity.objective;
   const presence = statePresence(plan, docs, progress, health, objective);
-  const todoItems = entity?.todoItems ?? loadTodoItems(schemas);
+  const todoItems = entity.todoItems;
   const counts = issueCounts(todoItems);
-  const decision = entity?.decision ?? decisionFollowUp(schemas);
-  const decisionAttention = entity?.decisionAttention ?? decisionReviewAttention(schemas);
+  const decision = entity.decision;
+  const decisionAttention = entity.decisionAttention;
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
   const sharedSkill = diagnoseCanonicalSkill(home);
   const projectIntegration = summarizeProjectIntegration({

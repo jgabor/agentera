@@ -2,21 +2,13 @@ import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
-import {
-  numberedArchiveArtifacts,
-  stateDurabilityContract,
-} from "../../state/archiveDiscovery.js";
-import {
-  StateRetrievalFailure,
-  type StateFailureClass,
-  type StateFailureBody,
-} from "../../state/directRetrieval.js";
+import { stateDurabilityContract } from "../../state/archiveDiscovery.js";
+import { StateRetrievalFailure } from "../../state/directRetrieval.js";
 import {
   inspectDurability,
   renderDurabilityText,
   type DurabilityArgs,
 } from "../../state/durability.js";
-import { detectStateMode } from "../../state/stateMode.js";
 import { entityArtifactValues } from "../../state/entityStorage.js";
 
 export function requestedDurabilityFormat(argv: string[]): "text" | "json" | "yaml" {
@@ -33,83 +25,21 @@ export function requestedDurabilityFormat(argv: string[]): "text" | "json" | "ya
   return "text";
 }
 
-export function durabilityFailure(
-  className: StateFailureClass,
-  message: string,
-  sourceRoot: string,
-  artifact?: string | null,
-  entryNumber?: number,
-  validValues?: string[],
-): StateRetrievalFailure {
-  const contract = stateDurabilityContract(sourceRoot);
-  const exampleArtifact = artifact && validValues?.includes(artifact) ? artifact : "progress";
-  const exampleNumber = entryNumber ?? 1;
-  const example = `agentera check durability --artifact ${exampleArtifact} --number ${exampleNumber} --format json`;
-  const body: StateFailureBody = {
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: className,
-      message,
-      syntax: contract.command,
-      example,
-      recovery: "Correct the command using the valid syntax and retry; no state was changed.",
-      ...(artifact ? { artifact_id: artifact } : {}),
-      ...(entryNumber !== undefined
-        ? { entry_number: entryNumber, stable_id: `${artifact ?? exampleArtifact}:${entryNumber}` }
-        : {}),
-      ...(validValues ? { valid_values: validValues } : {}),
-    },
-  };
-  return new StateRetrievalFailure(body, 2);
-}
-
 export function validateDurabilityArgs(args: DurabilityArgs, sourceRoot: string): void {
   const contract = stateDurabilityContract(sourceRoot);
-  const project = resolvePath(args.project ?? process.cwd());
-  const entityMode = detectStateMode(project, sourceRoot) === "entities";
-  const validArtifacts = entityMode ? entityArtifactValues(sourceRoot) : numberedArchiveArtifacts(sourceRoot);
-  if (entityMode) {
-    if (args.number !== undefined) throw entityDurabilityFailure("entity mode rejects --number; use --artifact ARTIFACT --id ID", args.artifact, args.id ?? undefined, validArtifacts);
-    if (!args.artifact || !args.id) throw entityDurabilityFailure("entity-mode durability requires --artifact ARTIFACT --id ID", args.artifact, args.id ?? undefined, validArtifacts);
-    if (!/^[a-z]{10}$/.test(args.id)) throw entityDurabilityFailure(`entity ID '${args.id}' must be ten lowercase letters`, args.artifact, args.id, validArtifacts);
-  } else if (args.id) {
-    throw durabilityFailure("invalid_request", "legacy durability does not accept --id; use --number N", sourceRoot, args.artifact, undefined, validArtifacts);
-  }
+  const validArtifacts = entityArtifactValues(sourceRoot);
+  if (args.number !== undefined) throw entityDurabilityFailure("entity mode rejects --number; use --artifact ARTIFACT --id ID", args.artifact, args.id ?? undefined, validArtifacts);
+  if (!args.artifact || !args.id) throw entityDurabilityFailure("entity-mode durability requires --artifact ARTIFACT --id ID", args.artifact, args.id ?? undefined, validArtifacts);
+  if (!/^[a-z]{10}$/.test(args.id)) throw entityDurabilityFailure(`entity ID '${args.id}' must be ten lowercase letters`, args.artifact, args.id, validArtifacts);
   if (args.artifact && !validArtifacts.includes(args.artifact)) {
-    if (entityMode) throw entityDurabilityFailure(`unsupported durability artifact '${args.artifact}'`, args.artifact, args.id ?? undefined, validArtifacts);
-    throw durabilityFailure(
-      "unsupported_artifact",
-      `unsupported durability artifact '${args.artifact}'`,
-      sourceRoot,
-      args.artifact,
-      undefined,
-      validArtifacts,
-    );
-  }
-  if (args.number !== undefined && !args.artifact) {
-    throw durabilityFailure(
-      "invalid_request",
-      "argument --number requires --artifact",
-      sourceRoot,
-      undefined,
-      args.number,
-      validArtifacts,
-    );
+    throw entityDurabilityFailure(`unsupported durability artifact '${args.artifact}'`, args.artifact, args.id ?? undefined, validArtifacts);
   }
   if (args.limit !== undefined && (args.limit < 1 || args.limit > contract.maximumLimit)) {
-    throw durabilityFailure(
-      "invalid_request",
-      `argument --limit must be between 1 and ${contract.maximumLimit}`,
-      sourceRoot,
-      args.artifact,
-      undefined,
-      validArtifacts,
-    );
+    throw entityDurabilityFailure(`argument --limit must be between 1 and ${contract.maximumLimit}`, args.artifact, args.id ?? undefined, validArtifacts);
   }
 }
 
-function entityDurabilityFailure(message: string, artifact?: string | null, id?: string, validValues?: string[]): StateRetrievalFailure {
+export function entityDurabilityFailure(message: string, artifact?: string | null, id?: string, validValues?: string[]): StateRetrievalFailure {
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",

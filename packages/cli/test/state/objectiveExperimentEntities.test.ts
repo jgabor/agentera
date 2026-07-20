@@ -130,6 +130,53 @@ describe("objective and experiment entity authority", () => {
     expect(capture(root, ["state", "experiments", "get", "--number", "0", "--objective", owner.id, "--format", "json"]).rc).toBe(2);
   });
 
+  it("bounds Unicode experiment pages and executes objective-bound omission recovery", () => {
+    const root = project();
+    const owner = createObjective(root, "unicode experiments");
+    const published: any[] = [];
+    for (let index = 0; index < 12; index += 1) {
+      const record = experiment(`${index}-${"😀漢字".repeat(450)}`, index === 0 ? "baseline" : "kept", `2026-07-${String(index + 1).padStart(2, "0")} 09:00`);
+      record.hypothesis = `Unicode hypothesis ${"é🙂漢字".repeat(450)}`;
+      published.push(publish(root, owner.id, record));
+    }
+    const expectedIds = new Set(published.map((entry) => entry.id));
+    const observed = new Set<string>();
+    let command = `agentera state experiments list --objective ${owner.id} --limit 100 --format json`;
+    let pageCount = 0;
+    do {
+      expect(command).toMatch(new RegExp(`^agentera state experiments list --objective ${owner.id} `));
+      const pageResult = capture(root, command.split(" ").slice(1));
+      expect(pageResult.rc, pageResult.err || pageResult.out).toBe(0);
+      expect(Buffer.byteLength(pageResult.out, "utf8")).toBeLessThanOrEqual(32_768);
+      const page = pageResult.json;
+      expect(page.filters.objective).toBe(owner.id);
+      for (const entry of page.entries) {
+        expect(entry.record.objective).toBe(owner.id);
+        expect(expectedIds.has(entry.id)).toBe(true);
+        expect(observed.has(entry.id)).toBe(false);
+        observed.add(entry.id);
+      }
+      if (page.omitted) {
+        expect(page.omission_reason).toMatch(/serialized_byte_budget|page_limit/);
+        expect(page.omitted_count).toBeGreaterThan(0);
+        expect(page.next_cursor).toEqual(expect.any(String));
+        expect(page.retrieval.get).toBe("agentera state experiments get --id ID --format json");
+        command = page.retrieval.continue;
+      } else command = "";
+      pageCount += 1;
+    } while (command);
+    expect(pageCount).toBeGreaterThan(1);
+    expect(observed).toEqual(expectedIds);
+
+    const exact = capture(root, ["state", "experiments", "get", "--id", published[0].id, "--objective", owner.id, "--format", "json"]);
+    expect(exact.rc, exact.err || exact.out).toBe(0);
+    expect(exact.json.entry).toMatchObject({
+      id: published[0].id,
+      artifact: "experiments",
+      record: { objective: owner.id, label: published[0].record.label, hypothesis: published[0].record.hypothesis },
+    });
+  });
+
   it("lists objectives and infers only one active objective for the compatibility query", () => {
     const root = project(); const first = createObjective(root, "first"); createObjective(root, "closed", "closed");
     expect(capture(root, ["state", "objective", "get", "--id", first.id, "--format", "json"]).json.entry.record.header.title).toBe("first");

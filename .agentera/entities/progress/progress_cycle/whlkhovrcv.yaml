@@ -1,0 +1,16 @@
+id: whlkhovrcv
+artifact: progress
+record:
+  timestamp: 2026-07-20 08:04
+  type: fix
+  phase: build
+  what: "Superseded progress zgpppabmoo after independent audit qesbsuazwq-audit-1: bound lifecycle migration gating and handlers to one parsed stdin project payload; replaced audit/document legacy decision aggregate reads with bounded entity history; repaired executable plan-task continuations; and expanded normal-authority guards plus Unicode, byte-bound, omission, relationship, and exact-recovery coverage for plan tasks and experiments."
+  context:
+    intent: Correct every concrete audit failure for plan task qesbsuazwq without weakening the earlier entity-authority cutover, removed-command precedence, migration compatibility, or failure provenance.
+    constraints: No commit, push, publish, tag, release, version, package, evaluation, TODO, decision-status, or task-status changes; retain v2 aggregate readers only under migration, upgrade, handoff, and fixtures.
+    unknowns: None after correction verification.
+    scope: Lifecycle hook dispatch/input binding; audit/document capability decision context; plan-task pagination continuations; current-authority consumer guard; plan-task and experiment specialized retrieval tests.
+  inspiration: Plan ntfgalrhbm task qesbsuazwq and failed independent review qesbsuazwq-audit-1; this record explicitly supersedes progress zgpppabmoo.
+  discovered: Lifecycle dispatch must parse hook stdin before project authority classification and pass that same parsed root onward; capability decision pressure also needed explicit degraded-state handling after switching to bounded entity history.
+  verified: "Focused correction suite: 12 files, 133 tests passed, including cross-cwd marker/payload hook binding, hostile decisions.yaml isolation, executable plan-task continuations, and plan-task/experiment Unicode omission recovery. Full CLI suite: 194 files, 2240 tests passed. pnpm -C packages/cli run typecheck and build passed. Built CLI check validate state passed with 1589 entities and 0 issues; capability-contract passed 2 checks; check compact passed with 0 over-limit artifacts; git diff --check passed."
+  next: Keep qesbsuazwq in progress for independent reevaluation; preserve qesbsuazwq-audit-1 failure provenance and do not commit, release, record another evaluation, or mutate task/TODO/decision status in this cycle.

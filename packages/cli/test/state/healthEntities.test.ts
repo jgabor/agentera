@@ -220,7 +220,7 @@ describe("health entity authority", () => {
     expect(() => getHealthEntity(root, "aaaaaaaaaa")).toThrow(/multiple canonical candidates|ambiguous/);
   });
 
-  it("rejects entity repair before effects while preserving legacy duplicate repair", () => {
+  it("rejects entity repair and marker-absent repair before effects", () => {
     const root = project(); append(root, "aaaaaaaaaa");
     const before = fs.readFileSync(path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml"), "utf8");
     expect(() => executeStateWrite(request(root, "repair", { number: 1, keep: "first" }))).toThrow(/immutable.*check validate state/i);
@@ -229,12 +229,13 @@ describe("health entity authority", () => {
 
     const legacy = project(false); const target = path.join(legacy, ".agentera/health.yaml"); fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, dumpYamlMapping({ audits: [{ number: 20, ...audit() }], archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"] }));
-    expect(executeStateWrite(request(legacy, "repair", { number: 14, keep: "first" }))).toMatchObject({ written: { removed_rows: 1 } });
+    expect(() => executeStateWrite(request(legacy, "repair", { number: 14, keep: "first" }))).toThrow(/durable entity-state marker/);
+    expect(fs.readFileSync(target, "utf8")).toBe(dumpYamlMapping({ audits: [{ number: 20, ...audit() }], archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"] }));
   });
 
-  it("keeps marker-absent append on unchanged legacy authority", () => {
-    const root = project(false); executeStateWrite(request(root, "append", audit()));
-    expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(true);
+  it("rejects marker-absent append without publishing an aggregate", () => {
+    const root = project(false); expect(() => executeStateWrite(request(root, "append", audit()))).toThrow(/durable entity-state marker/);
+    expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
   });
 

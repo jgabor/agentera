@@ -13,7 +13,7 @@ import { loadSchemas, discoverSchemasDir } from "../../appContext.js";
 import { StateArgs, Io, err } from "./shared.js";
 import { queryProgress } from "./progress.js";
 import { queryPlan } from "./plan.js";
-import { queryHealth, healthAuditNumber, latestHealthAudit } from "./health.js";
+import { queryHealth } from "./health.js";
 import { queryDocs } from "./docs.js";
 import { queryObjective } from "./objective.js";
 import { queryExperiments } from "./experiments.js";
@@ -40,8 +40,6 @@ export {
   queryExperiments,
   queryTodo,
   queryDecisions,
-  healthAuditNumber,
-  latestHealthAudit,
   normalizeSeverity,
   decisionContextEntry,
   decisionSatisfactionContext,

@@ -127,7 +127,7 @@ export function printStateHelp(sub?: string): string {
   if (sub === "plan") {
     return [
       "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
-      "       agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json",
+      "       agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
       "       agentera state plan tasks get --id ID --format json",
       "       agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] --format json",
       "       agentera state plan get --id ID --format json",
@@ -136,7 +136,7 @@ export function printStateHelp(sub?: string): string {
       "Plan and task reads use bare canonical IDs from entity list results.",
       "Plan list is bounded and cursor-paginated; plan get requires --id.",
       "Invalid historical archives remain non-fatal compatibility diagnostics unless selected.",
-      "Task list defaults to the sole open plan; task get requires --id.",
+      "Task list accepts an optional bare plan ID and otherwise defaults to the sole open plan; task get requires --id.",
       "Only the displayed bare-ID selectors are accepted.",
       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",

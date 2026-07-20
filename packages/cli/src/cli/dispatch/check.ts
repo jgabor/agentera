@@ -16,7 +16,7 @@ import { emitInvalidInput } from "../errors.js";
 import { StateWriteInputError } from "../../state/write/errors.js";
 import {
   cmdDurability,
-  durabilityFailure,
+  entityDurabilityFailure,
   emitDurabilityFailure,
   requestedDurabilityFormat,
   validateDurabilityArgs,
@@ -177,7 +177,7 @@ export function runDurability(argv: string[], io: Io, prog: string): number {
   const parsed = parseDurabilityArgs(argv);
   if ("error" in parsed) {
     return emitDurabilityFailure(
-      durabilityFailure("invalid_request", parsed.error, sourceRoot),
+      entityDurabilityFailure(parsed.error),
       format,
       io,
     );
@@ -188,7 +188,7 @@ export function runDurability(argv: string[], io: Io, prog: string): number {
   } catch (exc) {
     if (exc instanceof StateRetrievalFailure) return emitDurabilityFailure(exc, format, io);
     return emitDurabilityFailure(
-      durabilityFailure("unsupported_state", (exc as Error).message, sourceRoot, parsed.artifact, parsed.number),
+      entityDurabilityFailure((exc as Error).message, parsed.artifact, parsed.id ?? undefined),
       format,
       io,
     );

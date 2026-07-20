@@ -7,10 +7,9 @@ import { performance } from "node:perf_hooks";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { runStateList } from "../../src/cli/commands/state/list.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
-import { retrieveStateEntry } from "../../src/state/directRetrieval.js";
+import { retrieveStateEntry, StateRetrievalFailure } from "../../src/state/directRetrieval.js";
 import {
   boundStateList,
   listStateEntries,
@@ -88,29 +87,45 @@ function directList(root: string, limit: number, cursor?: string): StateListResp
   return listStateEntries(root, "progress", limit, {}, cursor, { sourceRoot });
 }
 
-function captureCli(root: string, args: string[]): { rc: number; out: string; err: string } {
-  const previous = process.cwd();
+function captureMigrationFixture(root: string, args: string[]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
-  process.chdir(root);
   try {
-    const rc = runStateList("progress", args, {
-      out: (text) => (out += text),
-      err: (text) => (err += text),
-    });
-    return { rc, out, err };
-  } finally {
-    process.chdir(previous);
+    let limit = 20;
+    let cursor: string | undefined;
+    let format: "text" | "json" | "yaml" = "text";
+    for (let index = 0; index < args.length; index += 2) {
+      const flag = args[index];
+      const value = args[index + 1];
+      if (flag === "--limit") limit = Number(value);
+      else if (flag === "--cursor") cursor = value;
+      else if (flag === "--format") format = value as typeof format;
+    }
+    const response = boundStateList(
+      listStateEntries(root, "progress", limit, {}, cursor, { sourceRoot }),
+      format,
+      sourceRoot,
+      root,
+    );
+    out = format === "json" ? JSON.stringify(response, null, 2) + "\n" : format === "yaml" ? YAML.stringify(response) : renderStateListText(response);
+    return { rc: 0, out, err };
+  } catch (error) {
+    if (!(error instanceof StateRetrievalFailure)) throw error;
+    const format = args[args.indexOf("--format") + 1] ?? "text";
+    if (format === "json") out = JSON.stringify(error.body, null, 2) + "\n";
+    else if (format === "yaml") out = YAML.stringify(error.body);
+    else err = `${error.body.error.message}\n`;
+    return { rc: error.exitCode, out, err };
   }
 }
 
-function cliPage(
+function migrationFixturePage(
   root: string,
   format: "json" | "yaml" | "text",
   limit: number,
   cursor?: string,
 ): { ids: string[]; nextCursor?: string } {
-  const result = captureCli(root, ["--limit", String(limit), ...(cursor ? ["--cursor", cursor] : []), "--format", format]);
+  const result = captureMigrationFixture(root, ["--limit", String(limit), ...(cursor ? ["--cursor", cursor] : []), "--format", format]);
   expect(result.rc).toBe(0);
   if (format === "json" || format === "yaml") {
     const response = (format === "json" ? JSON.parse(result.out) : YAML.parse(result.out)) as Record<string, unknown>;
@@ -145,7 +160,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
-describe("snapshot-stable state listing", () => {
+describe("read-only migration fixture state listing", () => {
   it("traverses pages in numeric order without duplicate or omitted identities", () => {
     const root = project();
     for (let number = 1; number <= 7; number += 1) archive(root, number);
@@ -180,7 +195,7 @@ describe("snapshot-stable state listing", () => {
           const cursors = new Set<string>();
           let cursor: string | undefined;
           for (let pageNumber = 0; pageNumber <= size + 1; pageNumber += 1) {
-            const page = cliPage(root, format, limit, cursor);
+            const page = migrationFixturePage(root, format, limit, cursor);
             ids.push(...page.ids);
             if (!page.nextCursor) break;
             expect(cursors.has(page.nextCursor)).toBe(false);
@@ -199,21 +214,21 @@ describe("snapshot-stable state listing", () => {
   it.each(["json", "yaml", "text"] as const)("returns the same bounded page for a repeated %s cursor", (format) => {
     const root = project();
     for (let number = 1; number <= 7; number += 1) writeArchiveFixture(root, number);
-    const first = cliPage(root, format, 2);
-    const repeated = cliPage(root, format, 2, first.nextCursor);
-    expect(repeated).toEqual(cliPage(root, format, 2, first.nextCursor));
+    const first = migrationFixturePage(root, format, 2);
+    const repeated = migrationFixturePage(root, format, 2, first.nextCursor);
+    expect(repeated).toEqual(migrationFixturePage(root, format, 2, first.nextCursor));
   });
 
   it("keeps an appended row out of an established bounded CLI snapshot", () => {
     const root = project();
     for (let number = 1; number <= 5; number += 1) writeArchiveFixture(root, number);
 
-    const first = cliPage(root, "json", 2);
+    const first = migrationFixturePage(root, "json", 2);
     writeArchiveFixture(root, 6);
     const continuedIds: string[] = [];
     let cursor = first.nextCursor;
     while (cursor) {
-      const page = cliPage(root, "json", 2, cursor);
+      const page = migrationFixturePage(root, "json", 2, cursor);
       continuedIds.push(...page.ids);
       cursor = page.nextCursor;
     }
@@ -250,7 +265,7 @@ describe("snapshot-stable state listing", () => {
     const tampered = `${token.slice(0, -1)}${token.endsWith("A") ? "B" : "A"}`;
     expect(() => directList(root, 1, tampered)).toThrow(/cursor signature is invalid|cursor is not a valid/);
     expect(() => listStateEntries(root, "progress", 1, { status: "feat" }, token, { sourceRoot })).toThrow(/bound to a different list/);
-    const tamperedCli = captureCli(root, ["--limit", "1", "--cursor", tampered, "--format", "json"]);
+    const tamperedCli = captureMigrationFixture(root, ["--limit", "1", "--cursor", tampered, "--format", "json"]);
     expect(tamperedCli.rc).toBe(2);
     expect(JSON.parse(tamperedCli.out)).toMatchObject({ error: { class: "cursor_invalid" } });
 
@@ -262,7 +277,7 @@ describe("snapshot-stable state listing", () => {
       expect((error as Error).message).toContain("no longer available");
     }
 
-    const invalid = captureCli(root, ["--cursor", "not-a-cursor", "--format", "json"]);
+    const invalid = captureMigrationFixture(root, ["--cursor", "not-a-cursor", "--format", "json"]);
     expect(invalid.rc).toBe(2);
     expect(JSON.parse(invalid.out)).toMatchObject({
       error: {
@@ -555,9 +570,9 @@ describe("snapshot-stable state listing", () => {
   it("publishes the CLI list contract and exact limit diagnostics", () => {
     const root = project();
     archive(root, 1);
-    const json = captureCli(root, ["--limit", "1", "--format", "json"]);
-    const yaml = captureCli(root, ["--limit", "1", "--format", "yaml"]);
-    const invalid = captureCli(root, ["--limit", "101", "--format", "json"]);
+    const json = captureMigrationFixture(root, ["--limit", "1", "--format", "json"]);
+    const yaml = captureMigrationFixture(root, ["--limit", "1", "--format", "yaml"]);
+    const invalid = captureMigrationFixture(root, ["--limit", "101", "--format", "json"]);
 
     expect(json.rc).toBe(0);
     expect(yaml.rc).toBe(0);

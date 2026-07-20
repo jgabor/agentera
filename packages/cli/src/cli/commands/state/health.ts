@@ -1,137 +1,20 @@
-/**
- * `state health` query (HEALTH.md / health.yaml audits).
- *
- * Surfaces the latest health audit by `number`, optionally filtered
- * by dimension (a grade key or a dimensions_detail.name substring).
- */
-
-import {
-  asList,
-  emitStateStructured,
-  extractEntries,
-  loadArtifact,
-  missingSchemaError,
-  sourceMetadata,
-  structuredState,
-} from "../../stateQuery.js";
-import { SchemaInfo, artifactPath } from "../../appContext.js";
-import { out, err, StateArgs, Io } from "./shared.js";
-import type { JsonObject } from "../../../core/jsonValue.js";
-import { detectStateMode } from "../../../state/stateMode.js";
-import { listHealthEntities } from "../../../state/healthEntities.js";
+import type { SchemaInfo } from "../../appContext.js";
 import { emitStructured } from "../../structured.js";
+import { listHealthEntities } from "../../../state/healthEntities.js";
 import YAML from "yaml";
+import { out, type Io, type StateArgs } from "./shared.js";
 
-export function healthAuditNumber(entry: JsonObject): number | null {
-  const number = entry.number;
-  if (typeof number === "number" && Number.isInteger(number)) return number;
-  if (typeof number === "string" && /^\d+$/.test(number)) return parseInt(number, 10);
-  return null;
-}
-
-export function latestHealthAudit(entries: JsonObject[]): JsonObject | null {
-  if (entries.length === 0) return null;
-  let best: JsonObject | null = null;
-  let bestNumber = -1;
-  for (const entry of entries) {
-    const number = healthAuditNumber(entry);
-    if (number === null) continue;
-    if (number > bestNumber) {
-      bestNumber = number;
-      best = entry;
-    }
-  }
-  return best !== null ? best : entries[entries.length - 1];
-}
-
-export function queryHealth(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
-  const o = out(io);
-  const e = err(io);
-  if (detectStateMode(process.cwd()) === "entities") {
-    const format = args.format ?? "text";
-    const response = listHealthEntities(process.cwd(), args.limit ?? 1, args.dimension ?? undefined, args.cursor ?? undefined, { format });
-    if (format === "text") o(YAML.stringify(response));
-    else emitStructured(response, format as "json" | "yaml", o);
-    return 0;
-  }
-  const info = schemas.health;
-  if (!info) {
-    e(missingSchemaError("health") + "\n");
-    return 1;
-  }
-  const p = artifactPath(info, "health");
-  const data = loadArtifact(p);
-  const entries = extractEntries(data);
-  const dimension = args.dimension ?? null;
-  let latest = latestHealthAudit(entries);
-  let latestEntries = latest ? [latest] : [];
-  if (dimension && latestEntries.length > 0) {
-    latest = latestEntries[0];
-    const dimLower = dimension.toLowerCase();
-    let matched = false;
-    const grades = latest.grades;
-    if (grades && typeof grades === "object" && !Array.isArray(grades)) {
-      matched = Object.keys(grades).some((gk) => String(gk).toLowerCase().includes(dimLower));
-    }
-    const details = latest.dimensions_detail;
-    if (Array.isArray(details)) {
-      matched =
-        matched ||
-        details.some((d) => d && typeof d === "object" && !Array.isArray(d) && String(d.name ?? "").toLowerCase().includes(dimLower));
-    }
-    if (!matched) latestEntries = [];
-  }
-
+export function queryHealth(args: StateArgs, _schemas: Record<string, SchemaInfo>, io: Io): number {
   const format = args.format ?? "text";
-  if (format !== "text") {
-    return emitStateStructured(
-      "health",
-      structuredState("health", latestEntries, sourceMetadata("health", p), {
-        filters: { dimension },
-        summary: { latest_only: true },
-      }),
-      format,
-      args.fields,
-      o,
-      e,
-    );
-  }
-  if (entries.length === 0) return 0;
-  latest = latestHealthAudit(entries);
-  if (!latest) return 0;
-  if (dimension) {
-    const dimLower = dimension.toLowerCase();
-    // cast: latest.grades is read from a parsed health.yaml audit entry (IO boundary)
-    const grades = (latest.grades ?? {}) as JsonObject;
-    let matched = false;
-    for (const [gk, gv] of Object.entries(grades)) {
-      if (String(gk).toLowerCase().includes(dimLower)) {
-        o(`${gk}: ${gv}\n`);
-        matched = true;
-      }
-    }
-    const details = asList(latest.dimensions_detail);
-    for (const d of details) {
-      const dn = String(d.name ?? "");
-      if (dn.toLowerCase().includes(dimLower)) {
-        const summary = d.summary ?? "";
-        if (summary) o(`  ${summary}\n`);
-        for (const f of asList(d.findings)) {
-          o(`  [${f.severity ?? ""}] ${f.heading ?? ""}\n`);
-        }
-        matched = true;
-      }
-    }
-    if (!matched) return 0;
-  } else {
-    const num = latest.number ?? "?";
-    const traj = latest.trajectory ?? "";
-    o(`Audit ${num}: ${traj}\n`);
-    // cast: latest.grades is read from a parsed health.yaml audit entry (IO boundary)
-    const grades = (latest.grades ?? {}) as JsonObject;
-    for (const [gk, gv] of Object.entries(grades)) {
-      o(`  ${gk}: ${gv}\n`);
-    }
-  }
+  const response = listHealthEntities(
+    process.cwd(),
+    args.limit ?? 1,
+    args.dimension ?? undefined,
+    args.cursor ?? undefined,
+    { format },
+  );
+  const output = out(io);
+  if (format === "text") output(YAML.stringify(response));
+  else emitStructured(response, format as "json" | "yaml", output);
   return 0;
 }

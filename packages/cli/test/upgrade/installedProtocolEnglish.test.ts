@@ -157,16 +157,6 @@ function seedV2ProtocolYaml(appBundleRoot: string): void {
   fs.writeFileSync(protocolPath, YAML.stringify(protocol));
 }
 
-function seedProgressPhase(project: string, phase: string): void {
-  fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
-  fs.writeFileSync(
-    path.join(project, ".agentera", "progress.yaml"),
-    YAML.stringify({
-      cycles: [{ number: 1, timestamp: "2026-06-27", type: "build", phase }],
-    }),
-  );
-}
-
 function capturePrime(
   env: Record<string, string>,
   opts: { context?: string } = {},
@@ -231,7 +221,6 @@ describe("installed protocol.yaml after app-content refresh (#28)", () => {
     const project = copyFixture("v2-yaml-project", path.join(tmp, "project-apply"));
     seedV2SkillMd(path.join(appHome, "app"));
     seedV2ProtocolYaml(path.join(appHome, "app"));
-    seedProgressPhase(project, "build");
 
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = dryRunMigration(ctx);
@@ -255,10 +244,6 @@ describe("installed protocol.yaml after app-content refresh (#28)", () => {
     process.chdir(project);
     try {
       const payload = capturePrime(appEnv);
-      const progress = payload.progress as Record<string, unknown>;
-      const latest = progress.latest as Record<string, unknown>;
-      expect(latest.phase).toBe("build");
-
       const buildPayload = capturePrime(appEnv, { context: "build" });
       const capabilityContext = buildPayload.capability_context as Record<string, unknown>;
       expect(capabilityContext.capability).toBe("build");

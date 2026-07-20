@@ -121,7 +121,7 @@ describe("independent source and generated-bundle command parity", () => {
       [["state", "progress", "get", "--id", "zzzzzzzzzz", "--format", "json"]],
       [["state", "plan", "list", "--format", "json"]],
       [["state", "plan", "get", "--id", "bbbbbbbbbb", "--format", "json"]],
-      [["state", "plan", "tasks", "list", "--plan-id", "bbbbbbbbbb", "--format", "json"]],
+      [["state", "plan", "tasks", "list", "bbbbbbbbbb", "--format", "json"]],
       [["state", "objective", "list", "--format", "json"]],
       [["state", "experiments", "list", "--objective", "dddddddddd", "--format", "json"]],
       [["state", "experiments", "get", "--objective", "dddddddddd", "--id", "eeeeeeeeee", "--format", "json"]],

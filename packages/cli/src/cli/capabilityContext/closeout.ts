@@ -158,6 +158,7 @@ export function documentCloseoutContext(
   docs: JsonObject,
   profile: JsonObject,
   bundle: JsonObject,
+  decisionHistory: JsonObject,
 ): JsonObject | null {
   if (capability !== "document") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
@@ -168,7 +169,7 @@ export function documentCloseoutContext(
   const progressEvidence = progressVerificationSummary(progress);
   const benchmarkEvidence = closeoutBenchmarkEvidence(docs);
   const releaseBoundary = closeoutReleaseBoundary(changelogBoundary, bundle);
-  const reviewPressure = decisionReviewPressure(schemas);
+  const reviewPressure = decisionReviewPressure(decisionHistory);
   const requiredState: Record<string, boolean> = {
     artifact_mappings: artifactMappings.status === "available",
     version_policy: versionPolicy.status === "available",
@@ -176,7 +177,7 @@ export function documentCloseoutContext(
     changelog_boundary: Boolean(changelogBoundary.boundary_present),
     progress_evidence: progressEvidence.status === "available",
     benchmark_evidence_or_caveat: benchmarkEvidence.status === "available" || ((benchmarkEvidence.caveats ?? []) as string[]).length > 0,
-    decision_review_pressure: reviewPressure.status !== "review_required",
+    decision_review_pressure: reviewPressure.status === "available",
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([k]) => k);
   let stateCaveats: string[] = [];

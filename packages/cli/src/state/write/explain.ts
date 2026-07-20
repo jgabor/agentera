@@ -13,7 +13,6 @@ import {
   type WriteVerb,
 } from "./operations.js";
 import { reject } from "./errors.js";
-import { detectStateMode } from "../stateMode.js";
 
 function liveDoc(p: string): Record<string, unknown> {
   if (!fs.existsSync(p)) return {};
@@ -29,7 +28,6 @@ export function buildExplain(
   projectRoot: string,
   requestedVerb?: string | null,
 ): Record<string, unknown> {
-  const stateMode = detectStateMode(projectRoot);
   const verb = (requestedVerb ?? defaultVerb(artifact)) as Exclude<WriteVerb, "explain">;
   const spec = operationSpec(artifact, verb);
   if (!spec) {
@@ -42,7 +40,6 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const markerAbsent = stateMode === "legacy";
   const entityArtifact = true;
   const resolved = entityArtifact
     ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "plan" ? ["append", "update", "set-status", "record-evaluation"].includes(verb) ? "plan_task" : "plan" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
@@ -91,10 +88,6 @@ export function buildExplain(
     command: `state ${artifact} explain`,
     requested_verb: verb,
     artifact,
-    ...(markerAbsent ? {
-      available_after_upgrade: true,
-      recovery: `Run npx -y agentera@next upgrade --channel development --project ${projectRoot} --yes before using this writer.`,
-    } : {}),
     path: path.relative(projectRoot, resolved) || resolved,
     verbs: verbsForArtifact(artifact),
     next,

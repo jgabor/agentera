@@ -6,7 +6,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { classifyResolvedRoot, resolveCandidate } from "../state/installRoot.js";
 import { buildDigest } from "./sessionStart.js";
 import { pyJsonInline } from "../core/pyjson.js";
-import { enforceCompletedEntityCutover } from "../cli/migrationRequired.js";
+import { parseProjectHookInput, type ParsedProjectHookInput } from "./projectHookInput.js";
 
 /**
  * Cursor sessionStart hook: export AGENTERA_HOME and preload session context.
@@ -67,31 +67,14 @@ export interface CursorSessionStartOptions {
   pluginRoot?: string;
 }
 
-export function runCursorSessionStart(rawStdin: string, opts: CursorSessionStartOptions = {}): number {
+export function runCursorSessionStart(
+  input: string | ParsedProjectHookInput,
+  opts: CursorSessionStartOptions = {},
+): number {
   const env = opts.env ?? process.env;
   const out = opts.out ?? ((text: string) => process.stdout.write(text + "\n"));
-  let cwd: string = ".";
-  if (rawStdin.trim()) {
-    let hookInput: unknown = {};
-    try {
-      hookInput = JSON.parse(rawStdin);
-    } catch {
-      hookInput = {};
-    }
-    if (hookInput && typeof hookInput === "object" && !Array.isArray(hookInput)) {
-      const hi = hookInput as Record<string, unknown>;
-      const roots = hi.workspace_roots;
-      cwd =
-        (hi.cwd as string) ||
-        (Array.isArray(roots) && roots.length > 0 ? String(roots[0]) : ".");
-    }
-  }
-
-  const projectRoot = resolvePath(String(cwd));
-  const cutoverFailure = enforceCompletedEntityCutover(projectRoot, "text", {
-    err: opts.err,
-  });
-  if (cutoverFailure !== null) return cutoverFailure;
+  const parsed = typeof input === "string" ? parseProjectHookInput("cursor-session-start", input) : input;
+  const projectRoot = parsed.projectRoot;
   const installRoot = resolveInstallRoot(projectRoot, { env, pluginRoot: opts.pluginRoot });
   const payload: Record<string, unknown> = {};
   if (installRoot !== null) {

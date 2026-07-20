@@ -155,9 +155,10 @@ describe("decision entity authority", () => {
     expect(() => getDecisionEntity(root, "aaaaaaaaaa")).toThrow(/competing revisions/);
   });
 
-  it("keeps marker-absent decisions on unchanged legacy authority", () => {
-    const root = project(false); executeStateWrite(request(root, "append", { question: "Legacy?", context: "No marker", alternatives: { chosen: "Legacy" }, choice: "Legacy", reasoning: "Cutover is explicit", confidence: "firm" }));
-    expect(fs.existsSync(path.join(root, ".agentera/decisions.yaml"))).toBe(true); expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+  it("rejects marker-absent decisions without publishing an aggregate", () => {
+    const root = project(false);
+    expect(() => executeStateWrite(request(root, "append", { question: "Legacy?", context: "No marker", alternatives: { chosen: "Legacy" }, choice: "Legacy", reasoning: "Cutover is explicit", confidence: "firm" }))).toThrow(/durable entity-state marker/);
+    expect(fs.existsSync(path.join(root, ".agentera/decisions.yaml"))).toBe(false); expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
   });
 
   it("lets Git merge unrelated bases and exposes competing same-decision ownership without data loss", () => {

@@ -27,6 +27,12 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
   const bundle = state.app as JsonObject;
   const todoItems = state.todo_items as unknown as Array<Record<string, string>>;
   const schemas = state.schemas as unknown as Record<string, SchemaInfo>;
+  const history = state.history && typeof state.history === "object" && !Array.isArray(state.history)
+    ? state.history as JsonObject
+    : {};
+  const decisionHistory = history.decisions && typeof history.decisions === "object" && !Array.isArray(history.decisions)
+    ? history.decisions as JsonObject
+    : {};
   return {
     orchestration_context: orchestrationContext(
       capabilityName,
@@ -47,6 +53,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       docs,
       profile,
       bundle,
+      decisionHistory,
     ),
     evidence_context: auditEvidenceContext(
       capabilityName,
@@ -58,6 +65,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       docs,
       profile,
       bundle,
+      decisionHistory,
     ),
     benchmark_context: optimizeBenchmarkContext(capabilityName),
     execution_context: buildExecutionContext(

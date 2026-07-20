@@ -5,7 +5,6 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { retrieveStateEntry, StateRetrievalFailure } from "../../src/state/directRetrieval.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 
@@ -68,18 +67,11 @@ function archive(root: string, artifact: Artifact, number: number): void {
   publishNumberedArchive(root, artifact, number, record(artifact, number), { sourceRoot });
 }
 
-function captureGet(artifact: string, args: string[]): { rc: number; out: string; err: string } {
-  let out = "";
-  let err = "";
-  const rc = runStateGet(artifact, args, { out: (text) => (out += text), err: (text) => (err += text) });
-  return { rc, out, err };
-}
-
 afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
-describe.each(artifacts)("direct stable-ID retrieval: %s", (artifact) => {
+describe.each(artifacts)("read-only migration fixture retrieval: %s", (artifact) => {
   it("returns an active full record with complete provenance", () => {
     const root = project();
     const current = record(artifact, 1);
@@ -371,54 +363,5 @@ describe.each(artifacts)("direct stable-ID retrieval: %s", (artifact) => {
       stable_id: `${artifact}:1`,
       details: { archive_path: archivePath, rejection: "invalid_envelope" },
     });
-  });
-});
-
-describe("state get CLI contract", () => {
-  it("keeps JSON and YAML success payloads structurally identical", () => {
-    const root = project();
-    archive(root, "progress", 1);
-    const previous = process.cwd();
-    process.chdir(root);
-    try {
-      const json = captureGet("progress", ["--number", "1", "--format", "json"]);
-      const yaml = captureGet("progress", ["--number", "1", "--format", "yaml"]);
-      const text = captureGet("progress", ["--number", "1"]);
-      expect(json.rc).toBe(0);
-      expect(yaml.rc).toBe(0);
-      expect(JSON.parse(json.out)).toEqual(YAML.parse(yaml.out));
-      expect(text.rc).toBe(0);
-      expect(text.out).toContain("provenance:");
-      expect(text.out).toContain("archive:");
-      expect(text.out).toContain("verified: true");
-      expect(text.out).toContain("current_projection:");
-      expect(text.out).toContain("representation: missing");
-      expect(text.out).toContain("record:");
-    } finally {
-      process.chdir(previous);
-    }
-  });
-
-  it.each(artifacts)("returns structured malformed-ID guidance for %s", (artifact) => {
-    const result = captureGet(artifact, ["--number", "01", "--format", "json"]);
-    const payload = JSON.parse(result.out);
-    expect(result.rc).toBe(2);
-    expect(payload).toMatchObject({
-      schemaVersion: "agentera.stateFailure.v1",
-      status: "fail",
-      error: {
-        class: "invalid_request",
-        syntax: `agentera state ${artifact} get --number N --format json`,
-        example: `agentera state ${artifact} get --number 1 --format json`,
-      },
-    });
-  });
-
-  it("keeps JSON and YAML failure envelopes structurally identical", () => {
-    const json = captureGet("progress", ["--number", "01", "--format", "json"]);
-    const yaml = captureGet("progress", ["--number", "01", "--format", "yaml"]);
-    expect(json.rc).toBe(2);
-    expect(yaml.rc).toBe(2);
-    expect(JSON.parse(json.out)).toEqual(YAML.parse(yaml.out));
   });
 });

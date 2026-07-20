@@ -23,6 +23,7 @@ import {
   runDoctor,
   runGate,
   runHook,
+  readStdin,
   runReport,
   runUpgrade,
   runUsage,
@@ -39,6 +40,7 @@ import {
   requestedMigrationFailureFormat,
   requiresCompletedEntityCutover,
 } from "../migrationRequired.js";
+import { isProjectBoundHook, parseProjectHookInput, type ParsedProjectHookInput } from "../../hooks/projectHookInput.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -65,9 +67,32 @@ export function main(argv: string[], io: Io = {}): number {
     });
   }
 
+  if (command && REMOVED_TOP_LEVEL_CORRECTIONS[command]) {
+    const canonical = REMOVED_TOP_LEVEL_CORRECTIONS[command];
+    const example = `agentera ${canonical} --format json`;
+    return emitInvalidInput(io, {
+      format: detectTopLevelFormat(rest),
+      body: {
+        class: "unsupported_target",
+        message: `unknown or not-yet-ported command: ${command}; this top-level name was removed, use '${canonical}'`,
+        valid_values: [canonical],
+        syntax: `agentera ${canonical} [options]`,
+        example,
+        recovery: `Run ${example}; no state was changed by the rejected command.`,
+      },
+    });
+  }
+
+  let projectHookInput: ParsedProjectHookInput | undefined;
+  const hookName = rest[0] ?? "";
+  if (command === "hook" && isProjectBoundHook(hookName)) {
+    const raw = io.stdin ? io.stdin() : readStdin();
+    projectHookInput = parseProjectHookInput(hookName, raw);
+  }
+
   if (requiresCompletedEntityCutover(args)) {
     const failure = enforceCompletedEntityCutover(
-      migrationProject(args),
+      projectHookInput?.projectRoot ?? migrationProject(args),
       requestedMigrationFailureFormat(args),
       io,
     );
@@ -114,7 +139,7 @@ export function main(argv: string[], io: Io = {}): number {
           },
         });
       }
-      return runHook(name, rest.slice(1), io);
+      return runHook(name, rest.slice(1), io, projectHookInput);
     }
     case "schema":
       return runSchema(rest, io, "agentera schema");
@@ -201,21 +226,6 @@ export function main(argv: string[], io: Io = {}): number {
     default:
       if (command && CAPABILITY_ROUTING_NAMES.includes(command)) {
         return runCapability(command, rest, io, `agentera ${command}`);
-      }
-      if (command && REMOVED_TOP_LEVEL_CORRECTIONS[command]) {
-        const canonical = REMOVED_TOP_LEVEL_CORRECTIONS[command];
-        const example = `agentera ${canonical} --format json`;
-        return emitInvalidInput(io, {
-          format: detectTopLevelFormat(rest),
-          body: {
-            class: "unsupported_target",
-            message: `unknown or not-yet-ported command: ${command}; this top-level name was removed, use '${canonical}'`,
-            valid_values: [canonical],
-            syntax: `agentera ${canonical} [options]`,
-            example,
-            recovery: `Run ${example}; no state was changed by the rejected command.`,
-          },
-        });
       }
       return emitInvalidInput(io, {
         format: "text",

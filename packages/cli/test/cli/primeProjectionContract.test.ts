@@ -22,7 +22,6 @@ import { boundStartupValue, startupHistorySummary } from "../../src/state/startu
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const CLI_DISPATCH_URL = pathToFileURL(path.join(REPO_ROOT, "packages/cli/dist/cli/dispatch.js")).href;
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
-const BUDGET_MANIFEST_PATH = path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml");
 
 type ColdMeasurement = {
   elapsedMs: number;
@@ -160,55 +159,8 @@ function authority(): Record<string, any> {
   return YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
 }
 
-function capabilityBudgets(): Record<string, { byte_budget: number; token_budget: number }> {
-  const manifest = YAML.parse(fs.readFileSync(BUDGET_MANIFEST_PATH, "utf8")) as Record<string, any>;
-  const surface = (manifest.surfaces as Array<Record<string, any>>).find(
-    (entry) => entry.id === "prime-capability-context",
-  );
-  return surface?.budget_by_capability as Record<string, { byte_budget: number; token_budget: number }>;
-}
-
 function writeArtifact(name: string, content: string): void {
   fs.writeFileSync(path.join(project, ".agentera", name), content);
-}
-
-function currentRows(collection: string, count: number, unicode: string): string {
-  const lines = [`${collection}:`];
-  for (let number = 1; number <= count; number += 1) {
-    lines.push(`  - number: ${number}`);
-    lines.push(`    status: ${number % 2 === 0 ? "complete" : "open"}`);
-    lines.push(`    timestamp: 2026-07-${String((number % 28) + 1).padStart(2, "0")} 00:00`);
-    lines.push(`    what: ${unicode}`);
-  }
-  return `${lines.join("\n")}\n`;
-}
-
-function largeFixture(count = 1000, archiveCount = 100): void {
-  const unicode = "😀漢字".repeat(4_000);
-  writeArtifact("progress.yaml", currentRows("cycles", count, unicode));
-  writeArtifact("decisions.yaml", currentRows("decisions", count, unicode));
-  writeArtifact("health.yaml", `${currentRows("audits", count, unicode)}\n`);
-  writeArtifact("plan.yaml", [
-    "header:",
-    "  title: Bounded fixture",
-    "  status: open",
-    "tasks:",
-    "  - number: 1",
-    "    name: Verify bounded startup",
-    "    status: pending",
-    "    depends_on: []",
-    "    acceptance: [bounded output]",
-    "",
-  ].join("\n"));
-  writeArtifact("docs.yaml", "mapping: []\nindex: []\n");
-  writeArtifact("TODO.md", "# TODO\n\n## normal\n");
-  for (const artifact of ["progress", "decisions", "health"]) {
-    const directory = path.join(project, ".agentera", "archive", artifact);
-    fs.mkdirSync(directory, { recursive: true });
-    for (let number = 1; number <= archiveCount; number += 1) {
-      fs.writeFileSync(path.join(directory, `${number}.yaml`), "broken: true\n");
-    }
-  }
 }
 
 function entityId(index: number): string {
@@ -487,61 +439,6 @@ describe("prime projection contract", () => {
     console.info("entity authority maxima", maxima);
   }, 120_000);
 
-  it("keeps large current projections and archive directories within authority budgets", () => {
-    largeFixture();
-    const limits = authority().budgets.startup;
-    const sourceLimits = limits.source_work.large;
-    const budgets = capabilityBudgets();
-    expect(Object.keys(budgets).sort()).toEqual([...CAPABILITY_NAMES].sort());
-    expect(
-      Object.values(budgets).every(
-        (budget) => budget.byte_budget <= limits.source_work.serialized_output.prime_capability_context_max_utf8_bytes,
-      ),
-    ).toBe(true);
-    const start = performance.now();
-    const beforeHeap = process.memoryUsage().heapUsed;
-    const state = collectOrientationState({ home, env: process.env });
-    const elapsed = performance.now() - start;
-    const heapDelta = Math.max(0, process.memoryUsage().heapUsed - beforeHeap);
-
-    expect(elapsed).toBeLessThanOrEqual(sourceLimits.max_latency_ms);
-    expect(heapDelta).toBeLessThanOrEqual(sourceLimits.max_heap_delta_bytes);
-    for (const history of Object.values(state.history)) {
-      const scan = (history.source as Record<string, any>).input_scan as Record<string, number>;
-      expect(scan.current_entries).toBeLessThanOrEqual(sourceLimits.max_current_entries);
-      expect(scan.archive_files).toBeLessThanOrEqual(sourceLimits.max_archive_files);
-      const counts = history.counts as Record<string, number>;
-      expect(counts.physical).toBe(1_100);
-      expect(counts.omitted).toBeGreaterThan(0);
-    }
-
-    const orientation = buildOrientationJsonPayload(state, "prime");
-    // The bare default emits a bounded decision brief (prime-briefing, 12000
-    // bytes); the full payload stays on --dashboard (prime-dashboard). The brief
-    // must fit even with accumulated plans/history/lifecycle findings.
-    const brief = capture((out, err) =>
-      emitPrime("prime", orientation, "json", undefined, out, err, { bareBrief: true }),
-    );
-    expect(brief.rc).toBe(0);
-    expect(Buffer.byteLength(brief.out, "utf8")).toBeLessThanOrEqual(limits.surfaces.prime_briefing.max_utf8_bytes);
-    expect((JSON.parse(brief.out).brief as Record<string, unknown>).status).toBe("ok");
-    // The full dashboard payload stays within its own larger budget.
-    expect(jsonBytes(orientation)).toBeLessThanOrEqual(limits.surfaces.prime_dashboard.max_utf8_bytes);
-    const sparse = capture((out, err) =>
-      emitPrime("prime", orientation, "json", "plan,progress,docs", out, err),
-    );
-    expect(sparse.rc).toBe(0);
-    expect(Buffer.byteLength(sparse.out, "utf8")).toBeLessThanOrEqual(limits.surfaces.prime_sparse.max_utf8_bytes);
-
-     for (const capability of CAPABILITY_NAMES) {
-       const payload = buildPrimeCapabilityContextPayload(state, capability);
-       const selected = capture((out, err) => emitPrime("prime", payload, "json", "capability_context", out, err));
-       expect(selected.rc, capability).toBe(0);
-       const capabilityBytes = Buffer.byteLength(selected.out, "utf8");
-       expect(capabilityBytes, capability).toBeLessThanOrEqual(budgets[capability]?.byte_budget ?? 0);
-     }
-  }, 30_000);
-
   it("reports omitted, unaddressable, ambiguous, and corrupt history with valid routes", () => {
     writeArtifact("decisions.yaml", [
       "decisions:",
@@ -624,18 +521,15 @@ describe("prime projection contract", () => {
   });
 
   it("preserves Unicode-safe identity, status, and continuation metadata", () => {
-    const unicode = "😀漢字".repeat(10_000);
-    writeArtifact("progress.yaml", [
-      "cycles:",
-      "  - number: 42",
-      "    status: open",
-      `    what: ${unicode}`,
-      "",
-    ].join("\n"));
-    writeArtifact("decisions.yaml", "decisions: []\n");
-    writeArtifact("health.yaml", "audits: []\n");
-    writeArtifact("plan.yaml", "header:\n  title: Unicode\n  status: open\ntasks: []\n");
-    writeArtifact("docs.yaml", "mapping: []\nindex: []\n");
+    const unicode = "😀漢字".repeat(1_000);
+    const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), dumpYamlMapping({
+      id: "aaaaaaaaaa",
+      artifact: "progress",
+      record: { timestamp: "2026-07-19 00:00", type: "test", phase: "audit", what: unicode, context: { intent: "Unicode safety" } },
+    }));
 
     const state = collectOrientationState({ home, env: process.env });
     const payload = buildOrientationJsonPayload(state, "prime");
@@ -645,9 +539,8 @@ describe("prime projection contract", () => {
     expect(hasUnpairedSurrogate(JSON.stringify(payload))).toBe(false);
     expect(payload.progress).toMatchObject({
       exists: true,
-      latest: { number: 42, status: "open" },
+      latest: { id: "aaaaaaaaaa", artifact: "progress" },
     });
-    expect((payload.history as any).progress.retrieval.get).toBe("agentera state progress get --number N --format json");
     // The bare default brief (not the full payload) must fit the briefing
     // budget; the full payload stays on --dashboard.
     const brief = briefOrientationPayload(payload);

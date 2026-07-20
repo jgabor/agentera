@@ -23,7 +23,6 @@ import {
   type OperationSpec,
   type WritableArtifact,
 } from "../../../state/write/index.js";
-import { detectStateMode } from "../../../state/stateMode.js";
 
 interface ParsedWrite {
   artifact: WritableArtifact;
@@ -159,7 +158,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     if (token === "--project" && argv[index + 1]) initialProjectRoot = path.resolve(argv[index + 1]);
     else if (token.startsWith("--project=")) initialProjectRoot = path.resolve(token.slice("--project=".length));
   }
-  const entityPlan = artifact === "plan" && detectStateMode(initialProjectRoot) === "entities" && verb !== "create";
+  const entityPlan = artifact === "plan" && verb !== "create";
   let fields = projectedFields(spec);
   if (entityPlan) {
     fields = fields.filter((field) => field.flag !== "--task").map((field) => field.flag === "--depends-on" ? { ...field, kind: "string_list" as const } : field);
@@ -277,7 +276,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
     });
-  if (artifact === "health" && verb === "repair" && detectStateMode(projectRoot) === "entities") {
+  if (artifact === "health" && verb === "repair") {
     invalid({
       class: "unsupported_target",
       message: "canonical health audit entities are immutable and cannot be row-deduplicated",
@@ -286,7 +285,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       recovery: "Validate malformed envelopes, duplicate IDs, or conflicting ownership and repair the canonical entity files without inventing audit history.",
     });
   }
-  const entityExperiments = artifact === "experiments" && detectStateMode(projectRoot) === "entities";
+  const entityExperiments = artifact === "experiments";
   for (const field of fields.filter((candidate) => candidate.required && !(entityExperiments && candidate.field === "number"))) {
     if (mappingPath(values, field.field) === undefined) {
       invalid({
@@ -299,42 +298,27 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     }
   }
   if (artifact === "decisions" && (verb === "update" || verb === "amend")) {
-    const entityMode = detectStateMode(projectRoot) === "entities";
     const id = mappingPath(values, "id");
     const number = mappingPath(values, "number");
-    if (entityMode && number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric decision selectors are unavailable in entity mode; use --id ID" });
-    if (!entityMode && id !== undefined) invalid({ class: "unrecognized_argument", message: "--id is unavailable in legacy mode; use --number N" });
-    if (entityMode && id === undefined) invalid({ class: "missing_argument", message: `--id is required for decisions ${verb} in entity mode` });
-    if (!entityMode && number === undefined) invalid({ class: "missing_argument", message: `--number is required for decisions ${verb} in legacy mode` });
-    if (entityMode && verb === "amend" && mappingPath(values, "base_sha256") === undefined)
+    if (number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric decision selectors are unavailable in entity mode; use --id ID" });
+    if (id === undefined) invalid({ class: "missing_argument", message: `--id is required for decisions ${verb} in entity mode` });
+    if (verb === "amend" && mappingPath(values, "base_sha256") === undefined)
       invalid({ class: "missing_argument", message: "--base-sha256 is required for decisions amend in entity mode" });
-    if (!entityMode && mappingPath(values, "base_sha256") !== undefined)
-      invalid({ class: "unrecognized_argument", message: "--base-sha256 applies only to entity-mode decisions" });
   }
   if (artifact === "plan" && verb !== "create") {
-    const entityMode = detectStateMode(projectRoot) === "entities";
     const taskVerb = ["update", "set-status", "record-evaluation"].includes(verb);
     const id = mappingPath(values, "id");
     const task = mappingPath(values, "task");
-    const plan = mappingPath(values, "plan");
-    if (entityMode && task !== undefined) invalid({ class: "unrecognized_argument", message: "numeric task selectors are unavailable in entity mode; use --id ID" });
-    if (!entityMode && (id !== undefined || plan !== undefined)) invalid({ class: "unrecognized_argument", message: "--id and --plan are unavailable in legacy mode; use the active plan and --task N" });
-    if (entityMode && taskVerb && id === undefined) invalid({ class: "missing_argument", message: `--id is required for plan ${verb} in entity mode` });
-    if (!entityMode && taskVerb && task === undefined) invalid({ class: "missing_argument", message: `--task is required for plan ${verb} in legacy mode` });
-    if (entityMode && force) invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plans; incomplete plans remain canonical history" });
+    if (task !== undefined) invalid({ class: "unrecognized_argument", message: "numeric task selectors are unavailable in entity mode; use --id ID" });
+    if (taskVerb && id === undefined) invalid({ class: "missing_argument", message: `--id is required for plan ${verb} in entity mode` });
+    if (force) invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plans; incomplete plans remain canonical history" });
   }
-  if (artifact === "plan" && verb === "create" && detectStateMode(projectRoot) === "entities" && force)
+  if (artifact === "plan" && verb === "create" && force)
     invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plan create because multiple open plans coexist" });
   if (artifact === "experiments" && verb === "publish") {
-    const entityMode = detectStateMode(projectRoot) === "entities";
     const number = mappingPath(values, "number");
-    const id = mappingPath(values, "id");
-    if (entityMode && number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric experiment selectors are unavailable in entity mode; omit --number" });
-    if (!entityMode && id !== undefined) invalid({ class: "unrecognized_argument", message: "--id replay selectors are unavailable in legacy mode; use --number N" });
-    if (!entityMode && number === undefined) invalid({ class: "missing_argument", message: "--number is required for experiments publish in legacy mode" });
+    if (number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric experiment selectors are unavailable in entity mode; omit --number" });
   }
-  if (artifact === "objective" && detectStateMode(projectRoot) !== "entities")
-    invalid({ class: "unsupported_target", message: "objective create and update require the durable entity-mode marker; legacy optimize harness paths remain unchanged" });
   if (
     verb === "update" &&
     artifact === "plan" &&

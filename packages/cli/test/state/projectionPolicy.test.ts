@@ -218,16 +218,26 @@ describe("lossless projection policy", () => {
 
   it("enforces the same budget at the state progress response surface", () => {
     const root = project();
-    const target = seedProgress(root, 12);
-    const entries = YAML.parse(fs.readFileSync(target, "utf8")).cycles as Array<Record<string, unknown>>;
-    for (const entry of entries) entry.what = "é🙂漢字".repeat(3000);
-    fs.writeFileSync(target, YAML.stringify({ cycles: entries }));
+    const directory = path.join(root, ".agentera/entities/progress/progress_cycle");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (let index = 0; index < 12; index += 1) {
+      const id = `${"a".repeat(9)}${String.fromCharCode(97 + index)}`;
+      fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
+        id,
+        artifact: "progress",
+        record: { timestamp: `2026-07-${String(index + 1).padStart(2, "0")} 10:00`, type: "test", phase: "build", what: "é🙂漢字".repeat(500), context: { intent: "budget" } },
+      }));
+    }
     let output = "";
-    const rc = queryProgress(
-      { command: "progress", format: "json", limit: 12 },
-      { progress: { path: target, record: undefined, schema: {}, fields: {} } },
-      { out: (text) => (output += text), err: () => {} },
-    );
+    const previous = process.cwd();
+    process.chdir(root);
+    let rc: number;
+    try {
+      rc = queryProgress({ command: "progress", format: "json", limit: 12 }, {}, { out: (text) => (output += text), err: () => {} });
+    } finally {
+      process.chdir(previous);
+    }
     const payload = JSON.parse(output) as Record<string, any>;
     expect(rc).toBe(0);
     expect(Buffer.byteLength(output, "utf8")).toBeLessThanOrEqual(32768);

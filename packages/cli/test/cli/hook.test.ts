@@ -22,6 +22,31 @@ function entityProject(): string {
   return root;
 }
 
+function markerAbsentProject(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hook-legacy-"));
+  roots.push(root);
+  fs.mkdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"), { recursive: true });
+  fs.writeFileSync(path.join(root, ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml"), "not: [valid\n");
+  return root;
+}
+
+function seedProgress(root: string, what: string): void {
+  const directory = path.join(root, ".agentera/entities/progress/progress_cycle");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), [
+    "id: aaaaaaaaaa",
+    "artifact: progress",
+    "record:",
+    "  timestamp: 2026-07-20 08:00",
+    "  type: test",
+    "  phase: build",
+    `  what: ${what}`,
+    "  context:",
+    "    intent: hook binding",
+    "",
+  ].join("\n"));
+}
+
 const DENY_PAYLOAD = JSON.stringify({
   runtime: "opencode",
   hook_event_name: "tool.execute.before",
@@ -100,15 +125,93 @@ describe("agentera hook dispatch", () => {
     }
   });
 
-  it("session-start reports migration required on a marker-absent minimal event", () => {
-    const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  it.each(["session-start", "session-stop", "cursor-session-start"] as const)(
+    "%s gates and handles the same payload-bound project after one stdin parse",
+    (name) => {
+      const payloadRoot = entityProject();
+      const cwd = markerAbsentProject();
+      seedProgress(payloadRoot, "payload-only-progress");
+      const previous = process.cwd();
+      let reads = 0;
+      let out = "";
+      let err = "";
+      process.chdir(cwd);
+      try {
+        const rc = main(["node", "agentera", "hook", name], {
+          stdin: () => { reads += 1; return JSON.stringify(name === "cursor-session-start" ? { workspace_roots: [payloadRoot] } : { cwd: payloadRoot }); },
+          out: (text) => { out += text; },
+          err: (text) => { err += text; },
+        });
+        expect(rc).toBe(0);
+      } finally {
+        process.chdir(previous);
+      }
+      expect(reads).toBe(1);
+      expect(err).toBe("");
+      if (name !== "session-stop") expect(out).toContain("payload-only-progress");
+      expect(out).not.toContain("migration_required");
+    },
+  );
+
+  it.each(["session-start", "session-stop", "cursor-session-start"] as const)(
+    "%s rejects a marker-absent payload project from marker-active cwd before reads or effects",
+    (name) => {
+      const cwd = entityProject();
+      const payloadRoot = markerAbsentProject();
+      const target = path.join(payloadRoot, ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml");
+      const before = fs.readFileSync(target);
+      const previous = process.cwd();
+      let reads = 0;
+      let out = "";
+      let err = "";
+      process.chdir(cwd);
+      try {
+        const rc = main(["node", "agentera", "hook", name], {
+          stdin: () => { reads += 1; return JSON.stringify(name === "cursor-session-start" ? { workspace_roots: [payloadRoot] } : { cwd: payloadRoot }); },
+          out: (text) => { out += text; },
+          err: (text) => { err += text; },
+        });
+        expect(rc).toBe(1);
+      } finally {
+        process.chdir(previous);
+      }
+      expect(reads).toBe(1);
+      expect(out).toBe("");
+      expect(err).toContain("completed entity-state cutover");
+      expect(err).toContain(payloadRoot);
+      expect(fs.readFileSync(target)).toEqual(before);
+    },
+  );
+
+  it.each(["session-start", "session-stop", "cursor-session-start"] as const)(
+    "%s preserves missing and malformed payload behavior without duplicate stdin reads",
+    (name) => {
+      const cwd = entityProject();
+      const previous = process.cwd();
+      process.chdir(cwd);
+      const invoke = (raw: string) => {
+        let reads = 0;
+        let out = "";
+        let err = "";
+        const rc = main(["node", "agentera", "hook", name], {
+          stdin: () => { reads += 1; return raw; },
+          out: (text) => { out += text; },
+          err: (text) => { err += text; },
+        });
+        return { rc, reads, out, err };
+      };
     try {
-      const rc = main(["node", "agentera", "hook", "session-start"], { stdin: () => "{}" });
-      expect(rc).toBe(1);
+        const missing = invoke("");
+        const malformed = invoke("{not-json");
+        expect(missing).toEqual(malformed);
+        expect(missing.rc).toBe(0);
+        expect(missing.reads).toBe(1);
+        expect(missing.err).toBe("");
     } finally {
-      spy.mockRestore();
+        process.chdir(previous);
     }
-  });
+    },
+  );
 });
 
 describe("agentera usage dispatch", () => {

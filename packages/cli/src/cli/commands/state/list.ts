@@ -1,15 +1,8 @@
 import { resolveSourceRoot } from "../../../core/sourceRoot.js";
-import {
-  listStateEntries,
-  boundStateList,
-  renderStateListText,
-  type StateListFilters,
-} from "../../../state/listRetrieval.js";
-import { numberedArchiveArtifacts } from "../../../state/archiveDiscovery.js";
+import type { StateListFilters } from "../../../state/listRetrieval.js";
 import { StateRetrievalFailure, type StateFailureBody } from "../../../state/directRetrieval.js";
 import { emitStructured } from "../../structured.js";
 import type { Io } from "../../dispatch/shared.js";
-import { detectStateMode } from "../../../state/stateMode.js";
 import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
@@ -24,6 +17,8 @@ interface StateListArgs {
   format: "text" | "json" | "yaml";
   filters: StateListFilters;
 }
+
+const ENTITY_LIST_ARTIFACTS = ["progress", "decisions", "health", "objective", "todo", "docs"];
 
 function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -77,8 +72,8 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parseListArgs(artifactId: string, argv: string[], sourceRoot: string, entityArtifact = false): StateListArgs {
-  const validValues = entityArtifact ? [...numberedArchiveArtifacts(sourceRoot), "objective", "todo", "docs"] : numberedArchiveArtifacts(sourceRoot);
+function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
+  const validValues = ENTITY_LIST_ARTIFACTS;
   if (!validValues.includes(artifactId)) {
     throw failure("unsupported_artifact", artifactId, `unsupported state artifact '${artifactId}'`, undefined, validValues);
   }
@@ -153,44 +148,27 @@ function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "ya
 export function runStateList(artifactId: string, argv: string[], io: Io, projectRoot = process.cwd()): number {
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
-  let entityArtifact = false;
   try {
-    entityArtifact = ["progress", "decisions", "health", "objective", "todo", "docs"].includes(artifactId) && detectStateMode(projectRoot, sourceRoot) === "entities";
-    const args = parseListArgs(artifactId, argv, sourceRoot, entityArtifact);
-    if (entityArtifact) {
-      const response = artifactId === "progress"
-        ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format })
-        : artifactId === "decisions"
-          ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format })
-          : artifactId === "health"
-            ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format })
-            : artifactId === "objective"
-              ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format })
-              : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format });
-      const output = io.out ?? ((text: string) => process.stdout.write(text));
-      if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
-      else emitStructured(response, args.format, output);
-      return 0;
-    }
-    const response = boundStateList(
-      listStateEntries(projectRoot, artifactId, args.limit, args.filters, args.cursor, { sourceRoot }),
-      args.format === "text" ? "text" : args.format,
-      sourceRoot,
-      projectRoot,
-    );
-    const out = io.out ?? ((text: string) => process.stdout.write(text));
-    if (args.format === "text") out(renderStateListText(response));
-    else emitStructured(response, args.format, out);
+    const args = parseListArgs(artifactId, argv);
+    const response = artifactId === "progress"
+      ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format })
+      : artifactId === "decisions"
+        ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format })
+        : artifactId === "health"
+          ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format })
+          : artifactId === "objective"
+            ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format })
+            : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format });
+    const output = io.out ?? ((text: string) => process.stdout.write(text));
+    if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
+    else emitStructured(response, args.format, output);
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) {
-      if (entityArtifact) {
-        const body = structuredClone(error.body);
-        delete body.error.artifact_id;
-        body.error.artifact = artifactId;
-        return emitFailure(new StateRetrievalFailure(body, error.exitCode), format, io);
-      }
-      return emitFailure(error, format, io);
+      const body = structuredClone(error.body);
+      delete body.error.artifact_id;
+      body.error.artifact = artifactId;
+      return emitFailure(new StateRetrievalFailure(body, error.exitCode), format, io);
     }
     return emitFailure(
       new StateRetrievalFailure(

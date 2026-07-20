@@ -1,0 +1,23 @@
+id: wtoanuxcsl
+artifact: plan
+record:
+  plan: ntfgalrhbm
+  name: Close archived task pagination and aggregate consumer guards
+  status: complete
+  depends_on:
+    - igibjjvytl
+  acceptance:
+    - GIVEN a plan-task cursor for an active or archived plan WHEN its emitted continuation runs unchanged THEN the cursor-bound plan identity is recovered before selection and the next page succeeds or reports only a genuine snapshot change.
+    - GIVEN plan-task selector diagnostics WHEN invalid input is supplied THEN every suggested correction uses runnable documented syntax and never the rejected --plan-id flag.
+    - GIVEN production TypeScript WHEN aggregate consumers are inventoried THEN all direct legacy reader calls and aggregate path constructions, including path.join segment forms, are rejected outside a narrow explicit migration/handoff allowlist.
+    - GIVEN the complete entity-only routing candidate WHEN reverified THEN hook binding, canonical decision contexts, correction precedence, writers, selectors, migration routes, and all gates remain intact.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Active and archived continuations, cursor errors, syntax, cumulative routing, full suite, and scope passed. currentAuthorityConsumers catches path.join aggregate paths but scans contiguous/template aggregate paths only inside selected call bodies; standalone '.agentera/decisions.yaml' and  probes escape. Extend aggregate construction scanning to whole production files and self-test both forms while retaining the exact three-owner migration allowlist.
+    provenance:
+      attempt_id: wtoanuxcsl-audit-2
+      source: "independent review ses_08192e226ffesUn08PeEHSDI6S: closed aggregate scanner and complete entity-only routing candidate passed"
+      recorded_at: 2026-07-20 09:35
+      writer_command: agentera state plan record-evaluation

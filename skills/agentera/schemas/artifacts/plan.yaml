@@ -61,7 +61,7 @@ ENTITY_AUTHORITY:
   retrieval:
     list: agentera state plan list --format json
     get: agentera state plan get --id ID --format json
-    tasks_list: agentera state plan tasks list --plan-id ID --format json
+    tasks_list: agentera state plan tasks list [PLAN_ID] --format json
     task_get: agentera state plan tasks get --id ID --format json
   mutation: agentera state plan explain --format json
   direct_file_edits: forbidden

@@ -245,7 +245,19 @@ describe("status capability self-contained startup", () => {
     expect(freshDashboard.project_integration).toBeDefined();
     expect(statusState(fresh.payload).state_presence.any_active).toBe(false);
 
-    writeProjectFile(".agentera/progress.yaml", "cycles:\n  - number: 1\n    timestamp: 2026-07-16\n    what: returning\n\n");
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    writeProjectFile(".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml", [
+      "id: aaaaaaaaaa",
+      "artifact: progress",
+      "record:",
+      "  timestamp: 2026-07-16 00:00",
+      "  type: test",
+      "  phase: build",
+      "  what: returning",
+      "  context:",
+      "    intent: exercise returning status",
+      "",
+    ].join("\n"));
     const returning = runStatus();
     const returningDashboard = renderStatusDashboard(statusState(returning.payload));
     expect(returningDashboard.mode).toBe("returning");

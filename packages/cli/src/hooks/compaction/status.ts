@@ -40,10 +40,11 @@ import {
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
 import type { ProjectionRecoveryReport } from "../../state/archiveRecovery.js";
 import { loadProjectionPolicy } from "../../state/projectionPolicy.js";
+import { ARTIFACT_PROTOCOL_PATHS } from "../../registries/artifactProtocolIds.js";
 
 function artifactPaths(projectRoot: string): Record<string, string> {
   const paths: Record<string, string> = { ...DEFAULT_ARTIFACT_PATHS };
-  const docsPath = path.join(projectRoot, ".agentera", "docs.yaml");
+  const docsPath = path.join(projectRoot, ARTIFACT_PROTOCOL_PATHS.docs);
   if (fs.existsSync(docsPath)) {
     Object.assign(paths, parseDocsYamlMapping(fs.readFileSync(docsPath, "utf8")));
   }

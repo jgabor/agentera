@@ -2,15 +2,8 @@ import fs from "node:fs";
 import type { SchemaInfo } from "../appContext.js";
 import { artifactPath } from "../appContext.js";
 import { asList } from "../stateQuery.js";
-import {
-  decisionSourceContract,
-} from "../commands/state/index.js";
 import { capabilityContext } from "./contract.js";
 import { docsConventions, entryStatus, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
-import { startupDecisionEntries } from "../orientation.js";
-import { resolveSourceRoot } from "../../core/sourceRoot.js";
-import { scanStartupArtifact } from "../../state/startupProjection.js";
-import { sourceMetadata } from "../stateQuery.js";
 import { selectEvidenceTarget } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
@@ -206,32 +199,49 @@ export function residualRiskEntry(category: string, status: string, message: str
   return { category, status, message, source_provenance: sp };
 }
 
-export function decisionContextRisk(schemas: Record<string, SchemaInfo>): JsonObject {
-  const info: SchemaInfo = schemas.decisions ?? { path: ".agentera/decisions.yaml", record: undefined, schema: {}, fields: {} };
-  const p = artifactPath(info, "decisions");
-  const source = sourceMetadata("decisions", p);
-  const entries = startupDecisionEntries(schemas);
-  if (!source.exists) {
+function decisionHistoryEntries(history: JsonObject): JsonObject[] {
+  return asList(history.entries).flatMap((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+    const entry = value as JsonObject;
+    const record = entry.record;
+    if (!record || typeof record !== "object" || Array.isArray(record)) return [];
+    return [{ ...record as JsonObject, id: entry.id ?? null, artifact: entry.artifact ?? "decisions", retrieval: entry.retrieval ?? null }];
+  });
+}
+
+function decisionHistoryCounts(history: JsonObject): JsonObject {
+  return history.counts && typeof history.counts === "object" && !Array.isArray(history.counts)
+    ? history.counts as JsonObject
+    : {};
+}
+
+export function decisionContextRisk(history: JsonObject): JsonObject {
+  const entries = decisionHistoryEntries(history);
+  const counts = decisionHistoryCounts(history);
+  if (history.command !== "state decisions list") {
     return {
       status: "unavailable",
-       source_provenance: sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions),
+      source_provenance: sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions),
       summary: null,
       caveats: ["Decision state is unavailable in CLI evidence context."],
     };
   }
-  const contract = decisionSourceContract(source, entries, {});
-  const completeness =
-    contract.completeness && typeof contract.completeness === "object" && !Array.isArray(contract.completeness)
-      ? contract.completeness
-      : {};
-  const compacted = completeness.compacted_entries;
-  const missing = completeness.entries_with_missing_fields;
-  const caveatsSource = compacted || missing ? (contract.caveats ?? []) : [];
-  const caveats = Array.isArray(caveatsSource) ? caveatsSource : [];
+  const omitted = Number(counts.remaining ?? history.omitted_count ?? 0);
+  const missing = entries.filter((entry) => !entry.id || !entry.date || !entry.question || !entry.choice).length;
+  const caveats = uniqueList([
+    ...(omitted > 0 ? [`Decision startup history omits ${omitted} decision(s); run ${STATE_FAMILY_LIST_COMMANDS.decisions} for the next bounded page.`] : []),
+    ...(missing > 0 ? [`${missing} bounded decision entr${missing === 1 ? "y is" : "ies are"} missing review context fields.`] : []),
+  ]);
   return {
     status: caveats.length > 0 ? "caveated" : "available",
-     source_provenance: sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions),
-    summary: completeness,
+    source_provenance: sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions),
+    summary: {
+      total_entries: Number(counts.total ?? entries.length),
+      returned_entries: Number(counts.returned ?? entries.length),
+      omitted_entries: omitted,
+      entries_with_missing_fields: missing,
+      authority: "canonical_entity_files",
+    },
     caveats,
   };
 }
@@ -258,6 +268,8 @@ export function decisionReviewDue(entry: JsonObject): [string | null, number | n
 }
 
 export function decisionLabel(entry: JsonObject): string {
+  const id = entry.id;
+  if (typeof id === "string" && id) return `Decision ${id}`;
   const number = entry.number;
   if (number !== null && number !== undefined && number !== "") return `Decision ${number}`;
   const summary = entry.summary;
@@ -270,28 +282,21 @@ export function isoFromUtcMs(utc: number): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
-export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): JsonObject {
-  const info: SchemaInfo = schemas.decisions ?? { path: ".agentera/decisions.yaml", record: undefined, schema: {}, fields: {} };
-  const p = artifactPath(info, "decisions");
-  const source = sourceMetadata("decisions", p);
-   const sp = sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
-  if (!source.exists) {
+export function decisionReviewPressure(history: JsonObject): JsonObject {
+  const sp = sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
+  if (history.command !== "state decisions list") {
     return { status: "unavailable", source_provenance: sp, summary: null, stale_protected_decisions: [], caveats: [] };
   }
-  const scans = scanStartupArtifact(process.cwd(), "decisions", resolveSourceRoot());
-  const activeEntries = scans.active.entries.map((entry) => ({
-    ...entry.fields,
-    ...(entry.identity.number !== null && entry.fields.number === undefined ? { number: entry.identity.number } : {}),
-  }));
-  const archiveEntries = scans.archive.entries.map((entry) => ({
-    ...entry.fields,
-    ...(entry.identity.number !== null && entry.fields.number === undefined ? { number: entry.identity.number } : {}),
-  }));
+  const activeEntries = decisionHistoryEntries(history);
+  const counts = decisionHistoryCounts(history);
+  const omitted = Number(counts.remaining ?? history.omitted_count ?? 0);
   const protectedActive = activeEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
-  const protectedArchive = archiveEntries.filter((e: JsonObject) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed);
+  const protectedArchive: JsonObject[] = [];
   const today = todayUtcMs();
   const stale: JsonObject[] = [];
-  let caveats: string[] = [];
+  let caveats: string[] = omitted > 0
+    ? [`Decision review pressure is bounded with ${omitted} decision(s) omitted; continue with ${STATE_FAMILY_LIST_COMMANDS.decisions}.`]
+    : [];
   for (const [collection, entries] of [["decisions", protectedActive], ["archive", protectedArchive]] as Array<[string, JsonObject[]]>) {
     for (const entry of entries) {
       const [field, reviewDate] = decisionReviewDue(entry);
@@ -317,13 +322,16 @@ export function decisionReviewPressure(schemas: Record<string, SchemaInfo>): Jso
   }
   caveats = uniqueList(caveats);
   return {
-    status: caveats.length > 0 ? "review_required" : "available",
+    status: stale.length > 0 || protectedOverflowCount > 0 ? "review_required" : omitted > 0 ? "degraded" : "available",
     source_provenance: sp,
     summary: {
       protected_active_decisions: protectedActive.length,
       protected_archive_decisions: protectedArchive.length,
       protected_overflow_count: protectedOverflowCount,
       stale_protected_decisions: stale.length,
+      returned_decisions: Number(counts.returned ?? activeEntries.length),
+      total_decisions: Number(counts.total ?? activeEntries.length),
+      omitted_decisions: omitted,
     },
     stale_protected_decisions: stale,
     caveats,
@@ -340,6 +348,7 @@ export function auditEvidenceContext(
   docs: JsonObject,
   profile: JsonObject,
   bundle: JsonObject,
+  decisionHistory: JsonObject,
 ): JsonObject | null {
   if (capability !== "audit") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
@@ -351,8 +360,8 @@ export function auditEvidenceContext(
   const todoState = evidenceTodoState(schemas, todoItems);
   const protectedStateChecks = evidenceProtectedStateChecks();
   const versionChecks = evidenceVersionChecks(docs);
-  const decisionRisk = decisionContextRisk(schemas);
-  const reviewPressure = decisionReviewPressure(schemas);
+  const decisionRisk = decisionContextRisk(decisionHistory);
+  const reviewPressure = decisionReviewPressure(decisionHistory);
 
   let stateCaveats: string[] = [];
   const attributedRisks: JsonObject[] = [];

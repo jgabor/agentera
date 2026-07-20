@@ -55,16 +55,16 @@ describe("cli query", () => {
     expect(err).toContain("query pattern required");
   });
 
-  it("preserves generic routine aliases when no entity marker exists", () => {
+  it("rejects routine aliases instead of reading marker-absent aggregates", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"));
     fs.writeFileSync(path.join(tmp, ".agentera/progress.yaml"), "cycles:\n  - phase: build\n    what: legacy\n");
     const prior = process.cwd();
     process.chdir(tmp);
     try {
-      const canonical = capture((io) => cmdQuery({ query: "progress" }, io));
       const alias = capture((io) => cmdQuery({ query: "progresss" }, io));
-      expect(alias).toEqual(canonical);
-      expect(alias.out).toContain("build");
+      expect(alias.rc).toBe(1);
+      expect(alias.err).toContain("Use `agentera state progress --format text` instead");
+      expect(alias.out).not.toContain("legacy");
     } finally {
       process.chdir(prior);
     }

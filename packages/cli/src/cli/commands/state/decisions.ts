@@ -11,21 +11,14 @@
  */
 
 import {
-  emitStateStructured,
   extractEntries,
-  loadArtifact,
-  missingSchemaError,
-  sourceMetadata,
-  stringFieldNames,
-  structuredState,
 } from "../../stateQuery.js";
-import { SchemaInfo, artifactPath } from "../../appContext.js";
-import { out, err, StateArgs, Io } from "./shared.js";
+import type { SchemaInfo } from "../../appContext.js";
+import { out, type StateArgs, type Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import {
   hydrateDecisionRecords,
 } from "../../../state/decisionOverlay.js";
-import { detectStateMode } from "../../../state/stateMode.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { emitStructured } from "../../structured.js";
 import YAML from "yaml";
@@ -103,12 +96,6 @@ export function hydrateDecisionEntries(
   projectRoot: string = process.cwd(),
 ): JsonObject[] {
   return hydrateDecisionRecords(entries, projectRoot);
-}
-
-function filterDecisionsByTopic(entries: JsonObject[], topic: string, fields: JsonObject): JsonObject[] {
-  const t = topic.toLowerCase();
-  const fnames = [...stringFieldNames(fields), "summary", "outcome"];
-  return entries.filter((entry) => fnames.some((f) => String(entry[f] ?? "").toLowerCase().includes(t)));
 }
 
 function decisionFieldMissing(entry: JsonObject, field: string): boolean {
@@ -382,7 +369,7 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
     },
     raw_artifact_access_boundary: {
       normal_deliberation:
-        "skip raw `.agentera/decisions.yaml` reads when complete_for_normal_deliberation_context=true",
+        "skip raw decision-state reads when complete_for_normal_deliberation_context=true",
       allowed_raw_artifact_uses: [
         "Discuss-owned decision writes or repairs",
         "artifact corruption diagnostics",
@@ -394,7 +381,7 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
        "Use `agentera state decisions list --limit 20 --format json` for bounded normal deliberation discovery; " +
        "use `agentera state decisions get --number N --format json` for exact detail, and key normal use off " +
       "complete_for_normal_deliberation_context. " +
-      "Do not read `.agentera/decisions.yaml` unless investigating artifact corruption or CLI defects; " +
+      "Do not read raw decision state unless investigating entity corruption or CLI defects; " +
       "historical compacted gaps are exposed through missing_fields and caveats.",
     caveats,
     fallback_behavior: {
@@ -415,54 +402,17 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
   };
 }
 
-export function queryDecisions(args: StateArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
-  const o = out(io);
-  const e = err(io);
-  if (detectStateMode(process.cwd()) === "entities") {
-    const format = args.format ?? "text";
-    const response = listDecisionEntities(process.cwd(), args.limit ?? undefined, args.topic ?? undefined, args.cursor ?? undefined, { format });
-    if (format === "text") o(YAML.stringify(response));
-    else emitStructured(response, format as "json" | "yaml", o);
-    return 0;
-  }
-  const info = schemas.decisions;
-  if (!info) {
-    e(missingSchemaError("decisions") + "\n");
-    return 1;
-  }
-  const p = artifactPath(info, "decisions");
-  const data = loadArtifact(p);
-  let entries = hydrateDecisionEntries(extractDecisionEntries(data));
-  const topic = args.topic ?? null;
-  if (topic) entries = filterDecisionsByTopic(entries, topic, info.fields);
+export function queryDecisions(args: StateArgs, _schemas: Record<string, SchemaInfo>, io: Io): number {
+  const output = out(io);
   const format = args.format ?? "text";
-  if (format !== "text") {
-    const enriched = entries.map((entry) => decisionContextEntry(entry));
-    const source = sourceMetadata("decisions", p);
-    const filters = { topic };
-    return emitStateStructured(
-      "decisions",
-      structuredState("decisions", enriched, source, {
-        filters,
-        sourceContract: decisionSourceContract(source, enriched, filters),
-      }),
-      format,
-      args.fields,
-      o,
-      e,
-    );
-  }
-  if (entries.length === 0) return 0;
-  const disp = displayFields(info.fields);
-  for (const entry of entries) {
-    const parts: string[] = [];
-    for (const fn of disp) {
-      const v = entry[fn];
-      if (v !== null && v !== undefined && v !== "" && !Array.isArray(v) && typeof v !== "object") {
-        parts.push(`${fn}=${v}`);
-      }
-    }
-    if (parts.length > 0) o(parts.join(" | ") + "\n");
-  }
+  const response = listDecisionEntities(
+    process.cwd(),
+    args.limit ?? undefined,
+    args.topic ?? undefined,
+    args.cursor ?? undefined,
+    { format },
+  );
+  if (format === "text") output(YAML.stringify(response));
+  else emitStructured(response, format as "json" | "yaml", output);
   return 0;
 }

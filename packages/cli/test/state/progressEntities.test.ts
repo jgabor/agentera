@@ -92,11 +92,11 @@ function expectNoProgressWrite(...projectRoots: string[]): void {
 }
 
 describe("progress entity authority", () => {
-  it("selects exactly one authority from the read-only cutover marker", () => {
+  it("requires entity authority and never publishes a marker-absent aggregate", () => {
     const legacy = project();
     expect(detectStateMode(legacy)).toBe("legacy");
-    executeStateWrite(request(legacy));
-    expect(fs.existsSync(path.join(legacy, ".agentera/progress.yaml"))).toBe(true);
+    expect(() => executeStateWrite(request(legacy))).toThrow(/durable entity-state marker/);
+    expect(fs.existsSync(path.join(legacy, ".agentera/progress.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
 
     const entities = project();
@@ -130,38 +130,6 @@ describe("progress entity authority", () => {
     fs.writeFileSync(path.join(corruptMarker, ".agentera/state-mode.yaml"), "mode: entities\n");
     expect(() => detectStateMode(corruptMarker)).toThrow(/must declare schemaVersion/);
     expect(fs.existsSync(path.join(corruptMarker, ".agentera/entities"))).toBe(false);
-  });
-
-  it("rejects an ancestor replacement between marker inspection and mutation", () => {
-    const outer = project();
-    const ancestor = path.join(outer, "ancestor");
-    const held = path.join(outer, "held");
-    const replacement = path.join(outer, "replacement");
-    const root = path.join(ancestor, "project");
-    const replacementRoot = path.join(replacement, "project");
-    fs.mkdirSync(root, { recursive: true });
-    fs.mkdirSync(replacementRoot, { recursive: true });
-    activate(replacementRoot);
-    const writeRequest = request(root);
-    const originalExists = fs.existsSync.bind(fs);
-    let replaced = false;
-
-    vi.spyOn(fs, "existsSync").mockImplementation((candidate) => {
-      if (
-        !replaced
-        && typeof candidate === "string"
-        && path.resolve(candidate) === path.join(root, ".agentera")
-      ) {
-        fs.renameSync(ancestor, held);
-        fs.renameSync(replacement, ancestor);
-        replaced = true;
-      }
-      return originalExists(candidate);
-    });
-
-    expect(() => executeStateWrite(writeRequest)).toThrow(/project root .* changed after validation.*exact real directory/i);
-    expect(replaced).toBe(true);
-    expectNoProgressWrite(path.join(held, "project"), root);
   });
 
   it("rejects root replacement through lock publication and cleans descriptors and lock residue", () => {

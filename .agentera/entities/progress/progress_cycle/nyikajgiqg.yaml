@@ -1,0 +1,16 @@
+id: nyikajgiqg
+artifact: progress
+record:
+  timestamp: 2026-07-20 09:26
+  type: fix
+  phase: build
+  what: Corrected the shell-interpolated evidence in progress qwpcekisye and superseded both qwpcekisye and ezksrsmwzx with the complete wtoanuxcsl-audit-1 guard correction record.
+  context:
+    intent: Record exact evidence for the final full-file aggregate-consumer guard correction while preserving immutable prior progress and all task evaluation history.
+    constraints: No commit, push, publication, tag, release, version, package, packed-path, broad documentation, production behavior, evaluation, task-status, TODO-status, or decision-status changes.
+    unknowns: None after full production scan and verification.
+    scope: packages/cli/test/state/currentAuthorityConsumers.test.ts and immutable superseding progress evidence only.
+  inspiration: Active task wtoanuxcsl and wtoanuxcsl-audit-1; qwpcekisye contains the implementation summary but lost one dynamic-template example during command-shell interpolation.
+  discovered: No real stale production consumer was exposed. The deterministic scanner walks literals throughout every production TypeScript file, skips comments, detects standalone bindings and dynamic templates, and composes with balanced path-call and named-reader scans without a generalized AST framework.
+  verified: "Hostile detections are: standalone bindings containing .agentera/decisions.yaml and every declared aggregate filename; a template expression with a dynamic root prefix followed by /.agentera/decisions.yaml; compact double-quoted and spaced single-quoted path.join forms using .agentera plus decisions.yaml segments; and retrieveStateEntry(). The unrelated .agentera/entities/decisions/decision/abcdefghij.yaml path is allowed. Exact excluded owners are packages/cli/src/state/entityMigrationPreview.ts, packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts, and packages/cli/src/migrate/v2HandoffManifest.ts. Built CLI preserved active ntfgalrhbm continuation with 12 omitted and archived gdxhejjjwn continuation with 4 omitted; each continuation returned its original plan. Focused suite: 18 files, 258 tests passed. Full CLI: 194 files, 2243 tests passed. Typecheck and build passed. State validation passed with 1592 entities and 0 issues before progress append; capability contract passed 2 checks; compact passed with 0 over-limit artifacts; git diff --check passed."
+  next: Leave wtoanuxcsl in progress for final independent audit; preserve wtoanuxcsl-audit-1, blocked qesbsuazwq 2/2, and all prior progress. Do not commit, evaluate, release, or mutate task/TODO/decision status.
