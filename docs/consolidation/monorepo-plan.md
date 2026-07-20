@@ -279,5 +279,4 @@ When application code is ready to move from a staging checkout:
 ## Related documents
 
 - [v3 packaging design](../packaging/v3-packaging.md) — CLI distribution (parallel track)
-- [Runtime feature parity](../../references/adapters/runtime-feature-parity.md) — editor adapter internals
 - [Vocabulary](../../references/cli/vocabulary.md) — product grammar and capability terms

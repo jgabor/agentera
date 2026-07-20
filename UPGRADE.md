@@ -1,4 +1,4 @@
-# Upgrade and integration lifecycle
+# Upgrade and migration
 
 Agentera 3.0 uses one upgrade command for app/project migration and explicit
 retired Claude cleanup. Preview and apply are separate operations. Current
@@ -144,7 +144,7 @@ Release preparation does not publish, tag, or push:
 pnpm -C packages/cli test
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check validate lifecycle-adapters
+node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
 node packages/cli/dist/bin/agentera.js check validate release-metadata
 ```
 

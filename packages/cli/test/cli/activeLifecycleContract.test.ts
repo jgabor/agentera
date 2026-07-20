@@ -87,6 +87,7 @@ describe("active shared-skill lifecycle contract", () => {
         "references/cli/agent-ready-state-contract.yaml",
       );
       expect(schemaPayload).not.toHaveProperty("runtime_lifecycle");
+      expect(JSON.stringify(schemaPayload)).not.toMatch(/current_runtime_selectors|current_native_resource_operations/);
     } finally {
       process.chdir(previous);
     }
@@ -124,6 +125,11 @@ describe("active shared-skill lifecycle contract", () => {
       "--project", project, "--dry-run", "--format", "json",
     ]);
     expect(cleanup.rc).toBe(0);
-    expect(JSON.parse(cleanup.out)).toHaveProperty("lifecycle.retiredCleanup.runtimeId", "claude");
+    const cleanupPayload = JSON.parse(cleanup.out);
+    expect(cleanupPayload).toHaveProperty("lifecycle.retiredCleanup.runtimeId", "claude");
+    expect(cleanupPayload.lifecycle).not.toHaveProperty("selection");
+    expect(cleanupPayload.lifecycle).not.toHaveProperty("projection");
+    expect(cleanupPayload.lifecycle).not.toHaveProperty("operations");
+    expect(cleanupPayload.lifecycle).not.toHaveProperty("userActions");
   });
 });

@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: AGENTS
   path: AGENTS.md
-  last_updated: 2026-07-15
+  last_updated: 2026-07-20
   status: current

@@ -1,7 +1,7 @@
 id: vbrqvtpfbj
 artifact: docs
 record:
-  document: RuntimeAdapter registry module
-  path: scripts/runtime_adapter_registry.py
-  last_updated: 2026-05-06
+  document: Repository native-retirement boundary tests
+  path: packages/cli/test/cli/repositoryNativeRetirement.test.ts
+  last_updated: 2026-07-20
   status: current

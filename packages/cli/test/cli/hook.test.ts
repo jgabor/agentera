@@ -284,6 +284,6 @@ describe("agentera upgrade dispatch", () => {
       err: (t) => (err += t),
     });
     expect(rc).toBe(2);
-    expect(err).toContain("--update-packages is not yet supported");
+    expect(err).toContain("--update-packages is retired");
   });
 });

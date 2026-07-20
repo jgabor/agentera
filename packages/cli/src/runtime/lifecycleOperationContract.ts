@@ -22,7 +22,9 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (data.schema_version !== "agentera.lifecycleOperationContract.v1") {
     errors.push("schema_version must be agentera.lifecycleOperationContract.v1");
   }
-  if (data.status !== "active_contract") errors.push("status must be active_contract");
+  if (data.status !== "migration_only_contract") {
+    errors.push("status must be migration_only_contract");
+  }
   if (data.decision !== 92) errors.push("decision must cite approved Decision 92");
   if (!sameList(data.resource_states, LIFECYCLE_RESOURCE_STATES)) {
     errors.push(`resource_states must be ${LIFECYCLE_RESOURCE_STATES.join(", ")}`);

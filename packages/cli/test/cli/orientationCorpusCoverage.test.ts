@@ -21,7 +21,6 @@ import type {
 } from "../../src/runtime/lifecycleSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const V2_APP_HOME_FIXTURE = path.join(__dirname, "../upgrade/fixtures/v2-app-home");
 
 let tmp: string;
@@ -48,7 +47,6 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
       message: "",
       pending_artifacts: 0,
       pending_runtime: 0,
-      upgrade_only: false,
     },
     plan: { exists: false, status: "absent" },
     docs: { exists: false, status: "absent" },

@@ -1,7 +1,7 @@
 id: qmdwvxjjun
 artifact: docs
 record:
-  document: OpenCode adapter reference
-  path: references/adapters/opencode.md
-  last_updated: 2026-05-07
+  document: Runtime lifecycle authority (migration-only internal)
+  path: references/adapters/runtime-lifecycle-authority.yaml
+  last_updated: 2026-07-20
   status: current

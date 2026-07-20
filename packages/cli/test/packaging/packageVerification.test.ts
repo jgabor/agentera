@@ -110,6 +110,13 @@ describe("npm distribution boundary", () => {
       expect(files.has(required), required).toBe(true);
     }
     expect([...files].some((file) => file.startsWith("src/"))).toBe(false);
+    for (const retired of [
+      "dist/registries/runtimeAdapterRegistry.js",
+      "dist/registries/runtimeAdapterRegistry.js.map",
+    ]) {
+      expect(files.has(retired), retired).toBe(false);
+      expect(fs.existsSync(path.join(fixture.packageRoot, retired)), retired).toBe(false);
+    }
 
     const authority = YAML.parse(fs.readFileSync(
       path.join(fixture.packageRoot, "bundle/references/adapters/package-registry.yaml"),
@@ -125,7 +132,9 @@ describe("npm distribution boundary", () => {
 
     for (const relative of [
       "skills/agentera/SKILL.md",
+      "references/adapters/runtime-lifecycle-authority.yaml",
       "references/adapters/runtime-lifecycle-adapters.yaml",
+      "references/adapters/runtime-lifecycle-operation-contract.yaml",
       "references/adapters/runtime-retired-resources.yaml",
     ]) {
       expect(
@@ -144,6 +153,22 @@ describe("npm distribution boundary", () => {
       managed_resources: [],
       adapters: [],
     });
+    const lifecycleAuthority = YAML.parse(fs.readFileSync(
+      path.join(fixture.packageRoot, "bundle/references/adapters/runtime-lifecycle-authority.yaml"),
+      "utf8",
+    ));
+    expect(lifecycleAuthority).toMatchObject({
+      status: "migration_only_authority",
+      active_runtimes: [],
+    });
+    const operationAuthority = YAML.parse(fs.readFileSync(
+      path.join(fixture.packageRoot, "bundle/references/adapters/runtime-lifecycle-operation-contract.yaml"),
+      "utf8",
+    ));
+    expect(operationAuthority).toMatchObject({
+      status: "migration_only_contract",
+      native_policy: { install_update_auth_trust_operations: "forbidden" },
+    });
     const retiredAuthority = YAML.parse(fs.readFileSync(
       path.join(fixture.packageRoot, "bundle/references/adapters/runtime-retired-resources.yaml"),
       "utf8",
@@ -151,11 +176,25 @@ describe("npm distribution boundary", () => {
     expect(retiredAuthority).toMatchObject({
       status: "retired_migration_contract",
       policy: {
+        active_inventory_exposure: "forbidden",
         preview: "strictly_read_only",
         apply_requires: "explicit_approval",
         ownership: "matching_whole_resource_legacy_ledger_identity_and_fingerprint",
       },
     });
+    for (const staleReference of [
+      "runtime-adapter-characterization.md",
+      "runtime-adapter-interface-model.yaml",
+      "runtime-adapter-registry.yaml",
+      "runtime-feature-parity.md",
+      "opencode.md",
+      "cursor.md",
+    ]) {
+      expect(
+        files.has(`bundle/references/adapters/${staleReference}`),
+        staleReference,
+      ).toBe(false);
+    }
     expect([...files].some((file) => file.startsWith("test/") || file.includes("upgrade/fixtures/")))
       .toBe(false);
   });

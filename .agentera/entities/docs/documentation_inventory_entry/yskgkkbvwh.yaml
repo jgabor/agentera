@@ -1,7 +1,7 @@
 id: yskgkkbvwh
 artifact: docs
 record:
-  document: RuntimeAdapter characterization
-  path: references/adapters/runtime-adapter-characterization.md
-  last_updated: 2026-07-12
+  document: Runtime lifecycle operations (migration-only internal)
+  path: references/adapters/runtime-lifecycle-operation-contract.yaml
+  last_updated: 2026-07-20
   status: current

@@ -1,0 +1,16 @@
+id: qohjddound
+artifact: progress
+record:
+  timestamp: 2026-07-20 14:11
+  type: refactor
+  phase: build
+  what: "Completed the shared-skill cutover closeout: removed dormant native runtime registry, selector, projection, package, and documentation surfaces; retained only closed migration and explicit cleanup contracts; reconciled docs and verification ownership."
+  context:
+    intent: Finish plan ntfgalrhbm with one active shared-skill and CLI contract and truthful migration-only residue.
+    constraints: No version change, release, publication, tag, push, remote mutation, historical task rewrite, or vision change.
+    unknowns: None within the plan scope.
+    scope: Runtime migration internals, package retirement guards, source/package verification ownership, active docs and changelog, DOCS inventory/schema, health, progress, and plan closeout.
+  inspiration: Final closeout task phujfptanh and objective-impact review of residual native surfaces.
+  discovered: The remaining material gaps were dead package-shipped native code, broad reference allowlisting, stale active documentation, and a contradictory DOCS word budget; release metadata validation is intentionally outside this non-release task because gitRef must remain unchanged.
+  verified: Source 191 files/2226 tests; package 2 files/8 tests; typecheck; lint 0 errors; build; capability contract 2/2; document and state validation; strict DOCS lint; compact; web check/build; closed package/reference scans; all 12 predecessor hashes; resolved critical TODO; unchanged package, suite, skill, registry, shim, and gitRef values.
+  next: No plan work remains. Keep release, publication, tags, pushes, and gitRef changes separate and explicit.

@@ -1,7 +1,7 @@
 id: xrrhzwwnit
 artifact: docs
 record:
-  document: Runtime parity reference
-  path: references/adapters/runtime-feature-parity.md
-  last_updated: 2026-07-12
+  document: Runtime lifecycle adapters (migration-only internal)
+  path: references/adapters/runtime-lifecycle-adapters.yaml
+  last_updated: 2026-07-20
   status: current

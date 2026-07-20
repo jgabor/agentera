@@ -1,7 +1,7 @@
 id: bxutgsdnio
 artifact: docs
 record:
-  document: RuntimeAdapter interface model
-  path: references/adapters/runtime-adapter-interface-model.yaml
-  last_updated: 2026-05-07
+  document: Retired runtime cleanup (migration-only internal)
+  path: references/adapters/runtime-retired-resources.yaml
+  last_updated: 2026-07-20
   status: current

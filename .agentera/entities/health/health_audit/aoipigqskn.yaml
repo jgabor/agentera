@@ -1,0 +1,50 @@
+id: aoipigqskn
+artifact: health
+record:
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - complexity_hotspots
+    - test_health
+    - security_hygiene
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "Improving: active and packaged behavior now expose one shared skill plus CLI, with native lifecycle data restricted to migration and explicit cleanup."
+  grades:
+    architecture_alignment: A
+    pattern_consistency: A
+    coupling_health: A
+    complexity_hotspots: A
+    test_health: A
+    security_hygiene: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: Current behavior matches the shared-skill and entity-state contract.
+    - name: pattern_consistency
+      grade: A
+      summary: Normal routing, docs, and package surfaces use one vocabulary.
+    - name: coupling_health
+      grade: A
+      summary: Source and package verification have distinct owners.
+    - name: complexity_hotspots
+      grade: A
+      summary: Dormant native registry, selectors, and projections were removed.
+    - name: test_health
+      grade: A
+      summary: Source, package, typecheck, validation, lint, compaction, and web gates passed.
+    - name: security_hygiene
+      grade: A
+      summary: Migration references are closed; Claude cleanup remains ownership-proven and explicit.
+  trends:
+    improved: One active integration contract and bounded migration-only residue.
+    degraded: None.
+    new_findings: None.
+    carried_forward: Unrelated TODO items remain outside this plan.
+  patterns:
+    - One contract governs active runtime, package, documentation, and verification boundaries.
+  date: 2026-07-20

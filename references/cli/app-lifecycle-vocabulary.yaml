@@ -25,10 +25,9 @@ scope:
     - Update channel names, dist-tag resolution, and override keys.
     - General prose outside app lifecycle metadata.
 compatibility_boundary: >-
-  Compatibility identifiers such as `.agentera-bundle.json`, `bundle.status`,
-  `activeBundleRoot`, and `--only bundle` may remain until an explicit migration
-  exists. They do not make bundle/fresh/stale/refresh/fixed canonical app
-  lifecycle status vocabulary.
+  Retired v2 identifiers such as `.agentera-bundle.json`, `bundle.status`,
+  `activeBundleRoot`, and `--only bundle` may remain only in migration readers,
+  fixtures, and released history. They are not current app lifecycle vocabulary.
 canonical_status_order:
   - up_to_date
   - outdated

@@ -1,7 +1,7 @@
 id: tdlhlhrspg
 artifact: docs
 record:
-  document: Decision 44 vocabulary proof tests
-  path: tests/test_decision44_vocabulary.py
-  last_updated: 2026-05-07
+  document: App lifecycle and update-channel vocabulary tests
+  path: packages/cli/test/validate/vocabularyAuthority.test.ts
+  last_updated: 2026-07-20
   status: current

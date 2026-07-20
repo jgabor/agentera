@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Monorepo consolidation plan
   path: docs/consolidation/monorepo-plan.md
-  last_updated: 2026-06-07
+  last_updated: 2026-07-20
   status: current

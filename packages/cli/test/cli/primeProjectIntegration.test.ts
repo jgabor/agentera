@@ -149,7 +149,6 @@ describe("prime project_integration", () => {
 
     expect(integration.recommendation).toBe("upgrade");
     expect(integration.pending_artifacts).toBe(1);
-    expect(integration.upgrade_only).toBeUndefined();
     expect(integration.dry_run_command).toContain("upgrade");
     expect(integration.dry_run_command).not.toContain("--project");
     expect(integration.dry_run_command).toContain("@next");

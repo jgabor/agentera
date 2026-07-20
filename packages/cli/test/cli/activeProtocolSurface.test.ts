@@ -43,15 +43,9 @@ const ALWAYS_ACTIVE_SOURCE_MANIFEST = [
 ].sort();
 
 const REFERENCE_CLASSIFICATIONS: Record<string, ReferenceClassification> = {
-  "references/adapters/cursor.md": { kind: "excluded", reason: "migration input/apply internals" },
-  "references/adapters/opencode.md": { kind: "excluded", reason: "migration input/apply internals" },
   "references/adapters/package-manifest-interface-model.yaml": { kind: "active" },
   "references/adapters/package-registry.yaml": { kind: "active" },
   "references/adapters/package-surface-characterization.md": { kind: "active" },
-  "references/adapters/runtime-adapter-characterization.md": { kind: "excluded", reason: "migration input/apply internals" },
-  "references/adapters/runtime-adapter-interface-model.yaml": { kind: "excluded", reason: "migration input/apply internals" },
-  "references/adapters/runtime-adapter-registry.yaml": { kind: "excluded", reason: "migration input/apply internals" },
-  "references/adapters/runtime-feature-parity.md": { kind: "excluded", reason: "migration input/apply internals" },
   "references/adapters/runtime-lifecycle-adapters.yaml": { kind: "excluded", reason: "migration input/apply internals" },
   "references/adapters/runtime-lifecycle-authority.yaml": { kind: "excluded", reason: "migration input/apply internals" },
   "references/adapters/runtime-lifecycle-operation-contract.yaml": { kind: "excluded", reason: "migration input/apply internals" },
@@ -83,6 +77,18 @@ const REFERENCE_CLASSIFICATIONS: Record<string, ReferenceClassification> = {
   "references/cli/vocabulary.md": { kind: "active" },
   "references/meta/documentation-inventory.md": { kind: "active" },
 };
+
+const RETIRED_NATIVE_CLAIMS = [
+  "runtime writes require an explicit selector",
+  "Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot",
+  "managed runtime config, plugins, hooks, commands, and safe cleanup",
+  "External package manager changes require `--update-packages`",
+  "Compatibility selector for narrow app-file work",
+  "Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation",
+  "Hooks that are shipped by active runtime plugin package surfaces",
+  "worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI",
+  "Diagnostic command surface for install/runtime health",
+] as const;
 
 const STATE_STORAGE_EXACT: Array<[string, string]> = [
   ["/entity_target/public_schema/forbidden_canonical_aliases/0", "stable_id"],
@@ -357,6 +363,18 @@ describe("authoritative active final-protocol surfaces", () => {
     findings.push(...semanticFindings("runtime://public-structured-outputs", runtime));
     const exceptions = exactExceptions(runtime);
     expect(reconcile(findings, exceptions)).toEqual([]);
+  });
+
+  it("keeps active protocol sources free of exact retired native-integration claims", () => {
+    const activeCopiedSources = copyOwnedPairs().map(([source]) => source)
+      .filter((source) => classifyCopiedSurface(source).kind === "active");
+    const activeSources = [...new Set([...ALWAYS_ACTIVE_SOURCE_MANIFEST, ...activeCopiedSources])];
+    for (const source of activeSources) {
+      const content = fs.readFileSync(path.join(ROOT, source), "utf8");
+      for (const claim of RETIRED_NATIVE_CLAIMS) {
+        expect(content, `${source}: ${claim}`).not.toContain(claim);
+      }
+    }
   });
 });
 

@@ -9,10 +9,8 @@ import {
   capabilityInstructionModulePath,
 } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
-import { loadRegistry as loadRuntimeAdapterRegistry } from "../../src/registries/runtimeAdapterRegistry.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const runtimeRegistryPath = "references/adapters/runtime-adapter-registry.yaml";
 const packageRegistryPath = "references/adapters/package-registry.yaml";
 
 const forbiddenCurrentSupportPatterns = [
@@ -31,9 +29,19 @@ const forbiddenCurrentSupportPatterns = [
     "Claude install command",
     /(?:\bnpx\s+(?:-y\s+)?skills\s+add[^\n]*(?:\bclaude\b|claude-code)|\bclaude\s+(?:plugin|install|setup|configure)\b[^\n]*agentera)/i,
   ],
+  ["active native runtime roster", /Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot/i],
+  ["runtime selector write requirement", /runtime writes require an explicit selector/i],
+  ["managed native repair", /managed runtime config, plugins, hooks, commands, and safe cleanup/i],
+  ["active package-update flag", /External package manager changes require `--update-packages`/i],
+  ["active narrow bundle selector", /`--only bundle`\s*\|\s*Compatibility selector for narrow app-file work/i],
+  ["active runtime adapter", /Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation/i],
+  ["active plugin hooks", /Hooks that are shipped by active runtime plugin package surfaces/i],
+  ["named native worker roster", /worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI/i],
+  ["runtime setup doctor", /Diagnostic command surface for install\/runtime health/i],
 ] as const;
 
 const publicInstallSurfaceRoots = [
+  "AGENTS.md",
   "README.md",
   "packages/cli/README.md",
   "packages/cli/shim",
@@ -44,15 +52,11 @@ const publicInstallSurfaceRoots = [
   "packages/web/src/content/docs/docs",
   "UPGRADE.md",
   "references/adapters/package-surface-characterization.md",
-  "references/adapters/runtime-adapter-characterization.md",
-] as const;
-
-const primaryLifecycleDocs = [
-  "README.md",
-  "packages/cli/README.md",
-  "UPGRADE.md",
-  "packages/web/src/content/docs/docs/getting-started/install.mdx",
-  "references/adapters/runtime-feature-parity.md",
+  "references/adapters/package-manifest-interface-model.yaml",
+  "references/cli/app-lifecycle-vocabulary.yaml",
+  "references/cli/bundle-skill-vocabulary.yaml",
+  "references/cli/routing-execution-vocabulary.yaml",
+  "references/cli/vocabulary.md",
 ] as const;
 
 const retiredInstallerSurfaces = [
@@ -62,7 +66,6 @@ const retiredInstallerSurfaces = [
   "references/adapters/package-registry.yaml",
   "references/adapters/package-manifest-interface-model.yaml",
   "references/adapters/package-surface-characterization.md",
-  "references/adapters/cursor.md",
 ] as const;
 
 const textExtensions = new Set([
@@ -130,28 +133,6 @@ function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void 
   }
 }
 
-function declaredCurrentSurfacePaths(): string[] {
-  const surfaces = new Set<string>([runtimeRegistryPath, packageRegistryPath]);
-  const runtimeRegistry = loadRuntimeAdapterRegistry(path.join(repoRoot, runtimeRegistryPath));
-  for (const record of runtimeRegistry.records) {
-    const dispatch = record.subagent_dispatch as Record<string, unknown>;
-    const config = record.config_targets as Record<string, unknown>;
-    const docs = record.documentation_claims as Record<string, unknown>;
-    for (const value of [
-      ...(dispatch.descriptor_sources as string[]),
-      ...(config.hook_targets as string[]),
-      ...(config.plugin_targets as string[]),
-      ...(docs.reference_paths as string[]),
-    ]) {
-      collectTextSurfaces(value, surfaces);
-    }
-  }
-
-  for (const value of publicInstallSurfaceRoots) collectTextSurfaces(value, surfaces);
-  surfaces.add("references/cli/vocabulary.md");
-  return [...surfaces].sort();
-}
-
 describe("retired runtime current-surface policy", () => {
   it("serves each capability module's canonical instruction export", async () => {
     for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
@@ -169,21 +150,10 @@ describe("retired runtime current-surface policy", () => {
     }
   });
 
-  it("describes only registry-declared active orchestration substrates", () => {
-    const runtimeRegistry = loadRuntimeAdapterRegistry(path.join(repoRoot, runtimeRegistryPath));
-    expect([...runtimeRegistry.adapterIds].sort()).toEqual(["codex", "copilot", "cursor", "opencode"]);
-
-    const orchestrate = CAPABILITY_INSTRUCTIONS.orchestrate;
-    for (const record of runtimeRegistry.records) {
-      const mechanism = (record.subagent_dispatch as Record<string, string>).mechanism;
-      expect(orchestrate, `${record.identity.runtime_id} substrate`).toContain(mechanism);
-    }
-    expect(orchestrate).toContain("Cursor IDE and cursor-agent are one Cursor identity");
-  });
-
-  it("keeps every registry-declared support surface and public install tree free of active Claude claims", () => {
-    const surfaces = declaredCurrentSurfacePaths();
-    expect(surfaces).toEqual(expect.arrayContaining([
+  it("keeps public install surfaces free of active Claude claims", () => {
+    const surfaces = new Set<string>([packageRegistryPath, "references/cli/vocabulary.md"]);
+    for (const value of publicInstallSurfaceRoots) collectTextSurfaces(value, surfaces);
+    expect([...surfaces]).toEqual(expect.arrayContaining([
       "README.md",
       "packages/cli/README.md",
       "packages/cli/shim/lib/exec.mjs",
@@ -191,8 +161,6 @@ describe("retired runtime current-surface policy", () => {
       "packages/web/src/content/docs/docs/index.mdx",
       "packages/web/src/content/docs/docs/getting-started/index.mdx",
       "packages/web/src/content/docs/docs/getting-started/install.mdx",
-      "references/adapters/opencode.md",
-      "references/adapters/runtime-feature-parity.md",
     ]));
     for (const surface of surfaces) {
       expect(currentSupportViolations(read(surface)), surface).toEqual([]);
@@ -205,6 +173,15 @@ describe("retired runtime current-surface policy", () => {
     ["supported list", "All supported runtimes: codex, claude-code, cursor"],
     ["opt-out flag", "Run profile with --no-claude"],
     ["install command", "npx skills add jgabor/agentera -g -a claude-code"],
+    ["active native roster", "Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot."],
+    ["selector write contract", "Runtime writes require an explicit selector and --yes."],
+    ["managed native repair", "App repair includes managed runtime config, plugins, hooks, commands, and safe cleanup."],
+    ["package update flag", "External package manager changes require `--update-packages`."],
+    ["bundle selector", "| `--only bundle` | Compatibility selector for narrow app-file work |"],
+    ["runtime adapter", "Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation."],
+    ["plugin hooks", "Hooks that are shipped by active runtime plugin package surfaces."],
+    ["native worker roster", "Runtime support for worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI."],
+    ["setup doctor", "Diagnostic command surface for install/runtime health."],
   ])("rejects %s regressions", (_label, claim) => {
     expect(currentSupportViolations(claim)).not.toEqual([]);
   });
@@ -217,14 +194,9 @@ describe("retired runtime current-surface policy", () => {
     expect(currentSupportViolations(claim)).toEqual([]);
   });
 
-  it("documents four active IDs, the inactive Cursor alias, and retired Claude only", () => {
-    const parity = read("references/adapters/runtime-feature-parity.md");
-    expect(parity).toContain("exactly `opencode`, `codex`, `cursor`, and `copilot`");
-    expect(parity).toContain("`cursor-agent` is an inactive compatibility alias");
-    expect(parity).not.toMatch(/^\| Claude Code \|/m);
-
+  it("documents host-neutral shared-skill support and retired Claude only", () => {
     const vocabulary = read("references/cli/vocabulary.md");
-    expect(vocabulary).toContain("Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot");
+    expect(vocabulary).toContain("does not ship host-native package surfaces");
     expect(vocabulary).toContain("Claude Code is a retired migration and consent-gated historical-import source");
   });
 

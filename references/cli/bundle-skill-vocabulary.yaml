@@ -12,7 +12,7 @@ scope:
   includes:
     - Current user-facing and diagnostic prose that names Agentera app files.
     - Package and distribution metadata that names the suite package shape.
-    - Runtime hook packaging prose and metadata for plugin-shipped hooks.
+    - Historical classification of retired runtime hook packaging prose and metadata.
     - Historical references to the removed `bundle-status` command.
     - Current references to `skills/agentera/SKILL.md`.
   excludes:
@@ -52,8 +52,7 @@ canonical_concepts:
   suite_package:
     definition: >-
       The packaged distribution shape that ships the Agentera skill, CLI,
-      scripts, hooks, references, runtime descriptors, and package metadata as
-      one suite artifact.
+      references, and package metadata as one suite artifact.
     allowed_terms:
       - suite package
       - Agentera package
@@ -63,10 +62,10 @@ canonical_concepts:
       - bundle
       - single-bundle model
       - bundled suite
-  plugin_shipped_hooks:
+  retired_plugin_shipped_hooks:
     definition: >-
-      Hooks that are shipped by active runtime plugin package surfaces such as
-      Codex, OpenCode, Cursor, or GitHub plugin metadata.
+      Historical term for hooks shipped by retired v2 host-native packages.
+      Current Agentera packages ship no host-native hooks or plugin metadata.
     allowed_terms:
       - plugin-shipped hooks
       - plugin-bundled hooks
@@ -155,6 +154,7 @@ focused_scan:
   allowed_classifications:
     - canonical
     - compatibility-preserved
+    - migration-only
     - historical
     - fixture-only
     - generic
@@ -162,7 +162,6 @@ focused_scan:
     - AGENTS.md
     - README.md
     - references/cli/vocabulary.md
-    - references/adapters/opencode.md
     - (retired maintainer measurement tool)
     - skills/agentera/SKILL.md
     - skills/agentera/capabilities/hej/schemas/triggers.yaml
@@ -193,16 +192,8 @@ focused_scan:
       reason: Vocabulary docs use concrete skill entry file paths and source-index references.
     - path: ^references/cli/vocabulary\.md$
       text: --only bundle|\.agentera-bundle\.json|bundle\.status|activeBundleRoot|bundle-status
-      classification: compatibility-preserved
-      reason: Vocabulary docs preserve shipped compatibility identifiers and removed command references.
-    - path: ^references/adapters/opencode\.md$
-      text: bundled Agentera dashboard path|bundled `agentera` skill|bundled Agentera
-      classification: generic
-      reason: OpenCode adapter prose uses bundled in the ordinary package-shipping sense, not as Agentera app-file terminology.
-    - path: ^references/adapters/opencode\.md$
-      text: SKILL\.md files|<name>/SKILL\.md|skills/\*/SKILL\.md|skills/agentera/SKILL\.md
-      classification: compatibility-preserved
-      reason: OpenCode adapter prose documents concrete runtime skill entry file paths.
+      classification: migration-only
+      reason: Vocabulary docs classify retired v2 identifiers for migration evidence and released history only.
     - path: ^scripts/measure_token_payload\.py$
       text: 'v1 baseline: all 12 v1 SKILL\.md files|skill_root / "SKILL\.md"'
       classification: historical
@@ -223,7 +214,7 @@ focused_scan:
       text: .
       classification: fixture-only
       reason: Runtime adapter tests use fixture paths, expected diagnostics, package metadata, and compatibility test class names.
-compatibility_identifiers:
+migration_identifiers:
   bundle:
     - .agentera-bundle.json
     - bundle.status

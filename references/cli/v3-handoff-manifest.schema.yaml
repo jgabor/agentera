@@ -47,9 +47,8 @@ required_top_level_fields:
     items:
       type: string
     description: >-
-      Runtime adapter ids (references/adapters/runtime-adapter-registry.yaml)
-      that the v2 install actively uses — runtimes whose setup doctor status is
-      pass at write time.
+      Historical runtime adapter ids that the v2 install actively used at handoff.
+      The v3 reader treats these as migration evidence, not active runtime inventory.
 user_data_inventory_catalog:
   - id: benchmarks
     relative_path: benchmarks

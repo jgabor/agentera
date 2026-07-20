@@ -10,7 +10,6 @@ import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import {
-  STATUS_MANUAL_REVIEW_NEEDED,
   STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
 } from "../../src/upgrade/compatibility.js";
@@ -279,6 +278,38 @@ describe("buildUpgradePlan", () => {
       runtime: "all",
       dryRun: true,
     })).toThrow("--runtime all is retired");
+  });
+
+  it.each([
+    { label: "preview", yes: false, operationsPath: "plan" },
+    { label: "apply", yes: true, operationsPath: "result" },
+  ])("keeps the retired cleanup phase message aligned with the $label payload", ({ yes, operationsPath }) => {
+    const project = path.join(tmp, `cleanup-${operationsPath}`);
+    fs.mkdirSync(project, { recursive: true });
+
+    const plan = buildUpgradePlan({
+      installRoot: REPO_ROOT,
+      home,
+      project,
+      channel: "development",
+      legacyCleanup: "claude",
+      yes,
+      dryRun: !yes,
+    });
+    const phase = plan.phases.find((candidate) => candidate.name === "lifecycle");
+
+    expect(phase?.message).toBe(
+      "summary only; retired Claude cleanup outcomes are reported under lifecycle.retiredCleanup",
+    );
+    expect(plan.lifecycle?.mode).toBe(yes ? "apply" : "preview");
+    expect(plan.lifecycle?.retiredCleanup).toHaveProperty("runtimeId", "claude");
+    if (operationsPath === "plan") {
+      expect(plan.lifecycle?.retiredCleanup).toHaveProperty("plan.operations");
+      expect(plan.lifecycle?.retiredCleanup).not.toHaveProperty("operations");
+    } else {
+      expect(plan.lifecycle?.retiredCleanup).toHaveProperty("operations");
+      expect(plan.lifecycle?.retiredCleanup).not.toHaveProperty("plan");
+    }
   });
 
   it("keeps stable previews and applies without a selector app-only", () => {

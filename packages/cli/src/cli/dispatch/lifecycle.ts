@@ -368,7 +368,7 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
       return rejectUnsupportedUpgradeFlag(
         io,
         args.format ?? "text",
-        "--update-packages is not yet supported by the TypeScript upgrade command; external package refresh is deferred for the 3.x channel model",
+        "--update-packages is retired; Agentera does not manage host package installation or updates",
       );
     }
     else if (["--restore", "--rollback", "--downgrade"].includes(a)) {

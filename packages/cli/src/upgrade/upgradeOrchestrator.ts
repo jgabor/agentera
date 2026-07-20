@@ -41,7 +41,6 @@ import {
 } from "./migrateArtifactsV2ToV3.js";
 import {
   runLifecycleUpgrade,
-  type LifecycleRuntimeSelector,
   type LifecycleUpgradeResult,
 } from "./lifecycleUpgrade.js";
 import { acquireUpgradeLock, releaseUpgradeLock } from "./upgradeLock.js";
@@ -73,7 +72,8 @@ export interface UpgradeOrchestratorArgs {
   dryRun?: boolean;
   only?: readonly UpgradeOnlyPhase[] | null;
   force?: boolean;
-  runtime?: LifecycleRuntimeSelector | null;
+  /** Retired CLI input retained only so direct callers fail before mutation. */
+  runtime?: string | null;
   legacyCleanup?: "claude" | null;
 }
 
@@ -291,25 +291,18 @@ function entityReadinessPhase(
 function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhase {
   const retired = result.retiredSummary;
   const summary: MigrationPhaseSummary = {
-    pending: result.summary.pending + (retired?.pending ?? 0),
-    applied: result.summary.applied + (retired?.applied ?? 0),
-    noop: result.summary.noop + (retired?.noop ?? 0),
-    failed: result.summary.failed + (retired?.failed ?? 0),
-    blocked: result.summary.blocked_unowned
-      + result.summary.skipped_dependency
-      + result.summary.action_required
-      + result.summary.nativeActionRequired
-      + result.summary.manualActionRequired
-      + (retired?.blocked_unowned ?? 0)
-      + (retired?.skipped_dependency ?? 0)
-      + (retired?.action_required ?? 0),
+    pending: retired.pending,
+    applied: retired.applied,
+    noop: retired.noop,
+    failed: retired.failed,
+    blocked: retired.blocked_unowned + retired.skipped_dependency + retired.action_required,
   };
   return {
     name: "lifecycle",
     status: workflowStatus(summary),
     summary,
     items: [],
-    message: "summary only; resource outcomes are reported once in lifecycle.operations",
+    message: "summary only; retired Claude cleanup outcomes are reported under lifecycle.retiredCleanup",
   };
 }
 
@@ -419,15 +412,10 @@ function buildUpgradePlanUnlocked(
     delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
   }
   const lifecycleArgs = args.legacyCleanup ? {
-    selector: null,
     home,
-    project,
-    sourceRoot,
     appHome: installRoot,
-    env,
-    canonicalSkillTarget: path.join(installRoot, "skills", "agentera"),
     apply: false,
-    retiredCleanup: args.legacyCleanup ?? null,
+    retiredCleanup: args.legacyCleanup,
   } : null;
   let lifecycle = lifecycleArgs ? runLifecycleUpgrade(lifecycleArgs) : null;
 
@@ -456,8 +444,7 @@ function buildUpgradePlanUnlocked(
   }
 
   if (args.yes && migrationPreview && !entityPreflightBlocked) {
-    const applyPhases = (args.only ?? MIGRATION_ONLY_PHASES)
-      .filter((phase) => !(args.runtime && phase === "runtime"));
+    const applyPhases = args.only ?? MIGRATION_ONLY_PHASES;
     migrationPreview = applyMigrationPhases(
       migrationCtx,
       migrationPreview,
@@ -586,36 +573,14 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
   }
   if (plan.lifecycle) {
     lines.push("");
-    lines.push("runtime lifecycle details:");
-    lines.push(`  selection: ${plan.lifecycle.selection.requested} (${plan.lifecycle.selection.runtimeIds.join(", ") || "retired cleanup only"})`);
+    lines.push("retired Claude cleanup:");
     lines.push(`  ownership journal: ${plan.lifecycle.ownershipJournal.state} at ${plan.lifecycle.ownershipJournal.path}`);
     lines.push(`  secure publication: ${plan.lifecycle.platform.securePublication ? "available" : "unavailable"} (${plan.lifecycle.platform.requirement})`);
-    for (const operation of plan.lifecycle.operations) {
-      lines.push(`  - ${operation.id}: ${operation.outcome ?? operation.action}`);
-      lines.push(`    runtime/surface/category/resource: ${operation.runtime}/${operation.surface}/${operation.category}/${operation.resource}`);
-      lines.push(`    desired/current: ${operation.desiredState}/${operation.currentState}`);
-      lines.push(`    ownership: ${operation.ownership}; ledger: ${operation.ownershipEvidence.ledgerRecord?.status ?? "absent"}`);
-      lines.push(`    required: ${operation.required ? "yes" : "no"}; dependencies: ${operation.dependencies.join(", ") || "none"}`);
-      if (operation.blockedReason) lines.push(`    blocked: ${operation.blockedReason}`);
-      for (const remediation of operation.remediation) lines.push(`    remediation: ${remediation}`);
-    }
-    for (const action of plan.lifecycle.userActions) {
-      lines.push(`  - action_required: ${action.id}`);
-      lines.push(`    runtime/surface/category: ${action.runtime}/${action.surface}/${action.category}`);
-      if (action.command !== null) {
-        lines.push(`    native step (run manually): ${Array.isArray(action.command) ? action.command.join(" ") : action.command}`);
-      }
-      lines.push(`    remediation: ${action.instruction}`);
-    }
-    if (plan.lifecycle.retiredCleanup) {
-      lines.push("  retired cleanup: claude (legacy-only, explicitly selected; user data excluded)");
-      if (plan.lifecycle.retiredSummary) {
-        const retired = plan.lifecycle.retiredSummary;
-        lines.push(
-          `  retired cleanup counts: pending=${retired.pending}, applied=${retired.applied}, noop=${retired.noop}, blocked=${retired.blocked_unowned + retired.action_required}`,
-        );
-      }
-    }
+    lines.push("  scope: exact legacy Agentera-owned skill link; user data excluded");
+    const retired = plan.lifecycle.retiredSummary;
+    lines.push(
+      `  counts: pending=${retired.pending}, applied=${retired.applied}, noop=${retired.noop}, blocked=${retired.blocked_unowned + retired.action_required}`,
+    );
   }
   if (plan.mode === "plan" && plan.summary.pending > 0 && plan.applyCommand) {
     lines.push("");

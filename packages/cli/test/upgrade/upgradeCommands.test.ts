@@ -75,7 +75,7 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.dryRunCommand).toContain("--dry-run");
   });
 
-  it("preserves lifecycle and retired-cleanup selection from preview into explicit apply", () => {
+  it("preserves retired-cleanup selection from preview into explicit apply", () => {
     const channel = resolveUpdateChannel({
       channel: "development",
       sourceRoot: REPO_ROOT,
@@ -85,31 +85,11 @@ describe("buildUpgradeCommands", () => {
       project: "/tmp/proj",
       installRoot: "/tmp/agentera",
       channel,
-      runtime: "cursor",
       legacyCleanup: "claude",
     });
 
-    expect(cmds.dryRunCommand).toContain("--runtime cursor");
     expect(cmds.dryRunCommand).toContain("--legacy-cleanup claude");
-    expect(cmds.applyCommand).toContain("--runtime cursor");
     expect(cmds.applyCommand).toContain("--legacy-cleanup claude");
-    expect(cmds.applyCommand).toContain("--yes");
-  });
-
-  it("renders an explicit all-runtime apply command for a default lifecycle preview", () => {
-    const channel = resolveUpdateChannel({
-      channel: "development",
-      sourceRoot: REPO_ROOT,
-      home: "/tmp/home",
-    });
-    const cmds = buildUpgradeCommands({
-      project: "/tmp/proj",
-      installRoot: "/tmp/agentera",
-      channel,
-      runtime: "all",
-    });
-
-    expect(cmds.applyCommand).toContain("--runtime all");
     expect(cmds.applyCommand).toContain("--yes");
   });
 
@@ -123,16 +103,15 @@ describe("buildUpgradeCommands", () => {
       project: "/tmp/project with spaces",
       installRoot: "/tmp/app home",
       channel,
-      runtime: "cursor",
     });
 
     expect(cmds.dryRunCommand).toBe(
       "npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" +
-        "/tmp/app home' --dry-run --channel development --runtime cursor",
+        "/tmp/app home' --dry-run --channel development",
     );
     expect(cmds.applyCommand).toBe(
       "npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" +
-        "/tmp/app home' --yes --channel development --runtime cursor",
+        "/tmp/app home' --yes --channel development",
     );
   });
 });

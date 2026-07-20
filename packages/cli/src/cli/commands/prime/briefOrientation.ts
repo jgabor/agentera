@@ -201,19 +201,6 @@ function briefHistory(history: unknown): Record<string, unknown> {
   return out;
 }
 
-function briefRuntimeLifecycle(runtime: unknown): Record<string, unknown> {
-  // Keep the snapshot identity, active runtime IDs, aggregate counts, and the
-  // release-blocked flag. Per-runtime surface/blocker detail is omitted and
-  // recovers via `agentera upgrade --dry-run --format json`.
-  return pick(runtime, [
-    "schemaVersion",
-    "snapshotVersion",
-    "activeRuntimeIds",
-    "counts",
-    "releaseBlocked",
-  ]);
-}
-
 function briefProjectIntegration(integration: unknown): Record<string, unknown> {
   // Keep the routing recommendation, message, pending counts, channel,
   // aggregate status, and any major-boundary block (which overrides

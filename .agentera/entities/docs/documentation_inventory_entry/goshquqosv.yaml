@@ -1,7 +1,7 @@
 id: goshquqosv
 artifact: docs
 record:
-  document: Exit vocabulary authority tests
-  path: tests/test_exit_vocabulary_authority.py
-  last_updated: 2026-05-06
+  document: Upgrade exit-code regression test
+  path: packages/cli/test/upgrade/exitCodes.test.ts
+  last_updated: 2026-07-20
   status: current

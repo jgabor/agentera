@@ -457,9 +457,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         state_field: "shared_skill",
       },
       cli: {
-        authority: "agentera",
-        current_runtime_selectors: [],
-        current_native_resource_operations: [],
+        command: "agentera",
       },
       supported_routes: {
         v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",

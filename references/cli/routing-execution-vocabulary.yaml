@@ -2,7 +2,7 @@ schema_version: agentera.routing_execution_vocabulary.v1
 status: active_authority
 purpose: >-
   Define routing and execution vocabulary boundaries so request routing, next-action
-  recommendation, Orkestrera task assignment, worker launch, runtime support, and
+  recommendation, Orkestrera task assignment, worker launch, host-provided worker support, and
   worker-safety Git commits stay distinct without forcing mechanical renames of
   shipped compatibility identifiers or historical evidence.
 sources:
@@ -14,7 +14,7 @@ scope:
     - Hej and capability next-action recommendations that wait for confirmation.
     - Orkestrera assignment of approved plan work to worker capabilities.
     - Realisera and Optimera launch of runtime workers.
-    - Runtime subagent support mechanisms and compatibility identifiers.
+    - Host-provided worker mechanisms without Agentera-owned runtime integration.
     - Git commit safety language before spawning isolated worker execution.
   excludes:
     - Broad current-prose replacement across capability instructions.
@@ -96,8 +96,8 @@ canonical_concepts:
       - launch substrate
   runtime_subagent_support:
     definition: >-
-      Runtime-specific support that lets Agentera use a host's subagent surface,
-      descriptor model, or equivalent worker mechanism.
+      A worker mechanism supplied by the coding host. Agentera may request a
+      worker but ships no host-specific descriptor, adapter, plugin, or hook.
     preferred_terms:
       - subagent mechanism
       - runtime subagent mechanism
@@ -167,7 +167,6 @@ focused_scan:
   paths:
     - AGENTS.md
     - references/cli/vocabulary.md
-    - references/adapters/runtime-feature-parity.md
     - (retired maintainer measurement tool)
     - skills/agentera/SKILL.md
     - skills/agentera/references/contract.md
@@ -198,10 +197,6 @@ focused_scan:
       text: subagent_dispatch|fixture names
       classification: compatibility-preserved
       reason: Routing vocabulary docs preserve explicit compatibility identifiers and fixture terminology.
-    - path: ^references/adapters/runtime-feature-parity\.md$
-      text: prompt rewrite router|Subagent Dispatch|Dispatch surface|Capability dispatch|subagent dispatch
-      classification: compatibility-preserved
-      reason: Runtime parity docs name concrete host and compatibility surfaces around descriptor dispatch support.
     - path: ^scripts/measure_token_payload\.py$
       text: static dispatch payload|Agentera router
       classification: historical
@@ -238,20 +233,7 @@ focused_scan:
       text: '`dispatch`: invoke another capability autonomously|`chain`: dispatch multiple capabilities autonomously|In orkestrera only, `dispatch` and `chain` are autonomous'
       classification: fixture-only
       reason: Skill dispatch contract tests assert the canonical Orkestrera dispatch reservation.
-    - path: ^tests/test_runtime_adapters\.py$
-      text: opencode bare-hej router|routeBareHejMessage|subagent_dispatch
-      classification: fixture-only
-      reason: Runtime adapter tests assert plugin routing helpers and compatibility identifier fixtures.
-    - path: ^tests/test_runtime_adapter_registry\.py$
-      text: subagent_dispatch
-      classification: code-identifier
-      reason: Runtime adapter registry tests preserve the shipped subagent_dispatch field name.
 compatibility_identifiers:
-  runtime_adapter:
-    - subagent_dispatch
-    - RuntimeAdapter.subagent_dispatch
-    - subagent_dispatch.supported
-    - subagent_dispatch.group
   route_aliases:
     - ROUTE_ALIASES
     - primary_aliases

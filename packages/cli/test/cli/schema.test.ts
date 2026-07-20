@@ -110,8 +110,7 @@ describe("cli schema", () => {
         state_field: "shared_skill",
       },
       cli: {
-        current_runtime_selectors: [],
-        current_native_resource_operations: [],
+        command: "agentera",
       },
       supported_routes: {
         v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
@@ -166,7 +165,7 @@ describe("cli schema", () => {
     expect(payload.integration).toMatchObject({
       active_contract: "one shared skill plus the Agentera CLI",
       shared_skill: { path: "~/.agents/skills/agentera", state_field: "shared_skill" },
-      cli: { current_runtime_selectors: [], current_native_resource_operations: [] },
+      cli: { command: "agentera" },
       supported_routes: {
         v2_migration: expect.stringContaining("--channel development"),
         retired_cleanup: expect.stringContaining("--legacy-cleanup claude"),

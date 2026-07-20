@@ -7,10 +7,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE } from "../../src/upgrade/doctor.js";
 import { summarizeProjectIntegration } from "../../src/upgrade/projectIntegration.js";
-import type {
-  LifecycleProjectedAction,
-  RuntimeLifecycleSnapshot,
-} from "../../src/runtime/lifecycleSnapshot.js";
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { detectV1ArtifactPairs } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { resolveInvokedUpdateChannel } from "../../src/upgrade/channels.js";
@@ -74,61 +70,6 @@ function baseArgs(project: string, overrides: Record<string, unknown> = {}) {
     bundleStatus: APP_OUTDATED,
     crossMajorBoundary: false,
     ...overrides,
-  };
-}
-
-function projectedAction(
-  runtime: string,
-  actionClass: LifecycleProjectedAction["actionClass"],
-  ownership: LifecycleProjectedAction["ownership"] = "managed",
-  command: string | null = null,
-): LifecycleProjectedAction {
-  return {
-    id: `${actionClass}:${runtime}`,
-    runtimeIds: [runtime],
-    surfaceId: "cli",
-    category: "skills",
-    resourceId: "canonical_skill",
-    destination: `/tmp/${runtime}/agentera`,
-    applicability: "required",
-    ownership,
-    actionClass,
-    required: true,
-    reason: `${runtime} fixture action`,
-    operation: actionClass === "unobservable_gap" ? null : "create",
-    commandEligibility: {
-      preview: actionClass === "repairable_owned",
-      apply: actionClass === "repairable_owned",
-      manual: actionClass === "manual_verification",
-      diagnostic: actionClass === "unobservable_gap",
-    },
-    manual:
-      actionClass === "manual_verification"
-        ? { command, instruction: `${runtime} fixture manual action` }
-        : null,
-  };
-}
-
-function lifecycleSnapshot(actions: LifecycleProjectedAction[]): RuntimeLifecycleSnapshot {
-  return {
-    schemaVersion: "agentera.runtimeLifecycleSnapshot.v1",
-    projectionVersion: "agentera.runtimeLifecycleProjection.v1",
-    snapshotId: "sha256:project-integration-fixture",
-    statusVocabularyVersion: "agentera.runtimeLifecycleStatus.v1",
-    authority: "fixture",
-    activeRuntimeIds: ["opencode", "codex", "cursor", "copilot"],
-    selection: { runtimeIds: ["opencode", "codex", "cursor", "copilot"] },
-    releaseBlocked: false,
-    sharedResources: [],
-    actions,
-    counts: {
-      total: actions.length,
-      repairableOwned: actions.filter((action) => action.actionClass === "repairable_owned").length,
-      manualVerification: actions.filter((action) => action.actionClass === "manual_verification").length,
-      unobservableGap: actions.filter((action) => action.actionClass === "unobservable_gap").length,
-      commandEligible: actions.length,
-    },
-    runtimes: [],
   };
 }
 
@@ -201,7 +142,6 @@ describe("summarizeProjectIntegration wording", () => {
       baseArgs(project, {
         bundleStatus: "up_to_date",
         crossMajorBoundary: false,
-        lifecycleSnapshot: lifecycleSnapshot([projectedAction("cursor", "repairable_owned")]),
       }),
     );
 
@@ -269,61 +209,6 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.message).toContain("Preview");
   });
 
-  it("ignores retired current-runtime lifecycle input", () => {
-    const project = path.join(tmp, "owned-lifecycle");
-    fs.mkdirSync(project, { recursive: true });
-
-    const summary = summarizeProjectIntegration(
-      baseArgs(project, {
-        bundleStatus: APP_UP_TO_DATE,
-        lifecycleSnapshot: lifecycleSnapshot([
-          projectedAction("codex", "repairable_owned"),
-        ]),
-      }),
-    );
-
-    expect(summary.recommendation).toBe("stay");
-    expect(summary.dry_run_command).toBeNull();
-    expect(summary.phases).toEqual({ app: expect.any(Object) });
-    expect(JSON.stringify(summary)).not.toContain("codex");
-  });
-
-  it.each([
-    {
-      label: "unowned collision",
-      action: projectedAction("cursor", "manual_verification", "unowned"),
-      route: "manual_review",
-      phrase: "Manual review",
-    },
-    {
-      label: "user-owned native action",
-      action: projectedAction("copilot", "manual_verification", "user_owned", "/skills reload"),
-      route: "host_action",
-      phrase: "host action",
-    },
-    {
-      label: "unobservable gap",
-      action: projectedAction("opencode", "unobservable_gap", "undeclared"),
-      route: "doctor",
-      phrase: "doctor diagnostics",
-    },
-  ])("ignores retired $label lifecycle evidence", ({ action, route }) => {
-    const project = path.join(tmp, route);
-    fs.mkdirSync(project, { recursive: true });
-
-    const summary = summarizeProjectIntegration(
-      baseArgs(project, {
-        bundleStatus: APP_UP_TO_DATE,
-        lifecycleSnapshot: lifecycleSnapshot([action]),
-      }),
-    );
-
-    expect(summary.recommendation).toBe("stay");
-    expect(summary.dry_run_command).toBeNull();
-    expect(summary.message).toContain("No app or project-state upgrade");
-    expect(summary.exit.code).toBe(0);
-  });
-
   it("keeps clean integration at stay with a zero exit meaning", () => {
     const project = path.join(tmp, "clean");
     fs.mkdirSync(project, { recursive: true });
@@ -331,7 +216,6 @@ describe("summarizeProjectIntegration wording", () => {
     const summary = summarizeProjectIntegration(
       baseArgs(project, {
         bundleStatus: APP_UP_TO_DATE,
-        lifecycleSnapshot: lifecycleSnapshot([]),
       }),
     );
 
@@ -373,30 +257,4 @@ describe("summarizeProjectIntegration wording", () => {
     }).pending_artifacts).toBe(standalone.pending_artifacts - 1);
   });
 
-  it("keeps app work independent from retired lifecycle evidence", () => {
-    const project = path.join(tmp, "simultaneous");
-    fs.mkdirSync(project, { recursive: true });
-
-    const summary = summarizeProjectIntegration(
-      baseArgs(project, {
-        bundleStatus: APP_OUTDATED,
-        retryCommand: "npx -y agentera prime",
-        lifecycleSnapshot: lifecycleSnapshot([
-          projectedAction("codex", "repairable_owned"),
-          projectedAction("cursor", "manual_verification", "unowned"),
-        ]),
-      }),
-    );
-
-    expect(summary.recommendation).toBe("upgrade");
-    expect(summary.aggregate_status).toBe("upgrade");
-    expect(summary.phases.app.counts).toEqual({ total: 1, pending: 1, blocked: 0 });
-    expect(summary.phases).toEqual({ app: expect.any(Object) });
-    expect(summary.exit).toEqual({ code: 1, meaning: "preview_required" });
-    expect(summary.retry).toEqual({
-      command: "npx -y agentera prime",
-      guidance: "Apply the approved preview, then retry Agentera to re-observe project integration.",
-    });
-    expect(JSON.stringify(summary)).not.toMatch(/codex|cursor/);
-  });
 });

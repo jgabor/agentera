@@ -73,10 +73,10 @@ BUDGET:
   1:
     id: DB1
     scope: full_file
-    max_words: 2000
+    max_words: null
     description: >-
-      Maximum words for the full file. If a write would exceed this
-      budget, compact older audit log entries.
+      No full-file word budget. Historical audit_log entries are immutable;
+      keep the active inventory and coverage sections concise.
 
 HEADER:
   1:
@@ -396,11 +396,3 @@ VALIDATION:
       Index status values should be from the allowed set.
     checks:
       - "Each status is one of: current, stale, missing, intent, generated"
-  4:
-    id: DVL4
-    rule: word_budget
-    severity: advisory
-    description: >-
-      Advisory check. Full file should be <=2000 words.
-    checks:
-      - "Total file word count <= 2000"

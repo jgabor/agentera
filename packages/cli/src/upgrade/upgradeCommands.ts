@@ -8,7 +8,6 @@ export interface BuildUpgradeCommandsArgs {
   installRoot?: string | null;
   channel: ResolvedUpdateChannel;
   only?: readonly UpgradeOnlyPhase[] | null;
-  runtime?: string | null;
   legacyCleanup?: string | null;
   /** When true, omit --project from user-facing command strings (defaults to cwd). */
   cwdDefault?: boolean;
@@ -58,10 +57,6 @@ export function buildUpgradeCommands(args: BuildUpgradeCommandsArgs): {
       previewParts.push("--only", phase);
       applyParts.push("--only", phase);
     }
-  }
-  if (args.runtime) {
-    previewParts.push("--runtime", args.runtime);
-    applyParts.push("--runtime", args.runtime);
   }
   if (args.legacyCleanup) {
     previewParts.push("--legacy-cleanup", args.legacyCleanup);

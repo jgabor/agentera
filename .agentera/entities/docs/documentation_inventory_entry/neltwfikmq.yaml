@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Vocabulary
   path: references/cli/vocabulary.md
-  last_updated: 2026-06-05
+  last_updated: 2026-07-20
   status: current

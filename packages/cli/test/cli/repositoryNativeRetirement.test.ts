@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -16,6 +17,7 @@ const RETIRED_CURRENT_IMPLEMENTATIONS = [
   ".opencode/commands/agentera.md",
   "hooks/codex-hooks.json",
   "hooks/codex-plugin-hooks.json",
+  "packages/cli/src/registries/runtimeAdapterRegistry.ts",
 ] as const;
 
 const RETIRED_PACKAGE_SURFACES = [
@@ -50,6 +52,48 @@ const PRESERVED_MIGRATION_AND_HISTORY = [
   "packages/cli/test/upgrade/fixtures/v2-runtime-cursor-full/project/.cursor/hooks.json",
 ] as const;
 
+const RETAINED_LIFECYCLE_REFERENCES = [
+  "references/adapters/runtime-lifecycle-authority.yaml",
+  "references/adapters/runtime-lifecycle-adapters.yaml",
+  "references/adapters/runtime-lifecycle-operation-contract.yaml",
+  "references/adapters/runtime-retired-resources.yaml",
+] as const;
+
+const RETIRED_ADAPTER_REFERENCES = [
+  "references/adapters/runtime-adapter-characterization.md",
+  "references/adapters/runtime-adapter-interface-model.yaml",
+  "references/adapters/runtime-adapter-registry.yaml",
+  "references/adapters/runtime-feature-parity.md",
+  "references/adapters/opencode.md",
+  "references/adapters/cursor.md",
+] as const;
+
+function sourceFiles(directory = path.join(ROOT, "packages/cli/src")): string[] {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return sourceFiles(absolute);
+    return entry.name.endsWith(".ts") ? [absolute] : [];
+  });
+}
+
+function relative(absolute: string): string {
+  return path.relative(ROOT, absolute).split(path.sep).join("/");
+}
+
+function moduleReferences(source: string): string[] {
+  const targets: string[] = [];
+  for (const match of source.matchAll(/(?:from\s+|import\s*\(\s*|require\s*\(\s*)["']([^"']+)["']/g)) {
+    targets.push(match[1]);
+  }
+  return targets;
+}
+
+function resolveTypeScriptImport(importer: string, specifier: string): string | null {
+  if (!specifier.startsWith(".")) return null;
+  const resolved = path.resolve(path.dirname(importer), specifier.replace(/\.js$/, ".ts"));
+  return relative(resolved);
+}
+
 describe("repository-native retirement inventory", () => {
   it("has no tracked current integration implementation or standalone OpenCode dependency boundary", () => {
     for (const relative of RETIRED_CURRENT_IMPLEMENTATIONS) {
@@ -76,5 +120,91 @@ describe("repository-native retirement inventory", () => {
     expect(fs.readFileSync(path.join(ROOT, "CHANGELOG.md"), "utf8")).toContain(
       ".agents/plugins/marketplace.json",
     );
+  });
+
+  it("retains only the closed migration lifecycle reference set", () => {
+    for (const reference of RETAINED_LIFECYCLE_REFERENCES) {
+      expect(fs.existsSync(path.join(ROOT, reference)), reference).toBe(true);
+    }
+    for (const reference of RETIRED_ADAPTER_REFERENCES) {
+      expect(fs.existsSync(path.join(ROOT, reference)), reference).toBe(false);
+    }
+
+    const authority = YAML.parse(fs.readFileSync(path.join(ROOT, RETAINED_LIFECYCLE_REFERENCES[0]), "utf8"));
+    expect(authority).toMatchObject({ status: "migration_only_authority", active_runtimes: [] });
+    const adapters = YAML.parse(fs.readFileSync(path.join(ROOT, RETAINED_LIFECYCLE_REFERENCES[1]), "utf8"));
+    expect(adapters).toMatchObject({
+      status: "migration_only_contract",
+      native_policy: { execution: "forbidden" },
+      shared_resources: [],
+      managed_resources: [],
+      adapters: [],
+    });
+    const operations = YAML.parse(fs.readFileSync(path.join(ROOT, RETAINED_LIFECYCLE_REFERENCES[2]), "utf8"));
+    expect(operations).toMatchObject({
+      status: "migration_only_contract",
+      native_policy: { install_update_auth_trust_operations: "forbidden" },
+    });
+    const retired = YAML.parse(fs.readFileSync(path.join(ROOT, RETAINED_LIFECYCLE_REFERENCES[3]), "utf8"));
+    expect(retired).toMatchObject({
+      status: "retired_migration_contract",
+      policy: { active_inventory_exposure: "forbidden" },
+    });
+  });
+
+  it("closes normal entrypoints to exact migration, cleanup, and ownership edges", () => {
+    const files = sourceFiles();
+    const edges = files.flatMap((file) => {
+      const importer = relative(file);
+      if (importer.startsWith("packages/cli/src/runtime/")) return [];
+      return moduleReferences(fs.readFileSync(file, "utf8"))
+        .map((specifier) => resolveTypeScriptImport(file, specifier))
+        .filter((target): target is string => target !== null && (
+          /^packages\/cli\/src\/runtime\/(?:lifecycle[^/]+|retiredRuntimeCleanup)\.ts$/.test(target)
+          || target === "packages/cli/src/upgrade/lifecycleUpgrade.ts"
+        ))
+        .map((target) => `${importer} -> ${target}`);
+    }).sort();
+    expect(edges).toEqual([
+      "packages/cli/src/cli/commands/schema.ts -> packages/cli/src/runtime/retiredRuntimeCleanup.ts",
+      "packages/cli/src/migrate/v2HandoffManifest.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      "packages/cli/src/upgrade/appContentRefresh.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/upgrade/doctor.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecycleOperations.ts",
+      "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/retiredRuntimeCleanup.ts",
+      "packages/cli/src/upgrade/migrationPublication.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/upgrade/upgradeOrchestrator.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
+    ]);
+
+    const referenceOwners = Object.fromEntries(RETAINED_LIFECYCLE_REFERENCES.map((reference) => [
+      reference,
+      files.filter((file) => fs.readFileSync(file, "utf8").includes(reference)).map(relative).sort(),
+    ]));
+    expect(referenceOwners).toEqual({
+      "references/adapters/runtime-lifecycle-authority.yaml": [
+        "packages/cli/src/runtime/lifecycleAuthority.ts",
+      ],
+      "references/adapters/runtime-lifecycle-adapters.yaml": [
+        "packages/cli/src/runtime/lifecycleAuthority.ts",
+      ],
+      "references/adapters/runtime-lifecycle-operation-contract.yaml": [
+        "packages/cli/src/runtime/lifecycleOperations.ts",
+      ],
+      "references/adapters/runtime-retired-resources.yaml": [
+        "packages/cli/src/runtime/lifecycleAuthority.ts",
+      ],
+    });
+
+    for (const file of files) {
+      const source = fs.readFileSync(file, "utf8");
+      for (const stale of RETIRED_ADAPTER_REFERENCES) {
+        expect(source, `${relative(file)} reads ${stale}`).not.toContain(stale);
+      }
+      expect(source, `${relative(file)} references retired RuntimeAdapter registry`).not.toContain(
+        "runtimeAdapterRegistry",
+      );
+    }
   });
 });

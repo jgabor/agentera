@@ -1,5 +1,5 @@
 schema_version: agentera.lifecycleOperationContract.v1
-status: active_contract
+status: migration_only_contract
 decision: 92
 scope: runtime_neutral_filesystem_resources
 ownership:

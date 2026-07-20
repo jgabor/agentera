@@ -1,7 +1,7 @@
 id: ipcsnehhym
 artifact: docs
 record:
-  document: RuntimeAdapter registry
-  path: references/adapters/runtime-adapter-registry.yaml
-  last_updated: 2026-05-07
+  document: Retired cleanup upgrade implementation
+  path: packages/cli/src/upgrade/lifecycleUpgrade.ts
+  last_updated: 2026-07-20
   status: current

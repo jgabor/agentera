@@ -1,4 +1,4 @@
-import { expanduser, isFile, resolvePath } from "../core/paths.js";
+import { resolvePath } from "../core/paths.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import {
   APP_MIGRATION_NEEDED,
@@ -7,12 +7,10 @@ import {
   APP_REPAIR_NEEDED,
   APP_UP_TO_DATE,
 } from "./doctor.js";
-import { doctorRoots } from "./appModel.js";
 import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
 import { classifyInstall, crossMajorBoundaryApplies, type InstallClassification } from "./compatibility.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import fs from "node:fs";
-import path from "node:path";
 
 import {
   detectV1ArtifactPairs,
@@ -25,7 +23,7 @@ import {
   textUsesPythonManagedEntrypoint,
 } from "./runtimeMigration.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
-import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
+import { buildUpgradeCommands } from "./upgradeCommands.js";
 import {
   classifyIntegrationScenario,
   integrationScenarioMessage,
@@ -34,7 +32,6 @@ import {
   type IntegrationExit,
   type IntegrationPhaseSummary,
   type IntegrationRetry,
-  type LifecycleIntegrationFacts,
   type IntegrationScenarioFacts,
 } from "./projectIntegrationDecision.js";
 import {
@@ -43,14 +40,6 @@ import {
   resolveRunningVersion,
   shouldIncludeCrossMajorPlanItems,
 } from "./versionResolution.js";
-import {
-  lifecycleOwnershipJournalPath,
-  readLifecycleOwnershipJournal,
-} from "../runtime/lifecycleOwnershipJournal.js";
-import {
-  observeRuntimeLifecycle,
-  type RuntimeLifecycleSnapshot,
-} from "../runtime/lifecycleSnapshot.js";
 
 const MAJOR_BOUNDARY_BLOCK_MESSAGE_PREFIX =
   "v3 successor line is not announced yet; v2 managed app files remain current on the";
@@ -80,8 +69,6 @@ export interface ProjectIntegrationArgs {
   successorAnnounced?: boolean;
   /** V1 artifact scan already performed by an enclosing orientation collection. */
   precomputedV1Artifacts?: readonly string[];
-  /** Canonical lifecycle projection; callers should reuse one observation across consumers. */
-  lifecycleSnapshot?: RuntimeLifecycleSnapshot;
   /** App retry command from doctor; retained separately from lifecycle guidance. */
   retryCommand?: string | null;
 }
@@ -93,7 +80,6 @@ export interface ProjectIntegrationSummary {
   dry_run_command: string | null;
   apply_command: string | null;
   update_channel: string;
-  upgrade_only?: readonly UpgradeOnlyPhase[];
   major_boundary_block?: string | null;
   phases: {
     app: IntegrationPhaseSummary;
@@ -187,32 +173,6 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
   };
 }
 
-/** Observe the canonical lifecycle projection used by project integration. */
-export function observeProjectIntegrationLifecycle(
-  args: ProjectIntegrationArgs,
-  installRoot?: string,
-): RuntimeLifecycleSnapshot {
-  const lifecycleInstallRoot = isNpxBundleRoot(args.sourceRoot)
-    ? resolveIntegrationTargets(args).installRoot
-    : installRoot ?? resolveIntegrationTargets(args).installRoot;
-  const ownership = readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(lifecycleInstallRoot));
-  const canonicalSkillTarget = path.join(
-    isNpxBundleRoot(args.sourceRoot)
-      ? args.sourceRoot
-      : doctorRoots(lifecycleInstallRoot).activeBundleRoot,
-    "skills",
-    "agentera",
-  );
-  return observeRuntimeLifecycle({
-    home: resolvePath(expanduser(args.home)),
-    project: resolvePath(args.project),
-    sourceRoot: args.sourceRoot,
-    env: { ...(args.env ?? process.env), HOME: resolvePath(expanduser(args.home)) },
-    ledger: ownership.ledger,
-    canonicalSkillTarget,
-  });
-}
-
 function commandChannel(
   args: ProjectIntegrationArgs,
   channel: ResolvedUpdateChannel,
@@ -228,46 +188,6 @@ function commandChannel(
     });
   }
   return channel;
-}
-
-function lifecycleIntegrationFacts(snapshot: RuntimeLifecycleSnapshot): LifecycleIntegrationFacts {
-  const actions = snapshot.actions;
-  const isHostAction = (action: RuntimeLifecycleSnapshot["actions"][number]): boolean =>
-    action.actionClass === "manual_verification" &&
-    action.ownership === "user_owned" &&
-    action.manual?.command !== null &&
-    action.manual?.command !== undefined;
-  const isManualReview = (action: RuntimeLifecycleSnapshot["actions"][number]): boolean =>
-    action.actionClass === "manual_verification" && !isHostAction(action);
-  const runtimesFor = (predicate: (action: RuntimeLifecycleSnapshot["actions"][number]) => boolean) =>
-    [...new Set(actions.filter(predicate).flatMap((action) => action.runtimeIds))].sort();
-  const pendingOwnedRuntimes = runtimesFor((action) => action.actionClass === "repairable_owned");
-  const hostActionRuntimes = runtimesFor(isHostAction);
-  const manualReviewRuntimes = runtimesFor(isManualReview);
-  const doctorRuntimes = runtimesFor((action) => action.actionClass === "unobservable_gap");
-  const blockers = [
-    ...new Set(
-      [
-        ...snapshot.runtimes.flatMap((runtime) =>
-          runtime.blockers.map((blocker) => `${blocker.code}: ${blocker.detail}`),
-        ),
-        ...actions
-          .filter((action) => action.actionClass !== "repairable_owned")
-          .map((action) => `${action.actionClass}: ${action.reason}`),
-      ],
-    ),
-  ];
-  return {
-    pendingOwnedCount: actions.filter((action) => action.actionClass === "repairable_owned").length,
-    pendingOwnedRuntimes,
-    manualReviewCount: actions.filter(isManualReview).length,
-    manualReviewRuntimes,
-    hostActionCount: actions.filter(isHostAction).length,
-    hostActionRuntimes,
-    doctorCount: actions.filter((action) => action.actionClass === "unobservable_gap").length,
-    doctorRuntimes,
-    blockers,
-  };
 }
 
 function appPhaseBlockers(
@@ -290,10 +210,6 @@ function retryGuidance(exit: IntegrationExit): string {
       return "Apply the approved preview, then retry Agentera to re-observe project integration.";
     case "preview_and_blockers":
       return "Resolve the reported blockers, apply the approved preview, then retry Agentera.";
-    case "host_action_required":
-      return "Run the user-owned host action, then retry Agentera to re-observe the runtime.";
-    case "doctor_diagnostics_required":
-      return "Run Agentera doctor diagnostics, then retry Agentera after the gap is observable.";
     case "manual_review_required":
       return "Complete the manual review, then retry Agentera to re-observe project integration.";
   }
@@ -344,18 +260,6 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     channel: args.channel ?? null,
     env: args.env,
   }, channel);
-  const lifecycle: LifecycleIntegrationFacts = {
-    pendingOwnedCount: 0,
-    pendingOwnedRuntimes: [],
-    manualReviewCount: 0,
-    manualReviewRuntimes: [],
-    hostActionCount: 0,
-    hostActionRuntimes: [],
-    doctorCount: 0,
-    doctorRuntimes: [],
-    blockers: [],
-  };
-
   const crossMajorMigration =
     crossMajor && upgradeOutcome !== null && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const isNpx = isNpxBundleRoot(args.sourceRoot);
@@ -389,7 +293,6 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
       : "stay";
   const scenarioFacts: IntegrationScenarioFacts = {
     bundleStatus: classificationBundleStatus,
-    pendingRuntimeCount: lifecycle.pendingOwnedCount,
     pendingArtifactCount: v1Artifacts.length + pendingProjectMigration.length,
     crossMajor,
     crossMajorMigration,
@@ -402,7 +305,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     : hasUpgradeWork
       ? "Preview the app or project-state upgrade, then apply the approved command."
       : "No app or project-state upgrade is required.";
-  const exit = integrationExit(hasUpgradeWork, lifecycle, appBlockers.length > 0);
+  const exit = integrationExit(hasUpgradeWork, appBlockers.length > 0);
 
   const cmdsChannel = commandChannel(args, channel, crossMajor, upgradeOutcome);
   const cmds = hasUpgradeWork
@@ -425,7 +328,6 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     dry_run_command: cmds?.dryRunCommand ?? null,
     apply_command: cmds?.applyCommand ?? null,
     update_channel: hasUpgradeWork ? cmdsChannel.channel : channel.channel,
-    upgrade_only: undefined,
     major_boundary_block: majorBoundaryBlock,
     phases: {
       app: appPhase,

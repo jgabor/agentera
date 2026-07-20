@@ -63,7 +63,7 @@ agentera/
 │   ├── protocol.yaml                      # Shared primitives, glyphs, semantic tokens
 │   ├── capability_schema_contract.yaml    # Schema structure contract
 │   └── references/                        # Internal schemas, adapters, vocabulary
-└── references/                            # Cross-runtime adapters, contract docs
+└── references/                            # Contracts and migration references
 ```
 
 Read project state through the CLI before reading artifacts directly:
@@ -329,7 +329,7 @@ Comments explain **why the code is shaped as it is** for a reader who has never 
 
 - **`vp dev packages/web` starts Vite in client-only mode** and returns 404 for SSR routes. Use `cd packages/web && npx astro dev` for full SSR dev experience.
 - **The published v3 npm package is self-contained**: it bundles app data (`skills/`, `references/`, `registry.json`) under `packages/cli/bundle/` at pack time, so `npx -y agentera@next` works with no repo checkout and no `AGENTERA_HOME`.
-- **Runtime lifecycle commands require explicit intent**: `upgrade --dry-run` is read-only; runtime writes require an explicit selector and `--yes`. The active runtime and ownership contract lives in `UPGRADE.md`.
+- **Upgrade previews are read-only**: normal upgrade handles app/project migration only; the separate `--legacy-cleanup claude` route requires explicit approval and matching ownership evidence.
 - **`.lefthook.yml` is the source of truth for pre-commit behavior** — verify there before relying on the summary above.
 - **`.opencode/` requires a standalone `npm install`** (not managed by the pnpm workspace) — provides `@opencode-ai/plugin` types used by some tests.
 - Requires Node.js 22+ with pnpm 10.30.3 (enable via `corepack enable`).

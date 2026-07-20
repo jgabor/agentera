@@ -1,7 +1,7 @@
 id: ggseplembi
 artifact: docs
 record:
-  document: RuntimeAdapter registry tests
-  path: tests/test_runtime_adapter_registry.py
-  last_updated: 2026-05-06
+  document: Retired runtime surface policy tests
+  path: packages/cli/test/runtime/retiredRuntimeSurfacePolicy.test.ts
+  last_updated: 2026-07-20
   status: current

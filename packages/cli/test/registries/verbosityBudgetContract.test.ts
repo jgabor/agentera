@@ -19,6 +19,8 @@ import {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const PRODUCTION_CONTRACT = path.join(REPO_ROOT, "references", "artifacts", "verbosity-budget-authority.yaml");
+const DOCS_SCHEMA = path.join(REPO_ROOT, "skills", "agentera", "schemas", "artifacts", "docs.yaml");
+const DOCS_ARTIFACT = path.join(REPO_ROOT, ".agentera", "docs.yaml");
 
 let tmp: string;
 beforeEach(() => {
@@ -87,6 +89,26 @@ describe("verbosity budget authority classifications", () => {
 describe("verbosity budget authority failures", () => {
   it("validates the checked-in owner inventory without fallback values", () => {
     expect(validateVerbosityBudgetContract(PRODUCTION_CONTRACT)).toEqual([]);
+    expect(inspectArtifactVerbosityBudget("docs", PRODUCTION_CONTRACT).dimensions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ scope: "full_file", classification: "explicit_no_limit" }),
+      ]),
+    );
+  });
+
+  it("keeps DOCS validation and audit metadata aligned with its no-limit budget", () => {
+    const schema = YAML.parse(fs.readFileSync(DOCS_SCHEMA, "utf8")) as Record<string, any>;
+    const docs = YAML.parse(fs.readFileSync(DOCS_ARTIFACT, "utf8")) as Record<string, any>;
+    const validationRules = Object.values(schema.VALIDATION as Record<string, Record<string, unknown>>);
+    const latestAudit = docs.audit_log[0] as { date: string; label: string; findings: Array<{ description: string }> };
+
+    expect(schema.BUDGET[1].max_words).toBeNull();
+    expect(validationRules).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ rule: "word_budget" }),
+    ]));
+    expect(JSON.stringify(validationRules)).not.toContain("2000");
+    expect(docs.last_audit).toBe(`${latestAudit.date} (${latestAudit.label})`);
+    expect(latestAudit.findings.at(-1)?.description).toContain("no full-file word limit");
   });
 
   it("fails validation for malformed authority YAML", () => {

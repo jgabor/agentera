@@ -1,7 +1,7 @@
 # Capability tool classification authority
 # Defines which tools each capability subagent needs to fulfill its purpose.
-# Consumed by: descriptor validation, regression tests, runtime adapter docs.
-# Source of truth for per-capability tool requirements across all runtimes.
+# Consumed by shared-skill worker metadata validation and regression tests.
+# Hosts provide and enforce their own tool surfaces; Agentera ships no native adapter.
 
 classification:
   mutation_capable:

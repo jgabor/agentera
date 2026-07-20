@@ -199,25 +199,6 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
       if (!authorityActive) {
         err("Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n");
       } else {
-        const lifecycleOperation = plan.lifecycle?.operations.find((operation) =>
-          operation.outcome !== null && !["applied", "noop"].includes(operation.outcome)
-        );
-        const lifecycleUserAction = plan.lifecycle?.userActions[0];
-        if (lifecycleOperation) {
-          const detail = lifecycleOperation.blockedReason
-            ?? lifecycleOperation.remediation.join(" ")
-            ?? "manual review required";
-          err(
-            `action-required after entity activation: ${lifecycleOperation.id} (${lifecycleOperation.destination}): ${lifecycleOperation.outcome}: ${detail}. Rerun the same upgrade command to continue forward.\n`,
-          );
-          return 1;
-        }
-        if (lifecycleUserAction) {
-          err(
-            `action-required after entity activation: ${lifecycleUserAction.id}: ${lifecycleUserAction.status}: ${lifecycleUserAction.instruction}. Rerun the same upgrade command to continue forward.\n`,
-          );
-          return 1;
-        }
         const unresolved = plan.phases
           .filter((phase) => ["runtime", "cleanup", "lifecycle"].includes(phase.name))
           .flatMap((phase) => phase.items)
