@@ -1,0 +1,14 @@
+id: qifoditbva
+artifact: plan
+record:
+  name: Establish baseline, measurement protocol, and risk decisions
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the current suite WHEN measured three warm times on the named 16-core Node 22 runner THEN the report records median wall time, setup time, cumulative assertion time, worker count, file and test totals, and slowest tests.
+    - GIVEN representative CLI and documentation commits WHEN pre-commit is measured THEN end-to-end hook time and selected policies are recorded.
+    - GIVEN authority-backed production-scale tests WHEN ownership is traced THEN each requirement names whether it gates merge, scheduled, or release verification.
+    - GIVEN worker and lane decisions remain uncertain WHEN this task closes THEN their resolution criteria are explicit rather than assumed.
+  test_proportionality: Record three warm source samples plus representative pre-commit samples; preserve raw machine-readable measurements.
+  plan: rmtdgltdgm

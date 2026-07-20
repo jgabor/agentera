@@ -1,0 +1,15 @@
+id: fbgcvyeexr
+artifact: plan
+record:
+  name: Publish lane commands and execution-policy contract
+  depends_on:
+    - qifoditbva
+  status: pending
+  acceptance:
+    - GIVEN the test inventory WHEN ownership is validated THEN every file has exactly one primary owner among source, stress, performance, and package.
+    - GIVEN a mixed test file WHEN ownership is assigned THEN it is identified for separation rather than classified ambiguously.
+    - GIVEN targeted pre-commit, local, merge, scheduled, and release use cases WHEN invoked THEN each composes named owner lanes and runs headlessly.
+    - GIVEN central contracts or verification configuration change WHEN routing is selected THEN conservative coverage runs.
+    - GIVEN any owner command fails WHEN diagnostics are emitted THEN the failed owner and correction path are explicit.
+  test_proportionality: Cover each owner command, each policy composition, one ownership gap, and one overlap failure.
+  plan: rmtdgltdgm

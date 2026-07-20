@@ -1,0 +1,20 @@
+id: lkyflumkrj
+artifact: plan
+record:
+  name: Tune worker and routing policy safely
+  depends_on:
+    - dzvytxbsdt
+    - cneetjywed
+    - vuijkygctf
+    - jiupbftubj
+    - xlokrejoue
+    - liuqlppclk
+  status: pending
+  acceptance:
+    - GIVEN a runner policy WHEN worker count is selected THEN repeatable measurement rather than CPU count alone determines it.
+    - GIVEN the measured 16-core runner WHEN ordinary source verification runs THEN the selected policy uses no more than eight workers.
+    - GIVEN three consecutive source runs WHEN concurrency is applied THEN no hidden timeout, shared-output race, or retry occurs.
+    - GIVEN unsafe over-concurrency evidence WHEN policy is documented THEN the twelve-worker failure remains an explicit upper-bound warning.
+    - GIVEN pre-commit and CI route verification WHEN changes are classified THEN only Task 2 policies are composed.
+  test_proportionality: Benchmark safe candidates and require three consecutive passing runs at the selected setting.
+  plan: rmtdgltdgm

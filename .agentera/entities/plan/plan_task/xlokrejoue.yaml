@@ -1,0 +1,15 @@
+id: xlokrejoue
+artifact: plan
+record:
+  name: Eliminate generated-output races
+  depends_on:
+    - fbgcvyeexr
+  status: pending
+  acceptance:
+    - GIVEN a clean checkout WHEN source verification runs THEN no prior generated checkout output is required.
+    - GIVEN source, build, and package commands overlap WHEN outputs are consumed THEN no command observes a partial generated surface.
+    - GIVEN package verification runs WHEN package behavior is checked THEN it still uses an extracted installation.
+    - GIVEN generation is interrupted WHEN state is inspected THEN the previous complete result remains or failure recovery is actionable.
+    - GIVEN generated surfaces need recovery WHEN guidance is consulted THEN ownership and correction are documented once.
+  test_proportionality: Cover clean checkout, overlapping readers and writers, interruption, and extracted-package independence.
+  plan: rmtdgltdgm

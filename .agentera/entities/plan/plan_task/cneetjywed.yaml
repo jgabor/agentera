@@ -1,0 +1,15 @@
+id: cneetjywed
+artifact: plan
+record:
+  name: Make migration pagination fixtures proportional
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+  status: pending
+  acceptance:
+    - GIVEN a proportional multi-page fixture WHEN source verification runs THEN continuation recovers every identity without gaps or duplicates within the byte bound.
+    - GIVEN the production response cap WHEN ownership is validated THEN a named owner still exercises it directly.
+    - GIVEN cursor bindings mutate WHEN continuation runs THEN every existing rejection and restart guarantee remains covered.
+    - GIVEN before and after measurements WHEN compared THEN migration-preview cost is reduced.
+  test_proportionality: Keep pass and mutation-fail coverage for pagination, with one separately owned production-cap case.
+  plan: rmtdgltdgm

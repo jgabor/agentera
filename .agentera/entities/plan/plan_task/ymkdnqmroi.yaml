@@ -1,0 +1,24 @@
+id: ymkdnqmroi
+artifact: plan
+record:
+  name: Synchronize state and prove the result
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+    - dzvytxbsdt
+    - cneetjywed
+    - vuijkygctf
+    - jiupbftubj
+    - xlokrejoue
+    - liuqlppclk
+    - lkyflumkrj
+    - rpsxvneecd
+  status: pending
+  acceptance:
+    - GIVEN the redesign is complete WHEN owner commands run THEN source, stress, performance, and package all pass independently.
+    - GIVEN execution policies run WHEN composition is validated THEN intended owners execute without gaps or overlap.
+    - GIVEN three warm source runs on the named 16-core machine WHEN measured THEN median wall time is at most 45 seconds, uses no more than eight workers, and improves at least 35 percent over the recorded four-worker baseline.
+    - GIVEN final evidence WHEN reported THEN wall, setup, cumulative assertion time, file and test counts, and slowest tests are compared before and after.
+    - GIVEN project artifacts are synchronized WHEN closeout completes THEN pre-commit, CI, verification documentation, TODO, plan, and progress agree, while changelog remains unchanged unless a user-visible contract changed.
+  test_proportionality: Run every owner, every policy composition, three warm source repetitions, package proof, and state/document validation.
+  plan: rmtdgltdgm

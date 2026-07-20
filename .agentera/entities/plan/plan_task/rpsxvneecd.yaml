@@ -1,0 +1,22 @@
+id: rpsxvneecd
+artifact: plan
+record:
+  name: Remove or consolidate proven duplicate coverage
+  depends_on:
+    - fbgcvyeexr
+    - dzvytxbsdt
+    - cneetjywed
+    - vuijkygctf
+    - jiupbftubj
+    - xlokrejoue
+    - liuqlppclk
+    - lkyflumkrj
+  status: pending
+  acceptance:
+    - GIVEN a teaching template or duplicate assertion WHEN it is removed THEN its surviving documentation or test owner is verified first.
+    - GIVEN parity harness behavior repeats WHEN consolidated THEN distinct command-family acceptance remains separate.
+    - GIVEN package, migration, ownership, or security evidence WHEN cleanup completes THEN no acceptance is reduced.
+    - GIVEN codexMain support is unresolved WHEN cleanup is considered THEN coverage remains until the supported-surface decision is complete.
+    - GIVEN a cleanup implies production export change WHEN scope is checked THEN that work is deferred to a separate plan.
+  test_proportionality: For every deletion, record the surviving owner and run its pass and failure evidence.
+  plan: rmtdgltdgm

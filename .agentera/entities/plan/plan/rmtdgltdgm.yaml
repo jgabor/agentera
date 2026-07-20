@@ -1,0 +1,52 @@
+id: rmtdgltdgm
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-20
+    status: open
+    reviewed: 2026-07-20
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    title: "Plan: Make CLI verification faster without weakening evidence"
+  what: Reduce ordinary CLI verification time by separating deterministic source tests, probabilistic stress tests, performance measurements, and package proof; make expensive fixtures proportional; remove only demonstrably duplicate coverage; and eliminate shared-output races.
+  why: The measured 2,230-test source suite takes 79.1 seconds with four workers, with most cost concentrated in a small set of stress, production-scale, subprocess, and oversized-fixture cases rather than in test count generally.
+  constraints: Preserve correctness, migration, ownership, security, package, and performance evidence. Never remove a test without a surviving acceptance owner. Keep source and package proof distinct, treat fast as an execution policy rather than an owner, preserve authority-required production-scale evidence, isolate generated outputs before raising concurrency, keep commands headless, and make no version, release, publication, or push changes. Update the changelog only for a user-visible command or contract change.
+  overall_acceptance: GIVEN the verification redesign is complete WHEN ordinary and specialized policies run THEN ordinary source verification is materially faster, every correctness and safety requirement has one named runnable owner, and no test disappears without surviving evidence.
+  scope:
+    included:
+      - Source, stress, performance, and package evidence ownership
+      - Targeted pre-commit, local, merge, scheduled, and release execution policies
+      - Proportional analytics and migration fixtures
+      - Stale-lock stress and cold-start performance separation
+      - Cross-runtime parity process reuse
+      - Generated-output isolation and worker policy
+      - Proven duplicate-test consolidation
+      - Reproducible before-and-after performance evidence
+    excluded:
+      - Mass deletion based on test age or count
+      - Removal of migration, package, ownership, or security acceptance
+      - Production behavior changes beyond safe test-bound parameterization seams
+      - Unrelated lint cleanup and product feature work
+      - Version, release, publication, tag, push, or remote mutation
+    deferred:
+      - Retiring cutover tests after a future support-window decision
+      - Any production export change implied by the codexMain support decision
+  design: Establish evidence ownership and reproducible measurement first. Introduce independent owner commands and policy compositions, then reduce deterministic fixture cost, separate probabilistic and machine-sensitive evidence, isolate generated outputs, optimize cross-runtime setup, and tune concurrency only after race boundaries are safe. Consolidate duplicate coverage last, then remeasure and synchronize all verification contracts.
+  unknowns:
+    - question: What worker count can each CI runner sustain without timeout or contention failure?
+      affects_task: 9
+      resolve_by: Benchmark each runner under the Task 1 protocol before changing its policy.
+    - question: Which production-scale cases must gate every merge rather than scheduled or release verification?
+      affects_task: 2
+      resolve_by: Trace each owning authority and classify failure risk before assigning execution policy.
+    - question: Is codexMain a supported maintainer API or an orphaned exported surface?
+      affects_task: 10
+      resolve_by: Trace callers and public or maintainer contracts; defer any production-surface change.
+    - question: Should stress and performance owners gate every relevant merge or scheduled and release runs only?
+      affects_task: 2
+      resolve_by: Combine authority requirements, failure impact, and measured CI cost in Task 1.
+    - question: Which generated-output publication model best preserves clean-checkout and fail-before-effects behavior?
+      affects_task: 7
+      resolve_by: Evaluate isolated immutable staging and checkout serialization against interruption and concurrency evidence.
+  surprises:
+    []

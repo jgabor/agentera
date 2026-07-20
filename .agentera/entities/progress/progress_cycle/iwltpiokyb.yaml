@@ -1,0 +1,15 @@
+id: iwltpiokyb
+artifact: progress
+record:
+  timestamp: 2026-07-20 21:14
+  type: test
+  phase: build
+  what: Recorded a reproducible four-worker verification baseline with three retained source samples, representative CLI and documentation pre-commit samples, production-scale ownership, and explicit worker/lane resolution criteria.
+  context:
+    intent: Establish evidence and risk boundaries for plan task qifoditbva without changing lanes, fixtures, worker defaults, tests, or release behavior.
+    constraints: No lane split, fixture optimization, worker-default change, test deletion, version/release mutation, publication, push, vision/profile refresh, or unrelated cleanup.
+    unknowns: Worker count and concrete lane composition remain unresolved. Decision retrieval was degraded; llavvlpcmb and djmjbmruyk satisfaction was unavailable, and missing vision/profile context was not inferred.
+  inspiration: Plan rmtdgltdgm task qifoditbva and the source/package verification boundary.
+  discovered: The retained four-worker wall median is 81.466s; the documentation hook selects build, compact, parity, and markdown policies but no source tests for root README.md.
+  verified: "Three source samples passed 191 files and 2,230 tests: 86.237s, 81.090s, and 81.466s wall (81.466s median; 0ms setup; 280.978s median cumulative assertion time). Representative CLI and documentation hooks passed in 6.529s and 3.460s. Final pnpm -C packages/cli test passed 191 files/2,230 tests; typecheck, build, focused activeProtocolSurface test, markdownlint, YAML format/parse, and diff checks passed."
+  next: Use the ownership map to implement Task 2; preserve source/package separation and do not select workers until output isolation and runner-specific three-pass criteria are met.

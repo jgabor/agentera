@@ -1,0 +1,15 @@
+id: vuijkygctf
+artifact: plan
+record:
+  name: Separate deterministic and probabilistic lock evidence
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+  status: pending
+  acceptance:
+    - GIVEN simultaneous publishers and stale locks WHEN the source owner runs THEN deterministic one-winner, explicit-loser, and cleanup behavior remains proven.
+    - GIVEN the stress owner runs WHEN 100 stale-lock races execute THEN every repetition preserves atomicity and cleanup.
+    - GIVEN a stress repetition fails WHEN diagnostics are emitted THEN the repetition and violated invariant are named.
+    - GIVEN merge and scheduled policies run WHEN lock evidence is selected THEN they follow the risk decision recorded in Task 1.
+  test_proportionality: Use a small deterministic source sample and preserve all 100 probabilistic repetitions in stress.
+  plan: rmtdgltdgm

@@ -1,0 +1,15 @@
+id: dzvytxbsdt
+artifact: plan
+record:
+  name: Make analytics boundary fixtures proportional
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+  status: pending
+  acceptance:
+    - GIVEN oversized analytics behavior WHEN ordinary source tests run THEN they prove retention, recovery, state, and artifact-path behavior without repeatedly constructing production-sized dense payloads.
+    - GIVEN production shard constants WHEN contracts are validated THEN their exact values remain directly asserted.
+    - GIVEN authority requires production-scale wiring evidence WHEN ownership is assigned THEN that evidence remains in a named owner.
+    - GIVEN before and after measurements WHEN compared THEN analytics test cost is materially reduced without acceptance loss.
+  test_proportionality: Retain one pass and one fail for each proportional boundary plus one production-constant authority assertion.
+  plan: rmtdgltdgm

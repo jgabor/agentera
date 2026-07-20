@@ -1,0 +1,15 @@
+id: jiupbftubj
+artifact: plan
+record:
+  name: Separate cold performance evidence
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+  status: pending
+  acceptance:
+    - GIVEN source verification runs WHEN startup and retrieval are checked THEN a bounded functional smoke remains.
+    - GIVEN the performance owner runs WHEN authority measurements execute THEN declared scales, cold processes, five repetitions, latency, heap, and output limits are preserved.
+    - GIVEN performance evidence completes WHEN results are emitted THEN runner conditions and samples are machine-readable.
+    - GIVEN inspector sampling changes WHEN maxima are compared THEN equivalent measurement behavior is proven before reducing overhead.
+  test_proportionality: Keep one source smoke and the full authority-required five-repetition performance matrix.
+  plan: rmtdgltdgm

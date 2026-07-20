@@ -1,0 +1,16 @@
+id: liuqlppclk
+artifact: plan
+record:
+  name: Reduce cross-runtime parity startup cost
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+  status: pending
+  acceptance:
+    - GIVEN parity verification runs WHEN seeded evidence is compared THEN independent Python and TypeScript implementations remain checked end to end.
+    - GIVEN multiple assertions use one valid seed WHEN no distinct process boundary is required THEN they reuse one probe result.
+    - GIVEN CI already owns a successful no-drift command WHEN source tests are inventoried THEN an identical subprocess check is not repeated without distinct acceptance.
+    - GIVEN divergent fixtures or failure paths WHEN parity runs THEN their coverage remains intact.
+    - GIVEN before and after measurements WHEN compared THEN the retained optimization has demonstrated value.
+  test_proportionality: Preserve one cross-language success, divergent-fixture failures, and command drift detection without duplicate startup.
+  plan: rmtdgltdgm
