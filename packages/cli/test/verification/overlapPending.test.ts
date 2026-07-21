@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 
@@ -9,6 +10,7 @@ import * as overlap from "../../scripts/overlap-pending.mjs";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const POLICY_PATH = path.join(REPO_ROOT, "references/analysis/verification-policy.yaml");
 const POLICY_BYTES = fs.readFileSync(POLICY_PATH);
+const VERIFY_LANE = path.join(REPO_ROOT, "packages/cli/scripts/verify-lane.mjs");
 const PENDING_PATH = "packages/cli/test/build/generatedOutputPublication.test.ts";
 const PENDING_NAME = "generated generation publication reads one real Darwin process identity independently of caller locale and timezone";
 const PACKAGE_FILE = "packages/cli/test/packaging/example.test.ts";
@@ -79,6 +81,27 @@ function validate(owner: "source" | "package", report: Buffer, ownerFiles: strin
   return overlap.validatePendingTests(owner, report, bytes(ownerFiles), POLICY_BYTES, root, platform);
 }
 
+function replacePolicy(source: string, from: string, to: string) {
+  expect(source).toContain(from);
+  return Buffer.from(source.replace(from, to));
+}
+
+function expectLanePolicyFailure(policyBytes: Buffer) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-policy-"));
+  const policyPath = path.join(directory, "verification-policy.yaml");
+  fs.writeFileSync(policyPath, policyBytes);
+  const result = spawnSync(process.execPath, [VERIFY_LANE, "validate"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    env: { ...process.env, AGENTERA_VERIFICATION_CONTRACT: policyPath },
+  });
+  expect(result.status).toBe(2);
+  expect(Buffer.byteLength(result.stderr, "utf8")).toBeLessThanOrEqual(8192);
+  expect(result.stderr).toContain("verification policy could not be read:");
+  expect(result.stderr).toContain("correction:");
+  expect(result.stderr).not.toContain("TypeError");
+}
+
 describe("serialized overlap evidence boundary", () => {
   it("exports only serialized-boundary operations", () => {
     expect(Object.keys(overlap).sort()).toEqual([
@@ -119,6 +142,17 @@ describe("serialized overlap evidence boundary", () => {
     ["structurally invalid YAML", Buffer.from(POLICY_BYTES.toString("utf8").replace("  max_diagnostic_utf8_bytes: 8192", "  unexpected: true\n  max_diagnostic_utf8_bytes: 8192"))],
   ])("fails closed before policy consumption for %s", (_, policyBytes) => {
     expectContractFailure(() => overlap.loadVerificationPolicy(policyBytes));
+  });
+
+  it.each([
+    ["null inventory", replacePolicy(POLICY_BYTES.toString("utf8"), "inventory:\n", "inventory: null\n")],
+    ["inventory rules object", replacePolicy(POLICY_BYTES.toString("utf8"), "  rules:\n", "  rules: {}\n")],
+    ["null policies", replacePolicy(POLICY_BYTES.toString("utf8"), "policies:\n", "policies: null\n")],
+    ["policy owner object", replacePolicy(POLICY_BYTES.toString("utf8"), "  targeted: [source]", "  targeted: { owner: source }")],
+    ["null owner definition", replacePolicy(POLICY_BYTES.toString("utf8"), "  source:\n", "  source: null\n")],
+  ])("rejects consumed %s before verify-lane can use it", (_, policyBytes) => {
+    expectContractFailure(() => overlap.loadVerificationPolicy(policyBytes));
+    expectLanePolicyFailure(policyBytes);
   });
 
   it.each([

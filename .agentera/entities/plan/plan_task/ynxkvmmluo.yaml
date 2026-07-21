@@ -12,3 +12,13 @@ record:
     - GIVEN internal validation helpers exist WHEN production call paths are traced THEN no exported programmatic object API can bypass serialized parsing, policy provenance, ownership checks, or evidence validation.
     - GIVEN adversarial review evaluates the repair WHEN findings are judged THEN attacks outside the declared serialized production boundary are identified as out of scope rather than expanding acceptance, while every reachable YAML/JSON attack remains covered.
     - GIVEN honest owner commands and full overlap run WHEN the stable boundary is enforced THEN source, build, extracted package, performance evidence, pending identity, and reader-generation checks all pass unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Serialized policy validation covers overlap but not every consumed production section: inventory: null reaches an uncaught TypeError and policies: null is accepted as empty. Add bounded schema validation for all policy collections consumed by verify-lane before use and adversarial YAML tests for these reachable inputs; recorded focused evidence does not yet substantiate criteria 2 and 4."
+    provenance:
+      attempt_id: ynxkvmmluo-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 12:10
+      writer_command: agentera state plan record-evaluation

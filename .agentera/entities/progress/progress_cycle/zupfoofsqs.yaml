@@ -1,0 +1,12 @@
+id: zupfoofsqs
+artifact: progress
+record:
+  timestamp: 2026-07-21 12:21
+  type: fix
+  phase: build
+  what: Validated every verification-policy collection and field consumed by verify-lane before owner routing.
+  context:
+    intent: Close audit-1 gaps so malformed governed YAML fails boundedly before inventory, policy, owner, or evidence consumption.
+  inspiration: ynxkvmmluo audit-1
+  verified: "Focused overlap and lane ownership: 85/85. Typecheck passed; source: 193 files, 2361 passed and 1 skipped; package: 10/10; performance: 3/3; full generated overlap passed with 193 source files, one canonical pending identity, and zero reader identity or surface failures."
+  next: Keep serialized YAML and JSON as the only overlap evidence boundary; do not add arbitrary object authority.
