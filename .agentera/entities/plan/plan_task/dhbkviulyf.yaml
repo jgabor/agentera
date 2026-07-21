@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Repair cold-performance owner evidence
-  status: complete
+  status: blocked
   depends_on:
     - qifoditbva
     - fbgcvyeexr
@@ -13,12 +13,12 @@ record:
     - GIVEN cold authority evidence runs WHEN results are validated THEN all declared scales, 25 samples, limits, maxima, runner conditions, and the 1 ms cadence remain intact.
     - GIVEN ordinary source verification runs WHEN cold-performance code is inventoried THEN source smoke remains isolated and emits no performance evidence.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: The performance owner emits correct real evidence, but command regression still uses a synthetic vp executable rather than invoking the real producer. Forwarded-option validation is arity-only, so recognized Vitest selectors such as --exclude, --testNamePattern, --dir, --root, --changed, --shard, and --config can alter or skip the owned suite and are rejected only after Vitest execution or not by ownership at all. Add a real-owner command regression and fail every suite-selection/configuration bypass before execution while preserving legitimate non-selection options.
+    last_failure_evidence: The real performance integration and cold evidence pass, but a performance-owned positional subset that omits entityAuthorityPerformance.test.ts reaches Vitest and fails only after execution, rather than pre-spawn. Retained/double -- delimiter forwarding can also escape the validated selection; a source invocation ran all non-package files including the cold producer. Reject producer-omitting subsets before spawn, forward only normalized validated arguments, cover delimiter injection, restore the cold TODO to open, and correct stale/overclaimed progress counts.
     provenance:
-      attempt_id: dhbkviulyf-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 07:17
+      attempt_id: dhbkviulyf-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 07:48
       writer_command: agentera state plan record-evaluation

@@ -48,12 +48,16 @@ The shim does not bundle Python, skills, or hooks. Install paths for runtimes re
 
 ## Publishing (maintainers)
 
-From this directory after review:
+This section applies only to the transitional 0.x stable shim. From the
+repository root after review, use its governed release script:
 
 ```bash
-npm pack
-npm publish --access public
+pnpm cli:publish:stable
 ```
+
+The v3 CLI has a separate isolated package-construction and recovery contract
+in [v3 npm packaging and verification](../../../docs/packaging/v3-packaging.md);
+do not apply direct checkout packing to it.
 
 Verify from a clean directory:
 

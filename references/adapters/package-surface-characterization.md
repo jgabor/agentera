@@ -34,9 +34,11 @@ and package guidance. Compiled commands ship in `dist/`. The shared-skill tree
 includes its capability schemas, artifact schemas, and canonical
 `skills/agentera/agents/*.toml` descriptors.
 
-Packaging tests inspect `npm pack --dry-run --json --ignore-scripts` and fail if
-the CLI or required bundle data disappears, or if a current host-native
-descriptor/runtime path enters the package.
+The package lane's isolated package fixture invokes `npm pack --json
+--ignore-scripts` after governed construction and fails if the CLI or required
+bundle data disappears, or if a current host-native descriptor/runtime path
+enters the package. Contributors use `pnpm -C packages/cli run pack:dry-run`;
+direct checkout packing remains rejected by the canonical packaging authority.
 
 ## Native package boundary
 

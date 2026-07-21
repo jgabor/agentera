@@ -167,6 +167,9 @@ surfaces.
 
 Before publishing, run the release gates from the repository root:
 
+Generated-output construction, direct-pack rejection, retention, and recovery
+follow [`docs/packaging/v3-packaging.md`](./docs/packaging/v3-packaging.md).
+
 ```bash
 pnpm -C packages/cli test
 pnpm -C packages/cli run typecheck

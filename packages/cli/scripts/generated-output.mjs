@@ -11,6 +11,10 @@ const guardSchema = "agentera.generatedGuard.v1";
 const retainedGenerationLimit = 2;
 const mutationLockName = ".mutation-lock";
 const mutationLockWaitMs = 30_000;
+const darwinMonths = new Map([
+  ["Jan", 0], ["Feb", 1], ["Mar", 2], ["Apr", 3], ["May", 4], ["Jun", 5],
+  ["Jul", 6], ["Aug", 7], ["Sep", 8], ["Oct", 9], ["Nov", 10], ["Dec", 11],
+]);
 
 function generatedPaths(root) {
   const generatedRoot = path.join(root, generatedDirectory);
@@ -68,6 +72,36 @@ function readGuard(file, label = "generation guard") {
   return parsed;
 }
 
+function canonicalDarwinStart(started) {
+  const match = /^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}) (\d{2}):(\d{2}):(\d{2}) (\d{4})$/.exec(started);
+  if (!match) return null;
+  const [, monthName, dayText, hourText, minuteText, secondText, yearText] = match;
+  const month = darwinMonths.get(monthName);
+  const values = [yearText, dayText, hourText, minuteText, secondText].map(Number);
+  const [year, day, hour, minute, second] = values;
+  if (month === undefined || day < 1 || hour > 23 || minute > 59 || second > 59) return null;
+  const date = new Date(Date.UTC(year, month, day, hour, minute, second));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day
+    || date.getUTCHours() !== hour || date.getUTCMinutes() !== minute || date.getUTCSeconds() !== second) return null;
+  return date.toISOString().replace(".000Z", "Z");
+}
+
+function processIdentityFamily(identity) {
+  if (typeof identity !== "string") return null;
+  if (/^linux-start:\d+$/.test(identity)) return "linux";
+  if (/^win32-start:\d+$/.test(identity)) return "win32";
+  const darwin = /^darwin-start-utc:(.+)$/.exec(identity);
+  if (!darwin) return null;
+  const parsed = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$/.exec(darwin[1]);
+  if (!parsed) return null;
+  const [, year, month, day, hour, minute, second] = parsed.map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+    && date.getUTCHours() === hour && date.getUTCMinutes() === minute && date.getUTCSeconds() === second
+    ? "darwin"
+    : null;
+}
+
 export function processStartIdentity(pid, options = {}) {
   const platform = options.platform ?? process.platform;
   const readFile = options.readFile ?? ((file) => fs.readFileSync(file, "utf8"));
@@ -76,12 +110,16 @@ export function processStartIdentity(pid, options = {}) {
     if (platform === "linux") {
       const stat = readFile(`/proc/${pid}/stat`);
       const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/);
-      return fields[19] ? `linux-start:${fields[19]}` : null;
+      return /^\d+$/.test(fields[19] ?? "") ? `linux-start:${fields[19]}` : null;
     }
     if (platform === "darwin") {
-      const result = run("ps", ["-o", "lstart=", "-p", String(pid)], { encoding: "utf8" });
+      const result = run("ps", ["-o", "lstart=", "-p", String(pid)], {
+        encoding: "utf8",
+        env: { ...(options.env ?? process.env), LC_ALL: "C", LANG: "C", TZ: "UTC0" },
+      });
       const started = result.status === 0 ? result.stdout?.trim() : "";
-      return started ? `darwin-start:${started.replace(/\s+/g, " ")}` : null;
+      const canonical = canonicalDarwinStart(started.replace(/\s+/g, " "));
+      return canonical ? `darwin-start-utc:${canonical}` : null;
     }
     if (platform === "win32") {
       const command = `(Get-Process -Id ${pid} -ErrorAction Stop).StartTime.ToUniversalTime().Ticks`;
@@ -113,9 +151,10 @@ export function classifyProcessOwner(owner, options = {}) {
   const identityForPid = options.identityForPid ?? processStartIdentity;
   if (!Number.isInteger(owner?.pid)) return "unknown";
   if (!isAlive(owner.pid)) return "stale";
-  if (typeof owner.processIdentity !== "string") return "unknown";
+  const recordedFamily = processIdentityFamily(owner.processIdentity);
+  if (recordedFamily === null) return "unknown";
   const observed = identityForPid(owner.pid);
-  if (observed === null) return "unknown";
+  if (processIdentityFamily(observed) !== recordedFamily) return "unknown";
   return observed === owner.processIdentity ? "active" : "stale";
 }
 
@@ -403,12 +442,69 @@ function reportResult(report) {
   }]));
 }
 
-function acquireGeneratedMutationLock(root) {
+function mutationClaimError(claims) {
+  const shown = claims.slice(0, 3).map(({ candidate, state }) => `${candidate} (${state})`);
+  return new Error(`generated-output mutation-lock reclaim claim has uncertain ownership: ${shown.join(", ")}${claims.length > shown.length ? ` (${claims.length - shown.length} more)` : ""}; correction: preserve every listed claim for inspection and rerun cleanup only where process-start identity is available`);
+}
+
+function readMutationClaimOwner(candidate) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return { owner: readJsonFile(path.join(candidate, "owner.json"), "generated-output mutation reclaim owner") };
+    } catch {
+      if (!optionalLstat(candidate)) return { missing: true };
+      if (attempt < 2) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
+    }
+  }
+  return { unknown: true };
+}
+
+function recoverGeneratedMutationClaims(generatedRoot, lock) {
+  const unresolved = [];
+  const names = fs.readdirSync(generatedRoot).filter((name) => name.startsWith(`${mutationLockName}.reclaim-`)).sort();
+  for (const name of names) {
+    const candidate = path.join(generatedRoot, name);
+    const stat = optionalLstat(candidate);
+    if (!stat) continue;
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+      unresolved.push({ candidate, state: "invalid claim" });
+      continue;
+    }
+    const ownerResult = readMutationClaimOwner(candidate);
+    if (ownerResult.missing) continue;
+    if (ownerResult.unknown) {
+      unresolved.push({ candidate, state: "unknown owner" });
+      continue;
+    }
+    const { owner } = ownerResult;
+    const state = ownerState(owner);
+    if (state === "stale") {
+      fs.rmSync(candidate, { recursive: true, force: true });
+      continue;
+    }
+    if (state === "unknown" || typeof owner.token !== "string") {
+      unresolved.push({ candidate, state: "unknown owner" });
+      continue;
+    }
+    if (!optionalLstat(lock)) {
+      try {
+        fs.renameSync(candidate, lock);
+      } catch (error) {
+        if (error?.code !== "ENOENT" && error?.code !== "EEXIST") throw error;
+      }
+    }
+  }
+  if (unresolved.length > 0) throw mutationClaimError(unresolved);
+}
+
+function acquireGeneratedMutationLock(root, options = {}) {
   const { generatedRoot } = generatedPaths(root);
   requireOwnedDirectory(generatedRoot, "generated-output root", true);
   const lock = path.join(generatedRoot, mutationLockName);
-  const deadline = Date.now() + mutationLockWaitMs;
+  const waitMs = options.mutationLockWaitMs ?? mutationLockWaitMs;
+  const deadline = Date.now() + waitMs;
   while (true) {
+    recoverGeneratedMutationClaims(generatedRoot, lock);
     const token = randomUUID();
     try {
       fs.mkdirSync(lock);
@@ -447,21 +543,23 @@ function acquireGeneratedMutationLock(root) {
       const claimed = path.join(generatedRoot, `${mutationLockName}.reclaim-${randomUUID()}`);
       try {
         fs.renameSync(lock, claimed);
-        fs.rmSync(claimed, { recursive: true, force: true });
+        if (options.faultAt === "after-mutation-lock-reclaim-rename") {
+          throw new Error("injected interruption at after-mutation-lock-reclaim-rename");
+        }
       } catch (error) {
         if (error?.code !== "ENOENT") throw error;
       }
       continue;
     }
     if (Date.now() >= deadline) {
-      throw new Error(`generated-output mutation lock remained active for ${mutationLockWaitMs} ms at ${lock}; correction: wait for the owning build or cleanup to finish, then retry`);
+      throw new Error(`generated-output mutation lock remained active for ${waitMs} ms at ${lock}; correction: wait for the owning build or cleanup to finish, then retry`);
     }
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
   }
 }
 
-export function withGeneratedStateLock(root, operation) {
-  const release = acquireGeneratedMutationLock(root);
+export function withGeneratedStateLock(root, operation, options = {}) {
+  const release = acquireGeneratedMutationLock(root, options);
   try {
     return operation();
   } finally {
@@ -598,7 +696,7 @@ function cleanupGeneratedStateUnlocked(root, options = {}) {
 export function cleanupGeneratedState(root, options = {}) {
   if (options.lockHeld) return cleanupGeneratedStateUnlocked(root, options);
   if (!optionalLstat(generatedPaths(root).generatedRoot)) return reportResult({ removed: [], restored: [], preserved: [], retained: [] });
-  return withGeneratedStateLock(root, () => cleanupGeneratedStateUnlocked(root, { ...options, lockHeld: true }));
+  return withGeneratedStateLock(root, () => cleanupGeneratedStateUnlocked(root, { ...options, lockHeld: true }), options);
 }
 
 function publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, options = {}) {
@@ -632,7 +730,7 @@ function publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, opti
 
 export function publishGeneratedGeneration(root, stagedRoot, generationId, options = {}) {
   if (options.lockHeld) return publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, options);
-  return withGeneratedStateLock(root, () => publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, { ...options, lockHeld: true }));
+  return withGeneratedStateLock(root, () => publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, { ...options, lockHeld: true }), options);
 }
 
 export const GENERATED_RETENTION_LIMIT = retainedGenerationLimit;

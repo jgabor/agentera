@@ -102,6 +102,22 @@ function generatedResidue(root: string): string[] {
   return residue.sort();
 }
 
+function writeMutationOwner(directory: string, owner: Record<string, unknown>): void {
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, "owner.json"), `${JSON.stringify(owner)}\n`);
+}
+
+function deadMutationOwner(token: string): Record<string, unknown> {
+  return { pid: 2_147_483_647, processIdentity: "linux-start:1", token };
+}
+
+function darwinPs(started: string, calls: Array<{ command: string; args: string[]; env: NodeJS.ProcessEnv }>) {
+  return (command: string, args: string[], options: { env: NodeJS.ProcessEnv }) => {
+    calls.push({ command, args, env: options.env });
+    return { status: 0, stdout: `${started}\n` };
+  };
+}
+
 afterEach(() => {
   for (const root of roots.splice(0)) {
     fs.rmSync(legacyPublicationLockPath(root), { recursive: true, force: true });
@@ -219,26 +235,89 @@ describe("generated generation publication", () => {
     const linuxFields = ["S", ...Array(18).fill("0"), "987654"];
     expect(processStartIdentity(42, { platform: "linux", readFile: () => `42 (agent worker) ${linuxFields.join(" ")}` }))
       .toBe("linux-start:987654");
+    const calls: Array<{ command: string; args: string[]; env: NodeJS.ProcessEnv }> = [];
     expect(processStartIdentity(42, {
       platform: "darwin",
-      spawnSync: () => ({ status: 0, stdout: "Tue Jul 21 06:10:11 2026\n" }),
-    })).toBe("darwin-start:Tue Jul 21 06:10:11 2026");
+      env: { TZ: "Pacific/Honolulu", LC_ALL: "fr_FR.UTF-8", LANG: "fr_FR.UTF-8" },
+      spawnSync: darwinPs("Tue Jul 21 06:10:11 2026", calls),
+    })).toBe("darwin-start-utc:2026-07-21T06:10:11Z");
+    expect(calls).toEqual([{
+      command: "ps",
+      args: ["-o", "lstart=", "-p", "42"],
+      env: expect.objectContaining({ TZ: "UTC0", LC_ALL: "C", LANG: "C" }),
+    }]);
     expect(processStartIdentity(42, {
       platform: "win32",
       spawnSync: () => ({ status: 0, stdout: "638887614110000000\r\n" }),
     })).toBe("win32-start:638887614110000000");
   });
 
-  it.each([
-    ["live", true, "darwin-start:A", "darwin-start:A", "active"],
-    ["PID reuse", true, "darwin-start:A", "darwin-start:B", "stale"],
-    ["dead", false, "darwin-start:A", null, "stale"],
-    ["unknown", true, "darwin-start:A", null, "unknown"],
-  ] as const)("classifies mocked Darwin %s lease ownership", (_, alive, recorded, observed, expected) => {
+  it("keeps Darwin ownership stable across caller locale and timezone changes", () => {
+    const recordedCalls: Array<{ command: string; args: string[]; env: NodeJS.ProcessEnv }> = [];
+    const checkedCalls: Array<{ command: string; args: string[]; env: NodeJS.ProcessEnv }> = [];
+    const recorded = processStartIdentity(42, {
+      platform: "darwin",
+      env: { TZ: "America/Los_Angeles", LC_ALL: "en_US.UTF-8", LANG: "en_US.UTF-8" },
+      spawnSync: darwinPs("Tue Jul 21 06:10:11 2026", recordedCalls),
+    });
+    const observed = () => processStartIdentity(42, {
+      platform: "darwin",
+      env: { TZ: "Asia/Tokyo", LC_ALL: "ja_JP.UTF-8", LANG: "ja_JP.UTF-8" },
+      spawnSync: darwinPs("Tue Jul 21 06:10:11 2026", checkedCalls),
+    });
+
+    expect(recorded).toBe("darwin-start-utc:2026-07-21T06:10:11Z");
     expect(classifyProcessOwner(
       { pid: 42, processIdentity: recorded },
-      { isAlive: () => alive, identityForPid: () => observed },
-    )).toBe(expected);
+      { isAlive: () => true, identityForPid: observed },
+    )).toBe("active");
+    expect([...recordedCalls, ...checkedCalls].every(({ env }) =>
+      env.TZ === "UTC0" && env.LC_ALL === "C" && env.LANG === "C")).toBe(true);
+  });
+
+  it("distinguishes reused and dead Darwin processes while preserving uncertain evidence", () => {
+    const recorded = "darwin-start-utc:2026-07-21T06:10:11Z";
+    const reused = () => processStartIdentity(42, {
+      platform: "darwin",
+      spawnSync: darwinPs("Tue Jul 21 06:11:12 2026", []),
+    });
+    expect(classifyProcessOwner(
+      { pid: 42, processIdentity: recorded },
+      { isAlive: () => true, identityForPid: reused },
+    )).toBe("stale");
+    expect(classifyProcessOwner(
+      { pid: 42, processIdentity: recorded },
+      { isAlive: () => false, identityForPid: () => { throw new Error("must not inspect a dead PID"); } },
+    )).toBe("stale");
+
+    for (const spawnSync of [
+      () => ({ status: 1, stdout: "", stderr: "operation not permitted" }),
+      () => ({ status: 0, stdout: "not a process start time\n" }),
+    ]) {
+      expect(classifyProcessOwner(
+        { pid: 42, processIdentity: recorded },
+        { isAlive: () => true, identityForPid: () => processStartIdentity(42, { platform: "darwin", spawnSync }) },
+      )).toBe("unknown");
+    }
+    expect(classifyProcessOwner(
+      { pid: 42, processIdentity: "darwin-start:Tue Jul 21 06:10:11 2026" },
+      { isAlive: () => true, identityForPid: reused },
+    )).toBe("unknown");
+    expect(classifyProcessOwner(
+      { pid: 42, processIdentity: recorded },
+      { isAlive: () => true, identityForPid: () => processStartIdentity(42, { platform: "freebsd" }) },
+    )).toBe("unknown");
+  });
+
+  it.runIf(process.platform === "darwin")("reads one real Darwin process identity independently of caller locale and timezone", () => {
+    const first = processStartIdentity(process.pid, {
+      env: { ...process.env, TZ: "Pacific/Honolulu", LC_ALL: "C", LANG: "C" },
+    });
+    const second = processStartIdentity(process.pid, {
+      env: { ...process.env, TZ: "Europe/Berlin", LC_ALL: "C", LANG: "C" },
+    });
+    expect(first).toMatch(/^darwin-start-utc:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    expect(second).toBe(first);
   });
 
   it.each(["direct", "generation-link", "prefix-collision"])("confines selected generations against %s escape", (scenario) => {
@@ -362,7 +441,7 @@ describe("generated generation publication", () => {
     const generated = path.join(root, ".agentera-generated");
     const reused = path.join(generated, `.staging-${process.pid}-deadbeef`);
     fs.mkdirSync(reused, { recursive: true });
-    fs.writeFileSync(path.join(reused, ".owner.json"), JSON.stringify({ pid: process.pid, processIdentity: "linux-start:not-this-process" }));
+    fs.writeFileSync(path.join(reused, ".owner.json"), JSON.stringify({ pid: process.pid, processIdentity: "linux-start:1" }));
     cleanupGeneratedState(root);
     expect(fs.existsSync(reused)).toBe(false);
 
@@ -394,7 +473,7 @@ describe("generated generation publication", () => {
     fs.mkdirSync(lock);
     fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({
       pid: process.pid,
-      processIdentity: "linux-start:not-this-process",
+      processIdentity: "linux-start:1",
       token: "reused",
     }));
 
@@ -405,6 +484,47 @@ describe("generated generation publication", () => {
     fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: process.pid, token: "unknown" }));
     expect(() => cleanupGeneratedState(root)).toThrow("mutation owner identity is unavailable");
     expect(fs.existsSync(lock)).toBe(true);
+  });
+
+  it("recovers an interrupted stale mutation-lock claim idempotently before cleanup and publication retry", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const generated = path.join(root, ".agentera-generated");
+    const lock = path.join(generated, ".mutation-lock");
+    writeMutationOwner(lock, deadMutationOwner("interrupted"));
+
+    expect(() => cleanupGeneratedState(root, { faultAt: "after-mutation-lock-reclaim-rename" }))
+      .toThrow("injected interruption at after-mutation-lock-reclaim-rename");
+    expect(fs.existsSync(lock)).toBe(false);
+    expect(fs.readdirSync(generated).filter((name) => name.startsWith(".mutation-lock.reclaim-"))).toHaveLength(1);
+
+    cleanupGeneratedState(root);
+    cleanupGeneratedState(root);
+    publishGeneratedGeneration(root, stage(root, "retried"), "retried");
+    expect(selectedTokens(root)).toEqual(["retried", "retried"]);
+    expect(generatedResidue(root)).toEqual([]);
+  });
+
+  it("restores live mutation ownership and preserves uncertain reclaim claims", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const generated = path.join(root, ".agentera-generated");
+    const liveClaim = path.join(generated, ".mutation-lock.reclaim-live");
+    const identity = processStartIdentity(process.pid);
+    expect(identity).not.toBeNull();
+    writeMutationOwner(liveClaim, { pid: process.pid, processIdentity: identity, token: "live" });
+
+    expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 20 })).toThrow("mutation lock remained active");
+    expect(fs.existsSync(liveClaim)).toBe(false);
+    expect(fs.readFileSync(path.join(generated, ".mutation-lock/owner.json"), "utf8")).toContain('"token":"live"');
+    fs.rmSync(path.join(generated, ".mutation-lock"), { recursive: true });
+
+    const uncertainClaim = path.join(generated, ".mutation-lock.reclaim-uncertain");
+    writeMutationOwner(uncertainClaim, { pid: process.pid, token: "uncertain" });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      expect(() => cleanupGeneratedState(root)).toThrow("mutation-lock reclaim claim has uncertain ownership");
+      expect(fs.existsSync(uncertainClaim)).toBe(true);
+    }
   });
 
   it("does not collect a complete generation owned by a concurrent live publisher", () => {
@@ -488,9 +608,17 @@ describe("generated generation publication", () => {
     expect(selectedTokens(root)).toEqual(["new", "new"]);
   });
 
-  it("serializes many cleaners and publishers without loser failures or launcher gaps", async () => {
+  it("serializes many stale reclaimers, cleaners, and publishers without residue or launcher gaps", async () => {
     const root = tempRoot();
     for (const id of ["seed1", "seed2", "seed3", "seed4"]) publishGeneratedGeneration(root, stage(root, id), id);
+    const generated = path.join(root, ".agentera-generated");
+    const interrupted = path.join(generated, ".mutation-lock");
+    writeMutationOwner(interrupted, deadMutationOwner("crash"));
+    expect(() => cleanupGeneratedState(root, { faultAt: "after-mutation-lock-reclaim-rename" })).toThrow("injected interruption");
+    writeMutationOwner(path.join(generated, ".mutation-lock"), deadMutationOwner("canonical-stale"));
+    for (const suffix of ["one", "two", "three"]) {
+      writeMutationOwner(path.join(generated, `.mutation-lock.reclaim-${suffix}`), deadMutationOwner(`residue-${suffix}`));
+    }
     const cleaners = Array.from({ length: 8 }, () => ({ script: "generatedCleanupWorker.mjs", args: [root] }));
     const builders = Array.from({ length: 6 }, (_, index) => ({
       script: "generatedBuildWorker.mjs",

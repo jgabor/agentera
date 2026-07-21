@@ -86,11 +86,13 @@ publication, retention, and compatibility-launcher installation; compilation
 still occurs outside it. There is no publication journal.
 
 Reader, publisher, staging, and mutation ownership records pair PID with process
-birth identity: `/proc/<pid>/stat` start ticks on Linux, `ps -o lstart` on
+birth identity: `/proc/<pid>/stat` start ticks on Linux,
+`LC_ALL=C LANG=C TZ=UTC0 ps -o lstart` normalized to an UTC ISO timestamp on
 macOS, and PowerShell `StartTime` ticks on Windows. PID reuse therefore becomes
-stale ownership rather than a false live reader. If process-start inspection is
-unavailable, ownership is `unknown`: cleanup or contended mutation fails with
-the preserved path instead of deleting state or claiming bounded success.
+stale ownership rather than a false live reader. Legacy, malformed,
+permission-denied, unsupported, or otherwise unavailable process-start evidence
+is `unknown`: cleanup or contended mutation fails with the preserved path
+instead of deleting state or claiming bounded success.
 Cleanup retains at most two complete generations unless additional generations
 have live leases. A reader lease is a hard link to the generation guard;
 cleanup atomically renames that guard before deletion, so lease acquisition
@@ -115,6 +117,7 @@ Recovery is idempotent and never follows or mutates an escaped target.
 | `.staging-*` | Removed only when its owner is absent or its recorded process identity no longer matches. Live state is retained; malformed or uncertain ownership fails with a correction. |
 | `.agentera-generation.guard.retiring-*` cleanup claim | Restored when the generation is current or a matching live lease exists; otherwise its unselected generation is removed. Conflicting guard state is preserved and reported. |
 | `.mutation-lock` | Concurrent callers wait for the owner. A dead or PID-reused owner is atomically claimed and reclaimed; a losing reclaimer retries. Live ownership times out actionably, and unknown identity is preserved. |
+| `.mutation-lock.reclaim-*` | Every interrupted reclaim claim is reclassified from its retained owner record. Proven-dead or PID-reused claims are removed, a lone live claim is restored to `.mutation-lock`, and malformed, permission-denied, unsupported, or conflicting ownership is preserved with bounded corrective paths. Retries converge without ignoring claim residue. |
 | Legacy publication lock | Active or uncertain ownership is retained. A dead owner or an ownerless lock older than 30 seconds is reclaimed. |
 | Legacy journal or backup residue | Never interpreted or deleted automatically. The build reports at most three paths and asks the contributor to inspect or remove confirmed residue. |
 
