@@ -334,6 +334,27 @@ describe("authoritative active final-protocol surfaces", () => {
     expect(reconcile(findings, exceptions)).toEqual([]);
   });
 
+  it("keeps current product grammar free of retired uncertainty and planning names", () => {
+    const activeCopiedSources = copyOwnedPairs().map(([source]) => source)
+      .filter((source) => classifyCopiedSurface(source).kind === "active");
+    const activeReferences = Object.entries(REFERENCE_CLASSIFICATIONS)
+      .filter(([, classification]) => classification.kind === "active")
+      .map(([file]) => file);
+    const activeSources = [...new Set([...ALWAYS_ACTIVE_SOURCE_MANIFEST, ...activeCopiedSources, ...activeReferences])].sort();
+
+    for (const source of activeSources) {
+      expect(fs.readFileSync(path.join(ROOT, source), "utf8"), source)
+        .not.toMatch(new RegExp(`\\b${"f" + "og"}\\b|\\b${"Way" + "finder"}\\b`, "i"));
+    }
+
+    expect(CAPABILITY_INSTRUCTIONS.discuss).toContain("name anything still unclear or unverified");
+    expect(CAPABILITY_INSTRUCTIONS.discuss).toContain("every remaining unknown is a specific, answerable question");
+    expect(CAPABILITY_INSTRUCTIONS.plan).toContain("**Unknown identification**");
+    expect(CAPABILITY_INSTRUCTIONS.plan).toContain("at least one consequential unknown");
+    expect(CAPABILITY_INSTRUCTIONS.plan).toContain("Unknowns treated as resolved");
+    expect(CAPABILITY_INSTRUCTIONS.plan).toContain("If `unknowns:` is non-empty, name the unresolved questions in the handoff");
+  });
+
   it("keeps active protocol sources free of exact retired native-integration claims", () => {
     const activeCopiedSources = copyOwnedPairs().map(([source]) => source)
       .filter((source) => classifyCopiedSurface(source).kind === "active");
