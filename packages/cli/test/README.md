@@ -29,6 +29,11 @@ the record against the authority before returning success.
 The integration surface is owned by the performance owner in
 `verification-policy.yaml`; it invokes `test:performance` once, so policy proof
 does not recurse or duplicate the 25-sample matrix.
+Forwarded owner arguments are normalized once: `--` delimiters are discarded,
+only reviewed observability flags and exact owner-inventory files reach Vitest,
+and every performance selection must retain the marked evidence producer.
+Result-file channels are consumed by the parent owner and removed from its test
+environment, so nested owner checks cannot inherit or overwrite that artifact.
 
 ## Classification key
 

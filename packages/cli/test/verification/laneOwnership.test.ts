@@ -27,6 +27,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   for (const relative of [
     "packages/cli/test/source.test.ts",
     "packages/cli/test/stress.test.ts",
+    "packages/cli/test/performance-analytics.test.ts",
     "packages/cli/test/performance.test.ts",
     "packages/cli/test/packaging/package.test.ts",
   ]) {
@@ -42,7 +43,8 @@ function fixture(overrides: Record<string, unknown> = {}) {
       default_owner: "source",
       rules: [
         { owner: "stress", path: "packages/cli/test/stress.test.ts" },
-        { owner: "performance", path: "packages/cli/test/performance.test.ts" },
+        { owner: "performance", path: "packages/cli/test/performance-analytics.test.ts" },
+        { owner: "performance", path: "packages/cli/test/performance.test.ts", evidence_producer: true },
         { owner: "package", prefix: "packages/cli/test/packaging/" },
       ],
     },
@@ -67,7 +69,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   fs.mkdirSync(bin);
   const record = path.join(root, "runs.jsonl");
   const vp = path.join(bin, "vp");
-  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
+  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
   fs.chmodSync(vp, 0o755);
   return { root, contractPath, record, bin };
 }
@@ -122,6 +124,7 @@ describe("verification lane ownership", () => {
     expect(runs[0].args).toContain("test/source.test.ts");
     expect(runs[0].args).toContain("--reporter=json");
     expect(runs[0].args).toContain(`--outputFile=${output}`);
+    expect(runs[0].resultChannel).toBe("");
   });
 
   it.each(Object.entries(POLICY_OWNERS))("composes policy %s from its named owners", (policy, owners) => {
@@ -156,6 +159,19 @@ describe("verification lane ownership", () => {
     expect(runs[0].args).toContain("test/performance.test.ts");
   });
 
+  it.each([
+    ["zero delimiters", ["--no-color", "test/performance.test.ts"]],
+    ["one delimiter", ["--", "--no-color", "test/performance.test.ts"]],
+    ["package-manager and owner delimiters", ["--", "--", "--no-color", "test/performance.test.ts"]],
+  ])("forwards one canonical argv for %s", (_, args) => {
+    const { result, runs } = run(["performance", ...args]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs).toHaveLength(1);
+    expect(runs[0].args.split(" ")).not.toContain("--");
+    expect(runs[0].args).toContain("--no-color test/performance.test.ts");
+    expect(runs[0].args).not.toContain("performance-analytics.test.ts");
+  });
+
   it("keeps the owner inventory selected when only reviewed flags are forwarded", () => {
     const { result, runs } = run(["performance", "--no-color"]);
     expect(result.status, result.stderr).toBe(0);
@@ -182,6 +198,14 @@ describe("verification lane ownership", () => {
     ["delimiter option-like filter", ["--", "--exclude"]],
     ["literal glob", ["test/performance/*.test.ts"]],
     ["traversal", ["test/performance/../source.test.ts"]],
+    ["directory", ["test"]],
+    ["file URL", ["file:///tmp/performance.test.ts"]],
+    ["selector", ["performance.test"]],
+    ["selector equals form", ["--testNamePattern=matrix"]],
+    ["configuration equals form", ["--config=other.config.ts"]],
+    ["output equals form", ["--outputFile=result.json"]],
+    ["mixed filters", ["test/performance.test.ts", "test/source.test.ts"]],
+    ["ambiguous trailing delimiter", ["test/performance.test.ts", "--", "test/performance.test.ts"]],
   ])("fails closed for %s before runner execution", (_, args) => {
     const { result, runs } = run(["performance", ...args]);
     expect(result.status).toBe(2);
@@ -190,23 +214,35 @@ describe("verification lane ownership", () => {
     expect(result.stderr).toContain("run performance correction");
   });
 
-  it("accepts multiple relative and absolute filters only when every match is performance-owned", () => {
+  it("normalizes aliases of the producer to its canonical inventory path", () => {
     const setup = fixture();
     const absolute = path.join(setup.root, "packages/cli/test/performance.test.ts");
     const { result, runs } = run(["performance", "./test/performance.test.ts", absolute], setup);
     expect(result.status, result.stderr).toBe(0);
     expect(runs).toHaveLength(1);
-    expect(runs[0].args).toContain(absolute);
+    expect(runs[0].args).toContain("test/performance.test.ts");
+    expect(runs[0].args).not.toContain(absolute);
   });
 
-  it("treats arguments after the delimiter only as positional filters", () => {
-    const accepted = run(["performance", "--", "test/performance.test.ts"]);
-    expect(accepted.result.status, accepted.result.stderr).toBe(0);
-    expect(accepted.runs).toHaveLength(1);
-    const rejected = run(["performance", "--", "--no-color"]);
-    expect(rejected.result.status).toBe(2);
-    expect(rejected.runs).toHaveLength(0);
-    expect(rejected.result.stderr).toContain('rejected filter "--no-color"');
+  it("rejects a performance subset that omits the evidence producer before runner execution", () => {
+    const { result, runs } = run(["performance", "test/performance-analytics.test.ts"]);
+    expect(result.status).toBe(2);
+    expect(runs).toHaveLength(0);
+    expect(result.stderr).toContain("omits required evidence producer");
+    expect(result.stderr).toContain("test/performance.test.ts");
+    expect(result.stderr).toContain("run performance correction");
+  });
+
+  it("rejects a symlink alias whose target is outside the canonical inventory", () => {
+    const setup = fixture();
+    const external = path.join(setup.root, "external.test.ts");
+    const alias = path.join(setup.root, "packages/cli/test/performance-alias.test.ts");
+    fs.writeFileSync(external, "// external\n");
+    fs.symlinkSync(external, alias);
+    const { result, runs } = run(["performance", "test/performance-alias.test.ts"], setup);
+    expect(result.status).toBe(2);
+    expect(runs).toHaveLength(0);
+    expect(result.stderr).toContain("canonical inventory file");
   });
 
   it("rejects reporter environment redirection before runner execution", () => {
@@ -280,6 +316,9 @@ describe("verification lane ownership", () => {
     expect(inventory.integrations).toEqual({
       performance: "packages/cli/test/integration/performanceOwner.integration.mjs",
     });
+    expect(inventory.evidence_producers).toEqual({
+      performance: "packages/cli/test/performance/entityAuthorityPerformance.test.ts",
+    });
     expect(inventory.mixed_files).toEqual([]);
   });
 
@@ -333,6 +372,7 @@ describe("verification lane ownership", () => {
     expect(contract).not.toMatch(/^  fast:\n/m);
     expect(performanceIntegration).toContain('spawnSync("pnpm", ["run", "test:performance"]');
     expect(performanceIntegration).not.toContain('"test:performance:integration"');
+    expect(performanceIntegration).toContain("delete ownerEnv.AGENTERA_VERIFICATION_RESULT");
   });
 
   it("keeps the source smoke fixture free of cold measurement dependencies", () => {

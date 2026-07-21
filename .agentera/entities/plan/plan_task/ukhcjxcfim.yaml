@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Close performance owner selection escapes
-  status: pending
+  status: complete
   depends_on:
     - qifoditbva
     - fbgcvyeexr

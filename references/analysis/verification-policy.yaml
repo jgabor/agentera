@@ -16,6 +16,7 @@ inventory:
       path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts
     - owner: performance
       path: packages/cli/test/performance/entityAuthorityPerformance.test.ts
+      evidence_producer: true
     - owner: package
       prefix: packages/cli/test/packaging/
 
@@ -38,6 +39,9 @@ owners:
       stdout_format: newline_delimited_json_record_amid_runner_output
       max_utf8_bytes: 65536
     forwarding:
+      # Delimiters are invocation syntax and are never forwarded. Every explicit
+      # file selection must resolve to exact inventory files and retain this
+      # owner's evidence producer.
       safe_options:
         --no-color: none
         --logHeapUsage: none

@@ -1,0 +1,14 @@
+id: popqsgohkt
+artifact: progress
+record:
+  timestamp: 2026-07-21 08:40
+  type: fix
+  phase: build
+  what: Closed performance-owner selection escapes by marking the sole evidence producer, normalizing zero/one/many leading delimiters, safe flags, symlink-resolved exact inventory paths, and equals forms into one canonical runner argv, and rejecting every ambiguous or membership-changing route before spawn. Parent owners now consume AGENTERA_VERIFICATION_RESULT without leaking it into nested direct owners; the integration does the same.
+  context:
+    intent: Complete Agentera plan task ukhcjxcfim with the narrow routing, normalization, and nested result-channel repair while preserving one real matrix per direct or integration invocation.
+    constraints: No worker tuning, consolidation, recovery behavior beyond result-channel/full-overlap verification correctness, release, version, publication, tag, push, vision, profile, or unrelated cleanup.
+  inspiration: Plan rmtdgltdgm task ukhcjxcfim, replacing exhausted audits jiupbftubj and dhbkviulyf.
+  discovered: Immutable progress tnrnvsynec underclaimed the final pre-repair focused and source counts as 51/51 and 2,327; the actual baselines were 52/52 and 2,328, and its forwarding claim was unsafe because runOwner still used original delimiter-bearing arguments. This repair adds 12 focused/source tests. Full overlap also exposed one intentional Darwin-only skip, so its success check now distinguishes pending tests from failures.
+  verified: Focused normalization and sentinel ownership passed 64/64 with zero fake vp spawns for producer omission; source, stress, package, unowned, traversal, glob, selector, config, output, unknown, mixed, directory, file-URL, symlink, and delimiter escapes. Direct and integration performance each passed 3/3 and emitted exactly one 9,287-byte and 9,279-byte schema record respectively, each with 25 cold samples, 100/1,000 scales, five repetitions, 1 ms heap cadence, declared limits, and runner conditions. Ordinary source passed 192/192 files, 2,340 tests with one intentional Darwin skip, and emitted zero records. Full generated overlap passed source 192 files/2,341 total, package 2 files/10 tests, build and invocation, one complete generation, zero identity mismatches, and zero surface failures. Stress 2/2, package 10/10, typecheck, build, inventory/policy validation, lint with 150 baseline warnings and zero errors, state 1,638 entities/0 issues, capability contract 2/2, compact, Python parity, markdownlint, package dry-run, and diff check passed.
+  next: Task ukhcjxcfim is complete. Keep indulnncww pending for its dedicated completion cycle; its implementation remains in the prior scoped recovery commit and full-overlap verification is now unblocked. Do not start exhausted audit tasks or final plan proof in this cycle.

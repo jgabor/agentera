@@ -9,10 +9,13 @@ import { validatePerformanceEvidence } from "../../scripts/performance-evidence.
 const packageRoot = path.resolve(import.meta.dirname, "../..");
 const root = path.resolve(packageRoot, "../..");
 const policy = YAML.parse(fs.readFileSync(path.join(root, "references/analysis/verification-policy.yaml"), "utf8"));
+const ownerEnv = { ...process.env };
+delete ownerEnv.AGENTERA_VERIFICATION_RESULT;
 const result = spawnSync("pnpm", ["run", "test:performance"], {
   cwd: packageRoot,
   encoding: "utf8",
   maxBuffer: 1024 * 1024,
+  env: ownerEnv,
 });
 
 process.stdout.write(result.stdout ?? "");

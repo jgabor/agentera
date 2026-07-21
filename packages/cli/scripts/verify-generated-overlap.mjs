@@ -63,8 +63,8 @@ function ownerResult(owner) {
   if (JSON.stringify(files) !== JSON.stringify(expected)) {
     throw new Error(`${owner} overlap inventory mismatch: expected ${expected.length} exact files, observed ${files.length}`);
   }
-  if (!result.success || result.numFailedTests !== 0 || result.numTotalTests !== result.numPassedTests) {
-    throw new Error(`${owner} overlap tests did not all pass: ${JSON.stringify({ total: result.numTotalTests, passed: result.numPassedTests, failed: result.numFailedTests })}`);
+  if (!result.success || result.numFailedTests !== 0 || result.numTotalTests !== result.numPassedTests + result.numPendingTests) {
+    throw new Error(`${owner} overlap tests did not pass or intentionally skip: ${JSON.stringify({ total: result.numTotalTests, passed: result.numPassedTests, skipped: result.numPendingTests, failed: result.numFailedTests })}`);
   }
   return { files: files.length, tests: result.numTotalTests };
 }

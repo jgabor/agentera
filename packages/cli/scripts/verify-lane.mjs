@@ -12,6 +12,7 @@ const OWNER_NAMES = ["source", "stress", "performance", "package"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRoot = path.resolve(packageRoot, "../..");
 const root = path.resolve(process.env.AGENTERA_VERIFICATION_ROOT ?? defaultRoot);
+const inventoryPackageRoot = path.join(root, "packages/cli");
 const contractPath = path.resolve(
   process.env.AGENTERA_VERIFICATION_CONTRACT
     ?? path.join(root, "references/analysis/verification-policy.yaml"),
@@ -21,11 +22,16 @@ function relative(file) {
   return path.relative(root, file).split(path.sep).join("/");
 }
 
+function runnerPath(file) {
+  return path.relative(inventoryPackageRoot, path.join(root, file)).split(path.sep).join("/");
+}
+
 function filesBelow(directory, suffix) {
   if (!fs.existsSync(directory)) return [];
   return fs.readdirSync(directory, { withFileTypes: true })
     .flatMap((entry) => {
       const candidate = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) return [];
       return entry.isDirectory() ? filesBelow(candidate, suffix) : candidate.endsWith(suffix) ? [candidate] : [];
     });
 }
@@ -80,6 +86,29 @@ function inventory(contract) {
     }
   }
 
+  const evidenceProducers = new Map();
+  for (const rule of contract.inventory.rules ?? []) {
+    if (!rule.evidence_producer) continue;
+    if (rule.path === undefined || !files.includes(rule.path)) {
+      errors.push(`evidence producer must name one inventory file: ${rule.path ?? "missing path"}`);
+      continue;
+    }
+    if (assignments.get(rule.path) !== rule.owner) {
+      errors.push(`evidence producer owner mismatch: ${rule.path} is ${assignments.get(rule.path)}, not ${rule.owner}`);
+      continue;
+    }
+    if (evidenceProducers.has(rule.owner)) {
+      errors.push(`multiple evidence producers for ${rule.owner}: ${evidenceProducers.get(rule.owner)}, ${rule.path}`);
+      continue;
+    }
+    evidenceProducers.set(rule.owner, rule.path);
+  }
+  for (const [owner, definition] of Object.entries(contract.owners ?? {})) {
+    if (definition.evidence !== undefined && !evidenceProducers.has(owner)) {
+      errors.push(`${owner} evidence has no marked inventory producer`);
+    }
+  }
+
   for (const [policy, owners] of Object.entries(contract.policies ?? {})) {
     const duplicates = owners.filter((owner, index) => owners.indexOf(owner) !== index);
     if (duplicates.length > 0) errors.push(`policy '${policy}' repeats owner '${duplicates[0]}'`);
@@ -96,7 +125,7 @@ function inventory(contract) {
     if (!Array.isArray(definition.integration.command) || definition.integration.command.length < 2) errors.push(`${owner} integration command is invalid`);
   }
 
-  return { files, assignments, errors };
+  return { files, assignments, evidenceProducers, errors };
 }
 
 function validated() {
@@ -116,23 +145,49 @@ function validated() {
   return { contract, ...result };
 }
 
-function forwardedFilters(definition, forwarded) {
+function canonicalInventoryFile(filter, state) {
+  const normalized = filter.replaceAll("\\", "/");
+  if (/^file:/i.test(normalized)) throw new Error("file URLs are not supported");
+  if (normalized.split("/").includes("..")) throw new Error("traversal filters are not supported");
+  if (/[*?{}[\]]/.test(normalized)) throw new Error("glob filters are not supported");
+  if (!path.isAbsolute(normalized) && !normalized.startsWith(".") && !normalized.includes("/")) {
+    throw new Error("selectors are not supported; expected an exact canonical inventory file");
+  }
+  const base = normalized.startsWith("packages/") ? root : inventoryPackageRoot;
+  const candidate = path.resolve(base, normalized);
+  if (!fs.existsSync(candidate)) throw new Error("no canonical inventory file");
+  if (!fs.statSync(candidate).isFile()) throw new Error("directories are not supported");
+  const canonical = fs.realpathSync(candidate);
+  const matches = state.files.filter((file) => fs.realpathSync(path.join(root, file)) === canonical);
+  if (matches.length !== 1) throw new Error("not a canonical inventory file");
+  return matches[0];
+}
+
+function normalizedSelection(owner, state, forwarded) {
+  const definition = state.contract.owners[owner];
   const safe = definition.forwarding?.safe_options ?? {};
   const forbidden = definition.forwarding?.forbidden_options ?? {};
-  const filters = [];
-  let positionalOnly = false;
-  for (let index = 0; index < forwarded.length; index += 1) {
-    const argument = forwarded[index];
-    if (positionalOnly) {
-      filters.push(argument);
-      continue;
-    }
+  const options = [];
+  const files = [];
+  let sawFile = false;
+  for (const argument of forwarded) {
     if (argument === "--") {
-      positionalOnly = true;
+      if (sawFile) throw new Error("ambiguous delimiter after a positional filter");
       continue;
     }
     if (!argument.startsWith("-")) {
-      filters.push(argument);
+      sawFile = true;
+      let file;
+      try {
+        file = canonicalInventoryFile(argument, state);
+      } catch (error) {
+        const display = JSON.stringify(argument.length > 200 ? `${argument.slice(0, 197)}...` : argument);
+        throw new Error(`filter ${display}: ${error.message}`);
+      }
+      if (state.assignments.get(file) !== owner) {
+        throw new Error(`filter ${JSON.stringify(argument)}: owner ${state.assignments.get(file)}`);
+      }
+      if (!files.includes(file)) files.push(file);
       continue;
     }
     const option = argument.split("=", 1)[0];
@@ -140,48 +195,36 @@ function forwardedFilters(definition, forwarded) {
     if (safe[option] === undefined) throw new Error(`unknown option '${option}': unreviewed options may alter owner selection or evidence output`);
     if (safe[option] === "none" && argument.includes("=")) throw new Error(`safe flag '${option}' does not accept a value`);
     if (safe[option] !== "none") throw new Error(`invalid forwarding contract for '${option}'`);
+    options.push(option);
   }
-  return filters;
-}
-
-function matchingInventoryFiles(filter, state) {
-  const normalized = filter.replaceAll("\\", "/");
-  if (normalized.split("/").includes("..") || /[*?{}[\]]/.test(normalized)) return [];
-  const pathLike = path.isAbsolute(filter) || normalized.startsWith(".") || normalized.includes("/");
-  const base = normalized.startsWith("packages/") ? root : path.join(root, "packages/cli");
-  const canonical = pathLike ? path.resolve(base, filter).split(path.sep).join("/") : undefined;
-  return state.files.filter((file) => {
-    const absoluteFile = path.join(root, file).split(path.sep).join("/");
-    return canonical
-      ? absoluteFile === canonical || absoluteFile.startsWith(`${canonical}/`)
-      : file.includes(normalized);
-  });
+  const producer = state.evidenceProducers.get(owner);
+  if (files.length > 0 && producer !== undefined && !files.includes(producer)) {
+    throw new Error(`selection omits required evidence producer '${runnerPath(producer)}'`);
+  }
+  const selectedFiles = files.length > 0
+    ? files
+    : state.files.filter((file) => state.assignments.get(file) === owner);
+  return {
+    argv: [
+      ...options,
+      ...selectedFiles.map(runnerPath),
+    ],
+  };
 }
 
 function validateForwardedSelection(owner, state, forwarded) {
-  let filters;
   try {
-    filters = forwardedFilters(state.contract.owners[owner], forwarded);
+    return normalizedSelection(owner, state, forwarded);
   } catch (error) {
     console.error(`${owner} owner rejected ${error.message}`);
-    console.error(`ownership risk: forwarded options must not change suite membership, configuration, or evidence output`);
-    console.error(`correction: use positional ${owner}-owned file filters or reviewed safe flags; ${state.contract.owners[owner].correction}`);
+    console.error(`ownership risk: forwarded arguments must not change suite membership, configuration, or evidence output`);
+    const producer = state.evidenceProducers.get(owner);
+    if (producer !== undefined) {
+      console.error(`required producer: ${runnerPath(producer)}`);
+    }
+    console.error(`correction: select only ${owner}-owned files by exact inventory path from 'node packages/cli/scripts/verify-lane.mjs inventory --json' or run the complete owner; ${state.contract.owners[owner].correction}`);
     return undefined;
   }
-  for (const filter of filters) {
-    const matches = matchingInventoryFiles(filter, state);
-    const owners = [...new Set(matches.map((file) => state.assignments.get(file)))];
-    if (matches.length === 0 || owners.length !== 1 || owners[0] !== owner) {
-      const display = JSON.stringify(filter.length > 200 ? `${filter.slice(0, 197)}...` : filter);
-      const unsupported = filter.replaceAll("\\", "/").split("/").includes("..") || /[*?{}[\]]/.test(filter);
-      const detail = unsupported ? "traversal and glob filters are not supported" : matches.length === 0 ? "no owned inventory file" : `owner ${owners.join(", ")}`;
-      console.error(`${owner} owner rejected filter ${display}: ${detail}`);
-      console.error(`ownership risk: the filter is not confined to the ${owner} inventory`);
-      console.error(`correction: select only ${owner}-owned files from 'node packages/cli/scripts/verify-lane.mjs inventory --json'; ${state.contract.owners[owner].correction}`);
-      return undefined;
-    }
-  }
-  return filters;
 }
 
 function runOwner(owner, state, forwarded = []) {
@@ -191,8 +234,8 @@ function runOwner(owner, state, forwarded = []) {
     console.log(`${owner} owner: 0 whole files; mixed evidence remains with its primary owner until separation`);
     return 0;
   }
-  const filters = validateForwardedSelection(owner, state, forwarded);
-  if (filters === undefined) return 2;
+  const selection = validateForwardedSelection(owner, state, forwarded);
+  if (selection === undefined) return 2;
   if (owner === "performance" && process.env.AGENTERA_VERIFICATION_RESULT) {
     console.error(`${owner} owner rejected environment output override AGENTERA_VERIFICATION_RESULT`);
     console.error(`ownership risk: reporter redirection can suppress the required evidence line`);
@@ -200,20 +243,19 @@ function runOwner(owner, state, forwarded = []) {
     return 2;
   }
   const config = path.relative(packageRoot, path.join(root, definition.config)).split(path.sep).join("/");
-  const ownedSelection = owned.map((file) => path.relative(packageRoot, path.join(root, file)).split(path.sep).join("/"));
-  const selected = forwarded.length > 0
-    ? [...forwarded, ...(filters.length === 0 ? ownedSelection : [])]
-    : ownedSelection;
-  const reporter = process.env.AGENTERA_VERIFICATION_RESULT
-    ? ["--reporter=json", `--outputFile=${process.env.AGENTERA_VERIFICATION_RESULT}`]
+  const resultChannel = process.env.AGENTERA_VERIFICATION_RESULT;
+  const reporter = resultChannel
+    ? ["--reporter=json", `--outputFile=${resultChannel}`]
     : [];
   const captureEvidence = definition.evidence !== undefined;
-  const result = spawnSync("vp", ["test", "run", "--config", config, ...selected, ...reporter], {
+  const runnerEnv = { ...process.env, AGENTERA_VERIFICATION_OWNER: owner };
+  delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
+  const result = spawnSync("vp", ["test", "run", "--config", config, ...selection.argv, ...reporter], {
     cwd: packageRoot,
     stdio: captureEvidence ? ["inherit", "pipe", "pipe"] : "inherit",
     encoding: captureEvidence ? "utf8" : undefined,
     maxBuffer: captureEvidence ? 1024 * 1024 : undefined,
-    env: { ...process.env, AGENTERA_VERIFICATION_OWNER: owner },
+    env: runnerEnv,
   });
   if (captureEvidence) {
     process.stdout.write(result.stdout ?? "");
@@ -274,7 +316,8 @@ if (command === "inventory") {
   const counts = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, [...state.assignments.values()].filter((value) => value === owner).length]));
   const files = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, state.files.filter((file) => state.assignments.get(file) === owner)]));
   const integrations = Object.fromEntries(Object.entries(state.contract.owners).flatMap(([owner, definition]) => definition.integration ? [[owner, definition.integration.path]] : []));
-  const output = { counts: { total: state.files.length, ...counts }, files, integrations, mixed_files: state.contract.mixed_files ?? [] };
+  const evidence_producers = Object.fromEntries(state.evidenceProducers);
+  const output = { counts: { total: state.files.length, ...counts }, files, integrations, evidence_producers, mixed_files: state.contract.mixed_files ?? [] };
   console.log(process.argv.includes("--json") ? JSON.stringify(output, null, 2) : YAML.stringify(output).trim());
   process.exit(0);
 }
