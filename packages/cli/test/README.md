@@ -34,6 +34,10 @@ only reviewed observability flags and exact owner-inventory files reach Vitest,
 and every performance selection must retain the marked evidence producer.
 Result-file channels are consumed by the parent owner and removed from its test
 environment, so nested owner checks cannot inherit or overwrite that artifact.
+Full-overlap proof also validates every non-passing assertion from the structured
+reporter. On Darwin no source test may be pending; elsewhere exactly the named
+Darwin process-identity test may be `skipped`. Its path, full name, and status
+must match the overlap contract, while package proof permits no pending tests.
 
 ## Classification key
 

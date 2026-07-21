@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { pinGeneratedGeneration, selectGeneratedGeneration } from "./generated-output.mjs";
+import { validatePendingTests } from "./overlap-pending.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
@@ -63,10 +64,8 @@ function ownerResult(owner) {
   if (JSON.stringify(files) !== JSON.stringify(expected)) {
     throw new Error(`${owner} overlap inventory mismatch: expected ${expected.length} exact files, observed ${files.length}`);
   }
-  if (!result.success || result.numFailedTests !== 0 || result.numTotalTests !== result.numPassedTests + result.numPendingTests) {
-    throw new Error(`${owner} overlap tests did not pass or intentionally skip: ${JSON.stringify({ total: result.numTotalTests, passed: result.numPassedTests, skipped: result.numPendingTests, failed: result.numFailedTests })}`);
-  }
-  return { files: files.length, tests: result.numTotalTests };
+  const pending = validatePendingTests(owner, result, { platform: process.platform, repoRoot });
+  return { files: files.length, tests: result.numTotalTests, pending };
 }
 
 try {

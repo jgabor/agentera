@@ -13,3 +13,13 @@ record:
     - GIVEN source, stress, package, unowned, traversal, glob, selector, configuration, output, unknown, or producer-omitting routes are attempted WHEN validation runs THEN every route exits before runner invocation and sentinel evidence proves zero spawns.
     - GIVEN the direct and integration performance owners run WHEN evidence is observed THEN each executes one real 25-sample matrix, emits exactly one bounded schema record, and ordinary source emits none.
     - GIVEN prior progress underclaimed counts or overstated forwarding safety WHEN repair completes THEN a new immutable progress record reports final exact counts and corrected evidence.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: All five routing criteria pass, but the full-overlap gate changed for the intentional Darwin-only pending test accepts any number or identity of pending tests whenever total equals passed plus pending. Arbitrary skip/todo/runIf cases can therefore reduce exact owner execution without failing. Enforce the platform-specific expected pending count and preferably exact skipped-test identity, with a regression proving unexpected skips fail.
+    provenance:
+      attempt_id: ukhcjxcfim-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 08:53
+      writer_command: agentera state plan record-evaluation
