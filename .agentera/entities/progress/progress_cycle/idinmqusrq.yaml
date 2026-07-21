@@ -1,0 +1,15 @@
+id: idinmqusrq
+artifact: progress
+record:
+  timestamp: 2026-07-21 15:21
+  type: test
+  phase: audit
+  what: Ran final owner, policy, package, and measured-source proof for ymkdnqmroi.
+  context:
+    intent: Close the verification redesign only with complete independent evidence and an honest measured comparison.
+    constraints: No version, release, CHANGELOG, vision, decision, or unrelated cleanup changes.
+    unknowns: Whether the current shared-machine contention or a source-suite regression caused the final median miss.
+    scope: references/analysis/verification-final-proof-2026-07-21.yaml; references/analysis/worker-policy-2026-07-21.yaml; plan/progress entities
+  discovered: All four owners and all seven policy compositions passed with a 200-file ownership inventory and no gaps or overlap. The final named-selector source median was 46.599s, 1.599s above the 45s acceptance limit, although it improved 42.799% over the 81.466s four-worker baseline; the current inventory has 194 files and 2370 tests versus 191 and 2230.
+  verified: "source 194 files/2369 passed/1 skipped; stress 1/2; performance 3/3 with valid evidence; package 2/10; targeted, precommit, fast, local, merge, scheduled, and release all passed. Typecheck, build, generated overlap, capability contract, compact, pack dry-run, and py-ts parity passed. Durable evidence: references/analysis/verification-final-proof-2026-07-21.yaml."
+  next: Keep ymkdnqmroi in progress and rerun the three measured source-owner samples after resolving the 1.599-second median wall-time miss; do not close blocked historical tasks or archive the plan.

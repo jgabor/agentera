@@ -13,7 +13,7 @@ record:
     - liuqlppclk
     - lkyflumkrj
     - rpsxvneecd
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the redesign is complete WHEN owner commands run THEN source, stress, performance, and package all pass independently.
     - GIVEN execution policies run WHEN composition is validated THEN intended owners execute without gaps or overlap.

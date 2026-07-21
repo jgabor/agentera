@@ -20,3 +20,13 @@ record:
     - GIVEN a cleanup implies production export change WHEN scope is checked THEN that work is deferred to a separate plan.
   test_proportionality: For every deletion, record the surviving owner and run its pass and failure evidence.
   plan: rmtdgltdgm
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: rpsxvneecd-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 14:57
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,227 @@
+schemaVersion: agentera.verificationFinalProof.v1
+status: not_accepted
+captured: 2026-07-21
+task: ymkdnqmroi
+revision: 454132b8
+
+scope:
+  authoritative_policy: references/analysis/verification-policy.yaml
+  historical_baseline: references/analysis/verification-baseline-2026-07-20.yaml
+  measured_selector: AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22
+  worker_policy: references/analysis/worker-policy-2026-07-21.yaml
+  runner:
+    logical_cpus: 16
+    node: v22.23.1
+    pnpm: 10.30.3
+    workers: 8
+
+ownership:
+  inventory:
+    total_files: 200
+    source: 194
+    stress: 1
+    performance: 3
+    package: 2
+    mixed_files: 0
+    result: pass
+  independent_owners:
+    - owner: source
+      command: pnpm -C packages/cli run test:source
+      wall_seconds: 43.282
+      result: pass
+      files: 194
+      passed_tests: 2369
+      skipped_tests: 1
+    - owner: stress
+      command: pnpm -C packages/cli run test:stress
+      wall_seconds: 19.463
+      result: pass
+      files: 1
+      passed_tests: 2
+    - owner: performance
+      command: pnpm -C packages/cli run test:performance
+      wall_seconds: 19.374
+      result: pass
+      files: 3
+      passed_tests: 3
+      performance_evidence: pass
+    - owner: package
+      command: pnpm -C packages/cli run verify:package
+      wall_seconds: 15.732
+      result: pass
+      files: 2
+      passed_tests: 10
+
+policy_compositions:
+  result: pass
+  runs:
+    - policy: targeted
+      owners: [source]
+      wall_seconds: 54.201
+    - policy: precommit
+      owners: [source]
+      wall_seconds: 59.291
+    - policy: fast
+      owners: [source]
+      wall_seconds: 44.113
+    - policy: local
+      owners: [source]
+      wall_seconds: 43.544
+    - policy: merge
+      owners: [source, package]
+      wall_seconds: 52.978
+    - policy: scheduled
+      owners: [source, stress, performance]
+      wall_seconds: 82.612
+    - policy: release
+      owners: [source, stress, performance, package]
+      wall_seconds: 96.956
+  interpretation: >-
+    Every canonical policy completed with the exact ordered owner list declared
+    by the authority. The inventory validation found no ownership gap, overlap,
+    or mixed file. Performance ran through its declared integration surface.
+
+measurement:
+  method: >-
+    Three serial, warm, complete source-owner runs used the named measured
+    selector with VITEST_MAX_WORKERS unset. Wall time encloses the complete pnpm
+    process. Vitest default-reporter dimensions are the authoritative current
+    timing dimensions. All runs passed 194 files and 2369 tests with one
+    declared skip.
+  retained_runs:
+    - sample: 1
+      wall_seconds: 46.675
+      vitest_duration_seconds: 45.69
+      transform_seconds: 3.86
+      setup_seconds: 0
+      import_seconds: 21.73
+      cumulative_test_seconds: 310.65
+      environment_seconds: 0.011
+      files: 194
+      tests_passed: 2369
+      tests_skipped: 1
+    - sample: 2
+      wall_seconds: 46.599
+      vitest_duration_seconds: 45.65
+      transform_seconds: 3.83
+      setup_seconds: 0
+      import_seconds: 21.78
+      cumulative_test_seconds: 311.25
+      environment_seconds: 0.010
+      files: 194
+      tests_passed: 2369
+      tests_skipped: 1
+    - sample: 3
+      wall_seconds: 46.445
+      vitest_duration_seconds: 45.49
+      transform_seconds: 3.78
+      setup_seconds: 0
+      import_seconds: 21.32
+      cumulative_test_seconds: 310.16
+      environment_seconds: 0.010
+      files: 194
+      tests_passed: 2369
+      tests_skipped: 1
+  median:
+    wall_seconds: 46.599
+    vitest_duration_seconds: 45.65
+    transform_seconds: 3.83
+    setup_seconds: 0
+    import_seconds: 21.73
+    cumulative_test_seconds: 310.65
+    environment_seconds: 0.010
+  comparison_to_four_worker_baseline:
+    baseline_revision: af9cf773
+    baseline_median:
+      wall_seconds: 81.466
+      vitest_duration_seconds: 80.90
+      transform_seconds: 1.76
+      setup_seconds: 0
+      import_seconds: 14.10
+      cumulative_assertion_seconds: 280.978
+      files: 191
+      tests: 2230
+      workers: 4
+    final_median:
+      wall_seconds: 46.599
+      vitest_duration_seconds: 45.65
+      transform_seconds: 3.83
+      setup_seconds: 0
+      import_seconds: 21.73
+      cumulative_test_seconds: 310.65
+      files: 194
+      tests: 2370
+      workers: 8
+    calculation:
+      wall_seconds_saved: 34.867
+      wall_improvement_percent: 42.799
+      file_count_change: +3
+      file_count_change_percent: 1.571
+      test_count_change: +140
+      test_count_change_percent: 6.278
+      cumulative_test_time_change_percent: 10.560
+    inventory_caveat: >-
+      The historical baseline has three fewer files and 140 fewer tests. Wall
+      improvement exceeds the required 35 percent, but cumulative test time is
+      not a like-for-like speed claim because the inventories differ.
+  slowest_tests:
+    method: >-
+      A complete exact-source-inventory verbose observer under the same selector
+      emitted per-assertion durations; the owner JSON reporter does not emit
+      assertion duration fields. The observer passed 194 files, 2369 tests, and
+      one skip, with 285550 ms summed assertion durations.
+    current_top_five:
+      - test: test/state/planEntities.test.ts > keeps one active plan unambiguous beside more than twenty archived plans and exposes archived exact/filter reads
+        milliseconds: 7717
+      - test: test/cli/primeCompatibilityBoundary.test.ts > runtime reconciliation > the policy declares exactly the fields the prime selector accepts
+        milliseconds: 5533
+      - test: test/cli/activeProtocolSurface.test.ts > rejects retired public identity and selector vocabulary on source and runtime surfaces
+        milliseconds: 4256
+      - test: test/cli/lifecycleProtocol.test.ts > uses canonical entities for startup and compact while ignoring hostile aggregates
+        milliseconds: 3868
+      - test: test/state/listRetrieval.test.ts > exhaustively follows every bounded yaml cursor without repeating a page boundary
+        milliseconds: 3522
+    baseline_top_three:
+      - test: test/state/entityStorage.test.ts > repeatedly gives simultaneous stale-lock reclaimers one publisher and one explicit loser
+        median_milliseconds: 18791
+      - test: test/state/entityMigrationPreview.test.ts > uses snapshot-bound whole-entry pagination to recover every entry without gaps or duplicates
+        median_milliseconds: 16680
+      - test: test/cli/primeProjectionContract.test.ts > keeps cold entity-mode startup and retrieval within authority budgets at declared scales
+        median_milliseconds: 11049
+
+gates:
+  - command: pnpm -C packages/cli run typecheck
+    result: pass
+  - command: pnpm -C packages/cli build
+    result: pass
+  - command: pnpm -C packages/cli run verify:generated-overlap
+    result: pass
+  - command: node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
+    result: pass
+  - command: node packages/cli/dist/bin/agentera.js check compact
+    result: pass
+  - command: pnpm -C packages/cli run pack:dry-run
+    result: pass
+  - command: bash packages/cli/scripts/py_ts_parity.sh --check --json
+    result: pass
+    detail: drift none
+  - command: bunx markdownlint --dot --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- TODO.md
+    result: pass
+  - command: bash scripts/precommit-vitest.sh <changed paths>
+    result: pass
+    detail: targeted evaluatorHandoffContract, inspekteraEvaluationReport, and activeProtocolSurface tests
+
+acceptance:
+  owners_independent: pass
+  policy_compositions: pass
+  worker_count_at_most_eight: pass
+  wall_improvement_at_least_35_percent: pass
+  median_wall_at_most_45_seconds: fail
+  measured_median_wall_seconds: 46.599
+  limit_seconds: 45
+  excess_seconds: 1.599
+  conclusion: >-
+    This proof cannot close ymkdnqmroi. Preserve its in-progress state and
+    rerun a controlled three-owner measurement to determine the cause of the
+    1.599-second median miss; do not represent the explicit CI four-worker
+    fallback as a benchmarked configuration.

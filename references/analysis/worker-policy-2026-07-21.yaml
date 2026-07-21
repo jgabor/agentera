@@ -196,6 +196,12 @@ policy_composition:
     No new composition or owner was added for worker selection.
 
 caveats:
+  - >-
+    references/analysis/verification-final-proof-2026-07-21.yaml reran the
+    final three-source-owner proof on this selector. All owner and policy
+    evidence passed and wall improvement was 42.799 percent over the historical
+    four-worker baseline, but its 46.599-second median missed the current
+    45-second task limit; ymkdnqmroi remains in progress.
   - Decisions retrieval was degraded to 5 of 50 records; missing detail was not reconstructed.
   - Satisfaction records remain unavailable for llavvlpcmb and djmjbmruyk.
   - Vision and profile state were absent from the original build context; no approval was inferred.

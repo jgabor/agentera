@@ -69,6 +69,7 @@ const REFERENCE_CLASSIFICATIONS: Record<string, ReferenceClassification> = {
   "references/analysis/analytics-boundary-proportional-2026-07-20.yaml": { kind: "excluded", reason: "evaluator fixture" },
   "references/analysis/migration-pagination-proportional-2026-07-20.yaml": { kind: "excluded", reason: "evaluator fixture" },
   "references/analysis/verification-baseline-2026-07-20.yaml": { kind: "excluded", reason: "evaluator fixture" },
+  "references/analysis/verification-final-proof-2026-07-21.yaml": { kind: "excluded", reason: "evaluator fixture" },
   "references/analysis/worker-policy-2026-07-21.yaml": { kind: "excluded", reason: "evaluator fixture" },
   "references/analysis/verification-policy.yaml": { kind: "active" },
   "references/artifacts/artifact-registry-interface-model.yaml": { kind: "excluded", reason: "internal adapter not public identity" },
