@@ -1,0 +1,14 @@
+id: gkhkwbenef
+artifact: progress
+record:
+  timestamp: 2026-07-21 21:44
+  type: fix
+  phase: build
+  what: Prevented pre-commit source verification from leaking the parent repository routing variables into nested Git fixtures.
+  context:
+    intent: "Keep full staged verification safe: fixture commits must stay inside their temporary repositories and never rewrite the developer branch or index."
+    constraints: Sanitize only at the verification exec boundary so staged-path routing and root discovery retain their existing behavior.
+    unknowns: none
+    scope: scripts/precommit-vitest.sh and packages/cli/test/scripts/precommitVitest.test.ts
+  discovered: Lefthook's pre-commit environment exported GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE, and GIT_COMMON_DIR through precommit-vitest.sh; broad source tests then committed fixture states onto the active branch.
+  verified: A focused precommitVitest regression passed 25 tests. Simulated parent-hook execution passed the full source suite with 2,367 tests passed and 1 skipped while branch HEAD and the cleanup working tree remained unchanged; typecheck and git diff --check passed.

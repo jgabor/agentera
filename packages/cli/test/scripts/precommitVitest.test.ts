@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,7 +31,64 @@ function runPrecommitVitest(...stagedPaths: string[]): Route {
   throw new Error(`unexpected route: ${result.stdout.trim()}`);
 }
 
+function gitPath(...args: string[]): string {
+  const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" });
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
+}
+
 describe("scripts/precommit-vitest.sh staged routing", () => {
+  it("removes parent-hook repository routing before verification", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "precommit-vitest-"));
+    const binDir = path.join(tempDir, "bin");
+    const envLog = path.join(tempDir, "verification-env");
+    fs.mkdirSync(binDir);
+    fs.writeFileSync(path.join(binDir, "node"), `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$2" == route ]]; then
+  printf 'local\\n'
+  exit 0
+fi
+[[ "$2" == policy ]]
+for name in GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR; do
+  if [[ -v "$name" ]]; then
+    printf '%s=present\\n' "$name"
+  else
+    printf '%s=absent\\n' "$name"
+  fi
+done > "$PRECOMMIT_VITEST_ENV_LOG"
+`);
+    fs.chmodSync(path.join(binDir, "node"), 0o755);
+
+    try {
+      const result = spawnSync("bash", [PRECOMMIT_SCRIPT, "packages/cli/src/cli/prime.ts"], {
+        cwd: REPO_ROOT,
+        env: {
+          ...process.env,
+          GIT_DIR: gitPath("rev-parse", "--git-dir"),
+          GIT_WORK_TREE: REPO_ROOT,
+          GIT_INDEX_FILE: gitPath("rev-parse", "--git-path", "index"),
+          GIT_COMMON_DIR: gitPath("rev-parse", "--git-common-dir"),
+          PATH: `${binDir}:${process.env.PATH}`,
+          BASH_ENV: "",
+          PRECOMMIT_VITEST_ENV_LOG: envLog,
+        },
+        encoding: "utf8",
+      });
+
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      expect(fs.readFileSync(envLog, "utf8")).toBe([
+        "GIT_DIR=absent",
+        "GIT_WORK_TREE=absent",
+        "GIT_INDEX_FILE=absent",
+        "GIT_COMMON_DIR=absent",
+        "",
+      ].join("\n"));
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it("routes broad source changes through the local source-owner policy", () => {
     expect(runPrecommitVitest("packages/cli/src/cli/prime.ts")).toEqual({
       mode: "policy", policy: "local", targets: [],

@@ -110,6 +110,11 @@ if [[ -n "${PRECOMMIT_VITEST_PRINT_ROUTE:-}" ]]; then
   exit 0
 fi
 
+# Lefthook exports these paths for its own repository. Test fixtures create
+# nested repositories, so their Git commands must discover those repositories
+# rather than inherit the parent hook's index and worktree.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+
 if [[ -n "$RUN_POLICY" ]]; then
   exec node scripts/verify-lane.mjs policy "$RUN_POLICY"
 fi
