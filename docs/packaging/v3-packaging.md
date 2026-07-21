@@ -32,13 +32,21 @@ lifecycle scripts disabled. Checkout `prepack` is a guard that rejects direct
 
 ## Generated-output and verification ownership
 
-The three owners are independent, including when they overlap:
+`references/analysis/verification-policy.yaml` is the executable authority for
+test inventory ownership and policy composition. The four test owners are
+independent:
 
 | Owner | Entry point | Owns |
 | ----- | ----------- | ---- |
 | Source | `pnpm -C packages/cli test` (`test:source`) | Every source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory; source never reads checkout `dist/`, `bundle/`, or `.agentera-generated/`. |
-| Build | `pnpm -C packages/cli build` | One immutable checkout generation containing matching `dist/` and `bundle/`, followed by one atomic `current` symlink replacement. |
+| Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
+| Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer and integration check. |
 | Package | `pnpm -C packages/cli run verify:package` | Every package-assigned test against one genuinely packed, extracted, production-installed regular tree constructed independently of checkout output. |
+
+Build is a separate generated-output participant, not a test owner.
+`pnpm -C packages/cli build` publishes one immutable checkout generation
+containing matching `dist/` and `bundle/`, followed by one atomic `current`
+symlink replacement.
 
 `packages/cli/test/packaging/packageSetup.ts` is the canonical package fixture.
 It builds once, packs with lifecycle scripts disabled to prevent a second
@@ -48,15 +56,33 @@ conjunctions. `copyBundleSafety.test.ts` consumes it for focused staging
 preflight and filesystem-side-effect failures. A failing lane labels its own
 boundary and does not invoke the other lane.
 
-Pre-commit runs the source lane only. CI runs both lanes explicitly. Release
-gates may add metadata and dry-run publication checks, but must use the same
-package construction path rather than adding another extracted-package matrix.
+The canonical policy compositions are:
 
-`pnpm -C packages/cli run verify:generated-overlap` starts all three complete
-owners from absent checkout output, releases their global-setup barrier once
+| Policy | Owners, in order |
+| ------ | ---------------- |
+| `targeted` | Source |
+| `precommit` | Source |
+| `fast` | Source |
+| `local` | Source |
+| `merge` | Source, package |
+| `scheduled` | Source, stress, performance |
+| `release` | Source, stress, performance, package |
+
+Pre-commit delegates composition to `verify-lane.mjs`. Ordinary source paths
+run targeted source files or the `local`/`precommit` source composition.
+Conservative authority and verification surfaces route to `release`, so all
+four owners run before those changes can commit. CI explicitly runs source and
+package, generated-output overlap, typecheck, build, and repository gates.
+Release gates add the stress and performance owners plus metadata and dry-run
+publication checks, while using the same package construction path rather than
+adding another extracted-package matrix.
+
+`pnpm -C packages/cli run verify:generated-overlap` starts the complete source,
+build, and package participants from absent checkout output, releases their
+global-setup barrier once
 all are ready, compares the exact source and package file inventories with
 structured Vitest results, and continuously pins and validates selected
-generations until every owner exits. Its JSON result records exact owner file
+generations until every participant exits. Its JSON result records exact owner file
 and test totals plus whether any actual reader observation had an identity or
 surface-validation mismatch; it does not turn scheduler-dependent observation
 counts into durable evidence.

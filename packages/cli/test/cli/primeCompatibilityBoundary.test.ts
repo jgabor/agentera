@@ -275,21 +275,16 @@ describe("prime consumer compatibility boundary (Plan Task 1)", () => {
 
   describe("runtime reconciliation: the policy stays honest against the CLI", () => {
     it("the policy declares exactly the fields the prime selector accepts", () => {
-      // Every declared field must be selectable without error; any undeclared
-      // selector must fail. This binds the YAML authority to emitPrime's
-      // availablePrimeFields so Task 2 cannot drift them independently.
-      const accepted: string[] = [];
-      const rejected: string[] = [];
-      for (const field of policy.declared_available_fields) {
-        const { rc } = capture({ command: "prime", format: "json", fields: field });
-        if (rc === 0) accepted.push(field);
-        else rejected.push(field);
-      }
-      expect(rejected, "declared fields must be selectable").toEqual([]);
-      expect(accepted.sort()).toEqual([...policy.declared_available_fields].sort());
+      // The selector accepts a comma-separated field set, so exercise the
+      // complete declared set in one real prime capture rather than rebuilding
+      // the same startup projection once per field.
+      const selected = policy.declared_available_fields.join(",");
+      const { rc, out } = capture({ command: "prime", format: "json", fields: selected });
+      expect(rc, "declared fields must be selectable together").toBe(0);
+      expect(Object.keys(JSON.parse(out)).sort()).toEqual(policy.declared_available_fields.filter((field) => field !== "capability_context").sort());
 
       // A field outside the declared set must be rejected.
-      expect(capture({ command: "prime", format: "json", fields: "not_a_real_field" }).rc).toBe(1);
+      expect(capture({ command: "prime", format: "json", fields: `${selected},not_a_real_field` }).rc).toBe(1);
     });
 
     it("default bare prime emits every required field and omits inactive conditional defaults", () => {

@@ -1,19 +1,88 @@
 schemaVersion: agentera.verificationFinalProof.v1
-status: not_accepted
+status: accepted
 captured: 2026-07-21
 task: ymkdnqmroi
-revision: 454132b8
 
 scope:
   authoritative_policy: references/analysis/verification-policy.yaml
   historical_baseline: references/analysis/verification-baseline-2026-07-20.yaml
   measured_selector: AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22
   worker_policy: references/analysis/worker-policy-2026-07-21.yaml
+  measured_parent: 2e84ba028a3c8ec76649e06b00e21e9452b4ef60
+  parent_worktree_diff_sha256: 58d4b87c4caa29990af3a32238a96bd89503016db4d74aaaf4c088df8d18bba6
   runner:
+    name: local-16-logical-cpu-node22
+    os: Linux 7.1.4-1-cachyos x86_64
+    cpu: AMD Ryzen 7 9800X3D 8-Core Processor
+    physical_cores: 8
     logical_cpus: 16
     node: v22.23.1
     pnpm: 10.30.3
-    workers: 8
+    resolved_workers: 8
+  final_inventory_sha256: 37b16a0224f75b2160fd85094d3a9ee3d77a6ac31eaf36f2f2df600a3cb54e61
+  final_input_sha256:
+    packages/cli/test/state/planEntities.test.ts: 5b08500e57f31b13d89201e490c35aaa9fd73ee25ac70ecfbb431dc6bfef868e
+    packages/cli/test/cli/primeCompatibilityBoundary.test.ts: a1b0000b0534908ce380c4c604973689e149654faf0ef6b22b107fe53dc35ffe
+    packages/cli/test/cli/activeProtocolSurface.test.ts: 1be33e45465f361bbf9ace58557558b00757925f2afe9adcae30d28289c1839e
+    packages/cli/test/verification/laneOwnership.test.ts: 67388a1cb38c430351ddef22a59afdf981c616b0f40fe5cf0710718a817cb51f
+    docs/packaging/v3-packaging.md: f9fab7467c3740d2c5a5c185846bb2ab8efcdfdd48bcc69cd4958c6c1fb0f5fb
+
+controlled_parent_block:
+  purpose: establish the exact audit-1 retry tree before proof, classification, or optimization edits
+  process_conditions:
+    captured_at: 2026-07-21T15:42:00+02:00
+    one_user: true
+    competing_cpu_bound_process_observed: false
+    VITEST_MAX_WORKERS: unset
+    selector_resolution: named selector resolved to eight workers
+  command: >-
+    AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22
+    AGENTERA_VERIFICATION_RESULT=/tmp/opencode/ymkdnqmroi-current-<phase>.json
+    pnpm -C packages/cli run test:source
+  warmup:
+    retained: false
+    wall_seconds: 45.765
+    status: pass
+  retained_runs:
+    - sample: 1
+      wall_seconds: 46.401
+      files: 194
+      tests_passed: 2369
+      tests_skipped: 1
+    - sample: 2
+      wall_seconds: 45.973
+      files: 194
+      tests_passed: 2369
+      tests_skipped: 1
+    - sample: 3
+      wall_seconds: 45.697
+      files: 194
+      tests_passed: 2369
+      tests_skipped: 1
+  median_wall_seconds: 45.973
+  result: fail
+  interpretation: >-
+    The exact audit-1 retry tree still exceeded 45 seconds without one outlier,
+    so fixture/setup optimization was required. The JSON-only owner channel did
+    not emit Vitest transform/import dimensions; those are not reconstructed.
+
+root_cause:
+  finding: >-
+    Source tests repeatedly rebuilt equivalent fixture state. The prime
+    compatibility selector ran one complete prime projection per declared field;
+    the archived-plan read test ran 21 already-covered public create/archive
+    cycles; and activeProtocolSurface regenerated every capability context even
+    though it already scans every capability instruction while lifecycleProtocol
+    separately proves every context's canonical plan projection.
+  correction: >-
+    Batch all declared fields through the documented comma-separated selector,
+    seed canonical archived read fixtures while retaining the separate public
+    lifecycle/archive acceptance, and capture one representative runtime context
+    in activeProtocolSurface while retaining all-instruction scanning and the
+    all-capability lifecycle assertion.
+  assertions_removed: 0
+  tests_skipped_or_deleted: 0
+  thresholds_changed: false
 
 ownership:
   inventory:
@@ -27,201 +96,223 @@ ownership:
   independent_owners:
     - owner: source
       command: pnpm -C packages/cli run test:source
-      wall_seconds: 43.282
-      result: pass
+      wall_seconds: 43.194
       files: 194
       passed_tests: 2369
       skipped_tests: 1
+      result: pass
     - owner: stress
       command: pnpm -C packages/cli run test:stress
-      wall_seconds: 19.463
-      result: pass
+      wall_seconds: 19.668
       files: 1
       passed_tests: 2
+      result: pass
     - owner: performance
       command: pnpm -C packages/cli run test:performance
-      wall_seconds: 19.374
-      result: pass
+      wall_seconds: 18.495
       files: 3
       passed_tests: 3
-      performance_evidence: pass
+      structured_evidence: pass
+      result: pass
     - owner: package
       command: pnpm -C packages/cli run verify:package
-      wall_seconds: 15.732
-      result: pass
+      wall_seconds: 16.533
       files: 2
       passed_tests: 10
+      result: pass
 
 policy_compositions:
   result: pass
   runs:
-    - policy: targeted
-      owners: [source]
-      wall_seconds: 54.201
-    - policy: precommit
-      owners: [source]
-      wall_seconds: 59.291
-    - policy: fast
-      owners: [source]
-      wall_seconds: 44.113
-    - policy: local
-      owners: [source]
-      wall_seconds: 43.544
-    - policy: merge
-      owners: [source, package]
-      wall_seconds: 52.978
-    - policy: scheduled
-      owners: [source, stress, performance]
-      wall_seconds: 82.612
-    - policy: release
-      owners: [source, stress, performance, package]
-      wall_seconds: 96.956
+    - { policy: targeted, owners: [source], wall_seconds: 42.701, result: pass }
+    - { policy: precommit, owners: [source], wall_seconds: 42.754, result: pass }
+    - { policy: fast, owners: [source], wall_seconds: 43.486, result: pass }
+    - { policy: local, owners: [source], wall_seconds: 42.343, result: pass }
+    - { policy: merge, owners: [source, package], wall_seconds: 50.191, result: pass }
+    - { policy: scheduled, owners: [source, stress, performance], wall_seconds: 81.380, result: pass }
+    - { policy: release, owners: [source, stress, performance, package], wall_seconds: 98.976, result: pass }
   interpretation: >-
-    Every canonical policy completed with the exact ordered owner list declared
-    by the authority. The inventory validation found no ownership gap, overlap,
-    or mixed file. Performance ran through its declared integration surface.
+    Every canonical policy executed the exact ordered owner list declared by the
+    policy authority. Inventory validation found no gap, overlap, or mixed file.
 
-measurement:
-  method: >-
-    Three serial, warm, complete source-owner runs used the named measured
-    selector with VITEST_MAX_WORKERS unset. Wall time encloses the complete pnpm
-    process. Vitest default-reporter dimensions are the authoritative current
-    timing dimensions. All runs passed 194 files and 2369 tests with one
-    declared skip.
+final_measurement:
+  classification_boundary: >-
+    All code, test, packaging documentation, and evidence-file location choices
+    were final before this block. Retained evidence lives under evidence/ rather
+    than package-copied references/, so retaining reports does not alter the
+    source owner inventory or package fixture input. Only typed state records are
+    appended after this proof.
+  process_conditions:
+    captured_at: 2026-07-21T16:32:32+02:00
+    load_average: [1.11, 2.78, 5.52]
+    cpu_temperature_celsius: 44.2
+    one_user: true
+    competing_cpu_bound_process_observed: false
+    VITEST_MAX_WORKERS: unset
+    selector_resolution: named selector resolved to eight workers
+  command: >-
+    Resolve files.source from `node packages/cli/scripts/verify-lane.mjs
+    inventory --json`, then from packages/cli run `AGENTERA_VITEST_RUNNER_POLICY=
+    local-16-logical-cpu-node22 pnpm exec vp test run --config vite.config.ts
+    --reporter=default --reporter=json --outputFile=<sample>.json <exact files>`.
+  wall_definition: Bash process wall around the complete pnpm observer
+  dimensions_definition: Vitest default reporter from the same process
+  cumulative_definition: sum of JSON assertion durations; concurrent assertions overlap
+  warmup:
+    retained: false
+    wall_seconds: 41.675
+    vitest_duration_seconds: 41.09
+    transform_seconds: 4.00
+    setup_seconds: 0
+    import_seconds: 21.00
+    cumulative_test_seconds: 276.35
+    status: pass
   retained_runs:
     - sample: 1
-      wall_seconds: 46.675
-      vitest_duration_seconds: 45.69
-      transform_seconds: 3.86
+      wall_seconds: 41.803
+      vitest_duration_seconds: 41.23
+      transform_seconds: 4.14
       setup_seconds: 0
-      import_seconds: 21.73
-      cumulative_test_seconds: 310.65
-      environment_seconds: 0.011
+      import_seconds: 21.07
+      cumulative_test_seconds: 277.24
+      cumulative_assertion_seconds: 268.853
       files: 194
       tests_passed: 2369
       tests_skipped: 1
     - sample: 2
-      wall_seconds: 46.599
-      vitest_duration_seconds: 45.65
-      transform_seconds: 3.83
+      wall_seconds: 43.020
+      vitest_duration_seconds: 42.45
+      transform_seconds: 4.30
       setup_seconds: 0
-      import_seconds: 21.78
-      cumulative_test_seconds: 311.25
-      environment_seconds: 0.010
+      import_seconds: 22.35
+      cumulative_test_seconds: 284.94
+      cumulative_assertion_seconds: 276.478
       files: 194
       tests_passed: 2369
       tests_skipped: 1
     - sample: 3
-      wall_seconds: 46.445
-      vitest_duration_seconds: 45.49
-      transform_seconds: 3.78
+      wall_seconds: 42.908
+      vitest_duration_seconds: 42.33
+      transform_seconds: 4.53
       setup_seconds: 0
-      import_seconds: 21.32
-      cumulative_test_seconds: 310.16
-      environment_seconds: 0.010
+      import_seconds: 22.00
+      cumulative_test_seconds: 284.11
+      cumulative_assertion_seconds: 275.542
       files: 194
       tests_passed: 2369
       tests_skipped: 1
   median:
-    wall_seconds: 46.599
-    vitest_duration_seconds: 45.65
-    transform_seconds: 3.83
+    wall_seconds: 42.908
+    vitest_duration_seconds: 42.33
+    transform_seconds: 4.30
     setup_seconds: 0
-    import_seconds: 21.73
-    cumulative_test_seconds: 310.65
-    environment_seconds: 0.010
-  comparison_to_four_worker_baseline:
-    baseline_revision: af9cf773
-    baseline_median:
-      wall_seconds: 81.466
-      vitest_duration_seconds: 80.90
-      transform_seconds: 1.76
-      setup_seconds: 0
-      import_seconds: 14.10
-      cumulative_assertion_seconds: 280.978
-      files: 191
-      tests: 2230
-      workers: 4
-    final_median:
-      wall_seconds: 46.599
-      vitest_duration_seconds: 45.65
-      transform_seconds: 3.83
-      setup_seconds: 0
-      import_seconds: 21.73
-      cumulative_test_seconds: 310.65
-      files: 194
-      tests: 2370
-      workers: 8
-    calculation:
-      wall_seconds_saved: 34.867
-      wall_improvement_percent: 42.799
-      file_count_change: +3
-      file_count_change_percent: 1.571
-      test_count_change: +140
-      test_count_change_percent: 6.278
-      cumulative_test_time_change_percent: 10.560
-    inventory_caveat: >-
-      The historical baseline has three fewer files and 140 fewer tests. Wall
-      improvement exceeds the required 35 percent, but cumulative test time is
-      not a like-for-like speed claim because the inventories differ.
-  slowest_tests:
-    method: >-
-      A complete exact-source-inventory verbose observer under the same selector
-      emitted per-assertion durations; the owner JSON reporter does not emit
-      assertion duration fields. The observer passed 194 files, 2369 tests, and
-      one skip, with 285550 ms summed assertion durations.
-    current_top_five:
-      - test: test/state/planEntities.test.ts > keeps one active plan unambiguous beside more than twenty archived plans and exposes archived exact/filter reads
-        milliseconds: 7717
-      - test: test/cli/primeCompatibilityBoundary.test.ts > runtime reconciliation > the policy declares exactly the fields the prime selector accepts
-        milliseconds: 5533
-      - test: test/cli/activeProtocolSurface.test.ts > rejects retired public identity and selector vocabulary on source and runtime surfaces
-        milliseconds: 4256
-      - test: test/cli/lifecycleProtocol.test.ts > uses canonical entities for startup and compact while ignoring hostile aggregates
-        milliseconds: 3868
-      - test: test/state/listRetrieval.test.ts > exhaustively follows every bounded yaml cursor without repeating a page boundary
-        milliseconds: 3522
-    baseline_top_three:
-      - test: test/state/entityStorage.test.ts > repeatedly gives simultaneous stale-lock reclaimers one publisher and one explicit loser
-        median_milliseconds: 18791
-      - test: test/state/entityMigrationPreview.test.ts > uses snapshot-bound whole-entry pagination to recover every entry without gaps or duplicates
-        median_milliseconds: 16680
-      - test: test/cli/primeProjectionContract.test.ts > keeps cold entity-mode startup and retrieval within authority budgets at declared scales
-        median_milliseconds: 11049
+    import_seconds: 22.00
+    cumulative_test_seconds: 284.11
+    cumulative_assertion_seconds: 275.542
+    files: 194
+    tests_total: 2370
+
+comparison_to_four_worker_baseline:
+  baseline:
+    wall_seconds: 81.466
+    vitest_duration_seconds: 80.90
+    transform_seconds: 1.76
+    setup_seconds: 0
+    import_seconds: 14.10
+    cumulative_assertion_seconds: 280.978
+    files: 191
+    tests: 2230
+    workers: 4
+  final:
+    wall_seconds: 42.908
+    vitest_duration_seconds: 42.33
+    transform_seconds: 4.30
+    setup_seconds: 0
+    import_seconds: 22.00
+    cumulative_assertion_seconds: 275.542
+    files: 194
+    tests: 2370
+    workers: 8
+  arithmetic:
+    wall_seconds_saved: 38.558
+    wall_improvement_percent: 47.330
+    file_count_change: 3
+    file_count_change_percent: 1.571
+    test_count_change: 140
+    test_count_change_percent: 6.278
+    cumulative_assertion_time_change_percent: -1.935
+  inventory_caveat: >-
+    The historical baseline has three fewer files and 140 fewer tests. Wall
+    improvement is process-level acceptance evidence; component and cumulative
+    assertion comparisons are not like-for-like speed claims.
+
+slowest_tests:
+  audit_1_before_observer:
+    - { test: planEntities active beside archived plans, milliseconds: 7717 }
+    - { test: primeCompatibility declared selector fields, milliseconds: 5533 }
+    - { test: activeProtocol retired vocabulary surface, milliseconds: 4256 }
+    - { test: lifecycleProtocol canonical startup and compact, milliseconds: 3868 }
+    - { test: listRetrieval bounded yaml cursor, milliseconds: 3522 }
+  final_target_medians:
+    - { test: planEntities active beside archived plans, milliseconds: 587.414 }
+    - { test: primeCompatibility declared selector fields, milliseconds: 359.191 }
+    - { test: activeProtocol retired vocabulary surface, milliseconds: 1290.204 }
+    - { test: lifecycleProtocol canonical startup and compact, milliseconds: 3896.026 }
+  final_top_five_medians:
+    - { test: lifecycleProtocol canonical startup and compact, milliseconds: 3896.026 }
+    - { test: listRetrieval bounded yaml cursor, milliseconds: 3593.758 }
+    - { test: listRetrieval bounded json cursor, milliseconds: 3493.647 }
+    - { test: listRetrieval bounded text cursor, milliseconds: 3396.428 }
+    - { test: prime projection emoji boundary, milliseconds: 3247.478 }
+
+raw_evidence:
+  root: evidence/ymkdnqmroi
+  compression: deterministic gzip with mtime zero
+  files:
+    current-warmup.log.gz: 9dbc7e00caece9d35f509817c8e7c6ccbefe670e69c8811a988b2cba66ffb24d
+    current-run1.log.gz: 7948e21a0106f62cedaf8f1b4183f8d44a37ab6e03992f42b8b21ef03902b989
+    current-run2.log.gz: 99f212158e94d028eff9c7e74e13686f2a505866604658fe0f0a9136ba0d90c1
+    current-run3.log.gz: ee9f52621e5a842cce784ab1b7dd549f516c563160d58b1a3da35f87f5a2ed41
+    final-warmup.log.gz: 465a27912a194b452020ac0aa74cd765bec0eed6e4108f9817d46af648177779
+    final-run1.log.gz: 824d383262fe2f80a882ba271e07ee7a8630cd4bce6a41106b9c9b026b54c6d0
+    final-run1.json.gz: eec0244f5f18ff2050d0b40d8ea594653017f5c472a7cc6dbea8753b83ade1c7
+    final-run2.log.gz: 69526e343d003d69f470c7906935d3fb183b2c2a77864b5e7eda0c5bbef8a989
+    final-run2.json.gz: f7240ced75283ef764855856eea4bc37a91dd0aac11f13416572e740e555fac3
+    final-run3.log.gz: c7ec7f4c0fbe4d544a1ab13ec996c2fceae2c49aaede16ed85a98dfe6ee8e11b
+    final-run3.json.gz: eba2c5fe1f58234ba9b20b6ffe0d417f3db6088c421d9386ff5a62f444d75385
+  original_current_json_sha256:
+    warmup: 07c1bdf72bbbee6d150cd2d3e39f4e58d43e71c092c40f798ee9f7d62b1b6865
+    run1: d3ec0f4d95351c0c889eb41e6488a351c0b5a75437bfaf8c3561958c567b35bb
+    run2: ebcec8e6e61fe75d8bc695ec7f564e24063f6a62ae841eff363340a115482cfe
+    run3: dafa94e46ccc8df16130cf3c17f62bca863046ceae445d10b1365fc2265490f5
+  recompute: >-
+    Run `sha256sum evidence/ymkdnqmroi/*`; use `gzip -dc` on each log to
+    recover timestamps, command, Vitest dimensions, and Bash wall; parse each
+    final JSON with Node, sum finite assertionResults[].duration values, and
+    median the three per-assertion durations for slow-test ranking.
 
 gates:
-  - command: pnpm -C packages/cli run typecheck
-    result: pass
-  - command: pnpm -C packages/cli build
-    result: pass
-  - command: pnpm -C packages/cli run verify:generated-overlap
-    result: pass
-  - command: node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
-    result: pass
-  - command: node packages/cli/dist/bin/agentera.js check compact
-    result: pass
-  - command: pnpm -C packages/cli run pack:dry-run
-    result: pass
-  - command: bash packages/cli/scripts/py_ts_parity.sh --check --json
-    result: pass
-    detail: drift none
-  - command: bunx markdownlint --dot --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- TODO.md
-    result: pass
-  - command: bash scripts/precommit-vitest.sh <changed paths>
-    result: pass
-    detail: targeted evaluatorHandoffContract, inspekteraEvaluationReport, and activeProtocolSurface tests
+  - { command: pnpm -C packages/cli run verify:generated-overlap, result: pass, detail: source 194/2370; package 2/10; build pass; zero mismatches }
+  - { command: pnpm -C packages/cli run typecheck, result: pass }
+  - { command: pnpm -C packages/cli build, result: pass }
+  - { command: node packages/cli/dist/bin/agentera.js check validate capability-contract --format json, result: pass }
+  - { command: node packages/cli/dist/bin/agentera.js check compact, result: pass }
+  - { command: pnpm -C packages/cli run pack:dry-run, result: pass, detail: 686 package entries }
+  - { command: bash packages/cli/scripts/py_ts_parity.sh --check --json, result: pass, detail: drift none }
+  - { command: bunx markdownlint docs/packaging/v3-packaging.md TODO.md, result: pass }
 
 acceptance:
   owners_independent: pass
   policy_compositions: pass
   worker_count_at_most_eight: pass
+  median_wall_at_most_45_seconds: pass
   wall_improvement_at_least_35_percent: pass
-  median_wall_at_most_45_seconds: fail
-  measured_median_wall_seconds: 46.599
-  limit_seconds: 45
-  excess_seconds: 1.599
-  conclusion: >-
-    This proof cannot close ymkdnqmroi. Preserve its in-progress state and
-    rerun a controlled three-owner measurement to determine the cause of the
-    1.599-second median miss; do not represent the explicit CI four-worker
-    fallback as a benchmarked configuration.
+  documentation_synchronized: pass
+  changelog_unchanged: pass
+  conclusion: ymkdnqmroi may close after typed progress and task-state publication.
+
+caveats:
+  - Decisions retrieval remained degraded to 5 of 50; omitted records were not reconstructed.
+  - Satisfaction remains unavailable for llavvlpcmb and djmjbmruyk.
+  - Vision and profile were absent; no approval was inferred.
+  - The missing NPM_TOKEN warning is nonblocking and no publication was attempted.

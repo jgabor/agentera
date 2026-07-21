@@ -13,7 +13,7 @@ record:
     - liuqlppclk
     - lkyflumkrj
     - rpsxvneecd
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the redesign is complete WHEN owner commands run THEN source, stress, performance, and package all pass independently.
     - GIVEN execution policies run WHEN composition is validated THEN intended owners execute without gaps or overlap.
@@ -22,3 +22,13 @@ record:
     - GIVEN project artifacts are synchronized WHEN closeout completes THEN pre-commit, CI, verification documentation, TODO, plan, and progress agree, while changelog remains unchanged unless a user-visible contract changed.
   test_proportionality: Run every owner, every policy composition, three warm source repetitions, package proof, and state/document validation.
   plan: rmtdgltdgm
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Final proof median is 46.599s, 1.599s above the 45s limit, and an independent run was 46.128s. Canonical packaging guidance still describes three owners/source-only precommit instead of four owners and current compositions. Retry must retain reconstructible warmup/raw timing evidence on the exact final tree, correct stale docs, and if controlled no-change runs still miss, optimize measured repeated archive/prime fixture setup without deleting coverage or weakening thresholds.
+    provenance:
+      attempt_id: ymkdnqmroi-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 15:40
+      writer_command: agentera state plan record-evaluation

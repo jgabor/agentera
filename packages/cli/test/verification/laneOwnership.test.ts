@@ -342,6 +342,10 @@ describe("verification lane ownership", () => {
     const shimReadme = fs.readFileSync(path.join(PACKAGE_ROOT, "shim/README.md"), "utf8");
     const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
     expect(authority).toContain("canonical authority for checkout generated output");
+    expect(authority).toContain("The four test owners are");
+    expect(authority).toContain("| Performance | `pnpm -C packages/cli run test:performance`");
+    expect(authority).toContain("| `release` | Source, stress, performance, package |");
+    expect(authority).toContain("Conservative authority and verification surfaces route to `release`");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
     expect(authority).toContain("generated:cleanup -- --force --json");
     expect(authority).toContain("singly linked regular");

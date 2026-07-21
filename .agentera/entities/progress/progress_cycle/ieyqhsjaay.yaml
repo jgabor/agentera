@@ -1,0 +1,16 @@
+id: ieyqhsjaay
+artifact: progress
+record:
+  timestamp: 2026-07-21 16:37
+  type: test
+  phase: build
+  what: Finalized the classified-tree source proof after synchronizing documentation and typed state.
+  context:
+    intent: Ensure retained performance evidence measures the final code, test, documentation, and state classification shape.
+    constraints: Preserve the earlier immutable osmvdcfwik record and every historical blocked task.
+    unknowns: Decision retrieval and satisfaction caveats remain unchanged.
+    scope: Final proof metrics, worker-policy summary, TODO closeout, retained evidence, and immutable progress.
+  inspiration: The closeout requirement that only source-inventory-neutral state may follow final measurement.
+  discovered: The fully synchronized tree retained the performance margin without further implementation changes.
+  verified: "Final retained source walls were 41.803s, 43.020s, and 42.908s: 42.908s median, eight workers, and 47.330% improvement over the 81.466s baseline. Raw logs and JSON reports replace the prior block under evidence/ymkdnqmroi/."
+  next: Commit the verified tree without publication or push.

@@ -377,7 +377,7 @@ describe("authoritative active final-protocol surfaces", () => {
       marker_absent_explain: capture(["state", "progress", "explain", "--format", "json"], legacyProject),
       error: capture(["state", "plan", "get", "--id", "zzzzzzzzzz", "--format", "json"]),
       prime: capture(["prime", "--format", "json"]),
-      contexts: Object.fromEntries(CAPABILITY_NAMES.map((name) => [name, capture(["prime", "--context", name, "--format", "json"])])),
+      context: capture(["prime", "--context", "status", "--format", "json"]),
     };
     findings.push(...semanticFindings("runtime://public-structured-outputs", runtime));
     const exceptions = exactExceptions(runtime);

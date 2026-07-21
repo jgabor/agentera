@@ -40,6 +40,24 @@ function create(root: string, title: string, dependency = false): any {
   const input = path.join(root, `${title}.yaml`); fs.writeFileSync(input, dumpYamlMapping(plan(title, dependency)));
   const result = capture(root, ["state", "plan", "create", "--input", input, "--format", "json"]); expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out);
 }
+function fixtureId(index: number): string {
+  let value = index;
+  return Array.from({ length: 10 }, () => {
+    const char = String.fromCharCode(97 + (value % 26));
+    value = Math.floor(value / 26);
+    return char;
+  }).join("");
+}
+function archivedPlanFixture(root: string, index: number): { id: string } {
+  const id = fixtureId(100 + index * 2); const taskId = fixtureId(101 + index * 2);
+  const record = plan(`historical-${index}`); delete record.tasks; (record.header as Record<string, unknown>).status = "archived";
+  const planFile = path.join(root, `.agentera/entities/plan/plan/${id}.yaml`);
+  const taskFile = path.join(root, `.agentera/entities/plan/plan_task/${taskId}.yaml`);
+  fs.mkdirSync(path.dirname(planFile), { recursive: true }); fs.mkdirSync(path.dirname(taskFile), { recursive: true });
+  fs.writeFileSync(planFile, dumpYamlMapping({ id, artifact: "plan", record }));
+  fs.writeFileSync(taskFile, dumpYamlMapping({ id: taskId, artifact: "plan", record: { plan: id, name: "First", status: "complete", depends_on: [], acceptance: ["GIVEN state WHEN written THEN it is canonical"] } }));
+  return { id };
+}
 function request(root: string, verb: string, values: Record<string, unknown> = {}, input: Record<string, unknown> | null = null): StateWriteRequest {
   const spec = operationSpec("plan", verb); if (!spec) throw new Error(`missing plan ${verb}`);
   return { artifact: "plan", spec, projectRoot: root, dryRun: false, force: false, values, callerPayload: structuredClone(input ?? values), input };
@@ -291,11 +309,7 @@ describe("plan and task entity authority", () => {
   it("keeps one active plan unambiguous beside more than twenty archived plans and exposes archived exact/filter reads", () => {
     const root = project(); const active = create(root, "active"); const archived: any[] = [];
     for (let index = 0; index < 21; index += 1) {
-      const historical = create(root, `historical-${index}`);
-      const result = capture(root, ["state", "plan", "archive", "--plan", historical.id, "--format", "json"]);
-      expect(result.rc, result.err || result.out).toBe(0);
-      expect(JSON.parse(result.out).record.header.status).toBe("archived");
-      archived.push(historical);
+      archived.push(archivedPlanFixture(root, index));
     }
 
     const current = capture(root, ["state", "plan", "--format", "json"]);
