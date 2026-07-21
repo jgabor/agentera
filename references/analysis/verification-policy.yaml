@@ -20,6 +20,20 @@ inventory:
     - owner: package
       prefix: packages/cli/test/packaging/
 
+# Full-overlap validation loads this declaration directly. The source proof
+# requires exactly one matching conditional assertion in the declared file and
+# nowhere else in the source-owner inventory.
+overlap:
+  max_diagnostic_utf8_bytes: 8192
+  allowed_pending_assertion:
+    owner: source
+    path: packages/cli/test/build/generatedOutputPublication.test.ts
+    suite: generated generation publication
+    title: reads one real Darwin process identity independently of caller locale and timezone
+    status: skipped
+    executes_when:
+      platform: darwin
+
 owners:
   source:
     config: packages/cli/vite.config.ts
@@ -103,6 +117,7 @@ conservative_routing:
     - packages/cli/vitest.shared.ts
     - packages/cli/scripts/verify-lane.mjs
     - packages/cli/scripts/performance-evidence.mjs
+    - packages/cli/scripts/overlap-pending.mjs
     - packages/cli/test/integration/performanceOwner.integration.mjs
     - packages/cli/scripts/build-package.mjs
     - packages/cli/scripts/generated-output.mjs

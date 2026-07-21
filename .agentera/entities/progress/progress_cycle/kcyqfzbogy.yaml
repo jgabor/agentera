@@ -1,0 +1,16 @@
+id: kcyqfzbogy
+artifact: progress
+record:
+  timestamp: 2026-07-21 09:59
+  type: fix
+  phase: build
+  what: Retried Task scrtlfqljn after scrtlfqljn-audit-1. references/analysis/verification-policy.yaml now owns the sole Darwin conditional identity and 8,192-byte diagnostic cap. packages/cli/scripts/overlap-pending.mjs reconciles four suite and five assertion aggregates against actual records, rejects malformed statuses and fields, statically proves one matching runIf in the declared source and source inventory, and bounds every diagnostic value through one renderer. The owner result adapter projects upstream nested-describe counts to the file-suite contract before validation.
+  context:
+    intent: Close all three audit-1 findings without changing accepted pending identity, performance routing, generated recovery, state dependencies, or prior progress qmetiwggau.
+    constraints: No performance routing changes, pending identity change, generated recovery change, dependency rewiring, unrelated planned work, version/release/publication/tag/push, vision, profile, or cleanup.
+    unknowns: Decision retrieval remained degraded at 5 of 50 with 45 omitted; satisfaction was unavailable and no satisfaction was inferred. Vision and profile remained absent from execution context.
+    scope: references/analysis/verification-policy.yaml; overlap validation and owner-result scripts; focused verification tests; typed scrtlfqljn and progress state only.
+  inspiration: Independent audit scrtlfqljn-audit-1 found unreconciled suite aggregates, duplicate-prone conditional synchronization, and unbounded malformed scalar diagnostics.
+  discovered: The upstream Vite Plus JSON reporter counts nested describe blocks in numTotalTestSuites while testResults contains one record per file. The owner result channel now explicitly projects suite aggregates from exact testResults statuses, after which overlap validation independently rejects every mismatch.
+  verified: Focused overlap contract passed 44/44, including zero/missing/noninteger/negative/mismatched aggregates, all suite statuses, duplicate/moved/renamed conditional sources, and 100KB scalar/object diagnostics bounded to 8,192 UTF-8 bytes with correction context. Lane policy passed 64/64; inventory validation passed 199 files and loaded the overlap authority. Full overlap passed source 193 files/2,385 assertions with one exact Linux skip, package 2 files/10 assertions with none, build, one complete generation, and zero identity/surface failures. Full source passed 193 files with 2,384 assertions plus one skip; package 10/10, stress 2/2, and direct/integration performance 3/3 each with one 25-sample matrix passed. Typecheck, build, 1,642-entity state validation, capability contract 2/2, compact, lint with 150 baseline warnings and zero errors, markdown, parity, diff check, and 684-entry dry-run packing passed.
+  next: Complete only indulnncww in its dedicated completion/audit; preserve scrtlfqljn-audit-1 and qmetiwggau immutably, keep exhausted tasks blocked, and leave downstream work pending.

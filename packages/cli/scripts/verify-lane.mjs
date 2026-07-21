@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 
+import { normalizeReporterSuiteAggregates, validatePendingAuthority } from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "package"];
@@ -123,6 +124,15 @@ function inventory(contract) {
     if (!fs.existsSync(path.join(root, integrationPath))) errors.push(`${owner} integration is missing: ${integrationPath}`);
     if (files.includes(integrationPath)) errors.push(`${owner} integration must not overlap primary test inventory: ${integrationPath}`);
     if (!Array.isArray(definition.integration.command) || definition.integration.command.length < 2) errors.push(`${owner} integration command is invalid`);
+  }
+
+  try {
+    validatePendingAuthority(contract.overlap, {
+      repoRoot: root,
+      expectedFiles: files.filter((file) => assignments.get(file) === "source"),
+    });
+  } catch (error) {
+    errors.push(error.message);
   }
 
   return { files, assignments, evidenceProducers, errors };
@@ -261,6 +271,16 @@ function runOwner(owner, state, forwarded = []) {
     process.stdout.write(result.stdout ?? "");
     process.stderr.write(result.stderr ?? "");
   }
+  if (!result.error && result.status === 0 && resultChannel && fs.existsSync(resultChannel)) {
+    try {
+      const reported = JSON.parse(fs.readFileSync(resultChannel, "utf8"));
+      fs.writeFileSync(resultChannel, JSON.stringify(normalizeReporterSuiteAggregates(reported)));
+    } catch (error) {
+      console.error(`${owner} owner result normalization failed: ${error.message}`);
+      console.error(`correction: ${definition.correction}`);
+      return 1;
+    }
+  }
   if (result.error) console.error(`${owner} owner failed: ${result.error.message}`);
   else if (result.status !== 0) console.error(`${owner} owner failed (exit ${result.status ?? "signal"})`);
   const evidenceErrors = !result.error && result.status === 0 && captureEvidence
@@ -317,7 +337,7 @@ if (command === "inventory") {
   const files = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, state.files.filter((file) => state.assignments.get(file) === owner)]));
   const integrations = Object.fromEntries(Object.entries(state.contract.owners).flatMap(([owner, definition]) => definition.integration ? [[owner, definition.integration.path]] : []));
   const evidence_producers = Object.fromEntries(state.evidenceProducers);
-  const output = { counts: { total: state.files.length, ...counts }, files, integrations, evidence_producers, mixed_files: state.contract.mixed_files ?? [] };
+  const output = { counts: { total: state.files.length, ...counts }, files, integrations, evidence_producers, overlap: state.contract.overlap, mixed_files: state.contract.mixed_files ?? [] };
   console.log(process.argv.includes("--json") ? JSON.stringify(output, null, 2) : YAML.stringify(output).trim());
   process.exit(0);
 }

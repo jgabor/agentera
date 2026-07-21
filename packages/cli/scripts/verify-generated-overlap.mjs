@@ -64,6 +64,7 @@ function ownerResult(owner) {
     platform: process.platform,
     repoRoot,
     expectedFiles,
+    overlapAuthority: inventory.overlap,
   });
   return { files: expectedFiles.length, tests: result.numTotalTests, pending };
 }
