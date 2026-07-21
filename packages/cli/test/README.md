@@ -38,6 +38,11 @@ Full-overlap proof also validates every non-passing assertion from the structure
 reporter. On Darwin no source test may be pending; elsewhere exactly the named
 Darwin process-identity test may be `skipped`. Its path, full name, and status
 must match the overlap contract, while package proof permits no pending tests.
+The governed `verification-policy.yaml` byte stream and the parent-owned JSON
+result-file bytes are the only overlap evidence authorities. YAML/JSON parsing
+and structural validation finish before normalization or consumption; direct
+JavaScript objects, including proxies and accessors, are outside this runtime
+boundary.
 
 ## Classification key
 

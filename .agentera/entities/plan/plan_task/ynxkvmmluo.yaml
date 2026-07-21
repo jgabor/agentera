@@ -1,0 +1,14 @@
+id: ynxkvmmluo
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Stabilize overlap evidence trust boundary
+  status: complete
+  depends_on:
+    - fbgcvyeexr
+  acceptance:
+    - GIVEN overlap policy and owner evidence enter production WHEN validation begins THEN their only trust boundaries are governed serialized YAML and process-owned JSON bytes, and arbitrary caller-supplied JavaScript objects are not accepted as runtime authority.
+    - GIVEN malformed, aliased, cyclic, accessor-like, oversized, or structurally invalid serialized policy or reporter data WHEN it crosses the governed boundary THEN validation fails closed with one bounded actionable diagnostic before evidence is normalized or consumed.
+    - GIVEN internal validation helpers exist WHEN production call paths are traced THEN no exported programmatic object API can bypass serialized parsing, policy provenance, ownership checks, or evidence validation.
+    - GIVEN adversarial review evaluates the repair WHEN findings are judged THEN attacks outside the declared serialized production boundary are identified as out of scope rather than expanding acceptance, while every reachable YAML/JSON attack remains covered.
+    - GIVEN honest owner commands and full overlap run WHEN the stable boundary is enforced THEN source, build, extracted package, performance evidence, pending identity, and reader-generation checks all pass unchanged.

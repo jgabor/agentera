@@ -1,7 +1,9 @@
 import fs from "node:fs";
+import { isUtf8 } from "node:buffer";
 import path from "node:path";
 
 import ts from "typescript";
+import YAML from "yaml";
 
 const MAX_DIAGNOSTIC_BYTES = 8192;
 const MIN_DIAGNOSTIC_BYTES = 1024;
@@ -10,6 +12,7 @@ const MAX_RENDER_ITEMS = 10;
 const MAX_ARRAY_ITEMS = 10_000;
 const MAX_ISSUES = 100;
 const MAX_SOURCE_BYTES = 2 * 1024 * 1024;
+const MAX_SERIALIZED_BYTES = 2 * 1024 * 1024;
 const REPORT_AGGREGATES = [
   "numTotalTestSuites",
   "numPassedTestSuites",
@@ -139,6 +142,44 @@ function isArray(value) {
   }
 }
 
+function serializedText(value, label) {
+  if (!Buffer.isBuffer(value)) {
+    throw contractError(
+      `${label} boundary is invalid`,
+      [`${label} must be process-owned UTF-8 bytes, not ${render(value)}`],
+      `supply ${label} through its governed serialized file channel`,
+    );
+  }
+  if (value.length > MAX_SERIALIZED_BYTES) {
+    throw contractError(
+      `${label} boundary is invalid`,
+      [`${label} is ${value.length} bytes; maximum ${MAX_SERIALIZED_BYTES}`],
+      `reduce ${label} to the governed serialized size limit`,
+    );
+  }
+  if (!isUtf8(value)) {
+    throw contractError(
+      `${label} boundary is invalid`,
+      [`${label} is not valid UTF-8`],
+      `write ${label} as UTF-8 through its governed serialized file channel`,
+    );
+  }
+  return value.toString("utf8");
+}
+
+function parseJsonBytes(value, label) {
+  const source = serializedText(value, label);
+  try {
+    return JSON.parse(source);
+  } catch (error) {
+    throw contractError(
+      `${label} boundary is invalid`,
+      [`${label} is not valid JSON: ${render(error)}`],
+      `write one JSON value to the ${label} file channel`,
+    );
+  }
+}
+
 function inspectPolicyContainer(value, issues, label, seen) {
   if (!isObject(value)) return value;
   if (seen.has(value)) {
@@ -205,7 +246,7 @@ function inspectPolicyContainer(value, issues, label, seen) {
   return clone;
 }
 
-export function validatePolicyObjectBoundary(value, label = "verification") {
+function validateParsedPolicy(value, label = "verification") {
   try {
     const issues = [];
     let clone;
@@ -225,6 +266,30 @@ export function validatePolicyObjectBoundary(value, label = "verification") {
       "verification policy object boundary is invalid",
       [`policy prototype boundary could not be inspected: ${render(error)}`],
       "provide plain own-data policy maps with Object.prototype or null and ordinary arrays",
+    );
+  }
+}
+
+export function loadVerificationPolicy(policyYaml) {
+  const source = serializedText(policyYaml, "verification policy");
+  try {
+    const document = YAML.parseDocument(source, { prettyErrors: false, strict: true, uniqueKeys: true });
+    if (document.errors.length > 0) {
+      throw contractError(
+        "verification policy boundary is invalid",
+        document.errors.map((error) => error.message),
+        "restore one valid governed YAML document in references/analysis/verification-policy.yaml",
+      );
+    }
+    const policy = validateParsedPolicy(document.toJS({ maxAliasCount: 0 }), "verification");
+    parsePendingAuthority(policy.overlap);
+    return policy;
+  } catch (error) {
+    if (error instanceof OverlapContractError) throw error;
+    throw contractError(
+      "verification policy boundary is invalid",
+      [`YAML boundary could not be parsed: ${render(error)}`],
+      "restore one valid governed YAML document in references/analysis/verification-policy.yaml",
     );
   }
 }
@@ -350,7 +415,6 @@ function pendingIdentity(authority) {
 
 function parsePendingAuthority(overlapAuthority) {
   const issues = [];
-  overlapAuthority = validatePolicyObjectBoundary(overlapAuthority, "overlap");
   exactKeys(overlapAuthority, POLICY_KEYS, issues, "overlap");
   const maxDiagnosticBytes = dataProperty(overlapAuthority, "max_diagnostic_utf8_bytes", issues, "overlap");
   const declaration = dataProperty(overlapAuthority, "allowed_pending_assertion", issues, "overlap");
@@ -391,9 +455,12 @@ function parsePendingAuthority(overlapAuthority) {
   });
 }
 
-export function pendingAuthority(overlapAuthority) {
+function pendingAuthority(policyYaml) {
   try {
-    return parsePendingAuthority(overlapAuthority);
+    const source = serializedText(policyYaml, "verification policy");
+    const document = YAML.parseDocument(source, { prettyErrors: false, strict: true, uniqueKeys: true });
+    if (document.errors.length > 0) throw document.errors[0];
+    return parsePendingAuthority(validateParsedPolicy(document.toJS({ maxAliasCount: 0 }), "verification").overlap);
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
     throw contractError(
@@ -487,10 +554,23 @@ function countRunIf(root, authority) {
   return count;
 }
 
-export function validatePendingAuthority(overlapAuthority, { repoRoot, expectedFiles } = {}) {
-  const authority = pendingAuthority(overlapAuthority);
+function parsedOwnerFiles(ownerFilesJson) {
   const issues = [];
-  const files = stringArray(expectedFiles, issues, "expectedFiles").map((file) => identityPath(file, repoRoot));
+  const files = stringArray(parseJsonBytes(ownerFilesJson, "owner inventory"), issues, "owner inventory");
+  if (issues.length > 0) {
+    throw contractError(
+      "owner inventory boundary is invalid",
+      issues,
+      "write one JSON array of canonical owner inventory paths",
+    );
+  }
+  return files;
+}
+
+export function validatePendingAuthority(policyYaml, ownerFilesJson, repoRoot) {
+  const authority = pendingAuthority(policyYaml);
+  const issues = [];
+  const files = parsedOwnerFiles(ownerFilesJson).map((file) => identityPath(file, repoRoot));
   const authorityOccurrences = files.filter((file) => file === authority.path).length;
   if (authorityOccurrences !== 1) addIssue(issues, `authority path inventory occurrences: expected 1, observed ${authorityOccurrences}`);
 
@@ -574,10 +654,10 @@ function validateRawStatusShape(result, issues) {
   }
 }
 
-export function normalizeReporterSuiteAggregates(result) {
+export function normalizeReporterSuiteAggregates(reporterJson) {
   try {
     const issues = [];
-    const parsed = parseReporter(result, issues);
+    const parsed = parseReporter(parseJsonBytes(reporterJson, "reporter result"), issues);
     validateRawStatusShape(parsed, issues);
     const assertions = assertionsFor(parsed.testResults);
     for (const field of REPORT_AGGREGATES) {
@@ -609,7 +689,7 @@ export function normalizeReporterSuiteAggregates(result) {
         "rerun the owner and fix its raw success, suite statuses, suite failure/pending aggregates, and exact assertion aggregates before file-suite projection",
       );
     }
-    return {
+    return Buffer.from(JSON.stringify({
       success: parsed.success,
       numTotalTestSuites: parsed.testResults.length,
       numPassedTestSuites: count(parsed.testResults, "passed"),
@@ -622,7 +702,7 @@ export function normalizeReporterSuiteAggregates(result) {
       numTodoTests: parsed.numTodoTests,
       ...(parsed.numRuntimeErrorTestSuites === undefined ? {} : { numRuntimeErrorTestSuites: parsed.numRuntimeErrorTestSuites }),
       testResults: parsed.testResults,
-    };
+    }));
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
     throw contractError(
@@ -633,8 +713,7 @@ export function normalizeReporterSuiteAggregates(result) {
   }
 }
 
-export function expectedPendingTests(owner, platform, overlapAuthority) {
-  const authority = pendingAuthority(overlapAuthority);
+function expectedPendingTests(owner, platform, authority) {
   return owner === authority.owner && platform !== authority.executesOn ? [pendingIdentity(authority)] : [];
 }
 
@@ -667,22 +746,17 @@ function identitiesMatch(left, right) {
     && identity.status === right[index].status);
 }
 
-export function validatePendingTests(owner, result, {
-  platform,
-  repoRoot,
-  expectedFiles,
-  overlapAuthority,
-} = {}) {
-  const authority = pendingAuthority(overlapAuthority);
+export function validatePendingTests(owner, reporterJson, ownerFilesJson, policyYaml, repoRoot, platform) {
+  const authority = pendingAuthority(policyYaml);
   try {
     const issues = [];
-    const parsed = parseReporter(result, issues);
+    const parsed = parseReporter(parseJsonBytes(reporterJson, "reporter result"), issues);
     validateRawStatusShape(parsed, issues);
     const testResults = parsed.testResults;
-    const expectedPaths = stringArray(expectedFiles, issues, "expectedFiles").map((file) => identityPath(file, repoRoot));
+    const expectedPaths = parsedOwnerFiles(ownerFilesJson).map((file) => identityPath(file, repoRoot));
     if (owner === authority.owner) {
       try {
-        validatePendingAuthority(overlapAuthority, { repoRoot, expectedFiles });
+        validatePendingAuthority(policyYaml, ownerFilesJson, repoRoot);
       } catch (error) {
         addIssue(issues, render(error, 1000));
       }
@@ -737,7 +811,7 @@ export function validatePendingTests(owner, result, {
     if (parsed.numRuntimeErrorTestSuites !== undefined) aggregateMismatch(issues, parsed, "numRuntimeErrorTestSuites", 0);
     if (parsed.success !== true) addIssue(issues, `success=${render(parsed.success)}; expected true`);
 
-    const expected = expectedPendingTests(owner, platform, overlapAuthority);
+    const expected = expectedPendingTests(owner, platform, authority);
     const observed = observedPendingTests(testResults, repoRoot);
     if (!identitiesMatch(observed, expected)) {
       addIssue(issues, `assertion pending identity mismatch: expected ${display(expected)}, observed ${display(observed)}`);

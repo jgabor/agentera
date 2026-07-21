@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 
 import {
+  loadVerificationPolicy,
   normalizeReporterSuiteAggregates,
   validatePendingAuthority,
-  validatePolicyObjectBoundary,
 } from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
 
@@ -42,7 +42,8 @@ function filesBelow(directory, suffix) {
 }
 
 function loadContract() {
-  return validatePolicyObjectBoundary(YAML.parse(fs.readFileSync(contractPath, "utf8")), "verification");
+  const policyBytes = fs.readFileSync(contractPath);
+  return { contract: loadVerificationPolicy(policyBytes), policyBytes };
 }
 
 function matches(rule, file) {
@@ -50,7 +51,7 @@ function matches(rule, file) {
     || (rule.prefix !== undefined && file.startsWith(rule.prefix));
 }
 
-function inventory(contract) {
+function inventory(contract, policyBytes) {
   const errors = [];
   const ownerKeys = Object.keys(contract.owners ?? {});
   for (const owner of OWNER_NAMES) {
@@ -131,10 +132,11 @@ function inventory(contract) {
   }
 
   try {
-    validatePendingAuthority(contract.overlap, {
-      repoRoot: root,
-      expectedFiles: files.filter((file) => assignments.get(file) === "source"),
-    });
+    validatePendingAuthority(
+      policyBytes,
+      Buffer.from(JSON.stringify(files.filter((file) => assignments.get(file) === "source"))),
+      root,
+    );
   } catch (error) {
     errors.push(error.message);
   }
@@ -143,20 +145,21 @@ function inventory(contract) {
 }
 
 function validated() {
-  let contract;
+  let loaded;
   try {
-    contract = loadContract();
+    loaded = loadContract();
   } catch (error) {
     console.error(`verification policy could not be read: ${error.message}`);
     process.exit(2);
   }
-  const result = inventory(contract);
+  const { contract, policyBytes } = loaded;
+  const result = inventory(contract, policyBytes);
   if (result.errors.length > 0) {
     for (const error of result.errors) console.error(`verification policy: ${error}`);
     console.error(`correction: update ${relative(contractPath)} so every test file has exactly one primary owner`);
     process.exit(2);
   }
-  return { contract, ...result };
+  return { contract, policyBytes, ...result };
 }
 
 function canonicalInventoryFile(filter, state) {
@@ -277,8 +280,7 @@ function runOwner(owner, state, forwarded = []) {
   }
   if (!result.error && result.status === 0 && resultChannel && fs.existsSync(resultChannel)) {
     try {
-      const reported = JSON.parse(fs.readFileSync(resultChannel, "utf8"));
-      fs.writeFileSync(resultChannel, JSON.stringify(normalizeReporterSuiteAggregates(reported)));
+      fs.writeFileSync(resultChannel, normalizeReporterSuiteAggregates(fs.readFileSync(resultChannel)));
     } catch (error) {
       console.error(`${owner} owner result normalization failed: ${error.message}`);
       console.error(`correction: ${definition.correction}`);
@@ -341,7 +343,7 @@ if (command === "inventory") {
   const files = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, state.files.filter((file) => state.assignments.get(file) === owner)]));
   const integrations = Object.fromEntries(Object.entries(state.contract.owners).flatMap(([owner, definition]) => definition.integration ? [[owner, definition.integration.path]] : []));
   const evidence_producers = Object.fromEntries(state.evidenceProducers);
-  const output = { counts: { total: state.files.length, ...counts }, files, integrations, evidence_producers, overlap: state.contract.overlap, mixed_files: state.contract.mixed_files ?? [] };
+  const output = { counts: { total: state.files.length, ...counts }, files, integrations, evidence_producers, mixed_files: state.contract.mixed_files ?? [] };
   console.log(process.argv.includes("--json") ? JSON.stringify(output, null, 2) : YAML.stringify(output).trim());
   process.exit(0);
 }

@@ -20,9 +20,12 @@ inventory:
     - owner: package
       prefix: packages/cli/test/packaging/
 
-# Full-overlap validation loads this declaration directly. The source proof
-# requires exactly one matching conditional assertion in the declared file and
-# nowhere else in the source-owner inventory.
+# Full-overlap validation accepts this governed YAML byte stream and the owner
+# command's JSON result-file bytes as its only evidence authorities. Parsed
+# objects are internal implementation details: callers cannot supply policy or
+# reporter objects directly. The source proof requires exactly one matching
+# conditional assertion in the declared file and nowhere else in the
+# source-owner inventory.
 overlap:
   max_diagnostic_utf8_bytes: 8192
   allowed_pending_assertion:

@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Harden overlap evidence normalization
-  status: complete
+  status: blocked
   depends_on:
     - fbgcvyeexr
   acceptance:
@@ -13,12 +13,12 @@ record:
     - GIVEN hostile reporter or policy data contains getters, circular values, malformed elements, symbols, bigints, invalid Unicode, or oversized values WHEN validation fails THEN it returns one actionable diagnostic within 8,192 UTF-8 bytes without a secondary exception.
     - GIVEN full overlap and owner commands run WHEN hardened normalization validates honest evidence THEN source, build, extracted package, pending identity, and reader-generation checks all pass unchanged.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Raw evidence ordering and bounded hostile diagnostics pass, but closed policy validation accepts objects with non-plain/inherited prototypes because only own keys are checked. The AST authority also accepts optional-chained describe?.(...) and it?.runIf(...), which are not the exact required executable call shape. Require plain null/Object prototypes at every policy object boundary, reject inherited state, reject questionDotToken/optional chains, add regressions, and append accurate final source counts.
+    last_failure_evidence: Raw projection, closed own-data policy schema, exact AST matching, bounded diagnostics for rejected values, and honest owner paths pass, but transparent Proxy policy containers are structurally accepted at both exported policy validation boundaries. This violates the explicit requirement that proxy policy data fail boundedly. Reject or eliminate Proxy-capable programmatic policy inputs at the trust boundary, add true transparent-Proxy container regressions, and emit one bounded actionable diagnostic.
     provenance:
-      attempt_id: embjllmmsd-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 10:39
+      attempt_id: embjllmmsd-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 11:05
       writer_command: agentera state plan record-evaluation

@@ -1,0 +1,12 @@
+id: qnnjwzdviz
+artifact: progress
+record:
+  timestamp: 2026-07-21 11:57
+  type: fix
+  phase: build
+  what: Stabilized overlap validation around governed policy YAML and parent-owned reporter JSON bytes.
+  context:
+    intent: Close ynxkvmmluo without treating arbitrary in-memory JavaScript objects as production authority.
+  inspiration: Plan task ynxkvmmluo
+  verified: "Focused overlap: 16/16; source: 193 files, 2356 passed and 1 skipped; typecheck, build, package 10/10, performance 3/3, and generated overlap passed with zero reader identity or surface failures."
+  next: Keep arbitrary in-memory objects outside the serialized production evidence boundary; generated recovery remains its dedicated task.

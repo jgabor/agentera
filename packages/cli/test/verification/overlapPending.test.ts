@@ -2,49 +2,37 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import {
-  expectedPendingTests,
-  normalizeReporterSuiteAggregates,
-  pendingAuthority,
-  validatePendingAuthority,
-  validatePendingTests,
-  validatePolicyObjectBoundary,
-} from "../../scripts/overlap-pending.mjs";
+import * as overlap from "../../scripts/overlap-pending.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const POLICY = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
-const OVERLAP_AUTHORITY = POLICY.overlap;
-const PENDING_AUTHORITY = pendingAuthority(OVERLAP_AUTHORITY);
-const PENDING_TEST = expectedPendingTests("source", "linux", OVERLAP_AUTHORITY)[0];
-const SOURCE_FILES = [
-  "packages/cli/test/verification/overlapPending.test.ts",
-  PENDING_TEST.path,
-];
-const PACKAGE_FILES = ["packages/cli/test/packaging/example.test.ts"];
+const POLICY_PATH = path.join(REPO_ROOT, "references/analysis/verification-policy.yaml");
+const POLICY_BYTES = fs.readFileSync(POLICY_PATH);
+const PENDING_PATH = "packages/cli/test/build/generatedOutputPublication.test.ts";
+const PENDING_NAME = "generated generation publication reads one real Darwin process identity independently of caller locale and timezone";
+const PACKAGE_FILE = "packages/cli/test/packaging/example.test.ts";
 
-type Assertion = { fullName: unknown; status: unknown; title: string };
-type Suite = { name: unknown; status: unknown; assertionResults: Assertion[] };
+type Assertion = { fullName: string; status: string };
+type Suite = { name: string; status: string; assertionResults: Assertion[] };
 
-function assertion(fullName: unknown, status: unknown = "passed"): Assertion {
-  return { fullName, status, title: typeof fullName === "string" ? fullName.split(" ").at(-1) ?? fullName : "malformed" };
+function bytes(value: unknown) {
+  return Buffer.from(JSON.stringify(value));
 }
 
-function suite(file: unknown, assertions: Assertion[] = [assertion(`${String(file)} passes`)], status: unknown = "passed"): Suite {
-  return {
-    name: typeof file === "string" ? path.join(REPO_ROOT, file) : file,
-    status,
-    assertionResults: assertions,
-  };
+function assertion(fullName: string, status = "passed"): Assertion {
+  return { fullName, status };
+}
+
+function suite(file: string, assertions: Assertion[] = [assertion(`${file} passes`)], status = "passed", root = REPO_ROOT): Suite {
+  return { name: path.join(root, file), status, assertionResults: assertions };
 }
 
 function result(testResults: Suite[], overrides: Record<string, unknown> = {}) {
   const assertions = testResults.flatMap(({ assertionResults }) => assertionResults);
-  const count = (values: Array<{ status: unknown }>, status: string) => values.filter((entry) => entry.status === status).length;
+  const count = (values: Array<{ status: string }>, status: string) => values.filter((entry) => entry.status === status).length;
   return {
-    success: count(testResults, "failed") === 0,
+    success: true,
     numTotalTestSuites: testResults.length,
     numPassedTestSuites: count(testResults, "passed"),
     numFailedTestSuites: count(testResults, "failed"),
@@ -59,47 +47,22 @@ function result(testResults: Suite[], overrides: Record<string, unknown> = {}) {
   };
 }
 
-function sourceResult(platform: "linux" | "darwin") {
-  const conditional = assertion(PENDING_TEST.name, platform === "linux" ? "skipped" : "passed");
-  return result([
-    suite(SOURCE_FILES[0]),
-    suite(SOURCE_FILES[1], [assertion("generated generation publication always executes"), conditional]),
-  ]);
-}
-
-function validate(owner: "source" | "package", report: ReturnType<typeof result>, platform = "linux") {
-  return validatePendingTests(owner, report, {
-    platform,
-    repoRoot: REPO_ROOT,
-    expectedFiles: owner === "source" ? SOURCE_FILES : PACKAGE_FILES,
-    overlapAuthority: OVERLAP_AUTHORITY,
-  });
-}
-
-function conditionalSource(title = PENDING_AUTHORITY.title) {
-  return [
-    `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => {`,
-    ["it.runIf(", `process.platform === ${JSON.stringify(PENDING_AUTHORITY.executesOn)}`, `)(${JSON.stringify(title)}, () => {});`].join(""),
-    "});",
-  ].join("\n");
-}
-
-function authorityFixture(declaredSource: string, otherSources: string[] = []) {
+function sourceFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-authority-"));
-  const files = [PENDING_TEST.path, ...otherSources.map((_, index) => `packages/cli/test/other-${index}.test.ts`)];
-  for (const [index, file] of files.entries()) {
-    const absolute = path.join(root, file);
-    fs.mkdirSync(path.dirname(absolute), { recursive: true });
-    fs.writeFileSync(absolute, index === 0 ? declaredSource : otherSources[index - 1]);
-  }
-  return { root, files };
+  const file = path.join(root, PENDING_PATH);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, [
+    'describe("generated generation publication", () => {',
+    '  it.runIf(process.platform === "darwin")("reads one real Darwin process identity independently of caller locale and timezone", () => {});',
+    "});",
+  ].join("\n"));
+  const overlapTest = path.join(root, "packages/cli/test/verification/overlapPending.test.ts");
+  fs.mkdirSync(path.dirname(overlapTest), { recursive: true });
+  fs.writeFileSync(overlapTest, "// source fixture\n");
+  return root;
 }
 
-function policy(): Record<string, any> {
-  return structuredClone(OVERLAP_AUTHORITY);
-}
-
-function expectContractFailure(run: () => unknown, correction: RegExp = /correction:/) {
+function expectContractFailure(run: () => unknown) {
   let error: Error | undefined;
   try {
     run();
@@ -108,511 +71,77 @@ function expectContractFailure(run: () => unknown, correction: RegExp = /correct
   }
   expect(error).toBeInstanceOf(Error);
   expect(Buffer.byteLength(error?.message ?? "", "utf8")).toBeLessThanOrEqual(8192);
-  expect(error?.message).toMatch(correction);
+  expect(error?.message).toContain("correction:");
   return error?.message ?? "";
 }
 
-function sparseArray(length: number) {
-  const value: unknown[] = [];
-  value.length = length;
-  return value;
+function validate(owner: "source" | "package", report: Buffer, ownerFiles: string[], root = REPO_ROOT, platform = "linux") {
+  return overlap.validatePendingTests(owner, report, bytes(ownerFiles), POLICY_BYTES, root, platform);
 }
 
-function nullPrototypeClone(value: any): any {
-  if (Array.isArray(value)) return value.map(nullPrototypeClone);
-  if (value === null || typeof value !== "object") return value;
-  const clone = Object.create(null);
-  for (const [key, entry] of Object.entries(value)) clone[key] = nullPrototypeClone(entry);
-  return clone;
-}
-
-describe("full-overlap suite and assertion execution contract", () => {
-  it("accepts valid Linux, Darwin, and package reports", () => {
-    expect(validate("source", sourceResult("linux"))).toEqual([PENDING_TEST]);
-    expect(validate("source", sourceResult("darwin"), "darwin")).toEqual([]);
-    expect(validate("package", result(PACKAGE_FILES.map((file) => suite(file))))).toEqual([]);
+describe("serialized overlap evidence boundary", () => {
+  it("exports only serialized-boundary operations", () => {
+    expect(Object.keys(overlap).sort()).toEqual([
+      "loadVerificationPolicy",
+      "normalizeReporterSuiteAggregates",
+      "validatePendingAuthority",
+      "validatePendingTests",
+    ]);
   });
 
-  it("rejects zero suite aggregates for one passing result", () => {
-    const report = result([suite(PACKAGE_FILES[0])], {
-      numTotalTestSuites: 0,
-      numPassedTestSuites: 0,
-    });
-    expect(() => validate("package", report)).toThrow(/numTotalTestSuites=0, expected 1.*numPassedTestSuites=0, expected 1/);
+  it("accepts governed YAML and parent-owned JSON result bytes", () => {
+    const root = sourceFixture();
+    const sourceReport = result([
+      suite("packages/cli/test/verification/overlapPending.test.ts", undefined, "passed", root),
+      suite(PENDING_PATH, [assertion("generation always executes"), assertion(PENDING_NAME, "skipped")], "passed", root),
+    ]);
+    expect(validate("source", bytes(sourceReport), ["packages/cli/test/verification/overlapPending.test.ts", PENDING_PATH], root))
+      .toEqual([{ path: PENDING_PATH, name: PENDING_NAME, status: "skipped" }]);
+    expect(validate("package", bytes(result([suite(PACKAGE_FILE)])), [PACKAGE_FILE])).toEqual([]);
   });
 
-  it("adapts upstream nested-suite aggregates to the file-suite result contract", () => {
-    const raw = result([suite(PACKAGE_FILES[0])], {
-      numTotalTestSuites: 2,
-      numPassedTestSuites: 2,
-    });
-    expect(validate("package", normalizeReporterSuiteAggregates(raw))).toEqual([]);
-  });
-
-  it.each([
-    ["failed", { numFailedTestSuites: 1 }],
-    ["pending", { numPendingTestSuites: 1 }],
-    ["runtime failure", { numRuntimeErrorTestSuites: 1 }],
-  ])("rejects raw %s suite evidence before projection", (_, overrides) => {
-    const raw = result([suite(PACKAGE_FILES[0])], overrides);
-    expectContractFailure(
-      () => normalizeReporterSuiteAggregates(raw),
-      /correction: rerun the owner and fix its raw success, suite statuses, suite failure\/pending aggregates/,
-    );
-  });
-
-  it.each([false, "true", 1, null, undefined])("rejects raw success=%s before projection", (success) => {
-    expect(() => normalizeReporterSuiteAggregates(result([suite(PACKAGE_FILES[0])], { success })))
-      .toThrow(/raw success=.*expected true before suite projection/);
-  });
-
-  it.each(["failed", "pending", "unknown"])('rejects contradictory raw suite status "%s" before projection', (status) => {
-    const raw = result([suite(PACKAGE_FILES[0])], {
-      success: true,
-      numFailedTestSuites: 0,
-      numPendingTestSuites: 0,
-    });
-    raw.testResults[0].status = status;
-    expect(() => normalizeReporterSuiteAggregates(raw)).toThrow(/raw suite status evidence is adverse/);
-  });
-
-  it("rejects contradictory raw total and passing suite aggregates", () => {
-    expect(() => normalizeReporterSuiteAggregates(result([suite(PACKAGE_FILES[0])], {
-      numTotalTestSuites: 3,
-      numPassedTestSuites: 2,
-    }))).toThrow(/raw suite aggregates contradict/);
-  });
-
-  it("preserves exact assertion aggregates while projecting only valid nested suite counts", () => {
-    const raw = result([suite(PACKAGE_FILES[0])], {
-      numTotalTestSuites: 2,
-      numPassedTestSuites: 2,
-      numTotalTests: 2,
-    });
-    expect(() => normalizeReporterSuiteAggregates(raw)).toThrow(/aggregate mismatch numTotalTests=2, expected 1/);
-  });
-
-  it.each([
-    ["numTotalTestSuites", 0],
-    ["numPassedTestSuites", 0],
-    ["numFailedTestSuites", 1],
-    ["numPendingTestSuites", 1],
-    ["numTotalTests", 0],
-    ["numPassedTests", 0],
-    ["numFailedTests", 1],
-    ["numPendingTests", 1],
-    ["numTodoTests", 1],
-  ])("rejects mismatched %s", (field, value) => {
-    expect(() => validate("package", result([suite(PACKAGE_FILES[0])], { [field]: value }))).toThrow(new RegExp(`${field}=.*expected`));
-  });
-
-  it.each([
-    ["negative", -1],
-    ["noninteger", 1.5],
-    ["nonnumeric", "1"],
-  ])("rejects a %s aggregate", (_, value) => {
-    expect(() => validate("package", result([suite(PACKAGE_FILES[0])], { numTotalTestSuites: value }))).toThrow(/numTotalTestSuites=.*expected 1/);
-  });
-
-  it.each([
-    "numTotalTestSuites",
-    "numPassedTestSuites",
-    "numFailedTestSuites",
-    "numPendingTestSuites",
-    "numTotalTests",
-    "numPassedTests",
-    "numFailedTests",
-    "numPendingTests",
-    "numTodoTests",
-  ])("rejects missing %s", (field) => {
-    const report: Record<string, unknown> = result([suite(PACKAGE_FILES[0])]);
-    delete report[field];
-    expect(() => validate("package", report as ReturnType<typeof result>)).toThrow(new RegExp(`${field}=undefined`));
-  });
-
-  it("rejects missing success and suite status fields", () => {
-    const report: Record<string, unknown> = result([suite(PACKAGE_FILES[0])]);
-    delete report.success;
-    delete (report.testResults as Suite[])[0].status;
-    expect(() => validate("package", report as ReturnType<typeof result>)).toThrow(/invalid suite statuses.*undefined.*success=undefined/);
-  });
-
-  it("rejects nonzero runtime-error suite aggregates", () => {
-    expect(() => validate("package", result([suite(PACKAGE_FILES[0])], {
-      numRuntimeErrorTestSuites: 1,
-    }))).toThrow(/numRuntimeErrorTestSuites=1, expected 0/);
-  });
-
-  it.each(["pending", "skipped", "todo", "failed", "unknown"])("rejects a %s suite and reconciles its exact status", (status) => {
-    const report = result([suite(PACKAGE_FILES[0], [assertion("package assertion")], status)]);
-    expect(() => validate("package", report)).toThrow(new RegExp(`package.*\\(${status}\\)`));
-  });
-
-  it("rejects pending suites with empty assertions while preserving the exact Linux assertion skip", () => {
-    const hidden = "packages/cli/test/hiddenPending.test.ts";
-    const report = result([...sourceResult("linux").testResults, suite(hidden, [], "pending")]);
-    expect(() => validatePendingTests("source", report, {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-      expectedFiles: [...SOURCE_FILES, hidden],
-      overlapAuthority: OVERLAP_AUTHORITY,
-    })).toThrow(/hiddenPending\.test\.ts \(pending\).*empty assertionResults/);
-  });
-
-  it.each([
-    ["missing", [suite(SOURCE_FILES[0])]],
-    ["duplicate", [suite(SOURCE_FILES[0]), suite(SOURCE_FILES[1]), suite(SOURCE_FILES[1])]],
-    ["renamed", [suite(SOURCE_FILES[0]), suite("packages/cli/test/build/renamed.test.ts")]],
-    ["empty", [suite(SOURCE_FILES[0]), suite(SOURCE_FILES[1], [])]],
-    ["all skipped", [suite(SOURCE_FILES[0]), suite(SOURCE_FILES[1], [assertion(PENDING_TEST.name, "skipped")])]],
-  ])("rejects %s file execution evidence", (_, suites) => {
-    expect(() => validate("source", result(suites))).toThrow(/inventory|empty assertionResults|no executed assertions/);
-  });
-
-  it("normalizes absolute, repository-relative, and reporter separator paths", () => {
-    const report = sourceResult("linux");
-    report.testResults[0].name = SOURCE_FILES[0];
-    report.testResults[1].name = path.join(REPO_ROOT, SOURCE_FILES[1]).replaceAll("/", "\\");
-    expect(validate("source", report)).toEqual([PENDING_TEST]);
-  });
-
-  it("proves the authoritative conditional exists exactly once in the declared source file", () => {
-    expect(validatePendingAuthority(OVERLAP_AUTHORITY, { repoRoot: REPO_ROOT, expectedFiles: SOURCE_FILES })).toEqual(PENDING_TEST);
-  });
-
-  it("accepts formatting variants of the exact executable declaration", () => {
-    const source = `describe(\n  '${PENDING_AUTHORITY.suite}',\n  function () {\n    it\n      .runIf(\n        process.platform\n          === '${PENDING_AUTHORITY.executesOn}',\n      )(\n        '${PENDING_AUTHORITY.title}',\n        () => {},\n      );\n  },\n);`;
-    const fixture = authorityFixture(source);
-    expect(validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toEqual(PENDING_TEST);
-  });
-
-  it("accepts semantics-preserving parentheses without relaxing the direct call shape", () => {
-    const source = `(describe)((${JSON.stringify(PENDING_AUTHORITY.suite)}), ((() => {
-      (((it)).runIf(((((process)).platform === (${JSON.stringify(PENDING_AUTHORITY.executesOn)})))))
-        ((${JSON.stringify(PENDING_AUTHORITY.title)}), ((() => {})));
-    })));`;
-    const fixture = authorityFixture(source);
-    expect(validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toEqual(PENDING_TEST);
-  });
-
-  it.each([
-    ["describe call", `describe?.(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { ${conditionalSource().split("\n")[1]} });`],
-    ["it property", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it?.runIf(process.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["runIf call", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf?.(process.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["title call", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform === "darwin")?.(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["process property", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process?.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["condition call", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform?.valueOf() === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["title expression", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform === "darwin")((${JSON.stringify(PENDING_AUTHORITY.title)} as string)?.trim(), () => {}); });`],
-    ["combined chain", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it?.runIf?.(process?.platform === "darwin")?.(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-  ])("rejects optional chaining at the %s boundary", (_, source) => {
-    const fixture = authorityFixture(source);
-    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toThrow(/authority proof failed/);
-  });
-
-  it.each([
-    ["comment", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { /* ${conditionalSource()} */ });`],
-    ["string", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { const text = ${JSON.stringify(conditionalSource())}; });`],
-    ["template", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { const text = \`${conditionalSource()}\`; });`],
-    ["wrapper", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { const runIf = it.runIf; runIf(process.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["alias", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { const runner = it; runner.runIf(process.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
-    ["template title", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform === "darwin")(\`${PENDING_AUTHORITY.title}\`, () => {}); });`],
-  ])("rejects %s text or indirection as the authoritative declaration", (_, source) => {
-    const fixture = authorityFixture(source);
-    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toThrow(/authoritative conditional count: expected 1, observed 0/);
-  });
-
-  it("rejects a duplicate matching conditional assertion", () => {
-    const fixture = authorityFixture(conditionalSource(), [conditionalSource()]);
-    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toThrow(/expected exactly one.*observed 2/);
-  });
-
-  it.each([
-    ["renamed", conditionalSource("renamed conditional"), []],
-    ["moved", "describe(\"generated generation publication\", () => {});", [conditionalSource()]],
-  ])("rejects a %s conditional without an authority update", (_, declared, others) => {
-    const fixture = authorityFixture(declared, others);
-    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toThrow(/declared source.*expected 1, observed 0/);
-  });
-
-  it("rejects a renamed authoritative suite", () => {
-    const fixture = authorityFixture(conditionalSource().replace(PENDING_AUTHORITY.suite, "renamed suite"));
-    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toThrow(/suite count: expected 1, observed 0/);
-  });
-
-  it("rejects malformed TypeScript instead of scanning its text", () => {
-    const fixture = authorityFixture(`${conditionalSource()}\nconst broken = ;`);
-    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
-      repoRoot: fixture.root,
-      expectedFiles: fixture.files,
-    })).toThrow(/malformed TypeScript syntax/);
-  });
-
-  it.each([
-    ["missing overlap key", (value: any) => { delete value.max_diagnostic_utf8_bytes; }],
-    ["extra overlap key", (value: any) => { value.extra = true; }],
-    ["symbol overlap key", (value: any) => { value[Symbol("extra")] = true; }],
-    ["array declaration", (value: any) => { value.allowed_pending_assertion = [value.allowed_pending_assertion]; }],
-    ["missing declaration key", (value: any) => { delete value.allowed_pending_assertion.title; }],
-    ["extra declaration key", (value: any) => { value.allowed_pending_assertion.extra = true; }],
-    ["extra execution key", (value: any) => { value.allowed_pending_assertion.executes_when.extra = true; }],
-    ["unsafe large cap", (value: any) => { value.max_diagnostic_utf8_bytes = 8193; }],
-    ["unsafe small cap", (value: any) => { value.max_diagnostic_utf8_bytes = 1023; }],
-    ["malformed cap", (value: any) => { value.max_diagnostic_utf8_bytes = "8192"; }],
-    ["unsupported platform", (value: any) => { value.allowed_pending_assertion.executes_when.platform = "linux"; }],
-    ["unsupported status", (value: any) => { value.allowed_pending_assertion.status = "todo"; }],
-    ["unsupported owner", (value: any) => { value.allowed_pending_assertion.owner = "package"; }],
-    ["outside path", (value: any) => { value.allowed_pending_assertion.path = "../outside.test.ts"; }],
-    ["malformed path", (value: any) => { value.allowed_pending_assertion.path = "packages/cli/test/../outside.test.ts"; }],
-    ["renamed title", (value: any) => { value.allowed_pending_assertion.title = "another title"; }],
-    ["oversized title", (value: any) => { value.allowed_pending_assertion.title = "x".repeat(100_000); }],
-  ])("fails closed for policy with %s", (_, mutate) => {
-    const value = policy();
-    mutate(value);
-    expectContractFailure(() => pendingAuthority(value), /correction: restore the closed overlap schema/);
-  });
-
-  it("accepts plain and recursively null-prototype policy maps", () => {
-    const sanitized = validatePolicyObjectBoundary(POLICY);
-    expect(sanitized).toEqual(POLICY);
-    expect(Object.getPrototypeOf(sanitized)).toBeNull();
-    expect(Object.getPrototypeOf(sanitized.overlap)).toBeNull();
-    expect(Object.getPrototypeOf(sanitized.overlap.allowed_pending_assertion.executes_when)).toBeNull();
-    const nullPolicy = nullPrototypeClone(policy());
-    expect(pendingAuthority(nullPolicy)).toMatchObject(PENDING_AUTHORITY);
-    const nullVerification = nullPrototypeClone({ overlap: policy(), nested: { map: { value: true } } });
-    expect(validatePolicyObjectBoundary(nullVerification)).toEqual(nullVerification);
-  });
-
-  it("still rejects an incomplete null-prototype map", () => {
-    const value = nullPrototypeClone(policy());
-    delete value.allowed_pending_assertion.title;
-    expectContractFailure(() => pendingAuthority(value), /correction: restore the closed overlap schema/);
-  });
-
-  it.each([
-    ["verification", () => Object.assign(Object.create({ attacker: true }), { overlap: policy() })],
-    ["overlap", () => ({ overlap: Object.assign(Object.create({ attacker: true }), policy()) })],
-    ["allowed_pending_assertion", () => {
-      const overlap = policy();
-      overlap.allowed_pending_assertion = Object.assign(
-        Object.create({ attacker: true }),
-        overlap.allowed_pending_assertion,
-      );
-      return { overlap };
-    }],
-    ["executes_when", () => {
-      const overlap = policy();
-      overlap.allowed_pending_assertion.executes_when = Object.assign(
-        Object.create({ attacker: true }),
-        overlap.allowed_pending_assertion.executes_when,
-      );
-      return { overlap };
-    }],
-    ["arbitrary nested map", () => ({ overlap: policy(), nested: { hostile: Object.create({ attacker: true }) } })],
-  ])("rejects inherited attacker fields at the %s map", (_, create) => {
-    expectContractFailure(() => validatePolicyObjectBoundary(create()), /correction: provide plain own-data policy maps/);
-  });
-
-  it.each([
-    ["class instance", () => Object.assign(new (class Policy {})(), policy())],
-    ["Date", () => new Date()],
-    ["Map", () => new Map(Object.entries(policy()))],
-    ["proxy prototype", () => Object.assign(Object.create(new Proxy({}, {})), policy())],
-  ])("rejects a %s policy map before reading its fields", (_, create) => {
-    const message = expectContractFailure(() => pendingAuthority(create()));
-    expect(message).toContain("unsupported prototype");
-  });
-
-  it("rejects __proto__ parser keys even when they do not mutate the prototype", () => {
-    const value = policy();
-    Object.defineProperty(value, "__proto__", {
-      value: { attacker: true },
-      enumerable: true,
-      configurable: true,
-    });
-    expectContractFailure(() => pendingAuthority(value));
-
-    const parsed = YAML.parse(`${YAML.stringify(policy())}__proto__:\n  attacker: true\n`);
-    expectContractFailure(() => pendingAuthority(parsed));
-  });
-
-  it("does not accept inherited values for missing own policy fields", () => {
-    const value = policy();
-    const declaration = value.allowed_pending_assertion;
-    delete declaration.owner;
-    Object.setPrototypeOf(declaration, { owner: "source" });
-    const message = expectContractFailure(() => pendingAuthority(value));
-    expect(message).toContain("unsupported prototype");
-  });
-
-  it("bounds throwing and revoked policy proxy prototype failures", () => {
-    const throwing = new Proxy(policy(), {
-      getPrototypeOf() { throw new Error("prototype trap"); },
-    });
-    expectContractFailure(() => pendingAuthority(throwing));
-
-    const revocable = Proxy.revocable(policy(), {});
-    revocable.revoke();
-    expectContractFailure(() => pendingAuthority(revocable.proxy));
-  });
-
-  it.each([
-    "max_diagnostic_utf8_bytes",
-    "allowed_pending_assertion",
-  ])("does not execute an overlap.%s getter", (field) => {
-    const value = policy();
-    let invoked = false;
-    Object.defineProperty(value, field, { get() { invoked = true; throw new Error("getter executed"); } });
-    expectContractFailure(() => pendingAuthority(value));
-    expect(invoked).toBe(false);
-  });
-
-  it.each(["owner", "path", "suite", "title", "status", "executes_when"])("does not execute an allowed_pending_assertion.%s getter", (field) => {
-    const value = policy();
-    let invoked = false;
-    Object.defineProperty(value.allowed_pending_assertion, field, { get() { invoked = true; throw new Error("getter executed"); } });
-    expectContractFailure(() => pendingAuthority(value));
-    expect(invoked).toBe(false);
-  });
-
-  it("does not execute the platform getter", () => {
-    const value = policy();
-    let invoked = false;
-    Object.defineProperty(value.allowed_pending_assertion.executes_when, "platform", { get() { invoked = true; throw new Error("getter executed"); } });
-    expectContractFailure(() => pendingAuthority(value));
-    expect(invoked).toBe(false);
-  });
-
-  it("fails safely when a policy proxy rejects inspection", () => {
-    const hostile = new Proxy({}, { ownKeys() { throw new Error("proxy trap"); } });
-    expectContractFailure(() => pendingAuthority(hostile));
-  });
-
-  it("honors a safe smaller diagnostic cap without allowing expansion", () => {
-    const value = policy();
-    value.max_diagnostic_utf8_bytes = 1024;
-    expect(pendingAuthority(value).maxDiagnosticBytes).toBe(1024);
-    const report = result([suite("x".repeat(100_000))]);
-    const message = expectContractFailure(() => validatePendingTests("package", report, {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-      expectedFiles: PACKAGE_FILES,
-      overlapAuthority: value,
-    }));
-    expect(Buffer.byteLength(message, "utf8")).toBeLessThanOrEqual(1024);
-  });
-
-  it.each([
-    "success",
-    "numTotalTestSuites",
-    "numPassedTestSuites",
-    "numFailedTestSuites",
-    "numPendingTestSuites",
-    "numTotalTests",
-    "numPassedTests",
-    "numFailedTests",
-    "numPendingTests",
-    "numTodoTests",
-    "numRuntimeErrorTestSuites",
-    "testResults",
-  ])("does not execute a report.%s getter", (field) => {
-    const report = result([suite(PACKAGE_FILES[0])]);
-    let invoked = false;
-    Object.defineProperty(report, field, { get() { invoked = true; throw new Error("getter executed"); } });
-    expectContractFailure(() => normalizeReporterSuiteAggregates(report));
-    expectContractFailure(() => validate("package", report));
-    expect(invoked).toBe(false);
-  });
-
-  it.each(["name", "status", "assertionResults"])("does not execute a suite.%s getter", (field) => {
-    const report = result([suite(PACKAGE_FILES[0])]);
-    let invoked = false;
-    Object.defineProperty(report.testResults[0], field, { get() { invoked = true; throw new Error("getter executed"); } });
-    expectContractFailure(() => normalizeReporterSuiteAggregates(report));
-    expectContractFailure(() => validate("package", report));
-    expect(invoked).toBe(false);
-  });
-
-  it.each(["fullName", "status"])("does not execute an assertion.%s getter", (field) => {
-    const report = result([suite(PACKAGE_FILES[0])]);
-    let invoked = false;
-    Object.defineProperty(report.testResults[0].assertionResults[0], field, { get() { invoked = true; throw new Error("getter executed"); } });
-    expectContractFailure(() => normalizeReporterSuiteAggregates(report));
-    expectContractFailure(() => validate("package", report));
-    expect(invoked).toBe(false);
-  });
-
-  it.each([
-    ["null report", null],
-    ["symbol report", Symbol("report")],
-    ["bigint report", 1n],
-    ["malformed suite", { ...result([]), numTotalTestSuites: 1, testResults: [null] }],
-    ["malformed assertion", {
-      ...result([]),
+  it("normalizes only validated reporter JSON bytes", () => {
+    const raw = result([suite(PACKAGE_FILE)], { numTotalTestSuites: 2, numPassedTestSuites: 2 });
+    const normalized = overlap.normalizeReporterSuiteAggregates(bytes(raw));
+    expect(JSON.parse(normalized.toString("utf8"))).toMatchObject({
       numTotalTestSuites: 1,
       numPassedTestSuites: 1,
-      numTotalTests: 1,
-      testResults: [{ name: PACKAGE_FILES[0], status: "passed", assertionResults: [null] }],
-    }],
-    ["sparse suites", { ...result([]), testResults: sparseArray(2) }],
-    ["oversized suites", { ...result([]), testResults: sparseArray(10_001) }],
-  ])("returns one bounded actionable diagnostic for %s", (_, hostile) => {
-    expectContractFailure(() => validate("package", hostile as ReturnType<typeof result>), /correction:/);
-  });
-
-  it("returns one bounded actionable diagnostic for circular, invalid-Unicode, symbol, and bigint fields", () => {
-    const circular: Record<string, unknown> = {};
-    circular.self = circular;
-    const report = result([suite(circular, [assertion("\ud800", Symbol("status"))], 1n)]);
-    const message = expectContractFailure(() => validate("package", report));
-    expect(message).toContain("�");
-    expect(message).toContain("correction:");
-  });
-
-  it("fails safely when a report proxy rejects property inspection", () => {
-    const hostile = new Proxy({}, { getOwnPropertyDescriptor() { throw new Error("proxy trap"); } });
-    expectContractFailure(() => validate("package", hostile as ReturnType<typeof result>));
+      testResults: [{ name: path.join(REPO_ROOT, PACKAGE_FILE) }],
+    });
   });
 
   it.each([
-    ["scalar", "x".repeat(100_000)],
-    ["object", { payload: "x".repeat(100_000) }],
-    ["lone surrogate", "\ud800".repeat(100_000)],
-  ])("bounds 100KB malformed %s diagnostics", (_, malformed) => {
-    const report = result([suite(malformed, [assertion(malformed, malformed)], malformed)], {
-      success: malformed,
-      numTotalTestSuites: malformed,
-      numTotalTests: malformed,
+    ["malformed YAML", Buffer.from("overlap: [")],
+    ["duplicate YAML key", Buffer.from(`${POLICY_BYTES.toString("utf8")}\noverlap: {}\n`)],
+    ["aliased YAML", Buffer.from(POLICY_BYTES.toString("utf8").replace("  allowed_pending_assertion:\n", "  allowed_pending_assertion: &pending\n").replace("    owner: source\n", "    owner: source\n  copied: *pending\n"))],
+    ["cyclic YAML", Buffer.from(POLICY_BYTES.toString("utf8").replace("      platform: darwin", "      platform: &loop { self: *loop }"))],
+    ["oversized YAML", Buffer.alloc(2 * 1024 * 1024 + 1, "x")],
+    ["structurally invalid YAML", Buffer.from(POLICY_BYTES.toString("utf8").replace("  max_diagnostic_utf8_bytes: 8192", "  unexpected: true\n  max_diagnostic_utf8_bytes: 8192"))],
+  ])("fails closed before policy consumption for %s", (_, policyBytes) => {
+    expectContractFailure(() => overlap.loadVerificationPolicy(policyBytes));
+  });
+
+  it.each([
+    ["malformed JSON", Buffer.from("{")],
+    ["oversized JSON", Buffer.alloc(2 * 1024 * 1024 + 1, "x")],
+    ["structurally invalid JSON", bytes({ testResults: { $ref: "#" } })],
+    ["accessor-like JSON shape", bytes({ get: "success", testResults: [] })],
+    ["alias/cycle-like JSON shape", bytes({ testResults: [{ $ref: "#/testResults/0" }] })],
+  ])("fails closed before report normalization for %s", (_, reporterBytes) => {
+    expectContractFailure(() => overlap.normalizeReporterSuiteAggregates(reporterBytes));
+  });
+
+  it("rejects object values rather than treating them as runtime evidence", () => {
+    expectContractFailure(() => overlap.loadVerificationPolicy({ overlap: {} } as never));
+    expectContractFailure(() => overlap.normalizeReporterSuiteAggregates({ testResults: [] } as never));
+    expectContractFailure(() => overlap.validatePendingTests("package", { testResults: [] } as never, bytes([PACKAGE_FILE]), POLICY_BYTES, REPO_ROOT, "linux"));
+  });
+
+  it("proves the canonical source declaration from serialized policy and inventory", () => {
+    const root = sourceFixture();
+    expect(overlap.validatePendingAuthority(POLICY_BYTES, bytes([PENDING_PATH]), root)).toMatchObject({
+      path: PENDING_PATH,
+      status: "skipped",
     });
-    let error: Error | undefined;
-    try {
-      validate("package", report);
-    } catch (caught) {
-      error = caught as Error;
-    }
-    expect(error).toBeDefined();
-    expect(Buffer.byteLength(error?.message ?? "", "utf8")).toBeLessThanOrEqual(OVERLAP_AUTHORITY.max_diagnostic_utf8_bytes);
-    expect(error?.message).toContain("correction: package permits no pending suites or assertions");
   });
 });

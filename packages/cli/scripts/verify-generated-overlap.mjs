@@ -12,6 +12,7 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
 const barrier = path.join(root, "barrier");
 const repoRoot = path.resolve(packageRoot, "../..");
+const policyBytes = fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
 const inventoryResult = spawnSync(process.execPath, ["scripts/verify-lane.mjs", "inventory", "--json"], {
   cwd: packageRoot,
   encoding: "utf8",
@@ -58,15 +59,10 @@ async function waitForReady() {
 }
 
 function ownerResult(owner) {
-  const result = JSON.parse(fs.readFileSync(path.join(root, `${owner}.json`), "utf8"));
+  const result = fs.readFileSync(path.join(root, `${owner}.json`));
   const expectedFiles = inventory.files[owner];
-  const pending = validatePendingTests(owner, result, {
-    platform: process.platform,
-    repoRoot,
-    expectedFiles,
-    overlapAuthority: inventory.overlap,
-  });
-  return { files: expectedFiles.length, tests: result.numTotalTests, pending };
+  const pending = validatePendingTests(owner, result, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
+  return { files: expectedFiles.length, tests: JSON.parse(result.toString("utf8")).numTotalTests, pending };
 }
 
 try {
