@@ -19,12 +19,12 @@ record:
   test_proportionality: Benchmark safe candidates and require three consecutive passing runs at the selected setting.
   plan: rmtdgltdgm
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "The six/eight-worker benchmark is valid only for the named local 16-logical-CPU runner, but maxWorkersFor returns eight on every machine and CI runs without an override. Do not apply local measurements to unmeasured GitHub-hosted runners: establish an explicit runner-specific CI policy from real evidence, or conservatively keep CI outside the tuned policy with accurate documentation and no invented measurement. Preserve local 8-worker evidence, three-run proof, routing composition, and the 12-worker warning."
     provenance:
-      attempt_id: lkyflumkrj-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 14:24
+      attempt_id: lkyflumkrj-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 14:41
       writer_command: agentera state plan record-evaluation

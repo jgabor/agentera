@@ -34,26 +34,6 @@ execution-policy compositions live in
 Losslessly compressed raw reports live beside a dependency-free recomputation
 command under `references/analysis/evidence/verification-baseline-2026-07-20/`.
 
-## CLI verification owners and policies
-
-Run one primary evidence owner independently:
-
-```bash
-pnpm -C packages/cli test:source
-pnpm -C packages/cli test:stress
-pnpm -C packages/cli test:performance
-pnpm -C packages/cli verify:package
-```
-
-Run a named policy with `pnpm -C packages/cli verify:<policy>`, where policy is
-`targeted`, `precommit`, `fast`, `local`, `merge`, `scheduled`, or `release`.
-`fast` is a source-owner composition, never an evidence owner. Targeted filters
-may follow `--`. The runner validates the complete inventory before execution,
-runs owners sequentially without prompts, and reports the failed owner plus its
-owner-specific correction command. Stress and performance currently own no
-whole files: their mixed evidence remains source-owned and is explicitly marked
-for later separation in the policy contract.
-
 The startup benchmark is an optimization signal for Decision 51 and Decision 52.
 It does not implement a startup state envelope or change runtime behavior.
 

@@ -1,0 +1,13 @@
+id: wdzkxxfver
+artifact: progress
+record:
+  timestamp: 2026-07-21 14:49
+  type: docs
+  phase: build
+  what: Removed the stale CLI verification teaching section from benchmark.md.
+  context:
+    intent: Keep verification ownership documentation authoritative in the policy contract.
+  inspiration: Task rpsxvneecd
+  discovered: The policy assigns one stress file and three performance files; the deleted prose's zero-file assertion was stale.
+  verified: "Surviving owner: references/analysis/verification-policy.yaml, enforced by packages/cli/scripts/verify-lane.mjs and test/verification/laneOwnership.test.ts. Before and after: lane ownership (64 passed), verify-lane validate, inventory (200: source 194, stress 1, performance 3, package 2), Markdown lint, and compact passed."
+  next: Defer codexMain coverage and any production export cleanup pending the supported-surface decision.

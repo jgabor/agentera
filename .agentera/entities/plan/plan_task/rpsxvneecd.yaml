@@ -11,7 +11,7 @@ record:
     - indulnncww
     - liuqlppclk
     - lkyflumkrj
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a teaching template or duplicate assertion WHEN it is removed THEN its surviving documentation or test owner is verified first.
     - GIVEN parity harness behavior repeats WHEN consolidated THEN distinct command-family acceptance remains separate.
