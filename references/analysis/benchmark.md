@@ -23,16 +23,9 @@ contract validators, and runtime smoke checks.
 | --- | --- | --- | --- |
 | Startup state benchmark | `mage bench:startupState` | Measures how often Agentera CLI state reads are followed by raw artifact access during startup/state gathering. | Manual only; forbidden in normal CI. |
 
-Verification optimization uses a separate retained baseline rather than this
-runtime-history benchmark. The 2026-07-20 source and pre-commit samples,
-production-scale ownership map, and unresolved worker/lane criteria live in
-[`verification-baseline-2026-07-20.yaml`](./verification-baseline-2026-07-20.yaml).
-That baseline remains measurement authority. Current test ownership, independent
-owner commands, mixed-file separation markers, conservative routing, and named
-execution-policy compositions live in
+Verification ownership, independent owner commands, mixed-file separation
+markers, conservative routing, and named execution-policy compositions live in
 [`verification-policy.yaml`](./verification-policy.yaml).
-Losslessly compressed raw reports live beside a dependency-free recomputation
-command under `references/analysis/evidence/verification-baseline-2026-07-20/`.
 
 The startup benchmark is an optimization signal for Decision 51 and Decision 52.
 It does not implement a startup state envelope or change runtime behavior.

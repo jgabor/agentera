@@ -1,0 +1,14 @@
+id: resqhtzeoj
+artifact: progress
+record:
+  timestamp: 2026-07-21 20:12
+  type: refactor
+  phase: build
+  what: Deleted 18 dated workpaper/evidence files (341,866 bytes) from references/analysis and reduced activeProtocolSurface.test.ts from 381 to 59 lines by checking served runtime output instead of classifying copied files.
+  context:
+    intent: Keep reference contracts with real consumers while removing historical package payload and self-referential test coupling.
+    constraints: Preserved active contracts and historical .agentera/CHANGELOG citations; did not redesign references or fix the stale mage command.
+    unknowns: none
+    scope: references/analysis, references/meta/documentation-inventory.md, and packages/cli/test/cli/{activeProtocolSurface.test.ts,lifecycleProtocol.test.ts,retiredVocabulary.ts}.
+  discovered: evidence-tier-authority.yaml, startup-measurement-contract.yaml, and verification-policy.yaml have executable readers; benchmark.md is a maintainer runbook. Its mage benchmark command is stale and remains separate follow-up work.
+  verified: Focused 156-test and post-audit 11-test suites, typecheck, build, package 10-test verification, pack dry run, compact, and git diff --check passed. The full 2,367-test source run had 2,365 pass, 1 skip, and one unrelated path-sensitive statusDashboardBudget failure; an independent audit confirmed the cleanup has no remaining blockers.
