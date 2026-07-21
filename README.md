@@ -117,13 +117,11 @@ The intentional singleton project state is:
 | ♾ | profile | Reusable decision profile |
 | ⎈ | orchestrate | Autonomous plan execution with evaluation |
 
-## Monorepo
+## Package
 
 | Package | Role |
 | --- | --- |
 | `packages/cli` (`agentera`) | Primary TypeScript CLI and bundled runtime data |
-| `packages/web` (`@agentera/web`) | Marketing and Starlight documentation site |
-| `packages/mobile` (`@agentera/mobile`) | Docs-only mobile product stub |
 
 Contributor commands and repository rules live in [AGENTS.md](./AGENTS.md).
 Migration and recovery details live in [UPGRADE.md](./UPGRADE.md).
@@ -132,7 +130,6 @@ Migration and recovery details live in [UPGRADE.md](./UPGRADE.md).
 pnpm -C packages/cli test
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
-vp run web:check
 ```
 
 License: [Apache-2.0](./LICENSE) · Author: Jonathan Gabor

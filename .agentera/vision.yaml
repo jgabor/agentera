@@ -6,8 +6,8 @@ north_star: |
 personas:
   - name: The Jonathan-shaped solo developer
     description: |
-      A solo developer or one-person founding team. Codes from a phone in bed,
-      laptop on the train, terminal open at 2am. Knows their stack, hates plugin
+      A solo developer or one-person founding team. Codes from a laptop on the
+      train, terminal open at 2am. Knows their stack, hates plugin
       soup, expects opinionated defaults that work immediately out of the box.
   - name: The solo founder who knows better
     description: |
@@ -20,7 +20,7 @@ personas:
       team — the one who keeps vision sharp, remembers reasoning, and watches for
       architectural drift while she's in flow. Agentera gives her that through
       one agent with structured project state, driven through a single CLI that
-      meets her where she works, including the couch at midnight.
+      meets her where she works.
 principles:
   - name: One agent, not a team
     description: |
@@ -43,11 +43,6 @@ principles:
     description: |
       No extensions, plugins, MCP servers, or user skill loading on any surface
       — ever. Missing behavior is built into Agentera, not loaded from outside.
-  - name: Mobile is the primary surface
-    description: |
-      Every screen works at 360px first; desktop is a larger layout, not a
-      different product. Phone-shaped interactions — queue, paste, rewind, smart
-      bar — are the design language.
   - name: Latency is a feature
     description: A 200ms response beats a perfect one at 2s.
   - name: One workflow, zero seams
@@ -68,22 +63,13 @@ principles:
       not full artifacts. If the system burns tokens on ceremony, the design is
       wrong.
 direction: |
-  Agentera is one agent driven through a single CLI, delivered across multiple
-  surfaces. The CLI is the brain and spine; every surface is a client.
+  Agentera is one agent driven through a single CLI. The CLI is the product,
+  brain, and spine.
 
-  **@agentera/cli** (`packages/cli`) — the agent runtime. Owns capability
+  **`agentera`** (`packages/cli`) — the agent runtime. Owns capability
   schema, `.agentera/` state contract, routing judgment, and the worker-spec
-  contract. All agent execution routes through the CLI (direct or `agentera
-  serve`). Published to npm as `agentera`. This is the narrow waist; every
-  other surface is a client.
-
-  **@agentera/mobile** (`packages/mobile`) — the flagship product. SvelteKit,
-  Cursor SDK, Cloudflare Worker. Phone-shaped interactions — queue, paste,
-  rewind, smart bar — are the design language. Mobile is a client of the CLI
-  engine; presentation-only tiering allowed.
-
-  **@agentera/web** (`packages/web`) — marketing site and published Starlight
-  documentation.
+  contract. All agent execution routes through the CLI. Published to npm as
+  `agentera`.
 
   **Host harnesses** (Claude, Cursor, Codex, Copilot, OpenCode) — the host
   provides the model, the tool runtime, and the spawn capacity. Agentera
@@ -92,18 +78,17 @@ direction: |
   extension — the same fixed workflow delivered inside the host's shell.
 
   Capability schemas, artifact shapes, and validation rules in `skills/` and
-  `references/` power every surface as implementation authority — not a
+  `references/` power the CLI as implementation authority — not a
   separate public protocol brand. Eleven top-level capabilities (profile
   demoted to background utility) plus a profile utility that surfaces through
   existing capabilities.
 
-  In 12 months, more code is shipped from the couch than the desk. The CLI is
-  the colleague's brain everywhere; mobile is where you live inside the
-  workflow.
+  In 12 months, the CLI is the colleague's brain wherever engineering work
+  happens.
 identity:
   personality: creative · driving · honest · opinionated · proactive · engaging
   voice: |
-    One voice across all surfaces: the sharp colleague. Casual, opinionated,
+    One voice throughout the CLI: the sharp colleague. Casual, opinionated,
     occasionally playful — encouraging on wins, blunt on misses. Jokes when
     momentum holds; honest when it doesn't. Pushes back when something's off.
     Says what it sees, says what it'd do, does it. Not terse, but warm. Not
@@ -118,8 +103,8 @@ identity:
     colleague at your back — one who keeps working when you walk away. Close
     the laptop; the colleague stays at work.
   naming: |
-    "Agentera" is the product everywhere — app, monorepo, npm scope (@agentera/*),
-    and dot-folder (.agentera/). The in-app agent's name is the user's choice.
+    "Agentera" is the product everywhere — CLI, npm package, and dot-folder
+    (.agentera/).
     "Skill," "plugin," and "engineering team" are internal transport terms, not
     product vocabulary. The product word is capabilities.
 tension: |

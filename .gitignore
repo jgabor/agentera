@@ -4,7 +4,6 @@
 docs/*
 !docs/README.md
 !docs/packaging/
-!docs/consolidation/
 __pycache__/
 *.pyc
 .env
@@ -13,9 +12,6 @@ node_modules
 package-lock.json
 bun.lock
 .pnpm-store
-packages/web/dist
-packages/web/.astro
-packages/web/.wrangler
 packages/cli/dist
 packages/cli/*.tgz
 packages/cli/bundle

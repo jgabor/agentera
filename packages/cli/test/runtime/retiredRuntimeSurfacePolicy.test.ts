@@ -46,10 +46,6 @@ const publicInstallSurfaceRoots = [
   "packages/cli/README.md",
   "packages/cli/shim",
   "packages/cli/src/cli/help.ts",
-  "packages/mobile/README.md",
-  "packages/mobile/DESIGN.md",
-  "packages/web/src/components/InstallTabs.astro",
-  "packages/web/src/content/docs/docs",
   "UPGRADE.md",
   "references/adapters/package-surface-characterization.md",
   "references/adapters/package-manifest-interface-model.yaml",
@@ -60,8 +56,6 @@ const publicInstallSurfaceRoots = [
 ] as const;
 
 const retiredInstallerSurfaces = [
-  "packages/web/src/content/docs/docs/getting-started/install.mdx",
-  "packages/web/src/components/InstallTabs.astro",
   "packages/cli/shim/lib/exec.mjs",
   "references/adapters/package-registry.yaml",
   "references/adapters/package-manifest-interface-model.yaml",
@@ -157,10 +151,6 @@ describe("retired runtime current-surface policy", () => {
       "README.md",
       "packages/cli/README.md",
       "packages/cli/shim/lib/exec.mjs",
-      "packages/web/src/components/InstallTabs.astro",
-      "packages/web/src/content/docs/docs/index.mdx",
-      "packages/web/src/content/docs/docs/getting-started/index.mdx",
-      "packages/web/src/content/docs/docs/getting-started/install.mdx",
     ]));
     for (const surface of surfaces) {
       expect(currentSupportViolations(read(surface)), surface).toEqual([]);
@@ -256,8 +246,6 @@ describe("retired runtime current-surface policy", () => {
     }
     for (const surface of [
       "packages/cli/README.md",
-      "packages/web/src/components/InstallTabs.astro",
-      "packages/web/src/content/docs/docs/getting-started/install.mdx",
       "packages/cli/shim/lib/exec.mjs",
     ]) {
       const content = read(surface);

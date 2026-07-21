@@ -195,9 +195,6 @@ describe("plan lifecycle contract", () => {
     expect(filesUnder(REPO_ROOT, "node_modules", exclusions, excludedDirectoryNames)).toEqual([]);
     expect(filesUnder(REPO_ROOT, ".git", exclusions, excludedDirectoryNames)).toEqual([]);
     expect(
-      filesUnder(REPO_ROOT, "packages/web/.wrangler", exclusions, excludedDirectoryNames),
-    ).toEqual([]);
-    expect(
       filesUnder(
         REPO_ROOT,
         "packages/cli/agentera-3.0.0-dev.1.tgz",

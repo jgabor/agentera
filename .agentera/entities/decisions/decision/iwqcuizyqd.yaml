@@ -1,0 +1,15 @@
+id: iwqcuizyqd
+artifact: decisions
+record:
+  date: 2026-07-21
+  question: Which package surfaces should Agentera maintain?
+  context: The repository contained unfinished mobile and web package surfaces that duplicated product direction and added workspace, CI, dependency, documentation, and maintenance overhead without contributing to the shipped CLI product.
+  alternatives:
+    - name: Maintain only the agentera CLI package
+      status: chosen
+    - name: Continue the CLI, mobile client, and documentation site as parallel package surfaces
+      status: rejected
+  choice: Keep packages/cli as Agentera's only package and product surface. Remove the mobile and web packages and their live configuration, documentation, CI, tests, roadmap items, and product-direction references.
+  reasoning: The CLI already owns Agentera's runtime, state, routing, capability contracts, and distribution. One package makes that authority explicit, eliminates speculative surfaces, and reduces dependency and verification burden without weakening the shipped product.
+  confidence: firm
+  feeds_into: README.md, AGENTS.md, DESIGN.md, .agentera/vision.yaml, .agentera/docs.yaml, workspace configuration, CI, tests, and package documentation

@@ -133,23 +133,14 @@ describe("producer capability writer integration", () => {
     }
   });
 
-  it("keeps cold-start agent and public documentation surfaces discoverable", () => {
+  it("keeps cold-start agent surfaces discoverable", () => {
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const agents = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
-    const publicReference = fs.readFileSync(
-      path.join(
-        REPO_ROOT,
-        "packages/web/src/content/docs/docs/reference/state-writer.mdx",
-      ),
-      "utf8",
-    );
-
-    for (const surface of [skill, agents, publicReference]) {
+    for (const surface of [skill, agents]) {
       expect(surface).toContain("agentera state decisions explain");
       expect(surface).toContain("--dry-run");
     }
     expect(skill).toContain("not edit `.agentera/entities/` directly");
     expect(agents).toContain("instead of editing `.agentera/entities/`");
-    expect(publicReference).toContain("agentera schema --format json");
   });
 });

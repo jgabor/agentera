@@ -11,7 +11,6 @@ guides — not under `docs/`.
 | Path | Topic |
 | ---- | ----- |
 | `docs/packaging/v3-packaging.md` | v3 CLI npm distribution and verification-lane contract |
-| `docs/consolidation/monorepo-plan.md` | Product pivot, `@agentera/*` package layout, migration checklist (D67) |
 
 ## Authority stack
 
@@ -27,7 +26,7 @@ guides — not under `docs/`.
 | Verification ownership and execution policy | `references/analysis/verification-policy.yaml` |
 | State storage, path, API, compatibility, and output authority | `references/artifacts/state-storage-authority.yaml` |
 | JSON surface budgets | `scripts/json_output_surface_manifest.yaml` |
-| Project drafts | `docs/` (gitignored except `docs/README.md`, `docs/packaging/`, `docs/consolidation/`) |
+| Project drafts | `docs/` (gitignored except `docs/README.md` and `docs/packaging/`) |
 
 ## `docs/` policy
 

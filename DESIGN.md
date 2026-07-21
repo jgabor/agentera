@@ -1,18 +1,14 @@
 # Agentera
 
-Visual identity system for Agentera. Terminal-native tokens for CLI and agent-rendered Markdown; mobile UI tokens live in [`packages/mobile/DESIGN.md`](./packages/mobile/DESIGN.md).
+Visual identity system for Agentera's CLI and agent-rendered Markdown.
 
 ## Surface register
 
-One brand (Agentera), three register layers: terminal/mobile surfaces (below), brand-vs-product output registers, and suite-vs-project design authorities.
+One brand (Agentera), with brand-vs-product output registers and suite-vs-project design authorities.
 
 | Surface | Authority | Renders |
 | --- | --- | --- |
 | `terminal` | This file (`DESIGN.md`) | CLI dashboard, capability introductions, structured artifact headers in Markdown |
-| `mobile` | `packages/mobile/DESIGN.md` | Touch UI, smart bar, sidebar, chat composer, responsive layouts |
-
-Shared across surfaces: product name, capability glyphs, sharp-colleague voice.
-Not shared: box-drawing logo usage (terminal key moments only), terminal severity arrows in mobile UI, Tailwind touch targets in terminal output.
 
 ## Output Registers
 
@@ -65,7 +61,7 @@ Governs the **host repository's own product** — web UI, the user's coding-agen
 - Design in a host project writes **project** `DESIGN.md` only; never merge suite design sources into it.
 - Status reads project design for **status metadata** (exists, stale, missing) — not to style suite chrome.
 - When both authorities apply in one session, suite chrome follows suite sources; the host product follows project `DESIGN.md`.
-- In the Agentera repository, root `DESIGN.md` is suite terminal dogfood plus brand register; `packages/mobile/DESIGN.md` is the mobile surface register.
+- In the Agentera repository, root `DESIGN.md` is the suite terminal dogfood and brand register.
 
 ## Philosophy
 

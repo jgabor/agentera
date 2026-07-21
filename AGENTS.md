@@ -4,15 +4,11 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## What this is
 
-Agentera is an opinionated mobile-first coding agent shipped as a monorepo:
+Agentera is an opinionated coding agent shipped as one npm package:
 
 | Package | npm | Role |
 | ------- | --- | ---- |
 | `packages/cli` | `agentera` | **Primary product** — agent runtime and `.agentera/` project-state CLI ("the colleague's brain") |
-| `packages/mobile` | `@agentera/mobile` | Mobile client — SvelteKit app with Cursor SDK (currently a docs-only stub; state and dev workflow: `packages/mobile/AGENTS.md`) |
-| `packages/web` | `@agentera/web` | Marketing site and Starlight docs |
-
-Mobile uses Cursor SDK directly — not skill routing from `skills/agentera/SKILL.md`.
 
 Twelve capabilities route through the CLI and editor runtimes:
 
@@ -33,8 +29,6 @@ Twelve capabilities route through the CLI and editor runtimes:
 
 Each capability is defined by human-readable prose (`packages/cli/src/capabilities/<name>/instructions.ts`) and machine-readable schemas (`triggers.yaml`, `artifacts.yaml`, `validation.yaml`, `exit.yaml`). The Agentera router routes incoming requests to the right capability. The runtime serves the prose through `agentera prime --context <name> --format json`.
 
-Monorepo consolidation plan: [`docs/consolidation/monorepo-plan.md`](./docs/consolidation/monorepo-plan.md).
-
 ## Project layout
 
 ```text
@@ -46,17 +40,15 @@ agentera/
 │   └── docs.yaml                          # Documentation policy/mappings singleton
 ├── AGENTS.md                              # This file
 ├── README.md, DESIGN.md, TODO.md, CHANGELOG.md, UPGRADE.md
-├── package.json                           # vp-based workspace shortcuts (web:*, mobile:*)
+├── package.json                           # Workspace release shortcuts
 ├── .lefthook.yml                          # Pre-commit hook config (authoritative)
 ├── packages/
-│   ├── cli/                               # `agentera` — TypeScript CLI + bundled skills
+│   └── cli/                               # `agentera` — TypeScript CLI + bundled skills
 │   │   ├── src/                           #   source: capabilities/, cli/, core/, state/, validate/, registries/, ...
 │   │   ├── test/                          #   vitest (pinned fixtures under fixtures/repo-state/)
 │   │   ├── dist/                          #   tsc build output (build before invoking bare `agentera` or `check compact`)
 │   │   ├── bundle/                        #   packed app data (skills/, references/, registry.json)
-│   │   └── shim/                          #   npm shim for stable channel
-│   ├── web/                               # `@agentera/web` — Astro + Starlight on Cloudflare
-│   └── mobile/                            # `@agentera/mobile` — docs-only stub; see packages/mobile/AGENTS.md
+│       └── shim/                          #   npm shim for stable channel
 ├── skills/agentera/
 │   ├── SKILL.md                           # Editor-runtime entry point + routing stub
 │   ├── capabilities/<name>/schemas/       # triggers, artifacts, validation, exit
@@ -116,7 +108,7 @@ Note: global agent guidance includes worktree tooling (`wt switch --create feat/
 
 ## Commands
 
-Invocation convention: during the v3 rewrite, `npx -y agentera@next <cmd>` invokes the published v3 channel; `npx -y agentera@latest` remains the stable v2.x channel until promotion. Bare `agentera` requires an installed CLI or `packages/cli/dist/bin/agentera.js`. Use contributor paths (`pnpm -C packages/cli`, `node packages/cli/dist/bin/agentera.js`) when modifying CLI source; use `vp run` for web and mobile workspace scripts.
+Invocation convention: during the v3 rewrite, `npx -y agentera@next <cmd>` invokes the published v3 channel; `npx -y agentera@latest` remains the stable v2.x channel until promotion. Bare `agentera` requires an installed CLI or `packages/cli/dist/bin/agentera.js`. Use contributor paths (`pnpm -C packages/cli`, `node packages/cli/dist/bin/agentera.js`) when modifying CLI source.
 
 ### Recipe-first entry points (run from repo root unless noted)
 
@@ -133,10 +125,6 @@ Invocation convention: during the v3 rewrite, `npx -y agentera@next <cmd>` invok
 | CLI package boundary | `pnpm -C packages/cli run verify:package` |
 | CLI typecheck / build | `pnpm -C packages/cli run typecheck` · `pnpm -C packages/cli build` |
 | Compaction gate | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
-| Web check / build | `vp run web:check` · `vp run web:build` |
-| Web dev (full SSR) | `cd packages/web && npx astro dev` |
-| Mobile check / dev | `vp run mobile:check` · `vp run mobile:dev` |
-| Workspace package script | `vp run @agentera/<pkg>#<script>` |
 
 ## Versioning and publishing
 
@@ -212,14 +200,13 @@ Pre-commit runs:
 
 - **`agentera check compact`** — artifact compaction budget gate (`uniform_10_40_50`). The most important repository content gate.
 - **`scripts/precommit-vitest.sh {staged_files}`** — staged-aware vitest; full `pnpm -C packages/cli test` only when broad CLI, schema, or workflow paths change.
-- **`vp staged`** in `packages/web` and `packages/mobile` when web or mobile files change.
 - **markdownlint** (via `bunx`) for repo-wide docs; **`vp fmt`** for configs.
 
 Use `LEFTHOOK=0 git commit` only for emergency bypass when the hook config itself is broken or a failure is already tracked for CI — not for routine TODO.md or fixture edits.
 
 ### Tests
 
-CLI test suite is vitest. Lefthook pre-commit runs it when staged files touch `packages/cli/**`, `skills/`/`references/` data, `registry.json`/`protocol.yaml`, or workflow paths — not for web-only changes under `packages/web/**`.
+CLI test suite is vitest. Lefthook pre-commit runs it when staged files touch `packages/cli/**`, `skills/`/`references/` data, `registry.json`/`protocol.yaml`, or workflow paths.
 
 ```bash
 pnpm -C packages/cli test
@@ -260,8 +247,6 @@ Conventional Commits: `feat(scope): …`, `fix(scope): …`, `docs(scope): …`,
 
 | Scope | Use for |
 | ----- | ------- |
-| `mobile` | `packages/mobile`, mobile UI, Cursor SDK integration, mobile deploy |
-| `web` | `packages/web`, Astro/Starlight site, marketing pages, published docs |
 | `cli` | `packages/cli`, command behavior, CLI output, command tests |
 | `hooks` | `hooks/*`, artifact validation hooks, session hooks, compaction hooks |
 | `schemas` | `protocol.yaml`, `capability_schema_contract.yaml`, artifact schemas, schema contracts |
@@ -330,7 +315,6 @@ Comments explain **why the code is shaped as it is** for a reader who has never 
 
 ## Gotchas
 
-- **`vp dev packages/web` starts Vite in client-only mode** and returns 404 for SSR routes. Use `cd packages/web && npx astro dev` for full SSR dev experience.
 - **The published v3 npm package is self-contained**: it bundles app data (`skills/`, `references/`, `registry.json`) under `packages/cli/bundle/` at pack time, so `npx -y agentera@next` works with no repo checkout and no `AGENTERA_HOME`.
 - **Upgrade previews are read-only**: normal upgrade handles app/project migration only; the separate `--legacy-cleanup claude` route requires explicit approval and matching ownership evidence.
 - **`.lefthook.yml` is the source of truth for pre-commit behavior** — verify there before relying on the summary above.

@@ -10,7 +10,8 @@ const CI_YML = path.join(REPO_ROOT, ".github/workflows/ci.yml");
 function sandboxL2Section(ciYaml: string): string {
   const start = ciYaml.indexOf("  sandbox-l2:");
   expect(start).toBeGreaterThanOrEqual(0);
-  const end = ciYaml.indexOf("\n  web:", start);
+  const nextJob = ciYaml.slice(start + 1).match(/\n  [a-zA-Z0-9_-]+:/);
+  const end = nextJob?.index === undefined ? -1 : start + 1 + nextJob.index;
   return end === -1 ? ciYaml.slice(start) : ciYaml.slice(start, end);
 }
 

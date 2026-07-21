@@ -102,21 +102,9 @@ jobs:
           export AGENTERA_NPM_PIN
           bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
 
-  web:
-    name: Website
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: voidzero-dev/setup-vp@v1
-        with:
-          node-version: 22
-          cache: true
-      - run: vp run @agentera/web#check
-      - run: vp run @agentera/web#build
-
   publish-next:
     name: Publish packages/cli to npm @next (feat/v3)
-    needs: [cli, sandbox-l1, sandbox-l2, web]
+    needs: [cli, sandbox-l1, sandbox-l2]
     if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
     runs-on: ubuntu-latest
     steps:
@@ -165,7 +153,7 @@ jobs:
 
   publish-latest:
     name: Publish stable shim to npm @latest (main)
-    needs: [cli, web]
+    needs: [cli]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:

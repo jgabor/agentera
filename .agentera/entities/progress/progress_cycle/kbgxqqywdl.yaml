@@ -1,0 +1,14 @@
+id: kbgxqqywdl
+artifact: progress
+record:
+  timestamp: 2026-07-21 18:52
+  type: chore
+  phase: build
+  what: Removed the unfinished client and site packages, reduced the workspace to the CLI, and reconciled live CI, hooks, dependencies, product direction, documentation, tests, and project state.
+  context:
+    intent: Make the CLI the repository's only package and remove live references to the retired package surfaces while preserving historical records.
+    constraints: Preserve archived plans, migration receipts, historical decisions, and other historical evidence; do not publish, tag, push, or bump versions.
+    scope: Workspace/package configuration, lockfile, CI, hooks, product and contributor docs, vision, design, documentation inventory, roadmap state, package-coupled tests, and obsolete consolidation workpapers.
+  discovered: Removing the site CI job exposed a test helper that bounded a YAML job section by that specific successor; the helper now recognizes any next top-level job.
+  verified: Only packages/cli remains. Live-reference scan returned no retired package paths, names, or scripts. Full source suite passed 194 files / 2375 tests with 1 skipped; targeted regression suite passed; typecheck, build, package verification (10 tests), state validation (1665 entities), DOCS validation, compact, workspace listing, and git diff check passed.
+  next: No follow-up required; historical records intentionally retain their original package references.

@@ -53,62 +53,10 @@ index:
   path: AGENTS.md
   last_updated: '2026-07-20'
   status: current
-- document: Mobile package README
-  path: packages/mobile/README.md
-  last_updated: '2026-07-12'
-  status: current
-- document: Mobile design system
-  path: packages/mobile/DESIGN.md
-  last_updated: '2026-07-12'
-  status: current
-- document: Mobile package AGENTS
-  path: packages/mobile/AGENTS.md
-  last_updated: '2026-06-07'
-  status: current
-- document: Mobile package TODO
-  path: packages/mobile/TODO.md
-  last_updated: '2026-06-07'
-  status: current
-- document: Mobile package CHANGELOG
-  path: packages/mobile/CHANGELOG.md
-  last_updated: '2026-06-07'
-  status: current
-- document: Mobile package LICENSE
-  path: packages/mobile/LICENSE
-  last_updated: '2026-06-07'
-  status: current
-- document: Web package README
-  path: packages/web/README.md
-  last_updated: '2026-06-05'
-  status: current
-- document: Web documentation home
-  path: packages/web/src/content/docs/docs/index.mdx
-  last_updated: '2026-07-12'
-  status: current
-- document: Web getting started
-  path: packages/web/src/content/docs/docs/getting-started/index.mdx
-  last_updated: '2026-07-12'
-  status: current
-- document: Web install and lifecycle guide
-  path: packages/web/src/content/docs/docs/getting-started/install.mdx
-  last_updated: '2026-07-12'
-  status: current
 - document: CLI package README
   path: packages/cli/README.md
   last_updated: '2026-07-15'
   status: current
-- document: Monorepo consolidation plan
-  path: docs/consolidation/monorepo-plan.md
-  last_updated: '2026-07-20'
-  status: current
-- document: Mobile open decisions
-  path: docs/consolidation/mobile-open-decisions.md
-  last_updated: '2026-06-07'
-  status: current
-- document: D69 multi-surface invariant deliberation (draft)
-  path: docs/consolidation/d69/README.md
-  last_updated: '2026-06-07'
-  status: draft
 - document: CLI package manifest
   path: packages/cli/package.json
   last_updated: '2026-07-20'

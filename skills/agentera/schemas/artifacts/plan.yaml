@@ -648,7 +648,6 @@ LIFECYCLE_CONTRACT:
       - skills/agentera/references/*
       - references/**/*.md
       - docs/**
-      - packages/web/src/**
       - "*.md"
       - AGENTS.md
       - README.md
