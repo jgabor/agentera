@@ -1,9 +1,5 @@
 # TODO
 
-## ⇉ Degraded
-
-- [ ] [fix:3.0.0] Finish generated-output recovery Task `indulnncww`. Commit `91335f19` implements interrupted reclaim-claim recovery, deterministic macOS process identity, bounded concurrent retention, and canonical documentation; focused, source, package, and exact full-overlap proof are green. Keep the task pending for its dedicated completion/audit, including a recheck of the intermittent stale-reclaimer `owner.json` ENOENT.
-
 ## → Normal
 
 - [ ] [refactor:3.0.0] Refactor plan levels from skip/light/full to light/normal/full. Remove skip mode so every direct plan invocation produces at least a light plan: light for trivial or localized work, normal for clear single-cycle work, and full for multi-cycle or architecture-spanning work. Update the runtime startup contract, plan instructions, schemas, validation, and tests to use the new three-level taxonomy consistently.
@@ -42,6 +38,7 @@
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Finish generated-output recovery. Resolved 2026-07-21: mutation ownership now uses atomic owner records, verifies a stale token immediately before claiming it, and safely recovers legacy reclaim claims; repeated concurrent publication, cleanup, and reader tests passed without lock residue.
 - [x] [test:3.0.0] Correct serialized consumed-policy fixture coverage. Resolved 2026-07-21: adversarial fixtures now parse the canonical policy, mutate data, and serialize valid YAML; they prove the bounded consumed-schema diagnostic rather than a parser failure or stack trace, cover all consumed policy sections plus unknown owner routing, and retain focused, source, package, performance, build, and generated-overlap evidence.
 - [x] [fix:3.0.0] Report complete open-TODO severity totals in status. Resolved 2026-07-20: `agentera prime --context status` now separates complete aggregate counts from its bounded 20-item detail projection and exposes total, returned, omitted, and exact continuation recovery without dropping routing state at the startup byte budget.
 - [x] [fix:3.0.0] Exclude resolved entity TODOs from status orientation. Resolved 2026-07-20: `agentera prime --context status` now filters to open TODOs before bounded pagination, preventing closed critical or degraded history from contaminating counts, attention, and next-action routing.

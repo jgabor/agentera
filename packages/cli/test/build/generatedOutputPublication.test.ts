@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   cleanupGeneratedState,
@@ -486,6 +486,31 @@ describe("generated generation publication", () => {
     expect(fs.existsSync(lock)).toBe(true);
   });
 
+  it("does not claim a lock that was reacquired after stale classification", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const lock = path.join(root, ".agentera-generated/.mutation-lock");
+    const ownerFile = path.join(lock, "owner.json");
+    writeMutationOwner(lock, deadMutationOwner("stale"));
+    const identity = processStartIdentity(process.pid);
+    expect(identity).not.toBeNull();
+    const original = fs.readFileSync.bind(fs);
+    let reads = 0;
+    const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation((...args) => {
+      if (args[0] === ownerFile && ++reads === 2) {
+        fs.writeFileSync(ownerFile, JSON.stringify({ pid: process.pid, processIdentity: identity, token: "fresh" }));
+      }
+      return Reflect.apply(original, fs, args);
+    });
+    try {
+      expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 0 })).toThrow("mutation lock remained active");
+      expect(fs.existsSync(lock)).toBe(true);
+      expect(fs.readdirSync(path.dirname(lock)).filter((name) => name.startsWith(".mutation-lock.reclaim-"))).toEqual([]);
+    } finally {
+      readSpy.mockRestore();
+    }
+  });
+
   it("recovers an interrupted stale mutation-lock claim idempotently before cleanup and publication retry", () => {
     const root = tempRoot();
     publishGeneratedGeneration(root, stage(root, "selected"), "selected");
@@ -516,7 +541,8 @@ describe("generated generation publication", () => {
 
     expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 20 })).toThrow("mutation lock remained active");
     expect(fs.existsSync(liveClaim)).toBe(false);
-    expect(fs.readFileSync(path.join(generated, ".mutation-lock/owner.json"), "utf8")).toContain('"token":"live"');
+    expect(fs.lstatSync(path.join(generated, ".mutation-lock")).isFile()).toBe(true);
+    expect(fs.readFileSync(path.join(generated, ".mutation-lock"), "utf8")).toContain('"token":"live"');
     fs.rmSync(path.join(generated, ".mutation-lock"), { recursive: true });
 
     const uncertainClaim = path.join(generated, ".mutation-lock.reclaim-uncertain");

@@ -1,0 +1,13 @@
+id: ogghbunvkd
+artifact: progress
+record:
+  timestamp: 2026-07-21 13:24
+  type: fix
+  phase: build
+  what: Completed generated-state recovery by closing the stale-reclaimer race that intermittently lost mutation owner records.
+  context:
+    intent: Verify Task indulnncww and repair only any real recovery acceptance gap.
+  inspiration: Task indulnncww dedicated completion cycle.
+  discovered: A delayed stale reclaimer could rename a freshly reacquired directory lock after classifying its prior owner; atomic file owner records and a token recheck remove that ownership gap while legacy directory claims remain recoverable.
+  verified: Focused generated-output publication passed 42 tests with one Darwin-only skip in 100 consecutive runs; source 193/2364 passed with one skip; package 2/10 passed; build, generated overlap, typecheck, compact, capability contract, dry-run pack, and packaging-doc markdownlint passed.
+  next: Keep downstream proof work out of scope; retain retrieval and satisfaction caveats until their owners provide evidence.

@@ -11,3 +11,13 @@ record:
     - GIVEN valid malformed policy YAML crosses the production boundary WHEN verification rejects it THEN the test asserts the bounded verification policy consumed schema is invalid diagnostic and proves no parser-only false positive or stack trace.
     - GIVEN every consumed policy section is enumerated WHEN focused adversarial tests run THEN null, wrong-container, wrong-scalar, unknown-owner, and owner-definition cases are covered proportionately without arbitrary in-memory object authority.
     - GIVEN the corrected fixture suite and honest owner flows run WHEN verification completes THEN focused overlap and lane ownership, source, package, performance, build, and full generated overlap retain their prior passing evidence.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: trmxcygkoe-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 12:47
+      writer_command: agentera state plan record-evaluation

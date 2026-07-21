@@ -11,6 +11,7 @@ const guardSchema = "agentera.generatedGuard.v1";
 const retainedGenerationLimit = 2;
 const mutationLockName = ".mutation-lock";
 const mutationLockWaitMs = 30_000;
+const mutationClaimReadWaitMs = 250;
 const darwinMonths = new Map([
   ["Jan", 0], ["Feb", 1], ["Mar", 2], ["Apr", 3], ["May", 4], ["Jun", 5],
   ["Jul", 6], ["Aug", 7], ["Sep", 8], ["Oct", 9], ["Nov", 10], ["Dec", 11],
@@ -447,16 +448,36 @@ function mutationClaimError(claims) {
   return new Error(`generated-output mutation-lock reclaim claim has uncertain ownership: ${shown.join(", ")}${claims.length > shown.length ? ` (${claims.length - shown.length} more)` : ""}; correction: preserve every listed claim for inspection and rerun cleanup only where process-start identity is available`);
 }
 
+function sameMutationOwner(left, right) {
+  return left?.pid === right?.pid
+    && left?.processIdentity === right?.processIdentity
+    && left?.token === right?.token;
+}
+
+function readMutationOwner(candidate, label) {
+  const stat = optionalLstat(candidate);
+  if (!stat) throw new Error(`${label} is missing at ${candidate}`);
+  if (stat.isSymbolicLink()) throw new Error(`${label} must not be a symbolic link at ${candidate}`);
+  if (stat.isFile()) return readJsonFile(candidate, label);
+  if (stat.isDirectory()) return readJsonFile(path.join(candidate, "owner.json"), label);
+  throw new Error(`${label} must be a regular file or directory at ${candidate}`);
+}
+
+function writeMutationLockOwner(lock, owner) {
+  fs.writeFileSync(lock, JSON.stringify(owner) + "\n", { flag: "wx" });
+}
+
 function readMutationClaimOwner(candidate) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  const deadline = Date.now() + mutationClaimReadWaitMs;
+  while (true) {
     try {
-      return { owner: readJsonFile(path.join(candidate, "owner.json"), "generated-output mutation reclaim owner") };
+      return { owner: readMutationOwner(candidate, "generated-output mutation reclaim owner") };
     } catch {
       if (!optionalLstat(candidate)) return { missing: true };
-      if (attempt < 2) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
+      if (Date.now() >= deadline) return { unknown: true };
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
     }
   }
-  return { unknown: true };
 }
 
 function recoverGeneratedMutationClaims(generatedRoot, lock) {
@@ -466,7 +487,7 @@ function recoverGeneratedMutationClaims(generatedRoot, lock) {
     const candidate = path.join(generatedRoot, name);
     const stat = optionalLstat(candidate);
     if (!stat) continue;
-    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+    if ((!stat.isDirectory() && !stat.isFile()) || stat.isSymbolicLink()) {
       unresolved.push({ candidate, state: "invalid claim" });
       continue;
     }
@@ -488,10 +509,12 @@ function recoverGeneratedMutationClaims(generatedRoot, lock) {
     }
     if (!optionalLstat(lock)) {
       try {
-        fs.renameSync(candidate, lock);
+        writeMutationLockOwner(lock, owner);
       } catch (error) {
-        if (error?.code !== "ENOENT" && error?.code !== "EEXIST") throw error;
+        if (error?.code !== "EEXIST") throw error;
+        continue;
       }
+      fs.rmSync(candidate, { recursive: true, force: true });
     }
   }
   if (unresolved.length > 0) throw mutationClaimError(unresolved);
@@ -507,16 +530,10 @@ function acquireGeneratedMutationLock(root, options = {}) {
     recoverGeneratedMutationClaims(generatedRoot, lock);
     const token = randomUUID();
     try {
-      fs.mkdirSync(lock);
-      try {
-        fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ ...ownerEvidence(), token }) + "\n", { flag: "wx" });
-      } catch (error) {
-        fs.rmSync(lock, { recursive: true, force: true });
-        throw error;
-      }
+      writeMutationLockOwner(lock, { ...ownerEvidence(), token });
       return () => {
         try {
-          const owner = readJsonFile(path.join(lock, "owner.json"), "generated-output mutation owner");
+          const owner = readMutationOwner(lock, "generated-output mutation owner");
           if (owner.token === token) fs.rmSync(lock, { recursive: true, force: true });
         } catch {
           // Never remove a lock that no longer proves this caller owns it.
@@ -528,11 +545,11 @@ function acquireGeneratedMutationLock(root, options = {}) {
 
     let owner = null;
     try {
-      owner = readJsonFile(path.join(lock, "owner.json"), "generated-output mutation owner");
+      owner = readMutationOwner(lock, "generated-output mutation owner");
     } catch {
       const stat = optionalLstat(lock);
       if (!stat) continue;
-      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error(`generated-output mutation lock is not a regular directory at ${lock}`);
+      if ((!stat.isDirectory() && !stat.isFile()) || stat.isSymbolicLink()) throw new Error(`generated-output mutation lock is not a regular file or directory at ${lock}`);
       if (Date.now() - stat.mtimeMs >= mutationLockWaitMs) owner = { pid: -1, processIdentity: "stale-ownerless-lock" };
     }
     const state = owner === null ? "active" : owner.pid === -1 ? "stale" : ownerState(owner);
@@ -542,6 +559,16 @@ function acquireGeneratedMutationLock(root, options = {}) {
     if (state === "stale") {
       const claimed = path.join(generatedRoot, `${mutationLockName}.reclaim-${randomUUID()}`);
       try {
+        // The lock may have been released and reacquired since its stale owner
+        // was read. Recheck its token immediately before moving it so a delayed
+        // reclaimer never claims a fresh owner's directory.
+        let currentOwner;
+        try {
+          currentOwner = readMutationOwner(lock, "generated-output mutation owner");
+        } catch {
+          continue;
+        }
+        if (!sameMutationOwner(owner, currentOwner)) continue;
         fs.renameSync(lock, claimed);
         if (options.faultAt === "after-mutation-lock-reclaim-rename") {
           throw new Error("injected interruption at after-mutation-lock-reclaim-rename");
