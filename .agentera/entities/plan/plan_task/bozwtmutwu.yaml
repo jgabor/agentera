@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Repair generated-generation safety
-  status: complete
+  status: blocked
   depends_on:
     - fbgcvyeexr
   acceptance:
@@ -13,12 +13,12 @@ record:
     - GIVEN completed generations accumulate while readers may be pinned WHEN cleanup runs THEN retention is bounded without invalidating live readers and a safe self-service cleanup path is tested.
     - GIVEN contributors inspect packaging and recovery guidance WHEN commands are followed THEN one canonical authority accurately documents governed packing, ownership, and correction without contradictory live instructions.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Generation validation rejects escaped roots but accepts symlinks nested under dist/bundle, allowing the checkout launcher to import an external target. Concurrent cleanup/build cleanup races on the same guard rename and raises ENOENT, so successful publication can still end with a failed build and missing launcher. Darwin lacks process-start lease identity, so reused PIDs can retain crashed-reader generations indefinitely while documentation claims bounded cleanup. Add recursive surface confinement, concurrency-safe idempotent cleanup, and a sound cross-platform lease/retention contract with matching tests and docs.
+    last_failure_evidence: Recursive confinement, full overlap, and normal cleaner serialization now pass, but recovery still ignores interrupted .mutation-lock.reclaim-* claims, leaving permanent unrecognized residue after a reclaimer crash. Darwin process-birth identity depends on timezone/locale-sensitive output and can misclassify a live reader, invalidating bounded retention. Live packaging guidance also still contradicts the canonical governed-pack authority. Recover reclaim residue, use stable macOS identity semantics, and remove the remaining documentation contradiction.
     provenance:
-      attempt_id: bozwtmutwu-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 06:19
+      attempt_id: bozwtmutwu-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 06:49
       writer_command: agentera state plan record-evaluation

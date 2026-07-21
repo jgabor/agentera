@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Repair cold-performance owner evidence
-  status: pending
+  status: complete
   depends_on:
     - qifoditbva
     - fbgcvyeexr

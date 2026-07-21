@@ -31,6 +31,8 @@ owners:
     correction: Run `pnpm -C packages/cli test:performance`; check runner conditions and fix the named budget regression.
     evidence:
       schema_version: agentera.entityAuthorityPerformanceEvidence.v1
+      authority: references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract
+      stdout_format: newline_delimited_json_record_amid_runner_output
       max_utf8_bytes: 65536
   package:
     config: packages/cli/vite.package.config.ts

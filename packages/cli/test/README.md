@@ -12,6 +12,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Layer | Proves | Entry point |
 | ----- | ------ | ----------- |
 | Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; no package construction or checkout generated-output dependency | `pnpm -C packages/cli test` |
+| Performance owner | Authority-declared production scales and cold-process budgets, including one bounded evidence record | `pnpm -C packages/cli test:performance` |
 | Package boundary | Focused bundle safety plus one tarball build, generated-surface no-drift checks, authority-derived inventory, extraction, install, and minimum isolated invocation conjunctions | `pnpm -C packages/cli run verify:package` |
 | Repo-state fixtures | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)` | `packages/cli/test/fixtures/repo-state/` |
 | Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
@@ -19,6 +20,11 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 
 Generated-output producers, consumers, publication, and recovery are defined
 once in the [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
+
+Performance stdout is not JSON-only: normal Vitest text surrounds exactly one
+whole-line `agentera.entityAuthorityPerformanceEvidence.v1` JSON record. Consumers
+extract newline-delimited records by `schemaVersion`; the owner command validates
+the record against the authority before returning success.
 
 ## Classification key
 

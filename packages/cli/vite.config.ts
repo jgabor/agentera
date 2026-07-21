@@ -14,10 +14,7 @@ export default defineConfig({
     ignorePatterns: ["dist/**", "bundle/**", "node_modules/**", "**/*.generated.*"],
   },
   test: {
-    include:
-      process.env.AGENTERA_PERFORMANCE_OUTPUT_FIXTURE === "1"
-        ? ["test/fixtures/performanceOwnerOutput.fixture.ts"]
-        : ["test/**/*.test.ts"],
+    include: ["test/**/*.test.ts"],
     exclude: ["test/packaging/**"],
     globalSetup: ["./test/sourceSetup.ts"],
     ...sharedTestConfig,
