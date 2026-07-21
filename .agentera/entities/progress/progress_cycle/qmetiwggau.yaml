@@ -1,0 +1,16 @@
+id: qmetiwggau
+artifact: progress
+record:
+  timestamp: 2026-07-21 09:34
+  type: test
+  phase: build
+  what: Completed Task scrtlfqljn by hardening packages/cli/scripts/overlap-pending.mjs so every source and package inventory path appears exactly once as a passing suite with nonempty executed assertions, reporter paths normalize before exact comparison, suite and assertion aggregates balance, and only the named Linux Darwin-conditional assertion may skip inside an otherwise executed file. Added 24 direct regressions and passed exact full-overlap proof.
+  context:
+    intent: Reject hidden pending-suite coverage without changing accepted performance routing, result channels, generated recovery, or publication behavior.
+    constraints: No worker tuning, generated recovery changes, routing changes, consolidation, release/version/publication work, vision/profile updates, or unrelated cleanup.
+    unknowns: Decision retrieval remained degraded at 5 of 50 with 45 omitted; satisfaction was unavailable and no satisfaction was inferred. Vision and profile were absent from execution context.
+    scope: packages/cli/scripts/overlap-pending.mjs, packages/cli/scripts/verify-generated-overlap.mjs, packages/cli/test/verification/overlapPending.test.ts, TODO.md, and typed plan/progress state.
+  inspiration: Plan rmtdgltdgm replacement Task scrtlfqljn and ukhcjxcfim audit-2's exact pending-suite gap.
+  discovered: The first full-overlap run hit a transient out-of-scope planLifecycle reader-lease ENOENT and a later ordinary source run reproduced the known stale-reclaimer owner.json ENOENT; another retry hit a transient durability git_unavailable result. Immediate overlap retry, focused durability, and final full source passed. Keep generated recovery completion and this recheck with pending Task indulnncww.
+  verified: Focused overlap contract passed 24/24; lane policy passed 64/64 and inventory validated 199 files. Final overlap passed source 193 files/2365 assertions with one exact Linux skip, package 2 files/10 assertions with zero pending, build pass, one complete generation, and zero identity/surface failures. Final ordinary source passed 193 files with 2364 passed and one skip; extracted package passed 2/2 files and 10/10 assertions. Direct and integration performance owners each passed the real 25-sample evidence matrix. Typecheck, build, 1641-entity state validation, capability contract 2/2, compact, lint with 150 baseline warnings and zero errors, markdown, parity, diff check, and 684-entry dry-run packing passed.
+  next: Complete only indulnncww in its dedicated completion/audit; leave exhausted tasks blocked and downstream final-proof tasks pending.

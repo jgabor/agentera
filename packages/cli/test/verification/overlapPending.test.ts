@@ -12,97 +12,177 @@ import {
 } from "../../scripts/overlap-pending.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const SOURCE_FILES = [
+  "packages/cli/test/example.test.ts",
+  DARWIN_PENDING_TEST.path,
+];
+const PACKAGE_FILES = ["packages/cli/test/packaging/example.test.ts"];
 
-type PendingIdentity = {
-  path: string;
-  name: string;
-  status: string;
-};
+type AssertionStatus = "passed" | "skipped" | "todo" | "failed";
+type Assertion = { fullName: string; status: AssertionStatus; title: string };
+type Suite = { name: string; status: string; assertionResults: Assertion[] };
 
-function assertion(identity: PendingIdentity) {
+function assertion(fullName: string, status: AssertionStatus = "passed"): Assertion {
+  return { fullName, status, title: fullName.split(" ").at(-1) ?? fullName };
+}
+
+function suite(file: string, assertions: Assertion[] = [assertion(`${file} passes`)], status = "passed"): Suite {
   return {
-    fullName: identity.name,
-    status: identity.status,
-    title: identity.name.split(" ").at(-1),
+    name: path.join(REPO_ROOT, file),
+    status,
+    assertionResults: assertions,
   };
 }
 
-function result(identities: PendingIdentity[] = [], overrides: Record<string, unknown> = {}) {
-  const assertionCount = identities.length + 1;
-  const failed = identities.filter(({ status }) => status === "failed").length;
-  const todo = identities.filter(({ status }) => status === "todo").length;
-  const pending = identities.filter(({ status }) => status === "skipped").length;
+function result(testResults: Suite[], overrides: Record<string, unknown> = {}) {
+  const assertions = testResults.flatMap(({ assertionResults }) => assertionResults);
+  const statusCount = (status: AssertionStatus) => assertions.filter((entry) => entry.status === status).length;
+  const suiteStatusCount = (status: string) => testResults.filter((entry) => entry.status === status).length;
   return {
-    success: failed === 0,
-    numTotalTests: assertionCount,
-    numPassedTests: assertionCount - failed - todo - pending,
-    numFailedTests: failed,
-    numPendingTests: pending,
-    numTodoTests: todo,
-    testResults: [
-      {
-        name: path.join(REPO_ROOT, "packages/cli/test/example.test.ts"),
-        assertionResults: [{ fullName: "ordinary passing test", status: "passed", title: "ordinary passing test" }],
-      },
-      ...identities.map((identity) => ({
-        name: path.join(REPO_ROOT, identity.path),
-        assertionResults: [assertion(identity)],
-      })),
-    ],
+    success: suiteStatusCount("failed") === 0,
+    numTotalTestSuites: testResults.length,
+    numPassedTestSuites: suiteStatusCount("passed"),
+    numFailedTestSuites: suiteStatusCount("failed"),
+    numPendingTestSuites: suiteStatusCount("pending") + suiteStatusCount("skipped") + suiteStatusCount("todo"),
+    numTotalTests: assertions.length,
+    numPassedTests: statusCount("passed"),
+    numFailedTests: statusCount("failed"),
+    numPendingTests: statusCount("skipped"),
+    numTodoTests: statusCount("todo"),
+    testResults,
     ...overrides,
   };
 }
 
-describe("full-overlap pending identity contract", () => {
-  it("accepts exactly the known Darwin-only pending identity off Darwin", () => {
-    expect(validatePendingTests("source", result([DARWIN_PENDING_TEST]), {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-    })).toEqual([DARWIN_PENDING_TEST]);
+function sourceResult(platform: "linux" | "darwin") {
+  const conditional = assertion(DARWIN_PENDING_TEST.name, platform === "linux" ? "skipped" : "passed");
+  return result([
+    suite(SOURCE_FILES[0]),
+    suite(SOURCE_FILES[1], [assertion("generated generation publication always executes"), conditional]),
+  ]);
+}
+
+function validateSource(report: ReturnType<typeof result>, platform = "linux") {
+  return validatePendingTests("source", report, {
+    platform,
+    repoRoot: REPO_ROOT,
+    expectedFiles: SOURCE_FILES,
+  });
+}
+
+describe("full-overlap suite and assertion execution contract", () => {
+  it("accepts exactly one conditional assertion skip on Linux inside an executed file", () => {
+    expect(validateSource(sourceResult("linux"))).toEqual([DARWIN_PENDING_TEST]);
     expect(expectedPendingTests("source", "win32")).toEqual([DARWIN_PENDING_TEST]);
   });
 
-  it("requires every source test to execute on Darwin", () => {
-    expect(validatePendingTests("source", result(), {
-      platform: "darwin",
+  it("executes the conditional assertion on Darwin", () => {
+    expect(validateSource(sourceResult("darwin"), "darwin")).toEqual([]);
+    expect(() => validateSource(sourceResult("linux"), "darwin")).toThrow(/expected \[\], observed/);
+  });
+
+  it("executes every package assertion and suite on every platform", () => {
+    const packageResult = result(PACKAGE_FILES.map((file) => suite(file)));
+    expect(validatePendingTests("package", packageResult, {
+      platform: "linux",
       repoRoot: REPO_ROOT,
+      expectedFiles: PACKAGE_FILES,
     })).toEqual([]);
-    expect(() => validatePendingTests("source", result([DARWIN_PENDING_TEST]), {
-      platform: "darwin",
+
+    const pendingPackage = result([
+      suite(PACKAGE_FILES[0], [assertion("package assertion", "skipped")]),
+    ]);
+    expect(() => validatePendingTests("package", pendingPackage, {
+      platform: "linux",
       repoRoot: REPO_ROOT,
-    })).toThrow(/expected \[\], observed/);
+      expectedFiles: PACKAGE_FILES,
+    })).toThrow(/package permits no pending suites or assertions/);
+  });
+
+  it("rejects a pending inventory suite with no assertions even when assertion aggregates balance", () => {
+    const hiddenPendingFile = "packages/cli/test/hiddenPending.test.ts";
+    const report = result([
+      ...sourceResult("linux").testResults,
+      suite(hiddenPendingFile, [], "pending"),
+    ]);
+    expect(() => validatePendingTests("source", report, {
+      platform: "linux",
+      repoRoot: REPO_ROOT,
+      expectedFiles: [...SOURCE_FILES, hiddenPendingFile],
+    })).toThrow(/hiddenPending\.test\.ts \(pending\).*empty assertionResults/);
+  });
+
+  it.each(["skipped", "todo", "failed", "unknown"])("rejects a %s suite result", (status) => {
+    const report = result([
+      suite(SOURCE_FILES[0]),
+      suite(SOURCE_FILES[1], [assertion("generated suite assertion")], status),
+    ]);
+    expect(() => validateSource(report)).toThrow(new RegExp(`generatedOutputPublication\\.test\\.ts \\(${status}\\)`));
   });
 
   it.each([
-    ["zero or missing", []],
-    ["extra .skip or false runIf", [DARWIN_PENDING_TEST, { path: "packages/cli/test/extra.test.ts", name: "extra skipped test", status: "skipped" }]],
-    ["wrong path", [{ ...DARWIN_PENDING_TEST, path: "packages/cli/test/wrong.test.ts" }]],
-    ["wrong name", [{ ...DARWIN_PENDING_TEST, name: "changed Darwin test" }]],
-    ["todo", [{ ...DARWIN_PENDING_TEST, status: "todo" }]],
-  ])("rejects %s pending evidence with expected and observed identities", (_, identities) => {
-    expect(() => validatePendingTests("source", result(identities), {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-    })).toThrow(/expected .*generatedOutputPublication\.test\.ts.* observed/);
+    ["missing", [suite(SOURCE_FILES[0])]],
+    ["duplicate", [suite(SOURCE_FILES[0]), suite(SOURCE_FILES[1]), suite(SOURCE_FILES[1])]],
+    ["renamed", [suite(SOURCE_FILES[0]), suite("packages/cli/test/build/renamed.test.ts")]],
+  ])("rejects %s owner inventory files", (_, suites) => {
+    expect(() => validateSource(result(suites))).toThrow(/inventory (?:missing|duplicate|unexpected)/);
   });
 
-  it("rejects failures even when the pending identity remains exact", () => {
-    const failed = { path: "packages/cli/test/failure.test.ts", name: "failed overlap test", status: "failed" };
-    expect(() => validatePendingTests("source", result([DARWIN_PENDING_TEST, failed]), {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-    })).toThrow(/"failed":1/);
+  it("rejects an executed suite with an empty assertion array", () => {
+    expect(() => validateSource(result([
+      suite(SOURCE_FILES[0]),
+      suite(SOURCE_FILES[1], []),
+    ]))).toThrow(/empty assertionResults.*generatedOutputPublication\.test\.ts/);
   });
 
-  it("permits no package pending tests on any platform", () => {
-    expect(validatePendingTests("package", result(), {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-    })).toEqual([]);
-    expect(() => validatePendingTests("package", result([DARWIN_PENDING_TEST]), {
-      platform: "linux",
-      repoRoot: REPO_ROOT,
-    })).toThrow(/package.*expected \[\]/);
+  it("rejects a file whose assertions are all skipped", () => {
+    expect(() => validateSource(result([
+      suite(SOURCE_FILES[0]),
+      suite(SOURCE_FILES[1], [assertion(DARWIN_PENDING_TEST.name, "skipped")]),
+    ]))).toThrow(/no executed assertions.*generatedOutputPublication\.test\.ts/);
+  });
+
+  it("rejects a nonzero pending-suite aggregate", () => {
+    const report = sourceResult("linux");
+    expect(() => validateSource({
+      ...report,
+      numPassedTestSuites: report.numPassedTestSuites - 1,
+      numPendingTestSuites: 1,
+    })).toThrow(/numPendingTestSuites=1/);
+  });
+
+  it.each([
+    ["suite total", { numTotalTestSuites: 3 }],
+    ["assertion total", { numTotalTests: 4 }],
+    ["passed assertions", { numPassedTests: 1 }],
+    ["pending assertions", { numPendingTests: 0 }],
+  ])("rejects inconsistent %s aggregates", (_, overrides) => {
+    expect(() => validateSource({ ...sourceResult("linux"), ...overrides })).toThrow(/aggregate mismatch/);
+  });
+
+  it("normalizes absolute, repository-relative, and reporter separator paths", () => {
+    const report = sourceResult("linux");
+    report.testResults[0].name = SOURCE_FILES[0];
+    report.testResults[1].name = path.join(REPO_ROOT, SOURCE_FILES[1]).replaceAll("/", "\\");
+    expect(validateSource(report)).toEqual([DARWIN_PENDING_TEST]);
+  });
+
+  it.each([
+    ["zero or missing", sourceResult("darwin")],
+    ["extra skip", result([
+      suite(SOURCE_FILES[0], [assertion("ordinary passing test"), assertion("extra skipped test", "skipped")]),
+      sourceResult("linux").testResults[1],
+    ])],
+    ["wrong name", result([
+      suite(SOURCE_FILES[0]),
+      suite(SOURCE_FILES[1], [assertion("generated suite assertion"), assertion("changed Darwin test", "skipped")]),
+    ])],
+    ["todo", result([
+      suite(SOURCE_FILES[0]),
+      suite(SOURCE_FILES[1], [assertion("generated suite assertion"), assertion(DARWIN_PENDING_TEST.name, "todo")]),
+    ])],
+  ])("rejects %s assertion-level pending evidence", (_, report) => {
+    expect(() => validateSource(report)).toThrow(/expected .*generatedOutputPublication\.test\.ts.* observed/);
   });
 
   it("keeps the structured identity synchronized with the real conditional test", () => {

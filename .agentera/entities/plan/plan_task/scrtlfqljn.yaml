@@ -1,0 +1,13 @@
+id: scrtlfqljn
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Require every overlap suite to execute
+  status: complete
+  depends_on:
+    - fbgcvyeexr
+  acceptance:
+    - GIVEN an owner reporter includes a pending, skipped, todo, failed, or otherwise non-passing suite result WHEN overlap validates coverage THEN the gate fails even if assertionResults is empty or aggregate counts balance.
+    - GIVEN exact owner inventory is expected WHEN structured results are checked THEN every inventory file contributes executed assertion coverage, except the one explicitly permitted Darwin assertion-level skip within an otherwise executed file.
+    - GIVEN Linux and Darwin pending contracts run WHEN the known conditional assertion is reported THEN Linux accepts exactly that assertion skip, Darwin executes it, package has no pending coverage, and all other suite/assertion omissions fail.
+    - GIVEN full source, build, and extracted-package overlap runs WHEN validation completes THEN all owners pass with one complete generation, zero identity or surface failures, and no hidden pending suite coverage.

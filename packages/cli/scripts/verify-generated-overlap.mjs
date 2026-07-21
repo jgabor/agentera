@@ -59,13 +59,13 @@ async function waitForReady() {
 
 function ownerResult(owner) {
   const result = JSON.parse(fs.readFileSync(path.join(root, `${owner}.json`), "utf8"));
-  const files = result.testResults.map(({ name }) => path.relative(repoRoot, name).split(path.sep).join("/")).sort();
-  const expected = [...inventory.files[owner]].sort();
-  if (JSON.stringify(files) !== JSON.stringify(expected)) {
-    throw new Error(`${owner} overlap inventory mismatch: expected ${expected.length} exact files, observed ${files.length}`);
-  }
-  const pending = validatePendingTests(owner, result, { platform: process.platform, repoRoot });
-  return { files: files.length, tests: result.numTotalTests, pending };
+  const expectedFiles = inventory.files[owner];
+  const pending = validatePendingTests(owner, result, {
+    platform: process.platform,
+    repoRoot,
+    expectedFiles,
+  });
+  return { files: expectedFiles.length, tests: result.numTotalTests, pending };
 }
 
 try {
