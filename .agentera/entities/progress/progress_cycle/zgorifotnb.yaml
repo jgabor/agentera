@@ -1,0 +1,13 @@
+id: zgorifotnb
+artifact: progress
+record:
+  timestamp: 2026-07-21 13:50
+  type: fix
+  phase: build
+  what: Replaced non-atomic stale mutation-lock reclamation with fail-closed canonical-lock recovery and conflict-aware interrupted-claim recovery.
+  context:
+    intent: Repair the audit-1 stale reclaimer race without weakening ownership safety.
+  inspiration: Task indulnncww audit-1 blocking defect.
+  discovered: Portable pathname operations cannot atomically compare and remove a canonical lock; automatic stale canonical reclamation therefore cannot be made safe without platform locking. The recovery path can still atomically restore a lone proved-live claim through exclusive file creation.
+  verified: Final focused suite passed 44 tests with one Darwin-only skip in 50 consecutive runs. Final source passed 193 files and 2,365 tests with one skip; package passed 2 files and 10 tests; build, generated overlap (2,366 source tests; no identity or surface failures), typecheck, compact, capability contract, dry-run pack, and markdownlint passed.
+  next: Do not extend this retry into downstream worker, consolidation, or final-proof tasks.

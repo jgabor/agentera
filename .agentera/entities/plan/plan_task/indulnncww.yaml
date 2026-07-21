@@ -13,3 +13,13 @@ record:
     - GIVEN concurrent publishers, cleaners, and pinned readers run WHEN generated state is retained or reclaimed THEN retention remains bounded, live readers remain valid, and no temporary claim residue survives successful recovery.
     - GIVEN contributors consult packaging guidance WHEN generated output is built, packed, cleaned, or recovered THEN every live document points to one accurate canonical authority with executable corrections.
   blocked_reason: Implementation committed in 91335f19; run its dedicated verification after serialized policy fixture repair trmxcygkoe passes.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "The stale-owner token recheck and pathname rename remain separate: after recheck, another reclaimer can remove the stale lock and create a fresh file lock that the delayed reclaimer then renames. This can permit overlapping mutation owners and leave a live reclaim claim. Replace the non-atomic protocol boundary or fail closed, add a deterministic after-recheck/before-claim regression using the current file-lock protocol, correct final focused evidence counts, and keep documentation claims aligned."
+    provenance:
+      attempt_id: indulnncww-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 13:41
+      writer_command: agentera state plan record-evaluation

@@ -512,9 +512,21 @@ function recoverGeneratedMutationClaims(generatedRoot, lock) {
         writeMutationLockOwner(lock, owner);
       } catch (error) {
         if (error?.code !== "EEXIST") throw error;
+        unresolved.push({ candidate, state: "conflicts with canonical lock" });
         continue;
       }
       fs.rmSync(candidate, { recursive: true, force: true });
+      continue;
+    }
+    try {
+      const canonicalOwner = readMutationOwner(lock, "generated-output mutation owner");
+      if (sameMutationOwner(owner, canonicalOwner)) {
+        fs.rmSync(candidate, { recursive: true, force: true });
+      } else {
+        unresolved.push({ candidate, state: "conflicts with canonical lock" });
+      }
+    } catch {
+      unresolved.push({ candidate, state: "conflicts with canonical lock" });
     }
   }
   if (unresolved.length > 0) throw mutationClaimError(unresolved);
@@ -557,26 +569,7 @@ function acquireGeneratedMutationLock(root, options = {}) {
       throw new Error(`generated-output mutation owner identity is unavailable at ${lock}; correction: preserve the lock for inspection and rerun on Linux, macOS, or Windows with process-start inspection available`);
     }
     if (state === "stale") {
-      const claimed = path.join(generatedRoot, `${mutationLockName}.reclaim-${randomUUID()}`);
-      try {
-        // The lock may have been released and reacquired since its stale owner
-        // was read. Recheck its token immediately before moving it so a delayed
-        // reclaimer never claims a fresh owner's directory.
-        let currentOwner;
-        try {
-          currentOwner = readMutationOwner(lock, "generated-output mutation owner");
-        } catch {
-          continue;
-        }
-        if (!sameMutationOwner(owner, currentOwner)) continue;
-        fs.renameSync(lock, claimed);
-        if (options.faultAt === "after-mutation-lock-reclaim-rename") {
-          throw new Error("injected interruption at after-mutation-lock-reclaim-rename");
-        }
-      } catch (error) {
-        if (error?.code !== "ENOENT") throw error;
-      }
-      continue;
+      throw new Error(`generated-output mutation lock has stale ownership at ${lock}; correction: preserve it for inspection, remove only confirmed residue, then rerun pnpm -C packages/cli run generated:cleanup -- --force`);
     }
     if (Date.now() >= deadline) {
       throw new Error(`generated-output mutation lock remained active for ${waitMs} ms at ${lock}; correction: wait for the owning build or cleanup to finish, then retry`);

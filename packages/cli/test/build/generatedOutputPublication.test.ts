@@ -466,7 +466,7 @@ describe("generated generation publication", () => {
     }
   });
 
-  it("reclaims PID-reused mutation ownership and preserves unknown ownership", () => {
+  it("fails closed for PID-reused mutation ownership and preserves unknown ownership", () => {
     const root = tempRoot();
     publishGeneratedGeneration(root, stage(root, "selected"), "selected");
     const lock = path.join(root, ".agentera-generated/.mutation-lock");
@@ -477,8 +477,9 @@ describe("generated generation publication", () => {
       token: "reused",
     }));
 
-    cleanupGeneratedState(root);
-    expect(fs.existsSync(lock)).toBe(false);
+    expect(() => cleanupGeneratedState(root)).toThrow("mutation lock has stale ownership");
+    expect(fs.existsSync(lock)).toBe(true);
+    fs.rmSync(lock, { recursive: true });
 
     fs.mkdirSync(lock);
     fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: process.pid, token: "unknown" }));
@@ -486,26 +487,29 @@ describe("generated generation publication", () => {
     expect(fs.existsSync(lock)).toBe(true);
   });
 
-  it("does not claim a lock that was reacquired after stale classification", () => {
+  it("does not move a fresh file lock after stale classification", () => {
     const root = tempRoot();
     publishGeneratedGeneration(root, stage(root, "selected"), "selected");
     const lock = path.join(root, ".agentera-generated/.mutation-lock");
-    const ownerFile = path.join(lock, "owner.json");
-    writeMutationOwner(lock, deadMutationOwner("stale"));
+    fs.writeFileSync(lock, JSON.stringify(deadMutationOwner("stale")));
     const identity = processStartIdentity(process.pid);
     expect(identity).not.toBeNull();
     const original = fs.readFileSync.bind(fs);
     let reads = 0;
     const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation((...args) => {
-      if (args[0] === ownerFile && ++reads === 2) {
-        fs.writeFileSync(ownerFile, JSON.stringify({ pid: process.pid, processIdentity: identity, token: "fresh" }));
+      if (args[0] === lock && ++reads === 1) {
+        const stale = Reflect.apply(original, fs, args);
+        fs.writeFileSync(lock, JSON.stringify({ pid: process.pid, processIdentity: identity, token: "fresh" }));
+        return stale;
       }
       return Reflect.apply(original, fs, args);
     });
     try {
-      expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 0 })).toThrow("mutation lock remained active");
+      expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 0 })).toThrow("mutation lock has stale ownership");
       expect(fs.existsSync(lock)).toBe(true);
+      expect(fs.readFileSync(lock, "utf8")).toContain('"token":"fresh"');
       expect(fs.readdirSync(path.dirname(lock)).filter((name) => name.startsWith(".mutation-lock.reclaim-"))).toEqual([]);
+      expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 0 })).toThrow("mutation lock remained active");
     } finally {
       readSpy.mockRestore();
     }
@@ -515,13 +519,7 @@ describe("generated generation publication", () => {
     const root = tempRoot();
     publishGeneratedGeneration(root, stage(root, "selected"), "selected");
     const generated = path.join(root, ".agentera-generated");
-    const lock = path.join(generated, ".mutation-lock");
-    writeMutationOwner(lock, deadMutationOwner("interrupted"));
-
-    expect(() => cleanupGeneratedState(root, { faultAt: "after-mutation-lock-reclaim-rename" }))
-      .toThrow("injected interruption at after-mutation-lock-reclaim-rename");
-    expect(fs.existsSync(lock)).toBe(false);
-    expect(fs.readdirSync(generated).filter((name) => name.startsWith(".mutation-lock.reclaim-"))).toHaveLength(1);
+    writeMutationOwner(path.join(generated, ".mutation-lock.reclaim-interrupted"), deadMutationOwner("interrupted"));
 
     cleanupGeneratedState(root);
     cleanupGeneratedState(root);
@@ -551,6 +549,22 @@ describe("generated generation publication", () => {
       expect(() => cleanupGeneratedState(root)).toThrow("mutation-lock reclaim claim has uncertain ownership");
       expect(fs.existsSync(uncertainClaim)).toBe(true);
     }
+  });
+
+  it("preserves conflicting live canonical and reclaim ownership", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const generated = path.join(root, ".agentera-generated");
+    const identity = processStartIdentity(process.pid);
+    expect(identity).not.toBeNull();
+    const lock = path.join(generated, ".mutation-lock");
+    const claim = path.join(generated, ".mutation-lock.reclaim-conflict");
+    fs.writeFileSync(lock, JSON.stringify({ pid: process.pid, processIdentity: identity, token: "canonical" }));
+    writeMutationOwner(claim, { pid: process.pid, processIdentity: identity, token: "claim" });
+
+    expect(() => cleanupGeneratedState(root, { mutationLockWaitMs: 0 })).toThrow("conflicts with canonical lock");
+    expect(fs.readFileSync(lock, "utf8")).toContain('"token":"canonical"');
+    expect(fs.existsSync(claim)).toBe(true);
   });
 
   it("does not collect a complete generation owned by a concurrent live publisher", () => {
@@ -638,11 +652,7 @@ describe("generated generation publication", () => {
     const root = tempRoot();
     for (const id of ["seed1", "seed2", "seed3", "seed4"]) publishGeneratedGeneration(root, stage(root, id), id);
     const generated = path.join(root, ".agentera-generated");
-    const interrupted = path.join(generated, ".mutation-lock");
-    writeMutationOwner(interrupted, deadMutationOwner("crash"));
-    expect(() => cleanupGeneratedState(root, { faultAt: "after-mutation-lock-reclaim-rename" })).toThrow("injected interruption");
-    writeMutationOwner(path.join(generated, ".mutation-lock"), deadMutationOwner("canonical-stale"));
-    for (const suffix of ["one", "two", "three"]) {
+    for (const suffix of ["crash", "one", "two", "three"]) {
       writeMutationOwner(path.join(generated, `.mutation-lock.reclaim-${suffix}`), deadMutationOwner(`residue-${suffix}`));
     }
     const cleaners = Array.from({ length: 8 }, () => ({ script: "generatedCleanupWorker.mjs", args: [root] }));
