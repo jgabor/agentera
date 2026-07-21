@@ -23,6 +23,8 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
       - name: Verify clean source boundary
+        env:
+          AGENTERA_VITEST_RUNNER_POLICY: unmeasured
         run: pnpm -C packages/cli test
       - name: Verify package boundary
         run: pnpm -C packages/cli run verify:package

@@ -72,14 +72,38 @@ candidates:
     result: pass
 
 selection:
-  default_workers: 8
+  precedence:
+    - VITEST_MAX_WORKERS explicit numeric override
+    - AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22
+    - unmeasured fallback
+  measured_local:
+    selector: AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22
+    workers: 8
+    evidence_status: measured
   rationale: >-
     Eight is the faster of the two safe, repeatably passing candidates: its
     43.926-second retained median is 6.102 seconds (12.197 percent) below the
     six-worker median. It is also the plan's stated maximum safe candidate.
-    The default is therefore static rather than derived from CPU count; an
-    explicit VITEST_MAX_WORKERS value remains available for a measured
-    machine-specific override.
+    It is selected only through the named runner-policy selector, never from
+    CPU count or host fingerprinting.
+  unmeasured_fallback:
+    selector: AGENTERA_VITEST_RUNNER_POLICY=unmeasured or no recognized selector
+    workers: 4
+    evidence_status: unmeasured_pending_benchmark
+    evidence: >-
+      references/analysis/verification-baseline-2026-07-20.yaml retains only
+      the named local runner's measurements and requires each CI runner to be
+      benchmarked. No retained GitHub-hosted runner measurement is available.
+    rationale: >-
+      Four workers is a conservative bounded fallback, not a GitHub-hosted
+      runner measurement. Every CI runner needs its own retained benchmark
+      before a tuned policy may replace it.
+  explicit_override:
+    selector: VITEST_MAX_WORKERS=<Vitest-supported worker count>
+    evidence_status: operator_selected
+    rationale: >-
+      This takes precedence over runner policy and is not presented as a
+      benchmarked setting unless separately measured and recorded.
   historical_baseline: >-
     The preserved four-worker baseline is 81.466 seconds median at source
     revision af9cf773 (references/analysis/verification-baseline-2026-07-20.yaml).
@@ -91,9 +115,9 @@ selection:
     is not a supported candidate, a selection target, or evidence superseded
     by this measurement.
 
-final_confirmation:
+superseded_confirmation:
   command: pnpm run test:source
-  environment: VITEST_MAX_WORKERS unset; the measured static default selected eight workers
+  environment: VITEST_MAX_WORKERS unset; previous global default selected eight workers
   consecutive_runs:
     - wall_seconds: 43.869
       vitest_duration_seconds: 42.90
@@ -111,10 +135,45 @@ final_confirmation:
       tests_passed: 2366
       tests_skipped: 1
   result: >-
-    All three serial source runs passed without timeout, retry, shared-output
-    race, or generated-output failure. The extra file and test relative to the
-    candidate table are this policy's source regression test; the benchmark
-    candidate counts intentionally remain recorded as observed.
+    These three serial source runs passed without timeout, retry, shared-output
+    race, or generated-output failure, but they predate the runner-specific
+    correction and must not be treated as evidence for the selector below.
+
+corrected_final_confirmation:
+  command: pnpm run test:source
+  environment: AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22; VITEST_MAX_WORKERS unset
+  consecutive_runs:
+    - wall_seconds: 43.508
+      vitest_duration_seconds: 42.56
+      files_passed: 194
+      tests_passed: 2369
+      tests_skipped: 1
+    - wall_seconds: 43.806
+      vitest_duration_seconds: 42.85
+      files_passed: 194
+      tests_passed: 2369
+      tests_skipped: 1
+    - wall_seconds: 43.330
+      vitest_duration_seconds: 42.39
+      files_passed: 194
+      tests_passed: 2369
+      tests_skipped: 1
+  result: >-
+    All three serial runs selected the named measured-local policy and passed
+    without timeout, retry, shared-output race, or generated-output failure.
+
+unmeasured_path_verification:
+  environment: AGENTERA_VITEST_RUNNER_POLICY=unmeasured
+  runner: local-16-logical-cpu-node22
+  workers: 4
+  wall_seconds: 71.296
+  vitest_duration_seconds: 70.34
+  files_passed: 194
+  tests_passed: 2369
+  tests_skipped: 1
+  interpretation: >-
+    This is one local integration check of the unmeasured selector, not a
+    GitHub-hosted benchmark or evidence that CI can be tuned to four workers.
 
 policy_composition:
   authority: references/analysis/verification-policy.yaml
@@ -129,9 +188,12 @@ policy_composition:
     and conservative authority surfaces to release; it delegates composition
     to verify-lane rather than declaring a second owner policy.
   ci: >-
-    .github/workflows/ci.yml separately invokes source and package owners;
-    stress and performance remain scheduled/release policy owners. No new
-    composition or owner was added for worker selection.
+    .github/workflows/ci.yml explicitly supplies
+    AGENTERA_VITEST_RUNNER_POLICY=unmeasured to source verification. This
+    selects the four-worker pending-benchmark fallback; it does not claim a
+    GitHub-hosted measurement. CI separately invokes source and package
+    owners; stress and performance remain scheduled/release policy owners.
+    No new composition or owner was added for worker selection.
 
 caveats:
   - Decisions retrieval was degraded to 5 of 50 records; missing detail was not reconstructed.

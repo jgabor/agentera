@@ -1,0 +1,13 @@
+id: xadrjzraop
+artifact: progress
+record:
+  timestamp: 2026-07-21 14:33
+  type: fix
+  phase: build
+  what: Scoped the eight-worker Vitest setting to an explicit measured-local runner policy and kept CI and other unmeasured runners on a documented four-worker fallback.
+  context:
+    intent: Correct lkyflumkrj audit-1 without applying local Ryzen measurements to GitHub-hosted or unmeasured runners.
+  inspiration: lkyflumkrj audit-1 and references/analysis/verification-baseline-2026-07-20.yaml
+  discovered: The authoritative baseline retains only local-16-logical-cpu-node22 results and explicitly requires each CI runner to be benchmarked; no retained GitHub-hosted measurement is available. The prior global eight-worker default therefore overstated its evidence.
+  verified: "Measured-local selector AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22 completed three serial eight-worker source runs: 43.508/43.806/43.330s, each 194 files and 2369 passed plus one declared skip, without timeout, retry, or shared-output failure. The unmeasured selector completed one local four-worker integration run in 71.296s (not a CI benchmark). Focused policy/routing/reference tests 102/102; stress 2/2; performance 3/3; package 10/10; typecheck, build, and root compact passed."
+  next: Keep GitHub Actions on the explicit unmeasured fallback until a retained benchmark for that runner justifies a new named policy; retain the twelve-worker warning.
