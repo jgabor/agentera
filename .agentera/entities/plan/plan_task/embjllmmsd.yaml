@@ -1,0 +1,14 @@
+id: embjllmmsd
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Harden overlap evidence normalization
+  status: complete
+  depends_on:
+    - fbgcvyeexr
+  acceptance:
+    - GIVEN raw reporter suite aggregates contain failed or pending evidence WHEN normalization runs THEN contradictory evidence is rejected before projection and cannot be overwritten by derived passing counts.
+    - GIVEN overlap policy loads WHEN its pending exception and diagnostic limits are validated THEN exactly one fixed-schema exception is accepted and malformed, expanded, unsupported, or unsafe values fail closed.
+    - GIVEN the permitted Darwin conditional declaration is synchronized WHEN source is inspected THEN executable syntax-aware analysis finds exactly one authoritative runIf declaration and comments, strings, duplicates, moves, or renames cannot satisfy it.
+    - GIVEN hostile reporter or policy data contains getters, circular values, malformed elements, symbols, bigints, invalid Unicode, or oversized values WHEN validation fails THEN it returns one actionable diagnostic within 8,192 UTF-8 bytes without a secondary exception.
+    - GIVEN full overlap and owner commands run WHEN hardened normalization validates honest evidence THEN source, build, extracted package, pending identity, and reader-generation checks all pass unchanged.

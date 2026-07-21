@@ -11,17 +11,7 @@ const PACKAGE_ROOT = path.join(REPO_ROOT, "packages/cli");
 const RUNNER = path.join(PACKAGE_ROOT, "scripts/verify-lane.mjs");
 const PRODUCTION_POLICY = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
 const PERFORMANCE_FORWARDING = PRODUCTION_POLICY.owners.performance.forwarding;
-const FIXTURE_OVERLAP = {
-  max_diagnostic_utf8_bytes: 8192,
-  allowed_pending_assertion: {
-    owner: "source",
-    path: "packages/cli/test/source.test.ts",
-    suite: "fixture suite",
-    title: "fixture Darwin assertion",
-    status: "skipped",
-    executes_when: { platform: "darwin" },
-  },
-};
+const FIXTURE_OVERLAP = PRODUCTION_POLICY.overlap;
 const OWNER_NAMES = ["source", "stress", "performance", "package"] as const;
 const POLICY_OWNERS = {
   targeted: ["source"],
@@ -37,6 +27,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-lanes-"));
   for (const relative of [
     "packages/cli/test/source.test.ts",
+    FIXTURE_OVERLAP.allowed_pending_assertion.path,
     "packages/cli/test/stress.test.ts",
     "packages/cli/test/performance-analytics.test.ts",
     "packages/cli/test/performance.test.ts",
@@ -44,12 +35,12 @@ function fixture(overrides: Record<string, unknown> = {}) {
   ]) {
     const file = path.join(root, relative);
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, relative.endsWith("source.test.ts")
+    fs.writeFileSync(file, relative === FIXTURE_OVERLAP.allowed_pending_assertion.path
       ? [
-        'describe("fixture suite", () => { ',
+        `describe(${JSON.stringify(FIXTURE_OVERLAP.allowed_pending_assertion.suite)}, () => { `,
         "it.runIf(",
         'process.platform === "darwin"',
-        ')("fixture Darwin assertion", () => {}); });\n',
+        `)(${JSON.stringify(FIXTURE_OVERLAP.allowed_pending_assertion.title)}, () => {}); });\n`,
       ].join("")
       : "// fixture\n");
   }

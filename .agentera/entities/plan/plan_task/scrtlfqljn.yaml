@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Require every overlap suite to execute
-  status: complete
+  status: blocked
   depends_on:
     - fbgcvyeexr
   acceptance:
@@ -12,12 +12,12 @@ record:
     - GIVEN Linux and Darwin pending contracts run WHEN the known conditional assertion is reported THEN Linux accepts exactly that assertion skip, Darwin executes it, package has no pending coverage, and all other suite/assertion omissions fail.
     - GIVEN full source, build, and extracted-package overlap runs WHEN validation completes THEN all owners pass with one complete generation, zero identity or surface failures, and no hidden pending suite coverage.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Hidden non-passing suites now reject, but suite aggregate fields are only internally balanced and are not reconciled with testResults.length or counted suite statuses, so one passing result with zero total/passed suites is accepted. The permitted Darwin conditional assertion synchronization uses non-unique toContain checks and can drift through coordinated rename/duplication. Malformed scalar reporter fields also produce unbounded diagnostics. Reconcile actual suite counts, make conditional authority unique/fail-closed, and bound every rendered scalar.
+    last_failure_evidence: All original overlap runtime criteria pass, but reporter projection overwrites contradictory raw nonzero failed/pending suite aggregates before validation. Conditional uniqueness scanning can count comments or strings as executable declarations, malformed policy values can expand or redefine the fixed exception, and adversarial getters/malformed array elements can throw secondary unbounded or non-actionable errors. Preserve contradictory raw evidence, validate a fixed policy schema, use executable syntax-aware uniqueness, and make normalization/diagnostics total over hostile reporter data.
     provenance:
-      attempt_id: scrtlfqljn-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 09:46
+      attempt_id: scrtlfqljn-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 10:11
       writer_command: agentera state plan record-evaluation
