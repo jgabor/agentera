@@ -1,0 +1,16 @@
+id: pgpbepgjtl
+artifact: progress
+record:
+  timestamp: 2026-07-21 10:50
+  type: fix
+  phase: build
+  what: Retried Task embjllmmsd after embjllmmsd-audit-1. Full verification policy loading now recursively validates every map and sequence prototype before field use, and overlap parsing permits only own-data Object.prototype or null-prototype maps. Executable source proof now requires exact direct, non-optional describe and it.runIf call/property shapes while allowing semantics-preserving parentheses.
+  context:
+    intent: Close only audit-1's policy-prototype and optional-chain fail-open gaps, then append corrected reproducible direct-source evidence without changing prior progress.
+    constraints: No mutation of fpmwtqrfpq; no generated recovery, performance routing, worker, consolidation, final-proof, version/release/publication/tag/push, vision/profile, changelog, or unrelated cleanup.
+    unknowns: Decision retrieval remained degraded at 5 of 50 with 45 omitted; satisfaction was unavailable and no satisfaction was inferred. Vision and profile remained absent. embjllmmsd-audit-1 is preserved as one failed evaluation.
+    scope: packages/cli/scripts/overlap-pending.mjs; full-policy loading in verify-lane.mjs; focused overlap regressions; typed embjllmmsd and new progress state only. fpmwtqrfpq remains byte-identical.
+  inspiration: Independent audit embjllmmsd-audit-1 identified inherited/custom policy containers and optional TypeScript call chains that could satisfy validation.
+  discovered: The first direct-source run reproduced indulnncww's tracked stale-reclaimer owner.json ENOENT and cleanup ENOTEMPTY. The focused generated-publication owner passed immediately afterward, and the complete source retry passed; no recovery code changed.
+  verified: Focused overlap and lane policy passed 208/208, covering Object/null prototypes, incomplete null maps, inherited attackers at verification/overlap/declaration/execution/arbitrary nesting, class/Date/Map/proxy prototypes, __proto__ parser results, throwing/revoked proxies, every optional-chain position, exact callback/cardinality shape, formatting, and safe parentheses. Real overlap passed source 193 files/2,485 assertions with one exact Linux skip, package 2 files/10 assertions with none, build, one complete generation, and zero reader identity/surface failures. Final reproducible direct source passed 193 files with 2,484 passed and one skipped (2,485 total). Package passed 10/10, stress 2/2, and direct/integration performance 3/3 each with 25 samples. Typecheck, build, 199-file inventory, 1,645-entity state validation, capability contract 2/2, compact, lint with 150 baseline warnings and zero errors, markdown, parity, diff check, and 684-entry package dry run passed.
+  next: Complete only indulnncww in its dedicated final verification; preserve its dependency on embjllmmsd, keep exhausted tasks blocked, and leave downstream synchronization/final-proof work pending.

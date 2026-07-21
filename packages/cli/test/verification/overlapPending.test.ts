@@ -11,6 +11,7 @@ import {
   pendingAuthority,
   validatePendingAuthority,
   validatePendingTests,
+  validatePolicyObjectBoundary,
 } from "../../scripts/overlap-pending.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -115,6 +116,14 @@ function sparseArray(length: number) {
   const value: unknown[] = [];
   value.length = length;
   return value;
+}
+
+function nullPrototypeClone(value: any): any {
+  if (Array.isArray(value)) return value.map(nullPrototypeClone);
+  if (value === null || typeof value !== "object") return value;
+  const clone = Object.create(null);
+  for (const [key, entry] of Object.entries(value)) clone[key] = nullPrototypeClone(entry);
+  return clone;
 }
 
 describe("full-overlap suite and assertion execution contract", () => {
@@ -280,6 +289,35 @@ describe("full-overlap suite and assertion execution contract", () => {
     })).toEqual(PENDING_TEST);
   });
 
+  it("accepts semantics-preserving parentheses without relaxing the direct call shape", () => {
+    const source = `(describe)((${JSON.stringify(PENDING_AUTHORITY.suite)}), ((() => {
+      (((it)).runIf(((((process)).platform === (${JSON.stringify(PENDING_AUTHORITY.executesOn)})))))
+        ((${JSON.stringify(PENDING_AUTHORITY.title)}), ((() => {})));
+    })));`;
+    const fixture = authorityFixture(source);
+    expect(validatePendingAuthority(OVERLAP_AUTHORITY, {
+      repoRoot: fixture.root,
+      expectedFiles: fixture.files,
+    })).toEqual(PENDING_TEST);
+  });
+
+  it.each([
+    ["describe call", `describe?.(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { ${conditionalSource().split("\n")[1]} });`],
+    ["it property", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it?.runIf(process.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
+    ["runIf call", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf?.(process.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
+    ["title call", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform === "darwin")?.(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
+    ["process property", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process?.platform === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
+    ["condition call", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform?.valueOf() === "darwin")(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
+    ["title expression", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it.runIf(process.platform === "darwin")((${JSON.stringify(PENDING_AUTHORITY.title)} as string)?.trim(), () => {}); });`],
+    ["combined chain", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { it?.runIf?.(process?.platform === "darwin")?.(${JSON.stringify(PENDING_AUTHORITY.title)}, () => {}); });`],
+  ])("rejects optional chaining at the %s boundary", (_, source) => {
+    const fixture = authorityFixture(source);
+    expect(() => validatePendingAuthority(OVERLAP_AUTHORITY, {
+      repoRoot: fixture.root,
+      expectedFiles: fixture.files,
+    })).toThrow(/authority proof failed/);
+  });
+
   it.each([
     ["comment", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { /* ${conditionalSource()} */ });`],
     ["string", `describe(${JSON.stringify(PENDING_AUTHORITY.suite)}, () => { const text = ${JSON.stringify(conditionalSource())}; });`],
@@ -352,6 +390,91 @@ describe("full-overlap suite and assertion execution contract", () => {
     const value = policy();
     mutate(value);
     expectContractFailure(() => pendingAuthority(value), /correction: restore the closed overlap schema/);
+  });
+
+  it("accepts plain and recursively null-prototype policy maps", () => {
+    const sanitized = validatePolicyObjectBoundary(POLICY);
+    expect(sanitized).toEqual(POLICY);
+    expect(Object.getPrototypeOf(sanitized)).toBeNull();
+    expect(Object.getPrototypeOf(sanitized.overlap)).toBeNull();
+    expect(Object.getPrototypeOf(sanitized.overlap.allowed_pending_assertion.executes_when)).toBeNull();
+    const nullPolicy = nullPrototypeClone(policy());
+    expect(pendingAuthority(nullPolicy)).toMatchObject(PENDING_AUTHORITY);
+    const nullVerification = nullPrototypeClone({ overlap: policy(), nested: { map: { value: true } } });
+    expect(validatePolicyObjectBoundary(nullVerification)).toEqual(nullVerification);
+  });
+
+  it("still rejects an incomplete null-prototype map", () => {
+    const value = nullPrototypeClone(policy());
+    delete value.allowed_pending_assertion.title;
+    expectContractFailure(() => pendingAuthority(value), /correction: restore the closed overlap schema/);
+  });
+
+  it.each([
+    ["verification", () => Object.assign(Object.create({ attacker: true }), { overlap: policy() })],
+    ["overlap", () => ({ overlap: Object.assign(Object.create({ attacker: true }), policy()) })],
+    ["allowed_pending_assertion", () => {
+      const overlap = policy();
+      overlap.allowed_pending_assertion = Object.assign(
+        Object.create({ attacker: true }),
+        overlap.allowed_pending_assertion,
+      );
+      return { overlap };
+    }],
+    ["executes_when", () => {
+      const overlap = policy();
+      overlap.allowed_pending_assertion.executes_when = Object.assign(
+        Object.create({ attacker: true }),
+        overlap.allowed_pending_assertion.executes_when,
+      );
+      return { overlap };
+    }],
+    ["arbitrary nested map", () => ({ overlap: policy(), nested: { hostile: Object.create({ attacker: true }) } })],
+  ])("rejects inherited attacker fields at the %s map", (_, create) => {
+    expectContractFailure(() => validatePolicyObjectBoundary(create()), /correction: provide plain own-data policy maps/);
+  });
+
+  it.each([
+    ["class instance", () => Object.assign(new (class Policy {})(), policy())],
+    ["Date", () => new Date()],
+    ["Map", () => new Map(Object.entries(policy()))],
+    ["proxy prototype", () => Object.assign(Object.create(new Proxy({}, {})), policy())],
+  ])("rejects a %s policy map before reading its fields", (_, create) => {
+    const message = expectContractFailure(() => pendingAuthority(create()));
+    expect(message).toContain("unsupported prototype");
+  });
+
+  it("rejects __proto__ parser keys even when they do not mutate the prototype", () => {
+    const value = policy();
+    Object.defineProperty(value, "__proto__", {
+      value: { attacker: true },
+      enumerable: true,
+      configurable: true,
+    });
+    expectContractFailure(() => pendingAuthority(value));
+
+    const parsed = YAML.parse(`${YAML.stringify(policy())}__proto__:\n  attacker: true\n`);
+    expectContractFailure(() => pendingAuthority(parsed));
+  });
+
+  it("does not accept inherited values for missing own policy fields", () => {
+    const value = policy();
+    const declaration = value.allowed_pending_assertion;
+    delete declaration.owner;
+    Object.setPrototypeOf(declaration, { owner: "source" });
+    const message = expectContractFailure(() => pendingAuthority(value));
+    expect(message).toContain("unsupported prototype");
+  });
+
+  it("bounds throwing and revoked policy proxy prototype failures", () => {
+    const throwing = new Proxy(policy(), {
+      getPrototypeOf() { throw new Error("prototype trap"); },
+    });
+    expectContractFailure(() => pendingAuthority(throwing));
+
+    const revocable = Proxy.revocable(policy(), {});
+    revocable.revoke();
+    expectContractFailure(() => pendingAuthority(revocable.proxy));
   });
 
   it.each([

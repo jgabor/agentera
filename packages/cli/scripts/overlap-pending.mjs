@@ -139,6 +139,96 @@ function isArray(value) {
   }
 }
 
+function inspectPolicyContainer(value, issues, label, seen) {
+  if (!isObject(value)) return value;
+  if (seen.has(value)) {
+    addIssue(issues, `${label} contains a repeated or circular policy object`);
+    return undefined;
+  }
+  seen.add(value);
+
+  let prototype;
+  try {
+    prototype = Object.getPrototypeOf(value);
+  } catch (error) {
+    addIssue(issues, `${label} prototype cannot be inspected: ${render(error)}`);
+    return undefined;
+  }
+  const array = isArray(value);
+  if (array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null) {
+    addIssue(issues, `${label} has an unsupported prototype; policy maps require Object.prototype or null and sequences require Array.prototype`);
+    return undefined;
+  }
+
+  let keys;
+  try {
+    keys = Reflect.ownKeys(value);
+  } catch (error) {
+    addIssue(issues, `${label} keys cannot be inspected: ${render(error)}`);
+    return undefined;
+  }
+  if (keys.length > MAX_ARRAY_ITEMS) {
+    addIssue(issues, `${label} has ${keys.length} own keys; maximum ${MAX_ARRAY_ITEMS}`);
+    return undefined;
+  }
+  const clone = array ? [] : Object.create(null);
+  for (const key of keys) {
+    if (key === "__proto__") {
+      addIssue(issues, `${label} has forbidden own key __proto__`);
+      continue;
+    }
+    let descriptor;
+    try {
+      descriptor = Object.getOwnPropertyDescriptor(value, key);
+    } catch (error) {
+      addIssue(issues, `${label}.${render(key, 80)} cannot be inspected: ${render(error)}`);
+      continue;
+    }
+    if (!descriptor || !("value" in descriptor)) {
+      addIssue(issues, `${label}.${render(key, 80)} must be an own data property, not an accessor`);
+      continue;
+    }
+    if (array && key === "length") {
+      if (!Number.isSafeInteger(descriptor.value) || descriptor.value < 0 || descriptor.value > MAX_ARRAY_ITEMS) {
+        addIssue(issues, `${label}.length=${render(descriptor.value)} must be a safe integer from 0 through ${MAX_ARRAY_ITEMS}`);
+      } else clone.length = descriptor.value;
+      continue;
+    }
+    const child = inspectPolicyContainer(descriptor.value, issues, `${label}.${render(key, 80)}`, seen);
+    Object.defineProperty(clone, key, {
+      value: child,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  }
+  return clone;
+}
+
+export function validatePolicyObjectBoundary(value, label = "verification") {
+  try {
+    const issues = [];
+    let clone;
+    if (!isObject(value) || isArray(value)) addIssue(issues, `${label} must be one policy map`);
+    else clone = inspectPolicyContainer(value, issues, label, new WeakSet());
+    if (issues.length > 0) {
+      throw contractError(
+        "verification policy object boundary is invalid",
+        issues,
+        "provide plain own-data policy maps with Object.prototype or null, ordinary arrays, no inherited/custom/proxy prototypes, and no __proto__ keys",
+      );
+    }
+    return clone;
+  } catch (error) {
+    if (error instanceof OverlapContractError) throw error;
+    throw contractError(
+      "verification policy object boundary is invalid",
+      [`policy prototype boundary could not be inspected: ${render(error)}`],
+      "provide plain own-data policy maps with Object.prototype or null and ordinary arrays",
+    );
+  }
+}
+
 function dataProperty(object, key, issues, label, { optional = false } = {}) {
   if (!isObject(object)) {
     addIssue(issues, `${label} must be an object`);
@@ -260,6 +350,7 @@ function pendingIdentity(authority) {
 
 function parsePendingAuthority(overlapAuthority) {
   const issues = [];
+  overlapAuthority = validatePolicyObjectBoundary(overlapAuthority, "overlap");
   exactKeys(overlapAuthority, POLICY_KEYS, issues, "overlap");
   const maxDiagnosticBytes = dataProperty(overlapAuthority, "max_diagnostic_utf8_bytes", issues, "overlap");
   const declaration = dataProperty(overlapAuthority, "allowed_pending_assertion", issues, "overlap");
@@ -314,38 +405,71 @@ export function pendingAuthority(overlapAuthority) {
 }
 
 function isString(node, value) {
-  return ts.isStringLiteral(node) && node.text === value;
+  const unwrapped = unwrapParentheses(node);
+  return ts.isStringLiteral(unwrapped) && unwrapped.text === value;
+}
+
+function unwrapParentheses(node) {
+  let current = node;
+  while (ts.isParenthesizedExpression(current)) current = current.expression;
+  return current;
+}
+
+function isDirectCall(node) {
+  return node !== undefined
+    && ts.isCallExpression(node)
+    && node.questionDotToken === undefined
+    && (node.flags & ts.NodeFlags.OptionalChain) === 0;
+}
+
+function isDirectProperty(node) {
+  return node !== undefined
+    && ts.isPropertyAccessExpression(node)
+    && node.questionDotToken === undefined
+    && (node.flags & ts.NodeFlags.OptionalChain) === 0;
+}
+
+function isCallback(node) {
+  const unwrapped = unwrapParentheses(node);
+  return ts.isArrowFunction(unwrapped) || ts.isFunctionExpression(unwrapped);
 }
 
 function isRunIfDeclaration(node, authority) {
-  if (!ts.isCallExpression(node) || node.arguments.length < 2 || !isString(node.arguments[0], authority.title)) return false;
-  const configured = node.expression;
-  if (!ts.isCallExpression(configured) || configured.arguments.length !== 1) return false;
-  const runIf = configured.expression;
-  if (!ts.isPropertyAccessExpression(runIf)
-    || !ts.isIdentifier(runIf.expression)
-    || runIf.expression.text !== "it"
+  if (!isDirectCall(node)
+    || node.arguments.length !== 2
+    || !isString(node.arguments[0], authority.title)
+    || !isCallback(node.arguments[1])) return false;
+  const configured = unwrapParentheses(node.expression);
+  if (!isDirectCall(configured) || configured.arguments.length !== 1) return false;
+  const runIf = unwrapParentheses(configured.expression);
+  const runner = isDirectProperty(runIf) ? unwrapParentheses(runIf.expression) : undefined;
+  if (!isDirectProperty(runIf)
+    || !ts.isIdentifier(runner)
+    || runner.text !== "it"
     || runIf.name.text !== "runIf") return false;
-  const condition = configured.arguments[0];
+  const condition = unwrapParentheses(configured.arguments[0]);
+  const platform = ts.isBinaryExpression(condition) ? unwrapParentheses(condition.left) : undefined;
+  const processIdentifier = isDirectProperty(platform) ? unwrapParentheses(platform.expression) : undefined;
   return ts.isBinaryExpression(condition)
     && condition.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
-    && ts.isPropertyAccessExpression(condition.left)
-    && ts.isIdentifier(condition.left.expression)
-    && condition.left.expression.text === "process"
-    && condition.left.name.text === "platform"
+    && isDirectProperty(platform)
+    && ts.isIdentifier(processIdentifier)
+    && processIdentifier.text === "process"
+    && platform.name.text === "platform"
     && isString(condition.right, authority.executesOn);
 }
 
 function exactSuiteCallbacks(sourceFile, authority) {
   const callbacks = [];
   function visit(node) {
-    if (ts.isCallExpression(node)
-      && ts.isIdentifier(node.expression)
-      && node.expression.text === "describe"
-      && node.arguments.length >= 2
+    const callee = isDirectCall(node) ? unwrapParentheses(node.expression) : undefined;
+    if (isDirectCall(node)
+      && ts.isIdentifier(callee)
+      && callee.text === "describe"
+      && node.arguments.length === 2
       && isString(node.arguments[0], authority.suite)
-      && (ts.isArrowFunction(node.arguments[1]) || ts.isFunctionExpression(node.arguments[1]))) {
-      callbacks.push(node.arguments[1]);
+      && isCallback(node.arguments[1])) {
+      callbacks.push(unwrapParentheses(node.arguments[1]));
     }
     ts.forEachChild(node, visit);
   }

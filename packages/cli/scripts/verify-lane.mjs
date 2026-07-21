@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 
-import { normalizeReporterSuiteAggregates, validatePendingAuthority } from "./overlap-pending.mjs";
+import {
+  normalizeReporterSuiteAggregates,
+  validatePendingAuthority,
+  validatePolicyObjectBoundary,
+} from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "package"];
@@ -38,7 +42,7 @@ function filesBelow(directory, suffix) {
 }
 
 function loadContract() {
-  return YAML.parse(fs.readFileSync(contractPath, "utf8"));
+  return validatePolicyObjectBoundary(YAML.parse(fs.readFileSync(contractPath, "utf8")), "verification");
 }
 
 function matches(rule, file) {
