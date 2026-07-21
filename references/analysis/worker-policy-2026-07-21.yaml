@@ -1,0 +1,139 @@
+schemaVersion: agentera.workerPolicyBenchmark.v1
+status: selected
+captured: 2026-07-21
+
+runner:
+  baseline_reference: references/analysis/verification-baseline-2026-07-20.yaml
+  name: local-16-logical-cpu-node22
+  plan_label: named 16-core Node 22 runner
+  plan_label_mapping: >-
+    "16-core" means the 16 logical scheduling CPUs reported by nproc and
+    os.cpus(), not physical cores. The named runner is an AMD Ryzen 7 9800X3D
+    with 8 physical cores and 16 threads, running Linux 7.1.4-1-cachyos,
+    Node v22.23.1, and pnpm 10.30.3. This preserves the historical baseline's
+    terminology without claiming 16 physical cores.
+
+method:
+  command: pnpm run test:source
+  working_directory: packages/cli
+  selection: >-
+    Each candidate was supplied only through VITEST_MAX_WORKERS, after which
+    the source owner selected its complete inventory through verify-lane.mjs.
+    No file filters, retries, reporter overrides, or concurrent invocations
+    were used.
+  protocol: >-
+    Run one unretained warmup followed immediately by three retained runs for
+    each safe candidate, serially in ascending worker order. Record Bash
+    process wall time and Vitest's reported duration, file count, and test
+    count. The shell emitted comma decimal separators; table values normalize
+    them to decimal points.
+  reproduction: >-
+    From packages/cli, for each workers value and phase in warmup sample-1
+    sample-2 sample-3, run: TIMEFORMAT="workers=$workers phase=$phase
+    wall_seconds=%3R"; time env VITEST_MAX_WORKERS="$workers" pnpm run
+    test:source. Run candidates serially; retain only the three samples after
+    each warmup.
+  pass_conditions:
+    - source command exits zero
+    - 193 test files pass and 2365 tests pass with one declared Darwin skip
+    - no test exceeds the configured 30000 ms timeout
+    - no retry, shared-output failure, or generated-output race is reported
+
+candidates:
+  - workers: 6
+    warmup:
+      wall_seconds: 66.085
+      vitest_duration_seconds: 64.47
+    retained:
+      - wall_seconds: 55.297
+        vitest_duration_seconds: 54.30
+      - wall_seconds: 50.028
+        vitest_duration_seconds: 49.09
+      - wall_seconds: 49.322
+        vitest_duration_seconds: 48.38
+    median:
+      wall_seconds: 50.028
+      vitest_duration_seconds: 49.09
+    result: pass
+  - workers: 8
+    warmup:
+      wall_seconds: 43.899
+      vitest_duration_seconds: 42.94
+    retained:
+      - wall_seconds: 43.968
+        vitest_duration_seconds: 43.03
+      - wall_seconds: 43.598
+        vitest_duration_seconds: 42.66
+      - wall_seconds: 43.926
+        vitest_duration_seconds: 42.99
+    median:
+      wall_seconds: 43.926
+      vitest_duration_seconds: 42.99
+    result: pass
+
+selection:
+  default_workers: 8
+  rationale: >-
+    Eight is the faster of the two safe, repeatably passing candidates: its
+    43.926-second retained median is 6.102 seconds (12.197 percent) below the
+    six-worker median. It is also the plan's stated maximum safe candidate.
+    The default is therefore static rather than derived from CPU count; an
+    explicit VITEST_MAX_WORKERS value remains available for a measured
+    machine-specific override.
+  historical_baseline: >-
+    The preserved four-worker baseline is 81.466 seconds median at source
+    revision af9cf773 (references/analysis/verification-baseline-2026-07-20.yaml).
+    Its 191 files and 2230 tests differ from this checkout's 193 files and
+    2365 tests, so it provides historical context rather than a like-for-like
+    speedup calculation.
+  unsafe_upper_bound: >-
+    Twelve workers previously failed under contention. It was not rerun and
+    is not a supported candidate, a selection target, or evidence superseded
+    by this measurement.
+
+final_confirmation:
+  command: pnpm run test:source
+  environment: VITEST_MAX_WORKERS unset; the measured static default selected eight workers
+  consecutive_runs:
+    - wall_seconds: 43.869
+      vitest_duration_seconds: 42.90
+      files_passed: 194
+      tests_passed: 2366
+      tests_skipped: 1
+    - wall_seconds: 43.972
+      vitest_duration_seconds: 43.02
+      files_passed: 194
+      tests_passed: 2366
+      tests_skipped: 1
+    - wall_seconds: 44.210
+      vitest_duration_seconds: 43.27
+      files_passed: 194
+      tests_passed: 2366
+      tests_skipped: 1
+  result: >-
+    All three serial source runs passed without timeout, retry, shared-output
+    race, or generated-output failure. The extra file and test relative to the
+    candidate table are this policy's source regression test; the benchmark
+    candidate counts intentionally remain recorded as observed.
+
+policy_composition:
+  authority: references/analysis/verification-policy.yaml
+  verification: >-
+    laneOwnership.test.ts requires the exact Task 2 policy compositions:
+    targeted/precommit/fast/local=[source], merge=[source, package],
+    scheduled=[source, stress, performance], and
+    release=[source, stress, performance, package]. verify-lane validates
+    exactly one primary owner per inventory file before composing a policy.
+  precommit: >-
+    scripts/precommit-vitest.sh routes ordinary staged source work to source
+    and conservative authority surfaces to release; it delegates composition
+    to verify-lane rather than declaring a second owner policy.
+  ci: >-
+    .github/workflows/ci.yml separately invokes source and package owners;
+    stress and performance remain scheduled/release policy owners. No new
+    composition or owner was added for worker selection.
+
+caveats:
+  - Decisions retrieval was degraded to 5 of 50 records; missing detail was not reconstructed.
+  - Satisfaction records remain unavailable for llavvlpcmb and djmjbmruyk.
+  - Vision and profile state were absent from the original build context; no approval was inferred.

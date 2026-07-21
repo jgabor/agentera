@@ -1,10 +1,11 @@
-import os from "node:os";
+// Eight workers is the fastest repeatably passing source setting measured on
+// the named runner; see references/analysis/worker-policy-2026-07-21.yaml.
+// VITEST_MAX_WORKERS remains the explicit machine override.
+export function maxWorkersFor(environment: NodeJS.ProcessEnv = process.env): number {
+  return Number.parseInt(environment.VITEST_MAX_WORKERS ?? "", 10) || 8;
+}
 
-// Keep concurrent agent runs below the process and memory pressure of one
-// worker per CPU. VITEST_MAX_WORKERS remains the explicit machine override.
-export const maxWorkers =
-  Number.parseInt(process.env.VITEST_MAX_WORKERS ?? "", 10) ||
-  Math.max(2, Math.ceil(os.cpus().length / 4));
+export const maxWorkers = maxWorkersFor();
 
 export const sharedTestConfig = {
   environment: "node" as const,

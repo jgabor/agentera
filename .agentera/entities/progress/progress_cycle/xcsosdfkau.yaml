@@ -1,0 +1,13 @@
+id: xcsosdfkau
+artifact: progress
+record:
+  timestamp: 2026-07-21 14:15
+  type: fix
+  phase: build
+  what: Replaced the CPU-derived Vitest source worker default with a measured static eight-worker policy, documented the benchmark, and asserted owner-policy composition.
+  context:
+    intent: Complete lkyflumkrj with a repeatable bounded worker policy without changing source, stress, performance, or package ownership.
+  inspiration: lkyflumkrj acceptance criteria and references/analysis/verification-baseline-2026-07-20.yaml
+  discovered: On the named 16-logical-CPU runner, retained source medians were 50.028s at six workers and 43.926s at eight; the historical four-worker 81.466s baseline has a different test inventory. Twelve workers remains an unrerun unsafe upper bound.
+  verified: "Candidate runs: six workers 55.297/50.028/49.322s and eight workers 43.968/43.598/43.926s after warmups. Final default-eight runs: 43.869/43.972/44.210s, each 194 files and 2366 passed plus one declared skip, with no timeout, retry, or shared-output failure. Focused worker/ownership/precommit/reference tests 99/99; stress 2/2; performance 3/3; package 10/10; typecheck, build, and root compact passed."
+  next: Keep the twelve-worker warning explicit; do not infer worker counts from CPU count or add auto-tuning without a new measured policy task.

@@ -9,7 +9,7 @@ record:
     - trmxcygkoe
     - indulnncww
     - liuqlppclk
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a runner policy WHEN worker count is selected THEN repeatable measurement rather than CPU count alone determines it.
     - GIVEN the measured 16-core runner WHEN ordinary source verification runs THEN the selected policy uses no more than eight workers.

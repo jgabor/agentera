@@ -368,6 +368,7 @@ describe("verification lane ownership", () => {
     expect(packageJson.scripts.test).toBe("pnpm run test:source");
     expect(packageJson.scripts["test:performance:integration"]).toBe("node test/integration/performanceOwner.integration.mjs");
     expect(packageJson.scripts["verify:package"]).toBe("node scripts/verify-lane.mjs package");
+    expect(PRODUCTION_POLICY.policies).toEqual(POLICY_OWNERS);
     expect(contract).toContain("fast: [source]");
     expect(contract).toContain("path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts");
     expect(contract).toContain("path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts");
