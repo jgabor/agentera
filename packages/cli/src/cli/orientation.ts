@@ -471,6 +471,17 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
   });
   const archived = asList(plan.archived_plans).slice(0, 10);
   const diagnostics = asList(plan.diagnostics).slice(0, 10);
+  const totalTasks = Number(plan.total ?? tasks.length);
+  const taskOmission = plan.task_omission && typeof plan.task_omission === "object" && !Array.isArray(plan.task_omission) ? plan.task_omission as JsonObject : {};
+  const finalTaskOmission = {
+    ...taskOmission,
+    omitted: totalTasks > boundedTasks.length,
+    total: totalTasks,
+    returned_count: boundedTasks.length,
+    omitted_count: Math.max(0, totalTasks - boundedTasks.length),
+    omission_reason: totalTasks > boundedTasks.length ? taskOmission.omission_reason ?? "startup_detail_capacity" : "none",
+    retrieval: taskOmission.retrieval ?? { list: plan.id ? `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json` : "agentera state plan tasks list --limit 100 --format json", restart: plan.id ? `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json` : "agentera state plan tasks list --limit 100 --format json", get: "agentera state plan tasks get --id ID --format json" },
+  };
   return {
     id: plan.id ?? null,
     artifact: plan.artifact ?? "plan",
@@ -479,14 +490,17 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     status: plan.status,
     title: plan.title ?? "",
     complete: plan.complete ?? 0,
-    total: plan.total ?? tasks.length,
+    superseded: plan.superseded ?? 0,
+    total: totalTasks,
+    task_status_counts: plan.task_status_counts ?? {},
+    task_omission: finalTaskOmission,
     complete_plan: Boolean(plan.complete_plan),
     first_pending: plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
       ? { id: plan.first_pending.id ?? null, artifact: plan.first_pending.artifact ?? "plan", name: plan.first_pending.name ?? plan.first_pending.title ?? "", status: plan.first_pending.status ?? "pending" }
       : null,
     tasks: boundedTasks,
-    task_count: tasks.length,
-    omitted_task_count: Math.max(0, tasks.length - boundedTasks.length),
+    task_count: totalTasks,
+    omitted_task_count: Math.max(0, totalTasks - boundedTasks.length),
     archived_plans: archived,
     archive_count: plan.archive_count ?? archived.length,
     omitted_archive_count: Math.max(0, Number(plan.archive_count ?? archived.length) - archived.length),
@@ -494,7 +508,7 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     diagnostics,
     omitted_diagnostic_count: Math.max(0, (plan.diagnostics ?? []).length - diagnostics.length),
     source_contract: {
-      detail_availability: tasks.length > boundedTasks.length ? "summary" : "full",
+      detail_availability: totalTasks > boundedTasks.length ? "summary" : "full",
       retrieval: "agentera state plan --format json",
       raw_archive_records: false,
     },

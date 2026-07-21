@@ -34,7 +34,7 @@ export function mutatePlanTaskEvaluation(
       reject({ class: "conflict", message: `evaluation attempt '${attemptId}' already exists with different result data` });
     return { replay: true, attemptCount: Number(prior.attempt_count ?? 0), failureCount: Number(prior.failure_count ?? 0) };
   }
-  if (["complete", "blocked"].includes(String(task.status ?? "")))
+  if (["complete", "blocked", "superseded"].includes(String(task.status ?? "")))
     reject({ class: "conflict", message: `${taskLabel} is ${task.status} and cannot accept another evaluation` });
   const attemptCount = Number(prior.attempt_count ?? 0);
   const failureCount = Number(prior.failure_count ?? 0);
@@ -94,18 +94,32 @@ export function planEvaluationMetadataViolations(value: unknown, prefix: string,
     if (provenance.writer_command !== "agentera state plan record-evaluation")
       violations.push(`plan: '${prefix}.provenance.writer_command' must identify the evaluation writer`);
   }
-  if (Number(failureCount) >= 2 && taskStatus !== "blocked")
-    violations.push(`plan: '${prefix}' with two failed evaluations requires task status blocked`);
+  if (Number(failureCount) >= 2 && !["blocked", "superseded"].includes(String(taskStatus)))
+    violations.push(`plan: '${prefix}' with two failed evaluations requires task status blocked or superseded`);
   return violations;
 }
 
 export function planTaskRecordViolations(task: Record<string, unknown>, prefix = "plan task"): string[] {
   const violations: string[] = [];
   if (typeof task.name !== "string" || !task.name.trim()) violations.push(`${prefix}: name must be a non-empty string`);
-  if (!["pending", "in_progress", "complete", "blocked", "skipped"].includes(String(task.status)))
-    violations.push(`${prefix}: status must be pending, in_progress, complete, blocked, or skipped`);
+  const status = String(task.status);
+  if (!["pending", "in_progress", "complete", "blocked", "superseded", "skipped"].includes(status))
+    violations.push(`${prefix}: status must be pending, in_progress, complete, blocked, superseded, or skipped`);
   for (const field of ["depends_on", "acceptance"])
     if (!Array.isArray(task[field]) || !(task[field] as unknown[]).every((value) => typeof value === "string"))
       violations.push(`${prefix}: ${field} must be a string list`);
+  const hasSupersession = task.superseded_by !== undefined || task.superseded_reason !== undefined;
+  if (status !== "superseded" && hasSupersession)
+    violations.push(`${prefix}: superseded_by and superseded_reason are only valid when status is superseded`);
+  if (status === "superseded") {
+    const replacements = task.superseded_by;
+    if (!Array.isArray(replacements) || replacements.length === 0 || !replacements.every((value) => typeof value === "string" && /^[a-z]{10}$/.test(value)))
+      violations.push(`${prefix}: superseded_by must be a non-empty list of bare task IDs`);
+    else if (new Set(replacements).size !== replacements.length)
+      violations.push(`${prefix}: superseded_by must not contain duplicate task IDs`);
+    const reason = task.superseded_reason;
+    if (typeof reason !== "string" || !reason.trim() || reason.length > 500)
+      violations.push(`${prefix}: superseded_reason must be a non-empty explanation of at most 500 characters`);
+  }
   return [...violations, ...planEvaluationMetadataViolations(task.evaluation, `${prefix}.evaluation`, task.status)];
 }

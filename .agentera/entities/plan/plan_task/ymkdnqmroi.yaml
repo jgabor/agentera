@@ -13,7 +13,7 @@ record:
     - liuqlppclk
     - lkyflumkrj
     - rpsxvneecd
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN the redesign is complete WHEN owner commands run THEN source, stress, performance, and package all pass independently.
     - GIVEN execution policies run WHEN composition is validated THEN intended owners execute without gaps or overlap.
@@ -32,3 +32,6 @@ record:
       source: independent orchestrate audit attempt 2, narrowed by user performance-tolerance clarification
       recorded_at: 2026-07-21 16:50
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - qgkxggjber
+  superseded_reason: Completed runtime vocabulary and focused validation evidence cover the blocked command-surface work.

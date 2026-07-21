@@ -29,6 +29,7 @@ import {
 const READ_CHUNK_BYTES = 64 * 1024;
 const MAX_CAPTURED_VALUE_CHARS = 512;
 const MAX_LINE_BUFFER_BYTES = 16 * 1024;
+export const STARTUP_ARRAY_LIMIT = 20;
 const ROOT_ITEM = /^  -(?:\s+(.*))?$/;
 const ROOT_FIELD = /^    ([A-Za-z0-9_-]+):(?:\s*(.*))?$/;
 const NESTED_FIELD = /^\s{6,}([A-Za-z0-9_-]+):(?:\s*(.*))?$/;
@@ -120,7 +121,7 @@ const PRESERVED_STARTUP_KEYS = new Set([
 export function boundStartupValue(value: JsonValue, key = "", depth = 0): JsonValue {
   if (typeof value === "string") return PRESERVED_STARTUP_KEYS.has(key) ? value : truncateCodePoints(value, 200, "\u2026");
   if (Array.isArray(value)) {
-    const bounded = value.slice(0, 20).map((item) => boundStartupValue(item, key, depth + 1));
+    const bounded = value.slice(0, STARTUP_ARRAY_LIMIT).map((item) => boundStartupValue(item, key, depth + 1));
     return bounded;
   }
   if (!isMapping(value) || depth > 8) return value;

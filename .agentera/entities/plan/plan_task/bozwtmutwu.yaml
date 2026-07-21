@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Repair generated-generation safety
-  status: blocked
+  status: superseded
   depends_on:
     - fbgcvyeexr
   acceptance:
@@ -22,3 +22,6 @@ record:
       source: independent orchestrate audit attempt 2
       recorded_at: 2026-07-21 06:49
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - indulnncww
+  superseded_reason: Completed generated-state recovery, retention, and packaging evidence resolves the remaining safety and guidance obligations.

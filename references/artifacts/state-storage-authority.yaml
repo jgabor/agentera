@@ -298,7 +298,7 @@ entity_target:
     - boundary: plan_task
       artifact: plan
       independently_mutable: true
-      relationships: [plan, depends_on_tasks]
+      relationships: [plan, depends_on_tasks, superseded_by]
       implementation: implemented
       publication: replace_owned_entity
       record:
@@ -412,6 +412,10 @@ entity_target:
         cardinality: exactly_one
       - source: plan_task
         field: depends_on
+        target: plan_task
+        cardinality: zero_or_many_same_plan
+      - source: plan_task
+        field: superseded_by
         target: plan_task
         cardinality: zero_or_many_same_plan
       - source: experiment

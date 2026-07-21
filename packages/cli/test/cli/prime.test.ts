@@ -6,8 +6,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
+import { main } from "../../src/cli/dispatch/index.js";
 import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
 import { buildOrientationJsonPayload } from "../../src/cli/commands/prime/orientationOutput.js";
+import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { planSummary } from "../../src/cli/orientation.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
@@ -262,7 +264,7 @@ describe("cli prime", () => {
       artifacts: [
         expect.objectContaining({
           artifact: "plan",
-          mutations: ["append", "update", "set-status", "set-plan-status", "record-evaluation", "archive", "create"],
+          mutations: ["append", "update", "set-status", "supersede", "set-plan-status", "record-evaluation", "archive", "create"],
         }),
       ],
       unsupported_targets: ["plan_archive"],
@@ -451,7 +453,8 @@ describe("orkestrera orchestration_context task_queue", () => {
     for (const [boundary, id, record] of [
       ["plan", "aaaaaaaaaa", "header:\n  level: light\n  created: 2026-07-17\n  title: Dependency queue regression\n  status: open\nwhat: test\nwhy: test\nscope:\n  included: [state]\n  excluded: []\n"],
       ["plan_task", "bbbbbbbbbb", "plan: aaaaaaaaaa\nname: First task\nstatus: complete\ndepends_on: []\nacceptance: []\n"],
-      ["plan_task", "cccccccccc", "plan: aaaaaaaaaa\nname: Second task\nstatus: pending\ndepends_on: [bbbbbbbbbb]\nacceptance: []\n"],
+      ["plan_task", "cccccccccc", "plan: aaaaaaaaaa\nname: Second task\nstatus: pending\ndepends_on: [dddddddddd]\nacceptance: []\n"],
+      ["plan_task", "dddddddddd", "plan: aaaaaaaaaa\nname: Superseded task\nstatus: superseded\nsuperseded_by: [bbbbbbbbbb]\nsuperseded_reason: Replacement task completed the work.\ndepends_on: []\nacceptance: []\n"],
     ] as const) {
       const dir = path.join(tmp, ".agentera/entities/plan", boundary);
       fs.mkdirSync(dir, { recursive: true });
@@ -487,6 +490,9 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(blocked.some((t) => t.id === "cccccccccc")).toBe(false);
     expect(allReasons.some((r) => r.includes("dependency bbbbbbbbbb is not present in plan tasks"))).toBe(false);
     expect((orch.task_summaries as Array<{ id: string; status: string }>)[0].status).toBe("complete");
+    expect(taskQueue).toMatchObject({ total: 3, complete: 1, superseded: 1 });
+    expect(ready).not.toContain("dddddddddd");
+    expect(blocked.some((t) => t.id === "dddddddddd")).toBe(false);
     expect((orch.selected_next_action as Record<string, unknown>)?.object).toBeTruthy();
   });
 
@@ -501,5 +507,70 @@ describe("orkestrera orchestration_context task_queue", () => {
 
     expect(ready).toContain("cccccccccc");
     expect(blockedReasons.some((r: string) => r.includes("dependency bbbbbbbbbb is not present in plan tasks"))).toBe(false);
+  });
+
+  it("indexes oversized task graphs exactly while returning bounded orchestration detail with recovery", () => {
+    const planId = "zzzzzzzzzz"; const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}aaaaaaaaa`);
+    fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
+    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan"); const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task"); fs.mkdirSync(planDirectory, { recursive: true }); fs.mkdirSync(taskDirectory, { recursive: true });
+    fs.writeFileSync(path.join(planDirectory, `${planId}.yaml`), dumpYamlMapping({ id: planId, artifact: "plan", record: { header: { level: "light", created: "2026-07-21", title: "Oversized graph", status: "open" }, what: "Bounded output must retain exact orchestration graph accounting.", why: "Task details can exceed startup page capacity.", scope: { included: ["plan"], excluded: [] } } }));
+    for (const [index, id] of taskIds.entries()) {
+      const status = index < 12 ? "complete" : index < 21 ? "superseded" : "pending";
+      const record: Record<string, unknown> = { plan: planId, name: `Task ${index + 1}: ${"x".repeat(3_000)}`, status, depends_on: index === 21 ? [taskIds[12]] : [], acceptance: [] };
+      if (status === "superseded") Object.assign(record, { superseded_by: [taskIds[0]], superseded_reason: "A completed replacement covers this task." });
+      fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record }));
+    }
+
+    const state = collectOrientationState({ env: process.env }); const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any;
+    const context = payload.capability_context.context; const queue = context.orchestration_context.task_queue;
+    expect(context.plan).toMatchObject({ complete: 12, superseded: 9, total: 22, task_status_counts: { complete: 12, superseded: 9, pending: 1 }, task_omission: { omitted: true } });
+    expect(context.plan.tasks.length).toBeLessThan(22);
+    expect(queue).toMatchObject({ total: 22, complete: 12, superseded: 9, status_counts: { complete: 12, superseded: 9, pending: 1 }, dependency_ready_count: 1, blocked_count: 0 });
+    expect(context.orchestration_context.selected_next_task.id).toBe(taskIds[21]);
+    expect(context.orchestration_context.task_summaries.length).toBe(10);
+    expect(context.orchestration_context.task_summaries_omission).toMatchObject({ omitted: true, omitted_count: 12, retrieval: { get: "agentera state plan tasks get --id ID --format json" } });
+    const emitted = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
+    expect(emitted.rc).toBe(0); expect(emitted.out).not.toContain("x".repeat(1_000));
+  });
+
+  it("reports generic startup-cap task omissions before generic bounding truncates detail", () => {
+    const planId = "yyyyyyyyyy"; const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}bbbbbbbbb`);
+    fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
+    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan"); const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task"); fs.mkdirSync(planDirectory, { recursive: true }); fs.mkdirSync(taskDirectory, { recursive: true });
+    fs.writeFileSync(path.join(planDirectory, `${planId}.yaml`), dumpYamlMapping({ id: planId, artifact: "plan", record: { header: { level: "light", created: "2026-07-21", title: "Small bounded graph", status: "open" }, what: "Startup task detail is explicitly bounded.", why: "Small records can exceed the generic startup item cap.", scope: { included: ["plan"], excluded: [] } } }));
+    for (const [index, id] of taskIds.entries()) fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record: { plan: planId, name: `Small task ${index + 1}`, status: "pending", depends_on: [], acceptance: [] } }));
+
+    const state = collectOrientationState({ env: process.env }); const statePlan = state.plan as any;
+    expect(statePlan).toMatchObject({ total: 22, task_status_counts: { pending: 22 }, task_omission: { omitted: true, total: 22, returned_count: 20, omitted_count: 2, omission_reason: "startup_detail_capacity", retrieval: { get: "agentera state plan tasks get --id ID --format json" } } });
+    expect(statePlan.tasks).toHaveLength(20);
+    const ordinary = buildOrientationJsonPayload(state, "prime") as any;
+    expect(ordinary.plan).toMatchObject({ total: 22, task_count: 22, omitted_task_count: 12, task_omission: { omitted: true, total: 22, returned_count: 10, omitted_count: 12, retrieval: { get: "agentera state plan tasks get --id ID --format json" } } });
+    expect(ordinary.plan.tasks).toHaveLength(10);
+    const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any; const queue = payload.capability_context.context.orchestration_context.task_queue;
+    expect(queue).toMatchObject({ total: 22, status_counts: { pending: 22 }, dependency_ready_count: 22, dependency_ready_omission: { omitted: true, omitted_count: 12, retrieval: { get: "agentera state plan tasks get --id ID --format json" } } });
+    expect(payload.capability_context.context.plan).toMatchObject({ total: 22, task_omission: { omitted: true, returned_count: 20, omitted_count: 2 } });
+  });
+
+  it("restarts task recovery when a byte-bounded page extends past public detail caps", () => {
+    const planId = "xxxxxxxxxx";
+    const taskId = (index: number): string => { let value = index; return Array.from({ length: 10 }, () => { const char = String.fromCharCode(97 + (value % 26)); value = Math.floor(value / 26); return char; }).join(""); };
+    const taskIds = Array.from({ length: 30 }, (_, index) => taskId(index));
+    fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
+    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan"); const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task"); fs.mkdirSync(planDirectory, { recursive: true }); fs.mkdirSync(taskDirectory, { recursive: true });
+    fs.writeFileSync(path.join(planDirectory, `${planId}.yaml`), dumpYamlMapping({ id: planId, artifact: "plan", record: { header: { level: "light", created: "2026-07-21", title: "Composed bound graph", status: "open" }, what: "Restart recovery cannot skip hidden page entries.", why: "Public detail caps compose with byte-bounded list pages.", scope: { included: ["plan"], excluded: [] } } }));
+    for (const [index, id] of taskIds.entries()) fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record: { plan: planId, name: `Medium task ${index + 1}: ${"m".repeat(1_100)}`, status: "pending", depends_on: [], acceptance: [] } }));
+
+    const state = collectOrientationState({ env: process.env }); const ordinary = buildOrientationJsonPayload(state, "prime") as any; const recovery = ordinary.plan.task_omission.retrieval;
+    expect(ordinary.plan.task_omission).toMatchObject({ omitted: true, total: 30, returned_count: 10, omitted_count: 20, retrieval: { restart: expect.stringContaining(`tasks list ${planId}`), get: "agentera state plan tasks get --id ID --format json" } });
+    expect(recovery).not.toHaveProperty("continue");
+    const invoke = (command: string): any => { let out = ""; let err = ""; const rc = main(["node", "agentera", ...command.split(" ").slice(1)], { out: (text) => { out += text; }, err: (text) => { err += text; } }); expect(rc, err || out).toBe(0); return JSON.parse(out); };
+    const reached = new Set<string>(); let page = invoke(recovery.restart);
+    expect(page.omitted).toBe(true); expect(page.entries.length).toBeGreaterThan(20);
+    while (true) {
+      for (const entry of page.entries) reached.add(entry.id);
+      if (!page.omitted) break;
+      page = invoke(page.retrieval.continue);
+    }
+    expect(reached).toEqual(new Set(taskIds));
   });
 });

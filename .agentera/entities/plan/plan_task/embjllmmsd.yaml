@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Harden overlap evidence normalization
-  status: blocked
+  status: superseded
   depends_on:
     - fbgcvyeexr
   acceptance:
@@ -22,3 +22,7 @@ record:
       source: independent orchestrate audit attempt 2
       recorded_at: 2026-07-21 11:05
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - qgkxggjber
+    - trmxcygkoe
+  superseded_reason: Completed structural fixture and focused runtime evidence cover the blocked overlap-normalization validation.

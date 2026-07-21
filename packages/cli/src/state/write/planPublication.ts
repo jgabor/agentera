@@ -34,6 +34,13 @@ export function validatePlanCreateInput(input: Record<string, unknown>): void {
     });
   }
   const tasks = Array.isArray(input.tasks) ? input.tasks.filter(isRecord) : [];
+  if (tasks.some((task) => task.status === "superseded")) {
+    reject({
+      class: "schema_violation",
+      message: "plan create cannot publish superseded tasks",
+      violations: ["superseded task relationships are assigned only by agentera state plan supersede"],
+    });
+  }
   const numbers = tasks.map((task) => Number(task.number));
   const expected = tasks.map((_, index) => index + 1);
   if (numbers.some((number, index) => number !== expected[index])) {

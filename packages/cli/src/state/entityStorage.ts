@@ -15,6 +15,7 @@ import { planTaskRecordViolations } from "./write/planEvaluation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 
 const MAX_DIAGNOSTICS = 100;
+const heldEntityWriterLocks = new Set<string>();
 
 interface EntityDefinition {
   boundary: string;
@@ -664,11 +665,24 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
       relation: "depends_on", message: `plan '${planId}' task dependency graph contains a cycle involving '${task.id}'`,
       recovery: recovery(projectRoot, `remove one record.depends_on edge in plan '${planId}' so the task graph is acyclic`),
     });
+    for (const task of tasks.filter((candidate) => candidate.record?.status === "superseded")) {
+      for (const replacementId of task.record?.superseded_by as string[]) {
+        const replacement = byTaskId.get(replacementId);
+        if (replacementId === task.id || replacement?.record?.status !== "complete") issues.push({
+          code: "unresolved_relation", path: task.relativePath, id: task.id!, artifact: task.artifact ?? undefined, boundary: task.boundary ?? undefined,
+          relation: "superseded_by", targetId: replacementId,
+          message: replacementId === task.id
+            ? `superseded task '${task.id}' cannot name itself as a replacement`
+            : `superseded task '${task.id}' replacement '${replacementId}' must be complete in plan '${planId}'`,
+          recovery: recovery(projectRoot, `set record.superseded_by in '${task.relativePath}' to completed task IDs from plan '${planId}'`),
+        });
+      }
+    }
   }
   for (const plan of discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record)) {
     const header = mapping(plan.record!.header) ? plan.record!.header as JsonObject : {};
     if (header.status === "complete") {
-      const incomplete = (tasksByPlan.get(plan.id!) ?? []).filter((task) => task.record?.status !== "complete");
+      const incomplete = (tasksByPlan.get(plan.id!) ?? []).filter((task) => !["complete", "superseded"].includes(String(task.record?.status)));
       if (incomplete.length) issues.push({
         code: "conflicting_ownership", path: plan.relativePath, id: plan.id!, artifact: plan.artifact ?? undefined, boundary: plan.boundary ?? undefined,
         message: `complete plan '${plan.id}' owns ${incomplete.length} incomplete task entities`,
@@ -846,11 +860,15 @@ function publishEntityLocked(
 
 export function withEntityWriterLock<T>(context: EntityPublicationContext, run: () => T): T {
   context.assertValid();
-  const lock = acquireWriterLock(context.pinnedPath(), 2000);
+  const root = context.pinnedPath();
+  if (heldEntityWriterLocks.has(root)) return run();
+  const lock = acquireWriterLock(root, 2000);
   try {
+    heldEntityWriterLocks.add(root);
     context.assertValid();
     return run();
   } finally {
+    heldEntityWriterLocks.delete(root);
     lock.release();
   }
 }

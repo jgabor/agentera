@@ -5,7 +5,7 @@ record:
   depends_on:
     - qifoditbva
     - fbgcvyeexr
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN source verification runs WHEN startup and retrieval are checked THEN a bounded functional smoke remains.
     - GIVEN the performance owner runs WHEN authority measurements execute THEN declared scales, cold processes, five repetitions, latency, heap, and output limits are preserved.
@@ -23,3 +23,8 @@ record:
       source: independent orchestrate audit attempt 2
       recorded_at: 2026-07-20 23:39
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - lkyflumkrj
+    - qgkxggjber
+    - trmxcygkoe
+  superseded_reason: Completed worker-policy, fixture, and focused runtime evidence cover the blocked performance-owner validation.

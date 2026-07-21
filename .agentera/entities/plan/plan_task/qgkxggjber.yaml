@@ -12,3 +12,13 @@ record:
     - GIVEN activeProtocolSurface and lifecycleProtocol have distinct responsibilities WHEN coverage is restored THEN activeProtocol keeps static/source-surface checks, lifecycleProtocol owns all-capability runtime payload checks, and no distinct assertion is removed or duplicated.
     - GIVEN the user's non-isolated-machine tolerance WHEN final proof is synchronized THEN approximately two seconds of ordinary wall-time variance is not a blocker or refactoring trigger; meaningful improvement, eight-worker bound, functional evidence, and no substantial regression remain recorded.
     - GIVEN the narrow repair completes WHEN focused and source verification run THEN all capability payloads are checked, owner/policy evidence remains green, proof wording is accurate, state/TODO agree, and CHANGELOG remains unchanged.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Progress lilvqovmry omitted the required verified field. Implementation verification was reported externally, but orchestration cannot audit completion until a new immutable progress record contains substantive focused/source/typecheck/build/compact/parity evidence. No code or performance rework is required.
+    provenance:
+      attempt_id: qgkxggjber-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 17:15
+      writer_command: agentera state plan record-evaluation

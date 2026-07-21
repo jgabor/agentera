@@ -1,0 +1,23 @@
+id: kizrmuaadj
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Support superseded task closure
+  status: complete
+  depends_on:
+    - qgkxggjber
+  acceptance:
+    - GIVEN a blocked task was addressed by one or more completed replacements WHEN supersession is recorded THEN a typed idempotent operation preserves failed evaluation history and records required same-plan completed successor IDs plus a reason.
+    - GIVEN task lifecycle is validated WHEN a plan completes THEN complete and valid superseded tasks are terminal, unresolved blocked tasks still prevent completion, and dependencies on valid superseded tasks are satisfied.
+    - GIVEN historical archived plans and existing blocked tasks are read WHEN the additive contract lands THEN no bulk migration or inferred supersession occurs and archived records remain immutable and valid.
+    - GIVEN this plan's nine blocked tasks have named passing successors WHEN the new writer is applied THEN they become superseded, task counts distinguish complete from superseded, the plan becomes complete, failed audit provenance remains intact, and the next plan can archive it atomically.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: kizrmuaadj-audit-1
+      source: independent focused lifecycle review
+      recorded_at: 2026-07-21 18:15
+      writer_command: agentera state plan record-evaluation

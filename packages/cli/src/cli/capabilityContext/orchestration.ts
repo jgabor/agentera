@@ -1,4 +1,3 @@
-import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { entryStatus, sourceProvenance, uniqueList } from "./shared.js";
 import {
@@ -13,6 +12,7 @@ import {
 import { progressVerificationSummary, retryState, evaluatorHandoff } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
+import { planTaskIndex } from "../planTaskIndex.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function orchestrationContext(
@@ -30,10 +30,15 @@ export function orchestrationContext(
   const tasks =
     lifecycle.current_plan_degraded === true
       ? []
-      : asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+      : planTaskIndex(plan);
   const taskByNumber = indexPlanTasksByNumber(tasks);
   const dependencyReady: JsonObject[] = [];
   const blocked: JsonObject[] = [];
+  const complete = tasks.filter((task) => entryStatus(task, "pending") === "complete").length;
+  const superseded = tasks.filter((task) => entryStatus(task, "pending") === "superseded").length;
+  const statusCounts = tasks.reduce<Record<string, number>>((counts, task) => {
+    const status = entryStatus(task, "pending"); counts[status] = (counts[status] ?? 0) + 1; return counts;
+  }, {});
   for (const task of tasks) {
     const status = entryStatus(task, "pending");
     if (DONE_STATUSES_ORCH.has(status)) continue;
@@ -50,6 +55,9 @@ export function orchestrationContext(
     else dependencyReady.push(orchestrationTaskSummary(task));
   }
   const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
+  const queueRetrieval = plan.id
+    ? { list: `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json`, restart: `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json`, get: "agentera state plan tasks get --id ID --format json" }
+    : null;
   const stateCaveats: string[] = [];
   let fallbackCommands: string[] = [];
   const capabilityContract = capabilityContext(capability) ?? {};
@@ -90,10 +98,10 @@ export function orchestrationContext(
   const progressVerification = progressVerificationSummary(progress);
   const retry = retryState(selected, tasks);
   const handoff = evaluatorHandoff(selected, progressVerification, retry, stateCaveats);
-  const complete = Boolean(plan.exists) && tasks.length > 0 && stateCaveats.length === 0;
+  const contextComplete = Boolean(plan.exists) && tasks.length > 0 && stateCaveats.length === 0 && (dependencyReady.length + blocked.length === 0 || queueRetrieval !== null);
   return {
     capability: "orchestrate",
-    task_queue: { total: tasks.length, dependency_ready_tasks: dependencyReady, blocked_tasks: blocked },
+    task_queue: { total: tasks.length, complete, superseded, status_counts: statusCounts, dependency_ready_tasks: dependencyReady, blocked_tasks: blocked, retrieval: queueRetrieval },
     selected_next_task: selected,
     selected_next_action: nextAction,
     progress_verification: progressVerification,
@@ -104,7 +112,7 @@ export function orchestrationContext(
     state_family_caveats: stateCaveats,
     fallback_commands: fallbackCommands,
     source_contract: {
-      complete_for_orchestration_context: complete,
+      complete_for_orchestration_context: contextComplete,
       raw_artifact_reads_required: false,
       raw_artifact_read_policy:
         "Use this orchestration_context and included status state first. Run listed routine CLI fallback commands " +

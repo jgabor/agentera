@@ -40,6 +40,9 @@ export interface PlanSummary {
   scope?: JsonValue;
   design?: JsonValue;
   complete?: number;
+  superseded?: number;
+  task_status_counts?: JsonObject;
+  task_omission?: JsonObject;
   total?: number;
   complete_plan?: boolean;
   first_pending?: JsonObject | null;

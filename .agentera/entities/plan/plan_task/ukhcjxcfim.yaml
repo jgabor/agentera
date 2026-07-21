@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Close performance owner selection escapes
-  status: blocked
+  status: superseded
   depends_on:
     - qifoditbva
     - fbgcvyeexr
@@ -23,3 +23,8 @@ record:
       source: independent orchestrate audit attempt 2
       recorded_at: 2026-07-21 09:14
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - lkyflumkrj
+    - qgkxggjber
+    - trmxcygkoe
+  superseded_reason: Completed worker-policy, fixture, and focused runtime evidence cover the blocked suite-routing validation.

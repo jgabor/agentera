@@ -6,7 +6,7 @@ export default `${instructions
 
 Plans, tasks, progress cycles, health audits, and decisions use entity authority: every record has \`id\` and \`artifact\`, lives in one writer-owned entity file, and is read through bounded list or exact \`get --id ID\` commands. Trust \`agentera prime --context orchestrate --format json\` for startup and use declared fallbacks. Discover plan mutations through \`agentera state plan explain --verb <verb> --format json\`; task writes always use the task's bare ID. Never edit entity paths directly.
 
-Advance tasks with \`agentera state plan set-status --id ID\` and persist evaluator outcomes with \`agentera state plan record-evaluation --id ID\`.
+Advance tasks with \`agentera state plan set-status --id ID\` and persist evaluator outcomes with \`agentera state plan record-evaluation --id ID\`. A superseded task is terminal, satisfies dependencies, and stays out of ready and blocked queues; record it only through \`agentera state plan supersede --id ID --by COMPLETED_ID --reason "..." --format json\`.
 
 ## The orchestration loop`)
   .replaceAll("--number N", "--id ID")

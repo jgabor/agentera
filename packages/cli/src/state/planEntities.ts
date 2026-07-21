@@ -179,8 +179,37 @@ function assertProjectedTask(entities: DiscoveredEntity[], id: string, record: J
     visiting.add(current); const value = records.get(current); const cyclic = (Array.isArray(value?.depends_on) ? value.depends_on : []).some((dependency) => typeof dependency === "string" && records.has(dependency) && visit(dependency)); visiting.delete(current); visited.add(current); return cyclic;
   };
   if ([...records.keys()].some(visit)) reject({ class: "schema_violation", message: `task '${id}' would create a dependency cycle in plan '${planId}'` });
+  if (record.status !== "complete" && entities.some((entity) => entity.boundary === TASK && entity.record?.plan === planId && entity.record?.status === "superseded" && Array.isArray(entity.record.superseded_by) && entity.record.superseded_by.includes(id)))
+    reject({ class: "conflict", message: `task '${id}' must remain complete while it is referenced by a superseded task` });
   const plan = entities.find((entity) => entity.boundary === PLAN && entity.id === planId);
-  if (plan && planStatus(plan) === "complete" && record.status !== "complete") reject({ class: "conflict", message: `task '${id}' cannot become incomplete while plan '${planId}' is complete` });
+  if (plan && planStatus(plan) === "complete" && !["complete", "superseded"].includes(String(record.status))) reject({ class: "conflict", message: `task '${id}' cannot become incomplete while plan '${planId}' is complete` });
+}
+
+function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, taskId: string, planId: string, values: Record<string, unknown>): JsonObject {
+  const reason = String(values.superseded_reason ?? "").trim();
+  const replacements = Array.isArray(values.superseded_by) ? values.superseded_by.map(String) : [];
+  if (!replacements.length) reject({ class: "schema_violation", message: "supersede requires at least one --by replacement task ID" });
+  if (new Set(replacements).size !== replacements.length) reject({ class: "schema_violation", message: "supersede replacement task IDs must be distinct" });
+  if (!reason || reason.length > 500) reject({ class: "schema_violation", message: "supersede --reason must be a non-empty explanation of at most 500 characters" });
+  const normalized = [...replacements].sort();
+  if (task.record?.status === "superseded") {
+    const existing = Array.isArray(task.record.superseded_by) ? task.record.superseded_by : [];
+    if (canonicalRecordJson(existing) === canonicalRecordJson(normalized) && task.record.superseded_reason === reason)
+      return structuredClone(task.record);
+    reject({ class: "conflict", message: `task '${taskId}' is already superseded with different replacements or reason` });
+  }
+  if (task.record?.status !== "blocked") reject({ class: "conflict", message: `only a currently blocked task can be superseded; task '${taskId}' is ${String(task.record?.status)}` });
+  for (const replacementId of normalized) {
+    if (!ID.test(replacementId)) reject({ class: "schema_violation", message: `supersede replacement task ID '${replacementId}' must be ten lowercase letters` });
+    if (replacementId === taskId) reject({ class: "schema_violation", message: "a task cannot supersede itself" });
+    const replacement = taskFor(entities, replacementId, planId);
+    if (replacement.record?.status !== "complete") reject({ class: "conflict", message: `supersede replacement task '${replacementId}' must be complete` });
+  }
+  const record = structuredClone(task.record!);
+  record.status = "superseded";
+  record.superseded_by = normalized;
+  record.superseded_reason = reason;
+  return record;
 }
 export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(req.projectRoot, sourceRoot);
@@ -198,7 +227,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
   if (req.spec.verb === "set-plan-status" || req.spec.verb === "archive") {
     const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id);
     const requested = req.spec.verb === "archive" ? "archived" : String(req.values.status);
-    if (requested === "complete" && tasks.some((task) => task.record?.status !== "complete")) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
+    if (requested === "complete" && tasks.some((task) => !["complete", "superseded"].includes(String(task.record?.status)))) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
     if (planStatus(plan) === "archived" && req.spec.verb !== "archive") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
     const record = structuredClone(plan.record!); const header = mapping(record.header) ? record.header : {}; header.status = requested; record.header = header;
     const command = req.spec.verb === "archive" ? "state plan archive" : "state plan set-plan-status";
@@ -209,6 +238,13 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
   }
   if (planStatus(plan) === "archived") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
   const taskId = String(req.values.id ?? ""); const task = taskFor(entities, taskId, plan.id!); const record = structuredClone(task.record!);
+  if (req.spec.verb === "supersede") {
+    const superseded = supersedeTask(entities, task, taskId, plan.id!, req.values);
+    if (canonicalRecordJson(superseded) === canonicalRecordJson(task.record)) return envelope("state plan supersede", { id: taskId, path: task.path, replay: true }, superseded, req.dryRun);
+    if (req.dryRun) return envelope("state plan supersede", { id: taskId, path: task.path, replay: false }, superseded, true);
+    const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: TASK, id: taskId, expectedRecord: task.record!, record: superseded });
+    return envelope("state plan supersede", result, superseded, false);
+  }
   if (req.spec.verb === "update") {
     const taskFields = ["name", "depends_on", "acceptance", "status", "evidence", "blocked_reason"];
     if (req.values.surprise !== undefined) {

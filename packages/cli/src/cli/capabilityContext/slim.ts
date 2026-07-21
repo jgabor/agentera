@@ -60,13 +60,25 @@ export function compactProgressVerification(value: any): any {
 export function slimOrchestrationContext(value: JsonObject): JsonObject {
   const compact: JsonObject = { ...value };
   const taskQueue = value.task_queue && typeof value.task_queue === "object" && !Array.isArray(value.task_queue) ? value.task_queue : {};
+  const ready = asList(taskQueue.dependency_ready_tasks);
+  const blocked = asList(taskQueue.blocked_tasks);
+  const retrieval = taskQueue.retrieval ?? null;
   compact.task_queue = {
     total: taskQueue.total ?? null,
-    dependency_ready_tasks: asList(taskQueue.dependency_ready_tasks).slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
-    blocked_tasks: asList(taskQueue.blocked_tasks).slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
+    complete: taskQueue.complete ?? null,
+    superseded: taskQueue.superseded ?? null,
+    status_counts: taskQueue.status_counts ?? {},
+    dependency_ready_tasks: ready.slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
+    blocked_tasks: blocked.slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
+    dependency_ready_count: ready.length,
+    blocked_count: blocked.length,
+    ...(ready.length > 10 ? { dependency_ready_omission: { omitted: true, omitted_count: ready.length - 10, omission_reason: "startup_detail_capacity", retrieval } } : {}),
+    ...(blocked.length > 10 ? { blocked_omission: { omitted: true, omitted_count: blocked.length - 10, omission_reason: "startup_detail_capacity", retrieval } } : {}),
   };
   compact.progress_verification = compactProgressVerification(value.progress_verification);
-  compact.task_summaries = asList(value.task_summaries).slice(0, 10).map((t) => compactTaskSummaryForSlim(t));
+  const summaries = asList(value.task_summaries);
+  compact.task_summaries = summaries.slice(0, 10).map((t) => compactTaskSummaryForSlim(t));
+  if (summaries.length > 10) compact.task_summaries_omission = { omitted: true, omitted_count: summaries.length - 10, omission_reason: "startup_detail_capacity", retrieval };
   return compact;
 }
 

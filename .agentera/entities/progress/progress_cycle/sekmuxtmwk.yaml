@@ -1,0 +1,15 @@
+id: sekmuxtmwk
+artifact: progress
+record:
+  timestamp: 2026-07-21 18:15
+  type: fix
+  phase: build
+  what: Completed the supersession lifecycle with typed writer validation, exact bounded plan recovery, and regression coverage; finalized the active lifecycle audit.
+  context:
+    intent: Make blocked historical validation work explicitly traceable to completed replacement evidence while preserving terminal task history.
+    constraints: No migration, version, release, publishing, or unrelated cleanup.
+    unknowns: none
+    scope: plan state writer, orchestration recovery, tests, and plan closeout
+  inspiration: rmtdgltdgm plan closeout and kizrmuaadj lifecycle audit
+  verified: Focused lifecycle tests passed 116/116; final prime tests passed 26/26; typecheck, build, and diff check passed.
+  next: Commit this implementation and closeout through the normal hook-owned verification run; do not expand scope.

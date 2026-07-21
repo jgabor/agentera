@@ -72,7 +72,7 @@ export function resolvePlanTaskByRef(taskByNumber: Record<string, JsonObject>, d
   return undefined;
 }
 
-export const DONE_STATUSES_ORCH = new Set(["complete", "completed", "closed", "done", "resolved", "retired"]);
+export const DONE_STATUSES_ORCH = new Set(["complete", "completed", "closed", "done", "resolved", "retired", "superseded"]);
 export const BLOCKED_STATUSES_ORCH = new Set(["blocked", "stuck"]);
 
 export const TARGET_VERSION_RE = /\b\d+\.\d+\.\d+\b/;

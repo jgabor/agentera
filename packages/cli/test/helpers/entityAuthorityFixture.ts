@@ -94,9 +94,11 @@ export function createEntityAuthorityFixture(
   add("plan", "plan_task", {
     plan,
     name: "B",
-    status: "complete",
+    status: "superseded",
     depends_on: [dependency],
     acceptance: ["V"],
+    superseded_by: [dependency],
+    superseded_reason: "Fixture replacement",
   });
   const objective = add("objective", "objective", {
     header: { title: "Objective 0", status: "complete", created: "2026-07-19" },

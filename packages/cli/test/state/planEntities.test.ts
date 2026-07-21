@@ -1,9 +1,11 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
@@ -15,6 +17,7 @@ import { operationSpec, type StateWriteRequest } from "../../src/state/write/ope
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
+const supersessionWorker = fileURLToPath(new URL("./planSupersessionWorker.mjs", import.meta.url));
 
 function project(entity = true): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-plan-entities-")); roots.push(root);
@@ -55,7 +58,7 @@ function archivedPlanFixture(root: string, index: number): { id: string } {
   const taskFile = path.join(root, `.agentera/entities/plan/plan_task/${taskId}.yaml`);
   fs.mkdirSync(path.dirname(planFile), { recursive: true }); fs.mkdirSync(path.dirname(taskFile), { recursive: true });
   fs.writeFileSync(planFile, dumpYamlMapping({ id, artifact: "plan", record }));
-  fs.writeFileSync(taskFile, dumpYamlMapping({ id: taskId, artifact: "plan", record: { plan: id, name: "First", status: "complete", depends_on: [], acceptance: ["GIVEN state WHEN written THEN it is canonical"] } }));
+  fs.writeFileSync(taskFile, dumpYamlMapping({ id: taskId, artifact: "plan", record: { plan: id, name: "First", status: "blocked", depends_on: [], acceptance: ["GIVEN state WHEN written THEN it is canonical"] } }));
   return { id };
 }
 function request(root: string, verb: string, values: Record<string, unknown> = {}, input: Record<string, unknown> | null = null): StateWriteRequest {
@@ -72,6 +75,16 @@ function entityNames(root: string): string[] {
   return fs.existsSync(entities) ? fs.readdirSync(entities, { recursive: true, encoding: "utf8" }) : [];
 }
 
+async function concurrentLifecycle(root: string, planId: string, blocked: string, replacement: string, action: "reopen" | "archive"): Promise<Array<{ ok: boolean; error?: string }>> {
+  const start = path.join(root, `race-${action}.start`); const ready = ["supersede", action].map((name) => path.join(root, `race-${action}-${name}.ready`)); const results = ["supersede", action].map((name) => path.join(root, `race-${action}-${name}.json`));
+  const children = ["supersede", action].map((kind, index) => new Promise<void>((resolve, reject) => {
+    const child = spawn(process.execPath, [supersessionWorker], { cwd: path.resolve(import.meta.dirname, "../.."), env: { ...sourceSubprocessEnv(), AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."), AGENTERA_PLAN_RACE_ROOT: root, AGENTERA_PLAN_RACE_PLAN: planId, AGENTERA_PLAN_RACE_BLOCKED: blocked, AGENTERA_PLAN_RACE_REPLACEMENT: replacement, AGENTERA_PLAN_RACE_ACTION: kind, AGENTERA_PLAN_RACE_READY: ready[index], AGENTERA_PLAN_RACE_START: start, AGENTERA_PLAN_RACE_RESULT: results[index] }, stdio: "pipe" });
+    let stderr = ""; child.stderr.setEncoding("utf8"); child.stderr.on("data", (chunk) => { stderr += chunk; }); child.on("error", reject); child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`plan race worker exited ${code}: ${stderr}`)));
+  }));
+  const deadline = Date.now() + 10_000; while (!ready.every((file) => fs.existsSync(file))) { if (Date.now() > deadline) throw new Error("plan race workers did not become ready"); await new Promise((resolve) => setTimeout(resolve, 10)); }
+  fs.writeFileSync(start, "start\n"); await Promise.all(children); return results.map((file) => JSON.parse(fs.readFileSync(file, "utf8")));
+}
+
 function unrelated(root: string): { file: string; bytes: string } {
   const file = path.join(root, ".agentera/unrelated.txt");
   const bytes = "successor or unrelated state\n";
@@ -84,7 +97,7 @@ afterEach(() => { vi.restoreAllMocks(); while (roots.length) fs.rmSync(roots.pop
 describe("plan and task entity authority", () => {
   it("explains task mutations with bare IDs in entity mode", () => {
     const root = project();
-    for (const verb of ["update", "set-status", "record-evaluation"]) {
+    for (const verb of ["update", "set-status", "supersede", "record-evaluation"]) {
       const result = capture(root, ["state", "plan", "explain", "--verb", verb, "--format", "json"]);
       expect(result.rc, result.err || result.out).toBe(0);
       const explanation = JSON.parse(result.out);
@@ -270,6 +283,68 @@ describe("plan and task entity authority", () => {
     result = capture(root, ["state", "plan", "set-plan-status", "--plan", planId, "--status", "complete", "--format", "json"]); expect(result.rc).toBe(0);
     result = capture(root, ["state", "plan", "archive", "--plan", planId, "--format", "json"]); expect(result.rc).toBe(0); expect(JSON.parse(result.out)).toMatchObject({ record: { header: { status: "archived" } }, operation: { idempotent_replay: false } });
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
+  });
+
+  it("supersedes a blocked task only with completed same-plan replacements and preserves evaluation evidence", () => {
+    const root = project(); const created = create(root, "supersession"); const [blocked] = created.tasks.map((task: any) => task.id);
+    const append = (name: string) => {
+      const result = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", name, "--format", "json"]);
+      expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out).id as string;
+    };
+    const firstReplacement = append("First replacement"); const secondReplacement = append("Second replacement");
+    const evaluate = (attempt: string, evidence: string) => capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", blocked, "--attempt-id", attempt, "--verdict", "fail", "--provenance", "audit", "--failure-evidence", evidence, "--format", "json"]);
+    expect(evaluate("audit-1", "failure one").rc).toBe(0); expect(evaluate("audit-2", "failure two").rc).toBe(0);
+    for (const id of [firstReplacement, secondReplacement]) expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", id, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    const taskPath = path.join(root, `.agentera/entities/plan/plan_task/${blocked}.yaml`);
+    const before = loadYamlMapping(fs.readFileSync(taskPath, "utf8")).record as Record<string, unknown>;
+    const superseded = capture(root, ["state", "plan", "supersede", "--plan", created.id, "--id", blocked, "--by", secondReplacement, "--by", firstReplacement, "--reason", "Replacement tasks cover the blocked work.", "--format", "json"]);
+    expect(superseded.rc, superseded.err || superseded.out).toBe(0);
+    expect(JSON.parse(superseded.out).record).toMatchObject({ status: "superseded", superseded_by: [firstReplacement, secondReplacement].sort(), superseded_reason: "Replacement tasks cover the blocked work.", evaluation: before.evaluation });
+    const replacementPath = path.join(root, `.agentera/entities/plan/plan_task/${firstReplacement}.yaml`); const replacementBytes = fs.readFileSync(replacementPath, "utf8");
+    const reopening = capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", firstReplacement, "--status", "pending", "--format", "json"]);
+    expect(reopening.rc).not.toBe(0); expect(fs.readFileSync(replacementPath, "utf8")).toBe(replacementBytes);
+    const written = fs.readFileSync(taskPath, "utf8");
+    const replay = capture(root, ["state", "plan", "supersede", "--plan", created.id, "--id", blocked, "--by", firstReplacement, "--by", secondReplacement, "--reason", "Replacement tasks cover the blocked work.", "--format", "json"]);
+    expect(replay.rc, replay.err || replay.out).toBe(0); expect(JSON.parse(replay.out).operation.idempotent_replay).toBe(true); expect(fs.readFileSync(taskPath, "utf8")).toBe(written);
+    expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "superseded", "--format", "json"]).rc).toBe(2);
+    expect(capture(root, ["state", "plan", "set-plan-status", "--plan", created.id, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    expect(validateEntityState(root).valid).toBe(true);
+    const invalid = loadYamlMapping(fs.readFileSync(taskPath, "utf8")); (invalid.record as Record<string, unknown>).superseded_by = [blocked]; fs.writeFileSync(taskPath, dumpYamlMapping(invalid));
+    expect(validateEntityState(root)).toMatchObject({ valid: false, issues: expect.arrayContaining([expect.objectContaining({ relation: "superseded_by", message: expect.stringContaining("cannot name itself") })]) });
+  });
+
+  it("rejects invalid supersession targets without changing the blocked task", () => {
+    const root = project(); const created = create(root, "supersession rejection"); const blocked = created.tasks[0].id;
+    const replacement = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "Pending replacement", "--format", "json"]); expect(replacement.rc).toBe(0); const pending = JSON.parse(replacement.out).id;
+    const otherPlan = create(root, "other plan"); const crossPlan = otherPlan.tasks[0].id;
+    expect(capture(root, ["state", "plan", "set-status", "--plan", otherPlan.id, "--id", crossPlan, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
+    const taskPath = path.join(root, `.agentera/entities/plan/plan_task/${blocked}.yaml`); const before = fs.readFileSync(taskPath, "utf8");
+    for (const args of [
+      ["--by", blocked],
+      ["--by", pending],
+      ["--by", pending, "--by", pending],
+      ["--by", "INVALID"],
+      ["--by", "zzzzzzzzzz"],
+      ["--by", crossPlan],
+    ]) {
+      const result = capture(root, ["state", "plan", "supersede", "--plan", created.id, "--id", blocked, ...args, "--reason", "Replacement work.", "--format", "json"]);
+      expect(result.rc).not.toBe(0); expect(fs.readFileSync(taskPath, "utf8")).toBe(before);
+    }
+  });
+
+  it("serializes supersession against replacement reopening and plan archival", async () => {
+    for (const action of ["reopen", "archive"] as const) {
+      const root = project(); const created = create(root, `supersession ${action}`); const blocked = created.tasks[0].id;
+      const appended = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "Completed replacement", "--format", "json"]); expect(appended.rc).toBe(0); const replacement = JSON.parse(appended.out).id;
+      expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
+      expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
+      const outcomes = await concurrentLifecycle(root, created.id, blocked, replacement, action);
+      expect(outcomes.some(({ ok }) => ok)).toBe(true);
+      if (action === "reopen") expect(outcomes.filter(({ ok }) => ok)).toHaveLength(1);
+      expect(validateEntityState(root).valid).toBe(true);
+      expect(fs.existsSync(path.join(root, ".agentera/.writer.lock"))).toBe(false);
+    }
   });
 
   it("enforces shared evaluation validation, exact replay, and divergent-attempt conflicts through the public CLI", () => {

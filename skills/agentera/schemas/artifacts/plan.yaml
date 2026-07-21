@@ -120,7 +120,8 @@ HEADER:
     required: true
     description: >-
       Canonical plan lifecycle. Open plans are active candidates, complete
-      plans satisfy every task, and archived plans are historical or abandoned.
+       plans satisfy every task through completion or valid supersession, and
+       archived plans are historical or abandoned.
     validation:
       - "Must be one of: open, complete, archived"
   4:
@@ -355,7 +356,7 @@ TASK:
       Task execution status. Uses visual tokens from protocol.yaml
       VISUAL_TOKENS (VT1-VT4) for display.
     validation:
-      - "Must be one of: complete, in_progress, pending, blocked"
+      - "Must be one of: complete, in_progress, pending, blocked, superseded"
   5:
     id: PT19
     field: acceptance
@@ -373,7 +374,24 @@ TASK:
     description: >-
       CLI-owned evaluator state written only by `agentera state plan
       record-evaluation`. It records attempt and failure counts, the latest
-      verdict, retained failure evidence, and stable attempt provenance.
+       verdict, retained failure evidence, and stable attempt provenance.
+  7:
+    id: PT21
+    field: superseded_by
+    type: list[string]
+    required: false
+    description: >-
+      CLI-owned completed replacement task IDs from the same plan. Required only
+      when status is superseded; IDs must be distinct and the replacements remain
+      complete.
+  8:
+    id: PT22
+    field: superseded_reason
+    type: string
+    required: false
+    description: >-
+      CLI-owned required explanation, at most 500 characters, for a superseded
+      task. Present only with superseded_by when status is superseded.
 
 VALIDATION:
   1:
@@ -455,7 +473,7 @@ LIFECYCLE_CONTRACT:
         - archived
       meaning:
         open: Work is active and unfinished.
-        complete: Every task is complete.
+        complete: Every task is complete or validly superseded.
         archived: Historical or abandoned source; tasks may be incomplete or empty.
     position:
       active: A unique open entity plan supplies the default active selection.

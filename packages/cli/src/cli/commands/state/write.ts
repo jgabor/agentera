@@ -162,7 +162,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   let fields = projectedFields(spec);
   if (entityPlan) {
     fields = fields.filter((field) => field.flag !== "--task").map((field) => field.flag === "--depends-on" ? { ...field, kind: "string_list" as const } : field);
-    if (["update", "set-status", "record-evaluation"].includes(verb)) fields.unshift({ flag: "--id", field: "id", kind: "string", required: true });
+    if (["update", "set-status", "supersede", "record-evaluation"].includes(verb)) fields.unshift({ flag: "--id", field: "id", kind: "string", required: true });
     fields.unshift({ flag: "--plan", field: "plan", kind: "string" });
   }
   const byFlag = new Map(fields.map((field) => [field.flag, field]));
@@ -306,7 +306,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       invalid({ class: "missing_argument", message: "--base-sha256 is required for decisions amend in entity mode" });
   }
   if (artifact === "plan" && verb !== "create") {
-    const taskVerb = ["update", "set-status", "record-evaluation"].includes(verb);
+    const taskVerb = ["update", "set-status", "supersede", "record-evaluation"].includes(verb);
     const id = mappingPath(values, "id");
     const task = mappingPath(values, "task");
     if (task !== undefined) invalid({ class: "unrecognized_argument", message: "numeric task selectors are unavailable in entity mode; use --id ID" });

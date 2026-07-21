@@ -8,6 +8,7 @@ export const WRITE_VERBS = [
   "update",
   "amend",
   "set-status",
+  "supersede",
   "set-plan-status",
   "record-evaluation",
   "repair",
@@ -208,6 +209,11 @@ const planEvaluationFields: OperationField[] = [
   },
 ];
 
+const planSupersedeFields: OperationField[] = [
+  { flag: "--by", field: "superseded_by", kind: "string_list", required: true, repeatable: true, description: "Distinct completed replacement task IDs in the same plan." },
+  { flag: "--reason", field: "superseded_reason", kind: "string", required: true, description: "Required explanation, at most 500 characters." },
+];
+
 const SPECS: OperationSpec[] = [
   { artifact: "progress", verb: "append", fields: progressAppend, compacts: true },
   { artifact: "decisions", verb: "append", fields: decisionAppend, compacts: true },
@@ -242,6 +248,7 @@ const SPECS: OperationSpec[] = [
       },
     ],
   },
+  { artifact: "plan", verb: "supersede", fields: planSupersedeFields },
   {
     artifact: "plan",
     verb: "set-plan-status",

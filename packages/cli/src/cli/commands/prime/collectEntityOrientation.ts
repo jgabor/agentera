@@ -7,7 +7,8 @@ import { listObjectiveEntities, listExperimentEntities } from "../../../state/ob
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
-import { boundStartupValue } from "../../../state/startupProjection.js";
+import { boundStartupValue, STARTUP_ARRAY_LIMIT } from "../../../state/startupProjection.js";
+import { rememberPlanTaskIndex } from "../../planTaskIndex.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -43,8 +44,8 @@ function header(entry: JsonObject | undefined): JsonObject {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
 }
 
-function complete(status: unknown): boolean {
-  return ["complete", "completed", "closed", "done", "resolved", "retired"].includes(String(status ?? "").toLowerCase());
+function terminal(status: unknown): boolean {
+  return ["complete", "completed", "closed", "done", "resolved", "retired", "superseded"].includes(String(status ?? "").toLowerCase());
 }
 
 function selected(entries: JsonObject[], artifact: "plan" | "objective"): JsonObject | undefined {
@@ -101,10 +102,27 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const docsEntries = entries(docsList);
 
   const selectedPlan = selected(planEntries, "plan");
-  const taskEntries = (selectedPlan
-    ? entries(listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json", discovery }))
+  const taskPage = selectedPlan
+    ? listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json", discovery })
+    : null;
+  const taskEntries = (taskPage
+    ? entries(taskPage)
     : []).map((entry): JsonObject => ({ ...record(entry), id: entry.id, artifact: entry.artifact, provenance: entry.provenance }));
-  const firstPending = taskEntries.find((entry) => !complete(entry.status));
+  const allTaskEntries = selectedPlan
+    ? discovery.entities
+      .filter((entry) => entry.boundary === "plan_task" && entry.classification === "valid" && entry.record?.plan === selectedPlan.id && entry.id)
+      .sort((left, right) => left.id!.localeCompare(right.id!))
+      .map((entry): JsonObject => ({ ...entry.record!, id: entry.id!, artifact: entry.artifact!, provenance: { storage: "canonical_entity_file", path: entry.relativePath } }))
+    : [];
+  const firstPending = allTaskEntries.find((entry) => !terminal(entry.status));
+  const taskStatusCounts = allTaskEntries.reduce<Record<string, number>>((counts, entry) => {
+    const status = String(entry.status ?? "pending").toLowerCase(); counts[status] = (counts[status] ?? 0) + 1; return counts;
+  }, {});
+  const publicTaskEntries = taskEntries.slice(0, STARTUP_ARRAY_LIMIT);
+  const taskDetailOmitted = allTaskEntries.length > publicTaskEntries.length;
+  const taskRetrieval: JsonObject = selectedPlan
+    ? { list: `agentera state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`, restart: `agentera state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`, get: "agentera state plan tasks get --id ID --format json" }
+    : {};
   const plan: PlanSummary = selectedPlan ? {
     exists: true,
     active: true,
@@ -112,13 +130,16 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     artifact: selectedPlan.artifact,
     status: String(header(selectedPlan).status ?? "open"),
     title: String(header(selectedPlan).title ?? ""),
-    tasks: taskEntries,
-    complete: taskEntries.filter((entry) => complete(entry.status)).length,
-    total: taskEntries.length,
-    complete_plan: taskEntries.length > 0 && taskEntries.every((entry) => complete(entry.status)),
+    tasks: publicTaskEntries,
+    complete: taskStatusCounts.complete ?? 0,
+    superseded: taskStatusCounts.superseded ?? 0,
+    total: allTaskEntries.length,
+    complete_plan: allTaskEntries.length > 0 && allTaskEntries.every((entry) => terminal(entry.status)),
     first_pending: firstPending ?? null,
+    task_status_counts: taskStatusCounts,
+    task_omission: { omitted: taskDetailOmitted, total: allTaskEntries.length, returned_count: publicTaskEntries.length, omitted_count: allTaskEntries.length - publicTaskEntries.length, omission_reason: taskDetailOmitted ? taskPage?.omitted === true ? taskPage.omission_reason : "startup_detail_capacity" : "none", retrieval: taskRetrieval },
     diagnostics: [],
-  } : { exists: false, active: false, status: "missing", tasks: [], complete: 0, total: 0, complete_plan: false, first_pending: null };
+  } : { exists: false, active: false, status: "missing", tasks: [], complete: 0, superseded: 0, total: 0, complete_plan: false, first_pending: null };
 
   const latestProgress = progressEntries[0];
   const latestProgressRecord = record(latestProgress);
@@ -215,5 +236,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   });
   // The opaque continuation cursor is already list-budget bounded and must stay
   // byte-exact so omitted TODO detail remains recoverable.
-  return { ...projection, todoDetail };
+  const result = { ...projection, todoDetail };
+  rememberPlanTaskIndex(result.plan as unknown as JsonObject, allTaskEntries);
+  return result;
 }

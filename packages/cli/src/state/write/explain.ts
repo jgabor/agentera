@@ -42,7 +42,7 @@ export function buildExplain(
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
   const entityArtifact = true;
   const resolved = entityArtifact
-    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "plan" ? ["append", "update", "set-status", "record-evaluation"].includes(verb) ? "plan_task" : "plan" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
+    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "plan" ? ["append", "update", "set-status", "supersede", "record-evaluation"].includes(verb) ? "plan_task" : "plan" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
     : artifact === "experiments"
     ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
@@ -59,7 +59,9 @@ export function buildExplain(
           ),
         };
   const validator = new ArtifactSchemaValidator();
-  const fields = projectedFields(spec, validator)
+  const fields = (entityArtifact && artifact === "plan" && verb === "supersede"
+    ? [{ flag: "--id", field: "id", kind: "string" as const, required: true }, ...projectedFields(spec, validator)]
+    : projectedFields(spec, validator))
     .filter(() => !(entityArtifact && artifact === "health" && verb === "repair"))
     .filter((field) => artifact !== "decisions" || !["update", "amend"].includes(verb) || (entityArtifact ? field.flag !== "--number" : !["--id", "--base-sha256"].includes(field.flag)))
     .filter((field) => !(entityArtifact && artifact === "experiments" && field.flag === "--number"))
@@ -139,7 +141,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
       "the CLI assigns bare IDs to the plan and each task and publishes one canonical file per entity",
       ...base,
     ];
-  if (entityArtifact && artifact === "plan" && ["update", "set-status", "record-evaluation"].includes(verb))
+  if (entityArtifact && artifact === "plan" && ["update", "set-status", "supersede", "record-evaluation"].includes(verb))
     return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
   if (entityArtifact && artifact === "plan" && verb === "append")
     return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];
@@ -237,6 +239,10 @@ export function exampleFor(artifact: WritableArtifact, verb: string, entityDecis
     return entityArtifact
       ? "agentera state plan set-status --id qjtrmnpvka --status complete --format json"
       : "agentera state plan set-status --task 1 --status complete --format json";
+  if (verb === "supersede")
+    return entityArtifact
+      ? 'agentera state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement tasks cover this work." --format json'
+      : "agentera state plan supersede --task 1 --by 2 --reason \"Replacement tasks cover this work.\" --format json";
   if (verb === "set-plan-status")
     return "agentera state plan set-plan-status --status complete --format json";
   if (verb === "record-evaluation")

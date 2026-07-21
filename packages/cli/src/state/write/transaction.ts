@@ -2,6 +2,7 @@ import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEn
 import { appendHealthEntity } from "../healthEntities.js";
 import { mutateObjectiveEntity, publishExperimentEntity } from "../objectiveExperimentEntities.js";
 import { mutatePlanEntities } from "../planEntities.js";
+import { withEntityWriterLock } from "../entityStorage.js";
 import { appendProgressEntity } from "../progressEntities.js";
 import { requireEntityStateBinding } from "../stateMode.js";
 import { mutateTodoDocsEntity } from "../todoDocsEntities.js";
@@ -33,7 +34,7 @@ export function executeStateWrite(
       }
       return appendHealthEntity(req, { publicationContext });
     }
-    if (req.artifact === "plan") return mutatePlanEntities(req, { publicationContext });
+    if (req.artifact === "plan") return withEntityWriterLock(publicationContext, () => mutatePlanEntities(req, { publicationContext }));
     if (req.artifact === "objective") return mutateObjectiveEntity(req, { publicationContext });
     if (req.artifact === "experiments") return publishExperimentEntity(req, { publicationContext });
     return mutateTodoDocsEntity(req, { publicationContext });
