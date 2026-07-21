@@ -7,10 +7,12 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   cleanupGeneratedState,
+  classifyProcessOwner,
   GENERATED_RETENTION_LIMIT,
   legacyPublicationLockPath,
   pinGeneratedGeneration,
   publishGeneratedGeneration,
+  processStartIdentity,
   selectGeneratedGeneration,
   writeGenerationIdentity,
 } from "../../scripts/generated-output.mjs";
@@ -31,6 +33,13 @@ function stage(root: string, id: string): string {
   }
   writeGenerationIdentity(staged, id);
   return staged;
+}
+
+function nestedLink(staged: string, surface: "dist" | "bundle", target: string, relative = false): string {
+  const link = path.join(staged, surface, "nested", "payload");
+  fs.mkdirSync(path.dirname(link), { recursive: true });
+  fs.symlinkSync(relative ? path.relative(path.dirname(link), target) : target, link);
+  return link;
 }
 
 function selectedTokens(root: string): string[] {
@@ -63,6 +72,34 @@ function worker(script: string, args: string[]): { done: Promise<void> } {
       child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(stderr)));
     }),
   };
+}
+
+async function synchronizedWorkers(root: string, specs: Array<{ script: string; args: string[] }>): Promise<void> {
+  const release = path.join(root, "workers.release");
+  const workers = specs.map(({ script, args }, index) => {
+    const ready = path.join(root, `worker-${index}.ready`);
+    return { ready, worker: worker(script, [...args, ready, release]) };
+  });
+  await waitFor(() => workers.every(({ ready }) => fs.existsSync(ready)), `${workers.length} worker barriers`);
+  fs.writeFileSync(release, "release\n");
+  await Promise.all(workers.map(({ worker: running }) => running.done));
+}
+
+function generatedResidue(root: string): string[] {
+  const generated = path.join(root, ".agentera-generated");
+  if (!fs.existsSync(generated)) return [];
+  const residue: string[] = [];
+  const visit = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const candidate = path.join(directory, entry.name);
+      if (/^(\.mutation-lock|\.current-|\.staging-)/.test(entry.name) || entry.name.includes(".retiring-")) {
+        residue.push(path.relative(generated, candidate));
+      }
+      if (entry.isDirectory()) visit(candidate);
+    }
+  };
+  visit(generated);
+  return residue.sort();
 }
 
 afterEach(() => {
@@ -120,6 +157,88 @@ describe("generated generation publication", () => {
     fs.writeFileSync(bundleIdentity, JSON.stringify({ ...identity, id: "different" }));
 
     expect(() => selectGeneratedGeneration(root)).toThrow("do not share generation");
+  });
+
+  it.each([
+    ["absolute dist file", "dist", "file", false],
+    ["relative dist file", "dist", "file", true],
+    ["absolute bundle file", "bundle", "file", false],
+    ["relative bundle directory", "bundle", "directory", true],
+    ["path-prefix collision", "dist", "prefix", false],
+    ["broken nested link", "bundle", "broken", true],
+  ] as const)("rejects %s nested surface escape without mutating its target", (_, surface, targetKind, relative) => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const candidate = stage(root, "escaped");
+    const outsideRoot = targetKind === "prefix"
+      ? path.join(root, ".agentera-generated", "generations-outside")
+      : tempRoot();
+    fs.mkdirSync(outsideRoot, { recursive: true });
+    const target = targetKind === "directory"
+      ? outsideRoot
+      : path.join(outsideRoot, targetKind === "broken" ? "missing.txt" : "outside.txt");
+    if (targetKind !== "directory" && targetKind !== "broken") fs.writeFileSync(target, "outside-before\n");
+    nestedLink(candidate, surface, target, relative);
+
+    expect(() => publishGeneratedGeneration(root, candidate, "escaped")).toThrow("contains a symbolic link");
+    expect(selectedTokens(root)).toEqual(["selected", "selected"]);
+    if (targetKind !== "directory" && targetKind !== "broken") expect(fs.readFileSync(target, "utf8")).toBe("outside-before\n");
+    else expect(fs.existsSync(outsideRoot)).toBe(true);
+  });
+
+  it("rejects an externally linked checkout executable during selection", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const selected = selectGeneratedGeneration(root);
+    const outside = path.join(tempRoot(), "agentera.js");
+    fs.writeFileSync(outside, "throw new Error('external code ran');\n");
+    const executable = path.join(selected.root, "dist/bin/agentera.js");
+    fs.mkdirSync(path.dirname(executable), { recursive: true });
+    fs.symlinkSync(outside, executable);
+
+    expect(() => selectGeneratedGeneration(root)).toThrow("dist surface contains a symbolic link");
+    expect(fs.readFileSync(outside, "utf8")).toContain("external code ran");
+  });
+
+  it("rejects nested hard links without unlinking or changing the external inode", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const candidate = stage(root, "linked");
+    const outside = path.join(tempRoot(), "outside.txt");
+    fs.writeFileSync(outside, "outside-before\n");
+    const linked = path.join(candidate, "bundle/nested/linked.txt");
+    fs.mkdirSync(path.dirname(linked), { recursive: true });
+    fs.linkSync(outside, linked);
+
+    expect(() => publishGeneratedGeneration(root, candidate, "linked")).toThrow("multiply linked file");
+    expect(fs.readFileSync(outside, "utf8")).toBe("outside-before\n");
+    expect(selectedTokens(root)).toEqual(["selected", "selected"]);
+  });
+
+  it("derives declared-platform process birth identities", () => {
+    const linuxFields = ["S", ...Array(18).fill("0"), "987654"];
+    expect(processStartIdentity(42, { platform: "linux", readFile: () => `42 (agent worker) ${linuxFields.join(" ")}` }))
+      .toBe("linux-start:987654");
+    expect(processStartIdentity(42, {
+      platform: "darwin",
+      spawnSync: () => ({ status: 0, stdout: "Tue Jul 21 06:10:11 2026\n" }),
+    })).toBe("darwin-start:Tue Jul 21 06:10:11 2026");
+    expect(processStartIdentity(42, {
+      platform: "win32",
+      spawnSync: () => ({ status: 0, stdout: "638887614110000000\r\n" }),
+    })).toBe("win32-start:638887614110000000");
+  });
+
+  it.each([
+    ["live", true, "darwin-start:A", "darwin-start:A", "active"],
+    ["PID reuse", true, "darwin-start:A", "darwin-start:B", "stale"],
+    ["dead", false, "darwin-start:A", null, "stale"],
+    ["unknown", true, "darwin-start:A", null, "unknown"],
+  ] as const)("classifies mocked Darwin %s lease ownership", (_, alive, recorded, observed, expected) => {
+    expect(classifyProcessOwner(
+      { pid: 42, processIdentity: recorded },
+      { isAlive: () => alive, identityForPid: () => observed },
+    )).toBe(expected);
   });
 
   it.each(["direct", "generation-link", "prefix-collision"])("confines selected generations against %s escape", (scenario) => {
@@ -220,7 +339,7 @@ describe("generated generation publication", () => {
     fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: process.pid }));
 
     expect(() => publishGeneratedGeneration(root, stage(root, "new"), "new"))
-      .toThrow(`publisher PID ${process.pid} is active`);
+      .toThrow(`publisher PID ${process.pid} has uncertain identity`);
     expect(fs.existsSync(lock)).toBe(true);
   });
 
@@ -244,12 +363,13 @@ describe("generated generation publication", () => {
     const reused = path.join(generated, `.staging-${process.pid}-deadbeef`);
     fs.mkdirSync(reused, { recursive: true });
     fs.writeFileSync(path.join(reused, ".owner.json"), JSON.stringify({ pid: process.pid, processIdentity: "linux-start:not-this-process" }));
+    cleanupGeneratedState(root);
+    expect(fs.existsSync(reused)).toBe(false);
+
     const conservative = path.join(generated, `.staging-${process.pid}-feedface`);
     fs.mkdirSync(conservative);
     fs.writeFileSync(path.join(conservative, ".owner.json"), JSON.stringify({ pid: process.pid }));
-
-    cleanupGeneratedState(root);
-    expect(fs.existsSync(reused)).toBe(false);
+    expect(() => cleanupGeneratedState(root)).toThrow("state has unknown ownership");
     expect(fs.existsSync(conservative)).toBe(true);
   });
 
@@ -265,6 +385,26 @@ describe("generated generation publication", () => {
       expect(fs.readFileSync(path.join(corrupt, "evidence.txt"), "utf8")).toBe("unknown\n");
       expect(selectedTokens(root)).toEqual(["selected", "selected"]);
     }
+  });
+
+  it("reclaims PID-reused mutation ownership and preserves unknown ownership", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "selected"), "selected");
+    const lock = path.join(root, ".agentera-generated/.mutation-lock");
+    fs.mkdirSync(lock);
+    fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({
+      pid: process.pid,
+      processIdentity: "linux-start:not-this-process",
+      token: "reused",
+    }));
+
+    cleanupGeneratedState(root);
+    expect(fs.existsSync(lock)).toBe(false);
+
+    fs.mkdirSync(lock);
+    fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ pid: process.pid, token: "unknown" }));
+    expect(() => cleanupGeneratedState(root)).toThrow("mutation owner identity is unavailable");
+    expect(fs.existsSync(lock)).toBe(true);
   });
 
   it("does not collect a complete generation owned by a concurrent live publisher", () => {
@@ -288,7 +428,7 @@ describe("generated generation publication", () => {
     cleanupGeneratedState(root);
     const generations = path.join(root, ".agentera-generated", "generations");
     expect(fs.existsSync(path.join(generations, "first"))).toBe(true);
-    expect(fs.readdirSync(generations).filter((name) => !name.startsWith("."))).toHaveLength(GENERATED_RETENTION_LIMIT);
+    expect(fs.readdirSync(generations).filter((name) => !name.startsWith("."))).toHaveLength(GENERATED_RETENTION_LIMIT + 1);
     expect(fs.readFileSync(path.join(pinned.root, "dist", "generation.txt"), "utf8")).toBe("first\n");
 
     pinned.release();
@@ -297,6 +437,23 @@ describe("generated generation publication", () => {
     cleanupGeneratedState(root);
     expect(fs.existsSync(path.join(generations, "first"))).toBe(false);
     expect(fs.readdirSync(generations).filter((name) => !name.startsWith("."))).toHaveLength(GENERATED_RETENTION_LIMIT);
+  });
+
+  it("bounds ordinary retention while preserving and reporting an uncertain lease", () => {
+    const root = tempRoot();
+    publishGeneratedGeneration(root, stage(root, "uncertain"), "uncertain");
+    const generated = path.join(root, ".agentera-generated");
+    const lease = path.join(generated, `leases/00000000-0000-4000-8000-000000000000.${process.pid}.none.reader.lease`);
+    fs.linkSync(path.join(generated, "generations/uncertain/.agentera-generation.guard"), lease);
+    for (const id of ["second", "third", "fourth", "fifth"]) publishGeneratedGeneration(root, stage(root, id), id);
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      expect(() => cleanupGeneratedState(root)).toThrow("unavailable process-start identity");
+      const retained = fs.readdirSync(path.join(generated, "generations")).filter((name) => !name.startsWith("."));
+      expect(retained).toHaveLength(GENERATED_RETENTION_LIMIT + 1);
+      expect(retained).toContain("uncertain");
+      expect(selectedTokens(root)).toEqual(["fifth", "fifth"]);
+    }
   });
 
   it("restores an interrupted cleanup claim when a reader lease is live", () => {
@@ -329,6 +486,26 @@ describe("generated generation publication", () => {
     cleanupGeneratedState(root);
     expect(fs.existsSync(old)).toBe(false);
     expect(selectedTokens(root)).toEqual(["new", "new"]);
+  });
+
+  it("serializes many cleaners and publishers without loser failures or launcher gaps", async () => {
+    const root = tempRoot();
+    for (const id of ["seed1", "seed2", "seed3", "seed4"]) publishGeneratedGeneration(root, stage(root, id), id);
+    const cleaners = Array.from({ length: 8 }, () => ({ script: "generatedCleanupWorker.mjs", args: [root] }));
+    const builders = Array.from({ length: 6 }, (_, index) => ({
+      script: "generatedBuildWorker.mjs",
+      args: [root, `build${index}`],
+    }));
+
+    await synchronizedWorkers(root, [...cleaners, ...builders]);
+
+    const selected = selectGeneratedGeneration(root);
+    expect(selected.id).toMatch(/^build\d$/);
+    expect(fs.lstatSync(path.join(root, "dist/bin/agentera.js")).isFile()).toBe(true);
+    const generations = path.join(root, ".agentera-generated/generations");
+    expect(fs.readdirSync(generations).filter((name) => !name.startsWith("."))).toHaveLength(GENERATED_RETENTION_LIMIT);
+    expect(generatedResidue(root)).toEqual([]);
+    expect(fs.readdirSync(root).filter((name) => name.startsWith(".worker-stage-"))).toEqual([]);
   });
 
   it("never exposes a missing or cross-generation surface to a pinned concurrent reader", async () => {

@@ -98,6 +98,28 @@ function entityEnvelopes(project: string): Array<{ id: string; artifact: string;
 }
 
 describe("npm distribution boundary", () => {
+  it("contains only regular, singly linked files and directories under packaged dist and bundle", () => {
+    let files = 0;
+    for (const surface of ["dist", "bundle"]) {
+      const pending = [path.join(fixture.packageRoot, surface)];
+      while (pending.length > 0) {
+        const directory = pending.pop()!;
+        for (const name of fs.readdirSync(directory)) {
+          const candidate = path.join(directory, name);
+          const stat = fs.lstatSync(candidate);
+          expect(stat.isSymbolicLink(), candidate).toBe(false);
+          if (stat.isDirectory()) pending.push(candidate);
+          else {
+            expect(stat.isFile(), candidate).toBe(true);
+            expect(stat.nlink, candidate).toBe(1);
+            files += 1;
+          }
+        }
+      }
+    }
+    expect(files).toBeGreaterThan(0);
+  });
+
   it("tests a packed and extracted installation built outside checkout outputs", () => {
     expect(isContained(fixture.root, fixture.constructionRoot)).toBe(true);
     expect(isContained(fixture.root, fixture.packageRoot)).toBe(true);

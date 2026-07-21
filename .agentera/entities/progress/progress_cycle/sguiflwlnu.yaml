@@ -1,0 +1,13 @@
+id: sguiflwlnu
+artifact: progress
+record:
+  timestamp: 2026-07-21 06:36
+  type: fix
+  phase: build
+  what: Corrected bozwtmutwu audit failures with recursive regular-tree confinement, serialized generated-state mutation, declared-platform process-birth identity, bounded uncertain-lease handling, and structured overlap assertions.
+  context:
+    intent: Make generated checkout and package surfaces recursively confined, make cleanup and launcher publication concurrency-safe, and make lease retention truthful across Linux, macOS, and Windows.
+  inspiration: Independent audit bozwtmutwu-audit-1.
+  discovered: Root-only confinement allowed nested executable symlinks; guard claims needed a mutation linearization point across cleaners and publishers; PID-only Darwin ownership could not distinguish reuse; scheduler-dependent reader counts were unsuitable durable evidence.
+  verified: 42 generated-output protocol tests passed, including absolute and relative nested links, directory and broken links, hard links, Linux and mocked Darwin ownership states, uncertain retention, and 14 simultaneous cleaner/publisher workers with no residue. Focused verification passed 3 files and 87 tests. Clean source passed 192 files and 2,297 tests with checkout output absent. Full overlap passed source 192/2,297, extracted package 2/10, and build; structured reader evidence reported observed=true, all_observations_complete=true, identity_mismatches=0, and surface_validation_failures=0. Independent extracted package 2/10, typecheck, build, 198-file owner inventory, state, capability contract, compact, lint with 150 baseline warnings and 0 errors, package dry-run, parity, markdown, and diff gates passed.
+  next: Return bozwtmutwu for independent re-audit; leave dhbkviulyf pending and blocked originals unchanged.

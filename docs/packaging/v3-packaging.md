@@ -56,7 +56,10 @@ package construction path rather than adding another extracted-package matrix.
 owners from absent checkout output, releases their global-setup barrier once
 all are ready, compares the exact source and package file inventories with
 structured Vitest results, and continuously pins and validates selected
-generations until every owner exits.
+generations until every owner exits. Its JSON result records exact owner file
+and test totals plus whether any actual reader observation had an identity or
+surface-validation mismatch; it does not turn scheduler-dependent observation
+counts into durable evidence.
 
 ## Checkout generation protocol
 
@@ -65,24 +68,39 @@ generation is complete only when its root, `dist/`, and `bundle/` carry the
 same identity. `current` must be a symlink to a regular direct child of
 `.agentera-generated/generations/`; canonical-path checks reject external
 targets, prefix collisions, generation symlinks, missing surfaces, and identity
-mismatches. The stable checkout launcher pins that validated generation for
-its process lifetime before importing the CLI. It never resolves `dist` and
+mismatches. Validation recursively `lstat`s and canonicalizes every `dist/` and
+`bundle/` entry, accepting only regular directories and singly linked regular
+files. Nested absolute, relative, directory, broken, and path-prefix symlinks,
+special files, and multiply linked files are rejected. Package construction
+applies the same rule before `npm pack`; npm metadata outside these surfaces
+remains unaffected. The cost is linear in generated entries and reads metadata,
+not file contents. The stable checkout launcher pins that validated generation
+for its process lifetime before importing the CLI. It never resolves `dist` and
 `bundle` separately.
 
 Publication validates in staging, renames the complete generation into the
 generations root, creates a temporary pointer, and atomically renames that
 pointer to `current`. A short publisher lease protects the pre-selection
-window. There is no publication journal or output lock.
+window. One short-lived, crash-recoverable mutation mutex serializes cleanup,
+publication, retention, and compatibility-launcher installation; compilation
+still occurs outside it. There is no publication journal.
 
-Reader and publisher leases record both PID and Linux process-start identity
-when available, so PID reuse cannot keep or reclaim the wrong generation.
+Reader, publisher, staging, and mutation ownership records pair PID with process
+birth identity: `/proc/<pid>/stat` start ticks on Linux, `ps -o lstart` on
+macOS, and PowerShell `StartTime` ticks on Windows. PID reuse therefore becomes
+stale ownership rather than a false live reader. If process-start inspection is
+unavailable, ownership is `unknown`: cleanup or contended mutation fails with
+the preserved path instead of deleting state or claiming bounded success.
 Cleanup retains at most two complete generations unless additional generations
 have live leases. A reader lease is a hard link to the generation guard;
 cleanup atomically renames that guard before deletion, so lease acquisition
 either wins first or retries without any live generation path disappearing. A
 live lease restores an interrupted guard claim. A
 later build or explicit cleanup removes stale leases and released generations,
-so crashed readers do not create permanent growth.
+so crashed readers do not create permanent growth on Linux, macOS, or Windows
+when their declared process-start mechanism is available. The precise invariant
+is two ordinary complete generations plus generations protected by currently
+live leases; unknown leases are preserved and make cleanup fail visibly.
 
 ## Recovery and cleanup
 
@@ -96,6 +114,7 @@ Recovery is idempotent and never follows or mutates an escaped target.
 | `.current-*` temporary pointer | A well-formed stale symlink is removed; malformed or non-symlink state is preserved and reported with bounded paths. |
 | `.staging-*` | Removed only when its owner is absent or its recorded process identity no longer matches. Live state is retained; malformed or uncertain ownership fails with a correction. |
 | `.agentera-generation.guard.retiring-*` cleanup claim | Restored when the generation is current or a matching live lease exists; otherwise its unselected generation is removed. Conflicting guard state is preserved and reported. |
+| `.mutation-lock` | Concurrent callers wait for the owner. A dead or PID-reused owner is atomically claimed and reclaimed; a losing reclaimer retries. Live ownership times out actionably, and unknown identity is preserved. |
 | Legacy publication lock | Active or uncertain ownership is retained. A dead owner or an ownerless lock older than 30 seconds is reclaimed. |
 | Legacy journal or backup residue | Never interpreted or deleted automatically. The build reports at most three paths and asks the contributor to inspect or remove confirmed residue. |
 

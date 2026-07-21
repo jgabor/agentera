@@ -76,7 +76,10 @@ try {
   const running = Object.entries(participants).map(([name, args]) => [name, start(name, args)]);
   await waitForReady();
   fs.writeFileSync(path.join(barrier, "release"), "release\n");
-  const observations = [];
+  let observed = false;
+  let identityMismatches = 0;
+  let surfaceValidationFailures = 0;
+  const readerGenerations = new Set();
   let readerError;
   const monitor = setInterval(() => {
     try {
@@ -85,8 +88,16 @@ try {
       try {
         const dist = JSON.parse(fs.readFileSync(path.join(pinned.root, "dist", ".agentera-generation.json"), "utf8")).id;
         const bundle = JSON.parse(fs.readFileSync(path.join(pinned.root, "bundle", ".agentera-generation.json"), "utf8")).id;
-        if (pinned.id !== dist || pinned.id !== bundle) throw new Error(`reader mixed ${pinned.id}, ${dist}, and ${bundle}`);
-        observations.push(pinned.id);
+        if (pinned.id !== dist || pinned.id !== bundle) {
+          identityMismatches += 1;
+          throw new Error(`reader mixed ${pinned.id}, ${dist}, and ${bundle}`);
+        }
+        if (pinned.inventory.dist.entries < 1 || pinned.inventory.bundle.entries < 1) {
+          surfaceValidationFailures += 1;
+          throw new Error(`reader observed an empty generated surface in ${pinned.id}`);
+        }
+        observed = true;
+        readerGenerations.add(pinned.id);
       } finally {
         pinned.release();
       }
@@ -99,7 +110,7 @@ try {
   const failures = settled.filter(({ status }) => status === "rejected");
   if (failures.length > 0) throw failures[0].reason;
   if (readerError) throw new Error(`continuous generated reader failed: ${readerError.message}`);
-  if (observations.length === 0) throw new Error("continuous generated reader observed no selected generation during full-owner overlap");
+  if (!observed) throw new Error("continuous generated reader observed no selected generation during full-owner overlap");
   const source = ownerResult("source");
   const packageResult = ownerResult("package");
   if (source.files !== inventory.counts.source || packageResult.files !== inventory.counts.package) {
@@ -115,7 +126,21 @@ try {
     child.on("error", reject);
     child.on("exit", (code) => code === 0 ? resolve(stdout.trim()) : reject(new Error(`selected CLI failed: ${stderr}`)));
   });
-  console.log(JSON.stringify({ status: "pass", source, package: packageResult, build: "pass", reader_observations: observations.length, reader_generations: [...new Set(observations)], generation: selected.id, invocation }, null, 2));
+  console.log(JSON.stringify({
+    status: "pass",
+    source,
+    package: packageResult,
+    build: "pass",
+    reader: {
+      observed,
+      all_observations_complete: identityMismatches === 0 && surfaceValidationFailures === 0,
+      identity_mismatches: identityMismatches,
+      surface_validation_failures: surfaceValidationFailures,
+      generations: [...readerGenerations],
+    },
+    generation: selected.id,
+    invocation,
+  }, null, 2));
 } catch (error) {
   console.error(`verify-generated-overlap: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;

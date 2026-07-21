@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 import {
   cleanupGeneratedState,
   publishGeneratedGeneration,
+  validateRegularTree,
+  withGeneratedStateLock,
   writeGenerationIdentity,
   writeStagingOwner,
 } from "./generated-output.mjs";
@@ -36,6 +38,8 @@ function construct(outputRoot) {
   try {
     run("pnpm", ["exec", "tsc", "-p", "tsconfig.json", "--outDir", distRoot]);
     run(process.execPath, ["scripts/copy-bundle.mjs", "--dist-root", distRoot, "--bundle-root", bundleRoot]);
+    validateRegularTree(distRoot, "packaged dist surface");
+    validateRegularTree(bundleRoot, "packaged bundle surface");
   } finally {
     if (createdDependencyLink) fs.rmSync(dependencies, { force: true });
   }
@@ -54,7 +58,7 @@ await import(pathToFileURL(path.join(selected.root, "dist/bin/agentera.js")).hre
 `;
 }
 
-function installCompatibilityLauncher(root) {
+export function installCompatibilityLauncher(root) {
   const dist = path.join(root, "dist");
   const expected = launcherSource();
   const existing = path.join(dist, "bin", "agentera.js");
@@ -99,9 +103,11 @@ function main() {
     writeStagingOwner(stagedRoot);
     construct(stagedRoot);
     writeGenerationIdentity(stagedRoot, generationId);
-    publishGeneratedGeneration(packageRoot, stagedRoot, generationId);
-    cleanupGeneratedState(packageRoot);
-    installCompatibilityLauncher(packageRoot);
+    withGeneratedStateLock(packageRoot, () => {
+      publishGeneratedGeneration(packageRoot, stagedRoot, generationId, { lockHeld: true });
+      cleanupGeneratedState(packageRoot, { lockHeld: true });
+      installCompatibilityLauncher(packageRoot);
+    });
   } finally {
     fs.rmSync(stagedRoot, { recursive: true, force: true });
   }

@@ -201,6 +201,9 @@ describe("verification lane ownership", () => {
     expect(authority).toContain("canonical authority for checkout generated output");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
     expect(authority).toContain("generated:cleanup -- --force --json");
+    expect(authority).toContain("singly linked regular");
+    expect(authority).toContain("`ps -o lstart` on");
+    expect(authority).toContain("mutation mutex serializes cleanup");
     expect(contributor).toContain("../../docs/packaging/v3-packaging.md");
     expect(testPolicy).toContain("../../../docs/packaging/v3-packaging.md");
     expect(contributor).not.toContain("Staging directories encode their owner PID");

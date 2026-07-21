@@ -43,6 +43,9 @@ describe("scripts/precommit-vitest.sh staged routing", () => {
     "packages/cli/vite.package.config.ts",
     "packages/cli/vitest.shared.ts",
     "packages/cli/scripts/verify-lane.mjs",
+    "packages/cli/scripts/generated-output.mjs",
+    "packages/cli/scripts/build-package.mjs",
+    "packages/cli/scripts/verify-generated-overlap.mjs",
     "packages/cli/test/sourceSetup.ts",
     "packages/cli/test/packaging/packageSetup.ts",
     "packages/cli/test/packaging/packageVerification.test.ts",
@@ -58,7 +61,7 @@ describe("scripts/precommit-vitest.sh staged routing", () => {
     const lefthook = fs.readFileSync(path.join(REPO_ROOT, ".lefthook.yml"), "utf8");
     for (const surface of [
       "packages/cli/package.json",
-      "packages/cli/scripts/verify-lane.mjs",
+      "packages/cli/scripts/*.mjs",
       "packages/cli/test/packaging/**",
       "scripts/precommit-vitest.sh",
     ]) expect(lefthook, surface).toContain(`- \"${surface}\"`);

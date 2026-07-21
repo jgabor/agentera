@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -8,6 +9,8 @@ const identityFile = ".agentera-generation.json";
 const guardFile = ".agentera-generation.guard";
 const guardSchema = "agentera.generatedGuard.v1";
 const retainedGenerationLimit = 2;
+const mutationLockName = ".mutation-lock";
+const mutationLockWaitMs = 30_000;
 
 function generatedPaths(root) {
   const generatedRoot = path.join(root, generatedDirectory);
@@ -65,15 +68,31 @@ function readGuard(file, label = "generation guard") {
   return parsed;
 }
 
-function processIdentity(pid) {
-  if (process.platform !== "linux") return null;
+export function processStartIdentity(pid, options = {}) {
+  const platform = options.platform ?? process.platform;
+  const readFile = options.readFile ?? ((file) => fs.readFileSync(file, "utf8"));
+  const run = options.spawnSync ?? spawnSync;
   try {
-    const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
-    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/);
-    return fields[19] ? `linux-start:${fields[19]}` : null;
+    if (platform === "linux") {
+      const stat = readFile(`/proc/${pid}/stat`);
+      const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/);
+      return fields[19] ? `linux-start:${fields[19]}` : null;
+    }
+    if (platform === "darwin") {
+      const result = run("ps", ["-o", "lstart=", "-p", String(pid)], { encoding: "utf8" });
+      const started = result.status === 0 ? result.stdout?.trim() : "";
+      return started ? `darwin-start:${started.replace(/\s+/g, " ")}` : null;
+    }
+    if (platform === "win32") {
+      const command = `(Get-Process -Id ${pid} -ErrorAction Stop).StartTime.ToUniversalTime().Ticks`;
+      const result = run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], { encoding: "utf8", windowsHide: true });
+      const started = result.status === 0 ? result.stdout?.trim() : "";
+      return /^\d+$/.test(started) ? `win32-start:${started}` : null;
+    }
   } catch {
-    return null;
+    // Unsupported or unavailable process inspection is represented explicitly.
   }
+  return null;
 }
 
 function processIsAlive(pid) {
@@ -86,16 +105,53 @@ function processIsAlive(pid) {
 }
 
 function ownerEvidence() {
-  return { pid: process.pid, processIdentity: processIdentity(process.pid) };
+  return { pid: process.pid, processIdentity: processStartIdentity(process.pid) };
+}
+
+export function classifyProcessOwner(owner, options = {}) {
+  const isAlive = options.isAlive ?? processIsAlive;
+  const identityForPid = options.identityForPid ?? processStartIdentity;
+  if (!Number.isInteger(owner?.pid)) return "unknown";
+  if (!isAlive(owner.pid)) return "stale";
+  if (typeof owner.processIdentity !== "string") return "unknown";
+  const observed = identityForPid(owner.pid);
+  if (observed === null) return "unknown";
+  return observed === owner.processIdentity ? "active" : "stale";
 }
 
 function ownerState(owner) {
-  if (!Number.isInteger(owner?.pid)) return "unknown";
-  if (!processIsAlive(owner.pid)) return "stale";
-  if (typeof owner.processIdentity !== "string") return "active";
-  const observed = processIdentity(owner.pid);
-  if (observed === null) return "unknown";
-  return observed === owner.processIdentity ? "active" : "stale";
+  return classifyProcessOwner(owner);
+}
+
+function pathIsWithin(root, candidate) {
+  const relative = path.relative(root, candidate);
+  return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(`..${path.sep}`));
+}
+
+export function validateRegularTree(root, label) {
+  const canonicalRoot = requireOwnedDirectory(root, label);
+  const pending = [canonicalRoot];
+  let directories = 0;
+  let files = 0;
+  while (pending.length > 0) {
+    const directory = pending.pop();
+    directories += 1;
+    for (const name of fs.readdirSync(directory)) {
+      const candidate = path.join(directory, name);
+      const stat = fs.lstatSync(candidate);
+      if (stat.isSymbolicLink()) throw new Error(`${label} contains a symbolic link at ${candidate}`);
+      const canonical = fs.realpathSync(candidate);
+      if (!pathIsWithin(canonicalRoot, canonical)) throw new Error(`${label} entry escapes its governed root at ${candidate}`);
+      if (stat.isDirectory()) pending.push(candidate);
+      else if (stat.isFile()) {
+        if (stat.nlink !== 1) throw new Error(`${label} contains a multiply linked file at ${candidate}`);
+        files += 1;
+      } else {
+        throw new Error(`${label} contains a non-regular entry at ${candidate}`);
+      }
+    }
+  }
+  return { directories, files, entries: directories + files };
 }
 
 function assertDirectGeneration(root, selected) {
@@ -125,12 +181,10 @@ export function validateGeneration(generationRoot, expectedId) {
   if (!rootStat?.isDirectory() || rootStat.isSymbolicLink()) {
     throw new Error(`generated generation must be a regular directory at ${generationRoot}`);
   }
+  const inventory = {};
   for (const surface of ["dist", "bundle"]) {
     const surfaceRoot = path.join(generationRoot, surface);
-    const stat = optionalLstat(surfaceRoot);
-    if (!stat?.isDirectory() || stat.isSymbolicLink()) {
-      throw new Error(`${surface} surface must be a regular directory at ${surfaceRoot}`);
-    }
+    inventory[surface] = validateRegularTree(surfaceRoot, `${surface} surface`);
   }
   const identities = [
     readIdentity(path.join(generationRoot, identityFile), "generation"),
@@ -140,7 +194,7 @@ export function validateGeneration(generationRoot, expectedId) {
   if (identities.some(({ id }) => id !== expectedId)) {
     throw new Error(`generated surfaces do not share generation ${JSON.stringify(expectedId)} at ${generationRoot}`);
   }
-  return { id: expectedId, root: generationRoot };
+  return { id: expectedId, root: generationRoot, inventory };
 }
 
 export function writeGenerationIdentity(generationRoot, id) {
@@ -278,10 +332,12 @@ function readLease(file) {
 
 function scanLeases(root) {
   const { leasesRoot } = generatedPaths(root);
-  if (!optionalLstat(leasesRoot)) return { liveIds: new Set(), stale: [], unknown: [] };
+  if (!optionalLstat(leasesRoot)) return { liveIds: new Set(), uncertainIds: new Set(), stale: [], uncertain: [], unknown: [] };
   requireOwnedDirectory(leasesRoot, "generated-output leases root");
   const liveIds = new Set();
+  const uncertainIds = new Set();
   const stale = [];
+  const uncertain = [];
   const unknown = [];
   for (const name of fs.readdirSync(leasesRoot).sort()) {
     const file = path.join(leasesRoot, name);
@@ -294,12 +350,15 @@ function scanLeases(root) {
       const state = ownerState(lease);
       if (state === "active") liveIds.add(lease.generationId);
       else if (state === "stale") stale.push(file);
-      else unknown.push(file);
+      else {
+        uncertainIds.add(lease.generationId);
+        uncertain.push(file);
+      }
     } catch {
       unknown.push(file);
     }
   }
-  return { liveIds, stale, unknown };
+  return { liveIds, uncertainIds, stale, uncertain, unknown };
 }
 
 function classifyStaging(generatedRoot, name) {
@@ -344,7 +403,73 @@ function reportResult(report) {
   }]));
 }
 
-export function cleanupGeneratedState(root, options = {}) {
+function acquireGeneratedMutationLock(root) {
+  const { generatedRoot } = generatedPaths(root);
+  requireOwnedDirectory(generatedRoot, "generated-output root", true);
+  const lock = path.join(generatedRoot, mutationLockName);
+  const deadline = Date.now() + mutationLockWaitMs;
+  while (true) {
+    const token = randomUUID();
+    try {
+      fs.mkdirSync(lock);
+      try {
+        fs.writeFileSync(path.join(lock, "owner.json"), JSON.stringify({ ...ownerEvidence(), token }) + "\n", { flag: "wx" });
+      } catch (error) {
+        fs.rmSync(lock, { recursive: true, force: true });
+        throw error;
+      }
+      return () => {
+        try {
+          const owner = readJsonFile(path.join(lock, "owner.json"), "generated-output mutation owner");
+          if (owner.token === token) fs.rmSync(lock, { recursive: true, force: true });
+        } catch {
+          // Never remove a lock that no longer proves this caller owns it.
+        }
+      };
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+    }
+
+    let owner = null;
+    try {
+      owner = readJsonFile(path.join(lock, "owner.json"), "generated-output mutation owner");
+    } catch {
+      const stat = optionalLstat(lock);
+      if (!stat) continue;
+      if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error(`generated-output mutation lock is not a regular directory at ${lock}`);
+      if (Date.now() - stat.mtimeMs >= mutationLockWaitMs) owner = { pid: -1, processIdentity: "stale-ownerless-lock" };
+    }
+    const state = owner === null ? "active" : owner.pid === -1 ? "stale" : ownerState(owner);
+    if (state === "unknown") {
+      throw new Error(`generated-output mutation owner identity is unavailable at ${lock}; correction: preserve the lock for inspection and rerun on Linux, macOS, or Windows with process-start inspection available`);
+    }
+    if (state === "stale") {
+      const claimed = path.join(generatedRoot, `${mutationLockName}.reclaim-${randomUUID()}`);
+      try {
+        fs.renameSync(lock, claimed);
+        fs.rmSync(claimed, { recursive: true, force: true });
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+      }
+      continue;
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(`generated-output mutation lock remained active for ${mutationLockWaitMs} ms at ${lock}; correction: wait for the owning build or cleanup to finish, then retry`);
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
+  }
+}
+
+export function withGeneratedStateLock(root, operation) {
+  const release = acquireGeneratedMutationLock(root);
+  try {
+    return operation();
+  } finally {
+    release();
+  }
+}
+
+function cleanupGeneratedStateUnlocked(root, options = {}) {
   const dryRun = options.dryRun === true;
   const retention = options.retention ?? retainedGenerationLimit;
   const report = { removed: [], restored: [], preserved: [], retained: [] };
@@ -367,7 +492,7 @@ export function cleanupGeneratedState(root, options = {}) {
   } catch {
     // Missing current is valid before first publication and after preserved corruption.
   }
-  const liveIds = leases.liveIds;
+  const leaseProtectedIds = new Set([...leases.liveIds, ...leases.uncertainIds]);
   const complete = [];
   const interrupted = [];
   let lexicalCurrent = null;
@@ -419,7 +544,7 @@ export function cleanupGeneratedState(root, options = {}) {
   if (!optionalLstat(generationsRoot)) return reportResult(report);
 
   for (const item of interrupted) {
-    if (liveIds.has(item.id) || item.candidate === lexicalCurrent) {
+    if (leaseProtectedIds.has(item.id) || item.candidate === lexicalCurrent) {
       const target = path.join(item.candidate, guardFile);
       report.restored.push(target);
       if (!dryRun) fs.renameSync(item.guard, target);
@@ -429,11 +554,14 @@ export function cleanupGeneratedState(root, options = {}) {
     }
   }
 
-  const protectedIds = new Set(liveIds);
-  if (currentRoot) protectedIds.add(path.basename(currentRoot));
+  const protectedIds = new Set(leaseProtectedIds);
+  const currentId = currentRoot ? path.basename(currentRoot) : null;
+  if (currentId) protectedIds.add(currentId);
+  let ordinaryRetained = currentId === null ? 0 : 1;
   for (const item of complete.sort((left, right) => right.mtimeMs - left.mtimeMs)) {
-    if (protectedIds.size >= retention || protectedIds.has(item.id)) continue;
+    if (protectedIds.has(item.id) || ordinaryRetained >= retention) continue;
     protectedIds.add(item.id);
+    ordinaryRetained += 1;
   }
   for (const item of complete) {
     if (protectedIds.has(item.id)) {
@@ -451,7 +579,8 @@ export function cleanupGeneratedState(root, options = {}) {
     }
     const retiring = `${item.guard}.retiring-${randomUUID()}`;
     fs.renameSync(item.guard, retiring);
-    if (scanLeases(root).liveIds.has(item.id)) {
+    const refreshedLeases = scanLeases(root);
+    if (refreshedLeases.liveIds.has(item.id) || refreshedLeases.uncertainIds.has(item.id)) {
       fs.renameSync(retiring, item.guard);
       report.restored.push(item.candidate);
     } else {
@@ -459,10 +588,20 @@ export function cleanupGeneratedState(root, options = {}) {
       report.removed.push(item.candidate);
     }
   }
+  if (leases.uncertain.length > 0) {
+    const shown = leases.uncertain.slice(0, 3);
+    throw new Error(`generated-output cleanup retained ${leases.uncertain.length} lease(s) with unavailable process-start identity: ${shown.join(", ")}${leases.uncertain.length > shown.length ? ` (${leases.uncertain.length - shown.length} more)` : ""}; correction: preserve them for inspection and rerun cleanup where process-start identity is available`);
+  }
   return reportResult(report);
 }
 
-export function publishGeneratedGeneration(root, stagedRoot, generationId, options = {}) {
+export function cleanupGeneratedState(root, options = {}) {
+  if (options.lockHeld) return cleanupGeneratedStateUnlocked(root, options);
+  if (!optionalLstat(generatedPaths(root).generatedRoot)) return reportResult({ removed: [], restored: [], preserved: [], retained: [] });
+  return withGeneratedStateLock(root, () => cleanupGeneratedStateUnlocked(root, { ...options, lockHeld: true }));
+}
+
+function publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, options = {}) {
   assertGenerationId(generationId);
   rejectLegacyRecoveryResidue(root);
   validateGeneration(stagedRoot, generationId);
@@ -489,6 +628,11 @@ export function publishGeneratedGeneration(root, stagedRoot, generationId, optio
   } finally {
     publicationLease.release();
   }
+}
+
+export function publishGeneratedGeneration(root, stagedRoot, generationId, options = {}) {
+  if (options.lockHeld) return publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, options);
+  return withGeneratedStateLock(root, () => publishGeneratedGenerationUnlocked(root, stagedRoot, generationId, { ...options, lockHeld: true }));
 }
 
 export const GENERATED_RETENTION_LIMIT = retainedGenerationLimit;
