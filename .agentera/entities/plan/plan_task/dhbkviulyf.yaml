@@ -12,3 +12,13 @@ record:
     - GIVEN command-level regression coverage runs WHEN the real owner path is invoked THEN it exercises the owned producer and rejects forwarded filters or environment gates that bypass ownership.
     - GIVEN cold authority evidence runs WHEN results are validated THEN all declared scales, 25 samples, limits, maxima, runner conditions, and the 1 ms cadence remain intact.
     - GIVEN ordinary source verification runs WHEN cold-performance code is inventoried THEN source smoke remains isolated and emits no performance evidence.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The performance owner emits correct real evidence, but command regression still uses a synthetic vp executable rather than invoking the real producer. Forwarded-option validation is arity-only, so recognized Vitest selectors such as --exclude, --testNamePattern, --dir, --root, --changed, --shard, and --config can alter or skip the owned suite and are rejected only after Vitest execution or not by ownership at all. Add a real-owner command regression and fail every suite-selection/configuration bypass before execution while preserving legitimate non-selection options.
+    provenance:
+      attempt_id: dhbkviulyf-audit-1
+      source: independent orchestrate audit attempt 1
+      recorded_at: 2026-07-21 07:17
+      writer_command: agentera state plan record-evaluation

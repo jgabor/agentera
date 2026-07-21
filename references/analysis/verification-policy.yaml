@@ -29,11 +29,38 @@ owners:
   performance:
     config: packages/cli/vite.config.ts
     correction: Run `pnpm -C packages/cli test:performance`; check runner conditions and fix the named budget regression.
+    integration:
+      path: packages/cli/test/integration/performanceOwner.integration.mjs
+      command: [pnpm, run, test:performance:integration]
     evidence:
       schema_version: agentera.entityAuthorityPerformanceEvidence.v1
       authority: references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract
       stdout_format: newline_delimited_json_record_amid_runner_output
       max_utf8_bytes: 65536
+    forwarding:
+      safe_options:
+        --no-color: none
+        --logHeapUsage: none
+        --printConsoleTrace: none
+        --includeTaskLocation: none
+      forbidden_options:
+        -t: test-name selection can skip owned evidence
+        --testNamePattern: test-name selection can skip owned evidence
+        --exclude: file exclusion changes owner suite membership
+        --include: file inclusion changes owner suite membership
+        --dir: scan-root selection changes owner suite membership
+        -r: root configuration can redirect owner discovery
+        --root: root configuration can redirect owner discovery
+        -c: config selection can replace the owner configuration
+        --config: config selection can replace the owner configuration
+        --changed: change selection can skip owned evidence
+        --shard: sharding can skip owned evidence
+        --project: project selection can redirect owner execution
+        --tagsFilter: tag selection can skip owned evidence
+        --reporter: reporter selection can suppress the evidence line
+        --outputFile: output redirection can suppress the evidence line
+        --silent: output suppression can hide the evidence line
+        --hideSkippedTests: output filtering can hide owner diagnostics
   package:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
@@ -71,6 +98,8 @@ conservative_routing:
     - packages/cli/vite.package.config.ts
     - packages/cli/vitest.shared.ts
     - packages/cli/scripts/verify-lane.mjs
+    - packages/cli/scripts/performance-evidence.mjs
+    - packages/cli/test/integration/performanceOwner.integration.mjs
     - packages/cli/scripts/build-package.mjs
     - packages/cli/scripts/generated-output.mjs
     - packages/cli/scripts/copy-bundle.mjs

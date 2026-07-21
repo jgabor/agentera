@@ -1,0 +1,13 @@
+id: tnrnvsynec
+artifact: progress
+record:
+  timestamp: 2026-07-21 07:34
+  type: test
+  phase: build
+  what: "Corrected audit-1 with an explicit performance-owned command integration under packages/cli/test. It invokes the supported test:performance command once, captures normal stdout, and independently validates the actual producer through the shared authority validator. Scheduled and release policies compose that integration instead of a second matrix. Replaced dynamic Vitest-help trust with a central fail-closed forwarding contract: only reviewed non-selection observability flags are safe; selectors, configuration, evidence-output controls, and unknown options fail before vp starts. Positional filters resolve only to central inventory ownership."
+  context:
+    intent: Retry dhbkviulyf after dhbkviulyf-audit-1 without changing the cold matrix, ordinary source ownership, or unrelated blocked work.
+    constraints: Only dhbkviulyf was retried. The recorded dhbkviulyf-audit-1 evaluation and all earlier progress, including darstkgawf, remain immutable. bozwtmutwu and original tasks remain blocked. Decisions remain degraded/compacted 5/50 with 45 omitted; satisfaction is unavailable and not inferred. Vision and profile are absent. No generated-output repair, worker tuning, consolidation, final-plan work, version, release, publish, tag, or push.
+  inspiration: Independent audit dhbkviulyf-audit-1 found synthetic command coverage and arity-only option trust.
+  verified: Real integration and direct owner each emitted exactly one record below the 65,536-byte policy bound with scales 100/1000, 25 cold samples, five repetitions across five authority targets, exact limits and computed maxima, complete Linux/Node runner conditions, and unchanged 1 ms cadence. The 18-option forbidden matrix and seven filter cases exited 2 with zero Vitest spawns; focused ownership passed 51/51. Full source passed 192 files/2,327 tests with zero performance records; stress passed 2/2 and package 10/10. Typecheck, build, inventory/policy composition, lint at 150 warnings/0 errors, state, capability-contract, compact, and commit hooks passed.
+  next: Keep the plan open for blocked bozwtmutwu and independent audit of this retry; do not begin final-plan work.

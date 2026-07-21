@@ -35,6 +35,7 @@
     "test:source": "node scripts/verify-lane.mjs source",
     "test:stress": "node scripts/verify-lane.mjs stress",
     "test:performance": "node scripts/verify-lane.mjs performance",
+    "test:performance:integration": "node test/integration/performanceOwner.integration.mjs",
     "test:watch": "vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
