@@ -25,6 +25,9 @@ implementing this check are excluded, avoiding a circular source reference.
 
 ## npm bundle
 
+Contributor construction, checkout-generation, and recovery behavior is owned
+by [`docs/packaging/v3-packaging.md`](../../docs/packaging/v3-packaging.md).
+
 The self-contained npm package ships `dist/` plus `bundle/`. Bundle data
 includes the canonical `skills/` tree, required `references/`, `registry.json`,
 and package guidance. Compiled commands ship in `dist/`. The shared-skill tree

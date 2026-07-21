@@ -38,6 +38,7 @@
     "test:watch": "vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
+    "generated:cleanup": "node scripts/build-package.mjs --cleanup",
     "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "verify:targeted": "node scripts/verify-lane.mjs policy targeted",
     "verify:precommit": "node scripts/verify-lane.mjs policy precommit",

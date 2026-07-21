@@ -18,7 +18,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Release gate | Version-bearing surfaces and governed provenance aligned in the live checkout | `agentera check validate release-metadata --format json` |
 
 Generated-output producers, consumers, publication, and recovery are defined
-once in the [CLI contributor guide](../README.md#generated-output-ownership-and-recovery).
+once in the [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
 
 ## Classification key
 

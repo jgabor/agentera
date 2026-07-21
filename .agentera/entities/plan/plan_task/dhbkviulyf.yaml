@@ -1,0 +1,14 @@
+id: dhbkviulyf
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Repair cold-performance owner evidence
+  status: pending
+  depends_on:
+    - qifoditbva
+    - fbgcvyeexr
+  acceptance:
+    - GIVEN the supported performance owner runs WHEN evidence is emitted THEN one bounded parseable agentera.entityAuthorityPerformanceEvidence.v1 record comes from an owned performance test without undocumented flags.
+    - GIVEN command-level regression coverage runs WHEN the real owner path is invoked THEN it exercises the owned producer and rejects forwarded filters or environment gates that bypass ownership.
+    - GIVEN cold authority evidence runs WHEN results are validated THEN all declared scales, 25 samples, limits, maxima, runner conditions, and the 1 ms cadence remain intact.
+    - GIVEN ordinary source verification runs WHEN cold-performance code is inventoried THEN source smoke remains isolated and emits no performance evidence.

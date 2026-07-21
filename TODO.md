@@ -2,6 +2,7 @@
 
 ## ⇉ Degraded
 
+- [ ] [fix:3.0.0] Repair blocked verification-lane Task `xlokrejoue` after two failed audits. Immutable generated generations fixed clean source verification and ordinary atomic selection, but `current` can escape the generations root, overlap proof covers only four source files, a directory at `current` is not recoverable, selected generations accumulate without a safe bounded cleanup protocol, and live packaging guidance contradicts governed direct-pack behavior. Constrain selection, prove full-owner overlap, recover corrupt pointers, define safe retention, and restore one documentation authority.
 - [ ] [test:3.0.0] Repair blocked verification-lane Task `jiupbftubj` after two failed audits. The performance owner now emits bounded cold-start JSON, but its regression uses `AGENTERA_PERFORMANCE_OUTPUT_FIXTURE` to run an unowned `.fixture.ts` path outside the ownership inventory. Replace the bypass with coverage of the owned performance producer, reject forwarded filters that escape owner classification, and correct the overstated progress count before treating cold-performance separation as complete.
 
 ## → Normal

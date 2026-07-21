@@ -1,0 +1,13 @@
+id: fmtvsixgqw
+artifact: progress
+record:
+  timestamp: 2026-07-21 06:09
+  type: fix
+  phase: build
+  what: Finalized live-reader retention with hard-link guard leases so cleanup never removes or transiently renames a pinned generation path.
+  context:
+    intent: Close the remaining reader-acquisition race in replacement task bozwtmutwu while preserving canonical confinement, atomic publication, and bounded recovery.
+  inspiration: Final protocol audit of the bounded-retention acceptance criterion.
+  discovered: A root-directory cleanup claim could be restored after noticing a new lease yet still make that path briefly unavailable; atomically claiming only the guard inode removes that gap.
+  verified: 26 focused recovery and security tests passed. Clean source passed 192 files and 2,278 tests with checkout output absent. Simultaneous full source (192 files, 2,278 tests), build, and extracted-package (2 files, 9 tests) owners passed with 5,783 continuous matching reader observations. Independent extracted package 2/9, typecheck, build, lint (150 baseline warnings, 0 errors), owner policy, state, capability contract, compaction, package dry-run, and diff checks passed.
+  next: Continue only with separately scoped plan task dhbkviulyf or later downstream tasks.

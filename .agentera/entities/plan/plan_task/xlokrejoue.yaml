@@ -4,7 +4,7 @@ record:
   name: Eliminate generated-output races
   depends_on:
     - fbgcvyeexr
-  status: complete
+  status: blocked
   acceptance:
     - GIVEN a clean checkout WHEN source verification runs THEN no prior generated checkout output is required.
     - GIVEN source, build, and package commands overlap WHEN outputs are consumed THEN no command observes a partial generated surface.
@@ -14,12 +14,12 @@ record:
   test_proportionality: Cover clean checkout, overlapping readers and writers, interruption, and extracted-package independence.
   plan: rmtdgltdgm
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Clean source verification still has upgrade tests that read checkout dist/capabilities, and clean CI later invokes checkout dist without a checkout build. Generated publication serializes writers but swaps dist and bundle separately, so lock-free readers can observe missing or cross-generation surfaces; its overlap test checks only final writer state. Recovery also deletes the journal when a hadPrevious backup is missing, allowing a partial target to become unrecoverable, with an owner-record crash gap. Remove checkout-output dependencies, design reader-safe generation selection or participation, and make every degraded recovery state explicit/idempotent with deterministic tests.
+    last_failure_evidence: The immutable-generation design fixes clean source and ordinary atomic selection, but current can resolve outside the generations root and be imported; overlap proof runs only 4 focused source files rather than the full owner; a directory at current causes repeated EISDIR and .current-* residue; every .selected generation is retained indefinitely without safe bounded cleanup; and live packaging documentation still contradicts the governed direct-pack behavior. Constrain selected paths, prove full-owner overlap, recover corrupt pointer states, define safe bounded retention, and reconcile the single documentation authority.
     provenance:
-      attempt_id: xlokrejoue-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 01:31
+      attempt_id: xlokrejoue-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 02:11
       writer_command: agentera state plan record-evaluation

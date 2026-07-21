@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-import { publishGeneratedGeneration } from "../../scripts/build-package.mjs";
+import { publishGeneratedGeneration } from "../../scripts/generated-output.mjs";
 
 const [packageRoot, stagedRoot, generationId, readyPath = "", holdBeforePointerMs = "0"] = process.argv.slice(2);
 

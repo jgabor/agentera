@@ -117,7 +117,10 @@ function runOwner(owner, state, forwarded = []) {
   const selected = forwarded.length > 0
     ? forwarded
     : owned.map((file) => path.relative(packageRoot, path.join(root, file)).split(path.sep).join("/"));
-  const result = spawnSync("vp", ["test", "run", "--config", config, ...selected], {
+  const reporter = process.env.AGENTERA_VERIFICATION_RESULT
+    ? ["--reporter=json", `--outputFile=${process.env.AGENTERA_VERIFICATION_RESULT}`]
+    : [];
+  const result = spawnSync("vp", ["test", "run", "--config", config, ...selected, ...reporter], {
     cwd: packageRoot,
     stdio: "inherit",
     env: { ...process.env, AGENTERA_VERIFICATION_OWNER: owner },
@@ -156,7 +159,8 @@ const state = validated();
 if (command === "validate") process.exit(0);
 if (command === "inventory") {
   const counts = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, [...state.assignments.values()].filter((value) => value === owner).length]));
-  const output = { counts: { total: state.files.length, ...counts }, mixed_files: state.contract.mixed_files ?? [] };
+  const files = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, state.files.filter((file) => state.assignments.get(file) === owner)]));
+  const output = { counts: { total: state.files.length, ...counts }, files, mixed_files: state.contract.mixed_files ?? [] };
   console.log(process.argv.includes("--json") ? JSON.stringify(output, null, 2) : YAML.stringify(output).trim());
   process.exit(0);
 }

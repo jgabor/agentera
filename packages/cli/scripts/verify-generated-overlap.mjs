@@ -1,17 +1,24 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { selectGeneratedGeneration } from "./build-package.mjs";
+import { pinGeneratedGeneration, selectGeneratedGeneration } from "./generated-output.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
 const barrier = path.join(root, "barrier");
+const repoRoot = path.resolve(packageRoot, "../..");
+const inventoryResult = spawnSync(process.execPath, ["scripts/verify-lane.mjs", "inventory", "--json"], {
+  cwd: packageRoot,
+  encoding: "utf8",
+});
+if (inventoryResult.status !== 0) throw new Error(`verification inventory failed: ${inventoryResult.stderr || inventoryResult.stdout}`);
+const inventory = JSON.parse(inventoryResult.stdout);
 const participants = {
-  source: ["run", "test:source", "--", "test/build/generatedOutputPublication.test.ts", "test/upgrade/appContentRefresh.test.ts", "test/upgrade/installedSkillMdV3.test.ts", "test/upgrade/installedContractV3.test.ts"],
+  source: ["run", "test:source"],
   build: ["run", "build"],
   package: ["run", "verify:package"],
 };
@@ -25,6 +32,7 @@ function start(participant, args) {
       ...process.env,
       AGENTERA_VERIFICATION_BARRIER: barrier,
       AGENTERA_VERIFICATION_PARTICIPANT: participant,
+      ...(participant === "build" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${participant}.json`) }),
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -48,10 +56,17 @@ async function waitForReady() {
   }
 }
 
-function counts(text) {
-  const files = text.match(/Test Files\s+(\d+) passed/);
-  const tests = text.match(/Tests\s+(\d+) passed/);
-  return { files: Number(files?.[1] ?? 0), tests: Number(tests?.[1] ?? 0) };
+function ownerResult(owner) {
+  const result = JSON.parse(fs.readFileSync(path.join(root, `${owner}.json`), "utf8"));
+  const files = result.testResults.map(({ name }) => path.relative(repoRoot, name).split(path.sep).join("/")).sort();
+  const expected = [...inventory.files[owner]].sort();
+  if (JSON.stringify(files) !== JSON.stringify(expected)) {
+    throw new Error(`${owner} overlap inventory mismatch: expected ${expected.length} exact files, observed ${files.length}`);
+  }
+  if (!result.success || result.numFailedTests !== 0 || result.numTotalTests !== result.numPassedTests) {
+    throw new Error(`${owner} overlap tests did not all pass: ${JSON.stringify({ total: result.numTotalTests, passed: result.numPassedTests, failed: result.numFailedTests })}`);
+  }
+  return { files: files.length, tests: result.numTotalTests };
 }
 
 try {
@@ -61,11 +76,34 @@ try {
   const running = Object.entries(participants).map(([name, args]) => [name, start(name, args)]);
   await waitForReady();
   fs.writeFileSync(path.join(barrier, "release"), "release\n");
-  const logs = Object.fromEntries(await Promise.all(running.map(async ([name, done]) => [name, await done])));
-  const source = counts(fs.readFileSync(logs.source, "utf8"));
-  const packageResult = counts(fs.readFileSync(logs.package, "utf8"));
-  if (source.files < 4 || source.tests < 1 || packageResult.files < 2 || packageResult.tests < 1) {
-    throw new Error(`real overlap result validation failed: ${JSON.stringify({ source, package: packageResult, logs })}`);
+  const observations = [];
+  let readerError;
+  const monitor = setInterval(() => {
+    try {
+      if (!fs.existsSync(path.join(packageRoot, ".agentera-generated", "current"))) return;
+      const pinned = pinGeneratedGeneration(packageRoot);
+      try {
+        const dist = JSON.parse(fs.readFileSync(path.join(pinned.root, "dist", ".agentera-generation.json"), "utf8")).id;
+        const bundle = JSON.parse(fs.readFileSync(path.join(pinned.root, "bundle", ".agentera-generation.json"), "utf8")).id;
+        if (pinned.id !== dist || pinned.id !== bundle) throw new Error(`reader mixed ${pinned.id}, ${dist}, and ${bundle}`);
+        observations.push(pinned.id);
+      } finally {
+        pinned.release();
+      }
+    } catch (error) {
+      readerError ??= error;
+    }
+  }, 10);
+  const settled = await Promise.allSettled(running.map(async ([name, done]) => [name, await done]));
+  clearInterval(monitor);
+  const failures = settled.filter(({ status }) => status === "rejected");
+  if (failures.length > 0) throw failures[0].reason;
+  if (readerError) throw new Error(`continuous generated reader failed: ${readerError.message}`);
+  if (observations.length === 0) throw new Error("continuous generated reader observed no selected generation during full-owner overlap");
+  const source = ownerResult("source");
+  const packageResult = ownerResult("package");
+  if (source.files !== inventory.counts.source || packageResult.files !== inventory.counts.package) {
+    throw new Error(`real overlap owner count mismatch: ${JSON.stringify({ source, package: packageResult, inventory: inventory.counts })}`);
   }
   const selected = selectGeneratedGeneration(packageRoot);
   const invocation = await new Promise((resolve, reject) => {
@@ -77,7 +115,7 @@ try {
     child.on("error", reject);
     child.on("exit", (code) => code === 0 ? resolve(stdout.trim()) : reject(new Error(`selected CLI failed: ${stderr}`)));
   });
-  console.log(JSON.stringify({ status: "pass", source, package: packageResult, generation: selected.id, invocation }, null, 2));
+  console.log(JSON.stringify({ status: "pass", source, package: packageResult, build: "pass", reader_observations: observations.length, reader_generations: [...new Set(observations)], generation: selected.id, invocation }, null, 2));
 } catch (error) {
   console.error(`verify-generated-overlap: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;

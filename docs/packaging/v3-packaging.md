@@ -1,5 +1,9 @@
 # v3 npm packaging and verification
 
+This document is the canonical authority for checkout generated output, npm
+package construction, verification ownership, retention, and recovery. Other
+contributor guides link here rather than restating the protocol.
+
 Agentera v3 has one distribution boundary: the self-contained `agentera` npm
 package used by `npx -y agentera@next`. Native runtime packages, editor
 packages, and the former Bun single-binary surface are retired.
@@ -20,18 +24,21 @@ agentera-<version>.tgz
         └── references/
 ```
 
-`packages/cli/scripts/copy-bundle.mjs` stages the registry-declared shared
-skill and reference inputs. The `prepack` lifecycle compiles TypeScript and
-stages those inputs before npm publication.
+`packages/cli/scripts/pack-package.mjs` constructs a regular isolated package
+tree, and `packages/cli/scripts/copy-bundle.mjs` stages the registry-declared
+shared skill and reference inputs into that tree. It then runs `npm pack` with
+lifecycle scripts disabled. Checkout `prepack` is a guard that rejects direct
+`npm pack`; it does not compile or stage publication output.
 
-## Verification ownership
+## Generated-output and verification ownership
 
-The two verification lanes are independent:
+The three owners are independent, including when they overlap:
 
-| Lane | Entry point | Owns |
-| ---- | ----------- | ---- |
-| Source | `pnpm -C packages/cli test` (`test:source`) | Detailed command behavior, failure matrices, schemas, state, migration, and source contracts. It excludes `test/packaging/**`; its transient TypeScript subprocess output lives in a temporary directory and never stages package data. |
-| Package | `pnpm -C packages/cli run verify:package` | One build, focused bundle filesystem safety, tarball construction, authority-derived manifest inventory, extraction, production install, and the minimum isolated invocation and packed-upgrade conjunctions. |
+| Owner | Entry point | Owns |
+| ----- | ----------- | ---- |
+| Source | `pnpm -C packages/cli test` (`test:source`) | Every source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory; source never reads checkout `dist/`, `bundle/`, or `.agentera-generated/`. |
+| Build | `pnpm -C packages/cli build` | One immutable checkout generation containing matching `dist/` and `bundle/`, followed by one atomic `current` symlink replacement. |
+| Package | `pnpm -C packages/cli run verify:package` | Every package-assigned test against one genuinely packed, extracted, production-installed regular tree constructed independently of checkout output. |
 
 `packages/cli/test/packaging/packageSetup.ts` is the canonical package fixture.
 It builds once, packs with lifecycle scripts disabled to prevent a second
@@ -44,6 +51,66 @@ boundary and does not invoke the other lane.
 Pre-commit runs the source lane only. CI runs both lanes explicitly. Release
 gates may add metadata and dry-run publication checks, but must use the same
 package construction path rather than adding another extracted-package matrix.
+
+`pnpm -C packages/cli run verify:generated-overlap` starts all three complete
+owners from absent checkout output, releases their global-setup barrier once
+all are ready, compares the exact source and package file inventories with
+structured Vitest results, and continuously pins and validates selected
+generations until every owner exits.
+
+## Checkout generation protocol
+
+`packages/cli/scripts/generated-output.mjs` is the executable authority. A
+generation is complete only when its root, `dist/`, and `bundle/` carry the
+same identity. `current` must be a symlink to a regular direct child of
+`.agentera-generated/generations/`; canonical-path checks reject external
+targets, prefix collisions, generation symlinks, missing surfaces, and identity
+mismatches. The stable checkout launcher pins that validated generation for
+its process lifetime before importing the CLI. It never resolves `dist` and
+`bundle` separately.
+
+Publication validates in staging, renames the complete generation into the
+generations root, creates a temporary pointer, and atomically renames that
+pointer to `current`. A short publisher lease protects the pre-selection
+window. There is no publication journal or output lock.
+
+Reader and publisher leases record both PID and Linux process-start identity
+when available, so PID reuse cannot keep or reclaim the wrong generation.
+Cleanup retains at most two complete generations unless additional generations
+have live leases. A reader lease is a hard link to the generation guard;
+cleanup atomically renames that guard before deletion, so lease acquisition
+either wins first or retries without any live generation path disappearing. A
+live lease restores an interrupted guard claim. A
+later build or explicit cleanup removes stale leases and released generations,
+so crashed readers do not create permanent growth.
+
+## Recovery and cleanup
+
+Build runs recovery before staging and bounded retention after publication.
+Recovery is idempotent and never follows or mutates an escaped target.
+
+| State | Recovery |
+| ----- | -------- |
+| Missing `current` | Valid before the first build; the next successful build selects one complete generation. |
+| Directory, regular file, broken link, escaped link, or otherwise invalid `current` | Atomically renamed to one `.preserved-current-*` path before replacement. Inspect that preserved path before deleting it. |
+| `.current-*` temporary pointer | A well-formed stale symlink is removed; malformed or non-symlink state is preserved and reported with bounded paths. |
+| `.staging-*` | Removed only when its owner is absent or its recorded process identity no longer matches. Live state is retained; malformed or uncertain ownership fails with a correction. |
+| `.agentera-generation.guard.retiring-*` cleanup claim | Restored when the generation is current or a matching live lease exists; otherwise its unselected generation is removed. Conflicting guard state is preserved and reported. |
+| Legacy publication lock | Active or uncertain ownership is retained. A dead owner or an ownerless lock older than 30 seconds is reclaimed. |
+| Legacy journal or backup residue | Never interpreted or deleted automatically. The build reports at most three paths and asks the contributor to inspect or remove confirmed residue. |
+
+Preview and apply self-service retention headlessly:
+
+```bash
+pnpm -C packages/cli run generated:cleanup -- --dry-run --json
+pnpm -C packages/cli run generated:cleanup -- --force --json
+```
+
+Cleanup requires either `--dry-run` or `--force`; retries are safe. To inspect
+the publication tarball surface, use
+`pnpm -C packages/cli run pack:dry-run`. Direct checkout `npm pack` remains
+rejected because compatibility launchers and generations are not package
+inputs.
 
 ## Ownership inventory
 

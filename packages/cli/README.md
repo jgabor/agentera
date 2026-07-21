@@ -76,41 +76,22 @@ Requires Node.js 22+ and pnpm 10.30.3.
 
 ### Generated-output ownership and recovery
 
-`test:source` owns a disposable TypeScript compilation under the operating
-system temporary directory. Upgrade tests receive that compiled root explicitly;
-source verification never discovers checkout output. `build` constructs one
-immutable generation containing both `dist/` and `bundle/`, validates matching
-generation markers, then atomically replaces
-`packages/cli/.agentera-generated/current`. Checkout CLI consumers enter through
-the stable `packages/cli/dist/bin/agentera.js` launcher, which resolves and
-validates `current` once before loading that generation. They therefore cannot
-mix surfaces even if another build publishes concurrently.
-
-Package verification constructs a separate regular `dist/` + `bundle/` package
-tree, packs it, extracts it, installs dependencies, and tests only that extracted
-installation. It does not package checkout compatibility paths or generations.
-
-Interruption before the `current` pointer replacement leaves the previous
-generation selected; interruption after replacement leaves the new complete
-generation selected. There are no publication journals, backups, or owner locks.
-If selection fails, rerun `pnpm -C packages/cli build`. Corrupt markers and
-legacy journal/backup residue fail with bounded paths and must be preserved for
-inspection before removal. An active legacy lock is retained; a fresh lock with
-no complete owner record asks for a bounded retry, while stale/dead ownership is
-reclaimed. Staging directories encode their owner PID: a later build removes
-dead-owner staging and retains unknown ownership for inspection.
+The canonical producer, reader, packing, retention, and recovery contract is
+[v3 npm packaging and verification](../../docs/packaging/v3-packaging.md).
 Generated generations are disposable; source files and the package registry
-remain authoritative.
+remain authoritative. Use its recovery matrix rather than deleting uncertain
+state.
 
 ```bash
 pnpm -C packages/cli test
 pnpm -C packages/cli run verify:package
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
+pnpm -C packages/cli run verify:generated-overlap
+pnpm -C packages/cli run generated:cleanup -- --dry-run --json
 pnpm -C packages/cli run lint
 ```
 
 Use `pnpm -C packages/cli run pack:dry-run` to inspect the exact isolated
-publication surface. Direct `npm pack` from the checkout is rejected because
-checkout compatibility paths are not package inputs. Do not publish from a
-normal development or capability cycle.
+publication surface. Do not publish from a normal development or capability
+cycle.

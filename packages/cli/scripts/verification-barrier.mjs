@@ -16,4 +16,6 @@ export function waitForVerificationBarrier(env = process.env) {
     if (Date.now() >= deadline) throw new Error(`verification overlap barrier timed out for ${participant}`);
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
   }
+  delete env.AGENTERA_VERIFICATION_BARRIER;
+  delete env.AGENTERA_VERIFICATION_PARTICIPANT;
 }

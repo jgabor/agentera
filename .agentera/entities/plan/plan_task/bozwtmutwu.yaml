@@ -1,0 +1,14 @@
+id: bozwtmutwu
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Repair generated-generation safety
+  status: complete
+  depends_on:
+    - fbgcvyeexr
+  acceptance:
+    - GIVEN checkout generated output is selected WHEN current is resolved THEN the selected generation is confined beneath the governed generations root and escaped, incomplete, or mismatched targets fail safely.
+    - GIVEN full source, build, and package owners overlap from absent checkout output WHEN commands complete THEN every owner passes and every reader observes one complete matching generation.
+    - GIVEN current is a directory or temporary pointer, lock, staging, or legacy residue is corrupt WHEN build or recovery runs THEN recovery is bounded, actionable, idempotent, and leaves no promoted partial generation.
+    - GIVEN completed generations accumulate while readers may be pinned WHEN cleanup runs THEN retention is bounded without invalidating live readers and a safe self-service cleanup path is tested.
+    - GIVEN contributors inspect packaging and recovery guidance WHEN commands are followed THEN one canonical authority accurately documents governed packing, ownership, and correction without contradictory live instructions.

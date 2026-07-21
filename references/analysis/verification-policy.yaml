@@ -70,6 +70,7 @@ conservative_routing:
     - packages/cli/vitest.shared.ts
     - packages/cli/scripts/verify-lane.mjs
     - packages/cli/scripts/build-package.mjs
+    - packages/cli/scripts/generated-output.mjs
     - packages/cli/scripts/copy-bundle.mjs
     - packages/cli/scripts/generate-extract-corpus-parity.mjs
     - packages/cli/scripts/verification-barrier.mjs

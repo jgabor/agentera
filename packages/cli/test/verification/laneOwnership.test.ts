@@ -92,6 +92,16 @@ describe("verification lane ownership", () => {
     expect(runs[0].args).toContain(owner === "package" ? "test/packaging/package.test.ts" : `test/${owner}.test.ts`);
   });
 
+  it("emits a structured full-owner result without replacing the owned inventory", () => {
+    const setup = fixture();
+    const output = path.join(setup.root, "source-result.json");
+    const { result, runs } = run(["source"], setup, { AGENTERA_VERIFICATION_RESULT: output });
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs[0].args).toContain("test/source.test.ts");
+    expect(runs[0].args).toContain("--reporter=json");
+    expect(runs[0].args).toContain(`--outputFile=${output}`);
+  });
+
   it.each(Object.entries(POLICY_OWNERS))("composes policy %s from its named owners", (policy, owners) => {
     const { result, runs } = run(["policy", policy]);
     expect(result.status, result.stderr).toBe(0);
@@ -175,7 +185,26 @@ describe("verification lane ownership", () => {
     const inventory = JSON.parse(result.stdout);
     expect(inventory.counts.total).toBeGreaterThan(190);
     expect(inventory.counts).toMatchObject({ stress: 1, performance: 3 });
+    expect(inventory.files.source).toHaveLength(inventory.counts.source);
+    expect(inventory.files.package).toEqual([
+      "packages/cli/test/packaging/copyBundleSafety.test.ts",
+      "packages/cli/test/packaging/packageVerification.test.ts",
+    ]);
     expect(inventory.mixed_files).toEqual([]);
+  });
+
+  it("keeps one canonical generated-output and packaging authority", () => {
+    const authority = fs.readFileSync(path.join(REPO_ROOT, "docs/packaging/v3-packaging.md"), "utf8");
+    const contributor = fs.readFileSync(path.join(PACKAGE_ROOT, "README.md"), "utf8");
+    const testPolicy = fs.readFileSync(path.join(PACKAGE_ROOT, "test/README.md"), "utf8");
+    const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
+    expect(authority).toContain("canonical authority for checkout generated output");
+    expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
+    expect(authority).toContain("generated:cleanup -- --force --json");
+    expect(contributor).toContain("../../docs/packaging/v3-packaging.md");
+    expect(testPolicy).toContain("../../../docs/packaging/v3-packaging.md");
+    expect(contributor).not.toContain("Staging directories encode their owner PID");
+    expect(packageJson.scripts["generated:cleanup"]).toBe("node scripts/build-package.mjs --cleanup");
   });
 
   it("keeps package construction separate and fast policy owner-free", () => {

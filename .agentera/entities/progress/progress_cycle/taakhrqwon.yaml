@@ -1,0 +1,12 @@
+id: taakhrqwon
+artifact: progress
+record:
+  timestamp: 2026-07-21 06:02
+  type: fix
+  phase: build
+  what: Repaired generated-generation safety with canonical confinement, process-identity leases, crash-safe bounded retention, complete owner-overlap proof, and one packaging authority.
+  context:
+    intent: Replace the twice-failed generated-output repair with a confined, recoverable immutable-generation protocol that proves full source, build, and package ownership without weakening package isolation.
+  inspiration: Replacement plan task bozwtmutwu after blocked task xlokrejoue failed two independent audits.
+  verified: 26 focused publication and recovery tests passed. Clean source passed 192 files and 2,278 tests with checkout output absent. Simultaneous full source (192 files, 2,278 tests), build, and extracted-package (2 files, 9 tests) owners passed with 6,077 continuous matching reader observations. Typecheck, build, lint (150 baseline warnings, 0 errors), owner policy, state (1,630 entities, 0 issues), capability contract (2/2), compaction, package dry-run, and diff checks passed.
+  next: Continue only with separately scoped plan task dhbkviulyf or later downstream tasks; do not reopen blocked originals as complete.
