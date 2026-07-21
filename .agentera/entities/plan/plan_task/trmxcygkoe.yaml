@@ -1,0 +1,13 @@
+id: trmxcygkoe
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Correct serialized policy regression fixtures
+  status: complete
+  depends_on:
+    - fbgcvyeexr
+  acceptance:
+    - GIVEN each consumed-policy container or field is malformed WHEN its regression fixture is constructed THEN the canonical policy is parsed, mutated as data, and serialized back into syntactically valid YAML that reaches consumed-schema validation.
+    - GIVEN valid malformed policy YAML crosses the production boundary WHEN verification rejects it THEN the test asserts the bounded verification policy consumed schema is invalid diagnostic and proves no parser-only false positive or stack trace.
+    - GIVEN every consumed policy section is enumerated WHEN focused adversarial tests run THEN null, wrong-container, wrong-scalar, unknown-owner, and owner-definition cases are covered proportionately without arbitrary in-memory object authority.
+    - GIVEN the corrected fixture suite and honest owner flows run WHEN verification completes THEN focused overlap and lane ownership, source, package, performance, build, and full generated overlap retain their prior passing evidence.

@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import * as overlap from "../../scripts/overlap-pending.mjs";
 
@@ -17,6 +18,7 @@ const PACKAGE_FILE = "packages/cli/test/packaging/example.test.ts";
 
 type Assertion = { fullName: string; status: string };
 type Suite = { name: string; status: string; assertionResults: Assertion[] };
+type Policy = Record<string, unknown>;
 
 function bytes(value: unknown) {
   return Buffer.from(JSON.stringify(value));
@@ -81,12 +83,37 @@ function validate(owner: "source" | "package", report: Buffer, ownerFiles: strin
   return overlap.validatePendingTests(owner, report, bytes(ownerFiles), POLICY_BYTES, root, platform);
 }
 
-function replacePolicy(source: string, from: string, to: string) {
-  expect(source).toContain(from);
-  return Buffer.from(source.replace(from, to));
+function serializedPolicy(mutate: (policy: Policy) => void) {
+  const document = YAML.parseDocument(POLICY_BYTES.toString("utf8"), {
+    prettyErrors: false,
+    strict: true,
+    uniqueKeys: true,
+  });
+  expect(document.errors).toEqual([]);
+  const policy = document.toJS({ maxAliasCount: 0 }) as Policy;
+  mutate(policy);
+  const serialized = Buffer.from(YAML.stringify(policy));
+  const reparsed = YAML.parseDocument(serialized.toString("utf8"), {
+    prettyErrors: false,
+    strict: true,
+    uniqueKeys: true,
+  });
+  expect(reparsed.errors).toEqual([]);
+  return serialized;
 }
 
-function expectLanePolicyFailure(policyBytes: Buffer) {
+function nestedPolicy(policy: Policy, key: string) {
+  return policy[key] as Policy;
+}
+
+function expectConsumedPolicyFailure(policyBytes: Buffer) {
+  const message = expectContractFailure(() => overlap.loadVerificationPolicy(policyBytes));
+  expect(message).toContain("verification policy consumed schema is invalid");
+  expect(message).not.toContain("verification policy boundary is invalid");
+  expect(message).not.toMatch(/(?:Syntax|Type)Error|\n\s+at\s/);
+}
+
+function expectLanePolicyFailure(policyBytes: Buffer, expected: string) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-policy-"));
   const policyPath = path.join(directory, "verification-policy.yaml");
   fs.writeFileSync(policyPath, policyBytes);
@@ -98,8 +125,27 @@ function expectLanePolicyFailure(policyBytes: Buffer) {
   expect(result.status).toBe(2);
   expect(Buffer.byteLength(result.stderr, "utf8")).toBeLessThanOrEqual(8192);
   expect(result.stderr).toContain("verification policy could not be read:");
+  expect(result.stderr).toContain(expected);
   expect(result.stderr).toContain("correction:");
-  expect(result.stderr).not.toContain("TypeError");
+  expect(result.stderr).not.toMatch(/(?:Syntax|Type)Error|\n\s+at\s/);
+}
+
+function expectUnknownOwnerFailure(policyBytes: Buffer) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-policy-"));
+  const policyPath = path.join(directory, "verification-policy.yaml");
+  fs.writeFileSync(policyPath, policyBytes);
+  const result = spawnSync(process.execPath, [VERIFY_LANE, "validate"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    env: { ...process.env, AGENTERA_VERIFICATION_CONTRACT: policyPath },
+  });
+  expect(result.status).toBe(2);
+  expect(Buffer.byteLength(result.stderr, "utf8")).toBeLessThanOrEqual(8192);
+  expect(result.stderr).toContain(
+    "verification policy: policy 'targeted' names invalid owner 'unknown'",
+  );
+  expect(result.stderr).toContain("correction:");
+  expect(result.stderr).not.toMatch(/(?:Syntax|Type)Error|\n\s+at\s/);
 }
 
 describe("serialized overlap evidence boundary", () => {
@@ -145,14 +191,53 @@ describe("serialized overlap evidence boundary", () => {
   });
 
   it.each([
-    ["null inventory", replacePolicy(POLICY_BYTES.toString("utf8"), "inventory:\n", "inventory: null\n")],
-    ["inventory rules object", replacePolicy(POLICY_BYTES.toString("utf8"), "  rules:\n", "  rules: {}\n")],
-    ["null policies", replacePolicy(POLICY_BYTES.toString("utf8"), "policies:\n", "policies: null\n")],
-    ["policy owner object", replacePolicy(POLICY_BYTES.toString("utf8"), "  targeted: [source]", "  targeted: { owner: source }")],
-    ["null owner definition", replacePolicy(POLICY_BYTES.toString("utf8"), "  source:\n", "  source: null\n")],
-  ])("rejects consumed %s before verify-lane can use it", (_, policyBytes) => {
-    expectContractFailure(() => overlap.loadVerificationPolicy(policyBytes));
-    expectLanePolicyFailure(policyBytes);
+    [
+      "null inventory",
+      serializedPolicy((policy) => {
+        policy.inventory = null;
+      }),
+    ],
+    [
+      "inventory rules object",
+      serializedPolicy((policy) => {
+        nestedPolicy(policy, "inventory").rules = {};
+      }),
+    ],
+    [
+      "null owner definition",
+      serializedPolicy((policy) => {
+        nestedPolicy(policy, "owners").source = null;
+      }),
+    ],
+    [
+      "mixed-files object",
+      serializedPolicy((policy) => {
+        policy.mixed_files = {};
+      }),
+    ],
+    [
+      "policy owner scalar",
+      serializedPolicy((policy) => {
+        nestedPolicy(policy, "policies").targeted = [0];
+      }),
+    ],
+    [
+      "routing scalar",
+      serializedPolicy((policy) => {
+        nestedPolicy(policy, "conservative_routing").exact = [null];
+      }),
+    ],
+  ])("rejects valid serialized consumed %s before verify-lane can use it", (_, policyBytes) => {
+    expectConsumedPolicyFailure(policyBytes);
+    expectLanePolicyFailure(policyBytes, "verification policy consumed schema is invalid");
+  });
+
+  it("rejects an unknown policy owner after the consumed schema accepts valid YAML", () => {
+    const policyBytes = serializedPolicy((policy) => {
+      nestedPolicy(policy, "policies").targeted = ["unknown"];
+    });
+    expect(overlap.loadVerificationPolicy(policyBytes)).toBeDefined();
+    expectUnknownOwnerFailure(policyBytes);
   });
 
   it.each([

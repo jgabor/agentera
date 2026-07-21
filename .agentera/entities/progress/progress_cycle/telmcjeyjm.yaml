@@ -1,0 +1,13 @@
+id: telmcjeyjm
+artifact: progress
+record:
+  timestamp: 2026-07-21 12:39
+  type: test
+  phase: build
+  what: Rebuilt malformed consumed-policy regression fixtures from canonical YAML data and added bounded production diagnostics.
+  context:
+    intent: Repair Task trmxcygkoe without changing the serialized-policy runtime boundary.
+  inspiration: Task trmxcygkoe and the exhausted ynxkvmmluo audit finding.
+  discovered: Text replacement left nested YAML children behind, so four fixtures never reached validateConsumedPolicy.
+  verified: pnpm -C packages/cli test -- test/verification/overlapPending.test.ts (23 passed); pnpm -C packages/cli test -- test/verification/laneOwnership.test.ts (64 passed); pnpm -C packages/cli test (193 files, 2363 passed, 1 skipped); pnpm -C packages/cli run test:performance (3 passed); pnpm -C packages/cli run verify:package (2 files, 10 passed); pnpm -C packages/cli run build; pnpm -C packages/cli run verify:generated-overlap (source 193 files/2364 tests, package 2 files/10 tests, build pass, complete reader observations).
+  next: Retain ynxkvmmluo blocked audit provenance; downstream recovery work may proceed through trmxcygkoe.

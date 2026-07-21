@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: rmtdgltdgm
   name: Stabilize overlap evidence trust boundary
-  status: complete
+  status: blocked
   depends_on:
     - fbgcvyeexr
   acceptance:
@@ -13,12 +13,12 @@ record:
     - GIVEN adversarial review evaluates the repair WHEN findings are judged THEN attacks outside the declared serialized production boundary are identified as out of scope rather than expanding acceptance, while every reachable YAML/JSON attack remains covered.
     - GIVEN honest owner commands and full overlap run WHEN the stable boundary is enforced THEN source, build, extracted package, performance evidence, pending identity, and reader-generation checks all pass unchanged.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: "Serialized policy validation covers overlap but not every consumed production section: inventory: null reaches an uncaught TypeError and policies: null is accepted as empty. Add bounded schema validation for all policy collections consumed by verify-lane before use and adversarial YAML tests for these reachable inputs; recorded focused evidence does not yet substantiate criteria 2 and 4."
+    last_failure_evidence: Runtime consumed-policy validation now fails boundedly for valid malformed inventory and policies YAML, but four of five new structural regressions leave indented children after replacing parent keys, producing YAML syntax errors before validateConsumedPolicy. Rebuild fixtures by parsing canonical policy, mutating the object, serializing valid YAML, and assert the consumed-schema diagnostic; focused 85/85 evidence does not substantiate reachable structural coverage.
     provenance:
-      attempt_id: ynxkvmmluo-audit-1
-      source: independent orchestrate audit attempt 1
-      recorded_at: 2026-07-21 12:10
+      attempt_id: ynxkvmmluo-audit-2
+      source: independent orchestrate audit attempt 2
+      recorded_at: 2026-07-21 12:30
       writer_command: agentera state plan record-evaluation

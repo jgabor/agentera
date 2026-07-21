@@ -6,10 +6,10 @@ record:
   status: pending
   depends_on:
     - fbgcvyeexr
-    - ynxkvmmluo
+    - trmxcygkoe
   acceptance:
     - GIVEN stale mutation-lock reclamation is interrupted WHEN cleanup or build retries THEN every .mutation-lock.reclaim-* claim is classified and recovered idempotently without deleting active or uncertain ownership.
     - GIVEN a supported macOS reader lease WHEN process identity is recorded and later checked THEN identity is locale- and timezone-independent and distinguishes live, dead, reused, and uncertain processes safely.
     - GIVEN concurrent publishers, cleaners, and pinned readers run WHEN generated state is retained or reclaimed THEN retention remains bounded, live readers remain valid, and no temporary claim residue survives successful recovery.
     - GIVEN contributors consult packaging guidance WHEN generated output is built, packed, cleaned, or recovered THEN every live document points to one accurate canonical authority with executable corrections.
-  blocked_reason: Implementation committed in 91335f19; run its dedicated verification after the serialized overlap trust boundary ynxkvmmluo passes.
+  blocked_reason: Implementation committed in 91335f19; run its dedicated verification after serialized policy fixture repair trmxcygkoe passes.
