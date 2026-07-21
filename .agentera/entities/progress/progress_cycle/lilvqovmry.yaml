@@ -1,0 +1,10 @@
+id: lilvqovmry
+artifact: progress
+record:
+  timestamp: 2026-07-21 16:57
+  type: fix
+  phase: build
+  what: Restored all-capability retired-vocabulary runtime reconciliation
+  context:
+    intent: Reuse lifecycleProtocol contexts without new prime invocations
+  next: Commit the verified scoped repair

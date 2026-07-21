@@ -48,5 +48,4 @@ record:
     - question: Which generated-output publication model best preserves clean-checkout and fail-before-effects behavior?
       affects_task: 7
       resolve_by: Evaluate isolated immutable staging and checkout serialization against interruption and concurrency evidence.
-  surprises:
-    []
+  surprises: User clarified that an approximately two-second wall-time miss on a non-isolated developer machine is not a substantial blocker and must not trigger refactoring by itself; treat the 45-second target as directional evidence, while preserving meaningful improvement and correctness.

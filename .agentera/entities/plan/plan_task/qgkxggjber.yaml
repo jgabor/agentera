@@ -1,0 +1,14 @@
+id: qgkxggjber
+artifact: plan
+record:
+  plan: rmtdgltdgm
+  name: Restore all-capability runtime vocabulary coverage
+  status: complete
+  depends_on:
+    - rpsxvneecd
+    - lkyflumkrj
+  acceptance:
+    - GIVEN lifecycleProtocol already generates every capability runtime context WHEN canonical plan fields are checked THEN the same in-memory contexts also pass retired-vocabulary reconciliation without invoking prime again.
+    - GIVEN activeProtocolSurface and lifecycleProtocol have distinct responsibilities WHEN coverage is restored THEN activeProtocol keeps static/source-surface checks, lifecycleProtocol owns all-capability runtime payload checks, and no distinct assertion is removed or duplicated.
+    - GIVEN the user's non-isolated-machine tolerance WHEN final proof is synchronized THEN approximately two seconds of ordinary wall-time variance is not a blocker or refactoring trigger; meaningful improvement, eight-worker bound, functional evidence, and no substantial regression remain recorded.
+    - GIVEN the narrow repair completes WHEN focused and source verification run THEN all capability payloads are checked, owner/policy evidence remains green, proof wording is accurate, state/TODO agree, and CHANGELOG remains unchanged.

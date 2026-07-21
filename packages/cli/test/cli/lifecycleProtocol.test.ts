@@ -11,6 +11,7 @@ import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { runSessionStart } from "../../src/hooks/sessionStart.js";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { commandText } from "../../src/upgrade/upgradeCommands.js";
+import { reconcile, semanticFindings } from "./retiredVocabulary.js";
 
 const roots: string[] = [];
 
@@ -190,6 +191,7 @@ describe("final lifecycle protocol", () => {
       const result = capture(root, ["prime", "--context", capability, "--format", "json"]);
       expect(result.rc, `${capability}: ${result.out}${result.err}`).toBe(0);
       const context = JSON.parse(result.out).capability_context.context;
+      expect(reconcile(semanticFindings(`runtime://capability-context/${capability}`, context), [])).toEqual([]);
       const contextPlan = capability === "status" ? context.status_context.plan : context.plan;
       expect(contextPlan).toMatchObject({ id: "dddddddddd", artifact: "plan" });
       expect(contextPlan.tasks).toEqual([expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" })]);

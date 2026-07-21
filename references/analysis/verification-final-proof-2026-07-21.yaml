@@ -23,7 +23,9 @@ scope:
   final_input_sha256:
     packages/cli/test/state/planEntities.test.ts: 5b08500e57f31b13d89201e490c35aaa9fd73ee25ac70ecfbb431dc6bfef868e
     packages/cli/test/cli/primeCompatibilityBoundary.test.ts: a1b0000b0534908ce380c4c604973689e149654faf0ef6b22b107fe53dc35ffe
-    packages/cli/test/cli/activeProtocolSurface.test.ts: 1be33e45465f361bbf9ace58557558b00757925f2afe9adcae30d28289c1839e
+    packages/cli/test/cli/activeProtocolSurface.test.ts: 7f4f44267adaad08209c3d8346ba4fbe45cdefa223560cbe494eef5e92ece4e0
+    packages/cli/test/cli/lifecycleProtocol.test.ts: 0eb13ce63e8b4078e3aa566633bca850a0840ffafeac1ade96ab9b39344b0435
+    packages/cli/test/cli/retiredVocabulary.ts: 60d6282180579ec5edc0f8bed7e285e21629c3191d1e0995b76a0bb35462aba6
     packages/cli/test/verification/laneOwnership.test.ts: 67388a1cb38c430351ddef22a59afdf981c616b0f40fe5cf0710718a817cb51f
     docs/packaging/v3-packaging.md: f9fab7467c3740d2c5a5c185846bb2ab8efcdfdd48bcc69cd4958c6c1fb0f5fb
 
@@ -73,13 +75,14 @@ root_cause:
     the archived-plan read test ran 21 already-covered public create/archive
     cycles; and activeProtocolSurface regenerated every capability context even
     though it already scans every capability instruction while lifecycleProtocol
-    separately proves every context's canonical plan projection.
+    separately generates every context for canonical plan projection.
   correction: >-
     Batch all declared fields through the documented comma-separated selector,
     seed canonical archived read fixtures while retaining the separate public
-    lifecycle/archive acceptance, and capture one representative runtime context
-    in activeProtocolSurface while retaining all-instruction scanning and the
-    all-capability lifecycle assertion.
+    lifecycle/archive acceptance, capture one representative runtime context in
+    activeProtocolSurface while retaining all-instruction scanning, and reconcile
+    retired vocabulary in lifecycleProtocol's already-generated all-capability
+    contexts alongside its canonical plan assertion.
   assertions_removed: 0
   tests_skipped_or_deleted: 0
   thresholds_changed: false
@@ -301,6 +304,24 @@ gates:
   - { command: bash packages/cli/scripts/py_ts_parity.sh --check --json, result: pass, detail: drift none }
   - { command: bunx markdownlint docs/packaging/v3-packaging.md TODO.md, result: pass }
 
+narrow_repair_verification:
+  focused_runtime_and_ownership:
+    command: >-
+      pnpm -C packages/cli run test:source --
+      test/cli/activeProtocolSurface.test.ts test/cli/lifecycleProtocol.test.ts
+      test/verification/laneOwnership.test.ts
+    result: pass
+    detail: 3 files, 84 tests; lifecycleProtocol reconciled all 12 already-generated capability payloads, and lane ownership remained green.
+  ordinary_source:
+    command: >-
+      AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node22
+      pnpm -C packages/cli run test:source
+    result: pass
+    detail: 194 files, 2369 passed, 1 skipped; Vitest duration 42.83 seconds.
+  typecheck:
+    command: pnpm -C packages/cli run typecheck
+    result: pass
+
 acceptance:
   owners_independent: pass
   policy_compositions: pass
@@ -309,9 +330,10 @@ acceptance:
   wall_improvement_at_least_35_percent: pass
   documentation_synchronized: pass
   changelog_unchanged: pass
-  conclusion: ymkdnqmroi may close after typed progress and task-state publication.
+  conclusion: qgkxggjber is complete; ymkdnqmroi remains blocked as audit-2 historical provenance.
 
 caveats:
+  - Approximately two seconds of ordinary wall-time variance on this non-isolated developer machine is nonblocking and not a refactor trigger; the retained meaningful improvement, eight-worker bound, and functional correctness evidence remain accepted.
   - Decisions retrieval remained degraded to 5 of 50; omitted records were not reconstructed.
   - Satisfaction remains unavailable for llavvlpcmb and djmjbmruyk.
   - Vision and profile were absent; no approval was inferred.
