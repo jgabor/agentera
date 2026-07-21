@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildProtocolValueLookup,
@@ -217,12 +217,20 @@ describe("validateCapability", () => {
         "description: Artifact entry.\n    deprecated: true\n    replaced_by: A99",
       ),
     );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+    const expectedWarning =
+      `V5 [warning]: entry 1 (A1) in ARTIFACTS in ${capDir} ` +
+      "has replaced_by='A99' which does not match any entry ID";
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+      expect(stderrSpy).toHaveBeenCalledOnce();
+      expect(stderrSpy).toHaveBeenCalledWith(expectedWarning + "\n");
+    } finally {
+      stderrSpy.mockRestore();
+    }
     const contract = loadCapabilitySchemaContract(CONTRACT_PATH);
     const groups = collectSchemaGroups(path.join(capDir, "schemas"), contract.requiredGroups);
-    expect(checkDeprecation(groups, capDir, contract)).toEqual([
-      `V5 [warning]: entry 1 (A1) in ARTIFACTS in ${capDir} has replaced_by='A99' which does not match any entry ID`,
-    ]);
+    expect(checkDeprecation(groups, capDir, contract)).toEqual([expectedWarning]);
   });
 
   it("observes contract-required groups", () => {
