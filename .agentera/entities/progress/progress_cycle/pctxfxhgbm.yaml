@@ -1,0 +1,14 @@
+id: pctxfxhgbm
+artifact: progress
+record:
+  timestamp: 2026-07-21 21:21
+  type: test
+  phase: build
+  what: Made statusDashboardBudget.test.ts independent of checkout path length by collecting its near-budget orientation state from synthetic temporary project and home paths.
+  context:
+    intent: Keep the 12,000-byte startup projection boundary deterministic across worktrees without raising the budget or weakening routing assertions.
+    constraints: Test-only fixture correction; production projection and byte budgets are unchanged.
+    unknowns: none
+    scope: packages/cli/test/cli/statusDashboardBudget.test.ts
+  discovered: The prior fixture embedded the real checkout and home paths; clean HEAD passed from a short path but exceeded the budget from this 66-character worktree path.
+  verified: Full source verification passed 194 files with 2,366 tests passed and 1 skipped. The focused status budget, active protocol, and lifecycle suites, typecheck, git diff --check, package verification, pack dry run, and compact checks passed.
