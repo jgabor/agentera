@@ -1,40 +1,16 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests research.
+    description: Research requests that analyze external sources, repositories, or approaches.
     priority: high
-    patterns:
-      - "research"
-      - "/research"
-    confidence_threshold: 55
   2:
     id: T2
-    description: >-
-      Applicability assessment requests. Matches when the user provides
-      an external URL and asks how it applies to their project or whether
-      they should adopt it.
-    priority: medium
-    patterns:
-      - "could I use this in"
-      - "how does this apply to my project"
-      - "is this relevant to"
-      - "what can I take from this"
-      - "should I adopt"
-    confidence_threshold: 45
+    description: Assess an external source's relevance, applicability, or adoption.
+    priority: high
   3:
     id: T3
-    description: >-
-      External resource review requests. Matches when the user wants
-      analysis of a library, repo, or approach for ideas and patterns.
-    priority: medium
-    patterns:
-      - "what do you think of this library"
-      - "review this repo for ideas"
-      - "anything worth stealing from"
-      - "how does this compare to what I'm doing"
-    confidence_threshold: 45
+    description: Review an external library, repository, or pattern for ideas.
+    priority: high
     disambiguates_against:
       - capability: audit
         hint: "research reviews external resources for ideas; audit reviews the local codebase for health"

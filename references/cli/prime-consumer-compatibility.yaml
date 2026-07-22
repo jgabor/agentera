@@ -24,9 +24,9 @@ exclusions:
 consumers:
   - id: status_dashboard_renderer
     startup_command: agentera prime --context status --format json
-    evidence: skills/agentera/SKILL.md:68
+    evidence: skills/agentera/SKILL.md:83
     dashboard_evidence: packages/cli/src/capabilities/status/instructions.ts
-    state_evidence: packages/cli/src/cli/commands/prime/orientationOutput.ts:206
+    state_evidence: packages/cli/src/cli/commands/prime/orientationOutput.ts:209
     consumed_fields:
       - capability_context.instructions
       - capability_context.context.status_context.health
@@ -39,16 +39,16 @@ consumers:
       - capability_context.context.status_context.state_presence
       - capability_context.context.status_context.source_contract
     notes: >-
-      Bare `/agentera` and natural-language routing run one status-context call.
-      The response contains the full `capability_context.instructions` body and
-      the bounded `capability_context.context.status_context` projection. The
-      dashboard glyphs (health/todo/plan/objective/profile/next_action/attention)
-      define the minimum required state families; omitted rich detail is recovered
-      through the named command in the status context, never by raw artifact read.
+      Bare `/agentera` and status orientation run one status-context call.
+      Natural language is classified from intent first, then starts the selected
+      capability context. The status response contains the full
+      `capability_context.instructions` body and bounded
+      `capability_context.context.status_context`; omitted rich detail recovers
+      through its named command, never by raw artifact read.
   - id: capability_context_dispatcher
     startup_command: agentera prime --context <capability> --format json
-    evidence: packages/cli/src/cli/capabilityContext/startup.ts:250
-    skill_evidence: skills/agentera/SKILL.md:68-103
+    evidence: packages/cli/src/cli/capabilityContext/startup.ts:264
+    skill_evidence: skills/agentera/SKILL.md:77-96
     consumed_fields:
       - command
       - status
@@ -100,7 +100,7 @@ consumers:
       from the retired `prose` field to the v3 `capability_context.instructions`
       field after the second Task 1 evaluation found this guidance was the one
       remaining live consumer contradiction. Runtime authority
-      (capabilityContext/startup.ts:250) and SKILL.md (lines 68, 103) both use
+      (capabilityContext/startup.ts:264) and SKILL.md (lines 112-114) both use
       `capability_context.instructions`. The
       `documentation_drift` guard below prevents this guidance from drifting
       back to `prose`; it does not execute a prime command.

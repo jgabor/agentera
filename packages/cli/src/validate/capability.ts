@@ -239,8 +239,9 @@ export function checkTriggerPriorities(
 /**
  * V7 trigger-entry enrichment validation. Enforces the four optional fields
  * declared in TRIGGER_ENRICHMENT in capability_schema_contract.yaml. Every
- * field is OPTIONAL; a triggers.yaml entry that omits all enriched fields
- * passes (backward compatibility per spec §6). Error messages include the
+ * field is OPTIONAL; a triggers.yaml entry that omits all compatibility fields
+ * passes. Decision 76 keeps active routing LLM-native while this validator
+ * preserves legacy enriched-file compatibility. Error messages include the
  * valid range/value and the offending entry ID so authors can locate the
  * violation without grepping the contract.
  */
@@ -265,6 +266,16 @@ export function checkTriggerEnrichment(
     }
     const entryId = entry.id ?? key;
     const location = `TRIGGERS entry ${key} (${entryId}) in ${sourceLabel}`;
+
+    if (entry.patterns !== undefined) {
+      const value = entry.patterns;
+      if (!Array.isArray(value) || !value.every((pattern) => typeof pattern === "string")) {
+        errors.push(
+          `V7 [error]: ${location} has patterns=${valueRepr(value)} ` +
+            `(must be a list of strings)`,
+        );
+      }
+    }
 
     if (entry.confidence_threshold !== undefined) {
       const value = entry.confidence_threshold;

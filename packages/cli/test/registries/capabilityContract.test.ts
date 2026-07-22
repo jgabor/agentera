@@ -104,30 +104,24 @@ describe("capability schema contract loader", () => {
     });
   });
 
-  it("exposes the TRIGGER_ENRICHMENT defaults and resolved capability IDs from the valid contract", () => {
+  it("exposes legacy compatibility fields without active routing defaults", () => {
     const model = loadCapabilitySchemaContract(CONTRACT_PATH);
     expect(model.triggerEnrichment.spec).toBe("references/cli/trigger-schema-enrichment.md");
-    expect(model.triggerEnrichment.contractDefaults).toEqual({
-      confidenceThreshold: 50,
-      borderlineBand: 15,
-    });
     const fieldNames = Object.keys(model.triggerEnrichment.fields).sort();
     expect(fieldNames).toEqual(
-      ["borderline_band", "confidence_threshold", "disambiguates_against", "patterns_regex"].sort(),
+      ["borderline_band", "confidence_threshold", "disambiguates_against", "patterns", "patterns_regex"].sort(),
     );
     expect(model.triggerEnrichment.fields.confidence_threshold).toMatchObject({
       type: "integer",
       required: false,
       min: 0,
       max: 100,
-      default: 50,
     });
     expect(model.triggerEnrichment.fields.borderline_band).toMatchObject({
       type: "integer",
       required: false,
       min: 0,
       max: 100,
-      default: 15,
     });
     expect(model.triggerEnrichment.fields.patterns_regex.eachMustBeValidRegex).toBe(true);
     const capRule = model.triggerEnrichment.fields.disambiguates_against.entries?.capability;
@@ -228,8 +222,8 @@ describe("capability schema contract loader", () => {
       "TRIGGER_ENRICHMENT in fixture.yaml must be present as a mapping",
     ],
     [
-      (data) => (data.TRIGGER_ENRICHMENT.contract_defaults.confidence_threshold = 150),
-      "TRIGGER_ENRICHMENT.contract_defaults.confidence_threshold in fixture.yaml must be an integer in range 0..100",
+      (data) => (data.TRIGGER_ENRICHMENT.fields.confidence_threshold.max = 101),
+      "TRIGGER_ENRICHMENT.fields.confidence_threshold.max in fixture.yaml must be 100",
     ],
     [
       (data) => delete data.TRIGGER_ENRICHMENT.fields.confidence_threshold,

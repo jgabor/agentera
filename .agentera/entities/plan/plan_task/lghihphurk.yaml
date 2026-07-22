@@ -1,0 +1,14 @@
+id: lghihphurk
+artifact: plan
+record:
+  name: Deliver deterministic routing
+  depends_on:
+    - tkgtvppdur
+  status: pending
+  acceptance:
+    - GIVEN a bare request, capability name, primary alias, or uniquely owned leading phrase WHEN routed THEN the expected capability and tier are returned.
+    - GIVEN a recognized phrase with a topic WHEN routed THEN only the recognized span is consumed and the original topic is preserved.
+    - GIVEN collision, partial match, negation, quotation, or non-owned wording WHEN routed THEN the deterministic tier abstains.
+    - GIVEN legacy matcher metadata WHEN present THEN it does not affect active routing.
+    - GIVEN every deterministic tier WHEN tested THEN pass, fail, collision, Unicode, whitespace, and punctuation behavior is covered proportionally.
+  plan: pxyvjauajx

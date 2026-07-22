@@ -1,0 +1,18 @@
+id: vhyyngtmun
+artifact: plan
+record:
+  name: Synchronize project state
+  depends_on:
+    - warjaypkno
+    - tkgtvppdur
+    - lghihphurk
+    - tcgzbnkhtd
+    - lzhjiqlqsu
+    - tzmwbmehzs
+  status: pending
+  acceptance:
+    - GIVEN final CLI state WHEN read THEN the routing decision, plan, progress, and relevant TODO entries agree.
+    - GIVEN unresolved portability or accuracy caveats WHEN closed out THEN they remain explicit and actionable.
+    - GIVEN current artifacts WHEN validated THEN none claims the retired scorer or an entirely LLM-only cascade remains authoritative.
+    - GIVEN changed artifacts WHEN verified THEN schema validation and compaction pass.
+  plan: pxyvjauajx

@@ -56,6 +56,14 @@ intent and state-readiness are both advisory context the LLM consults.
   `disambiguates_against.hint` strings as advisory context when it asks the
   user to confirm or clarify. The hints supply the words; the LLM supplies the
   judgment.
+- **Common-language judgment**: the requested outcome and semantic object
+  outrank a generic verb. For example, an audit of documentation or a design
+  system belongs to document or design, not audit. For an explicit ordered
+  compound request, start with its earliest prerequisite and preserve the
+  remaining intent for handoff (for example, plan before implementation). Ask
+  one clarifying question for unclear independent compounds. `next_action`
+  informs readiness only after classification and cannot override the message
+  intent.
 - **Implementation status**: implemented — the LLM host owns this layer.
   `references/cli/trigger-schema-enrichment.md` is the intent documentation
   contract the host reads.
@@ -73,8 +81,7 @@ disambiguation-engine output schema.
 
 - **Input pattern**: the LLM host cannot map the request to any capability from
   the trigger schema's intent descriptions.
-- **Action**: route to status for orientation. Status handles status requests
-  and ambiguous inputs.
+- **Action**: route to status for orientation only after no capability matches.
 - **Implementation status**: implemented and unchanged.
 
 ## Ownership boundaries

@@ -22,10 +22,11 @@ contract to the **trigger intent documentation contract**: it defines the
 `triggers.yaml` fields that help the LLM host understand what each capability
 does and how to disambiguate near-equal requests.
 
-The fields stay as documentation, not as scoring inputs. The LLM host reads the
-descriptions and disambiguates natively; `priority` and `disambiguates_against`
-are advisory hints, not scoring weights. There is no scoring algorithm, no
-confidence threshold, no borderline band, and no `prime --route` output schema.
+The active fields stay as documentation, not as scoring inputs. The LLM host
+reads the descriptions and disambiguates natively; `priority` and
+`disambiguates_against` are advisory hints, not scoring weights. There is no
+scoring algorithm, no confidence threshold, no borderline band, and no
+`prime --route` output schema.
 Decision 75's request-vs-state mutual exclusivity is dissolved: request intent
 and state-readiness are both advisory context the LLM consults. Decision 76
 supersedes Decision 75 design choices 2 (request-derived scoring as router), 4
@@ -58,11 +59,11 @@ TRIGGERS:
   1:
     id: T2
     description: >-
-      Audit and codebase health requests.
-    priority: medium
-    patterns:
-      - "check code health"
-      - "architecture review"
+      Audit local codebase health, architecture, quality, or technical debt.
+    priority: high
+    disambiguates_against:
+      - capability: document
+        hint: "audit owns code and architecture health; document owns documentation maintenance"
 ```
 
 ### 1.2 `disambiguates_against`
@@ -134,3 +135,14 @@ contract-owned values).
 | `priority` is one of `high` / `medium` / `low` on every `TRIGGERS` entry | §1.3 |
 | Document reframed as LLM-readable intent documentation; no scoring algorithm, thresholds, borderline band, or `--route` output schema | Decision 76, §1 |
 | Decision artifact lists each choice, ≥1 alternative, and rationale | Decision 76 in `.agentera/decisions.yaml` |
+
+## 4. Legacy enriched fields
+
+`patterns`, `patterns_regex`, `confidence_threshold`, and `borderline_band`
+remain accepted only so inherited enriched trigger files validate and load. They
+are discarded by the loader: the active trigger model does not expose strings,
+`RegExp` objects, scores, thresholds, or bands from them. The capability
+validator validates their compatibility shapes; specifically, it validates the
+numeric fields' integer 0..100 range, while the loader accepts and discards
+their values. Do not add them to new active trigger entries. Their presence
+cannot change a natural-language classification.

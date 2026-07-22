@@ -1,0 +1,14 @@
+id: tkgtvppdur
+artifact: plan
+record:
+  name: Authorize and specify the hybrid contract
+  depends_on:
+    - warjaypkno
+  status: pending
+  acceptance:
+    - GIVEN Decision 76 WHEN superseded THEN only curated literal fast paths are restored and open-ended language remains LLM-owned.
+    - GIVEN every route shape WHEN reviewed THEN precedence, abstention, selection, clarification, no-match, and compound outcomes are unambiguous.
+    - GIVEN phrase-plus-topic input WHEN compared THEN the recognized span and original remainder have one defined result.
+    - GIVEN evaluation evidence WHEN retained THEN private request text is absent by default and development, holdout, and adversarial partitions are frozen.
+    - GIVEN each route outcome WHEN tested THEN at least one passing and one failing fixture exists for every relevant capability boundary.
+  plan: pxyvjauajx

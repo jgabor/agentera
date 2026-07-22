@@ -1,49 +1,20 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests profile.
+    description: Create, maintain, or analyze a reusable decision profile.
     priority: high
-    patterns:
-      - "profile"
-      - "/profile"
-    confidence_threshold: 55
   2:
     id: T2
-    description: >-
-      Profile generation requests. Matches when the user wants to build
-      or regenerate their decision profile from scratch.
-    priority: medium
-    patterns:
-      - "build decision profile"
-      - "generate decision profile"
-      - "rebuild my profile"
-      - "regenerate profile"
-    confidence_threshold: 45
+    description: Build, generate, or regenerate a decision profile.
+    priority: high
+    disambiguates_against:
+      - capability: build
+        hint: "profile builds a reusable decision profile; build implements a software task"
   3:
     id: T3
-    description: >-
-      Profile maintenance requests. Matches when the user wants to update,
-      validate, or check their existing profile.
+    description: Update, validate, or refresh an existing decision profile.
     priority: medium
-    patterns:
-      - "update my profile"
-      - "refresh my decision profile"
-      - "validate my profile"
-      - "check my profile"
-      - "quick profile check"
-    confidence_threshold: 45
   4:
     id: T4
-    description: >-
-      Decision analysis requests. Matches when the user wants to understand
-      their own decision-making patterns or review past decisions.
+    description: Analyze personal decision patterns or review decision history.
     priority: medium
-    patterns:
-      - "what would I decide"
-      - "analyze my decisions"
-      - "mine my sessions"
-      - "decision patterns"
-      - "review my decision history"
-    confidence_threshold: 45

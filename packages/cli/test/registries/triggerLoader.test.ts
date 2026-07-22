@@ -44,6 +44,12 @@ afterEach(() => {
 describe("trigger schema loader — live repo fixtures", () => {
   const contract = loadCapabilitySchemaContract(CONTRACT_PATH);
 
+  function checkedInEntries(capability: string): Record<string, unknown>[] {
+    const source = fs.readFileSync(triggersYamlPath(capability, REPO_ROOT), "utf8");
+    const schema = YAML.parse(source) as { TRIGGERS: Record<string, Record<string, unknown>> };
+    return Object.values(schema.TRIGGERS);
+  }
+
   it("loads all twelve capabilities from the checked-in triggers.yaml files", () => {
     const model = loadTriggerModel(contract, { sourceRoot: REPO_ROOT });
     expect(model.capabilities.size).toBe(12);
@@ -55,17 +61,33 @@ describe("trigger schema loader — live repo fixtures", () => {
     }
   });
 
-  it("compiles patterns_regex entries into usable RegExp objects", () => {
+  it("uses checked-in triggers as LLM intent metadata rather than legacy matcher inputs", () => {
     const model = loadTriggerModel(contract, { sourceRoot: REPO_ROOT });
-    const vision = model.capabilities.get("vision")!;
-    const t3 = vision.triggers.find((t) => t.id === "T3")!;
-    expect(t3.patternsRegex.length).toBeGreaterThan(0);
-    const sample = t3.patternsRegex[0];
-    expect(sample).toBeInstanceOf(RegExp);
-    // The vision T3 entry documents "refine the vision" as a regex pattern.
-    expect(t3.patternsRegex.some((re) => re.test("I want to refine the vision now"))).toBe(true);
-    // Compiled regexes are case-insensitive per the enrichment spec (§1.3).
-    expect(t3.patternsRegex.some((re) => re.test("REFINE THE VISION"))).toBe(true);
+    const inertCompatibilityFields = [
+      "patterns",
+      ...Object.keys(contract.triggerEnrichment.fields).filter((field) => field !== "disambiguates_against"),
+    ];
+
+    for (const capability of CAPABILITY_IDS) {
+      const entries = checkedInEntries(capability);
+      for (const entry of entries) {
+        expect(entry.description, `${capability} trigger description`).toEqual(expect.any(String));
+        expect(entry.priority, `${capability} trigger priority`).toBeOneOf(
+          contract.triggerPriorityRules.allowedValues,
+        );
+        for (const field of inertCompatibilityFields) {
+          expect(entry, `${capability} ${String(entry.id)} must not present inert ${field}`).not.toHaveProperty(field);
+        }
+      }
+      for (const entry of model.capabilities.get(capability)!.triggers) {
+        expect(entry).not.toHaveProperty("patterns");
+        expect(entry).not.toHaveProperty("patternsRegex");
+      }
+    }
+
+    expect(checkedInEntries("status").find((entry) => entry.id === "T5")!.fallback).toBe(true);
+    expect(checkedInEntries("status").find((entry) => entry.id === "T5")!.priority).toBe("low");
+    expect(checkedInEntries("build").find((entry) => entry.id === "T4")!.description).not.toContain("vision");
   });
 
   it("resolves every disambiguates_against reference to a capability present in the model", () => {
@@ -79,7 +101,7 @@ describe("trigger schema loader — live repo fixtures", () => {
         }
       }
     }
-    // Spot check: vision T3 declares a disambiguation against build.
+    // Spot check: vision T3 distinguishes direction from implementation.
     const visionT3 = model.capabilities.get("vision")!.triggers.find((t) => t.id === "T3")!;
     const buildRef = visionT3.disambiguatesAgainst.find((d) => d.capability === "build");
     expect(buildRef).toBeDefined();
@@ -87,23 +109,6 @@ describe("trigger schema loader — live repo fixtures", () => {
     expect(model.capabilities.get(buildRef!.capability)!.capability).toBe("build");
   });
 
-  it("applies contract defaults for enriched fields that are absent", () => {
-    const model = loadTriggerModel(contract, { sourceRoot: REPO_ROOT });
-    // status T2 omits borderline_band; it must receive the contract default (15).
-    const statusT2 = model.capabilities.get("status")!.triggers.find((t) => t.id === "T2")!;
-    expect(statusT2.borderlineBand).toBe(contract.triggerEnrichment.contractDefaults.borderlineBand);
-    expect(statusT2.confidenceThreshold).toBe(40); // status T2 sets confidence_threshold: 40
-
-    // discuss T1 sets both fields; they must be honored, not defaulted.
-    const discussT1 = model.capabilities.get("discuss")!.triggers.find((t) => t.id === "T1")!;
-    expect(discussT1.confidenceThreshold).toBe(60);
-    expect(discussT1.borderlineBand).toBe(10);
-
-    // status T5 is the fallback marker entry.
-    const statusT5 = model.capabilities.get("status")!.triggers.find((t) => t.id === "T5")!;
-    expect(statusT5.fallback).toBe(true);
-    expect(statusT5.priority).toBe("low");
-  });
 });
 
 describe("trigger schema loader — temp fixture", () => {
@@ -115,10 +120,10 @@ describe("trigger schema loader — temp fixture", () => {
     return file;
   }
 
-  it("applies contract defaults for every enriched field when omitted", () => {
+  it("accepts legacy matcher fields without carrying them into semantic intent", () => {
     const contract = loadCapabilitySchemaContract(CONTRACT_PATH);
-    // Build a minimal triggers.yaml that omits every enriched field for the
-    // twelve capabilities. Only id/description/priority/patterns are set.
+    // Build a minimal legacy triggers.yaml that omits every enriched field for
+    // the twelve capabilities. `patterns` remains accepted for compatibility.
     for (const id of CAPABILITY_IDS) {
       writeTriggersFixture(tmp, id, {
         TRIGGERS: {
@@ -135,19 +140,16 @@ describe("trigger schema loader — temp fixture", () => {
 
     for (const id of CAPABILITY_IDS) {
       const entry = model.capabilities.get(id)!.triggers[0]!;
-      expect(entry.confidenceThreshold, id).toBe(
-        contract.triggerEnrichment.contractDefaults.confidenceThreshold,
-      );
-      expect(entry.borderlineBand, id).toBe(
-        contract.triggerEnrichment.contractDefaults.borderlineBand,
-      );
-      expect(entry.patternsRegex, id).toEqual([]);
+      expect(entry, id).not.toHaveProperty("patterns");
+      expect(entry, id).not.toHaveProperty("patternsRegex");
+      expect(entry, id).not.toHaveProperty("confidenceThreshold");
+      expect(entry, id).not.toHaveProperty("borderlineBand");
       expect(entry.disambiguatesAgainst, id).toEqual([]);
       expect(entry.fallback).toBe(false);
     }
   });
 
-  it("compiles a declared regex pattern and rejects an invalid one", () => {
+  it("discards legacy enriched fields without letting them influence the loaded intent", () => {
     const contract = loadCapabilitySchemaContract(CONTRACT_PATH);
     writeTriggersFixture(tmp, "status", {
       TRIGGERS: {
@@ -157,6 +159,8 @@ describe("trigger schema loader — temp fixture", () => {
           priority: "high",
           patterns: ["status"],
           patterns_regex: ["\\brefine\\s+the\\s+vision\\b"],
+          confidence_threshold: 72,
+          borderline_band: 8,
         },
       },
     });
@@ -179,9 +183,28 @@ describe("trigger schema loader — temp fixture", () => {
     }
     const model = loadTriggerModel(contract, { sourceRoot: tmp });
     const statusT1 = model.capabilities.get("status")!.triggers[0]!;
-    expect(statusT1.patternsRegex.length).toBe(1);
-    expect(statusT1.patternsRegex[0]).toBeInstanceOf(RegExp);
-    expect(statusT1.patternsRegex[0]!.test("please refine the vision now")).toBe(true);
+    expect(statusT1).toEqual({
+      id: "T1",
+      description: "regex-bearing trigger",
+      priority: "high",
+      disambiguatesAgainst: [],
+      fallback: false,
+    });
+
+    writeTriggersFixture(tmp, "status", {
+      TRIGGERS: {
+        1: {
+          id: "T1",
+          description: "regex-bearing trigger",
+          priority: "high",
+          patterns: ["status"],
+          patterns_regex: ["\\brefine\\s+the\\s+vision\\b"],
+          confidence_threshold: 0,
+          borderline_band: 100,
+        },
+      },
+    });
+    expect(loadTriggerModel(contract, { sourceRoot: tmp }).capabilities.get("status")!.triggers[0]!).toEqual(statusT1);
 
     // Now corrupt the regex and verify the loader surfaces a TriggerLoaderError.
     writeTriggersFixture(tmp, "status", {

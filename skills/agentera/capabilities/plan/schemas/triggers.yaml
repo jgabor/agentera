@@ -1,46 +1,23 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests plan for structured planning.
+    description: Requests to structure work into a plan before implementation.
     priority: high
-    patterns:
-      - "plan"
-      - "/plan"
-    confidence_threshold: 60
-    borderline_band: 10
-    patterns_regex:
-      - "\\b/plan\\b"
   2:
     id: T2
-    description: >-
-      Planning requests. Matches when the user wants to create a plan,
-      break work down, or specify requirements before building.
-    priority: medium
-    patterns:
-      - "plan this"
-      - "write a plan"
-      - "break this down"
-      - "decompose this"
-      - "spec this out"
-      - "plan before building"
-    confidence_threshold: 50
+    description: Create a plan, break work down, or specify requirements before building.
+    priority: high
     disambiguates_against:
       - capability: build
         hint: "plan structures work into tasks before coding; build implements the work"
+      - capability: discuss
+        hint: "plan structures committed work; discuss explores an undecided choice or tradeoff"
+      - capability: vision
+        hint: "plan structures work toward known direction; vision defines the direction itself"
   3:
     id: T3
-    description: >-
-      Architectural planning signals. Matches when the user is asking how
-      to approach building something or when the work is too large for a
-      single development cycle.
+    description: Plan a multi-step feature or approach too large for one development cycle.
     priority: medium
-    patterns:
-      - "how should we build this"
-      - "multi-step feature"
-      - "this is too big for one cycle"
-    confidence_threshold: 50
     disambiguates_against:
       - capability: build
         hint: "plan sizes work before implementation; build runs the development cycle"

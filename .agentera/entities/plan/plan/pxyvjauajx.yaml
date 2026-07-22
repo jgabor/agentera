@@ -1,0 +1,40 @@
+id: pxyvjauajx
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-23
+    status: open
+    reviewed: 2026-07-23
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    title: "Plan: Hybrid Capability Routing"
+  what: Deliver one portable routing cascade that resolves explicit and curated high-precision requests deterministically, delegates open-ended language to the receiving LLM host, validates semantic decisions before capability startup, preserves unresolved and compound intent, and emits bounded, explainable outcomes.
+  why: Make explicit requests fast and reproducible without recreating the retired keyword-scoring engine, while retaining semantic judgment for requests that deterministic matching cannot safely own.
+  constraints: The CLI remains the sole contract and validation authority, and the portable shared skill remains the sole host integration surface. Add no runtime-specific adapter. Preserve bare, capability-name, and primary-alias behavior. Keep active triggers semantic and legacy matcher fields compatibility-only. Give deterministic phrases unique ownership and preserve the original topic. State-derived next_action never overrides request intent. Never silently execute compound follow-up work. Do not persist private request text by default. Do not publish, tag, push, or change the 3.0.0 suite version.
+  overall_acceptance: GIVEN any supported request WHEN the complete cascade runs THEN exactly one documented outcome is validated before capability startup, explicit and uniquely owned phrase requests resolve deterministically without losing topic text, semantic requests select, clarify, preserve compound intent, or fall back to status, tier-specific quality and latency are reported, and the packed CLI and shared skill expose the same behavior without runtime-specific integration.
+  scope:
+    included:
+      - shared route-request and semantic-receipt contract
+      - deterministic explicit and curated leading-phrase routes
+      - LLM selection, clarification, no-match, and compound-intent outcomes
+      - privacy, validation, evaluation, packaging, documentation, and state synchronization
+    excluded:
+      - fuzzy keyword scoring, regex weights, confidence thresholds, and embeddings
+      - separate model services and runtime-native adapters
+      - autonomous execution of chained capabilities
+      - unrelated status recommendation behavior
+    deferred:
+      - learned or embedding-based classification unless later evidence justifies it
+  design: Run one shared route-decision cascade before capability startup. Explicit routes terminate deterministically. A separate contract-owned phrase registry may consume a uniquely owned leading phrase while preserving the original remainder as topic. Otherwise the request phase returns a bounded semantic capsule. The host supplies a select, clarify, or no-match receipt; the CLI validates that receipt before startup. Every terminal result carries provenance and preserved intent. Evaluation reports deterministic and semantic tiers separately.
+  unknowns:
+    - question: Which leading phrases form a useful, globally collision-free inventory?
+      affects_task: 3
+      resolve_by: Task 2 freezes a corpus-backed inventory; failure stops implementation for replanning rather than broadening matching.
+    - question: Can a two-phase request and receipt contract represent every semantic outcome without persistence or a runtime adapter?
+      affects_task: 4
+      resolve_by: Task 2 proves versioned examples for selection, clarification, no-match, invalid receipt, and compound remainder before implementation continues.
+    - question: Which reference host, model settings, latency boundary, and harmful-misroute target govern acceptance?
+      affects_task: 5
+      resolve_by: Task 2 freezes the reference protocol, corpus partitions, metrics, and targets before routing implementation is measured.
+  surprises:
+    []

@@ -1,54 +1,20 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests discuss for structured deliberation.
+    description: Structured deliberation about a choice, decision, or tradeoff.
     priority: high
-    patterns:
-      - "discuss"
-      - "/discuss"
-    confidence_threshold: 60
-    borderline_band: 10
   2:
     id: T2
-    description: >-
-      Decision-oriented requests. Matches when the user wants help thinking
-      through a decision or evaluating tradeoffs.
-    priority: medium
-    patterns:
-      - "deliberate"
-      - "help me think through"
-      - "help me decide"
-      - "think this through with me"
-      - "let's deliberate"
-      - "what are the tradeoffs"
-      - "brainstorm"
-      - "rubber duck"
-    confidence_threshold: 50
+    description: Help decide, think through alternatives, or evaluate tradeoffs.
+    priority: high
   3:
     id: T3
-    description: >-
-      Option-comparison signals. Matches when the user is torn between
-      choices or wants to evaluate competing approaches.
-    priority: medium
-    patterns:
-      - "should I"
-      - "I'm torn between"
-      - "what's the right approach"
-      - "let's reason about"
-    confidence_threshold: 50
+    description: Compare competing options before committing to an approach.
+    priority: high
   4:
     id: T4
-    description: >-
-      Pre-build scoping signals. Matches when the user wants to scope or
-      reason about work before starting implementation.
+    description: Explore uncertain scope or approach before committing to implementation.
     priority: medium
-    patterns:
-      - "scope this out"
-      - "before I build this"
-      - "talk me through"
-    confidence_threshold: 50
     disambiguates_against:
       - capability: plan
         hint: "discuss explores options before committing; plan structures committed work"

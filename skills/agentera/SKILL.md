@@ -25,9 +25,10 @@ capabilities:
 
 # agentera
 
-One agent, one CLI, many capabilities. The CLI is the routing brain — it owns
-project memory, capability instructions, routing judgment, and the worker-spec contract.
-The host agent learns one contract: the CLI.
+One agent, one CLI, many capabilities. The CLI owns project memory,
+capability instructions, and the worker-spec contract. The LLM host owns
+natural-language routing from the trigger intent documentation; it learns that
+contract from the CLI.
 
 ---
 
@@ -75,27 +76,23 @@ interruption; recovery continues forward internally.
 
 ## Routing
 
-The CLI routes. The host agent follows.
+The LLM host classifies natural language; the CLI supplies contracts and context.
 
 | Request shape | Route |
 |---|---|
 | Bare `/agentera` | 1. Run `agentera prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
 | `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Natural language | Run `agentera prime --context status --format json` once. Read `capability_context.instructions` and `capability_context.context.status_context`; use `next_action.capability` to suggest the matching capability. If no high-confidence match, present a disambiguation prompt. |
+| Natural language | Classify expressed intent before startup from trigger `description`, `priority`, and `disambiguates_against`; then run `agentera prime --context <selected-capability> --format json`. Ask one clarifying question only for genuine consequential ambiguity; use status only if no capability fits. |
 
-Capability names are the routing identity: `status`, `vision`, `discuss`,
-`research`, `plan`, `build`, `optimize`, `audit`, `document`, `profile`,
-`design`, `orchestrate`. Plain-language triggers (`help me decide`, `what's
-next`, `plan this`) match against each capability's `schemas/triggers.yaml`,
-not hardcoded here.
+Plain-language requests use per-capability `schemas/triggers.yaml`, not
+hardcoded rules. `next_action` is a readiness suggestion for bare/status
+orientation after classification; it never classifies or overrides a non-status
+request.
 
-The full five-layer routing model (Decision 42) — Layer 1 bare `/agentera`,
-Layer 2 capability/alias direct route, Layer 3 high-confidence natural-language
-match, Layer 4 borderline disambiguation, Layer 5 no-match fallback to status —
-is defined in [`references/cli/routing-model.md`](../../references/cli/routing-model.md).
-Layers 1, 2, and 5 are implemented; Layers 3 and 4 are being built by the Trigger
-Schema Enrichment and Layer 3-4 Routing plan.
+[Decision 76's routing model](../../references/cli/routing-model.md) makes
+Layer 3 LLM-native and dissolves Layer 4 into it: no scores, thresholds, or
+borderline band.
 
 Handoff verbs:
 

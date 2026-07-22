@@ -129,7 +129,7 @@ function capabilityContextPointer(requiredBeforeRendering = true): JsonObject {
     required_before_rendering: requiredBeforeRendering,
     note: requiredBeforeRendering
       ? "Dashboard rendering instructions (template, field rules, exit marker) are owned by the status capability. Run the fetch_command before rendering."
-      : "The status-context response includes dashboard instructions and bounded state; no second prime call is required before rendering.",
+      : "Includes dashboard instructions and bounded state; no second prime call.",
   };
 }
 
@@ -193,7 +193,7 @@ export function buildOrientationJsonPayload(
       fields: STATUS_STRUCTURED_FIELDS,
       render,
       access,
-      empty_state: "fresh mode with missing artifact summaries and zero issue counts",
+      empty_state: "fresh: summaries absent; zero issues",
       capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
        capability_context: capabilityContextPointer(options.capabilityContextRequiredBeforeRendering ?? true),
       artifact_writes: stateWriterContract(),

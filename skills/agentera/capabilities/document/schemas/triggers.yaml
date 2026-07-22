@@ -1,45 +1,16 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests document.
+    description: Create, maintain, or assess project documentation.
     priority: high
-    patterns:
-      - "document"
-      - "/document"
-    confidence_threshold: 60
-    borderline_band: 10
-    patterns_regex:
-      - "\\b/document\\b"
   2:
     id: T2
-    description: >-
-      Documentation creation requests. Matches when the user wants to
-      write or create documentation, including DTC-first workflows.
-    priority: medium
-    patterns:
-      - "write docs"
-      - "document this"
-      - "create README"
-      - "write AGENTS.md"
-      - "docs first"
-      - "document before building"
-    confidence_threshold: 50
+    description: Write or create project documentation, including README and agent guidance.
+    priority: high
   3:
     id: T3
-    description: >-
-      Documentation maintenance and audit requests. Matches when the user
-      wants to update, check, or verify existing documentation.
-    priority: medium
-    patterns:
-      - "update the docs"
-      - "audit docs"
-      - "check documentation"
-      - "docs out of sync"
-    confidence_threshold: 50
+    description: Update, verify, or audit documentation, including “audit the docs”.
+    priority: high
     disambiguates_against:
       - capability: audit
         hint: "document maintains project docs; audit reviews codebase health"
-    patterns_regex:
-      - "\\baudit\\s+docs?\\b"

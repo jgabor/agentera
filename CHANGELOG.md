@@ -81,6 +81,7 @@
 
 ### Fixed
 
+- Fixed natural-language capability routing to select from the user's expressed intent and trigger metadata before capability startup; status `next_action` now remains an orientation readiness suggestion rather than a classifier for non-status requests.
 - Fixed overlapping source, build, and package verification to use isolated construction and one atomically selected `dist` + `bundle` generation; clean source no longer requires checkout output, package proof still runs from an extracted tarball, and `pnpm -C packages/cli run pack:dry-run` replaces direct checkout `npm pack`.
 - Fixed `agentera prime --context status` to report severity totals across every open TODO while keeping attention and routing detail bounded with explicit omission recovery.
 - Fixed `agentera prime --context status` to exclude resolved entity TODOs before bounded pagination, so severity counts, attention, and next-action routing reflect only open work.

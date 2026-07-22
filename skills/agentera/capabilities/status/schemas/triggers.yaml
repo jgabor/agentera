@@ -1,62 +1,22 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests status.
+    description: Explicit status requests and orientation for the current project.
     priority: high
-    patterns:
-      - "status"
-      - "/status"
-    confidence_threshold: 60
-    borderline_band: 10
   2:
     id: T2
-    description: >-
-      Session-start signals. Matches explicit session-start or returning-to-project
-      requests from a user resuming work.
-    priority: medium
-    patterns:
-      - "start"
-      - "begin"
-      - "getting started"
-      - "onboard me"
-    confidence_threshold: 40
+    description: Session-start requests seeking orientation before choosing work.
+    priority: high
   3:
     id: T3
-    description: >-
-      Status and orientation requests. Matches when the user wants to know
-      the current state of the project or get a briefing.
+    description: Current project state, briefing, attention, or progress requests.
     priority: medium
-    patterns:
-      - "status"
-      - "dashboard"
-      - "pulse"
-      - "brief"
-      - "brief me"
-      - "update me"
-      - "what needs attention"
-    confidence_threshold: 45
   4:
     id: T4
-    description: >-
-      Returning-to-project signals. Matches when the user resumes work
-      on a known project and wants to pick up where they left off.
-    priority: medium
-    patterns:
-      - "where were we"
-      - "catch me up"
-      - "what should I work on"
-      - "what's next"
-    confidence_threshold: 45
+    description: Resume-work and “what's next?” requests with no separate requested outcome.
+    priority: high
   5:
     id: T5
-    description: >-
-      Fallback. Status is the default capability when no other capability's
-      trigger patterns match. This entry documents the fallback behavior
-      defined in the routing layer routing logic.
-    patterns:
-      - "*"
+    description: Fallback orientation when no capability fits the request.
     fallback: true
     priority: low
-    confidence_threshold: 0

@@ -79,14 +79,15 @@ export interface DisambiguateAgainstEntryRule {
 }
 
 /**
- * Optional trigger-entry enrichment field rule (TRIGGER_ENRICHMENT.fields),
- * the single authority for the four enriched-field shapes and their contract
- * defaults per Decision 75 / references/cli/trigger-schema-enrichment.md.
+ * Optional trigger-entry compatibility field rule (TRIGGER_ENRICHMENT.fields).
+ * Decision 76 makes descriptions, priority, and disambiguation LLM-native
+ * intent documentation; these shapes and defaults preserve legacy enriched
+ * files under references/cli/trigger-schema-enrichment.md.
  */
 export interface TriggerEnrichmentFieldRule {
   readonly type: string;
   readonly required: boolean;
-  readonly default: unknown;
+  readonly default?: unknown;
   readonly min?: number;
   readonly max?: number;
   readonly eachMustBeValidRegex?: boolean;
@@ -100,7 +101,6 @@ export interface TriggerEnrichmentFieldRule {
  */
 export interface TriggerEnrichmentRules {
   readonly spec: string;
-  readonly contractDefaults: { readonly confidenceThreshold: number; readonly borderlineBand: number };
   readonly fields: Record<string, TriggerEnrichmentFieldRule>;
   readonly allowedCapabilityIds: string[];
 }
@@ -214,17 +214,12 @@ export function buildCapabilitySchemaContract(
 
 function buildTriggerEnrichmentRules(data: JsonObject): TriggerEnrichmentRules {
   const enrichment = data.TRIGGER_ENRICHMENT as JsonObject;
-  const defaults = enrichment.contract_defaults as JsonObject;
   const fields = enrichment.fields as Record<string, JsonObject>;
   const primaryAliases = (data.ROUTE_ALIASES as JsonObject).primary_aliases as JsonObject[];
   const allowedCapabilityIds: string[] = primaryAliases.map((entry) => entry.capability as string);
 
   return {
     spec: enrichment.spec as string,
-    contractDefaults: {
-      confidenceThreshold: defaults.confidence_threshold as number,
-      borderlineBand: defaults.borderline_band as number,
-    },
     fields: Object.fromEntries(
       Object.entries(fields).map(([name, raw]) => [name, buildEnrichmentFieldRule(raw)]),
     ),
@@ -550,9 +545,7 @@ function checkSelfGroups(
 }
 
 /**
- * Required integer range field inside TRIGGER_ENRICHMENT (defaults and
- * per-field min/max). Used by both the contract_defaults and field-level
- * constraint checks below.
+ * Required integer range field inside TRIGGER_ENRICHMENT compatibility rules.
  */
 function checkEnrichmentIntegerField(
   value: unknown,
@@ -580,34 +573,15 @@ function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, erro
       `bootstrap [error]: TRIGGER_ENRICHMENT.spec in ${sourceLabel} must be a non-empty string`,
     );
   }
-  const defaults = enrichment.contract_defaults;
-  if (!isMapping(defaults)) {
-    errors.push(
-      `bootstrap [error]: TRIGGER_ENRICHMENT.contract_defaults in ${sourceLabel} must be a mapping`,
-    );
-  } else {
-    checkEnrichmentIntegerField(
-      defaults.confidence_threshold,
-      "TRIGGER_ENRICHMENT.contract_defaults.confidence_threshold",
-      sourceLabel,
-      errors,
-    );
-    checkEnrichmentIntegerField(
-      defaults.borderline_band,
-      "TRIGGER_ENRICHMENT.contract_defaults.borderline_band",
-      sourceLabel,
-      errors,
-    );
-  }
-
   const fields = enrichment.fields;
   if (!isMapping(fields)) {
     errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields in ${sourceLabel} must be a mapping`);
     return;
   }
-  // The four canonical enrichment field names. Each must exist as a mapping
-  // with the documented shape; the loader reads them faithfully.
+  // Legacy fields remain shape-validated for compatibility, but are not
+  // carried into the active semantic trigger model.
   const expected: Record<string, string> = {
+    patterns: "list_of_strings",
     confidence_threshold: "integer",
     borderline_band: "integer",
     patterns_regex: "list_of_strings",
@@ -643,14 +617,8 @@ function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, erro
           `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.max in ${sourceLabel} must be 100`,
         );
       }
-      checkEnrichmentIntegerField(
-        fields[fieldName].default,
-        `TRIGGER_ENRICHMENT.fields.${fieldName}.default`,
-        sourceLabel,
-        errors,
-      );
     }
-    if (expectedType === "list_of_strings" && fields[fieldName].each_must_be_valid_regex !== true) {
+    if (fieldName === "patterns_regex" && fields[fieldName].each_must_be_valid_regex !== true) {
       errors.push(
         `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.each_must_be_valid_regex in ${sourceLabel} must be true`,
       );

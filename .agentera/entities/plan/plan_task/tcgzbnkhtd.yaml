@@ -1,0 +1,15 @@
+id: tcgzbnkhtd
+artifact: plan
+record:
+  name: Deliver portable semantic fallback
+  depends_on:
+    - tkgtvppdur
+    - lghihphurk
+  status: pending
+  acceptance:
+    - GIVEN deterministic abstention and clear intent WHEN the host returns a valid selection THEN the capability starts with route provenance.
+    - GIVEN consequential ambiguity or no match WHEN classified THEN one clarification occurs or status starts explicitly as no-match.
+    - GIVEN ordered or independent compound intent WHEN classified THEN remaining work is preserved and nothing silently chains.
+    - GIVEN an invalid or mismatched receipt WHEN validated THEN startup fails safely with actionable recovery.
+    - GIVEN semantic outcome tests WHEN counted THEN clear, ambiguous, unmatched, compound, malformed, and prompt-injection cases are represented.
+  plan: pxyvjauajx

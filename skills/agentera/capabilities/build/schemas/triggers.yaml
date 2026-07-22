@@ -1,49 +1,27 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests build for autonomous development.
+    description: A scoped implementation task or one verified development cycle.
     priority: high
-    patterns:
-      - "build"
-      - "/build"
-    confidence_threshold: 60
-    borderline_band: 10
   2:
     id: T2
-    description: >-
-      Development cycle requests. Matches when the user wants to run an
-      autonomous development cycle or evolve the project.
-    priority: medium
-    patterns:
-      - "run a dev cycle"
-      - "evolve the project"
-      - "develop autonomously"
-      - "build the next feature"
-    confidence_threshold: 50
-  3:
-    id: T3
-    description: >-
-      Continuous development signals. Matches when the user wants ongoing
-      building or to start working on the project.
-    priority: medium
-    patterns:
-      - "keep building"
-      - "start building"
-      - "work on the project"
-    confidence_threshold: 50
-  4:
-    id: T4
-    description: >-
-      Vision refinement within a development context. Matches when the user
-      wants to refine the project vision as part of a development session.
-    priority: medium
-    patterns:
-      - "refine the vision"
-    confidence_threshold: 50
+    description: Implement one requested feature, fix, or bounded development task.
+    priority: high
     disambiguates_against:
       - capability: vision
-        hint: "build implements code after vision work; vision defines direction"
-    patterns_regex:
-      - "\\brefine\\s+the\\s+vision\\b"
+        hint: "build implements code; vision defines or refines project direction"
+      - capability: profile
+        hint: "build implements a software task; profile builds a reusable decision profile"
+      - capability: orchestrate
+        hint: "build completes one task or cycle; orchestrate runs an entire plan or multiple tasks"
+  3:
+    id: T3
+    description: Start or continue a single concrete implementation task.
+    priority: medium
+  4:
+    id: T4
+    description: Implement a scoped task after its plan or requirements are established.
+    priority: medium
+    disambiguates_against:
+      - capability: plan
+        hint: "build implements an established task; plan structures work before implementation"

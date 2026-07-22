@@ -1,0 +1,14 @@
+id: ztqcucoubm
+artifact: progress
+record:
+  timestamp: 2026-07-23 00:49
+  type: refactor
+  phase: build
+  what: "Recovered the semantic-trigger baseline after independent audit: removed the contaminated commit, recreated the delivery under canonical identity, and isolated hook Git state from fixture repositories."
+  context:
+    intent: Preserve Decision 76's LLM-native intent model while correcting audit-proven delivery safety and evidence gaps.
+    constraints: Do not implement later hybrid-routing tasks; retain only semantic intent metadata in the active model.
+    scope: Hook test environment, semantic trigger loader and validator, trigger schemas, routing documentation, shared skill, package parity tests, and typed plan/progress state.
+  discovered: The prior audited attempt used the upgrade-fixture identity and bypassed a failed hook; hook-local Git variables reached fixture repositories. Numeric compatibility fields are loader-inert while V7 validates their ranges.
+  verified: Focused routing and hook-isolation tests passed (99 tests); full source suite passed (2,378 passed, 1 skipped); typecheck, build, all 12 capability validations, capability-contract validation, package verification, compaction, and diff checks passed. A normal pre-commit hook passed for the hook-safety commit.
+  next: Later plan tasks own hybrid phrase routing and route receipts; do not add either here.

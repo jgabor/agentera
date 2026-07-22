@@ -317,7 +317,7 @@ describe("trigger enrichment (V7)", () => {
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
   });
 
-  it("accepts a fully enriched triggers.yaml with valid confidence_threshold, borderline_band, patterns_regex, and disambiguates_against", () => {
+  it("accepts fully populated legacy compatibility fields and semantic disambiguation", () => {
     const capDir = writeCapability(
       path.join(tmp, "enriched"),
       triggerSchema(`patterns:
@@ -333,6 +333,16 @@ disambiguates_against:
     hint: "vision is about what to build, not tuning existing code"`),
     );
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+  });
+
+  it("fails when legacy patterns is not a list of strings", () => {
+    const capDir = writeCapability(
+      path.join(tmp, "patterns-invalid"),
+      triggerSchema("patterns: 42"),
+    );
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
+      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has patterns=42 (must be a list of strings)`,
+    ]);
   });
 
   it("fails when confidence_threshold is above 100 with the valid range and offending entry ID", () => {

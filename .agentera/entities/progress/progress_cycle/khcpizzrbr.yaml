@@ -1,0 +1,13 @@
+id: khcpizzrbr
+artifact: progress
+record:
+  timestamp: 2026-07-23 00:21
+  type: refactor
+  phase: build
+  what: "Established the semantic-trigger baseline: active trigger models expose only intent metadata while legacy matcher and score fields remain compatibility-validated and inert."
+  context:
+    intent: Implement Decision 76's LLM-owned natural-language routing boundary before later deterministic or receipt-protocol work.
+    constraints: No scores, confidence thresholds, or borderline band in active triggers; no runtime-specific adapters, publishing, tags, pushes, or version changes.
+    scope: Trigger schemas, semantic trigger loader and validator, routing documentation, shared skill, package parity tests
+  verified: Focused registry, routing, validation, and status tests passed (74 tests); typecheck, build, all 12 capability validations, capability-contract validation, package-boundary verification, and git diff --check passed.
+  next: Later plan tasks own the hybrid phrase registry and route request/receipt protocol; do not add either to this baseline.

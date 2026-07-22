@@ -1,47 +1,16 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests optimize.
+    description: Improve an existing system against a measurable target.
     priority: high
-    patterns:
-      - "optimize"
-      - "/optimize"
-    confidence_threshold: 60
-    borderline_band: 20
     disambiguates_against:
       - capability: audit
         hint: "optimize tunes existing code; audit reviews codebase health"
   2:
     id: T2
-    description: >-
-      Metric-driven optimization requests. Matches when the user wants to
-      improve a concrete, quantifiable property of their codebase.
-    priority: medium
-    patterns:
-      - "optimize"
-      - "improve performance"
-      - "reduce latency"
-      - "increase test coverage"
-      - "lower bundle size"
-      - "speed up"
-      - "make faster"
-      - "make smaller"
-      - "get the score up"
-      - "hit the target"
-      - "improve the metric"
-    confidence_threshold: 50
-    borderline_band: 20
+    description: Improve a concrete metric such as startup time, latency, coverage, or size.
+    priority: high
   3:
     id: T3
-    description: >-
-      Iterative experimentation requests. Matches when the user wants to
-      run experiments, benchmark, or iterate on a measurable objective.
+    description: Benchmark, experiment, or iterate toward a measurable objective.
     priority: medium
-    patterns:
-      - "benchmark and iterate"
-      - "run experiments"
-      - "tune"
-      - "experiment until"
-    confidence_threshold: 50

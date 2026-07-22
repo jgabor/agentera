@@ -1,55 +1,23 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests orchestrate.
+    description: Execute an entire plan or coordinate multiple tasks and capabilities.
     priority: high
-    patterns:
-      - "orchestrate"
-      - "/orchestrate"
-    confidence_threshold: 60
-    borderline_band: 10
-    patterns_regex:
-      - "\\b/orchestrate\\b"
   2:
     id: T2
-    description: >-
-      Multi-cycle execution signals. Matches when the user wants to execute
-      an entire plan autonomously or run tasks through evaluation gating.
-    priority: medium
-    patterns:
-      - "run the plan"
-      - "execute the plan"
-      - "run all tasks"
-      - "keep going until done"
-      - "run through the plan"
-      - "build everything"
-    confidence_threshold: 55
+    description: Run every task in a plan or execute a full plan autonomously.
+    priority: high
     disambiguates_against:
       - capability: build
         hint: "orchestrate runs the whole plan autonomously; build executes one development cycle"
   3:
     id: T3
-    description: >-
-      Orchestration and delegation signals. Matches when the user wants to
-      chain multiple capabilities, delegate work, or coordinate multi-step
-      execution.
+    description: Coordinate multiple tasks or capability handoffs through completion.
     priority: medium
-    patterns:
-      - "orchestrate"
-      - "orchestrate skills"
-      - "multi-cycle"
-    confidence_threshold: 50
   4:
     id: T4
-    description: >-
-      Autonomous plan execution signals. Matches when the user wants
-      evaluated, plan-driven development without manual intervention.
+    description: Run evaluated, plan-driven development across multiple tasks without manual sequencing.
     priority: medium
-    patterns:
-      - "autonomous plan execution"
-    confidence_threshold: 50
     disambiguates_against:
       - capability: build
         hint: "orchestrate chains multi-cycle execution; build runs a single cycle"

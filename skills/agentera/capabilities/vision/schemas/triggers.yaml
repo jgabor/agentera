@@ -1,55 +1,23 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests vision.
+    description: Requests to define or refine the project's vision and direction.
     priority: high
-    patterns:
-      - "vision"
-      - "/vision"
-    confidence_threshold: 60
-    borderline_band: 10
   2:
     id: T2
-    description: >-
-      Vision creation requests. Matches when the user wants to define or
-      create a project vision or north star direction.
-    priority: medium
-    patterns:
-      - "create a vision"
-      - "write the vision"
-      - "define the direction"
-      - "set the north star"
-      - "dream bigger"
-    confidence_threshold: 50
+    description: Define a new north star, product direction, or desired future.
+    priority: high
   3:
     id: T3
-    description: >-
-      Vision refinement requests. Matches when the user wants to evolve
-      or rethink an existing vision.
-    priority: medium
-    patterns:
-      - "rethink the vision"
-      - "refine the vision"
-      - "update the vision"
-    confidence_threshold: 50
+    description: Refine, rethink, or update an existing vision or north star.
+    priority: high
     disambiguates_against:
       - capability: build
         hint: "vision refines existing project direction; build implements code"
-    patterns_regex:
-      - "\\brefine\\s+the\\s+vision\\b"
-      - "update\\s+the\\s+vision"
   4:
     id: T4
-    description: >-
-      Project bootstrap. Matches when the user wants to bootstrap a new
-      project identity or define what a project should become.
-    priority: medium
-    patterns:
-      - "bootstrap the project"
-      - "what should this project become"
-    confidence_threshold: 50
+    description: Establish a new project's identity or decide what it should become.
+    priority: high
     disambiguates_against:
       - capability: plan
         hint: "vision defines what a project should become; plan structures the work"

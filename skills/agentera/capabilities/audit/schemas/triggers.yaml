@@ -1,47 +1,25 @@
 TRIGGERS:
   1:
     id: T1
-    description: >-
-      Direct invocation by name or slash command. Matches when the user
-      explicitly requests audit.
+    description: Audit local codebase health, architecture, quality, or technical debt.
     priority: high
-    patterns:
-      - "audit"
-      - "/audit"
-    confidence_threshold: 60
-    borderline_band: 10
-    patterns_regex:
-      - "\\b/audit\\b"
   2:
     id: T2
-    description: >-
-      Audit and codebase health requests. Matches when the user wants to
-      assess codebase health, architecture quality, or structural integrity.
-    priority: medium
-    patterns:
-      - "audit the codebase"
-      - "check code health"
-      - "architecture review"
-      - "find technical debt"
-      - "assess code quality"
-      - "how healthy is this codebase"
-      - "what needs fixing"
-      - "structural review"
-      - "pattern audit"
-      - "dependency check"
-      - "test coverage audit"
-    confidence_threshold: 55
+    description: Review the local repository's code, architecture, dependencies, or structural health.
+    priority: high
+    disambiguates_against:
+      - capability: research
+        hint: "audit reviews this local codebase; research analyzes an external source or repository"
+      - capability: document
+        hint: "audit owns code and architecture health; document owns documentation maintenance and docs audits"
+      - capability: design
+        hint: "audit owns code and architecture health; design owns visual identity and design-system review"
+      - capability: optimize
+        hint: "audit assesses local health; optimize improves an existing system against a measurable target"
   3:
     id: T3
-    description: >-
-      Implicit trigger after extended build activity. Matches when
-      build has run 5+ cycles without a health check and the system
-      detects an overdue audit.
+    description: Review local health after implementation activity reveals a need for assessment.
     priority: medium
-    patterns:
-      - "health check overdue"
-      - "audit after build"
-    confidence_threshold: 50
     disambiguates_against:
       - capability: build
         hint: "audit checks codebase health after build activity; build continues development"

@@ -223,6 +223,9 @@ describe("status dashboard contract", () => {
       });
       expect(statusContext.attention).toHaveLength(6);
       expect(statusContext.next_action).toMatchObject({ capability: "build", object: boundedText });
+      expect((statusContext.source_contract as Record<string, unknown>).empty_state).toBe(
+        "fresh: summaries absent; zero issues",
+      );
 
       const capsule = buildStatusCapabilityContextPayload(state);
       let out = "";

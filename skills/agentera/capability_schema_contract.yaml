@@ -137,31 +137,32 @@ FIELD_RULES:
         - low
       description: >-
         Relevance-precedence hint the LLM host reads when ordering
-        candidate capabilities for a request. See
+        capability intent for a request. See
         references/cli/routing-model.md for routing semantics.
 
 TRIGGER_ENRICHMENT:
   description: >-
-    Optional trigger-entry intent-documentation fields. Every field is
-    OPTIONAL: a triggers.yaml entry that omits all enriched fields remains
-    valid. The LLM host consumes description and disambiguates_against at
-    runtime; confidence_threshold, borderline_band, and patterns_regex are
-    retained as shape-validated documentation so triggers.yaml files that
-    carry them still validate.
+    Optional trigger-entry fields. Every field is OPTIONAL: a triggers.yaml
+    entry that omits all enriched fields remains valid. The LLM host consumes
+    disambiguates_against as intent documentation. patterns,
+    confidence_threshold, borderline_band, and patterns_regex are legacy
+    compatibility fields: they remain shape-validated only and never enter the
+    active semantic trigger model.
   spec: references/cli/trigger-schema-enrichment.md
-  contract_defaults:
-    # Default values for optional enriched fields.
-    confidence_threshold: 50
-    borderline_band: 15
   fields:
+    patterns:
+      type: list_of_strings
+      required: false
+      description: >-
+        Legacy matcher strings retained only so existing trigger files load and
+        validate. They are never matched or returned by the active model.
     confidence_threshold:
       type: integer
       required: false
       min: 0
       max: 100
-      default: 50
       description: >-
-        Optional integer 0-100. Not consumed by the LLM host; retained so
+        Legacy integer 0-100. Not consumed by the LLM host; retained so
         triggers.yaml files carrying the field still validate. A non-integer
         or value outside 0..100 fails V7 validation with the valid range
         and the offending entry ID.
@@ -170,25 +171,21 @@ TRIGGER_ENRICHMENT:
       required: false
       min: 0
       max: 100
-      default: 15
       description: >-
-        Optional integer 0-100. Not consumed by the LLM host; retained so
+        Legacy integer 0-100. Not consumed by the LLM host; retained so
         triggers.yaml files carrying the field still validate. A non-integer
         or value outside 0..100 fails V7 validation.
     patterns_regex:
       type: list_of_strings
       required: false
-      default: []
       each_must_be_valid_regex: true
       description: >-
-        Optional list of regex strings. Not consumed by the LLM host;
-        retained so triggers.yaml files carrying the field still validate.
-        The loader compiles each entry during validation; a compile failure
-        fails V7 validation naming the offending entry and pattern.
+        Legacy list of regex strings. Not consumed by the LLM host; retained
+        so triggers.yaml files carrying the field still validate. The loader
+        syntax-validates each entry but never returns a RegExp or matches it.
     disambiguates_against:
       type: list_of_mappings
       required: false
-      default: []
       description: >-
         Declares which other capabilities this trigger's intent could be
         confused with, with a hint the LLM host consults when a request could
@@ -497,13 +494,14 @@ VALIDATION:
     description: >-
       Trigger entries MAY carry the optional intent-documentation fields
       defined in TRIGGER_ENRICHMENT. Enrichment is opt-in per entry;
-      triggers omitting every enriched field remain valid.
-      confidence_threshold, borderline_band, and patterns_regex are
-      retained as shape-validated documentation; disambiguates_against
-      is consumed by the LLM host at runtime. Validating an entry with
-      enriched fields fails when the rules below are violated.
+      triggers omitting every enriched field remain valid. patterns,
+      confidence_threshold, borderline_band, and patterns_regex are legacy
+      compatibility fields only; disambiguates_against is consumed by the
+      LLM host at runtime. Validating an entry with enriched fields fails
+      when the rules below are violated.
     severity: error
     checks:
+      - "patterns, when present, is a list of strings"
       - "confidence_threshold, when present, is an integer in 0..100"
       - "borderline_band, when present, is an integer in 0..100"
       - "patterns_regex entries are strings that compile as regular expressions"

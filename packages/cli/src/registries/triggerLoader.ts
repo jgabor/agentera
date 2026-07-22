@@ -9,9 +9,11 @@ import type { CapabilitySchemaContract } from "./capabilityContract.js";
 /**
  * Trigger schema loader. Reads the twelve
  * `skills/agentera/capabilities/<name>/schemas/triggers.yaml` files into a
- * typed runtime model the Layer 3-4 routing engine consumes. Applies the
- * TRIGGER_ENRICHMENT contract defaults for absent fields and compiles
- * `patterns_regex` entries into real RegExp objects.
+ * typed semantic intent and compatibility model. It validates textual legacy
+ * matcher fields, accepts and discards numeric compatibility fields, and never
+ * returns any of them as executable matcher inputs or Layer 3-4 decisions.
+ * Decision 76 assigns natural-language routing to the LLM host, which reads
+ * active trigger intent documentation.
  *
  * Spec: references/cli/trigger-schema-enrichment.md
  * Contract: skills/agentera/capability_schema_contract.yaml (TRIGGER_ENRICHMENT)
@@ -26,11 +28,7 @@ export interface CompiledTriggerEntry {
   readonly id: string;
   readonly description: string;
   readonly priority: "high" | "medium" | "low";
-  readonly patterns: readonly string[];
-  readonly patternsRegex: readonly RegExp[];
-  readonly confidenceThreshold: number;
   readonly disambiguatesAgainst: readonly DisambiguationEntry[];
-  readonly borderlineBand: number;
   readonly fallback: boolean;
 }
 
@@ -85,12 +83,11 @@ function asStringArray(value: unknown, location: string): string[] {
   return [...(value as string[])];
 }
 
-function compileRegexPatterns(patterns: readonly string[], location: string): RegExp[] {
-  const compiled: RegExp[] = [];
+function validateLegacyRegexPatterns(patterns: readonly string[], location: string): void {
   for (let i = 0; i < patterns.length; i++) {
     const source = patterns[i];
     try {
-      compiled.push(new RegExp(source, "i"));
+      new RegExp(source, "i");
     } catch (exc) {
       throw new TriggerLoaderError([
         `${location} patterns_regex[${i}]=${JSON.stringify(source)} is not a valid regular expression: ${
@@ -99,7 +96,6 @@ function compileRegexPatterns(patterns: readonly string[], location: string): Re
       ]);
     }
   }
-  return compiled;
 }
 
 function resolveDisambiguation(
@@ -149,7 +145,6 @@ function buildTriggerEntry(
   capability: string,
   contract: CapabilitySchemaContract,
 ): CompiledTriggerEntry {
-  const enrichment = contract.triggerEnrichment;
   const location = `TRIGGERS entry ${key} in ${capability}/schemas/triggers.yaml`;
 
   const id = raw.id;
@@ -171,24 +166,18 @@ function buildTriggerEntry(
   }
   const priority = priorityRaw as "high" | "medium" | "low";
 
-  const patterns = asStringArray(raw.patterns, `${location} patterns`);
-
+  // These inherited matcher/scoring fields are accepted only to keep legacy
+  // trigger files loadable. Nothing below carries them into the active model.
+  // Numeric compatibility fields are deliberately accepted and discarded here;
+  // V7 validation owns their integer and range checks.
+  asStringArray(raw.patterns, `${location} patterns`);
   const patternsRegexSources = asStringArray(raw.patterns_regex, `${location} patterns_regex`);
-  const patternsRegex = compileRegexPatterns(patternsRegexSources, location);
-
-  const confidenceThreshold =
-    typeof raw.confidence_threshold === "number" && Number.isInteger(raw.confidence_threshold)
-      ? raw.confidence_threshold
-      : (enrichment.fields.confidence_threshold.default as number);
-  const borderlineBand =
-    typeof raw.borderline_band === "number" && Number.isInteger(raw.borderline_band)
-      ? raw.borderline_band
-      : (enrichment.fields.borderline_band.default as number);
+  validateLegacyRegexPatterns(patternsRegexSources, location);
 
   const disambiguatesAgainst = resolveDisambiguation(
     raw.disambiguates_against,
     location,
-    enrichment.allowedCapabilityIds,
+    contract.triggerEnrichment.allowedCapabilityIds,
   );
 
   const fallback = raw.fallback === true;
@@ -197,11 +186,7 @@ function buildTriggerEntry(
     id,
     description,
     priority,
-    patterns,
-    patternsRegex,
-    confidenceThreshold,
     disambiguatesAgainst,
-    borderlineBand,
     fallback,
   };
 }
@@ -240,12 +225,13 @@ function buildCapabilityTriggers(
 }
 
 /**
- * Load all twelve capability triggers.yaml files into a typed TriggerModel.
+ * Load all twelve capability triggers.yaml files into a typed inspection and
+ * compatibility TriggerModel.
  * The capability set is the ROUTE_ALIASES.primary_aliases list owned by the
- * capability schema contract. Enrichment defaults are applied for absent
- * fields; `disambiguates_against.capability` references are validated against
- * the canonical capability IDs and each must resolve to a capability present
- * in the returned model.
+ * capability schema contract. Absent `disambiguates_against` defaults to an
+ * empty list; its capability references are validated against the canonical
+ * capability IDs and each must resolve to a capability present in the returned
+ * model.
  */
 export function loadTriggerModel(
   contract: CapabilitySchemaContract,
