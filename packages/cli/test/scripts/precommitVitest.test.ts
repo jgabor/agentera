@@ -31,12 +31,11 @@ function runPrecommitVitest(...stagedPaths: string[]): Route {
   throw new Error(`unexpected route: ${result.stdout.trim()}`);
 }
 
-function gitPath(...args: string[]): string {
+function gitOutput(...args: string[]): string {
   const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" });
   expect(result.status, result.stderr).toBe(0);
   return result.stdout.trim();
 }
-
 describe("scripts/precommit-vitest.sh staged routing", () => {
   it("removes parent-hook repository routing before verification", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "precommit-vitest-"));
@@ -65,10 +64,10 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
         cwd: REPO_ROOT,
         env: {
           ...process.env,
-          GIT_DIR: gitPath("rev-parse", "--git-dir"),
+          GIT_DIR: gitOutput("rev-parse", "--git-dir"),
           GIT_WORK_TREE: REPO_ROOT,
-          GIT_INDEX_FILE: gitPath("rev-parse", "--git-path", "index"),
-          GIT_COMMON_DIR: gitPath("rev-parse", "--git-common-dir"),
+          GIT_INDEX_FILE: gitOutput("rev-parse", "--git-path", "index"),
+          GIT_COMMON_DIR: gitOutput("rev-parse", "--git-common-dir"),
           PATH: `${binDir}:${process.env.PATH}`,
           BASH_ENV: "",
           PRECOMMIT_VITEST_ENV_LOG: envLog,
@@ -89,6 +88,33 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     }
   });
 
+  it("clears hook-local Git environment before fixture repositories run", () => {
+    const before = {
+      head: gitOutput("rev-parse", "HEAD"),
+      localConfig: gitOutput("config", "--local", "--list"),
+    };
+    const result = spawnSync(
+      "bash",
+      [PRECOMMIT_SCRIPT, "packages/cli/test/upgrade/upgradeOrchestrator.test.ts"],
+      {
+        cwd: REPO_ROOT,
+        env: {
+          ...process.env,
+          GIT_DIR: gitOutput("rev-parse", "--absolute-git-dir"),
+          GIT_COMMON_DIR: path.resolve(REPO_ROOT, gitOutput("rev-parse", "--git-common-dir")),
+          GIT_INDEX_FILE: gitOutput("rev-parse", "--git-path", "index"),
+          GIT_WORK_TREE: REPO_ROOT,
+        },
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect({
+      head: gitOutput("rev-parse", "HEAD"),
+      localConfig: gitOutput("config", "--local", "--list"),
+    }).toEqual(before);
+  });
   it("routes broad source changes through the local source-owner policy", () => {
     expect(runPrecommitVitest("packages/cli/src/cli/prime.ts")).toEqual({
       mode: "policy", policy: "local", targets: [],

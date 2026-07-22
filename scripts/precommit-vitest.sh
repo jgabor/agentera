@@ -5,6 +5,14 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
+
+# Git hook invocations can export repository-local variables such as GIT_DIR
+# and GIT_WORK_TREE. The test suite creates independent Git fixture
+# repositories; letting those variables cross that boundary could redirect a
+# fixture commit or config write into this checkout. Use Git's own complete
+# list before launching any test subprocesses.
+unset $(git rev-parse --local-env-vars)
+
 cd "$ROOT/packages/cli"
 
 if ! command -v pnpm >/dev/null 2>&1; then
