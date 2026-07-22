@@ -4,7 +4,7 @@ record:
   name: Authorize and specify the hybrid contract
   depends_on:
     - warjaypkno
-  status: pending
+  status: complete
   acceptance:
     - GIVEN Decision 76 WHEN superseded THEN only curated literal fast paths are restored and open-ended language remains LLM-owned.
     - GIVEN every route shape WHEN reviewed THEN precedence, abstention, selection, clarification, no-match, and compound outcomes are unambiguous.

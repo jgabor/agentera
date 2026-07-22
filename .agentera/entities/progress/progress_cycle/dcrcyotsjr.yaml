@@ -1,0 +1,14 @@
+id: dcrcyotsjr
+artifact: progress
+record:
+  timestamp: 2026-07-23 01:11
+  type: refactor
+  phase: build
+  what: Specified the portable hybrid route and receipt contract, phrase authority, frozen corpus, and structural conformance checks.
+  context:
+    intent: Restore only curated literal fast paths while preserving Decision 76's LLM ownership of open-ended routing.
+    constraints: No deterministic resolver, semantic runtime, benchmark execution, version change, publication, or runtime-specific adapter.
+    unknowns: "Resolved: initial collision-free inventory, stateless receipt binding, reference host profile, corpus partitions, and target gates are defined; benchmark results remain Task 5 work."
+    scope: Hybrid route contract, phrase registry, routing corpus, shared skill, routing model, static tests, and decision state.
+  verified: Focused contract tests, capability-contract validation, typecheck, 2,384 source tests, package verification, build, and compaction passed.
+  next: Task 3 may implement deterministic resolution from the frozen contract; Task 4 owns the semantic runtime path.

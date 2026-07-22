@@ -1,0 +1,222 @@
+schema_version: agentera.hybrid_route_contract.v1
+status: normative
+purpose: >-
+  Define the portable, two-phase request-to-capability route contract. This is
+  a contract only: Task 3 implements deterministic resolution and Task 4
+  implements the semantic host path.
+ownership:
+  cli: >-
+    The CLI owns request validation, deterministic terminal selections, receipt
+    validation, and all startup authorization.
+  host: >-
+    The portable shared skill is the only host integration. A host may make a
+    semantic judgment only after semantic_required and must submit a receipt.
+  prohibited: [runtime_specific_adapter, host_bypasses_receipt_validation]
+  phrase_registry: skills/agentera/route-phrases.yaml
+  semantic_intent: references/cli/trigger-schema-enrichment.md
+  evaluation_corpus: fixtures/routing/hybrid-corpus.yaml
+
+protocol:
+  request:
+    version: agentera.route_request.v1
+    required_fields: [request]
+    request: >-
+      The transient, unmodified user message. It is accepted for routing and is
+      never persisted by this protocol.
+  response:
+    version: agentera.route_response.v1
+    outcomes: [deterministic_selection, semantic_required]
+    deterministic_selection:
+      required_fields: [capability, tier, recognized_span, topic_span, provenance]
+      tiers: [bare, direct, phrase]
+    semantic_required:
+      required_fields: [request_sha256, semantic_capsule, provenance]
+      semantic_capsule: >-
+        The active trigger intent documentation and contract version needed for
+        a host judgment. It contains no state-derived next_action and no raw
+        request text beyond the host's transient input.
+  receipt:
+    version: agentera.route_receipt.v1
+    required_fields: [version, request_sha256, outcome]
+    outcomes: [select, clarify, no_match]
+    select:
+      required_fields: [capability, compound]
+      forbidden_fields: [question]
+    clarify:
+      required_fields: [question]
+      forbidden_fields: [capability, compound]
+    no_match:
+      forbidden_fields: [capability, question, compound]
+    request_binding: >-
+      The host sends the original request transiently beside the receipt. The
+      CLI recomputes SHA-256 over its UTF-8 bytes and requires an exact match to
+      request_sha256. No session, nonce, or receipt is stored.
+  validation_result:
+    terminal_outcomes: [selected, clarification, status_fallback, invalid_receipt]
+    startup_authorization:
+      selected: selected capability only
+      clarification: none
+      status_fallback: status only
+      invalid_receipt: none
+    invalid_receipt_exit: 64
+
+precedence:
+  - order: 1
+    name: bare
+    condition: /agentera with no additional text
+    response: deterministic_selection
+    capability: status
+    tier: bare
+  - order: 2
+    name: direct
+    condition: >-
+      An explicit canonical capability name, or a primary alias, before any
+      topic under the existing direct-route grammar.
+    response: deterministic_selection
+    tier: direct
+  - order: 3
+    name: curated_phrase
+    condition: >-
+      A globally unique active phrase from the phrase registry exactly matches
+      the normalized leading token sequence.
+    response: deterministic_selection
+    tier: phrase
+  - order: 4
+    name: deterministic_abstention
+    condition: Any request not selected by orders 1 through 3.
+    response: semantic_required
+    rule: >-
+      The deterministic tier does not infer meaning, score candidates, match
+      substrings, or use regexes, thresholds, bands, state, or next_action.
+  - order: 5
+    name: semantic_receipt
+    condition: A valid receipt for a semantic_required response.
+    response: select, clarify, or no_match as validated below
+
+receipt_semantics:
+  select:
+    result: selected
+    startup: The selected capability starts after validation.
+  clarify:
+    result: clarification
+    startup: No capability starts; the host asks exactly the supplied question.
+  no_match:
+    result: status_fallback
+    startup: Status starts for orientation only, after validation.
+  invalid_receipt:
+    result: invalid_receipt
+    startup: No capability starts; return a bounded correction naming the invalid field.
+
+compound_intent:
+  principle: >-
+    A route selects at most one capability. Remainder is preserved and is never
+    silently chained, dispatched, or executed.
+  deterministic: >-
+    A direct or phrase route passes its exact topic_span to the selected
+    capability without classifying it as a follow-on request.
+  semantic:
+    values: [none, preserve, clarify]
+    preserve: >-
+      A select receipt with compound=preserve MUST include a non-empty
+      remainder_span inside the original request. The CLI carries that exact
+      original slice as deferred intent; it does not start another capability.
+    clarify: >-
+      Independent or consequential requests that cannot safely name one primary
+      capability require a clarify receipt, not a select receipt.
+
+phrase_matching:
+  comparison_view: >-
+    Split the original request into Unicode-whitespace-delimited tokens. For
+    each token, apply Unicode NFKC then locale-independent Unicode case folding;
+    join normalized tokens with one ASCII space. Punctuation remains part of a
+    token and is never stripped.
+  leading_only: >-
+    The registry phrase must equal the first normalized token sequence. Its next
+    source character must be Unicode whitespace, end of request, or one of the
+    explicit topic separators `:`, `-`, or `—`; a separator is not consumed.
+    Other punctuation attached to a phrase token, quotation, negation, a phrase
+    later in a sentence, and a partial token all abstain.
+  recognized_span: >-
+    Use the original UTF-16 offsets from the first matched source token through
+    the end of the last matched source token, including original whitespace only
+    between matched tokens. The response returns these half-open offsets and the
+    exact original substring.
+  topic_span: >-
+    The topic is the exact original half-open slice from recognized_span.end to
+    request.length. It preserves every separator, whitespace character, and
+    remainder byte; it is not normalized, trimmed, or interpreted.
+  example:
+    request: "  HELP\tME decide: migrate the store"
+    normalized_leading_phrase: help me decide
+    recognized_span: { start: 2, end: 16, text: "HELP\tME decide" }
+    topic_span: { start: 16, end: 35, text: ": migrate the store" }
+
+phrase_ownership:
+  active_phrase_source: skills/agentera/route-phrases.yaml
+  collision_rule: >-
+    Every normalized phrase is globally unique across every registry entry,
+    including deprecated entries. A collision fails validation; precedence must
+    never choose a phrase owner.
+  direct_route_rule: >-
+    A phrase must not duplicate a canonical capability name or primary alias and
+    must not begin with one under the direct-route grammar. Direct routes always
+    retain order-2 precedence.
+  trigger_rule: >-
+    Trigger descriptions are semantic documentation only. They neither create
+    phrase ownership nor alter phrase precedence.
+
+privacy:
+  default_persistence: forbidden
+  transient_data: [request, topic, receipt, request_sha256]
+  retained_evaluation_evidence: >-
+    Retain only corpus version, case ID, partition, expected and observed
+    outcome, capability ID, tier, timing, model profile, and aggregate metrics.
+    Do not retain raw private request text, topic text, receipt question, or
+    semantic rationale by default.
+  permitted_corpus_text: >-
+    Frozen corpus text is synthetic or explicitly consented, and each corpus
+    declares its text provenance. Private production prompts are never imported.
+
+evaluation:
+  conformance_owner: packages/cli/test/registries/hybridRouteContract.test.ts
+  corpus_partitions:
+    development: frozen
+    holdout: locked
+    adversarial: frozen
+  reference_host:
+    protocol: agentera.semantic_receipt_json.v1
+    provider: OpenAI Responses API
+    model: openai/gpt-5.6-terra
+    settings: { temperature: 0, top_p: 1, max_output_tokens: 256, seed: unsupported }
+    output: Strict JSON receipt only; no tool calls, state reads, or runtime adapters.
+    latency_boundary: >-
+      Semantic elapsed time starts when the host receives the semantic capsule
+      and ends when the CLI validates its receipt. It excludes capability startup
+      and user interaction. Local receipt validation is measured separately.
+  target_gates:
+    deterministic_fixture_accuracy: 100_percent
+    deterministic_phase1_p95: 25_ms
+    receipt_validation_p95: 25_ms
+    semantic_end_to_end_p95: 15000_ms
+    harmful_misroutes: 0
+    non_harmful_misroute_rate_max: 5_percent
+    required_abstention_recall: 100_percent
+    required_clarification_recall: 100_percent
+    compound_preservation_recall: 100_percent
+  harmful_misroute_taxonomy:
+    - wrong_capability_starts_a_state_changing_or_destructive_flow
+    - a_compound_remainder_is_executed_or_chained_without_user_consent
+    - a_no_match_or_clarify_request_starts_non_status_work
+    - private_request_text_is_persisted_or_exported
+  execution_status: >-
+    Targets are frozen acceptance gates for Task 5, not benchmark results from
+    this contract task.
+
+deprecations:
+  decision_76: >-
+    Superseded by Decision mpulyomlyl only for the order-3 curated literal fast
+    path. Decision 76 continues to assign open-ended language and ambiguity
+    judgment to the LLM host; legacy trigger patterns, regexes, scores,
+    thresholds, and bands stay retired.
+  legacy_matchers: prohibited_from_active_routing
+  route_contract_changes: Require a new schema_version and a new frozen corpus version.

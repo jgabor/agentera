@@ -12,12 +12,12 @@ record:
     - GIVEN the packaged skill WHEN verified THEN tests and documentation express the same baseline model.
   plan: pxyvjauajx
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Behavior passed, but the implementation commit and local Git identity used an upgrade-fixture author; progress evidence omitted the failed contaminated hook run and LEFTHOOK bypass. Restore canonical identity, recreate the commit, disclose verification caveats, and prevent future hook environment leakage.
     provenance:
-      attempt_id: audit-warjaypkno-1
+      attempt_id: audit-warjaypkno-2
       source: independent audit ses_0741128e2ffem3jSQb96G1q6p7
-      recorded_at: 2026-07-23 00:38
+      recorded_at: 2026-07-23 00:59
       writer_command: agentera state plan record-evaluation

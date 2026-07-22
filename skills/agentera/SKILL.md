@@ -83,16 +83,25 @@ The LLM host classifies natural language; the CLI supplies contracts and context
 | Bare `/agentera` | 1. Run `agentera prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
 | `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Natural language | Classify expressed intent before startup from trigger `description`, `priority`, and `disambiguates_against`; then run `agentera prime --context <selected-capability> --format json`. Ask one clarifying question only for genuine consequential ambiguity; use status only if no capability fits. |
+| Curated leading phrase | Send the request to the shared route contract. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
+| Other natural language | Classify expressed intent before startup from trigger `description`, `priority`, and `disambiguates_against` only after the shared route contract returns `semantic_required`; submit a `select`, `clarify`, or `no_match` receipt for CLI validation. Ask one clarifying question only for genuine consequential ambiguity; use status only if no capability fits. |
 
 Plain-language requests use per-capability `schemas/triggers.yaml`, not
 hardcoded rules. `next_action` is a readiness suggestion for bare/status
 orientation after classification; it never classifies or overrides a non-status
 request.
 
-[Decision 76's routing model](../../references/cli/routing-model.md) makes
-Layer 3 LLM-native and dissolves Layer 4 into it: no scores, thresholds, or
-borderline band.
+After the CLI validates a `select` receipt, then run `agentera prime --context <selected-capability> --format json`. A `clarify` receipt starts no capability;
+a valid `no_match` receipt starts status only for orientation.
+
+[The hybrid routing model](../../references/cli/routing-model.md) defines the
+shared two-phase request/receipt contract. Open-ended language remains LLM-owned:
+no scores, thresholds, or borderline band. The phrase registry is the only
+deterministic natural-language authority; do not revive legacy trigger patterns,
+regexes, thresholds, or bands. `next_action` never classifies or overrides a
+request, and a compound remainder is preserved rather than silently chained.
+Decision mpulyomlyl supersedes Decision 76 only for this curated literal fast
+path.
 
 Handoff verbs:
 

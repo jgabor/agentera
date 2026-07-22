@@ -1,0 +1,17 @@
+id: mpulyomlyl
+artifact: decisions
+record:
+  date: 2026-07-23
+  question: Should curated literal fast paths coexist with Decision 76's LLM-primary routing?
+  context: Decision 76 correctly retired open-ended natural-language scoring because trigger patterns cannot own semantic judgment. The hybrid routing plan requires a small portable deterministic boundary without reviving legacy matcher behavior or runtime-specific integration.
+  alternatives:
+    - name: Keep LLM ownership for open-ended language and add only a globally collision-free registry of curated literal leading phrases before semantic routing.
+      status: chosen
+    - name: Restore trigger patterns, regexes, thresholds, bands, or score-based routing
+      status: rejected
+    - name: Leave every explicit natural-language request to the host without a deterministic fast path
+      status: rejected
+  choice: Adopt the versioned two-phase hybrid route contract. The CLI may terminally select bare, direct, and curated literal leading-phrase routes; every other request returns semantic_required and only a validated select, clarify, or no-match receipt authorizes startup. The portable shared skill remains the sole host integration. This supersedes Decision 76 only for curated literal fast paths.
+  reasoning: Literal phrases have explicit ownership, collision validation, deterministic span preservation, and bounded abstention, so they provide reproducible convenience without claiming to understand open-ended language. A receipt keeps semantic judgment LLM-owned while leaving the CLI as the single validation and startup authority. Legacy patterns and scoring remain retired, and next_action remains a post-classification readiness signal.
+  confidence: firm
+  feeds_into: references/cli/hybrid-route-contract.yaml, skills/agentera/route-phrases.yaml, fixtures/routing/hybrid-corpus.yaml, references/cli/routing-model.md, skills/agentera/SKILL.md

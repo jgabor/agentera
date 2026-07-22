@@ -1,0 +1,81 @@
+schema_version: agentera.route_phrase_registry.v1
+status: active_authority
+purpose: >-
+  Own the small, explicit inventory of deterministic leading phrases. Trigger
+  schemas remain semantic intent documentation and are not a phrase source.
+normalization: references/cli/hybrid-route-contract.yaml#phrase_matching
+rules:
+  stable_ids: Phrase IDs are permanent and never reassigned.
+  active_matching: Only entries with status active are eligible for matching.
+  global_collisions: >-
+    Normalized phrases must be unique across active and deprecated entries; a
+    collision is a validation error, never a precedence decision.
+  direct_route_collisions: >-
+    A phrase cannot duplicate or begin with a canonical capability name or a
+    primary alias under the direct-route grammar.
+  deprecation: >-
+    Remove no entry. Mark it deprecated, retain its ID and phrase, and set
+    replaced_by to an active registry ID. Deprecated phrases abstain.
+  prohibited_sources: [legacy_patterns, regexes, thresholds, bands, trigger_descriptions]
+
+phrases:
+  - id: RP_STATUS_PROJECT_BRIEFING
+    capability: status
+    phrase: show project briefing
+    status: active
+    evidence: [DEV-PHRASE-STATUS]
+  - id: RP_VISION_PRODUCT_DIRECTION
+    capability: vision
+    phrase: define product direction
+    status: active
+    evidence: [DEV-PHRASE-VISION]
+  - id: RP_DISCUSS_DECISION
+    capability: discuss
+    phrase: help me decide
+    status: active
+    evidence: [DEV-PHRASE-DISCUSS]
+  - id: RP_RESEARCH_EXTERNAL_PATTERNS
+    capability: research
+    phrase: study external patterns
+    status: active
+    evidence: [DEV-PHRASE-RESEARCH]
+  - id: RP_PLAN_IMPLEMENTATION
+    capability: plan
+    phrase: make an implementation plan
+    status: active
+    evidence: [DEV-PHRASE-PLAN]
+  - id: RP_BUILD_APPROVED_PLAN
+    capability: build
+    phrase: implement the approved plan
+    status: active
+    evidence: [DEV-PHRASE-BUILD]
+  - id: RP_OPTIMIZE_BOTTLENECK
+    capability: optimize
+    phrase: improve a measured bottleneck
+    status: active
+    evidence: [DEV-PHRASE-OPTIMIZE]
+  - id: RP_AUDIT_CODEBASE_HEALTH
+    capability: audit
+    phrase: check codebase health
+    status: active
+    evidence: [DEV-PHRASE-AUDIT]
+  - id: RP_DOCUMENT_PROJECT
+    capability: document
+    phrase: refresh project documentation
+    status: active
+    evidence: [DEV-PHRASE-DOCUMENT]
+  - id: RP_PROFILE_DECISION
+    capability: profile
+    phrase: save a decision profile
+    status: active
+    evidence: [DEV-PHRASE-PROFILE]
+  - id: RP_DESIGN_INTERFACE
+    capability: design
+    phrase: shape the interface
+    status: active
+    evidence: [DEV-PHRASE-DESIGN]
+  - id: RP_ORCHESTRATE_DELIVERY
+    capability: orchestrate
+    phrase: execute the approved plan
+    status: active
+    evidence: [DEV-PHRASE-ORCHESTRATE]

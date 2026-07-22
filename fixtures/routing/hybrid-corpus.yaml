@@ -1,0 +1,60 @@
+schema_version: agentera.hybrid_routing_corpus.v1
+status: frozen
+text_provenance: All request text in this fixture is synthetic and authored for conformance testing.
+retention_policy: >-
+  This fixture may contain only synthetic or explicitly consented text. Evaluation
+  reports retain case IDs and metrics, never these request strings by default.
+freeze_policy: >-
+  Development, holdout, and adversarial entries are immutable in this corpus
+  version. Additions or expectation changes require a new schema_version and a
+  new corpus file; holdout cases may not guide phrase selection.
+partitions:
+  development: { status: frozen, purpose: phrase inventory and contract development }
+  holdout: { status: locked, purpose: predeclared semantic receipt evaluation }
+  adversarial: { status: frozen, purpose: abstention and invalid-receipt safety }
+
+route_cases:
+  - { id: DEV-PHRASE-STATUS, partition: development, request: "show project briefing for the checkout", expected: { phase1: deterministic_selection, tier: phrase, capability: status } }
+  - { id: DEV-PHRASE-VISION, partition: development, request: "define product direction for collaboration", expected: { phase1: deterministic_selection, tier: phrase, capability: vision } }
+  - { id: DEV-PHRASE-DISCUSS, partition: development, request: "help me decide: cache or queue", expected: { phase1: deterministic_selection, tier: phrase, capability: discuss } }
+  - { id: DEV-PHRASE-RESEARCH, partition: development, request: "study external patterns for durable jobs", expected: { phase1: deterministic_selection, tier: phrase, capability: research } }
+  - { id: DEV-PHRASE-PLAN, partition: development, request: "make an implementation plan for import safety", expected: { phase1: deterministic_selection, tier: phrase, capability: plan } }
+  - { id: DEV-PHRASE-BUILD, partition: development, request: "implement the approved plan for task one", expected: { phase1: deterministic_selection, tier: phrase, capability: build } }
+  - { id: DEV-PHRASE-OPTIMIZE, partition: development, request: "improve a measured bottleneck in startup", expected: { phase1: deterministic_selection, tier: phrase, capability: optimize } }
+  - { id: DEV-PHRASE-AUDIT, partition: development, request: "check codebase health before release", expected: { phase1: deterministic_selection, tier: phrase, capability: audit } }
+  - { id: DEV-PHRASE-DOCUMENT, partition: development, request: "refresh project documentation for setup", expected: { phase1: deterministic_selection, tier: phrase, capability: document } }
+  - { id: DEV-PHRASE-PROFILE, partition: development, request: "save a decision profile for local work", expected: { phase1: deterministic_selection, tier: phrase, capability: profile } }
+  - { id: DEV-PHRASE-DESIGN, partition: development, request: "shape the interface for review", expected: { phase1: deterministic_selection, tier: phrase, capability: design } }
+  - { id: DEV-PHRASE-ORCHESTRATE, partition: development, request: "execute the approved plan for phase two", expected: { phase1: deterministic_selection, tier: phrase, capability: orchestrate } }
+  - { id: DEV-ABSTAIN-STATUS, partition: development, request: "show project briefings", expected: { phase1: semantic_required, reason: literal_abstention, boundary: status } }
+  - { id: DEV-ABSTAIN-VISION, partition: development, request: "define our product direction", expected: { phase1: semantic_required, reason: literal_abstention, boundary: vision } }
+  - { id: DEV-ABSTAIN-DISCUSS, partition: development, request: "help us decide", expected: { phase1: semantic_required, reason: literal_abstention, boundary: discuss } }
+  - { id: DEV-ABSTAIN-RESEARCH, partition: development, request: "research patterns", expected: { phase1: semantic_required, reason: literal_abstention, boundary: research } }
+  - { id: DEV-ABSTAIN-PLAN, partition: development, request: "make implementation plan", expected: { phase1: semantic_required, reason: literal_abstention, boundary: plan } }
+  - { id: DEV-ABSTAIN-BUILD, partition: development, request: "implement approved plan", expected: { phase1: semantic_required, reason: literal_abstention, boundary: build } }
+  - { id: DEV-ABSTAIN-OPTIMIZE, partition: development, request: "optimize measured bottleneck", expected: { phase1: semantic_required, reason: literal_abstention, boundary: optimize } }
+  - { id: DEV-ABSTAIN-AUDIT, partition: development, request: "audit the codebase health", expected: { phase1: semantic_required, reason: literal_abstention, boundary: audit } }
+  - { id: DEV-ABSTAIN-DOCUMENT, partition: development, request: "update documentation", expected: { phase1: semantic_required, reason: literal_abstention, boundary: document } }
+  - { id: DEV-ABSTAIN-PROFILE, partition: development, request: "save decision profile", expected: { phase1: semantic_required, reason: literal_abstention, boundary: profile } }
+  - { id: DEV-ABSTAIN-DESIGN, partition: development, request: "design an interface", expected: { phase1: semantic_required, reason: literal_abstention, boundary: design } }
+  - { id: DEV-ABSTAIN-ORCHESTRATE, partition: development, request: "execute approved plan", expected: { phase1: semantic_required, reason: literal_abstention, boundary: orchestrate } }
+  - { id: DEV-BARE, partition: development, request: "/agentera", expected: { phase1: deterministic_selection, tier: bare, capability: status } }
+  - { id: DEV-DIRECT, partition: development, request: "/agentera plan import safety", expected: { phase1: deterministic_selection, tier: direct, capability: plan } }
+  - { id: HOLDOUT-SEMANTIC-SELECT, partition: holdout, request: "How should we divide the import work?", expected: { phase1: semantic_required, receipt: select, capability: plan, compound: none } }
+  - { id: HOLDOUT-SEMANTIC-CLARIFY, partition: holdout, request: "Make it better", expected: { phase1: semantic_required, receipt: clarify } }
+  - { id: HOLDOUT-SEMANTIC-NO-MATCH, partition: holdout, request: "What time is the train?", expected: { phase1: semantic_required, receipt: no_match } }
+  - { id: HOLDOUT-COMPOUND, partition: holdout, request: "Plan the migration and then implement it", expected: { phase1: semantic_required, receipt: select, capability: plan, compound: preserve } }
+  - { id: ADV-QUOTED-PHRASE, partition: adversarial, request: 'The words "help me decide" appear in this quote.', expected: { phase1: semantic_required, reason: nonleading_phrase } }
+  - { id: ADV-NEGATED-PHRASE, partition: adversarial, request: "Do not help me decide; just show alternatives.", expected: { phase1: semantic_required, reason: nonleading_phrase } }
+  - { id: ADV-PUNCTUATED-PHRASE, partition: adversarial, request: "help me decide: now", expected: { phase1: deterministic_selection, tier: phrase, capability: discuss, topic: ": now" } }
+  - { id: ADV-FULLWIDTH-PHRASE, partition: adversarial, request: "ＨＥＬＰ　ＭＥ　ＤＥＣＩＤＥ cache", expected: { phase1: deterministic_selection, tier: phrase, capability: discuss, topic: " cache" } }
+
+receipt_cases:
+  - { id: HOLDOUT-RECEIPT-SELECT-PASS, partition: holdout, valid: true, receipt: { outcome: select, capability: plan, compound: none } }
+  - { id: ADV-RECEIPT-SELECT-FAIL, partition: adversarial, valid: false, receipt: { outcome: select, compound: none }, error: missing_capability }
+  - { id: HOLDOUT-RECEIPT-CLARIFY-PASS, partition: holdout, valid: true, receipt: { outcome: clarify, question: "Do you want a plan or implementation?" } }
+  - { id: ADV-RECEIPT-CLARIFY-FAIL, partition: adversarial, valid: false, receipt: { outcome: clarify }, error: missing_question }
+  - { id: HOLDOUT-RECEIPT-NO-MATCH-PASS, partition: holdout, valid: true, receipt: { outcome: no_match } }
+  - { id: ADV-RECEIPT-NO-MATCH-FAIL, partition: adversarial, valid: false, receipt: { outcome: no_match, capability: plan }, error: forbidden_capability }
+  - { id: HOLDOUT-RECEIPT-COMPOUND-PASS, partition: holdout, valid: true, receipt: { outcome: select, capability: plan, compound: preserve, remainder_span: { start: 23, end: 40 } } }
+  - { id: ADV-RECEIPT-COMPOUND-FAIL, partition: adversarial, valid: false, receipt: { outcome: select, capability: plan, compound: execute }, error: invalid_compound }
