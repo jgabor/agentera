@@ -1,0 +1,15 @@
+id: oaxvplpnba
+artifact: progress
+record:
+  timestamp: 2026-07-23 01:39
+  type: fix
+  phase: plan
+  what: "Corrected the hybrid routing contract after the independent audit: API profile and retention caveat, UTF-8 separator spans, contract-derived receipt fixtures, sealed holdout manifest, and boundary coverage."
+  context:
+    intent: Repair every accepted Task 2 audit finding without implementing Tasks 3–5.
+    constraints: Preserved Decision mpulyomlyl and made no runtime, adapter, benchmark, version, or publication changes.
+    scope: Hybrid route contract, routing corpus and sealed holdout manifest, routing model, structural conformance tests, plan task state.
+  inspiration: Independent audit attempt audit-tkgtvppdur-1 for plan task tkgtvppdur.
+  discovered: The prior Task 2 contract used a provider-qualified model name, contradicted its punctuation examples, exposed tuneable holdout cases, and tested receipts with an incomplete ad hoc checker.
+  verified: Focused hybrid contract suite (7 tests), full source suite (195 files; 2,385 passed, 1 skipped), typecheck, build, capability-contract validator, package verification, compaction, and diff check all passed.
+  next: Task 2 is complete; do not implement resolver, semantic runtime, benchmark execution, adapters, versioning, or later-task state sync in this correction.

@@ -1,0 +1,21 @@
+schema_version: agentera.hybrid_routing_holdout_manifest.v1
+status: independently_controlled
+purpose: >-
+  Bind the private Task 5 holdout without committing its inputs or labels. The
+  independent evaluator controls the sealed corpus and releases aggregate
+  results only.
+holdout:
+  corpus_version: agentera.hybrid_routing_holdout.v1
+  case_count: 4
+  canonical_content_sha256: 3e0c0d90fb8c3db5b41b2152c2dd4dd1cfa47d0d3dd2c8c1c2dc328f579fc97f
+  canonicalization: UTF-8 LF-delimited evaluator-owned records in ascending case ID order
+  committed_content: [version, case_count, canonical_content_sha256, canonicalization]
+  excluded_content: [requests, expected_labels, receipt_text, semantic_rationales]
+result_binding:
+  task: Task 5
+  required_fields: [corpus_version, canonical_content_sha256, case_count, aggregate_metrics, evaluated_at_utc, model_profile]
+  prohibited_fields: [raw_request, topic, receipt_question, expected_label, observed_label, semantic_rationale]
+  rule: >-
+    Task 5 may record aggregate metrics only when every required binding field
+    exactly matches this manifest. The evaluator retains case-level evidence;
+    this repository retains no private holdout inputs or labels.

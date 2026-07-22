@@ -12,3 +12,13 @@ record:
     - GIVEN evaluation evidence WHEN retained THEN private request text is absent by default and development, holdout, and adversarial partitions are frozen.
     - GIVEN each route outcome WHEN tested THEN at least one passing and one failing fixture exists for every relevant capability boundary.
   plan: pxyvjauajx
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Reference API model syntax and retention controls are incorrect; separator tokenization contradicts phrase examples; valid receipt fixtures omit required binding fields; the visible holdout is tuneable; bare/direct negative and terminal outcome coverage is incomplete. Correct the normative contract and contract-derived fixtures/tests.
+    provenance:
+      attempt_id: audit-tkgtvppdur-1
+      source: independent audit ses_073e3c434ffe2JLTGhmPdX3ckL
+      recorded_at: 2026-07-23 01:26
+      writer_command: agentera state plan record-evaluation

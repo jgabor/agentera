@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -10,38 +11,125 @@ const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const CONTRACT_PATH = path.join(ROOT, "references/cli/hybrid-route-contract.yaml");
 const PHRASES_PATH = path.join(ROOT, "skills/agentera/route-phrases.yaml");
 const CORPUS_PATH = path.join(ROOT, "fixtures/routing/hybrid-corpus.yaml");
+const HOLDOUT_MANIFEST_PATH = path.join(ROOT, "fixtures/routing/holdout-manifest.yaml");
 const CAPABILITY_CONTRACT_PATH = path.join(ROOT, "skills/agentera/capability_schema_contract.yaml");
 
-function yaml(file: string): Record<string, any> {
-  return YAML.parse(fs.readFileSync(file, "utf8")) as Record<string, any>;
+type RecordValue = Record<string, any>;
+
+function yaml(file: string): RecordValue {
+  return YAML.parse(fs.readFileSync(file, "utf8")) as RecordValue;
 }
 
 function normalizedPhrase(value: string): string {
   return value.normalize("NFKC").toLowerCase().trim().replace(/\s+/gu, " ");
 }
 
-function receiptErrors(receipt: Record<string, unknown>): string[] {
-  const outcome = receipt.outcome;
-  if (outcome === "select") {
-    const errors = typeof receipt.capability === "string" ? [] : ["missing_capability"];
-    if (!(["none", "preserve"] as const).includes(receipt.compound as "none" | "preserve")) errors.push("invalid_compound");
-    if (receipt.compound === "preserve" && !receipt.remainder_span) errors.push("missing_remainder_span");
-    return errors;
+function utf8Offset(value: string, utf16Offset: number): number {
+  return Buffer.byteLength(value.slice(0, utf16Offset), "utf8");
+}
+
+function normalizedSourceToken(value: string): string {
+  return value.normalize("NFKC").toLowerCase();
+}
+
+function sourceSeparatorOffset(value: string): number | undefined {
+  let offset = 0;
+  for (const character of value) {
+    if ([":", "-", "—"].includes(character.normalize("NFKC"))) return offset;
+    offset += character.length;
   }
-  if (outcome === "clarify") return typeof receipt.question === "string" && receipt.question ? [] : ["missing_question"];
-  if (outcome === "no_match") return receipt.capability === undefined && receipt.question === undefined && receipt.compound === undefined ? [] : ["forbidden_capability"];
-  return ["invalid_outcome"];
+  return undefined;
+}
+
+function deriveLeadingPhrase(request: string, phrase: string): { recognized: string; topic: string; utf8Start: number; utf8End: number } | undefined {
+  const phraseTokens = normalizedPhrase(phrase).split(" ");
+  const sourceTokens = [...request.matchAll(/\S+/gu)];
+  if (sourceTokens.length < phraseTokens.length) return undefined;
+
+  for (let index = 0; index < phraseTokens.length - 1; index += 1) {
+    if (normalizedSourceToken(sourceTokens[index][0]) !== phraseTokens[index]) return undefined;
+  }
+
+  const finalToken = sourceTokens[phraseTokens.length - 1];
+  const separatorOffset = sourceSeparatorOffset(finalToken[0]);
+  const finalEnd = separatorOffset === undefined ? finalToken[0].length : separatorOffset;
+  if (normalizedSourceToken(finalToken[0].slice(0, finalEnd)) !== phraseTokens.at(-1)) return undefined;
+
+  const start = sourceTokens[0].index!;
+  const end = finalToken.index! + finalEnd;
+  const utf8Start = utf8Offset(request, start);
+  const utf8End = utf8Offset(request, end);
+  const bytes = Buffer.from(request, "utf8");
+  return {
+    recognized: bytes.subarray(utf8Start, utf8End).toString("utf8"),
+    topic: bytes.subarray(utf8End).toString("utf8"),
+    utf8Start,
+    utf8End,
+  };
+}
+
+function validateSchema(schema: RecordValue, value: unknown, location = "$"): string[] {
+  const errors: string[] = [];
+  const isObject = typeof value === "object" && value !== null && !Array.isArray(value);
+  if (schema.type === "object" && !isObject) return [`${location}.type`];
+  if (schema.type === "string" && typeof value !== "string") return [`${location}.type`];
+  if (schema.type === "integer" && (!Number.isInteger(value) || typeof value !== "number")) return [`${location}.type`];
+  if (schema.const !== undefined && value !== schema.const) errors.push(`${location}.const`);
+  if (schema.enum && !schema.enum.includes(value)) errors.push(`${location}.enum`);
+  if (typeof value === "string" && schema.minLength !== undefined && value.length < schema.minLength) errors.push(`${location}.minLength`);
+  if (typeof value === "string" && schema.pattern && !new RegExp(schema.pattern, "u").test(value)) errors.push(`${location}.pattern`);
+  if (typeof value === "number" && schema.minimum !== undefined && value < schema.minimum) errors.push(`${location}.minimum`);
+
+  if (isObject) {
+    const object = value as RecordValue;
+    for (const required of schema.required ?? []) if (!(required in object)) errors.push(`${location}.required.${required}`);
+    if (schema.additionalProperties === false) {
+      for (const field of Object.keys(object)) if (!(field in (schema.properties ?? {}))) errors.push(`${location}.additionalProperties.${field}`);
+    }
+    for (const [field, fieldSchema] of Object.entries(schema.properties ?? {})) {
+      if (field in object) errors.push(...validateSchema(fieldSchema as RecordValue, object[field], `${location}.${field}`));
+    }
+  }
+  for (const member of schema.allOf ?? []) {
+    const memberSchema = member as RecordValue;
+    if (memberSchema.if) {
+      if (validateSchema(memberSchema.if as RecordValue, value, location).length === 0 && memberSchema.then) {
+        errors.push(...validateSchema(memberSchema.then as RecordValue, value, location));
+      }
+    } else {
+      errors.push(...validateSchema(memberSchema, value, location));
+    }
+  }
+  if (schema.not && validateSchema(schema.not as RecordValue, value, location).length === 0) errors.push(`${location}.not`);
+  return errors;
+}
+
+function receiptErrors(receipt: RecordValue, request: string, authority: RecordValue, capabilities: string[]): string[] {
+  const errors = validateSchema(authority.schema, receipt).map((error) => error.replace("$.", ""));
+  if (typeof receipt.capability === "string" && !capabilities.includes(receipt.capability)) errors.push("binding.capability");
+  if (typeof receipt.request_sha256 === "string") {
+    const expected = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    if (receipt.request_sha256 !== expected) errors.push("binding.request_sha256");
+  }
+  for (const field of Object.keys(authority.request_bound_fields)) {
+    const span = receipt[field] as RecordValue | undefined;
+    if (span && !(0 <= span.start && span.start < span.end && span.end <= Buffer.byteLength(request, "utf8"))) {
+      errors.push(`binding.${field}`);
+    }
+  }
+  return errors;
 }
 
 describe("hybrid route contract", () => {
   const contract = yaml(CONTRACT_PATH);
   const phrases = yaml(PHRASES_PATH);
   const corpus = yaml(CORPUS_PATH);
+  const holdoutManifest = yaml(HOLDOUT_MANIFEST_PATH);
   const capabilityContract = loadCapabilitySchemaContract(CAPABILITY_CONTRACT_PATH);
   const capabilities = capabilityContract.routeAliases.primaryAliases.map(({ capability }) => capability);
 
   it("defines the versioned cascade, terminal outcomes, and receipt authorization", () => {
-    expect(contract.schema_version).toBe("agentera.hybrid_route_contract.v1");
+    expect(contract.schema_version).toBe("agentera.hybrid_route_contract.v2");
     expect(contract.protocol.response.outcomes).toEqual(["deterministic_selection", "semantic_required"]);
     expect(contract.protocol.receipt.outcomes).toEqual(["select", "clarify", "no_match"]);
     expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual([
@@ -57,17 +145,20 @@ describe("hybrid route contract", () => {
       status_fallback: "status only",
       invalid_receipt: "none",
     });
-    expect(contract.compound_intent.principle).toContain("never silently chained");
+    expect(contract.compound_intent.semantic.dispositions).toEqual(["none", "preserve"]);
+    expect(contract.compound_intent.semantic.clarification).toContain("outcome only");
+    expect(contract.protocol.receipt.clarify.forbidden_fields).toContain("remainder_span");
+    expect(contract.protocol.receipt.no_match.forbidden_fields).toContain("remainder_span");
     expect(contract.privacy.default_persistence).toBe("forbidden");
   });
 
   it("assigns every active literal phrase one collision-free capability and corpus proof", () => {
     expect(phrases.schema_version).toBe("agentera.route_phrase_registry.v1");
     const seen = new Set<string>();
-    const routeCases = corpus.route_cases as Array<Record<string, any>>;
+    const routeCases = corpus.route_cases as RecordValue[];
 
     expect(phrases.phrases).toHaveLength(capabilities.length);
-    for (const entry of phrases.phrases as Array<Record<string, any>>) {
+    for (const entry of phrases.phrases as RecordValue[]) {
       expect(entry.id).toMatch(/^RP_[A-Z_]+$/);
       expect(capabilities).toContain(entry.capability);
       expect(entry.status).toBe("active");
@@ -84,62 +175,97 @@ describe("hybrid route contract", () => {
     }
   });
 
-  it("freezes positive and deterministic-abstention fixtures at every capability boundary", () => {
-    const routeCases = corpus.route_cases as Array<Record<string, any>>;
+  it("keeps visible development and adversarial data separate from the sealed holdout", () => {
+    const routeCases = corpus.route_cases as RecordValue[];
+    expect(corpus.schema_version).toBe("agentera.hybrid_routing_corpus.v2");
+    expect(Object.keys(corpus.partitions).sort()).toEqual(["adversarial", "development"]);
+    expect(routeCases.every((routeCase) => routeCase.partition !== "holdout")).toBe(true);
+    expect(corpus.freeze_policy).toContain("not a holdout");
+    expect(holdoutManifest.holdout).toMatchObject({ corpus_version: "agentera.hybrid_routing_holdout.v1", case_count: 4 });
+    expect(holdoutManifest.holdout.canonical_content_sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(holdoutManifest.holdout.excluded_content).toEqual(expect.arrayContaining(["requests", "expected_labels"]));
+    expect(holdoutManifest.result_binding.required_fields).toEqual(expect.arrayContaining(["canonical_content_sha256", "aggregate_metrics"]));
+    expect(holdoutManifest.result_binding.prohibited_fields).toEqual(expect.arrayContaining(["raw_request", "expected_label"]));
+  });
+
+  it("covers positive and negative boundaries for all phrases plus bare and direct tiers", () => {
+    const routeCases = corpus.route_cases as RecordValue[];
     for (const capability of capabilities) {
       expect(routeCases.some((routeCase) => routeCase.id === `DEV-PHRASE-${capability.toUpperCase()}`)).toBe(true);
       expect(routeCases.some((routeCase) => routeCase.expected?.phase1 === "semantic_required" && routeCase.expected?.boundary === capability)).toBe(true);
     }
-    expect(corpus.partitions).toMatchObject({
-      development: { status: "frozen" },
-      holdout: { status: "locked" },
-      adversarial: { status: "frozen" },
-    });
-    expect(corpus.text_provenance).toContain("synthetic");
-    expect(corpus.retention_policy).toContain("never these request strings");
+    expect(routeCases.find((routeCase) => routeCase.id === "DEV-BARE")?.expected.tier).toBe("bare");
+    expect(routeCases.find((routeCase) => routeCase.id === "DEV-DIRECT")?.expected.tier).toBe("direct");
+    expect(routeCases.find((routeCase) => routeCase.id === "ADV-BARE-WITH-TEXT")?.expected.boundary).toBe("bare");
+    expect(routeCases.find((routeCase) => routeCase.id === "ADV-DIRECT-PARTIAL")?.expected.boundary).toBe("direct");
   });
 
-  it("contains passing and failing receipt fixtures for select, clarify, no-match, and compounds", () => {
-    const receiptCases = corpus.receipt_cases as Array<Record<string, any>>;
-    for (const outcome of ["select", "clarify", "no_match"]) {
-      const cases = receiptCases.filter((receiptCase) => receiptCase.receipt.outcome === outcome);
-      expect(cases.some((receiptCase) => receiptCase.valid)).toBe(true);
-      expect(cases.some((receiptCase) => !receiptCase.valid)).toBe(true);
+  it("derives literal spans and UTF-8 topic slices from complete requests", () => {
+    const phraseEntries = phrases.phrases as RecordValue[];
+    const routeCases = corpus.route_cases as RecordValue[];
+    for (const routeCase of routeCases.filter((candidate) => candidate.expected?.tier === "phrase")) {
+      const match = phraseEntries
+        .map((entry) => ({ entry, span: deriveLeadingPhrase(routeCase.request, entry.phrase) }))
+        .find((candidate) => candidate.span);
+      expect(match, routeCase.id).toBeDefined();
+      expect(match!.entry.capability, routeCase.id).toBe(routeCase.expected.capability);
+      expect(Buffer.from(routeCase.request, "utf8").subarray(match!.span.utf8Start, match!.span.utf8End).toString("utf8")).toBe(match!.span.recognized);
+      if (routeCase.expected.topic !== undefined) expect(match!.span.topic, routeCase.id).toBe(routeCase.expected.topic);
     }
+    for (const id of ["ADV-QUOTED-PHRASE", "ADV-NEGATED-PHRASE", "ADV-PARTIAL-PHRASE", "ADV-UNSUPPORTED-PUNCTUATION"]) {
+      const routeCase = routeCases.find((candidate) => candidate.id === id)!;
+      expect(deriveLeadingPhrase(routeCase.request, "help me decide"), id).toBeUndefined();
+    }
+  });
+
+  it("validates complete receipt fixtures through the formal contract authority", () => {
+    const authority = contract.protocol.receipt.validation_authority;
+    const receiptCases = corpus.receipt_cases as RecordValue[];
+    expect(authority.canonical_capability_source).toBe("skills/agentera/capability_schema_contract.yaml#route_aliases.primary_aliases");
     for (const receiptCase of receiptCases) {
-      const errors = receiptErrors(receiptCase.receipt);
-      expect(errors.length === 0, receiptCase.id).toBe(receiptCase.valid);
+      const errors = receiptErrors(receiptCase.receipt, receiptCase.request, authority, capabilities);
+      expect(errors.length === 0, `${receiptCase.id}: ${errors.join(", ")}`).toBe(receiptCase.valid);
       if (!receiptCase.valid) expect(errors).toContain(receiptCase.error);
+      if (receiptCase.valid) {
+        expect(receiptCase.receipt).toEqual(expect.objectContaining({
+          version: "agentera.route_receipt.v1",
+          request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          outcome: expect.any(String),
+        }));
+      }
     }
-    expect(receiptCases.some((receiptCase) => receiptCase.receipt.compound === "preserve" && receiptCase.valid)).toBe(true);
-    expect(receiptCases.some((receiptCase) => receiptCase.error === "invalid_compound" && !receiptCase.valid)).toBe(true);
+    for (const terminal of contract.protocol.validation_result.terminal_outcomes) {
+      expect(receiptCases.some((receiptCase) => receiptCase.expected_terminal === terminal), terminal).toBe(true);
+    }
+    expect(receiptCases.some((receiptCase) => receiptCase.valid && receiptCase.receipt.compound === "preserve")).toBe(true);
+    expect(receiptCases.some((receiptCase) => !receiptCase.valid && receiptCase.error === "binding.remainder_span")).toBe(true);
   });
 
-  it("freezes the reference host, safety taxonomy, and Task 5 target gates without claiming a benchmark run", () => {
-    expect(contract.evaluation.reference_host).toMatchObject({
+  it("freezes an API-accepted, retention-bounded reference-host profile without claiming execution", () => {
+    const host = contract.evaluation.reference_host;
+    expect(host).toMatchObject({
       protocol: "agentera.semantic_receipt_json.v1",
       provider: "OpenAI Responses API",
-      model: "openai/gpt-5.6-terra",
-      settings: { temperature: 0, top_p: 1, max_output_tokens: 256, seed: "unsupported" },
+      profile_version: "agentera.openai_responses_receipt.v1",
+      request: {
+        method: "POST",
+        path: "/v1/responses",
+        model: "gpt-5.6-terra",
+        store: false,
+        temperature: 0,
+        top_p: 1,
+        max_output_tokens: 256,
+        retry: { max_attempts: 1, automatic_retry: false },
+        text: { format: { type: "json_schema", name: "agentera_route_receipt", strict: true } },
+      },
     });
-    expect(contract.evaluation.target_gates).toMatchObject({
-      deterministic_fixture_accuracy: "100_percent",
-      harmful_misroutes: 0,
-      required_abstention_recall: "100_percent",
-      required_clarification_recall: "100_percent",
-      compound_preservation_recall: "100_percent",
-    });
-    expect(contract.evaluation.harmful_misroute_taxonomy).toHaveLength(4);
-    expect(contract.evaluation.execution_status).toContain("Task 5");
-  });
-
-  it("defines normalized leading matching while retaining the original span and remainder", () => {
-    const example = contract.phrase_matching.example;
-    expect(normalizedPhrase(example.recognized_span.text)).toBe(example.normalized_leading_phrase);
-    expect(example.request.slice(example.recognized_span.start, example.recognized_span.end)).toBe(example.recognized_span.text);
-    expect(example.request.slice(example.topic_span.start, example.topic_span.end)).toBe(example.topic_span.text);
-    const fullwidth = (corpus.route_cases as Array<Record<string, any>>).find(({ id }) => id === "ADV-FULLWIDTH-PHRASE")!;
-    expect(normalizedPhrase(fullwidth.request).startsWith("help me decide ")).toBe(true);
-    expect(fullwidth.expected.topic).toBe(" cache");
+    expect(host.request.timestamp_metadata.forbidden_fields).toEqual(expect.arrayContaining(["raw_request", "receipt_question"]));
+    expect(host.request.text.format.schema).toEqual(contract.protocol.receipt.validation_authority.schema);
+    expect(host.request.text.format.canonical_capability_values_source).toBe(contract.protocol.receipt.validation_authority.canonical_capability_source);
+    expect(host.retention_caveat).toContain("Zero Data Retention");
+    expect(host.retention_caveat).toContain("not a promise");
+    expect(host.data_controls_authority).toContain("https://developers.openai.com/api/docs/guides/your-data");
+    expect(contract.evaluation.execution_status).toContain("Task 2 proves structural contract conformance only");
+    expect(contract.evaluation.execution_status).toContain("Tasks 3–5");
   });
 });

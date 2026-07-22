@@ -44,12 +44,14 @@ not executable matcher inputs.
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends `agentera.route_receipt.v1` together
-with the same transient original request. The receipt binds to the request's
-SHA-256 digest. The CLI recomputes that digest and validates shape and outcome:
+with the same transient original request. The receipt binds to the SHA-256 of
+the request's UTF-8 bytes. The CLI recomputes that digest and validates it with
+the contract's JSON Schema, canonical-capability binding, and request-bound
+span rules:
 
 | Receipt | Required result | Startup |
 | --- | --- | --- |
-| `select` | one canonical capability and compound disposition | selected capability only |
+| `select` | one canonical capability and `none` or `preserve` compound disposition | selected capability only |
 | `clarify` | one non-empty question | none |
 | `no_match` | no capability or question | status only |
 | invalid | bounded field-level correction, exit 64 | none |
@@ -63,7 +65,10 @@ The phrase registry owns stable IDs, capability ownership, literal phrases,
 global collision detection, and deprecation. Per-capability trigger schemas
 never create phrase ownership. Matching uses the contract's normalized token
 view (Unicode NFKC, case folding, whitespace normalization) while returning
-source UTF-16 offsets and slices from the original request.
+source UTF-8 byte offsets and exact slices from the original request. A `:`,
+`-`, or `—` that terminates the final phrase token is recognized in the
+comparison view but starts the preserved topic slice; other attached
+punctuation abstains.
 
 For example, `HELP\tME decide: migrate the store` recognizes only
 `HELP\tME decide`; its topic is the exact original `: migrate the store`.
@@ -79,24 +84,35 @@ or `no_match`. A compound request never authorizes implicit chaining:
 - A direct or phrase selection preserves its entire original remainder as one
   topic without interpreting it as follow-on work.
 - A semantic `select` may mark one original remainder span `preserve`; it is
-  deferred intent, not a second startup.
-- Independent or consequential compound intent uses `clarify` when one primary
-  capability cannot be named safely.
+  deferred intent, not a second startup. `clarify` is an outcome, never a
+  compound disposition.
+- Independent or consequential compound intent uses the `clarify` outcome when
+  one primary capability cannot be named safely.
 
 `next_action` informs readiness only after classification and cannot override the message intent. It never classifies a request.
 
 ## Evaluation and privacy
 
-The frozen development, locked holdout, and adversarial partitions live in
+The visible frozen development and adversarial regression data live in
 [`fixtures/routing/hybrid-corpus.yaml`](../../fixtures/routing/hybrid-corpus.yaml).
-They use synthetic or explicitly consented text only. Retained evaluation
-evidence contains IDs, partition, outcome, tier, capability, timing, model
-profile, and aggregate metrics; private raw request text, topic text, receipt
-questions, and semantic rationale are absent by default.
+They use synthetic or explicitly consented text only and are not a holdout. The
+independently controlled holdout exposes only its version, count, content hash,
+and Task 5 aggregate-result protocol through
+[`fixtures/routing/holdout-manifest.yaml`](../../fixtures/routing/holdout-manifest.yaml).
+Retained evaluation evidence contains IDs, partition, outcome, tier,
+capability, timing, model profile, and aggregate metrics; private raw request
+text, topic text, receipt questions, and semantic rationale are absent by
+default.
 
-The contract declares a reference-host profile, latency boundary, harmful
-misroute taxonomy, and Task 5 acceptance targets. Those targets are not a claim
-that the benchmark has run.
+The contract's exact OpenAI Responses profile uses the API model identifier
+`gpt-5.6-terra`, `store: false`, a strict `text.format` JSON Schema, one
+attempt, and non-content timestamp metadata. `store: false` is not a
+no-provider-retention promise: a no-provider-retention acceptance claim requires
+an approved Zero Data Retention organization and compatible enabled features.
+The contract links the current official data-controls and Responses structured-
+output documentation. Its latency boundary, harmful-misroute taxonomy, and Task
+5 targets are not a claim that any benchmark has run. Task 2 establishes only
+structural conformance; Tasks 3–5 own execution and evaluation.
 
 ## Ownership boundaries
 

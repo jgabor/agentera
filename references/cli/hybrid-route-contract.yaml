@@ -1,4 +1,4 @@
-schema_version: agentera.hybrid_route_contract.v1
+schema_version: agentera.hybrid_route_contract.v2
 status: normative
 purpose: >-
   Define the portable, two-phase request-to-capability route contract. This is
@@ -44,9 +44,63 @@ protocol:
       forbidden_fields: [question]
     clarify:
       required_fields: [question]
-      forbidden_fields: [capability, compound]
+      forbidden_fields: [capability, compound, remainder_span]
     no_match:
-      forbidden_fields: [capability, question, compound]
+      forbidden_fields: [capability, question, compound, remainder_span]
+    validation_authority:
+      name: agentera.route_receipt_schema.v1
+      dialect: json_schema_draft_2020_12
+      canonical_capability_source: &canonical_capability_source skills/agentera/capability_schema_contract.yaml#route_aliases.primary_aliases
+      request_binding: sha256_of_original_utf8_request_bytes
+      request_bound_fields:
+        remainder_span:
+          encoding: utf8_bytes
+          relation: 0 <= start < end <= original_request_utf8_byte_length
+      schema: &agentera_route_receipt_schema
+        type: object
+        additionalProperties: false
+        required: [version, request_sha256, outcome]
+        properties:
+          version: { const: agentera.route_receipt.v1 }
+          request_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+          outcome: { enum: [select, clarify, no_match] }
+          capability: { type: string }
+          compound: { enum: [none, preserve] }
+          question: { type: string, minLength: 1 }
+          remainder_span:
+            type: object
+            additionalProperties: false
+            required: [start, end]
+            properties:
+              start: { type: integer, minimum: 0 }
+              end: { type: integer, minimum: 0 }
+        allOf:
+          - if: { properties: { outcome: { const: select } }, required: [outcome] }
+            then:
+              required: [capability, compound]
+              not: { required: [question] }
+          - if: { properties: { outcome: { const: clarify } }, required: [outcome] }
+            then:
+              required: [question]
+              allOf:
+                - not: { required: [capability] }
+                - not: { required: [compound] }
+                - not: { required: [remainder_span] }
+          - if: { properties: { outcome: { const: no_match } }, required: [outcome] }
+            then:
+              allOf:
+                - not: { required: [capability] }
+                - not: { required: [question] }
+                - not: { required: [compound] }
+                - not: { required: [remainder_span] }
+          - if:
+              properties: { outcome: { const: select }, compound: { const: preserve } }
+              required: [outcome, compound]
+            then: { required: [remainder_span] }
+          - if:
+              properties: { outcome: { const: select }, compound: { const: none } }
+              required: [outcome, compound]
+            then: { not: { required: [remainder_span] } }
     request_binding: >-
       The host sends the original request transiently beside the receipt. The
       CLI recomputes SHA-256 over its UTF-8 bytes and requires an exact match to
@@ -115,7 +169,10 @@ compound_intent:
     A direct or phrase route passes its exact topic_span to the selected
     capability without classifying it as a follow-on request.
   semantic:
-    values: [none, preserve, clarify]
+    dispositions: [none, preserve]
+    clarification: >-
+      clarify is a receipt outcome only, never a compound disposition. It is used
+      when one primary capability cannot safely be named.
     preserve: >-
       A select receipt with compound=preserve MUST include a non-empty
       remainder_span inside the original request. The CLI carries that exact
@@ -126,30 +183,37 @@ compound_intent:
 
 phrase_matching:
   comparison_view: >-
-    Split the original request into Unicode-whitespace-delimited tokens. For
-    each token, apply Unicode NFKC then locale-independent Unicode case folding;
-    join normalized tokens with one ASCII space. Punctuation remains part of a
-    token and is never stripped.
+    Decode the request as valid UTF-8, then split it into source tokens at
+    Unicode whitespace. Apply Unicode NFKC and locale-independent Unicode case
+    folding to each source-token comparison segment; join phrase segments with
+    one ASCII space. The final source token may be partitioned at its first
+    permitted separator; only its prefix participates in phrase comparison.
   leading_only: >-
-    The registry phrase must equal the first normalized token sequence. Its next
-    source character must be Unicode whitespace, end of request, or one of the
-    explicit topic separators `:`, `-`, or `—`; a separator is not consumed.
-    Other punctuation attached to a phrase token, quotation, negation, a phrase
-    later in a sentence, and a partial token all abstain.
+    The registry phrase must equal the first normalized comparison-token
+    sequence. For every source token except the final phrase token, the whole
+    normalized token must match. The final phrase token either matches whole or
+    ends immediately before its first permitted separator. A permitted separator
+    is a source code point whose NFKC form is exactly `:`, `-`, or `—`; it is
+    not consumed and need not be followed by whitespace. No other attached
+    punctuation terminates a token. Quotation, negation, a phrase later in a
+    sentence, and a partial token abstain.
   recognized_span: >-
-    Use the original UTF-16 offsets from the first matched source token through
-    the end of the last matched source token, including original whitespace only
-    between matched tokens. The response returns these half-open offsets and the
-    exact original substring.
+    Return half-open UTF-8 byte offsets from the first matched source token
+    through the final matched-token prefix. The exact original bytes between
+    source tokens, including whitespace, belong to this span; leading whitespace
+    and a separator do not. Decoding that byte slice reproduces the recognized
+    text exactly.
   topic_span: >-
-    The topic is the exact original half-open slice from recognized_span.end to
-    request.length. It preserves every separator, whitespace character, and
-    remainder byte; it is not normalized, trimmed, or interpreted.
+    The topic is the exact original UTF-8 byte slice from recognized_span.end to
+    request_byte_length. It begins at the permitted separator when one ended the
+    final phrase token, otherwise at the end of that token. It preserves every
+    separator, whitespace character, and remainder byte; it is not normalized,
+    trimmed, or interpreted.
   example:
     request: "  HELP\tME decide: migrate the store"
     normalized_leading_phrase: help me decide
-    recognized_span: { start: 2, end: 16, text: "HELP\tME decide" }
-    topic_span: { start: 16, end: 35, text: ": migrate the store" }
+    recognized_span: { utf8_start: 2, utf8_end: 16, text: "HELP\tME decide" }
+    topic_span: { utf8_start: 16, utf8_end: 35, text: ": migrate the store" }
 
 phrase_ownership:
   active_phrase_source: skills/agentera/route-phrases.yaml
@@ -181,14 +245,48 @@ evaluation:
   conformance_owner: packages/cli/test/registries/hybridRouteContract.test.ts
   corpus_partitions:
     development: frozen
-    holdout: locked
     adversarial: frozen
+    holdout: independently_controlled
+  holdout_manifest: fixtures/routing/holdout-manifest.yaml
   reference_host:
     protocol: agentera.semantic_receipt_json.v1
     provider: OpenAI Responses API
-    model: openai/gpt-5.6-terra
-    settings: { temperature: 0, top_p: 1, max_output_tokens: 256, seed: unsupported }
-    output: Strict JSON receipt only; no tool calls, state reads, or runtime adapters.
+    profile_version: agentera.openai_responses_receipt.v1
+    request:
+      method: POST
+      path: /v1/responses
+      model: gpt-5.6-terra
+      store: false
+      temperature: 0
+      top_p: 1
+      max_output_tokens: 256
+      retry: { max_attempts: 1, automatic_retry: false }
+      timestamp_metadata:
+        sent_at_utc: RFC3339_UTC_instant_recorded_at_send
+        fields: [profile_version, model, temperature, top_p, max_output_tokens, store, attempt]
+        forbidden_fields: [raw_request, topic, receipt_question, semantic_rationale]
+      input: >-
+        One transient system instruction containing the semantic capsule followed
+        by one transient user message containing the original request. Neither is
+        copied into local evaluation evidence.
+      text:
+        format:
+          type: json_schema
+          name: agentera_route_receipt
+          strict: true
+          schema: *agentera_route_receipt_schema
+          canonical_capability_values_source: *canonical_capability_source
+    output: Strict JSON receipt only; no tool calls, state reads, runtime adapters, or third-party services.
+    retention_caveat: >-
+      store=false disables Responses application-state storage; it is not a
+      promise that OpenAI or any other provider retains no data. This profile
+      makes no private-by-default third-party-processing claim. A no-provider-
+      retention acceptance claim requires an approved Zero Data Retention
+      organization and confirmation that every enabled feature is ZDR-compatible.
+      Local evidence remains free of raw request text regardless.
+    data_controls_authority:
+      - https://developers.openai.com/api/docs/guides/your-data
+      - https://developers.openai.com/api/docs/guides/responses-vs-chat-completions
     latency_boundary: >-
       Semantic elapsed time starts when the host receives the semantic capsule
       and ends when the CLI validates its receipt. It excludes capability startup
@@ -209,8 +307,9 @@ evaluation:
     - a_no_match_or_clarify_request_starts_non_status_work
     - private_request_text_is_persisted_or_exported
   execution_status: >-
-    Targets are frozen acceptance gates for Task 5, not benchmark results from
-    this contract task.
+    Task 2 proves structural contract conformance only. Tasks 3–5 own resolver
+    execution, semantic runtime behavior, holdout evaluation, and benchmark
+    results.
 
 deprecations:
   decision_76: >-
