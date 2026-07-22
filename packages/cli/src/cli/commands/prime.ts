@@ -12,6 +12,7 @@ import {
 import { briefUtf8Bytes } from "./prime/briefOrientation.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
+import { startupSurfaceBudget } from "../../state/retrievalAuthority.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -118,9 +119,9 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     }
     const state = collectOrientationState(collectOpts);
     const payload = buildOrientationJsonPayload(state, command);
-    // --dashboard keeps full-fidelity payload (prime-dashboard, 35000-byte
-    // budget); only the bare default is projected to the bounded brief.
-    return emitPrime(command, payload, format, args.fields, out, err);
+    return emitPrime(command, payload, format, args.fields, out, err, {
+      maxUtf8Bytes: startupSurfaceBudget("prime_dashboard"),
+    });
   }
   const state = collectOrientationState(collectOpts);
   if (format !== "text") {

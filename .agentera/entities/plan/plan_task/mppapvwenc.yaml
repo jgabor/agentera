@@ -1,0 +1,22 @@
+id: mppapvwenc
+artifact: plan
+record:
+  plan: zcziuekcec
+  name: Fail closed when corrupt entities lack Git recovery
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN a corrupt local entity with no independently validated committed counterpart WHEN durability is inspected THEN Git and combined status are unavailable with not_committed rather than degraded, regardless of provenance-shaped metadata, dirty archives, or shallow history.
+    - GIVEN a corrupt local migrated entity whose exact bytes and provenance source independently validate together in the captured commit WHEN durability is inspected THEN the existing verified source-divergence recovery remains intact.
+    - GIVEN changed, ambiguous, duplicate, unsafe, deleted, and ordinary canonical entity cases WHEN durability is inspected THEN their established fail-closed or verified semantics do not regress.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-mppapvwenc-1
+      source: independent final audit session ses_07914d82effeT39Vl8J5hwTkfv; all durability and migration criteria passed
+      recorded_at: 2026-07-22 01:35
+      writer_command: agentera state plan record-evaluation

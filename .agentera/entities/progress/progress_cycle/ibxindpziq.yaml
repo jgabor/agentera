@@ -1,0 +1,16 @@
+id: ibxindpziq
+artifact: progress
+record:
+  timestamp: 2026-07-22 02:43
+  type: fix
+  phase: build
+  what: "Task rijxghsjgp: packages/cli/src/state/listCursor.ts now enforces canonical base64url cursors; progressEntities.ts, decisionEntities.ts, and healthEntities.ts hash their actual projected list entries; mixed prime output reports full current records plus bounded summary totals."
+  context:
+    intent: Resolve the two failed audit findings without disturbing the integrated v2-to-v3 entity cutover or weakening existing summary/full read behavior.
+    constraints: No commit, push, publish, tag, release, version, vision, task-status, external KTX, or stash mutation.
+    unknowns: None remaining in implementation; independent evaluation still owns acceptance judgment.
+    scope: Shared list cursor codec; progress/decision/health list snapshots; entity-backed prime collection and human rendering; reader/prime regressions.
+  inspiration: Replacement Task rijxghsjgp and accepted audit session ses_078e6c649ffeLcKr6WTi87fcN6.
+  discovered: The previous decision snapshot duplicated base/supporting projections instead of hashing compose() output, and the mixed prime branch treated degraded history as an alternative to current detail rather than an independent signal.
+  verified: Focused reader/prime suites passed 7 files and 99 tests. Dashboard and monolith gates passed 2 files and 3 tests. Active protocol/capability tests passed 3 files and 51 tests. Full source suite passed 196 files and 2425 tests with one expected platform skip. Performance owner passed all 25 cold-process samples; large startup max 581.97 ms/67,949,176 bytes and large bounded-list max 416.85 ms/41,606,664 bytes stayed within authority limits. Typecheck, build, all 12 capability validations, capability contract 2/2, state validation at 1700 entities/0 issues, compact, lint with 0 errors, and git diff --check passed.
+  next: Independent evaluation may assess Task rijxghsjgp; do not change task status here. Preserve the existing uncommitted cutover work and stash@{0}.

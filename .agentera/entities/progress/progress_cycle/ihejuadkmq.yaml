@@ -1,0 +1,16 @@
+id: ihejuadkmq
+artifact: progress
+record:
+  timestamp: 2026-07-22 03:41
+  type: fix
+  phase: build
+  what: Implemented causal migration blocker diagnostics and pinned v2-compaction lifecycle coverage.
+  context:
+    intent: Separate source-root corruption from generated dependent graph blockers without changing aggregate sources.
+    constraints: No KTX writes, no task status change, no version or vision change.
+    unknowns: Why KTX decision 25 has two divergent current-projection records.
+    scope: entity migration preview, causal diagnostics, cutover tests, authority, upgrade docs
+  inspiration: Plan zcziuekcec causal cutover verification.
+  discovered: "Fresh built read-only KTX preview is blocked: decisions:25 conflict; 249 identities, 248 targets, 1 root blocker, 0 dependents, 1 total, not the noted 250."
+  verified: "Focused 129 tests, source suite 2430 passed/1 skipped, typecheck, build, package, performance, capabilities, protocol, state, compact, and diff checks passed. KTX before/after snapshots matched: 68 .agentera entries, marker absent, seven pre-existing modified archives, aggregate SHA-256 values unchanged."
+  next: Do not mutate KTX; investigate its divergent decision 25 separately before expecting zero blockers or 250 targets.

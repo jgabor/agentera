@@ -1,0 +1,15 @@
+id: tdrstqdkgt
+artifact: progress
+record:
+  timestamp: 2026-07-22 07:28
+  type: fix
+  phase: audit
+  what: "Corrected the compacted-summary authority contract: one implemented mapping-or-scalar physical-row digest declaration now governs all primary and declared progress, decision, and health summary boundaries."
+  context:
+    intent: Align the accepted final-audit contract with runtime preview without weakening source provenance or changing cutover scope.
+    constraints: No task or plan status, KTX, vision, version, release, publication, tag, push, merge, or stash mutation.
+    scope: State-storage authority, compacted-summary authority loader, parity test, and existing accepted cutover work.
+  inspiration: Final audit finding for Plan zcziuekcec Task crhxazotxt.
+  discovered: Preview already normalizes scalar strings to retained summary content while hashing the original physical scalar row; the authority had six stale mapping-only digest declarations and one future-scope phrase.
+  verified: Authority tests now iterate all three summary boundaries, invoke the loader, and prove mapping and scalar physical-row hashes against preview output. Focused authority/provenance/migration tests passed (179); full source passed (2431 passed, 1 skipped); typecheck, build, package verification (10 tests), package dry-run, performance, monolith, cross-capability, protocol, state validation (1709 entities, 0 issues), compact, and diff check passed.
+  next: Prime retains task and plan status ownership. KTX remains unchanged; its Decision 25 conflict stays owner work outside this fix.

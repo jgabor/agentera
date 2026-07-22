@@ -2,5 +2,5 @@ id: bpldovnflp
 artifact: todo
 record:
   severity: normal
-  status: open
-  description: '[refactor:3.0.0] "blocked by manual review" is resolved for the Git-only full v2-to-v3 entity cutover: tracked, unchanged HEAD inputs are preflighted and the one-way upgrade automates cutover, state validation, and startup validation. Continue investigating overly conservative blockers in unrelated upgrade and migration scenarios.'
+  status: resolved
+  description: "[fix:3.0.0] Resolved 2026-07-22: Valid v2.7.11 compacted progress, decision, and health summaries now migrate as source-bound immutable degraded entities, preserve inherited confidence during migration, use ordinary immutable readers and startup, report root/dependent diagnostics, and pass the Git-backed lifecycle proof. Read-only KTX preview reports 249 identities and 248 targets because of a pre-existing Decision 25 conflict; KTX was not migrated and its conflict remains owner work."

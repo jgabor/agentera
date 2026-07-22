@@ -1,0 +1,22 @@
+id: yjvcdgexku
+artifact: plan
+record:
+  name: Specify the degraded-summary compatibility contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the approved contract decision WHEN storage and upgrade authorities are reviewed THEN progress, decision, and health summaries have one explicit immutable canonical representation with retained-field, provenance, ordering, and mutation rules.
+    - GIVEN supported and protected v2 families WHEN migration scope is read THEN included and excluded families are explicit and no document promises reconstruction, dual authority, or an unsupported repair command.
+    - GIVEN the triage note's satisfaction accounting WHEN documentation is updated THEN fifteen summary-dependent and three confidence-dependent failures replace the incorrect six-per-decision claim.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Contract provenance has no persisted canonical location; active authority marks summary outcomes ready even though runtime still blocks and readers cannot consume them; docs-only verification is insufficient because the authority is runtime-loaded. External note citations also drifted.
+    provenance:
+      attempt_id: audit-yjvcdgexku-2
+      source: independent reaudit ses_079eb7ba0ffev1P7jhvj9aGhv6; 3/3 acceptance criteria and evidence audit passed
+      recorded_at: 2026-07-21 21:29
+      writer_command: agentera state plan record-evaluation

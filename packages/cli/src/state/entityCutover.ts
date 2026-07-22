@@ -110,7 +110,7 @@ function targetsForPlan(plan: DurableEntityMigrationPlan): EntityCutoverTargetBi
   const targets = plan.entries.map((entry): EntityCutoverTargetBinding => {
     const target = entry.proposed_target;
     if (!target || typeof target.id !== "string" || typeof entry.artifact !== "string" || !safeTarget(target.path)) throw new EntityCutoverError(`first unresolved path '${entry.source_paths[0] ?? ".agentera"}': source has no safe canonical target`);
-    const bytes = canonicalEntityEnvelopeBytes({ id: target.id, artifact: entry.artifact, record: entry.record });
+    const bytes = canonicalEntityEnvelopeBytes({ id: target.id, artifact: entry.artifact, record: entry.record, migrationProvenance: entry.canonical_migration_provenance });
     if (entry.target_sha256 !== hash(bytes)) throw new EntityCutoverError(`first unresolved path '${target.path}': converted entity bytes are not deterministic`);
     return { path: target.path, sha256: hash(bytes) };
   }).sort((a, b) => a.path.localeCompare(b.path));
@@ -245,7 +245,7 @@ function fault(phase: string): void {
 function publishTargets(project: string, plan: DurableEntityMigrationPlan): void {
   for (const entry of plan.entries.slice().sort((a, b) => a.proposed_target!.path.localeCompare(b.proposed_target!.path))) {
     const target = entry.proposed_target!;
-    const bytes = canonicalEntityEnvelopeBytes({ id: target.id!, artifact: entry.artifact!, record: entry.record });
+    const bytes = canonicalEntityEnvelopeBytes({ id: target.id!, artifact: entry.artifact!, record: entry.record, migrationProvenance: entry.canonical_migration_provenance });
     const observed = readProjectFileSnapshot(validateRealProjectRoot(project), target.path);
     if (observed.kind === "file") {
       if (hash(observed.bytes) !== hash(bytes)) throw new EntityCutoverError(`first unresolved path '${target.path}': existing target is not an exact converted match`);

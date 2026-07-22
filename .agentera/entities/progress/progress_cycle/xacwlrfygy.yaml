@@ -1,0 +1,16 @@
+id: xacwlrfygy
+artifact: progress
+record:
+  timestamp: 2026-07-22 04:30
+  type: fix
+  phase: build
+  what: Rendered causal roots in text diagnostics and strengthened the pinned compaction upgrade lifecycle regression.
+  context:
+    intent: Make dependent blockers actionable in human output and prove summary cutover publication, recovery, reads, and idempotency.
+    constraints: No KTX writes, no task status/version/vision changes, no release operations.
+    unknowns: KTX target premise remains invalid because Decision 25 has divergent source candidates.
+    scope: entity migration text output, integrated upgrade regression, upgrade documentation
+  inspiration: Accepted Task voygvdlhqh audit findings.
+  discovered: Public migration preview must be paged to verify every target hash because one bounded page omits later entries.
+  verified: Focused diagnostics/lifecycle tests passed 150 tests; source suite 2430 passed/1 skipped; typecheck, build, package, performance, capability/protocol, state, compact, and diff gates passed.
+  next: Preserve KTX as read-only evidence; obtain user direction before any Decision 25 conflict action.

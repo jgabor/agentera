@@ -1,0 +1,26 @@
+id: lnwiwlnfmx
+artifact: plan
+record:
+  name: Expose degraded history through ordinary reads and startup
+  depends_on:
+    - dxtdckelks
+    - xrdkdvcvjv
+  status: superseded
+  acceptance:
+    - GIVEN full and summary entities WHEN progress, decisions, or health are listed or fetched THEN retained records are discoverable with explicit detail availability, compatibility, caveats, provenance, deterministic ordering, and bounded cursor behavior.
+    - GIVEN a summary decision WHEN amendment or satisfaction mutation is requested THEN the operation fails before effects with an explanation that incomplete historical evidence is read-only.
+    - GIVEN a migrated project containing summary-only history WHEN prime runs THEN startup succeeds without presenting missing detail as a full current record.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Decision snapshots hash a surrogate rather than actual projected entries; noncanonical base64url cursor aliases are accepted; mixed human prime omits bounded degraded-history signaling when a full current record exists.
+    provenance:
+      attempt_id: audit-lnwiwlnfmx-2
+      source: independent re-audit session ses_078e6c649ffeLcKr6WTi87fcN6
+      recorded_at: 2026-07-22 02:33
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - rijxghsjgp
+  superseded_reason: Completed replacement rijxghsjgp preserves ordinary degraded reads and mutation refusal while adding exact projected cursor binding, canonical cursor spelling, and bounded mixed-history startup.

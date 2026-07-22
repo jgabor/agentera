@@ -1,0 +1,16 @@
+id: qnpcdxqsna
+artifact: progress
+record:
+  timestamp: 2026-07-21 22:02
+  type: fix
+  phase: build
+  what: Allowed migration of inherited high, medium, and low decision confidence labels without normalization; exposed legacy caveats in canonical decision reads.
+  context:
+    intent: Complete plan task dxtdckelks without allowing unrelated schema violations or new unsupported confidence values.
+    constraints: No task completion, commit, cutover, or changes beyond inherited-confidence migration and read behavior.
+    unknowns: none
+    scope: packages/cli state migration, decision reads, and focused regression tests
+  inspiration: Plan zcziuekcec task dxtdckelks
+  discovered: Replacing a known inherited label with an authority-declared current label and revalidating the full record proves confidence is the sole violation without parsing aggregate-schema diagnostics.
+  verified: "Focused tests passed: v2CompactionEvidence.test.ts plus decisionEntities.test.ts (17 tests), entityMigrationPreview.test.ts (82 tests), and write/stateWrite.test.ts (62 tests). pnpm -C packages/cli run typecheck and pnpm -C packages/cli build passed. Built CLI fixture preview reported legacy decisions 6-11 and satisfactions 7, 9, and 11 publishable; summary-only decisions and unrelated corrupt experiments remained blocked."
+  next: Leave task completion and cutover to the orchestrator; do not broaden summary migration behavior.

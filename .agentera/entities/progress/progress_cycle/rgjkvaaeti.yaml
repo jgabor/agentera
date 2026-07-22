@@ -1,0 +1,16 @@
+id: rgjkvaaeti
+artifact: progress
+record:
+  timestamp: 2026-07-22 01:30
+  type: fix
+  phase: build
+  what: Closed the final durability evidence gap by making every corrupt local candidate that remains after independently validated exact same-commit byte equality return Git unavailable. Added exact uncommitted fabricated-provenance regressions for both dirty and shallow Git fallbacks.
+  context:
+    intent: Implement Task mppapvwenc without weakening valid migrated source-divergence recovery or ordinary clean, dirty, and deleted entity behavior.
+    constraints: Preserved all work and valid source-only divergence, changed-byte, duplicate, ambiguity, unsafe replacement, deleted, and ordinary durability behavior; did not commit, push, publish, tag, release, mutate plan or vision status, touch external KTX, or alter stash.
+    unknowns: none
+    scope: packages/cli/src/state/durability.ts and packages/cli/test/state/durability.test.ts
+  inspiration: Accepted audit failure for untracked malformed progress provenance receiving degraded Git evidence without reachable recovery.
+  discovered: The no-pinned-byte branch was already fail-closed, but a corrupt provenance-shaped candidate with safely read bytes and no committed blob still bypassed the narrower reachable mismatch branch and reached dirty or shallow fallback handling.
+  verified: "Durability matrix: 20 passed. Focused migration smoke matrix: 4 files and 140 tests passed. Full source suite: 195 files, 2415 passed, 1 skipped. Typecheck and build passed. Build capability, capability contract, and protocol validation passed. State validation, compact, and git diff --check passed."
+  next: Retain the no-commit and no-status-mutation boundary for final review.

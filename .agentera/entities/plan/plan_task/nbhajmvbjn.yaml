@@ -1,0 +1,22 @@
+id: nbhajmvbjn
+artifact: plan
+record:
+  plan: zcziuekcec
+  name: Correct inherited-confidence provenance and archive migration
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN complete inherited projection or verified-archive decisions whose sole violation is high, medium, or low confidence WHEN migration runs THEN decisions and satisfactions publish unchanged with verifiable inherited provenance and read caveats.
+    - GIVEN a canonical decision with an unsupported confidence but no verified migration provenance WHEN state validation or reads run THEN it is rejected as invalid rather than described as inherited.
+    - GIVEN another schema violation or new or amended unsupported confidence WHEN validation runs THEN it blocks before effects while current confidence content remains supported.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Persisted confidence provenance is only shape-checked: a fabricated digest and nonexistent source path pass state validation and reads emit an inherited caveat. Decision list snapshots also omit provenance, allowing metadata-only cursor drift."
+    provenance:
+      attempt_id: audit-nbhajmvbjn-2
+      source: independent final audit ses_079b94fbdffenC7WCaVwHejRcw; all replacement criteria and evidence audit passed
+      recorded_at: 2026-07-21 22:57
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,25 @@
+id: dxtdckelks
+artifact: plan
+record:
+  name: Apply inherited-confidence compatibility during migration
+  depends_on:
+    - vlcpnynime
+  status: superseded
+  acceptance:
+    - GIVEN a complete inherited decision whose only current-schema violation is high, medium, or low confidence WHEN migration is previewed THEN the decision and its satisfaction are publishable without normalization and the legacy caveat remains observable after cutover.
+    - GIVEN an inherited decision with another schema violation WHEN migration is previewed THEN that violation remains a root blocker before effects.
+    - GIVEN new or amended decision content WHEN an unsupported confidence is supplied THEN the write still rejects before publication.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Legacy-confidence compatibility is not applied to verified archive decisions. Canonical validation also accepts hand-edited high or arbitrary certain values and labels high inherited without verified migration provenance.
+    provenance:
+      attempt_id: audit-dxtdckelks-2
+      source: independent audit ses_079b94fbdffenC7WCaVwHejRcw
+      recorded_at: 2026-07-21 22:13
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - nbhajmvbjn
+  superseded_reason: Replacement completed inherited-confidence migration for verified archives and source-bound canonical provenance after the original task exhausted evaluation retries.

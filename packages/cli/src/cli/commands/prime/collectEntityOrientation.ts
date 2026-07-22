@@ -7,6 +7,7 @@ import { listObjectiveEntities, listExperimentEntities } from "../../../state/ob
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
+import { summaryCaveat } from "../../../state/summaryEntityRead.js";
 import { boundStartupValue, STARTUP_ARRAY_LIMIT } from "../../../state/startupProjection.js";
 import { rememberPlanTaskIndex } from "../../planTaskIndex.js";
 import type {
@@ -46,6 +47,49 @@ function header(entry: JsonObject | undefined): JsonObject {
 
 function terminal(status: unknown): boolean {
   return ["complete", "completed", "closed", "done", "resolved", "retired", "superseded"].includes(String(status ?? "").toLowerCase());
+}
+
+function degradedHistory(
+  artifact: "progress" | "decisions" | "health",
+  totalSummaryCount: number,
+): JsonObject | undefined {
+  if (totalSummaryCount === 0) return undefined;
+  return {
+    summary_count: totalSummaryCount,
+    returned_count: 0,
+    omitted_count: totalSummaryCount,
+    retrieval: {
+      list: `agentera state ${artifact} list --limit 20 --format json`,
+      get: `agentera state ${artifact} get --id ID --format json`,
+    },
+  };
+}
+
+function projectedHistory(
+  list: JsonObject,
+  artifact: "progress" | "decisions" | "health",
+  fullCount: number,
+  summaryCount: number,
+  degraded: JsonObject | undefined,
+): JsonObject {
+  const total = fullCount + summaryCount;
+  const listCommand = `agentera state ${artifact} list --limit 20 --format json`;
+  const getCommand = `agentera state ${artifact} get --id ID --format json`;
+  return {
+    schemaVersion: list.schemaVersion,
+    command: list.command,
+    status: summaryCount > 0 ? "degraded" : "ok",
+    compatibility: summaryCount > 0 ? (fullCount > 0 ? "mixed" : "degraded") : "current",
+    detail_availability: "omitted",
+    counts: { total, returned: 0, remaining: total, full: fullCount, summary: summaryCount },
+    ...(summaryCount > 0 ? { caveats: [summaryCaveat(artifact)] } : {}),
+    omitted: total > 0,
+    omitted_count: total,
+    omission_reason: total > 0 ? "startup_history_detail" : "none",
+    retrieval: { list: listCommand, get: getCommand },
+    ...(degraded ? { degraded_history: degraded } : {}),
+    source_contract: list.source_contract,
+  };
 }
 
 function selected(entries: JsonObject[], artifact: "plan" | "objective"): JsonObject | undefined {
@@ -96,6 +140,27 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const progressEntries = entries(progressList);
   const healthEntries = entries(healthList);
   const decisionEntries = entries(decisionList);
+  const fullProgressEntries = progressEntries.filter((entry) => entry.detail_availability === "full");
+  const fullHealthEntries = healthEntries.filter((entry) => entry.detail_availability === "full");
+  const fullDecisionEntries = decisionEntries.filter((entry) => entry.detail_availability === "full");
+  const progressHistory = degradedHistory(
+    "progress",
+    discovery.entities.filter((entry) => entry.boundary === "progress_summary").length,
+  );
+  const decisionHistory = degradedHistory(
+    "decisions",
+    discovery.entities.filter((entry) => entry.boundary === "decision_summary").length,
+  );
+  const healthHistory = degradedHistory(
+    "health",
+    discovery.entities.filter((entry) => entry.boundary === "health_summary").length,
+  );
+  const progressFullCount = discovery.entities.filter((entry) => entry.boundary === "progress_cycle").length;
+  const decisionFullCount = discovery.entities.filter((entry) => entry.boundary === "decision").length;
+  const healthFullCount = discovery.entities.filter((entry) => entry.boundary === "health_audit").length;
+  const progressSummaryCount = discovery.entities.filter((entry) => entry.boundary === "progress_summary").length;
+  const decisionSummaryCount = discovery.entities.filter((entry) => entry.boundary === "decision_summary").length;
+  const healthSummaryCount = discovery.entities.filter((entry) => entry.boundary === "health_summary").length;
   const planEntries = entries(planList);
   const objectiveEntries = entries(objectiveList);
   const todoEntries = entries(todoList);
@@ -141,7 +206,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     diagnostics: [],
   } : { exists: false, active: false, status: "missing", tasks: [], complete: 0, superseded: 0, total: 0, complete_plan: false, first_pending: null };
 
-  const latestProgress = progressEntries[0];
+  const latestProgress = fullProgressEntries[0];
   const latestProgressRecord = record(latestProgress);
   const progress: ProgressSummary = latestProgress ? {
     exists: true,
@@ -157,9 +222,15 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     },
     ...(latestProgressRecord.verified === undefined ? {} : { latest_verification: latestProgressRecord.verified }),
     cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
+    ...(progressHistory ? { degraded_history: progressHistory } : {}),
+  } : progressEntries.length ? {
+    exists: true,
+    status: "degraded_history",
+    cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
+    degraded_history: progressHistory!,
   } : { exists: false, status: "missing", cycle_count: 0 };
 
-  const latestHealth = healthEntries[0];
+  const latestHealth = fullHealthEntries[0];
   const healthRecord = record(latestHealth);
   const grades = healthRecord.grades && typeof healthRecord.grades === "object" && !Array.isArray(healthRecord.grades)
     ? healthRecord.grades as JsonObject
@@ -171,6 +242,10 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     date: String(healthRecord.date ?? ""),
     trajectory: String(healthRecord.trajectory ?? ""),
     grade: Object.values(grades).map(String).sort()[0] ?? "",
+    ...(healthHistory ? { degraded_history: healthHistory } : {}),
+  } : healthEntries.length ? {
+    exists: true,
+    degraded_history: healthHistory!,
   } : { exists: false };
 
   const activeObjective = selected(objectiveEntries, "objective");
@@ -212,7 +287,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     entries: docsEntries,
   };
 
-  const reviewEntries = decisionEntries.filter((entry) => {
+  const reviewEntries = fullDecisionEntries.filter((entry) => {
     const satisfaction = record(entry).satisfaction as JsonObject | undefined;
     return satisfaction?.review_needed === true || satisfaction?.state === "open";
   });
@@ -232,7 +307,11 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
 
   const projection = bounded({
     plan, docs, progress, health, objective, todoItems, todoCounts, decision, decisionAttention,
-    history: { progress: progressList, decisions: decisionList, health: healthList },
+    history: {
+      progress: projectedHistory(progressList, "progress", progressFullCount, progressSummaryCount, progressHistory),
+      decisions: projectedHistory(decisionList, "decisions", decisionFullCount, decisionSummaryCount, decisionHistory),
+      health: projectedHistory(healthList, "health", healthFullCount, healthSummaryCount, healthHistory),
+    },
   });
   // The opaque continuation cursor is already list-budget bounded and must stay
   // byte-exact so omitted TODO detail remains recoverable.

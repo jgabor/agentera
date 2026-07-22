@@ -10,8 +10,9 @@ import { truncateCodePoints } from "../../../core/text.js";
  * required top-level field stays PRESENT (the compatibility boundary asserts
  * the key set), but rich diagnostic/writer detail within those fields is
  * projected to routing-essential leaves plus a named authoritative recovery
- * command for each omitted sub-detail. `--dashboard`, `--fields <name>`, and
- * `--context <capability>` are NOT projected and keep the full payload.
+ * command for each omitted sub-detail. Dashboard startup independently omits
+ * duplicated ordinary history entries; explicit fields and capability contexts
+ * retain their separately governed projections.
  *
  * The byte gate is deterministic pretty-JSON UTF-8 measurement
  * (Buffer.byteLength(JSON.stringify(brief, null, 2) + "\n", "utf8")); an
@@ -276,7 +277,7 @@ function briefProgress(progress: unknown): Record<string, unknown> {
   // pathological value cannot blow the budget. Full detail recovers via
   // `agentera state progress get --number N --format json`.
   if (!isObject(progress)) return {};
-  const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count"]);
+  const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count", "degraded_history"]);
   const latest = progress.latest;
   if (isObject(latest)) {
     const boundedLatest: Record<string, unknown> = {};
@@ -288,6 +289,10 @@ function briefProgress(progress: unknown): Record<string, unknown> {
     out.latest = latest;
   }
   return out;
+}
+
+function briefHealth(health: unknown): Record<string, unknown> {
+  return pick(health, ["exists", "id", "artifact", "date", "trajectory", "grade", "degraded_history"]);
 }
 
 function briefNextAction(nextAction: unknown): Record<string, unknown> {
@@ -473,6 +478,9 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
         break;
       case "progress":
         out[key] = briefProgress(value);
+        break;
+      case "health":
+        out[key] = briefHealth(value);
         break;
       case "next_action":
         out[key] = briefNextAction(value);

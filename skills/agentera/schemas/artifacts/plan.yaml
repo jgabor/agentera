@@ -609,6 +609,7 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/upgrade/doctor.ts
       - packages/cli/src/cli/commands/prime/v1Migration.ts
       - packages/cli/src/state/entityMigration*.ts
+      - packages/cli/src/state/canonicalMigrationRecord.ts
     schemas:
       - skills/agentera/schemas/artifacts/*.yaml
       - skills/agentera/capabilities/*/schemas/*.yaml

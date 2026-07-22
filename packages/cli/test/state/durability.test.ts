@@ -1,13 +1,15 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { inspectDurability } from "../../src/state/durability.js";
+import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
@@ -171,6 +173,215 @@ describe("read-only entity and Git durability", () => {
     git(root, ["commit", "--quiet", "-m", `${artifact} duplicate`]);
     fs.rmSync(path.join(root, ".agentera/entities"), { recursive: true });
     expect(inspectDurability(root, { artifact, id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ git: { status: "unavailable", reason: "committed_entity_conflict", reachable_recovery: false } }] });
+  });
+
+  it("does not verify a committed entity through a cross-artifact duplicate identity", () => {
+    const root = project(); initGit(root);
+    writeEntity(root);
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity"]);
+    const duplicate = path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml");
+    fs.mkdirSync(path.dirname(duplicate), { recursive: true });
+    fs.writeFileSync(duplicate, dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "health", record: {} }));
+
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      status: "unavailable",
+      entries: [{ local: { status: "corrupt" }, git: { status: "unavailable", reason: "committed_content_mismatch" } }],
+    });
+  });
+
+  it("does not verify a committed entity through same-artifact boundary ambiguity", () => {
+    const root = project(); initGit(root);
+    writeEntity(root);
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity"]);
+    const source = { number: 1, summary: "ambiguous summary" };
+    const summary = path.join(root, ".agentera/entities/progress/progress_summary/aaaaaaaaaa.yaml");
+    fs.mkdirSync(path.dirname(summary), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "archive:\n  - number: 1\n    summary: ambiguous summary\n");
+    fs.writeFileSync(summary, dumpYamlMapping({
+      id: "aaaaaaaaaa",
+      artifact: "progress",
+      record: {
+        summary: source.summary,
+        migration_provenance: {
+          source_path: ".agentera/progress.yaml",
+          source_record_sha256: createHash("sha256").update(canonicalRecordJson(source)).digest("hex"),
+        },
+      },
+    }));
+
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      status: "unavailable",
+      entries: [{ local: { status: "corrupt" }, git: { status: "unavailable", reason: "committed_content_mismatch" } }],
+    });
+  });
+
+  it.each([
+    { label: "dirty", shallow: false },
+    { label: "shallow", shallow: true },
+  ])("rejects an uncommitted malformed provenance entity before $label Git fallbacks", ({ shallow }) => {
+    const root = project(); initGit(root);
+    fs.writeFileSync(path.join(root, "README.md"), "fixture\n");
+    git(root, ["add", "README.md"]); git(root, ["commit", "--quiet", "-m", "baseline"]);
+    const target = path.join(root, ".agentera/entities/progress/progress_summary/aaaaaaaaaa.yaml");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.writeFileSync(target, dumpYamlMapping({
+      id: "aaaaaaaaaa",
+      artifact: "progress",
+      record: {
+        summary: "fabricated provenance",
+        migration_provenance: {
+          source_path: ".agentera/progress.yaml",
+          source_record_sha256: "a".repeat(64),
+        },
+      },
+    }));
+    const runGit = shallow ? (args: string[], cwd: string) => {
+      if (args.join(" ") === "rev-parse --is-shallow-repository") {
+        return { status: 0, stdout: "true\n", timedOut: false };
+      }
+      const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false });
+      return { status: result.status, stdout: String(result.stdout ?? ""), timedOut: false, ...(result.error ? { error: result.error.message } : {}) };
+    } : undefined;
+
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot, ...(runGit ? { runGit } : {}) })).toMatchObject({
+      status: "unavailable",
+      entries: [{
+        local: { status: "corrupt" },
+        git: { status: "unavailable", reason: "not_committed", reachable_recovery: false },
+      }],
+    });
+  });
+
+  it("fails Git evidence closed when an entity path is replaced before its bytes are pinned", () => {
+    const root = project(); initGit(root);
+    const target = writeEntity(root);
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity"]);
+    const outside = path.join(root, "outside.yaml");
+    fs.writeFileSync(outside, entityBytes());
+    const originalOpenSync = fs.openSync;
+    let replaced = false;
+    const open = vi.spyOn(fs, "openSync").mockImplementation((file, flags, mode) => {
+      if (!replaced && path.resolve(String(file)) === target) {
+        replaced = true;
+        fs.renameSync(target, `${target}.replaced`);
+        fs.symlinkSync(outside, target);
+      }
+      return originalOpenSync(file, flags, mode);
+    });
+    try {
+      expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+        status: "unavailable",
+        entries: [{ local: { status: "corrupt" }, git: { status: "unavailable", reason: "committed_content_mismatch" } }],
+      });
+      expect(replaced).toBe(true);
+    } finally {
+      open.mockRestore();
+    }
+  });
+
+  it("binds committed compacted summaries to the preserved aggregate blob from the same commit", () => {
+    const root = project();
+    initGit(root);
+    const source = { number: 1, summary: "committed summary" };
+    const sourceDigest = createHash("sha256").update(canonicalRecordJson(source)).digest("hex");
+    const directory = path.join(root, ".agentera/entities/progress/progress_summary");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "archive:\n  - number: 1\n    summary: committed summary\n");
+    fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), dumpYamlMapping({
+      id: "aaaaaaaaaa",
+      artifact: "progress",
+      record: { summary: source.summary, migration_provenance: { source_path: ".agentera/progress.yaml", source_record_sha256: sourceDigest } },
+    }));
+    git(root, ["add", ".agentera"]);
+    git(root, ["commit", "--quiet", "-m", "summary"]);
+
+    const entityPath = path.join(directory, "aaaaaaaaaa.yaml");
+    const committedEntityBytes = fs.readFileSync(entityPath, "utf8");
+    fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "archive:\n  - number: 1\n    summary: divergent worktree source\n");
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      status: "degraded", entries: [{ local: { status: "corrupt" }, git: { status: "verified", reason: "reachable_head", reachable_recovery: true } }],
+    });
+    fs.writeFileSync(entityPath, committedEntityBytes.replace("summary: committed summary", "summary: changed local entity"));
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      entries: [{ local: { status: "corrupt" }, git: { status: "unavailable", reason: "committed_content_mismatch" } }],
+    });
+    fs.writeFileSync(entityPath, committedEntityBytes);
+    fs.rmSync(entityPath);
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      entries: [{ local: { status: "unavailable" }, git: { status: "verified", reason: "reachable_head" } }],
+    });
+    git(root, ["checkout", "--", ".agentera"]);
+
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      entries: [{ git: { status: "verified", reason: "reachable_head", reachable_recovery: true } }],
+    });
+
+    git(root, ["checkout", "--", ".agentera"]);
+    fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "archive:\n  - number: 1\n    summary: forged replacement\n");
+    git(root, ["add", ".agentera/progress.yaml"]);
+    git(root, ["commit", "--quiet", "-m", "diverge source"]);
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      entries: [{ git: { status: "unavailable", reason: "committed_entity_invalid", reachable_recovery: false } }],
+    });
+
+    git(root, ["checkout", "--", ".agentera"]);
+    git(root, ["rm", "--quiet", ".agentera/progress.yaml"]);
+    git(root, ["commit", "--quiet", "-m", "remove source"]);
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "progress", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      entries: [{ git: { status: "unavailable", reason: "committed_entity_invalid", reachable_recovery: false } }],
+    });
+  });
+
+  it.each(["current_projection", "verified_archive"] as const)("binds inherited-confidence %s durability to its exact same-commit source", (sourceKind) => {
+    const root = project(); initGit(root);
+    const canonical = { date: "2026-07-17", question: "Q", context: "C", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "R", confidence: "high" };
+    const sourceRecord = { number: 1, ...canonical };
+    const digest = createHash("sha256").update(canonicalRecordJson(sourceRecord)).digest("hex");
+    const sourcePath = sourceKind === "current_projection" ? ".agentera/decisions.yaml" : ".agentera/archive/decisions/1.yaml";
+    const sourceBytes = (record = sourceRecord, entryNumber = 1) => sourceKind === "current_projection"
+      ? dumpYamlMapping({ decisions: [record] })
+      : dumpYamlMapping({ schemaVersion: "agentera.stateArchiveEntry.v1", artifact_id: "decisions", entry_number: entryNumber, record, record_sha256: createHash("sha256").update(canonicalRecordJson(record)).digest("hex") });
+    const directory = path.join(root, ".agentera/entities/decisions/decision");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    fs.mkdirSync(path.dirname(path.join(root, sourcePath)), { recursive: true });
+    fs.writeFileSync(path.join(root, sourcePath), sourceBytes());
+    const entityPath = path.join(directory, "aaaaaaaaaa.yaml");
+    fs.writeFileSync(entityPath, dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "decisions", migration_provenance: { kind: "inherited_decision_confidence", source: sourceKind, source_path: sourcePath, source_record_sha256: digest, confidence: "high" }, record: canonical }));
+    git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "inherited source"]);
+
+    const committedEntityBytes = fs.readFileSync(entityPath, "utf8");
+    fs.writeFileSync(path.join(root, sourcePath), sourceBytes({ ...sourceRecord, choice: "worktree divergence" }));
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({
+      status: "degraded", entries: [{ local: { status: "corrupt" }, git: { status: "verified", reason: "reachable_head", reachable_recovery: true } }],
+    });
+    const changedEntity = JSON.parse(JSON.stringify(canonical)); changedEntity.choice = "changed local entity";
+    fs.writeFileSync(entityPath, dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "decisions", migration_provenance: { kind: "inherited_decision_confidence", source: sourceKind, source_path: sourcePath, source_record_sha256: digest, confidence: "high" }, record: changedEntity }));
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ local: { status: "corrupt" }, git: { status: "unavailable", reason: "committed_content_mismatch" } }] });
+    fs.writeFileSync(entityPath, committedEntityBytes); fs.rmSync(entityPath);
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ local: { status: "unavailable" }, git: { status: "verified", reason: "reachable_head" } }] });
+    git(root, ["checkout", "--", ".agentera"]);
+
+    fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ git: { status: "verified", reason: "reachable_head" } }] });
+
+    git(root, ["checkout", "--", ".agentera"]);
+    fs.writeFileSync(path.join(root, sourcePath), sourceBytes({ ...sourceRecord, choice: "forged" }));
+    git(root, ["add", sourcePath]); git(root, ["commit", "--quiet", "-m", "forge source"]); fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ git: { status: "unavailable", reason: "committed_entity_invalid" } }] });
+
+    git(root, ["checkout", "--", ".agentera"]);
+    fs.writeFileSync(path.join(root, sourcePath), sourceBytes(sourceKind === "current_projection" ? { ...sourceRecord, number: 2 } : sourceRecord, 2));
+    git(root, ["add", sourcePath]); git(root, ["commit", "--quiet", "-m", "mismatch source identity"]); fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ git: { status: "unavailable", reason: "committed_entity_invalid" } }] });
+
+    git(root, ["checkout", "--", ".agentera"]); git(root, ["rm", "--quiet", sourcePath]); git(root, ["commit", "--quiet", "-m", "remove inherited source"]); fs.rmSync(path.join(root, ".agentera"), { recursive: true });
+    expect(inspectDurability(root, { artifact: "decisions", id: "aaaaaaaaaa" }, { sourceRoot })).toMatchObject({ entries: [{ git: { status: "unavailable", reason: "committed_entity_invalid" } }] });
   });
 
   it.each([

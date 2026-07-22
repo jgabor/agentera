@@ -1,0 +1,16 @@
+id: wsgikqzdju
+artifact: progress
+record:
+  timestamp: 2026-07-22 06:34
+  type: docs
+  phase: audit
+  what: Reframed the complete KTX triage note as historical evidence and replaced stale recommendations and missing-coverage claims with the implemented compatibility contract and regressions.
+  context:
+    intent: Make the non-authoritative triage note internally consistent with the user-approved truthful KTX result.
+    constraints: No KTX, product code, version, release, publication, tag, push, vision, or stash change.
+    unknowns: none
+    scope: External non-authoritative Agentera triage note and durable project progress.
+  inspiration: Task toptutorlq audit found stale present-tense old-classifier sections after the executive correction.
+  discovered: A cold reader could still interpret the old 265-identity and 58-blocker reproduction as current despite the corrected executive summary.
+  verified: The note now labels the 2026-07-20 output and old behavior as historical, includes the 249-identity/248-target current table, records 16 inline satisfactions and the pre-existing Decision 25 conflict, and lists implemented regression coverage without claiming KTX migration.
+  next: Re-audit the note and revised task, then supersede the invalid predecessor if accepted.

@@ -1,0 +1,14 @@
+id: notceweoxv
+artifact: progress
+record:
+  timestamp: 2026-07-21 21:06
+  type: fix
+  phase: build
+  what: Specified the immutable degraded-summary cutover contract for compacted v2 progress, decisions, and health.
+  context:
+    intent: Allow valid compaction output to cross the one-way cutover without reconstructed history or dual authority.
+    constraints: No migration/read implementation, behavior tests, repair/import command, or plan-task completion
+    unknowns: Implementation and migration regression coverage remain pending later plan tasks.
+    scope: references/artifacts/state-storage-authority.yaml, UPGRADE.md, CHANGELOG.md, and authority-model assertions
+  verified: "N/A: docs-only"
+  next: Implement the declared migration and reader behavior with regression coverage.

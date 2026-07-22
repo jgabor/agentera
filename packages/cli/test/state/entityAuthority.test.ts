@@ -1,8 +1,14 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
+
+import { entityBoundariesForArtifact } from "../../src/state/entityStorage.js";
+import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
+import { planEntityMigration } from "../../src/state/entityMigrationPreview.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
@@ -116,13 +122,28 @@ describe("Decision 94 entity authority", () => {
       artifact: "decisions",
       implementation: "implemented",
       publication: "immutable",
-      retrieval: { exact: "agentera state decisions get --id ID --format json", cursor: "opaque_snapshot_cursor" },
+      retrieval: {
+        exact: "agentera state decisions get --id ID --format json",
+        cursor: "opaque_snapshot_cursor",
+        ordering: "date_desc_then_id_asc",
+      },
     });
     expect(target.entities.find((entity: any) => entity.boundary === "todo_item")).toMatchObject({
       artifact: "todo",
       implementation: "implemented",
       publication: "replace_owned_entity",
       retrieval: { exact: "agentera state todo get --id ID --format json", ordering: "severity_then_status_then_id" },
+    });
+    expect(target.entities.find((entity: any) => entity.boundary === "decision")).toMatchObject({
+      canonical_metadata: {
+        migration_provenance: {
+          applicability: "inherited_unsupported_confidence_only",
+          required_fields: ["kind", "source", "source_path", "source_record_sha256", "confidence"],
+          additional_fields: "forbidden",
+          kind: "inherited_decision_confidence",
+          sources: ["current_projection", "verified_archive"],
+        },
+      },
     });
     expect(target.entities.find((entity: any) => entity.boundary === "documentation_inventory_entry")).toMatchObject({
       artifact: "docs",
@@ -178,10 +199,13 @@ describe("Decision 94 entity authority", () => {
 
     expect([...entities.keys()]).toEqual([
       "progress_cycle",
+      "progress_summary",
       "decision",
       "decision_satisfaction",
+      "decision_summary",
       "decision_revision",
       "health_audit",
+      "health_summary",
       "plan",
       "plan_task",
       "objective",
@@ -192,7 +216,12 @@ describe("Decision 94 entity authority", () => {
     expect(new Set([...entities.values()].map((entity: any) => entity.artifact))).toEqual(
       new Set(["progress", "decisions", "health", "plan", "objective", "experiments", "todo", "docs"]),
     );
-    expect([...entities.values()].every((entity: any) => entity.independently_mutable)).toBe(true);
+    expect([...entities.values()].filter((entity: any) => !entity.boundary.endsWith("_summary")).every((entity: any) => entity.independently_mutable)).toBe(true);
+    expect(["progress_summary", "decision_summary", "health_summary"].map((boundary) => entities.get(boundary))).toEqual([
+      expect.objectContaining({ independently_mutable: false, publication: "immutable", mutation: "forbidden" }),
+      expect.objectContaining({ independently_mutable: false, publication: "immutable", mutation: "forbidden" }),
+      expect.objectContaining({ independently_mutable: false, publication: "immutable", mutation: "forbidden" }),
+    ]);
 
     for (const relationship of target.relationships.declarations) {
       expect(entities.has(relationship.source), relationship.source).toBe(true);
@@ -214,6 +243,73 @@ describe("Decision 94 entity authority", () => {
       "docs_mapping",
     ]);
     expect(target.excluded_from_entity_migration).toContain("all intentional_singletons");
+  });
+
+  it("activates immutable compacted-summary boundaries for migration validation", () => {
+    const target = loadAuthority().entity_target;
+    const declared = target.declared_compacted_summary_contract;
+    const activeBoundaries = target.entities.map((entity: any) => entity.boundary);
+
+    expect(declared).toMatchObject({
+      status: "implemented",
+      runtime_boundary_source: "entity_target.entities",
+      diagnostics: { status: "implemented" },
+      source_outcomes: { status: "implemented" },
+    });
+    for (const [boundary, artifact, command, ordering] of [
+      [
+        "progress_summary",
+        "progress",
+        "agentera state progress get --id ID --format json",
+        "full_timestamp_desc_then_id_asc_then_summary_id_asc",
+      ],
+      [
+        "decision_summary",
+        "decisions",
+        "agentera state decisions get --id ID --format json",
+        "full_date_desc_then_id_asc_then_summary_id_asc",
+      ],
+      [
+        "health_summary",
+        "health",
+        "agentera state health get --id ID --format json",
+        "full_date_desc_then_id_asc_then_summary_id_asc",
+      ],
+    ]) {
+      const summary = declared.boundaries.find((entry: any) => entry.boundary === boundary);
+      expect(summary).toMatchObject({
+        artifact,
+        independently_mutable: false,
+        implementation: "implemented",
+        publication: "immutable",
+        mutation: "forbidden",
+        record: {
+          required_fields: ["summary", "migration_provenance"],
+          additional_fields: "source_retained_fields_plus_declared_metadata",
+          declared_metadata_fields: ["migration_provenance"],
+          migration_provenance: {
+            path: "record.migration_provenance",
+            required_fields: ["source_path", "source_record_sha256"],
+            additional_fields: "forbidden",
+            source_row_provenance: "entity_target.declared_compacted_summary_contract.source_row_provenance",
+          },
+        },
+        retrieval: {
+          exact: command,
+          detail_availability: "summary",
+          compatibility: "degraded",
+          ordering,
+          summary_ordering: "canonical_id_asc_without_chronology_claim",
+          mutation: "read_only",
+        },
+      });
+      expect(activeBoundaries).toContain(boundary);
+      expect(entityBoundariesForArtifact(artifact, REPO_ROOT)).toContain(boundary);
+    }
+    expect(declared.boundaries.find((entry: any) => entry.boundary === "decision_summary").record).toMatchObject({
+      satisfaction: "optional_inline_read_only_source_retained_field",
+      satisfaction_rule: expect.stringContaining("never creates or targets a decision_satisfaction entity"),
+    });
   });
 
   it("exposes duplicate vocabulary and unresolved boundary references as contract failures", () => {
@@ -303,7 +399,8 @@ describe("Decision 94 entity authority", () => {
       valid_full: "ready",
       canonical_mirror: "ready_with_mirrored_provenance",
       degraded_recoverable: "ready_with_provenance",
-      summary_only_or_missing_detail: "blocked",
+      valid_compacted_summary: "ready_with_degraded_provenance",
+      missing_detail_not_declared_summary: "blocked",
       ambiguous_or_duplicate_identity: "blocked",
       proposed_target_conflict: "blocked",
       corrupt_or_unresolved_relationship: "blocked",
@@ -334,9 +431,66 @@ describe("Decision 94 entity authority", () => {
         startup_large: { max_latency_ms: 15000 },
       },
     });
-    expect(measurement.fixtures.small).toContain("every declared entity boundary");
-    expect(measurement.fixtures.large).toContain("every declared entity boundary");
+    expect(measurement.fixtures.small).toContain("every active entity_target.entities boundary");
+    expect(measurement.fixtures.large).toContain("every active entity_target.entities boundary");
     expect(measurement.failure_rule).toContain("never truncate bytes");
     expect(measurement.failure_rule).toContain("fabricate detail");
+  });
+
+  it("uses one mapping-or-scalar source-row provenance contract in every summary boundary and preview", () => {
+    const target = loadAuthority().entity_target;
+    const declared = target.declared_compacted_summary_contract;
+    const reference = "entity_target.declared_compacted_summary_contract.source_row_provenance";
+    const semantic = declared.source_row_provenance;
+    const primary = new Map(target.entities.map((entry: any) => [entry.boundary, entry]));
+    const sourceRows = {
+      progress: [{ summary: "progress mapping", retained: { z: 1, a: ["second", "first"] } }, "progress scalar"],
+      decisions: [{ summary: "decision mapping", satisfaction: { state: "user_confirmed_satisfied" } }, "decision scalar"],
+      health: [{ summary: "health mapping", retained: { z: 1, a: ["second", "first"] } }, "health scalar"],
+    } as const;
+    const collections = { progress: "cycles", decisions: "decisions", health: "audits" } as const;
+    const boundaries = { progress: "progress_summary", decisions: "decision_summary", health: "health_summary" } as const;
+
+    expect(semantic).toMatchObject({
+      semantic_id: "v2_compacted_summary_physical_row.v1",
+      status: "implemented",
+      accepted_parsed_row_values: ["mapping", "scalar_string"],
+      source_record_sha256: { format: "lowercase_sha256_hex" },
+    });
+    for (const artifact of Object.keys(sourceRows) as Array<keyof typeof sourceRows>) {
+      const boundary = boundaries[artifact];
+      expect(primary.get(boundary).canonical_metadata.summary_migration_provenance.source_row_provenance).toBe(reference);
+      expect(declared.boundaries.find((entry: any) => entry.boundary === boundary).record.migration_provenance.source_row_provenance).toBe(reference);
+      expect(entityBoundariesForArtifact(artifact, REPO_ROOT)).toContain(boundary);
+    }
+
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-summary-source-rows-"));
+    try {
+      for (const artifact of Object.keys(sourceRows) as Array<keyof typeof sourceRows>) {
+        const file = path.join(root, ".agentera", `${artifact}.yaml`);
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, YAML.stringify({ [collections[artifact]]: sourceRows[artifact] }));
+      }
+      const preview = planEntityMigration(root, REPO_ROOT);
+      for (const artifact of Object.keys(sourceRows) as Array<keyof typeof sourceRows>) {
+        for (const [index, physical] of sourceRows[artifact].entries()) {
+          const entry = preview.entries.find((candidate) => candidate.source_identity === `${artifact}:${collections[artifact]}[${index}]`);
+          const sourceDigest = createHash("sha256").update(canonicalRecordJson(physical)).digest("hex");
+          expect(entry).toMatchObject({
+            boundary: boundaries[artifact],
+            classification: "valid_compacted_summary",
+            record: {
+              summary: typeof physical === "string" ? physical : physical.summary,
+              migration_provenance: { source_record_sha256: sourceDigest },
+            },
+          });
+          if (typeof physical === "string") {
+            expect(sourceDigest).not.toBe(createHash("sha256").update(canonicalRecordJson({ summary: physical })).digest("hex"));
+          }
+        }
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

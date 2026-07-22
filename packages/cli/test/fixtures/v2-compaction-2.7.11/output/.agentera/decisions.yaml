@@ -1,0 +1,160 @@
+decisions:
+- number: 2
+  date: '2026-06-02'
+  question: Fixture question 2?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 2.
+  reasoning: Fixture reasoning.
+  confidence: firm
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-02'
+- number: 3
+  date: '2026-06-03'
+  question: Fixture question 3?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 3.
+  reasoning: Fixture reasoning.
+  confidence: firm
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-03'
+- number: 4
+  date: '2026-06-04'
+  question: Fixture question 4?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 4.
+  reasoning: Fixture reasoning.
+  confidence: firm
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-04'
+- number: 5
+  date: '2026-06-05'
+  question: Fixture question 5?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 5.
+  reasoning: Fixture reasoning.
+  confidence: firm
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-05'
+- number: 6
+  date: '2026-06-06'
+  question: Fixture question 6?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 6.
+  reasoning: Fixture reasoning.
+  confidence: high
+  feeds_into: fixture
+- number: 7
+  date: '2026-06-07'
+  question: Fixture question 7?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 7.
+  reasoning: Fixture reasoning.
+  confidence: high
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-07'
+- number: 8
+  date: '2026-06-08'
+  question: Fixture question 8?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 8.
+  reasoning: Fixture reasoning.
+  confidence: medium
+  feeds_into: fixture
+- number: 9
+  date: '2026-06-09'
+  question: Fixture question 9?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 9.
+  reasoning: Fixture reasoning.
+  confidence: medium
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-09'
+- number: 10
+  date: '2026-06-10'
+  question: Fixture question 10?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 10.
+  reasoning: Fixture reasoning.
+  confidence: low
+  feeds_into: fixture
+- number: 11
+  date: '2026-06-11'
+  question: Fixture question 11?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 11.
+  reasoning: Fixture reasoning.
+  confidence: low
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-11'
+archive:
+- summary: 'Decision 1 (2026-06-01): Fixture choice 1.'
+  number: 1
+  date: '2026-06-01'
+  choice: Fixture choice 1.
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-01'
+  outcome: Fixture choice 1.
+- number: 0
+  summary: 'Decision 0 (2026-06-01): legacy summary without satisfaction'

@@ -1,0 +1,16 @@
+id: gfgxsozphq
+artifact: progress
+record:
+  timestamp: 2026-07-22 00:40
+  type: fix
+  phase: build
+  what: Closed the four final-audit blockers by unifying project and same-commit provenance source binding, proving every mixed summary against selected full content, sharing scalar summary normalization with provenance validation, and rejecting authority-undeclared aggregate collections before cutover effects.
+  context:
+    intent: Make compacted-summary and inherited-confidence migration evidence fail closed without weakening deterministic mirror promotion or existing entity cutover behavior.
+    constraints: No commit, push, publish, tag, release, vision or task-status change, external KTX access, or recovery-stash manipulation.
+    unknowns: No known correctness blocker; only final post-progress checks remain.
+    scope: Migration source binding, archive blob validation, scalar summaries, entity preview classification and inventory, durability, cutover refusal, and adversarial tests.
+  inspiration: Final audit ses_07943f112ffeLbnXEajZwfwIGn.
+  discovered: Inherited-confidence envelopes bypassed source binding outside whole-project validation; mixed current full and summary rows skipped mirror proof; scalar summaries were normalized only during preview; and aggregate inventory silently ignored unknown top-level arrays.
+  verified: Focused adversarial suites passed 206 tests before the final one-line monolith correction; the complete source suite then passed 195 files and 2410 tests with 1 skipped. Typecheck, build, activeProtocolSurface, state validation, compact, and diff checks passed.
+  next: Run post-progress state validation, compact, diff checks, and inspect the final working-tree delta without changing task status.

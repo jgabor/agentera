@@ -1,0 +1,27 @@
+id: crhxazotxt
+artifact: plan
+record:
+  name: Synchronize current state and close verification
+  depends_on:
+    - yjvcdgexku
+    - vlcpnynime
+    - dxtdckelks
+    - xrdkdvcvjv
+    - lnwiwlnfmx
+    - voygvdlhqh
+  status: complete
+  acceptance:
+    - GIVEN all behavioral tasks are complete WHEN repository verification runs THEN targeted tests, the full source suite, typecheck, build, package verification, state validation, and compaction gates pass.
+    - GIVEN the implementation evidence WHEN project state is synchronized THEN the cutover TODO, plan tasks, progress, decision context, and user-facing documentation agree in the same substantive commit.
+    - GIVEN the approved delivery boundary WHEN closeout is inspected THEN no version, release, publication, tag, push, vision, or KTX mutation occurred.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: The authority defines compacted-summary provenance as hashing a parsed summary mapping and labels implemented behavior future scope, while runtime/tests correctly hash the original parsed source row, including scalar strings. Six duplicated declarations can drift.
+    provenance:
+      attempt_id: audit-crhxazotxt-2
+      source: independent final audit session ses_077d485eeffelxCouQ5rbcnojy; authority parity and complete delivery gates passed
+      recorded_at: 2026-07-22 07:45
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,14 @@
+id: zqnfncpomm
+artifact: progress
+record:
+  timestamp: 2026-07-21 21:52
+  type: test
+  phase: build
+  what: Made the v2 compaction TODO migration evidence assert its exact surviving canonical targets.
+  context:
+    intent: Prevent empty TODO selections from falsely proving compacted rows migrate as full canonical todo entities.
+    constraints: No production migration behavior, task completion, commit, or prior progress edit
+    unknowns: none
+    scope: v2CompactionEvidence TODO assertions and v2-compaction-2.7.11 manifest
+  verified: "pnpm v2CompactionEvidence + entityMigrationPreview: 86 passed; pnpm -C packages/cli run typecheck: passed; git diff --check: passed."
+  next: Use the pinned fixture evidence in later migration implementation tasks.

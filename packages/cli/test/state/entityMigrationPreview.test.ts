@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { main } from "../../src/cli/dispatch.js";
 import { printStateHelp } from "../../src/cli/help.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
+import { yamlArchiveEntry } from "../../src/hooks/compaction/retention.js";
 import { collectMigrationPreviewPages } from "../helpers/entityMigrationPagination.js";
 import {
   assertEntityMigrationBinding,
@@ -957,12 +958,118 @@ describe("entity migration read-only preview", () => {
     write(root, ".agentera/archive/progress/unsupported.txt", "record: {}\n");
     write(root, ".agentera/plan.yaml", `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n  - number: 1\n    name: one\n    depends_on: []\n    status: pending\n    acceptance: [pass]\n  - number: 2\n    name: two\n    depends_on: ["1"]\n    status: pending\n    acceptance: [pass]\nsurprises: []\n`);
     const preview = previewEntityMigration(root, REPO_ROOT);
-    expect(preview.counts).toMatchObject({ recoverable_degraded_full_projection: 2, irrecoverable_summary_only: 1, mirrors: 2, duplicates: 1, conflicts: 1, corrupt: 1, unsupported: 1, physical_records: 14, logical_identities: 10 });
+    expect(preview.counts).toMatchObject({ recoverable_degraded_full_projection: 2, valid_compacted_summary: 1, mirrors: 2, duplicates: 1, conflicts: 1, corrupt: 1, unsupported: 1, physical_records: 14, logical_identities: 10 });
+    expect(preview.entries.find((entry) => entry.source_identity === "progress:3")).toMatchObject({ boundary: "progress_summary", classification: "valid_compacted_summary", detail_availability: "summary", compatibility: "degraded", proposed_target: expect.any(Object) });
     expect(preview.entries.find((entry) => entry.source_identity === "progress:4")?.classification).toBe("recoverable_degraded_full_projection");
     expect(preview.entries.find((entry) => entry.source_identity === "progress:5")?.classification).toBe("duplicate");
     expect(preview.entries.find((entry) => entry.source_identity === "progress:6")?.classification).toBe("verified_full");
     expect(preview.entries.some((entry) => entry.boundary === "plan_task" && entry.relationships.some((relation) => relation.field === "depends_on" && relation.status === "resolved"))).toBe(true);
     expect(preview.entries.every((entry) => !("record" in entry))).toBe(true);
+  });
+
+  it("blocks divergent compacted summaries independent of source order", () => {
+    const summarySource = (rows: string[]) => `cycles:\n${rows.map((summary) => `  - number: 3\n    summary: ${summary}\n`).join("")}`;
+    const first = project();
+    const second = project();
+    write(first, ".agentera/progress.yaml", summarySource(["first retained body", "second retained body"]));
+    write(second, ".agentera/progress.yaml", summarySource(["second retained body", "first retained body"]));
+
+    const entries = [planEntityMigration(first, REPO_ROOT), planEntityMigration(second, REPO_ROOT)].map((plan) => plan.entries.find((entry) => entry.source_identity === "progress:3")!);
+    expect(entries).toEqual(entries.map(() => expect.objectContaining({
+      classification: "conflict",
+      detail_availability: "full",
+      compatibility: "current",
+      proposed_target: null,
+      record: { summary: "first retained body" },
+    })));
+  });
+
+  it("publishes canonical-equivalent summary mirrors deterministically in either source order", () => {
+    const summarySource = (rows: Array<{ alias: string; value: string }>) => `cycles:\n${rows.map(({ alias, value }) => `  - number: 3\n    ${alias}: ${value}\n    summary: retained body\n`).join("")}`;
+    const first = project();
+    const second = project();
+    write(first, ".agentera/progress.yaml", summarySource([{ alias: "stable_id", value: "legacy-a" }, { alias: "type_prefixed_id", value: "legacy-b" }]));
+    write(second, ".agentera/progress.yaml", summarySource([{ alias: "type_prefixed_id", value: "legacy-b" }, { alias: "stable_id", value: "legacy-a" }]));
+
+    const entries = [planEntityMigration(first, REPO_ROOT), planEntityMigration(second, REPO_ROOT)].map((plan) => plan.entries.find((entry) => entry.source_identity === "progress:3")!);
+    expect(entries[0]).toMatchObject({ classification: "valid_compacted_summary", proposed_target: expect.any(Object), record: { summary: "retained body", migration_provenance: expect.any(Object) } });
+    expect(entries[1]).toMatchObject({ classification: "valid_compacted_summary", proposed_target: entries[0].proposed_target, record: entries[0].record, target_sha256: entries[0].target_sha256 });
+    expect(entries[0].record).not.toHaveProperty("stable_id");
+    expect(entries[0].record).not.toHaveProperty("type_prefixed_id");
+  });
+
+  it.each([
+    ["progress", "cycles", { number: 7, timestamp: "2026-07-16 10:00", type: "fix", phase: "build", what: "retained work", inspiration: "audit", discovered: "none", verified: "tests", next: "done", context: { intent: "verify", constraints: "none", unknowns: "none", scope: "state" } }],
+    ["decisions", "decisions", { number: 7, date: "2026-07-16", question: "Keep full?", context: "audit", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "evidence", confidence: "firm" }],
+    ["health", "audits", { number: 7, date: "2026-07-16", dimensions: ["architecture_alignment"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { architecture_alignment: "A" } }],
+  ] as const)("requires every mixed %s summary to mirror the selected full record in every order", (artifact, collection, full) => {
+    const matching = yamlArchiveEntry(artifact, full);
+    const divergent = { ...matching, summary: `${matching.summary} divergent` };
+    for (const summary of [matching, divergent]) {
+      const results = [[full, summary], [summary, full]].map((rows) => {
+        const root = project();
+        write(root, `.agentera/${artifact}.yaml`, YAML.stringify({ [collection]: rows }));
+        return planEntityMigration(root, REPO_ROOT).entries.find((entry) => entry.source_identity === `${artifact}:7`)!;
+      });
+      if (summary === matching) {
+        expect(results.every((entry) => entry.proposed_target !== null), JSON.stringify(results)).toBe(true);
+        expect(results.map((entry) => entry.record)).toEqual([results[0].record, results[0].record]);
+        if (artifact === "decisions") expect(results[0].record).not.toHaveProperty("satisfaction");
+      } else {
+        expect(results).toEqual(results.map(() => expect.objectContaining({ classification: "conflict", proposed_target: null })));
+      }
+    }
+  });
+
+  it("binds scalar summaries truthfully and reconciles scalar/mapping mirrors without order dependence", () => {
+    const scalar = "Cycle 3 retained body";
+    const mapping = { number: 3, summary: scalar };
+    const scalarOnly = project();
+    write(scalarOnly, ".agentera/progress.yaml", YAML.stringify({ cycles: [scalar] }));
+    const scalarEntry = planEntityMigration(scalarOnly, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:3")!;
+    expect(scalarEntry).toMatchObject({ classification: "valid_compacted_summary", proposed_target: expect.any(Object), record: { summary: scalar, migration_provenance: { source_record_sha256: createHash("sha256").update(canonicalRecordJson(scalar)).digest("hex") } } });
+
+    const mirrors = [[scalar, mapping], [mapping, scalar]].map((rows) => {
+      const root = project(); write(root, ".agentera/progress.yaml", YAML.stringify({ cycles: rows }));
+      return planEntityMigration(root, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:3")!;
+    });
+    expect(mirrors[1]).toMatchObject({ classification: "valid_compacted_summary", proposed_target: mirrors[0].proposed_target, record: mirrors[0].record, target_sha256: mirrors[0].target_sha256 });
+
+    const divergent = project();
+    write(divergent, ".agentera/progress.yaml", YAML.stringify({ cycles: [scalar, { number: 3, summary: "Cycle 3 divergent" }] }));
+    expect(planEntityMigration(divergent, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:3")).toMatchObject({ classification: "conflict", proposed_target: null });
+  });
+
+  it.each([
+    ["hidden divergent rows", [{ number: 99, summary: "hidden" }]],
+    ["benign unknown array", []],
+  ])("blocks authority-undeclared aggregate collections: %s", (_label, hidden) => {
+    const outcomes = [
+      { cycles: [{ number: 1, summary: "Cycle 1 retained" }], hidden },
+      { hidden, cycles: [{ number: 1, summary: "Cycle 1 retained" }] },
+    ].map((document) => {
+      const root = project(); write(root, ".agentera/progress.yaml", YAML.stringify(document)); const before = tree(root);
+      const plan = planEntityMigration(root, REPO_ROOT);
+      expect(tree(root)).toEqual(before);
+      return plan;
+    });
+    for (const plan of outcomes) {
+      expect(plan.counts).toMatchObject({ blockers: 1, corrupt: 1, publishable_entities: 1 });
+      expect(plan.diagnostics).toEqual([expect.objectContaining({ source_identity: "progress:undeclared_collection:hidden", path: ".agentera/progress.yaml", message: expect.stringContaining("not declared") })]);
+    }
+    expect(outcomes.map((plan) => plan.entries.find((entry) => entry.source_identity.includes("undeclared_collection")))).toEqual(outcomes.map(() => expect.objectContaining({ source_identity: "progress:undeclared_collection:hidden", classification: "corrupt", proposed_target: null, source_paths: [".agentera/progress.yaml"] })));
+  });
+
+  it("takes aggregate collection allowlists from the selected authority", () => {
+    const root = project();
+    const sourceRoot = project();
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), { recursive: true });
+    const authorityPath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
+    const authority = YAML.parse(fs.readFileSync(authorityPath, "utf8"));
+    authority.entity_target.entities.find((entry: any) => entry.boundary === "progress_summary").canonical_metadata.summary_migration_provenance.sources[0].collections.push("hidden");
+    fs.writeFileSync(authorityPath, YAML.stringify(authority));
+    write(root, ".agentera/progress.yaml", YAML.stringify({ cycles: [{ number: 1, summary: "Cycle 1 retained" }], hidden: [] }));
+    expect(planEntityMigration(root, sourceRoot).entries.some((entry) => entry.source_identity.includes("undeclared_collection"))).toBe(false);
   });
 
   it("omits whole entries under bounds without truncating scalar identities", () => {
@@ -1024,7 +1131,7 @@ describe("entity migration read-only preview", () => {
     }
   });
 
-  it("emits exact unresolved-relationship diagnostics and recovers omitted diagnostics through continuation", () => {
+  it("reports unresolved relationship sources as root blockers and recovers omitted diagnostics through continuation", () => {
     const root = project();
     write(root, ".agentera/plan.yaml", `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n${Array.from({ length: 8 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    depends_on: [\"${index + 20}\"]\n    status: pending\n    acceptance: [pass]`).join("\n")}\nsurprises: []\n`);
     const diagnostics: EntityMigrationPreview["diagnostics"] = [];
@@ -1034,7 +1141,7 @@ describe("entity migration read-only preview", () => {
       if (!page.next_after) break;
       page = previewEntityMigration(root, REPO_ROOT, { limit: 2, after: page.next_after, sourceFingerprint: page.source_fingerprint, previewDigest: page.preview_digest });
     } while (true);
-    const unresolved = diagnostics.filter((diagnostic) => diagnostic.classification === "unresolved_relationship");
+    const unresolved = diagnostics.filter((diagnostic) => diagnostic.classification === "corrupt" && diagnostic.message.includes("unresolved target"));
     expect(unresolved).toHaveLength(8);
     expect(unresolved[0]).toMatchObject({
       source_identity: "plan:123e4567-e89b-42d3-a456-426614174000/task:1",
@@ -1049,13 +1156,76 @@ describe("entity migration read-only preview", () => {
       let structured = "";
       expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run", "--format", format], { out: (value) => (structured += value), err: () => undefined })).toBe(1);
       const body = format === "json" ? JSON.parse(structured) : YAML.parse(structured);
-      expect(body.diagnostics.find((diagnostic: EntityMigrationPreview["diagnostics"][number]) => diagnostic.classification === "unresolved_relationship")?.recovery).toContain("Repair relationship 'depends_on'");
+      expect(body.counts).toMatchObject({ root_blockers: 8, dependent_blockers: 0, blockers: 8, corrupt: 8 });
+      expect(body.diagnostics.find((diagnostic: EntityMigrationPreview["diagnostics"][number]) => diagnostic.classification === "corrupt")?.recovery).toContain("Repair relationship 'depends_on'");
     }
     let text = "";
     expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
-    expect(text).toContain("blocker unresolved_relationship plan:123e4567-e89b-42d3-a456-426614174000/task:1");
+    expect(text).toContain("blocker corrupt plan:123e4567-e89b-42d3-a456-426614174000/task:1");
     expect(text).toContain("Repair relationship 'depends_on'");
     expect(text).toContain("task:20");
+  });
+
+  it("separates corrupt source roots from valid relationship dependents", () => {
+    const root = project();
+    const decisions = YAML.parse(EXACT_SOURCE_FIXTURES[".agentera/decisions.yaml"]);
+    delete decisions.decisions[0].reasoning;
+    write(root, ".agentera/decisions.yaml", YAML.stringify(decisions));
+    write(root, ".agentera/overlays/decisions.yaml", EXACT_SOURCE_FIXTURES[".agentera/overlays/decisions.yaml"]);
+
+    const plan = planEntityMigration(root, REPO_ROOT);
+    const source = plan.entries.find((entry) => entry.source_identity === "decisions:7")!;
+    const dependent = plan.entries.find((entry) => entry.source_identity === "decision_satisfaction:decisions:7")!;
+    expect(source).toMatchObject({ classification: "corrupt", proposed_target: null });
+    expect(dependent).toMatchObject({ classification: "verified_full", proposed_target: null, relationships: [expect.objectContaining({ status: "resolved", target_source_identity: "decisions:7" })] });
+    expect(plan.counts).toMatchObject({ corrupt: 1, root_blockers: 1, dependent_blockers: 1, blockers: 2 });
+    expect(plan.counts.blockers).toBe(plan.counts.root_blockers + plan.counts.dependent_blockers);
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ classification: "corrupt", source_identity: "decisions:7" }),
+      expect.objectContaining({ classification: "dependent_blocker", source_identity: "decision_satisfaction:decisions:7", root_source_identity: "decisions:7", relationship_field: "decision" }),
+    ]));
+    let text = "";
+    expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
+    expect(text).toContain("blocker dependent_blocker decision_satisfaction:decisions:7 root_source_identity=decisions:7");
+    expect(text).toContain("relationship 'decision' is blocked by root source 'decisions:7'");
+  });
+
+  it("attributes multiple valid dependents to each of multiple corrupt roots", () => {
+    const root = project();
+    const decisions = YAML.parse(EXACT_SOURCE_FIXTURES[".agentera/decisions.yaml"]);
+    const second = structuredClone(decisions.decisions[0]);
+    second.number = 8;
+    delete decisions.decisions[0].reasoning;
+    delete second.reasoning;
+    decisions.decisions.push(second);
+    write(root, ".agentera/decisions.yaml", YAML.stringify(decisions));
+    write(root, ".agentera/overlays/decisions.yaml", `decisions:7:\n  satisfaction:\n    state: provisionally_satisfied\n    evidence: first\ndecisions:8:\n  satisfaction:\n    state: provisionally_satisfied\n    evidence: second\n`);
+
+    const plan = planEntityMigration(root, REPO_ROOT);
+    expect(plan.counts).toMatchObject({ corrupt: 2, root_blockers: 2, dependent_blockers: 2, blockers: 4 });
+    expect(plan.diagnostics.filter((diagnostic) => diagnostic.classification === "dependent_blocker")).toEqual([
+      expect.objectContaining({ source_identity: "decision_satisfaction:decisions:7", root_source_identity: "decisions:7" }),
+      expect.objectContaining({ source_identity: "decision_satisfaction:decisions:8", root_source_identity: "decisions:8" }),
+    ]);
+  });
+
+  it("roots relationship cycles deterministically and attributes the remaining cycle member", () => {
+    const root = project();
+    write(root, ".agentera/plan.yaml", VALID_PLAN.replace("depends_on: []", "depends_on: [Task 2]").replace("surprises: []", "  - number: 2\n    name: two\n    depends_on: [Task 1]\n    status: pending\n    acceptance: [pass]\nsurprises: []"));
+
+    const plan = planEntityMigration(root, REPO_ROOT);
+    const rootIdentity = `${ACTIVE_PLAN_ID}/task:1`;
+    const dependentIdentity = `${ACTIVE_PLAN_ID}/task:2`;
+    expect(plan.entries.find((entry) => entry.source_identity === rootIdentity)).toMatchObject({ classification: "corrupt", proposed_target: null });
+    expect(plan.entries.find((entry) => entry.source_identity === dependentIdentity)).toMatchObject({ classification: "verified_full", proposed_target: null });
+    expect(plan.diagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ classification: "corrupt", source_identity: rootIdentity, message: expect.stringContaining("cycle") }),
+      expect.objectContaining({ classification: "dependent_blocker", source_identity: dependentIdentity, root_source_identity: rootIdentity }),
+    ]));
+    let text = "";
+    expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
+    expect(text).toContain(`blocker dependent_blocker ${dependentIdentity} root_source_identity=${rootIdentity}`);
+    expect(text).toContain(`relationship 'depends_on' is blocked by root source '${rootIdentity}'`);
   });
 
   it("renders a complete text summary and dedicated entity help", () => {
@@ -1063,8 +1233,8 @@ describe("entity migration read-only preview", () => {
     write(root, ".agentera/progress.yaml", "cycles:\n  - number: 1\n    summary: unavailable detail\n");
     let out = "";
     const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run"], { out: (text) => (out += text), err: () => undefined });
-    expect(rc).toBe(1);
-    expect(out).toContain("status: blocked");
+    expect(rc).toBe(0);
+    expect(out).toContain("status: ready");
     expect(out).toContain("classes:");
     expect(out).toContain("physical_records:");
     expect(out).toContain("blockers:");

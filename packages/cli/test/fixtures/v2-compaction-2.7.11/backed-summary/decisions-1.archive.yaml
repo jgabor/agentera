@@ -1,0 +1,21 @@
+schemaVersion: agentera.stateArchiveEntry.v1
+artifact_id: decisions
+entry_number: 1
+record:
+  number: 1
+  date: '2026-06-01'
+  question: Fixture question 1?
+  context: Fixture context.
+  alternatives:
+  - name: Keep fixture
+    status: chosen
+  choice: Fixture choice 1.
+  reasoning: Fixture reasoning.
+  confidence: firm
+  feeds_into: fixture
+  satisfaction:
+    state: user_confirmed_satisfied
+    user_confirmation:
+      confirmed_by: fixture
+      confirmed_at: '2026-07-01'
+record_sha256: 1b04036b272454735ed66b77d01136f2279224e0a80b9f90e830359a74dd0c8d

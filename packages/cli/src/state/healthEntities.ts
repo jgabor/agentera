@@ -1,4 +1,3 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -19,11 +18,14 @@ import {
 } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { healthEntityViolations } from "./healthEntityValidation.js";
+import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEntityRead.js";
+import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
 import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 
 const ARTIFACT = "health";
 const BOUNDARY = "health_audit";
+const SUMMARY = "health_summary";
 const ORDER = "date_desc_then_id_asc";
 const ID_PATTERN = /^[a-z]{10}$/;
 
@@ -144,7 +146,7 @@ function healthEntities(root: string, sourceRoot: string, supplied?: ReturnType<
   if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
   const discovery = supplied ?? discoverEntities(root, sourceRoot);
   const relevant = discovery.entities.filter((entity) => entity.artifact === ARTIFACT || entity.boundary === BOUNDARY);
-  const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record || healthEntityViolations(entity.record).length > 0);
+  const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record || (entity.boundary === BOUNDARY && healthEntityViolations(entity.record).length > 0));
   if (bad) throw listFailure(
     bad.classification === "duplicate" ? "ambiguous" : "corrupt",
     `health entity '${bad.relativePath}' is not canonical`,
@@ -159,7 +161,8 @@ function entry(root: string, entity: DiscoveredEntity): JsonObject {
     id,
     artifact: ARTIFACT,
     record: entity.record!,
-    provenance: { storage: "canonical_entity_file", path: relative(root, entity.path), boundary: BOUNDARY, detail: "full" },
+    ...detailMetadata(entity),
+    provenance: detailProvenance(relative(root, entity.path), entity),
     retrieval: { get: `agentera state health get --id ${id} --format json` },
   };
 }
@@ -170,38 +173,39 @@ export function getHealthEntity(root: string, id: string, sourceRoot = resolveSo
   const matches = all.filter((entity) => entity.id === id);
   if (matches.length > 1 || matches.some((entity) => entity.classification === "duplicate")) throw failure("ambiguous", `health entity ID '${id}' has multiple canonical candidates`, "Run agentera check validate state, preserve conflicting evidence, and assign unique IDs.", id);
   const selected = matches[0];
-  const expectedPath = path.join(path.resolve(root), contract(sourceRoot).entityRoot, ARTIFACT, BOUNDARY, `${id}.yaml`);
+  const expectedPath = path.join(path.resolve(root), contract(sourceRoot).entityRoot, ARTIFACT, selected?.boundary === SUMMARY ? SUMMARY : BOUNDARY, `${id}.yaml`);
   const canonical = all.find((entity) => entity.path === expectedPath);
   if (!selected && canonical) throw failure("corrupt", `health entity '${canonical.relativePath}' does not match its canonical ID envelope`, "Run agentera check validate state and repair the canonical entity file.", id);
-  if (!selected || selected.artifact !== ARTIFACT || selected.boundary !== BOUNDARY) throw failure("not_found", `no health entity exists with ID '${id}'`, "Copy an ID from agentera state health list --format json and retry.", id);
-  if (selected.classification !== "valid" || !selected.record || healthEntityViolations(selected.record).length > 0) throw failure("corrupt", `health entity '${selected.relativePath}' is corrupt or violates the audit contract`, "Run agentera check validate state, preserve its evidence, and repair the canonical entity file.", id);
+  if (!selected || selected.artifact !== ARTIFACT || ![BOUNDARY, SUMMARY].includes(selected.boundary ?? "")) throw failure("not_found", `no health entity exists with ID '${id}'`, "Copy an ID from agentera state health list --format json and retry.", id);
+  if (selected.classification !== "valid" || !selected.record || (selected.boundary === BOUNDARY && healthEntityViolations(selected.record).length > 0)) throw failure("corrupt", `health entity '${selected.relativePath}' is corrupt or violates the audit contract`, "Run agentera check validate state, preserve its evidence, and repair the canonical entity file.", id);
   return {
     schemaVersion: "agentera.stateRetrieval.v1",
     command: "state health get",
-    status: "ok",
+    status: isSummaryEntity(selected) ? "degraded" : "ok",
     entry: entry(root, selected),
     source: { artifact: ARTIFACT, authority: "canonical_entity_file" },
-    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full" },
+    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: isSummaryEntity(selected) ? "summary" : "full" },
   };
 }
 
-function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date)}\0${entity.id}`; }
-function snapshot(root: string, entities: DiscoveredEntity[]): string {
-  const inputs = entities.map(({ id, artifact, boundary, record, path: entityPath }) => ({ id, artifact, boundary, path: relative(root, entityPath), record })).sort((a, b) => canonicalRecordJson(a).localeCompare(canonicalRecordJson(b)));
-  return createHash("sha256").update(canonicalRecordJson(inputs)).digest("hex");
+function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date ?? "")}\0${entity.id}`; }
+function snapshot(root: string, entities: DiscoveredEntity[], dimension: string | undefined, entityRoot: string): string {
+  return projectedListSnapshot({
+    schemaVersion: "agentera.stateList.v1",
+    command: "state health list",
+    order: ORDER,
+    filters: { dimension: dimension ?? null },
+    source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: entityRoot },
+    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: entities.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
+    entries: entities.map((entity) => entry(root, entity)),
+  });
 }
-function cursorSecret(root: string, authorityPath: string): Buffer { return createHash("sha256").update(path.resolve(root)).update("\0").update(fs.readFileSync(authorityPath)).digest(); }
 function encode(payload: JsonObject, root: string, authorityPath: string): string {
-  const bytes = Buffer.from(canonicalRecordJson(payload));
-  return `${bytes.toString("base64url")}.${createHmac("sha256", cursorSecret(root, authorityPath)).update(bytes).digest("base64url")}`;
+  return encodeListCursor(payload, root, authorityPath);
 }
 function decode(token: string, root: string, authorityPath: string): JsonObject {
-  try {
-    const parts = token.split("."); if (parts.length !== 2) throw new Error();
-    const bytes = Buffer.from(parts[0], "base64url"); const supplied = Buffer.from(parts[1], "base64url"); const expected = createHmac("sha256", cursorSecret(root, authorityPath)).update(bytes).digest();
-    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new Error();
-    const value = JSON.parse(bytes.toString()); if (!mapping(value)) throw new Error(); return value;
-  } catch { throw listFailure("cursor_invalid", "health cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
+  try { return decodeListCursor(token, root, authorityPath); }
+  catch { throw listFailure("cursor_invalid", "health cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
 }
 function serializedBytes(value: JsonObject, format: string): number { return Buffer.byteLength(format === "json" ? `${JSON.stringify(value, null, 2)}\n` : YAML.stringify(value)); }
 
@@ -209,9 +213,9 @@ export function listHealthEntities(root: string, limit?: number, dimension?: str
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw listFailure("invalid_request", `health list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", 2);
   const all = healthEntities(root, sourceRoot, options.discovery);
-  let filtered = [...all].sort((a, b) => String(b.record!.date).localeCompare(String(a.record!.date)) || a.id!.localeCompare(b.id!));
+  let filtered = [...all].sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
   if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
-  const snap = snapshot(root, all); let start = 0;
+  const snap = snapshot(root, filtered, dimension, declared.entityRoot); let start = 0;
   if (cursor) {
     const value = decode(cursor, root, declared.authorityPath);
     if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.dimension !== (dimension ?? null)) throw listFailure("cursor_snapshot_unavailable", "health changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot.");
@@ -222,9 +226,9 @@ export function listHealthEntities(root: string, limit?: number, dimension?: str
     const remaining = filtered.length - start - selected.length;
     const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, dimension: dimension ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
     return {
-      schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
+      schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining || filtered.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
       counts: { total: filtered.length, returned: selected.length, remaining }, filters: { dimension: dimension ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: filtered.length },
-      source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" },
+      source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: filtered.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
       ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next, retrieval: { continue: `agentera state health list --limit ${effectiveLimit}${dimension ? ` --dimension ${dimension}` : ""} --cursor ${next} --format json`, get: "agentera state health get --id ID --format json" } } : {}),
     };
   };

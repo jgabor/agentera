@@ -255,26 +255,23 @@ export function emitPrime(
   // (v1_migration/docs/objective when default) so startup does not carry
   // default-only payload, then — for the bare default only — projects the full
   // payload to a bounded decision brief (Plan Task 3). Explicit `--fields`
-  // selection, `--dashboard`, and `--context` keep the full payload so a consumer
-  // recovering a named field or rendering a full surface is never confused by
-  // omission (see default_emission_omission_contract + brief_omission_contract).
+  // selection and `--context` use their governed payloads. Dashboard history is
+  // already projected at collection time so ordinary list detail is not copied
+  // into startup (see default_emission_omission_contract + brief_omission_contract).
   const conditional = requested.length === 0 && options.bareBrief ? omitInactiveConditionalDefaults(payload) : payload;
   const effectivePayload =
     requested.length === 0 && options.bareBrief
       ? briefOrientationPayload(conditional, { budgetBytes: options.briefBudgetBytes })
       : conditional;
-  if (format === "json" && requested.length === 0 && options.maxUtf8Bytes !== undefined) {
-    const bytes = briefUtf8Bytes(effectivePayload);
-    if (bytes > options.maxUtf8Bytes) {
-      err(
-        `Error: ${command} JSON output is ${bytes} UTF-8 bytes, over the ${options.maxUtf8Bytes}-byte startup budget; ` +
-          "use the named recovery commands in capability_context.context.status_context.brief.\n",
-      );
-      return 1;
-    }
-  }
   emitIssuesFieldDeprecationWarning(requested, effectivePayload, err);
   if (requested.length === 0) {
+    if (format === "json" && options.maxUtf8Bytes !== undefined) {
+      const bytes = briefUtf8Bytes(effectivePayload);
+      if (bytes > options.maxUtf8Bytes) {
+        err(`Error: ${command} JSON output is ${bytes} UTF-8 bytes, over the ${options.maxUtf8Bytes}-byte startup budget; use the named recovery commands in the projected output contract.\n`);
+        return 1;
+      }
+    }
     emitStructured(effectivePayload, format, out);
     return 0;
   }
@@ -287,6 +284,13 @@ export function emitPrime(
   const selected: Record<string, unknown> = {};
   for (const field of [...REQUIRED_SPARSE_CONTEXT_FIELDS, ...requested]) {
     if (field in payload && !(field in selected)) selected[field] = payload[field];
+  }
+  if (format === "json" && options.maxUtf8Bytes !== undefined) {
+    const bytes = briefUtf8Bytes(selected);
+    if (bytes > options.maxUtf8Bytes) {
+      err(`Error: ${command} JSON output is ${bytes} UTF-8 bytes, over the ${options.maxUtf8Bytes}-byte startup budget; use the named recovery commands in the projected output contract.\n`);
+      return 1;
+    }
   }
   emitStructured(selected, format, out);
   return 0;
@@ -323,12 +327,40 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   }
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
   out(`profile: ${profileStatus} | path=${profile}\n`);
-  if (health.exists) {
+  if (health.exists && health.id) {
     const worst = health.worst;
     const worstText = worst ? `${worst[0]}:${worst[1]}` : "none";
     out(
-      `health: id=${health.id ?? "unknown"} | artifact=${health.artifact ?? "health"} | grade=${health.grade || "unknown"} | ` +
-        `trajectory=${health.trajectory || "unknown"} | worst=${worstText}\n`,
+      `health: id=${health.id} | artifact=${health.artifact ?? "health"} | grade=${health.grade || "unknown"} | ` +
+      `trajectory=${health.trajectory || "unknown"} | worst=${worstText}\n`,
+    );
+  }
+  if (health.degraded_history) {
+    const degraded = health.degraded_history as Record<string, unknown>;
+    out(
+      `health: degraded_history | summaries=${String(degraded.summary_count ?? 0)} | returned=${String(degraded.returned_count ?? 0)} | omitted=${String(degraded.omitted_count ?? 0)} | ` +
+        `detail=summary-only | recovery=agentera state health list --limit 20 --format json\n`,
+    );
+  }
+  const latestProgress = state.progress.latest as Record<string, unknown> | undefined;
+  if (latestProgress) {
+    out(
+      `progress: id=${String(latestProgress.id ?? "unknown")} | artifact=${String(latestProgress.artifact ?? "progress")} | ` +
+      `what=${String(latestProgress.what ?? "unknown")}\n`,
+    );
+  }
+  if (state.progress.degraded_history) {
+    const degraded = state.progress.degraded_history as Record<string, unknown>;
+    out(
+      `progress: degraded_history | summaries=${String(degraded.summary_count ?? 0)} | returned=${String(degraded.returned_count ?? 0)} | omitted=${String(degraded.omitted_count ?? 0)} | ` +
+        `detail=summary-only | recovery=agentera state progress list --limit 20 --format json\n`,
+    );
+  }
+  const decisionHistory = (state.history.decisions as Record<string, unknown> | undefined)?.degraded_history as Record<string, unknown> | undefined;
+  if (decisionHistory) {
+    out(
+      `decisions: degraded_history | summaries=${String(decisionHistory.summary_count ?? 0)} | returned=${String(decisionHistory.returned_count ?? 0)} | omitted=${String(decisionHistory.omitted_count ?? 0)} | ` +
+      `detail=summary-only | recovery=agentera state decisions list --limit 20 --format json\n`,
     );
   }
   out(`todo: critical=${counts.critical} | degraded=${counts.degraded} | normal=${counts.normal} | annoying=${counts.annoying}\n`);

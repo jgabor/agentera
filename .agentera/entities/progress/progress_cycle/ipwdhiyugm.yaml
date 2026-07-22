@@ -1,0 +1,16 @@
+id: ipwdhiyugm
+artifact: progress
+record:
+  timestamp: 2026-07-22 03:08
+  type: fix
+  phase: build
+  what: "Task rijxghsjgp dashboard correction: packages/cli/src/cli/commands/prime.ts loads and enforces prime_dashboard.max_utf8_bytes; packages/cli/src/cli/commands/prime/collectEntityOrientation.ts omits duplicated history entries with counts and recovery; mixed 12-summary fixtures stay under 35,000 bytes."
+  context:
+    intent: Correct the accepted dashboard-budget finding while preserving full current startup state, ordinary list/get detail, cursor guarantees, and the integrated entity cutover.
+    constraints: No commit, push, publish, tag, release, task, vision, version, external KTX, or stash mutation.
+    unknowns: None remaining in implementation; independent evaluation owns acceptance judgment.
+    scope: Authority startup-budget loading; dashboard output gating; compact startup history metadata; capability evidence caveats; mixed summary dashboard, budget, and performance fixtures.
+  inspiration: Accepted audit reproduction measured a 59,875-byte mixed dashboard, with 30,768 bytes in duplicated history list responses.
+  discovered: The dashboard branch documented the 35,000-byte authority limit but did not pass it to emitPrime, and capability evidence had treated duplicated history entries as available evidence rather than caveating their startup omission.
+  verified: Focused prime/read suite passed 6 files and 67 tests. Dashboard/status/budget/monolith gates passed 5 files and 30 tests. Active protocol/capability tests passed 3 files and 51 tests. Full source suite passed 196 files and 2426 tests with one expected platform skip. Performance ownership passed all 25 cold-process samples with one summary in every summary boundary; dashboard maxima were 19,667 bytes small and 19,672 bytes large against 35,000. Typecheck and build passed. All 12 capabilities, capability contract/protocol 2/2, state validation at 1701 entities/0 issues, compact, lint with 0 errors, and git diff --check passed.
+  next: Independent evaluation may assess Task rijxghsjgp; do not change task status. Preserve all uncommitted cutover work and stash@{0}.

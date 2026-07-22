@@ -387,13 +387,14 @@ describe("cli prime", () => {
       expect(auditAfter).toEqual(auditBefore);
       expect(documentAfter).toEqual(documentBefore);
       expect(auditAfter.decision_context).toMatchObject({
-        status: "available",
-        summary: { total_entries: 1, returned_entries: 1, omitted_entries: 0, authority: "canonical_entity_files" },
+        status: "caveated",
+        summary: { total_entries: 1, returned_entries: 0, omitted_entries: 1, authority: "canonical_entity_files" },
+        caveats: [expect.stringContaining("agentera state decisions list --limit 20 --format json")],
       });
       expect(auditAfter.decision_review_pressure).toMatchObject({
-        status: "review_required",
-        summary: { protected_active_decisions: 1, total_decisions: 1, omitted_decisions: 0 },
-        stale_protected_decisions: [{ label: "Decision aaaaaaaaaa", source_field: "satisfaction.review_due" }],
+        status: "degraded",
+        summary: { protected_active_decisions: 0, total_decisions: 1, omitted_decisions: 1 },
+        stale_protected_decisions: [],
         source_provenance: { command: "agentera state decisions list --limit 20 --format json" },
       });
       expect(JSON.stringify(auditAfter)).not.toContain("HOSTILE LEGACY DECISION");

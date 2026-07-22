@@ -1,14 +1,19 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
+import { getDecisionEntity } from "../../src/state/decisionEntities.js";
+import { validateEntityState } from "../../src/state/entityStorage.js";
+import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import {
   STATUS_READY_TO_APPLY,
   UPGRADE_PREVIEW_SCHEMA,
@@ -179,6 +184,73 @@ describe("buildUpgradePlan", () => {
     expect(plan.lifecycle).toBeNull();
     expect(plan.summary.pending).toBe(0);
     expect(fs.readFileSync(path.join(project, ".agentera/plan.yaml"))).toEqual(legacyPlan);
+  });
+
+  it("persists inherited-confidence provenance through cutover and uses it for reads", () => {
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "inherited-confidence-cutover"));
+    fs.writeFileSync(path.join(project, ".agentera/decisions.yaml"), YAML.stringify({ decisions: [{
+      number: 1,
+      date: "2026-07-21",
+      question: "Keep inherited confidence?",
+      context: "Cutover compatibility",
+      alternatives: [{ name: "Preserve", status: "chosen" }],
+      choice: "Preserve",
+      reasoning: "Migration provenance is explicit.",
+      confidence: "high",
+      satisfaction: { state: "open" },
+    }] }));
+    const archiveRecord = {
+      number: 2,
+      date: "2026-07-20",
+      question: "Preserve archived confidence?",
+      context: "Verified archive compatibility",
+      alternatives: [{ name: "Preserve", status: "chosen" }],
+      choice: "Preserve",
+      reasoning: "Archive migration uses the same classifier.",
+      confidence: "medium",
+      satisfaction: { state: "provisionally_satisfied", evidence: "archive fixture" },
+    };
+    const archiveDir = path.join(project, ".agentera/archive/decisions");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(path.join(archiveDir, "2.yaml"), YAML.stringify({
+      schemaVersion: "agentera.stateArchiveEntry.v1",
+      artifact_id: "decisions",
+      entry_number: 2,
+      record: archiveRecord,
+      record_sha256: createHash("sha256").update(canonicalRecordJson(archiveRecord)).digest("hex"),
+    }));
+    initializeGit(project);
+
+    const prepared = prepareEntityCutoverForUpgrade(project, REPO_ROOT);
+    expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: false, mutation_performed: true });
+    expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: true, mutation_performed: false });
+    const entityDir = path.join(project, ".agentera/entities/decisions/decision");
+    const entities = fs.readdirSync(entityDir).map((name) => YAML.parse(fs.readFileSync(path.join(entityDir, name), "utf8")));
+    const entity = entities.find((candidate) => candidate.migration_provenance?.source === "current_projection");
+    expect(entity).toMatchObject({
+      migration_provenance: {
+        kind: "inherited_decision_confidence",
+        source: "current_projection",
+        source_path: ".agentera/decisions.yaml",
+        source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        confidence: "high",
+      },
+      record: { confidence: "high" },
+    });
+    expect(validateEntityState(project)).toMatchObject({ valid: true });
+    expect((getDecisionEntity(project, entity.id) as any).entry).toMatchObject({
+      record: { confidence: "high", satisfaction: { state: "open" } },
+      caveats: [expect.stringContaining("inherited unsupported confidence label 'high'")],
+    });
+    const archived = entities.find((candidate) => candidate.migration_provenance?.source === "verified_archive");
+    expect(archived).toMatchObject({
+      migration_provenance: { source_path: ".agentera/archive/decisions/2.yaml", confidence: "medium" },
+      record: { confidence: "medium" },
+    });
+    expect((getDecisionEntity(project, archived.id) as any).entry).toMatchObject({
+      record: { confidence: "medium", satisfaction: { state: "provisionally_satisfied", evidence: "archive fixture" } },
+      caveats: [expect.stringContaining("inherited unsupported confidence label 'medium'")],
+    });
   });
 
   it.each([["runtime"], ["cleanup"]] as const)("refuses marker-absent %s-only apply before effects", (only) => {

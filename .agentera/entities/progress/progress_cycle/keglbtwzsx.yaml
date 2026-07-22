@@ -1,0 +1,16 @@
+id: keglbtwzsx
+artifact: progress
+record:
+  timestamp: 2026-07-22 00:09
+  type: fix
+  phase: build
+  what: Resolved compacted-summary cutover blockers by requiring source-bound summary validation, validating committed recovery against same-commit aggregate blobs, canonicalizing equivalent mirrors deterministically, and deriving alias stripping from entity authority; integrated current feat/v3 test-isolation and package-reference fixes.
+  context:
+    intent: Make every canonical and durability summary path fail closed on forged or absent provenance while preserving truthful mirrored summaries and prior migration behavior.
+    constraints: No commit, push, publish, tag, release, vision edit, external KTX access, or task-status mutation.
+    unknowns: No known correctness blocker; final post-append gates remain.
+    scope: Summary migration provenance, canonical migration records, migration preview determinism, durability, adversarial tests, and safe feat/v3 integration.
+  inspiration: Replacement Task mudhiflfix and accepted audits ses_0797a1590ffe9xdFXeWElRIXnJ and ses_0795dd3f4ffekydljRGOmw0XDQ.
+  discovered: The prior direct APIs shape-checked summaries without binding evidence, durability reused that context-free path, physical mirror cardinality was counted before canonical deduplication, alias removal duplicated authority knowledge, and the branch lagged feat/v3 by three integration commits.
+  verified: Focused state, upgrade, durability, v2 compaction, and active protocol tests passed; full source suite passed 195 files and 2400 tests with 1 skipped; typecheck, build, state validation, compact, and diff checks passed before this append.
+  next: Run final post-append state validation and compact checks, audit the preserved diff, and return evidence without changing plan task status.

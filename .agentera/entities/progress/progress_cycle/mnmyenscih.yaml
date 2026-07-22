@@ -1,0 +1,16 @@
+id: mnmyenscih
+artifact: progress
+record:
+  timestamp: 2026-07-22 00:58
+  type: fix
+  phase: build
+  what: Corrected migration-provenance durability recovery so one safe corrupt local entity match retains exact raw bytes for comparison with an independently validated same-commit entity/source pair.
+  context:
+    intent: Verify reachable committed recovery when only the worktree provenance source diverges, while rejecting changed local entities and invalid committed evidence.
+    constraints: No commit, push, publish, tag, release, task-status or vision change, external KTX access, or recovery-stash manipulation.
+    unknowns: None known.
+    scope: Entity durability candidate bytes and historical Git regressions for summary and inherited-confidence provenance.
+  inspiration: Replacement Task yauhdabjqd and exact audit failure ses_07943f112ffeLbnXEajZwfwIGn.
+  discovered: Durability discarded bytes whenever project-bound provenance made the local entity noncanonical, so candidate path selection prevented an otherwise valid same-commit byte comparison.
+  verified: Focused durability/state suites passed 180 tests; full source suite passed 195 files and 2410 tests with 1 skipped; typecheck, build, active protocol, state validation, compact, and diff checks passed.
+  next: Run post-progress state validation, compact, and diff checks, then report without evaluating task status.

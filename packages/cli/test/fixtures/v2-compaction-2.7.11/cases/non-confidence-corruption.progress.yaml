@@ -1,0 +1,6 @@
+cycles:
+- number: 99
+  timestamp: 2026-06-30 10:00
+  type: fix
+  phase: build
+  what: Missing context is a non-confidence corruption

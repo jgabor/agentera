@@ -242,8 +242,7 @@ describe("decision amend command discovery", () => {
     ]);
 
     expect(result.rc).toBe(1);
-    expect(result.err).toContain("aaaaaaaaaa");
-    expect(result.err).toMatch(/not found|does not exist/);
+    expect(JSON.parse(result.out).error).toMatchObject({ id: "aaaaaaaaaa", message: expect.stringMatching(/not found|does not exist/) });
     // No side effects: no revision entity or decision projection is created.
     expect(fs.existsSync(path.join(root, ".agentera", "entities", "decisions", "decision_revision"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera", "decisions.yaml"))).toBe(false);

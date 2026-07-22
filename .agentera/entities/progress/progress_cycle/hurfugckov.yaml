@@ -1,0 +1,14 @@
+id: hurfugckov
+artifact: progress
+record:
+  timestamp: 2026-07-22 02:22
+  type: fix
+  phase: build
+  what: Make degraded summary startup, mutation failures, and cursors truthful and actionable.
+  context:
+    intent: Correct accepted audit findings for immutable migrated summary reads.
+    constraints: Preserved migration, provenance, durability, cutover, task status, versions, and external checkouts.
+    unknowns: none
+    scope: prime projections; decision writer failures; summary reader cursors; migration authority and release documentation
+  verified: Focused CLI tests, full source suite, typecheck, build, capability protocol validation, and performance budget gate passed.
+  next: Retain causal migration diagnostics and end-to-end cutover proof as pending work.

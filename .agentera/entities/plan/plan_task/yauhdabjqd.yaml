@@ -1,0 +1,25 @@
+id: yauhdabjqd
+artifact: plan
+record:
+  plan: zcziuekcec
+  name: Preserve verified Git recovery across local source divergence
+  status: superseded
+  depends_on:
+    []
+  acceptance:
+    - GIVEN a migrated entity and its provenance source validate together in one commit while only the worktree source later diverges WHEN durability is inspected THEN local state is corrupt, Git recovery remains verified against that exact commit, and the combined result is degraded rather than unavailable.
+    - GIVEN the committed entity or committed provenance source is absent, mismatched, forged, or invalid WHEN durability is inspected THEN Git recovery remains unavailable and no worktree evidence can make it verified.
+    - GIVEN summary and inherited-confidence provenance plus ordinary canonical entities WHEN durability is inspected THEN both migration kinds share the same commit-pinned recovery semantics without regressing non-migration durability.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: A corrupt uncommitted entity with provenance-shaped metadata and no committed blob falls through to dirty_archive/degraded instead of Git unavailable/not_committed. Prior duplicate and descriptor-replacement defects are fixed.
+    provenance:
+      attempt_id: audit-yauhdabjqd-2
+      source: independent re-audit session ses_07914d82effeT39Vl8J5hwTkfv
+      recorded_at: 2026-07-22 01:26
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - mppapvwenc
+  superseded_reason: Completed replacement mppapvwenc preserves verified same-commit recovery while failing closed for corrupt, ambiguous, unsafe, changed, and absent Git evidence.

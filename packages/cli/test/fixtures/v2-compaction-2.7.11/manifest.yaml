@@ -1,0 +1,80 @@
+schemaVersion: agentera.v2CompactionFixture.v1
+fixture: v2-compaction-2.7.11
+generator:
+  repository: agentera
+  version: 2.7.11
+  source_commit: b54a10a6bf4dfca5097101e60e18d5eaec7e5026
+  compactor_path: hooks/compaction.py
+  compactor_blob: b54c449a66e7842bd00f9343097a443d606c05b8
+  runtime:
+    python: CPython 3.12.13
+    pyyaml: 6.0.3
+  command: >-
+    git archive b54a10a6bf4dfca5097101e60e18d5eaec7e5026 | tar -x -C "$V2_SOURCE" &&
+    cp -a "$FIXTURE/input/." "$PROJECT/" &&
+    uv run --frozen --project "$V2_SOURCE" "$V2_SOURCE/scripts/agentera"
+    compact --mode fix --project "$PROJECT" --format json
+  command_result:
+    compacted_artifacts: [TODO.md#Resolved, PROGRESS.md, DECISIONS.md, HEALTH.md]
+    protected_skipped_artifacts: [EXPERIMENTS.md]
+tree_hash:
+  algorithm: sha256
+  canonicalization: >-
+    Sort project-relative file paths lexicographically, then hash the UTF-8
+    concatenation of <path>, NUL, lowercase SHA-256 of that file's bytes, and
+    newline for every file.
+input:
+  tree_sha256: f8084b803255255185365df6d5c0436a3e60bf58cb3c0006ec0b7b494d1177be
+  files:
+    .agentera/decisions.yaml: 727333229dc2e8bd26ca1a5301fbed9d3885310daacf9836242e6049a3a8a50f
+    .agentera/health.yaml: 806d062d0db84bdd68dc982414424ab45d7b70d4f429723487db4c11b40641eb
+    .agentera/optimera/fixture/experiments.yaml: 1c99f749579b21ab96a952326b0d7c0dd5c56b597b71137016b66467d3ab20b6
+    .agentera/optimera/fixture/objective.yaml: fdb92674bb932dc127ca3847bfe8be0f68a8e3dd6dac1f127599039e6984c9e3
+    .agentera/progress.yaml: ae6be1304d4acd3c78085ee0fef960fc585c22c97333fe0a58b1c50c66de85c7
+    TODO.md: 086a304f58febba2cb8ca5d2ef403f2d33a3e7b9c11fd4051b8fdcf55e0a4d70
+output:
+  tree_sha256: d523ef3eda0dfedeb73c7d695253c32710891e4becd24dae55586c5a10112e6b
+  files:
+    .agentera/decisions.yaml: 9446b39f8c61a2623a64f3c63ac13c9a9ffbe6a7d120023563b7b66f0e94a146
+    .agentera/health.yaml: 6ddddbc14ac21791fc57ddbac26c032f12ec0a64a513593d504d8201146da708
+    .agentera/optimera/fixture/experiments.yaml: 1c99f749579b21ab96a952326b0d7c0dd5c56b597b71137016b66467d3ab20b6
+    .agentera/optimera/fixture/objective.yaml: fdb92674bb932dc127ca3847bfe8be0f68a8e3dd6dac1f127599039e6984c9e3
+    .agentera/progress.yaml: b5ecaa5a1a967e00b0af5cbc446638259e61626506640dd1556b4e1dac9976c3
+    TODO.md: 32e6e945c54249ba590d5167384f380c79f9a3980e717d4b8b764e28e8e4f640
+supporting_cases:
+  backed_summary:
+    path: backed-summary/decisions-1.archive.yaml
+    sha256: e90c9cc86c574410cc11f499bf4fccfc311e10c7a6264c134cd99c7dfd3370e5
+    role: >-
+      Deterministic v3 verified archive envelope for the captured v2 decision
+      summary numbered 1. This is test-only recovery evidence, not v2 compactor
+      output; it retains the full input record and its canonical record hash.
+  non_confidence_corruption:
+    path: cases/non-confidence-corruption.progress.yaml
+    sha256: 944ca97e456598877de2464f2fbd12355111695d2ad306ac8d439b48e8190a21
+    role: Derived negative case with missing progress context; it is not compactor output.
+matrix:
+  progress_summary: output/.agentera/progress.yaml#archive[0]
+  health_summary: output/.agentera/health.yaml#archive[0]
+  decision_summary_with_satisfaction: output/.agentera/decisions.yaml#archive[number=1]
+  decision_summary_without_satisfaction: output/.agentera/decisions.yaml#archive[number=0]
+  backed_summary: backed-summary/decisions-1.archive.yaml + output/.agentera/decisions.yaml#archive[number=1]
+  inherited_confidence_full:
+    high: { without_satisfaction: 6, with_satisfaction: 7 }
+    medium: { without_satisfaction: 8, with_satisfaction: 9 }
+    low: { without_satisfaction: 10, with_satisfaction: 11 }
+  non_confidence_corruption: cases/non-confidence-corruption.progress.yaml
+scope_notes:
+  experiments: >-
+    .agentera/optimera/fixture/experiments.yaml is a v2 protected objective-state
+    experiment file. The v2 compactor reports it skipped and its captured output
+    bytes equal the input bytes; no experiment summary is invented. The current
+    v3 baseline inventories it as a non-summary ordinary projection and rejects
+    its legacy experiment shape as corrupt.
+  runtime_local_sessions: >-
+    Runtime-local sessions are not project-cutover input. The migration test adds
+    a runtime-local session file and asserts it has no migration entity.
+  compacted_todo_rows: >-
+    The v2 compactor retains eleven resolved TODO rows: ten full rows plus one
+    compacted one-line row. The migration test asserts every surviving TODO row is
+    an ordinary full canonical todo_item, not a summary boundary.

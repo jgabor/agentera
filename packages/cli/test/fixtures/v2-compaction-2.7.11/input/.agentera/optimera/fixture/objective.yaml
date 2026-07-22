@@ -1,0 +1,18 @@
+header:
+  id: objective:323e4567-e89b-42d3-a456-426614174000
+  title: Fixture objective
+  status: open
+objective:
+  description: Fixture objective
+  measurement: p95
+  constraints: []
+metric:
+  direction: minimize
+  unit: ms
+baseline:
+  description: 100 ms
+gates: {}
+scope:
+  included:
+  - fixture
+  excluded: []

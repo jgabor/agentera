@@ -229,7 +229,7 @@ export function decisionContextRisk(history: JsonObject): JsonObject {
   const omitted = Number(counts.remaining ?? history.omitted_count ?? 0);
   const missing = entries.filter((entry) => !entry.id || !entry.date || !entry.question || !entry.choice).length;
   const caveats = uniqueList([
-    ...(omitted > 0 ? [`Decision startup history omits ${omitted} decision(s); run ${STATE_FAMILY_LIST_COMMANDS.decisions} for the next bounded page.`] : []),
+    ...(omitted > 0 ? [`Decision startup history omits ${omitted} decision detail entr${omitted === 1 ? "y" : "ies"}; run ${STATE_FAMILY_LIST_COMMANDS.decisions} for the ordinary bounded list.`] : []),
     ...(missing > 0 ? [`${missing} bounded decision entr${missing === 1 ? "y is" : "ies are"} missing review context fields.`] : []),
   ]);
   return {

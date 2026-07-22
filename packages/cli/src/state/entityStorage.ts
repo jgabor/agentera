@@ -7,9 +7,13 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { decisionRevisionContract, decisionRevisionEntityViolations } from "./decisionRevision.js";
+import { decisionMigrationProvenanceViolations, type MigrationProvenanceDeclaration } from "./decisionMigrationProvenance.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { healthEntityViolations } from "./healthEntityValidation.js";
+import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js";
 import { detectStateModeBinding } from "./stateMode.js";
+import { summaryMigrationProvenanceDeclaration, summaryMigrationProvenanceViolations, type SummaryMigrationProvenanceDeclaration } from "./summaryMigrationProvenance.js";
+import { validateCompactedSummarySourceRowAuthority } from "./summarySourceRowAuthority.js";
 import { acquireWriterLock } from "./write/lock.js";
 import { planTaskRecordViolations } from "./write/planEvaluation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
@@ -20,6 +24,7 @@ const heldEntityWriterLocks = new Set<string>();
 interface EntityDefinition {
   boundary: string;
   artifact: string;
+  independentlyMutable: boolean;
   record?: {
     requiredFields: string[];
     requiredPaths: string[];
@@ -29,22 +34,21 @@ interface EntityDefinition {
   };
   ownership?: { fields: string[]; cardinality: string };
   baseline?: { field: string; value: string; cardinality: string };
+  migrationProvenance?: MigrationProvenanceDeclaration;
+  summaryMigrationProvenance?: SummaryMigrationProvenanceDeclaration;
 }
-
 interface FieldShape {
   type: "mapping";
   requiredFields: Record<string, "string_list">;
   optionalFields: Record<string, "string_list">;
   additionalFields: "allowed" | "forbidden";
 }
-
 interface RelationshipDefinition {
   source: string;
   field: string;
   target: string;
   cardinality: string;
 }
-
 interface EntityAuthority {
   entityRoot: string;
   alphabet: string;
@@ -56,7 +60,6 @@ interface EntityAuthority {
   byBoundary: Map<string, EntityDefinition>;
   forbiddenAliases: string[];
 }
-
 export type EntityClassification = "valid" | "duplicate" | "malformed" | "unsafe";
 
 export interface EntityDiagnostic {
@@ -76,6 +79,7 @@ export interface DiscoveredEntity {
   artifact: string | null;
   boundary: string | null;
   record: JsonObject | null;
+  migrationProvenance: JsonObject | null;
   path: string;
   relativePath: string;
   classification: EntityClassification;
@@ -104,6 +108,7 @@ export interface CanonicalEntityTarget {
   artifact: string;
   boundary: string;
   record: JsonObject;
+  migrationProvenance?: JsonObject;
 }
 
 export interface CanonicalEntityTargetDiagnostic {
@@ -123,14 +128,16 @@ export function entityBoundariesForArtifact(artifact: string, sourceRoot?: strin
     .sort();
 }
 
+export function entityForbiddenCanonicalAliases(sourceRoot?: string): string[] { return [...authority(sourceRoot).forbiddenAliases]; }
+export function entityPreservedAggregateCollections(sourceRoot?: string): Record<string, string[]> { const sources = authority(sourceRoot).entities.flatMap((definition) => definition.summaryMigrationProvenance?.sources ?? []); return Object.fromEntries(sources.map((source) => [source.path, [...source.collections].sort()])); }
 /** Validate bytes independently of a working-tree path, for committed recovery evidence. */
 export function canonicalEntityEnvelope(
   bytes: string,
   expected: { artifact: string; boundary: string; id: string },
-  sourceRoot?: string,
-): { id: string; artifact: string; record: JsonObject } {
+  sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext,
+): { id: string; artifact: string; record: JsonObject; migrationProvenance: JsonObject | null } {
   const model = authority(sourceRoot);
-  return canonicalEntityEnvelopeAgainstModel(bytes, expected, model, sourceRoot);
+  return canonicalEntityEnvelopeAgainstModel(bytes, expected, model, sourceRoot, sourceBinding);
 }
 
 function canonicalEntityEnvelopeAgainstModel(
@@ -138,20 +145,24 @@ function canonicalEntityEnvelopeAgainstModel(
   expected: { artifact: string; boundary: string; id: string },
   model: EntityAuthority,
   sourceRoot?: string,
-): { id: string; artifact: string; record: JsonObject } {
+  sourceBinding?: MigrationSourceBindingContext,
+): { id: string; artifact: string; record: JsonObject; migrationProvenance: JsonObject | null } {
   const owner = model.byBoundary.get(expected.boundary);
   if (!owner || owner.artifact !== expected.artifact || !model.pattern.test(expected.id)) {
     throw new Error("the requested artifact, boundary, or ID is not authority-declared");
   }
   const document = loadYamlMapping(bytes);
-  if (Object.keys(document).some((key) => !["id", "artifact", "record"].includes(key))) {
-    throw new Error("entity envelope may contain only id, artifact, and record");
+  if (Object.keys(document).some((key) => !["id", "artifact", "record", "migration_provenance"].includes(key))) {
+    throw new Error("entity envelope contains an authority-undeclared field");
   }
   if (document.id !== expected.id || document.artifact !== expected.artifact || !mapping(document.record)) {
     throw new Error("entity envelope does not match the requested artifact and ID");
   }
   const record = document.record as JsonObject;
-  const violations = canonicalEntityRecordViolationsAgainstModel(expected.boundary, record, model);
+  const migrationProvenanceValue = document.migration_provenance;
+  const migrationProvenance = mapping(migrationProvenanceValue) ? migrationProvenanceValue as JsonObject : null;
+  const violations = canonicalEntityRecordViolationsAgainstModel(expected.boundary, record, model, sourceBinding);
+  violations.push(...migrationProvenanceViolations(expected.boundary, record, migrationProvenanceValue, model, sourceRoot, sourceBinding));
   if (owner.record?.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""))) violations.push("timestamp must use YYYY-MM-DD HH:MM");
   if (expected.boundary === "decision_revision") violations.push(...decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot)));
   if (expected.boundary === "health_audit") violations.push(...healthEntityViolations(record));
@@ -163,20 +174,15 @@ function canonicalEntityEnvelopeAgainstModel(
   if (expected.boundary === "experiment" && (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status)))) violations.push("invalid experiment date or status");
   if (expected.boundary === "todo_item" || expected.boundary === "documentation_inventory_entry") violations.push(...todoDocsRecordViolations(expected.boundary, record));
   if (violations.length) throw new Error(`entity record violates the '${expected.boundary}' boundary contract: ${violations.join("; ")}`);
-  return { id: expected.id, artifact: expected.artifact, record };
+  return { id: expected.id, artifact: expected.artifact, record, migrationProvenance };
 }
 
-export function canonicalEntityEnvelopeBytes(target: Pick<CanonicalEntityTarget, "id" | "artifact" | "record">): string {
-  return dumpYamlMapping({ id: target.id, artifact: target.artifact, record: target.record });
+export function canonicalEntityEnvelopeBytes(target: Pick<CanonicalEntityTarget, "id" | "artifact" | "record" | "migrationProvenance">): string {
+  return dumpYamlMapping({ id: target.id, artifact: target.artifact, ...(target.migrationProvenance ? { migration_provenance: target.migrationProvenance } : {}), record: target.record });
 }
 
-function mapping(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function strings(value: unknown): string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
-}
+function mapping(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function strings(value: unknown): string[] { return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : []; }
 
 function fieldShapes(value: unknown, authorityPath: string): Record<string, FieldShape> {
   if (value === undefined) return {};
@@ -210,6 +216,7 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   if (!mapping(target) || !mapping(target.identity) || !mapping(target.storage_boundary) || !mapping(target.public_schema) || !Array.isArray(target.entities) || !mapping(target.relationships)) {
     throw new Error(`invalid entity authority '${authorityPath}'`);
   }
+  validateCompactedSummarySourceRowAuthority(target, authorityPath);
   const entities = target.entities.map((value): EntityDefinition => {
     if (!mapping(value) || typeof value.boundary !== "string" || typeof value.artifact !== "string") {
       throw new Error(`invalid entity declaration in '${authorityPath}'`);
@@ -217,9 +224,13 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     const record = mapping(value.record) ? value.record : null;
     const ownership = mapping(value.ownership) ? value.ownership : null;
     const baseline = mapping(value.baseline) ? value.baseline : null;
+    const canonicalMetadata = mapping(value.canonical_metadata) ? value.canonical_metadata : null;
+    const migrationProvenance = canonicalMetadata && mapping(canonicalMetadata.migration_provenance) ? canonicalMetadata.migration_provenance : null;
+    const summaryMigrationProvenance = mapping(canonicalMetadata?.summary_migration_provenance) ? canonicalMetadata.summary_migration_provenance as JsonObject : null;
     return {
       boundary: value.boundary,
       artifact: value.artifact,
+      independentlyMutable: value.independently_mutable !== false,
       ...(record ? { record: {
         requiredFields: strings(record.required_fields),
         requiredPaths: strings(record.required_paths),
@@ -236,6 +247,13 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
         value: baseline.value,
         cardinality: String(baseline.cardinality ?? ""),
       } } : {}),
+      ...(migrationProvenance ? { migrationProvenance: {
+        requiredFields: strings(migrationProvenance.required_fields),
+        kind: String(migrationProvenance.kind ?? ""),
+        sources: strings(migrationProvenance.sources),
+        additionalFields: migrationProvenance.additional_fields as "forbidden",
+      } } : {}),
+      ...(summaryMigrationProvenance ? { summaryMigrationProvenance: summaryMigrationProvenanceDeclaration(summaryMigrationProvenance, authorityPath) } : {}),
     };
   });
   const declarations = target.relationships.declarations;
@@ -270,16 +288,11 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   };
 }
 
-export function canonicalEntityRecordViolations(
-  boundary: string,
-  record: JsonObject,
-  sourceRoot?: string,
-): string[] {
-  const model = authority(sourceRoot);
-  return canonicalEntityRecordViolationsAgainstModel(boundary, record, model);
+export function canonicalEntityRecordViolations(boundary: string, record: JsonObject, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): string[] {
+  return canonicalEntityRecordViolationsAgainstModel(boundary, record, authority(sourceRoot), sourceBinding);
 }
 
-function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: JsonObject, model: EntityAuthority): string[] {
+function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: JsonObject, model: EntityAuthority, sourceBinding?: MigrationSourceBindingContext): string[] {
   const definition = model.byBoundary.get(boundary);
   if (!definition?.record) throw new Error(`unknown entity record boundary '${boundary}'`);
   const missing = definition.record.requiredFields.filter((field) => record[field] === undefined);
@@ -313,7 +326,23 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
     ...missingPaths.map((field) => `${field} is required by the canonical ${boundary} record contract`),
     ...forbidden.map((field) => `${field} is forbidden by the canonical entity authority`),
     ...shapeViolations,
+    ...(definition.summaryMigrationProvenance ? summaryMigrationProvenanceViolations(boundary, record, definition.summaryMigrationProvenance, model.forbiddenAliases, sourceBinding) : []),
   ];
+}
+
+function migrationProvenanceViolations(
+  boundary: string,
+  record: JsonObject,
+  provenance: unknown,
+  model: EntityAuthority,
+  sourceRoot?: string,
+  sourceBinding?: MigrationSourceBindingContext,
+): string[] {
+  const definition = model.byBoundary.get(boundary);
+  const declared = definition?.migrationProvenance;
+  if (!declared) return provenance === null || provenance === undefined ? [] : ["migration_provenance is not allowed on this entity boundary"];
+  if (boundary !== "decision") return ["migration_provenance is declared only for canonical decisions"];
+  return decisionMigrationProvenanceViolations(record, provenance, declared, model.forbiddenAliases, sourceRoot, sourceBinding);
 }
 
 function relative(projectRoot: string, candidate: string): string {
@@ -361,6 +390,7 @@ function unsafeEntity(projectRoot: string, candidate: string): DiscoveredEntity 
     artifact: null,
     boundary: null,
     record: null,
+    migrationProvenance: null,
     path: candidate,
     relativePath: relative(projectRoot, candidate),
     classification: "unsafe",
@@ -396,6 +426,8 @@ function discoverFile(
   const id = typeof document?.id === "string" ? document.id : filenameId;
   const artifact = typeof document?.artifact === "string" ? document.artifact : pathArtifact;
   const record = mapping(document?.record) ? document.record as JsonObject : null;
+  const migrationProvenanceValue = document?.migration_provenance;
+  const migrationProvenance = mapping(migrationProvenanceValue) ? migrationProvenanceValue as JsonObject : null;
   let malformed = document === null;
   if (
     !model.pattern.test(filenameId)
@@ -404,7 +436,7 @@ function discoverFile(
     || typeof document?.artifact !== "string"
     || record === null
     || document === null
-    || Object.keys(document).some((key) => !["id", "artifact", "record"].includes(key))
+    || Object.keys(document).some((key) => !["id", "artifact", "record", "migration_provenance"].includes(key))
   ) {
     malformed = true;
     if (document !== null) {
@@ -414,7 +446,7 @@ function discoverFile(
         id,
         artifact,
         boundary,
-        message: `entity '${relativePath}' must contain only id, artifact, and record; id and filename must match ${model.pattern.source}`,
+        message: `entity '${relativePath}' has an invalid canonical envelope; id and filename must match ${model.pattern.source}`,
         recovery: recovery(projectRoot, `rename and rewrite '${relativePath}' as <ten-lowercase-letter-id>.yaml with matching id, artifact, and mapping record fields`),
       });
     }
@@ -448,7 +480,10 @@ function discoverFile(
     }
   }
   if (!malformed && owner?.record && record) {
-    const violations = canonicalEntityRecordViolationsAgainstModel(boundary, record, model);
+    const violations = [
+      ...canonicalEntityRecordViolationsAgainstModel(boundary, record, model, { kind: "project", projectRoot }),
+      ...migrationProvenanceViolations(boundary, record, migrationProvenanceValue, model, sourceRoot, { kind: "project", projectRoot }),
+    ];
     const timestampInvalid = owner.record.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""));
     if (violations.length || timestampInvalid) {
       malformed = true;
@@ -519,7 +554,7 @@ function discoverFile(
       issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has an invalid ${boundary} record: ${violations.join("; ")}`, recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared ${boundary} fields`) });
     }
   }
-  return { id, artifact, boundary, record, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
+  return { id, artifact, boundary, record, migrationProvenance, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
 }
 
 export function discoverEntities(projectRoot: string, sourceRoot?: string): EntityDiscoveryResult {
@@ -752,11 +787,11 @@ export function validateCanonicalEntityTargets(projectRoot: string, targets: Can
     let record: JsonObject | null = null;
     let message: string | null = target.path === expectedPath ? null : `canonical target path '${target.path}' must be '${expectedPath}'`;
     if (!message) {
-      try { record = canonicalEntityEnvelopeAgainstModel(canonicalEntityEnvelopeBytes(target), target, model, sourceRoot).record; }
+      try { record = canonicalEntityEnvelopeAgainstModel(canonicalEntityEnvelopeBytes(target), target, model, sourceRoot, { kind: "project", projectRoot }).record; }
       catch (error) { message = (error as Error).message; }
     }
     if (message) issues.push({ code: "malformed_entity", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message, recovery: recovery(projectRoot, `repair legacy source '${target.sourceIdentity}' so its canonical target satisfies the authority-backed boundary validator`) });
-    entities.push({ id: target.id, artifact: target.artifact, boundary: target.boundary, record, path: path.join(projectRoot, target.path), relativePath: target.path, classification: message ? "malformed" : "valid" });
+    entities.push({ id: target.id, artifact: target.artifact, boundary: target.boundary, record, migrationProvenance: target.migrationProvenance ?? null, path: path.join(projectRoot, target.path), relativePath: target.path, classification: message ? "malformed" : "valid" });
   }
   for (const duplicates of targetsById.values()) {
     if (duplicates.length < 2) continue;
@@ -821,6 +856,7 @@ function publishEntityLocked(
   const owner = model.byBoundary.get(request.boundary);
   if (!owner) throw new Error(`unknown entity boundary '${request.boundary}'`);
   if (owner.artifact !== request.artifact) throw new Error(`boundary '${request.boundary}' is owned by artifact '${owner.artifact}', not '${request.artifact}'`);
+  if (!owner.independentlyMutable) throw new Error(`boundary '${request.boundary}' is immutable migration-only state and cannot be published by an ordinary entity writer`);
   if (!mapping(request.record)) throw new Error("entity record must be a mapping");
   const root = context.pinnedPath();
   const relativeTarget = path.join(
@@ -885,6 +921,7 @@ export function replaceEntityUnderLock(request: ReplaceEntityRequest): PublishEn
   context.assertValid();
   const owner = model.byBoundary.get(request.boundary);
   if (!owner || owner.artifact !== request.artifact) throw new Error(`unknown '${request.artifact}' entity boundary '${request.boundary}'`);
+  if (!owner.independentlyMutable) throw new Error(`boundary '${request.boundary}' is immutable migration-only state and cannot be replaced by an ordinary entity writer`);
   const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
   if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record))
     return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };

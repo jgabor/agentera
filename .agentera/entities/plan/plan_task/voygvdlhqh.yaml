@@ -1,0 +1,27 @@
+id: voygvdlhqh
+artifact: plan
+record:
+  name: Prove causal diagnostics and the complete one-way cutover
+  depends_on:
+    - dxtdckelks
+    - xrdkdvcvjv
+    - lnwiwlnfmx
+  status: superseded
+  acceptance:
+    - GIVEN an invalid parent with valid dependent relationships WHEN preview reports blockers THEN root, dependent, and total counts are distinct, every dependent names its root, and corruption counts only source-root corruption.
+    - GIVEN the clean tracked v2 fixture WHEN preview, apply, validation, prime, interruption recovery, and repeated upgrade run THEN publication is complete and idempotent while every aggregate source byte remains unchanged.
+    - GIVEN the current dirty KTX checkout WHEN the built CLI runs a read-only preview THEN valid compacted state and inherited labels produce zero entity blockers and 250 canonical targets without writing any path.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Causal diagnostics and the complete pinned-v2 lifecycle pass, but literal KTX acceptance is impossible: a pre-existing divergent reuse of Decision 25 correctly leaves one root blocker and 248 targets; valid summaries and inherited labels themselves cause zero blockers."
+    provenance:
+      attempt_id: audit-voygvdlhqh-2
+      source: independent final audit session ses_078829979ffeaL0ND6BM5qbGyR
+      recorded_at: 2026-07-22 04:40
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - toptutorlq
+  superseded_reason: "User-approved replacement toptutorlq preserves the proven causal lifecycle and replaces the invalid 250-target premise with the truthful read-only KTX result: 249 identities, 248 targets, and one pre-existing Decision 25 root."

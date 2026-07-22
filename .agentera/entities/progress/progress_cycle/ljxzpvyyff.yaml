@@ -1,0 +1,16 @@
+id: ljxzpvyyff
+artifact: progress
+record:
+  timestamp: 2026-07-21 22:30
+  type: fix
+  phase: build
+  what: Completed inherited-confidence migration for current projections and verified archives with persisted canonical provenance, strict canonical validation, and provenance-gated read caveats.
+  context:
+    intent: Complete replacement plan task nbhajmvbjn without marking it complete or implementing compacted-summary migration.
+    constraints: Preserved prior Task 1-2 and partial Task 3 changes; no task completion, commit, push, KTX mutation, vision edit, or Task 4 implementation.
+    unknowns: none
+    scope: Decision migration classification, canonical envelope provenance, cutover publication, entity validation and reads, authority contract, and focused regressions.
+  inspiration: Replacement task nbhajmvbjn and audit ses_079b94fbdffenC7WCaVwHejRcw.
+  discovered: The prior record-level projection exception was insufficient because verified archives retained an unconditional strict gate and canonical reads inferred inheritance from a literal label. A single complete-record classifier plus envelope-level migration provenance removes both invalid assumptions.
+  verified: "Focused migration/archive/decision/state-validation/write/amend/upgrade suite passed: 8 files, 225 tests. Regression gates passed: active protocol, dashboard budget, and monolith lint, 3 files/14 tests. Full source suite passed: 195 files, 2392 passed and 1 skipped. Typecheck and build passed. Cutover regression proves projection and verified-archive decision and satisfaction publication with high/medium provenance-backed caveats."
+  next: Orchestrator may evaluate replacement acceptance; do not mark the task complete here and do not begin compacted-summary implementation.

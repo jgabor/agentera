@@ -1,0 +1,15 @@
+id: xugkzhvzwm
+artifact: progress
+record:
+  timestamp: 2026-07-22 06:51
+  type: fix
+  phase: audit
+  what: "Completed final closeout synchronization for the v2 compacted-state cutover: resolved the canonical TODO, amended the approved decision context without changing its choice, and kept public migration documentation aligned with the accepted implementation."
+  context:
+    intent: Record truthful verified closeout evidence while leaving final task and plan status to Prime.
+    constraints: No KTX, vision, version, release, publication, tag, push, merge, or stash mutation.
+    scope: Canonical TODO and decision revision, root TODO, closeout progress, accepted cutover implementation, authority, upgrade guide, changelog, and regressions.
+  inspiration: Plan zcziuekcec Task crhxazotxt closeout requirements and approved Decision cgmdaewdas.
+  discovered: The optional release-metadata validator remains red because the package source reference does not match the current integrated source tree; no release or version metadata was changed. Read-only KTX preview remains one pre-existing Decision 25 conflict, not a compacted-summary migration defect.
+  verified: Focused migration, provenance, durability, readers, prime, diagnostics, and cutover tests passed (272). Full source suite passed (2430 passed, 1 skipped); typecheck, build, package verification (10 tests), performance, dashboard, monolith, capability-contract/protocol, all 12 capability validations, state validation (1708 entities, 0 issues), compact, package dry-run, fixture-byte check, and diff check passed.
+  next: Prime owns final task and plan status. Do not migrate KTX; its pre-existing Decision 25 conflict remains owner work outside this fix.

@@ -1,0 +1,14 @@
+id: corzyqtswd
+artifact: progress
+record:
+  timestamp: 2026-07-21 21:25
+  type: fix
+  phase: build
+  what: Corrected the declared degraded-summary contract so provenance is persisted at record.migration_provenance and future boundaries remain inactive.
+  context:
+    intent: Keep the active cutover blocking summaries until later implementation tasks while preserving an executable, provenance-complete target contract.
+    constraints: No migration/read production behavior, task completion, repair/import command, or direct entity edit
+    unknowns: Tasks 3–6 must implement declared summaries, diagnostics, and readers before activation.
+    scope: state-storage authority, authority-model assertions, and external triage citations
+  verified: "pnpm -C packages/cli exec vp test run --config vite.config.ts test/state/entityAuthority.test.ts: 5 passed; pnpm -C packages/cli run typecheck: passed; focused entityMigrationPreview test: 1 passed; git diff --check: passed."
+  next: Implement the pending summary migration and reader behavior with regression coverage.

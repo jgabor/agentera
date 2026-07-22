@@ -187,6 +187,27 @@ entity_target:
         mutation_after_snapshot: cursor_snapshot_unavailable
         omission: whole_entries_only_with_count_reason_continuation_and_exact_get
         scalar_truncation: forbidden
+    - boundary: progress_summary
+      artifact: progress
+      independently_mutable: false
+      relationships: []
+      implementation: implemented
+      publication: immutable
+      mutation: forbidden
+      record:
+        required_fields: [summary, migration_provenance]
+        required_paths: []
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+      canonical_metadata:
+        summary_migration_provenance:
+          path: record.migration_provenance
+          required_fields: [source_path, source_record_sha256]
+          additional_fields: forbidden
+          source_path: project-relative v2 aggregate source path
+          sources:
+            - path: .agentera/progress.yaml
+              collections: [cycles, archive]
+          source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
     - boundary: decision
       artifact: decisions
       independently_mutable: true
@@ -197,6 +218,20 @@ entity_target:
         required_fields: [date, question, context, alternatives, choice, reasoning, confidence]
         required_paths: []
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number, satisfaction]
+      canonical_metadata:
+        migration_provenance:
+          applicability: inherited_unsupported_confidence_only
+          required_fields: [kind, source, source_path, source_record_sha256, confidence]
+          additional_fields: forbidden
+          kind: inherited_decision_confidence
+          sources: [current_projection, verified_archive]
+          semantics: >-
+            Cutover persists this envelope-level metadata only when an authority-backed
+            complete-record classifier proves that high, medium, or low confidence is
+            the source record's sole schema violation. confidence must match the
+            canonical record, source_path is project-relative, and source_record_sha256
+            binds the complete parsed source record before canonical alias removal.
+            Current confidence values and ordinary decision writes omit this metadata.
       retrieval:
         exact: agentera state decisions get --id ID --format json
         list: agentera state decisions list [--limit N] [--cursor TOKEN] --format json
@@ -219,6 +254,28 @@ entity_target:
         required_fields: [decision, state]
         required_paths: []
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+    - boundary: decision_summary
+      artifact: decisions
+      independently_mutable: false
+      relationships: []
+      implementation: implemented
+      publication: immutable
+      mutation: forbidden
+      record:
+        required_fields: [summary, migration_provenance]
+        required_paths: []
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+      canonical_metadata:
+        summary_migration_provenance:
+          path: record.migration_provenance
+          required_fields: [source_path, source_record_sha256]
+          additional_fields: forbidden
+          source_path: project-relative v2 aggregate source path
+          sources:
+            - path: .agentera/decisions.yaml
+              collections: [decisions, archive]
+          source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
+      satisfaction: optional_inline_read_only_source_retained_field
     - boundary: decision_revision
       artifact: decisions
       independently_mutable: true
@@ -254,8 +311,29 @@ entity_target:
         scalar_truncation: forbidden
       repair: >-
         Canonical health audit entities are immutable and cannot be row-deduplicated.
-        Malformed envelopes, duplicate IDs, or conflicting ownership fail before effects
-        and recover through agentera check validate state; no repair event is fabricated.
+         Malformed envelopes, duplicate IDs, or conflicting ownership fail before effects
+          and recover through agentera check validate state; no repair event is fabricated.
+    - boundary: health_summary
+      artifact: health
+      independently_mutable: false
+      relationships: []
+      implementation: implemented
+      publication: immutable
+      mutation: forbidden
+      record:
+        required_fields: [summary, migration_provenance]
+        required_paths: []
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+      canonical_metadata:
+        summary_migration_provenance:
+          path: record.migration_provenance
+          required_fields: [source_path, source_record_sha256]
+          additional_fields: forbidden
+          source_path: project-relative v2 aggregate source path
+          sources:
+            - path: .agentera/health.yaml
+              collections: [audits, archive]
+          source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
     - boundary: plan
       artifact: plan
       independently_mutable: true
@@ -453,13 +531,195 @@ entity_target:
     - all intentional_singletons
     - immutable historical prose and evidence, except structured references explicitly declared for rewrite
     - genuinely singleton editorial artifacts added by an authority amendment
+  declared_compacted_summary_contract:
+    status: implemented
+    activation: >-
+      The three summary boundaries are active entity and migration authority in
+       entity_target.entities. Ordinary summary readers and startup projection
+       expose retained degraded history without reconstructing missing detail.
+    runtime_boundary_source: entity_target.entities
+    runtime_exclusion: >-
+      No experiment_summary boundary is activated. Summary boundaries are
+      immutable/read-only and are not ordinary write targets.
+    source_scope:
+      included_artifacts: [progress, decisions, health]
+      excluded_artifacts:
+        - objective_experiments: protected v2 family; not a compacted-summary migration input
+        - runtime_local_session_state: runtime-local state is outside canonical project migration
+        - compacted_todo_rows: already satisfy the canonical TODO shape and are not remapped as summaries
+      authority_rule: >-
+        This implemented scope does not reconstruct Git history, normalize source
+        summaries, retain dual authority, or provide a repair or import command.
+    source_row_provenance:
+      semantic_id: v2_compacted_summary_physical_row.v1
+      status: implemented
+      accepted_parsed_row_values: [mapping, scalar_string]
+      normalization: >-
+        Preview normalizes either accepted parsed physical row value to canonical
+        retained summary content for matching and publication. A mapping retains
+        its source fields subject to canonical alias removal and declared metadata
+        injection; a scalar string becomes {summary: value}.
+      source_record_sha256:
+        format: lowercase_sha256_hex
+        input: >-
+          original parsed physical source row value, which may be a mapping or a
+          scalar string, before summary normalization, canonical alias removal, or
+          metadata injection
+        canonicalization: >-
+          SHA-256 of UTF-8 canonical JSON: recursively sort mapping keys, preserve
+          array order, serialize scalar strings with JSON.stringify, and emit no
+          insignificant whitespace.
+    diagnostics:
+      status: implemented
+      implementation: >-
+        Read-only migration preview classifies independent invalid source
+        identities as roots, then reports generated graph dependents separately.
+        Ordinary summary reads and startup do not expose these migration-only
+        fields.
+      counts:
+        blockers: total root_blockers plus dependent_blockers
+        root_blockers: independently invalid, ambiguous, conflicting, or unsupported source identities
+        dependent_blockers: >-
+          Downstream diagnostics caused by a named root blocker. Each dependent names
+          its root source identity and does not increase root corruption.
+        dependent_blocker_required_fields: [root_source_identity]
+        corruption_count: corrupt classification counts source roots only, never generated dependents
+      graph: >-
+        A resolved relationship to a root (including a chain) is a dependent
+        blocker. Missing references make their owning source a root. Cycles with
+        no source root choose their lexicographically first source identity as a
+        deterministic corrupt root; preview does not attempt graph recovery.
+    source_outcomes:
+      status: implemented
+      valid_compacted_summary:
+        outcome: ready_with_degraded_provenance
+        rule: >-
+          Map each valid supported v2 summary to its declared immutable summary
+          boundary, retain source fields and migration provenance, and never
+          reconstruct missing detail.
+      missing_detail_not_declared_summary:
+        outcome: blocked
+        rule: retain evidence and stop before publication; never infer omitted fields
+      inherited_confidence_only:
+        outcome: ready_with_legacy_caveat
+        rule: >-
+          Preserve an inherited full-decision high, medium, or low label exactly and
+          report its caveat. Only new or amended labels must use the current strict
+          vocabulary.
+    boundaries:
+      - boundary: progress_summary
+        artifact: progress
+        independently_mutable: false
+        implementation: implemented
+        publication: immutable
+        mutation: forbidden
+        canonical_representation: one_immutable_degraded_summary_entity_per_valid_v2_summary
+        relationships: []
+        record:
+          required_fields: [summary, migration_provenance]
+          additional_fields: source_retained_fields_plus_declared_metadata
+          declared_metadata_fields: [migration_provenance]
+          source_retained_fields: >-
+            Preserve every source-retained field in the canonical record except
+            public_schema.forbidden_canonical_aliases. migration_provenance is
+            declared canonical metadata, not a retained source field. Missing
+            full-detail fields remain absent; migration does not normalize or
+            reconstruct them.
+          forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+          migration_provenance:
+            path: record.migration_provenance
+            required_fields: [source_path, source_record_sha256]
+            additional_fields: forbidden
+            source_path: project-relative v2 aggregate source path
+            source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
+        retrieval:
+          exact: agentera state progress get --id ID --format json
+          list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
+          detail_availability: summary
+          compatibility: degraded
+          caveats: required
+          ordering: full_timestamp_desc_then_id_asc_then_summary_id_asc
+          summary_ordering: canonical_id_asc_without_chronology_claim
+          mutation: read_only
+      - boundary: decision_summary
+        artifact: decisions
+        independently_mutable: false
+        implementation: implemented
+        publication: immutable
+        mutation: forbidden
+        canonical_representation: one_immutable_degraded_summary_entity_per_valid_v2_summary
+        relationships: []
+        record:
+          required_fields: [summary, migration_provenance]
+          additional_fields: source_retained_fields_plus_declared_metadata
+          declared_metadata_fields: [migration_provenance]
+          source_retained_fields: >-
+            Preserve every source-retained field in the canonical record except
+            public_schema.forbidden_canonical_aliases. migration_provenance is
+            declared canonical metadata, not a retained source field. Missing
+            full-detail fields remain absent; migration does not normalize or
+            reconstruct them.
+          forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+          satisfaction: optional_inline_read_only_source_retained_field
+          satisfaction_rule: >-
+            Satisfaction may be absent. When retained, it remains inline and read-only;
+            a decision summary never creates or targets a decision_satisfaction entity.
+          migration_provenance:
+            path: record.migration_provenance
+            required_fields: [source_path, source_record_sha256]
+            additional_fields: forbidden
+            source_path: project-relative v2 aggregate source path
+            source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
+        retrieval:
+          exact: agentera state decisions get --id ID --format json
+          list: agentera state decisions list [--limit N] [--cursor TOKEN] --format json
+          detail_availability: summary
+          compatibility: degraded
+          caveats: required
+          ordering: full_date_desc_then_id_asc_then_summary_id_asc
+          summary_ordering: canonical_id_asc_without_chronology_claim
+          mutation: read_only
+      - boundary: health_summary
+        artifact: health
+        independently_mutable: false
+        implementation: implemented
+        publication: immutable
+        mutation: forbidden
+        canonical_representation: one_immutable_degraded_summary_entity_per_valid_v2_summary
+        relationships: []
+        record:
+          required_fields: [summary, migration_provenance]
+          additional_fields: source_retained_fields_plus_declared_metadata
+          declared_metadata_fields: [migration_provenance]
+          source_retained_fields: >-
+            Preserve every source-retained field in the canonical record except
+            public_schema.forbidden_canonical_aliases. migration_provenance is
+            declared canonical metadata, not a retained source field. Missing
+            full-detail fields remain absent; migration does not normalize or
+            reconstruct them.
+          forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+          migration_provenance:
+            path: record.migration_provenance
+            required_fields: [source_path, source_record_sha256]
+            additional_fields: forbidden
+            source_path: project-relative v2 aggregate source path
+            source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
+        retrieval:
+          exact: agentera state health get --id ID --format json
+          list: agentera state health list [--limit N] [--cursor TOKEN] --format json
+          detail_availability: summary
+          compatibility: degraded
+          caveats: required
+          ordering: full_date_desc_then_id_asc_then_summary_id_asc
+          summary_ordering: canonical_id_asc_without_chronology_claim
+          mutation: read_only
   measurement_contract:
     status: implemented
     environment: Linux, Node.js 22 or newer, one cold CLI process per sample
     fixtures:
-      small: 100 valid entities distributed across every declared entity boundary
-      large: 1000 valid entities distributed across every declared entity boundary
-      relationship_rule: every declared relationship has at least one valid fixture edge
+      small: 100 valid entities distributed across every active entity_target.entities boundary
+      large: 1000 valid entities distributed across every active entity_target.entities boundary
+      relationship_rule: every active entity_target.relationships declaration has at least one valid fixture edge
     sampling:
       repetitions: 5
       pass_rule: every repetition stays within every applicable limit
@@ -594,7 +854,7 @@ entity_migration:
       .agentera/archive/recovery/projection-correlation.yaml recovery set by
       identity, archive bytes, final record SHA-256, parent/child Git proof or
       legacy converter/source proof, current projection bytes, and overlay.
-      Missing, changed, new, replaced, or unlisted recovery evidence blocks.
+       Missing, changed, new, replaced, or unlisted recovery evidence blocks.
   internal_migration_diagnostic: true
   read_only_preview:
     implementation: implemented
@@ -660,6 +920,9 @@ entity_migration:
       mirrors: excess canonical-identical physical records grouped under one logical identity
       duplicates: excess divergent physical records claiming one logical identity
       conflicts: logical identities with divergent candidates plus proposed-target collisions
+      root_blockers: independently invalid source identities, counted once per source identity
+      dependent_blockers: generated relationship-to-root diagnostics, each carrying root_source_identity
+      blockers: root_blockers plus dependent_blockers
     zero_write: >-
       Inventory, preview, malformed-input handling, and source-binding checks
       open no writer or upgrade lock and create no directory, temporary file,
@@ -678,7 +941,10 @@ entity_migration:
     degraded_recoverable:
       outcome: ready_with_provenance
       rule: admit only independently validated full detail and record its recovery provenance
-    summary_only_or_missing_detail:
+    valid_compacted_summary:
+      outcome: ready_with_degraded_provenance
+      rule: preserve retained summary fields and source-record provenance without reconstructing omitted detail
+    missing_detail_not_declared_summary:
       outcome: blocked
       rule: retain evidence and stop before publication; never reconstruct omitted fields
     ambiguous_or_duplicate_identity:
@@ -768,12 +1034,14 @@ retrieval:
     plan_tasks: implemented
     plans: implemented
     experiments: implemented
+    progress: implemented
+    decisions: implemented
+    health: implemented
   authority_boundary: >-
     This group owns public list/get envelopes, cursors, selectors, identities,
     omissions, and structured retrieval failures. It does not replace storage
-    ownership: numbered archives remain authoritative for progress, decisions,
-    and health; immutable plan files remain authoritative for plan history; and
-    objective directories remain authoritative for experiments.
+    ownership: canonical entity files remain authoritative after the durable
+    cutover marker; retained v2 aggregates are immutable migration evidence only.
   envelope:
     schema_version: agentera.stateRetrieval.v1
     required_fields:
@@ -788,12 +1056,28 @@ retrieval:
       - source
       - source_contract
     entry_required_fields:
-      - stable_id
-      - addressable
+      - id
+      - artifact
+      - boundary
       - detail_availability
       - compatibility
       - provenance
       - retrieval
+    summary_boundary_entries:
+      visibility: >-
+        Progress, decision, and health list/get reads include both the full
+        boundary and its corresponding immutable summary boundary under the
+        same artifact vocabulary.
+      full: { detail_availability: full, compatibility: current }
+      summary:
+        detail_availability: summary
+        compatibility: degraded
+        required_fields: [boundary, caveats, record.migration_provenance]
+        provenance: record_level_summary_migration_provenance
+        mutation: immutable_read_only
+      ordering: >-
+        Summary rows without a full-record temporal sort field sort after
+        timestamped or dated full rows and then by canonical ID ascending.
     counts_required_fields: [total, returned, remaining, omitted]
     status_values: [ok, degraded]
   cursor:
@@ -1841,7 +2125,8 @@ budgets:
         # to routing-essential leaves plus named recovery pointers for omitted
         # rich state. Pretty UTF-8 JSON + trailing newline is measured and an
         # over-budget brief is rejected in favor of a bounded degraded envelope;
-        # diagnostics stay on stderr. prime_dashboard keeps full fidelity.
+        # diagnostics stay on stderr. prime_dashboard keeps full current state
+        # while omitting duplicated ordinary history entries with recovery.
         max_utf8_bytes: 12000
       prime_dashboard:
         manifest_id: prime-dashboard

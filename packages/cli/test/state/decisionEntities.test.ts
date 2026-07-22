@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,10 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import YAML from "yaml";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { runStateList } from "../../src/cli/commands/state/list.js";
 import { amendDecisionEntity, appendDecisionEntity, getDecisionEntity, listDecisionEntities, updateDecisionSatisfactionEntity } from "../../src/state/decisionEntities.js";
-import { validateEntityState } from "../../src/state/entityStorage.js";
+import { canonicalEntityEnvelope, validateEntityState } from "../../src/state/entityStorage.js";
 import { executeStateWrite } from "../../src/state/write/transaction.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { buildExplain } from "../../src/state/write/explain.js";
@@ -51,6 +53,99 @@ describe("decision entity authority", () => {
     const result = getDecisionEntity(root, "aaaaaaaaaa") as any;
     expect(result.entry).toMatchObject({ id: "aaaaaaaaaa", artifact: "decisions", record: { choice: "Canonical entities", satisfaction: { state: "provisionally_satisfied", evidence: "tests pass" } }, provenance: { base: { id: "aaaaaaaaaa", artifact: "decisions" }, revisions: [{ id: "cccccccccc", artifact: "decisions" }], satisfaction: { id: "bbbbbbbbbb", artifact: "decisions" } } });
     expect(JSON.stringify(result)).not.toMatch(/stable_id|artifact_id|entry_number|"number"/);
+  });
+
+  it.each(["high", "medium", "low"])("reports migration-proven inherited confidence %s in exact and list reads", (confidence) => {
+    const root = project(); base(root);
+    const entityPath = path.join(root, ".agentera/entities/decisions/decision/aaaaaaaaaa.yaml");
+    const entity = YAML.parse(fs.readFileSync(entityPath, "utf8"));
+    entity.record.confidence = confidence;
+    const sourceRecord = { number: 1, ...structuredClone(entity.record) };
+    const sourceRecordSha256 = createHash("sha256").update(canonicalRecordJson(sourceRecord)).digest("hex");
+    fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), dumpYamlMapping({ decisions: [sourceRecord] }));
+    entity.migration_provenance = { kind: "inherited_decision_confidence", source: "current_projection", source_path: ".agentera/decisions.yaml", source_record_sha256: sourceRecordSha256, confidence };
+    fs.writeFileSync(entityPath, dumpYamlMapping(entity));
+    expect(validateEntityState(root)).toMatchObject({ valid: true });
+    expect(() => canonicalEntityEnvelope(fs.readFileSync(entityPath, "utf8"), { artifact: "decisions", boundary: "decision", id: "aaaaaaaaaa" })).toThrow(/requires a source binding context/);
+    expect(canonicalEntityEnvelope(fs.readFileSync(entityPath, "utf8"), { artifact: "decisions", boundary: "decision", id: "aaaaaaaaaa" }, undefined, { kind: "project", projectRoot: root }).migrationProvenance).toEqual(entity.migration_provenance);
+
+    for (const entry of [(getDecisionEntity(root, "aaaaaaaaaa") as any).entry, (listDecisionEntities(root, 20) as any).entries[0]]) {
+      expect(entry).toMatchObject({
+        record: { confidence },
+        provenance: { base: { migration_provenance: entity.migration_provenance } },
+        caveats: [expect.stringContaining(`inherited unsupported confidence label '${confidence}'`)],
+      });
+      expect(entry.record).not.toHaveProperty("migration_provenance");
+      expect(entry.effective_sha256).toBe(createHash("sha256").update(canonicalRecordJson(entry.record)).digest("hex"));
+    }
+  });
+
+  it.each([
+    ["known legacy without provenance", "high", undefined],
+    ["arbitrary unsupported", "certain", undefined],
+    ["arbitrary unsupported with fabricated provenance", "certain", { kind: "inherited_decision_confidence", source: "current_projection", source_path: ".agentera/decisions.yaml", source_record_sha256: "c".repeat(64), confidence: "certain" }],
+    ["current confidence with provenance", "firm", { kind: "inherited_decision_confidence", source: "current_projection", source_path: ".agentera/decisions.yaml", source_record_sha256: "d".repeat(64), confidence: "firm" }],
+    ["malformed provenance", "high", { kind: "inherited_decision_confidence" }],
+    ["mismatched provenance", "high", { kind: "inherited_decision_confidence", source: "verified_archive", source_path: ".agentera/archive/decisions/1.yaml", source_record_sha256: "b".repeat(64), confidence: "low" }],
+  ])("rejects canonical confidence state with %s", (_label, confidence, provenance) => {
+    const root = project(); base(root);
+    const entityPath = path.join(root, ".agentera/entities/decisions/decision/aaaaaaaaaa.yaml");
+    const entity = YAML.parse(fs.readFileSync(entityPath, "utf8"));
+    entity.record.confidence = confidence;
+    if (provenance) entity.migration_provenance = provenance;
+    fs.writeFileSync(entityPath, dumpYamlMapping(entity));
+    expect(validateEntityState(root).valid).toBe(false);
+    expect(() => getDecisionEntity(root, "aaaaaaaaaa")).toThrow(/not canonical/);
+    expect(() => listDecisionEntities(root, 20)).toThrow(/not canonical/);
+  });
+
+  it.each([
+    ["nonexistent projection", (root: string, source: Record<string, any>) => ({ source: "current_projection", source_path: ".agentera/decisions.yaml", digest: "a".repeat(64) })],
+    ["fabricated projection digest", (root: string, source: Record<string, any>) => { fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), dumpYamlMapping({ decisions: [source] })); return { source: "current_projection", source_path: ".agentera/decisions.yaml", digest: "b".repeat(64) }; }],
+    ["projection content mismatch", (root: string, source: Record<string, any>) => { source.choice = "Different source choice"; fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), dumpYamlMapping({ decisions: [source] })); return { source: "current_projection", source_path: ".agentera/decisions.yaml", digest: createHash("sha256").update(canonicalRecordJson(source)).digest("hex") }; }],
+    ["wrong projection path", (root: string, source: Record<string, any>) => { fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), dumpYamlMapping({ decisions: [source] })); return { source: "current_projection", source_path: ".agentera/not-decisions.yaml", digest: createHash("sha256").update(canonicalRecordJson(source)).digest("hex") }; }],
+    ["symlinked projection", (root: string, source: Record<string, any>) => { fs.writeFileSync(path.join(root, ".agentera/real-decisions.yaml"), dumpYamlMapping({ decisions: [source] })); fs.symlinkSync("real-decisions.yaml", path.join(root, ".agentera/decisions.yaml")); return { source: "current_projection", source_path: ".agentera/decisions.yaml", digest: createHash("sha256").update(canonicalRecordJson(source)).digest("hex") }; }],
+    ["malformed archive", (root: string, source: Record<string, any>) => { const dir = path.join(root, ".agentera/archive/decisions"); fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, "1.yaml"), "not: an archive\n"); return { source: "verified_archive", source_path: ".agentera/archive/decisions/1.yaml", digest: createHash("sha256").update(canonicalRecordJson(source)).digest("hex") }; }],
+    ["wrong archive path", (root: string, source: Record<string, any>) => ({ source: "verified_archive", source_path: ".agentera/archive/decisions/not-a-number.yaml", digest: createHash("sha256").update(canonicalRecordJson(source)).digest("hex") })],
+    ["wrong archive identity", (root: string, source: Record<string, any>) => { const dir = path.join(root, ".agentera/archive/decisions"); fs.mkdirSync(dir, { recursive: true }); const digest = createHash("sha256").update(canonicalRecordJson(source)).digest("hex"); fs.writeFileSync(path.join(dir, "1.yaml"), dumpYamlMapping({ schemaVersion: "agentera.stateArchiveEntry.v1", artifact_id: "decisions", entry_number: 2, record: source, record_sha256: digest })); return { source: "verified_archive", source_path: ".agentera/archive/decisions/1.yaml", digest }; }],
+    ["symlinked archive", (root: string, source: Record<string, any>) => { const dir = path.join(root, ".agentera/archive/decisions"); fs.mkdirSync(dir, { recursive: true }); const digest = createHash("sha256").update(canonicalRecordJson(source)).digest("hex"); fs.writeFileSync(path.join(dir, "real.yaml"), dumpYamlMapping({ schemaVersion: "agentera.stateArchiveEntry.v1", artifact_id: "decisions", entry_number: 1, record: source, record_sha256: digest })); fs.symlinkSync("real.yaml", path.join(dir, "1.yaml")); return { source: "verified_archive", source_path: ".agentera/archive/decisions/1.yaml", digest }; }],
+  ])("rejects source-unbound inherited provenance: %s", (_label, arrange) => {
+    const root = project(); base(root);
+    const entityPath = path.join(root, ".agentera/entities/decisions/decision/aaaaaaaaaa.yaml");
+    const entity = YAML.parse(fs.readFileSync(entityPath, "utf8"));
+    entity.record.confidence = "high";
+    const sourceRecord = { number: 1, ...structuredClone(entity.record) };
+    const binding = arrange(root, sourceRecord);
+    entity.migration_provenance = { kind: "inherited_decision_confidence", source: binding.source, source_path: binding.source_path, source_record_sha256: binding.digest, confidence: "high" };
+    fs.writeFileSync(entityPath, dumpYamlMapping(entity));
+    expect(validateEntityState(root).valid).toBe(false);
+    expect(() => getDecisionEntity(root, "aaaaaaaaaa")).toThrow(/not canonical/);
+  });
+
+  it("keeps inherited provenance out of amendments and caveats only the effective inherited label", () => {
+    const root = project(); base(root);
+    const entityPath = path.join(root, ".agentera/entities/decisions/decision/aaaaaaaaaa.yaml");
+    const entity = YAML.parse(fs.readFileSync(entityPath, "utf8"));
+    entity.record.confidence = "high";
+    const sourceRecord = { number: 1, ...structuredClone(entity.record) };
+    const sourceRecordSha256 = createHash("sha256").update(canonicalRecordJson(sourceRecord)).digest("hex");
+    const archiveDir = path.join(root, ".agentera/archive/decisions");
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(path.join(archiveDir, "1.yaml"), dumpYamlMapping({ schemaVersion: "agentera.stateArchiveEntry.v1", artifact_id: "decisions", entry_number: 1, record: sourceRecord, record_sha256: sourceRecordSha256 }));
+    entity.migration_provenance = { kind: "inherited_decision_confidence", source: "verified_archive", source_path: ".agentera/archive/decisions/1.yaml", source_record_sha256: sourceRecordSha256, confidence: "high" };
+    fs.writeFileSync(entityPath, dumpYamlMapping(entity));
+
+    const inherited = (getDecisionEntity(root, "aaaaaaaaaa") as any).entry;
+    amendDecisionEntity(request(root, "amend", { id: "aaaaaaaaaa", base_sha256: inherited.effective_sha256, choice: "Still inherited" }), { id: "bbbbbbbbbb" });
+    const unchangedConfidence = (getDecisionEntity(root, "aaaaaaaaaa") as any).entry;
+    expect(unchangedConfidence.caveats).toHaveLength(1);
+    expect(unchangedConfidence.provenance.revisions[0]).not.toHaveProperty("migration_provenance");
+    amendDecisionEntity(request(root, "amend", { id: "aaaaaaaaaa", base_sha256: unchangedConfidence.effective_sha256, confidence: "firm" }), { id: "cccccccccc" });
+    const current = (getDecisionEntity(root, "aaaaaaaaaa") as any).entry;
+    expect(current.record.confidence).toBe("firm");
+    expect(current).not.toHaveProperty("caveats");
+    expect(current.provenance.base.migration_provenance.confidence).toBe("high");
+    expect(validateEntityState(root).valid).toBe(true);
   });
 
   it("routes exact get/list through bare IDs and rejects numeric selectors in entity mode", () => {
@@ -103,6 +198,25 @@ describe("decision entity authority", () => {
     base(root, "dddddddddd", "D"); expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor)).toThrow(/changed after this cursor snapshot/);
   });
 
+  it("invalidates list cursors after a valid migration-provenance-only change", () => {
+    const root = project(); base(root, "aaaaaaaaaa", "A"); base(root, "bbbbbbbbbb", "B"); base(root, "cccccccccc", "C");
+    const entityPath = path.join(root, ".agentera/entities/decisions/decision/aaaaaaaaaa.yaml");
+    const entity = YAML.parse(fs.readFileSync(entityPath, "utf8"));
+    entity.record.confidence = "high";
+    const sourceRecord = { number: 1, ...structuredClone(entity.record) };
+    const digest = createHash("sha256").update(canonicalRecordJson(sourceRecord)).digest("hex");
+    fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), dumpYamlMapping({ decisions: [sourceRecord] }));
+    const archiveDir = path.join(root, ".agentera/archive/decisions"); fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(path.join(archiveDir, "1.yaml"), dumpYamlMapping({ schemaVersion: "agentera.stateArchiveEntry.v1", artifact_id: "decisions", entry_number: 1, record: sourceRecord, record_sha256: digest }));
+    entity.migration_provenance = { kind: "inherited_decision_confidence", source: "current_projection", source_path: ".agentera/decisions.yaml", source_record_sha256: digest, confidence: "high" };
+    fs.writeFileSync(entityPath, dumpYamlMapping(entity));
+    const first = listDecisionEntities(root, 1) as any;
+    entity.migration_provenance = { ...entity.migration_provenance, source: "verified_archive", source_path: ".agentera/archive/decisions/1.yaml" };
+    fs.writeFileSync(entityPath, dumpYamlMapping(entity));
+    expect(validateEntityState(root).valid).toBe(true);
+    expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor)).toThrow(/changed after this cursor snapshot/);
+  });
+
   it("binds cursors to every revision and satisfaction input while stable snapshots continue", () => {
     const mutations: Array<[string, (root: string) => void, (root: string) => void]> = [
       ["satisfaction add", () => {}, (root) => { updateDecisionSatisfactionEntity(request(root, "update", { id: "aaaaaaaaaa", satisfaction: { state: "open" } }), { id: "dddddddddd" }); }],
@@ -120,7 +234,8 @@ describe("decision entity authority", () => {
       const first = listDecisionEntities(root, 1) as any;
       expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor), `${label} stable`).not.toThrow();
       mutate(root);
-      expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor), label).toThrow(/changed after this cursor snapshot/);
+      const expected = label.includes("ownership conflict") ? /competing/ : /changed after this cursor snapshot/;
+      expect(() => listDecisionEntities(root, 1, undefined, first.next_cursor), label).toThrow(expected);
     }
   });
 

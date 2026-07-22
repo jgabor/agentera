@@ -1,0 +1,25 @@
+id: xrdkdvcvjv
+artifact: plan
+record:
+  name: Publish valid compacted summaries as canonical degraded entities
+  depends_on:
+    - vlcpnynime
+  status: superseded
+  acceptance:
+    - GIVEN a summary-only progress, decision, or health source WHEN migration is previewed THEN it receives a canonical summary target preserving only retained facts plus source provenance and inventing no full-detail field.
+    - GIVEN a decision summary with retained satisfaction WHEN targets are built THEN satisfaction remains inline and no standalone relationship to a nonexistent full decision is emitted.
+    - GIVEN independently verified full detail plus a matching summary WHEN migration runs THEN the identity becomes a full canonical entity rather than a degraded duplicate.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Exported canonical validation APIs still bypass source binding; canonical-equivalent mirrors become corrupt; activeProtocolSurface is red from branch integration drift. The migration also duplicates the authority-owned alias list.
+    provenance:
+      attempt_id: audit-2
+      source: independent audit session ses_0795dd3f4ffekydljRGOmw0XDQ
+      recorded_at: 2026-07-21 23:57
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - mppapvwenc
+  superseded_reason: Completed replacement mppapvwenc and its predecessors satisfy compacted-summary publication, inline satisfaction, full promotion, source binding, and fail-closed durability.

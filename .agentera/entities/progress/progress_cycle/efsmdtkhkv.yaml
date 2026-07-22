@@ -1,0 +1,16 @@
+id: efsmdtkhkv
+artifact: progress
+record:
+  timestamp: 2026-07-21 22:51
+  type: fix
+  phase: build
+  what: Completed final source-bound provenance verification using descriptor-stable projection and numbered-archive reads.
+  context:
+    intent: Record final evidence for the audit retry after strengthening the shared archive read seam.
+    constraints: No task completion, commit, push, KTX mutation, vision edit, Git inference, or unrelated scope.
+    unknowns: none
+    scope: Safe archive source reads and final verification of source-bound inherited-confidence provenance.
+  inspiration: Progress igwbonffdt followed by final safe archive-reader hardening.
+  discovered: The numbered archive validator could be reused without retaining its lstat/read sequence by feeding it bytes from the existing descriptor-stable project reader, preserving envelope and schema authority while closing symlink and replacement races.
+  verified: "Final archive and decision suites passed: 2 files, 44 tests. Final full source suite passed: 195 files, 2402 passed and 1 skipped. Typecheck passed after source-bound changes. Final build passed; agentera check validate state passed with 1683 entities and 0 issues; git diff --check passed."
+  next: Re-audit nbhajmvbjn; do not mark complete or activate summary contracts in this implementation session.

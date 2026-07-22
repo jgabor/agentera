@@ -55,6 +55,22 @@ export function createEntityAuthorityFixture(
       what: `Fixture ${index}`,
       context: { intent: "Measure" },
     });
+  const summary = (
+    artifact: "progress" | "decisions" | "health",
+    boundary: "progress_summary" | "decision_summary" | "health_summary",
+    collection: "cycles" | "decisions" | "audits",
+  ): string => {
+    const physical = { number: 1, summary: `${artifact} retained summary` };
+    const sourcePath = `.agentera/${artifact}.yaml`;
+    fs.writeFileSync(path.join(project, sourcePath), dumpYamlMapping({ [collection]: [physical] }));
+    return add(artifact, boundary, {
+      summary: physical.summary,
+      migration_provenance: {
+        source_path: sourcePath,
+        source_record_sha256: createHash("sha256").update(canonicalRecordJson(physical)).digest("hex"),
+      },
+    });
+  };
 
   const decisionRecord = {
     date: "2026-07-19",
@@ -134,11 +150,13 @@ export function createEntityAuthorityFixture(
     last_updated: "2026-07-19",
     status: "current",
   });
+  summary("progress", "progress_summary", "cycles");
+  summary("decisions", "decision_summary", "decisions");
+  summary("health", "health_summary", "audits");
   while (entities.length < count) {
     const id = progress(entities.length);
     exactId ||= id;
   }
-
   const byId = new Map(entities.map((entity) => [entity.id, entity]));
   const relationshipEdges = (
     contract.entity_target.relationships.declarations as Array<Record<string, string>>
@@ -161,7 +179,7 @@ export function createEntityAuthorityFixture(
   );
   return {
     exactId,
-    progressCount: boundaryCounts.progress_cycle,
+    progressCount: boundaryCounts.progress_cycle + boundaryCounts.progress_summary,
     boundaryCounts,
     relationshipEdges,
   };

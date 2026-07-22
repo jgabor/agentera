@@ -1,0 +1,22 @@
+id: vlcpnynime
+artifact: plan
+record:
+  name: Pin real v2 compaction evidence and acceptance cases
+  depends_on:
+    - yjvcdgexku
+  status: complete
+  acceptance:
+    - GIVEN the pinned v2.7.11 compactor WHEN fixture provenance is verified THEN its source commit, generation command, input hash, and output hash reproduce the committed compacted bytes.
+    - GIVEN the fixture matrix WHEN migration tests run THEN it covers progress, decision, and health summaries, decision summaries with and without satisfaction, backed summaries, all inherited confidence labels, and a non-confidence corruption.
+    - GIVEN protected experiments, runtime-local sessions, and compacted TODO rows WHEN fixture scope is checked THEN their exclusion or ordinary full migration behavior is explicit and tested.
+  plan: zcziuekcec
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Compacted TODO regression uses a vacuous every() assertion and does not prove any TODO rows migrated; manifest says ten retained but output has eleven rows (ten full plus one compacted).
+    provenance:
+      attempt_id: audit-vlcpnynime-2
+      source: independent reaudit ses_079c91d92ffeVnvW3YHHzywM6T; 3/3 criteria and evidence audit passed
+      recorded_at: 2026-07-21 21:54
+      writer_command: agentera state plan record-evaluation

@@ -1,4 +1,3 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -18,11 +17,14 @@ import {
   type DiscoveredEntity,
 } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
+import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEntityRead.js";
+import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
 import { localTimestamp } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 
 const ARTIFACT = "progress";
 const BOUNDARY = "progress_cycle";
+const SUMMARY = "progress_summary";
 const ORDER = "timestamp_desc_then_id_asc";
 const CURSOR_VERSION = 1;
 
@@ -247,7 +249,7 @@ function sortedProgress(discovery: ReturnType<typeof discoverEntities>): Discove
       entity.classification !== "valid" ||
       !entity.id ||
       !entity.record ||
-      typeof entity.record.timestamp !== "string",
+      (entity.boundary === BOUNDARY && typeof entity.record.timestamp !== "string"),
   );
   if (corrupt)
     throw listFailure(
@@ -257,7 +259,7 @@ function sortedProgress(discovery: ReturnType<typeof discoverEntities>): Discove
     );
   return progress.sort(
     (left, right) =>
-      String(right.record!.timestamp).localeCompare(String(left.record!.timestamp)) ||
+      String(right.record!.timestamp ?? "").localeCompare(String(left.record!.timestamp ?? "")) ||
       left.id!.localeCompare(right.id!),
   );
 }
@@ -268,39 +270,26 @@ function entry(projectRoot: string, entity: DiscoveredEntity): JsonObject {
     id,
     artifact: ARTIFACT,
     record: entity.record!,
-    provenance: {
-      storage: "canonical_entity_file",
-      path: relative(projectRoot, entity.path),
-      boundary: BOUNDARY,
-      detail: "full",
-    },
+    ...detailMetadata(entity),
+    provenance: detailProvenance(relative(projectRoot, entity.path), entity),
     retrieval: { get: `agentera state progress get --id ${id} --format json` },
   };
 }
 
-function snapshotId(entities: DiscoveredEntity[]): string {
-  const source = entities.map((entity) => ({
-    id: entity.id,
-    artifact: entity.artifact,
-    record: entity.record,
-  }));
-  return createHash("sha256").update(canonicalRecordJson(source), "utf8").digest("hex");
-}
-
-function cursorKey(projectRoot: string, authorityPath: string): Buffer {
-  return createHash("sha256")
-    .update(path.resolve(projectRoot))
-    .update("\0")
-    .update(fs.readFileSync(authorityPath))
-    .digest();
+function snapshotId(projectRoot: string, entities: DiscoveredEntity[], filters: JsonObject, entityRoot: string): string {
+  return projectedListSnapshot({
+    schemaVersion: "agentera.stateList.v1",
+    command: "state progress list",
+    order: ORDER,
+    filters,
+    source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: entityRoot },
+    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: entities.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
+    entries: entities.map((entity) => entry(projectRoot, entity)),
+  });
 }
 
 function encodeCursor(payload: ProgressCursor, projectRoot: string, authorityPath: string): string {
-  const bytes = Buffer.from(canonicalRecordJson(payload), "utf8");
-  const signature = createHmac("sha256", cursorKey(projectRoot, authorityPath))
-    .update(bytes)
-    .digest();
-  return `${bytes.toString("base64url")}.${signature.toString("base64url")}`;
+  return encodeListCursor(payload as unknown as JsonObject, projectRoot, authorityPath);
 }
 
 function decodeCursor(token: string, projectRoot: string, authorityPath: string): ProgressCursor {
@@ -311,32 +300,15 @@ function decodeCursor(token: string, projectRoot: string, authorityPath: string)
       "progress cursor is malformed",
       "Copy next_cursor exactly, or omit --cursor to start from the current snapshot.",
     );
-  let bytes: Buffer;
-  let signature: Buffer;
+  let payload: unknown;
   try {
-    bytes = Buffer.from(encoded, "base64url");
-    signature = Buffer.from(signed, "base64url");
+    payload = decodeListCursor(token, projectRoot, authorityPath);
   } catch {
     throw listFailure(
       "cursor_invalid",
       "progress cursor is malformed",
       "Copy next_cursor exactly, or omit --cursor to start from the current snapshot.",
     );
-  }
-  const expected = createHmac("sha256", cursorKey(projectRoot, authorityPath))
-    .update(bytes)
-    .digest();
-  if (signature.length !== expected.length || !timingSafeEqual(signature, expected))
-    throw listFailure(
-      "cursor_invalid",
-      "progress cursor signature is invalid",
-      "Copy next_cursor exactly, or omit --cursor to start from the current snapshot.",
-    );
-  let payload: unknown;
-  try {
-    payload = JSON.parse(bytes.toString("utf8"));
-  } catch {
-    payload = null;
   }
   if (
     !mapping(payload) ||
@@ -400,7 +372,7 @@ export function getProgressEntity(
     path.resolve(projectRoot),
     progressContract(sourceRoot).entityRoot,
     ARTIFACT,
-    BOUNDARY,
+    selected?.boundary === SUMMARY ? SUMMARY : BOUNDARY,
     `${id}.yaml`,
   );
   const corruptAtCanonicalPath = discovery.entities.find((entity) => entity.path === expectedPath);
@@ -411,7 +383,7 @@ export function getProgressEntity(
       "Run agentera check validate state, repair the canonical entity file, and retry.",
       id,
     );
-  if (!selected || selected.artifact !== ARTIFACT || selected.boundary !== BOUNDARY)
+  if (!selected || selected.artifact !== ARTIFACT || ![BOUNDARY, SUMMARY].includes(selected.boundary ?? ""))
     throw failure(
       "not_found",
       `no progress entity exists with ID '${id}'`,
@@ -421,7 +393,7 @@ export function getProgressEntity(
   if (
     selected.classification !== "valid" ||
     !selected.record ||
-    typeof selected.record.timestamp !== "string"
+    (selected.boundary === BOUNDARY && typeof selected.record.timestamp !== "string")
   )
     throw failure(
       "corrupt",
@@ -432,12 +404,12 @@ export function getProgressEntity(
   return {
     schemaVersion: "agentera.stateRetrieval.v1",
     command: "state progress get",
-    status: "ok",
+    status: isSummaryEntity(selected) ? "degraded" : "ok",
     entry: entry(projectRoot, selected),
     source: { artifact: ARTIFACT, authority: "canonical_entity_file" },
     source_contract: {
       authority: "references/artifacts/state-storage-authority.yaml",
-      detail: "full",
+      detail: isSummaryEntity(selected) ? "summary" : "full",
     },
   };
 }
@@ -466,8 +438,21 @@ export function listProgressEntities(
   }
   if (options.discovery) assertEntityDiscoveryOrigin(projectRoot, sourceRoot, options.discovery);
   const all = sortedProgress(options.discovery ?? discoverEntities(projectRoot, sourceRoot));
-  const snapshot = snapshotId(all);
   const filterState = filtersObject(filters);
+  const filtered = all.filter((entity) => {
+    if (
+      filters.status &&
+      String(entity.record!.type).toLowerCase() !== filters.status.toLowerCase()
+    )
+      return false;
+    return (
+      !filters.topic ||
+      values(entity.record).some((value) =>
+        value.toLowerCase().includes(filters.topic!.toLowerCase()),
+      )
+    );
+  });
+  const snapshot = snapshotId(projectRoot, filtered, filterState, contract.entityRoot);
   let afterKey = "";
   if (cursor) {
     const parsed = decodeCursor(cursor, projectRoot, contract.authorityPath);
@@ -485,19 +470,6 @@ export function listProgressEntities(
       );
     afterKey = parsed.after_key;
   }
-  const filtered = all.filter((entity) => {
-    if (
-      filters.status &&
-      String(entity.record!.type).toLowerCase() !== filters.status.toLowerCase()
-    )
-      return false;
-    return (
-      !filters.topic ||
-      values(entity.record).some((value) =>
-        value.toLowerCase().includes(filters.topic!.toLowerCase()),
-      )
-    );
-  });
   const start = afterKey ? filtered.findIndex((entity) => sortKey(entity) === afterKey) + 1 : 0;
   if (afterKey && start === 0)
     throw listFailure(
@@ -531,7 +503,7 @@ export function listProgressEntities(
     return {
       schemaVersion: "agentera.stateList.v1",
       command: "state progress list",
-      status: remaining > 0 ? "degraded" : "ok",
+      status: remaining > 0 || filtered.some(isSummaryEntity) ? "degraded" : "ok",
       entries: selected.map((entity) => entry(projectRoot, entity)),
       counts: { total: filtered.length, returned: selected.length, remaining },
       filters: filterState,
@@ -549,7 +521,7 @@ export function listProgressEntities(
       },
       source_contract: {
         authority: "references/artifacts/state-storage-authority.yaml",
-        detail: "full",
+        detail: filtered.some(isSummaryEntity) ? "mixed" : "full",
         cursor: "opaque_snapshot_cursor",
       },
       ...(remaining > 0

@@ -104,22 +104,31 @@ describe("prime projection contract", () => {
     const contract = authority();
     const count = 25;
     const fixture = createEntityAuthorityFixture(project, count, contract);
-    expect(Object.values(fixture.boundaryCounts).every((boundaryCount) => boundaryCount > 0)).toBe(true);
+    expect(Object.entries(fixture.boundaryCounts).filter(([boundary]) => !boundary.endsWith("_summary")).every(([, boundaryCount]) => boundaryCount > 0)).toBe(true);
     expect(Object.values(fixture.boundaryCounts).reduce((sum, boundaryCount) => sum + boundaryCount, 0)).toBe(count);
 
     const startup = capture((out, err) => main(["node", "agentera", "prime", "--dashboard", "--format", "json"], { out, err }));
     expect(startup.rc, startup.out || startup.err).toBe(0);
     const payload = JSON.parse(startup.out) as Record<string, any>;
     const latest = payload.progress.latest;
-    const fullEntry = payload.history.progress.entries[0];
-    expect(latest).toEqual({ id: fullEntry.id, artifact: "progress", what: fullEntry.record.what });
-    expect(fullEntry.retrieval.get).toBe(`agentera state progress get --id ${latest.id} --format json`);
-    expect(payload.history.progress).toMatchObject({ omitted: true, omission_reason: "page_limit" });
-    expect(payload.history.progress.next_cursor).toBeTruthy();
+    expect(latest).toMatchObject({ id: expect.any(String), artifact: "progress", what: expect.any(String) });
+    expect(payload.history.progress).toMatchObject({
+      counts: { total: fixture.progressCount, returned: 0, remaining: fixture.progressCount, summary: 1 },
+      omitted: true,
+      omitted_count: fixture.progressCount,
+      omission_reason: "startup_history_detail",
+      retrieval: {
+        list: "agentera state progress list --limit 20 --format json",
+        get: "agentera state progress get --id ID --format json",
+      },
+    });
+    expect(payload.history.progress).not.toHaveProperty("entries");
 
     const list = capture((out, err) => main(["node", "agentera", "state", "progress", "list", "--limit", "5", "--format", "json"], { out, err }));
     expect(list.rc, list.out || list.err).toBe(0);
-    expect(JSON.parse(list.out).counts.total).toBe(fixture.progressCount);
+    const listed = JSON.parse(list.out);
+    expect(listed.counts.total).toBe(fixture.progressCount);
+    expect(listed.entries[0]).toHaveProperty("retrieval.get");
     const exact = capture((out, err) => main(["node", "agentera", "state", "progress", "get", "--id", fixture.exactId, "--format", "json"], { out, err }));
     expect(exact.rc, exact.out || exact.err).toBe(0);
     expect(JSON.parse(exact.out).entry.id).toBe(fixture.exactId);

@@ -1,0 +1,12 @@
+id: nyppizasfc
+artifact: progress
+record:
+  timestamp: 2026-07-21 23:11
+  type: fix
+  phase: build
+  what: Published valid v2 compacted progress, decision, and health summaries as immutable degraded entity targets.
+  context:
+    intent: Complete Plan zcziuekcec Task xrdkdvcvjv without reconstructing missing detail or changing reader behavior.
+    scope: Entity migration preview, canonical storage validation, authority contract, and focused regression tests.
+  verified: Focused authority, migration preview, storage, pinned v2 evidence, and cutover tests passed (142 tests); typecheck, build, and active state validation passed. Pinned preview reports four valid compacted summaries on summary boundaries and no experiment_summary.
+  next: Task 5 owns ordinary summary readers and startup behavior; do not add them in this task.

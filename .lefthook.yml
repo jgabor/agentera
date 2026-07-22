@@ -22,6 +22,8 @@ pre-commit:
       exclude:
         - "docs/plans/*.md"
         - "skills/*/references/contract.md"
+        - "packages/cli/test/fixtures/v2-compaction-2.7.11/input/TODO.md"
+        - "packages/cli/test/fixtures/v2-compaction-2.7.11/output/TODO.md"
     configs:
       run: vp fmt --write {staged_files}
       stage_fixed: true

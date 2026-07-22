@@ -1,0 +1,11 @@
+id: nzdtqfemki
+artifact: progress
+record:
+  timestamp: 2026-07-21 23:41
+  type: fix
+  phase: build
+  what: Corrected Task xrdkdvcvjv source-bound compacted-summary migration validation and protected-experiment handling.
+  context:
+    intent: Publish only truthful v2 compacted summaries under the Task 4 cutover contract.
+    scope: packages/cli state migration and validation; UPGRADE.md; CHANGELOG.md
+  verified: Focused state/upgrade suite passed 154 tests; typecheck, build, state validation, and compact checks passed.

@@ -3,6 +3,8 @@ import fs from "node:fs";
 
 import { emitInvalidInput, type InvalidInputErrorBody } from "../../errors.js";
 import type { Io } from "../../dispatch/shared.js";
+import { emitStructured } from "../../structured.js";
+import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import {
   normalizeArtifactProtocolId,
   VALIDATE_ARTIFACT_PROTOCOL_IDS,
@@ -46,6 +48,21 @@ function formatFromArgv(argv: string[]): "text" | "json" {
 
 function invalid(body: InvalidInputErrorBody): never {
   throw new StateWriteInputError(body);
+}
+
+function emitRetrievalFailure(error: StateRetrievalFailure, format: "text" | "json", io: Io): number {
+  if (format === "json") {
+    emitStructured(error.body, "json", io.out ?? ((text) => process.stdout.write(text)));
+  } else {
+    const detail = error.body.error;
+    (io.err ?? ((text) => process.stderr.write(text)))([
+      `Error: ${detail.message}`,
+      `Syntax: ${detail.syntax}`,
+      `Example: ${detail.example}`,
+      `Recovery: ${detail.recovery}`,
+    ].join("\n") + "\n");
+  }
+  return error.exitCode;
 }
 
 function setNested(target: Record<string, unknown>, field: string, value: unknown): void {
@@ -423,6 +440,8 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
   } catch (error) {
     if (error instanceof StateWriteInputError)
       return emitInvalidInput(io, { format: detectedFormat, body: error.body });
+    if (error instanceof StateRetrievalFailure)
+      return emitRetrievalFailure(error, detectedFormat, io);
     err(`Error: ${(error as Error).message}\n`);
     return 1;
   }

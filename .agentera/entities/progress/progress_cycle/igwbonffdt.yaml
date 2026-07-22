@@ -1,0 +1,16 @@
+id: igwbonffdt
+artifact: progress
+record:
+  timestamp: 2026-07-21 22:48
+  type: fix
+  phase: build
+  what: Bound inherited-confidence provenance to preserved projection or authority-valid archive source records and included provenance in decision cursor snapshots.
+  context:
+    intent: Correct audit-proven provenance trust and cursor gaps for replacement task nbhajmvbjn without changing summary scope or task status.
+    constraints: No task completion, commit, push, KTX mutation, vision edit, Git inference, or compacted-summary implementation.
+    unknowns: none
+    scope: Source-bound decision migration provenance validation, shared migration canonicalization, archive validation reuse, decision cursor snapshots, and focused regressions.
+  inspiration: Audit retry showing exact-shaped fabricated provenance passed validation and reads.
+  discovered: Envelope syntax cannot establish migration inheritance. Canonical state must safely resolve the authority-declared source, validate the complete source record and archive envelope where applicable, recompute the canonical source hash, and compare migration-normalized content before trusting the marker.
+  verified: "Focused migration, archive, decision entity, state validation, write/amend, and upgrade tests passed: 8 files and 233 tests; final decision provenance suite passed 32 tests including missing source, fabricated digest, content mismatch, wrong path and identity, malformed and symlinked sources, cursor invalidation, cutover, and replay. Full source suite passed: 195 files, 2402 passed and 1 skipped. Typecheck, build, agentera check validate state (1682 entities, 0 issues), and git diff --check passed."
+  next: Orchestrator may re-audit replacement acceptance; leave task nbhajmvbjn in progress and summary contracts inactive.

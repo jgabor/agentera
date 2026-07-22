@@ -1,0 +1,9 @@
+id: sifxvpccth
+artifact: decisions
+record:
+  decision: cgmdaewdas
+  date: 2026-07-22
+  provenance: historical_revision
+  base_sha256: 0b8fee4663cece9a12ce5639f2111575cbf78797ac66fa057d419d3630c1cdee
+  changes:
+    context: "The documented development-channel upgrade formerly rejected valid progress, decision, and health summaries emitted by supported v2 compaction and inherited decision confidence labels. The accepted implementation now migrates each valid summary with source-bound provenance into an immutable canonical entity, preserves retained facts without reconstruction, serves degraded summary reads and startup, and separates root source blockers from relationship dependents. A read-only KTX preview confirms valid compacted state and inherited labels are not the blocker: its 249 identities map to 248 targets because of one pre-existing divergent Decision 25 reuse. KTX is unchanged, and that conflict remains its owner's work."

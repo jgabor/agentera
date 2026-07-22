@@ -1,0 +1,17 @@
+id: cgmdaewdas
+artifact: decisions
+record:
+  date: 2026-07-21
+  question: How should valid state produced by v2 aggregate compaction cross the one-way v3 entity cutover?
+  context: The documented development-channel upgrade currently rejects summary-only progress, decision, and health records emitted by supported v2 compaction and strictly rejects inherited decision confidence labels. The migration must preserve retained evidence without inventing omitted detail, keep one canonical entity authority after cutover, and make root versus dependent blockers truthful.
+  alternatives:
+    - name: Migrate valid summaries into immutable degraded canonical summary entities
+      status: chosen
+    - name: Keep valid v2 summaries blocking and require owner reconstruction
+      status: rejected
+    - name: Add a Git-backed recovery or evidence-import workflow before cutover
+      status: rejected
+  choice: Add immutable progress_summary, decision_summary, and health_summary entity boundaries. Preserve source-retained fields plus source path and content hash, expose them through existing artifact get/list commands as degraded summary detail, order full records first and summaries deterministically without claiming chronology, and retain decision-summary satisfaction inline without creating a full-decision relationship. Migrate summaries even when satisfaction is absent. Preserve inherited high, medium, and low confidence values with explicit caveats while keeping new or amended labels strict. Report root and dependent blockers separately while retaining total blockers.
+  reasoning: This is the smallest lossless forward contract. It accepts every default v2 compacted project-state shape, preserves the sole one-way upgrade, avoids fabricated fields and dual authority, and does not add a recovery subsystem. Separate summary boundaries keep full entity schemas and mutation contracts strict. Inline summary satisfaction preserves evidence without creating a relation to a nonexistent full decision. Health is included because v2 compaction emits the same degraded shape there; experiments remain excluded because the supported v2 compaction status classified objective experiment files as protected.
+  confidence: firm
+  feeds_into: references/artifacts/state-storage-authority.yaml, packages/cli entity migration and readers, UPGRADE.md, CHANGELOG.md, tests, and the v2-to-v3 cutover plan

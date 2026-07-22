@@ -1,0 +1,14 @@
+id: gdtlymdkxn
+artifact: progress
+record:
+  timestamp: 2026-07-22 01:47
+  type: fix
+  phase: build
+  what: Expose immutable migrated summaries through state reads and prime without fabricating current detail.
+  context:
+    intent: Implement Plan zcziuekcec Task lnwiwlnfmx reader and startup behavior.
+    constraints: Preserved existing migration, provenance, durability, and cutover work; no task status change.
+    unknowns: none
+    scope: progress, decisions, health entity readers; prime projection; state retrieval authority
+  verified: Focused summary reader tests, full CLI source suite, typecheck, build, capability contract, state validation, and compaction passed.
+  next: Review the implementation diff and retain Task 6 diagnostics scope separately.

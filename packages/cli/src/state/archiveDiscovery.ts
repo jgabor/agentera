@@ -7,6 +7,8 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { ArtifactSchemaValidator } from "../hooks/validateArtifact/index.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
+import { validateRealProjectRoot } from "./projectRoot.js";
+import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.yaml";
 const EXPECTED_AUTHORITY_SCHEMA = "agentera.stateStorageAuthority.v1";
@@ -563,6 +565,7 @@ function validateCandidate(
   sourceRoot: string,
   seenIds: Set<string>,
   retainRecords = true,
+  recordValidator?: (record: JsonObject) => string[],
 ): NumberedArchiveEntry | ArchiveRejection {
   let envelope: AuthorityMapping;
   try {
@@ -654,7 +657,7 @@ function validateCandidate(
     return rejection(filePath, "duplicate_identity", `duplicate archive identity ${stableId}`);
   }
 
-  const schemaViolations = validateRecordSchema(sourceRoot, artifact, record);
+  const schemaViolations = recordValidator ? recordValidator(record) : validateRecordSchema(sourceRoot, artifact, record);
   if (schemaViolations.length > 0) {
     return rejection(filePath, "record_schema", schemaViolations.join("; "));
   }
@@ -678,48 +681,23 @@ export function readNumberedArchiveEntry(
   projectRoot: string,
   artifactId: string,
   entryNumber: number,
-  options: { sourceRoot?: string } = {},
+  options: { sourceRoot?: string; recordValidator?: (record: JsonObject) => string[] } = {},
 ): NumberedArchiveLookup {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const authority = loadAuthority(sourceRoot);
   const artifact = authority.supportedArtifacts.get(artifactId);
   if (!artifact) throw new Error(`unsupported numbered archive artifact '${artifactId}'`);
   const resolvedProjectRoot = path.resolve(projectRoot);
-  const target = path.join(
-    resolvedProjectRoot,
+  const relativeTarget = path.posix.join(
     authority.archiveRoot,
     artifactId,
     `${entryNumber}${authority.archiveExtension}`,
   );
-  const issue = pathIssue(resolvedProjectRoot, target, "file");
-  if (issue) return { path: target, rejection: rejection(target, issue.reason, issue.message) };
-
-  let stat: fs.Stats;
-  try {
-    stat = fs.lstatSync(target);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { path: target };
-    return {
-      path: target,
-      rejection: rejection(target, "read_failure", `cannot read archive record: ${(error as Error).message}`),
-    };
-  }
-  if (!stat.isFile()) {
-    return {
-      path: target,
-      rejection: rejection(target, "unsafe_path", "archive record path is not a regular file"),
-    };
-  }
-
-  let bytes: string;
-  try {
-    bytes = fs.readFileSync(target, "utf8");
-  } catch (error) {
-    return {
-      path: target,
-      rejection: rejection(target, "read_failure", `cannot read archive record: ${(error as Error).message}`),
-    };
-  }
+  const target = path.join(resolvedProjectRoot, ...relativeTarget.split("/"));
+  const snapshot = readProjectFileSnapshot(validateRealProjectRoot(resolvedProjectRoot), relativeTarget);
+  if (snapshot.kind === "missing") return { path: target };
+  if (snapshot.kind === "unsafe") return { path: target, rejection: rejection(target, snapshot.reason === "symlink" ? "symlink" : "unsafe_path", `archive record path is unsafe (${snapshot.reason})`) };
+  const bytes = snapshot.bytes.toString("utf8");
   const result = validateCandidate(
     target,
     artifact,
@@ -729,8 +707,25 @@ export function readNumberedArchiveEntry(
     sourceRoot,
     new Set<string>(),
     true,
+    options.recordValidator,
   );
   return "stableId" in result ? { path: target, entry: result } : { path: target, rejection: result };
+}
+
+/** Validate one pinned archive blob without consulting the working tree. */
+export function validateNumberedArchiveBytes(
+  artifactId: string,
+  entryNumber: number,
+  bytes: string,
+  options: { sourceRoot?: string; sourcePath?: string; recordValidator?: (record: JsonObject) => string[] } = {},
+): NumberedArchiveLookup {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const authority = loadAuthority(sourceRoot);
+  const artifact = authority.supportedArtifacts.get(artifactId);
+  if (!artifact) throw new Error(`unsupported numbered archive artifact '${artifactId}'`);
+  const sourcePath = options.sourcePath ?? path.posix.join(authority.archiveRoot, artifactId, `${entryNumber}${authority.archiveExtension}`);
+  const result = validateCandidate(sourcePath, artifact, entryNumber, bytes, authority, sourceRoot, new Set<string>(), true, options.recordValidator);
+  return "stableId" in result ? { path: sourcePath, entry: result } : { path: sourcePath, rejection: result };
 }
 
 function scanArtifactDirectory(

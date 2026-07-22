@@ -1,0 +1,16 @@
+id: guiealsvoh
+artifact: progress
+record:
+  timestamp: 2026-07-22 01:19
+  type: fix
+  phase: build
+  what: Closed durability evidence over ambiguous identities and unpinned local bytes by limiting the source-divergence exception to one provenance-bearing malformed entity and rejecting corrupt candidates without descriptor-verified bytes before Git dirty or shallow fallbacks. Added duplicate, boundary-ambiguity, and path-replacement regressions.
+  context:
+    intent: Resolve the accepted durability audit findings without weakening valid source-divergence recovery.
+    constraints: Preserved source-only migration divergence recovery, ordinary durability behavior, existing task state, and stash; no commit, push, publish, tag, or release.
+    unknowns: none
+    scope: packages/cli/src/state/durability.ts and packages/cli/test/state/durability.test.ts
+  inspiration: Plan task yauhdabjqd durability audit findings.
+  discovered: The previous readable-match condition admitted every non-unsafe classification, including globally duplicated identities, while the Git evidence ordering let corrupt candidates with no safe bytes degrade through dirty or shallow status.
+  verified: "Targeted durability suite: 18 passed. Full source suite: 195 files, 2413 passed, 1 skipped. Typecheck and build passed. Capability contract including protocol passed; state validation and compaction passed; git diff --check passed."
+  next: Review the final durability diff and retain the no-commit, no-publish boundary.

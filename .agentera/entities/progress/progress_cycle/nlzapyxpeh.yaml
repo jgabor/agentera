@@ -1,0 +1,16 @@
+id: nlzapyxpeh
+artifact: progress
+record:
+  timestamp: 2026-07-22 06:29
+  type: fix
+  phase: audit
+  what: Accepted the truthful read-only KTX result and corrected the triage accounting for the pre-existing Decision 25 identity conflict.
+  context:
+    intent: Validate causal cutover behavior without weakening conflict safety or modifying KTX.
+    constraints: No KTX write, conflict recovery, version, release, publication, tag, push, vision, or stash change.
+    unknowns: none
+    scope: Plan acceptance, durable progress, and the external non-authoritative KTX triage note.
+  inspiration: User-approved replacement Task toptutorlq after independent audit invalidated the old 250-target premise.
+  discovered: The old 265 count included 16 standalone summary satisfactions, and the old classifier missed two divergent records reusing Decision 25 before the triage note.
+  verified: Independent audit passed causal human/JSON diagnostics and the complete tracked v2.7.11 lifecycle; KTX snapshots stayed byte-identical while preview reported 249 identities, 248 targets, one Decision 25 root, zero dependents, and all valid summaries and inherited labels publishable.
+  next: Independently evaluate Task toptutorlq, supersede the invalid predecessor, then run final repository closeout without touching KTX.

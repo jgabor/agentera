@@ -2,18 +2,23 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import { main } from "../../src/cli/dispatch.js";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { detectStateMode } from "../../src/state/stateMode.js";
-import { FORWARD_MANIFEST } from "../../src/state/entityCutover.js";
+import { FORWARD_MANIFEST, applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
+import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
+import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const FIXTURE = path.join(import.meta.dirname, "fixtures/v2-yaml-project");
+const V2_COMPACTION_OUTPUT = path.join(import.meta.dirname, "../fixtures/v2-compaction-2.7.11/output");
 const roots: string[] = [];
 
 function managedV2(home: string): string {
@@ -32,6 +37,19 @@ function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-cutover-"));
   roots.push(root);
   fs.cpSync(FIXTURE, root, { recursive: true });
+  return root;
+}
+
+/** The clean lifecycle fixture retains only the pinned compactor's supported summary families. */
+function compactedProject(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-cutover-"));
+  roots.push(root);
+  for (const relative of ["TODO.md", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml"]) {
+    const source = path.join(V2_COMPACTION_OUTPUT, relative);
+    const target = path.join(root, relative);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(source, target);
+  }
   return root;
 }
 
@@ -64,6 +82,28 @@ function applyUpgrade(
   let err = "";
   const code = cmdUpgrade({ installRoot: appHome, home, project: root, channel: "development", yes: true, only, format }, { out: (value) => { out += value; }, err: (value) => { err += value; } }, verification);
   return { code, out, err };
+}
+
+function previewUpgrade(root: string, appHome: string, home: string): { code: number; out: string; err: string } {
+  let out = "";
+  let err = "";
+  const code = cmdUpgrade({ installRoot: appHome, home, project: root, channel: "development", format: "json" }, { out: (value) => { out += value; }, err: (value) => { err += value; } });
+  return { code, out, err };
+}
+
+function sha256(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function aggregateHashes(root: string): Record<string, string> {
+  const paths = ["TODO.md", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml"];
+  return Object.fromEntries(paths.filter((relative) => fs.existsSync(path.join(root, relative))).map((relative) => [relative, sha256(fs.readFileSync(path.join(root, relative)))]));
+}
+
+function json(root: string, args: string[]): any {
+  const result = capture(root, [...args, "--format", "json"]);
+  expect(result.code, `${args.join(" ")}\n${result.out}\n${result.err}`).toBe(0);
+  return JSON.parse(result.out);
 }
 
 function capture(root: string, args: string[]): { code: number; out: string; err: string } {
@@ -135,6 +175,155 @@ describe("one-way Git entity cutover", () => {
     expect(files(root).some((file) => /(?:snapshot|journal|receipts)/.test(file))).toBe(false);
     expect(capture(root, ["state", "plan", "list", "--format", "json"])).toMatchObject({ code: 0 });
   }, 30_000);
+
+  it("cuts over valid compacted summaries as immutable degraded entities and replays them exactly", () => {
+    const root = project();
+    fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "cycles:\n  - number: 1\n    summary: Retained progress summary only.\n");
+    fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), "decisions:\n  - number: 1\n    summary: Retained decision summary only.\n    satisfaction:\n      state: user_confirmed_satisfied\n");
+    fs.writeFileSync(path.join(root, ".agentera/health.yaml"), "audits:\n  - number: 1\n    summary: Retained health summary only.\n");
+    initializeGit(root);
+    const prepared = prepareEntityCutoverForUpgrade(root, SOURCE_ROOT);
+    expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: false, mutation_performed: true });
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    for (const [artifact, boundary] of [["progress", "progress_summary"], ["decisions", "decision_summary"], ["health", "health_summary"]]) {
+      const files = fs.readdirSync(path.join(root, `.agentera/entities/${artifact}/${boundary}`));
+      expect(files).toHaveLength(1);
+      expect(capture(root, ["check", "validate", "state", "--format", "json"]).code).toBe(0);
+    }
+    const decision = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision_summary"))
+      .map((name) => fs.readFileSync(path.join(root, ".agentera/entities/decisions/decision_summary", name), "utf8"))[0];
+    expect(decision).toContain("satisfaction:");
+    expect(fs.existsSync(path.join(root, ".agentera/entities/decisions/decision_satisfaction"))).toBe(false);
+    expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: true, mutation_performed: false });
+  }, 30_000);
+
+  it("completes the pinned v2 compaction lifecycle without changing aggregate bytes", () => {
+    const root = compactedProject();
+    const protectedExperiments = treeBytes(V2_COMPACTION_OUTPUT, ".agentera/optimera");
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-home-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const aggregateBefore = aggregateHashes(root);
+    const assertSourcesUnchanged = () => {
+      expect(aggregateHashes(root)).toEqual(aggregateBefore);
+      expect(treeBytes(V2_COMPACTION_OUTPUT, ".agentera/optimera")).toEqual(protectedExperiments);
+    };
+    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+    const previewEntries = [...preview.entries];
+    let previewPage = preview;
+    while (previewPage.next_after) {
+      previewPage = previewEntityMigration(root, SOURCE_ROOT, {
+        limit: 1000,
+        after: previewPage.next_after,
+        sourceFingerprint: previewPage.source_fingerprint,
+        previewDigest: previewPage.preview_digest,
+      });
+      previewEntries.push(...previewPage.entries);
+    }
+    expect(preview).toMatchObject({ status: "ready", read_only: true, mutation_performed: false });
+    expect(preview.counts).toMatchObject({ blockers: 0, root_blockers: 0, dependent_blockers: 0 });
+    expect(preview.counts.valid_compacted_summary).toBeGreaterThan(0);
+    const targets = previewEntries.filter((entry) => entry.proposed_target !== null);
+    expect(new Set(previewEntries.map((entry) => entry.source_identity)).size).toBe(previewEntries.length);
+    expect(previewEntries).toHaveLength(preview.counts.total);
+    expect(new Set(targets.map((entry) => entry.proposed_target!.id)).size).toBe(targets.length);
+    assertSourcesUnchanged();
+    const upgradePreview = previewUpgrade(root, appHome, home);
+    expect(upgradePreview.code, `${upgradePreview.out}\n${upgradePreview.err}`).toBe(1);
+    expect(JSON.parse(upgradePreview.out)).toMatchObject({ schemaVersion: "agentera.upgrade.v2", mode: "plan" });
+    assertSourcesUnchanged();
+
+    process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE = "entity_published";
+    const interrupted = applyUpgrade(root, appHome, home);
+    expect(interrupted.code).not.toBe(0);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    assertSourcesUnchanged();
+    const entitiesAfterInterrupt = treeBytes(root, ".agentera/entities");
+    expect(Object.keys(entitiesAfterInterrupt)).not.toHaveLength(0);
+
+    delete process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE;
+    const recovered = applyUpgrade(root, appHome, home);
+    expect(recovered).toMatchObject({ code: 0, err: "" });
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    expect(capture(root, ["check", "validate", "state", "--format", "json"]).code).toBe(0);
+    const marker = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
+    expect(marker).toEqual(Buffer.from(dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities" })));
+    const finalEntities = treeBytes(root, ".agentera/entities");
+    expect(Object.keys(finalEntities)).toHaveLength(preview.counts.publishable_entities);
+    expect(Object.entries(entitiesAfterInterrupt).every(([relative, bytes]) => finalEntities[relative] === bytes)).toBe(true);
+    const entityIds = new Set<string>();
+    for (const entry of targets) {
+      const target = entry.proposed_target!;
+      const bytes = fs.readFileSync(path.join(root, target.path));
+      expect(sha256(bytes)).toBe(entry.target_sha256);
+      const envelope = YAML.parse(bytes.toString("utf8"));
+      expect(envelope).toMatchObject({ id: target.id, artifact: entry.artifact });
+      expect(entityIds.has(envelope.id)).toBe(false);
+      entityIds.add(envelope.id);
+    }
+    expect(entityIds.size).toBe(targets.length);
+    let fullReadCount = 0;
+    for (const artifact of ["progress", "decisions", "health"] as const) {
+      const list = json(root, ["state", artifact, "list"]);
+      const full = list.entries.find((entry: any) => entry.detail_availability === "full");
+      const summary = list.entries.find((entry: any) => entry.detail_availability === "summary");
+      expect(summary, `${artifact} summary target`).toBeDefined();
+      expect(summary).toMatchObject({ detail_availability: "summary", compatibility: "degraded" });
+      if (full) {
+        fullReadCount += 1;
+        expect(full).toMatchObject({ detail_availability: "full", compatibility: "current" });
+        expect(json(root, ["state", artifact, "get", "--id", full.id])).toMatchObject({ status: "ok", entry: { id: full.id, detail_availability: "full", compatibility: "current" } });
+      }
+      expect(json(root, ["state", artifact, "get", "--id", summary.id])).toMatchObject({
+        status: "degraded",
+        entry: {
+          id: summary.id,
+          detail_availability: "summary",
+          compatibility: "degraded",
+          record: { migration_provenance: { source_path: `.agentera/${artifact}.yaml`, source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } },
+          provenance: { migration_provenance: expect.any(Object) },
+          caveats: [expect.stringContaining("incomplete historical evidence")],
+        },
+      });
+    }
+    expect(fullReadCount).toBeGreaterThan(0);
+    expect(capture(root, ["prime"]).code).toBe(0);
+    expect(capture(root, ["prime", "--format", "json"]).code).toBe(0);
+    assertSourcesUnchanged();
+
+    const repeatedPreview = previewUpgrade(root, appHome, home);
+    expect(repeatedPreview.code).toBe(0);
+    const repeatedPlan = JSON.parse(repeatedPreview.out);
+    expect(repeatedPlan).toMatchObject({ status: "noop", lifecycleStatus: "no_changes_needed" });
+    const repeatedApply = applyUpgrade(root, appHome, home, undefined, "json");
+    expect(repeatedApply).toMatchObject({ code: 0, err: "" });
+    expect(JSON.parse(repeatedApply.out)).toMatchObject({ status: "noop" });
+    expect(treeBytes(root, ".agentera/entities")).toEqual(finalEntities);
+    assertSourcesUnchanged();
+  }, 60_000);
+
+  it("refuses authority-undeclared aggregate collections before any cutover effect", () => {
+    const root = project();
+    fs.appendFileSync(path.join(root, ".agentera/progress.yaml"), "hidden_rows:\n  - number: 99\n    summary: concealed\n");
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-blocked-summary-"));
+    roots.push(home);
+    const appHome = managedV2(home);
+    const before = treeBytes(root);
+    const appBefore = treeBytes(appHome);
+    expect(() => prepareEntityCutoverForUpgrade(root, SOURCE_ROOT)).toThrow(/not declared/i);
+    expect(treeBytes(root)).toEqual(before);
+    const failed = applyUpgrade(root, appHome, home);
+    expect(failed.code).not.toBe(0);
+    expect(failed.err).toMatch(/not declared|hidden/i);
+    expect(treeBytes(root)).toEqual(before);
+    expect(treeBytes(appHome)).toEqual(appBefore);
+    expect(detectStateMode(root, SOURCE_ROOT)).toBe("legacy");
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(root, FORWARD_MANIFEST))).toBe(false);
+  });
 
   it.each([
     ["ignored migration input", (root: string) => { fs.writeFileSync(path.join(root, ".gitignore"), ".agentera/progress.yaml\n"); initializeGit(root); }],

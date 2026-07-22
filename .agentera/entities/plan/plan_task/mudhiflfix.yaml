@@ -1,0 +1,25 @@
+id: mudhiflfix
+artifact: plan
+record:
+  plan: zcziuekcec
+  name: Complete source-bound compacted-summary publication
+  status: superseded
+  depends_on:
+    []
+  acceptance:
+    - GIVEN a canonical progress, decision, or health summary WHEN any canonical validation or durability path runs THEN its record-level provenance is bound to the declared preserved source in that same project or commit and forged, missing, ambiguous, or unsafe evidence fails closed.
+    - GIVEN canonical-equivalent summary mirrors or divergent summaries in any order WHEN migration is previewed THEN equivalent mirrors publish one deterministic truthful target while divergent facts produce a deterministic conflict with no target.
+    - GIVEN summary decisions, backed full decisions, protected experiments, and legacy aliases WHEN migration and cutover run THEN inline satisfaction, full-detail promotion, experiment exclusion, and authority-owned alias removal remain correct and all required protocol/state gates pass.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "A valid same-commit migrated entity/source pair is reported unavailable when only the worktree source diverges: local provenance correctly becomes corrupt, but verified committed recovery is discarded as committed_content_mismatch."
+    provenance:
+      attempt_id: audit-mudhiflfix-2
+      source: independent re-audit session ses_07943f112ffeLbnXEajZwfwIGn
+      recorded_at: 2026-07-22 00:54
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - mppapvwenc
+  superseded_reason: Completed replacement mppapvwenc closes the final durability gap after mudhiflfix corrected summary migration, provenance binding, mirrors, scalar sources, and aggregate inventory.

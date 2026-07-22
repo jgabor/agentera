@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Added ordinary progress, decision, and health reads plus startup handling for
+  immutable v2-compaction summaries. Summary-only history now remains explicitly
+  degraded with source provenance and caveats instead of appearing as current
+  detail. Migration preview now separates corrupt source roots from generated
+  relationship dependents, and a Git-backed lifecycle proof covers interrupted
+  retry without changing aggregate source bytes. The contract excludes
+  reconstruction, dual authority, and repair/import commands.
 - Changed the v2-to-v3 development upgrade to one full Git-backed command that converts unchanged tracked input directly into canonical entities, accepts exact partial targets on retry, validates the complete graph, and activates entity authority last. Runtime blockers are reported as post-activation action-required work without modifying the blocked resource. The optional dry-run is read-only; cross-major apply is one-way and has no staging graph, recovery journal, rollback, restore, non-Git, or partial workflow.
 - Cut ordinary project state over to one canonical writer-owned file per entity. Public records now use only bare `id` and `artifact` identity, bounded `list` and exact `get --id` reads, and typed writers discovered through `agentera state <artifact> explain`; aggregate state files and ordinal selectors remain migration or historical evidence only.
 - Split lifecycle validation orchestration from the public validation facade while preserving its import surface and validation behavior.

@@ -78,6 +78,7 @@ export interface ProgressSummary {
   latest?: JsonObject;
   latest_verification?: JsonValue;
   cycle_count?: number;
+  degraded_history?: JsonObject;
 }
 
 export interface HealthSummary {
@@ -95,6 +96,7 @@ export interface HealthSummary {
   stale_threshold_days?: number;
   stale_threshold_cycles?: number;
   cycles_since_audit?: number | null;
+  degraded_history?: JsonObject;
   triggering_axis?: string;
   suggested_action?: string;
 }

@@ -1,0 +1,22 @@
+id: rijxghsjgp
+artifact: plan
+record:
+  plan: zcziuekcec
+  name: Complete projected cursors and mixed degraded-history startup
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN progress, decision, or health pagination WHEN any projected list schema, metadata, caveat, provenance, retrieval field, or composed decision output changes THEN prior cursors are rejected, while unchanged data and contracts remain deterministic.
+    - GIVEN an opaque list cursor WHEN its textual base64url spelling is altered, even to an equivalent decoded byte sequence, THEN it is rejected as noncanonical before continuation.
+    - GIVEN full current records plus summary history WHEN human prime runs THEN full records remain current and a separate bounded degraded-history signal reports truthful total, returned, and omitted summary counts.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: All replacement criteria pass, but mixed summary history expands prime dashboard JSON to 59,875 bytes against the authority 35,000-byte limit because three detailed history entry lists are embedded without an enforced dashboard bound.
+    provenance:
+      attempt_id: audit-rijxghsjgp-2
+      source: independent final audit session ses_078e6c649ffeLcKr6WTi87fcN6; projected cursors, mixed startup, and authority budgets passed
+      recorded_at: 2026-07-22 03:17
+      writer_command: agentera state plan record-evaluation

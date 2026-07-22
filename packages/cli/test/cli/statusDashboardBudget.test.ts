@@ -165,7 +165,7 @@ describe("status dashboard contract", () => {
 
   it("retains required routing fields in a near-budget full startup context", () => {
     withSyntheticOrientationState((baseState) => {
-      const boundedText = "routing context ".repeat(12).slice(0, 170);
+    const boundedText = "routing context ".repeat(12).slice(0, 142);
       const state: OrientationState = {
         ...baseState,
         counts: { critical: 1, degraded: 7, normal: 23, annoying: 2 },

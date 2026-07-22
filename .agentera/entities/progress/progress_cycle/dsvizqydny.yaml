@@ -1,0 +1,14 @@
+id: dsvizqydny
+artifact: progress
+record:
+  timestamp: 2026-07-21 21:44
+  type: test
+  phase: build
+  what: Pinned reproducible v2.7.11 compaction input/output evidence and migration acceptance cases.
+  context:
+    intent: Ground later summary migration work in real v2 compactor bytes while preserving the current blocked baseline.
+    constraints: No migration/read production behavior, raw entity edit, task completion, release, or KTX mutation
+    unknowns: The protected v2 experiment projection remains a current non-summary corrupt baseline because its legacy record shape is not a v3 experiment schema.
+    scope: packages/cli/test/fixtures/v2-compaction-2.7.11 and state migration evidence tests
+  verified: "Reproduced v2 commit b54a10a6bf4dfca5097101e60e18d5eaec7e5026 with uv run --frozen; output tree SHA-256 d523ef3eda0dfedeb73c7d695253c32710891e4becd24dae55586c5a10112e6b matched the fixture. pnpm v2CompactionEvidence + entityMigrationPreview: 86 passed; typecheck passed; git diff --check passed."
+  next: Use the pinned baseline to implement declared summary migration behavior in later tasks.

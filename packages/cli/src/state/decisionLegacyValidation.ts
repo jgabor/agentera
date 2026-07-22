@@ -53,6 +53,12 @@ export interface DecisionLegacyPartition {
   legacy_caveats: DecisionConfidenceCaveat[];
 }
 
+export interface CompleteDecisionConfidenceClassification {
+  status: "current" | "inherited" | "invalid";
+  violations: string[];
+  caveat: DecisionConfidenceCaveat | null;
+}
+
 function isMapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -142,6 +148,45 @@ export function legacyConfidenceCaveat(
     source,
     caveat: classification.caveat,
   };
+}
+
+/**
+ * Return a caveat only for a label declared as known v2 legacy state. Migration
+ * uses this narrower classifier so an arbitrary unsupported confidence value
+ * cannot become publishable merely because it occupies the confidence field.
+ */
+export function knownLegacyConfidenceCaveat(
+  record: Record<string, unknown>,
+  coexistence: LegacyLabelCoexistence,
+  source: "active" | "archive" = "active",
+): DecisionConfidenceCaveat | null {
+  if (typeof record.confidence !== "string" || !coexistence.knownLegacyExamples.includes(record.confidence)) return null;
+  return legacyConfidenceCaveat(record, coexistence, false, source);
+}
+
+/**
+ * Classify a complete migration source record without interpreting validator
+ * error text. A known legacy confidence is inherited only when replacing that
+ * one field with an authority-declared current value makes the whole record
+ * valid. Projection and verified-archive migration both use this classifier.
+ */
+export function classifyCompleteDecisionConfidence(
+  record: Record<string, unknown>,
+  coexistence: LegacyLabelCoexistence,
+  validate: (candidate: Record<string, unknown>) => string[],
+  source: "active" | "archive",
+): CompleteDecisionConfidenceClassification {
+  if (coexistence.dimensions.length !== 1 || coexistence.dimensions[0] !== "confidence") {
+    throw new Error("decision legacy coexistence must declare confidence as its sole compatibility dimension");
+  }
+  const violations = validate(record);
+  if (violations.length === 0) return { status: "current", violations, caveat: null };
+  const caveat = knownLegacyConfidenceCaveat(record, coexistence, source);
+  if (!caveat || coexistence.currentVocabulary.length === 0) return { status: "invalid", violations, caveat: null };
+  const strictCandidate = { ...record, confidence: coexistence.currentVocabulary[0] };
+  return validate(strictCandidate).length === 0
+    ? { status: "inherited", violations, caveat }
+    : { status: "invalid", violations, caveat: null };
 }
 
 /**

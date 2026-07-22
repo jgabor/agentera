@@ -112,6 +112,39 @@ Forward migration is one-way. Returning to the Python 2.x line is unsupported,
 and cross-major apply has no rollback, restore, non-Git, or partial workflow.
 If apply is interrupted, rerun the same full apply command.
 
+### Compacted v2 summaries
+
+Entity-cutover publication for valid v2 compaction output is implemented for
+`progress`, `decisions`, and `health`. Each valid summary becomes one immutable,
+read-only canonical
+`progress_summary`, `decision_summary`, or `health_summary` entity. The entity
+requires `summary`, preserves every source-retained field except forbidden
+identity aliases, and records the source path plus source-record SHA-256.
+
+Ordinary summary readers and startup projection are implemented. Reads report
+`detail_availability: summary`, `compatibility: degraded`, record-level source
+provenance, and applicable caveats; startup presents summary-only history as
+degraded history rather than current detail. Full records retain their existing
+temporal order; the degraded-summary segment follows in deterministic canonical-ID
+order and makes no chronology claim. Retained decision-summary satisfaction is
+inline and read-only, may be absent, and never creates a standalone satisfaction
+ target. Preview reports independent source roots separately from generated
+ relationship dependents: `root_blockers + dependent_blockers = blockers`, and
+ each dependent names its stable `root_source_identity`. A Git-backed regression
+ copies the supported `progress`, `decisions`, and `health` sources from pinned
+ v2.7.11 compaction output; its protected experiment evidence remains unchanged
+ and excluded. It verifies preview bindings and target hashes, marker-last
+ publication and interrupted exact-target retry, canonical validation, ordinary
+ list/get reads for retained full and summary entries, human/JSON prime, and
+ repeated no-change upgrade behavior while aggregate source hashes remain stable.
+Inherited full-decision `high`, `medium`, and `low` confidence remains readable
+with a legacy caveat; newly supplied or amended confidence remains strict.
+
+Protected objective experiments, runtime-local session state, and compacted TODO
+rows that already satisfy the canonical TODO shape are outside this summary
+scope. This contract does not reconstruct Git history, normalize source records,
+create dual authority, or add a repair or import command.
+
 ## Unsupported legacy state
 
 Pending v1 Markdown state and unknown marker-absent state are not automatic

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -11,10 +12,13 @@ import {
 
 import {
   allocateEntityId,
+  canonicalEntityEnvelope,
+  canonicalEntityRecordViolations,
   discoverEntities,
   publishEntity,
   validateEntityState,
 } from "../../src/state/entityStorage.js";
+import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 
 const roots: string[] = [];
 
@@ -299,5 +303,69 @@ describe("whole-state entity validation", () => {
     publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan", id: "aaaaaaaaaa", record: planRecord });
     publishEntity({ projectRoot: root, artifact: "plan", boundary: "plan_task", id: "bbbbbbbbbb", record: taskRecord("aaaaaaaaaa") });
     expect(validateEntityState(root)).toMatchObject({ valid: true, issues: [], entityCount: 2 });
+  });
+
+  it("accepts exact degraded-summary records and rejects malformed provenance or identity aliases", () => {
+    const root = project();
+    const directory = path.join(root, ".agentera/entities/decisions/decision_summary");
+    fs.mkdirSync(directory, { recursive: true });
+    const source = { number: 1, summary: "retained decision evidence", satisfaction: { state: "user_confirmed_satisfied" } };
+    const source_record_sha256 = createHash("sha256").update(canonicalRecordJson(source)).digest("hex");
+    fs.writeFileSync(path.join(root, ".agentera/decisions.yaml"), `archive:\n  - number: 1\n    summary: retained decision evidence\n    satisfaction:\n      state: user_confirmed_satisfied\n`);
+    fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), `id: aaaaaaaaaa\nartifact: decisions\nrecord:\n  summary: retained decision evidence\n  satisfaction:\n    state: user_confirmed_satisfied\n  migration_provenance:\n    source_path: .agentera/decisions.yaml\n    source_record_sha256: ${source_record_sha256}\n`);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, issues: [], entityCount: 1 });
+
+    fs.writeFileSync(path.join(directory, "bbbbbbbbbb.yaml"), `id: bbbbbbbbbb\nartifact: decisions\nrecord:\n  number: 1\n  summary: retained decision evidence\n  migration_provenance:\n    source_path: .agentera/decisions.yaml\n    source_record_sha256: uppercase\n    extra: forbidden\n`);
+    const invalid = validateEntityState(root);
+    expect(invalid.valid).toBe(false);
+    expect(invalid.issues.find((issue) => issue.path.endsWith("bbbbbbbbbb.yaml"))?.message).toContain("number is forbidden");
+    expect(() => publishEntity({ projectRoot: root, artifact: "health", boundary: "health_summary", id: "cccccccccc", record: {
+      summary: "ordinary writes must not publish summaries",
+      migration_provenance: { source_path: ".agentera/health.yaml", source_record_sha256: "b".repeat(64) },
+    } })).toThrow(/immutable migration-only/);
+  });
+
+  it("requires degraded-summary provenance to bind one declared source record and retained body", () => {
+    const root = project();
+    const directory = path.join(root, ".agentera/entities/progress/progress_summary");
+    fs.mkdirSync(directory, { recursive: true });
+    const source = { number: 1, summary: "retained progress evidence" };
+    const digest = createHash("sha256").update(canonicalRecordJson(source)).digest("hex");
+    const sourcePath = path.join(root, ".agentera/progress.yaml");
+    const target = path.join(directory, "aaaaaaaaaa.yaml");
+    const writeTarget = (summary = source.summary, sourceDigest = digest, provenancePath = ".agentera/progress.yaml") => {
+      fs.writeFileSync(target, `id: aaaaaaaaaa\nartifact: progress\nrecord:\n  summary: ${summary}\n  migration_provenance:\n    source_path: ${provenancePath}\n    source_record_sha256: ${sourceDigest}\n`);
+    };
+    const writeSource = (rows = [source]) => fs.writeFileSync(sourcePath, `archive:\n${rows.map((row) => `  - number: ${row.number}\n    summary: ${row.summary}\n`).join("")}`);
+
+    writeSource(); writeTarget();
+    expect(validateEntityState(root)).toMatchObject({ valid: true, issues: [] });
+    const record = {
+      summary: source.summary,
+      migration_provenance: { source_path: ".agentera/progress.yaml", source_record_sha256: digest },
+    };
+    expect(canonicalEntityRecordViolations("progress_summary", record)).toContain("migration_provenance requires a source binding context for a compacted summary");
+    expect(() => canonicalEntityEnvelope(fs.readFileSync(target, "utf8"), { artifact: "progress", boundary: "progress_summary", id: "aaaaaaaaaa" })).toThrow(/requires a source binding context/);
+    expect(() => canonicalEntityEnvelope(fs.readFileSync(target, "utf8"), { artifact: "progress", boundary: "progress_summary", id: "aaaaaaaaaa" }, undefined, { kind: "git_commit", commit: "not-a-commit", readSource: () => "archive: []\n" })).toThrow(/requires an immutable commit ID/);
+    expect(canonicalEntityRecordViolations("progress_summary", record, undefined, { kind: "project", projectRoot: root })).toEqual([]);
+    expect(canonicalEntityEnvelope(fs.readFileSync(target, "utf8"), { artifact: "progress", boundary: "progress_summary", id: "aaaaaaaaaa" }, undefined, { kind: "project", projectRoot: root }).record).toEqual(record);
+
+    writeTarget("fabricated retained content");
+    expect(validateEntityState(root).issues[0]?.message).toContain("does not bind");
+    writeTarget(source.summary, "b".repeat(64));
+    expect(validateEntityState(root).issues[0]?.message).toContain("does not bind");
+    writeTarget(source.summary, digest, ".agentera/decisions.yaml");
+    expect(validateEntityState(root).issues[0]?.message).toContain("authority-declared preserved aggregate path");
+    writeTarget(); fs.rmSync(sourcePath);
+    expect(validateEntityState(root).issues[0]?.message).toContain("is missing");
+    writeSource([source, source]);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, issues: [] });
+    fs.writeFileSync(sourcePath, "archive: [\n");
+    expect(validateEntityState(root).issues[0]?.message).toContain("invalid YAML");
+    fs.rmSync(sourcePath);
+    const external = path.join(root, "outside-progress.yaml");
+    fs.writeFileSync(external, "archive: []\n");
+    fs.symlinkSync(external, sourcePath);
+    expect(validateEntityState(root).issues[0]?.message).toContain("unsafe");
   });
 });

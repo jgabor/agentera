@@ -9,6 +9,8 @@ import {
   type StateDurabilityContract,
 } from "./archiveDiscovery.js";
 import { canonicalEntityEnvelope, discoverEntities, entityBoundariesForArtifact } from "./entityStorage.js";
+import { validateRealProjectRoot } from "./projectRoot.js";
+import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 const GIT_TIMEOUT_MS = 1_000;
 const GIT_MAX_BUFFER = 2 * 1024 * 1024;
@@ -319,6 +321,9 @@ function buildGitEvidence(
   if (candidate.local === "unavailable" && reachable) {
     return { status: "verified", reason: "reachable_head", reachableRecovery: true };
   }
+  if (candidate.local === "corrupt") {
+    return { status: "unavailable", reason: reachable ? "committed_content_mismatch" : "not_committed", reachableRecovery: reachable };
+  }
   if (
     candidate.bytes !== undefined &&
     historyWasRewritten(context, relative, candidate.bytes, context.before)
@@ -349,11 +354,22 @@ function inspectEntityDurability(
   let local: LocalDurabilityStatus = canonical ? "verified" : matches.length ? "corrupt" : "unavailable";
   let bytes: string | undefined;
   let localMessage: string | undefined;
-  if (canonical) {
-    try { bytes = fs.readFileSync(canonical.path, "utf8"); }
+  const sourceBoundMalformed = matches.length === 1
+    && matches[0].classification === "malformed"
+    && (matches[0].migrationProvenance !== null || matches[0].record?.migration_provenance !== undefined)
+    ? matches[0]
+    : undefined;
+  const readableMatch = canonical ?? sourceBoundMalformed;
+  if (readableMatch) {
+    try {
+      const snapshot = readProjectFileSnapshot(validateRealProjectRoot(projectRoot), readableMatch.relativePath);
+      if (snapshot.kind === "file") bytes = snapshot.bytes.toString("utf8");
+      else throw new Error(snapshot.kind === "missing" ? "entity disappeared" : `unsafe entity path (${snapshot.reason})`);
+    }
     catch (error) { local = "corrupt"; localMessage = `cannot read canonical entity: ${(error as Error).message}`; }
-  } else if (matches.length > 1) localMessage = `entity ID '${id}' has conflicting ownership for artifact '${artifact}'`;
-  else if (matches.length === 1) localMessage = `entity '${matches[0].relativePath}' is not canonical`;
+  }
+  if (matches.length > 1) localMessage = `entity ID '${id}' has conflicting ownership for artifact '${artifact}'`;
+  else if (!canonical && matches.length === 1 && !localMessage) localMessage = `entity '${matches[0].relativePath}' is not canonical`;
   let committedPath: string | undefined;
   let committedFailure: string | undefined;
   if (git.available && git.root && git.before) {
@@ -364,7 +380,14 @@ function inspectEntityDurability(
       const relative = `${projectPrefix ? `${projectPrefix}/` : ""}${relativeTargets[index]}`;
       const committed = blobAtHead(git, relative, git.before);
       if (committed === undefined) continue;
-      try { canonicalEntityEnvelope(committed, { artifact, boundary: boundaries[index], id }, sourceRoot); valid.push(relative); }
+      try {
+        canonicalEntityEnvelope(committed, { artifact, boundary: boundaries[index], id }, sourceRoot, {
+          kind: "git_commit",
+          commit: git.before,
+          readSource: (sourcePath) => blobAtHead(git, `${projectPrefix ? `${projectPrefix}/` : ""}${sourcePath}`, git.before!),
+        });
+        valid.push(relative);
+      }
       catch { invalid += 1; }
     }
     if (valid.length === 1 && invalid === 0) committedPath = path.join(git.root, ...valid[0].split("/"));

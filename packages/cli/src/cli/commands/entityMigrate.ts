@@ -84,18 +84,22 @@ function output(value: Record<string, unknown>, format: Format, io: Io): void {
   const counts = value.counts as Record<string, number> | undefined;
   const error = value.error as Record<string, unknown> | undefined;
   const diagnostics = Array.isArray(value.diagnostics) ? value.diagnostics as Array<Record<string, unknown>> : [];
-  const classes = counts ? ["verified_full", "recoverable_degraded_full_projection", "irrecoverable_summary_only", "duplicate", "conflict", "corrupt", "unsupported"].map((name) => `${name}=${counts[name] ?? 0}`).join(", ") : "unavailable";
+  const classes = counts ? ["verified_full", "recoverable_degraded_full_projection", "valid_compacted_summary", "duplicate", "conflict", "corrupt", "unsupported"].map((name) => `${name}=${counts[name] ?? 0}`).join(", ") : "unavailable";
   const sink = error ? io.err ?? ((text: string) => process.stderr.write(text)) : out;
   sink([
     `status: ${String(value.status)}`,
     `command: ${String(value.command)}`,
     `classes: ${classes}`,
     `physical_records: ${counts?.physical_records ?? "unavailable"}; logical_identities: ${counts?.logical_identities ?? "unavailable"}; mirrors: ${counts?.mirrors ?? "unavailable"}; duplicates: ${counts?.duplicates ?? "unavailable"}; conflicts: ${counts?.conflicts ?? "unavailable"}`,
-    `relationships: ${counts?.relationships ?? "unavailable"}; unresolved_relationships: ${counts?.unresolved_relationships ?? "unavailable"}; blockers: ${counts?.blockers ?? "unavailable"}`,
+    `relationships: ${counts?.relationships ?? "unavailable"}; unresolved_relationships: ${counts?.unresolved_relationships ?? "unavailable"}; root_blockers: ${counts?.root_blockers ?? "unavailable"}; dependent_blockers: ${counts?.dependent_blockers ?? "unavailable"}; blockers: ${counts?.blockers ?? "unavailable"}`,
     `omission: omitted=${String(value.omitted ?? false)}, entries=${String(value.omitted_count ?? 0)}, diagnostics=${String(value.diagnostics_omitted_count ?? 0)}, reason=${String(value.omission_reason ?? "none")}`,
     `source_fingerprint: ${String(value.source_fingerprint ?? "unavailable")}`,
     `preview_digest: ${String(value.preview_digest ?? "unavailable")}`,
-    ...diagnostics.map((diagnostic) => `blocker ${String(diagnostic.classification)} ${String(diagnostic.source_identity)}: ${String(diagnostic.recovery)}`),
+    ...diagnostics.map((diagnostic) => [
+      `blocker ${String(diagnostic.classification)} ${String(diagnostic.source_identity)}`,
+      diagnostic.root_source_identity === undefined ? "" : ` root_source_identity=${String(diagnostic.root_source_identity)}`,
+      `: ${String(diagnostic.message)}; recovery: ${String(diagnostic.recovery)}`,
+    ].join("")),
     `recovery: ${String(error?.recovery ?? (value.retrieval as Record<string, unknown> | undefined)?.command ?? "none")}`,
     "",
   ].join("\n"));

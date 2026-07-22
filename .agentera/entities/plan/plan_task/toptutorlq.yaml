@@ -1,0 +1,22 @@
+id: toptutorlq
+artifact: plan
+record:
+  plan: zcziuekcec
+  name: Validate cutover against truthful KTX source state
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN invalid source roots and valid dependent relationships WHEN preview reports blockers THEN human and JSON output distinguish root, dependent, and total counts, every dependent names its root, and corruption counts source roots only.
+    - GIVEN the clean tracked v2.7.11 compaction fixture WHEN preview, apply, validation, reads, prime, interruption recovery, and repeated upgrade run THEN publication is complete and idempotent while every aggregate source byte remains unchanged.
+    - GIVEN the current dirty KTX checkout with its pre-existing divergent Decision 25 reuse WHEN the built CLI runs a read-only preview THEN all valid compacted summaries and inherited labels are publishable, the conflict remains one root, 249 identities yield 248 targets, and no path is written.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: All three revised acceptance criteria pass, but later sections of the external triage note still presented the superseded 265/207/58 classifier behavior, recommendations, and missing coverage as current.
+    provenance:
+      attempt_id: audit-toptutorlq-2
+      source: independent final audit session ses_078829979ffeaL0ND6BM5qbGyR; causal lifecycle and truthful read-only KTX criteria passed
+      recorded_at: 2026-07-22 06:42
+      writer_command: agentera state plan record-evaluation

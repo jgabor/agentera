@@ -348,3 +348,17 @@ export function entityPublicRetrieval(sourceRoot = resolveSourceRoot()): JsonObj
   }
   return projection as JsonObject;
 }
+
+export function startupSurfaceBudget(
+  surface: "prime_briefing" | "prime_dashboard" | "prime_status_context" | "prime_sparse",
+  sourceRoot = resolveSourceRoot(),
+): number {
+  const authorityPath = path.join(sourceRoot, STATE_RETRIEVAL_AUTHORITY_PATH);
+  const value = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const surfaces = mapping(mapping(mapping(value.budgets).startup).surfaces);
+  const budget = Number(mapping(surfaces[surface]).max_utf8_bytes);
+  if (!Number.isSafeInteger(budget) || budget < 1) {
+    throw new Error(`state storage authority '${authorityPath}' has no positive startup budget for '${surface}'`);
+  }
+  return budget;
+}

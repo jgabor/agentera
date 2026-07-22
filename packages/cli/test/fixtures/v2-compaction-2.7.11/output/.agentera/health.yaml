@@ -1,0 +1,123 @@
+audits:
+- number: 2
+  date: '2026-06-02'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 2
+  grades:
+    architecture_alignment: A
+- number: 3
+  date: '2026-06-03'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 3
+  grades:
+    architecture_alignment: A
+- number: 4
+  date: '2026-06-04'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 4
+  grades:
+    architecture_alignment: A
+- number: 5
+  date: '2026-06-05'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 5
+  grades:
+    architecture_alignment: A
+- number: 6
+  date: '2026-06-06'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 6
+  grades:
+    architecture_alignment: A
+- number: 7
+  date: '2026-06-07'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 7
+  grades:
+    architecture_alignment: A
+- number: 8
+  date: '2026-06-08'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 8
+  grades:
+    architecture_alignment: A
+- number: 9
+  date: '2026-06-09'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 9
+  grades:
+    architecture_alignment: A
+- number: 10
+  date: '2026-06-10'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 10
+  grades:
+    architecture_alignment: A
+- number: 11
+  date: '2026-06-11'
+  dimensions:
+  - architecture_alignment
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable fixture audit 11
+  grades:
+    architecture_alignment: A
+archive:
+- summary: 'Audit 1 (2026-06-01): stable fixture audit 1'

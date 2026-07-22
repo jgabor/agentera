@@ -376,9 +376,9 @@ describe("plan and task entity authority", () => {
     const root = project(); const first = create(root, "first");
     expect(capture(root, ["state", "plan", "append", "--name", "Inferred", "--format", "json"]).rc).toBe(0);
     const second = create(root, "second");
-    const ambiguous = capture(root, ["state", "plan", "append", "--name", "No owner", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(ambiguous.err).toMatch(new RegExp(`${first.id}.*${second.id}|${second.id}.*${first.id}`));
+    const ambiguous = capture(root, ["state", "plan", "append", "--name", "No owner", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(JSON.parse(ambiguous.out).error.message).toMatch(new RegExp(`${first.id}.*${second.id}|${second.id}.*${first.id}`));
     expect(capture(root, ["state", "plan", "append", "--plan", second.id, "--name", "Explicit", "--format", "json"]).rc).toBe(0);
-    const empty = project(); const missing = capture(empty, ["state", "plan", "append", "--name", "Missing", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.err).toMatch(/no open plan/i);
+    const empty = project(); const missing = capture(empty, ["state", "plan", "append", "--name", "Missing", "--format", "json"]); expect(missing.rc).toBe(1); expect(JSON.parse(missing.out).error.message).toMatch(/no open plan/i);
   });
 
   it("keeps one active plan unambiguous beside more than twenty archived plans and exposes archived exact/filter reads", () => {
