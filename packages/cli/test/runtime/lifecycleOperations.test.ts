@@ -19,6 +19,7 @@ import {
   type LifecyclePlanAction,
   type LifecycleResourceState,
 } from "../../src/runtime/lifecycleOperations.js";
+import * as lifecyclePublication from "../../src/runtime/lifecyclePublication.js";
 
 let root: string;
 
@@ -702,17 +703,20 @@ describe("apply convergence", () => {
       intent: "remove",
     };
     const manifest = createLifecycleOwnershipManifest([spec]);
+    const observed = lifecyclePublication.observeLifecyclePath(destination, [root]);
+    vi.spyOn(lifecyclePublication, "secureLifecycleRemovalAvailable").mockReturnValue(false);
     const first = applyLifecycleOperations(
       planLifecycleOperations({
         allowedRoots: [root],
         operations: [spec],
         manifest,
-        ledger: ledger([recordFor(spec)]),
+        ledger: ledger([recordFor(spec, { fingerprint: observed.fingerprint })]),
       }),
     );
     expect(first.operations[0]).toMatchObject({
       action: "action_required",
       status: "action_required",
+      reason: "safe removal requires Linux /proc/self/fd pinned-parent access",
     });
     expect(first.ownershipLedger.records).toHaveLength(1);
     expect(fs.readFileSync(destination, "utf8")).toBe("managed\n");

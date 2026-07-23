@@ -1,0 +1,13 @@
+id: yacxmiyhvk
+artifact: progress
+record:
+  timestamp: 2026-07-23 15:49
+  type: test
+  phase: build
+  what: Corrected packages/cli/test/runtime/lifecycleOperations.test.ts so the conditional-unlink platform test uses the observed removal fingerprint and mocks only secureLifecycleRemovalAvailable.
+  context:
+    intent: Exercise the unsupported conditional-removal platform branch instead of fingerprint validation.
+    scope: packages/cli/test/runtime/lifecycleOperations.test.ts
+  inspiration: Independent Audit finding for lowjbuwmey
+  verified: pnpm -C packages/cli exec vp test run test/runtime/lifecycleOperations.test.ts (25 passed); pnpm -C packages/cli run typecheck.
+  next: No production behavior changed; continue the remaining plan work.
