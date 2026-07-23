@@ -23,7 +23,8 @@ export type InvalidInputErrorClass =
   | "invalid_request"
   | "unsupported_target"
   | "schema_violation"
-  | "conflict";
+  | "conflict"
+  | "invalid_receipt";
 
 export interface InvalidInputErrorBody {
   class: InvalidInputErrorClass;
@@ -46,6 +47,7 @@ export interface InvalidInputEnvelope {
 export interface EmitInvalidInputOptions {
   format: "text" | "json" | "yaml";
   body: InvalidInputErrorBody;
+  exitCode?: number;
 }
 
 export const INVALID_INPUT_EXIT_CODE = 2;
@@ -77,7 +79,7 @@ export function emitInvalidInput(
     };
     if (opts.format === "json") out(JSON.stringify(envelope) + "\n");
     else out(YAML.stringify(envelope));
-    return INVALID_INPUT_EXIT_CODE;
+    return opts.exitCode ?? INVALID_INPUT_EXIT_CODE;
   }
 
   const lines: string[] = [];
@@ -103,5 +105,5 @@ export function emitInvalidInput(
   lines.push("");
   lines.push(`Recovery: ${opts.body.recovery ?? DEFAULT_RECOVERY}`);
   err(lines.join("\n") + "\n");
-  return INVALID_INPUT_EXIT_CODE;
+  return opts.exitCode ?? INVALID_INPUT_EXIT_CODE;
 }

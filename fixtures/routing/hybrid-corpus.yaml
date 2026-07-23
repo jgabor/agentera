@@ -96,7 +96,7 @@ receipt_cases:
     valid: true
     request: "Plan the migration and then implement it"
     expected_terminal: selected
-    receipt: { version: agentera.route_receipt.v1, request_sha256: f26da5835071b706a176032b263b0131817a56dcd2965f4198e57e2e23b0ac60, outcome: select, capability: plan, compound: preserve, remainder_span: { start: 4, end: 39 } }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: f26da5835071b706a176032b263b0131817a56dcd2965f4198e57e2e23b0ac60, outcome: select, capability: plan, compound: preserve, remainder_span: { start: 4, end: 40 } }
   - id: ADV-RECEIPT-COMPOUND-INVALID
     partition: adversarial
     valid: false

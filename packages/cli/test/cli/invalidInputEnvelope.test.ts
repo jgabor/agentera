@@ -195,7 +195,8 @@ describe("invalid-input envelope (oracle parity)", () => {
         invalid_format: true,
         unsupported_target: true,
         schema_violation: true,
-        conflict: true,
+      conflict: true,
+      invalid_receipt: true,
       } satisfies Record<InvalidInputErrorClass, true>;
       expect(new Set(ORACLE.errorClassUnion)).toEqual(new Set(Object.keys(liveClasses)));
     });

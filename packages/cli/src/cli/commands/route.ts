@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 import { loadYamlMapping } from "../../core/yaml.js";
 import { HybridRouteRegistryError, resolveRouteRequest } from "../../registries/hybridRoute.js";
+import { RouteReceiptValidationError, validateRouteReceiptSubmission } from "../../registries/hybridRouteReceipt.js";
 import { emitStructured } from "../structured.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import type { Io } from "../dispatch/shared.js";
@@ -83,6 +84,33 @@ export function runRouteRequest(argv: string[], io: RouteIo): number {
       return invalidRouteInput(io, { class: "conflict", message: "routing authority validation failed before routing" });
     }
     return invalidRouteInput(io, { class: "invalid_request", message: "route request could not be resolved" });
+  }
+}
+
+/** Validate a host's nullable API receipt and emit startup authorization only. */
+export function runRouteReceipt(argv: string[], io: Io): number;
+export function runRouteReceipt(argv: string[], io: RouteIo): number;
+export function runRouteReceipt(argv: string[], io: RouteIo): number {
+  const parsed = parse(argv);
+  if ("class" in parsed) return invalidRouteInput(io, parsed);
+  let input: unknown;
+  try {
+    input = loadRouteInput(parsed.input, io.stdin ?? readStdin);
+    emitStructured(validateRouteReceiptSubmission(input), parsed.format, io.out ?? ((text) => process.stdout.write(text)));
+    return 0;
+  } catch (error) {
+    const message = error instanceof RouteReceiptValidationError
+      ? `invalid route receipt at ${error.field}: ${error.message}`
+      : "route receipt input must be a readable UTF-8 YAML or JSON mapping";
+    return emitInvalidInput({ out: io.out, err: io.err }, {
+      format: "json",
+      body: {
+        class: "invalid_receipt",
+        message,
+        recovery: "Submit the original request and a complete nullable API receipt through --input; no capability was started.",
+      },
+      exitCode: 64,
+    });
   }
 }
 

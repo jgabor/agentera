@@ -16,7 +16,8 @@
     "invalid_format",
     "unsupported_target",
     "schema_violation",
-    "conflict"
+    "conflict",
+    "invalid_receipt"
   ],
   "textMode": {
     "stream": "stderr",

@@ -47,6 +47,17 @@ protocol:
   receipt:
     version: agentera.route_receipt.v1
     required_fields: [version, request_sha256, outcome]
+    cli_seam:
+      command: agentera route receipt --input PATH --format json
+      input: >-
+        A YAML or JSON mapping supplied by --input PATH or --input -. It has the
+        transient original request in request and the complete nullable API output
+        in receipt. Neither field is accepted in argv or persisted.
+      output: >-
+        JSON startup authorization only: selected capability, one clarification,
+        or explicit status fallback. A preserved remainder includes its exact span
+        and transient text for the receiving host; diagnostics never echo input.
+      exit_codes: { ok: 0, invalid_input: 2, invalid_receipt: 64 }
     outcomes: [select, clarify, no_match]
     select:
       required_fields: [capability, compound]
@@ -75,7 +86,7 @@ protocol:
           outcome: { enum: [select, clarify, no_match] }
           capability: { type: string }
           compound: { enum: [none, preserve] }
-          question: { type: string, minLength: 1 }
+          question: { type: string, minLength: 1, maxLength: 280 }
           remainder_span:
             type: object
             additionalProperties: false
@@ -131,7 +142,7 @@ protocol:
             compound:
               type: [string, "null"]
               enum: [none, preserve, null]
-            question: { type: [string, "null"] }
+            question: { type: [string, "null"], maxLength: 280 }
             remainder_span:
               type: [object, "null"]
               additionalProperties: false
@@ -194,6 +205,18 @@ protocol:
       status_fallback: status only
       invalid_receipt: none
     invalid_receipt_exit: 64
+    result_schema:
+      version: agentera.route_receipt_result.v1
+      selected: >-
+        Emits the selected canonical capability, bounded semantic-receipt
+        provenance, and agentera prime --context <capability> --format json as
+        the existing startup path. It authorizes that capability only.
+      clarification: >-
+        Emits exactly one validated question and semantic-receipt provenance; it
+        authorizes no startup.
+      status_fallback: >-
+        Emits status with status_reason no_match and the existing status startup
+        path. It is not a readiness classification.
 
 precedence:
   - order: 1

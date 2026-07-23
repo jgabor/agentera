@@ -372,13 +372,15 @@ export function printCapabilityHelp(capability: string): string {
 
 export function printRouteHelp(): string {
   return [
-    "usage: agentera route request --input PATH [--format json]",
+    "usage: agentera route <request|receipt> --input PATH [--format json]",
     "",
-    "Route one transient request through the deterministic phase of the shared hybrid contract.",
+    "Route one transient request or validate one semantic API receipt through the shared hybrid contract.",
     "Request text is accepted only from the structured YAML or JSON input document, never argv.",
     "Use --input - to read the document from stdin. Output is JSON on stdout.",
     "",
     "input document: { version: agentera.route_request.v1, request: <string> }",
+    "receipt input: { request: <string>, receipt: <complete nullable API receipt> }",
+    "A receipt result authorizes only its reported startup command; clarify starts none.",
   ].join("\n");
 }
 

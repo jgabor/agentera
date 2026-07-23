@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -5,7 +6,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import { runRouteRequest } from "../../src/cli/commands/route.js";
+import { runRouteReceipt, runRouteRequest } from "../../src/cli/commands/route.js";
 
 function invoke(input: string, args = ["route", "request", "--input", "-", "--format", "json"]) {
   let out = "";
@@ -22,6 +23,17 @@ function invokeBytes(input: Buffer, args = ["--input", "-", "--format", "json"])
   let out = "";
   let err = "";
   const rc = runRouteRequest(args, {
+    stdin: () => input,
+    out: (text) => (out += text),
+    err: (text) => (err += text),
+  });
+  return { rc, out, err };
+}
+
+function invokeReceipt(input: string) {
+  let out = "";
+  let err = "";
+  const rc = runRouteReceipt(["--input", "-", "--format", "json"], {
     stdin: () => input,
     out: (text) => (out += text),
     err: (text) => (err += text),
@@ -84,5 +96,26 @@ describe("route request CLI", () => {
     } finally {
       fs.rmSync(path.dirname(file), { recursive: true, force: true });
     }
+  });
+});
+
+describe("route receipt CLI", () => {
+  it("returns selected startup authorization and rejects a malformed receipt without exposing request text", () => {
+    const request = "private plan the import 8675309";
+    const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    const selected = invokeReceipt(JSON.stringify({
+      request,
+      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
+    }));
+    expect(selected.rc).toBe(0);
+    expect(selected.err).toBe("");
+    expect(JSON.parse(selected.out)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "agentera prime --context plan --format json" } });
+    expect(selected.out).not.toContain(request);
+
+    const malformed = invokeReceipt(JSON.stringify({ request, receipt: { outcome: "select", instructions: request } }));
+    expect(malformed.rc).toBe(64);
+    expect(malformed.err).toBe("");
+    expect(JSON.parse(malformed.out)).toMatchObject({ error: { class: "invalid_receipt", recovery: expect.stringContaining("no capability was started") } });
+    expect(malformed.out).not.toContain(request);
   });
 });

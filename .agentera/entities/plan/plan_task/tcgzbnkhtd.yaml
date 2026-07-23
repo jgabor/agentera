@@ -5,7 +5,7 @@ record:
   depends_on:
     - tkgtvppdur
     - lghihphurk
-  status: pending
+  status: complete
   acceptance:
     - GIVEN deterministic abstention and clear intent WHEN the host returns a valid selection THEN the capability starts with route provenance.
     - GIVEN consequential ambiguity or no match WHEN classified THEN one clarification occurs or status starts explicitly as no-match.

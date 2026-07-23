@@ -43,11 +43,12 @@ not executable matcher inputs.
 
 ## Phase two: semantic receipt
 
-For `semantic_required`, the host sends `agentera.route_receipt.v1` together
-with the same transient original request. The receipt binds to the SHA-256 of
-the request's UTF-8 bytes. The CLI recomputes that digest and validates it with
-the contract's JSON Schema, canonical-capability binding, and request-bound
-span rules:
+For `semantic_required`, the host sends the same transient original request and
+the complete nullable API receipt to `agentera route receipt --input - --format
+json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes. The CLI
+first validates the unmodified API shape, removes only contract-listed nulls,
+then validates the projected CLI receipt with canonical-capability binding and
+request-bound span rules:
 
 | Receipt | Required result | Startup |
 | --- | --- | --- |
@@ -56,8 +57,12 @@ span rules:
 | `no_match` | no capability or question | status only |
 | invalid | bounded field-level correction, exit 64 | none |
 
-This is intentionally a shared CLI contract, not a runtime-specific adapter.
-The portable shared skill is the sole host integration surface.
+The resulting `selected` or `status_fallback` authorization contains bounded
+route provenance and the existing `agentera prime --context <capability>
+--format json` startup path. A `clarification` contains exactly one bounded
+question and no startup. This is intentionally a shared CLI contract, not a
+runtime-specific adapter. The portable shared skill is the sole host integration
+surface.
 
 ## Phrase, span, and topic behavior
 

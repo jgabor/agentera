@@ -277,6 +277,27 @@ describe("npm distribution boundary", () => {
     });
   });
 
+  it("validates a semantic receipt from the extracted package and exposes only startup authorization", () => {
+    const request = "private package semantic selection";
+    const receipt = {
+      version: "agentera.route_receipt.v1",
+      request_sha256: sha256(request),
+      outcome: "select",
+      capability: "plan",
+      compound: "none",
+      question: null,
+      remainder_span: null,
+    };
+    const input = path.join(fixture.root, "route-receipt.json");
+    fs.writeFileSync(input, JSON.stringify({ request, receipt }));
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const result = run(process.execPath, [bin, "route", "receipt", "--input", input, "--format", "json"], fixture.root, isolatedPackageEnv());
+    expect(result.status, `package boundary receipt failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stderr).not.toContain(request);
+    expect(result.stdout).not.toContain(request);
+    expect(JSON.parse(result.stdout)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "agentera prime --context plan --format json" } });
+  });
+
   it("upgrades one managed v2 fixture and converges on a same-install rerun", () => {
     const project = path.join(fixture.root, "project $(touch shell-expansion-trap) `touch backtick-trap`");
     fs.cpSync(V2_PROJECT, project, { recursive: true });
