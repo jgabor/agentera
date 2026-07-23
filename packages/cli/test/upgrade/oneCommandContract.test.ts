@@ -58,4 +58,24 @@ describe("v2-to-v3 one-command guidance", () => {
     expect(section("UPGRADE.md", "## Upgrading v2 to v3 development channel"))
       .toMatch(/no rollback, restore, non-Git, or partial\s+workflow/);
   });
+
+  it("keeps current cleanup narratives native while preserving Claude-specific examples and history", () => {
+    const currentUpgradeNarratives = [
+      section("UPGRADE.md", "## Active integration"),
+      section("UPGRADE.md", "## Verification and recovery"),
+      section("UPGRADE.md", "## Mutation ownership"),
+      section("CHANGELOG.md", "## [Unreleased]"),
+    ];
+
+    for (const narrative of currentUpgradeNarratives) {
+      expect(narrative).toContain("native Agentera resource cleanup");
+      expect(narrative).not.toMatch(/\bClaude cleanup\b/i);
+    }
+
+    const cleanupGuide = section("UPGRADE.md", "## Native Agentera resource cleanup");
+    expect(cleanupGuide).toContain("claude.agentera-skill-link");
+    expect(cleanupGuide).toContain("--import-source claude");
+    expect(section("CHANGELOG.md", "## [2.2.0] · 2026-05-07"))
+      .toContain("optional Claude live-smoke");
+  });
 });

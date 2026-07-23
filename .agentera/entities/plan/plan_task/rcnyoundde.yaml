@@ -11,3 +11,13 @@ record:
     - GIVEN the selected resource exists WHEN ownership is missing or invalid THEN existing action_required safety remains unchanged.
     - GIVEN cleanup regression tests WHEN resources run THEN one multi-record noop pass and one unowned preservation failure cover the distinction.
   plan: grxukdwjrz
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation; non-Linux host-real evidence dismissed as out of scope
+      recorded_at: 2026-07-23 18:17
+      writer_command: agentera state plan record-evaluation

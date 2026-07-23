@@ -1,0 +1,12 @@
+id: duejyfrnjn
+artifact: progress
+record:
+  timestamp: 2026-07-23 18:21
+  type: docs
+  phase: build
+  what: "Updated UPGRADE.md and Unreleased CHANGELOG.md: `agentera upgrade --legacy-cleanup RESOURCE_ID` now uses native Agentera resource cleanup, while Claude-specific selectors, import consent, and historical wording remain intact."
+  context:
+    intent: Normalize current cleanup narratives without changing cleanup behavior or host-specific references.
+    unknowns: none
+    scope: UPGRADE.md, CHANGELOG.md, packages/cli/test/upgrade/oneCommandContract.test.ts
+  verified: Focused oneCommandContract coverage passed 3 tests; the guard scopes current UPGRADE.md sections and Unreleased CHANGELOG.md.

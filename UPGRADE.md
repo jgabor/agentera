@@ -24,8 +24,8 @@ runtime package managers, authentication, enablement, or trust operations.
 
 Passing `--runtime` fails before mutation. Remove `--runtime`, ensure the runtime
 can read `~/.agents/skills/agentera`, and invoke the CLI directly. The supported
-v2 migration and Claude cleanup routes below are separate from normal active
-integration.
+v2 migration and native Agentera resource cleanup routes below are separate from
+normal active integration.
 
 ## Preview and apply
 
@@ -174,7 +174,7 @@ npx -y agentera@next prime --format json
 
 `upgrade --verify` without `--yes` is a read-only doctor and capability-context
 verification. With `--yes`, it runs those checks after approved migration.
-Explicit Claude cleanup with `--verify` requires `--yes`.
+Explicit native Agentera resource cleanup with `--verify` requires `--yes`.
 
 `--force` applies only where the owning migration contract explicitly permits
 replacement. It never adopts user-owned resources.
@@ -194,7 +194,8 @@ node packages/cli/dist/bin/agentera.js check validate release-metadata
 ## Mutation ownership
 
 Upgrade apply holds the required project lock before migration begins. Explicit
-Claude cleanup additionally uses its ownership journal and shared lock. Lock
-creation is atomic, and release succeeds only for the matching ownership token.
+native Agentera resource cleanup additionally uses its ownership journal and
+shared lock. Lock creation is atomic, and release succeeds only for the matching
+ownership token.
 A stale or malformed lock stops the operation; inspect the named lock file,
 remove only that file after confirming no operation owns it, then rerun.

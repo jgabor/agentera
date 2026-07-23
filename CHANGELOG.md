@@ -129,7 +129,7 @@
 - Removed `hej`, `describe`, and `gate` from top-level `agentera --help` and dispatch; unsupported structured requests return runnable corrections to `agentera prime`, `agentera schema`, and `agentera check compact`.
 - Removed the requirement for `uv` or a git checkout on the development channel; `uvx --from git+https://github.com/jgabor/agentera@main agentera` remains the stable 2.x Python line only.
 - Removed `agentera state migrate`, `agentera state backfill`, projection repair, and automatic v1 conversion. Recognized v2 aggregate projects now have one forward mutation path: full `agentera upgrade --yes`; `state migrate entities --dry-run` remains read-only.
-- Removed host-native runtime selectors, repair actions, package manifests, plugins, hooks, agents, and Bun single-binary delivery from the v3 distribution. Migration fixtures, ownership evidence, and explicit Claude cleanup remain internal migration surfaces.
+- Removed host-native runtime selectors, repair actions, package manifests, plugins, hooks, agents, and Bun single-binary delivery from the v3 distribution. Migration fixtures, ownership evidence, and explicit native Agentera resource cleanup remain internal migration surfaces.
 
 ### Migration notes
 

@@ -4,7 +4,7 @@ record:
   name: Normalize current cleanup terminology
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the stale current cleanup narratives in UPGRADE.md and the Unreleased changelog WHEN read THEN they say native Agentera resource cleanup rather than Claude-only cleanup.
     - GIVEN resource IDs, command examples, historical releases, and Claude import text WHEN searched THEN their accurate host-specific wording remains unchanged.
