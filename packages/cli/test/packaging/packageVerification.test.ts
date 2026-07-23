@@ -57,6 +57,10 @@ function unclassifiedManifestPaths(files: Iterable<string>, surfaces: BundleSurf
   });
 }
 
+function currentDescriptorPaths(files: Iterable<string>): string[] {
+  return [...files].filter((file) => file.startsWith("bundle/skills/agentera/agents/"));
+}
+
 function git(root: string, ...args: string[]): void {
   const result = run("git", args, root);
   if (result.status !== 0) throw new Error(result.stderr);
@@ -141,6 +145,7 @@ describe("npm distribution boundary", () => {
       expect(files.has(required), required).toBe(true);
     }
     expect([...files].some((file) => file.startsWith("src/"))).toBe(false);
+    expect(currentDescriptorPaths(files)).toEqual([]);
     for (const retired of [
       "dist/registries/runtimeAdapterRegistry.js",
       "dist/registries/runtimeAdapterRegistry.js.map",
@@ -228,6 +233,14 @@ describe("npm distribution boundary", () => {
     }
     expect([...files].some((file) => file.startsWith("test/") || file.includes("upgrade/fixtures/")))
       .toBe(false);
+  });
+
+  it("flags a reintroduced native descriptor path in the package inventory", () => {
+    expect(currentDescriptorPaths([
+      "bundle/skills/agentera/SKILL.md",
+      "bundle/skills/agentera/agents/build.toml",
+      "bundle/.agentera/archive/legacy/skills/agentera/agents/build.toml",
+    ])).toEqual(["bundle/skills/agentera/agents/build.toml"]);
   });
 
   it("rejects retired and otherwise unclassified top-level package surfaces", () => {

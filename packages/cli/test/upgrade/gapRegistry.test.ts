@@ -78,19 +78,12 @@ describe("gapRegistry", () => {
     expect(D56_PARITY_FAMILY_GAPS.verify_eval).toBe(GAP_IDS.VERIFY_EVAL_FAMILY);
   });
 
-  it("documents runtime_adapter_hooks parity family as closed after D56 T7", () => {
-    expect(isGapClosed(GAP_IDS.RUNTIME_ADAPTER_HOOKS_FAMILY)).toBe(true);
-    expect(isParityFamilyClosed("runtime_adapter_hooks")).toBe(true);
-    expect(D56_PARITY_FAMILY_GAPS.runtime_adapter_hooks).toBe(GAP_IDS.RUNTIME_ADAPTER_HOOKS_FAMILY);
-  });
-
-  it("maps all six D56 parity families to gap ids", () => {
+  it("maps current D56 parity families to gap ids", () => {
     expect(Object.keys(D56_PARITY_FAMILY_GAPS).sort()).toEqual(
       [
         "artifact_validation",
         "compaction",
         "doctor_upgrade_safety",
-        "runtime_adapter_hooks",
         "usage_stats_consent",
         "verify_eval",
       ].sort(),

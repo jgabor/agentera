@@ -32,10 +32,10 @@ const RETIRED_PACKAGE_SURFACES = [
   "plugins/agentera",
 ] as const;
 
+const RETIRED_CURRENT_DESCRIPTOR_DIRECTORY = "skills/agentera/agents";
+
 const CANONICAL_SHARED_SKILL_DATA = [
   "skills/agentera/SKILL.md",
-  "skills/agentera/agents/build.toml",
-  "skills/agentera/agents/status.toml",
   "skills/agentera/capabilities/build/schemas/artifacts.yaml",
   "skills/agentera/schemas/artifacts/plan.yaml",
 ] as const;
@@ -80,6 +80,13 @@ function relative(absolute: string): string {
   return path.relative(ROOT, absolute).split(path.sep).join("/");
 }
 
+function currentDescriptorViolations(root: string): string[] {
+  const directory = path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY);
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory).filter((entry) => entry.endsWith(".toml"))
+    .map((entry) => `${RETIRED_CURRENT_DESCRIPTOR_DIRECTORY}/${entry} native descriptor present`);
+}
+
 function moduleReferences(source: string): string[] {
   const targets: string[] = [];
   for (const match of source.matchAll(/(?:from\s+|import\s*\(\s*|require\s*\(\s*)["']([^"']+)["']/g)) {
@@ -104,6 +111,27 @@ describe("repository-native retirement inventory", () => {
   it("has no current package or distribution descriptors", () => {
     for (const relative of RETIRED_PACKAGE_SURFACES) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(false);
+    }
+  });
+
+  it("has no current native descriptor directory", () => {
+    expect(currentDescriptorViolations(ROOT)).toEqual([]);
+  });
+
+  it("flags a reintroduced current descriptor while allowing migration-only history", () => {
+    const root = fs.mkdtempSync(path.join(import.meta.dirname, "native-descriptor-"));
+    try {
+      fs.mkdirSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents"), { recursive: true });
+      fs.writeFileSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents/build.toml"), "historical\n");
+      expect(currentDescriptorViolations(root)).toEqual([]);
+
+      fs.mkdirSync(path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY), { recursive: true });
+      fs.writeFileSync(path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY, "build.toml"), "current\n");
+      expect(currentDescriptorViolations(root)).toEqual([
+        "skills/agentera/agents/build.toml native descriptor present",
+      ]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 

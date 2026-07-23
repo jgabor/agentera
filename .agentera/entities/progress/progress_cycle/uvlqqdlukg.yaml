@@ -1,0 +1,12 @@
+id: uvlqqdlukg
+artifact: progress
+record:
+  timestamp: 2026-07-23 14:36
+  type: refactor
+  phase: build
+  what: Retired skills/agentera/agents/*.toml and check validate descriptors while preserving SKILL.md, migration history, and native-resource cleanup.
+  context:
+    intent: Complete plan task tdagqikgcl's active descriptor-contract retirement without changing Codex setup or cleanup behavior.
+  inspiration: Firm Decisions nksvqmnevm and llavvlpcmb; audited dependency psovbbpibd.
+  verified: pnpm -C packages/cli test (2468 passed, 1 skipped); pnpm -C packages/cli run typecheck; pnpm -C packages/cli run verify:package (14 passed); check compact; capability-contract validation.
+  next: Task gypzghfmic may retire Codex setup behavior; do not perform installed-remnant cleanup here.

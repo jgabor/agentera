@@ -7,7 +7,6 @@ import { validateAgentString, validatePathValue } from "../argvalidate.js";
 import { HookCliAdapter } from "../../hooks/validateArtifact/index.js";
 import { validateCapability, validateContractSelf, validateProtocolSelf } from "../../validate/capability.js";
 import { loadYamlMapping } from "../../core/yaml.js";
-import { parseToml as parseTomlValidate } from "../../core/toml.js";
 import { validateGraph } from "../../validate/crossCapability.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
@@ -141,7 +140,7 @@ export function cmdValidate(family: string, args: DelegatedValidateArgs, io: Io)
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   if (!(family in DELEGATED_RUNNERS)) {
     throw new Error(
-      "unsupported validate target family; valid families: capability, artifact, descriptors, " +
+      "unsupported validate target family; valid families: capability, artifact, " +
         "cross-capability, app-home-contract, vocabularyAuthority, selfAudit, release-metadata, capability-contract.",
     );
   }
@@ -358,120 +357,6 @@ export function cmdValidateCapabilityContract(args: { format?: string }, io: Io)
     }
   }
   return results.every(([, r]) => r.returncode === 0) ? 0 : 1;
-}
-
-// ── descriptors family ──────────────────────────────────────────────
-
-function pySplitlinesText(s: string): string[] {
-  return s.split(/\r\n|\r|\n/);
-}
-
-function descriptorValidationPayload(): JsonObject {
-  const sourceRoot = resolveSourceRoot();
-  const codexDir = path.join(sourceRoot, "skills", "agentera", "agents");
-  const classificationPath = path.join(sourceRoot, "references", "cli", "capability-tool-classification.yaml");
-  const checks: JsonObject[] = [];
-  const violations: string[] = [];
-
-  let capPermissions: Record<string, JsonValue> = {};
-  try {
-    // cast: classificationData is a parsed YAML mapping (YAML IO boundary); subsequent
-    // categoryData/capData casts traverse that parsed classification structure.
-    const classificationData = loadYamlMapping(fsReadFileSync(classificationPath, "utf8"));
-    capPermissions = {};
-    for (const categoryData of Object.values((classificationData as JsonObject).classification as JsonObject)) {
-      for (const [capability, capData] of Object.entries((categoryData as JsonObject).capabilities as JsonObject)) {
-        capPermissions[capability] = (capData as JsonObject).permission;
-      }
-    }
-  } catch (exc) {
-    violations.push(`classification authority: failed to load classification: ${(exc as Error).message}`);
-    capPermissions = {};
-  }
-
-  for (const name of CAPABILITY_NAMES) {
-    const codexPath = path.join(codexDir, `${name}.toml`);
-    let check: JsonObject = { runtime: "codex", capability: name, path: codexPath, status: "pass" };
-    let text: string;
-    let parsed: JsonObject;
-    try {
-      text = fsReadFileSync(codexPath, "utf8");
-      // cast: parseTomlValidate result of a managed codex descriptor (TOML IO boundary)
-      parsed = parseTomlValidate(text) as JsonObject;
-    } catch (exc) {
-      check = { ...check, status: "fail", message: (exc as Error).message };
-      violations.push(`codex ${name}: ${(exc as Error).message}`);
-      checks.push(check);
-      continue;
-    }
-    const expectedRef = `agentera prime --context ${name} --format json`;
-    const legacyRef = `capabilities/${name}/instructions.md`;
-    if (parsed.name !== name) {
-      check = { ...check, status: "fail", message: "name field does not match capability" };
-      violations.push(`codex ${name}: name field must be ${name}`);
-    } else if (typeof parsed.description !== "string" || !parsed.description.trim()) {
-      check = { ...check, status: "fail", message: "description is required" };
-      violations.push(`codex ${name}: description is required`);
-    } else if (typeof parsed.developer_instructions !== "string" || !parsed.developer_instructions.includes(expectedRef)) {
-      check = { ...check, status: "fail", message: "developer_instructions must reference capability instructions" };
-      violations.push(`codex ${name}: developer_instructions must reference ${expectedRef}`);
-    } else if (typeof parsed.developer_instructions === "string" && parsed.developer_instructions.includes(legacyRef)) {
-      check = { ...check, status: "fail", message: "developer_instructions must not reference the retired on-disk instructions.md" };
-      violations.push(`codex ${name}: developer_instructions must not reference ${legacyRef} (use the prime --context command)`);
-    } else if (!pySplitlinesText(text).slice(0, 5).includes("# agentera_managed: true")) {
-      check = { ...check, status: "fail", message: "managed marker is required" };
-      violations.push(`codex ${name}: managed marker is required`);
-    } else {
-      const devInst = parsed.developer_instructions as string;
-      // cast: capPermissions entry is read from the parsed classification YAML (IO boundary)
-      const expectedPermission = (capPermissions[name] ?? {}) as JsonObject;
-      if (expectedPermission && Object.keys(expectedPermission).length > 0) {
-        let expectedGuidance: string;
-        if (expectedPermission.write === "allow" && expectedPermission.bash === "allow") {
-          expectedGuidance = "You have full file write, file edit, and shell execution tools available";
-        } else if (expectedPermission.write === "allow" && expectedPermission.bash === "deny") {
-          expectedGuidance =
-            "You have file write and file edit tools available to create or update files, but shell execution is disabled";
-        } else {
-          expectedGuidance = "You are a read-only agent \u2014 do not write files or execute shell commands";
-        }
-        if (!devInst.includes(expectedGuidance)) {
-          check = { ...check, status: "fail", message: `developer_instructions must contain guidance '${expectedGuidance}'` };
-          violations.push(`codex ${name}: developer_instructions must contain guidance '${expectedGuidance}'`);
-        }
-      }
-    }
-    checks.push(check);
-  }
-
-  return {
-    command: "validate",
-    status: violations.length > 0 ? "fail" : "pass",
-    target_family: "descriptors",
-    target: "agent-descriptors",
-    checks,
-    violations,
-    summary: {
-      passed: checks.filter((c) => c.status === "pass").length,
-      failed: checks.filter((c) => c.status === "fail").length,
-    },
-  };
-}
-
-export function cmdValidateDescriptors(args: { format?: string }, io: Io): number {
-  const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
-  const payload = descriptorValidationPayload();
-  if ((args.format ?? "text") === "json") {
-    emitStructured(payload, "json", out);
-  } else {
-    // cast: payload.summary/violations derive from parsed codex TOML + classification YAML (IO boundary)
-    out(
-      `descriptor validation ${payload.status}: ${(payload.summary as JsonObject).passed} passed, ${(payload.summary as JsonObject).failed} failed\n`,
-    );
-    for (const violation of payload.violations as string[]) err(`- ${violation}\n`);
-  }
-  return payload.status === "pass" ? 0 : 1;
 }
 
 // ── artifact family ─────────────────────────────────────────────────

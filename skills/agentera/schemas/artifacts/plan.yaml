@@ -645,7 +645,6 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/capabilities/*/instructions.ts
       - packages/cli/README.md
       - skills/agentera/SKILL.md
-      - skills/agentera/agents/*
       - skills/agentera/references/*
       - references/**/*.md
       - docs/**

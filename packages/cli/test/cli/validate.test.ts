@@ -11,7 +11,6 @@ import {
   cmdValidateCapability,
   cmdValidateCapabilityContract,
   cmdValidateArtifact,
-  cmdValidateDescriptors,
   cmdValidateState,
   isDelegatedValidateFamily,
 } from "../../src/cli/commands/validate.js";
@@ -90,9 +89,10 @@ describe("cli dispatch: validate routing", () => {
   });
 
   it("requires a family", () => {
-    const { rc, err } = capture((io) => main(["node", "agentera", "check", "validate"], io));
+    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "--format", "json"], io));
     expect(rc).toBe(2);
-    expect(err).toContain("validate_family");
+    const payload = JSON.parse(out);
+    expect(payload.error.valid_values).not.toContain("descriptors");
   });
 });
 
@@ -187,22 +187,28 @@ describe("cli validate capability-contract (structure)", () => {
 });
 
 
-describe("cli validate descriptors", () => {
-  it("validates agent descriptors against the repo (text)", () => {
-    const { rc, out } = capture((io) => cmdValidateDescriptors({}, io));
-    expect(out).toMatch(/descriptor validation (pass|fail): \d+ passed, \d+ failed/);
-    expect([0, 1]).toContain(rc);
-  });
-
-  it("emits a structured descriptors envelope (json)", () => {
-    const { out } = capture((io) => cmdValidateDescriptors({ format: "json" }, io));
+describe("retired cli validate descriptors", () => {
+  it("rejects the retired family with the bounded current-family correction", () => {
+    const { rc, out } = capture((io) => main([
+      "node", "agentera", "check", "validate", "descriptors", "--format", "json",
+    ], io));
+    expect(rc).toBe(2);
     const payload = JSON.parse(out);
-    expect(payload.command).toBe("validate");
-    expect(payload.target_family).toBe("descriptors");
-    expect(payload.target).toBe("agent-descriptors");
-    // 12 capabilities x 1 runtime (codex) = 12 checks
-    expect(payload.checks).toHaveLength(12);
-    expect(payload.summary.passed + payload.summary.failed).toBe(12);
+    expect(payload.error).toMatchObject({
+      class: "unsupported_target",
+      message: "unsupported validate family 'descriptors'; valid families are listed in valid_values.",
+    });
+    expect(payload.error.valid_values).toEqual([
+      "cross-capability",
+      "app-home-contract",
+      "vocabularyAuthority",
+      "selfAudit",
+      "release-metadata",
+      "capability",
+      "capability-contract",
+      "artifact",
+      "state",
+    ]);
   });
 });
 

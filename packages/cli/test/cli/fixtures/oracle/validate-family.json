@@ -114,28 +114,6 @@
       "checkItemEngineCommandValue": "validate_capability.py",
       "summaryRequiredKeys": ["passed", "failed"]
     },
-    "descriptors": {
-      "argv": ["check", "validate", "descriptors", "--format", "json"],
-      "exitCode": 0,
-      "requiredTopLevelKeys": [
-        "command",
-        "status",
-        "target_family",
-        "target",
-        "checks",
-        "violations",
-        "summary"
-      ],
-      "targetFamilyValue": "descriptors",
-      "targetValueType": "string",
-      "targetValue": "agent-descriptors",
-      "checksValueType": "array<object>",
-      "checkItemRequiredKeys": ["runtime", "capability", "path", "status"],
-      "checkItemRuntimeValueUnion": ["codex"],
-      "checkItemStatusValueUnion": ["pass", "fail"],
-      "summaryRequiredKeys": ["passed", "failed"],
-      "summaryCheckCount": 12
-    },
     "artifact": {
       "argv": ["check", "validate", "artifact", "--artifact", "plan", "--format", "json"],
       "exitCode": 0,

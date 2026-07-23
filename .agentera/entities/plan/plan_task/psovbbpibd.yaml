@@ -11,3 +11,13 @@ record:
     - GIVEN descriptor and configuration inventory WHEN ownership is assessed THEN each unit names durable proof; value, marker, or equality alone never authorizes shared-file mutation.
     - GIVEN contract tests WHEN run THEN one owned pass and one unowned failure cover each resource class.
   plan: vooqzwqnlo
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation with preview-wording recheck
+      recorded_at: 2026-07-23 14:22
+      writer_command: agentera state plan record-evaluation

@@ -2,7 +2,7 @@ schema_version: agentera.bundle_skill_vocabulary.v1
 status: active_authority
 purpose: >-
   Classify surviving `bundle` and `SKILL.md` terminology so docs, package
-  metadata, runtime descriptors, tests, historical records, and compatibility
+  metadata, tests, historical records, and compatibility
   identifiers share one bounded vocabulary source without forcing mechanical
   renames of shipped surfaces.
 sources:

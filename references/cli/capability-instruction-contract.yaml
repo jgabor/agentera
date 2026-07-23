@@ -87,8 +87,6 @@ implementation_state:
   first_invocation_read_cli_metadata: true
   first_invocation_read_schema_metadata: true
   runtime_first_invocation_behavior: true
-  descriptors_rewritten_to_prime_command: true
-  package_metadata_rewritten_to_prime_command: true
 compatibility_preservation:
   preserve_legacy_references_only_when_classified:
     - skills/agentera/capabilities/*/instructions.md paths (historical)
@@ -111,7 +109,6 @@ surface_inventory:
   docs_vocabulary: delegates_to_this_authority
   readme: concise_user_facing_current_and_future_authoring_seam
   capability_schema_contract: current_canonical_validator_reference
-  runtime_descriptors: current_canonical_instructions_md_pointers
   capability_instruction_files: current_canonical_instruction_files
 evaluator_handoff:
   status: implemented

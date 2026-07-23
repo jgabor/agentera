@@ -20,7 +20,6 @@ export const GAP_IDS = {
   DOCTOR_UPGRADE_SAFETY_FAMILY: "gap-doctor-upgrade-safety-family",
   VERIFY_EVAL_FAMILY: "gap-verify-eval-family",
   USAGE_STATS_CONSENT_FAMILY: "gap-usage-stats-consent-family",
-  RUNTIME_ADAPTER_HOOKS_FAMILY: "gap-runtime-adapter-hooks-family",
 } as const;
 
 export type GapId = (typeof GAP_IDS)[keyof typeof GAP_IDS];
@@ -99,14 +98,6 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
-  // D56 T7: runtime adapter hooks (OpenCode/Codex/Cursor/Copilot).
-  {
-    id: GAP_IDS.RUNTIME_ADAPTER_HOOKS_FAMILY,
-    description:
-      "D56 T7: port runtime adapter hooks (OpenCode event/shell.env/chat.message/tool.execute.before-after/experimental.session.compacting; Codex hooks.state + PLUGIN_ROOT-safe apply_patch; Cursor preToolUse Write + session lifecycle; Copilot per-invocation AGENTERA_HOME) and per-runtime subagent_dispatch parity; descriptor bodies and trust hashes parity.",
-    closed: true,
-    runtimeIds: ["opencode", "copilot", "codex", "cursor"],
-  },
 ] as const;
 
 export function isGapClosed(id: GapId): boolean {
@@ -120,7 +111,6 @@ export const D56_PARITY_FAMILY_GAPS: Record<string, GapId> = {
   doctor_upgrade_safety: GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY,
   verify_eval: GAP_IDS.VERIFY_EVAL_FAMILY,
   usage_stats_consent: GAP_IDS.USAGE_STATS_CONSENT_FAMILY,
-  runtime_adapter_hooks: GAP_IDS.RUNTIME_ADAPTER_HOOKS_FAMILY,
 };
 
 export function isParityFamilyClosed(family: string): boolean {

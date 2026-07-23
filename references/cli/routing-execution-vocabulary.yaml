@@ -237,10 +237,6 @@ compatibility_identifiers:
   route_aliases:
     - ROUTE_ALIASES
     - primary_aliases
-  command_and_schema_surfaces:
-    - agentera validate descriptors
-    - descriptor_sources
-    - invocation_pattern
 code_identifiers:
   - subagent_dispatch
   - test_runtime_adapter_subagent_dispatch_metadata_is_complete

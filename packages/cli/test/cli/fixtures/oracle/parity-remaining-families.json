@@ -170,33 +170,6 @@
         "privacyRequiredKeys": ["local_history_read", "local_history_write"]
       },
       "forbiddenSubstrings": ["agentera corpus", "raw runtime history read without --consent"]
-    },
-    "runtime_adapter_hooks": {
-      "description": "OpenCode/Codex/Cursor/Copilot hook surface coverage + per-runtime `subagent_dispatch` parity + descriptor bodies and trust hashes parity. T7 closes this row when `check validate descriptors --format json` is parity-green (12 checks: 12 codex; OpenCode uses single agent per D73) and lifecycle adapter metadata validates.",
-      "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
-      "argv": ["check", "validate", "descriptors", "--format", "json"],
-      "exitCode": 0,
-      "expectedShape": {
-        "command": "string",
-        "command_value": "validate",
-        "status": "string",
-        "target_family": "string",
-        "target_family_value": "descriptors",
-        "target": "string",
-        "target_value": "agent-descriptors",
-        "checks": "array",
-        "checksLength": 12,
-        "violations": "array",
-        "summary": "object",
-        "summaryRequiredKeys": ["passed", "failed"],
-        "checkItemRequiredKeys": ["runtime", "capability", "path", "status"],
-        "checkItemRuntimeUnion": ["codex"],
-        "checkItemStatusUnion": ["pass", "fail"]
-      },
-      "forbiddenSubstrings": [
-        "Read ${AGENTERA_HOME}/app/skills/agentera/capabilities",
-        "experimental.session.compacting missing"
-      ]
     }
   },
   "relatedOracles": {

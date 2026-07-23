@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Removed bundled native capability descriptors and `agentera check validate descriptors`; the canonical shared skill and CLI are the only active integration seam.
 - `agentera route receipt` now requires the phase-one `semantic_capsule_sha256` as well as `request_sha256`; it fails closed when the current trigger-intent capsule differs, preventing startup from a receipt classified against stale routing authority.
 - Defined the portable routing boundary: `agentera route request` deterministically resolves bare `/agentera`, explicit capability names or aliases, and curated leading phrases to a capability; every other request remains host-owned open-ended semantic classification. `agentera route receipt` validates the host result before authorizing startup, while `agentera route evaluate` and `agentera check verify eval routing` gate implementation with the frozen offline synthetic corpus; Agentera ships no built-in model service or live benchmark.
 - Added ordinary progress, decision, and health reads plus startup handling for

@@ -507,22 +507,6 @@ surfaces:
   enforcement_tier: enforce
   byte_budget: 4000
   token_budget: 1000
-- id: check-validate-descriptors
-  command: agentera check validate descriptors
-  selector: --format json
-  argv:
-  - check
-  - validate
-  - descriptors
-  - --format
-  - json
-  inventory_classification: change
-  budget_classification: unbudgeted
-  measurement_scope: primary
-  fixture: repo_root
-  enforcement_tier: enforce
-  byte_budget: 8000
-  token_budget: 2000
 - id: check-validate-cross-capability
   command: agentera check validate cross-capability
   selector: --format json

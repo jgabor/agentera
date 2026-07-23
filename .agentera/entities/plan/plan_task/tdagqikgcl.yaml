@@ -4,7 +4,7 @@ record:
   name: Retire the active descriptor contract
   depends_on:
     - psovbbpibd
-  status: pending
+  status: complete
   acceptance:
     - GIVEN source and package contracts WHEN inspected THEN no native descriptor directory or requirement remains, while the canonical shared skill remains required.
     - GIVEN CLI help and validation discovery WHEN inspected THEN descriptors are absent, and the retired family returns a bounded correction naming valid families.

@@ -174,7 +174,7 @@ audience_namespaces:
       validate:
         canonical_shape: agentera check validate <family> [target options]
         delegates_from: validate
-        notes: Preserves existing validate families (capability, artifact, descriptors, etc.).
+        notes: Preserves current validate families including capability and artifact validation.
       verify:
         canonical_shape: agentera check verify <family> <target> [options]
         delegates_from: verify

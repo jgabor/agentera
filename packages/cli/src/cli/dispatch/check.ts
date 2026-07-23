@@ -6,7 +6,6 @@ import {
   cmdValidateCapability,
   cmdValidateCapabilityContract,
   cmdValidateArtifact,
-  cmdValidateDescriptors,
   cmdValidateState,
   isDelegatedValidateFamily,
 } from "../commands/validate.js";
@@ -273,7 +272,6 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
           "release-metadata",
           "capability",
           "capability-contract",
-          "descriptors",
           "artifact",
           "state",
         ],
@@ -298,9 +296,6 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
     if (family === "capability-contract") {
       return cmdValidateCapabilityContract({ format }, io);
     }
-    if (family === "descriptors") {
-      return cmdValidateDescriptors({ format }, io);
-    }
     if (family === "artifact") {
       if (artifactFlag === null) {
         return emitInvalidInput(io, {
@@ -324,7 +319,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       format,
       body: {
         class: "unsupported_target",
-        message: `validate family not yet ported: ${family}`,
+        message: `unsupported validate family '${family}'; valid families are listed in valid_values.`,
         valid_values: [
           "cross-capability",
           "app-home-contract",
@@ -333,7 +328,6 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
           "release-metadata",
           "capability",
           "capability-contract",
-          "descriptors",
           "artifact",
           "state",
         ],
