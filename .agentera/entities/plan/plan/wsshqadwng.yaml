@@ -1,0 +1,35 @@
+id: wsshqadwng
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-23
+    status: open
+    reviewed: 2026-07-23
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    revised: Defined exact completed-state restoration, expanded failure-boundary coverage, separated evidence layers, completed release-readiness gates, and made version and scope decisions explicit.
+    title: "Plan: Restore Migrated Entity-State Publication"
+  what: Restore valid Plan and TODO mutations in migrated entity-mode projects while preserving secure pinned publication, and make failed plan replacement restore its predecessor exactly.
+  why: A logical-path validation mismatch rejects valid migrated provenance and can leave the current completed plan archived when replacement creation fails.
+  constraints: Preserve descriptor-pinned publication, marker and root identity checks, immutable source-bound migration provenance, atomic idempotent writes, and one-way entity authority. Limit regression guarantees to Plan and TODO. Do not redesign migration, weaken provenance, change versions, publish, tag, or push. The startup docs context declares no applicable version files or semver policy.
+  overall_acceptance: GIVEN valid and adversarial migrated entity-mode projects WHEN Plan and TODO creation and plan replacement recovery are exercised THEN valid mutations succeed through secure publication, unsafe identity or provenance conditions fail closed, failed replacements restore the exact completed current predecessor without residue, and all required package gates pass.
+  scope:
+    included:
+      - Plan and TODO creation with migrated decision and progress summaries
+      - Secure logical provenance validation under descriptor-pinned publication
+      - Plan archive-then-create recovery across every post-archive failure boundary
+      - Focused, CLI integration, and package-readiness evidence
+    excluded:
+      - Other entity writer families
+      - Migration or provenance redesign
+      - Provenance weakening or reconstruction
+      - Version changes, publication, tags, and pushes
+    deferred:
+      []
+  design: Separate logical provenance validation from pinned physical publication checks, then treat predecessor archival and replacement creation as one recoverable lifecycle. Prove focused behavior before CLI integration and package readiness, then synchronize project state only after all evidence is green.
+  unknowns:
+    - question: Will exact predecessor restoration change any user-visible writer output or recovery contract?
+      affects_task: 3
+      resolve_by: Use Task 2 failure envelopes and contract validation; update owned public contracts in Task 3 only if observable behavior changes.
+  surprises:
+    []

@@ -1,0 +1,13 @@
+id: qsemyehqcf
+artifact: plan
+record:
+  name: Restore logical validation for pinned Plan and TODO publication
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN valid migrated decision and progress summaries WHEN Plan or TODO creation runs THEN creation succeeds and canonical state remains valid.
+    - GIVEN valid provenance WHEN post-publication validation runs THEN logical reads use the validated real root while physical mutation remains descriptor-pinned.
+    - GIVEN a source symlink or hash mismatch, changed root, or changed marker WHEN validation runs THEN it fails closed and preserves prior and unrelated bytes.
+    - GIVEN new testable validation units WHEN focused tests run THEN one passing and one failing case cover each unit unless a narrower bound is justified.
+  plan: wsshqadwng

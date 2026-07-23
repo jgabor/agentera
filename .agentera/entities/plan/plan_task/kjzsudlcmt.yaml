@@ -1,0 +1,14 @@
+id: kjzsudlcmt
+artifact: plan
+record:
+  name: Synchronize verified project state
+  depends_on:
+    - qsemyehqcf
+    - gjtpahmifa
+    - uolfhenlai
+  status: pending
+  acceptance:
+    - GIVEN all evidence is green WHEN state is synchronized THEN the critical TODO is resolved and progress records the verified outcomes.
+    - GIVEN the health writer requires remediation evidence WHEN state closes THEN health records it through the typed contract.
+    - GIVEN implementation and state belong together WHEN the plan closes THEN terminal plan state and related artifacts share the substantive change without standalone bookkeeping.
+  plan: wsshqadwng

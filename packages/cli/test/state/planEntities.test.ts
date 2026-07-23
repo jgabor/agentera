@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
@@ -419,6 +420,31 @@ describe("plan and task entity authority", () => {
     expect(() => createPlanEntities(request(root, "create", {}, plan("rollback", true)), { publicationContext: binding.publicationContext, candidate: (() => { const ids = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"]; return () => ids.shift()!; })() })).toThrow(/injected create failure/);
     binding.publicationContext.close();
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 0 });
+  });
+
+  it("creates a valid plan graph when logical validation reaches migrated summary sources through the real root", () => {
+    const root = project();
+    writeMigratedDecisionAndProgressSummaries(root);
+    const created = create(root, "migrated summaries");
+    expect(created).toMatchObject({ id: expect.stringMatching(/^[a-z]{10}$/), tasks: [{ id: expect.stringMatching(/^[a-z]{10}$/) }] });
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 4 });
+  });
+
+  it("rolls back a plan graph when a migrated summary source no longer matches after publication", () => {
+    const root = project(); const { progressSource } = writeMigratedDecisionAndProgressSummaries(root); const preserved = unrelated(root);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let calls = 0;
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+      const result = original(target, bytes); calls += 1;
+      if (calls === 2) fs.writeFileSync(progressSource, "archive: []\n");
+      return result;
+    });
+    const ids = ["cccccccccc", "dddddddddd"];
+    expect(() => createPlanEntities(request(root, "create", {}, plan("changed provenance")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/migration_provenance|bind|unsafe/i);
+    binding.publicationContext.close();
+    expect(calls).toBe(2);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/plan"))).toBe(false);
+    expect(fs.readFileSync(preserved.file, "utf8")).toBe(preserved.bytes);
   });
 
   it("rolls back the complete create graph after every successful file when the marker or root changes", () => {

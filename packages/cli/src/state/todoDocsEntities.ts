@@ -111,13 +111,16 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
   }
   const context = options.publicationContext;
   return withEntityWriterLock(context, () => {
-    assertState(context.pinnedPath(), sourceRoot);
-    const entities = relevant(context.pinnedPath(), sourceRoot, artifact);
+    context.assertValid();
+    assertState(context.projectRoot, sourceRoot);
+    context.assertValid();
+    const entities = relevant(context.projectRoot, sourceRoot, artifact);
+    context.assertValid();
     if (req.spec.verb === "create") {
       const record = mutationRecord(req); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations });
       const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope(`state ${artifact} create`, { id, path: targetPath(req.projectRoot, sourceRoot, artifact, id), replay: false }, artifact, record, true);
       let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
-      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, record }); published = result; assertState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope(`state ${artifact} create`, result, artifact, record, false); }
+      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, record }); published = result; assertState(context.projectRoot, sourceRoot); context.assertValid(); return envelope(`state ${artifact} create`, result, artifact, record, false); }
       catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
     }
     const id = String(req.values.id ?? "");
@@ -127,7 +130,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     if (req.dryRun) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: false }, artifact, record, true);
     const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, expectedRecord: entity.record!, record };
     let replaced = false;
-    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope(`state ${artifact} ${req.spec.verb}`, result, artifact, record, false); }
+    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertState(context.projectRoot, sourceRoot); context.assertValid(); return envelope(`state ${artifact} ${req.spec.verb}`, result, artifact, record, false); }
     catch (error) { if (replaced) replaceEntityUnderLock({ ...request, expectedRecord: record, record: entity.record! }); throw error; }
   });
 }

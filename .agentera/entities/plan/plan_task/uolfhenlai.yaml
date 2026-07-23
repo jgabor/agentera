@@ -1,0 +1,14 @@
+id: uolfhenlai
+artifact: plan
+record:
+  name: Prove integration and package readiness
+  depends_on:
+    - qsemyehqcf
+    - gjtpahmifa
+  status: pending
+  acceptance:
+    - GIVEN both remedies WHEN CLI integration runs THEN migrated Plan and TODO creation, rollback, exact restoration, and retry all pass.
+    - GIVEN the recovery evidence WHEN public contracts are compared THEN observable changes are documented and validated, or unchanged contracts are explicitly confirmed.
+    - GIVEN the candidate WHEN repository gates run THEN full tests, typecheck, build, capability-contract validation, package verification, pack dry-run, and compact validation pass.
+    - GIVEN release actions are excluded WHEN verification completes THEN no version changes, publication, tags, or pushes occurred.
+  plan: wsshqadwng

@@ -1,0 +1,14 @@
+id: vxiprecxpc
+artifact: progress
+record:
+  timestamp: 2026-07-24 00:05
+  type: fix
+  phase: build
+  what: Restored Plan and TODO logical validation against the validated real project root while retaining descriptor-pinned publication and exact rollback.
+  context:
+    intent: Allow valid migrated decision and progress summaries during Plan and TODO publication without weakening provenance or publication identity checks.
+    constraints: Scoped to Plan and TODO publication; no migration redesign, version change, vision change, release, tag, push, or later plan task.
+    scope: packages/cli Plan/TODO entity publication logic and migrated-summary regression fixtures/tests.
+  inspiration: Plan wsshqadwng task qsemyehqcf and firm Decision cgmdaewdas.
+  verified: "Focused Plan/TODO source tests: 32 passed; full source suite: 200 files, 2489 passed and 1 skipped; TypeScript typecheck passed; local CLI build completed as 3.0.0-dev.29."
+  next: Proceed only to the next plan task through a separate authorized Build cycle.

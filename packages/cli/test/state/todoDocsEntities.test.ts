@@ -11,6 +11,7 @@ import { validateEntityState } from "../../src/state/entityStorage.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
+import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 
 const roots: string[] = [];
 const MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -72,6 +73,34 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(fs.readFileSync(path.join(root, "TODO.md"))).toEqual(todoBytes);
     expect(fs.readFileSync(path.join(root, ".agentera/docs.yaml"))).toEqual(docsBytes);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 2 });
+  });
+
+  it("creates a valid TODO when logical validation reaches migrated summary sources through the real root", () => {
+    const root = project();
+    writeMigratedDecisionAndProgressSummaries(root);
+    const item = todo(root, "Publish beside migrated summaries");
+    expect(item).toMatchObject({ id: expect.stringMatching(/^[a-z]{10}$/), record: { description: "Publish beside migrated summaries" } });
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it("rolls back a TODO when a migrated summary source becomes a symlink after publication", () => {
+    const root = project(); const { progressSource } = writeMigratedDecisionAndProgressSummaries(root);
+    const unrelated = path.join(root, ".agentera/unrelated.txt"); fs.writeFileSync(unrelated, "preserve me\n");
+    const external = path.join(root, "external-progress.yaml"); fs.writeFileSync(external, "archive: []\n");
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let mutated = false;
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+      const result = original(target, bytes);
+      fs.rmSync(progressSource); fs.symlinkSync(external, progressSource); mutated = true;
+      return result;
+    });
+    const spec = operationSpec("todo", "create")!;
+    const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { severity: "normal", description: "unsafe source" }, callerPayload: { severity: "normal", description: "unsafe source" }, input: null };
+    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, candidate: () => "cccccccccc" })).toThrow(/migration_provenance|unsafe|symbolic link/i);
+    binding.publicationContext.close();
+    expect(mutated).toBe(true);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/todo/todo_item/cccccccccc.yaml"))).toBe(false);
+    expect(fs.readFileSync(unrelated, "utf8")).toBe("preserve me\n");
   });
 
   it("rejects aliases and non-bare selectors before effects while marker-absent commands retain legacy behavior", () => {

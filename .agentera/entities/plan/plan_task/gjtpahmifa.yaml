@@ -1,0 +1,14 @@
+id: gjtpahmifa
+artifact: plan
+record:
+  name: Restore the exact predecessor after failed plan replacement
+  depends_on:
+    - qsemyehqcf
+  status: pending
+  acceptance:
+    - GIVEN a completed current predecessor WHEN replacement begins THEN its exact content and ownership identity remain available for recovery.
+    - GIVEN any post-archive publication, validation, identity, or cleanup failure WHEN recovery runs THEN exact-owned replacement residue is removed and the predecessor returns byte-for-byte as the current completed plan.
+    - GIVEN restoration ownership changed WHEN recovery runs THEN no competing bytes are overwritten and both primary and recovery failures are actionable.
+    - GIVEN recovery succeeded WHEN replacement retries THEN one current replacement and one canonical predecessor history remain.
+    - GIVEN new lifecycle test units WHEN focused tests run THEN one passing and one failing case cover each unit unless a narrower bound is justified.
+  plan: wsshqadwng
