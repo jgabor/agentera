@@ -14,7 +14,6 @@ import {
   CODEX_PLUGIN_HOOK_COMMAND,
   CODEX_PLUGIN_HOOK_SOURCE,
   CODEX_PLUGIN_ID,
-  DEFAULT_AGENT_LIMITS,
   MANAGED_KEY,
   SECTION_NAME,
   SET_SUBTABLE_NAME,
@@ -177,18 +176,9 @@ export function emitSetInlineTable(pairs: Record<string, string>): string {
   return entries.length > 0 ? `{ ${rendered} }` : "{ }";
 }
 
-export function renderAgentsConfigSection(): string {
-  return "[agents]\n" + Object.entries(DEFAULT_AGENT_LIMITS).map(([k, v]) => `${k} = ${v}`).join("\n") + "\n";
-}
-
 export function renderFreshConfig(installRoot: string): string {
   const setValue = emitSetInlineTable({ [MANAGED_KEY]: installRoot });
-  return (
-    `[${SECTION_NAME}]\nset = ${setValue}\n\n` +
-    `${renderAgentsConfigSection()}\n` +
-    `[features.multi_agent_v2]\n` +
-    `max_concurrent_threads_per_session = 6\n`
-  );
+  return `[${SECTION_NAME}]\nset = ${setValue}\n`;
 }
 
 // ── Codex hook trust hashing ───────────────────────────────────────
@@ -466,76 +456,6 @@ function removeTableKeyLine(text: string, table: string, key: string): string {
   if (keyIdx === null) keyIdx = findTableKeyIndex(plainLines, tableIdx, key);
   if (keyIdx === null) return text;
   return [...linesWithEnds.slice(0, keyIdx), ...linesWithEnds.slice(keyIdx + 1)].join("");
-}
-
-function codexMultiAgentThreadLimit(parsed: JsonObject): number {
-  const agents = parsed.agents;
-  if (agents && typeof agents === "object" && !Array.isArray(agents) && "max_threads" in agents) {
-    const n = Number((agents as JsonObject).max_threads);
-    if (Number.isInteger(n)) return n;
-  }
-  const features = parsed.features;
-  if (features && typeof features === "object" && !Array.isArray(features)) {
-    const multi = (features as JsonObject).multi_agent_v2;
-    if (multi && typeof multi === "object" && "max_concurrent_threads_per_session" in multi) {
-      const n = Number((multi as JsonObject).max_concurrent_threads_per_session);
-      if (Number.isInteger(n)) return n;
-    }
-  }
-  return 6;
-}
-
-function ensureCodexMultiAgentV2(text: string, maxThreadsVal: number): string {
-  const parsed = tomlLoadOrEmpty(text);
-  const features = parsed.features;
-  let multi: JsonObject = {};
-  if (features && typeof features === "object" && !Array.isArray(features)) {
-    const m = (features as JsonObject).multi_agent_v2;
-    if (m && typeof m === "object" && !Array.isArray(m)) multi = m;
-  }
-  if (multi.max_concurrent_threads_per_session === maxThreadsVal) return text;
-  const lines = splitKeepEnds(text).map(rstripEol);
-  const tableIdx = findTableHeaderIndex(lines, "features.multi_agent_v2");
-  const key = "max_concurrent_threads_per_session";
-  const line = `${key} = ${maxThreadsVal}`;
-  if (tableIdx === null) return appendTable(text, "features.multi_agent_v2", [line]);
-  const keyIdx = findTableKeyIndex(lines, tableIdx, key);
-  if (keyIdx === null) return insertTableKeyLine(text, "features.multi_agent_v2", line);
-  return replaceTableKeyLine(text, "features.multi_agent_v2", key, line);
-}
-
-export function ensureCodexAgentLimits(text: string): string {
-  let parsed = tomlLoadOrEmpty(text);
-  const maxThreadsVal = codexMultiAgentThreadLimit(parsed);
-  text = removeTableKeyLine(text, "agents", "max_threads");
-  parsed = tomlLoadOrEmpty(text);
-  const agents = parsed.agents;
-  const agentsMatches =
-    agents && typeof agents === "object" && !Array.isArray(agents) &&
-    Object.entries(DEFAULT_AGENT_LIMITS).every(([k, v]) => (agents as JsonObject)[k] === v);
-  if (!agentsMatches) {
-    const lines = splitKeepEnds(text).map(rstripEol);
-    const tableIdx = findTableHeaderIndex(lines, "agents");
-    if (tableIdx === null) {
-      if (agents && typeof agents === "object" && !Array.isArray(agents) && Object.keys(agents).length > 0) {
-        throw new Error("[agents] uses an unsupported inline or child-table-only form");
-      }
-      text = appendTable(text, "agents", Object.entries(DEFAULT_AGENT_LIMITS).map(([k, v]) => `${k} = ${v}`));
-    } else {
-      for (const [key, value] of Object.entries(DEFAULT_AGENT_LIMITS)) {
-        const line = `${key} = ${value}`;
-        const curLines = splitKeepEnds(text).map(rstripEol);
-        const curTableIdx = findTableHeaderIndex(curLines, "agents");
-        if (curTableIdx === null) throw new Error("[agents] header disappeared during update");
-        if (findTableKeyIndex(curLines, curTableIdx, key) === null) {
-          text = insertTableKeyLine(text, "agents", line);
-        } else {
-          text = replaceTableKeyLine(text, "agents", key, line);
-        }
-      }
-    }
-  }
-  return ensureCodexMultiAgentV2(text, maxThreadsVal);
 }
 
 function hookStateLine(key: string, trustedHash: string): string {

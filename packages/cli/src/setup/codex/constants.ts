@@ -3,21 +3,6 @@ import { SETUP_EVIDENCE } from "../../state/installRoot.js";
 export const CANONICAL_ENTRIES = SETUP_EVIDENCE;
 export const MANAGED_KEY = "AGENTERA_HOME";
 export const SECTION_NAME = "shell_environment_policy";
-export const DEFAULT_AGENT_LIMITS: Record<string, number> = { max_depth: 1 };
-export const CAPABILITY_AGENT_NAMES = [
-  "status",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-] as const;
 
 export const CODEX_HOOK_COMMAND = "npx -y agentera@next hook validate-artifact";
 export const CODEX_PLUGIN_ID = "agentera@agentera";

@@ -11,3 +11,13 @@ record:
     - GIVEN retirement coverage WHEN a current native descriptor path is reintroduced THEN verification fails, while migration-only history remains allowed.
     - GIVEN test proportionality WHEN contract classes run THEN each has one absence pass and one reintroduction failure.
   plan: vooqzwqnlo
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation with parity and directory rechecks
+      recorded_at: 2026-07-23 14:58
+      writer_command: agentera state plan record-evaluation

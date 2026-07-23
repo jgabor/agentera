@@ -1,0 +1,14 @@
+id: nedafjqhhv
+artifact: progress
+record:
+  timestamp: 2026-07-23 15:08
+  type: refactor
+  phase: build
+  what: Retired Codex descriptor installation and dispatch-setting writes in packages/cli/src/setup/codex; rejected retired options before setup I/O while preserving migration-only hook retirement safeguards.
+  context:
+    intent: Complete plan task gypzghfmic without running installed-remnant cleanup or changing user-owned Codex configuration.
+    constraints: No installed-remnant cleanup, live-host prompts, version bump, publish, tag, push, branch, or worktree.
+    scope: Codex setup helpers, migration-only hook regression coverage, and Unreleased changelog.
+  inspiration: Plan vooqzwqnlo task gypzghfmic; descriptor-contract retirement through b6023364.
+  verified: pnpm -C packages/cli test (200 files, 2473 passed, 1 skipped); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check compact; targeted Codex setup and migration tests (35 passed).
+  next: Task llwejsfofq can verify the final runtime-neutral package surface; leave lowjbuwmey cleanup scope unchanged.

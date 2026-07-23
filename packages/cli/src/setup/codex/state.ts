@@ -7,7 +7,6 @@ import {
 import {
   classifyToml,
   emitSetInlineTable,
-  ensureCodexAgentLimits,
   ensureCodexHookTrust,
   ensureCodexPluginHookTrust,
   hasInlineSetLine,
@@ -62,29 +61,9 @@ function withCodexHookTrust(
   if (outcome.action === "conflict") return outcome;
   const before = beforeText || "";
 
-  let newText: string;
-  try {
-    newText = ensureCodexAgentLimits(outcome.newText);
-  } catch (exc) {
-    return {
-      action: "conflict",
-      newText: "",
-      message: `cannot safely update Codex agent dispatch settings: ${(exc as Error).message}`,
-      diff: "",
-    };
-  }
-
-  if (newText !== outcome.newText) {
-    const action = outcome.action !== "noop" ? outcome.action : "insert";
-    const message =
-      outcome.action === "noop"
-        ? "would configure Codex agent dispatch limits"
-        : `${outcome.message}; would configure Codex agent dispatch limits`;
-    outcome = { action, newText, message, diff: unifiedDiffText(before, newText) };
-  }
-
   if (hooksPath === null && !pluginHooks) return outcome;
 
+  let newText: string;
   try {
     if (pluginHooks) {
       newText = ensureCodexPluginHookTrust(outcome.newText, CODEX_HOOK_COMMAND, hooksPath);

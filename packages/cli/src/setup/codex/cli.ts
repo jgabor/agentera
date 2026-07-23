@@ -4,7 +4,6 @@ import path from "node:path";
 import { parseToml } from "../../core/toml.js";
 import { pathExists } from "../../core/paths.js";
 import { DEFAULT_CONFIG_PATH, InstallRootError, resolveInstallRoot } from "./installRoot.js";
-import { planAgentDescriptorChanges, writeAgentDescriptorChanges, defaultAgentsDirForConfig } from "./agents.js";
 import { planChange } from "./state.js";
 
 type Env = Record<string, string | undefined>;
@@ -32,10 +31,8 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
   const args = {
     installRoot: null as string | null,
     configFile: DEFAULT_CONFIG_PATH,
-    agentsDir: null as string | null,
     dryRun: false,
     force: false,
-    enableAgents: false,
   };
 
   const valueFlag = (a: string, name: string): string | null => {
@@ -47,18 +44,21 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
-    if ((v = valueFlag(a, "--install-root")) !== null) {
+    if (a === "--enable-agents" || a === "--agents-dir" || a.startsWith("--agents-dir=")) {
+      const option = a.startsWith("--agents-dir") ? "--agents-dir" : "--enable-agents";
+      err(
+        `${option} is retired: use the shared skill at ~/.agents/skills/agentera/SKILL.md ` +
+          "and run `npx -y agentera@next prime --context <capability> --format json` for the CLI workflow.",
+      );
+      return 2;
+    } else if ((v = valueFlag(a, "--install-root")) !== null) {
       args.installRoot = v === "__NEXT__" ? argv[++i] : v;
     } else if ((v = valueFlag(a, "--config-file")) !== null) {
       args.configFile = v === "__NEXT__" ? argv[++i] : v;
-    } else if ((v = valueFlag(a, "--agents-dir")) !== null) {
-      args.agentsDir = v === "__NEXT__" ? argv[++i] : v;
     } else if (a === "--dry-run") {
       args.dryRun = true;
     } else if (a === "--force") {
       args.force = true;
-    } else if (a === "--enable-agents") {
-      args.enableAgents = true;
     } else {
       err(`setup_codex: error: unrecognized arguments: ${a}`);
       return 2;
@@ -100,25 +100,8 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
     }
   }
 
-  // Step 4: plan the AGENTERA_HOME change and runtime-native descriptors.
+  // Step 4: plan the AGENTERA_HOME change.
   const outcome = planChange(currentText, installRoot, { force: args.force });
-  let agentsDir: string;
-  try {
-    agentsDir = args.agentsDir ?? defaultAgentsDirForConfig(configPath);
-  } catch (errx) {
-    err(`error: ${(errx as Error).message}`);
-    return 2;
-  }
-  const descriptorChanges = planAgentDescriptorChanges(installRoot, agentsDir, { force: args.force });
-  const pendingDescriptors = descriptorChanges.filter((c) => c.action === "pending");
-  const blockedDescriptors = descriptorChanges.filter((c) => c.action === "blocked");
-
-  if (args.enableAgents) {
-    err(
-      "--enable-agents is deprecated in Agentera v2; no [agents.*] " +
-        "blocks will be written; runtime-native descriptor files are managed separately.",
-    );
-  }
 
   // Step 5: dispatch on the outcome.
   if (outcome.action === "conflict") {
@@ -127,14 +110,7 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
     return 2;
   }
 
-  if (blockedDescriptors.length > 0) {
-    for (const change of blockedDescriptors) {
-      err(`error: ${change.target}: ${change.message}`);
-    }
-    return 2;
-  }
-
-  if (outcome.action === "noop" && pendingDescriptors.length === 0) {
+  if (outcome.action === "noop") {
     out(outcome.message);
     return 0;
   }
@@ -145,9 +121,6 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
       writeOut(outcome.diff);
       if (!outcome.diff.endsWith("\n")) out("");
     }
-    for (const change of pendingDescriptors) {
-      out(`${change.message}: ${change.target}`);
-    }
     return 1;
   }
 
@@ -156,7 +129,6 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
       fs.mkdirSync(path.dirname(configPath), { recursive: true });
       fs.writeFileSync(configPath, outcome.newText, "utf8");
     }
-    writeAgentDescriptorChanges(pendingDescriptors);
   } catch (errx) {
     err(`error writing Codex setup targets: ${(errx as Error).message}`);
     return 2;
@@ -166,9 +138,6 @@ export function codexMain(argv: string[] = [], io: CodexCliIo = {}): number {
     out(`wrote ${configPath}: ${outcome.message.replaceAll("would ", "")}`);
   } else {
     out(outcome.message);
-  }
-  for (const change of pendingDescriptors) {
-    out(`wrote ${change.target}: ${change.message.replaceAll("would ", "")}`);
   }
   return 0;
 }

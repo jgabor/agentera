@@ -15,12 +15,10 @@ import {
   codexPluginHooksEnabled,
   codexValidatorCommand,
   emitSetInlineTable,
-  ensureCodexAgentLimits,
   ensureCodexHookTrust,
   ensureCodexPluginHookTrust,
   insertSetLine,
   codexMain,
-  planAgentDescriptorChanges,
   planChange,
   renderCodexHooksConfig,
   renderFreshConfig,
@@ -72,8 +70,8 @@ describe("setup codex: TOML classification + emission", () => {
   it("renders a fresh config", () => {
     const text = renderFreshConfig("/opt/agentera");
     expect(text).toContain('[shell_environment_policy]\nset = { AGENTERA_HOME = "/opt/agentera" }');
-    expect(text).toContain("[agents]\nmax_depth = 1");
-    expect(text).toContain("[features.multi_agent_v2]");
+    expect(text).not.toContain("[agents]");
+    expect(text).not.toContain("[features.multi_agent_v2]");
   });
 });
 
@@ -133,12 +131,6 @@ describe("setup codex: TOML mutation engine", () => {
     expect(() => rewriteSetLine("[shell_environment_policy]\nset = {\n  FOO = \"bar\"\n}\n", { FOO: "x" })).toThrow();
   });
 
-  it("ensures default agent limits on an empty config", () => {
-    const text = ensureCodexAgentLimits("");
-    expect(text).toContain("[agents]\nmax_depth = 1");
-    expect(text).toContain("[features.multi_agent_v2]\nmax_concurrent_threads_per_session = 6");
-  });
-
   it("ensures hook trust by enabling features.hooks and writing trust state", () => {
     const text = ensureCodexHookTrust("", "/opt/agentera/hooks/codex-hooks.json");
     expect(text).toContain("[features]\nhooks = true");
@@ -163,20 +155,6 @@ describe("setup codex: TOML mutation engine", () => {
   });
 });
 
-
-const AGENT_NAMES = [
-  "status", "vision", "discuss", "research", "plan", "build",
-  "optimize", "audit", "document", "profile", "design", "orchestrate",
-];
-
-function managedRootWithAgents(root: string): void {
-  managedFresh(root);
-  const agentsDir = path.join(root, "skills", "agentera", "agents");
-  fs.mkdirSync(agentsDir, { recursive: true });
-  for (const name of AGENT_NAMES) {
-    fs.writeFileSync(path.join(agentsDir, `${name}.toml`), `# agent ${name}\nname = "${name}"\n`);
-  }
-}
 
 describe("setup codex: planChange branches", () => {
   const R = "/opt/agentera";
@@ -206,25 +184,6 @@ describe("setup codex: planChange branches", () => {
   });
 });
 
-describe("setup codex: agent descriptors", () => {
-  it("plans install/refresh/noop/blocked by ownership", () => {
-    const root = path.join(tmp, "root");
-    managedRootWithAgents(root);
-    const agentsDir = path.join(tmp, "agents");
-    fs.mkdirSync(agentsDir, { recursive: true });
-    // user-owned status.toml blocks; managed vision refreshes; current discuss noops
-    fs.writeFileSync(path.join(agentsDir, "status.toml"), "user owned\n");
-    fs.writeFileSync(path.join(agentsDir, "vision.toml"), "# agentera_managed: true\nold\n");
-    fs.writeFileSync(path.join(agentsDir, "discuss.toml"), '# agent discuss\nname = "discuss"\n');
-    const changes = planAgentDescriptorChanges(root, agentsDir, { force: false });
-    const by = Object.fromEntries(changes.map((c) => [c.name, c.action]));
-    expect(by.status).toBe("blocked");
-    expect(by.vision).toBe("pending");
-    expect(by.discuss).toBe("noop");
-    expect(by.plan).toBe("pending");
-  });
-});
-
 describe("setup codex: codexMain end-to-end", () => {
   function run(argv: string[]): { rc: number; out: string; err: string } {
     let out = "";
@@ -233,26 +192,64 @@ describe("setup codex: codexMain end-to-end", () => {
     return { rc, out, err };
   }
 
-  it("installs fresh config + descriptors, then is idempotent", () => {
+  it("writes only AGENTERA_HOME and never creates descriptors or dispatch settings", () => {
     const root = path.join(tmp, "root");
-    managedRootWithAgents(root);
+    managedFresh(root);
     const cfg = path.join(tmp, "home", ".codex", "config.toml");
     fs.mkdirSync(path.dirname(cfg), { recursive: true });
 
     const first = run(["--install-root", root, "--config-file", cfg]);
     expect(first.rc).toBe(0);
     expect(fs.existsSync(cfg)).toBe(true);
-    expect(fs.readFileSync(cfg, "utf8")).toContain(`AGENTERA_HOME = "${resolvePath(root)}"`);
+    const config = fs.readFileSync(cfg, "utf8");
+    expect(config).toContain(`AGENTERA_HOME = "${resolvePath(root)}"`);
+    expect(config).not.toContain("[agents]");
+    expect(config).not.toContain("[features.multi_agent_v2]");
     const agentsDir = path.join(tmp, "home", ".codex", "agents");
-    expect(fs.readdirSync(agentsDir).sort()).toEqual(AGENT_NAMES.map((n) => `${n}.toml`).sort());
+    expect(fs.existsSync(agentsDir)).toBe(false);
 
     const second = run(["--install-root", root, "--config-file", cfg]);
     expect(second.rc).toBe(0);
   });
 
+  it("does not alter existing Codex dispatch settings", () => {
+    const root = path.join(tmp, "existing-settings-root");
+    managedFresh(root);
+    const cfg = path.join(tmp, "existing-settings", ".codex", "config.toml");
+    const current =
+      `[shell_environment_policy]\nset = { AGENTERA_HOME = "${resolvePath(root)}" }\n\n` +
+      "[agents]\nmax_depth = 5\n\n" +
+      "[features.multi_agent_v2]\nmax_concurrent_threads_per_session = 9\n";
+    fs.mkdirSync(path.dirname(cfg), { recursive: true });
+    fs.writeFileSync(cfg, current);
+
+    const result = run(["--install-root", root, "--config-file", cfg]);
+
+    expect(result.rc).toBe(0);
+    expect(fs.readFileSync(cfg, "utf8")).toBe(current);
+  });
+
+  it.each(["--agents-dir", "--agents-dir=/tmp/agents", "--enable-agents"])(
+    "rejects retired %s before side effects",
+    (retiredOption) => {
+      const root = path.join(tmp, "retired-option-root");
+      managedFresh(root);
+      const cfg = path.join(tmp, "retired-option", ".codex", "config.toml");
+
+      const result = run(["--install-root", root, "--config-file", cfg, retiredOption]);
+
+      expect(result.rc).toBe(2);
+      expect(result.err).toContain(`${retiredOption.startsWith("--agents-dir") ? "--agents-dir" : retiredOption} is retired`);
+      expect(result.err).toContain("~/.agents/skills/agentera/SKILL.md");
+      expect(result.err).toContain("npx -y agentera@next prime --context <capability> --format json");
+      expect(fs.existsSync(cfg)).toBe(false);
+      expect(fs.existsSync(path.join(tmp, "retired-option", ".codex", "agents"))).toBe(false);
+    },
+  );
+
   it("dry-run reports a pending change and writes nothing (rc 1)", () => {
     const root = path.join(tmp, "root");
-    managedRootWithAgents(root);
+    managedFresh(root);
     const cfg = path.join(tmp, "dry", ".codex", "config.toml");
     fs.mkdirSync(path.dirname(cfg), { recursive: true });
     const r = run(["--install-root", root, "--config-file", cfg, "--dry-run"]);
@@ -262,7 +259,7 @@ describe("setup codex: codexMain end-to-end", () => {
 
   it("conflicts (rc 2) on sibling keys without --force", () => {
     const root = path.join(tmp, "root");
-    managedRootWithAgents(root);
+    managedFresh(root);
     const cfg = path.join(tmp, "conf", ".codex", "config.toml");
     fs.mkdirSync(path.dirname(cfg), { recursive: true });
     fs.writeFileSync(cfg, '[shell_environment_policy]\nset = { FOO = "bar" }\n');
@@ -289,8 +286,8 @@ describe("setup codex: misplaced shell_environment_policy", () => {
       "\n" +
       "[shell_environment_policy.set]\n" +
       "\n" +
-      "[agents]\n" +
-      "max_depth = 1\n";
+      "[unrelated]\n" +
+      "setting = true\n";
     const o = planChange(current, R, { force: false });
     expect(o.action).toBe("normalize");
     expect(o.newText).toContain(`set = { AGENTERA_HOME = "${R}" }`);
