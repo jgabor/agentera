@@ -1,9 +1,10 @@
 # Health Artifact Schema
 #
-# Audit log maintained by audit. Each audit entry records assessed
-# dimensions, findings (critical/warning/info counts), overall trajectory,
-# per-dimension grades (A-F), per-dimension findings with confidence, and
-# trend analysis against the prior audit.
+# Audit normally owns health records. Orchestrate may append only the limited
+# artifact_freshness record for terminal-plan closure after Audit passes. Each
+# audit entry records assessed dimensions, findings (critical/warning/info
+# counts), overall trajectory, per-dimension grades (A-F), per-dimension
+# findings with confidence, and trend analysis against the prior audit.
 #
 # The active authority is one health_audit entity per writer-owned file. The
 # numbered projection model below is retained only as an exact legacy migration
