@@ -188,6 +188,51 @@ describe("native resource cleanup ownership", () => {
     expect(fs.existsSync(destination)).toBe(true);
   });
 
+  it("keeps an absent selected resource noop with unrelated valid ledger records", () => {
+    const selected = resourceCases[1];
+    const statusDestination = path.join(home, ".codex", "agents", "status.toml");
+    const visionDestination = path.join(home, ".codex", "agents", "vision.toml");
+    fs.mkdirSync(path.dirname(statusDestination), { recursive: true });
+    fs.writeFileSync(statusDestination, "# owned status\n");
+    fs.writeFileSync(visionDestination, "# owned vision\n");
+    const ledger: LifecycleOwnershipLedger = {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [
+        ledgerFor("codex.agent-descriptor.status", "managed", statusDestination).records[0]!,
+        ledgerFor("codex.agent-descriptor.vision", "managed", visionDestination).records[0]!,
+      ],
+    };
+
+    const preview = previewNativeResourceCleanup({ resourceId: selected.id, home, ledger });
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+
+    expect(preview).toMatchObject({
+      ledgerAuthorization: "match_or_absent_noop",
+      ledgerDiagnostics: [],
+    });
+    expect(preview.plan.operations[0]?.action).toBe("noop");
+    expect(applied.operations[0]?.status).toBe("noop");
+    expect(applied.ownershipLedger.records).toEqual(ledger.records);
+  });
+
+  it("preserves an existing unowned resource despite unrelated valid ledger records", () => {
+    const selected = resourceCases[1];
+    const destination = selected.destination();
+    const unrelatedDestination = path.join(home, ".codex", "agents", "status.toml");
+    selected.install(destination);
+    fs.writeFileSync(unrelatedDestination, "# owned status\n");
+    const ledger = ledgerFor("codex.agent-descriptor.status", "managed", unrelatedDestination);
+
+    const preview = previewNativeResourceCleanup({ resourceId: selected.id, home, ledger });
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+
+    expect(preview).toMatchObject({ ledgerAuthorization: "blocked" });
+    expect(preview.plan.operations[0]).toMatchObject({ action: "action_required" });
+    expect(applied.operations[0]?.status).toBe("action_required");
+    expect(fs.existsSync(destination)).toBe(true);
+  });
+
   it("preserves a changed Codex descriptor as action_required", () => {
     const resource = resourceCases[1];
     const destination = resource.destination();

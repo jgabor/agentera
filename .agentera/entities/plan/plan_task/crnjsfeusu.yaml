@@ -11,3 +11,13 @@ record:
     - GIVEN health closure fails WHEN orchestration resolves the cycle THEN the plan remains open and the finding is surfaced.
     - GIVEN a missing plan WHEN orchestration starts THEN bootstrap remains unchanged; state-plus-instructions tests pin all three cases.
   plan: grxukdwjrz
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation with health-authority prose rechecks
+      recorded_at: 2026-07-23 17:59
+      writer_command: agentera state plan record-evaluation

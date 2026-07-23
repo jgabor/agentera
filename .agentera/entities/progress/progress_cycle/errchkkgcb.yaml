@@ -1,0 +1,12 @@
+id: errchkkgcb
+artifact: progress
+record:
+  timestamp: 2026-07-23 18:05
+  type: fix
+  phase: build
+  what: "Changed packages/cli/src/runtime/nativeResourceCleanup.ts ledgerDiagnostics(): an absent selected resource returns noop with unrelated valid ledger records; present resources retain whole-resource ownership enforcement."
+  context:
+    intent: Make the selected absent-resource cleanup output coherent without relaxing ownership proof for existing resources.
+    constraints: No live cleanup, approval, shared Codex configuration, resource IDs, user-state, or ownership identity/fingerprint policy changed.
+    scope: Native cleanup diagnostics, proportional runtime tests, and plan task state.
+  verified: Focused native cleanup test (12 passed); full source suite (200 files, 2482 passed, 1 skipped); typecheck, build, package verification, and compact passed.

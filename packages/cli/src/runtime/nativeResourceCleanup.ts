@@ -275,7 +275,7 @@ function expandHome(template: string, home: string): string {
 function ledgerDiagnostics(plan: LifecycleOperationPlan, resource: NativeResourceCleanupDefinition): string[] {
   const ledger = plan.request.ledger ?? emptyLifecycleOwnershipLedger();
   const planned = plan.operations[0];
-  if (planned?.action === "noop" && ledger.records.length === 0) return [];
+  if (planned?.action === "noop") return [];
   const records = ledger.records.filter((record) => record.resourceId === resource.id);
   if (records.length !== 1) return [`${resource.id}: cleanup requires exactly one ownership ledger record`];
   const record = records[0]!;
