@@ -10,7 +10,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateEntityId, publishEntity, replaceEntity, validateEntityDiscovery, validateEntityState, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
+import { allocateEntityId, publishEntity, replaceEntity, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
@@ -107,6 +107,10 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
     try { return createPlanEntities(req, { ...options, publicationContext: binding.publicationContext }); }
     finally { binding.publicationContext.close(); }
   }
+  return withEntityWriterLock(options.publicationContext, () => createPlanEntitiesUnderLock(req, options as Options & { publicationContext: EntityPublicationContext }));
+}
+
+function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & { publicationContext: EntityPublicationContext }): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const input = structuredClone(req.input ?? {});
   validatePlanCreateInput(input);
@@ -134,8 +138,23 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
   });
   const publications = [{ boundary: PLAN, id: planId, record: planRecord }, ...taskRecords.map((record, index) => ({ boundary: TASK, id: taskIds[index], record }))];
   if (req.dryRun) return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })) });
+  const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
+  const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
+  const openPlans = entities.filter((entity) => entity.boundary === PLAN && planStatus(entity) === "open");
+  const completedPlans = entities.filter((entity) => entity.boundary === PLAN && planStatus(entity) === "complete");
+  const currentPredecessor = openPlans.length === 0 && completedPlans.length === 1 ? completedPlans[0] : undefined;
   const published: Array<{ relative: string; identity: PublishedTargetIdentity }> = [];
+  let predecessor: { relative: string; archivedIdentity: PublishedTargetIdentity; bytes: string } | undefined;
   try {
+    if (currentPredecessor) {
+      const archivedRecord = structuredClone(currentPredecessor.record!);
+      const archivedHeader = mapping(archivedRecord.header) ? archivedRecord.header : {};
+      archivedHeader.status = "archived";
+      archivedRecord.header = archivedHeader;
+      const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: currentPredecessor.id!, expectedRecord: currentPredecessor.record!, record: archivedRecord });
+      if (!archived.publishedIdentity || archived.previousBytes === undefined) throw new Error(`completed predecessor '${currentPredecessor.id}' archive did not retain its exact recovery identity and bytes`);
+      predecessor = { relative: relative(req.projectRoot, archived.path), archivedIdentity: archived.publishedIdentity, bytes: archived.previousBytes };
+    }
     for (const item of publications) {
       const result = publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, ...item });
       if (!result.replay) {
@@ -148,7 +167,20 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
     if (!validation.valid) throw new Error(`created plan graph failed state validation: ${validation.issues.map(({ message }) => message).join("; ")}`);
     options.publicationContext.assertValid();
   } catch (error) {
-    for (const item of published.reverse()) options.publicationContext?.removeExact(item.relative, item.identity);
+    const recoveryFailures: string[] = [];
+    for (const item of published.reverse()) {
+      try {
+        const removed = options.publicationContext.removeExact(item.relative, item.identity);
+        if (removed === "identity_mismatch") recoveryFailures.push(`cleanup ownership changed for replacement entity '${item.relative}'`);
+      } catch (cleanupError) {
+        recoveryFailures.push(`cleanup failed for replacement entity '${item.relative}': ${(cleanupError as Error).message}`);
+      }
+    }
+    if (predecessor) {
+      try { options.publicationContext.restoreExact(predecessor.relative, predecessor.archivedIdentity, predecessor.bytes); }
+      catch (restoreError) { recoveryFailures.push(`predecessor restoration failed because ownership changed or publication was unsafe: ${(restoreError as Error).message}`); }
+    }
+    if (recoveryFailures.length) throw new Error(`plan replacement failed: ${(error as Error).message}; recovery failed: ${recoveryFailures.join("; ")}`, { cause: error });
     throw error;
   }
   return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })) });

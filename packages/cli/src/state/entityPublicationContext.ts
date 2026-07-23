@@ -27,6 +27,11 @@ export interface PublishedTargetIdentity {
   sha256: string;
 }
 
+export interface ExactReplacementResult {
+  previousBytes: string;
+  publishedIdentity: PublishedTargetIdentity;
+}
+
 function samePublished(left: PublishedTargetIdentity, right: PublishedTargetIdentity): boolean {
   return left.dev === right.dev
     && left.ino === right.ino
@@ -494,7 +499,16 @@ export class EntityPublicationContext {
     }
   }
 
-  replaceExisting(relativeTarget: string, expectedBytes: string, bytes: string): void {
+  replaceExisting(relativeTarget: string, expectedBytes: string, bytes: string): ExactReplacementResult {
+    return this.replaceOwned(relativeTarget, expectedBytes, bytes);
+  }
+
+  restoreExact(relativeTarget: string, expected: PublishedTargetIdentity, bytes: string): ExactReplacementResult {
+    // Recovery stays bound to the pinned root and exact archived target even when context invalidation caused the primary failure.
+    return this.replaceOwned(relativeTarget, expected, bytes, false);
+  }
+
+  private replaceOwned(relativeTarget: string, expected: string | PublishedTargetIdentity, bytes: string, verifyContext = true): ExactReplacementResult {
     const segments = relativeTarget.split(path.sep).filter(Boolean);
     if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
       throw new Error(`unsafe entity replacement target '${relativeTarget}'`);
@@ -514,9 +528,10 @@ export class EntityPublicationContext {
       const directoryFd = directories.at(-1)!.fd;
       const targetName = segments.at(-1)!;
       targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd });
-      if (!readDescriptor(targetFd).equals(Buffer.from(expectedBytes)))
-        throw new Error(`entity '${relativeTarget}' changed before replacement; preserve both changes and retry explicitly`);
+      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd }, verifyContext);
+      const previousBytes = readDescriptor(targetFd);
+      if (typeof expected === "string" ? !previousBytes.equals(Buffer.from(expected)) : !matchesPublished(targetFd, expected))
+        throw new Error(`entity '${relativeTarget}' ownership changed before replacement; preserve both changes and retry explicitly`);
       backupName = `.${targetName}.${process.pid}.${randomUUID()}.previous`;
       fs.linkSync(fdPath(directoryFd, targetName), fdPath(directoryFd, backupName));
       if (!openMatches(directoryFd, backupName, targetFd, FILE_FLAGS))
@@ -525,14 +540,15 @@ export class EntityPublicationContext {
       stageFd = fs.openSync(fdPath(directoryFd, stageName), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
       fs.writeFileSync(stageFd, bytes, "utf8");
       fs.fsyncSync(stageFd);
-      this.assertBoundary(directories, { name: stageName, fd: stageFd }, { name: targetName, fd: targetFd });
+      this.assertBoundary(directories, { name: stageName, fd: stageFd }, { name: targetName, fd: targetFd }, verifyContext);
       fs.renameSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName));
       replacementVisible = true;
       stageName = undefined;
       syncDirectory(directoryFd);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd });
+      this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd }, verifyContext);
       this.removeOwnedFile(directoryFd, backupName, targetFd);
       backupName = undefined;
+      return { previousBytes: previousBytes.toString("utf8"), publishedIdentity: publishedIdentity(stageFd) };
     } catch (error) {
       const directoryFd = directories.at(-1)?.fd;
       if (replacementVisible && directoryFd !== undefined && stageFd !== undefined && targetFd !== undefined) {
@@ -571,8 +587,9 @@ export class EntityPublicationContext {
     directories: DirectoryEntry[],
     stage?: { name: string; fd: number },
     target?: { name: string; fd: number },
+    verifyContext = true,
   ): void {
-    this.assertValid();
+    if (verifyContext) this.assertValid();
     for (const entry of directories) {
       if (!openMatches(entry.parentFd, entry.name, entry.fd, DIRECTORY_FLAGS)) {
         throw new Error(`entity publication directory '${entry.name}' changed during publication`);

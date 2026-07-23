@@ -44,6 +44,12 @@ function create(root: string, title: string, dependency = false): any {
   const input = path.join(root, `${title}.yaml`); fs.writeFileSync(input, dumpYamlMapping(plan(title, dependency)));
   const result = capture(root, ["state", "plan", "create", "--input", input, "--format", "json"]); expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out);
 }
+function complete(root: string, title: string): any {
+  const created = create(root, title);
+  expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", created.tasks[0].id, "--status", "complete", "--format", "json"]).rc).toBe(0);
+  expect(capture(root, ["state", "plan", "set-plan-status", "--plan", created.id, "--status", "complete", "--format", "json"]).rc).toBe(0);
+  return created;
+}
 function fixtureId(index: number): string {
   let value = index;
   return Array.from({ length: 10 }, () => {
@@ -420,6 +426,86 @@ describe("plan and task entity authority", () => {
     expect(() => createPlanEntities(request(root, "create", {}, plan("rollback", true)), { publicationContext: binding.publicationContext, candidate: (() => { const ids = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"]; return () => ids.shift()!; })() })).toThrow(/injected create failure/);
     binding.publicationContext.close();
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 0 });
+  });
+
+  it("restores a completed predecessor byte-for-byte after each replacement publication boundary, then archives it once on retry", () => {
+    for (const failAt of [1, 2]) {
+      const root = project(); const predecessor = complete(root, `predecessor-${failAt}`);
+      const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`);
+      const predecessorBytes = fs.readFileSync(predecessorPath, "utf8");
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let calls = 0;
+      vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => { calls += 1; if (calls === failAt) throw new Error(`injected replacement publication failure ${failAt}`); return original(target, bytes); });
+      const failedIds = ["cccccccccc", "dddddddddd"];
+      expect(() => createPlanEntities(request(root, "create", {}, plan("replacement")), { publicationContext: binding.publicationContext, candidate: () => failedIds.shift()! })).toThrow(/replacement publication failure/);
+      expect(fs.readFileSync(predecessorPath, "utf8")).toBe(predecessorBytes);
+      expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan/cccccccccc.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan_task/dddddddddd.yaml"))).toBe(false);
+      vi.mocked(binding.publicationContext.publishImmutable).mockImplementation(original);
+      const ids = ["cccccccccc", "dddddddddd"];
+      const replacement = createPlanEntities(request(root, "create", {}, plan("replacement")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! });
+      binding.publicationContext.close(); vi.restoreAllMocks();
+      expect(replacement.id).toBe("cccccccccc");
+      expect(loadYamlMapping(fs.readFileSync(predecessorPath, "utf8")).record).toMatchObject({ header: { status: "archived" } });
+      expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 4 });
+    }
+  });
+
+  it("restores the exact predecessor and removes the whole replacement graph after post-publication validation or identity failure", () => {
+    for (const boundary of ["validation", "identity"] as const) {
+      const root = project(); const predecessor = complete(root, `predecessor-${boundary}`);
+      const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`);
+      const predecessorBytes = fs.readFileSync(predecessorPath, "utf8");
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const originalPublish = binding.publicationContext.publishImmutable.bind(binding.publicationContext);
+      const originalReplace = binding.publicationContext.replaceExisting.bind(binding.publicationContext);
+      const originalExact = binding.publicationContext.restoreExact.bind(binding.publicationContext);
+      const originalAssert = binding.publicationContext.assertValid.bind(binding.publicationContext); let publications = 0; let replacements = 0;
+      vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => { replacements += 1; return originalReplace(...args); });
+      vi.spyOn(binding.publicationContext, "restoreExact").mockImplementation((...args) => { replacements += 1; return originalExact(...args); });
+      vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+        const result = originalPublish(target, bytes); publications += 1;
+        if (boundary === "validation" && publications === 2) fs.writeFileSync(path.join(root, ".agentera/entities/plan/plan_task/eeeeeeeeee.yaml"), "invalid: residue\n");
+        return result;
+      });
+      if (boundary === "identity") vi.spyOn(binding.publicationContext, "assertValid").mockImplementation(() => { if (publications === 2) throw new Error("injected replacement identity failure"); return originalAssert(); });
+      const ids = ["cccccccccc", "dddddddddd"];
+      expect(() => createPlanEntities(request(root, "create", {}, plan(`replacement-${boundary}`)), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(boundary === "validation" ? /failed state validation/ : /identity failure/);
+      binding.publicationContext.close(); vi.restoreAllMocks();
+      expect(fs.readFileSync(predecessorPath, "utf8")).toBe(predecessorBytes);
+      expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan/cccccccccc.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan_task/dddddddddd.yaml"))).toBe(false);
+      expect(replacements).toBe(2);
+      if (boundary === "validation") fs.rmSync(path.join(root, ".agentera/entities/plan/plan_task/eeeeeeeeee.yaml"));
+      expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 2 });
+    }
+  });
+
+  it("fails closed with both errors when predecessor restoration ownership changes", () => {
+    const root = project(); const predecessor = complete(root, "owned predecessor");
+    const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`); const competing = "competing predecessor bytes\n";
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation(() => { fs.writeFileSync(predecessorPath, competing); throw new Error("primary replacement failure"); });
+    const ids = ["cccccccccc", "dddddddddd"];
+    expect(() => createPlanEntities(request(root, "create", {}, plan("replacement")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/primary replacement failure.*recovery.*ownership|recovery.*ownership.*primary replacement failure/i);
+    binding.publicationContext.close();
+    expect(fs.readFileSync(predecessorPath, "utf8")).toBe(competing);
+  });
+
+  it("retains competing replacement residue and reports primary plus cleanup failure", () => {
+    const root = project(); complete(root, "cleanup predecessor");
+    const replacementPath = path.join(root, ".agentera/entities/plan/plan/cccccccccc.yaml"); const competing = "competing replacement bytes\n";
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const originalPublish = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let publications = 0;
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+      const result = originalPublish(target, bytes); publications += 1;
+      if (publications === 2) fs.writeFileSync(replacementPath, competing);
+      return result;
+    });
+    const ids = ["cccccccccc", "dddddddddd"];
+    expect(() => createPlanEntities(request(root, "create", {}, plan("cleanup replacement")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/failed state validation.*recovery.*cleanup|recovery.*cleanup.*failed state validation/i);
+    binding.publicationContext.close();
+    expect(fs.readFileSync(replacementPath, "utf8")).toBe(competing);
   });
 
   it("creates a valid plan graph when logical validation reaches migrated summary sources through the real root", () => {

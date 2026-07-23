@@ -840,7 +840,7 @@ export interface PublishEntityResult {
   boundary: string;
   path: string;
   replay: boolean;
-  publishedIdentity?: PublishedTargetIdentity;
+  publishedIdentity?: PublishedTargetIdentity; previousBytes?: string;
 }
 
 export interface ReplaceEntityRequest extends PublishEntityRequest {
@@ -926,12 +926,12 @@ export function replaceEntityUnderLock(request: ReplaceEntityRequest): PublishEn
   const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
   if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record))
     return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
-  context.replaceExisting(
+  const replacement = context.replaceExisting(
     relativeTarget,
     dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.expectedRecord }),
     dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.record }),
   );
-  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false };
+  return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false, publishedIdentity: replacement.publishedIdentity, previousBytes: replacement.previousBytes };
 }
 
 function withPublicationContext<T>(

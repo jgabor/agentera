@@ -1,0 +1,16 @@
+id: vlzfrsgrzb
+artifact: progress
+record:
+  timestamp: 2026-07-24 00:42
+  type: fix
+  phase: build
+  what: "Made completed-plan replacement transactional: archive snapshots retain exact bytes and identity, failed creation removes only exact-owned residue, and guarded recovery restores the completed predecessor for safe retry."
+  context:
+    intent: Implement plan wsshqadwng task gjtpahmifa without advancing its orchestrated status.
+    constraints: Preserved archive immutability, exact ownership, migrated provenance, task status, versions, and vision; no push, publish, or tag.
+    unknowns: Task 3 still owns end-to-end comparison of public recovery prose; no output-schema delta was observed here.
+    scope: Plan entity replacement lifecycle, descriptor-pinned exact restoration, regression tests, and typed progress.
+  inspiration: Task gjtpahmifa acceptance criteria and the automatic-restoration lifecycle decision.
+  discovered: The stateWrite.v1 response shape and writer operation contract are unchanged; the fix changes only replacement side effects already owned by plan create, so no public contract file required an update in this task.
+  verified: pnpm -C packages/cli test -- test/state/entityPublicationContext.test.ts test/state/planEntities.test.ts passed 48 tests; pnpm -C packages/cli test passed 2495 tests with 1 skipped; pnpm -C packages/cli run typecheck and pnpm -C packages/cli build passed.
+  next: Orchestrate should record Audit for gjtpahmifa before completion; do not begin integration/package-readiness or state-synchronization tasks from this build cycle.
