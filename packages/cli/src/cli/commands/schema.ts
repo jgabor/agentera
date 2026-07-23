@@ -15,7 +15,10 @@ import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
 import { CANONICAL_SHARED_SKILL_PATH } from "../../setup/sharedSkill.js";
-import { loadRetiredRuntimeCleanupContract } from "../../runtime/retiredRuntimeCleanup.js";
+import {
+  loadNativeResourceCleanupContract,
+  nativeResourceCleanupIds,
+} from "../../runtime/nativeResourceCleanup.js";
 import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 
@@ -124,7 +127,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   stats: "Deprecated alias for report. Read or refresh privacy-gated usage analytics.",
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
   upgrade:
-    "Preview or apply app and project-state migration, including recognized v2 rewiring, or explicit retired Claude cleanup.",
+    "Preview or apply app and project-state migration, including recognized v2 rewiring, or explicit native Agentera resource cleanup.",
   doctor: "Check Agentera CLI, app, shared-skill, and project-integration status.",
 };
 function availableStructuredFields(command: string): string[] {
@@ -422,7 +425,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     artifactLocations,
   );
   gaps.push(...schemaGaps);
-  const retiredRuntimeCleanup = loadRetiredRuntimeCleanupContract();
+  const nativeResourceCleanup = loadNativeResourceCleanupContract();
   const retrievalAuthority = loadStateRetrievalAuthority();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
@@ -461,28 +464,26 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       },
       supported_routes: {
         v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
-        retired_cleanup: "agentera upgrade --legacy-cleanup claude --dry-run|--yes",
+        native_resource_cleanup: "agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
       },
-      retired_runtime_inputs: retiredRuntimeCleanup.runtimes.map((runtime) => ({
-        id: runtime.id,
-        active_runtime: false,
-        source_product: runtime.sourceProduct,
-        cleanup_contract: retiredRuntimeCleanup.sourcePath,
-        cleanup: {
-          preview: "strictly_read_only",
-          apply_requires: "explicit_approval",
-          ownership: "matching legacy ledger identity and fingerprint",
-        },
-        analytics: {
-          import_flag: "--import-source claude",
-          source_class: "historical_import",
-          active_runtime: false,
-          default_view: "excluded",
-          all_sources_view: "--sources all",
-          sensitivity_warning:
-            "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
-        },
-      })),
+      native_resource_cleanup: {
+        contract: nativeResourceCleanup.sourcePath,
+        selection: "native_agentera_resource_only",
+        resource_ids: nativeResourceCleanupIds(nativeResourceCleanup),
+        preview: "strictly_read_only",
+        apply_requires: "explicit_approval",
+        ownership: "matching whole-resource ledger identity and fingerprint",
+        shared_configuration_without_key_ledger: "action_required",
+      },
+      historical_import: {
+        source: "claude",
+        import_flag: "--import-source claude",
+        source_class: "historical_import",
+        default_view: "excluded",
+        all_sources_view: "--sources all",
+        sensitivity_warning:
+          "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
+      },
     },
     routine_state_commands: ROUTINE_STATE_COMMANDS,
     structured_output: {

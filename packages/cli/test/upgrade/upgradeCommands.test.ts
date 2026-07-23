@@ -85,11 +85,11 @@ describe("buildUpgradeCommands", () => {
       project: "/tmp/proj",
       installRoot: "/tmp/agentera",
       channel,
-      legacyCleanup: "claude",
+      legacyCleanup: "claude.agentera-skill-link",
     });
 
-    expect(cmds.dryRunCommand).toContain("--legacy-cleanup claude");
-    expect(cmds.applyCommand).toContain("--legacy-cleanup claude");
+    expect(cmds.dryRunCommand).toContain("--legacy-cleanup claude.agentera-skill-link");
+    expect(cmds.applyCommand).toContain("--legacy-cleanup claude.agentera-skill-link");
     expect(cmds.applyCommand).toContain("--yes");
   });
 

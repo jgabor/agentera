@@ -1,0 +1,36 @@
+id: vooqzwqnlo
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-23
+    status: open
+    reviewed: 2026-07-23
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    revised: Separated provenance definition from cleanup, kept supported hosts active, recorded accepted smoke evidence, and moved final-tree verification after state synchronization.
+    title: "Plan: Retire Native Runtime Descriptors"
+  what: Remove the remaining native capability descriptor product surface so Agentera ships and supports one runtime-neutral discovery path through the canonical shared skill and one behavior and state path through the CLI.
+  why: Firm Decision nksvqmnevm requires one portable integration contract. Bundled Codex descriptors, descriptor installation and validation, agent-dispatch settings, tests, and current documentation duplicate that contract and can drift from the shared skill.
+  constraints: Preserve skills/agentera/SKILL.md and CLI behavior. Treat the accepted discovery evidence as sufficient without more live-host prompts. Keep Codex, Cursor, OpenCode, and Copilot classified as supported hosts. Never remove or rewrite user-owned runtime state. Cleanup requires durable positive Agentera ownership provenance, read-only preview, explicit apply approval, and idempotent retry. Preserve historical migration evidence and fixtures. Do not bump the suite version during the 3.0.0 hold.
+  overall_acceptance: GIVEN the plan is complete WHEN the final repository, built package, CLI help, validation surfaces, and migration behavior are inspected THEN no active native capability descriptor is shipped, installed, configured, validated, or advertised; every supported runtime retains the canonical shared skill and CLI path; proven Agentera-owned remnants can be retired safely; unowned state and historical evidence remain untouched.
+  scope:
+    included:
+      - skills/agentera/agents/*.toml and package inclusion contracts
+      - Codex descriptor installation and Agentera-added multi-agent settings
+      - descriptor validation CLI, help, fixtures, and tests
+      - host-neutral provenance-gated cleanup of previously installed native resources
+      - current package characterization, schema commitments, upgrade guidance, and changelog entry
+      - final Agentera plan, progress, TODO, decision, and health synchronization
+    excluded:
+      - skills/agentera/SKILL.md behavior or capability routing changes
+      - new live-host prompts or another discovery smoke-test round
+      - user removal of ~/.claude/skills/agentera
+      - user-owned runtime agents or configuration
+      - historical archives, migration receipts, and fixtures except where current tests classify them
+      - npm publication, tagging, pushing, and suite version changes
+  design: Establish the evidence and ownership contract before deleting source evidence. Remove the duplicate current product contract, then close active installation and configuration paths. Route eligible legacy cleanup through the existing ownership-aware lifecycle instead of a new subsystem. Verify the package and CLI as one runtime-neutral surface, synchronize project state, and reverify the final tree.
+  unknowns:
+    - question: Does durable positive ownership provenance exist for every installed descriptor and Agentera-added Codex configuration key?
+      affects_task: 4
+      resolve_by: Task 1 inventories each ownership unit before deletion. Task 4 removes only ledger-bound identities and fingerprints; absent key-level provenance produces preservation and action_required.
+  surprises: ""

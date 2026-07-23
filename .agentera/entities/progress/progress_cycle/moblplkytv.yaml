@@ -1,0 +1,13 @@
+id: moblplkytv
+artifact: progress
+record:
+  timestamp: 2026-07-23 13:58
+  type: feat
+  phase: build
+  what: Established the native-resource cleanup evidence and ownership contract.
+  context:
+    intent: Implement Task psovbbpibd without retiring supported hosts or deleting descriptor sources.
+    constraints: No live-host prompts, descriptor deletion, Codex setup retirement, installed-remnant cleanup, version bump, publish, tag, or push.
+    unknowns: No durable key-level ledger exists for Codex config.toml; the contract preserves its three Agentera-written keys as action_required.
+    scope: Native cleanup contract, lifecycle CLI/schema projection, docs, tests, and Task psovbbpibd state.
+  verified: pnpm -C packages/cli test passed (201 files; 2,471 passed, 1 skipped); typecheck, build, package verification, local schema assertion, and capability-contract validation passed.

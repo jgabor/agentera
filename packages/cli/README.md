@@ -38,15 +38,17 @@ Preview has no side effects. The apply path is the explicit, one-way v2-to-v3
 migration described in [UPGRADE.md](../../UPGRADE.md); it does not run a native
 package installer.
 
-Retired Claude cleanup is intentionally separate:
+Native Agentera resource cleanup is intentionally separate from host support:
 
 ```bash
-npx -y agentera@next upgrade --legacy-cleanup claude --dry-run
+npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --dry-run
 ```
 
-It can remove only the exact Agentera-owned legacy link. Historical transcript
-import is also explicit (`agentera report refresh --import-source claude`) and
-is excluded from default active-runtime analytics.
+It selects declared native Agentera resources only. Each removal needs a
+matching whole-resource ledger identity and fingerprint; shared Codex config
+keys require unavailable key-level evidence and remain action-required.
+Historical transcript import is also explicit (`agentera report refresh
+--import-source claude`) and is excluded from default active-runtime analytics.
 
 ## Bounded state retrieval
 

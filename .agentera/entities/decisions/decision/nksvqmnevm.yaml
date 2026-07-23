@@ -1,0 +1,17 @@
+id: nksvqmnevm
+artifact: decisions
+record:
+  date: 2026-07-23
+  question: What integration boundary should Agentera enforce for runtimes that support the canonical shared skill?
+  context: Decision llavvlpcmb established the portable shared skill and CLI as the sole active integration boundary. Native Cursor and OpenCode descriptors are already retired, but skills/agentera/agents/*.toml and Codex setup, validation, packaging, tests, and documentation still maintain one duplicate capability-registration path.
+  alternatives:
+    - name: Enforce the shared-skill and CLI boundary for every supported runtime and retire all native capability descriptors.
+      status: chosen
+    - name: Retire only Codex descriptors while permitting equivalent native registration elsewhere.
+      status: rejected
+    - name: Keep native descriptors as runtime conveniences alongside the shared skill.
+      status: rejected
+  choice: Codex, Cursor, OpenCode, Copilot, and future compatible runtimes must discover Agentera through ~/.agents/skills/agentera/SKILL.md and obtain behavior and state through the Agentera CLI. Delete the bundled descriptor tree and every active installer, validator, package, schema, test, and documentation dependency; prevent native descriptor reintroduction. Require shared-skill invocation smoke coverage for each supported runtime. Remove installed native resources and Agentera-added multi-agent settings only when positive ownership provenance exists; preserve user-owned state and migration history.
+  reasoning: One runtime-neutral contract prevents duplicate discovery, behavioral drift, and runtime-specific lifecycle burden. Codex descriptors are the remaining active violation, not a Codex-specific policy exception. Per-runtime smoke tests prove the replacement path before deletion, while provenance-gated cleanup preserves runtime trust boundaries.
+  confidence: firm
+  feeds_into: Shared skill contract, package boundary, Codex setup retirement, runtime migration cleanup, descriptor validation, tests, and documentation.

@@ -1,0 +1,13 @@
+id: psovbbpibd
+artifact: plan
+record:
+  name: Establish retirement and evidence contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN accepted smoke evidence WHEN the matrix is reviewed THEN Codex and Cursor show loaded skill instructions, OpenCode lists the canonical skill, and Copilot's intentional disablement is recorded.
+    - GIVEN the cleanup contract WHEN exposed THEN supported hosts remain active and only native Agentera resources are selectable through read-only preview and approved apply.
+    - GIVEN descriptor and configuration inventory WHEN ownership is assessed THEN each unit names durable proof; value, marker, or equality alone never authorizes shared-file mutation.
+    - GIVEN contract tests WHEN run THEN one owned pass and one unowned failure cover each resource class.
+  plan: vooqzwqnlo

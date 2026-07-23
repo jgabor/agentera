@@ -145,10 +145,10 @@ describe("repository-native retirement inventory", () => {
       status: "migration_only_contract",
       native_policy: { install_update_auth_trust_operations: "forbidden" },
     });
-    const retired = YAML.parse(fs.readFileSync(path.join(ROOT, RETAINED_LIFECYCLE_REFERENCES[3]), "utf8"));
-    expect(retired).toMatchObject({
-      status: "retired_migration_contract",
-      policy: { active_inventory_exposure: "forbidden" },
+    const cleanup = YAML.parse(fs.readFileSync(path.join(ROOT, RETAINED_LIFECYCLE_REFERENCES[3]), "utf8"));
+    expect(cleanup).toMatchObject({
+      status: "resource_retirement_contract",
+      policy: { selection: "native_agentera_resource_only" },
     });
   });
 
@@ -160,20 +160,21 @@ describe("repository-native retirement inventory", () => {
       return moduleReferences(fs.readFileSync(file, "utf8"))
         .map((specifier) => resolveTypeScriptImport(file, specifier))
         .filter((target): target is string => target !== null && (
-          /^packages\/cli\/src\/runtime\/(?:lifecycle[^/]+|retiredRuntimeCleanup)\.ts$/.test(target)
+          /^packages\/cli\/src\/runtime\/(?:lifecycle[^/]+|nativeResourceCleanup)\.ts$/.test(target)
           || target === "packages/cli/src/upgrade/lifecycleUpgrade.ts"
         ))
         .map((target) => `${importer} -> ${target}`);
     }).sort();
     expect(edges).toEqual([
-      "packages/cli/src/cli/commands/schema.ts -> packages/cli/src/runtime/retiredRuntimeCleanup.ts",
+      "packages/cli/src/cli/commands/schema.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
+      "packages/cli/src/cli/dispatch/lifecycle.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/migrate/v2HandoffManifest.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/upgrade/appContentRefresh.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/doctor.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecycleOperations.ts",
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
-      "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/retiredRuntimeCleanup.ts",
+      "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/migrationPublication.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/upgradeOrchestrator.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
     ]);

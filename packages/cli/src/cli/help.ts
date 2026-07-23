@@ -57,7 +57,7 @@ export function printUpgradeHelp(): string {
   return [
     "usage: agentera upgrade [-h] [--project PROJECT] [--install-root INSTALL_ROOT]",
     "                        [--home HOME] [--channel {stable,development}]",
-    "                        [--legacy-cleanup {claude}]",
+    "                        [--legacy-cleanup RESOURCE_ID]",
     "                        [--only {artifacts,runtime,cleanup}] [--dry-run] [--yes]",
     "                        [--force] [--verify] [--format {text,json}]",
     "",
@@ -65,9 +65,9 @@ export function printUpgradeHelp(): string {
     "  -h, --help            show this help message and exit",
     "  --project PROJECT     Project directory whose .agentera artifacts should be migrated",
     "  --install-root PATH   Agentera app home to inspect or update",
-    "  --home HOME           Home directory for shared-skill detection and explicit legacy cleanup",
+    "  --home HOME           Home directory for shared-skill detection and explicit native resource cleanup",
     "  --channel CHANNEL     Update channel: stable (2.x) or development (3.x npm)",
-    "  --legacy-cleanup ID   Explicitly include legacy-only retired Claude cleanup",
+    "  --legacy-cleanup ID   Select one declared native Agentera resource for cleanup",
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",
     "  --yes                 Explicitly approve app/project migration or selected legacy cleanup",
@@ -84,7 +84,7 @@ export function printUpgradeHelp(): string {
     "active integration:",
     "  Agentera uses the shared skill at ~/.agents/skills/agentera plus the CLI.",
     "  Current runtime selectors and native plugin, hook, agent, command, descriptor, and marketplace writes are retired.",
-    "  Claude cleanup remains explicit: agentera upgrade --legacy-cleanup claude --dry-run|--yes",
+    "  Native resource cleanup remains explicit: agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
   ].join("\n");
 }
 

@@ -6,11 +6,11 @@ import {
 } from "../runtime/lifecycleOwnershipJournal.js";
 import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 import {
-  applyRetiredRuntimeCleanup,
-  previewRetiredRuntimeCleanup,
-  type RetiredRuntimeCleanupPreview,
-  type RetiredRuntimeCleanupResult,
-} from "../runtime/retiredRuntimeCleanup.js";
+  applyNativeResourceCleanup,
+  previewNativeResourceCleanup,
+  type NativeResourceCleanupPreview,
+  type NativeResourceCleanupResult,
+} from "../runtime/nativeResourceCleanup.js";
 import type {
   LifecycleApplyOptions,
   LifecycleApplySummary,
@@ -19,7 +19,7 @@ import type {
 
 export const LIFECYCLE_UPGRADE_SCHEMA = "agentera.lifecycleUpgrade.v1" as const;
 
-export interface LifecycleRetiredSummary extends LifecycleApplySummary {
+export interface LifecycleCleanupSummary extends LifecycleApplySummary {
   pending: number;
 }
 
@@ -33,8 +33,8 @@ export interface LifecycleUpgradeResult {
     requirement: "linux_proc_self_fd";
   };
   ownershipJournal: LifecycleOwnershipJournalRead;
-  retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult;
-  retiredSummary: LifecycleRetiredSummary;
+  nativeResourceCleanup: NativeResourceCleanupPreview | NativeResourceCleanupResult;
+  cleanupSummary: LifecycleCleanupSummary;
   requiredUnmet: string[];
 }
 
@@ -42,12 +42,12 @@ export interface LifecycleUpgradeArgs {
   home: string;
   appHome: string;
   apply: boolean;
-  retiredCleanup: "claude";
+  resourceCleanup: string;
 }
 
 export interface LifecycleUpgradeApplyOptions extends LifecycleApplyOptions {}
 
-function emptySummary(): LifecycleRetiredSummary {
+function emptySummary(): LifecycleCleanupSummary {
   return {
     applied: 0,
     noop: 0,
@@ -59,7 +59,7 @@ function emptySummary(): LifecycleRetiredSummary {
   };
 }
 
-function previewSummary(preview: RetiredRuntimeCleanupPreview): LifecycleRetiredSummary {
+function previewSummary(preview: NativeResourceCleanupPreview): LifecycleCleanupSummary {
   const summary = emptySummary();
   for (const operation of preview.plan.operations) {
     if (operation.action === "noop") summary.noop += 1;
@@ -70,7 +70,7 @@ function previewSummary(preview: RetiredRuntimeCleanupPreview): LifecycleRetired
   return summary;
 }
 
-function resultSummary(result: RetiredRuntimeCleanupResult): LifecycleRetiredSummary {
+function resultSummary(result: NativeResourceCleanupResult): LifecycleCleanupSummary {
   return { ...result.summary, pending: 0 };
 }
 
@@ -95,7 +95,7 @@ function journalBlocker(journal: LifecycleOwnershipJournalRead): string {
 
 function statusFor(
   mode: "preview" | "apply",
-  summary: LifecycleRetiredSummary,
+  summary: LifecycleCleanupSummary,
   requiredUnmet: string[],
 ): LifecycleUpgradeResult["status"] {
   if (
@@ -110,14 +110,14 @@ function statusFor(
   return "noop";
 }
 
-/** Preview or apply the one explicit ownership-proven retired Claude cleanup. */
+/** Preview or apply one explicit ownership-proven native Agentera resource cleanup. */
 export function runLifecycleUpgrade(
   args: LifecycleUpgradeArgs,
   options: LifecycleUpgradeApplyOptions = {},
 ): LifecycleUpgradeResult {
   const journal = readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(args.appHome));
-  let preview = previewRetiredRuntimeCleanup({
-    runtimeId: args.retiredCleanup,
+  let preview = previewNativeResourceCleanup({
+    resourceId: args.resourceCleanup,
     home: args.home,
     ledger: journal.ledger,
   });
@@ -132,38 +132,38 @@ export function runLifecycleUpgrade(
   }
 
   let outputJournal = journal;
-  let retiredCleanup: RetiredRuntimeCleanupPreview | RetiredRuntimeCleanupResult = preview;
-  let retiredSummary = previewSummary(preview);
+  let nativeResourceCleanup: NativeResourceCleanupPreview | NativeResourceCleanupResult = preview;
+  let cleanupSummary = previewSummary(preview);
   if (args.apply && !journalBlocksMutation(journal)) {
-    retiredCleanup = applyRetiredRuntimeCleanup(preview, {
+    nativeResourceCleanup = applyNativeResourceCleanup(preview, {
       ...options,
       approved: true,
       persistLedger(ledger) {
         appendLifecycleOwnershipJournal(journal.path, ledger);
       },
     });
-    retiredSummary = resultSummary(retiredCleanup);
+    cleanupSummary = resultSummary(nativeResourceCleanup);
     outputJournal = readLifecycleOwnershipJournal(journal.path);
   }
 
-  const requiredUnmet = "plan" in retiredCleanup
-    ? retiredCleanup.plan.operations
+  const requiredUnmet = "plan" in nativeResourceCleanup
+    ? nativeResourceCleanup.plan.operations
       .filter((operation) => operation.required && operation.action !== "noop")
       .map((operation) => operation.id)
-    : retiredCleanup.requiredUnmet;
+    : nativeResourceCleanup.requiredUnmet;
   const mode = args.apply ? "apply" : "preview";
   return {
     schemaVersion: LIFECYCLE_UPGRADE_SCHEMA,
     mode,
-    status: statusFor(mode, retiredSummary, requiredUnmet),
+    status: statusFor(mode, cleanupSummary, requiredUnmet),
     approval: args.apply ? "approved" : "not_requested",
     platform: {
       securePublication: secureLifecycleRemovalAvailable(),
       requirement: "linux_proc_self_fd",
     },
     ownershipJournal: outputJournal,
-    retiredCleanup,
-    retiredSummary,
+    nativeResourceCleanup,
+    cleanupSummary,
     requiredUnmet,
   };
 }

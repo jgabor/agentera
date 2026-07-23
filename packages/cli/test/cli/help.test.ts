@@ -46,7 +46,7 @@ describe("cli help", () => {
     expect(text).toContain("--only");
     expect(text).not.toContain("--runtime {all,opencode,codex,cursor,copilot}");
     expect(text).toContain("~/.agents/skills/agentera");
-    expect(text).toContain("--legacy-cleanup {claude}");
+    expect(text).toContain("--legacy-cleanup RESOURCE_ID");
     expect(text).toContain("Current runtime selectors");
     expect(text).toContain("--format {text,json}");
     expect(text).toContain("--verify");

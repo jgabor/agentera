@@ -74,7 +74,7 @@ export interface UpgradeOrchestratorArgs {
   force?: boolean;
   /** Retired CLI input retained only so direct callers fail before mutation. */
   runtime?: string | null;
-  legacyCleanup?: "claude" | null;
+  legacyCleanup?: string | null;
 }
 
 export interface UpgradeOrchestratorPhase {
@@ -289,20 +289,20 @@ function entityReadinessPhase(
 }
 
 function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhase {
-  const retired = result.retiredSummary;
+  const cleanup = result.cleanupSummary;
   const summary: MigrationPhaseSummary = {
-    pending: retired.pending,
-    applied: retired.applied,
-    noop: retired.noop,
-    failed: retired.failed,
-    blocked: retired.blocked_unowned + retired.skipped_dependency + retired.action_required,
+    pending: cleanup.pending,
+    applied: cleanup.applied,
+    noop: cleanup.noop,
+    failed: cleanup.failed,
+    blocked: cleanup.blocked_unowned + cleanup.skipped_dependency + cleanup.action_required,
   };
   return {
     name: "lifecycle",
     status: workflowStatus(summary),
     summary,
     items: [],
-    message: "summary only; retired Claude cleanup outcomes are reported under lifecycle.retiredCleanup",
+    message: "summary only; selected native Agentera resource cleanup outcomes are reported under lifecycle.nativeResourceCleanup",
   };
 }
 
@@ -415,7 +415,7 @@ function buildUpgradePlanUnlocked(
     home,
     appHome: installRoot,
     apply: false,
-    retiredCleanup: args.legacyCleanup,
+    resourceCleanup: args.legacyCleanup,
   } : null;
   let lifecycle = lifecycleArgs ? runLifecycleUpgrade(lifecycleArgs) : null;
 
@@ -573,13 +573,13 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
   }
   if (plan.lifecycle) {
     lines.push("");
-    lines.push("retired Claude cleanup:");
+    lines.push("native Agentera resource cleanup:");
     lines.push(`  ownership journal: ${plan.lifecycle.ownershipJournal.state} at ${plan.lifecycle.ownershipJournal.path}`);
     lines.push(`  secure publication: ${plan.lifecycle.platform.securePublication ? "available" : "unavailable"} (${plan.lifecycle.platform.requirement})`);
     lines.push("  scope: exact legacy Agentera-owned skill link; user data excluded");
-    const retired = plan.lifecycle.retiredSummary;
+    const cleanup = plan.lifecycle.cleanupSummary;
     lines.push(
-      `  counts: pending=${retired.pending}, applied=${retired.applied}, noop=${retired.noop}, blocked=${retired.blocked_unowned + retired.action_required}`,
+      `  counts: pending=${cleanup.pending}, applied=${cleanup.applied}, noop=${cleanup.noop}, blocked=${cleanup.blocked_unowned + cleanup.action_required}`,
     );
   }
   if (plan.mode === "plan" && plan.summary.pending > 0 && plan.applyCommand) {

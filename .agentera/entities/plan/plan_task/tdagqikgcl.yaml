@@ -1,0 +1,13 @@
+id: tdagqikgcl
+artifact: plan
+record:
+  name: Retire the active descriptor contract
+  depends_on:
+    - psovbbpibd
+  status: pending
+  acceptance:
+    - GIVEN source and package contracts WHEN inspected THEN no native descriptor directory or requirement remains, while the canonical shared skill remains required.
+    - GIVEN CLI help and validation discovery WHEN inspected THEN descriptors are absent, and the retired family returns a bounded correction naming valid families.
+    - GIVEN retirement coverage WHEN a current native descriptor path is reintroduced THEN verification fails, while migration-only history remains allowed.
+    - GIVEN test proportionality WHEN contract classes run THEN each has one absence pass and one reintroduction failure.
+  plan: vooqzwqnlo

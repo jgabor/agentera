@@ -233,7 +233,7 @@ describe("retired runtime current-surface policy", () => {
     for (const surface of ["README.md", "UPGRADE.md"]) {
       const content = read(surface);
       expect(content, surface).not.toMatch(/--runtime\s+(?:all|opencode|codex|cursor|copilot)/);
-      expect(content, surface).toContain("--legacy-cleanup claude");
+      expect(content, surface).toContain("--legacy-cleanup RESOURCE_ID");
     }
   });
 

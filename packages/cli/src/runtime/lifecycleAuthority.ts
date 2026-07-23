@@ -11,7 +11,7 @@ export const LIFECYCLE_AUTHORITY_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-authority.yaml";
 export const LIFECYCLE_ADAPTER_CONTRACT_RELATIVE_PATH =
   "references/adapters/runtime-lifecycle-adapters.yaml";
-export const RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH =
+export const NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH =
   "references/adapters/runtime-retired-resources.yaml";
 
 const EXPECTED_EVIDENCE_FIELDS = ["host_present", "installed", "enabled", "trusted"] as const;
@@ -209,12 +209,12 @@ export function validateLifecycleAuthorityData(
       ),
     );
   }
-  if (data.retired_cleanup_contract !== RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH) {
+  if (data.native_resource_cleanup_contract !== NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH) {
     errors.push(
       sourceError(
         sourcePath,
-        "retired_cleanup_contract",
-        `must point to ${RETIRED_RUNTIME_CLEANUP_CONTRACT_RELATIVE_PATH}`,
+        "native_resource_cleanup_contract",
+        `must point to ${NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH}`,
       ),
     );
   }
@@ -392,20 +392,19 @@ export function validateLifecycleAuthorityData(
       ),
     );
   }
-  const retiredInputs = data.retired_runtime_inputs;
+  const historicalInputs = data.historical_inputs;
   if (
-    !Array.isArray(retiredInputs) ||
-    retiredInputs.length !== 1 ||
-    !isMapping(retiredInputs[0]) ||
-    retiredInputs[0].id !== "claude" ||
-    JSON.stringify(retiredInputs[0].purposes) !==
-      JSON.stringify(["consent_gated_historical_import", "owned_legacy_resource_cleanup"])
+    !Array.isArray(historicalInputs) ||
+    historicalInputs.length !== 1 ||
+    !isMapping(historicalInputs[0]) ||
+    historicalInputs[0].id !== "claude" ||
+    JSON.stringify(historicalInputs[0].purposes) !== JSON.stringify(["consent_gated_historical_import"])
   ) {
     errors.push(
       sourceError(
         sourcePath,
-        "retired_runtime_inputs",
-        "must contain only claude for consent-gated historical import and owned legacy cleanup",
+        "historical_inputs",
+        "must contain only claude for consent-gated historical import",
       ),
     );
   }

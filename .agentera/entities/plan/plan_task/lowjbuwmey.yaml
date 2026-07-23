@@ -1,0 +1,14 @@
+id: lowjbuwmey
+artifact: plan
+record:
+  name: Retire proven managed remnants
+  depends_on:
+    - psovbbpibd
+    - gypzghfmic
+  status: pending
+  acceptance:
+    - GIVEN preview WHEN native resources are evaluated THEN the report is read-only and classifies each ownership unit.
+    - GIVEN matching durable identity and fingerprint WHEN approved cleanup runs THEN only that resource is removed and retry converges to no-op.
+    - GIVEN unbound, changed, ambiguous, unsupported, or user-owned state WHEN cleanup runs THEN it is preserved as action_required without blocking independent safe removals.
+    - GIVEN cleanup tests WHEN each resource class runs THEN one owned success and one unowned preservation case prove the safety seam.
+  plan: vooqzwqnlo

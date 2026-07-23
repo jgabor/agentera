@@ -43,13 +43,13 @@ function tree(root: string): string[] {
 }
 
 describe("active shared-skill lifecycle contract", () => {
-  it("documents app upgrade, v2 migration, and explicit Claude cleanup without current runtime selectors", () => {
+  it("documents app upgrade, v2 migration, and explicit native resource cleanup without current runtime selectors", () => {
     const help = capture(["upgrade", "--help"]);
     expect(help.rc).toBe(0);
     expect(help.out).not.toContain("--runtime");
     expect(help.out).toContain("~/.agents/skills/agentera");
     expect(help.out).toContain("v2-to-v3 development upgrade");
-    expect(help.out).toContain("--legacy-cleanup {claude}");
+    expect(help.out).toContain("--legacy-cleanup RESOURCE_ID");
 
     const doctorHelp = capture(["doctor", "--help"]);
     expect(doctorHelp.rc).toBe(0);
@@ -107,7 +107,7 @@ describe("active shared-skill lifecycle contract", () => {
     expect(tree(root)).toEqual(before);
   });
 
-  it("keeps normal preview/apply native-resource-free and Claude cleanup explicitly reachable", () => {
+  it("keeps normal preview/apply native-resource-free and native cleanup explicitly reachable", () => {
     const { root, home, project } = fixture();
     const forbidden = [".opencode", ".codex", ".cursor", ".github", ".claude-plugin"];
     for (const approval of ["--dry-run", "--yes"] as const) {
@@ -121,12 +121,12 @@ describe("active shared-skill lifecycle contract", () => {
     }
 
     const cleanup = capture([
-      "upgrade", "--legacy-cleanup", "claude", "--home", home, "--install-root", REPO_ROOT,
+      "upgrade", "--legacy-cleanup", "claude.agentera-skill-link", "--home", home, "--install-root", REPO_ROOT,
       "--project", project, "--dry-run", "--format", "json",
     ]);
     expect(cleanup.rc).toBe(0);
     const cleanupPayload = JSON.parse(cleanup.out);
-    expect(cleanupPayload).toHaveProperty("lifecycle.retiredCleanup.runtimeId", "claude");
+    expect(cleanupPayload).toHaveProperty("lifecycle.nativeResourceCleanup.resourceId", "claude.agentera-skill-link");
     expect(cleanupPayload.lifecycle).not.toHaveProperty("selection");
     expect(cleanupPayload.lifecycle).not.toHaveProperty("projection");
     expect(cleanupPayload.lifecycle).not.toHaveProperty("operations");

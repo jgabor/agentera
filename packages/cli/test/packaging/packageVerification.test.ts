@@ -200,17 +200,17 @@ describe("npm distribution boundary", () => {
       status: "migration_only_contract",
       native_policy: { install_update_auth_trust_operations: "forbidden" },
     });
-    const retiredAuthority = YAML.parse(fs.readFileSync(
+    const cleanupAuthority = YAML.parse(fs.readFileSync(
       path.join(fixture.packageRoot, "bundle/references/adapters/runtime-retired-resources.yaml"),
       "utf8",
     ));
-    expect(retiredAuthority).toMatchObject({
-      status: "retired_migration_contract",
+    expect(cleanupAuthority).toMatchObject({
+      status: "resource_retirement_contract",
       policy: {
-        active_inventory_exposure: "forbidden",
+        selection: "native_agentera_resource_only",
         preview: "strictly_read_only",
         apply_requires: "explicit_approval",
-        ownership: "matching_whole_resource_legacy_ledger_identity_and_fingerprint",
+        ownership: "matching_whole_resource_ledger_identity_and_fingerprint",
       },
     });
     for (const staleReference of [

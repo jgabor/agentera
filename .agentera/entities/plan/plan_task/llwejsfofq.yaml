@@ -1,0 +1,15 @@
+id: llwejsfofq
+artifact: plan
+record:
+  name: Verify the runtime-neutral product surface
+  depends_on:
+    - tdagqikgcl
+    - gypzghfmic
+    - lowjbuwmey
+  status: pending
+  acceptance:
+    - GIVEN the built npm package WHEN its bounded inventory is inspected THEN it contains the canonical shared skill and required CLI data but no native descriptors.
+    - GIVEN current documentation and schemas WHEN searched THEN only clearly historical or migration-only descriptor references remain, and the changelog records the removal.
+    - GIVEN repository verification WHEN source tests, typecheck, build, package verification, capability-contract validation, and compaction run THEN every gate passes.
+    - GIVEN accepted smoke evidence WHEN closeout is reviewed THEN no redundant live-host prompt is required.
+  plan: vooqzwqnlo

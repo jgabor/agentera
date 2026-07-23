@@ -76,7 +76,7 @@ describe("cli schema", () => {
     );
     expect(upgrade?.structured_fields).toEqual(expect.arrayContaining(["phase", "phases"]));
     expect(upgrade?.description).toContain("app and project-state migration");
-    expect(upgrade?.description).toContain("retired Claude cleanup");
+    expect(upgrade?.description).toContain("native Agentera resource cleanup");
     expect(upgrade?.description).not.toContain("runtime lifecycle repair");
     expect(upgrade?.filters).toContain("legacy_cleanup");
     expect(upgrade?.filters).toContain("only");
@@ -114,7 +114,7 @@ describe("cli schema", () => {
       },
       supported_routes: {
         v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
-        retired_cleanup: "agentera upgrade --legacy-cleanup claude --dry-run|--yes",
+        native_resource_cleanup: "agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
       },
     });
     expect(payload.integration.authority).not.toContain("runtime-lifecycle-authority");
@@ -168,21 +168,19 @@ describe("cli schema", () => {
       cli: { command: "agentera" },
       supported_routes: {
         v2_migration: expect.stringContaining("--channel development"),
-        retired_cleanup: expect.stringContaining("--legacy-cleanup claude"),
+        native_resource_cleanup: expect.stringContaining("--legacy-cleanup RESOURCE_ID"),
       },
     });
-    expect(payload.integration.retired_runtime_inputs).toEqual([
-      expect.objectContaining({
-        id: "claude",
-        active_runtime: false,
-        source_product: "claude-code",
-        analytics: expect.objectContaining({
-          import_flag: "--import-source claude",
-          source_class: "historical_import",
-          default_view: "excluded",
-        }),
-      }),
-    ]);
+    expect(payload.integration.native_resource_cleanup).toMatchObject({
+      selection: "native_agentera_resource_only",
+      resource_ids: expect.arrayContaining(["claude.agentera-skill-link", "codex.agent-descriptor.build"]),
+      shared_configuration_without_key_ledger: "action_required",
+    });
+    expect(payload.integration.historical_import).toMatchObject({
+      import_flag: "--import-source claude",
+      source_class: "historical_import",
+      default_view: "excluded",
+    });
     const decisions = (
       payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
     ).find((artifact) => artifact.name === "decisions");

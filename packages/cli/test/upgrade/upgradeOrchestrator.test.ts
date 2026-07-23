@@ -355,7 +355,7 @@ describe("buildUpgradePlan", () => {
   it.each([
     { label: "preview", yes: false, operationsPath: "plan" },
     { label: "apply", yes: true, operationsPath: "result" },
-  ])("keeps the retired cleanup phase message aligned with the $label payload", ({ yes, operationsPath }) => {
+  ])("keeps the native resource cleanup phase message aligned with the $label payload", ({ yes, operationsPath }) => {
     const project = path.join(tmp, `cleanup-${operationsPath}`);
     fs.mkdirSync(project, { recursive: true });
 
@@ -364,23 +364,23 @@ describe("buildUpgradePlan", () => {
       home,
       project,
       channel: "development",
-      legacyCleanup: "claude",
+      legacyCleanup: "claude.agentera-skill-link",
       yes,
       dryRun: !yes,
     });
     const phase = plan.phases.find((candidate) => candidate.name === "lifecycle");
 
     expect(phase?.message).toBe(
-      "summary only; retired Claude cleanup outcomes are reported under lifecycle.retiredCleanup",
+      "summary only; selected native Agentera resource cleanup outcomes are reported under lifecycle.nativeResourceCleanup",
     );
     expect(plan.lifecycle?.mode).toBe(yes ? "apply" : "preview");
-    expect(plan.lifecycle?.retiredCleanup).toHaveProperty("runtimeId", "claude");
+    expect(plan.lifecycle?.nativeResourceCleanup).toHaveProperty("resourceId", "claude.agentera-skill-link");
     if (operationsPath === "plan") {
-      expect(plan.lifecycle?.retiredCleanup).toHaveProperty("plan.operations");
-      expect(plan.lifecycle?.retiredCleanup).not.toHaveProperty("operations");
+      expect(plan.lifecycle?.nativeResourceCleanup).toHaveProperty("plan.operations");
+      expect(plan.lifecycle?.nativeResourceCleanup).not.toHaveProperty("operations");
     } else {
-      expect(plan.lifecycle?.retiredCleanup).toHaveProperty("operations");
-      expect(plan.lifecycle?.retiredCleanup).not.toHaveProperty("plan");
+      expect(plan.lifecycle?.nativeResourceCleanup).toHaveProperty("operations");
+      expect(plan.lifecycle?.nativeResourceCleanup).not.toHaveProperty("plan");
     }
   });
 

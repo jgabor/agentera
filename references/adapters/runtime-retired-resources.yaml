@@ -1,25 +1,58 @@
-schema_version: agentera.retiredRuntimeResources.v1
-status: retired_migration_contract
-decision: 92
+schema_version: agentera.nativeResourceCleanup.v1
+status: resource_retirement_contract
+decision: nksvqmnevm
 authority: references/adapters/runtime-lifecycle-authority.yaml
 operation_contract: references/adapters/runtime-lifecycle-operation-contract.yaml
 policy:
-  active_inventory_exposure: forbidden
+  host_inventory_exposure: evidence_only
+  selection: native_agentera_resource_only
   preview: strictly_read_only
   apply_requires: explicit_approval
-  ownership: matching_whole_resource_legacy_ledger_identity_and_fingerprint
+  ownership: matching_whole_resource_ledger_identity_and_fingerprint
+  shared_configuration: action_required_without_key_level_ownership
+  forbidden_ownership_evidence:
+    - value_equality
+    - managed_marker
+    - resource_name
+    - file_equality
   unsupported_platform_result: action_required
-retired_runtimes:
+accepted_host_evidence:
+  - host: codex
+    state: supported
+    proof: Codex loaded Agentera's specific canonical skill instructions and bootstrap command.
+  - host: cursor
+    state: supported
+    proof: Cursor loaded Agentera's specific canonical skill instructions and bootstrap command.
+  - host: opencode
+    state: supported
+    proof: OpenCode's native CLI listed /home/jgabor/.agents/skills/agentera/SKILL.md.
+  - host: copilot
+    state: supported_disabled
+    proof: Copilot's native CLI listed the canonical personal-agents skill; its disabled state is intentional.
+hosts:
+  - id: codex
+    display_name: Codex
+    support_status: supported
+  - id: cursor
+    display_name: Cursor
+    support_status: supported
+  - id: opencode
+    display_name: OpenCode
+    support_status: supported
+  - id: copilot
+    display_name: Copilot
+    support_status: supported_disabled
   - id: claude
     display_name: Claude Code historical migration
-    active_runtime: false
-    source_product: claude-code
-    resources:
-      - id: claude.agentera-skill-link
-        kind: symlink
-        intent: remove
-        destination: "{home}/.claude/skills/agentera"
-        ledger_status: legacy
+    support_status: retired_historical
+resources:
+  - id: claude.agentera-skill-link
+    host: claude
+    kind: symlink
+    intent: remove
+    destination: "{home}/.claude/skills/agentera"
+    ledger_status: legacy
+    durable_proof: matching whole-resource legacy ledger identity and fingerprint
     never_touch:
       - "{home}/.claude/projects"
       - "{home}/.claude/statsig"
@@ -31,3 +64,34 @@ retired_runtimes:
       - "{home}/.claude/conversations"
       - "{home}/.claude/credentials"
     safety_note: Only the declared Agentera skill symlink may be removed, and only when a matching legacy ownership ledger still binds its identity and target fingerprint. Transcript, settings, credential, conversation, stats, cache, and ambiguous paths are never cleanup targets.
+  - id: codex.agent-descriptor
+    host: codex
+    kind: file
+    intent: remove
+    destination: "{home}/.codex/agents/{descriptor}.toml"
+    descriptors: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate]
+    ledger_status: managed
+    durable_proof: matching whole-resource ledger identity and fingerprint for each declared descriptor file
+    safety_note: Each descriptor is an independently owned file. A managed marker, descriptor name, or matching content never establishes ownership.
+configuration_inventory:
+  - id: codex.config.shell_environment_policy.set.AGENTERA_HOME
+    host: codex
+    destination: "{home}/.codex/config.toml"
+    key: shell_environment_policy.set.AGENTERA_HOME
+    durable_proof: key-level ownership ledger identity and fingerprint
+    ownership_available: false
+    result_without_proof: action_required
+  - id: codex.config.agents.max_depth
+    host: codex
+    destination: "{home}/.codex/config.toml"
+    key: agents.max_depth
+    durable_proof: key-level ownership ledger identity and fingerprint
+    ownership_available: false
+    result_without_proof: action_required
+  - id: codex.config.features.multi_agent_v2
+    host: codex
+    destination: "{home}/.codex/config.toml"
+    key: features.multi_agent_v2
+    durable_proof: key-level ownership ledger identity and fingerprint
+    ownership_available: false
+    result_without_proof: action_required

@@ -22,6 +22,7 @@ import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, emitDepreca
 import { emitInvalidInput } from "../errors.js";
 import { migrationProject } from "../migrationRequired.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
+import { nativeResourceCleanupIds } from "../../runtime/nativeResourceCleanup.js";
 import type { ParsedProjectHookInput } from "../../hooks/projectHookInput.js";
 
 function rejectUnsupportedUpgradeFlag(
@@ -326,21 +327,22 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
           message:
             `argument --runtime ${v} is retired; Agentera now uses the shared skill at ` +
             "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun the app/project upgrade. " +
-            "For explicit Agentera-owned Claude cleanup, use --legacy-cleanup claude.",
+             "For explicit Agentera-owned native resource cleanup, use --legacy-cleanup RESOURCE_ID.",
         },
       });
     } else if ((v = value("--legacy-cleanup")) !== null) {
-      if (v !== "claude") {
+      const validValues = nativeResourceCleanupIds();
+      if (!validValues.includes(v)) {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
           body: {
             class: "invalid_choice",
-            message: `argument --legacy-cleanup: invalid choice: '${v}' (choose from 'claude')`,
-            valid_values: ["claude"],
+            message: `argument --legacy-cleanup: invalid choice: '${v}' (choose from ${validValues.map((id) => `'${id}'`).join(", ")})`,
+            valid_values: validValues,
           },
         });
       }
-      args.legacyCleanup = "claude";
+      args.legacyCleanup = v;
     } else if ((v = value("--only")) !== null) {
       if (v !== "artifacts" && v !== "runtime" && v !== "cleanup") {
         return emitInvalidInput(io, {

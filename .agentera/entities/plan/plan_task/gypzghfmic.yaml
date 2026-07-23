@@ -1,0 +1,12 @@
+id: gypzghfmic
+artifact: plan
+record:
+  name: Retire native Codex setup behavior
+  depends_on:
+    - tdagqikgcl
+  status: pending
+  acceptance:
+    - GIVEN normal setup or upgrade behavior WHEN Codex integration is evaluated THEN Agentera installs no descriptors and adds no descriptor limits or multi-agent feature settings.
+    - GIVEN retired descriptor-specific options WHEN invoked THEN they fail before side effects with a correction to the shared-skill workflow.
+    - GIVEN supported migration-only hook behavior WHEN descriptor setup is removed THEN it remains unchanged, with one preservation pass and one unsafe-input failure.
+  plan: vooqzwqnlo

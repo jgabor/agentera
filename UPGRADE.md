@@ -1,8 +1,8 @@
 # Upgrade and migration
 
 Agentera 3.0 uses one upgrade command for app/project migration and explicit
-retired Claude cleanup. Preview and apply are separate operations. Current
-runtime installation and repair are not upgrade operations.
+native Agentera resource cleanup. Preview and apply are separate operations.
+Current runtime installation and repair are not upgrade operations.
 
 Before the npm stable dist-tag promotion, use `agentera@next`. The stable 2.x
 channel remains `agentera@latest` until that promotion; upgrade does not publish
@@ -55,20 +55,29 @@ Retries re-observe the current app/project state. Completed migration work
 converges to no change; interrupted v2 migration continues through the same full
 apply command.
 
-## Retired Claude cleanup
+## Native Agentera resource cleanup
 
-Claude cleanup is a distinct historical route, not a current-runtime selection:
+Cleanup is a distinct resource route, not a host selection. Codex, Cursor,
+OpenCode, and Copilot remain supported through the canonical shared skill and
+CLI. Accepted smoke evidence records that Codex and Cursor loaded Agentera's
+skill instructions, OpenCode listed the canonical skill, and Copilot's listed
+canonical skill is intentionally disabled.
+
+Use `agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes` with one
+declared native Agentera resource ID.
 
 ```bash
-npx -y agentera@next upgrade --legacy-cleanup claude --dry-run
-npx -y agentera@next upgrade --legacy-cleanup claude --yes
+npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --dry-run
+npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --yes
 ```
 
-Cleanup is limited to the exact Agentera-owned legacy skill link recorded by the
-ownership journal. It never removes Claude projects, transcripts, settings,
-credentials, caches, or other user data. Ambiguous or unowned resources remain
-blocked. Preview is read-only; apply is idempotent and can be retried with the
-same explicit selection.
+The contract also inventories retired Codex descriptor files. Each file needs a
+matching whole-resource ledger identity and fingerprint before it can be
+removed. Codex configuration keys remain `action_required`: Agentera has no
+durable key-level ownership proof, so matching values, markers, names, or whole
+file contents never authorize a shared `config.toml` mutation. Preview is
+read-only; approved apply is idempotent and preserves ambiguous or unowned
+resources.
 
 Historical transcript import is independent of cleanup. Default extraction and
 analytics do not read Claude history. Import requires explicit local consent:

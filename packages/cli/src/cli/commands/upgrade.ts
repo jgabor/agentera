@@ -102,7 +102,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     err(
       `upgrade error: --runtime ${orchestratorArgs.runtime} is retired; Agentera now uses the shared skill at ` +
       "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun. " +
-      "For explicit Agentera-owned Claude cleanup, use --legacy-cleanup claude.\n",
+      "For explicit Agentera-owned native resource cleanup, use --legacy-cleanup RESOURCE_ID.\n",
     );
     return 2;
   }
