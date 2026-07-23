@@ -109,7 +109,11 @@ The contract's exact OpenAI Responses profile uses the API model identifier
 `gpt-5.6-terra`, `reasoning.effort: low`, `store: false`, a strict
 `text.format` JSON Schema, and an explicit output-token limit. Its API schema
 has all fields required, using nullable fields for outcome-inapplicable values;
-the CLI schema separately validates outcome relationships and request binding.
+the bounded API-to-CLI receipt normalization seam first validates that unmodified
+API shape, removes only contract-listed nulls, and preserves every non-null
+value unchanged. The CLI schema then separately validates outcome relationships,
+request binding, spans, canonical capabilities, and startup authorization.
+Normalization never authorizes startup or weakens a cross-field rule.
 Retry and timestamp details are harness metadata, not API-body fields.
 `store: false` disables Responses application-state storage, but is not a
 no-provider-retention promise: a no-provider-retention acceptance claim requires

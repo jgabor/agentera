@@ -181,6 +181,35 @@ function receiptErrors(receipt: RecordValue, request: string, authority: RecordV
   return errors;
 }
 
+function normalizeApiReceipt(apiReceipt: RecordValue, authority: RecordValue): { receipt?: RecordValue; errors: string[] } {
+  const apiShape = authority.api_output_shape as RecordValue;
+  const normalization = authority.api_to_cli_normalization as RecordValue;
+  const apiErrors = validateSchema(apiShape.schema as RecordValue, apiReceipt);
+  if (apiErrors.length > 0) return { errors: apiErrors.map((error) => `api.${error}`) };
+
+  const acceptedKeys = normalization.input.accepted_keys as string[];
+  const unsupportedKeys = Object.keys(apiReceipt).filter((field) => !acceptedKeys.includes(field));
+  if (unsupportedKeys.length > 0) return { errors: unsupportedKeys.map((field) => `normalization.unsupported_key.${field}`) };
+
+  const rule = (normalization.projection as RecordValue).outcome_rules as RecordValue;
+  const outcomeRule = rule[apiReceipt.outcome] as RecordValue;
+  const errors: string[] = [];
+  for (const field of outcomeRule.required_non_null as string[]) {
+    if (apiReceipt[field] === null) errors.push(`normalization.unexpected_null.${field}`);
+  }
+  for (const [field, condition] of Object.entries(outcomeRule.removable_nulls as RecordValue)) {
+    if (apiReceipt[field] !== null) continue;
+    if (condition === "always" || (condition === "when_compound_none" && apiReceipt.compound === "none")) continue;
+    errors.push(`normalization.unexpected_null.${field}`);
+  }
+  if (errors.length > 0) return { errors };
+
+  return {
+    receipt: Object.fromEntries(Object.entries(apiReceipt).filter(([, value]) => value !== null)),
+    errors: [],
+  };
+}
+
 describe("hybrid route contract", () => {
   const contract = yaml(CONTRACT_PATH);
   const phrases = yaml(PHRASES_PATH);
@@ -309,32 +338,84 @@ describe("hybrid route contract", () => {
     expect(receiptCases.some((receiptCase) => !receiptCase.valid && receiptCase.error === "binding.remainder_span")).toBe(true);
   });
 
-  it("keeps the API output shape separate from CLI outcome validation", () => {
+  it("normalizes complete API receipts before authoritative CLI validation and binding", () => {
     const authority = contract.protocol.receipt.validation_authority;
     const apiShape = authority.api_output_shape;
     expect(apiShape.canonical_capability_values_source).toBe(authority.canonical_capability_source);
     expect(apiShape.schema.properties.capability.enum.slice(0, -1)).toEqual(capabilities);
     expect(apiOutputSchemaErrors(apiShape.schema)).toEqual([]);
+    expect(authority.api_to_cli_normalization).toMatchObject({
+      name: "agentera.route_receipt_api_to_cli.v1",
+      rejection: { unsupported_key: "reject", unexpected_null: "reject", projection_bypass: "reject" },
+    });
 
+    const cases = [
+      {
+        request: "choose a route",
+        receipt: { outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
+      },
+      {
+        request: "plan the release then document it",
+        receipt: {
+          outcome: "select",
+          capability: "plan",
+          compound: "preserve",
+          question: null,
+          remainder_span: { start: 17, end: 33 },
+        },
+      },
+      {
+        request: "make it better",
+        receipt: { outcome: "clarify", capability: null, compound: null, question: "Which capability should own this?", remainder_span: null },
+      },
+      {
+        request: "hello there",
+        receipt: { outcome: "no_match", capability: null, compound: null, question: null, remainder_span: null },
+      },
+    ];
+
+    for (const testCase of cases) {
+      const apiReceipt = {
+        version: "agentera.route_receipt.v1",
+        request_sha256: crypto.createHash("sha256").update(testCase.request, "utf8").digest("hex"),
+        ...testCase.receipt,
+      };
+      expect(validateSchema(apiShape.schema, apiReceipt)).toEqual([]);
+      const normalized = normalizeApiReceipt(apiReceipt, authority);
+      expect(normalized.errors).toEqual([]);
+      expect(normalized.receipt).toBeDefined();
+      expect(receiptErrors(normalized.receipt!, testCase.request, authority, capabilities)).toEqual([]);
+      for (const [field, value] of Object.entries(apiReceipt)) {
+        if (value !== null) expect(normalized.receipt![field]).toBe(value);
+      }
+    }
+  });
+
+  it("rejects API projection bypasses, unexpected nulls, altered values, and extra keys", () => {
+    const authority = contract.protocol.receipt.validation_authority;
     const request = "choose a route";
-    const hash = crypto.createHash("sha256").update(request, "utf8").digest("hex");
     const apiSelect = {
       version: "agentera.route_receipt.v1",
-      request_sha256: hash,
+      request_sha256: crypto.createHash("sha256").update(request, "utf8").digest("hex"),
       outcome: "select",
       capability: "plan",
       compound: "none",
       question: null,
       remainder_span: null,
     };
-    expect(validateSchema(apiShape.schema, apiSelect)).toEqual([]);
-    expect(receiptErrors({
-      version: apiSelect.version,
-      request_sha256: apiSelect.request_sha256,
-      outcome: apiSelect.outcome,
-      capability: apiSelect.capability,
-      compound: apiSelect.compound,
-    }, request, authority, capabilities)).toEqual([]);
+
+    expect(receiptErrors(apiSelect, request, authority, capabilities)).not.toEqual([]);
+    expect(normalizeApiReceipt({ ...apiSelect, capability: null }, authority).errors).toEqual([
+      "normalization.unexpected_null.capability",
+    ]);
+    expect(normalizeApiReceipt({ ...apiSelect, unexpected: null }, authority).errors).toEqual([
+      "api.$.additionalProperties.unexpected",
+    ]);
+
+    const altered = normalizeApiReceipt({ ...apiSelect, request_sha256: "0".repeat(64) }, authority);
+    expect(altered.errors).toEqual([]);
+    expect(altered.receipt!.request_sha256).toBe("0".repeat(64));
+    expect(receiptErrors(altered.receipt!, request, authority, capabilities)).toContain("binding.request_sha256");
   });
 
   it("rejects unsupported or incomplete API schemas, extra format fields, and missing holdout provenance", () => {

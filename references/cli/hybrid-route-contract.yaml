@@ -130,6 +130,49 @@ protocol:
               properties:
                 start: { type: integer }
                 end: { type: integer }
+      api_to_cli_normalization:
+        name: agentera.route_receipt_api_to_cli.v1
+        purpose: >-
+          Project the API-required nullable shape into the authoritative CLI receipt
+          shape without changing any non-null value.
+        input:
+          first_step: >-
+            Validate the unmodified API response against api_output_shape.schema.
+            Reject it on any API-schema failure before projecting any field.
+          accepted_keys: [version, request_sha256, outcome, capability, compound, question, remainder_span]
+        projection:
+          operation: >-
+            Copy every non-null field unchanged, including its exact string bytes
+            and numeric values; remove only a null field listed as inapplicable by
+            the matching outcome rule.
+          outcome_rules:
+            select:
+              required_non_null: [version, request_sha256, outcome, capability, compound]
+              removable_nulls:
+                question: always
+                remainder_span: when_compound_none
+            clarify:
+              required_non_null: [version, request_sha256, outcome, question]
+              removable_nulls:
+                capability: always
+                compound: always
+                remainder_span: always
+            no_match:
+              required_non_null: [version, request_sha256, outcome]
+              removable_nulls:
+                capability: always
+                compound: always
+                question: always
+                remainder_span: always
+        rejection:
+          unsupported_key: reject
+          unexpected_null: reject
+          projection_bypass: reject
+        downstream_validation: >-
+          Pass only the projected receipt to agentera.route_receipt_schema.v1, then
+          apply canonical-capability, request-digest, span, and startup-authorization
+          checks. Normalization does not authorize startup and does not weaken any
+          CLI cross-field rule.
     request_binding: >-
       The host sends the original request transiently beside the receipt. The
       CLI recomputes SHA-256 over its UTF-8 bytes and requires an exact match to

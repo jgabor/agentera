@@ -1,0 +1,15 @@
+id: iduattnpal
+artifact: progress
+record:
+  timestamp: 2026-07-23 02:46
+  type: fix
+  phase: build
+  what: Defined the bounded API-to-CLI receipt normalization seam and contract-derived validation coverage for all semantic receipt outcomes.
+  context:
+    intent: Correct replacement task umlkejxsng after audit failure without implementing runtime routing or later tasks.
+    constraints: Contract-only correction; no runtime routing, semantic execution, benchmarks, adapters, or version changes.
+    unknowns: Independent post-correction audit remains pending.
+    scope: Hybrid route contract, routing-model documentation, hybrid contract tests, and canonical task evaluation state.
+  discovered: The audit found that API-required nullable receipt fields could not enter the authoritative CLI schema because no normative projection existed.
+  verified: Focused normalization tests (10), full source suite (195 files; 2,388 passed; 1 skipped), typecheck, build, capability-contract validator, package verification, and compaction passed.
+  next: Keep umlkejxsng in_progress pending independent audit; the orchestrator alone may supersede tkgtvppdur or resolve TODO wojpaasobd.
