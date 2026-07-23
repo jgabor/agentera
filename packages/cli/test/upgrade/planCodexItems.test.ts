@@ -45,6 +45,27 @@ afterEach(() => {
 });
 
 describe("planCodexItems project and home detection", () => {
+  it("never plans Codex descriptors or dispatch settings", () => {
+    const home = path.join(tmp, "invariant-home");
+    const project = path.join(tmp, "invariant-project");
+    seedCodexLayout(home);
+    seedCodexLayout(project);
+
+    const items = planRuntimeMigrationItems(migrationCtx(path.join(home, "agentera"), project, home, REPO_ROOT))
+      .filter((item) => item.runtime === "codex");
+
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      for (const filePath of [item.source, item.target]) {
+        expect(filePath ?? "").not.toContain(path.join(".codex", "agents"));
+      }
+      const previousText = item.target && fs.existsSync(item.target) ? fs.readFileSync(item.target, "utf8") : "";
+      for (const setting of ["[agents]", "[features.multi_agent_v2]"]) {
+        expect(item.newText?.includes(setting) && !previousText.includes(setting)).toBe(false);
+      }
+    }
+  });
+
   it("preserves a non-Agentera copied hook when plugin hooks are enabled", () => {
     const home = path.join(tmp, "preserved-home");
     const project = path.join(tmp, "preserved-project");

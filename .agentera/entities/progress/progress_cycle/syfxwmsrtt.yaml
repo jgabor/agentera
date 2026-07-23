@@ -1,0 +1,14 @@
+id: syfxwmsrtt
+artifact: progress
+record:
+  timestamp: 2026-07-23 15:23
+  type: test
+  phase: build
+  what: Added a migration-item invariant in test/upgrade/planCodexItems.test.ts and removed the stale src/setup/codex/agents.ts lint-baseline warning.
+  context:
+    intent: Address only the independent audit's two accepted low findings for completed task gypzghfmic.
+    constraints: No setup behavior, ownership contract, installed-remnant cleanup, current-documentation cleanup, version bump, publish, tag, push, branch, or worktree changes.
+    scope: Codex migration-plan regression test and CLI lint baseline only.
+  inspiration: Independent Audit accepted low findings after e7e529f7.
+  verified: pnpm -C packages/cli exec vp test run test/upgrade/planCodexItems.test.ts (6 passed); pnpm -C packages/cli run typecheck; pnpm -C packages/cli run lint (0 errors).
+  next: Leave deferred orchestrate prose to llwejsfofq and installed-remnant cleanup to lowjbuwmey.

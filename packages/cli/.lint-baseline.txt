@@ -1,16 +1,6 @@
 VITE+ - The Unified Toolchain for the Web
 
 
-  ! eslint(no-unused-vars): Function 'readTextOrNull' is declared but never used.
-     ,-[src/setup/codex/agents.ts:106:10]
- 105 | 
- 106 | function readTextOrNull(p: string): string | null {
-     :          ^^^^^^^|^^^^^^
-     :                 `-- 'readTextOrNull' is declared here
- 107 |   if (!pathExists(p)) return null;
-     `----
-  help: Consider removing this declaration.
-
   ! eslint(no-unused-vars): Variable 'stateArgs' is declared but never used. Unused variables should start with a '_'.
      ,-[src/cli/commands/query.ts:361:9]
  360 |   const schemas = loadSchemas(discoverSchemasDir());
