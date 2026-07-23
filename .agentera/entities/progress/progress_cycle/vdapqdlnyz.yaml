@@ -1,0 +1,13 @@
+id: vdapqdlnyz
+artifact: progress
+record:
+  timestamp: 2026-07-23 09:23
+  type: fix
+  phase: audit
+  what: Corrected the failed release audit's routing wording, hermetic fixtures, and shipped-input provenance coverage.
+  context:
+    intent: Close task tzmwbmehzs with a truthful development release reference and clean-environment evidence.
+  inspiration: Independent audit attempt audit-tzmwbmehzs-1.
+  discovered: Route requests select a capability; host semantics and receipt validation alone authorize startup. Package README and frozen routing corpus are shipped provenance inputs.
+  verified: "Clean environment verify:release passed with isolated HOME/profile/app fixture: 199 source files, 2,417 tests passed, 1 skipped; stress, performance, and package owners passed. Normal source suite, build, typecheck, validators, package verification, pack dry run, route evaluation, and compact passed."
+  next: No publication or version bump; package gitRef records the substantive correction commit.
