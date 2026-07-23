@@ -1,0 +1,16 @@
+id: gfexbkeeml
+artifact: progress
+record:
+  timestamp: 2026-07-23 10:38
+  type: fix
+  phase: audit
+  what: Corrected active routing authority so deterministic bare/direct/curated phrase resolution abstains before host semantic judgment, and receipt validation authorizes startup.
+  context:
+    intent: Close vhyyngtmun's audit finding without reviving an LLM-only routing model.
+    constraints: No version change, publication, plan archive, or decision-satisfaction update.
+    unknowns: Exact measurements from the two earlier failed manual hook attempts are unavailable.
+    scope: Routing authority prose, contract regression, and task state.
+  inspiration: Independent audit-vhyyngtmun-1 failure.
+  discovered: adlgtgmaiq was prospective and omitted two earlier failed manual hook attempts. Their exact heap measurements were not retained and cannot be reconstructed.
+  verified: Focused and full source suites passed (199 files; 2,417 passed, 1 skipped); typecheck, build, validators, route evaluation and wrapper, package verification, pack dry run, compact, verify:release, and normal pre-commit passed.
+  next: Task may close; leave the plan open and decision satisfaction unchanged.

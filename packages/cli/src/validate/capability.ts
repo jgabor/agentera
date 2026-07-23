@@ -240,8 +240,9 @@ export function checkTriggerPriorities(
  * V7 trigger-entry enrichment validation. Enforces the four optional fields
  * declared in TRIGGER_ENRICHMENT in capability_schema_contract.yaml. Every
  * field is OPTIONAL; a triggers.yaml entry that omits all compatibility fields
- * passes. Decision 76 keeps active routing LLM-native while this validator
- * preserves legacy enriched-file compatibility. Error messages include the
+ * passes. The hybrid route contract limits these fields to the semantic phase
+ * after deterministic abstention while this validator preserves legacy
+ * enriched-file compatibility. Error messages include the
  * valid range/value and the offending entry ID so authors can locate the
  * violation without grepping the contract.
  */

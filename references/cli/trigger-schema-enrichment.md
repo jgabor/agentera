@@ -1,39 +1,31 @@
 # Trigger intent documentation contract
 
-Authority for Layer 3 LLM-native capability routing. This document defines the
-trigger-schema fields the LLM host consults to understand what each capability
-does and how to disambiguate near-equal requests. The fields are documentation
-the host reads, not inputs to a scoring engine.
+Authority for semantic-phase trigger intent documentation. This document
+defines the trigger-schema fields a host consults only after the CLI
+deterministically abstains, so it can make a semantic judgment and submit a
+receipt. The fields are documentation, not inputs to a routing engine.
 
 - **Authority path:** `references/cli/trigger-schema-enrichment.md`
 - **Schema contract:** `skills/agentera/capability_schema_contract.yaml` (the
   contract loader at `packages/cli/src/registries/capabilityContract.ts` consumes it)
 - **Trigger files:** `skills/agentera/capabilities/<name>/schemas/triggers.yaml`
-- **Scope:** Layer 3 (LLM-native natural-language routing) of the five-layer
-  routing model. Layer 4 (formerly borderline-band disambiguation) is dissolved
-  into Layer 3. Layers 1, 2, and 5 are unchanged.
+- **Scope:** The semantic phase of the two-phase route contract. See
+  `references/cli/hybrid-route-contract.yaml` for the authoritative precedence,
+  abstention, receipt validation, and startup authorization rules.
 
-## Decision 76 — repositioning
+## Current boundary and obsolete layer numbering
 
-Decision 76 (2026-06-30) retires the deterministic NL routing engine. The LLM
-host — the AI model that receives the user's message — owns natural-language
-routing natively. This document is repositioned from a scoring-enrichment
-contract to the **trigger intent documentation contract**: it defines the
-`triggers.yaml` fields that help the LLM host understand what each capability
-does and how to disambiguate near-equal requests.
+Earlier Decision 76 material described open-ended routing as Layer 3 and folded
+the former Layer 4 into it. That layer numbering is obsolete; it is not another
+routing model. The hybrid route contract now has one deterministic request phase
+(bare, direct, and curated phrase selection) and one semantic receipt phase.
 
-The active fields stay as documentation, not as scoring inputs. The LLM host
-reads the descriptions and disambiguates natively; `priority` and
-`disambiguates_against` are advisory hints, not scoring weights. There is no
-scoring algorithm, no confidence threshold, no borderline band, and no
-`prime --route` output schema.
-Decision 75's request-vs-state mutual exclusivity is dissolved: request intent
-and state-readiness are both advisory context the LLM consults. Decision 76
-supersedes Decision 75 design choices 2 (request-derived scoring as router), 4
-(mutual exclusivity), and 5 (pure request-derived).
-
-Decision 76 records the design choices and rejected alternatives (including the
-tuning-the-engine and reposition-`--route` alternatives that were rejected).
+Only a `semantic_required` response may expose these fields to a host. The host
+uses them to choose `select`, `clarify`, or `no_match`, then submits the complete
+receipt. The CLI validates that receipt before authorizing capability startup.
+`priority` and `disambiguates_against` are advisory semantic-judgment context,
+not scoring weights. There is no scoring algorithm, confidence threshold,
+borderline band, or `prime --route` output schema.
 
 ## 1. Field shape
 
@@ -46,11 +38,11 @@ one capability.
 ### 1.1 `description`
 
 - **Type:** non-empty string (required on every `TRIGGERS` entry).
-- **Meaning:** the LLM-readable explanation of what this trigger entry routes to.
-  The LLM host reads this to decide whether a natural-language request matches
-  the capability's intent. Prose that names the capability's purpose and the
-  request shapes it owns reads better than keyword lists; write it for a reader
-  who has never seen the capability before.
+- **Meaning:** the semantic-judgment explanation of this capability's intent.
+  After `semantic_required`, the host reads it to decide whether a request fits
+  the capability. Prose that names the capability's purpose and request shapes
+  reads better than keyword lists; write it for a reader who has never seen the
+  capability before.
 - **Validation failure:** a missing, empty, or non-string `description` fails
   validation with an error message naming the offending entry ID.
 
@@ -77,11 +69,10 @@ TRIGGERS:
   - `hint` — non-empty string distinguishing this trigger's intent from the
     named capability on near-equal requests.
 - **Meaning:** declares which other capabilities this trigger's intent could be
-  confused with, with a hint the LLM host consults when it sees a request that
-  could match more than one capability. The list is advisory: the LLM host
-  resolves ambiguity natively and MAY surface the hint when asking the user to
-  confirm or clarify. The hint supplies the words; the LLM supplies the
-  judgment.
+  confused with, with a hint the host consults after `semantic_required`. The
+  list is advisory: the host resolves ambiguity and MAY surface the hint when
+  asking the user to clarify. The hint supplies the words; the host supplies the
+  judgment in a receipt the CLI validates.
 - **Validation failure:** a `capability` value that is not one of the twelve
   canonical IDs, a missing `hint`, an empty `hint`, or an entry that is not a
   mapping fails validation with the offending entry ID and the constraint.
@@ -99,7 +90,8 @@ disambiguates_against:
 - **Type:** string enum `high` | `medium` | `low` (required on every `TRIGGERS`
   entry).
 - **Meaning:** advisory relevance-precedence hint the LLM host reads alongside
-  `description` when deciding which capability best fits a request. `high`
+  `description` when deciding which capability best fits a semantically
+  abstained request. `high`
   marks a capability that owns the request strongly; `low` marks a capability
   that is a plausible but weaker fit. It is not a scoring weight and feeds no
   weighted-average calculation; the LLM host uses it as one signal among the
@@ -133,8 +125,8 @@ contract-owned values).
 | `description` is a non-empty string on every `TRIGGERS` entry | §1.1 |
 | `disambiguates_against` entries reference a valid capability ID and include a non-empty hint | §1.2 |
 | `priority` is one of `high` / `medium` / `low` on every `TRIGGERS` entry | §1.3 |
-| Document reframed as LLM-readable intent documentation; no scoring algorithm, thresholds, borderline band, or `--route` output schema | Decision 76, §1 |
-| Decision artifact lists each choice, ≥1 alternative, and rationale | Decision 76 in `.agentera/decisions.yaml` |
+| Trigger fields are semantic-phase documentation; no scoring algorithm, thresholds, borderline band, or `--route` output schema | Current boundary, §1 |
+| Deterministic precedence and validated receipt authorization remain singular | `hybrid-route-contract.yaml` |
 
 ## 4. Legacy enriched fields
 

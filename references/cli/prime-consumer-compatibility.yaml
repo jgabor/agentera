@@ -40,8 +40,9 @@ consumers:
       - capability_context.context.status_context.source_contract
     notes: >-
       Bare `/agentera` and status orientation run one status-context call.
-      Natural language is classified from intent first, then starts the selected
-      capability context. The status response contains the full
+       Deterministic routing resolves bare, direct, and curated phrase requests;
+       every other request requires a validated semantic receipt before the
+       selected capability context starts. The status response contains the full
       `capability_context.instructions` body and bounded
       `capability_context.context.status_context`; omitted rich detail recovers
       through its named command, never by raw artifact read.

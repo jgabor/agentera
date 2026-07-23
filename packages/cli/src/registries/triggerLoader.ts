@@ -11,10 +11,9 @@ import type { CapabilitySchemaContract } from "./capabilityContract.js";
  * `skills/agentera/capabilities/<name>/schemas/triggers.yaml` files into a
  * typed semantic intent model. Legacy matcher and scoring fields are excluded
  * from this active loader; capability validation owns their compatibility
- * checks. Nothing here returns them as executable matcher inputs or Layer 3-4
- * decisions.
- * Decision 76 assigns natural-language routing to the LLM host, which reads
- * active trigger intent documentation.
+ * checks. Nothing here returns them as executable matcher inputs or makes a
+ * routing decision. The hybrid route contract exposes active trigger intent
+ * documentation to a host only after deterministic abstention.
  *
  * Spec: references/cli/trigger-schema-enrichment.md
  * Contract: skills/agentera/capability_schema_contract.yaml (TRIGGER_ENRICHMENT)

@@ -58,9 +58,10 @@ describe("public runtime vocabulary", () => {
     expect(semanticFindings("runtime://public-cli", { rootHelp, stateHelp, schema, explain, error, prime })).toEqual([]);
   });
 
-  it("keeps natural-language routing LLM-native and intent-first", () => {
+  it("keeps the two-phase routing boundary and receipt authorization current", () => {
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const routingModel = fs.readFileSync(path.join(REPO_ROOT, "references/cli/routing-model.md"), "utf8");
+    const hybridRouteContract = fs.readFileSync(path.join(REPO_ROOT, "references/cli/hybrid-route-contract.yaml"), "utf8");
     const primeCompatibility = fs.readFileSync(path.join(REPO_ROOT, "references/cli/prime-consumer-compatibility.yaml"), "utf8");
     const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
     const enrichment = fs.readFileSync(path.join(REPO_ROOT, "references/cli/trigger-schema-enrichment.md"), "utf8");
@@ -74,33 +75,31 @@ describe("public runtime vocabulary", () => {
       enrichment.indexOf("### 1.2 `disambiguates_against`"),
     );
 
-    expect(skill).toContain("Classify expressed intent before startup");
     expect(skill).toContain("The CLI first applies deterministic explicit and curated route tiers.");
-    expect(skill).toContain("the LLM host classifies open-ended language");
-    expect(skill).toContain("`description`, `priority`, and `disambiguates_against`");
-    expect(skill).toContain("then run `agentera prime --context <selected-capability> --format json`");
-    expect(skill).toContain("one clarifying question only for genuine consequential ambiguity");
-    expect(skill).toContain("use status only if no capability fits");
+    expect(skill).toContain("Only after the shared route contract returns `semantic_required`");
+    expect(skill).toContain("submit the complete nullable API receipt");
+    expect(skill).toContain("only through that returned authorization");
     expect(skill).toMatch(/next_action` is a readiness suggestion for bare\/status\s+orientation after classification; it never classifies or overrides a non-status\s+request/);
     expect(skill).not.toContain("next_action.capability");
-    expect(skill).not.toContain("high-confidence natural-language");
-    expect(skill).not.toContain("borderline disambiguation");
-    expect(skill).not.toContain("Layers 3 and 4 are being built");
-    expect(skill).not.toContain("The CLI routes. The host agent follows.");
     expect(skill).toMatch(/no scores, thresholds, or\s+borderline band/);
+    expect(hybridRouteContract).toContain("open-ended semantic judgment only after deterministic abstention");
+    expect(hybridRouteContract).toContain("all startup authorization");
+    expect(hybridRouteContract).toContain("must submit a receipt");
     expect(routingModel).toContain("no scoring engine, no confidence threshold, and no borderline band");
+    expect(routingModel).toMatch(/Every other request returns\s+`semantic_required`/);
+    expect(routingModel).toMatch(/the CLI validates it\s+before capability startup/);
     expect(routingModel).toMatch(/next_action`\s+informs readiness only after classification and cannot override the message\s+intent/);
     expect(routingModel).toContain("route to status for orientation only after no capability matches");
     expect(routingModel).toContain("not semantic generalization or an end-to-end latency commitment");
     expect(routingModel).not.toContain("ambiguous inputs");
     expect(primeCompatibility).toContain("Bare `/agentera` and status orientation run one status-context call.");
-    expect(primeCompatibility).toContain("Natural language is classified from intent first, then starts the selected\n      capability context.");
-    expect(primeCompatibility).not.toContain("Bare `/agentera` and natural-language routing run one status-context call.");
-    expect(routingVocabulary).toContain("LLM-readable intent descriptions");
-    expect(routingVocabulary).toContain("Under Decision 76, clear intent routes directly.");
-    expect(routingVocabulary).toContain("Genuine consequential ambiguity");
-    expect(routingVocabulary).toContain("only when no capability fits");
-    expect(routingVocabulary).not.toMatch(/trigger matching|High-confidence match|Borderline match|sufficient match/);
+    expect(primeCompatibility).toContain("every other request requires a validated semantic receipt before the\n       selected capability context starts.");
+    expect(routingVocabulary).toContain("only after deterministic routing returns `semantic_required`");
+    expect(routingVocabulary).toContain("receipt the CLI validates before startup");
+    expect(enrichment).toContain("Current boundary and obsolete layer numbering");
+    expect(enrichment).toContain("Only a `semantic_required` response may expose these fields to a host.");
+    expect(enrichment).not.toContain("Authority for Layer 3 LLM-native capability routing.");
+    expect(enrichment).not.toContain("clear intent routes directly");
     expect(descriptionExample).toContain("disambiguates_against:");
     expect(descriptionExample).not.toContain("patterns:");
     expect(triggerContract).toContain("active semantic trigger model");
