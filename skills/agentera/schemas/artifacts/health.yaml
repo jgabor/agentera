@@ -50,8 +50,9 @@ meta:
   name: health
   version: "1.0.0"
   description: >-
-    Audit log maintained by audit. Consumed by capabilities that need
-    codebase health context.
+    Audit normally owns health records. Orchestrate may append only the
+    limited artifact_freshness record for terminal-plan closure after Audit
+    passes. Consumed by capabilities that need codebase health context.
   artifact_type: agent_facing
   path: ".agentera/health.yaml"
   authority: legacy_migration_input_only

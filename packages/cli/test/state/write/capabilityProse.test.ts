@@ -80,6 +80,12 @@ describe("producer capability writer integration", () => {
         "utf8",
       ),
     ) as Record<string, any>;
+    const health = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/health.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
     const closureStart = orchestrateInstructions.indexOf("**Terminal-open closure sequence**");
     const closureEnd = orchestrateInstructions.indexOf("Step markers", closureStart);
     const closure = orchestrateInstructions.slice(closureStart, closureEnd);
@@ -88,6 +94,9 @@ describe("producer capability writer integration", () => {
       artifact: "health",
       local_role: "produces_and_consumes",
     });
+    expect(health.meta).toMatchObject({ producer: ["audit", "orchestrate"] });
+    expect(health.meta.description).toContain("Audit normally owns health records.");
+    expect(health.meta.description).toContain("limited artifact_freshness record for terminal-plan closure after Audit passes.");
     expect(orchestrateInstructions).toContain("Plan exists, `active: true` and `complete_plan: true`");
     expect(closure).toContain("agentera state health append --input PATH --format json");
     expect(closure.indexOf("agentera state health append --input PATH --format json")).toBeLessThan(
