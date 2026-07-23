@@ -82,6 +82,7 @@ export const RELEASE_METADATA_ADVISORY_FILES = [
 export const RELEASE_PROVENANCE_PATHS = [
   "packages/cli/src",
   "packages/cli/scripts",
+  "packages/cli/README.md",
   "packages/cli/tsconfig.json",
   "skills",
   "references",
@@ -91,6 +92,7 @@ export const RELEASE_PROVENANCE_PATHS = [
   "DESIGN.md",
   "LICENSE",
   "registry.json",
+  "fixtures/routing/hybrid-corpus.yaml",
 ] as const;
 
 export const RELEASE_PROVENANCE_EXCLUSIONS = [

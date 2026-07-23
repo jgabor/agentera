@@ -141,8 +141,10 @@ function git(root: string, ...args: string[]): string {
 }
 
 function initializeGitFixture(root: string): string {
+  writeFile(root, "packages/cli/README.md", "# Agentera\n");
   writeFile(root, "packages/cli/src/index.ts", "export const value = 1;\n");
   writeFile(root, "packages/cli/src/release/releaseMetadata.ts", "export const validator = 1;\n");
+  writeFile(root, "fixtures/routing/hybrid-corpus.yaml", "cases: []\n");
   git(root, "init", "-q");
   git(root, "add", ".");
   git(
@@ -286,6 +288,22 @@ describe("release-metadata", () => {
     );
   });
 
+  it.each([
+    ["packages/cli/README.md", "# Changed package documentation\n"],
+    ["fixtures/routing/hybrid-corpus.yaml", "cases:\n  - changed\n"],
+  ])("rejects post-ref changes to shipped package input %s", (input, changedContent) => {
+    const selected = initializeGitFixture(tmp);
+    const pkg = VALID_PACKAGE();
+    pkg.agentera = { ...(pkg.agentera as Record<string, unknown>), gitRef: selected };
+    writeJson(tmp, "packages/cli/package.json", pkg);
+
+    writeFile(tmp, input, changedContent);
+
+    expect(validateReleaseMetadata(tmp)).toContainEqual(
+      expect.stringContaining("does not match the governed package source tree"),
+    );
+  });
+
   it("rejects package contract drift outside version and gitRef", () => {
     const selected = initializeGitFixture(tmp);
     const pkg = VALID_PACKAGE();
@@ -324,6 +342,7 @@ describe("release-metadata", () => {
     expect(RELEASE_PROVENANCE_PATHS).toEqual([
       "packages/cli/src",
       "packages/cli/scripts",
+      "packages/cli/README.md",
       "packages/cli/tsconfig.json",
       "skills",
       "references",
@@ -333,6 +352,7 @@ describe("release-metadata", () => {
       "DESIGN.md",
       "LICENSE",
       "registry.json",
+      "fixtures/routing/hybrid-corpus.yaml",
     ]);
   });
 

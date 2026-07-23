@@ -20,6 +20,21 @@ const FIXTURES = path.resolve(
 let tmp: string;
 let home: string;
 let prevCwd: string;
+let previousEnv: Record<string, string | undefined>;
+
+const SANDBOXED_ENVIRONMENT = [
+  "AGENTERA_BOOTSTRAP_SOURCE_ROOT",
+  "AGENTERA_DEFAULT_INSTALL_ROOT",
+  "AGENTERA_HOME",
+  "AGENTERA_PROFILE_DIR",
+  "PROFILERA_PROFILE_DIR",
+  "AGENTERA_VISIBLE_SKILL_ROOT",
+  "HOME",
+  "XDG_CACHE_HOME",
+  "XDG_CONFIG_HOME",
+  "XDG_DATA_HOME",
+  "XDG_STATE_HOME",
+] as const;
 
 function seedNpxBundle(root: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
@@ -37,16 +52,26 @@ beforeEach(() => {
   home = path.join(tmp, "home");
   fs.mkdirSync(home, { recursive: true });
   prevCwd = process.cwd();
+  previousEnv = Object.fromEntries(SANDBOXED_ENVIRONMENT.map((name) => [name, process.env[name]]));
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
   process.env.HOME = home;
+  process.env.XDG_CACHE_HOME = path.join(tmp, "xdg", "cache");
+  process.env.XDG_CONFIG_HOME = path.join(tmp, "xdg", "config");
+  process.env.XDG_DATA_HOME = path.join(tmp, "xdg", "data");
+  process.env.XDG_STATE_HOME = path.join(tmp, "xdg", "state");
+  process.env.AGENTERA_PROFILE_DIR = path.join(tmp, "profile");
+  process.env.PROFILERA_PROFILE_DIR = path.join(tmp, "profile");
   delete process.env.AGENTERA_HOME;
+  delete process.env.AGENTERA_DEFAULT_INSTALL_ROOT;
+  delete process.env.AGENTERA_VISIBLE_SKILL_ROOT;
 });
 
 afterEach(() => {
   process.chdir(prevCwd);
-  delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
-  delete process.env.HOME;
-  delete process.env.AGENTERA_HOME;
+  for (const name of SANDBOXED_ENVIRONMENT) {
+    if (previousEnv[name] === undefined) delete process.env[name];
+    else process.env[name] = previousEnv[name];
+  }
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -54,6 +79,7 @@ describe("prime project_integration", () => {
   it("requires manual review for unowned python-managed cursor hooks", () => {
     const bundle = path.join(tmp, "bundle");
     seedNpxBundle(bundle);
+    seedNpxBundle(path.join(tmp, "xdg", "data", "agentera"));
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
 
     const project = path.join(tmp, "project");

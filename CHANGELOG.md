@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Defined the portable routing boundary: `agentera route request` deterministically executes bare `/agentera`, explicit capability names or aliases, and curated leading phrases; every other request remains host-owned open-ended semantic classification. `agentera route receipt` validates the host result before authorizing startup, while `agentera route evaluate` and `agentera check verify eval routing` gate implementation with the frozen offline synthetic corpus; Agentera ships no built-in model service or live benchmark.
+- Defined the portable routing boundary: `agentera route request` deterministically resolves bare `/agentera`, explicit capability names or aliases, and curated leading phrases to a capability; every other request remains host-owned open-ended semantic classification. `agentera route receipt` validates the host result before authorizing startup, while `agentera route evaluate` and `agentera check verify eval routing` gate implementation with the frozen offline synthetic corpus; Agentera ships no built-in model service or live benchmark.
 - Added ordinary progress, decision, and health reads plus startup handling for
   immutable v2-compaction summaries. Summary-only history now remains explicitly
   degraded with source provenance and caveats instead of appearing as current
