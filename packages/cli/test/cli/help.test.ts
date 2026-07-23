@@ -63,6 +63,14 @@ describe("cli help", () => {
     expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
+  it("makes the offline routing evaluation discoverable from canonical route help", () => {
+    const { rc, out } = capture((io) => main(["node", "agentera", "route", "--help"], io));
+    expect(rc).toBe(0);
+    expect(out).toContain("agentera route evaluate --format json");
+    expect(out).toContain("frozen offline conformance corpus");
+    expect(out).toContain("exits 1 when its report status is fail");
+  });
+
   it("documents executable plan and plan-task retrieval grammar", () => {
     const plan = printStateHelp("plan");
     expect(plan).toContain("agentera state plan tasks list [PLAN_ID] [--limit N]");

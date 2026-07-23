@@ -354,6 +354,7 @@ privacy:
 evaluation:
   conformance_owner: packages/cli/test/registries/hybridRouteContract.test.ts
   visible_corpus_entrypoint: agentera route evaluate --format json
+  visible_corpus_exit_codes: { pass: 0, failed_evaluation: 1, authority_conflict: 2 }
   visible_corpus_output: >-
     agentera.hybrid_route_evaluation.v1 reports only case IDs, partitions,
     expected/observed outcomes, routing tier, capability ID, timings, authority

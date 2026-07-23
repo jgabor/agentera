@@ -2,6 +2,7 @@ import { main as evalSkillsMain } from "../../eval/evalSkills.js";
 import { main as semanticEvalMain } from "../../eval/semanticEval.js";
 import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { routeEvaluationExitCode } from "./route.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
@@ -183,8 +184,9 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
       long_running_default: false,
     };
     const result = runInProcess(["eval", "routing"], (out) => {
-      out(JSON.stringify(evaluateHybridRoute(), null, 2) + "\n");
-      return 0;
+      const report = evaluateHybridRoute();
+      out(JSON.stringify(report, null, 2) + "\n");
+      return routeEvaluationExitCode(report);
     });
     return { result, safety };
   }

@@ -373,10 +373,12 @@ export function printCapabilityHelp(capability: string): string {
 export function printRouteHelp(): string {
   return [
     "usage: agentera route <request|receipt> --input PATH [--format json]",
+    "       agentera route evaluate --format json",
     "",
     "Route one transient request or validate one semantic host receipt through the shared hybrid contract.",
     "Request text is accepted only from the structured YAML or JSON input document, never argv.",
     "Use --input - to read the document from stdin. Output is JSON on stdout.",
+    "Evaluate runs the frozen offline conformance corpus without a semantic host; it exits 1 when its report status is fail.",
     "",
     "input document: { version: agentera.route_request.v1, request: <string> }",
     "receipt input: { request: <string>, receipt: <complete nullable host receipt> }",

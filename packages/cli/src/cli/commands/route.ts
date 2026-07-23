@@ -11,6 +11,13 @@ import type { Io } from "../dispatch/shared.js";
 type RouteInput = { version?: unknown; request?: unknown };
 type RouteIo = Omit<Io, "stdin"> & { stdin?: () => string | Buffer };
 
+/** A conformance report that fails is a failed CLI gate, not a successful invocation. */
+export const ROUTE_EVALUATION_FAILED_EXIT_CODE = 1;
+
+export function routeEvaluationExitCode(report: { status?: unknown }): number {
+  return report.status === "fail" ? ROUTE_EVALUATION_FAILED_EXIT_CODE : 0;
+}
+
 function decodeRouteInput(bytes: Buffer): string {
   return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 }
@@ -125,8 +132,9 @@ export function runRouteEvaluation(argv: string[], io: RouteIo): number {
     });
   }
   try {
-    emitStructured(evaluateHybridRoute(), "json", io.out ?? ((text) => process.stdout.write(text)));
-    return 0;
+    const report = evaluateHybridRoute();
+    emitStructured(report, "json", io.out ?? ((text) => process.stdout.write(text)));
+    return routeEvaluationExitCode(report);
   } catch {
     return invalidRouteInput(io, {
       class: "conflict",

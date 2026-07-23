@@ -1,0 +1,13 @@
+id: thnyziisfo
+artifact: progress
+record:
+  timestamp: 2026-07-23 08:25
+  type: fix
+  phase: build
+  what: "Corrected the audited routing evaluation gate: failed offline reports now exit nonzero, verify propagates the same report result, and route help exposes evaluation."
+  context:
+    intent: Make offline conformance status authoritative without restoring live providers, credentials, ZDR, or holdout machinery.
+    constraints: Offline frozen corpus only; preserve receipt validation, distinct latency fields, host-dependent semantic nulls, and checkout/package parity.
+    unknowns: none
+    scope: route evaluation command, verify wrapper, route help, contract, regression tests, plan task
+  verified: "Final gates: focused source evaluator/help regression suite; pnpm -C packages/cli test (199 files, 2415 passed, 1 skipped); typecheck; build; check validate capability-contract and capability build; verify:package; pack:dry-run; check compact. CLI evidence: passing corpus 48/48 exits 0; disposable wrong expectation exits 1 with 47 pass, 1 fail, 1 harmful; verify eval routing exits 1 with wrapper fail and engine exit 1."

@@ -13,3 +13,13 @@ record:
     - GIVEN checkout and packed execution WHEN verified THEN both use the same protocol, phrase authority, shared skill guidance, and synthetic corpus.
     - GIVEN the portable host-owned architecture WHEN evaluation closes THEN no OpenAI credential, ZDR approval, sealed holdout, or provider-specific live benchmark is required for implementation acceptance.
   plan: pxyvjauajx
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: A failing or harmful synthetic corpus report still exits zero, causing check verify to report pass; route help also omits evaluate. Propagate report failure through both CLI gates and add failing-corpus plus help regressions.
+    provenance:
+      attempt_id: audit-lzhjiqlqsu-2
+      source: "follow-up audit correction: failed report exit propagation, verify parity, and route help regression gates"
+      recorded_at: 2026-07-23 08:25
+      writer_command: agentera state plan record-evaluation

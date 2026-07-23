@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { runRouteReceipt, runRouteRequest } from "../../src/cli/commands/route.js";
+import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
 
 function invoke(input: string, args = ["route", "request", "--input", "-", "--format", "json"]) {
   let out = "";
@@ -39,6 +40,27 @@ function invokeReceipt(input: string) {
     err: (text) => (err += text),
   });
   return { rc, out, err };
+}
+
+function withWrongCorpusExpectation<T>(run: () => T): T {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-route-cli-evaluation-"));
+  const previousSourceRoot = process.env[BOOTSTRAP_SOURCE_ROOT_ENV];
+  try {
+    for (const directory of ["fixtures", "references", "skills"]) {
+      fs.cpSync(path.join(path.resolve(import.meta.dirname, "../../../.."), directory), path.join(root, directory), { recursive: true });
+    }
+    const corpusPath = path.join(root, "fixtures/routing/hybrid-corpus.yaml");
+    fs.writeFileSync(corpusPath, fs.readFileSync(corpusPath, "utf8").replace(
+      "id: DEV-PHRASE-STATUS, partition: development, request: \"show project briefing for the checkout\", expected: { phase1: deterministic_selection, tier: phrase, capability: status }",
+      "id: DEV-PHRASE-STATUS, partition: development, request: \"show project briefing for the checkout\", expected: { phase1: deterministic_selection, tier: phrase, capability: vision }",
+    ));
+    process.env[BOOTSTRAP_SOURCE_ROOT_ENV] = root;
+    return run();
+  } finally {
+    if (previousSourceRoot === undefined) delete process.env[BOOTSTRAP_SOURCE_ROOT_ENV];
+    else process.env[BOOTSTRAP_SOURCE_ROOT_ENV] = previousSourceRoot;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 }
 
 describe("route request CLI", () => {
@@ -149,5 +171,30 @@ describe("route evaluation CLI", () => {
     const result = invoke("", ["route", "evaluate", "--input", "private-corpus", "--format", "json"]);
     expect(result.rc).toBe(2);
     expect(result.out).not.toContain("private-corpus");
+  });
+
+  it("returns the failed report once and exits nonzero for a disposable wrong corpus expectation", () => {
+    const result = withWrongCorpusExpectation(() => invoke("", ["route", "evaluate", "--format", "json"]));
+    const report = JSON.parse(result.out);
+
+    expect(result.rc).toBe(1);
+    expect(result.err).toBe("");
+    expect(result.out.match(/agentera\.hybrid_route_evaluation\.v1/g)).toHaveLength(1);
+    expect(report).toMatchObject({ status: "fail", aggregate_metrics: { harmful_misroutes: { observed: 1, status: "fail" } } });
+    expect(report.results.find((entry: { case_id: string }) => entry.case_id === "DEV-PHRASE-STATUS")).toMatchObject({
+      evaluation_tier: "deterministic",
+      failure_tier: "deterministic",
+      harmful_misroute: true,
+    });
+  });
+
+  it("makes verify eval routing fail from the same failed evaluation report", () => {
+    const result = withWrongCorpusExpectation(() => invoke("", ["check", "verify", "eval", "routing", "--format", "json"]));
+    const wrapper = JSON.parse(result.out);
+
+    expect(result.rc).toBe(1);
+    expect(result.err).toBe("");
+    expect(wrapper).toMatchObject({ status: "fail", target: "routing", engine: { exit_code: 1 } });
+    expect(wrapper.diagnostics.stdout.join("\n")).toContain('"status": "fail"');
   });
 });
