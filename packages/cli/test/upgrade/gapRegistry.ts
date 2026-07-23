@@ -2,14 +2,9 @@
  * Tracked v2→v3 migration gaps. Flip `closed` to true when implementation lands;
  * corresponding tests must pass without skip.
  *
- * The D56 plan adds per-family gap entries that map to the six
- * v3-remaining CLI surface families in
+ * The retained per-family gap entries map to the current CLI parity rows in
  * `packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json`.
- * These entries start as `closed: false` (the surfaces are not yet ported
- * at T1) and flip to `closed: true` as T2-T7 land the surface ports. The
- * T1 npmParityMatrix registers each family as
- * `version_break: true` (intentional_version_break) until the corresponding
- * gap closes.
+ * All listed rows are closed, so npmParityMatrix requires equal drift.
  */
 export const GAP_IDS = {
   OPENCODE_RUNTIME_REWIRE: "gap-opencode-runtime-rewire",
@@ -57,44 +52,43 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
     closed: true,
     runtimeIds: ["codex", "cursor"],
   },
-  // D56 T2: artifact-validation CLI surface (7 validate subcommands).
-  // Ported incrementally; close when all 7 subcommands are parity-green.
+  // Artifact-validation CLI surface.
   {
     id: GAP_IDS.ARTIFACT_VALIDATION_FAMILY,
     description:
-      "D56 T2: port the 7 validate subcommands (capability, capability-contract, cross-capability, lifecycle-adapters, app-home-contract, vocabularyAuthority, selfAudit) to TS and prove byte-level parity with the Python oracle pinned at parity-remaining-families.json:python_commit.",
+      "Validate command parity with the Python oracle pinned at parity-remaining-families.json:python_commit.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
-  // D56 T3: compaction CLI surface (apply + dry-run + retention caps).
+  // Compaction CLI surface.
   {
     id: GAP_IDS.COMPACTION_FAMILY,
     description:
-      "D56 T3: port `check compact` apply + dry-run + retention caps (10/40/50) to TS with size-bounded corpus reads and archive preservation; parity row in parity-remaining-families.json:compaction closes when drift_direction === 'equal'.",
+      "`check compact` apply, dry-run, and retention parity with size-bounded corpus reads and archive preservation.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
-  // D56 T4: doctor/upgrade safety rails.
+  // Doctor and upgrade safety rails.
   {
     id: GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY,
     description:
-      "D56 T4: port doctor/upgrade safety rails (outdated → ready_to_apply → applied; repair_needed; manual_review_needed) to TS with Decision 54 lifecycle vocabulary and plain-language repair wording; next-major doctor parity for the npm channel.",
+      "Doctor and upgrade safety rails cover lifecycle status vocabulary and plain-language repair wording on the npm channel.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
-  // D56 T5: verify gates (check verify eval).
+  // Verify gates.
   {
     id: GAP_IDS.VERIFY_EVAL_FAMILY,
     description:
-      "D56 T5: port `check verify eval` safety wrappers (retired smoke family messaging for npm distribution; bounded offline smoke without live model calls by default) and pin the agent-ready-state-contract.yaml for the npm @next distribution boundary.",
+      "`check verify eval` preserves bounded offline evaluation and retired-smoke guidance for the npm distribution.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
-  // D56 T6: usage/stats consent semantics (closed — npmParityMatrix usage_stats_consent = equal).
+  // Usage and stats consent semantics.
   {
     id: GAP_IDS.USAGE_STATS_CONSENT_FAMILY,
     description:
-      "D56 T6: port `stats` + `stats refresh --dry-run` + `stats refresh --consent local-history` to TS with explicit consent enforcement and size-bounded corpus reads; v1 `agentera stats` namespace owns the surface; no top-level `agentera corpus` command.",
+      "`stats` and `stats refresh` enforce explicit consent with size-bounded corpus reads; no top-level `agentera corpus` command.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },

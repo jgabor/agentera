@@ -78,9 +78,8 @@ afterEach(() => {
 
 /* ------------------------------------------------------------------ *
  * The matrix: every row carries drift_direction and version_break.   *
- * The 6 original npm-cli-surface rows are equal-pass at T1; the 6    *
- * v3-remaining family rows are intentional_version_break until T2-  *
- * T7 close them. Each row is exercised once via the matrix helper.  *
+ * Original npm-cli-surface rows and retained parity-family rows are  *
+ * equal-pass. Each row is exercised once via the matrix helper.     *
  * ------------------------------------------------------------------ */
 
 const ORIGINAL_ROWS: ParityRow[] = Object.entries(ORACLE.commands).map(([name, spec]) => ({
@@ -106,6 +105,12 @@ const REMAINING_FAMILY_ROWS: ParityRow[] = Object.entries(REMAINING_FAMILIES.fam
     version_break: !isParityFamilyClosed(family),
   }),
 );
+
+describe("retained parity-family inventory", () => {
+  it("contains only closed current families", () => {
+    expect(REMAINING_FAMILY_ROWS.every((row) => row.version_break === false)).toBe(true);
+  });
+});
 
 interface MatrixResult {
   rc: number;
@@ -317,7 +322,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
       // ---- V5 pass case (per family) ----
       //   - family is registered in the fixture
       //   - python_commit is pinned to the current main HEAD
-      //   - version_break lifts to intentional_version_break until T2-T7 close
+      //   - version_break classifies an explicitly declared future migration
       //     the gap; closed families must report drift_direction === 'equal'.
       expect(row.python_commit, `row '${row.family}' python_commit`).toBe(REMAINING_FAMILIES.python_commit);
       expect(row.version_break, `row '${row.family}' version_break`).toBe(!isParityFamilyClosed(familyId));

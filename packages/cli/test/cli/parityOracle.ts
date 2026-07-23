@@ -5,7 +5,7 @@
  * live TypeScript CLI envelopes to the Python `agentera` stable CLI pinned at
  * `python_commit` in `fixtures/oracle/parity-remaining-families.json`. The
  * helpers in this module centralize the normalization and drift classification
- * so the matrix and its future siblings (T2-T7 close the per-family rows) stay
+ * so the matrix and its future siblings stay
  * in lockstep with the fixture.
  *
  * Rules (mirrored from `parity-remaining-families.json`):

@@ -48,31 +48,31 @@ describe("gapRegistry", () => {
     expect(isGapClosed(GAP_IDS.OPENCODE_RUNTIME_REWIRE)).toBe(true);
   });
 
-  it("documents compaction parity family as closed after D56 T3", () => {
+  it("documents compaction parity family as closed", () => {
     expect(isGapClosed(GAP_IDS.COMPACTION_FAMILY)).toBe(true);
     expect(isParityFamilyClosed("compaction")).toBe(true);
     expect(D56_PARITY_FAMILY_GAPS.compaction).toBe(GAP_IDS.COMPACTION_FAMILY);
   });
 
-  it("documents usage_stats_consent parity family as closed after D56 T6", () => {
+  it("documents usage_stats_consent parity family as closed", () => {
     expect(isGapClosed(GAP_IDS.USAGE_STATS_CONSENT_FAMILY)).toBe(true);
     expect(isParityFamilyClosed("usage_stats_consent")).toBe(true);
     expect(D56_PARITY_FAMILY_GAPS.usage_stats_consent).toBe(GAP_IDS.USAGE_STATS_CONSENT_FAMILY);
   });
 
-  it("documents artifact_validation parity family as closed after D56 T2", () => {
+  it("documents artifact_validation parity family as closed", () => {
     expect(isGapClosed(GAP_IDS.ARTIFACT_VALIDATION_FAMILY)).toBe(true);
     expect(isParityFamilyClosed("artifact_validation")).toBe(true);
     expect(D56_PARITY_FAMILY_GAPS.artifact_validation).toBe(GAP_IDS.ARTIFACT_VALIDATION_FAMILY);
   });
 
-  it("documents doctor_upgrade_safety parity family as closed after D56 T4", () => {
+  it("documents doctor_upgrade_safety parity family as closed", () => {
     expect(isGapClosed(GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY)).toBe(true);
     expect(isParityFamilyClosed("doctor_upgrade_safety")).toBe(true);
     expect(D56_PARITY_FAMILY_GAPS.doctor_upgrade_safety).toBe(GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY);
   });
 
-  it("documents verify_eval parity family as closed after D56 T5", () => {
+  it("documents verify_eval parity family as closed", () => {
     expect(isGapClosed(GAP_IDS.VERIFY_EVAL_FAMILY)).toBe(true);
     expect(isParityFamilyClosed("verify_eval")).toBe(true);
     expect(D56_PARITY_FAMILY_GAPS.verify_eval).toBe(GAP_IDS.VERIFY_EVAL_FAMILY);

@@ -80,11 +80,8 @@ function relative(absolute: string): string {
   return path.relative(ROOT, absolute).split(path.sep).join("/");
 }
 
-function currentDescriptorViolations(root: string): string[] {
-  const directory = path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY);
-  if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory).filter((entry) => entry.endsWith(".toml"))
-    .map((entry) => `${RETIRED_CURRENT_DESCRIPTOR_DIRECTORY}/${entry} native descriptor present`);
+function hasCurrentDescriptorDirectory(root: string): boolean {
+  return fs.existsSync(path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY));
 }
 
 function moduleReferences(source: string): string[] {
@@ -115,21 +112,18 @@ describe("repository-native retirement inventory", () => {
   });
 
   it("has no current native descriptor directory", () => {
-    expect(currentDescriptorViolations(ROOT)).toEqual([]);
+    expect(hasCurrentDescriptorDirectory(ROOT)).toBe(false);
   });
 
-  it("flags a reintroduced current descriptor while allowing migration-only history", () => {
+  it("flags a reintroduced current descriptor directory while allowing migration-only history", () => {
     const root = fs.mkdtempSync(path.join(import.meta.dirname, "native-descriptor-"));
     try {
       fs.mkdirSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents"), { recursive: true });
       fs.writeFileSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents/build.toml"), "historical\n");
-      expect(currentDescriptorViolations(root)).toEqual([]);
+      expect(hasCurrentDescriptorDirectory(root)).toBe(false);
 
       fs.mkdirSync(path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY), { recursive: true });
-      fs.writeFileSync(path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY, "build.toml"), "current\n");
-      expect(currentDescriptorViolations(root)).toEqual([
-        "skills/agentera/agents/build.toml native descriptor present",
-      ]);
+      expect(hasCurrentDescriptorDirectory(root)).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

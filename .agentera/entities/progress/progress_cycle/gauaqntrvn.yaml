@@ -1,0 +1,12 @@
+id: gauaqntrvn
+artifact: progress
+record:
+  timestamp: 2026-07-23 14:54
+  type: test
+  phase: build
+  what: Corrected current parity metadata and made the native-descriptor retirement test require skills/agentera/agents to be absent.
+  context:
+    intent: Address the independent audit's accepted low findings for completed task tdagqikgcl without changing Codex setup or cleanup.
+  inspiration: Independent Audit findings F1 and F2 after f228124d.
+  verified: pnpm -C packages/cli exec vp test run test/cli/repositoryNativeRetirement.test.ts test/cli/npmParityMatrix.test.ts test/upgrade/gapRegistry.test.ts (32 passed); pnpm -C packages/cli run typecheck; check compact.
+  next: Continue with separately scoped Codex setup retirement only when selected.
