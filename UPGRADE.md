@@ -73,11 +73,12 @@ npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --yes
 
 The contract also inventories retired Codex descriptor files. Each file needs a
 matching whole-resource ledger identity and fingerprint before it can be
-removed. Codex configuration keys remain `action_required`: Agentera has no
-durable key-level ownership proof, so matching values, markers, names, or whole
-file contents never authorize a shared `config.toml` mutation. Preview is
-read-only; approved apply is idempotent and preserves ambiguous or unowned
-resources.
+removed. Codex descriptor previews report each shared configuration key as
+`action_required` without adding it to the selected resource's apply work.
+Agentera has no durable key-level ownership proof, so matching values, markers,
+names, or whole file contents never authorize a shared `config.toml` mutation.
+Preview is read-only; approved apply is idempotent and preserves ambiguous or
+unowned resources.
 
 Historical transcript import is independent of cleanup. Default extraction and
 analytics do not read Claude history. Import requires explicit local consent:

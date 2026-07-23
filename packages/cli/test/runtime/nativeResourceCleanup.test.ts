@@ -52,6 +52,12 @@ const resourceCases = [
   },
 ] as const;
 
+const codexConfigurationIds = [
+  "codex.config.shell_environment_policy.set.AGENTERA_HOME",
+  "codex.config.agents.max_depth",
+  "codex.config.features.multi_agent_v2",
+];
+
 function ledgerFor(
   id: string,
   status: "legacy" | "managed",
@@ -144,6 +150,10 @@ describe("native resource cleanup ownership", () => {
       action: "remove",
       ownership: resource.status === "legacy" ? "legacy" : "managed",
     });
+    expect(preview.configurationUnits.map((unit) => unit.id)).toEqual(
+      resource.id.startsWith("codex.") ? codexConfigurationIds : [],
+    );
+    expect(preview.configurationUnits.every((unit) => unit.status === "action_required")).toBe(true);
     expect(fs.lstatSync(destination).ino).toBe(before);
     expect(applyNativeResourceCleanup(preview, { approved: false }).operations[0]?.status).toBe("action_required");
     expect(fs.existsSync(destination)).toBe(true);
@@ -151,6 +161,7 @@ describe("native resource cleanup ownership", () => {
     const applied = applyNativeResourceCleanup(preview, { approved: true });
     expect(applied.status).toBe("success");
     expect(applied.operations[0]?.status).toBe("applied");
+    expect(applied.configurationUnits).toEqual(preview.configurationUnits);
     expect(fs.existsSync(destination)).toBe(false);
 
     const repeat = previewNativeResourceCleanup({
@@ -168,8 +179,74 @@ describe("native resource cleanup ownership", () => {
     const preview = previewNativeResourceCleanup({ resourceId: resource.id, home });
     const applied = applyNativeResourceCleanup(preview, { approved: true });
 
-    expect(preview.plan.operations[0]).toMatchObject({ action: "blocked_unowned" });
-    expect(applied.operations[0]?.status).toBe("blocked_unowned");
+    expect(preview.plan.operations[0]).toMatchObject({
+      state: "unowned",
+      ownership: "unowned",
+      action: "action_required",
+    });
+    expect(applied.operations[0]?.status).toBe("action_required");
     expect(fs.existsSync(destination)).toBe(true);
+  });
+
+  it("preserves a changed Codex descriptor as action_required", () => {
+    const resource = resourceCases[1];
+    const destination = resource.destination();
+    resource.install(destination);
+    const ledger = ledgerFor(resource.id, resource.status, destination);
+    fs.writeFileSync(destination, "user changed this descriptor\n");
+
+    const preview = previewNativeResourceCleanup({ resourceId: resource.id, home, ledger });
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+
+    expect(preview.plan.operations[0]).toMatchObject({ action: "action_required" });
+    expect(applied.operations[0]?.status).toBe("action_required");
+    expect(fs.existsSync(destination)).toBe(true);
+  });
+
+  it("preserves an ambiguous Codex ownership ledger as action_required", () => {
+    const resource = resourceCases[1];
+    const destination = resource.destination();
+    resource.install(destination);
+    const record = ledgerFor(resource.id, resource.status, destination).records[0]!;
+    const ledger: LifecycleOwnershipLedger = {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [record, { ...record }],
+    };
+
+    const preview = previewNativeResourceCleanup({ resourceId: resource.id, home, ledger });
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+
+    expect(preview.plan.operations[0]).toMatchObject({
+      state: "ambiguous_ownership",
+      ownership: "ambiguous",
+      action: "action_required",
+    });
+    expect(applied.operations[0]?.status).toBe("action_required");
+    expect(fs.existsSync(destination)).toBe(true);
+  });
+
+  it("does not let an unowned Codex descriptor block an independently owned one", () => {
+    const unowned = resourceCases[1];
+    const owned = { ...resourceCases[1], id: "codex.agent-descriptor.status" };
+    const unownedDestination = unowned.destination();
+    const ownedDestination = path.join(home, ".codex", "agents", "status.toml");
+    unowned.install(unownedDestination);
+    owned.install(ownedDestination);
+    const ledger = ledgerFor(owned.id, owned.status, ownedDestination);
+
+    const preserved = applyNativeResourceCleanup(
+      previewNativeResourceCleanup({ resourceId: unowned.id, home }),
+      { approved: true },
+    );
+    const removed = applyNativeResourceCleanup(
+      previewNativeResourceCleanup({ resourceId: owned.id, home, ledger }),
+      { approved: true },
+    );
+
+    expect(preserved.operations[0]?.status).toBe("action_required");
+    expect(removed.operations[0]?.status).toBe("applied");
+    expect(fs.existsSync(unownedDestination)).toBe(true);
+    expect(fs.existsSync(ownedDestination)).toBe(false);
   });
 });

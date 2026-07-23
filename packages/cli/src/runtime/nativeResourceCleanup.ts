@@ -39,9 +39,24 @@ export interface NativeResourceCleanupDefinition {
   safetyNote: string;
 }
 
+interface NativeResourceCleanupConfigurationDefinition {
+  id: string;
+  host: string;
+  key: string;
+}
+
+export interface NativeResourceCleanupConfigurationUnit {
+  id: string;
+  hostId: string;
+  key: string;
+  status: "action_required";
+  reason: string;
+}
+
 export interface NativeResourceCleanupContract {
   sourcePath: string;
   resources: NativeResourceCleanupDefinition[];
+  configuration: NativeResourceCleanupConfigurationDefinition[];
 }
 
 export interface NativeResourceCleanupPreview {
@@ -56,6 +71,8 @@ export interface NativeResourceCleanupPreview {
   ledgerAuthorization: "match_or_absent_noop" | "blocked";
   ledgerDiagnostics: string[];
   plan: LifecycleOperationPlan;
+  /** Report-only shared configuration; it never adds apply work for a selected resource. */
+  configurationUnits: NativeResourceCleanupConfigurationUnit[];
   neverTouch: string[];
   safetyNote: string;
 }
@@ -65,6 +82,7 @@ export interface NativeResourceCleanupResult extends LifecycleApplyResult {
   hostId: string;
   hostSupportStatus: HostSupportStatus;
   approval: "approved" | "required";
+  configurationUnits: NativeResourceCleanupConfigurationUnit[];
 }
 
 function isMapping(value: unknown): value is Record<string, unknown> {
@@ -174,7 +192,7 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   }
   for (const key of expectedKeys) {
     const unit = configuration.find((item) => isMapping(item) && item.key === key);
-    if (!isMapping(unit) || unit.host !== "codex" || unit.destination !== "{home}/.codex/config.toml"
+    if (!isMapping(unit) || !requiredString(unit, "id") || unit.host !== "codex" || unit.destination !== "{home}/.codex/config.toml"
       || unit.durable_proof !== "key-level ownership ledger identity and fingerprint"
       || unit.ownership_available !== false || unit.result_without_proof !== "action_required") {
       errors.push(`configuration_inventory must preserve ${key} without key-level ownership`);
@@ -221,6 +239,11 @@ export function loadNativeResourceCleanupContract(
     resources: (data.resources as Record<string, unknown>[]).flatMap((resource) =>
       expandResource(resource, statuses.get(resource.host as string)!),
     ),
+    configuration: (data.configuration_inventory as Record<string, unknown>[]).map((unit) => ({
+      id: unit.id as string,
+      host: unit.host as string,
+      key: unit.key as string,
+    })),
   };
 }
 
@@ -269,18 +292,36 @@ function ledgerDiagnostics(plan: LifecycleOperationPlan, resource: NativeResourc
   return [];
 }
 
-function blockedPlan(plan: LifecycleOperationPlan, diagnostics: string[]): LifecycleOperationPlan {
+function blockedPlan(
+  plan: LifecycleOperationPlan,
+  diagnostics: string[],
+  invalidLedger = false,
+): LifecycleOperationPlan {
   const reason = `${diagnostics.join("; ")} ${LIFECYCLE_MANUAL_REVIEW_GUIDANCE}`;
   return {
     ...plan,
     operations: plan.operations.map((operation) => operation.action === "noop" ? operation : {
       ...operation,
-      state: "ambiguous_ownership",
-      ownership: "ambiguous",
-      action: "blocked_unowned",
+      ...(invalidLedger ? { state: "ambiguous_ownership" as const, ownership: "ambiguous" as const } : {}),
+      action: "action_required",
       reason,
     }),
   };
+}
+
+function configurationUnitsFor(
+  contract: NativeResourceCleanupContract,
+  host: string,
+): NativeResourceCleanupConfigurationUnit[] {
+  return contract.configuration
+    .filter((unit) => unit.host === host)
+    .map((unit) => ({
+      id: unit.id,
+      hostId: unit.host,
+      key: unit.key,
+      status: "action_required",
+      reason: "no durable key-level ownership ledger identity and fingerprint",
+    }));
 }
 
 export function previewNativeResourceCleanup(opts: {
@@ -321,7 +362,8 @@ export function previewNativeResourceCleanup(opts: {
     ownershipRequirement: "matching_whole_resource_ledger",
     ledgerAuthorization: diagnostics.length === 0 ? "match_or_absent_noop" : "blocked",
     ledgerDiagnostics: diagnostics,
-    plan: diagnostics.length === 0 ? plan : blockedPlan(plan, diagnostics),
+    plan: diagnostics.length === 0 ? plan : blockedPlan(plan, diagnostics, errors.length > 0),
+    configurationUnits: configurationUnitsFor(contract, resource.host),
     neverTouch: resource.neverTouch.map((entry) => expandHome(entry, opts.home)),
     safetyNote: resource.safetyNote,
   };
@@ -382,5 +424,6 @@ export function applyNativeResourceCleanup(
     hostId: preview.hostId,
     hostSupportStatus: preview.hostSupportStatus,
     approval: options.approved ? "approved" : "required",
+    configurationUnits: preview.configurationUnits,
   };
 }

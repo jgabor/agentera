@@ -5,7 +5,7 @@ record:
   depends_on:
     - psovbbpibd
     - gypzghfmic
-  status: pending
+  status: complete
   acceptance:
     - GIVEN preview WHEN native resources are evaluated THEN the report is read-only and classifies each ownership unit.
     - GIVEN matching durable identity and fingerprint WHEN approved cleanup runs THEN only that resource is removed and retry converges to no-op.

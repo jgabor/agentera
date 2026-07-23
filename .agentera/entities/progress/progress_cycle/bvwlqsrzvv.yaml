@@ -1,0 +1,12 @@
+id: bvwlqsrzvv
+artifact: progress
+record:
+  timestamp: 2026-07-23 15:33
+  type: fix
+  phase: build
+  what: Updated packages/cli/src/runtime/nativeResourceCleanup.ts so Codex descriptor previews classify unowned resources and each shared config key as action_required while allowing a separately ledger-owned descriptor removal.
+  context:
+    intent: Retire only provenance-proven native remnants without touching user-owned Codex descriptors or shared configuration.
+  inspiration: Plan task lowjbuwmey
+  verified: packages/cli/test/runtime/nativeResourceCleanup.test.ts; pnpm -C packages/cli test (2477 passed, 1 skipped); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; pnpm -C packages/cli run verify:package; read-only previews of all 12 codex.agent-descriptor IDs.
+  next: Complete the remaining active plan task and run the plan-completion sweep; no live Codex removal is eligible without a matching ownership journal record.

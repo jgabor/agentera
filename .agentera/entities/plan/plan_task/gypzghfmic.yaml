@@ -10,3 +10,13 @@ record:
     - GIVEN retired descriptor-specific options WHEN invoked THEN they fail before side effects with a correction to the shared-skill workflow.
     - GIVEN supported migration-only hook behavior WHEN descriptor setup is removed THEN it remains unchanged, with one preservation pass and one unsafe-input failure.
   plan: vooqzwqnlo
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation with migration-invariant and lint-baseline rechecks
+      recorded_at: 2026-07-23 15:24
+      writer_command: agentera state plan record-evaluation
