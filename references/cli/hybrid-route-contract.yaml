@@ -75,7 +75,11 @@ protocol:
       request_bound_fields:
         remainder_span:
           encoding: utf8_bytes
-          relation: 0 <= start < end <= original_request_utf8_byte_length
+          relation: 0 <= start < end = original_request_utf8_byte_length
+          exact_suffix: >-
+            start and end are UTF-8 code-point boundaries. The suffix bytes decode
+            with fatal UTF-8 handling and are returned unchanged, without
+            truncation or replacement characters.
       schema: &agentera_route_receipt_schema
         type: object
         additionalProperties: false
@@ -190,9 +194,11 @@ protocol:
           projection_bypass: reject
         downstream_validation: >-
           Pass only the projected receipt to agentera.route_receipt_schema.v1, then
-          apply canonical-capability, request-digest, span, and startup-authorization
-          checks. Normalization does not authorize startup and does not weaken any
-          CLI cross-field rule.
+          rerun deterministic routing against the supplied request and source
+          authority, require semantic_required with the same request digest and
+          semantic capsule binding, then apply canonical-capability, request-digest,
+          span, and startup-authorization checks. Normalization does not authorize
+          startup and does not weaken any CLI cross-field rule.
     request_binding: >-
       The host sends the original request transiently beside the receipt. The
       CLI recomputes SHA-256 over its UTF-8 bytes and requires an exact match to

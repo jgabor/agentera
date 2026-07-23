@@ -69,6 +69,52 @@ describe("semantic route receipt validator", () => {
     expect(result).not.toHaveProperty("next_capability");
   });
 
+  it("requires deterministic abstention before accepting a semantic receipt", () => {
+    for (const request of ["/agentera plan the import", "help me decide: cache or queue"]) {
+      expect(() => validateRouteReceiptSubmission(api(request, { capability: "build", compound: "none" }), ROOT), request)
+        .toThrow(RouteReceiptValidationError);
+    }
+  });
+
+  it("preserves only an exact UTF-8-aligned suffix", () => {
+    const request = "Compare café then build";
+    const bytes = Buffer.from(request, "utf8");
+    const start = Buffer.byteLength(request.slice(0, request.indexOf("é")), "utf8");
+
+    expect(validateRouteReceiptSubmission(api(request, {
+      capability: "build",
+      compound: "preserve",
+      remainder_span: { start, end: bytes.length },
+    }), ROOT)).toMatchObject({ deferred_intent: { text: "é then build" } });
+
+    for (const [name, receipt] of [
+      ["truncated end", { capability: "build", compound: "preserve", remainder_span: { start: 0, end: bytes.length - 1 } }],
+      ["split code point", { capability: "build", compound: "preserve", remainder_span: { start: start + 1, end: bytes.length } }],
+      ["empty suffix", { capability: "build", compound: "preserve", remainder_span: { start: 0, end: 0 } }],
+      ["inapplicable span", { capability: "build", compound: "none", remainder_span: { start: 0, end: bytes.length } }],
+    ] as const) {
+      expect(() => validateRouteReceiptSubmission(api(request, receipt), ROOT), name).toThrow(RouteReceiptValidationError);
+    }
+
+    expect(validateRouteReceiptSubmission(api(request, {
+      capability: "build",
+      compound: "preserve",
+      remainder_span: { start: 0, end: bytes.length },
+    }), ROOT)).toMatchObject({ deferred_intent: { text: request } });
+  });
+
+  it("counts clarification length in Unicode code points", () => {
+    const request = "Which capability should handle this?";
+    expect(validateRouteReceiptSubmission(api(request, {
+      outcome: "clarify",
+      question: "😀".repeat(280),
+    }), ROOT)).toMatchObject({ outcome: "clarification" });
+    expect(() => validateRouteReceiptSubmission(api(request, {
+      outcome: "clarify",
+      question: "😀".repeat(281),
+    }), ROOT)).toThrow(RouteReceiptValidationError);
+  });
+
   it("rejects malformed, stale, mismatched, forbidden, and injection-shaped receipts before startup", () => {
     const request = "Plan the import";
     const cases: Array<[string, unknown]> = [

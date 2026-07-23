@@ -1,0 +1,12 @@
+id: tvomeeufvs
+artifact: progress
+record:
+  timestamp: 2026-07-23 04:25
+  type: fix
+  phase: build
+  what: Corrected semantic receipt authorization, UTF-8 compound suffix validation, and Unicode clarification limits in packages/cli/src/registries/hybridRouteReceipt.ts.
+  context:
+    intent: Retry tcgzbnkhtd after its audit findings without expanding into benchmark, versioning, or sync work.
+  inspiration: Task tcgzbnkhtd audit-tcgzbnkhtd-1.
+  verified: "Focused receipt, CLI, and contract tests: 23 passed. Full source suite: 2,407 passed, 1 skipped across 198 files. Package verification: 12 passed across 2 files. pnpm typecheck, pnpm build, and capability-contract validation passed."
+  next: No Task 5 benchmark, versioning, or final sync was implemented.

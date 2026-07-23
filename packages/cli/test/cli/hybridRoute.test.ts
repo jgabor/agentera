@@ -118,4 +118,16 @@ describe("route receipt CLI", () => {
     expect(JSON.parse(malformed.out)).toMatchObject({ error: { class: "invalid_receipt", recovery: expect.stringContaining("no capability was started") } });
     expect(malformed.out).not.toContain(request);
   });
+
+  it("counts clarification question length in Unicode code points", () => {
+    const request = "Which capability should handle this?";
+    const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    const receipt = (question: string) => JSON.stringify({
+      request,
+      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, outcome: "clarify", capability: null, compound: null, question, remainder_span: null },
+    });
+
+    expect(invokeReceipt(receipt("😀".repeat(280))).rc).toBe(0);
+    expect(invokeReceipt(receipt("😀".repeat(281))).rc).toBe(64);
+  });
 });

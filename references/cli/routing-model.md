@@ -47,8 +47,10 @@ For `semantic_required`, the host sends the same transient original request and
 the complete nullable API receipt to `agentera route receipt --input - --format
 json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes. The CLI
 first validates the unmodified API shape, removes only contract-listed nulls,
-then validates the projected CLI receipt with canonical-capability binding and
-request-bound span rules:
+then reruns deterministic routing and accepts the receipt only when the same
+request still produces its bound `semantic_required` capsule. It then validates
+the projected CLI receipt with canonical-capability binding and request-bound
+span rules:
 
 | Receipt | Required result | Startup |
 | --- | --- | --- |
@@ -88,9 +90,9 @@ or `no_match`. A compound request never authorizes implicit chaining:
 
 - A direct or phrase selection preserves its entire original remainder as one
   topic without interpreting it as follow-on work.
-- A semantic `select` may mark one original remainder span `preserve`; it is
-  deferred intent, not a second startup. `clarify` is an outcome, never a
-  compound disposition.
+- A semantic `select` may mark one original, UTF-8 code-point-aligned trailing
+  remainder span `preserve`; it is deferred intent, not a second startup.
+  `clarify` is an outcome, never a compound disposition.
 - Independent or consequential compound intent uses the `clarify` outcome when
   one primary capability cannot be named safely.
 

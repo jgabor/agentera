@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadCapabilitySchemaContract } from "./capabilityContract.js";
+import { resolveRouteRequest } from "./hybridRoute.js";
 
 type Mapping = Record<string, unknown>;
 
@@ -48,6 +49,10 @@ function validUtf8String(value: unknown, field: string): string {
   return value;
 }
 
+function codePointLength(value: string): number {
+  return [...value].length;
+}
+
 function apiShape(receipt: unknown, capabilities: Set<string>): Mapping {
   if (!isMapping(receipt)) throw new RouteReceiptValidationError("receipt", "must be an API receipt mapping");
   const keys = ["version", "request_sha256", "outcome", "capability", "compound", "question", "remainder_span"] as const;
@@ -67,7 +72,7 @@ function apiShape(receipt: unknown, capabilities: Set<string>): Mapping {
   }
   if (receipt.question !== null) {
     const question = validUtf8String(receipt.question, "receipt.question");
-    if (question.length > 280) throw new RouteReceiptValidationError("receipt.question", "must be at most 280 characters");
+    if (codePointLength(question) > 280) throw new RouteReceiptValidationError("receipt.question", "must be at most 280 characters");
   }
   if (receipt.remainder_span !== null) {
     if (!isMapping(receipt.remainder_span)) throw new RouteReceiptValidationError("receipt.remainder_span", "must be a span mapping or null");
@@ -105,7 +110,24 @@ function normalizeApiReceipt(api: Mapping): Mapping {
   return Object.fromEntries(Object.entries(api).filter(([, value]) => value !== null));
 }
 
-function authoritativeReceipt(receipt: Mapping, request: string, capabilities: Set<string>): void {
+function exactUtf8Suffix(request: string, span: { start: number; end: number }): string {
+  const bytes = Buffer.from(request, "utf8");
+  if (span.start < 0 || span.end <= span.start || span.end !== bytes.length) {
+    throw new RouteReceiptValidationError("receipt.remainder_span", "must be a non-empty suffix ending at the original request byte length");
+  }
+  try {
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(span.start, span.end));
+    if (!Buffer.from(text, "utf8").equals(bytes.subarray(span.start, span.end))) {
+      throw new RouteReceiptValidationError("receipt.remainder_span", "must preserve exact UTF-8 request bytes");
+    }
+    return text;
+  } catch (error) {
+    if (error instanceof RouteReceiptValidationError) throw error;
+    throw new RouteReceiptValidationError("receipt.remainder_span", "must start and end on UTF-8 code-point boundaries");
+  }
+}
+
+function authoritativeReceipt(receipt: Mapping, request: string, capabilities: Set<string>): string | undefined {
   hasOnlyKeys(receipt, ["version", "request_sha256", "outcome", "capability", "compound", "question", "remainder_span"], "receipt");
   if (receipt.version !== "agentera.route_receipt.v1") throw new RouteReceiptValidationError("receipt.version", "is unsupported");
   if (typeof receipt.request_sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(receipt.request_sha256)) {
@@ -122,7 +144,7 @@ function authoritativeReceipt(receipt: Mapping, request: string, capabilities: S
     if (receipt.compound === "preserve" && !("remainder_span" in receipt)) throw new RouteReceiptValidationError("receipt.remainder_span", "is required when compound is preserve");
   } else if (receipt.outcome === "clarify") {
     const question = validUtf8String(receipt.question, "receipt.question");
-    if (!question || question.length > 280) throw new RouteReceiptValidationError("receipt.question", "must be a non-empty question of at most 280 characters");
+    if (!question || codePointLength(question) > 280) throw new RouteReceiptValidationError("receipt.question", "must be a non-empty question of at most 280 characters");
     for (const key of ["capability", "compound", "remainder_span"]) if (key in receipt) throw new RouteReceiptValidationError(`receipt.${key}`, "is forbidden for clarify");
   } else if (receipt.outcome === "no_match") {
     for (const key of ["capability", "compound", "question", "remainder_span"]) if (key in receipt) throw new RouteReceiptValidationError(`receipt.${key}`, "is forbidden for no_match");
@@ -134,9 +156,20 @@ function authoritativeReceipt(receipt: Mapping, request: string, capabilities: S
     if (!isMapping(receipt.remainder_span) || !Number.isInteger(receipt.remainder_span.start) || !Number.isInteger(receipt.remainder_span.end)) {
       throw new RouteReceiptValidationError("receipt.remainder_span", "must contain integer start and end values");
     }
-    const { start, end } = receipt.remainder_span as { start: number; end: number };
-    const length = Buffer.byteLength(request, "utf8");
-    if (start < 0 || end <= start || end > length) throw new RouteReceiptValidationError("receipt.remainder_span", "must be a non-empty span inside the original request");
+    return exactUtf8Suffix(request, receipt.remainder_span as { start: number; end: number });
+  }
+  return undefined;
+}
+
+function requireSemanticAuthorization(request: string, receipt: Mapping, sourceRoot: string): void {
+  try {
+    const phaseOne = resolveRouteRequest(request, sourceRoot);
+    if (phaseOne.outcome !== "semantic_required" || phaseOne.request_sha256 !== receipt.request_sha256) {
+      throw new RouteReceiptValidationError("receipt.request_sha256", "is not bound to a semantic_required route response");
+    }
+  } catch (error) {
+    if (error instanceof RouteReceiptValidationError) throw error;
+    throw new RouteReceiptValidationError("receipt", "could not be authorized by the deterministic route authority");
   }
 }
 
@@ -148,7 +181,8 @@ export function validateRouteReceiptSubmission(input: unknown, sourceRoot: strin
   const contract = loadCapabilitySchemaContract(path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml"));
   const capabilities = new Set(contract.routeAliases.primaryAliases.map(({ capability }) => capability));
   const receipt = normalizeApiReceipt(apiShape(apiReceipt, capabilities));
-  authoritativeReceipt(receipt, request, capabilities);
+  const deferredText = authoritativeReceipt(receipt, request, capabilities);
+  requireSemanticAuthorization(request, receipt, sourceRoot);
 
   if (receipt.outcome === "clarify") {
     return {
@@ -165,7 +199,7 @@ export function validateRouteReceiptSubmission(input: unknown, sourceRoot: strin
     schemaVersion: "agentera.route_receipt_result.v1",
     outcome: receipt.outcome === "no_match" ? "status_fallback" : "selected",
     capability,
-    ...(span ? { deferred_intent: { remainder_span: span, text: Buffer.from(request, "utf8").subarray(span.start, span.end).toString("utf8") } } : {}),
+    ...(span ? { deferred_intent: { remainder_span: span, text: deferredText! } } : {}),
     route_provenance: {
       source: "semantic_receipt",
       receipt_version: "agentera.route_receipt.v1",

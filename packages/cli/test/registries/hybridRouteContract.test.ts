@@ -80,8 +80,8 @@ function validateSchema(schema: RecordValue, value: unknown, location = "$"): st
   ))) return [`${location}.type`];
   if (schema.const !== undefined && value !== schema.const) errors.push(`${location}.const`);
   if (schema.enum && !schema.enum.includes(value)) errors.push(`${location}.enum`);
-  if (typeof value === "string" && schema.minLength !== undefined && value.length < schema.minLength) errors.push(`${location}.minLength`);
-  if (typeof value === "string" && schema.maxLength !== undefined && value.length > schema.maxLength) errors.push(`${location}.maxLength`);
+  if (typeof value === "string" && schema.minLength !== undefined && [...value].length < schema.minLength) errors.push(`${location}.minLength`);
+  if (typeof value === "string" && schema.maxLength !== undefined && [...value].length > schema.maxLength) errors.push(`${location}.maxLength`);
   if (typeof value === "string" && schema.pattern && !new RegExp(schema.pattern, "u").test(value)) errors.push(`${location}.pattern`);
   if (typeof value === "number" && schema.minimum !== undefined && value < schema.minimum) errors.push(`${location}.minimum`);
 
