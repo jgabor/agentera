@@ -71,9 +71,13 @@ function deriveLeadingPhrase(request: string, phrase: string): { recognized: str
 function validateSchema(schema: RecordValue, value: unknown, location = "$"): string[] {
   const errors: string[] = [];
   const isObject = typeof value === "object" && value !== null && !Array.isArray(value);
-  if (schema.type === "object" && !isObject) return [`${location}.type`];
-  if (schema.type === "string" && typeof value !== "string") return [`${location}.type`];
-  if (schema.type === "integer" && (!Number.isInteger(value) || typeof value !== "number")) return [`${location}.type`];
+  const types = schema.type === undefined ? [] : Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (types.length > 0 && !types.some((type) => (
+    (type === "object" && isObject)
+    || (type === "string" && typeof value === "string")
+    || (type === "integer" && Number.isInteger(value) && typeof value === "number")
+    || (type === "null" && value === null)
+  ))) return [`${location}.type`];
   if (schema.const !== undefined && value !== schema.const) errors.push(`${location}.const`);
   if (schema.enum && !schema.enum.includes(value)) errors.push(`${location}.enum`);
   if (typeof value === "string" && schema.minLength !== undefined && value.length < schema.minLength) errors.push(`${location}.minLength`);
@@ -101,6 +105,63 @@ function validateSchema(schema: RecordValue, value: unknown, location = "$"): st
     }
   }
   if (schema.not && validateSchema(schema.not as RecordValue, value, location).length === 0) errors.push(`${location}.not`);
+  return errors;
+}
+
+function apiOutputSchemaErrors(schema: RecordValue, location = "$"): string[] {
+  const errors: string[] = [];
+  const supportedKeywords = new Set(["type", "enum", "properties", "required", "additionalProperties"]);
+  for (const keyword of Object.keys(schema)) {
+    if (!supportedKeywords.has(keyword)) errors.push(`${location}.unsupported.${keyword}`);
+  }
+
+  const types = schema.type === undefined ? [] : Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (types.includes("object")) {
+    const properties = schema.properties as RecordValue | undefined;
+    const required = schema.required as string[] | undefined;
+    if (!properties || !required || new Set(required).size !== Object.keys(properties).length || Object.keys(properties).some((field) => !required.includes(field))) {
+      errors.push(`${location}.all_properties_required`);
+    }
+    if (schema.additionalProperties !== false) errors.push(`${location}.additional_properties`);
+    for (const [field, fieldSchema] of Object.entries(properties ?? {})) {
+      errors.push(...apiOutputSchemaErrors(fieldSchema as RecordValue, `${location}.${field}`));
+    }
+  }
+  if (location === "$") {
+    for (const field of ["capability", "compound", "question", "remainder_span"]) {
+      const fieldTypes = (schema.properties as RecordValue)[field].type;
+      if (!Array.isArray(fieldTypes) || !fieldTypes.includes("null")) errors.push(`${location}.${field}.nullable`);
+    }
+  }
+  return errors;
+}
+
+function apiProfileErrors(host: RecordValue): string[] {
+  const errors: string[] = [];
+  const request = host.request as RecordValue;
+  const format = (request.text as RecordValue).format as RecordValue;
+  if (request.method !== "POST" || request.path !== "/v1/responses") errors.push("request.endpoint");
+  if (request.model !== "gpt-5.6-terra") errors.push("request.model");
+  if (request.store !== false) errors.push("request.store");
+  if ((request.reasoning as RecordValue).effort !== "low") errors.push("request.reasoning.effort");
+  if (request.max_output_tokens !== 256) errors.push("request.max_output_tokens");
+  if (Object.keys(format).some((field) => !["type", "name", "strict", "schema"].includes(field))) errors.push("request.text.format.keys");
+  if (format.type !== "json_schema" || format.name !== "agentera_route_receipt" || format.strict !== true) errors.push("request.text.format");
+  errors.push(...apiOutputSchemaErrors(format.schema as RecordValue, "request.text.format.schema"));
+  return errors;
+}
+
+function holdoutProvenanceErrors(manifest: RecordValue): string[] {
+  const errors: string[] = [];
+  const holdout = manifest.holdout as RecordValue;
+  const provenance = holdout.content_provenance as RecordValue | undefined;
+  if (!provenance || provenance.declaration !== "evaluator_attested" || provenance.attested_by !== "independent_evaluator") errors.push("provenance.evaluator_attestation");
+  if (!Array.isArray(provenance?.text_origin) || !provenance.text_origin.every((source: unknown) => ["synthetic", "explicitly_consented"].includes(source as string))) {
+    errors.push("provenance.text_origin");
+  }
+  if (provenance?.imported_production_prompts !== false) errors.push("provenance.imported_production_prompts");
+  const custody = holdout.custody as RecordValue | undefined;
+  if (!custody || custody.owner !== "independent_evaluator" || custody.access !== "sealed_private") errors.push("custody");
   return errors;
 }
 
@@ -184,6 +245,13 @@ describe("hybrid route contract", () => {
     expect(holdoutManifest.holdout).toMatchObject({ corpus_version: "agentera.hybrid_routing_holdout.v1", case_count: 4 });
     expect(holdoutManifest.holdout.canonical_content_sha256).toMatch(/^[a-f0-9]{64}$/);
     expect(holdoutManifest.holdout.excluded_content).toEqual(expect.arrayContaining(["requests", "expected_labels"]));
+    expect(holdoutProvenanceErrors(holdoutManifest)).toEqual([]);
+    expect(holdoutManifest.holdout.custody.repository_retains).toEqual(expect.arrayContaining([
+      "version",
+      "case_count",
+      "canonical_content_sha256",
+      "aggregate_result_binding",
+    ]));
     expect(holdoutManifest.result_binding.required_fields).toEqual(expect.arrayContaining(["canonical_content_sha256", "aggregate_metrics"]));
     expect(holdoutManifest.result_binding.prohibited_fields).toEqual(expect.arrayContaining(["raw_request", "expected_label"]));
   });
@@ -241,6 +309,58 @@ describe("hybrid route contract", () => {
     expect(receiptCases.some((receiptCase) => !receiptCase.valid && receiptCase.error === "binding.remainder_span")).toBe(true);
   });
 
+  it("keeps the API output shape separate from CLI outcome validation", () => {
+    const authority = contract.protocol.receipt.validation_authority;
+    const apiShape = authority.api_output_shape;
+    expect(apiShape.canonical_capability_values_source).toBe(authority.canonical_capability_source);
+    expect(apiShape.schema.properties.capability.enum.slice(0, -1)).toEqual(capabilities);
+    expect(apiOutputSchemaErrors(apiShape.schema)).toEqual([]);
+
+    const request = "choose a route";
+    const hash = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    const apiSelect = {
+      version: "agentera.route_receipt.v1",
+      request_sha256: hash,
+      outcome: "select",
+      capability: "plan",
+      compound: "none",
+      question: null,
+      remainder_span: null,
+    };
+    expect(validateSchema(apiShape.schema, apiSelect)).toEqual([]);
+    expect(receiptErrors({
+      version: apiSelect.version,
+      request_sha256: apiSelect.request_sha256,
+      outcome: apiSelect.outcome,
+      capability: apiSelect.capability,
+      compound: apiSelect.compound,
+    }, request, authority, capabilities)).toEqual([]);
+  });
+
+  it("rejects unsupported or incomplete API schemas, extra format fields, and missing holdout provenance", () => {
+    const invalidSchema = structuredClone(contract.protocol.receipt.validation_authority.api_output_shape.schema);
+    invalidSchema.allOf = [];
+    invalidSchema.required = invalidSchema.required.filter((field: string) => field !== "question");
+    invalidSchema.properties.question.type = "string";
+    expect(apiOutputSchemaErrors(invalidSchema)).toEqual(expect.arrayContaining([
+      "$.unsupported.allOf",
+      "$.all_properties_required",
+      "$.question.nullable",
+    ]));
+
+    const invalidProfile = structuredClone(contract.evaluation.reference_host);
+    invalidProfile.request.text.format.canonical_capability_values_source = "not_an_api_field";
+    invalidProfile.request.store = true;
+    expect(apiProfileErrors(invalidProfile)).toEqual(expect.arrayContaining([
+      "request.store",
+      "request.text.format.keys",
+    ]));
+
+    const missingProvenance = structuredClone(holdoutManifest);
+    delete missingProvenance.holdout.content_provenance;
+    expect(holdoutProvenanceErrors(missingProvenance)).toContain("provenance.evaluator_attestation");
+  });
+
   it("freezes an API-accepted, retention-bounded reference-host profile without claiming execution", () => {
     const host = contract.evaluation.reference_host;
     expect(host).toMatchObject({
@@ -252,16 +372,15 @@ describe("hybrid route contract", () => {
         path: "/v1/responses",
         model: "gpt-5.6-terra",
         store: false,
-        temperature: 0,
-        top_p: 1,
+        reasoning: { effort: "low" },
         max_output_tokens: 256,
-        retry: { max_attempts: 1, automatic_retry: false },
         text: { format: { type: "json_schema", name: "agentera_route_receipt", strict: true } },
       },
     });
-    expect(host.request.timestamp_metadata.forbidden_fields).toEqual(expect.arrayContaining(["raw_request", "receipt_question"]));
-    expect(host.request.text.format.schema).toEqual(contract.protocol.receipt.validation_authority.schema);
-    expect(host.request.text.format.canonical_capability_values_source).toBe(contract.protocol.receipt.validation_authority.canonical_capability_source);
+    expect(host.harness.retry).toEqual({ max_attempts: 1, automatic_retry: false });
+    expect(host.harness.timestamp_metadata.forbidden_fields).toEqual(expect.arrayContaining(["raw_request", "receipt_question"]));
+    expect(host.request.text.format.schema).toEqual(contract.protocol.receipt.validation_authority.api_output_shape.schema);
+    expect(apiProfileErrors(host)).toEqual([]);
     expect(host.retention_caveat).toContain("Zero Data Retention");
     expect(host.retention_caveat).toContain("not a promise");
     expect(host.data_controls_authority).toContain("https://developers.openai.com/api/docs/guides/your-data");

@@ -1,0 +1,15 @@
+id: qyoxwcygof
+artifact: progress
+record:
+  timestamp: 2026-07-23 02:28
+  type: fix
+  phase: build
+  what: Separated the Responses API output shape from the CLI receipt schema, moved harness metadata outside the API body, and added sealed-holdout provenance attestation.
+  context:
+    intent: Repair replacement task umlkejxsng after the independent audit found an API-incompatible Structured Outputs schema and missing holdout provenance.
+    constraints: Contract-only correction; no runtime routing, semantic execution, adapters, benchmarks, or version changes.
+    unknowns: Independent post-commit audit remains pending.
+    scope: references/cli/hybrid-route-contract.yaml, fixtures/routing/holdout-manifest.yaml, routing-model documentation, and hybrid contract tests.
+  inspiration: Independent audit attempt 2 for blocked task tkgtvppdur; corrective replacement umlkejxsng.
+  verified: Focused positive and negative contract coverage and full source suite passed (195 files, 2,387 tests, 1 skipped); typecheck, build, capability-contract validation, and package verification passed.
+  next: Keep umlkejxsng in_progress until independent audit approval; orchestrator alone supersedes tkgtvppdur and resolves the degraded TODO.

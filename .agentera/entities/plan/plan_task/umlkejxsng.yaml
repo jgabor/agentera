@@ -1,0 +1,14 @@
+id: umlkejxsng
+artifact: plan
+record:
+  plan: pxyvjauajx
+  name: Repair hybrid routing contract
+  status: in_progress
+  depends_on:
+    - warjaypkno
+  acceptance:
+    - GIVEN the declared Responses API request WHEN checked against the supported Structured Outputs subset THEN every output field is required or nullable, unsupported conditional composition is absent, and model, reasoning, persistence, and output settings are explicit.
+    - GIVEN outcome-specific receipt rules WHEN a host response is processed THEN the API schema validates shape while the CLI contract validates cross-field relationships.
+    - GIVEN the sealed holdout manifest WHEN inspected THEN it attests that all text is synthetic or explicitly consented, excludes imported production prompts, and retains immutable count, hash, custody, and aggregate-result binding.
+    - GIVEN invalid API profiles or missing holdout provenance WHEN contract checks run THEN they fail, while the corrected contract, full suite, package checks, and compaction pass.
+    - GIVEN independent audit approval WHEN the replacement completes THEN task tkgtvppdur is superseded by the replacement and downstream tasks become dependency-ready.

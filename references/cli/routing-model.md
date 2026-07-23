@@ -97,7 +97,8 @@ The visible frozen development and adversarial regression data live in
 [`fixtures/routing/hybrid-corpus.yaml`](../../fixtures/routing/hybrid-corpus.yaml).
 They use synthetic or explicitly consented text only and are not a holdout. The
 independently controlled holdout exposes only its version, count, content hash,
-and Task 5 aggregate-result protocol through
+sealed evaluator custody, provenance attestation (synthetic or explicitly
+consented text; no imported production prompts), and Task 5 aggregate-result protocol through
 [`fixtures/routing/holdout-manifest.yaml`](../../fixtures/routing/holdout-manifest.yaml).
 Retained evaluation evidence contains IDs, partition, outcome, tier,
 capability, timing, model profile, and aggregate metrics; private raw request
@@ -105,8 +106,12 @@ text, topic text, receipt questions, and semantic rationale are absent by
 default.
 
 The contract's exact OpenAI Responses profile uses the API model identifier
-`gpt-5.6-terra`, `store: false`, a strict `text.format` JSON Schema, one
-attempt, and non-content timestamp metadata. `store: false` is not a
+`gpt-5.6-terra`, `reasoning.effort: low`, `store: false`, a strict
+`text.format` JSON Schema, and an explicit output-token limit. Its API schema
+has all fields required, using nullable fields for outcome-inapplicable values;
+the CLI schema separately validates outcome relationships and request binding.
+Retry and timestamp details are harness metadata, not API-body fields.
+`store: false` disables Responses application-state storage, but is not a
 no-provider-retention promise: a no-provider-retention acceptance claim requires
 an approved Zero Data Retention organization and compatible enabled features.
 The contract links the current official data-controls and Responses structured-

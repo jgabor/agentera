@@ -4,7 +4,7 @@ record:
   name: Authorize and specify the hybrid contract
   depends_on:
     - warjaypkno
-  status: complete
+  status: blocked
   acceptance:
     - GIVEN Decision 76 WHEN superseded THEN only curated literal fast paths are restored and open-ended language remains LLM-owned.
     - GIVEN every route shape WHEN reviewed THEN precedence, abstention, selection, clarification, no-match, and compound outcomes are unambiguous.
@@ -13,12 +13,12 @@ record:
     - GIVEN each route outcome WHEN tested THEN at least one passing and one failing fixture exists for every relevant capability boundary.
   plan: pxyvjauajx
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Reference API model syntax and retention controls are incorrect; separator tokenization contradicts phrase examples; valid receipt fixtures omit required binding fields; the visible holdout is tuneable; bare/direct negative and terminal outcome coverage is incomplete. Correct the normative contract and contract-derived fixtures/tests.
+    last_failure_evidence: The OpenAI strict output schema remains API-incompatible because it uses unsupported conditional composition and optional properties, and the sealed holdout manifest lacks required synthetic-or-consented text provenance. Replace the API schema with a supported required/nullable shape and add evaluator provenance before replanning.
     provenance:
-      attempt_id: audit-tkgtvppdur-1
+      attempt_id: audit-tkgtvppdur-2
       source: independent audit ses_073e3c434ffe2JLTGhmPdX3ckL
-      recorded_at: 2026-07-23 01:26
+      recorded_at: 2026-07-23 01:48
       writer_command: agentera state plan record-evaluation

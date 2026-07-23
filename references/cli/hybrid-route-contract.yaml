@@ -101,6 +101,35 @@ protocol:
               properties: { outcome: { const: select }, compound: { const: none } }
               required: [outcome, compound]
             then: { not: { required: [remainder_span] } }
+      api_output_shape:
+        name: agentera_route_receipt
+        purpose: >-
+          The Responses Structured Outputs shape. It validates the complete receipt
+          object only; the CLI receipt schema remains authoritative for outcome
+          relationships, request binding, and capability authorization.
+        canonical_capability_values_source: *canonical_capability_source
+        schema: &agentera_route_receipt_api_schema
+          type: object
+          additionalProperties: false
+          required: [version, request_sha256, outcome, capability, compound, question, remainder_span]
+          properties:
+            version: { type: string, enum: [agentera.route_receipt.v1] }
+            request_sha256: { type: string }
+            outcome: { type: string, enum: [select, clarify, no_match] }
+            capability:
+              type: [string, "null"]
+              enum: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate, null]
+            compound:
+              type: [string, "null"]
+              enum: [none, preserve, null]
+            question: { type: [string, "null"] }
+            remainder_span:
+              type: [object, "null"]
+              additionalProperties: false
+              required: [start, end]
+              properties:
+                start: { type: integer }
+                end: { type: integer }
     request_binding: >-
       The host sends the original request transiently beside the receipt. The
       CLI recomputes SHA-256 over its UTF-8 bytes and requires an exact match to
@@ -257,14 +286,8 @@ evaluation:
       path: /v1/responses
       model: gpt-5.6-terra
       store: false
-      temperature: 0
-      top_p: 1
+      reasoning: { effort: low }
       max_output_tokens: 256
-      retry: { max_attempts: 1, automatic_retry: false }
-      timestamp_metadata:
-        sent_at_utc: RFC3339_UTC_instant_recorded_at_send
-        fields: [profile_version, model, temperature, top_p, max_output_tokens, store, attempt]
-        forbidden_fields: [raw_request, topic, receipt_question, semantic_rationale]
       input: >-
         One transient system instruction containing the semantic capsule followed
         by one transient user message containing the original request. Neither is
@@ -274,8 +297,13 @@ evaluation:
           type: json_schema
           name: agentera_route_receipt
           strict: true
-          schema: *agentera_route_receipt_schema
-          canonical_capability_values_source: *canonical_capability_source
+          schema: *agentera_route_receipt_api_schema
+    harness:
+      retry: { max_attempts: 1, automatic_retry: false }
+      timestamp_metadata:
+        sent_at_utc: RFC3339_UTC_instant_recorded_at_send
+        fields: [profile_version, model, reasoning_effort, max_output_tokens, store, attempt]
+        forbidden_fields: [raw_request, topic, receipt_question, semantic_rationale]
     output: Strict JSON receipt only; no tool calls, state reads, runtime adapters, or third-party services.
     retention_caveat: >-
       store=false disables Responses application-state storage; it is not a
