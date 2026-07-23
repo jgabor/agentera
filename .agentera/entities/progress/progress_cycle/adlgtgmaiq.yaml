@@ -1,0 +1,14 @@
+id: adlgtgmaiq
+artifact: progress
+record:
+  timestamp: 2026-07-23 09:45
+  type: docs
+  phase: build
+  what: Synchronize hybrid routing state and current protocol caveats.
+  context:
+    intent: Close plan task vhyyngtmun without changing the routing decision or plan lifecycle.
+    constraints: No version bump, publication, tag, push, decision satisfaction, or plan archive; retain unrelated and historical TODO evidence.
+    unknowns: Visible corpus proves protocol conformance rather than semantic generalization; semantic-host quality and latency are host-dependent and unmeasured; local p95 is run-specific.
+    scope: Routing contract, model, shared skill, protocol tests, plan task state, and progress state.
+  verified: Focused routing tests (25), full source suite (199 files; 2,417 passed, 1 skipped), typecheck, build, state and capability-contract validation, all capability validation, and offline route evaluation (48/48) with verify wrapper passed; release metadata will be revalidated after the substantive commit records the governed source tree.
+  next: Keep plan pxyvjauajx open and unarchived pending the orchestrator's independent audit; only the user may confirm decision satisfaction.

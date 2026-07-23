@@ -75,7 +75,8 @@ describe("public runtime vocabulary", () => {
     );
 
     expect(skill).toContain("Classify expressed intent before startup");
-    expect(skill).toContain("The LLM host classifies natural language");
+    expect(skill).toContain("The CLI first applies deterministic explicit and curated route tiers.");
+    expect(skill).toContain("the LLM host classifies open-ended language");
     expect(skill).toContain("`description`, `priority`, and `disambiguates_against`");
     expect(skill).toContain("then run `agentera prime --context <selected-capability> --format json`");
     expect(skill).toContain("one clarifying question only for genuine consequential ambiguity");
@@ -90,6 +91,7 @@ describe("public runtime vocabulary", () => {
     expect(routingModel).toContain("no scoring engine, no confidence threshold, and no borderline band");
     expect(routingModel).toMatch(/next_action`\s+informs readiness only after classification and cannot override the message\s+intent/);
     expect(routingModel).toContain("route to status for orientation only after no capability matches");
+    expect(routingModel).toContain("not semantic generalization or an end-to-end latency commitment");
     expect(routingModel).not.toContain("ambiguous inputs");
     expect(primeCompatibility).toContain("Bare `/agentera` and status orientation run one status-context call.");
     expect(primeCompatibility).toContain("Natural language is classified from intent first, then starts the selected\n      capability context.");

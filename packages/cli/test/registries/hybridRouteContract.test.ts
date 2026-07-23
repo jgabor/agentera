@@ -190,6 +190,7 @@ describe("hybrid route contract", () => {
 
   it("defines the versioned cascade, terminal outcomes, and receipt authorization", () => {
     expect(contract.schema_version).toBe("agentera.hybrid_route_contract.v3");
+    expect(contract.purpose).toContain("implements deterministic resolution and receipt validation");
     expect(contract.protocol.response.outcomes).toEqual(["deterministic_selection", "semantic_required"]);
     expect(contract.protocol.receipt.outcomes).toEqual(["select", "clarify", "no_match"]);
     expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual([
@@ -210,6 +211,8 @@ describe("hybrid route contract", () => {
     expect(contract.protocol.receipt.clarify.forbidden_fields).toContain("remainder_span");
     expect(contract.protocol.receipt.no_match.forbidden_fields).toContain("remainder_span");
     expect(contract.privacy.default_persistence).toBe("forbidden");
+    expect(contract.evaluation.local_latency_caveat).toContain("run-specific local");
+    expect(contract.evaluation.execution_status).toContain("not semantic generalization");
   });
 
   it("assigns every active literal phrase one collision-free capability and corpus proof", () => {

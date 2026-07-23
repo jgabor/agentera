@@ -11,12 +11,12 @@ record:
     - GIVEN release validation WHEN run THEN metadata passes without publication, tagging, or pushing.
   plan: pxyvjauajx
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Changelog overstates route request as execution rather than selection; clean verify:release is non-hermetic due inherited XDG/profile state and an environment-derived status budget fixture; gitRef validation omits packaged README and routing corpus inputs. Correct all three and rerun clean release policy.
     provenance:
-      attempt_id: audit-tzmwbmehzs-1
+      attempt_id: audit-tzmwbmehzs-2
       source: independent audit ses_07246b4adffem226Z0VgJWYosH
-      recorded_at: 2026-07-23 08:58
+      recorded_at: 2026-07-23 09:37
       writer_command: agentera state plan record-evaluation

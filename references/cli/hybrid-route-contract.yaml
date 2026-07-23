@@ -1,9 +1,9 @@
 schema_version: agentera.hybrid_route_contract.v3
 status: normative
 purpose: >-
-  Define the portable, two-phase request-to-capability route contract. This is
-  a contract only: Task 3 implements deterministic resolution and Task 4
-  implements the semantic host path.
+  Define the portable, two-phase request-to-capability route contract. The CLI
+  implements deterministic resolution and receipt validation; the host supplies
+  open-ended semantic judgment only after deterministic abstention.
 ownership:
   cli: >-
     The CLI owns request validation, deterministic terminal selections, receipt
@@ -369,6 +369,9 @@ evaluation:
     A host may make the semantic judgment and submit the portable nullable host
     receipt shape. Host selection, model quality, and latency are host-dependent
     and unmeasured by this offline evaluator; no host invocation is required.
+  local_latency_caveat: >-
+    Deterministic and receipt-validation p95 values are run-specific local
+    conformance measurements, not semantic-host or end-to-end latency claims.
   target_gates:
     deterministic_phase1_p95: 25_ms
     receipt_validation_p95: 25_ms
@@ -381,8 +384,9 @@ evaluation:
     - private_request_text_is_persisted_or_exported
   execution_status: >-
     Offline implementation acceptance requires frozen deterministic and
-    receipt-validation conformance only. Semantic host quality and latency are
-    explicitly unmeasured and do not block implementation acceptance.
+    receipt-validation conformance only. The visible corpus proves protocol
+    conformance, not semantic generalization. Semantic host quality and latency
+    are explicitly unmeasured and do not block implementation acceptance.
 
 deprecations:
   decision_76: >-

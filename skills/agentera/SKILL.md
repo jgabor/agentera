@@ -26,9 +26,9 @@ capabilities:
 # agentera
 
 One agent, one CLI, many capabilities. The CLI owns project memory,
-capability instructions, and the worker-spec contract. The LLM host owns
-natural-language routing from the trigger intent documentation; it learns that
-contract from the CLI.
+capability instructions, the deterministic routing tiers, and the worker-spec
+contract. The host owns open-ended semantic judgment from the trigger intent
+documentation after deterministic abstention; it learns that contract from the CLI.
 
 ---
 
@@ -76,7 +76,9 @@ interruption; recovery continues forward internally.
 
 ## Routing
 
-The LLM host classifies natural language; the CLI supplies contracts and context.
+The CLI first applies deterministic explicit and curated route tiers. For
+`semantic_required` requests, the LLM host classifies open-ended language from
+the CLI-supplied contract and context.
 
 | Request shape | Route |
 |---|---|
@@ -119,9 +121,11 @@ path.
 Run `agentera route evaluate --format json` to evaluate the frozen visible
 development and adversarial corpus. Its report binds the protocol, phrase
 authority, and shared-skill hashes, labels every result with a routing tier, and
-keeps request text out of output. It does not invoke a semantic host: deterministic
-and receipt-validation conformance are measured locally, while semantic model
-quality and latency are host-dependent and explicitly unmeasured.
+keeps request text out of output. It proves protocol conformance, not semantic
+generalization. It does not invoke a semantic host: deterministic and
+receipt-validation conformance and run-specific local p95 values are measured
+locally, while semantic model quality and latency are host-dependent and
+explicitly unmeasured.
 
 Handoff verbs:
 

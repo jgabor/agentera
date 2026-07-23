@@ -1,8 +1,8 @@
 # Hybrid routing model
 
-The portable shared skill and CLI use one hybrid cascade. Curated, globally
-unique literal phrases provide a small deterministic fast path; open-ended
-language remains LLM-owned. The normative protocol is
+The portable shared skill and CLI use one hybrid cascade. Explicit routes and
+curated, globally unique literal phrases provide deterministic tiers; open-ended
+language remains host-owned. The normative protocol is
 [`hybrid-route-contract.yaml`](./hybrid-route-contract.yaml); this page is a
 reader-oriented model, not a second contract.
 
@@ -116,9 +116,11 @@ validates that unmodified shape, removes only contract-listed nulls, and preserv
 every non-null value unchanged. The CLI schema then separately validates outcome
 relationships, request binding, spans, canonical capabilities, and startup authorization.
 Normalization never authorizes startup or weakens a cross-field rule.
-The evaluator reports separate deterministic and receipt-validation p95 values.
-Semantic model quality and latency remain host-dependent and unmeasured; it makes
-no live model calls.
+The evaluator reports separate, run-specific local deterministic and
+receipt-validation p95 values. They prove protocol conformance for this visible
+corpus, not semantic generalization or an end-to-end latency commitment. Semantic
+model quality and latency remain host-dependent and unmeasured; it makes no live
+model calls.
 
 ## Ownership boundaries
 
@@ -127,7 +129,6 @@ no live model calls.
 - `skills/agentera/route-phrases.yaml` owns the deterministic phrase inventory.
 - `references/cli/trigger-schema-enrichment.md` owns semantic trigger intent
   documentation only.
-- `packages/cli/test/registries/hybridRouteContract.test.ts` is the
-  host-independent structural conformance owner until Tasks 3–5 add executable
-  resolution and benchmark evidence.
+- `packages/cli/src/eval/hybridRouteEvaluation.ts` evaluates the frozen offline
+  conformance corpus; its tests verify the evaluator and protocol structure.
 - `skills/agentera/SKILL.md` remains the thin portable host integration surface.

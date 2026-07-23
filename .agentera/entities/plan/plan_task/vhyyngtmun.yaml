@@ -9,7 +9,7 @@ record:
     - tcgzbnkhtd
     - lzhjiqlqsu
     - tzmwbmehzs
-  status: pending
+  status: complete
   acceptance:
     - GIVEN final CLI state WHEN read THEN the routing decision, plan, progress, and relevant TODO entries agree.
     - GIVEN unresolved portability or accuracy caveats WHEN closed out THEN they remain explicit and actionable.
