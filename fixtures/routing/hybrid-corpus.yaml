@@ -56,78 +56,99 @@ receipt_cases:
     valid: true
     request: "How should we divide the import work?"
     expected_terminal: selected
-    receipt: { version: agentera.route_receipt.v1, request_sha256: c28396095a91d6b3f0f6485f8cc4a898f7d012a1d01d000653786fa869626b70, outcome: select, capability: plan, compound: none }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: c28396095a91d6b3f0f6485f8cc4a898f7d012a1d01d000653786fa869626b70, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: plan, compound: none }
   - id: ADV-RECEIPT-SELECT-MISSING-CAPABILITY
     partition: adversarial
     valid: false
     request: "How should we divide the import work?"
     expected_terminal: invalid_receipt
     error: required.capability
-    receipt: { version: agentera.route_receipt.v1, request_sha256: c28396095a91d6b3f0f6485f8cc4a898f7d012a1d01d000653786fa869626b70, outcome: select, compound: none }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: c28396095a91d6b3f0f6485f8cc4a898f7d012a1d01d000653786fa869626b70, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, compound: none }
   - id: DEV-RECEIPT-CLARIFY-PASS
     partition: development
     valid: true
     request: "Make it better"
     expected_terminal: clarification
-    receipt: { version: agentera.route_receipt.v1, request_sha256: d71e91121b85d9e84a5dea968dc995878667e4b631b92f8742622427a23cdaa6, outcome: clarify, question: "Do you want a plan or implementation?" }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: d71e91121b85d9e84a5dea968dc995878667e4b631b92f8742622427a23cdaa6, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: clarify, question: "Do you want a plan or implementation?" }
   - id: ADV-RECEIPT-CLARIFY-MISSING-QUESTION
     partition: adversarial
     valid: false
     request: "Make it better"
     expected_terminal: invalid_receipt
     error: required.question
-    receipt: { version: agentera.route_receipt.v1, request_sha256: d71e91121b85d9e84a5dea968dc995878667e4b631b92f8742622427a23cdaa6, outcome: clarify }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: d71e91121b85d9e84a5dea968dc995878667e4b631b92f8742622427a23cdaa6, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: clarify }
   - id: DEV-RECEIPT-NO-MATCH-PASS
     partition: development
     valid: true
     request: "What time is the train?"
     expected_terminal: status_fallback
-    receipt: { version: agentera.route_receipt.v1, request_sha256: b712acb8d881cc37a94f06c8ec9efb91f6ce24fa4e7349883dbbb36b57c5d7bc, outcome: no_match }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: b712acb8d881cc37a94f06c8ec9efb91f6ce24fa4e7349883dbbb36b57c5d7bc, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: no_match }
   - id: ADV-RECEIPT-NO-MATCH-FORBIDDEN-CAPABILITY
     partition: adversarial
     valid: false
     request: "What time is the train?"
     expected_terminal: invalid_receipt
     error: not
-    receipt: { version: agentera.route_receipt.v1, request_sha256: b712acb8d881cc37a94f06c8ec9efb91f6ce24fa4e7349883dbbb36b57c5d7bc, outcome: no_match, capability: plan }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: b712acb8d881cc37a94f06c8ec9efb91f6ce24fa4e7349883dbbb36b57c5d7bc, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: no_match, capability: plan }
   - id: DEV-RECEIPT-COMPOUND-PRESERVE-PASS
     partition: development
     valid: true
     request: "Plan the migration and then implement it"
     expected_terminal: selected
-    receipt: { version: agentera.route_receipt.v1, request_sha256: f26da5835071b706a176032b263b0131817a56dcd2965f4198e57e2e23b0ac60, outcome: select, capability: plan, compound: preserve, remainder_span: { start: 4, end: 40 } }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: f26da5835071b706a176032b263b0131817a56dcd2965f4198e57e2e23b0ac60, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: plan, compound: preserve, remainder_span: { start: 4, end: 40 } }
   - id: ADV-RECEIPT-COMPOUND-INVALID
     partition: adversarial
     valid: false
     request: "Plan the migration and then implement it"
     expected_terminal: invalid_receipt
     error: compound.enum
-    receipt: { version: agentera.route_receipt.v1, request_sha256: f26da5835071b706a176032b263b0131817a56dcd2965f4198e57e2e23b0ac60, outcome: select, capability: plan, compound: clarify }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: f26da5835071b706a176032b263b0131817a56dcd2965f4198e57e2e23b0ac60, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: plan, compound: clarify }
   - id: ADV-RECEIPT-MISSING-VERSION
     partition: adversarial
     valid: false
     request: "Map the migration before implementation."
     expected_terminal: invalid_receipt
     error: required.version
-    receipt: { request_sha256: fc8dfdefc423ea7c375669b044a01c443b48be880e0c4e769579d296ef048f74, outcome: select, capability: plan, compound: none }
+    receipt: { request_sha256: fc8dfdefc423ea7c375669b044a01c443b48be880e0c4e769579d296ef048f74, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: plan, compound: none }
   - id: ADV-RECEIPT-INVALID-DIGEST
     partition: adversarial
     valid: false
     request: "Which capability should handle this?"
     expected_terminal: invalid_receipt
     error: request_sha256.pattern
-    receipt: { version: agentera.route_receipt.v1, request_sha256: not-a-digest, outcome: select, capability: plan, compound: none }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: not-a-digest, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: plan, compound: none }
   - id: ADV-RECEIPT-UNKNOWN-CAPABILITY
     partition: adversarial
     valid: false
     request: "Which capability should handle this?"
     expected_terminal: invalid_receipt
     error: binding.capability
-    receipt: { version: agentera.route_receipt.v1, request_sha256: 9516783492db2d389ec305dfea5f60d23e6d136c7cd27e236bbc29daeca427df, outcome: select, capability: unknown, compound: none }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: 9516783492db2d389ec305dfea5f60d23e6d136c7cd27e236bbc29daeca427df, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: unknown, compound: none }
   - id: ADV-RECEIPT-OUT-OF-BOUNDS-SPAN
     partition: adversarial
     valid: false
     request: "Keep the second request deferred."
     expected_terminal: invalid_receipt
     error: binding.remainder_span
-    receipt: { version: agentera.route_receipt.v1, request_sha256: 8b5ea821ff9831f5d5c9a87e2b5a2eefbfbbce54032d2f1bc160ada48eb82180, outcome: select, capability: plan, compound: preserve, remainder_span: { start: 0, end: 999 } }
+    receipt: { version: agentera.route_receipt.v1, request_sha256: 8b5ea821ff9831f5d5c9a87e2b5a2eefbfbbce54032d2f1bc160ada48eb82180, semantic_capsule_sha256: f885d882a3d08a59aac28cebbb9a3270a28096b6f411f55f99e8772c3ce7637e, outcome: select, capability: plan, compound: preserve, remainder_span: { start: 0, end: 999 } }
+  - id: ADV-RECEIPT-MISSING-CAPSULE-DIGEST
+    partition: adversarial
+    valid: false
+    request: "Which capability should handle this?"
+    expected_terminal: invalid_receipt
+    error: required.semantic_capsule_sha256
+    receipt: { version: agentera.route_receipt.v1, request_sha256: 9516783492db2d389ec305dfea5f60d23e6d136c7cd27e236bbc29daeca427df, outcome: select, capability: plan, compound: none }
+  - id: ADV-RECEIPT-INVALID-CAPSULE-DIGEST
+    partition: adversarial
+    valid: false
+    request: "Which capability should handle this?"
+    expected_terminal: invalid_receipt
+    error: semantic_capsule_sha256.pattern
+    receipt: { version: agentera.route_receipt.v1, request_sha256: 9516783492db2d389ec305dfea5f60d23e6d136c7cd27e236bbc29daeca427df, semantic_capsule_sha256: not-a-digest, outcome: select, capability: plan, compound: none }
+  - id: ADV-RECEIPT-STALE-CAPSULE-DIGEST
+    partition: adversarial
+    valid: false
+    request: "Which capability should handle this?"
+    expected_terminal: invalid_receipt
+    error: binding.semantic_capsule_sha256
+    receipt: { version: agentera.route_receipt.v1, request_sha256: 9516783492db2d389ec305dfea5f60d23e6d136c7cd27e236bbc29daeca427df, semantic_capsule_sha256: "0000000000000000000000000000000000000000000000000000000000000000", outcome: select, capability: plan, compound: none }

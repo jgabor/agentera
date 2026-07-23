@@ -279,9 +279,19 @@ describe("npm distribution boundary", () => {
 
   it("validates a semantic receipt from the extracted package and exposes only startup authorization", () => {
     const request = "private package semantic selection";
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const requestInput = path.join(fixture.root, "route-request.json");
+    fs.writeFileSync(requestInput, JSON.stringify({ version: "agentera.route_request.v1", request }));
+    const phaseOne = run(process.execPath, [bin, "route", "request", "--input", requestInput, "--format", "json"], fixture.root, isolatedPackageEnv());
+    expect(phaseOne.status, `package boundary phase one failed:\n${phaseOne.stdout}\n${phaseOne.stderr}`).toBe(0);
+    expect(phaseOne.stderr).not.toContain(request);
+    expect(phaseOne.stdout).not.toContain(request);
+    const response = JSON.parse(phaseOne.stdout);
+    expect(response).toMatchObject({ outcome: "semantic_required", semantic_capsule_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) });
     const receipt = {
       version: "agentera.route_receipt.v1",
       request_sha256: sha256(request),
+      semantic_capsule_sha256: response.semantic_capsule_sha256,
       outcome: "select",
       capability: "plan",
       compound: "none",
@@ -290,7 +300,6 @@ describe("npm distribution boundary", () => {
     };
     const input = path.join(fixture.root, "route-receipt.json");
     fs.writeFileSync(input, JSON.stringify({ request, receipt }));
-    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const result = run(process.execPath, [bin, "route", "receipt", "--input", input, "--format", "json"], fixture.root, isolatedPackageEnv());
     expect(result.status, `package boundary receipt failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
     expect(result.stderr).not.toContain(request);

@@ -6,6 +6,7 @@ import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 import { loadCapabilitySchemaContract } from "../../src/registries/capabilityContract.js";
+import { resolveRouteRequest } from "../../src/registries/hybridRoute.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const CONTRACT_PATH = path.join(ROOT, "references/cli/hybrid-route-contract.yaml");
@@ -110,7 +111,7 @@ function validateSchema(schema: RecordValue, value: unknown, location = "$"): st
 
 function hostOutputSchemaErrors(schema: RecordValue, location = "$"): string[] {
   const errors: string[] = [];
-  const supportedKeywords = new Set(["type", "enum", "properties", "required", "additionalProperties", "maxLength"]);
+  const supportedKeywords = new Set(["type", "enum", "properties", "required", "additionalProperties", "maxLength", "pattern"]);
   for (const keyword of Object.keys(schema)) {
     if (!supportedKeywords.has(keyword)) errors.push(`${location}.unsupported.${keyword}`);
   }
@@ -142,6 +143,12 @@ function receiptErrors(receipt: RecordValue, request: string, authority: RecordV
   if (typeof receipt.request_sha256 === "string") {
     const expected = crypto.createHash("sha256").update(request, "utf8").digest("hex");
     if (receipt.request_sha256 !== expected) errors.push("binding.request_sha256");
+  }
+  if (typeof receipt.semantic_capsule_sha256 === "string") {
+    const response = resolveRouteRequest(request, ROOT);
+    if (response.outcome !== "semantic_required" || receipt.semantic_capsule_sha256 !== response.semantic_capsule_sha256) {
+      errors.push("binding.semantic_capsule_sha256");
+    }
   }
   for (const field of Object.keys(authority.request_bound_fields)) {
     const span = receipt[field] as RecordValue | undefined;
@@ -193,6 +200,9 @@ describe("hybrid route contract", () => {
     expect(contract.purpose).toContain("implements deterministic resolution and receipt validation");
     expect(contract.protocol.response.outcomes).toEqual(["deterministic_selection", "semantic_required"]);
     expect(contract.protocol.receipt.outcomes).toEqual(["select", "clarify", "no_match"]);
+    expect(contract.protocol.response.semantic_required.required_fields).toContain("semantic_capsule_sha256");
+    expect(contract.protocol.receipt.required_fields).toContain("semantic_capsule_sha256");
+    expect(contract.protocol.response.semantic_required.semantic_capsule_canonicalization.excluded_inputs).toContain("request");
     expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual([
       "bare",
       "direct",
@@ -289,6 +299,7 @@ describe("hybrid route contract", () => {
         expect(receiptCase.receipt).toEqual(expect.objectContaining({
           version: "agentera.route_receipt.v1",
           request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          semantic_capsule_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
           outcome: expect.any(String),
         }));
       }
@@ -340,6 +351,7 @@ describe("hybrid route contract", () => {
       const hostReceipt = {
         version: "agentera.route_receipt.v1",
         request_sha256: crypto.createHash("sha256").update(testCase.request, "utf8").digest("hex"),
+        semantic_capsule_sha256: (resolveRouteRequest(testCase.request, ROOT) as any).semantic_capsule_sha256,
         ...testCase.receipt,
       };
       expect(validateSchema(hostShape.schema, hostReceipt)).toEqual([]);
@@ -359,6 +371,7 @@ describe("hybrid route contract", () => {
     const apiSelect = {
       version: "agentera.route_receipt.v1",
       request_sha256: crypto.createHash("sha256").update(request, "utf8").digest("hex"),
+      semantic_capsule_sha256: (resolveRouteRequest(request, ROOT) as any).semantic_capsule_sha256,
       outcome: "select",
       capability: "plan",
       compound: "none",
@@ -378,6 +391,8 @@ describe("hybrid route contract", () => {
     expect(altered.errors).toEqual([]);
     expect(altered.receipt!.request_sha256).toBe("0".repeat(64));
     expect(receiptErrors(altered.receipt!, request, authority, capabilities)).toContain("binding.request_sha256");
+    const capsuleAltered = normalizeHostReceipt({ ...apiSelect, semantic_capsule_sha256: "0".repeat(64) }, authority);
+    expect(receiptErrors(capsuleAltered.receipt!, request, authority, capabilities)).toContain("binding.semantic_capsule_sha256");
   });
 
   it("rejects unsupported or incomplete host receipt schemas", () => {

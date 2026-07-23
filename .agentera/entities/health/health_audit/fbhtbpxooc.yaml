@@ -1,0 +1,83 @@
+id: fbhtbpxooc
+artifact: health
+record:
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - coupling_health
+    - complexity_hotspots
+    - test_health
+    - version_health
+    - artifact_freshness
+    - security_hygiene
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: hybrid routing is coherent and release-ready, with one nonblocking receipt-snapshot limitation."
+  grades:
+    architecture_alignment: B
+    pattern_consistency: A
+    coupling_health: A
+    complexity_hotspots: A
+    test_health: B
+    version_health: A
+    artifact_freshness: A
+    security_hygiene: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: B
+      summary: The CLI, contract, routing model, shared skill, decision, and completed plan agree; receipt validation does not bind the exact semantic capsule snapshot.
+      findings:
+        - heading: Semantic receipts are not bound to the exact capsule used for classification
+          severity: warning
+          confidence: 94
+          location: references/cli/hybrid-route-contract.yaml:42-55,195-200; packages/cli/src/registries/hybridRouteReceipt.ts:164-185
+          evidence: The response carries semantic_capsule, but the host receipt carries only request_sha256. Authorization compares semantic_required plus request_sha256, so changed trigger intent can be accepted without detecting a stale capsule.
+          impact: A host decision made from stale trigger intent could authorize startup if authorities change between calls. Normal immutable-package use makes this low risk.
+          suggested_action: Bind a canonical semantic_capsule digest in the response and required receipt, compare it during authorization, and add an authority-change regression.
+    - name: pattern_consistency
+      grade: A
+      summary: Decision mpulyomlyl, deterministic precedence, semantic fallback, active triggers, and retired matcher treatment use one vocabulary.
+      findings:
+        []
+    - name: coupling_health
+      grade: A
+      summary: One CLI contract, phrase authority, and portable shared skill avoid runtime-specific adapters and duplicate routing engines.
+      findings:
+        []
+    - name: complexity_hotspots
+      grade: A
+      summary: The cascade avoids scoring, provider services, credentials, and hidden holdout infrastructure.
+      findings:
+        []
+    - name: test_health
+      grade: B
+      summary: Full and focused suites plus the 48-case evaluator passed; no capsule-change regression exists.
+      findings:
+        []
+    - name: version_health
+      grade: A
+      summary: Package 3.0.0-dev.28, suite 3.0.0, release metadata, and governed routing inputs validate without publication.
+      findings:
+        []
+    - name: artifact_freshness
+      grade: A
+      summary: The completed plan, task supersession, resolved blocker TODO, progress, docs, and null decision satisfaction agree.
+      findings:
+        []
+    - name: security_hygiene
+      grade: A
+      summary: Request text stays off argv and retained reports; UTF-8, spans, and invalid receipts fail closed without authorizing startup.
+      findings:
+        []
+  trends:
+    improved: Hybrid routing now has deterministic fast paths, validated semantic receipts, package parity, and fail-closed evaluation gates.
+    degraded: None in supported immutable-package operation.
+    new_findings: Receipt authorization lacks exact semantic-capsule snapshot binding.
+    resolved: The failed original contract task was validly superseded by its independently approved replacement; scorer and live-provider claims are retired.
+    carried_forward: Visible-corpus conformance does not prove semantic generalization; semantic-host quality and latency remain host-dependent and unmeasured.
+  patterns:
+    - Keep deterministic ownership narrow and literal; delegate open-ended judgment, then validate one bounded receipt before startup.
+  date: 2026-07-23

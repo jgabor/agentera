@@ -39,14 +39,29 @@ protocol:
       required_fields: [capability, tier, recognized_span, topic_span, provenance]
       tiers: [bare, direct, phrase]
     semantic_required:
-      required_fields: [request_sha256, semantic_capsule, provenance]
+      required_fields: [request_sha256, semantic_capsule, semantic_capsule_sha256, provenance]
       semantic_capsule: >-
         The active trigger intent documentation and contract version needed for
         a host judgment. It contains no state-derived next_action and no raw
         request text beyond the host's transient input.
+      semantic_capsule_sha256: >-
+        SHA-256 of the contract-owned canonical JSON representation of exactly
+        semantic_capsule. The host returns this value unchanged in its receipt.
+      semantic_capsule_canonicalization:
+        source: semantic_capsule
+        serialization: >-
+          UTF-8 JSON with recursively lexicographically sorted object keys and
+          no insignificant whitespace; array order is the order presented in
+          semantic_capsule.
+        included_inputs: [contract_version, capabilities, capability, triggers, id, description, priority, disambiguates_against, hint]
+        excluded_inputs: [request, request_sha256, provenance, diagnostics, next_action, phrase_registry, raw_trigger_matchers]
+        binding: >-
+          The digest binds the bounded classification inputs presented to the
+          host, not route diagnostics, state, private raw request duplication,
+          or any authority the host did not see.
   receipt:
     version: agentera.route_receipt.v1
-    required_fields: [version, request_sha256, outcome]
+    required_fields: [version, request_sha256, semantic_capsule_sha256, outcome]
     cli_seam:
       command: agentera route receipt --input PATH --format json
       input: >-
@@ -72,6 +87,7 @@ protocol:
       dialect: json_schema_draft_2020_12
       canonical_capability_source: &canonical_capability_source skills/agentera/capability_schema_contract.yaml#route_aliases.primary_aliases
       request_binding: sha256_of_original_utf8_request_bytes
+      semantic_capsule_binding: sha256_of_canonical_semantic_required.semantic_capsule
       request_bound_fields:
         remainder_span:
           encoding: utf8_bytes
@@ -83,10 +99,11 @@ protocol:
       schema: &agentera_route_receipt_schema
         type: object
         additionalProperties: false
-        required: [version, request_sha256, outcome]
+        required: [version, request_sha256, semantic_capsule_sha256, outcome]
         properties:
           version: { const: agentera.route_receipt.v1 }
           request_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+          semantic_capsule_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
           outcome: { enum: [select, clarify, no_match] }
           capability: { type: string }
           compound: { enum: [none, preserve] }
@@ -135,10 +152,11 @@ protocol:
         schema: &agentera_route_receipt_host_schema
           type: object
           additionalProperties: false
-          required: [version, request_sha256, outcome, capability, compound, question, remainder_span]
+          required: [version, request_sha256, semantic_capsule_sha256, outcome, capability, compound, question, remainder_span]
           properties:
             version: { type: string, enum: [agentera.route_receipt.v1] }
-            request_sha256: { type: string }
+            request_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+            semantic_capsule_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
             outcome: { type: string, enum: [select, clarify, no_match] }
             capability:
               type: [string, "null"]
@@ -163,7 +181,7 @@ protocol:
           first_step: >-
             Validate the unmodified host receipt against host_output_shape.schema.
             Reject it on any host-shape failure before projecting any field.
-          accepted_keys: [version, request_sha256, outcome, capability, compound, question, remainder_span]
+          accepted_keys: [version, request_sha256, semantic_capsule_sha256, outcome, capability, compound, question, remainder_span]
         projection:
           operation: >-
             Copy every non-null field unchanged, including its exact string bytes
@@ -171,18 +189,18 @@ protocol:
             the matching outcome rule.
           outcome_rules:
             select:
-              required_non_null: [version, request_sha256, outcome, capability, compound]
+              required_non_null: [version, request_sha256, semantic_capsule_sha256, outcome, capability, compound]
               removable_nulls:
                 question: always
                 remainder_span: when_compound_none
             clarify:
-              required_non_null: [version, request_sha256, outcome, question]
+              required_non_null: [version, request_sha256, semantic_capsule_sha256, outcome, question]
               removable_nulls:
                 capability: always
                 compound: always
                 remainder_span: always
             no_match:
-              required_non_null: [version, request_sha256, outcome]
+              required_non_null: [version, request_sha256, semantic_capsule_sha256, outcome]
               removable_nulls:
                 capability: always
                 compound: always
@@ -195,10 +213,10 @@ protocol:
         downstream_validation: >-
           Pass only the projected receipt to agentera.route_receipt_schema.v1, then
           rerun deterministic routing against the supplied request and source
-          authority, require semantic_required with the same request digest and
-          semantic capsule binding, then apply canonical-capability, request-digest,
-          span, and startup-authorization checks. Normalization does not authorize
-          startup and does not weaken any CLI cross-field rule.
+           authority, require semantic_required with the same request digest and
+           semantic_capsule_sha256, then apply canonical-capability, request-digest,
+           semantic-capsule, span, and startup-authorization checks. Normalization
+           does not authorize startup and does not weaken any CLI cross-field rule.
     request_binding: >-
       The host sends the original request transiently beside the receipt. The
       CLI recomputes SHA-256 over its UTF-8 bytes and requires an exact match to
@@ -341,7 +359,7 @@ phrase_ownership:
 
 privacy:
   default_persistence: forbidden
-  transient_data: [request, topic, receipt, request_sha256]
+  transient_data: [request, topic, receipt, request_sha256, semantic_capsule_sha256]
   retained_evaluation_evidence: >-
     Retain only corpus version, case ID, partition, expected and observed
     outcome, capability ID, tier, timing, model profile, and aggregate metrics.

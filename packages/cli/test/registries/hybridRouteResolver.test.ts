@@ -5,7 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { HybridRouteRegistryError, resolveRouteRequest } from "../../src/registries/hybridRoute.js";
+import { HybridRouteRegistryError, resolveRouteRequest, semanticCapsuleSha256 } from "../../src/registries/hybridRoute.js";
 import { loadCapabilitySchemaContract } from "../../src/registries/capabilityContract.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -84,6 +84,31 @@ describe("deterministic hybrid route resolver", () => {
     ]) {
       expect(route(request).outcome, request).toBe("semantic_required");
     }
+  });
+
+  it("returns a stable digest of the exact canonical semantic capsule", () => {
+    const request = "Plan the import";
+    const first = route(request);
+    const second = route(request);
+
+    expect(first.outcome).toBe("semantic_required");
+    expect(second).toEqual(first);
+    if (first.outcome !== "semantic_required") return;
+    const reordered = {
+      capabilities: first.semantic_capsule.capabilities.map(({ capability, triggers }) => ({
+        triggers: triggers.map(({ id, description, priority, disambiguates_against }) => ({
+          priority,
+          disambiguates_against: disambiguates_against.map(({ capability: target, hint }) => ({ hint, capability: target })),
+          description,
+          id,
+        })),
+        capability,
+      })),
+      contract_version: first.semantic_capsule.contract_version,
+    };
+    expect(first.semantic_capsule_sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(first.semantic_capsule_sha256).toBe(semanticCapsuleSha256(first.semantic_capsule));
+    expect(first.semantic_capsule_sha256).toBe(semanticCapsuleSha256(reordered));
   });
 
   it("rejects a phrase collision before routing", () => {

@@ -1,0 +1,35 @@
+id: omyvrvejtr
+artifact: health
+record:
+  dimensions:
+    - architecture_alignment
+    - test_health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: semantic receipts now bind the exact phase-one capsule; the prior receipt-snapshot warning is resolved."
+  grades:
+    architecture_alignment: A
+    test_health: A
+  dimension_details:
+    - name: architecture_alignment
+      grade: A
+      summary: Semantic receipts bind the request and canonical host-visible capsule, and stale authority fails before startup authorization.
+      findings:
+        []
+    - name: test_health
+      grade: A
+      summary: Targeted resolver, receipt, contract, evaluator, CLI, and active-protocol regressions pass, including changed trigger intent between phases.
+      findings:
+        []
+  trends:
+    improved: Canonical capsule digests now close the cross-invocation snapshot gap.
+    degraded: None.
+    new_findings: None.
+    resolved: The prior semantic receipt snapshot-binding warning.
+    carried_forward: Visible-corpus conformance does not prove semantic generalization; host quality and latency remain host-dependent and unmeasured.
+  patterns:
+    - Bind host decisions to both request identity and the exact bounded classification snapshot.
+  date: 2026-07-23

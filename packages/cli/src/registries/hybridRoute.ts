@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { loadYamlMapping } from "../core/yaml.js";
+import { canonicalRecordJson } from "../state/archiveDiscovery.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadCapabilitySchemaContract, type CapabilitySchemaContract } from "./capabilityContract.js";
 import { loadTriggerModel, type TriggerModel } from "./triggerLoader.js";
@@ -23,6 +24,7 @@ export type SemanticRequiredRoute = {
   schemaVersion: "agentera.route_response.v1";
   outcome: "semantic_required";
   request_sha256: string;
+  semantic_capsule_sha256: string;
   semantic_capsule: {
     contract_version: string;
     capabilities: Array<{
@@ -192,6 +194,11 @@ function semanticCapsule(model: TriggerModel, contractVersion: string): Semantic
   };
 }
 
+/** Hash the exact bounded semantic classification capsule presented to the host. */
+export function semanticCapsuleSha256(capsule: SemanticRequiredRoute["semantic_capsule"]): string {
+  return crypto.createHash("sha256").update(canonicalRecordJson(capsule), "utf8").digest("hex");
+}
+
 /** Resolve only the contract's deterministic request phase; semantic selection remains host-owned. */
 export function resolveRouteRequest(request: string, sourceRoot: string = resolveSourceRoot()): RouteResponse {
   if (typeof request !== "string") throw new TypeError("request must be a string");
@@ -228,11 +235,13 @@ export function resolveRouteRequest(request: string, sourceRoot: string = resolv
   } catch (error) {
     throw new HybridRouteRegistryError([`semantic intent authority is invalid: ${(error as Error).message}`]);
   }
+  const semantic_capsule = semanticCapsule(triggerModel, contractVersion);
   return {
     schemaVersion: "agentera.route_response.v1",
     outcome: "semantic_required",
     request_sha256: crypto.createHash("sha256").update(request, "utf8").digest("hex"),
-    semantic_capsule: semanticCapsule(triggerModel, contractVersion),
+    semantic_capsule,
+    semantic_capsule_sha256: semanticCapsuleSha256(semantic_capsule),
     provenance: { tier: "deterministic_abstention", contract: contractVersion },
   };
 }

@@ -17,12 +17,12 @@ record:
     - GIVEN changed artifacts WHEN verified THEN schema validation and compaction pass.
   plan: pxyvjauajx
   evaluation:
-    attempt_count: 2
+    attempt_count: 3
     failure_count: 1
     last_verdict: pass
     last_failure_evidence: Active trigger-enrichment and vocabulary docs plus their regression still preserve broad LLM-native routing rather than deterministic abstention plus validated semantic receipt. Correct those surfaces and append final release/hook evidence, explicitly noting earlier heap-failure measurements are unavailable.
     provenance:
-      attempt_id: audit-vhyyngtmun-2
-      source: "corrective local verification: release gate and normal pre-commit"
-      recorded_at: 2026-07-23 10:38
+      attempt_id: audit-vhyyngtmun-3
+      source: independent re-audit ses_071d7b8f1ffekWZ9JhM10Yuu8r
+      recorded_at: 2026-07-23 11:02
       writer_command: agentera state plan record-evaluation

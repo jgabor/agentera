@@ -1,8 +1,12 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
+import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
+import { resolveRouteRequest } from "../../src/registries/hybridRoute.js";
 import { RouteReceiptValidationError, validateRouteReceiptSubmission } from "../../src/registries/hybridRouteReceipt.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -11,12 +15,18 @@ function digest(request: string): string {
   return crypto.createHash("sha256").update(request, "utf8").digest("hex");
 }
 
-function api(request: string, receipt: Record<string, unknown>) {
+function semanticCapsuleDigest(request: string, sourceRoot: string = ROOT): string {
+  const response = resolveRouteRequest(request, sourceRoot);
+  return response.outcome === "semantic_required" ? response.semantic_capsule_sha256 : "0".repeat(64);
+}
+
+function api(request: string, receipt: Record<string, unknown>, sourceRoot: string = ROOT) {
   return {
     request,
     receipt: {
       version: "agentera.route_receipt.v1",
       request_sha256: digest(request),
+      semantic_capsule_sha256: semanticCapsuleDigest(request, sourceRoot),
       outcome: "select",
       capability: null,
       compound: null,
@@ -76,6 +86,27 @@ describe("semantic route receipt validator", () => {
     }
   });
 
+  it("rejects a receipt classified against a changed trigger-intent authority snapshot", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-route-receipt-"));
+    const request = "Plan the import";
+    try {
+      fs.cpSync(path.join(ROOT, "skills"), path.join(root, "skills"), { recursive: true });
+      fs.mkdirSync(path.join(root, "references", "cli"), { recursive: true });
+      fs.copyFileSync(path.join(ROOT, "references/cli/hybrid-route-contract.yaml"), path.join(root, "references/cli/hybrid-route-contract.yaml"));
+      const receipt = api(request, { capability: "plan", compound: "none" }, root);
+      const triggerPath = path.join(root, "skills/agentera/capabilities/plan/schemas/triggers.yaml");
+      const triggers = YAML.parse(fs.readFileSync(triggerPath, "utf8"));
+      triggers.TRIGGERS[1].description += " Updated after the host classified the request.";
+      fs.writeFileSync(triggerPath, YAML.stringify(triggers));
+
+      expect(() => validateRouteReceiptSubmission(receipt, root)).toThrowError(
+        expect.objectContaining({ field: "receipt.semantic_capsule_sha256" }),
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("preserves only an exact UTF-8-aligned suffix", () => {
     const request = "Compare café then build";
     const bytes = Buffer.from(request, "utf8");
@@ -117,9 +148,14 @@ describe("semantic route receipt validator", () => {
 
   it("rejects malformed, stale, mismatched, forbidden, and injection-shaped receipts before startup", () => {
     const request = "Plan the import";
+    const missingCapsuleDigest = api(request, { capability: "plan", compound: "none" });
+    delete (missingCapsuleDigest.receipt as Record<string, unknown>).semantic_capsule_sha256;
     const cases: Array<[string, unknown]> = [
       ["unsupported version", api(request, { version: "agentera.route_receipt.v2", capability: "plan", compound: "none" })],
       ["stale digest", api(request, { request_sha256: "0".repeat(64), capability: "plan", compound: "none" })],
+      ["missing capsule digest", missingCapsuleDigest],
+      ["malformed capsule digest", api(request, { semantic_capsule_sha256: "not-a-digest", capability: "plan", compound: "none" })],
+      ["stale capsule digest", api(request, { semantic_capsule_sha256: "0".repeat(64), capability: "plan", compound: "none" })],
       ["invalid span", api(request, { capability: "plan", compound: "preserve", remainder_span: { start: 0, end: 999 } })],
       ["forbidden no-match field", api(request, { outcome: "no_match", capability: "plan" })],
       ["host receipt projection bypass", { request, receipt: { version: "agentera.route_receipt.v1", request_sha256: digest(request), outcome: "select", capability: "plan", compound: "none" } }],

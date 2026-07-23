@@ -55,12 +55,13 @@ function codePointLength(value: string): number {
 
 function nullableHostShape(receipt: unknown, capabilities: Set<string>): Mapping {
   if (!isMapping(receipt)) throw new RouteReceiptValidationError("receipt", "must be a nullable host receipt mapping");
-  const keys = ["version", "request_sha256", "outcome", "capability", "compound", "question", "remainder_span"] as const;
+  const keys = ["version", "request_sha256", "semantic_capsule_sha256", "outcome", "capability", "compound", "question", "remainder_span"] as const;
   hasOnlyKeys(receipt, keys, "receipt");
   for (const key of keys) requires(receipt, key, "receipt");
 
   if (receipt.version !== "agentera.route_receipt.v1") throw new RouteReceiptValidationError("receipt.version", "must be agentera.route_receipt.v1");
   validUtf8String(receipt.request_sha256, "receipt.request_sha256");
+  validUtf8String(receipt.semantic_capsule_sha256, "receipt.semantic_capsule_sha256");
   if (!["select", "clarify", "no_match"].includes(receipt.outcome as string)) {
     throw new RouteReceiptValidationError("receipt.outcome", "must be select, clarify, or no_match");
   }
@@ -95,15 +96,15 @@ function normalizeHostReceipt(hostReceipt: Mapping): Mapping {
   };
 
   if (outcome === "select") {
-    requireNonNull(["version", "request_sha256", "outcome", "capability", "compound"]);
+    requireNonNull(["version", "request_sha256", "semantic_capsule_sha256", "outcome", "capability", "compound"]);
     requireNull(["question"]);
     if (hostReceipt.compound === "none") requireNull(["remainder_span"]);
     else requireNonNull(["remainder_span"]);
   } else if (outcome === "clarify") {
-    requireNonNull(["version", "request_sha256", "outcome", "question"]);
+    requireNonNull(["version", "request_sha256", "semantic_capsule_sha256", "outcome", "question"]);
     requireNull(["capability", "compound", "remainder_span"]);
   } else {
-    requireNonNull(["version", "request_sha256", "outcome"]);
+    requireNonNull(["version", "request_sha256", "semantic_capsule_sha256", "outcome"]);
     requireNull(["capability", "compound", "question", "remainder_span"]);
   }
 
@@ -128,10 +129,13 @@ function exactUtf8Suffix(request: string, span: { start: number; end: number }):
 }
 
 function authoritativeReceipt(receipt: Mapping, request: string, capabilities: Set<string>): string | undefined {
-  hasOnlyKeys(receipt, ["version", "request_sha256", "outcome", "capability", "compound", "question", "remainder_span"], "receipt");
+  hasOnlyKeys(receipt, ["version", "request_sha256", "semantic_capsule_sha256", "outcome", "capability", "compound", "question", "remainder_span"], "receipt");
   if (receipt.version !== "agentera.route_receipt.v1") throw new RouteReceiptValidationError("receipt.version", "is unsupported");
   if (typeof receipt.request_sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(receipt.request_sha256)) {
     throw new RouteReceiptValidationError("receipt.request_sha256", "must be a lowercase SHA-256 digest");
+  }
+  if (typeof receipt.semantic_capsule_sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(receipt.semantic_capsule_sha256)) {
+    throw new RouteReceiptValidationError("receipt.semantic_capsule_sha256", "must be a lowercase SHA-256 digest");
   }
   const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
   if (receipt.request_sha256 !== digest) throw new RouteReceiptValidationError("receipt.request_sha256", "does not match the supplied request");
@@ -166,6 +170,9 @@ function requireSemanticAuthorization(request: string, receipt: Mapping, sourceR
     const phaseOne = resolveRouteRequest(request, sourceRoot);
     if (phaseOne.outcome !== "semantic_required" || phaseOne.request_sha256 !== receipt.request_sha256) {
       throw new RouteReceiptValidationError("receipt.request_sha256", "is not bound to a semantic_required route response");
+    }
+    if (phaseOne.semantic_capsule_sha256 !== receipt.semantic_capsule_sha256) {
+      throw new RouteReceiptValidationError("receipt.semantic_capsule_sha256", "does not match the current semantic capsule");
     }
   } catch (error) {
     if (error instanceof RouteReceiptValidationError) throw error;

@@ -42,6 +42,14 @@ function invokeReceipt(input: string) {
   return { rc, out, err };
 }
 
+function semanticCapsuleDigest(request: string): string {
+  const result = invoke(JSON.stringify({ request }));
+  expect(result.rc).toBe(0);
+  const response = JSON.parse(result.out);
+  expect(response.outcome).toBe("semantic_required");
+  return response.semantic_capsule_sha256;
+}
+
 function withWrongCorpusExpectation<T>(run: () => T): T {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-route-cli-evaluation-"));
   const previousSourceRoot = process.env[BOOTSTRAP_SOURCE_ROOT_ENV];
@@ -83,7 +91,11 @@ describe("route request CLI", () => {
     expect(result.rc).toBe(0);
     expect(result.err).toBe("");
     expect(result.out).not.toContain(privateRequest);
-    expect(JSON.parse(result.out)).toMatchObject({ outcome: "semantic_required", request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) });
+    expect(JSON.parse(result.out)).toMatchObject({
+      outcome: "semantic_required",
+      request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      semantic_capsule_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
   });
 
   it("rejects argv request text and malformed input without exposing the supplied request", () => {
@@ -125,9 +137,10 @@ describe("route receipt CLI", () => {
   it("returns selected startup authorization and rejects a malformed receipt without exposing request text", () => {
     const request = "private plan the import 8675309";
     const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    const capsuleDigest = semanticCapsuleDigest(request);
     const selected = invokeReceipt(JSON.stringify({
       request,
-      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
+      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, semantic_capsule_sha256: capsuleDigest, outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
     }));
     expect(selected.rc).toBe(0);
     expect(selected.err).toBe("");
@@ -144,9 +157,10 @@ describe("route receipt CLI", () => {
   it("counts clarification question length in Unicode code points", () => {
     const request = "Which capability should handle this?";
     const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    const capsuleDigest = semanticCapsuleDigest(request);
     const receipt = (question: string) => JSON.stringify({
       request,
-      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, outcome: "clarify", capability: null, compound: null, question, remainder_span: null },
+      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, semantic_capsule_sha256: capsuleDigest, outcome: "clarify", capability: null, compound: null, question, remainder_span: null },
     });
 
     expect(invokeReceipt(receipt("😀".repeat(280))).rc).toBe(0);

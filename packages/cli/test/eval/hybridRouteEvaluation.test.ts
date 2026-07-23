@@ -25,7 +25,7 @@ describe("hybrid route evaluation", () => {
         end_to_end: { status: "unmeasured", reason: "host_dependent" },
       },
     });
-    expect(results).toHaveLength(48);
+    expect(results).toHaveLength(51);
     expect(results.every((result) => typeof result.case_id === "string" && typeof result.routing_tier === "string" && ["deterministic", "receipt_validation"].includes(result.evaluation_tier as string))).toBe(true);
     expect(results.every((result) => result.harmful_misroute === false)).toBe(true);
     expect(results.some((result) => result.routing_tier === "semantic_receipt_validation")).toBe(true);

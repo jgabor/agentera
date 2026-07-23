@@ -381,7 +381,7 @@ export function printRouteHelp(): string {
     "Evaluate runs the frozen offline conformance corpus without a semantic host; it exits 1 when its report status is fail.",
     "",
     "input document: { version: agentera.route_request.v1, request: <string> }",
-    "receipt input: { request: <string>, receipt: <complete nullable host receipt> }",
+    "receipt input: { request: <string>, receipt: <complete nullable host receipt with request_sha256 and semantic_capsule_sha256> }",
     "A receipt result authorizes only its reported startup command; clarify starts none.",
   ].join("\n");
 }

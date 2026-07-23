@@ -58,6 +58,7 @@ function nullableFixtureReceipt(receipt: Mapping): Mapping {
   return {
     version: null,
     request_sha256: null,
+    semantic_capsule_sha256: null,
     outcome: null,
     capability: null,
     compound: null,

@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-07-23
-    status: open
+    status: complete
     reviewed: 2026-07-23
     critic_issues: 9 found, 9 addressed, 0 dismissed
     title: "Plan: Hybrid Capability Routing"

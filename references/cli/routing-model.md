@@ -34,23 +34,28 @@ is exactly one of:
 
 - `deterministic_selection`: a `bare`, `direct`, or `phrase` selection with
   capability, provenance, recognized span, and topic span.
-- `semantic_required`: a request digest and semantic intent capsule. It does
-  not start a capability.
+- `semantic_required`: a request digest, semantic intent capsule, and canonical
+  capsule digest. It does not start a capability.
 
 The request itself is not persisted. The semantic capsule contains active
 trigger `description`, `priority`, and `disambiguates_against` documentation,
-not executable matcher inputs.
+not executable matcher inputs. Its digest is SHA-256 over contract-owned
+canonical JSON (recursively sorted object keys, no insignificant whitespace,
+and the presented array order) for exactly that capsule. It excludes private
+request text, request digests, diagnostics, state, and matcher authorities the
+host did not see.
 
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends the same transient original request and
 the complete nullable host receipt to `agentera route receipt --input - --format
-json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes. The CLI
-first validates the unmodified host shape, removes only contract-listed nulls,
-then reruns deterministic routing and accepts the receipt only when the same
-request still produces its bound `semantic_required` capsule. It then validates
-the projected CLI receipt with canonical-capability binding and request-bound
-span rules:
+json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes and the
+`semantic_capsule_sha256` returned in phase one. The CLI first validates the
+unmodified host shape, removes only contract-listed nulls, then reruns
+deterministic routing and accepts the receipt only when the same request still
+produces `semantic_required` with both bound digests. It then validates the
+projected CLI receipt with canonical-capability binding and request-bound span
+rules:
 
 | Receipt | Required result | Startup |
 | --- | --- | --- |
