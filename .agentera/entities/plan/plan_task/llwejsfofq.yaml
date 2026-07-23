@@ -6,7 +6,7 @@ record:
     - tdagqikgcl
     - gypzghfmic
     - lowjbuwmey
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the built npm package WHEN its bounded inventory is inspected THEN it contains the canonical shared skill and required CLI data but no native descriptors.
     - GIVEN current documentation and schemas WHEN searched THEN only clearly historical or migration-only descriptor references remain, and the changelog records the removal.

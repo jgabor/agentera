@@ -12,3 +12,13 @@ record:
     - GIVEN unbound, changed, ambiguous, unsupported, or user-owned state WHEN cleanup runs THEN it is preserved as action_required without blocking independent safe removals.
     - GIVEN cleanup tests WHEN each resource class runs THEN one owned success and one unowned preservation case prove the safety seam.
   plan: vooqzwqnlo
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation with unsupported-platform branch recheck
+      recorded_at: 2026-07-23 15:50
+      writer_command: agentera state plan record-evaluation

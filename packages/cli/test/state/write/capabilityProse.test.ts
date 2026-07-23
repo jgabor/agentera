@@ -66,6 +66,12 @@ describe("producer capability writer integration", () => {
     expect(auditInstructions).toContain("agentera state health append --input PATH");
   });
 
+  it("keeps orchestration delegation runtime-neutral", () => {
+    expect(orchestrateInstructions).toContain("host-provided worker facility");
+    expect(orchestrateInstructions).not.toContain("runtime-native subagent descriptor");
+    expect(orchestrateInstructions).not.toMatch(/(?:\.codex\/agents|\.cursor\/agents|\.opencode\/agents)/);
+  });
+
   it("uses the writer as the final plan publication gate", () => {
     const vocabulary = fs.readFileSync(
       path.join(REPO_ROOT, "references/cli/vocabulary.md"),

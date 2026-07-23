@@ -1,0 +1,12 @@
+id: mjlbieugrj
+artifact: progress
+record:
+  timestamp: 2026-07-23 15:59
+  type: docs
+  phase: build
+  what: Updated packages/cli/src/capabilities/orchestrate/instructions.ts to remove runtime-native delegation claims and added a regression in packages/cli/test/state/write/capabilityProse.test.ts.
+  context:
+    intent: Complete plan task llwejsfofq by verifying the runtime-neutral product surface without new live-host prompts.
+  inspiration: Firm decision nksvqmnevm and active plan vooqzwqnlo.
+  verified: "pnpm -C packages/cli test: 2478 passed, 1 skipped; typecheck, build, verify:package (14 passed), built CLI capability-contract validation, and compaction passed. Governed constructed npm inventory: 685 files, canonical SKILL.md and required CLI data present, no bundle/skills/agentera/agents paths."
+  next: Do not archive the active plan; remaining plan lifecycle work stays with its owner.
