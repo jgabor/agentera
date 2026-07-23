@@ -13,3 +13,13 @@ record:
     - GIVEN repository verification WHEN source tests, typecheck, build, package verification, capability-contract validation, and compaction run THEN every gate passes.
     - GIVEN accepted smoke evidence WHEN closeout is reviewed THEN no redundant live-host prompt is required.
   plan: vooqzwqnlo
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Independent Audit evaluation with generic delegation-phrase recheck
+      recorded_at: 2026-07-23 16:13
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,12 @@
+id: dthmnhseti
+artifact: progress
+record:
+  timestamp: 2026-07-23 16:11
+  type: test
+  phase: build
+  what: Added a negative assertion in packages/cli/test/state/write/capabilityProse.test.ts rejecting the retired runtime-native subagent substrate phrase.
+  context:
+    intent: Close the accepted audit regression gap without changing orchestrate behavior or later state-sync scope.
+  inspiration: Independent Audit accepted low finding for task llwejsfofq.
+  verified: "pnpm exec vp test run test/state/write/capabilityProse.test.ts: 7 passed; pnpm -C packages/cli run typecheck: passed. Commit hooks will recheck the staged change."
+  next: Do not change later state-sync scope.

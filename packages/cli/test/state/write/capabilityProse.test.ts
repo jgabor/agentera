@@ -69,6 +69,7 @@ describe("producer capability writer integration", () => {
   it("keeps orchestration delegation runtime-neutral", () => {
     expect(orchestrateInstructions).toContain("host-provided worker facility");
     expect(orchestrateInstructions).not.toContain("runtime-native subagent descriptor");
+    expect(orchestrateInstructions).not.toContain("runtime-native subagent substrate");
     expect(orchestrateInstructions).not.toMatch(/(?:\.codex\/agents|\.cursor\/agents|\.opencode\/agents)/);
   });
 
