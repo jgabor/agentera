@@ -1,0 +1,13 @@
+id: crnjsfeusu
+artifact: plan
+record:
+  name: Repair completed-plan closure sequencing
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an open plan whose tasks are terminal WHEN orchestration starts or loops THEN it selects staleness and health closure instead of bootstrap.
+    - GIVEN staleness is assessed WHEN health closure passes THEN a typed health record is published before the plan becomes complete, and no archive route is called.
+    - GIVEN health closure fails WHEN orchestration resolves the cycle THEN the plan remains open and the finding is surfaced.
+    - GIVEN a missing plan WHEN orchestration starts THEN bootstrap remains unchanged; state-plus-instructions tests pin all three cases.
+  plan: grxukdwjrz

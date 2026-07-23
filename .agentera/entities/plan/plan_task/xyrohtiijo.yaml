@@ -1,0 +1,12 @@
+id: xyrohtiijo
+artifact: plan
+record:
+  name: Normalize current cleanup terminology
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN the stale current cleanup narratives in UPGRADE.md and the Unreleased changelog WHEN read THEN they say native Agentera resource cleanup rather than Claude-only cleanup.
+    - GIVEN resource IDs, command examples, historical releases, and Claude import text WHEN searched THEN their accurate host-specific wording remains unchanged.
+    - GIVEN bounded terminology tests WHEN the named current narratives regress THEN validation fails without flagging allowed historical or identifier text.
+  plan: grxukdwjrz

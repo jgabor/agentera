@@ -23,13 +23,17 @@ ARTIFACTS:
   3:
     id: A3
     artifact: health
-    local_role: consumes
+    local_role: produces_and_consumes
     description: >-
-      Orchestrate consumes returned health state first after plan completion to
-      decide whether to start a new plan cycle; bounded `agentera state health
-      list --limit 20 --format json` and exact `state health get --id ID`
-      are the fallback contracts. Raw reads are diagnostic-only for corruption
-      or CLI-defect investigation.
+      For an active plan whose tasks are all terminal, Orchestrate consumes
+      returned health state and delegates a limited staleness closure check.
+      On PASS it publishes one typed `artifact_freshness` health record through
+      `agentera state health append --input PATH --format json` before setting
+      the still-open plan complete. WARN or FAIL leaves the plan open and
+      surfaces the finding. Bounded `agentera state health list --limit 20
+      --format json` and exact `state health get --id ID` are fallback
+      contracts. Raw reads are diagnostic-only for corruption or CLI-defect
+      investigation.
   4:
     id: A4
     artifact: todo

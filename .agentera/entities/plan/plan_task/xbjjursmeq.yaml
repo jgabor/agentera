@@ -1,0 +1,15 @@
+id: xbjjursmeq
+artifact: plan
+record:
+  name: Verify and synchronize follow-up state
+  depends_on:
+    - crnjsfeusu
+    - rcnyoundde
+    - xyrohtiijo
+  status: pending
+  acceptance:
+    - GIVEN implementation completes WHEN source tests, typecheck, build, package verification, orchestrate capability validation, capability-contract validation, state validation, and compaction run THEN every gate passes.
+    - GIVEN the three audit findings WHEN closeout is reviewed THEN each has cited verification and no descriptor, ownership, user-state, or version regression.
+    - GIVEN final typed writes complete WHEN affected state and documentation are revalidated THEN the plan, health, and progress evidence are complete and truthful.
+    - GIVEN substantive commits WHEN inspected THEN related code, tests, docs, changelog, and project state follow repository same-commit rules.
+  plan: grxukdwjrz

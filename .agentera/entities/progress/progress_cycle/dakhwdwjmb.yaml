@@ -1,0 +1,13 @@
+id: dakhwdwjmb
+artifact: progress
+record:
+  timestamp: 2026-07-23 17:33
+  type: fix
+  phase: build
+  what: Repaired terminal-open orchestration closure.
+  context:
+    intent: Close completed plans only after limited typed health PASS.
+    constraints: No health record or plan lifecycle closure was executed for the live plan.
+    unknowns: "Resolved: artifact_freshness is the narrow health dimension for closure evidence."
+    scope: orchestrate instructions, state projection, schemas, and regression tests
+  verified: pnpm -C packages/cli test passed (200 files, 2480 passed, 1 skipped); typecheck, build, orchestrate validation, compact, and py-ts parity passed.

@@ -1,0 +1,34 @@
+id: grxukdwjrz
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-23
+    status: open
+    reviewed: 2026-07-23
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    revised: Pinned existing terminal-open projection semantics, required health-before-completion ordering, parallelized terminology work, scoped prose guards, and added orchestrate capability validation.
+    title: "Plan: Close Native Retirement Audit Findings"
+  what: Correct the three accepted post-plan findings so completed orchestration closes reliably, absent-resource cleanup retries report coherent authorization, and current cleanup documentation uses host-neutral terminology.
+  why: The descriptor-retirement plan passed with Grade B. These bounded follow-ups remove the remaining orchestration restart hazard and misleading cleanup output without reopening the retired descriptor surface or changing user-state safety.
+  constraints: Preserve firm Decision nksvqmnevm, the canonical shared skill and CLI, supported host classifications, whole-resource ownership and fingerprint requirements, report-only shared Codex configuration units, historical release text, and the 3.0.0 version hold. Do not run live-host prompts, cleanup apply, publication, tags, pushes, or version changes.
+  overall_acceptance: GIVEN all tasks complete WHEN orchestration closure, cleanup retry output, current documentation, package behavior, and project state are evaluated THEN an open plan with terminal tasks receives staleness and typed health closure before becoming complete; absent resources converge to an unambiguous no-op with unrelated ledger records; current prose uses native Agentera resource cleanup terminology; safety and release gates pass.
+  scope:
+    included:
+      - Orchestrate completed-plan sequencing and state-plus-instructions regression coverage
+      - Typed post-plan health closure before plan completion
+      - Native cleanup absent-resource no-op diagnostics with unrelated valid ledger records
+      - Bounded current UPGRADE.md and Unreleased changelog terminology
+      - Final tests, package verification, state synchronization, and compaction
+    excluded:
+      - Native descriptor retirement completed by plan vooqzwqnlo
+      - Cleanup ownership, selection, approval, or mutation policy changes
+      - Live user-state cleanup, live-host prompts, and decision satisfaction
+      - Resource IDs, command examples, historical release notes, archives, receipts, and migration fixtures
+      - npm publication, tags, pushes, and version changes
+  design: "Align orchestration instructions and tests with the existing active-plan projection: an open plan with terminal tasks performs staleness and typed health closure, remains open on health failure, and becomes complete only after health passes. Independently make absent-resource no-op output suppress inapplicable ledger diagnostics. Correct only bounded current cleanup narratives, then verify and synchronize state."
+  unknowns:
+    - question: Which existing typed health record shape can report post-plan closure without overstating audit breadth?
+      affects_task: 1
+      resolve_by: Inspect the live health append contract and audit context before implementation. Use the narrowest valid record that cites closure evidence and preserves any limited-scope caveat.
+  surprises: ""

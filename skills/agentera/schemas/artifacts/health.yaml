@@ -55,7 +55,7 @@ meta:
   artifact_type: agent_facing
   path: ".agentera/health.yaml"
   authority: legacy_migration_input_only
-  producer: audit
+  producer: [audit, orchestrate]
   consumers: [document, status, audit, orchestrate, plan, build, vision]
   format: yaml
 

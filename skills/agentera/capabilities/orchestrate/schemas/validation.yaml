@@ -46,14 +46,15 @@ VALIDATION:
     id: V5
     rule: orchestrator_read_only_artifacts
     description: >-
-      The orchestrator reads artifacts and updates plan task statuses and
-      TODO.md blocked entries. It does NOT write to progress, changelog,
-      or any other capability-owned artifact. This rule verifies the
-      artifacts schema reflects this constraint.
+      The orchestrator updates plan task statuses and TODO.md blocked entries.
+      During terminal-open closure only, it writes the typed limited-scope
+      health record before plan completion. It does NOT write progress or
+      changelog. This rule verifies the artifacts schema reflects this
+      constraint.
     severity: warning
     checks:
       - "progress is consumes only (not produces)"
-      - "health is consumes only (not produces)"
+      - "health is produces_and_consumes for terminal-open closure only"
       - "decisions is consumes only (not produces)"
       - "vision is consumes only (not produces)"
   6:

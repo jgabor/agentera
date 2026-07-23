@@ -25,6 +25,8 @@ export function slimPlanState(plan: JsonObject): JsonObject {
     .map(taskRef);
   return {
     exists: Boolean(plan.exists),
+    active: Boolean(plan.active),
+    complete_plan: Boolean(plan.complete_plan),
     id: plan.id ?? null,
     artifact: plan.artifact ?? "plan",
     status: plan.status ?? null,

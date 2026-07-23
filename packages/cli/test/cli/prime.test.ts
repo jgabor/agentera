@@ -510,6 +510,40 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(blockedReasons.some((r: string) => r.includes("dependency bbbbbbbbbb is not present in plan tasks"))).toBe(false);
   });
 
+  it("keeps terminal-open plans distinct from missing-plan bootstrap", () => {
+    fs.writeFileSync(
+      path.join(tmp, ".agentera/entities/plan/plan_task/cccccccccc.yaml"),
+      dumpYamlMapping({
+        id: "cccccccccc",
+        artifact: "plan",
+        record: {
+          plan: "aaaaaaaaaa",
+          name: "Second task",
+          status: "complete",
+          depends_on: ["dddddddddd"],
+          acceptance: [],
+        },
+      }),
+    );
+    const terminal = buildPrimeCapabilityContextPayload(collectOrientationState({ env: process.env }), "orchestrate") as any;
+    expect(terminal.capability_context.context.plan).toMatchObject({
+      exists: true,
+      active: true,
+      complete_plan: true,
+    });
+    expect(terminal.capability_context.context.orchestration_context.selected_next_task).toBeNull();
+    expect(terminal.capability_context.state.declared_write_targets).toContain("health");
+
+    fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
+    const missing = buildPrimeCapabilityContextPayload(collectOrientationState({ env: process.env }), "orchestrate") as any;
+    expect(missing.capability_context.context.plan).toMatchObject({
+      exists: false,
+      active: false,
+      complete_plan: false,
+    });
+    expect(missing.capability_context.context.orchestration_context.selected_next_task).toBeNull();
+  });
+
   it("indexes oversized task graphs exactly while returning bounded orchestration detail with recovery", () => {
     const planId = "zzzzzzzzzz"; const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}aaaaaaaaa`);
     fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });

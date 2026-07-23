@@ -1,0 +1,13 @@
+id: rcnyoundde
+artifact: plan
+record:
+  name: Make absent-resource no-op diagnostics coherent
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN a selected cleanup resource is absent WHEN preview or approved retry runs THEN the operation is noop without blocked authorization or ownership errors for that resource.
+    - GIVEN unrelated valid ownership records remain WHEN the selected resource is absent THEN they do not change its noop or add inapplicable diagnostics.
+    - GIVEN the selected resource exists WHEN ownership is missing or invalid THEN existing action_required safety remains unchanged.
+    - GIVEN cleanup regression tests WHEN resources run THEN one multi-record noop pass and one unowned preservation failure cover the distinction.
+  plan: grxukdwjrz

@@ -73,6 +73,34 @@ describe("producer capability writer integration", () => {
     expect(orchestrateInstructions).not.toMatch(/(?:\.codex\/agents|\.cursor\/agents|\.opencode\/agents)/);
   });
 
+  it("orders terminal-open health closure before plan completion and preserves failure follow-up", () => {
+    const artifacts = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/capabilities/orchestrate/schemas/artifacts.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
+    const closureStart = orchestrateInstructions.indexOf("**Terminal-open closure sequence**");
+    const closureEnd = orchestrateInstructions.indexOf("Step markers", closureStart);
+    const closure = orchestrateInstructions.slice(closureStart, closureEnd);
+
+    expect(artifacts.ARTIFACTS[3]).toMatchObject({
+      artifact: "health",
+      local_role: "produces_and_consumes",
+    });
+    expect(orchestrateInstructions).toContain("Plan exists, `active: true` and `complete_plan: true`");
+    expect(closure).toContain("agentera state health append --input PATH --format json");
+    expect(closure.indexOf("agentera state health append --input PATH --format json")).toBeLessThan(
+      closure.indexOf("agentera state plan set-plan-status --status complete --format json"),
+    );
+    expect(closure).toContain("WARN or FAIL requiring follow-up");
+    expect(closure).toContain("keep the plan open");
+    expect(closure).not.toContain("run `agentera state plan archive");
+    expect(orchestrateInstructions).toContain("During terminal-open closure only, Orchestrate may publish the limited typed health record");
+    expect(orchestrateInstructions).not.toContain("changes plan lifecycle state only through `agentera state plan set-status ...`");
+    expect(orchestrateInstructions).toContain("**No plan in returned state**: bootstrap mode.");
+  });
+
   it("uses the writer as the final plan publication gate", () => {
     const vocabulary = fs.readFileSync(
       path.join(REPO_ROOT, "references/cli/vocabulary.md"),

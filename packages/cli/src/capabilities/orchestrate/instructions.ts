@@ -12,7 +12,36 @@ Advance tasks with \`agentera state plan set-status --id ID\` and persist evalua
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")
   .replace("task N · step M/5", "task ID · step M/5")
-  .replace("N is the task number from the selected orchestration context task.", "ID is the bare ID from the selected orchestration context task.")}
+  .replace("N is the task number from the selected orchestration context task.", "ID is the bare ID from the selected orchestration context task.")
+  .replace(/- \*\*Plan exists, `header\.status: complete`, and all tasks complete\*\*:[\s\S]*?---\n\nStep markers/, () => [
+    "- **Plan exists, `active: true` and `complete_plan: true`**: terminal-open closure. This is not bootstrap. Keep the plan open while completing the closure sequence; do not call the archive route.",
+    "- **Plan exists, but blocked or incomplete tasks remain**: do not complete it as successful work. Route to the orchestration loop or replanning so incomplete evidence stays visible.",
+    "- **Plan exists, tasks pending**: proceed to the loop using `orchestration_context` task selection.",
+    "",
+    "**Terminal-open closure sequence**: complete every step while `active: true` and `complete_plan: true`.",
+    "",
+    "1. **Assess staleness**: identify delegated capabilities from plan task history and progress summary in CLI context. For each expected artifact, compare `git log -1 --format=%aI -- <path>` with the plan creation date. An artifact is stale only when its owner was delegated and it was not modified since that date.",
+    "2. **Delegate Audit**: request a limited post-plan health result covering the staleness assessment and closure evidence. Preserve source-contract caveats and require PASS or WARN/FAIL findings with evidence.",
+    "3. **PASS only — publish health before plan completion**: discover `agentera state health explain --verb append --format json`, then publish one typed health record with `agentera state health append --input PATH --format json`. Use only the canonical `artifact_freshness` dimension. Its summary and evidence state the terminal-task scope, staleness result, and Audit verdict; do not represent this limited closure check as a codebase-wide audit.",
+    "4. **PASS only — complete the open plan**: after the health writer confirms publication, run `agentera state plan set-plan-status --status complete --format json`. Do not call `agentera state plan archive`; archive history is not part of terminal-open closure.",
+    "5. **WARN or FAIL requiring follow-up**: keep the plan open, surface the cited finding and staleness context, and route it to the applicable task/replanning path. Do not publish a PASS closure record, complete the plan, or call an archive route.",
+    "",
+    "---",
+    "",
+    "Step markers",
+  ].join("\n"))
+  .replace(
+    "- MUST NOT write to progress, changelog, or other capability-owned artifacts. Dispatched capabilities write their own entries. Orchestrate changes plan lifecycle state only through `agentera state plan set-status ...` and `agentera state plan archive`.",
+    "- MUST NOT write to progress or changelog. Dispatched capabilities write their own entries. During terminal-open closure only, Orchestrate may publish the limited typed health record, then change plan lifecycle state through `agentera state plan set-plan-status --status complete --format json`; it MUST NOT invoke the archive route.",
+  )
+  .replace(
+    "- **complete** (EX1): All plan tasks are complete, the health check passed, and the session concluded with all planned work finished.",
+    "- **complete** (EX1): All plan tasks are terminal, the limited health check passed, its typed health record was published, and the open plan was set complete without archiving.",
+  )
+  .replace(
+    "- **≡ plan**: When no plan exists or the current plan is complete, orchestrate invokes plan to create the next plan.",
+    "- **≡ plan**: When no plan exists, including after successful terminal-open closure removes the active plan from selection, orchestrate invokes plan to create the next plan.",
+  )}
 
 ## Evaluation Retry State
 

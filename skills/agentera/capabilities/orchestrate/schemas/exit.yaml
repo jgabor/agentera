@@ -3,8 +3,9 @@ EXIT_CONDITIONS:
     id: E1
     condition: complete
     description: >-
-      All plan tasks are complete or validly superseded, the health check passed, and the
-      orchestration session concluded with all planned work finished.
+      All plan tasks are complete or validly superseded, the limited post-plan
+      health check passed, its typed health record was published, and the
+      still-open plan was then set complete without invoking archive.
     exit_signal: complete
   2:
     id: E2
