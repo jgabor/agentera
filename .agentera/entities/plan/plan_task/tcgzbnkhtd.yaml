@@ -14,12 +14,12 @@ record:
     - GIVEN semantic outcome tests WHEN counted THEN clear, ambiguous, unmatched, compound, malformed, and prompt-injection cases are represented.
   plan: pxyvjauajx
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Semantic receipts can override deterministic routes because phase one is not rerun; compound spans need an end-of-request UTF-8-aligned suffix and fatal decode; clarification length must count Unicode code points. Add precedence, truncation, code-point-boundary, and supplementary-character regressions.
     provenance:
-      attempt_id: audit-tcgzbnkhtd-1
+      attempt_id: audit-tcgzbnkhtd-2
       source: independent audit ses_073460cc8ffeGoNc4C6I3ScA22
-      recorded_at: 2026-07-23 04:19
+      recorded_at: 2026-07-23 04:32
       writer_command: agentera state plan record-evaluation

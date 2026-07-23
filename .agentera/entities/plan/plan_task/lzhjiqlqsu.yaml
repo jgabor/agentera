@@ -5,7 +5,7 @@ record:
   depends_on:
     - lghihphurk
     - tcgzbnkhtd
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN frozen corpora WHEN evaluated THEN every result and failure is attributable to a routing tier.
     - GIVEN baseline and hybrid runs WHEN compared THEN harmful misroutes remain within the predeclared target.

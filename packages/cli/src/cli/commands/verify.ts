@@ -1,5 +1,6 @@
 import { main as evalSkillsMain } from "../../eval/evalSkills.js";
 import { main as semanticEvalMain } from "../../eval/semanticEval.js";
+import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -7,7 +8,7 @@ type Io = { out?: (t: string) => void; err?: (t: string) => void };
 export const VERIFY_FAMILIES = ["eval"] as const;
 export const RETIRED_VERIFY_FAMILIES = ["smoke"] as const;
 export const VERIFY_TARGETS: Record<string, string[]> = {
-  eval: ["skills", "semantic"],
+  eval: ["skills", "semantic", "routing"],
 };
 export const VERIFY_FORMATS = ["text", "json"] as const;
 export const VERIFY_DIAGNOSTIC_LINE_LIMIT = 20;
@@ -172,6 +173,19 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
     const result = runInProcess(["eval", "semantic", ...fixtures], (out) =>
       semanticEvalMain(fixtures, (l) => out(l)),
     );
+    return { result, safety };
+  }
+  if (family === "eval" && target === "routing") {
+    const safety = {
+      mode: "offline-frozen-corpus",
+      summary: "runs the contract-owned visible corpus only; it never sends requests, reads sealed holdout cases, or invokes a model",
+      live: false,
+      long_running_default: false,
+    };
+    const result = runInProcess(["eval", "routing"], (out) => {
+      out(JSON.stringify(evaluateHybridRoute(), null, 2) + "\n");
+      return 0;
+    });
     return { result, safety };
   }
   throw new Error(`unhandled verify target ${family}/${target}`);

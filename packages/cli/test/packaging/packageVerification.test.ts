@@ -298,6 +298,27 @@ describe("npm distribution boundary", () => {
     expect(JSON.parse(result.stdout)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "agentera prime --context plan --format json" } });
   });
 
+  it("evaluates the frozen routing corpus from byte-identical packed authorities", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const result = run(process.execPath, [bin, "route", "evaluate", "--format", "json"], fixture.root, isolatedPackageEnv());
+    expect(result.status, `package routing evaluation failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
+    const report = JSON.parse(result.stdout) as { authority: Record<string, string>; corpus: Record<string, string>; status: string };
+    expect(report.status).toBe("pass");
+    for (const [reportKey, sourcePath, bundledPath] of [
+      ["protocol_sha256", "references/cli/hybrid-route-contract.yaml", "bundle/references/cli/hybrid-route-contract.yaml"],
+      ["phrase_authority_sha256", "skills/agentera/route-phrases.yaml", "bundle/skills/agentera/route-phrases.yaml"],
+      ["shared_skill_sha256", "skills/agentera/SKILL.md", "bundle/skills/agentera/SKILL.md"],
+    ] as const) {
+      const sourceHash = sha256(fs.readFileSync(path.join(CHECKOUT_ROOT, sourcePath)));
+      const bundledHash = sha256(fs.readFileSync(path.join(fixture.packageRoot, bundledPath)));
+      expect(bundledHash, bundledPath).toBe(sourceHash);
+      expect(report.authority[reportKey]).toBe(sourceHash);
+    }
+    const corpusHash = sha256(fs.readFileSync(path.join(CHECKOUT_ROOT, "fixtures/routing/hybrid-corpus.yaml")));
+    expect(sha256(fs.readFileSync(path.join(fixture.packageRoot, "bundle/fixtures/routing/hybrid-corpus.yaml")))).toBe(corpusHash);
+    expect(report.corpus.content_sha256).toBe(corpusHash);
+  });
+
   it("upgrades one managed v2 fixture and converges on a same-install rerun", () => {
     const project = path.join(fixture.root, "project $(touch shell-expansion-trap) `touch backtick-trap`");
     fs.cpSync(V2_PROJECT, project, { recursive: true });

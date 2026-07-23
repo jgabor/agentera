@@ -30,8 +30,9 @@ by [`docs/packaging/v3-packaging.md`](../../docs/packaging/v3-packaging.md).
 
 The self-contained npm package ships `dist/` plus `bundle/`. Bundle data
 includes the canonical `skills/` tree, required `references/`, `registry.json`,
-and package guidance. Compiled commands ship in `dist/`. The shared-skill tree
-includes its capability schemas, artifact schemas, and canonical
+the frozen routing evaluation corpus and privacy-safe holdout manifest, and
+package guidance. Compiled commands
+ship in `dist/`. The shared-skill tree includes its capability schemas, artifact schemas, and canonical
 `skills/agentera/agents/*.toml` descriptors.
 
 The package lane's isolated package fixture invokes `npm pack --json

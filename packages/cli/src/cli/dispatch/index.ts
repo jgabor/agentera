@@ -1,7 +1,7 @@
 import { isPortedStateCommand } from "../commands/state/index.js";
 import { runEntityMigrate } from "../commands/entityMigrate.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
-import { runRouteReceipt, runRouteRequest } from "../commands/route.js";
+import { runRouteEvaluation, runRouteReceipt, runRouteRequest } from "../commands/route.js";
 import {
   printCommandHelp,
   printStateHelp,
@@ -219,13 +219,14 @@ export function main(argv: string[], io: Io = {}): number {
     case "route":
       if (rest[0] === "request") return runRouteRequest(rest.slice(1), io);
       if (rest[0] === "receipt") return runRouteReceipt(rest.slice(1), io);
+      if (rest[0] === "evaluate") return runRouteEvaluation(rest.slice(1), io);
       return emitInvalidInput(io, {
         format: detectTopLevelFormat(rest),
         body: {
           class: "unsupported_target",
           message: "route requires the request subcommand",
-          valid_values: ["request", "receipt"],
-          syntax: "agentera route <request|receipt> --input PATH --format json",
+            valid_values: ["request", "receipt", "evaluate"],
+            syntax: "agentera route <request|receipt> --input PATH --format json | agentera route evaluate --format json",
           example: "agentera route receipt --input - --format json",
         },
       });

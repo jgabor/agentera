@@ -353,6 +353,12 @@ privacy:
 
 evaluation:
   conformance_owner: packages/cli/test/registries/hybridRouteContract.test.ts
+  visible_corpus_entrypoint: agentera route evaluate --format json
+  visible_corpus_output: >-
+    agentera.hybrid_route_evaluation.v1 reports only case IDs, partitions,
+    expected/observed outcomes, routing tier, capability ID, timings, authority
+    hashes, and aggregate metrics. It never writes a report or emits request,
+    topic, receipt-question, or rationale text.
   corpus_partitions:
     development: frozen
     adversarial: frozen

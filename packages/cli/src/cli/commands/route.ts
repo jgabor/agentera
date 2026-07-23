@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { HybridRouteRegistryError, resolveRouteRequest } from "../../registries/hybridRoute.js";
 import { RouteReceiptValidationError, validateRouteReceiptSubmission } from "../../registries/hybridRouteReceipt.js";
+import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import { emitStructured } from "../structured.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import type { Io } from "../dispatch/shared.js";
@@ -110,6 +111,27 @@ export function runRouteReceipt(argv: string[], io: RouteIo): number {
         recovery: "Submit the original request and a complete nullable API receipt through --input; no capability was started.",
       },
       exitCode: 64,
+    });
+  }
+}
+
+/** Run the contract-owned visible routing corpus without reading sealed holdout data or invoking a model. */
+export function runRouteEvaluation(argv: string[], io: RouteIo): number {
+  if (argv.length !== 2 || argv[0] !== "--format" || argv[1] !== "json") {
+    return invalidRouteInput(io, {
+      class: "unrecognized_argument",
+      message: "route evaluation accepts only --format json and never accepts request text or corpus overrides",
+      syntax: "agentera route evaluate --format json",
+    });
+  }
+  try {
+    emitStructured(evaluateHybridRoute(), "json", io.out ?? ((text) => process.stdout.write(text)));
+    return 0;
+  } catch {
+    return invalidRouteInput(io, {
+      class: "conflict",
+      message: "routing evaluation authority validation failed before evaluation",
+      recovery: "Restore the contract-owned corpus and authorities, then retry; no request was sent or persisted.",
     });
   }
 }

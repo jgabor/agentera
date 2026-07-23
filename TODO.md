@@ -2,6 +2,7 @@
 
 ## → Normal
 
+- [ ] [test:3.0.0] Complete the sealed hybrid-routing evaluation with evaluator-held corpus access, `OPENAI_API_KEY`, and approved ZDR confirmation. Run the declared baseline and hybrid samples and retain only aggregate metrics bound to the holdout manifest.
 - [ ] [refactor:3.0.0] Refactor plan levels from skip/light/full to light/normal/full. Remove skip mode so every direct plan invocation produces at least a light plan: light for trivial or localized work, normal for clear single-cycle work, and full for multi-cycle or architecture-spanning work. Update the runtime startup contract, plan instructions, schemas, validation, and tests to use the new three-level taxonomy consistently.
 - [ ] [feat:3.0.0] Add light/normal/full levels to research. Light handles a focused lookup with bounded evidence, normal compares multiple relevant sources, and full performs broad synthesis across competing approaches. Levels control evidence breadth, analysis depth, and verification—not prose length. Update the startup contract, instructions, schemas, and tests.
 - [ ] [feat:3.0.0] Add light/normal/full levels to audit. Light assesses one named finding or dimension, normal assesses the relevant selected dimensions, and full performs a repository-wide multi-dimensional audit. Levels control inspected scope and evidence depth while preserving finding-confidence and citation requirements. Update the startup contract, instructions, schemas, and tests.

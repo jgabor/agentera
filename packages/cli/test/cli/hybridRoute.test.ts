@@ -131,3 +131,23 @@ describe("route receipt CLI", () => {
     expect(invokeReceipt(receipt("😀".repeat(281))).rc).toBe(64);
   });
 });
+
+describe("route evaluation CLI", () => {
+  it("emits only the contract-owned visible corpus report", () => {
+    const result = invoke("", ["route", "evaluate", "--format", "json"]);
+    expect(result.rc).toBe(0);
+    expect(result.err).toBe("");
+    expect(JSON.parse(result.out)).toMatchObject({
+      schemaVersion: "agentera.hybrid_route_evaluation.v1",
+      status: "pass",
+      latency: { deterministic_phase1: expect.any(Object), receipt_validation: expect.any(Object) },
+    });
+    expect(result.out).not.toContain("help me decide: cache or queue");
+  });
+
+  it("rejects corpus overrides before evaluation", () => {
+    const result = invoke("", ["route", "evaluate", "--input", "private-corpus", "--format", "json"]);
+    expect(result.rc).toBe(2);
+    expect(result.out).not.toContain("private-corpus");
+  });
+});

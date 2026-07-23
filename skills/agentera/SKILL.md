@@ -116,6 +116,13 @@ request, and a compound remainder is preserved rather than silently chained.
 Decision mpulyomlyl supersedes Decision 76 only for this curated literal fast
 path.
 
+Run `agentera route evaluate --format json` to evaluate the frozen visible
+development and adversarial corpus. Its report binds the protocol, phrase
+authority, and shared-skill hashes, labels every result with a routing tier, and
+keeps request text out of output. It does not invoke a model or access sealed
+holdout cases; live baseline, repeated-sample, and holdout evidence requires the
+approved evaluator custody described by the routing contract.
+
 Handoff verbs:
 
 - `route`: user directly invoked a capability. Consent to invoke; no extra confirmation.

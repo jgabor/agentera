@@ -1,0 +1,14 @@
+id: kjxdofpecp
+artifact: progress
+record:
+  timestamp: 2026-07-23 04:44
+  type: test
+  phase: build
+  what: packages/cli/src/eval/hybridRouteEvaluation.ts evaluates 48 frozen cases with tier attribution and separate p95 latency boundaries.
+  context:
+    intent: Harden the complete deterministic request and semantic receipt cascade without fabricating live or sealed evidence.
+    unknowns: Live reference-host and sealed-holdout evidence are unavailable.
+    scope: routing evaluator, package boundary, shared skill, contract, and frozen corpus bundle
+  inspiration: Plan pxyvjauajx task lzhjiqlqsu
+  verified: Focused 53 tests, full 2,411 passed/1 skipped, typecheck, build, package verification, validators, and compact passed; route evaluate reported 48/48.
+  next: Await evaluator-held corpus access, OPENAI_API_KEY, and approved ZDR confirmation before baseline, hybrid, and repeated semantic runs.
