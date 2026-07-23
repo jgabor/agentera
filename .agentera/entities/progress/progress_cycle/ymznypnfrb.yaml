@@ -1,0 +1,14 @@
+id: ymznypnfrb
+artifact: progress
+record:
+  timestamp: 2026-07-23 19:18
+  type: fix
+  phase: build
+  what: "Fixed health current-record ordering in packages/cli/src/state/healthEntities.ts: the typed append writer assigns appended_at, and timestamped health audits sort newest-first before legacy date-and-ID fallback."
+  context:
+    intent: Retry Task xbjjursmeq after the terminal health Audit exposed same-day random-ID ordering, without publishing a live health closure or completing the plan.
+    constraints: No live health append, plan completion, user-state or descriptor-cleanup mutation, decision change, version or release-metadata change, publish, tag, or push.
+    scope: Health entity writer, retrieval order, prime current-health selection, authority/schema contracts, tests, and folded Task xbjjursmeq candidate state.
+  discovered: Legacy health audits omit appended_at and remain valid, date-and-ID ordered records; no chronology is reconstructed. Append replay retains the stored timestamp when caller content matches.
+  verified: "Focused health, entity-authority, prime, and summary-read tests: 56 passed. Full source: 200 files, 2,485 passed, 1 skipped; typecheck; build; verify:package (14 passed); generated-overlap parity; orchestrate capability; capability-contract; state validation (1,772 entities, 0 issues); compact."
+  next: Retry the limited terminal health Audit first. Only after its PASS may Orchestrate append the artifact_freshness closure record and set plan grxukdwjrz complete without archiving.

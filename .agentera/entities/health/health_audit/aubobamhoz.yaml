@@ -1,0 +1,29 @@
+id: aubobamhoz
+artifact: health
+record:
+  date: 2026-07-23
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: terminal-plan closure evidence is current and append-time health ordering is verified."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Plan grxukdwjrz remains open with 4/4 complete tasks. The prior same-day health-ordering blocker is resolved; terminal closure sequencing, cleanup no-op safety, current cleanup terminology, task evaluations, and progress evidence are current.
+      findings:
+        []
+  trends:
+    improved: CLI-owned append time now makes later same-day health writes current through shared list authority.
+    degraded: None in the limited terminal-plan closure scope.
+    new_findings: None.
+    resolved: Same-day random health IDs can no longer prevent a later typed append from becoming current.
+    carried_forward: Release gitRef refresh remains release-time work outside this plan.
+  patterns:
+    - Terminal plans close only after Audit PASS, typed artifact_freshness health publication, and plan lifecycle completion.
+  appended_at: 2026-07-23T17:37:05.489Z

@@ -114,7 +114,8 @@ export function buildExplain(
         ? ["id", "artifact", "objective"]
         : entityArtifact && artifact === "objective"
           ? ["id", "artifact"]
-        : entityArtifact && ["health", "docs", "plan"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
+        : entityArtifact && artifact === "health" ? ["id", "artifact", "appended_at"]
+        : entityArtifact && ["docs", "plan"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
         artifact === "health"

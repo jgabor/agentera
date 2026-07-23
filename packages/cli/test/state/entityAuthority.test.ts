@@ -166,10 +166,12 @@ describe("Decision 94 entity authority", () => {
       record: {
         required_fields: ["date", "dimensions", "findings_summary", "trajectory", "grades"],
         forbidden_fields: expect.arrayContaining(["number", "stable_id", "artifact_id", "entry_number"]),
+        cli_owned_append_fields: ["appended_at"],
+        legacy_optional_fields: ["appended_at"],
       },
       retrieval: {
         exact: "agentera state health get --id ID --format json",
-        ordering: "date_desc_then_id_asc",
+        ordering: "appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc",
         cursor: "opaque_snapshot_cursor",
         scalar_truncation: "forbidden",
       },

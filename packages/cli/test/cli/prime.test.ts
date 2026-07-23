@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { main } from "../../src/cli/dispatch/index.js";
@@ -12,6 +12,8 @@ import { buildOrientationJsonPayload } from "../../src/cli/commands/prime/orient
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { planSummary } from "../../src/cli/orientation.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
+import { appendHealthEntity } from "../../src/state/healthEntities.js";
+import { operationSpec } from "../../src/state/write/operations.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -542,6 +544,40 @@ describe("orkestrera orchestration_context task_queue", () => {
       complete_plan: false,
     });
     expect(missing.capability_context.context.orchestration_context.selected_next_task).toBeNull();
+  });
+
+  it("selects the later same-day health append as current regardless of health ID", () => {
+    const spec = operationSpec("health", "append");
+    if (!spec) throw new Error("health append spec missing");
+    const audit = {
+      date: "2026-07-17",
+      dimensions: ["artifact_freshness"],
+      findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+      trajectory: "stable",
+      grades: { artifact_freshness: "A" },
+      dimensions_detail: [{
+        name: "artifact_freshness",
+        grade: "A",
+        summary: "Current entity is selected by CLI-owned append time.",
+        findings: [],
+      }],
+    };
+    const request = () => ({ artifact: "health", spec, projectRoot: tmp, dryRun: false, force: false, values: {}, callerPayload: structuredClone(audit), input: structuredClone(audit) });
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-07-17T10:00:00.000Z"));
+      appendHealthEntity(request(), { id: "eeeeeeeeee" });
+      vi.setSystemTime(new Date("2026-07-17T11:00:00.000Z"));
+      appendHealthEntity(request(), { id: "zzzzzzzzzz" });
+
+      expect(collectOrientationState({ env: process.env }).health).toMatchObject({
+        id: "zzzzzzzzzz",
+        date: "2026-07-17",
+        grade: "A",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("indexes oversized task graphs exactly while returning bounded orchestration detail with recovery", () => {

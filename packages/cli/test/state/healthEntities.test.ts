@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { runStateList } from "../../src/cli/commands/state/list.js";
@@ -74,6 +74,12 @@ function append(root: string, id: string, date = "2026-07-17", trajectory = "sta
   appendHealthEntity(request(root, "append", audit(date, trajectory)), { id });
 }
 
+function legacy(root: string, id: string, date = "2026-07-17", trajectory = "stable"): void {
+  const directory = path.join(root, ".agentera/entities/health/health_audit");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "health", record: audit(date, trajectory) }));
+}
+
 function git(root: string, ...args: string[]): string {
   const env = { ...process.env };
   delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE;
@@ -99,11 +105,11 @@ describe("health entity authority", () => {
     expect(err).toBe("");
     const published = JSON.parse(out);
     expect(published).toMatchObject({ id: expect.stringMatching(/^[a-z]{10}$/), artifact: "health" });
-    expect(published.record).toEqual(supplied);
+    expect(published.record).toEqual({ ...supplied, appended_at: expect.any(String) });
     expect((getHealthEntity(root, published.id) as any).entry).toEqual(expect.objectContaining({
       id: published.id,
       artifact: "health",
-      record: supplied,
+      record: { ...supplied, appended_at: expect.any(String) },
     }));
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
@@ -115,6 +121,7 @@ describe("health entity authority", () => {
       { stable_id: "health:1", ...supplied },
       { artifact_id: "health", ...supplied },
       { entry_number: 1, ...supplied },
+      { appended_at: "2026-07-17T12:00:00.000Z", ...supplied },
       { record: supplied },
       { audit: supplied },
       { audits: [supplied] },
@@ -135,7 +142,7 @@ describe("health entity authority", () => {
   it("publishes one immutable canonical audit with no projection, archive, or numeric vocabulary", () => {
     const root = project();
     const result = executeStateWrite(request(root, "append", audit())) as any;
-    expect(result).toMatchObject({ artifact: "health", id: expect.stringMatching(/^[a-z]{10}$/), record: { date: "2026-07-17" } });
+    expect(result).toMatchObject({ artifact: "health", id: expect.stringMatching(/^[a-z]{10}$/), record: { date: "2026-07-17", appended_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/) } });
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
@@ -149,7 +156,7 @@ describe("health entity authority", () => {
       path: ".agentera/entities/health/health_audit/<id>.yaml",
       next: {},
       compaction: expect.stringContaining("not applicable"),
-      input_schema: { cli_owned_fields: ["id", "artifact"] },
+      input_schema: { cli_owned_fields: ["id", "artifact", "appended_at"] },
     });
     expect(JSON.stringify(appendExplain)).not.toMatch(/entry_number|stable_id|"number"/);
     const repairExplain = buildExplain("health", root, "repair") as any;
@@ -158,11 +165,11 @@ describe("health entity authority", () => {
     expect(repairExplain.guidance.join(" ")).toMatch(/immutable.*check validate state/i);
   });
 
-  it("gets and lists full audits by bare ID with deterministic order, provenance, and repair evidence", () => {
+  it("gets and lists legacy full audits by bare ID with deterministic date and ID fallback", () => {
     const root = project();
-    append(root, "bbbbbbbbbb", "2026-07-16", "improving");
-    append(root, "cccccccccc", "2026-07-17");
-    append(root, "aaaaaaaaaa", "2026-07-17");
+    legacy(root, "bbbbbbbbbb", "2026-07-16", "improving");
+    legacy(root, "cccccccccc", "2026-07-17");
+    legacy(root, "aaaaaaaaaa", "2026-07-17");
     const exact = getHealthEntity(root, "aaaaaaaaaa") as any;
     expect(exact.entry).toMatchObject({
       id: "aaaaaaaaaa",
@@ -173,12 +180,34 @@ describe("health entity authority", () => {
     });
     const listed = listHealthEntities(root, 20) as any;
     expect(listed.entries.map((entry: any) => entry.id)).toEqual(["aaaaaaaaaa", "cccccccccc", "bbbbbbbbbb"]);
-    expect(listed.snapshot.order).toBe("date_desc_then_id_asc");
+    expect(listed.snapshot.order).toBe("appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc");
     expect(JSON.stringify(listed)).toContain("validator output and exact command");
   });
 
+  it("orders a later same-day CLI append before an older random ID", () => {
+    const root = project();
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-07-17T10:00:00.000Z"));
+      append(root, "aaaaaaaaaa");
+      vi.setSystemTime(new Date("2026-07-17T11:00:00.000Z"));
+      append(root, "zzzzzzzzzz");
+      append(root, "mmmmmmmmmm");
+
+      const listed = listHealthEntities(root, 20) as any;
+      expect(listed.entries.map((entry: any) => entry.id)).toEqual(["mmmmmmmmmm", "zzzzzzzzzz", "aaaaaaaaaa"]);
+      expect(listed.entries.map((entry: any) => entry.record.appended_at)).toEqual([
+        "2026-07-17T11:00:00.000Z",
+        "2026-07-17T11:00:00.000Z",
+        "2026-07-17T10:00:00.000Z",
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("routes public get/list to entity authority and preserves whole-entry bounds with exact recovery", () => {
-    const root = project(); append(root, "aaaaaaaaaa"); append(root, "bbbbbbbbbb", "2026-07-16");
+    const root = project(); legacy(root, "aaaaaaaaaa"); legacy(root, "bbbbbbbbbb", "2026-07-16");
     let out = "";
     expect(runStateGet("health", ["--id", "aaaaaaaaaa", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
     expect(JSON.parse(out).entry.id).toBe("aaaaaaaaaa"); out = "";
@@ -193,7 +222,7 @@ describe("health entity authority", () => {
 
   it("binds cursors to an exact snapshot", () => {
     for (const mutation of ["add", "remove", "change"] as const) {
-      const root = project(); append(root, "aaaaaaaaaa"); append(root, "bbbbbbbbbb", "2026-07-16");
+      const root = project(); legacy(root, "aaaaaaaaaa"); legacy(root, "bbbbbbbbbb", "2026-07-16");
       const first = listHealthEntities(root, 1) as any;
       if (mutation === "add") append(root, "cccccccccc", "2026-07-15");
       if (mutation === "remove") fs.rmSync(path.join(root, ".agentera/entities/health/health_audit/bbbbbbbbbb.yaml"));

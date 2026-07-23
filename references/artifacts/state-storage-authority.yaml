@@ -298,10 +298,19 @@ entity_target:
         required_fields: [date, dimensions, findings_summary, trajectory, grades]
         required_paths: []
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
+        cli_owned_append_fields: [appended_at]
+        legacy_optional_fields: [appended_at]
+        field_contract:
+          appended_at:
+            format: canonical_utc_iso8601
+            assignment: cli_writer_at_append
+            compatibility: >-
+              Legacy canonical health audits omit appended_at and remain valid without
+              reconstructed chronology.
       retrieval:
         exact: agentera state health get --id ID --format json
         list: agentera state health list [--limit N] [--cursor TOKEN] --format json
-        ordering: date_desc_then_id_asc
+        ordering: appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
         max_utf8_bytes: 32768

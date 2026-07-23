@@ -6,10 +6,20 @@ record:
     - crnjsfeusu
     - rcnyoundde
     - xyrohtiijo
-  status: pending
+  status: complete
   acceptance:
     - GIVEN implementation completes WHEN source tests, typecheck, build, package verification, orchestrate capability validation, capability-contract validation, state validation, and compaction run THEN every gate passes.
     - GIVEN the three audit findings WHEN closeout is reviewed THEN each has cited verification and no descriptor, ownership, user-state, or version regression.
     - GIVEN final typed writes complete WHEN affected state and documentation are revalidated THEN the plan, health, and progress evidence are complete and truthful.
     - GIVEN substantive commits WHEN inspected THEN related code, tests, docs, changelog, and project state follow repository same-commit rules.
   plan: grxukdwjrz
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Terminal health Audit WARN: same-day health records sort by date plus random ID, so a newly appended closure PASS is not guaranteed to become current."
+    provenance:
+      attempt_id: health-audit-2
+      source: Limited artifact_freshness Audit after append-time health ordering fix
+      recorded_at: 2026-07-23 19:34
+      writer_command: agentera state plan record-evaluation

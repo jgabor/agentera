@@ -26,7 +26,7 @@ import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.j
 const ARTIFACT = "health";
 const BOUNDARY = "health_audit";
 const SUMMARY = "health_summary";
-const ORDER = "date_desc_then_id_asc";
+const ORDER = "appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc";
 const ID_PATTERN = /^[a-z]{10}$/;
 
 interface HealthContract {
@@ -98,11 +98,12 @@ function listFailure(kind: StateFailureClass, message: string, recovery: string,
 }
 
 function healthRecord(values: Record<string, unknown>): JsonObject {
-  for (const field of ["id", "artifact", "number", "stable_id", "artifact_id", "entry_number"]) {
+  for (const field of ["id", "artifact", "number", "stable_id", "artifact_id", "entry_number", "appended_at"]) {
     if (field in values) throw new Error(`health entity record forbids identity field '${field}'`);
   }
   const record = structuredClone(values) as JsonObject;
   if (typeof record.date !== "string") record.date = localDate();
+  record.appended_at = new Date().toISOString();
   const violations = healthEntityViolations(record);
   if (violations.length) throw new Error(`health entity violates the canonical audit schema: ${violations.join("; ")}`);
   return record;
@@ -122,6 +123,25 @@ function envelope(published: { path: string; id: string; artifact: string; repla
   };
 }
 
+function withoutAppendTimestamp(record: JsonObject): JsonObject {
+  const copy = structuredClone(record);
+  delete copy.appended_at;
+  return copy;
+}
+
+function existingReplay(root: string, sourceRoot: string, id: string, record: JsonObject): DiscoveredEntity | null {
+  const existing = discoverEntities(root, sourceRoot).entities.find((entity) =>
+    entity.id === id
+    && entity.artifact === ARTIFACT
+    && entity.boundary === BOUNDARY
+    && entity.classification === "valid"
+    && entity.record !== null
+    && healthEntityViolations(entity.record).length === 0,
+  );
+  if (!existing || canonicalRecordJson(withoutAppendTimestamp(existing.record!)) !== canonicalRecordJson(withoutAppendTimestamp(record))) return null;
+  return existing;
+}
+
 export function appendHealthEntity(req: StateWriteRequest, options: HealthEntityOptions = {}): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const declared = contract(sourceRoot);
@@ -131,6 +151,10 @@ export function appendHealthEntity(req: StateWriteRequest, options: HealthEntity
     const id = options.id ?? allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot);
     options.publicationContext?.assertValid();
     return envelope({ path: path.join(path.resolve(req.projectRoot), declared.entityRoot, ARTIFACT, BOUNDARY, `${id}.yaml`), id, artifact: ARTIFACT, replay: false }, record, true);
+  }
+  if (options.id) {
+    const replay = existingReplay(req.projectRoot, sourceRoot, options.id, record);
+    if (replay) return envelope({ path: replay.path, id: options.id, artifact: ARTIFACT, replay: true }, replay.record!, false);
   }
   const published = options.id
     ? publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: BOUNDARY, id: options.id, record })
@@ -188,7 +212,24 @@ export function getHealthEntity(root: string, id: string, sourceRoot = resolveSo
   };
 }
 
-function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date ?? "")}\0${entity.id}`; }
+function appendTimestamp(entity: DiscoveredEntity): string | null {
+  return typeof entity.record?.appended_at === "string" ? entity.record.appended_at : null;
+}
+
+function compareHealthEntities(left: DiscoveredEntity, right: DiscoveredEntity): number {
+  const leftTimestamp = appendTimestamp(left);
+  const rightTimestamp = appendTimestamp(right);
+  if (leftTimestamp !== null && rightTimestamp !== null) {
+    return rightTimestamp.localeCompare(leftTimestamp) || left.id!.localeCompare(right.id!);
+  }
+  if (leftTimestamp !== null) return -1;
+  if (rightTimestamp !== null) return 1;
+  return String(right.record!.date ?? "").localeCompare(String(left.record!.date ?? "")) || left.id!.localeCompare(right.id!);
+}
+
+function key(entity: DiscoveredEntity): string {
+  return `${appendTimestamp(entity) ?? String(entity.record!.date ?? "")}\0${entity.id}`;
+}
 function snapshot(root: string, entities: DiscoveredEntity[], dimension: string | undefined, entityRoot: string): string {
   return projectedListSnapshot({
     schemaVersion: "agentera.stateList.v1",
@@ -213,7 +254,7 @@ export function listHealthEntities(root: string, limit?: number, dimension?: str
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw listFailure("invalid_request", `health list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", 2);
   const all = healthEntities(root, sourceRoot, options.discovery);
-  let filtered = [...all].sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
+  let filtered = [...all].sort(compareHealthEntities);
   if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
   const snap = snapshot(root, filtered, dimension, declared.entityRoot); let start = 0;
   if (cursor) {

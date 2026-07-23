@@ -1,0 +1,14 @@
+id: wcsgyenjal
+artifact: progress
+record:
+  timestamp: 2026-07-23 18:42
+  type: test
+  phase: build
+  what: "Verified the three audit repairs: terminal-open health-before-plan-completion sequencing in packages/cli/src/capabilities/orchestrate/instructions.ts, absent-resource no-op diagnostics in packages/cli/src/runtime/nativeResourceCleanup.ts, and native cleanup labels in UPGRADE.md and CHANGELOG.md."
+  context:
+    intent: Prepare the truthful phase-one candidate for Task xbjjursmeq without changing plan lifecycle, health, decision satisfaction, user state, versions, or external resources.
+    constraints: No health closure or plan completion in phase one; no live hosts, cleanup apply, user-state mutation, version/release metadata change, publish, tag, or push.
+    scope: ".agentera entity state only: Audit PASS provenance, this progress cycle, and Task xbjjursmeq status."
+  discovered: Supplemental release-metadata validation remains failed on the committed packages/cli/package.json agentera.gitRef not matching current package source; phase one did not change version or release metadata, which is outside this task's scope.
+  verified: "Focused: prime/capability prose 35 passed, native cleanup 12 passed, upgrade contract 3 passed, retired runtime policy 24 passed. Gates: pnpm -C packages/cli test (200 files; 2,483 passed, 1 skipped); typecheck; build; verify:package (2 files; 14 passed); capability orchestrate; capability-contract (2/2); state (1,771 entities, 0 issues); artifacts plan/progress/health/changelog/docs; compact; git diff --check."
+  next: Audit must assess staleness and post-plan closure first; only then may Orchestrate append the limited artifact_freshness health record and set plan grxukdwjrz complete without archiving.

@@ -16,6 +16,7 @@
 # ─────────────────────────────────────────────────────────────────────
 # ## Audit N · date                     AUDIT.number           HA1
 # (date from heading)                   AUDIT.date             HA2
+# (CLI append time)                     AUDIT.appended_at      HA7
 # **Dimensions assessed**: <list>       AUDIT.dimensions       HA3
 # **Findings**: N crit, N warn, N info  AUDIT.findings_summary HA4
 # **Overall trajectory**: <text>        AUDIT.trajectory       HA5
@@ -240,6 +241,21 @@ AUDIT:
     validation:
       - "Every assessed dimension has a grade"
       - "Grades are single characters A through F"
+  7:
+    id: HA7
+    field: appended_at
+    type: string
+    format: "YYYY-MM-DDTHH:mm:ss.sssZ"
+    required: false
+    cli_owned: true
+    description: >-
+      Canonical UTC timestamp assigned by the health append writer. Full records
+      with this field sort newest-first by append time, then stable ID. Legacy
+      records without it retain date-then-ID ordering; migration never fabricates
+      append chronology.
+    validation:
+      - "When present, must be canonical UTC ISO-8601 with millisecond precision"
+      - "Must be omitted from caller input and assigned by the CLI writer"
 
 DIMENSION:
   1:
