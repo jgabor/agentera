@@ -12,3 +12,13 @@ record:
     - GIVEN legacy matcher metadata WHEN present THEN it does not affect active routing.
     - GIVEN every deterministic tier WHEN tested THEN pass, fail, collision, Unicode, whitespace, and punctuation behavior is covered proportionally.
   plan: pxyvjauajx
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Malformed retired regex metadata can change semantic abstention into authority failure, and route input silently replaces invalid UTF-8 instead of rejecting it before routing. Load only active semantic trigger fields for routing, decode stdin/files with fatal UTF-8 semantics, add regressions, and correct the progress count.
+    provenance:
+      attempt_id: audit-lghihphurk-1
+      source: independent audit ses_073792c49ffezAFTsXD0YQOm0T
+      recorded_at: 2026-07-23 03:31
+      writer_command: agentera state plan record-evaluation

@@ -1,11 +1,27 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { runRouteRequest } from "../../src/cli/commands/route.js";
 
 function invoke(input: string, args = ["route", "request", "--input", "-", "--format", "json"]) {
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", ...args], {
+    stdin: () => input,
+    out: (text) => (out += text),
+    err: (text) => (err += text),
+  });
+  return { rc, out, err };
+}
+
+function invokeBytes(input: Buffer, args = ["--input", "-", "--format", "json"]) {
+  let out = "";
+  let err = "";
+  const rc = runRouteRequest(args, {
     stdin: () => input,
     out: (text) => (out += text),
     err: (text) => (err += text),
@@ -47,5 +63,26 @@ describe("route request CLI", () => {
     expect(malformed.rc).toBe(2);
     expect(malformed.out).not.toContain(secret);
     expect(malformed.err).toBe("");
+  });
+
+  it("rejects invalid UTF-8 from stdin and files before parsing without exposing bytes", () => {
+    const invalid = Buffer.from([0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x3a, 0x20, 0xff]);
+    const stdin = invokeBytes(invalid);
+    expect(stdin.rc).toBe(2);
+    expect(stdin.err).toBe("");
+    expect(JSON.parse(stdin.out)).toMatchObject({ error: { class: "invalid_format" } });
+    expect(stdin.out).not.toContain("�");
+
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "agentera-route-input-")), "request.yaml");
+    try {
+      fs.writeFileSync(file, invalid);
+      const fromFile = invokeBytes(Buffer.alloc(0), ["--input", file, "--format", "json"]);
+      expect(fromFile.rc).toBe(2);
+      expect(fromFile.err).toBe("");
+      expect(JSON.parse(fromFile.out)).toMatchObject({ error: { class: "invalid_format" } });
+      expect(fromFile.out).not.toContain("�");
+    } finally {
+      fs.rmSync(path.dirname(file), { recursive: true, force: true });
+    }
   });
 });

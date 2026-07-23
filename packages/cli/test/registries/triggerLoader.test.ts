@@ -206,7 +206,7 @@ describe("trigger schema loader — temp fixture", () => {
     });
     expect(loadTriggerModel(contract, { sourceRoot: tmp }).capabilities.get("status")!.triggers[0]!).toEqual(statusT1);
 
-    // Now corrupt the regex and verify the loader surfaces a TriggerLoaderError.
+    // Legacy metadata is not inspected by the active semantic loader.
     writeTriggersFixture(tmp, "status", {
       TRIGGERS: {
         1: {
@@ -218,7 +218,11 @@ describe("trigger schema loader — temp fixture", () => {
         },
       },
     });
-    expect(() => loadTriggerModel(contract, { sourceRoot: tmp })).toThrow(TriggerLoaderError);
+    expect(loadTriggerModel(contract, { sourceRoot: tmp }).capabilities.get("status")!.triggers[0]!).toMatchObject({
+      id: "T1",
+      description: "bad regex trigger",
+      priority: "high",
+    });
   });
 
   it("rejects a disambiguates_against capability that is not canonical", () => {

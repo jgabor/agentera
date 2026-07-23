@@ -100,19 +100,23 @@ describe("deterministic hybrid route resolver", () => {
     expect(() => resolveRouteRequest("help me decide", root)).toThrow(HybridRouteRegistryError);
   });
 
-  it("does not activate legacy matcher metadata", () => {
-    const root = copiedAuthority();
-    const triggersPath = path.join(root, "skills/agentera/capabilities/status/schemas/triggers.yaml");
-    const triggers = YAML.parse(fs.readFileSync(triggersPath, "utf8"));
-    triggers.TRIGGERS[1].patterns = ["uniquely legacy route"];
-    triggers.TRIGGERS[1].patterns_regex = ["^uniquely legacy route$"];
-    triggers.TRIGGERS[1].confidence_threshold = 0;
-    fs.writeFileSync(triggersPath, YAML.stringify(triggers));
+  it("does not let malformed retired matcher metadata change semantic abstention", () => {
+    const request = "uniquely legacy route";
+    const expected = resolveRouteRequest(request, copiedAuthority());
 
-    const result = resolveRouteRequest("uniquely legacy route", root);
-    expect(result.outcome).toBe("semantic_required");
-    if (result.outcome === "semantic_required") {
-      expect(JSON.stringify(result.semantic_capsule)).not.toContain("uniquely legacy route");
+    for (const [field, value] of [
+      ["patterns", 1],
+      ["patterns_regex", ["(unclosed"]],
+      ["confidence_threshold", "invalid"],
+      ["borderline_band", {}],
+    ]) {
+      const root = copiedAuthority();
+      const triggersPath = path.join(root, "skills/agentera/capabilities/status/schemas/triggers.yaml");
+      const triggers = YAML.parse(fs.readFileSync(triggersPath, "utf8"));
+      triggers.TRIGGERS[1][field] = value;
+      fs.writeFileSync(triggersPath, YAML.stringify(triggers));
+
+      expect(resolveRouteRequest(request, root), field).toEqual(expected);
     }
   });
 });

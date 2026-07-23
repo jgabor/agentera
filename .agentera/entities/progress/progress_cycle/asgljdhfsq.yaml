@@ -1,0 +1,13 @@
+id: asgljdhfsq
+artifact: progress
+record:
+  timestamp: 2026-07-23 03:38
+  type: fix
+  phase: build
+  what: Corrected deterministic route handling after audit findings.
+  context:
+    intent: Complete corrective follow-up for task lghihphurk without semantic receipt implementation.
+    scope: Active trigger loader and route request input boundary, with focused regressions.
+  inspiration: Task lghihphurk audit evidence.
+  verified: "Audit finding 1: malformed retired patterns, regex, threshold, and band metadata now leave semantic abstention unchanged because active routing reads only semantic trigger fields. Audit finding 2: invalid UTF-8 stdin and files now fail before YAML or JSON parsing with a bounded invalid-format envelope. Focused tests passed 19/19; final full source suite passed 197 files, 2398 passed, 1 skipped (2399 total); typecheck, build, capability-contract validation 2/2, package verification 11/11, and compaction passed."
+  next: Task lghihphurk is complete; tcgzbnkhtd remains unimplemented.

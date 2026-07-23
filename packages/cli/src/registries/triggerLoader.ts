@@ -9,9 +9,10 @@ import type { CapabilitySchemaContract } from "./capabilityContract.js";
 /**
  * Trigger schema loader. Reads the twelve
  * `skills/agentera/capabilities/<name>/schemas/triggers.yaml` files into a
- * typed semantic intent and compatibility model. It validates textual legacy
- * matcher fields, accepts and discards numeric compatibility fields, and never
- * returns any of them as executable matcher inputs or Layer 3-4 decisions.
+ * typed semantic intent model. Legacy matcher and scoring fields are excluded
+ * from this active loader; capability validation owns their compatibility
+ * checks. Nothing here returns them as executable matcher inputs or Layer 3-4
+ * decisions.
  * Decision 76 assigns natural-language routing to the LLM host, which reads
  * active trigger intent documentation.
  *
@@ -73,29 +74,6 @@ function readTriggersYaml(filePath: string): JsonObject {
     throw new TriggerLoaderError([`triggers.yaml not found at ${filePath}`]);
   }
   return loadYamlMapping(fs.readFileSync(filePath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
-}
-
-function asStringArray(value: unknown, location: string): string[] {
-  if (value === undefined || value === null) return [];
-  if (!Array.isArray(value) || !value.every((v) => typeof v === "string")) {
-    throw new TriggerLoaderError([`${location} must be a list of strings`]);
-  }
-  return [...(value as string[])];
-}
-
-function validateLegacyRegexPatterns(patterns: readonly string[], location: string): void {
-  for (let i = 0; i < patterns.length; i++) {
-    const source = patterns[i];
-    try {
-      new RegExp(source, "i");
-    } catch (exc) {
-      throw new TriggerLoaderError([
-        `${location} patterns_regex[${i}]=${JSON.stringify(source)} is not a valid regular expression: ${
-          (exc as Error).message
-        }`,
-      ]);
-    }
-  }
 }
 
 function resolveDisambiguation(
@@ -166,14 +144,6 @@ function buildTriggerEntry(
   }
   const priority = priorityRaw as "high" | "medium" | "low";
 
-  // These inherited matcher/scoring fields are accepted only to keep legacy
-  // trigger files loadable. Nothing below carries them into the active model.
-  // Numeric compatibility fields are deliberately accepted and discarded here;
-  // V7 validation owns their integer and range checks.
-  asStringArray(raw.patterns, `${location} patterns`);
-  const patternsRegexSources = asStringArray(raw.patterns_regex, `${location} patterns_regex`);
-  validateLegacyRegexPatterns(patternsRegexSources, location);
-
   const disambiguatesAgainst = resolveDisambiguation(
     raw.disambiguates_against,
     location,
@@ -225,8 +195,8 @@ function buildCapabilityTriggers(
 }
 
 /**
- * Load all twelve capability triggers.yaml files into a typed inspection and
- * compatibility TriggerModel.
+ * Load all twelve capability triggers.yaml files into a typed active
+ * TriggerModel.
  * The capability set is the ROUTE_ALIASES.primary_aliases list owned by the
  * capability schema contract. Absent `disambiguates_against` defaults to an
  * empty list; its capability references are validated against the canonical
