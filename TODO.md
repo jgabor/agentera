@@ -1,5 +1,9 @@
 # TODO
 
+## ⇶ Critical
+
+- [ ] [fix:3.0.0] Fix entity-state publication validation against secure pinned paths. In `agentera@next` 3.0.0-dev.28, post-publication validation passes the writer's `/proc/self/fd/<n>` pinned directory to logical entity validation; migrated `migration_provenance.source` paths then fail `validateRealProjectRoot` because `/proc/self/fd/<n>` is a symlink. This reproduces in an entity-mode migrated project with `agentera state plan create` and `agentera state todo create`, blocking otherwise valid mutations; plan graph creation rolls back, but a separately archived predecessor can leave the project without an active plan. Keep pinned-descriptor access for atomic publication and identity checks, but validate logical provenance against the already-validated real project root. Add integration coverage for plan and TODO creation with migrated decision/progress summary entities, transaction rollback without partial graph residue, and archive-then-create recovery.
+
 ## → Normal
 
 - [ ] [refactor:3.0.0] Refactor plan levels from skip/light/full to light/normal/full. Remove skip mode so every direct plan invocation produces at least a light plan: light for trivial or localized work, normal for clear single-cycle work, and full for multi-cycle or architecture-spanning work. Update the runtime startup contract, plan instructions, schemas, validation, and tests to use the new three-level taxonomy consistently.
