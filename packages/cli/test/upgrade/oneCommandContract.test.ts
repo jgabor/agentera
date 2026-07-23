@@ -10,6 +10,7 @@ import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const APPLY = 'npx -y agentera@next upgrade --channel development --project "$PWD" --yes';
 const DRY_RUN = 'npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run';
+const STALE_CURRENT_CLEANUP_PHRASE = /\bClaude(?:-only| resource)? cleanup\b/i;
 
 function section(file: string, heading: string): string {
   const text = fs.readFileSync(path.join(ROOT, file), "utf8");
@@ -69,9 +70,20 @@ describe("v2-to-v3 one-command guidance", () => {
 
     for (const narrative of currentUpgradeNarratives) {
       expect(narrative).toContain("native Agentera resource cleanup");
-      expect(narrative).not.toMatch(/\bClaude cleanup\b/i);
+      expect(narrative).not.toMatch(STALE_CURRENT_CLEANUP_PHRASE);
     }
 
+    for (const phrase of ["Claude cleanup", "Claude-only cleanup", "Claude resource cleanup"]) {
+      expect(phrase).toMatch(STALE_CURRENT_CLEANUP_PHRASE);
+    }
+    for (const allowed of [
+      "claude.agentera-skill-link",
+      "--import-source claude",
+      "optional Claude live-smoke",
+      "Claude Code historical transcript import",
+    ]) {
+      expect(allowed).not.toMatch(STALE_CURRENT_CLEANUP_PHRASE);
+    }
     const cleanupGuide = section("UPGRADE.md", "## Native Agentera resource cleanup");
     expect(cleanupGuide).toContain("claude.agentera-skill-link");
     expect(cleanupGuide).toContain("--import-source claude");

@@ -1,0 +1,12 @@
+id: zoownshatz
+artifact: progress
+record:
+  timestamp: 2026-07-23 18:31
+  type: test
+  phase: build
+  what: Expanded `oneCommandContract.test.ts` scoped cleanup matcher to reject Claude-only and Claude resource cleanup while keeping identifiers, imports, and historical text allowed.
+  context:
+    intent: Close the accepted audit gap without broadening cleanup terminology checks beyond current narratives.
+    unknowns: none
+    scope: packages/cli/test/upgrade/oneCommandContract.test.ts
+  verified: Focused oneCommandContract coverage passed 3 tests before recording this follow-up.
