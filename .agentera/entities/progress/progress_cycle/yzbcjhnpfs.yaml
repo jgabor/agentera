@@ -1,0 +1,15 @@
+id: yzbcjhnpfs
+artifact: progress
+record:
+  timestamp: 2026-07-24 00:23
+  type: fix
+  phase: build
+  what: Closed the accepted root ABA gap by keeping Plan and TODO graph discovery descriptor-pinned while binding migrated provenance reads to the publication context's validated real root.
+  context:
+    intent: Make transient root swap-and-restore races fail closed without weakening migrated source or exact-owned publication checks.
+    constraints: Task qsemyehqcf only; task remains pending for the next Audit verdict. No Task 2, vision, version, publication, tag, or push changes.
+    scope: Plan/TODO postpublication validation, entity discovery provenance binding, migration source binding, and ABA regression tests.
+  inspiration: Retry of plan wsshqadwng task qsemyehqcf after Audit attempt audit-1.
+  discovered: Real-root pathname discovery could observe an empty successor during an ABA interval even though publication remained pinned to the original descriptor.
+  verified: Deterministic Plan and TODO root-swap-and-restore regressions passed in the focused source run (34 passed); full source suite passed (200 files, 2491 passed, 1 skipped); TypeScript typecheck passed; local CLI build completed as 3.0.0-dev.29.
+  next: Orchestrate must record the next Audit verdict before changing task qsemyehqcf from pending.

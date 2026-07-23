@@ -4,10 +4,20 @@ record:
   name: Restore logical validation for pinned Plan and TODO publication
   depends_on:
     []
-  status: complete
+  status: pending
   acceptance:
     - GIVEN valid migrated decision and progress summaries WHEN Plan or TODO creation runs THEN creation succeeds and canonical state remains valid.
     - GIVEN valid provenance WHEN post-publication validation runs THEN logical reads use the validated real root while physical mutation remains descriptor-pinned.
     - GIVEN a source symlink or hash mismatch, changed root, or changed marker WHEN validation runs THEN it fails closed and preserves prior and unrelated bytes.
     - GIVEN new testable validation units WHEN focused tests run THEN one passing and one failing case cover each unit unless a narrower bound is justified.
   plan: wsshqadwng
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Transient root ABA replacement can make logical validation inspect a successor pathname while descriptor-pinned publication mutates the original root, returning success without validating the published graph.
+    provenance:
+      attempt_id: audit-1
+      source: Audit ses_06efa8a35ffesgzUWyPJEQdPM2
+      recorded_at: 2026-07-24 00:15
+      writer_command: agentera state plan record-evaluation

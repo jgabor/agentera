@@ -144,7 +144,7 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
       }
     }
     options.publicationContext.assertValid();
-    const validation = validateEntityState(options.publicationContext.projectRoot, sourceRoot);
+    const validation = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
     if (!validation.valid) throw new Error(`created plan graph failed state validation: ${validation.issues.map(({ message }) => message).join("; ")}`);
     options.publicationContext.assertValid();
   } catch (error) {

@@ -21,6 +21,7 @@ import {
   type EntityDiscoveryResult,
 } from "./entityStorage.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
+import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
@@ -55,9 +56,9 @@ function failure(kind: StateFailureClass, artifact: string, message: string, rec
   return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: `agentera state ${artifact} get --id ID --format json`, example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
 }
 
-function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult): DiscoveredEntity[] {
+function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult, sourceBinding?: MigrationSourceBindingContext): DiscoveredEntity[] {
   if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
-  const discovery = supplied ?? discoverEntities(root, sourceRoot);
+  const discovery = supplied ?? discoverEntities(root, sourceRoot, sourceBinding);
   const selected = discovery.entities.filter((entity) => [TODO.boundary, DOCS.boundary].includes(entity.boundary as typeof TODO.boundary) || [TODO.artifact, DOCS.artifact].includes(entity.artifact as typeof TODO.artifact));
   const bad = selected.find(({ classification, id, record }) => classification !== "valid" || !id || !record);
   if (bad) throw failure(bad.classification === "duplicate" ? "ambiguous" : "corrupt", artifact ?? bad.artifact ?? "todo", `entity '${bad.relativePath}' is not canonical`, "Run agentera check validate state and resolve every invalid identity or record before retrying.", bad.id ?? undefined);
@@ -78,8 +79,8 @@ function recordViolations(artifact: "todo" | "docs", record: JsonObject, sourceR
   return [...new Set(violations)];
 }
 
-function assertState(root: string, sourceRoot: string): void {
-  const state = validateEntityState(root, sourceRoot);
+function assertState(root: string, sourceRoot: string, sourceBinding?: MigrationSourceBindingContext): void {
+  const state = validateEntityState(root, sourceRoot, sourceBinding);
   if (!state.valid) reject({ class: "conflict", message: `canonical entity state is invalid: ${state.issues.map(({ message }) => message).join("; ")}`, recovery: "Run agentera check validate state and resolve every identity or record conflict before retrying; no state was changed." });
 }
 
@@ -111,16 +112,18 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
   }
   const context = options.publicationContext;
   return withEntityWriterLock(context, () => {
+    const pinnedRoot = context.pinnedPath();
+    const sourceBinding = { kind: "project", projectRoot: context.validatedRoot } as const;
     context.assertValid();
-    assertState(context.projectRoot, sourceRoot);
+    assertState(pinnedRoot, sourceRoot, sourceBinding);
     context.assertValid();
-    const entities = relevant(context.projectRoot, sourceRoot, artifact);
+    const entities = relevant(pinnedRoot, sourceRoot, artifact, undefined, sourceBinding);
     context.assertValid();
     if (req.spec.verb === "create") {
       const record = mutationRecord(req); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations });
       const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope(`state ${artifact} create`, { id, path: targetPath(req.projectRoot, sourceRoot, artifact, id), replay: false }, artifact, record, true);
       let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
-      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, record }); published = result; assertState(context.projectRoot, sourceRoot); context.assertValid(); return envelope(`state ${artifact} create`, result, artifact, record, false); }
+      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, record }); published = result; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope(`state ${artifact} create`, result, artifact, record, false); }
       catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
     }
     const id = String(req.values.id ?? "");
@@ -130,7 +133,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     if (req.dryRun) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: false }, artifact, record, true);
     const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, expectedRecord: entity.record!, record };
     let replaced = false;
-    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertState(context.projectRoot, sourceRoot); context.assertValid(); return envelope(`state ${artifact} ${req.spec.verb}`, result, artifact, record, false); }
+    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope(`state ${artifact} ${req.spec.verb}`, result, artifact, record, false); }
     catch (error) { if (replaced) replaceEntityUnderLock({ ...request, expectedRecord: record, record: entity.record! }); throw error; }
   });
 }

@@ -1,9 +1,8 @@
-import type { ValidatedProjectRoot } from "./projectRoot.js";
-import { validateRealProjectRoot } from "./projectRoot.js";
+import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 export type MigrationSourceBindingContext =
-  | { kind: "project"; projectRoot: string }
+  | { kind: "project"; projectRoot: string | ValidatedProjectRoot }
   | { kind: "git_commit"; commit: string; readSource: (path: string) => string | undefined };
 
 export type BoundMigrationSource =
@@ -21,7 +20,11 @@ function projectSource(project: ValidatedProjectRoot, sourcePath: string): Bound
 /** Read one authority-approved provenance source from one pinned project or Git snapshot. */
 export function readBoundMigrationSource(binding: MigrationSourceBindingContext, sourcePath: string): BoundMigrationSource {
   if (binding.kind === "project") {
-    try { return projectSource(validateRealProjectRoot(binding.projectRoot), sourcePath); }
+    try {
+      const project = typeof binding.projectRoot === "string" ? validateRealProjectRoot(binding.projectRoot) : binding.projectRoot;
+      assertValidatedProjectRoot(project);
+      return projectSource(project, sourcePath);
+    }
     catch (error) { return { kind: "unsafe", reason: (error as Error).message }; }
   }
   if (!/^[a-f0-9]{40,64}$/.test(binding.commit)) return { kind: "unsafe", reason: "Git binding requires an immutable commit ID" };

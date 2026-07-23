@@ -447,6 +447,31 @@ describe("plan and task entity authority", () => {
     expect(fs.readFileSync(preserved.file, "utf8")).toBe(preserved.bytes);
   });
 
+  it("rejects a root ABA that hides invalid descriptor-pinned state during plan postvalidation", () => {
+    const container = project(false); const root = path.join(container, "project"); const held = path.join(container, "held"); const successor = path.join(container, "successor");
+    fs.mkdirSync(path.join(root, ".agentera"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER);
+    fs.mkdirSync(path.join(successor, ".agentera/entities"), { recursive: true }); fs.writeFileSync(path.join(successor, ".agentera/unrelated.txt"), "successor bytes\n");
+    const { progressSource } = writeMigratedDecisionAndProgressSummaries(root); const preserved = unrelated(root);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const originalPublish = binding.publicationContext.publishImmutable.bind(binding.publicationContext); const originalReadDirectory = fs.readdirSync.bind(fs);
+    let armed = false; let swapped = false;
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => { const result = originalPublish(target, bytes); if (target.includes("/plan_task/")) { fs.writeFileSync(progressSource, "archive: []\n"); armed = true; } return result; });
+    vi.spyOn(fs, "readdirSync").mockImplementation((candidate, options) => {
+      if (!armed || typeof candidate !== "string" || !candidate.endsWith("/.agentera/entities")) return originalReadDirectory(candidate, options);
+      fs.renameSync(root, held); fs.renameSync(successor, root);
+      try { swapped = true; return originalReadDirectory(candidate, options); }
+      finally { fs.renameSync(root, successor); fs.renameSync(held, root); armed = false; }
+    });
+    const ids = ["cccccccccc", "dddddddddd"]; let failure: unknown;
+    try { createPlanEntities(request(root, "create", {}, plan("root ABA")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! }); }
+    catch (error) { failure = error; }
+    finally { binding.publicationContext.close(); }
+    expect(swapped).toBe(true); expect(String(failure)).toMatch(/migration_provenance|bind|changed|invalid/i);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/plan"))).toBe(false);
+    expect(fs.readFileSync(preserved.file, "utf8")).toBe(preserved.bytes);
+    expect(fs.readFileSync(path.join(successor, ".agentera/unrelated.txt"), "utf8")).toBe("successor bytes\n");
+  });
+
   it("rolls back the complete create graph after every successful file when the marker or root changes", () => {
     for (const invalidation of ["remove", "replace", "root"] as const) for (const after of [1, 2, 3]) {
       const container = project(false); const root = path.join(container, "project"); fs.mkdirSync(root); fs.mkdirSync(path.join(root, ".agentera")); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), VALID_MARKER);

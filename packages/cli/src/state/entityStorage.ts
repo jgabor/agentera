@@ -409,6 +409,7 @@ function discoverFile(
   model: EntityAuthority,
   issues: EntityDiagnostic[],
   sourceRoot?: string,
+  sourceBinding?: MigrationSourceBindingContext,
 ): DiscoveredEntity {
   const relativePath = relative(projectRoot, file);
   const filenameId = path.basename(file, path.extname(file));
@@ -481,8 +482,8 @@ function discoverFile(
   }
   if (!malformed && owner?.record && record) {
     const violations = [
-      ...canonicalEntityRecordViolationsAgainstModel(boundary, record, model, { kind: "project", projectRoot }),
-      ...migrationProvenanceViolations(boundary, record, migrationProvenanceValue, model, sourceRoot, { kind: "project", projectRoot }),
+      ...canonicalEntityRecordViolationsAgainstModel(boundary, record, model, sourceBinding),
+      ...migrationProvenanceViolations(boundary, record, migrationProvenanceValue, model, sourceRoot, sourceBinding),
     ];
     const timestampInvalid = owner.record.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""));
     if (violations.length || timestampInvalid) {
@@ -557,7 +558,7 @@ function discoverFile(
   return { id, artifact, boundary, record, migrationProvenance, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
 }
 
-export function discoverEntities(projectRoot: string, sourceRoot?: string): EntityDiscoveryResult {
+export function discoverEntities(projectRoot: string, sourceRoot?: string, sourceBinding: MigrationSourceBindingContext = { kind: "project", projectRoot }): EntityDiscoveryResult {
   const root = path.resolve(projectRoot);
   const resolvedSourceRoot = path.resolve(sourceRoot ?? resolveSourceRoot());
   const origin = { projectRoot: root, sourceRoot: resolvedSourceRoot };
@@ -594,7 +595,7 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string): Enti
           issues.push({ code: "malformed_entity", path: relative(root, file), message: `entity path '${relative(root, file)}' is not a canonical YAML file`, recovery: recovery(root, `remove '${relative(root, file)}' or replace it with <ten-lowercase-letter-id>.yaml`) });
           continue;
         }
-        entities.push(discoverFile(root, file, artifactEntry.name, boundaryEntry.name, model, issues, resolvedSourceRoot));
+        entities.push(discoverFile(root, file, artifactEntry.name, boundaryEntry.name, model, issues, resolvedSourceRoot, sourceBinding));
       }
     }
   }
@@ -770,8 +771,8 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
   return { ...discovery, issues: boundedIssues, valid: issues.length === 0, entityCount: discovery.entities.length, omittedIssueCount };
 }
 
-export function validateEntityState(projectRoot: string, sourceRoot?: string): EntityValidationResult {
-  return validateEntityDiscovery(projectRoot, sourceRoot, discoverEntities(projectRoot, sourceRoot));
+export function validateEntityState(projectRoot: string, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): EntityValidationResult {
+  return validateEntityDiscovery(projectRoot, sourceRoot, discoverEntities(projectRoot, sourceRoot, sourceBinding));
 }
 
 /** Validate the exact canonical envelopes and graph proposed by a migration without publishing them. */

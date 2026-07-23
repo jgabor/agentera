@@ -103,6 +103,32 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(fs.readFileSync(unrelated, "utf8")).toBe("preserve me\n");
   });
 
+  it("rejects a root ABA that hides invalid descriptor-pinned state during TODO postvalidation", () => {
+    const container = project(false); const root = path.join(container, "project"); const held = path.join(container, "held"); const successor = path.join(container, "successor");
+    fs.mkdirSync(path.join(root, ".agentera"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER); fs.writeFileSync(path.join(root, "TODO.md"), "# original\n");
+    fs.mkdirSync(path.join(successor, ".agentera/entities"), { recursive: true }); fs.writeFileSync(path.join(successor, ".agentera/unrelated.txt"), "successor bytes\n");
+    const { progressSource } = writeMigratedDecisionAndProgressSummaries(root); const unrelated = path.join(root, ".agentera/unrelated.txt"); fs.writeFileSync(unrelated, "original bytes\n");
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const originalPublish = binding.publicationContext.publishImmutable.bind(binding.publicationContext); const originalReadDirectory = fs.readdirSync.bind(fs);
+    let armed = false; let swapped = false;
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => { const result = originalPublish(target, bytes); fs.writeFileSync(progressSource, "archive: []\n"); armed = true; return result; });
+    vi.spyOn(fs, "readdirSync").mockImplementation((candidate, options) => {
+      if (!armed || typeof candidate !== "string" || !candidate.endsWith("/.agentera/entities")) return originalReadDirectory(candidate, options);
+      fs.renameSync(root, held); fs.renameSync(successor, root);
+      try { swapped = true; return originalReadDirectory(candidate, options); }
+      finally { fs.renameSync(root, successor); fs.renameSync(held, root); armed = false; }
+    });
+    const spec = operationSpec("todo", "create")!; const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { severity: "normal", description: "root ABA" }, callerPayload: { severity: "normal", description: "root ABA" }, input: null };
+    let failure: unknown;
+    try { mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, candidate: () => "cccccccccc" }); }
+    catch (error) { failure = error; }
+    finally { binding.publicationContext.close(); }
+    expect(swapped).toBe(true); expect(String(failure)).toMatch(/migration_provenance|bind|changed|invalid/i);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/todo/todo_item/cccccccccc.yaml"))).toBe(false);
+    expect(fs.readFileSync(unrelated, "utf8")).toBe("original bytes\n");
+    expect(fs.readFileSync(path.join(successor, ".agentera/unrelated.txt"), "utf8")).toBe("successor bytes\n");
+  });
+
   it("rejects aliases and non-bare selectors before effects while marker-absent commands retain legacy behavior", () => {
     const root = project(); const item = todo(root, "valid"); const before = fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`));
     for (const id of ["1", "todo:abcdefghij", "abcdefghij/path", "TODO.md", "ABCDEFGHIJ"]) {
