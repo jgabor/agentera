@@ -1,0 +1,29 @@
+id: jcvoooivsa
+artifact: health
+record:
+  date: 2026-07-24
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: terminal-plan artifacts now contain four complete PASS tasks and synchronized progress, TODO, and changelog evidence."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Terminal-plan scope only, not codebase-wide. Plan wsshqadwng has 4/4 complete tasks with preserved retry provenance; required progress is substantive, the critical TODO is resolved, the changelog matches shipped behavior, the exact deferred closeout set is present, and canonical state validates with zero issues.
+      findings:
+        []
+  trends:
+    improved: The open plan advanced to fully evaluated terminal task and artifact state.
+    degraded: None in terminal-plan scope.
+    new_findings: None.
+    resolved: Publication-validation and exact-restoration closure evidence is synchronized.
+    carried_forward: Health publication and plan lifecycle completion only.
+  patterns:
+    - Terminal closure publishes limited health before completing the plan lifecycle.
+  appended_at: 2026-07-23T23:32:31.090Z

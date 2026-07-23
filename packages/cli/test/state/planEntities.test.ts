@@ -492,6 +492,27 @@ describe("plan and task entity authority", () => {
     expect(fs.readFileSync(predecessorPath, "utf8")).toBe(competing);
   });
 
+  it("does not overwrite a competitor installed immediately before final predecessor restoration publication", () => {
+    const root = project(); const predecessor = complete(root, "racing predecessor");
+    const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`); const competing = "final-interval competitor bytes\n";
+    const competitorStage = path.join(root, "competitor.tmp"); fs.writeFileSync(competitorStage, competing);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const originalRename = fs.renameSync.bind(fs); const originalLink = fs.linkSync.bind(fs); let recovering = false; let injected = false;
+    const inject = (source: fs.PathLike, destination: fs.PathLike): void => {
+      if (!recovering || injected || !String(source).includes(".tmp") || !String(destination).endsWith(`/${predecessor.id}.yaml`)) return;
+      injected = true; originalRename(competitorStage, predecessorPath);
+    };
+    vi.spyOn(fs, "renameSync").mockImplementation((source, destination) => { inject(source, destination); originalRename(source, destination); });
+    vi.spyOn(fs, "linkSync").mockImplementation((source, destination) => { inject(source, destination); originalLink(source, destination); });
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation(() => { recovering = true; throw new Error("primary final-interval failure"); });
+    const ids = ["cccccccccc", "dddddddddd"];
+    expect(() => createPlanEntities(request(root, "create", {}, plan("racing replacement")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/primary final-interval failure.*recovery failed.*ownership|recovery failed.*ownership.*primary final-interval failure/i);
+    binding.publicationContext.close();
+    expect(injected).toBe(true);
+    expect(fs.readFileSync(predecessorPath, "utf8")).toBe(competing);
+    expect(entityNames(root).filter((name) => name.includes(".tmp") || name.includes(".previous") || name.includes(".displaced"))).toEqual([]);
+  });
+
   it("retains competing replacement residue and reports primary plus cleanup failure", () => {
     const root = project(); complete(root, "cleanup predecessor");
     const replacementPath = path.join(root, ".agentera/entities/plan/plan/cccccccccc.yaml"); const competing = "competing replacement bytes\n";

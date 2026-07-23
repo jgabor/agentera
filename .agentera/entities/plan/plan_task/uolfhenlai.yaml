@@ -5,10 +5,20 @@ record:
   depends_on:
     - qsemyehqcf
     - gjtpahmifa
-  status: pending
+  status: complete
   acceptance:
     - GIVEN both remedies WHEN CLI integration runs THEN migrated Plan and TODO creation, rollback, exact restoration, and retry all pass.
     - GIVEN the recovery evidence WHEN public contracts are compared THEN observable changes are documented and validated, or unchanged contracts are explicitly confirmed.
     - GIVEN the candidate WHEN repository gates run THEN full tests, typecheck, build, capability-contract validation, package verification, pack dry-run, and compact validation pass.
     - GIVEN release actions are excluded WHEN verification completes THEN no version changes, publication, tags, or pushes occurred.
   plan: wsshqadwng
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Audit ses_06ebcbcabffe5840DADMSgHGjO
+      recorded_at: 2026-07-24 01:20
+      writer_command: agentera state plan record-evaluation

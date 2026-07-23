@@ -1,0 +1,16 @@
+id: xcptqhjnie
+artifact: progress
+record:
+  timestamp: 2026-07-24 01:01
+  type: fix
+  phase: build
+  what: Closed the predecessor restoration ownership race by moving the exact archived target aside under pinned descriptors and publishing restored bytes with a no-clobber hard link; final-interval competitors now survive and produce combined creation/recovery diagnostics.
+  context:
+    intent: Correct only the accepted Audit blocker for plan task gjtpahmifa while leaving it pending for reevaluation.
+    constraints: No later tasks, version changes, vision edits, publication, tags, or pushes; preserve Task 1 ABA and migrated provenance protections.
+    unknowns: None within the accepted race finding; independent Audit still owns task completion.
+    scope: EntityPublicationContext exact restoration race, plan lifecycle regression coverage, accepted evaluator state, and typed progress.
+  inspiration: Audit attempt 1 reproduced a competitor overwrite between restoreExact ownership validation and unconditional rename.
+  discovered: The correction is internal to descriptor-pinned restoration; stateWrite.v1, writer registry, and authority contracts remain unchanged.
+  verified: Focused plan/publication-context tests passed 49/49, including deterministic final-interval ownership injection; full source tests passed 2496 with 1 skipped; typecheck and local CLI build passed.
+  next: Audit should reevaluate gjtpahmifa before any task completion or later plan work.

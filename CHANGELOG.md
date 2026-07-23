@@ -88,6 +88,11 @@
 
 ### Fixed
 
+- Fixed `agentera state plan create` and `agentera state todo create` rejecting
+  valid migrated decision and progress summaries during descriptor-pinned
+  publication; logical provenance now validates against the real project root,
+  and failed plan replacement restores the exact completed predecessor without
+  overwriting competing files.
 - Fixed natural-language capability routing to select from the user's expressed intent and trigger metadata before capability startup; status `next_action` now remains an orientation readiness suggestion rather than a classifier for non-status requests.
 - Fixed overlapping source, build, and package verification to use isolated construction and one atomically selected `dist` + `bundle` generation; clean source no longer requires checkout output, package proof still runs from an extracted tarball, and `pnpm -C packages/cli run pack:dry-run` replaces direct checkout `npm pack`.
 - Fixed `agentera prime --context status` to report severity totals across every open TODO while keeping attention and routing detail bounded with explicit omission recovery.

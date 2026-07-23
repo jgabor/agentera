@@ -1,0 +1,16 @@
+id: rotterqvcq
+artifact: progress
+record:
+  timestamp: 2026-07-24 01:14
+  type: test
+  phase: build
+  what: Proved migrated Plan and TODO integration plus package readiness without adding redundant coverage or advancing the plan task.
+  context:
+    intent: Verify plan task uolfhenlai through the locally built CLI, focused recovery tests, public-contract comparison, and every required repository gate while preserving Task 2 PASS state.
+    constraints: No version bump, publish, tag, push, vision modification, Task 4 work, or task completion. Preserve the uncommitted Task 2 PASS evaluation.
+    unknowns: none
+    scope: Disposable integration fixture and verification only; one typed progress entity added. No substantive code, test, contract, documentation, package, or vision file changed.
+  inspiration: Plan wsshqadwng task uolfhenlai and firm migration-summary Decision cgmdaewdas.
+  discovered: Existing authoritative focused tests already cover every injected rollback, exact-restoration, ownership-conflict, residue-cleanup, and retry boundary; no substantive test or contract gap remained. Public stateWrite.v1 output shape, writer registry, schema, and state-storage authority paths are unchanged; only observable combined plan-replacement recovery error prose changed.
+  verified: "Local executable /home/jgabor/git/agentera/packages/cli/dist/bin/agentera.js reported 3.0.0-dev.29. Disposable entity-mode migrated fixture: built CLI created Plan and TODO beside valid decision/progress summaries; completed predecessor ccecarwwwo became one archived canonical history entry; corrected replacement xiohqsjewl was the sole current open plan; TODO rxnligatxw round-tripped. Focused pnpm -C packages/cli exec vp test run test/state/planEntities.test.ts test/state/todoDocsEntities.test.ts: 2 files, 39 tests passed, proving migrated creation and rollback, exact restoration and whole-graph cleanup across publication/validation/identity failures, combined primary/recovery ownership errors with competitors preserved, and clean retry. Required gates passed: pnpm -C packages/cli test (200 files, 2496 passed, 1 skipped); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json (2 passed); pnpm -C packages/cli run verify:package (2 files, 14 tests); pnpm -C packages/cli run pack:dry-run (agentera-3.0.0-dev.29.tgz manifest generated dry-run only); node packages/cli/dist/bin/agentera.js check compact (status pass, over_limit 0, errors 0, changed 0). Git diff confirmed no package/version-bearing or vision change; no publish, tag, push, or version command ran."
+  next: Audit should independently evaluate uolfhenlai while it remains pending; Task 4 must not begin in this build cycle.

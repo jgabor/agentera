@@ -517,6 +517,9 @@ export class EntityPublicationContext {
     let stageFd: number | undefined;
     let stageName: string | undefined;
     let backupName: string | undefined;
+    let displacedName: string | undefined;
+    let displacedFd: number | undefined;
+    let displacedOwned = false;
     let replacementVisible = false;
     try {
       let parentFd = this.rootFd;
@@ -541,9 +544,36 @@ export class EntityPublicationContext {
       fs.writeFileSync(stageFd, bytes, "utf8");
       fs.fsyncSync(stageFd);
       this.assertBoundary(directories, { name: stageName, fd: stageFd }, { name: targetName, fd: targetFd }, verifyContext);
-      fs.renameSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName));
-      replacementVisible = true;
-      stageName = undefined;
+      if (verifyContext) {
+        fs.renameSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName));
+        replacementVisible = true;
+        stageName = undefined;
+      } else {
+        displacedName = `.${targetName}.${process.pid}.${randomUUID()}.displaced`;
+        fs.renameSync(fdPath(directoryFd, targetName), fdPath(directoryFd, displacedName));
+        displacedFd = fs.openSync(fdPath(directoryFd, displacedName), FILE_FLAGS);
+        if (typeof expected === "string" || !matchesPublished(displacedFd, expected)) {
+          try {
+            fs.linkSync(fdPath(directoryFd, displacedName), fdPath(directoryFd, targetName));
+            if (!openMatches(directoryFd, targetName, displacedFd, FILE_FLAGS)) throw new Error("competing entity could not be returned to its pathname");
+            syncDirectory(directoryFd);
+          } catch (restoreError) {
+            throw new Error(`entity '${relativeTarget}' ownership changed immediately before restoration; competing bytes remain at '${displacedName}'`, { cause: restoreError });
+          }
+          throw new Error(`entity '${relativeTarget}' ownership changed immediately before restoration; competing bytes were preserved at the target and '${displacedName}'`);
+        }
+        displacedOwned = true;
+        try { fs.linkSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName)); }
+        catch (publishError) {
+          if ((publishError as NodeJS.ErrnoException).code === "EEXIST") throw new Error(`entity '${relativeTarget}' ownership changed during no-clobber restoration publication; competing bytes were preserved`, { cause: publishError });
+          throw publishError;
+        }
+        replacementVisible = true;
+        this.removeOwnedFile(directoryFd, stageName, stageFd);
+        stageName = undefined;
+        this.removeOwnedFile(directoryFd, displacedName, targetFd);
+        displacedName = undefined;
+      }
       syncDirectory(directoryFd);
       this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd }, verifyContext);
       this.removeOwnedFile(directoryFd, backupName, targetFd);
@@ -551,7 +581,7 @@ export class EntityPublicationContext {
       return { previousBytes: previousBytes.toString("utf8"), publishedIdentity: publishedIdentity(stageFd) };
     } catch (error) {
       const directoryFd = directories.at(-1)?.fd;
-      if (replacementVisible && directoryFd !== undefined && stageFd !== undefined && targetFd !== undefined) {
+      if (verifyContext && replacementVisible && directoryFd !== undefined && stageFd !== undefined && targetFd !== undefined) {
         const ownsReplacement = openMatches(directoryFd, segments.at(-1)!, stageFd, FILE_FLAGS);
         const ownsPrior = backupName !== undefined && openMatches(directoryFd, backupName, targetFd, FILE_FLAGS);
         if (ownsReplacement && ownsPrior) {
@@ -569,6 +599,9 @@ export class EntityPublicationContext {
         this.removeOwnedFile(directoryFd, stageName, stageFd);
       if (directoryFd !== undefined && targetFd !== undefined && backupName !== undefined)
         this.removeOwnedFile(directoryFd, backupName, targetFd);
+      if (directoryFd !== undefined && targetFd !== undefined && displacedName !== undefined && displacedOwned)
+        this.removeOwnedFile(directoryFd, displacedName, targetFd);
+      if (displacedFd !== undefined) fs.closeSync(displacedFd);
       if (stageFd !== undefined) fs.closeSync(stageFd);
       if (targetFd !== undefined) fs.closeSync(targetFd);
       for (const entry of directories.reverse()) fs.closeSync(entry.fd);

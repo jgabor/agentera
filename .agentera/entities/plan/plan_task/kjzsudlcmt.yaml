@@ -6,9 +6,19 @@ record:
     - qsemyehqcf
     - gjtpahmifa
     - uolfhenlai
-  status: pending
+  status: complete
   acceptance:
     - GIVEN all evidence is green WHEN state is synchronized THEN the critical TODO is resolved and progress records the verified outcomes.
     - GIVEN the health writer requires remediation evidence WHEN state closes THEN health records it through the typed contract.
     - GIVEN implementation and state belong together WHEN the plan closes THEN terminal plan state and related artifacts share the substantive change without standalone bookkeeping.
   plan: wsshqadwng
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Audit ses_06eb530cbffeo4nQEt7Zke24WL
+      recorded_at: 2026-07-24 01:27
+      writer_command: agentera state plan record-evaluation
