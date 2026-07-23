@@ -14,12 +14,12 @@ record:
     - GIVEN the portable host-owned architecture WHEN evaluation closes THEN no OpenAI credential, ZDR approval, sealed holdout, or provider-specific live benchmark is required for implementation acceptance.
   plan: pxyvjauajx
   evaluation:
-    attempt_count: 2
+    attempt_count: 3
     failure_count: 1
     last_verdict: pass
     last_failure_evidence: A failing or harmful synthetic corpus report still exits zero, causing check verify to report pass; route help also omits evaluate. Propagate report failure through both CLI gates and add failing-corpus plus help regressions.
     provenance:
-      attempt_id: audit-lzhjiqlqsu-2
-      source: "follow-up audit correction: failed report exit propagation, verify parity, and route help regression gates"
-      recorded_at: 2026-07-23 08:25
+      attempt_id: audit-lzhjiqlqsu-3
+      source: independent audit ses_0726a4c49ffewx5RVUx5Y0yxqr
+      recorded_at: 2026-07-23 08:35
       writer_command: agentera state plan record-evaluation

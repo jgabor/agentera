@@ -1,0 +1,13 @@
+id: sungiidepe
+artifact: progress
+record:
+  timestamp: 2026-07-23 08:41
+  type: chore
+  phase: build
+  what: Advanced only the development package from 3.0.0-dev.27 to 3.0.0-dev.28 and recorded the portable routing boundary for release.
+  context:
+    intent: Align development release metadata under the v3 cutover hold without publishing.
+    constraints: Only packages/cli/package.json version and gitRef advance; suite-bearing surfaces remain 3.0.0; no publication, tag, or push.
+    unknowns: none
+    scope: CLI package metadata, Unreleased changelog, plan-task state, and progress state
+  verified: npm @next is 3.0.0-dev.27; pnpm lockfile does not represent the package version; focused release tests 20/20; full source 199 files, 2,415 passed, 1 skipped; typecheck; build; release-metadata, vocabulary, cross-capability, capability-contract, and state validation; package verification 13/13; pack dry-run; compact; and offline routing evaluation 48/48 with check verify eval routing. No publication, tag, or push.

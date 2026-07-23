@@ -4,7 +4,7 @@ record:
   name: Align development release metadata
   depends_on:
     - lzhjiqlqsu
-  status: pending
+  status: complete
   acceptance:
     - GIVEN v3 cutover policy WHEN metadata is checked THEN only the permitted development package version advances and suite metadata remains 3.0.0.
     - GIVEN a cold changelog reader WHEN behavior is described THEN deterministic execution and LLM responsibility are distinguished.
