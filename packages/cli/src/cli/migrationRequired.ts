@@ -23,7 +23,7 @@ export function requestedMigrationFailureFormat(argv: string[]): Format {
 /** Marker-absent projects expose only the forward upgrade and static discovery. */
 export function requiresCompletedEntityCutover(argv: string[]): boolean {
   const [command, subcommand, verb] = argv;
-  if (["--version", "version", "app-home", "doctor", "schema", "upgrade"].includes(command)) return false;
+  if (["--version", "version", "app-home", "doctor", "schema", "route", "upgrade"].includes(command)) return false;
   if (command === "prime" && argv.includes("--guidance")) return false;
   if (command === "query") return !argv.includes("--list-artifacts");
   if (command === "state" && subcommand === "query" && argv.includes("--list-artifacts")) return false;

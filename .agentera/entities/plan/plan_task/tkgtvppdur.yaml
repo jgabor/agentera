@@ -4,7 +4,7 @@ record:
   name: Authorize and specify the hybrid contract
   depends_on:
     - warjaypkno
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN Decision 76 WHEN superseded THEN only curated literal fast paths are restored and open-ended language remains LLM-owned.
     - GIVEN every route shape WHEN reviewed THEN precedence, abstention, selection, clarification, no-match, and compound outcomes are unambiguous.
@@ -22,3 +22,6 @@ record:
       source: independent audit ses_073e3c434ffe2JLTGhmPdX3ckL
       recorded_at: 2026-07-23 01:48
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - umlkejxsng
+  superseded_reason: Audited replacement corrects the API output contract, normalization seam, and sealed holdout provenance.

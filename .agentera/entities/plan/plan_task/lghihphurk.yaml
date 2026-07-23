@@ -4,7 +4,7 @@ record:
   name: Deliver deterministic routing
   depends_on:
     - tkgtvppdur
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a bare request, capability name, primary alias, or uniquely owned leading phrase WHEN routed THEN the expected capability and tier are returned.
     - GIVEN a recognized phrase with a topic WHEN routed THEN only the recognized span is consumed and the original topic is preserved.

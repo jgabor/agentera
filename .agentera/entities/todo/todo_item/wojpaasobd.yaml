@@ -2,5 +2,5 @@ id: wojpaasobd
 artifact: todo
 record:
   severity: degraded
-  status: open
+  status: resolved
   description: Plan task tkgtvppdur exhausted both audit attempts. The OpenAI Structured Outputs profile still uses unsupported conditional composition and optional fields, and the sealed routing holdout lacks synthetic-or-consented text provenance. Replan the contract correction before deterministic or semantic routing tasks continue.

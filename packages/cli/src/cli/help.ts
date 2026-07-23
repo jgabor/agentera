@@ -5,6 +5,7 @@ import { entityMigrateHelp } from "./commands/entityMigrate.js";
 const TOP_LEVEL = [
   "prime",
   "schema",
+  "route",
   "state",
   ...CAPABILITY_ROUTING_NAMES,
   "upgrade",
@@ -28,6 +29,7 @@ export function printTopLevelHelp(): string {
     ...lines("Agent commands:", [
       "prime               Composite orientation briefing, capability startup context, or static guidance",
       "schema              Runtime CLI/schema introspection",
+      "route               Privacy-safe request-to-capability routing",
       "state               Routine artifact reads, writes, and advanced artifact query",
       ...CAPABILITY_ROUTING_NAMES.map(
         (name) => `${name.padEnd(19)} Route to ${name} capability guidance`,
@@ -368,6 +370,18 @@ export function printCapabilityHelp(capability: string): string {
   ].join("\n");
 }
 
+export function printRouteHelp(): string {
+  return [
+    "usage: agentera route request --input PATH [--format json]",
+    "",
+    "Route one transient request through the deterministic phase of the shared hybrid contract.",
+    "Request text is accepted only from the structured YAML or JSON input document, never argv.",
+    "Use --input - to read the document from stdin. Output is JSON on stdout.",
+    "",
+    "input document: { version: agentera.route_request.v1, request: <string> }",
+  ].join("\n");
+}
+
 export function printCommandHelp(command: string, rest: string[] = []): string | null {
   const sub = rest.find((a) => !a.startsWith("-") && a !== "--help" && a !== "-h");
   if (command === "state" && rest.filter((item) => !item.startsWith("-")).slice(0, 2).join(" ") === "migrate entities") return entityMigrateHelp();
@@ -376,6 +390,8 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printPrimeHelp();
     case "schema":
       return printSchemaHelp();
+    case "route":
+      return printRouteHelp();
     case "upgrade":
       return printUpgradeHelp();
     case "app-home":

@@ -83,13 +83,15 @@ The LLM host classifies natural language; the CLI supplies contracts and context
 | Bare `/agentera` | 1. Run `agentera prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
 | `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Curated leading phrase | Send the request to the shared route contract. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
-| Other natural language | Classify expressed intent before startup from trigger `description`, `priority`, and `disambiguates_against` only after the shared route contract returns `semantic_required`; submit a `select`, `clarify`, or `no_match` receipt for CLI validation. Ask one clarifying question only for genuine consequential ambiguity; use status only if no capability fits. |
+| Curated leading phrase | Send the request through `agentera route request --input - --format json` using a transient structured `{ version: agentera.route_request.v1, request: ... }` document on stdin. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
+| Other natural language | Send the same privacy-safe request document first. Only after the shared route contract returns `semantic_required`, classify expressed intent from trigger `description`, `priority`, and `disambiguates_against`; Task 4 will add receipt submission and validation. |
 
 Plain-language requests use per-capability `schemas/triggers.yaml`, not
 hardcoded rules. `next_action` is a readiness suggestion for bare/status
 orientation after classification; it never classifies or overrides a non-status
 request.
+
+The LLM host classifies natural language. Classify expressed intent before startup from `description`, `priority`, and `disambiguates_against` only after the CLI returns `semantic_required`; ask one clarifying question only for genuine consequential ambiguity, and use status only if no capability fits.
 
 After the CLI validates a `select` receipt, then run `agentera prime --context <selected-capability> --format json`. A `clarify` receipt starts no capability;
 a valid `no_match` receipt starts status only for orientation.

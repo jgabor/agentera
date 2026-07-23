@@ -1,0 +1,13 @@
+id: dkbjgzhiyn
+artifact: progress
+record:
+  timestamp: 2026-07-23 03:05
+  type: feat
+  phase: build
+  what: Added privacy-safe deterministic route request resolution for bare, direct, and phrase tiers with byte-accurate spans and semantic abstention.
+  context:
+    intent: Deliver plan task lghihphurk without semantic receipt execution.
+    scope: Shared CLI route command, route authority loader, portable skill, contract, tests, and package boundary.
+  inspiration: Plan pxyvjauajx task lghihphurk and the hybrid route contract.
+  verified: Focused resolver and CLI tests, full source suite (197 files, 2396 passed, 1 skipped), typecheck, build, package verification, capability-contract and state validators, and compaction passed.
+  next: Task complete; semantic receipt validation remains owned by tcgzbnkhtd.

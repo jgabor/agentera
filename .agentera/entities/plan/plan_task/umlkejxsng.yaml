@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: pxyvjauajx
   name: Repair hybrid routing contract
-  status: in_progress
+  status: complete
   depends_on:
     - warjaypkno
   acceptance:
@@ -13,12 +13,12 @@ record:
     - GIVEN invalid API profiles or missing holdout provenance WHEN contract checks run THEN they fail, while the corrected contract, full suite, package checks, and compaction pass.
     - GIVEN independent audit approval WHEN the replacement completes THEN task tkgtvppdur is superseded by the replacement and downstream tasks become dependency-ready.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: API-shaped receipts require nullable fields, while the CLI schema requires those fields absent and non-null; no normative projection exists. Add and test an explicit API-to-CLI normalization seam that removes null-valued inapplicable fields before authoritative receipt, digest, capability, and span validation.
     provenance:
-      attempt_id: audit-umlkejxsng-1
+      attempt_id: audit-umlkejxsng-2
       source: independent audit ses_0739ba9cfffekA3Y2e0l21pTGZ
-      recorded_at: 2026-07-23 02:41
+      recorded_at: 2026-07-23 02:51
       writer_command: agentera state plan record-evaluation

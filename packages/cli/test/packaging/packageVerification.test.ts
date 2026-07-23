@@ -261,6 +261,22 @@ describe("npm distribution boundary", () => {
     expect(result.stdout).toContain("agentera");
   });
 
+  it("routes a structured request from the extracted package without exposing it in diagnostics", () => {
+    const request = "help me decide: private package-boundary topic";
+    const input = path.join(fixture.root, "route-request.yaml");
+    fs.writeFileSync(input, YAML.stringify({ version: "agentera.route_request.v1", request }));
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const result = run(process.execPath, [bin, "route", "request", "--input", input, "--format", "json"], fixture.root, isolatedPackageEnv());
+    expect(result.status, `package boundary route failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
+    expect(result.stderr).not.toContain(request);
+    expect(result.stdout).not.toContain(request);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      outcome: "deterministic_selection",
+      tier: "phrase",
+      capability: "discuss",
+    });
+  });
+
   it("upgrades one managed v2 fixture and converges on a same-install rerun", () => {
     const project = path.join(fixture.root, "project $(touch shell-expansion-trap) `touch backtick-trap`");
     fs.cpSync(V2_PROJECT, project, { recursive: true });

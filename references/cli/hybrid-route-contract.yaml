@@ -22,7 +22,16 @@ protocol:
     required_fields: [request]
     request: >-
       The transient, unmodified user message. It is accepted for routing and is
-      never persisted by this protocol.
+       never persisted by this protocol.
+    cli_seam:
+      command: agentera route request --input PATH --format json
+      input: >-
+        A YAML or JSON mapping supplied by --input PATH or --input -. The request
+        field is never accepted in argv; --input - reads it from stdin.
+      output: >-
+        The versioned route response is emitted as JSON on stdout. Diagnostics do
+        not include request or topic text, and routing writes no state or report.
+      exit_codes: { ok: 0, invalid_input: 2, authority_conflict: 2 }
   response:
     version: agentera.route_response.v1
     outcomes: [deterministic_selection, semantic_required]
