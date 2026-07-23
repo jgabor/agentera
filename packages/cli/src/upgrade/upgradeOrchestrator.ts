@@ -576,7 +576,9 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
     lines.push("native Agentera resource cleanup:");
     lines.push(`  ownership journal: ${plan.lifecycle.ownershipJournal.state} at ${plan.lifecycle.ownershipJournal.path}`);
     lines.push(`  secure publication: ${plan.lifecycle.platform.securePublication ? "available" : "unavailable"} (${plan.lifecycle.platform.requirement})`);
-    lines.push("  scope: exact legacy Agentera-owned skill link; user data excluded");
+    lines.push(
+      `  scope: ownership-proven native Agentera resource ${plan.lifecycle.nativeResourceCleanup.resourceId}; unrelated user-owned data excluded`,
+    );
     const cleanup = plan.lifecycle.cleanupSummary;
     lines.push(
       `  counts: pending=${cleanup.pending}, applied=${cleanup.applied}, noop=${cleanup.noop}, blocked=${cleanup.blocked_unowned + cleanup.action_required}`,

@@ -21,6 +21,7 @@ import {
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import {
   buildUpgradePlan,
+  renderUpgradePlan,
   validateUpgradeApply,
 } from "../../src/upgrade/upgradeOrchestrator.js";
 
@@ -382,6 +383,23 @@ describe("buildUpgradePlan", () => {
       expect(plan.lifecycle?.nativeResourceCleanup).toHaveProperty("operations");
       expect(plan.lifecycle?.nativeResourceCleanup).not.toHaveProperty("plan");
     }
+  });
+
+  it("renders the selected Codex descriptor resource instead of a Claude-only scope", () => {
+    const project = path.join(tmp, "codex-cleanup-preview");
+    fs.mkdirSync(project, { recursive: true });
+    const plan = buildUpgradePlan({
+      installRoot: REPO_ROOT,
+      home,
+      project,
+      channel: "development",
+      legacyCleanup: "codex.agent-descriptor.build",
+      dryRun: true,
+    });
+
+    expect(renderUpgradePlan(plan)).toContain(
+      "scope: ownership-proven native Agentera resource codex.agent-descriptor.build; unrelated user-owned data excluded",
+    );
   });
 
   it("keeps stable previews and applies without a selector app-only", () => {

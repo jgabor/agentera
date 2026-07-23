@@ -1,0 +1,12 @@
+id: lzxrdntdmq
+artifact: progress
+record:
+  timestamp: 2026-07-23 14:19
+  type: fix
+  phase: build
+  what: Corrected native cleanup text preview scope for the selected resource.
+  context:
+    intent: Address the independent audit finding without changing cleanup selection or ownership behavior.
+    constraints: No cleanup-contract, resource-selection, ownership, descriptor, Codex-setup, version, publication, tag, or push changes.
+    scope: Upgrade text preview and its Codex descriptor regression test.
+  verified: pnpm -C packages/cli run typecheck and pnpm -C packages/cli test passed (201 files; 2,472 passed, 1 skipped).
