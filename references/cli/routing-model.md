@@ -44,9 +44,9 @@ not executable matcher inputs.
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends the same transient original request and
-the complete nullable API receipt to `agentera route receipt --input - --format
+the complete nullable host receipt to `agentera route receipt --input - --format
 json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes. The CLI
-first validates the unmodified API shape, removes only contract-listed nulls,
+first validates the unmodified host shape, removes only contract-listed nulls,
 then reruns deterministic routing and accepts the receipt only when the same
 request still produces its bound `semantic_required` capsule. It then validates
 the projected CLI receipt with canonical-capability binding and request-bound
@@ -102,33 +102,23 @@ or `no_match`. A compound request never authorizes implicit chaining:
 
 The visible frozen development and adversarial regression data live in
 [`fixtures/routing/hybrid-corpus.yaml`](../../fixtures/routing/hybrid-corpus.yaml).
-They use synthetic or explicitly consented text only and are not a holdout. The
-independently controlled holdout exposes only its version, count, content hash,
-sealed evaluator custody, provenance attestation (synthetic or explicitly
-consented text; no imported production prompts), and Task 5 aggregate-result protocol through
-[`fixtures/routing/holdout-manifest.yaml`](../../fixtures/routing/holdout-manifest.yaml).
+They use synthetic or explicitly consented text only and are the sole frozen
+implementation conformance corpus; no sealed holdout, credential, privacy
+approval, or provider-host benchmark is required.
 Retained evaluation evidence contains IDs, partition, outcome, tier,
-capability, timing, model profile, and aggregate metrics; private raw request
+capability, timing, and aggregate metrics; private raw request
 text, topic text, receipt questions, and semantic rationale are absent by
 default.
 
-The contract's exact OpenAI Responses profile uses the API model identifier
-`gpt-5.6-terra`, `reasoning.effort: low`, `store: false`, a strict
-`text.format` JSON Schema, and an explicit output-token limit. Its API schema
-has all fields required, using nullable fields for outcome-inapplicable values;
-the bounded API-to-CLI receipt normalization seam first validates that unmodified
-API shape, removes only contract-listed nulls, and preserves every non-null
-value unchanged. The CLI schema then separately validates outcome relationships,
-request binding, spans, canonical capabilities, and startup authorization.
+The portable host receipt shape has all fields required, using nullable fields
+for outcome-inapplicable values; the bounded host-to-CLI normalization seam first
+validates that unmodified shape, removes only contract-listed nulls, and preserves
+every non-null value unchanged. The CLI schema then separately validates outcome
+relationships, request binding, spans, canonical capabilities, and startup authorization.
 Normalization never authorizes startup or weakens a cross-field rule.
-Retry and timestamp details are harness metadata, not API-body fields.
-`store: false` disables Responses application-state storage, but is not a
-no-provider-retention promise: a no-provider-retention acceptance claim requires
-an approved Zero Data Retention organization and compatible enabled features.
-The contract links the current official data-controls and Responses structured-
-output documentation. Its latency boundary, harmful-misroute taxonomy, and Task
-5 targets are not a claim that any benchmark has run. Task 2 establishes only
-structural conformance; Tasks 3–5 own execution and evaluation.
+The evaluator reports separate deterministic and receipt-validation p95 values.
+Semantic model quality and latency remain host-dependent and unmeasured; it makes
+no live model calls.
 
 ## Ownership boundaries
 

@@ -11,7 +11,6 @@ const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const CONTRACT_PATH = path.join(ROOT, "references/cli/hybrid-route-contract.yaml");
 const PHRASES_PATH = path.join(ROOT, "skills/agentera/route-phrases.yaml");
 const CORPUS_PATH = path.join(ROOT, "fixtures/routing/hybrid-corpus.yaml");
-const HOLDOUT_MANIFEST_PATH = path.join(ROOT, "fixtures/routing/holdout-manifest.yaml");
 const CAPABILITY_CONTRACT_PATH = path.join(ROOT, "skills/agentera/capability_schema_contract.yaml");
 
 type RecordValue = Record<string, any>;
@@ -109,7 +108,7 @@ function validateSchema(schema: RecordValue, value: unknown, location = "$"): st
   return errors;
 }
 
-function apiOutputSchemaErrors(schema: RecordValue, location = "$"): string[] {
+function hostOutputSchemaErrors(schema: RecordValue, location = "$"): string[] {
   const errors: string[] = [];
   const supportedKeywords = new Set(["type", "enum", "properties", "required", "additionalProperties", "maxLength"]);
   for (const keyword of Object.keys(schema)) {
@@ -125,7 +124,7 @@ function apiOutputSchemaErrors(schema: RecordValue, location = "$"): string[] {
     }
     if (schema.additionalProperties !== false) errors.push(`${location}.additional_properties`);
     for (const [field, fieldSchema] of Object.entries(properties ?? {})) {
-      errors.push(...apiOutputSchemaErrors(fieldSchema as RecordValue, `${location}.${field}`));
+      errors.push(...hostOutputSchemaErrors(fieldSchema as RecordValue, `${location}.${field}`));
     }
   }
   if (location === "$") {
@@ -134,35 +133,6 @@ function apiOutputSchemaErrors(schema: RecordValue, location = "$"): string[] {
       if (!Array.isArray(fieldTypes) || !fieldTypes.includes("null")) errors.push(`${location}.${field}.nullable`);
     }
   }
-  return errors;
-}
-
-function apiProfileErrors(host: RecordValue): string[] {
-  const errors: string[] = [];
-  const request = host.request as RecordValue;
-  const format = (request.text as RecordValue).format as RecordValue;
-  if (request.method !== "POST" || request.path !== "/v1/responses") errors.push("request.endpoint");
-  if (request.model !== "gpt-5.6-terra") errors.push("request.model");
-  if (request.store !== false) errors.push("request.store");
-  if ((request.reasoning as RecordValue).effort !== "low") errors.push("request.reasoning.effort");
-  if (request.max_output_tokens !== 256) errors.push("request.max_output_tokens");
-  if (Object.keys(format).some((field) => !["type", "name", "strict", "schema"].includes(field))) errors.push("request.text.format.keys");
-  if (format.type !== "json_schema" || format.name !== "agentera_route_receipt" || format.strict !== true) errors.push("request.text.format");
-  errors.push(...apiOutputSchemaErrors(format.schema as RecordValue, "request.text.format.schema"));
-  return errors;
-}
-
-function holdoutProvenanceErrors(manifest: RecordValue): string[] {
-  const errors: string[] = [];
-  const holdout = manifest.holdout as RecordValue;
-  const provenance = holdout.content_provenance as RecordValue | undefined;
-  if (!provenance || provenance.declaration !== "evaluator_attested" || provenance.attested_by !== "independent_evaluator") errors.push("provenance.evaluator_attestation");
-  if (!Array.isArray(provenance?.text_origin) || !provenance.text_origin.every((source: unknown) => ["synthetic", "explicitly_consented"].includes(source as string))) {
-    errors.push("provenance.text_origin");
-  }
-  if (provenance?.imported_production_prompts !== false) errors.push("provenance.imported_production_prompts");
-  const custody = holdout.custody as RecordValue | undefined;
-  if (!custody || custody.owner !== "independent_evaluator" || custody.access !== "sealed_private") errors.push("custody");
   return errors;
 }
 
@@ -182,31 +152,31 @@ function receiptErrors(receipt: RecordValue, request: string, authority: RecordV
   return errors;
 }
 
-function normalizeApiReceipt(apiReceipt: RecordValue, authority: RecordValue): { receipt?: RecordValue; errors: string[] } {
-  const apiShape = authority.api_output_shape as RecordValue;
-  const normalization = authority.api_to_cli_normalization as RecordValue;
-  const apiErrors = validateSchema(apiShape.schema as RecordValue, apiReceipt);
-  if (apiErrors.length > 0) return { errors: apiErrors.map((error) => `api.${error}`) };
+function normalizeHostReceipt(hostReceipt: RecordValue, authority: RecordValue): { receipt?: RecordValue; errors: string[] } {
+  const hostShape = authority.host_output_shape as RecordValue;
+  const normalization = authority.host_to_cli_normalization as RecordValue;
+  const hostErrors = validateSchema(hostShape.schema as RecordValue, hostReceipt);
+  if (hostErrors.length > 0) return { errors: hostErrors.map((error) => `host.${error}`) };
 
   const acceptedKeys = normalization.input.accepted_keys as string[];
-  const unsupportedKeys = Object.keys(apiReceipt).filter((field) => !acceptedKeys.includes(field));
+  const unsupportedKeys = Object.keys(hostReceipt).filter((field) => !acceptedKeys.includes(field));
   if (unsupportedKeys.length > 0) return { errors: unsupportedKeys.map((field) => `normalization.unsupported_key.${field}`) };
 
   const rule = (normalization.projection as RecordValue).outcome_rules as RecordValue;
-  const outcomeRule = rule[apiReceipt.outcome] as RecordValue;
+  const outcomeRule = rule[hostReceipt.outcome] as RecordValue;
   const errors: string[] = [];
   for (const field of outcomeRule.required_non_null as string[]) {
-    if (apiReceipt[field] === null) errors.push(`normalization.unexpected_null.${field}`);
+    if (hostReceipt[field] === null) errors.push(`normalization.unexpected_null.${field}`);
   }
   for (const [field, condition] of Object.entries(outcomeRule.removable_nulls as RecordValue)) {
-    if (apiReceipt[field] !== null) continue;
-    if (condition === "always" || (condition === "when_compound_none" && apiReceipt.compound === "none")) continue;
+    if (hostReceipt[field] !== null) continue;
+    if (condition === "always" || (condition === "when_compound_none" && hostReceipt.compound === "none")) continue;
     errors.push(`normalization.unexpected_null.${field}`);
   }
   if (errors.length > 0) return { errors };
 
   return {
-    receipt: Object.fromEntries(Object.entries(apiReceipt).filter(([, value]) => value !== null)),
+    receipt: Object.fromEntries(Object.entries(hostReceipt).filter(([, value]) => value !== null)),
     errors: [],
   };
 }
@@ -215,12 +185,11 @@ describe("hybrid route contract", () => {
   const contract = yaml(CONTRACT_PATH);
   const phrases = yaml(PHRASES_PATH);
   const corpus = yaml(CORPUS_PATH);
-  const holdoutManifest = yaml(HOLDOUT_MANIFEST_PATH);
   const capabilityContract = loadCapabilitySchemaContract(CAPABILITY_CONTRACT_PATH);
   const capabilities = capabilityContract.routeAliases.primaryAliases.map(({ capability }) => capability);
 
   it("defines the versioned cascade, terminal outcomes, and receipt authorization", () => {
-    expect(contract.schema_version).toBe("agentera.hybrid_route_contract.v2");
+    expect(contract.schema_version).toBe("agentera.hybrid_route_contract.v3");
     expect(contract.protocol.response.outcomes).toEqual(["deterministic_selection", "semantic_required"]);
     expect(contract.protocol.receipt.outcomes).toEqual(["select", "clarify", "no_match"]);
     expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual([
@@ -266,24 +235,13 @@ describe("hybrid route contract", () => {
     }
   });
 
-  it("keeps visible development and adversarial data separate from the sealed holdout", () => {
+  it("keeps visible development and adversarial data as the sole synthetic corpus", () => {
     const routeCases = corpus.route_cases as RecordValue[];
-    expect(corpus.schema_version).toBe("agentera.hybrid_routing_corpus.v2");
+    expect(corpus.schema_version).toBe("agentera.hybrid_routing_corpus.v3");
     expect(Object.keys(corpus.partitions).sort()).toEqual(["adversarial", "development"]);
-    expect(routeCases.every((routeCase) => routeCase.partition !== "holdout")).toBe(true);
-    expect(corpus.freeze_policy).toContain("not a holdout");
-    expect(holdoutManifest.holdout).toMatchObject({ corpus_version: "agentera.hybrid_routing_holdout.v1", case_count: 4 });
-    expect(holdoutManifest.holdout.canonical_content_sha256).toMatch(/^[a-f0-9]{64}$/);
-    expect(holdoutManifest.holdout.excluded_content).toEqual(expect.arrayContaining(["requests", "expected_labels"]));
-    expect(holdoutProvenanceErrors(holdoutManifest)).toEqual([]);
-    expect(holdoutManifest.holdout.custody.repository_retains).toEqual(expect.arrayContaining([
-      "version",
-      "case_count",
-      "canonical_content_sha256",
-      "aggregate_result_binding",
-    ]));
-    expect(holdoutManifest.result_binding.required_fields).toEqual(expect.arrayContaining(["canonical_content_sha256", "aggregate_metrics"]));
-    expect(holdoutManifest.result_binding.prohibited_fields).toEqual(expect.arrayContaining(["raw_request", "expected_label"]));
+    expect(routeCases.every((routeCase) => ["development", "adversarial"].includes(routeCase.partition as string))).toBe(true);
+    expect(corpus.freeze_policy).toContain("sole frozen synthetic implementation corpus");
+    expect(contract.evaluation.corpus_scope).toContain("no hidden, sealed, or vendor-host");
   });
 
   it("covers positive and negative boundaries for all phrases plus bare and direct tiers", () => {
@@ -339,14 +297,14 @@ describe("hybrid route contract", () => {
     expect(receiptCases.some((receiptCase) => !receiptCase.valid && receiptCase.error === "binding.remainder_span")).toBe(true);
   });
 
-  it("normalizes complete API receipts before authoritative CLI validation and binding", () => {
+  it("normalizes complete host receipts before authoritative CLI validation and binding", () => {
     const authority = contract.protocol.receipt.validation_authority;
-    const apiShape = authority.api_output_shape;
-    expect(apiShape.canonical_capability_values_source).toBe(authority.canonical_capability_source);
-    expect(apiShape.schema.properties.capability.enum.slice(0, -1)).toEqual(capabilities);
-    expect(apiOutputSchemaErrors(apiShape.schema)).toEqual([]);
-    expect(authority.api_to_cli_normalization).toMatchObject({
-      name: "agentera.route_receipt_api_to_cli.v1",
+    const hostShape = authority.host_output_shape;
+    expect(hostShape.canonical_capability_values_source).toBe(authority.canonical_capability_source);
+    expect(hostShape.schema.properties.capability.enum.slice(0, -1)).toEqual(capabilities);
+    expect(hostOutputSchemaErrors(hostShape.schema)).toEqual([]);
+    expect(authority.host_to_cli_normalization).toMatchObject({
+      name: "agentera.route_receipt_host_to_cli.v1",
       rejection: { unsupported_key: "reject", unexpected_null: "reject", projection_bypass: "reject" },
     });
 
@@ -376,23 +334,23 @@ describe("hybrid route contract", () => {
     ];
 
     for (const testCase of cases) {
-      const apiReceipt = {
+      const hostReceipt = {
         version: "agentera.route_receipt.v1",
         request_sha256: crypto.createHash("sha256").update(testCase.request, "utf8").digest("hex"),
         ...testCase.receipt,
       };
-      expect(validateSchema(apiShape.schema, apiReceipt)).toEqual([]);
-      const normalized = normalizeApiReceipt(apiReceipt, authority);
+      expect(validateSchema(hostShape.schema, hostReceipt)).toEqual([]);
+      const normalized = normalizeHostReceipt(hostReceipt, authority);
       expect(normalized.errors).toEqual([]);
       expect(normalized.receipt).toBeDefined();
       expect(receiptErrors(normalized.receipt!, testCase.request, authority, capabilities)).toEqual([]);
-      for (const [field, value] of Object.entries(apiReceipt)) {
+      for (const [field, value] of Object.entries(hostReceipt)) {
         if (value !== null) expect(normalized.receipt![field]).toBe(value);
       }
     }
   });
 
-  it("rejects API projection bypasses, unexpected nulls, altered values, and extra keys", () => {
+  it("rejects host receipt projection bypasses, unexpected nulls, altered values, and extra keys", () => {
     const authority = contract.protocol.receipt.validation_authority;
     const request = "choose a route";
     const apiSelect = {
@@ -406,67 +364,36 @@ describe("hybrid route contract", () => {
     };
 
     expect(receiptErrors(apiSelect, request, authority, capabilities)).not.toEqual([]);
-    expect(normalizeApiReceipt({ ...apiSelect, capability: null }, authority).errors).toEqual([
+    expect(normalizeHostReceipt({ ...apiSelect, capability: null }, authority).errors).toEqual([
       "normalization.unexpected_null.capability",
     ]);
-    expect(normalizeApiReceipt({ ...apiSelect, unexpected: null }, authority).errors).toEqual([
-      "api.$.additionalProperties.unexpected",
+    expect(normalizeHostReceipt({ ...apiSelect, unexpected: null }, authority).errors).toEqual([
+      "host.$.additionalProperties.unexpected",
     ]);
 
-    const altered = normalizeApiReceipt({ ...apiSelect, request_sha256: "0".repeat(64) }, authority);
+    const altered = normalizeHostReceipt({ ...apiSelect, request_sha256: "0".repeat(64) }, authority);
     expect(altered.errors).toEqual([]);
     expect(altered.receipt!.request_sha256).toBe("0".repeat(64));
     expect(receiptErrors(altered.receipt!, request, authority, capabilities)).toContain("binding.request_sha256");
   });
 
-  it("rejects unsupported or incomplete API schemas, extra format fields, and missing holdout provenance", () => {
-    const invalidSchema = structuredClone(contract.protocol.receipt.validation_authority.api_output_shape.schema);
+  it("rejects unsupported or incomplete host receipt schemas", () => {
+    const invalidSchema = structuredClone(contract.protocol.receipt.validation_authority.host_output_shape.schema);
     invalidSchema.allOf = [];
     invalidSchema.required = invalidSchema.required.filter((field: string) => field !== "question");
     invalidSchema.properties.question.type = "string";
-    expect(apiOutputSchemaErrors(invalidSchema)).toEqual(expect.arrayContaining([
+    expect(hostOutputSchemaErrors(invalidSchema)).toEqual(expect.arrayContaining([
       "$.unsupported.allOf",
       "$.all_properties_required",
       "$.question.nullable",
     ]));
 
-    const invalidProfile = structuredClone(contract.evaluation.reference_host);
-    invalidProfile.request.text.format.canonical_capability_values_source = "not_an_api_field";
-    invalidProfile.request.store = true;
-    expect(apiProfileErrors(invalidProfile)).toEqual(expect.arrayContaining([
-      "request.store",
-      "request.text.format.keys",
-    ]));
-
-    const missingProvenance = structuredClone(holdoutManifest);
-    delete missingProvenance.holdout.content_provenance;
-    expect(holdoutProvenanceErrors(missingProvenance)).toContain("provenance.evaluator_attestation");
   });
 
-  it("freezes an API-accepted, retention-bounded reference-host profile without claiming execution", () => {
-    const host = contract.evaluation.reference_host;
-    expect(host).toMatchObject({
-      protocol: "agentera.semantic_receipt_json.v1",
-      provider: "OpenAI Responses API",
-      profile_version: "agentera.openai_responses_receipt.v1",
-      request: {
-        method: "POST",
-        path: "/v1/responses",
-        model: "gpt-5.6-terra",
-        store: false,
-        reasoning: { effort: "low" },
-        max_output_tokens: 256,
-        text: { format: { type: "json_schema", name: "agentera_route_receipt", strict: true } },
-      },
-    });
-    expect(host.harness.retry).toEqual({ max_attempts: 1, automatic_retry: false });
-    expect(host.harness.timestamp_metadata.forbidden_fields).toEqual(expect.arrayContaining(["raw_request", "receipt_question"]));
-    expect(host.request.text.format.schema).toEqual(contract.protocol.receipt.validation_authority.api_output_shape.schema);
-    expect(apiProfileErrors(host)).toEqual([]);
-    expect(host.retention_caveat).toContain("Zero Data Retention");
-    expect(host.retention_caveat).toContain("not a promise");
-    expect(host.data_controls_authority).toContain("https://developers.openai.com/api/docs/guides/your-data");
-    expect(contract.evaluation.execution_status).toContain("Task 2 proves structural contract conformance only");
-    expect(contract.evaluation.execution_status).toContain("Tasks 3–5");
+  it("requires only offline conformance and leaves semantic evaluation host-dependent", () => {
+    expect(contract.evaluation.semantic_host).toContain("host-dependent");
+    expect(contract.evaluation.semantic_host).toContain("no host invocation is required");
+    expect(contract.evaluation.execution_status).toContain("Offline implementation acceptance");
+    expect(contract.evaluation.execution_status).toContain("unmeasured");
   });
 });

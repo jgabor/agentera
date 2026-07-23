@@ -47,8 +47,6 @@ records:
           path: registry.json
         - id: routing-evaluation-corpus
           path: fixtures/routing/hybrid-corpus.yaml
-        - id: routing-holdout-manifest
-          path: fixtures/routing/holdout-manifest.yaml
       generated_files:
         - id: npx-bundle-marker
           path: .agentera-npx-bundle.json

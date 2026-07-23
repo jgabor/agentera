@@ -53,8 +53,8 @@ function codePointLength(value: string): number {
   return [...value].length;
 }
 
-function apiShape(receipt: unknown, capabilities: Set<string>): Mapping {
-  if (!isMapping(receipt)) throw new RouteReceiptValidationError("receipt", "must be an API receipt mapping");
+function nullableHostShape(receipt: unknown, capabilities: Set<string>): Mapping {
+  if (!isMapping(receipt)) throw new RouteReceiptValidationError("receipt", "must be a nullable host receipt mapping");
   const keys = ["version", "request_sha256", "outcome", "capability", "compound", "question", "remainder_span"] as const;
   hasOnlyKeys(receipt, keys, "receipt");
   for (const key of keys) requires(receipt, key, "receipt");
@@ -84,20 +84,20 @@ function apiShape(receipt: unknown, capabilities: Set<string>): Mapping {
   return receipt;
 }
 
-/** Projects the required nullable API shape without changing any non-null value. */
-function normalizeApiReceipt(api: Mapping): Mapping {
-  const outcome = api.outcome;
+/** Projects the required nullable host shape without changing any non-null value. */
+function normalizeHostReceipt(hostReceipt: Mapping): Mapping {
+  const outcome = hostReceipt.outcome;
   const requireNonNull = (keys: string[]) => {
-    for (const key of keys) if (api[key] === null) throw new RouteReceiptValidationError(`receipt.${key}`, "must not be null for this outcome");
+    for (const key of keys) if (hostReceipt[key] === null) throw new RouteReceiptValidationError(`receipt.${key}`, "must not be null for this outcome");
   };
   const requireNull = (keys: string[]) => {
-    for (const key of keys) if (api[key] !== null) throw new RouteReceiptValidationError(`receipt.${key}`, "must be null for this outcome");
+    for (const key of keys) if (hostReceipt[key] !== null) throw new RouteReceiptValidationError(`receipt.${key}`, "must be null for this outcome");
   };
 
   if (outcome === "select") {
     requireNonNull(["version", "request_sha256", "outcome", "capability", "compound"]);
     requireNull(["question"]);
-    if (api.compound === "none") requireNull(["remainder_span"]);
+    if (hostReceipt.compound === "none") requireNull(["remainder_span"]);
     else requireNonNull(["remainder_span"]);
   } else if (outcome === "clarify") {
     requireNonNull(["version", "request_sha256", "outcome", "question"]);
@@ -107,7 +107,7 @@ function normalizeApiReceipt(api: Mapping): Mapping {
     requireNull(["capability", "compound", "question", "remainder_span"]);
   }
 
-  return Object.fromEntries(Object.entries(api).filter(([, value]) => value !== null));
+  return Object.fromEntries(Object.entries(hostReceipt).filter(([, value]) => value !== null));
 }
 
 function exactUtf8Suffix(request: string, span: { start: number; end: number }): string {
@@ -177,10 +177,10 @@ export function validateRouteReceiptSubmission(input: unknown, sourceRoot: strin
   if (!isMapping(input)) throw new RouteReceiptValidationError("input", "must be a mapping with request and receipt");
   hasOnlyKeys(input, ["request", "receipt"], "input");
   const request = validUtf8String(requires(input, "request", "input"), "input.request");
-  const apiReceipt = requires(input, "receipt", "input");
+  const hostReceipt = requires(input, "receipt", "input");
   const contract = loadCapabilitySchemaContract(path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml"));
   const capabilities = new Set(contract.routeAliases.primaryAliases.map(({ capability }) => capability));
-  const receipt = normalizeApiReceipt(apiShape(apiReceipt, capabilities));
+  const receipt = normalizeHostReceipt(nullableHostShape(hostReceipt, capabilities));
   const deferredText = authoritativeReceipt(receipt, request, capabilities);
   requireSemanticAuthorization(request, receipt, sourceRoot);
 

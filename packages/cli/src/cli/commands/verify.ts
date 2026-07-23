@@ -178,7 +178,7 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
   if (family === "eval" && target === "routing") {
     const safety = {
       mode: "offline-frozen-corpus",
-      summary: "runs the contract-owned visible corpus only; it never sends requests, reads sealed holdout cases, or invokes a model",
+      summary: "runs the contract-owned frozen synthetic corpus only; it never sends requests or invokes a semantic host",
       live: false,
       long_running_default: false,
     };

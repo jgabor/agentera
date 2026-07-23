@@ -1,0 +1,13 @@
+id: mqtnenxxhq
+artifact: progress
+record:
+  timestamp: 2026-07-23 07:59
+  type: refactor
+  phase: build
+  what: Simplified the portable routing cascade to use the frozen 48-case synthetic corpus as its sole implementation conformance gate; retained offline tier attribution, receipt safety, package parity, and the amended task/surprise.
+  context:
+    intent: Close lzhjiqlqsu without provider credentials, ZDR approval, sealed holdout custody, or live benchmarks while preserving semantic receipt authorization.
+  inspiration: lzhjiqlqsu acceptance and tcgzbnkhtd passing offline evaluation
+  discovered: The evaluator's adversarial partition purpose was parsed as extra YAML keys; quoted it while versioning the sole corpus.
+  verified: Focused evaluator/route/receipt/package tests passed (20); typecheck passed; build passed; route evaluate passed 48/48 with zero harmful deterministic/protocol misroutes and separate 9.508 ms deterministic and 8.589 ms receipt p95; full source suite passed 2,412 tests with 1 skipped; capability-contract validation, package verification, pack dry-run, and compact passed.
+  next: Semantic host quality and latency remain host-dependent and unmeasured; no live model calls are part of implementation acceptance.

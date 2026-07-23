@@ -31,7 +31,7 @@ function stageFakeRepo(options: { omitSkills?: boolean } = {}): string {
     "schema_version: fixture.authority.v1\n",
   );
   fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [] }));
-  for (const name of ["hybrid-corpus.yaml", "holdout-manifest.yaml"])
+  for (const name of ["hybrid-corpus.yaml"])
     fs.writeFileSync(path.join(root, "fixtures/routing", name), "schema_version: fixture.v1\n");
   for (const name of ["README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE"])
     fs.writeFileSync(path.join(root, name), "fixture\n");

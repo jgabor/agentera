@@ -88,7 +88,7 @@ export function runRouteRequest(argv: string[], io: RouteIo): number {
   }
 }
 
-/** Validate a host's nullable API receipt and emit startup authorization only. */
+/** Validate a host's nullable receipt and emit startup authorization only. */
 export function runRouteReceipt(argv: string[], io: Io): number;
 export function runRouteReceipt(argv: string[], io: RouteIo): number;
 export function runRouteReceipt(argv: string[], io: RouteIo): number {
@@ -108,14 +108,14 @@ export function runRouteReceipt(argv: string[], io: RouteIo): number {
       body: {
         class: "invalid_receipt",
         message,
-        recovery: "Submit the original request and a complete nullable API receipt through --input; no capability was started.",
+        recovery: "Submit the original request and a complete nullable host receipt through --input; no capability was started.",
       },
       exitCode: 64,
     });
   }
 }
 
-/** Run the contract-owned visible routing corpus without reading sealed holdout data or invoking a model. */
+/** Run the contract-owned frozen synthetic corpus without invoking a semantic host. */
 export function runRouteEvaluation(argv: string[], io: RouteIo): number {
   if (argv.length !== 2 || argv[0] !== "--format" || argv[1] !== "json") {
     return invalidRouteInput(io, {

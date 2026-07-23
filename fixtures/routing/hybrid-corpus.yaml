@@ -1,17 +1,16 @@
-schema_version: agentera.hybrid_routing_corpus.v2
+schema_version: agentera.hybrid_routing_corpus.v3
 status: frozen
 text_provenance: All request text in this fixture is synthetic and authored for conformance testing.
 retention_policy: >-
   This fixture may contain only synthetic or explicitly consented text. Evaluation
   reports retain case IDs and aggregate metrics, never private request strings.
 freeze_policy: >-
-  Development and adversarial entries are versioned regression data, not a
-  holdout. Additions or expectation changes require a new schema_version and a
-  new corpus file. The independent evaluator-controlled holdout is bound only by
-  fixtures/routing/holdout-manifest.yaml and is not committed here.
+  Development and adversarial entries are the sole frozen synthetic implementation
+  corpus. Additions or expectation changes require a new schema_version and a new
+  corpus file; no hidden, sealed, or vendor-host corpus is required.
 partitions:
   development: { status: frozen, purpose: phrase inventory and structural contract development }
-  adversarial: { status: frozen, purpose: abstention, separator, and invalid-receipt safety }
+  adversarial: { status: frozen, purpose: "abstention, separator, and invalid-receipt safety" }
 
 route_cases:
   - { id: DEV-PHRASE-STATUS, partition: development, request: "show project briefing for the checkout", expected: { phase1: deterministic_selection, tier: phrase, capability: status } }

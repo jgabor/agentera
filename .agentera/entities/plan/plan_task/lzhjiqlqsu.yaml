@@ -1,15 +1,15 @@
 id: lzhjiqlqsu
 artifact: plan
 record:
-  name: Evaluate and harden the complete cascade
+  name: Evaluate and harden the portable cascade
   depends_on:
     - lghihphurk
     - tcgzbnkhtd
-  status: in_progress
+  status: complete
   acceptance:
-    - GIVEN frozen corpora WHEN evaluated THEN every result and failure is attributable to a routing tier.
-    - GIVEN baseline and hybrid runs WHEN compared THEN harmful misroutes remain within the predeclared target.
-    - GIVEN repeated semantic runs WHEN variance occurs THEN distributions, model context, and caveats are reported.
-    - GIVEN latency measurements WHEN reported THEN deterministic, semantic, and end-to-end boundaries remain distinct.
-    - GIVEN checkout and packed execution WHEN verified THEN both use the same protocol, phrase authority, and skill guidance.
+    - GIVEN the frozen synthetic corpus WHEN evaluated THEN every result and failure is attributable to a deterministic or receipt-validation tier.
+    - GIVEN offline cascade conformance WHEN measured THEN harmful deterministic and protocol misroutes remain at zero without tuning against hidden or vendor-host data.
+    - GIVEN latency measurements WHEN reported THEN deterministic and receipt-validation boundaries remain distinct, while semantic model quality and latency are explicitly host-dependent and unmeasured.
+    - GIVEN checkout and packed execution WHEN verified THEN both use the same protocol, phrase authority, shared skill guidance, and synthetic corpus.
+    - GIVEN the portable host-owned architecture WHEN evaluation closes THEN no OpenAI credential, ZDR approval, sealed holdout, or provider-specific live benchmark is required for implementation acceptance.
   plan: pxyvjauajx

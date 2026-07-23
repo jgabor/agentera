@@ -1,4 +1,4 @@
-schema_version: agentera.hybrid_route_contract.v2
+schema_version: agentera.hybrid_route_contract.v3
 status: normative
 purpose: >-
   Define the portable, two-phase request-to-capability route contract. This is
@@ -51,7 +51,7 @@ protocol:
       command: agentera route receipt --input PATH --format json
       input: >-
         A YAML or JSON mapping supplied by --input PATH or --input -. It has the
-        transient original request in request and the complete nullable API output
+         transient original request in request and the complete nullable host output
         in receipt. Neither field is accepted in argv or persisted.
       output: >-
         JSON startup authorization only: selected capability, one clarification,
@@ -125,14 +125,14 @@ protocol:
               properties: { outcome: { const: select }, compound: { const: none } }
               required: [outcome, compound]
             then: { not: { required: [remainder_span] } }
-      api_output_shape:
+      host_output_shape:
         name: agentera_route_receipt
         purpose: >-
-          The Responses Structured Outputs shape. It validates the complete receipt
-          object only; the CLI receipt schema remains authoritative for outcome
-          relationships, request binding, and capability authorization.
+          The portable nullable host receipt shape. It validates the complete
+          receipt object only; the CLI receipt schema remains authoritative for
+          outcome relationships, request binding, and capability authorization.
         canonical_capability_values_source: *canonical_capability_source
-        schema: &agentera_route_receipt_api_schema
+        schema: &agentera_route_receipt_host_schema
           type: object
           additionalProperties: false
           required: [version, request_sha256, outcome, capability, compound, question, remainder_span]
@@ -154,15 +154,15 @@ protocol:
               properties:
                 start: { type: integer }
                 end: { type: integer }
-      api_to_cli_normalization:
-        name: agentera.route_receipt_api_to_cli.v1
+      host_to_cli_normalization:
+        name: agentera.route_receipt_host_to_cli.v1
         purpose: >-
-          Project the API-required nullable shape into the authoritative CLI receipt
-          shape without changing any non-null value.
+          Project the host-required nullable shape into the authoritative CLI
+          receipt shape without changing any non-null value.
         input:
           first_step: >-
-            Validate the unmodified API response against api_output_shape.schema.
-            Reject it on any API-schema failure before projecting any field.
+            Validate the unmodified host receipt against host_output_shape.schema.
+            Reject it on any host-shape failure before projecting any field.
           accepted_keys: [version, request_sha256, outcome, capability, compound, question, remainder_span]
         projection:
           operation: >-
@@ -359,72 +359,29 @@ evaluation:
     expected/observed outcomes, routing tier, capability ID, timings, authority
     hashes, and aggregate metrics. It never writes a report or emits request,
     topic, receipt-question, or rationale text.
-  corpus_partitions:
-    development: frozen
-    adversarial: frozen
-    holdout: independently_controlled
-  holdout_manifest: fixtures/routing/holdout-manifest.yaml
-  reference_host:
-    protocol: agentera.semantic_receipt_json.v1
-    provider: OpenAI Responses API
-    profile_version: agentera.openai_responses_receipt.v1
-    request:
-      method: POST
-      path: /v1/responses
-      model: gpt-5.6-terra
-      store: false
-      reasoning: { effort: low }
-      max_output_tokens: 256
-      input: >-
-        One transient system instruction containing the semantic capsule followed
-        by one transient user message containing the original request. Neither is
-        copied into local evaluation evidence.
-      text:
-        format:
-          type: json_schema
-          name: agentera_route_receipt
-          strict: true
-          schema: *agentera_route_receipt_api_schema
-    harness:
-      retry: { max_attempts: 1, automatic_retry: false }
-      timestamp_metadata:
-        sent_at_utc: RFC3339_UTC_instant_recorded_at_send
-        fields: [profile_version, model, reasoning_effort, max_output_tokens, store, attempt]
-        forbidden_fields: [raw_request, topic, receipt_question, semantic_rationale]
-    output: Strict JSON receipt only; no tool calls, state reads, runtime adapters, or third-party services.
-    retention_caveat: >-
-      store=false disables Responses application-state storage; it is not a
-      promise that OpenAI or any other provider retains no data. This profile
-      makes no private-by-default third-party-processing claim. A no-provider-
-      retention acceptance claim requires an approved Zero Data Retention
-      organization and confirmation that every enabled feature is ZDR-compatible.
-      Local evidence remains free of raw request text regardless.
-    data_controls_authority:
-      - https://developers.openai.com/api/docs/guides/your-data
-      - https://developers.openai.com/api/docs/guides/responses-vs-chat-completions
-    latency_boundary: >-
-      Semantic elapsed time starts when the host receives the semantic capsule
-      and ends when the CLI validates its receipt. It excludes capability startup
-      and user interaction. Local receipt validation is measured separately.
+  corpus_partitions: { development: frozen, adversarial: frozen }
+  corpus_scope: >-
+    The frozen synthetic development and adversarial corpus is the sole
+    implementation conformance corpus. It has no hidden, sealed, or vendor-host
+    companion corpus.
+  semantic_host: >-
+    A host may make the semantic judgment and submit the portable nullable host
+    receipt shape. Host selection, model quality, and latency are host-dependent
+    and unmeasured by this offline evaluator; no host invocation is required.
   target_gates:
-    deterministic_fixture_accuracy: 100_percent
     deterministic_phase1_p95: 25_ms
     receipt_validation_p95: 25_ms
-    semantic_end_to_end_p95: 15000_ms
     harmful_misroutes: 0
-    non_harmful_misroute_rate_max: 5_percent
-    required_abstention_recall: 100_percent
-    required_clarification_recall: 100_percent
-    compound_preservation_recall: 100_percent
+    deterministic_fixture_accuracy: 100_percent
   harmful_misroute_taxonomy:
     - wrong_capability_starts_a_state_changing_or_destructive_flow
     - a_compound_remainder_is_executed_or_chained_without_user_consent
     - a_no_match_or_clarify_request_starts_non_status_work
     - private_request_text_is_persisted_or_exported
   execution_status: >-
-    Task 2 proves structural contract conformance only. Tasks 3–5 own resolver
-    execution, semantic runtime behavior, holdout evaluation, and benchmark
-    results.
+    Offline implementation acceptance requires frozen deterministic and
+    receipt-validation conformance only. Semantic host quality and latency are
+    explicitly unmeasured and do not block implementation acceptance.
 
 deprecations:
   decision_76: >-

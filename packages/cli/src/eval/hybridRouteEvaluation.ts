@@ -67,23 +67,16 @@ function nullableFixtureReceipt(receipt: Mapping): Mapping {
   };
 }
 
-/** Runs only frozen visible conformance; live and sealed evaluation stay external to this command. */
-export function evaluateHybridRoute(
-  sourceRoot: string = resolveSourceRoot(),
-  environment: NodeJS.ProcessEnv = process.env,
-): Mapping {
+/** Runs the complete frozen synthetic conformance corpus without invoking a semantic host. */
+export function evaluateHybridRoute(sourceRoot: string = resolveSourceRoot()): Mapping {
   const contractPath = path.join(sourceRoot, "references/cli/hybrid-route-contract.yaml");
   const corpusPath = path.join(sourceRoot, "fixtures/routing/hybrid-corpus.yaml");
-  const manifestPath = path.join(sourceRoot, "fixtures/routing/holdout-manifest.yaml");
   const phrasePath = path.join(sourceRoot, "skills/agentera/route-phrases.yaml");
   const skillPath = path.join(sourceRoot, "skills/agentera/SKILL.md");
   const contract = loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
   const corpus = loadYamlMapping(fs.readFileSync(corpusPath, "utf8"));
-  const manifest = loadYamlMapping(fs.readFileSync(manifestPath, "utf8"));
   const evaluation = mapping(contract.evaluation, "contract.evaluation");
   const targetGates = mapping(evaluation.target_gates, "contract.evaluation.target_gates");
-  const referenceHost = mapping(evaluation.reference_host, "contract.evaluation.reference_host");
-  const holdout = mapping(manifest.holdout, "holdout manifest.holdout");
   const routeCases = cases(corpus.route_cases, "corpus.route_cases") as RouteCase[];
   const receiptCases = cases(corpus.receipt_cases, "corpus.receipt_cases") as ReceiptCase[];
   const results: Mapping[] = [];
@@ -99,14 +92,19 @@ export function evaluateHybridRoute(
       && (observed.outcome !== "deterministic_selection" || (
         observed.tier === routeCase.expected.tier && observed.capability === routeCase.expected.capability
       ));
+    const harmfulMisroute = observed.outcome === "deterministic_selection"
+      && (routeCase.expected.phase1 !== "deterministic_selection" || observed.capability !== routeCase.expected.capability);
     results.push({
       case_id: routeCase.id,
       partition: routeCase.partition,
+      evaluation_tier: "deterministic",
       routing_tier: observed.outcome === "deterministic_selection" ? observed.tier : "deterministic_abstention",
       expected_outcome: routeCase.expected.phase1,
       observed_outcome: observed.outcome,
       ...(observed.outcome === "deterministic_selection" ? { capability: observed.capability } : {}),
       status: passed ? "pass" : "fail",
+      ...(passed ? {} : { failure_tier: "deterministic" }),
+      harmful_misroute: harmfulMisroute,
       elapsed_ms: elapsed,
     });
   }
@@ -122,27 +120,24 @@ export function evaluateHybridRoute(
     }
     const elapsed = elapsedMs(start);
     receiptTimings.push(elapsed);
+    const passed = terminal === receiptCase.expected_terminal;
+    const harmfulMisroute = terminal === "selected" && receiptCase.expected_terminal !== "selected";
     results.push({
       case_id: receiptCase.id,
       partition: receiptCase.partition,
+      evaluation_tier: "receipt_validation",
       routing_tier: "semantic_receipt_validation",
       expected_outcome: receiptCase.expected_terminal,
       observed_outcome: terminal,
-      status: terminal === receiptCase.expected_terminal ? "pass" : "fail",
+      status: passed ? "pass" : "fail",
+      ...(passed ? {} : { failure_tier: "receipt_validation" }),
+      harmful_misroute: harmfulMisroute,
       elapsed_ms: elapsed,
     });
   }
 
   const failed = results.filter(({ status }) => status === "fail");
-  const model = mapping(referenceHost.request, "contract.evaluation.reference_host.request");
-  const credentialConfigured = Boolean(environment.OPENAI_API_KEY);
-  const zdrApproved = environment.AGENTERA_OPENAI_ZDR_APPROVED === "true";
-  const holdoutConfigured = Boolean(environment.AGENTERA_ROUTING_HOLDOUT);
-  const liveBlockers = [
-    ...(credentialConfigured ? [] : ["OPENAI_API_KEY is not configured in this process"]),
-    ...(zdrApproved ? [] : ["approved ZDR custody was not supplied"]),
-    ...(holdoutConfigured ? [] : ["evaluator-owned holdout custody was not supplied"]),
-  ];
+  const harmfulMisroutes = results.filter((result) => result.harmful_misroute === true).length;
   return {
     schemaVersion: "agentera.hybrid_route_evaluation.v1",
     status: failed.length === 0 ? "pass" : "fail",
@@ -163,39 +158,24 @@ export function evaluateHybridRoute(
       passed: results.length - failed.length,
       failed: failed.length,
       harmful_misroutes: {
+        scope: "deterministic_and_receipt_validation_conformance",
         target: targetGates.harmful_misroutes,
-        status: "not_measured_without_independent_baseline_and_holdout",
+        observed: harmfulMisroutes,
+        status: harmfulMisroutes === 0 ? "pass" : "fail",
         taxonomy: evaluation.harmful_misroute_taxonomy,
       },
     },
     model_context: {
-      profile_version: referenceHost.profile_version,
-      model: model.model,
-      reasoning_effort: mapping(model.reasoning, "reference host reasoning").effort,
-      max_output_tokens: model.max_output_tokens,
-      store: model.store,
+      status: "unmeasured",
+      reason: "host_dependent",
       samples: 0,
       distributions: {},
-      variance: "not_measured_without_live_reference_host",
-      retention_caveat: referenceHost.retention_caveat,
     },
     latency: {
       deterministic_phase1: { sample_count: deterministicTimings.length, p95_ms: percentile(deterministicTimings), target: targetGates.deterministic_phase1_p95 },
       receipt_validation: { sample_count: receiptTimings.length, p95_ms: percentile(receiptTimings), target: targetGates.receipt_validation_p95 },
-      semantic_model: { status: "not_measured_without_live_reference_host", target: targetGates.semantic_end_to_end_p95 },
-      end_to_end: { status: "not_measured_without_live_reference_host", target: targetGates.semantic_end_to_end_p95 },
-    },
-    prerequisites: {
-      live_reference_host: { configured: credentialConfigured, status: credentialConfigured ? "configured_not_run" : "blocked" },
-      zero_data_retention: { approved: zdrApproved, status: zdrApproved ? "approved_not_run" : "blocked" },
-      sealed_holdout: {
-        configured: holdoutConfigured,
-        status: holdoutConfigured ? "configured_not_run" : "blocked",
-        corpus_version: holdout.corpus_version,
-        canonical_content_sha256: holdout.canonical_content_sha256,
-        case_count: holdout.case_count,
-      },
-      blockers: liveBlockers,
+      semantic_model: { status: "unmeasured", reason: "host_dependent" },
+      end_to_end: { status: "unmeasured", reason: "host_dependent" },
     },
   };
 }

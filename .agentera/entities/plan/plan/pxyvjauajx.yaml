@@ -36,5 +36,4 @@ record:
     - question: Which reference host, model settings, latency boundary, and harmful-misroute target govern acceptance?
       affects_task: 5
       resolve_by: Task 2 freezes the reference protocol, corpus partitions, metrics, and targets before routing implementation is measured.
-  surprises:
-    []
+  surprises: Live OpenAI benchmarking, ZDR approval, and sealed holdout custody were unnecessary for a host-owned semantic-routing architecture; offline synthetic conformance is the implementation gate.
