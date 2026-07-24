@@ -168,20 +168,22 @@ describe("cli validate capability (structure; exact output covered by parity har
 });
 
 describe("cli validate capability-contract (structure)", () => {
-  it("prints both contract and protocol headers (text)", () => {
+  it("prints contract, protocol, and TODO readiness headers (text)", () => {
     const { out } = capture((io) => cmdValidateCapabilityContract({}, io));
     expect(out).toContain("Self-validating contract: skills/agentera/capability_schema_contract.yaml");
     expect(out).toContain("Validating protocol: skills/agentera/protocol.yaml");
+    expect(out).toContain("Validating TODO readiness: skills/agentera/schemas/artifacts/todo.yaml");
   });
 
-  it("emits a two-check JSON envelope", () => {
+  it("emits a three-check JSON envelope", () => {
     const { out } = capture((io) => cmdValidateCapabilityContract({ format: "json" }, io));
     const payload = JSON.parse(out);
     expect(payload.target_family).toBe("capability-contract");
-    expect(payload.checks).toHaveLength(2);
+    expect(payload.checks).toHaveLength(3);
     expect(payload.checks.map((c: { target_family: string }) => c.target_family)).toEqual([
       "capability-contract-self",
       "capability-protocol",
+      "todo-readiness",
     ]);
   });
 });

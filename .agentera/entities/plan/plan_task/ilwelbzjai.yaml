@@ -1,0 +1,18 @@
+id: ilwelbzjai
+artifact: plan
+record:
+  name: Verify and synchronize project evidence
+  depends_on:
+    - dovrbathpj
+    - knlrruqcun
+    - osiuqtoqdi
+    - xlgphfieaq
+    - noqyovxfvw
+  status: pending
+  acceptance:
+    - GIVEN Tasks 1 through 5 complete WHEN repository gates run THEN tests, typecheck, build, capability-contract validation, and compaction pass.
+    - GIVEN audit tmfxkjtoph Finding 1 WHEN evidence is checked THEN explicit discuss-first readiness is published and the binary destination limit is removed.
+    - GIVEN audit tmfxkjtoph Findings 2 and 3 WHEN evidence is checked THEN complete-state selection, eligibility, dependencies, gates, and meaningful ties are verified.
+    - GIVEN audit tmfxkjtoph Finding 4 WHEN evidence is checked THEN production-shaped regression fixtures fail under the former behavior and pass under the new contract.
+    - GIVEN affected plan, progress, health, TODO, docs, and changelog state WHEN closeout publishes THEN records agree, unrelated user changes remain untouched, and only release-policy-required version surfaces change.
+  plan: kitqatxlxe

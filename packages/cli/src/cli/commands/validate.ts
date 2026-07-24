@@ -23,6 +23,10 @@ import { detectStateModeBinding } from "../../state/stateMode.js";
 import { loadEntityCutoverTargetsForMarker } from "../../state/entityCutover.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
+import {
+  loadTodoReadinessContract,
+  TodoReadinessContractError,
+} from "../../registries/todoReadinessContract.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
 
@@ -170,6 +174,7 @@ const CAPABILITY_NAMES = [
 ];
 const CONTRACT_PATH = "skills/agentera/capability_schema_contract.yaml";
 const PROTOCOL_PATH = "skills/agentera/protocol.yaml";
+const TODO_READINESS_PATH = "skills/agentera/schemas/artifacts/todo.yaml";
 
 function pyRepr(value: string): string {
   return value.includes("'") && !value.includes('"') ? `"${value}"` : `'${value}'`;
@@ -324,12 +329,36 @@ function protocolSelfResult(): ProcResult {
   return { stdout, stderr, returncode };
 }
 
+function todoReadinessResult(): ProcResult {
+  let stdout = `Validating TODO readiness: ${TODO_READINESS_PATH}\n`;
+  let errors: string[] = [];
+  try {
+    loadTodoReadinessContract(
+      path.join(resolveSourceRoot(), TODO_READINESS_PATH),
+      path.join(resolveSourceRoot(), PROTOCOL_PATH),
+      path.join(resolveSourceRoot(), CONTRACT_PATH),
+    );
+  } catch (exc) {
+    errors = exc instanceof TodoReadinessContractError ? exc.errors : [(exc as Error).message];
+  }
+  let stderr = "";
+  let returncode = 0;
+  if (errors.length > 0) {
+    stderr = "FAILED:\n" + errors.map((error) => `  ${error}\n`).join("");
+    returncode = 1;
+  } else {
+    stdout += "PASS: TODO readiness contract is internally consistent\n";
+  }
+  return { stdout, stderr, returncode };
+}
+
 export function cmdValidateCapabilityContract(args: { format?: string }, io: Io): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const results: Array<[string, ProcResult]> = [
     ["capability-contract-self", contractSelfResult()],
     ["capability-protocol", protocolSelfResult()],
+    ["todo-readiness", todoReadinessResult()],
   ];
   if ((args.format ?? "text") === "json") {
     const checks = results.map(([name, result]) => delegatedValidationPayload(name, result, "validate_capability.py"));
@@ -338,7 +367,7 @@ export function cmdValidateCapabilityContract(args: { format?: string }, io: Io)
         command: "validate",
         status: results.every(([, r]) => r.returncode === 0) ? "pass" : "fail",
         target_family: "capability-contract",
-        target: "capability-schema-contract-and-protocol",
+        target: "capability-schema-contract-protocol-and-todo-readiness",
         checks,
         // cast: c.violations are captured validation-engine lines (subprocess IO boundary)
         violations: checks.flatMap((c) => c.violations as string[]),

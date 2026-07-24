@@ -1,0 +1,70 @@
+id: tmfxkjtoph
+artifact: health
+record:
+  date: 2026-07-24
+  dimensions:
+    - architecture_alignment
+    - pattern_consistency
+    - test_health
+  findings_summary:
+    critical: 0
+    warning: 4
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: no measured routing trajectory; the prior audit covered terminal artifacts only."
+  grades:
+    architecture_alignment: B
+    pattern_consistency: B
+    test_health: B
+  dimension_details:
+    - name: architecture_alignment
+      grade: B
+      summary: TODO readiness lacks explicit capability, phase, dependency, and gate authority (`skills/agentera/schemas/artifacts/todo.yaml:37`).
+      findings:
+        - heading: TODO readiness cannot express deliberation
+          location: skills/agentera/schemas/artifacts/todo.yaml:37; packages/cli/src/cli/orientation.ts:832
+          evidence: TODO records contain only severity, description, and status; readiness emits only plan or build.
+          impact: Status can propose implementation before required discussion or research.
+          suggested_action: Add validated optional readiness capability, phase, reason, dependencies, and gate metadata; honor it before fallback.
+          severity: warning
+          confidence: 99
+    - name: pattern_consistency
+      grade: B
+      summary: Mutable, bounded prose and opaque identity determine readiness (`packages/cli/src/cli/orientation.ts:352`).
+      findings:
+        - heading: Lossy startup text controls the destination
+          location: packages/cli/src/state/startupProjection.ts:120; packages/cli/src/cli/commands/prime/collectEntityOrientation.ts:266
+          evidence: Descriptions are truncated to 200 code points before todoNeedsPlan evaluates keyword signals.
+          impact: Reordering unchanged prose changes build versus plan; the glossary TODO reproduces this.
+          suggested_action: Classify complete internal records, then bound only emitted presentation fields.
+          severity: warning
+          confidence: 100
+        - heading: Eligibility collapses to severity and opaque ID
+          location: packages/cli/src/state/todoDocsEntities.ts:147; packages/cli/src/cli/orientation.ts:832
+          evidence: Same-severity open items are ID-ordered; blocked, prerequisite, and release-gate state is absent.
+          impact: Dependent or release-gated work can outrank executable work.
+          suggested_action: Filter by explicit readiness and dependencies before stable priority ordering.
+          severity: warning
+          confidence: 96
+    - name: test_health
+      grade: B
+      summary: Tests cover short binary plan/build examples, not production routing shapes (`packages/cli/test/cli/orientation.test.ts:64`).
+      findings:
+        - heading: Routing regressions evade the test corpus
+          location: packages/cli/test/cli/orientation.test.ts:64; packages/cli/test/cli/statusContextStartup.test.ts:262
+          evidence: No case covers truncation, discuss/research/document destinations, dependencies, gates, or equal-severity ties.
+          impact: The glossary misroute passes the current targeted suite.
+          suggested_action: Add end-to-end readiness fixtures for each destination, late signals, gates, dependencies, and deterministic ties.
+          severity: warning
+          confidence: 99
+  trends:
+    comparison_target: Audit jcvoooivsa
+    improved: Request routing remains isolated from next_action.
+    degraded: None measured; routing scope was not covered previously.
+    new_findings: Four warning-level readiness and test defects.
+    resolved: None.
+    carried_forward: Prior artifact-freshness result remains valid.
+  patterns:
+    - Readiness derives capability from mutable TODO prose after bounded projection.
+    - Request routing and status readiness are separate contracts.
+  appended_at: 2026-07-24T18:27:45.866Z

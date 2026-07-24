@@ -1,0 +1,16 @@
+id: noqyovxfvw
+artifact: plan
+record:
+  name: Review persisted TODO readiness
+  depends_on:
+    - knlrruqcun
+    - osiuqtoqdi
+    - xlgphfieaq
+  status: pending
+  acceptance:
+    - GIVEN the persisted open queue WHEN review begins THEN every page and exact record is enumerated without assuming one response contains the full queue.
+    - GIVEN a proposed capability assignment WHEN no reviewer approved it THEN no annotation is written and the record remains needs-triage.
+    - GIVEN TODO azytlqzxoa WHEN its confirmed assignment is published THEN readiness names discuss while preserving the user's current description and identity.
+    - GIVEN blocked, prerequisite-bound, or release-gated records WHEN reviewed THEN their non-actionable reason and recovery are explicit before any destination is considered.
+    - GIVEN each approved update WHEN dry-run and apply execute THEN only readiness fields change, retries are safe, and current unrelated fields survive.
+  plan: kitqatxlxe

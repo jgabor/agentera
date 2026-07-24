@@ -1,0 +1,14 @@
+id: dovrbathpj
+artifact: plan
+record:
+  name: Establish TODO readiness authority
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a TODO producer declares readiness WHEN the contract is validated THEN capability, reason, dependency, gate, and ordering semantics have one canonical authority.
+    - GIVEN canonical capabilities and phases WHEN the authority is inspected THEN the exact allowed destination set and capability-to-phase mapping are explicit and non-duplicated.
+    - GIVEN readiness is absent WHEN persisted state is interpreted THEN the defined result is needs-triage rather than plan or build inference.
+    - GIVEN blocked, gated, missing, cyclic, resolved, and cross-artifact dependencies WHEN eligibility is specified THEN each has one bounded outcome, attention behavior, and recovery path.
+    - GIVEN equally severe actionable work WHEN ordering is specified THEN the policy is deterministic, intent-bearing, and uses no fabricated chronology; each testable rule has a passing and failing case.
+  plan: kitqatxlxe

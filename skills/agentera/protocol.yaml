@@ -432,8 +432,8 @@ PHASES:
   2:
     id: PH2
     value: deliberate
-    capabilities: [discuss]
-    purpose: "Reason through decisions before committing to a direction"
+    capabilities: [discuss, research]
+    purpose: "Reason through decisions or external evidence before committing to a direction"
     valid_successors: [plan, build, envision]
     terminal: false
     self_transition: false
@@ -448,8 +448,8 @@ PHASES:
   4:
     id: PH4
     value: build
-    capabilities: [build, optimize, document, design]
-    purpose: "Implement, optimize, document, or design"
+    capabilities: [build, optimize, document, profile, design]
+    purpose: "Implement, optimize, document, profile, or design"
     valid_successors: [build, audit, plan]
     terminal: true
     self_transition: true

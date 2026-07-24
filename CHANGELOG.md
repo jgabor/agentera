@@ -28,6 +28,9 @@
 
 ### Added
 
+- Added a validated TODO readiness authority with phase-derived capability
+  destinations, explicit triage/block/gate/dependency outcomes, and
+  reviewer-assigned deterministic queue ordering.
 - Added post-cutover entity-backed default state views, bare-ID durability diagnostics, and read-only historical migration-manifest target validation while preserving legacy numbered behavior before cutover.
 - Added a Git-backed entity cutover owned by the full development-channel `upgrade --yes` command, with deterministic direct publication, exact-target retries, marker-last authority activation, and first-unresolved-path handoff.
 - Added post-cutover decision entities for immutable bases and content revisions, replaceable satisfaction ownership, bare-ID exact and bounded reads, deterministic effective provenance, stale-base and transition validation, and explicit same-decision conflict detection; marker-absent projects retain the legacy numbered authority without dual writes.

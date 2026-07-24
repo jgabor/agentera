@@ -61,6 +61,181 @@ ITEM:
       Current status: open or resolved.
     validation:
       - "Must be one of: open, resolved"
+  4:
+    id: TI4
+    field: readiness
+    type: mapping
+    required: false
+    description: >-
+      Reviewer-declared state readiness. Absence means needs-triage and MUST
+      NOT be interpreted from description prose. When present, the complete
+      nested shape is owned by READINESS below.
+
+READINESS:
+  schema_version: agentera.todoReadiness.v1
+  description: >-
+    Single authority for a TODO item's intended destination, eligibility,
+    attention, recovery, and ordering semantics. Request routing remains
+    separate and open-ended language remains host-owned.
+  destination:
+    phase_authority: protocol.yaml#PHASES[*].capabilities
+    description: >-
+      The exact allowed destination set is the union of capabilities in the
+      canonical PHASES entries. A capability's containing PHASES entry is its
+      phase; TODO does not repeat either list or mapping.
+    excluded_capabilities:
+      status: >-
+        Orientation consumes readiness but is not work a TODO can request.
+      orchestrate: >-
+        Execution mode selects plan tasks but is not a TODO's work intent.
+  fields:
+    capability:
+      type: string
+      required: true
+      enum_source: protocol.yaml#PHASES[*].capabilities
+      description: Reviewer-approved capability that owns the next action.
+    reason:
+      type: string
+      required: true
+      non_empty: true
+      description: Durable intent explaining why the destination is correct.
+    dependencies:
+      type: list
+      required: true
+      description: >-
+        Zero or more TODO prerequisites. Only canonical TODO entity IDs are
+        valid; artifact-qualified references make cross-artifact mistakes
+        explicit instead of guessing identity.
+      entries:
+        artifact:
+          type: string
+          required: true
+          const: todo
+        id:
+          type: string
+          required: true
+          pattern: "^[a-z]{10}$"
+    blocked:
+      type: [mapping, "null"]
+      required: true
+      description: Explicit blocker, or null when no blocker is declared.
+      fields:
+        reason: {type: string, required: true, non_empty: true}
+        recovery: {type: string, required: true, non_empty: true}
+    gate:
+      type: [mapping, "null"]
+      required: true
+      description: Explicit external or approval gate, or null when ungated.
+      fields:
+        state: {type: string, required: true, enum: [pending, satisfied]}
+        reason: {type: string, required: true, non_empty: true}
+        recovery: {type: string, required: true, non_empty: true}
+    queue_rank:
+      type: integer
+      required: true
+      minimum: 1
+      description: >-
+        Reviewer-assigned durable intent order among open items of the same
+        severity. Lower values run first; the number is priority, not time.
+    order_reason:
+      type: string
+      required: true
+      non_empty: true
+      description: Durable reason for the queue_rank assignment.
+  evaluation:
+    precedence:
+      - todo_resolved
+      - readiness_absent
+      - blocked
+      - gate_pending
+      - dependency_cross_artifact
+      - dependency_missing
+      - dependency_cycle
+      - dependency_open
+      - ordering_conflict
+      - actionable
+    description: >-
+      Evaluate once in this order against complete entity state. The first
+      matching result is final; bounded output projection happens afterward.
+  outcomes:
+    todo_resolved:
+      result: resolved
+      eligible: false
+      attention: none
+      recovery: null
+    readiness_absent:
+      result: needs-triage
+      eligible: false
+      attention: item
+      recovery: Review the item and declare readiness through the typed TODO writer.
+    blocked:
+      result: blocked
+      eligible: false
+      attention: item
+      recovery: Emit only the declared bounded blocked.recovery action.
+    gate_pending:
+      result: gated
+      eligible: false
+      attention: none
+      recovery: Emit only the declared bounded gate.recovery action; re-evaluate after the gate is satisfied.
+    dependency_cross_artifact:
+      result: needs-triage
+      eligible: false
+      attention: item
+      recovery: Replace the reference with a canonical TODO dependency or remove it after review.
+    dependency_missing:
+      result: needs-triage
+      eligible: false
+      attention: item
+      recovery: Restore the referenced TODO or remove the stale dependency after review.
+    dependency_cycle:
+      result: needs-triage
+      eligible: false
+      attention: item
+      recovery: Break the cycle by reviewing and updating at least one TODO dependency.
+    dependency_open:
+      result: waiting
+      eligible: false
+      attention: none
+      recovery: Resolve the canonical TODO dependency, then re-evaluate this item.
+    dependency_resolved:
+      result: satisfied
+      eligible: null
+      attention: none
+      recovery: null
+    ordering_conflict:
+      result: needs-triage
+      eligible: false
+      attention: item
+      recovery: Assign distinct queue_rank values to same-severity actionable items after review.
+    actionable:
+      result: actionable
+      eligible: true
+      attention: none
+      recovery: null
+  queue_outcomes:
+    mixed_actionable_and_triage:
+      selection: highest_ordered_actionable
+      attention: bounded_triage_summary
+      recovery: Review unannotated or invalid items separately; do not displace actionable work.
+    all_non_actionable:
+      selection: abstain
+      attention: bounded_highest_severity_summary
+      recovery: Emit the first matching contract-owned item recovery; never infer plan or build from prose.
+  ordering:
+    primary: protocol.yaml#SEVERITY_ISSUE
+    within_severity: queue_rank_ascending
+    duplicate_rank: ordering_conflict
+    prohibited_tiebreakers:
+      - entity_id
+      - file_order
+      - filesystem_time
+      - created_or_modified_time
+      - description_text
+    description: >-
+      Severity remains primary. Equally severe actionable work is ordered only
+      by explicit queue_rank. Duplicate ranks require triage rather than an
+      invented chronology or opaque identity tie-break.
 
 CONVENTION:
   1:

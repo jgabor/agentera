@@ -1,0 +1,15 @@
+id: osiuqtoqdi
+artifact: plan
+record:
+  name: Select actionable TODOs from complete state
+  depends_on:
+    - dovrbathpj
+    - knlrruqcun
+  status: pending
+  acceptance:
+    - GIVEN a discuss-first TODO WHEN status evaluates readiness THEN it recommends discuss with the stable TODO identity, declared reason, derived phase, and exact retrieval.
+    - GIVEN decisive record content beyond the output text bound WHEN status evaluates candidates THEN emitted truncation cannot change eligibility, destination, or ordering.
+    - GIVEN actionable and needs-triage records coexist WHEN candidates rank THEN actionable work wins and triage remains visible as a bounded alternative or attention item.
+    - GIVEN all records are blocked, gated, dependency-unresolved, or needs-triage WHEN status evaluates readiness THEN it abstains from implementation and exposes the contract-owned recovery action.
+    - GIVEN equally severe actionable records WHEN status ranks repeatedly THEN the Task 1 policy yields the same meaningful winner; each eligibility branch has a positive and adversarial test.
+  plan: kitqatxlxe

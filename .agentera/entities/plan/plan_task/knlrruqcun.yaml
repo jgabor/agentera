@@ -1,0 +1,14 @@
+id: knlrruqcun
+artifact: plan
+record:
+  name: Publish readiness through typed TODO state
+  depends_on:
+    - dovrbathpj
+  status: pending
+  acceptance:
+    - GIVEN valid readiness WHEN TODO create or update runs THEN explain, list, and exact get round-trip the canonical fields without raw entity edits.
+    - GIVEN invalid capability, dependency, gate, or ordering input WHEN a write is attempted THEN it fails before side effects and names a working correction.
+    - GIVEN an existing TODO without readiness WHEN ordinary reads and unrelated updates run THEN its identity, description, severity, status, and needs-triage meaning are preserved.
+    - GIVEN dry-run, retry, and concurrent current-record reads WHEN the same mutation is applied THEN publication remains atomic and idempotent without overwriting unrelated fields.
+    - GIVEN shared validation rules WHEN tests run THEN each rule is covered once at its authority plus one operation-boundary pass and fail case.
+  plan: kitqatxlxe

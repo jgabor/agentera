@@ -131,7 +131,7 @@ describe("validateParity (D56 artifact-validation surface)", () => {
         const spec = VALIDATE_FAMILY_ORACLE.families["capability-contract"];
         expect(payload.target_family).toBe(spec.targetFamilyValue);
         expect(Array.isArray(payload.checks)).toBe(true);
-        expect((payload.checks as unknown[]).length).toBe(2);
+        expect((payload.checks as unknown[]).length).toBe(3);
         for (const key of spec.requiredTopLevelKeys) {
           expect(payload).toHaveProperty(key);
         }

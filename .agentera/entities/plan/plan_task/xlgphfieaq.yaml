@@ -1,0 +1,14 @@
+id: xlgphfieaq
+artifact: plan
+record:
+  name: Align status projections and routing regressions
+  depends_on:
+    - osiuqtoqdi
+  status: pending
+  acceptance:
+    - GIVEN a TODO recommendation WHEN JSON, terminal, and host status projections render THEN capability, TODO identity, reason, phase, eligibility, and retrieval agree.
+    - GIVEN every Task 1 allowed destination WHEN integration fixtures run THEN each destination has one positive case and one conflicting or invalid case.
+    - GIVEN blocked, gated, dependency-unresolved, needs-triage, mixed, and all-non-actionable queues WHEN fixtures run THEN each expected recommendation, abstention, attention, and recovery result is asserted.
+    - GIVEN the glossary record and a late-signal control record WHEN status runs THEN the glossary selects discuss and description ordering cannot alter either result.
+    - GIVEN hybrid routing and receipt tests WHEN the suite runs THEN deterministic tiers, semantic abstention, and next_action separation remain unchanged.
+  plan: kitqatxlxe

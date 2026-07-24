@@ -1,0 +1,125 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import YAML from "yaml";
+import { describe, expect, it } from "vitest";
+
+import {
+  loadTodoReadinessContract,
+  validateTodoReadinessContract,
+} from "../../src/registries/todoReadinessContract.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "../../../..");
+const TODO_PATH = path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/todo.yaml");
+const PROTOCOL_PATH = path.join(REPO_ROOT, "skills/agentera/protocol.yaml");
+const CAPABILITY_CONTRACT_PATH = path.join(REPO_ROOT, "skills/agentera/capability_schema_contract.yaml");
+
+function loadYaml(filePath: string): any {
+  return YAML.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function validDocuments(): { todo: any; protocol: any; capabilities: any } {
+  return {
+    todo: loadYaml(TODO_PATH),
+    protocol: loadYaml(PROTOCOL_PATH),
+    capabilities: loadYaml(CAPABILITY_CONTRACT_PATH),
+  };
+}
+
+describe("TODO readiness contract", () => {
+  it("derives the exact destination and phase model from one valid authority", () => {
+    const model = loadTodoReadinessContract(TODO_PATH, PROTOCOL_PATH, CAPABILITY_CONTRACT_PATH);
+
+    expect(model.schemaVersion).toBe("agentera.todoReadiness.v1");
+    expect(model.allowedDestinations).toEqual([
+      "vision",
+      "discuss",
+      "research",
+      "plan",
+      "build",
+      "optimize",
+      "document",
+      "profile",
+      "design",
+      "audit",
+    ]);
+    expect(Object.fromEntries(model.phaseByCapability)).toEqual({
+      vision: "envision",
+      discuss: "deliberate",
+      research: "deliberate",
+      plan: "plan",
+      build: "build",
+      optimize: "build",
+      document: "build",
+      profile: "build",
+      design: "build",
+      audit: "audit",
+    });
+    expect(model.excludedCapabilities).toEqual({
+      status: expect.stringMatching(/Orientation/),
+      orchestrate: expect.stringMatching(/Execution mode/),
+    });
+    expect(model.fields).toHaveProperty("capability.enum_source", "protocol.yaml#PHASES[*].capabilities");
+    expect(model.fields).toHaveProperty("reason.non_empty", true);
+    expect(model.fields).toHaveProperty("dependencies.entries.artifact.const", "todo");
+    expect(model.fields).toHaveProperty("gate.fields.state.enum", ["pending", "satisfied"]);
+    expect(model.outcomes.readiness_absent).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
+    expect(model.outcomes.blocked).toMatchObject({ result: "blocked", eligible: false, attention: "item" });
+    expect(model.outcomes.gate_pending).toMatchObject({ result: "gated", eligible: false, attention: "none" });
+    expect(model.outcomes.dependency_missing).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
+    expect(model.outcomes.dependency_cycle).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
+    expect(model.outcomes.dependency_resolved).toEqual({ result: "satisfied", eligible: null, attention: "none", recovery: null });
+    expect(model.outcomes.dependency_cross_artifact).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
+    expect(model.queueOutcomes).toMatchObject({
+      mixed_actionable_and_triage: { selection: "highest_ordered_actionable", attention: "bounded_triage_summary" },
+      all_non_actionable: { selection: "abstain", attention: "bounded_highest_severity_summary" },
+    });
+    expect(model.ordering).toMatchObject({
+      primary: "protocol.yaml#SEVERITY_ISSUE",
+      within_severity: "queue_rank_ascending",
+      duplicate_rank: "ordering_conflict",
+    });
+    expect(model.ordering.prohibited_tiebreakers).toEqual([
+      "entity_id",
+      "file_order",
+      "filesystem_time",
+      "created_or_modified_time",
+      "description_text",
+    ]);
+  });
+
+  const failingRules: Array<[string, (documents: ReturnType<typeof validDocuments>) => void, string]> = [
+    ["readiness authority is required", ({ todo }) => { delete todo.READINESS; }, "READINESS must be a mapping"],
+    ["schema version is fixed", ({ todo }) => { todo.READINESS.schema_version = "other"; }, "schema_version must be agentera.todoReadiness.v1"],
+    ["phase mapping has one source", ({ todo }) => { todo.READINESS.destination.phase_authority = "local"; }, "phase_authority must be protocol.yaml#PHASES[*].capabilities"],
+    ["destination values are not duplicated", ({ todo }) => { todo.READINESS.destination.allowed_destinations = ["build"]; }, "allowed_destinations duplicates the canonical PHASES authority"],
+    ["phase capabilities are unique", ({ protocol }) => { protocol.PHASES[3].capabilities.push("research"); }, "capability 'research' appears in multiple PHASES entries"],
+    ["phase capabilities are canonical", ({ protocol }) => { protocol.PHASES[3].capabilities.push("ghost"); }, "PHASES capability 'ghost' is not canonical"],
+    ["every canonical capability is mapped or excluded", ({ todo }) => { delete todo.READINESS.destination.excluded_capabilities.status; }, "canonical capability 'status' must be mapped to one phase or explicitly excluded"],
+    ["exclusions carry a reason", ({ todo }) => { todo.READINESS.destination.excluded_capabilities.status = ""; }, "excluded capability 'status' must have a non-empty reason"],
+    ["readiness fields are complete", ({ todo }) => { delete todo.READINESS.fields.reason; }, "READINESS.fields.reason must be a mapping"],
+    ["readiness fields are required when readiness exists", ({ todo }) => { todo.READINESS.fields.queue_rank.required = false; }, "READINESS.fields.queue_rank.required must be true"],
+    ["capability values use the phase authority", ({ todo }) => { todo.READINESS.fields.capability.enum_source = "local"; }, "READINESS.fields.capability.enum_source must be protocol.yaml#PHASES[*].capabilities"],
+    ["dependencies remain TODO-local", ({ todo }) => { todo.READINESS.fields.dependencies.entries.artifact.const = "plan"; }, "dependency artifact const must be todo"],
+    ["evaluation precedence is exact", ({ todo }) => { todo.READINESS.evaluation.precedence.pop(); }, "READINESS.evaluation.precedence must equal"],
+    ["all bounded outcomes exist", ({ todo }) => { delete todo.READINESS.outcomes.dependency_cycle; }, "READINESS.outcomes.dependency_cycle must be a mapping"],
+    ["outcomes use bounded attention values", ({ todo }) => { todo.READINESS.outcomes.blocked.attention = "verbose"; }, "READINESS.outcomes.blocked.attention must be one of: none, item"],
+    ["queue outcomes are complete", ({ todo }) => { delete todo.READINESS.queue_outcomes.all_non_actionable; }, "READINESS.queue_outcomes.all_non_actionable must be a mapping"],
+    ["severity and intent own ordering", ({ todo }) => { todo.READINESS.ordering.within_severity = "entity_id"; }, "READINESS.ordering.within_severity must be queue_rank_ascending"],
+    ["fabricated chronology is prohibited", ({ todo }) => { todo.READINESS.ordering.prohibited_tiebreakers.pop(); }, "READINESS.ordering.prohibited_tiebreakers must equal"],
+  ];
+
+  it.each(failingRules)("rejects invalid contract: %s", (_name, mutate, expected) => {
+    const documents = validDocuments();
+    mutate(documents);
+
+    expect(validateTodoReadinessContract(
+      documents.todo,
+      documents.protocol,
+      documents.capabilities,
+      "fixture",
+    )).toContainEqual(expect.stringContaining(expected));
+  });
+});

@@ -1,0 +1,16 @@
+id: hztcxhyqzo
+artifact: progress
+record:
+  timestamp: 2026-07-24 22:37
+  type: feat
+  phase: build
+  what: Established readiness authority in skills/agentera/schemas/artifacts/todo.yaml, phase-derived destinations in skills/agentera/protocol.yaml, bounded eligibility outcomes, reviewer-assigned queue ordering, and loader validation for Task dovrbathpj.
+  context:
+    intent: Complete only Task dovrbathpj without implementing writers, recommendation, projection, or persisted annotation.
+    constraints: No prose classification, hybrid routing changes, TODO CRUD, status selection, projection, persisted TODO annotation, package publication, or unrelated state edits.
+    unknowns: "Resolved: equally severe actionable TODOs use queue_rank ascending; duplicate same-severity ranks yield needs-triage instead of ID, timestamps, file order, or prose tie-breaking."
+    scope: TODO artifact contract, lifecycle phase authority, readiness loader/validator, capability-contract check, and focused tests.
+  inspiration: Plan kitqatxlxe Task dovrbathpj; audit tmfxkjtoph; firm Decision mpulyomlyl.
+  discovered: The lifecycle PHASES authority omitted research and profile, and the plan's equal-severity ordering unknown required explicit durable intent rather than entity identity or chronology.
+  verified: 58 focused tests passed; full source suite passed 2,515 tests with 1 skipped; pnpm typecheck and build passed; local capability-contract validation passed 3/3; cross-capability and compact validation passed.
+  next: Proceed only when requested to Task knlrruqcun; downstream TODO writers, recommendation, projection, integration, and annotations remain pending.

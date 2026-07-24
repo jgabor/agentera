@@ -1,0 +1,50 @@
+id: kitqatxlxe
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-24
+    status: open
+    reviewed: 2026-07-24
+    critic_issues: 13 found, 10 addressed, 3 dismissed
+    revised: Resolved policy before dependent work, split writer and consumer readiness from reviewed backfill, defined non-actionable outcomes and destination authority, narrowed identity scope to TODO recommendations, and expanded adversarial coverage.
+    title: "Plan: Intent-aware status readiness"
+  what: Replace prose-derived TODO next-action guessing with explicit validated readiness, ensure complete state drives recommendation before output bounding, exclude non-actionable work, establish truthful deterministic ordering, and verify every supported outcome.
+  why: Audit tmfxkjtoph found four routing warnings. The glossary TODO was sent to build because bounded prose controlled a binary plan/build heuristic, while authoritative TODO state could not express the required discuss-first handoff.
+  constraints: Keep request-to-capability routing separate from state-derived next_action. Preserve entity identity, atomic typed writes, bounded output, exact retrieval, and concurrent user edits. Do not introduce semantic keyword, regex, score, or automatic prose-classification authority. Do not fabricate chronology, modify vision, execute unrelated TODOs, publish packages, or bypass the v3 cutover hold.
+  design: State producers declare a TODO's intended next capability and readiness constraints through one contract. Status derives phase and eligibility from canonical authorities, recommends only actionable records, and treats absent annotations as triage rather than implementation consent. Complete records drive selection; bounded projections follow. One reviewed policy orders equally severe actionable records. Existing records receive annotations only through explicit review, after writers and consumers are ready.
+  overall_acceptance: GIVEN open TODO state WHEN status recommends work THEN complete authoritative readiness determines eligibility and capability, stable identity and exact retrieval remain available, bounded prose cannot change the result, blocked or unreviewed work never becomes implementation by default, and hybrid user-request routing remains unchanged.
+  scope:
+    included:
+      - TODO artifact readiness and ordering contract
+      - typed TODO create, update, explain, list, and get behavior
+      - status readiness selection from complete entity state
+      - TODO next_action identity and exact retrieval projection
+      - status instructions and routing vocabulary alignment
+      - reviewed annotations for persisted open TODOs
+      - source, integration, adversarial, and state closeout coverage
+    excluded:
+      - hybrid request and receipt protocol changes
+      - capability trigger semantic changes
+      - identity changes for plan, health, objective, decision, or vision recommendations
+      - glossary feature implementation
+      - unrelated TODO execution
+      - broad prime diagnostics redesign
+      - package publication
+    deferred:
+      - general next_action identity normalization already tracked by TODO cmblkkszqp
+  unknowns:
+    - question: Can every persisted open TODO receive a reviewer-approved capability annotation during this plan, or must some remain needs-triage?
+      affects_task: 5
+      resolve_by: Enumerate the complete cursor-bounded open queue after consumer readiness, review each exact record, annotate only approved assignments, and leave every uncertain record needs-triage.
+    - question: Which durable signal can truthfully order equally severe actionable TODOs without inventing chronology or duplicating severity?
+      affects_task: 3
+      resolve_by: Task 1 compares explicit queue order, existing durable metadata, and clarification fallback, then publishes one tested policy before selection changes begin.
+  rejected:
+    - issue: Redesign hybrid user-request routing in the same plan.
+      rationale: The audit concerns status readiness; Decision mpulyomlyl keeps open-ended request semantics host-owned and requires unchanged protocol coverage.
+    - issue: Reduce this remediation to a light plan.
+      rationale: The work crosses artifact authority, typed writes, selection, projections, persisted state review, and repository-wide verification.
+    - issue: Require a package version bump during implementation.
+      rationale: Planning context exposes no version-file policy, and repository guidance keeps release metadata at 3.0.0 until explicit release work.
+  surprises: ""
