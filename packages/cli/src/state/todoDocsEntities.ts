@@ -27,6 +27,7 @@ import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { TODO_SEVERITIES, TODO_STATUSES, todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
+import { todoReadinessReferenceViolations } from "../registries/todoReadinessContract.js";
 
 const ID = /^[a-z]{10}$/;
 const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_id" } as const;
@@ -75,7 +76,7 @@ function selectedById(entities: DiscoveredEntity[], artifact: "todo" | "docs", i
 
 function recordViolations(artifact: "todo" | "docs", record: JsonObject, sourceRoot: string): string[] {
   const boundary = definition(artifact).boundary;
-  const violations = [...canonicalEntityRecordViolations(boundary, record, sourceRoot), ...todoDocsRecordViolations(boundary, record)];
+  const violations = [...canonicalEntityRecordViolations(boundary, record, sourceRoot), ...todoDocsRecordViolations(boundary, record, sourceRoot)];
   return [...new Set(violations)];
 }
 
@@ -97,8 +98,40 @@ function mutationRecord(req: StateWriteRequest, current?: JsonObject): JsonObjec
   const record = structuredClone(current ?? { severity: req.values.severity, status: "open", description: req.values.description }) as JsonObject;
   if (req.values.severity !== undefined) record.severity = req.values.severity as string;
   if (req.values.description !== undefined) record.description = req.values.description as string;
+  if (mapping(req.values.readiness)) {
+    const input = req.values.readiness;
+    const dependencies = Array.isArray(input.dependencies) ? input.dependencies : [];
+    record.readiness = {
+      ...(input.capability !== undefined ? { capability: input.capability } : {}),
+      ...(input.reason !== undefined ? { reason: input.reason } : {}),
+      dependencies: dependencies.map((id) => ({ artifact: "todo", id })),
+      blocked: mapping(input.blocked) ? input.blocked : null,
+      gate: mapping(input.gate) ? input.gate : null,
+      ...(input.queue_rank !== undefined ? { queue_rank: input.queue_rank } : {}),
+      ...(input.order_reason !== undefined ? { order_reason: input.order_reason } : {}),
+    } as JsonObject;
+  }
   if (req.spec.verb === "resolve") record.status = "resolved";
   return record;
+}
+
+function assertTodoReferences(id: string, record: JsonObject, entities: DiscoveredEntity[]): void {
+  if (record.readiness === undefined) return;
+  const todos = entities
+    .filter((entity) => entity.boundary === TODO.boundary && entity.id && entity.record && entity.id !== id)
+    .map((entity) => ({ id: entity.id!, record: entity.record! }));
+  todos.push({ id, record });
+  const violations = todoReadinessReferenceViolations(id, record.readiness, todos);
+  if (violations.length) reject({
+    class: "schema_violation",
+    message: "todo readiness dependencies are invalid",
+    violations,
+    recovery: "Use bare ten-letter IDs returned by `agentera state todo list --format json`; reference existing TODO items only and remove self-references or cycles, then retry.",
+  });
+}
+
+function todoReadinessRecovery(verb: string): string {
+  return `Run agentera state todo explain --verb ${verb} --format json, then supply --capability, --reason, --queue-rank, and --order-reason together; use dependency IDs returned by agentera state todo list --format json.`;
 }
 
 export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
@@ -120,15 +153,16 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const entities = relevant(pinnedRoot, sourceRoot, artifact, undefined, sourceBinding);
     context.assertValid();
     if (req.spec.verb === "create") {
-      const record = mutationRecord(req); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations });
-      const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope(`state ${artifact} create`, { id, path: targetPath(req.projectRoot, sourceRoot, artifact, id), replay: false }, artifact, record, true);
+      const record = mutationRecord(req); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations, ...(artifact === "todo" && record.readiness !== undefined ? { recovery: todoReadinessRecovery(req.spec.verb) } : {}) });
+      const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (artifact === "todo" && mapping(req.values.readiness)) assertTodoReferences(id, record, entities); if (req.dryRun) return envelope(`state ${artifact} create`, { id, path: targetPath(req.projectRoot, sourceRoot, artifact, id), replay: false }, artifact, record, true);
       let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
       try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, record }); published = result; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope(`state ${artifact} create`, result, artifact, record, false); }
       catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
     }
     const id = String(req.values.id ?? "");
     if (!ID.test(id)) reject({ class: "invalid_request", message: `${artifact} ID '${id}' must be ten lowercase letters`, recovery: `Use a bare ${artifact} ID returned by create or list; numeric, prefixed, composite, path, and alias identities are invalid.` });
-    const entity = selectedById(entities, artifact, id); const record = mutationRecord(req, entity.record!); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations });
+    const entity = selectedById(entities, artifact, id); const record = mutationRecord(req, entity.record!); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations, ...(artifact === "todo" && record.readiness !== undefined ? { recovery: todoReadinessRecovery(req.spec.verb) } : {}) });
+    if (artifact === "todo" && mapping(req.values.readiness)) assertTodoReferences(id, record, entities);
     if (canonicalRecordJson(record) === canonicalRecordJson(entity.record)) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: true }, artifact, record, req.dryRun);
     if (req.dryRun) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: false }, artifact, record, true);
     const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, expectedRecord: entity.record!, record };

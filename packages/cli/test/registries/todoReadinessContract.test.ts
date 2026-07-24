@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   loadTodoReadinessContract,
+  todoReadinessRecordViolations,
+  todoReadinessReferenceViolations,
   validateTodoReadinessContract,
 } from "../../src/registries/todoReadinessContract.js";
 
@@ -187,5 +189,72 @@ describe("TODO readiness contract", () => {
       documents.capabilities,
       "fixture",
     )).toContainEqual(expect.stringContaining(expected));
+  });
+
+  it("validates each persisted readiness field rule at the contract authority", () => {
+    const contract = loadTodoReadinessContract(TODO_PATH, PROTOCOL_PATH, CAPABILITY_CONTRACT_PATH);
+    const valid = {
+      capability: "build",
+      reason: "The implementation boundary is ready.",
+      dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }],
+      blocked: { reason: "Waiting for input.", recovery: "Provide the input." },
+      gate: { state: "pending", reason: "Approval required.", recovery: "Approve the change." },
+      queue_rank: 1,
+      order_reason: "Highest-value ready implementation work.",
+    };
+    expect(todoReadinessRecordViolations(valid, contract)).toEqual([]);
+    expect(todoReadinessRecordViolations({ ...valid, blocked: null, gate: null }, contract)).toEqual([]);
+
+    const cases: Array<[string, unknown, string]> = [
+      ["mapping", null, "readiness must be a mapping"],
+      ["exact fields", { ...valid, extra: true }, "unsupported field 'extra'"],
+      ["complete fields", (() => { const value: any = structuredClone(valid); delete value.reason; return value; })(), "reason is required"],
+      ["capability", { ...valid, capability: "status" }, "capability must be one of"],
+      ["reason", { ...valid, reason: "" }, "reason must be a non-empty string"],
+      ["dependencies list", { ...valid, dependencies: {} }, "dependencies must be a list"],
+      ["dependency mapping", { ...valid, dependencies: ["bbbbbbbbbb"] }, "dependencies[0] must be a mapping"],
+      ["dependency exact fields", { ...valid, dependencies: [{ artifact: "todo", id: "bbbbbbbbbb", extra: true }] }, "dependencies[0] has unsupported field 'extra'"],
+      ["dependency shape", { ...valid, dependencies: [{ artifact: "plan", id: "bbbbbbbbbb" }] }, "dependency artifact must be 'todo'"],
+      ["dependency identity", { ...valid, dependencies: [{ artifact: "todo", id: "plan:bbbbbbbbbb" }] }, "dependency ID must be ten lowercase letters"],
+      ["blocked mapping", { ...valid, blocked: "blocked" }, "blocked must be a mapping or null"],
+      ["blocked required fields", { ...valid, blocked: { reason: "Why" } }, "blocked.recovery is required"],
+      ["blocked reason", { ...valid, blocked: { reason: "", recovery: "Fix it." } }, "blocked.reason must be a non-empty string"],
+      ["blocked recovery", { ...valid, blocked: { reason: "Why", recovery: "" } }, "blocked.recovery must be a non-empty string"],
+      ["blocked exact fields", { ...valid, blocked: { reason: "Why", recovery: "Fix", extra: true } }, "blocked has unsupported field 'extra'"],
+      ["gate mapping", { ...valid, gate: "pending" }, "gate must be a mapping or null"],
+      ["gate required fields", { ...valid, gate: { state: "pending", reason: "Why" } }, "gate.recovery is required"],
+      ["gate state", { ...valid, gate: { state: "invented", reason: "Why", recovery: "Fix" } }, "gate.state must be one of"],
+      ["gate reason", { ...valid, gate: { state: "pending", reason: "", recovery: "Fix" } }, "gate.reason must be a non-empty string"],
+      ["gate recovery", { ...valid, gate: { state: "pending", reason: "Why", recovery: "" } }, "gate.recovery must be a non-empty string"],
+      ["gate exact fields", { ...valid, gate: { state: "pending", reason: "Why", recovery: "Fix", extra: true } }, "gate has unsupported field 'extra'"],
+      ["queue rank integer", { ...valid, queue_rank: 1.5 }, "queue_rank must be an integer greater than or equal to 1"],
+      ["queue rank minimum", { ...valid, queue_rank: 0 }, "queue_rank must be an integer greater than or equal to 1"],
+      ["order reason", { ...valid, order_reason: "" }, "order_reason must be a non-empty string"],
+    ];
+    for (const [name, value, expected] of cases) {
+      expect(todoReadinessRecordViolations(value, contract), name).toContainEqual(expect.stringContaining(expected));
+    }
+  });
+
+  it("validates dependency existence and cycles against complete current TODO state", () => {
+    const readiness = {
+      capability: "build",
+      reason: "Ready after the prerequisite.",
+      dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }],
+      blocked: null,
+      gate: null,
+      queue_rank: 1,
+      order_reason: "Dependency-aware order.",
+    };
+    const records = [
+      { id: "aaaaaaaaaa", record: { severity: "normal", status: "open", description: "A", readiness } },
+      { id: "bbbbbbbbbb", record: { severity: "normal", status: "open", description: "B" } },
+    ];
+    expect(todoReadinessReferenceViolations("aaaaaaaaaa", readiness, records)).toEqual([]);
+    expect(todoReadinessReferenceViolations("aaaaaaaaaa", { ...readiness, dependencies: [{ artifact: "todo", id: "cccccccccc" }] }, records)).toContainEqual(expect.stringContaining("does not exist"));
+    expect(todoReadinessReferenceViolations("aaaaaaaaaa", { ...readiness, dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }] }, records)).toContainEqual(expect.stringContaining("cannot depend on itself"));
+    const cycle = structuredClone(records);
+    cycle[1].record.readiness = { ...readiness, dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }] };
+    expect(todoReadinessReferenceViolations("aaaaaaaaaa", readiness, cycle)).toContainEqual(expect.stringContaining("dependency cycle"));
   });
 });

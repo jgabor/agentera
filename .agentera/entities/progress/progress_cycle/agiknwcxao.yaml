@@ -1,0 +1,16 @@
+id: agiknwcxao
+artifact: progress
+record:
+  timestamp: 2026-07-24 23:16
+  type: feat
+  phase: build
+  what: Published canonical TODO readiness through typed create/update flags, explain discovery, validation, and unchanged list/get records.
+  context:
+    intent: Complete only plan Task knlrruqcun by exposing the Task 1 readiness authority through the atomic typed TODO state boundary.
+    constraints: Preserved hybrid request routing, status consumers, and every unrelated worktree change; did not edit the protected TODO entity, publish, push, tag, bump versions, or execute downstream tasks.
+    unknowns: none
+    scope: CHANGELOG.md; TODO state help/explain/operation registry; readiness loader validators; TODO entity validation/mutation; focused tests; typed plan/progress state.
+  inspiration: Plan kitqatxlxe Task knlrruqcun and the validated readiness authority from commits ee166efc and 719cfb39.
+  discovered: The existing replace-under-lock writer already supplied atomic publication, rollback, and replay safety; the minimal change was a complete readiness flag group plus authority-owned record and reference validation.
+  verified: "Criterion 1: packages/cli/test/state/todoDocsEntities.test.ts proves create and update explain/list/get round-trips for all canonical readiness fields. Criterion 2: capability, missing dependency, gate, and queue-rank cases fail before publication with valid values or exact explain/list recovery. Criterion 3: an unannotated TODO ordinary update preserves ID, severity, status, description, and readiness absence, which remains the contract-owned needs-triage state. Criterion 4: dry-run preserves exact bytes, identical update retries report idempotent replay, two pre-opened writer contexts preserve an unrelated severity update, and existing rollback tests remain green. Criterion 5: packages/cli/test/registries/todoReadinessContract.test.ts covers each record and reference rule once at authority, while focused operation tests provide pass/fail boundaries. Focused tests passed 139/139; full source suite passed 2558 with 1 skipped; typecheck, build, lint with 0 errors, built-CLI dry-run/rejection smoke, state validation with 1797 entities and 0 issues, capability-contract 3/3, build capability validation, compact, and git diff --check passed."
+  next: Task osiuqtoqdi remains pending; status readiness selection, next_action recommendation, startup projection, rendering, routing corpus, and persisted TODO annotation remain out of scope.

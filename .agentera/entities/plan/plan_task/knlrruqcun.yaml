@@ -4,7 +4,7 @@ record:
   name: Publish readiness through typed TODO state
   depends_on:
     - dovrbathpj
-  status: pending
+  status: complete
   acceptance:
     - GIVEN valid readiness WHEN TODO create or update runs THEN explain, list, and exact get round-trip the canonical fields without raw entity edits.
     - GIVEN invalid capability, dependency, gate, or ordering input WHEN a write is attempted THEN it fails before side effects and names a working correction.

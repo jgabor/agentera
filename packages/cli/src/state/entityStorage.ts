@@ -172,7 +172,7 @@ function canonicalEntityEnvelopeAgainstModel(
   }
   if (expected.boundary === "plan_task") violations.push(...planTaskRecordViolations(record));
   if (expected.boundary === "experiment" && (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status)))) violations.push("invalid experiment date or status");
-  if (expected.boundary === "todo_item" || expected.boundary === "documentation_inventory_entry") violations.push(...todoDocsRecordViolations(expected.boundary, record));
+  if (expected.boundary === "todo_item" || expected.boundary === "documentation_inventory_entry") violations.push(...todoDocsRecordViolations(expected.boundary, record, sourceRoot));
   if (violations.length) throw new Error(`entity record violates the '${expected.boundary}' boundary contract: ${violations.join("; ")}`);
   return { id: expected.id, artifact: expected.artifact, record, migrationProvenance };
 }
@@ -549,7 +549,7 @@ function discoverFile(
     }
   }
   if (!malformed && (boundary === "todo_item" || boundary === "documentation_inventory_entry") && record) {
-    const violations = todoDocsRecordViolations(boundary, record);
+    const violations = todoDocsRecordViolations(boundary, record, sourceRoot);
     if (violations.length) {
       malformed = true;
       issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has an invalid ${boundary} record: ${violations.join("; ")}`, recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared ${boundary} fields`) });

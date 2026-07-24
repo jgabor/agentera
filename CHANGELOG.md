@@ -28,6 +28,9 @@
 
 ### Added
 
+- Added typed TODO readiness publication to `agentera state todo create` and
+  `update`, including explain discovery, canonical dependency references,
+  complete nested validation, replay-safe publication, and list/get round-tripping.
 - Added a validated TODO readiness authority with phase-derived capability
   destinations, explicit triage/block/gate/dependency outcomes, and
   reviewer-assigned deterministic queue ordering.

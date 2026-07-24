@@ -167,10 +167,22 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     return ["select one objective with its bare ten-letter --id; numeric and composite selectors are unavailable", "the CLI preserves that ID while replacing the validated objective record", ...base];
   if (entityArtifact && artifact === "objective")
     return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
-  if (entityArtifact && artifact === "todo" && verb !== "create")
+  if (entityArtifact && artifact === "todo" && verb === "update")
+    return [
+      "select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
+      "supplying any readiness flag replaces complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
+      "an update with no readiness flags preserves the current readiness or its needs-triage absence",
+      ...base,
+    ];
+  if (entityArtifact && artifact === "todo" && verb === "resolve")
     return ["select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable", ...base];
   if (entityArtifact && artifact === "todo")
-    return ["a bare ten-letter TODO item ID is assigned by the CLI; status starts open", ...base];
+    return [
+      "a bare ten-letter TODO item ID is assigned by the CLI; status starts open",
+      "supplying any readiness flag declares complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
+      "omit every readiness flag to create a valid needs-triage TODO",
+      ...base,
+    ];
   if (entityArtifact && artifact === "docs" && verb === "update")
     return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];
   if (entityArtifact && artifact === "docs")
@@ -226,9 +238,9 @@ export function exampleFor(artifact: WritableArtifact, verb: string, entityDecis
   if (artifact === "health") return "agentera state health append --input audit.yaml --format json";
   if (entityArtifact && artifact === "objective" && verb === "create") return "agentera state objective create --input objective.yaml --format json";
   if (entityArtifact && artifact === "objective" && verb === "update") return "agentera state objective update --id qjtrmnpvka --input objective.yaml --format json";
-  if (entityArtifact && artifact === "todo" && verb === "create") return 'agentera state todo create --severity normal --description "..." --format json';
+  if (entityArtifact && artifact === "todo" && verb === "create") return 'agentera state todo create --severity normal --description "..." --capability build --reason "..." --queue-rank 1 --order-reason "..." --format json';
   if (entityArtifact && artifact === "todo" && verb === "resolve") return "agentera state todo resolve --id qjtrmnpvka --format json";
-  if (entityArtifact && artifact === "todo" && verb === "update") return 'agentera state todo update --id qjtrmnpvka --description "..." --format json';
+  if (entityArtifact && artifact === "todo" && verb === "update") return 'agentera state todo update --id qjtrmnpvka --capability build --reason "..." --queue-rank 1 --order-reason "..." --format json';
   if (entityArtifact && artifact === "docs" && verb === "create") return "agentera state docs create --input documentation.yaml --format json";
   if (entityArtifact && artifact === "docs" && verb === "update") return "agentera state docs update --id qjtrmnpvka --input documentation.yaml --format json";
   if (verb === "create") return "agentera state plan create --input plan.yaml --format json";

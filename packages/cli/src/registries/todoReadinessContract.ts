@@ -312,6 +312,97 @@ export interface TodoReadinessContract {
   ordering: JsonObject;
 }
 
+function requiredMappingFields(label: string, value: unknown, names: readonly string[]): string[] {
+  if (!isMapping(value)) return [`${label} must be a mapping or null`];
+  const errors: string[] = [];
+  for (const name of names) {
+    if (!(name in value)) errors.push(`${label}.${name} is required`);
+    else if (typeof value[name] !== "string" || !String(value[name]).trim()) errors.push(`${label}.${name} must be a non-empty string`);
+  }
+  for (const name of Object.keys(value)) {
+    if (!names.includes(name)) errors.push(`${label} has unsupported field '${name}'`);
+  }
+  return errors;
+}
+
+export function todoReadinessRecordViolations(
+  readiness: unknown,
+  contract = loadTodoReadinessContract(),
+): string[] {
+  if (!isMapping(readiness)) return ["readiness must be a mapping"];
+  const errors: string[] = [];
+  for (const field of REQUIRED_FIELDS) {
+    if (!(field in readiness)) errors.push(`${field} is required when readiness is declared`);
+  }
+  for (const field of Object.keys(readiness)) {
+    if (!REQUIRED_FIELDS.includes(field as typeof REQUIRED_FIELDS[number])) errors.push(`readiness has unsupported field '${field}'`);
+  }
+  if (typeof readiness.capability !== "string" || !contract.allowedDestinations.includes(readiness.capability)) {
+    errors.push(`capability must be one of: ${contract.allowedDestinations.join(", ")}`);
+  }
+  if (typeof readiness.reason !== "string" || !readiness.reason.trim()) errors.push("reason must be a non-empty string");
+
+  if (!Array.isArray(readiness.dependencies)) errors.push("dependencies must be a list");
+  else for (const [index, dependency] of readiness.dependencies.entries()) {
+    if (!isMapping(dependency)) {
+      errors.push(`dependencies[${index}] must be a mapping`);
+      continue;
+    }
+    for (const field of Object.keys(dependency)) {
+      if (field !== "artifact" && field !== "id") errors.push(`dependencies[${index}] has unsupported field '${field}'`);
+    }
+    if (dependency.artifact !== "todo") errors.push(`dependencies[${index}] dependency artifact must be 'todo'`);
+    if (!/^[a-z]{10}$/.test(String(dependency.id ?? ""))) errors.push(`dependencies[${index}] dependency ID must be ten lowercase letters`);
+  }
+
+  if (readiness.blocked !== null) errors.push(...requiredMappingFields("blocked", readiness.blocked, ["reason", "recovery"]));
+  if (readiness.gate !== null) {
+    errors.push(...requiredMappingFields("gate", readiness.gate, ["state", "reason", "recovery"]));
+    const gate = isMapping(readiness.gate) ? readiness.gate : {};
+    const gateFields = isMapping(contract.fields.gate) && isMapping(contract.fields.gate.fields) ? contract.fields.gate.fields : {};
+    const stateField = isMapping(gateFields.state) ? gateFields.state : {};
+    const allowed = stringList(stateField.enum) ?? [];
+    if (typeof gate.state === "string" && !allowed.includes(gate.state)) errors.push(`gate.state must be one of: ${allowed.join(", ")}`);
+  }
+  const queueField = isMapping(contract.fields.queue_rank) ? contract.fields.queue_rank : {};
+  const minimum = typeof queueField.minimum === "number" ? queueField.minimum : 1;
+  if (!Number.isInteger(readiness.queue_rank) || Number(readiness.queue_rank) < minimum) errors.push(`queue_rank must be an integer greater than or equal to ${minimum}`);
+  if (typeof readiness.order_reason !== "string" || !readiness.order_reason.trim()) errors.push("order_reason must be a non-empty string");
+  return [...new Set(errors)];
+}
+
+export function todoReadinessReferenceViolations(
+  itemId: string,
+  readiness: unknown,
+  todos: Array<{ id: string; record: JsonObject }>,
+): string[] {
+  if (!isMapping(readiness) || !Array.isArray(readiness.dependencies)) return [];
+  const dependencies = readiness.dependencies
+    .filter(isMapping)
+    .map((dependency) => String(dependency.id ?? ""))
+    .filter((id) => /^[a-z]{10}$/.test(id));
+  const byId = new Map(todos.map((todo) => [todo.id, todo.record]));
+  const errors: string[] = [];
+  for (const dependency of dependencies) {
+    if (dependency === itemId) errors.push(`TODO '${itemId}' cannot depend on itself`);
+    else if (!byId.has(dependency)) errors.push(`TODO dependency '${dependency}' does not exist`);
+  }
+  const reachesItem = (id: string, seen: Set<string>): boolean => {
+    if (id === itemId) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    const record = byId.get(id);
+    const nested = isMapping(record?.readiness) && Array.isArray(record.readiness.dependencies)
+      ? record.readiness.dependencies.filter(isMapping).map((dependency) => String(dependency.id ?? ""))
+      : [];
+    return nested.some((dependency) => reachesItem(dependency, seen));
+  };
+  if (!errors.length && dependencies.some((dependency) => reachesItem(dependency, new Set()))) {
+    errors.push(`TODO '${itemId}' would create a dependency cycle`);
+  }
+  return errors;
+}
+
 export class TodoReadinessContractError extends Error {
   constructor(readonly errors: string[]) {
     super(errors.join("; "));

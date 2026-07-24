@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
+import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
@@ -41,9 +41,38 @@ function capture(root: string, args: string[], input?: Record<string, unknown>):
   } finally { process.chdir(cwd); }
 }
 
+function files(root: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const walk = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const target = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(target);
+      else result[path.relative(root, target)] = fs.readFileSync(target, "utf8");
+    }
+  };
+  walk(root);
+  return result;
+}
+
 function todo(root: string, description: string, severity = "normal"): any {
   const result = capture(root, ["state", "todo", "create", "--severity", severity, "--description", description, "--format", "json"]);
   expect(result.rc, result.err || result.out).toBe(0); return result.json;
+}
+
+function readinessArgs(overrides: Record<string, string> = {}): string[] {
+  const values = {
+    capability: "build",
+    reason: "The implementation boundary is ready.",
+    queueRank: "1",
+    orderReason: "Highest-value ready work.",
+    ...overrides,
+  };
+  return [
+    "--capability", values.capability,
+    "--reason", values.reason,
+    "--queue-rank", values.queueRank,
+    "--order-reason", values.orderReason,
+  ];
 }
 
 function doc(root: string, document: string, filePath: string, status = "current"): any {
@@ -59,6 +88,102 @@ function git(root: string, ...args: string[]): string {
 afterEach(() => { vi.restoreAllMocks(); while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true }); });
 
 describe("TODO item and documentation inventory entity authority", () => {
+  it("discovers and round-trips canonical readiness through create, list, and exact get", () => {
+    const root = project();
+    const dependency = todo(root, "Prepare the boundary");
+    const explain = capture(root, ["state", "todo", "explain", "--verb", "create", "--format", "json"]);
+    expect(explain.json.fields.map((field: any) => field.flag)).toEqual(expect.arrayContaining([
+      "--capability", "--reason", "--dependency", "--blocked-reason", "--blocked-recovery",
+      "--gate-state", "--gate-reason", "--gate-recovery", "--queue-rank", "--order-reason",
+    ]));
+    expect(explain.json.guidance.join(" ")).toContain("complete readiness");
+
+    const created = capture(root, [
+      "state", "todo", "create", "--severity", "normal", "--description", "Implement the boundary",
+      ...readinessArgs(), "--dependency", dependency.id,
+      "--gate-state", "satisfied", "--gate-reason", "Review complete", "--gate-recovery", "Re-review if changed",
+      "--format", "json",
+    ]);
+    expect(created.rc, created.err || created.out).toBe(0);
+    const readiness = {
+      capability: "build",
+      reason: "The implementation boundary is ready.",
+      dependencies: [{ artifact: "todo", id: dependency.id }],
+      blocked: null,
+      gate: { state: "satisfied", reason: "Review complete", recovery: "Re-review if changed" },
+      queue_rank: 1,
+      order_reason: "Highest-value ready work.",
+    };
+    expect(created.json.record.readiness).toEqual(readiness);
+    expect(capture(root, ["state", "todo", "get", "--id", created.json.id, "--format", "json"]).json.entry.record.readiness).toEqual(readiness);
+
+    const updated = capture(root, [
+      "state", "todo", "update", "--id", created.json.id,
+      ...readinessArgs({ capability: "discuss", reason: "A decision is required.", queueRank: "2", orderReason: "Resolve intent before implementation." }),
+      "--blocked-reason", "Decision missing", "--blocked-recovery", "Run agentera discuss", "--format", "json",
+    ]);
+    expect(updated.rc, updated.err || updated.out).toBe(0);
+    const updatedReadiness = {
+      capability: "discuss",
+      reason: "A decision is required.",
+      dependencies: [],
+      blocked: { reason: "Decision missing", recovery: "Run agentera discuss" },
+      gate: null,
+      queue_rank: 2,
+      order_reason: "Resolve intent before implementation.",
+    };
+    expect(updated.json.record.readiness).toEqual(updatedReadiness);
+    const listed = capture(root, ["state", "todo", "list", "--format", "json"]);
+    expect(listed.json.entries.find((entry: any) => entry.id === created.json.id).record.readiness).toEqual(updatedReadiness);
+    expect(capture(root, ["state", "todo", "get", "--id", created.json.id, "--format", "json"]).json.entry.record.readiness).toEqual(updatedReadiness);
+  });
+
+  it("rejects invalid readiness inputs before publication with a working correction", () => {
+    const root = project();
+    const before = files(root);
+    const cases = [
+      ["capability", readinessArgs({ capability: "status" }), "invalid_choice"],
+      ["dependency", [...readinessArgs(), "--dependency", "cccccccccc"], "schema_violation"],
+      ["gate", [...readinessArgs(), "--gate-state", "invented", "--gate-reason", "why", "--gate-recovery", "fix"], "invalid_choice"],
+      ["ordering", readinessArgs({ queueRank: "0" }), "schema_violation"],
+    ] as const;
+    for (const [name, args, classification] of cases) {
+      const result = capture(root, ["state", "todo", "create", "--severity", "normal", "--description", name, ...args, "--format", "json"]);
+      expect(result.rc, name).not.toBe(0);
+      expect(result.json.error.class, name).toBe(classification);
+      expect(result.json.error.recovery ?? result.json.error.valid_values ?? result.json.error.syntax, name).toBeTruthy();
+      expect(files(root), name).toEqual(before);
+    }
+  });
+
+  it("preserves legacy meaning and unrelated fields across dry-run, replay, and pre-opened writer contexts", () => {
+    const root = project();
+    const item = todo(root, "Needs review", "normal");
+    const pathToItem = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+    const ordinary = capture(root, ["state", "todo", "update", "--id", item.id, "--description", "Still needs review", "--format", "json"]);
+    expect(ordinary.json).toMatchObject({ id: item.id, record: { severity: "normal", status: "open", description: "Still needs review" } });
+    expect(ordinary.json.record).not.toHaveProperty("readiness");
+
+    const beforeDryRun = fs.readFileSync(pathToItem);
+    const dryRun = capture(root, ["state", "todo", "update", "--id", item.id, ...readinessArgs(), "--dry-run", "--format", "json"]);
+    expect(dryRun.json.operation).toMatchObject({ dry_run: true, idempotent_replay: false });
+    expect(fs.readFileSync(pathToItem)).toEqual(beforeDryRun);
+
+    const first = detectStateModeBinding(root); const second = detectStateModeBinding(root);
+    if (first.mode !== "entities" || second.mode !== "entities") throw new Error("entity mode expected");
+    try {
+      const updateSpec = operationSpec("todo", "update")!;
+      mutateTodoDocsEntity({ artifact: "todo", spec: updateSpec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, severity: "critical" }, callerPayload: {}, input: null }, { publicationContext: first.publicationContext });
+      mutateTodoDocsEntity({ artifact: "todo", spec: updateSpec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, readiness: { capability: "build", reason: "Ready now.", dependencies: [], queue_rank: 1, order_reason: "Reviewed first." } }, callerPayload: {}, input: null }, { publicationContext: second.publicationContext });
+    } finally {
+      first.publicationContext.close(); second.publicationContext.close();
+    }
+    const current = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]).json.entry.record;
+    expect(current).toMatchObject({ severity: "critical", status: "open", description: "Still needs review", readiness: { capability: "build", blocked: null, gate: null } });
+    const replay = capture(root, ["state", "todo", "update", "--id", item.id, ...readinessArgs({ reason: "Ready now.", orderReason: "Reviewed first." }), "--format", "json"]);
+    expect(replay.json.operation.idempotent_replay).toBe(true);
+  });
+
   it("creates, updates, and resolves one canonical entity without touching either legacy aggregate", () => {
     const root = project();
     const todoBytes = fs.readFileSync(path.join(root, "TODO.md"));

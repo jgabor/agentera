@@ -1,4 +1,5 @@
 import type { JsonObject } from "../../core/jsonValue.js";
+import { loadTodoReadinessContract } from "../../registries/todoReadinessContract.js";
 
 export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
@@ -57,6 +58,19 @@ export interface StateWriteEnvelope extends Record<string, unknown> {
   schemaVersion: "agentera.stateWrite.v1";
   status: "pass";
 }
+
+const todoReadinessFields: OperationField[] = [
+  { flag: "--capability", field: "readiness.capability", kind: "string", description: "Reviewer-approved capability that owns the next action." },
+  { flag: "--reason", field: "readiness.reason", kind: "string", description: "Durable intent explaining why the destination is correct." },
+  { flag: "--dependency", field: "readiness.dependencies", kind: "string_list", repeatable: true, description: "Bare ten-letter canonical TODO prerequisite ID; repeat for each dependency." },
+  { flag: "--blocked-reason", field: "readiness.blocked.reason", kind: "string", description: "Explicit blocker reason; requires --blocked-recovery." },
+  { flag: "--blocked-recovery", field: "readiness.blocked.recovery", kind: "string", description: "Bounded action that clears the declared blocker; requires --blocked-reason." },
+  { flag: "--gate-state", field: "readiness.gate.state", kind: "string", validValues: ["pending", "satisfied"], description: "Declared external or approval gate state." },
+  { flag: "--gate-reason", field: "readiness.gate.reason", kind: "string", description: "Reason for the declared gate." },
+  { flag: "--gate-recovery", field: "readiness.gate.recovery", kind: "string", description: "Bounded action for the declared gate." },
+  { flag: "--queue-rank", field: "readiness.queue_rank", kind: "integer", description: "Reviewer-assigned intent order within severity; lower values run first." },
+  { flag: "--order-reason", field: "readiness.order_reason", kind: "string", description: "Durable reason for the queue rank." },
+];
 
 /** Caller-selected existing decision number (update/amend). Never CLI-assigned. */
 const EXISTING_DECISION_NUMBER_DESCRIPTION =
@@ -333,6 +347,7 @@ const SPECS: OperationSpec[] = [
     fields: [
       { flag: "--severity", field: "severity", kind: "string", required: true, validValues: ["critical", "degraded", "normal", "annoying"] },
       { flag: "--description", field: "description", kind: "string", required: true },
+      ...todoReadinessFields,
     ],
   },
   {
@@ -342,6 +357,7 @@ const SPECS: OperationSpec[] = [
       { flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter TODO item ID returned by create or list." },
       { flag: "--severity", field: "severity", kind: "string", required: false, validValues: ["critical", "degraded", "normal", "annoying"] },
       { flag: "--description", field: "description", kind: "string", required: false },
+      ...todoReadinessFields,
     ],
   },
   { artifact: "todo", verb: "resolve", fields: [{ flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter TODO item ID returned by create or list." }] },
@@ -356,7 +372,13 @@ const SPECS: OperationSpec[] = [
 ];
 
 export function operationSpec(artifact: string, verb: string): OperationSpec | null {
-  return SPECS.find((spec) => spec.artifact === artifact && spec.verb === verb) ?? null;
+  const spec = SPECS.find((candidate) => candidate.artifact === artifact && candidate.verb === verb) ?? null;
+  if (!spec || artifact !== "todo" || !["create", "update"].includes(verb)) return spec;
+  const allowedDestinations = loadTodoReadinessContract().allowedDestinations;
+  return {
+    ...spec,
+    fields: spec.fields.map((field) => field.flag === "--capability" ? { ...field, validValues: allowedDestinations } : field),
+  };
 }
 
 export function verbsForArtifact(artifact: string): WriteVerb[] {
