@@ -14,3 +14,13 @@ record:
     - GIVEN blocked, prerequisite-bound, or release-gated records WHEN reviewed THEN their non-actionable reason and recovery are explicit before any destination is considered.
     - GIVEN each approved update WHEN dry-run and apply execute THEN only readiness fields change, retries are safe, and current unrelated fields survive.
   plan: kitqatxlxe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task5-audit-1
+      source: orchestrate audit evaluation; separate projection defect flagged
+      recorded_at: 2026-07-25 00:44
+      writer_command: agentera state plan record-evaluation
