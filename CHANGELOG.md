@@ -4,6 +4,10 @@
 
 ### Changed
 
+- Status now selects TODO recommendations from complete typed readiness state
+  before applying startup bounds, preserves the selected TODO ID and exact
+  retrieval command, and abstains with schema-owned recovery when no item is
+  actionable instead of inferring `plan` or `build` from description prose.
 - Health audit appends now receive a CLI-owned UTC timestamp. Bounded health
   reads and `prime` select timestamped records newest-first regardless of random
   ID; legacy records retain deterministic date-and-ID ordering without inferred

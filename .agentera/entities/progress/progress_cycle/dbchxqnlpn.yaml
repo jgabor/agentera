@@ -1,0 +1,13 @@
+id: dbchxqnlpn
+artifact: progress
+record:
+  timestamp: 2026-07-24 23:43
+  type: feat
+  phase: build
+  what: Selected actionable TODOs from complete typed readiness state before startup bounds.
+  context:
+    intent: Implement only plan Task osiuqtoqdi so status follows the Task 1 readiness policy without prose inference.
+    constraints: Did not execute Tasks xlgphfieaq, noqyovxfvw, or ilwelbzjai; did not edit persisted TODO readiness.
+    scope: Status TODO readiness selection, bounded recommendation metadata, focused tests, and CHANGELOG.md.
+  verified: "C1 PASS: statusContextStartup.test.ts preserves discuss TODO ID, declared reason, derived phase, and exact get command. C2 PASS: its 22-record case selects readiness beyond the 20-record page despite a 20,000-character description. C3 PASS: todoReadinessSelection.test.ts keeps actionable work ahead of bounded triage. C4 PASS: blocked, gated, unresolved-dependency, and unannotated queues abstain with schema-owned recovery. C5 PASS: reversed input honors severity and queue_rank; duplicate ranks conflict; every outcome branch has positive and adversarial coverage. Verified 52 focused tests; pnpm test passed 2,570 tests; typecheck, build, status smoke, status/cross-capability/capability-contract/state validation, skill dry-run, lint, and compact passed."
+  next: Leave remaining plan tasks pending for separate cycles.

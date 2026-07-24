@@ -301,7 +301,7 @@ function briefNextAction(nextAction: unknown): Record<string, unknown> {
     ? (nextAction.alternatives as JsonValue[]).slice(0, BRIEF_NEXT_ACTION_ALTERNATIVES)
     : [];
   return {
-    ...pick(nextAction, ["object", "capability", "reason", "phase"]),
+    ...pick(nextAction, ["object", "capability", "reason", "phase", "id", "artifact", "outcome", "retrieval"]),
     alternatives,
   };
 }

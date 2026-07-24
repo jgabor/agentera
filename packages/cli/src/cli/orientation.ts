@@ -24,7 +24,12 @@ import { normalizeSeverity } from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 import type { JsonObject } from "../core/jsonValue.js";
 import { truncateCodePoints } from "../core/text.js";
-import { TODO_SEVERITY_ORDER, TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
+import { TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
+import {
+  evaluateTodoReadinessQueue,
+  type TodoReadinessEntity,
+  type TodoReadinessQueueSelection,
+} from "./todoReadinessSelection.js";
 import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
 import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./planArtifacts.js";
 import { planLifecycleState } from "./planLifecycleState.js";
@@ -74,10 +79,6 @@ export const DECISION_ATTENTION_MAX_ENTRIES = 3;
 const TODO_SECTION_SEVERITIES: Record<string, string> = Object.fromEntries(
   TODO_SEVERITY_ORDER_KEYS.map((key) => [key, key]),
 );
-const TODO_PLAN_SIGNALS = new Set([
-  "acceptance", "artifact", "capability", "capability-context", "compatibility", "contract",
-  "cross-capability", "docs", "metadata", "migration", "schema", "startup", "surface", "test", "validation",
-]);
 
 const PROFILE_STALE_DAYS_ENV = "AGENTERA_PROFILE_MAX_AGE_DAYS";
 const DEFAULT_PROFILE_STALE_DAYS = 7;
@@ -347,13 +348,6 @@ export function issueCounts(todoItems: Array<Record<string, string>>): IssueCoun
     else counts.normal += 1;
   }
   return counts;
-}
-
-function todoNeedsPlan(item: Record<string, string>): boolean {
-  const text = item.text.toLowerCase();
-  let signalCount = 0;
-  for (const signal of TODO_PLAN_SIGNALS) if (text.includes(signal)) signalCount += 1;
-  return signalCount >= 2 || (signalCount >= 1 && text.length > 180);
 }
 
 // ── per-artifact summaries ──────────────────────────────────────────
@@ -797,6 +791,7 @@ export function selectStatusReadiness(
   todoItems: Array<Record<string, string>>,
   decision: DecisionFollowUp | null,
   savedContext: boolean,
+  completeTodoReadiness?: TodoReadinessQueueSelection,
 ): ReadinessHint {
   const candidates: NextAction[] = [];
 
@@ -829,15 +824,40 @@ export function selectStatusReadiness(
       phase: "build",
     });
   }
-  if (todoItems.length > 0) {
-    const item = [...todoItems].sort(
-      (a, b) => (TODO_SEVERITY_ORDER[a.severity] ?? 2) - (TODO_SEVERITY_ORDER[b.severity] ?? 2),
-    )[0];
-    if (todoNeedsPlan(item)) {
-      candidates.push({ object: `TODO: ${item.text}`, capability: "plan", reason: "complex TODO needs planning", phase: "plan" });
-    } else {
-      candidates.push({ object: `TODO: ${item.text}`, capability: "build", reason: "highest-priority open TODO", phase: "build" });
+  const todoReadiness = completeTodoReadiness ?? evaluateTodoReadinessQueue(todoItems.map((item) => ({
+    id: String(item.id ?? ""),
+    artifact: String(item.artifact ?? "todo"),
+    record: { ...item, description: item.text },
+  })) as TodoReadinessEntity[]);
+  if (todoReadiness.selected) {
+    const item = todoReadiness.selected;
+    candidates.push({
+      object: `TODO ${item.id}: ${truncate(item.description, 120)}`,
+      capability: item.capability!,
+      reason: item.reason!,
+      phase: item.phase!,
+      id: item.id,
+      artifact: item.artifact,
+      outcome: item.result,
+      retrieval: item.retrieval,
+    });
+    if (todoReadiness.triage.count > 0) {
+      candidates.push({
+        object: `TODO triage: ${todoReadiness.triage.count} item(s)`,
+        capability: "status",
+        reason: todoReadiness.triage.recovery!,
+        phase: "audit",
+        outcome: "needs-triage",
+      });
     }
+  } else if (todoReadiness.abstainRecovery) {
+    candidates.push({
+      object: "TODO queue: no actionable item",
+      capability: "status",
+      reason: todoReadiness.abstainRecovery,
+      phase: "audit",
+      outcome: "needs-triage",
+    });
   }
   if (health.stale && !health.degrading) {
     candidates.push({
@@ -881,7 +901,8 @@ export function selectStatusNextAction(
   todoItems: Array<Record<string, string>>,
   decision: DecisionFollowUp | null,
   savedContext: boolean,
+  completeTodoReadiness?: TodoReadinessQueueSelection,
 ): Record<string, string> {
-  const { recommended } = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
+  const { recommended } = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, completeTodoReadiness);
   return { object: recommended.object, capability: recommended.capability, reason: recommended.reason };
 }

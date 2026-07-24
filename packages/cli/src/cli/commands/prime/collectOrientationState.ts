@@ -94,7 +94,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     successorAnnounced,
     precomputedV1Artifacts: v1Artifacts,
   });
-  const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext);
+  const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
   const nextAction = selectProjectIntegrationNextAction(readiness, projectIntegration);
 
   const attention = buildOrientationAttention({

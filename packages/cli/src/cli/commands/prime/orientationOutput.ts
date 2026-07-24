@@ -17,8 +17,17 @@ export { briefOrientationPayload, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrie
 export const PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES = 25000;
 
 /** Project a single {@link NextAction} to its JSON record shape. */
-function nextActionEntry(action: NextAction): Record<string, string> {
-  return { object: action.object, capability: action.capability, reason: action.reason, phase: action.phase };
+function nextActionEntry(action: NextAction): Record<string, unknown> {
+  return {
+    object: action.object,
+    capability: action.capability,
+    reason: action.reason,
+    phase: action.phase,
+    ...(action.id ? { id: action.id } : {}),
+    ...(action.artifact ? { artifact: action.artifact } : {}),
+    ...(action.outcome ? { outcome: action.outcome } : {}),
+    ...(action.retrieval ? { retrieval: action.retrieval } : {}),
+  };
 }
 
 /** Ranked state-readiness hint for the prime JSON `next_action` field (D76).

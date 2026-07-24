@@ -73,16 +73,30 @@ function writeProjectFile(relativePath: string, contents: string): void {
   fs.writeFileSync(target, contents);
 }
 
-function writeTodoEntity(id: string, severity: string, status: string, description: string): void {
-  writeProjectFile(`.agentera/entities/todo/todo_item/${id}.yaml`, [
-    `id: ${id}`,
-    "artifact: todo",
-    "record:",
-    `  severity: ${severity}`,
-    `  status: ${status}`,
-    `  description: ${description}`,
-    "",
-  ].join("\n"));
+function writeTodoEntity(
+  id: string,
+  severity: string,
+  status: string,
+  description: string,
+  readiness?: Record<string, unknown>,
+): void {
+  writeProjectFile(`.agentera/entities/todo/todo_item/${id}.yaml`, YAML.stringify({
+    id,
+    artifact: "todo",
+    record: { severity, status, description, ...(readiness ? { readiness } : {}) },
+  }));
+}
+
+function readyTodo(capability: string, reason: string, queueRank: number): Record<string, unknown> {
+  return {
+    capability,
+    reason,
+    dependencies: [],
+    blocked: null,
+    gate: null,
+    queue_rank: queueRank,
+    order_reason: "Reviewer-declared queue order.",
+  };
 }
 
 function runStatus(): { rc: number; out: string; err: string; payload: Record<string, any> } {
@@ -113,6 +127,15 @@ function renderStatusDashboard(statusContext: Record<string, any>): Record<strin
 }
 
 describe("status capability self-contained startup", () => {
+  it("delegates TODO selection to typed readiness without prose inference", () => {
+    const instructions = runStatus().payload.capability_context.instructions as string;
+
+    expect(instructions).toContain("selected from complete typed readiness state");
+    expect(instructions).toContain("preserve its TODO ID, declared reason, derived phase, and exact retrieval");
+    expect(instructions).not.toContain("route by shape");
+    expect(instructions).not.toContain("contract-shaped, multi-surface");
+  });
+
   it("uses the manifest's dedicated one-call status budget", () => {
     const manifest = YAML.parse(fs.readFileSync(BUDGET_MANIFEST_PATH, "utf8")) as {
       surfaces: Array<{ id: string; byte_budget: number }>;
@@ -265,7 +288,7 @@ describe("status capability self-contained startup", () => {
       writeTodoEntity(`aaaaaaaa${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`, "critical", "resolved", `Resolved critical ${index}`);
     }
     writeTodoEntity("aaaaaaaaba", "degraded", "resolved", "Resolved degraded");
-    writeTodoEntity("aaaaaaaabb", "normal", "open", "Ship open fix");
+    writeTodoEntity("aaaaaaaabb", "normal", "open", "Ship open fix", readyTodo("build", "The fix is scoped.", 1));
 
     const result = runStatus();
     const state = statusState(result.payload);
@@ -275,7 +298,7 @@ describe("status capability self-contained startup", () => {
     expect(state.attention).toContain("normal: TODO: Ship open fix");
     expect(state.attention.join("\n")).not.toContain("Resolved critical");
     expect(state.attention.join("\n")).not.toContain("Resolved degraded");
-    expect(state.next_action).toMatchObject({ object: "TODO: Ship open fix", capability: "build" });
+    expect(state.next_action).toMatchObject({ object: "TODO aaaaaaaabb: Ship open fix", capability: "build" });
   });
 
   it("reports complete open TODO totals while keeping detail bounded and recoverable", () => {
@@ -286,7 +309,7 @@ describe("status capability self-contained startup", () => {
       writeTodoEntity(`bbbbbbbb${suffix}`, "normal", "open", `Normal open ${index}`);
     }
     writeTodoEntity("ccccccccaa", "degraded", "open", "Degraded open");
-    writeTodoEntity("zzzzzzzzzz", "critical", "open", "Critical open");
+    writeTodoEntity("zzzzzzzzzz", "critical", "open", "Critical open", readyTodo("build", "The critical fix is scoped.", 1));
 
     const result = runStatus();
     const state = statusState(result.payload);
@@ -301,7 +324,7 @@ describe("status capability self-contained startup", () => {
       detail: { total: 23, returned: 20, omitted: 3 },
     });
     expect(state.attention).toContain("critical: TODO: Critical open");
-    expect(state.next_action).toMatchObject({ object: "TODO: Critical open", capability: "build" });
+    expect(state.next_action).toMatchObject({ object: "TODO zzzzzzzzzz: Critical open", capability: "build" });
 
     const recovery = state.todo.detail.retrieval.continue as string;
     expect(recovery).toMatch(/^agentera state todo list --status 'open' --limit 20 --cursor \S+ --format json$/);
@@ -319,6 +342,41 @@ describe("status capability self-contained startup", () => {
     expect(recoveryRc).toBe(0);
     expect(recoveryErr).toBe("");
     expect(JSON.parse(recoveryOut)).toMatchObject({ counts: { total: 23, returned: 3, remaining: 0 } });
+  });
+
+  it("selects from complete TODO records before bounding and preserves discuss identity", () => {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (let index = 0; index < 21; index += 1) {
+      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`;
+      writeTodoEntity(`aaaaaaaa${suffix}`, "critical", "open", `Needs triage ${index}`);
+    }
+    const decisiveSuffix = "The visible prefix is intentionally irrelevant. ".repeat(600);
+    writeTodoEntity(
+      "zzzzzzzzzz",
+      "critical",
+      "open",
+      decisiveSuffix,
+      readyTodo("discuss", "Resolve the declared product boundary.", 1),
+    );
+
+    const result = runStatus();
+    const state = statusState(result.payload);
+
+    expect(result.rc).toBe(0);
+    expect(state.todo.detail).toMatchObject({ total: 22, returned: 20, omitted: 2 });
+    expect(state.next_action).toMatchObject({
+      id: "zzzzzzzzzz",
+      artifact: "todo",
+      capability: "discuss",
+      reason: "Resolve the declared product boundary.",
+      phase: "deliberate",
+      outcome: "actionable",
+      retrieval: { exact: "agentera state todo get --id zzzzzzzzzz --format json" },
+    });
+    expect(state.next_action.alternatives).toContainEqual(expect.objectContaining({
+      capability: "status",
+      outcome: "needs-triage",
+    }));
   });
 
   it("reports an exact full detail page without continuation at the 20-item bound", () => {

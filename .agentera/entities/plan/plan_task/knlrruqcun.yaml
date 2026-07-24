@@ -12,3 +12,13 @@ record:
     - GIVEN dry-run, retry, and concurrent current-record reads WHEN the same mutation is applied THEN publication remains atomic and idempotent without overwriting unrelated fields.
     - GIVEN shared validation rules WHEN tests run THEN each rule is covered once at its authority plus one operation-boundary pass and fail case.
   plan: kitqatxlxe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task2-audit-1
+      source: orchestrate audit evaluation
+      recorded_at: 2026-07-24 23:27
+      writer_command: agentera state plan record-evaluation

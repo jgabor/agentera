@@ -23,6 +23,7 @@ import type {
   TodoDetailSummary,
 } from "../../contracts/orientationState.js";
 import { issueCounts } from "../../orientation.js";
+import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "../../todoReadinessSelection.js";
 
 function entries(payload: JsonObject): JsonObject[] {
   return Array.isArray(payload.entries)
@@ -120,6 +121,7 @@ export interface EntityOrientationProjection {
   todoItems: Array<Record<string, string>>;
   todoCounts: IssueCounts;
   todoDetail: TodoDetailSummary;
+  todoReadiness: TodoReadinessQueueSelection;
   decision: DecisionFollowUp | null;
   decisionAttention: DecisionReviewAttention | null;
   history: Record<string, StartupHistorySummary>;
@@ -263,9 +265,14 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     closed_count: closedObjectiveCount,
   } : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
 
+  const completeTodoEntities = discovery.entities
+    .filter((entry) => entry.boundary === "todo_item" && entry.classification === "valid" && entry.id && entry.artifact && entry.record)
+    .map((entry) => ({ id: entry.id!, artifact: entry.artifact!, record: entry.record! }));
+  const todoReadiness = evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot);
   const todoItems = todoEntries.map((entry) => ({
     id: String(entry.id), artifact: String(entry.artifact),
-    ...Object.fromEntries(Object.entries(record(entry)).map(([key, value]) => [key, String(value)])),
+    severity: String(record(entry).severity ?? "normal"),
+    status: String(record(entry).status ?? "open"),
     text: String(record(entry).description ?? ""),
   }));
   const todoCounts = issueCounts(
@@ -315,7 +322,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   });
   // The opaque continuation cursor is already list-budget bounded and must stay
   // byte-exact so omitted TODO detail remains recoverable.
-  const result = { ...projection, todoDetail };
+  const result = { ...projection, todoDetail, todoReadiness };
   rememberPlanTaskIndex(result.plan as unknown as JsonObject, allTaskEntries);
   return result;
 }

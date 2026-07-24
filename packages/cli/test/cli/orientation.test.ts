@@ -61,11 +61,11 @@ describe("orientation: pure helpers", () => {
     });
   });
 
-  it("routes a complex TODO to plan and a simple one to build", () => {
+  it("does not infer a TODO destination from prose", () => {
     const complex = [{ severity: "normal", status: "open", text: "update the schema contract and validation surface" }];
-    expect(selectStatusNextAction({}, {}, {}, complex, null, true).capability).toBe("plan");
     const simple = [{ severity: "normal", status: "open", text: "rename a thing" }];
-    expect(selectStatusNextAction({}, {}, {}, simple, null, true).capability).toBe("build");
+    expect(selectStatusNextAction({}, {}, {}, complex, null, true).capability).toBe("status");
+    expect(selectStatusNextAction({}, {}, {}, simple, null, true).capability).toBe("status");
   });
 
   it("summarizes state presence", () => {
@@ -561,7 +561,7 @@ describe("selectStatusReadiness", () => {
     const observedPhases = new Set([hint.recommended.phase, ...hint.alternatives.map((alt) => alt.phase)]);
     expect(observedPhases.has("envision")).toBe(true);
     expect(observedPhases.has("deliberate")).toBe(true);
-    expect(observedPhases.has("plan")).toBe(true);
+    expect(observedPhases.has("plan")).toBe(false);
     expect(observedPhases.has("build")).toBe(true);
     expect(observedPhases.has("audit")).toBe(true);
   });

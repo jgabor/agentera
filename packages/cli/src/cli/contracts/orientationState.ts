@@ -143,6 +143,10 @@ export interface NextAction {
   reason: string;
   /** Protocol phase tag (PH1-PH5): envision, deliberate, plan, build, or audit. */
   phase: string;
+  id?: string;
+  artifact?: string;
+  outcome?: string;
+  retrieval?: JsonObject;
 }
 
 /** Ranked state-readiness hint: position 1 (`recommended`) is the cascade winner;
