@@ -774,8 +774,24 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
 
 export function formatNextAction(action: NextAction | Record<string, string> | null): string {
   if (!action) return "object=VISION refresh | capability=vision | reason=no executable follow-up | phase=envision";
-  const phase = "phase" in action && action.phase ? ` | phase=${action.phase}` : "";
-  return `object=${truncate(action.object)} | capability=${action.capability} | reason=${action.reason}${phase}`;
+  const fields = [
+    `object=${truncate(action.object)}`,
+    `capability=${action.capability}`,
+    `reason=${action.reason}`,
+  ];
+  if ("phase" in action && action.phase) fields.push(`phase=${action.phase}`);
+  if ("id" in action && action.id) fields.push(`id=${action.id}`);
+  if ("artifact" in action && action.artifact) fields.push(`artifact=${action.artifact}`);
+  if ("outcome" in action && action.outcome) fields.push(`outcome=${action.outcome}`);
+  if ("eligible" in action && typeof action.eligible === "boolean") fields.push(`eligible=${String(action.eligible)}`);
+  if (
+    "retrieval" in action
+    && action.retrieval
+    && typeof action.retrieval === "object"
+    && "exact" in action.retrieval
+    && typeof action.retrieval.exact === "string"
+  ) fields.push(`retrieval=${action.retrieval.exact}`);
+  return fields.join(" | ");
 }
 
 /**
@@ -839,6 +855,7 @@ export function selectStatusReadiness(
       id: item.id,
       artifact: item.artifact,
       outcome: item.result,
+      eligible: item.eligible,
       retrieval: item.retrieval,
     });
     if (todoReadiness.triage.count > 0) {
@@ -848,6 +865,7 @@ export function selectStatusReadiness(
         reason: todoReadiness.triage.recovery!,
         phase: "audit",
         outcome: "needs-triage",
+        eligible: false,
       });
     }
   } else if (todoReadiness.abstainRecovery) {
@@ -857,6 +875,7 @@ export function selectStatusReadiness(
       reason: todoReadiness.abstainRecovery,
       phase: "audit",
       outcome: "needs-triage",
+      eligible: false,
     });
   }
   if (health.stale && !health.degrading) {

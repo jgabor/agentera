@@ -26,6 +26,7 @@ function nextActionEntry(action: NextAction): Record<string, unknown> {
     ...(action.id ? { id: action.id } : {}),
     ...(action.artifact ? { artifact: action.artifact } : {}),
     ...(action.outcome ? { outcome: action.outcome } : {}),
+    ...(typeof action.eligible === "boolean" ? { eligible: action.eligible } : {}),
     ...(action.retrieval ? { retrieval: action.retrieval } : {}),
   };
 }

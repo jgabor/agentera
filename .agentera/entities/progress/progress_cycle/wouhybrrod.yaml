@@ -1,0 +1,16 @@
+id: wouhybrrod
+artifact: progress
+record:
+  timestamp: 2026-07-25 00:13
+  type: fix
+  phase: build
+  what: Aligned status recommendation projections and added synthetic integration regressions for Task xlgphfieaq.
+  context:
+    intent: Complete only Align status projections and routing regressions while preserving Task 1 authority, Task 3 selection, hybrid routing, and persisted TODO readiness.
+    constraints: Did not execute Tasks noqyovxfvw or ilwelbzjai; did not modify or stage persisted TODO readiness; kept the frozen hybrid corpus and trigger semantics unchanged.
+    unknowns: none
+    scope: Status NextAction projection and terminal rendering; bounded prime projection; synthetic status readiness integration tests; CHANGELOG.md; typed plan/progress state.
+  inspiration: Plan kitqatxlxe Task xlgphfieaq and canonical Task 1 readiness plus Task 3 selection behavior.
+  discovered: The shared JSON and host action already preserved identity and retrieval, but terminal formatting and the bounded brief omitted canonical eligibility fields.
+  verified: "C1 PASS: JSON and host next_action objects are identical and terminal output retains capability, TODO ID/artifact, reason, phase, outcome/eligible, and exact retrieval. C2 PASS: all ten contract-derived destinations select positively and abstain on duplicate-rank conflict; status and orchestrate remain excluded. C3 PASS: blocked, gated, dependency-waiting, readiness-absent, mixed, and all-non-actionable fixtures assert selection or abstention, attention, eligibility, and recovery. C4 PASS: the synthetic provenance-marked glossary and early/late signal controls follow structured readiness regardless of prose or input order. C5 PASS: 40 hybrid request, receipt, contract, and eval tests plus the frozen routing eval preserve deterministic tiers, semantic abstention, receipts, and next_action separation. Focused status tests passed 46; full source passed 2591 with 1 skipped; typecheck, build, lint, status smoke, status/cross-capability/capability-contract/state validation, shared-skill dry-run, routing eval, compact, and git diff --check passed."
+  next: Leave Tasks noqyovxfvw and ilwelbzjai pending for separate cycles.

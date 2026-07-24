@@ -4,7 +4,7 @@ record:
   name: Align status projections and routing regressions
   depends_on:
     - osiuqtoqdi
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a TODO recommendation WHEN JSON, terminal, and host status projections render THEN capability, TODO identity, reason, phase, eligibility, and retrieval agree.
     - GIVEN every Task 1 allowed destination WHEN integration fixtures run THEN each destination has one positive case and one conflicting or invalid case.

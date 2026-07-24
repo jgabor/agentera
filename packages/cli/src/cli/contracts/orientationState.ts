@@ -146,6 +146,7 @@ export interface NextAction {
   id?: string;
   artifact?: string;
   outcome?: string;
+  eligible?: boolean;
   retrieval?: JsonObject;
 }
 
