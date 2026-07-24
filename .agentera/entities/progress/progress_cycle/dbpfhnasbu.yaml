@@ -1,0 +1,16 @@
+id: dbpfhnasbu
+artifact: progress
+record:
+  timestamp: 2026-07-25 00:31
+  type: chore
+  phase: build
+  what: "Reviewed all 27 persisted open TODOs and published the only reviewer-approved readiness assignment: azytlqzxoa routes to discuss; 26 records remain needs-triage."
+  context:
+    intent: Complete Task noqyovxfvw by reviewing the full persisted queue without inferring unapproved capability assignments.
+    constraints: "State-only review: no source, tests, contracts, routing fixtures, vision, versions, unrelated TODO fields, terminal task, or plan closure."
+    unknowns: Capability assignments for the 26 unannotated TODOs remain unapproved.
+    scope: TODO azytlqzxoa readiness; Task 4 PASS preservation; Task noqyovxfvw status; one progress entity.
+  inspiration: Active plan Task noqyovxfvw and the user-confirmed discuss assignment for azytlqzxoa.
+  discovered: The canonical update contract replaces complete readiness, so huiepnrwav and ruzauoaotd cannot receive standalone gate or dependency metadata without inventing an unapproved capability. Built prime projections also surface completed dovrbathpj or terminal ilwelbzjai instead of active Task 5.
+  verified: "C1 PASS: nine cursor pages enumerated 27 open records; every ID received an exact get and the final page had remaining 0/has_more false. C2 PASS: only approved azytlqzxoa was annotated; 26 remain needs-triage. C3 PASS: exact get shows discuss/rank 1 and unchanged description hash 04a2b13f12a0b8856f635052ee2e5a9fc64ab37cf6df45a1c0f09617f3914dc6. C4 PASS: huiepnrwav release gate and ruzauoaotd prerequisites azytlqzxoa/guijxewees were reviewed and left unannotated because destination approval is absent. C5 PASS: dry-run had no side effect, apply passed, retry was idempotent, and exact get/diff preserved unrelated fields. Build, state validation, git diff --check, and compaction passed; root prime shows discuss plus 26 needs-triage alternatives."
+  next: Task ilwelbzjai remains pending and was not executed; terminal plan closure is out of scope.

@@ -12,3 +12,13 @@ record:
     - GIVEN the glossary record and a late-signal control record WHEN status runs THEN the glossary selects discuss and description ordering cannot alter either result.
     - GIVEN hybrid routing and receipt tests WHEN the suite runs THEN deterministic tiers, semantic abstention, and next_action separation remain unchanged.
   plan: kitqatxlxe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task4-audit-1
+      source: orchestrate audit evaluation
+      recorded_at: 2026-07-25 00:24
+      writer_command: agentera state plan record-evaluation

@@ -6,7 +6,7 @@ record:
     - knlrruqcun
     - osiuqtoqdi
     - xlgphfieaq
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the persisted open queue WHEN review begins THEN every page and exact record is enumerated without assuming one response contains the full queue.
     - GIVEN a proposed capability assignment WHEN no reviewer approved it THEN no annotation is written and the record remains needs-triage.
