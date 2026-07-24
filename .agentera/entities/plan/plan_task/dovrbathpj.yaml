@@ -12,3 +12,13 @@ record:
     - GIVEN blocked, gated, missing, cyclic, resolved, and cross-artifact dependencies WHEN eligibility is specified THEN each has one bounded outcome, attention behavior, and recovery path.
     - GIVEN equally severe actionable work WHEN ordering is specified THEN the policy is deterministic, intent-bearing, and uses no fabricated chronology; each testable rule has a passing and failing case.
   plan: kitqatxlxe
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Criterion 5 lacks negative cases for outcome result, eligibility, recovery, queue recovery, ordering primary, and duplicate-rank validation. Progress evidence reports aggregate green counts without criterion-level proof.
+    provenance:
+      attempt_id: task1-audit-1
+      source: orchestrate audit evaluation
+      recorded_at: 2026-07-24 22:52
+      writer_command: agentera state plan record-evaluation

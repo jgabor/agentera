@@ -1,0 +1,16 @@
+id: pyemmqnakv
+artifact: progress
+record:
+  timestamp: 2026-07-24 22:55
+  type: test
+  phase: build
+  what: Closed the criterion-5 coverage gap from Audit attempt task1-audit-1 in packages/cli/test/registries/todoReadinessContract.test.ts.
+  context:
+    intent: Prove every cited TODO readiness validator rule with an explicit passing case and focused failing mutation without changing production behavior or downstream tasks.
+    constraints: Tests and required task/progress state only; no production contract, loader, writer, recommendation, projection, annotation, routing, or unrelated state changes.
+    unknowns: none
+    scope: packages/cli/test/registries/todoReadinessContract.test.ts and typed plan/progress state.
+  inspiration: Independent Audit failure task1-audit-1 for plan Task dovrbathpj.
+  discovered: The validator behavior was complete; the gap was test evidence granularity for repeated outcome and queue branches.
+  verified: "Criterion 5: one explicit valid-contract case asserts all 11 exact outcome result/eligible/recovery tuples, both non-empty queue recoveries, severity primary ordering, queue_rank ascending, and duplicate-rank ordering_conflict. Negative matrix adds 33 generated mutations covering result, eligible, and recovery for each of todo_resolved, readiness_absent, blocked, gate_pending, dependency_cross_artifact, dependency_missing, dependency_cycle, dependency_open, dependency_resolved, ordering_conflict, and actionable; adds both queue recovery failures; and adds ordering primary and duplicate_rank failures. Existing failures retain outcome attention, within_severity, and prohibited tie-breaker coverage. Dedicated file passed 57/57; three-file readiness/validation suite passed 96/96; typecheck, build, and capability-contract validation passed 3/3."
+  next: Task dovrbathpj can be independently re-evaluated; do not begin downstream Task knlrruqcun in this cycle.

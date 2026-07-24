@@ -28,6 +28,22 @@ function validDocuments(): { todo: any; protocol: any; capabilities: any } {
   };
 }
 
+const EXPECTED_OUTCOMES: Record<string, { result: string; eligible: boolean | null; recovery: "null" | "required" }> = {
+  todo_resolved: { result: "resolved", eligible: false, recovery: "null" },
+  readiness_absent: { result: "needs-triage", eligible: false, recovery: "required" },
+  blocked: { result: "blocked", eligible: false, recovery: "required" },
+  gate_pending: { result: "gated", eligible: false, recovery: "required" },
+  dependency_cross_artifact: { result: "needs-triage", eligible: false, recovery: "required" },
+  dependency_missing: { result: "needs-triage", eligible: false, recovery: "required" },
+  dependency_cycle: { result: "needs-triage", eligible: false, recovery: "required" },
+  dependency_open: { result: "waiting", eligible: false, recovery: "required" },
+  dependency_resolved: { result: "satisfied", eligible: null, recovery: "null" },
+  ordering_conflict: { result: "needs-triage", eligible: false, recovery: "required" },
+  actionable: { result: "actionable", eligible: true, recovery: "null" },
+};
+
+type FailingRule = [string, (documents: ReturnType<typeof validDocuments>) => void, string];
+
 describe("TODO readiness contract", () => {
   it("derives the exact destination and phase model from one valid authority", () => {
     const model = loadTodoReadinessContract(TODO_PATH, PROTOCOL_PATH, CAPABILITY_CONTRACT_PATH);
@@ -90,7 +106,52 @@ describe("TODO readiness contract", () => {
     ]);
   });
 
-  const failingRules: Array<[string, (documents: ReturnType<typeof validDocuments>) => void, string]> = [
+  it("passes criterion 5 with every exact outcome and deterministic intent-ordering rule", () => {
+    const documents = validDocuments();
+    expect(validateTodoReadinessContract(
+      documents.todo,
+      documents.protocol,
+      documents.capabilities,
+      "fixture",
+    )).toEqual([]);
+
+    for (const [name, expected] of Object.entries(EXPECTED_OUTCOMES)) {
+      expect(documents.todo.READINESS.outcomes[name]).toMatchObject({
+        result: expected.result,
+        eligible: expected.eligible,
+        recovery: expected.recovery === "null" ? null : expect.stringMatching(/\S/),
+      });
+    }
+    expect(documents.todo.READINESS.queue_outcomes).toMatchObject({
+      mixed_actionable_and_triage: { recovery: expect.stringMatching(/\S/) },
+      all_non_actionable: { recovery: expect.stringMatching(/\S/) },
+    });
+    expect(documents.todo.READINESS.ordering).toMatchObject({
+      primary: "protocol.yaml#SEVERITY_ISSUE",
+      within_severity: "queue_rank_ascending",
+      duplicate_rank: "ordering_conflict",
+    });
+  });
+
+  const outcomeRules: FailingRule[] = Object.entries(EXPECTED_OUTCOMES).flatMap(([name, expected]) => [
+    [
+      `${name} has its exact result`,
+      ({ todo }) => { todo.READINESS.outcomes[name].result = "wrong"; },
+      `READINESS.outcomes.${name}.result must be ${expected.result}`,
+    ],
+    [
+      `${name} has its exact eligibility`,
+      ({ todo }) => { todo.READINESS.outcomes[name].eligible = expected.eligible === true ? false : true; },
+      `READINESS.outcomes.${name}.eligible must be ${String(expected.eligible)}`,
+    ],
+    [
+      `${name} has its exact recovery shape`,
+      ({ todo }) => { todo.READINESS.outcomes[name].recovery = expected.recovery === "null" ? "unexpected" : ""; },
+      `READINESS.outcomes.${name}.recovery must be ${expected.recovery === "null" ? "null" : "a non-empty string"}`,
+    ],
+  ] as FailingRule[]);
+
+  const failingRules: FailingRule[] = [
     ["readiness authority is required", ({ todo }) => { delete todo.READINESS; }, "READINESS must be a mapping"],
     ["schema version is fixed", ({ todo }) => { todo.READINESS.schema_version = "other"; }, "schema_version must be agentera.todoReadiness.v1"],
     ["phase mapping has one source", ({ todo }) => { todo.READINESS.destination.phase_authority = "local"; }, "phase_authority must be protocol.yaml#PHASES[*].capabilities"],
@@ -106,8 +167,13 @@ describe("TODO readiness contract", () => {
     ["evaluation precedence is exact", ({ todo }) => { todo.READINESS.evaluation.precedence.pop(); }, "READINESS.evaluation.precedence must equal"],
     ["all bounded outcomes exist", ({ todo }) => { delete todo.READINESS.outcomes.dependency_cycle; }, "READINESS.outcomes.dependency_cycle must be a mapping"],
     ["outcomes use bounded attention values", ({ todo }) => { todo.READINESS.outcomes.blocked.attention = "verbose"; }, "READINESS.outcomes.blocked.attention must be one of: none, item"],
+    ...outcomeRules,
     ["queue outcomes are complete", ({ todo }) => { delete todo.READINESS.queue_outcomes.all_non_actionable; }, "READINESS.queue_outcomes.all_non_actionable must be a mapping"],
+    ["mixed queue recovery is bounded", ({ todo }) => { todo.READINESS.queue_outcomes.mixed_actionable_and_triage.recovery = ""; }, "READINESS.queue_outcomes.mixed_actionable_and_triage.recovery must be a non-empty string"],
+    ["all-non-actionable queue recovery is bounded", ({ todo }) => { todo.READINESS.queue_outcomes.all_non_actionable.recovery = ""; }, "READINESS.queue_outcomes.all_non_actionable.recovery must be a non-empty string"],
+    ["canonical severity owns primary ordering", ({ todo }) => { todo.READINESS.ordering.primary = "queue_rank"; }, "READINESS.ordering.primary must be protocol.yaml#SEVERITY_ISSUE"],
     ["severity and intent own ordering", ({ todo }) => { todo.READINESS.ordering.within_severity = "entity_id"; }, "READINESS.ordering.within_severity must be queue_rank_ascending"],
+    ["duplicate ranks require triage", ({ todo }) => { todo.READINESS.ordering.duplicate_rank = "entity_id"; }, "READINESS.ordering.duplicate_rank must be ordering_conflict"],
     ["fabricated chronology is prohibited", ({ todo }) => { todo.READINESS.ordering.prohibited_tiebreakers.pop(); }, "READINESS.ordering.prohibited_tiebreakers must equal"],
   ];
 
