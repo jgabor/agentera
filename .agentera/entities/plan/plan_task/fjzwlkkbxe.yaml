@@ -1,0 +1,13 @@
+id: fjzwlkkbxe
+artifact: plan
+record:
+  plan: kedmyhqqtb
+  name: Correct precision-safe prerelease ordering
+  status: complete
+  depends_on:
+    - dxauzvwsfy
+  acceptance:
+    - GIVEN two npm-valid development prerelease versions with identifiers beyond safe integer precision WHEN their precedence is compared THEN the newer identifier orders strictly after the older without numeric precision loss.
+    - GIVEN the current next tag is newer than the local development version at any supported identifier size WHEN publication preflight runs THEN it fails before publish and reports the exact conflicting versions.
+    - GIVEN development and stable versions at zero, ordinary, maximum supported, and oversized boundaries WHEN validation runs THEN npm-publishable forms are accepted and invalid forms are rejected consistently.
+    - GIVEN the replacement regression suite runs WHEN publication callbacks are observed THEN every advanced-tag and invalid-version failure records zero registry mutations.

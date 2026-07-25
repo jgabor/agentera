@@ -1,0 +1,13 @@
+id: jzkrepytkw
+artifact: progress
+record:
+  timestamp: 2026-07-25 15:55
+  type: fix
+  phase: build
+  what: Corrected precision loss in development prerelease ordering by comparing canonical numeric identifiers as digit strings while retaining npm semver length, leading-zero, and core safe-integer boundaries. Added advanced-tag and invalid-version callback regressions.
+  context:
+    intent: Complete replacement task fjzwlkkbxe with exact semver precedence and prove every preflight rejection remains mutation-free.
+    constraints: No publication, registry mutation, CI, docs, credentials, package construction, release metadata, tags, pushes, adjacent tasks, or supersession of zcobvxqwmc.
+  inspiration: Replacement plan task fjzwlkkbxe after task3-audit-2 exposed Number precision collapse in zcobvxqwmc.
+  verified: "Criterion 1: adjacent npm-valid dev identifiers 9007199254740992/3 and 246-digit identifiers order strictly. Criterion 2: advanced @next values fail before publish and report exact tag/local versions. Criterion 3: zero, ordinary, core maximum, prerelease maximum-length, oversized core/length, and leading-zero matrices pass or fail per adapter policy. Criterion 4: all advanced-tag and invalid-version paths record zero publish callbacks. pnpm test: 204 files, 2650 passed, 1 skipped; verify:package: 14 passed; focused: 59 passed; typecheck, build, vp fmt --check, check compact, and git diff --check passed."
+  next: Independent audit may evaluate fjzwlkkbxe and only the orchestrator may supersede blocked task zcobvxqwmc; do not advance adjacent plan tasks.

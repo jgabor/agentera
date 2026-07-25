@@ -500,20 +500,85 @@ describe("publication version preflight", () => {
   it.each([
     ["development", "999999999999999999999999.0.0-dev.1"],
     ["stable", "999999999999999999999999.0.0"],
-  ] as const)("rejects an npm-unpublishable oversized %s version", (adapter, version) => {
+    ["development", "0.0.0-dev.01"],
+    ["development", `0.0.0-dev.${"1".repeat(247)}`],
+    ["stable", "0.0.01"],
+  ] as const)("rejects the adapter-invalid %s boundary %s", (adapter, version) => {
     expect(preflightPublication(adapter, { ...manifest(adapter), version }, state)).toMatchObject({
       outcome: "failed",
     });
   });
 
   it.each([
+    ["development", "3.0.0-dev.32"],
+    ["stable", "2.7.8"],
     ["development", "9007199254740991.0.0-dev.1"],
     ["stable", "9007199254740991.0.0"],
     ["development", "0.0.0-dev.0"],
     ["stable", "0.0.0"],
+    ["development", "0.0.0-dev.9007199254740992"],
+    ["development", `0.0.0-dev.${"1".repeat(246)}`],
   ] as const)("accepts the npm-publishable %s boundary %s", (adapter, version) => {
     expect(preflightPublication(adapter, { ...manifest(adapter), version }, state)).toMatchObject({
       outcome: "passed",
     });
+  });
+
+  it.each([
+    ["3.0.0-dev.9007199254740992", "3.0.0-dev.9007199254740993"],
+    [`0.0.0-dev.${"1".repeat(245)}2`, `0.0.0-dev.${"1".repeat(245)}3`],
+  ])(
+    "rejects precision-sensitive advanced next tag %s before publication",
+    async (version, ahead) => {
+      const committed = { ...manifest("development"), version };
+      const packed = normalizeConstruction(packedManifest(version), {
+        expectedName: "agentera",
+        expectedVersion: version,
+        expectedTag: "next",
+        artifact: `/tmp/agentera-${version}.tgz`,
+        warnings: [],
+      });
+      let publishes = 0;
+
+      await expect(
+        executePublication("development", committed, packed, {
+          inspectRegistry: () => ({
+            exists: false,
+            integrity: null,
+            expectedTagVersion: ahead,
+            tagged: false,
+          }),
+          publishPackage: () => publishes++,
+          smokePackage: () => version,
+          sleep: async () => undefined,
+          registryAttempts: 1,
+        }),
+      ).rejects.toThrow(
+        `@next already points to ${ahead}, which is incompatible with committed ${version}`,
+      );
+      expect(publishes).toBe(0);
+    },
+  );
+
+  it.each([
+    ["development", "0.0.0-dev.01"],
+    ["development", "9007199254740992.0.0-dev.1"],
+    ["stable", "0.0.01"],
+    ["stable", "9007199254740992.0.0"],
+  ] as const)("rejects %s version %s before any registry mutation", async (adapter, version) => {
+    let inspections = 0;
+    let publishes = 0;
+
+    await expect(
+      executePublication(adapter, { ...manifest(adapter), version }, packedManifest(version), {
+        inspectRegistry: () => {
+          inspections++;
+          throw new Error("registry inspection must not run");
+        },
+        publishPackage: () => publishes++,
+      }),
+    ).rejects.toMatchObject({ publicationPhase: "preflight" });
+    expect(inspections).toBe(0);
+    expect(publishes).toBe(0);
   });
 });

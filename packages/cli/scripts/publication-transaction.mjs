@@ -208,17 +208,35 @@ function registryState(manifest, adapter) {
   };
 }
 
-function publishableVersion(adapterName, version) {
-  if (typeof version !== "string" || version.length > 256) return false;
-  const numeric = "(0|[1-9]\\d*)";
-  const suffix = adapterName === "development" ? `-dev\\.${numeric}` : "";
-  const match = new RegExp(`^${numeric}\\.${numeric}\\.${numeric}${suffix}$`).exec(version);
-  return Boolean(match && match.slice(1, 4).every((part) => Number.isSafeInteger(Number(part))));
+const MAX_SAFE_INTEGER_IDENTIFIER = String(Number.MAX_SAFE_INTEGER);
+
+function compareNumericIdentifiers(left, right) {
+  if (left.length !== right.length) return left.length < right.length ? -1 : 1;
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
 }
 
 function versionParts(version) {
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:-dev\.(\d+))?$/.exec(version ?? "");
-  return match ? match.slice(1).map((part) => (part === undefined ? null : Number(part))) : null;
+  if (typeof version !== "string" || version.length > 256) return null;
+  const numeric = "(0|[1-9]\\d*)";
+  const match = new RegExp(`^${numeric}\\.${numeric}\\.${numeric}(?:-dev\\.${numeric})?$`).exec(
+    version,
+  );
+  if (
+    !match ||
+    match
+      .slice(1, 4)
+      .some((part) => compareNumericIdentifiers(part, MAX_SAFE_INTEGER_IDENTIFIER) > 0)
+  )
+    return null;
+  return match.slice(1);
+}
+
+function publishableVersion(adapterName, version) {
+  const parts = versionParts(version);
+  return Boolean(
+    parts && (adapterName === "development" ? parts[3] !== undefined : parts[3] === undefined),
+  );
 }
 
 function compareVersions(left, right) {
@@ -226,12 +244,13 @@ function compareVersions(left, right) {
   const rightParts = versionParts(right);
   if (!leftParts || !rightParts) return null;
   for (let index = 0; index < 3; index++) {
-    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+    const comparison = compareNumericIdentifiers(leftParts[index], rightParts[index]);
+    if (comparison !== 0) return comparison;
   }
   if (leftParts[3] === rightParts[3]) return 0;
-  if (leftParts[3] === null) return 1;
-  if (rightParts[3] === null) return -1;
-  return leftParts[3] - rightParts[3];
+  if (leftParts[3] === undefined) return 1;
+  if (rightParts[3] === undefined) return -1;
+  return compareNumericIdentifiers(leftParts[3], rightParts[3]);
 }
 
 function publicationError(message, phase, nextAction) {
