@@ -231,10 +231,18 @@ export function buildStatusContextState(
     },
   );
   // The canonical brief contains compatibility and source metadata useful to
-  // bare-prime consumers. History/source and null bespoke pointers are not
-  // dashboard or routing inputs. Omit only those redundant leaves after
-  // applying the shared brief projection, leaving every field named by the
-  // status instructions and its recovery catalog intact.
+  // bare-prime consumers. Keep only the startup-completeness source contract
+  // consumed by status; the outer capability capsule already declares how it
+  // was fetched, while the brief block retains omitted-detail recovery.
+  const sourceContract = projected.source_contract;
+  if (sourceContract && typeof sourceContract === "object" && !Array.isArray(sourceContract)) {
+    projected.source_contract = {
+      capability_startup: (sourceContract as Record<string, unknown>).capability_startup,
+      empty_state: (sourceContract as Record<string, unknown>).empty_state,
+    };
+  }
+  // History/source and null bespoke pointers are not dashboard or routing
+  // inputs. Omit those redundant leaves after applying the shared projection.
   for (const field of [
     "app_home",
     "history",

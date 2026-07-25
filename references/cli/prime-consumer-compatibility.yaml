@@ -37,7 +37,8 @@ consumers:
       - capability_context.context.status_context.next_action
       - capability_context.context.status_context.attention
       - capability_context.context.status_context.state_presence
-      - capability_context.context.status_context.source_contract
+      - capability_context.context.status_context.source_contract.capability_startup
+      - capability_context.context.status_context.source_contract.empty_state
     notes: >-
       Bare `/agentera` and status orientation run one status-context call.
        Deterministic routing resolves bare, direct, and curated phrase requests;
@@ -365,11 +366,14 @@ public_output_policy:
     measurement: Buffer.byteLength(JSON.stringify(payload, null, 2) + "\n", "utf8")
     budget_allocation: >-
       Assemble contract-owned capability metadata, instructions, and context
-      keys and measure the complete envelope. When it is over budget, set the
-      next status_context allowance one byte below the current nested
-      projection's measured serialized size. Every accepted retry is therefore
-      strictly smaller; terminate only with a <=25000-byte capsule or explicit
-      irreducible routing-envelope failure.
+      keys and measure the complete envelope. The nested status projection keeps
+      source_contract.capability_startup and source_contract.empty_state, and
+      omits bare-prime source inventory metadata that the dashboard does not
+      consume. When the envelope is over budget, set the next status_context
+      allowance one byte below the current nested projection's measured
+      serialized size. Every accepted retry is therefore strictly smaller;
+      terminate only with a <=25000-byte capsule or explicit irreducible
+      routing-envelope failure.
     required_capability_metadata:
       - capability_context.state.declared_read_needs
       - capability_context.state.declared_write_targets

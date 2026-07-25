@@ -1,0 +1,15 @@
+id: caaxnnumlp
+artifact: progress
+record:
+  timestamp: 2026-07-25 11:54
+  type: fix
+  phase: build
+  what: Kept status startup self-contained by removing bare-prime-only source metadata from the nested dashboard projection.
+  context:
+    intent: Prevent routine status startup from degrading and requiring a second dashboard request while preserving the 25000-byte one-call contract.
+    constraints: Preserve dashboard fields, routing data, startup completeness, empty-state semantics, recovery metadata, and the genuine over-budget fallback.
+    unknowns: none
+    scope: Status context projection, startup budget tests, and prime consumer compatibility contract.
+  discovered: The nested status projection reused bare-prime source inventory metadata that no status consumer reads, pushing the complete capsule over budget despite ordinary project state.
+  verified: Full source suite passed 2591 tests with 1 skipped; typecheck, build, focused status budget tests, capability-contract validation, compaction, and a rebuilt live status startup all passed. The live capsule is 23822 bytes with brief status ok.
+  next: Publish the verified fix in the next permitted 3.0.0 development build on npm @next.

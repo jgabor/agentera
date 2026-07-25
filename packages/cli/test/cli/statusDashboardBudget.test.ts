@@ -297,7 +297,7 @@ describe("status dashboard contract", () => {
       );
       const diagnosticBytes = PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES + 1 - baselineBytes;
       expect(diagnosticBytes).toBeGreaterThan(0);
-      expect(diagnosticBytes).toBeLessThan(2_000);
+      expect(diagnosticBytes).toBeLessThan(2_500);
       const stateDiagnosticBytes = Math.floor(diagnosticBytes / 2);
       const contextDiagnosticBytes = diagnosticBytes - stateDiagnosticBytes;
       expect(stateDiagnosticBytes).toBeGreaterThan(0);

@@ -249,6 +249,13 @@ describe("status capability self-contained startup", () => {
     expect(state.project_integration).not.toHaveProperty("phases");
     expect(state.project_integration).not.toHaveProperty("guidance");
     expect(state.project_integration).not.toHaveProperty("retry");
+    expect(state.source_contract).toEqual({
+      capability_startup: expect.objectContaining({
+        complete_for_capability_startup: expect.any(Boolean),
+        raw_artifact_reads_required: expect.any(Boolean),
+      }),
+      empty_state: "fresh: summaries absent; zero issues",
+    });
     if (name === "flagged") expect(state.attention.length).toBeGreaterThan(0);
     if (name === "waiting") expect(state.next_action.object).toBeTruthy();
     if (name === "upgrade") {
