@@ -8,6 +8,9 @@
     "access": "Publish the unscoped package with public access.",
     "retry": "An exact version with matching integrity and expected tag is a successful replay; any conflict fails without mutation.",
     "smoke": "Run one non-mutating no-project exact-version --version command after convergence.",
+    "construction": "Each adapter returns the exact npm name, version, file count, packed and unpacked sizes, shasum, integrity, expected tag, artifact path, warnings, and complete file manifest before publication.",
+    "credentials": "Only the npm publish child receives credentials, through a mode-0600 temporary user config; inherited npm/pnpm lifecycle settings and token variables are removed from its environment, and the config is deleted when the child exits.",
+    "outputModes": "Default construction output omits the per-file list; --json and --verbose retain the complete npm pack manifest.",
     "output": ["package", "version", "expectedTag", "phase", "outcome", "nextAction"]
   },
   "packages": {

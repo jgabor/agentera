@@ -15,12 +15,12 @@ record:
   test_proportionality: At least one passing and one failing case for preparation, preflight, and output shape per package adapter.
   plan: kedmyhqqtb
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Stable publication construction invokes pnpm test in packages/cli/shim, whose script forwards forbidden directory selector test/shim/ and exits 2 before Node tests; progress evidence covered only direct node tests.
     provenance:
-      attempt_id: task1-audit-1
-      source: independent audit ses_066c2014fffeGgR2AnxFIvhijO
-      recorded_at: 2026-07-25 14:32
+      attempt_id: task1-audit-2
+      source: independent audit ses_066b67ae1ffej3u9b5oJ1aDINC
+      recorded_at: 2026-07-25 14:42
       writer_command: agentera state plan record-evaluation

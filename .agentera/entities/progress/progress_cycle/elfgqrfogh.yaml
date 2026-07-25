@@ -1,0 +1,16 @@
+id: elfgqrfogh
+artifact: progress
+record:
+  timestamp: 2026-07-25 14:59
+  type: feat
+  phase: build
+  what: Bound package construction manifests, output projection, and npm credential lifecycle for Task dxauzvwsfy.
+  context:
+    intent: Produce exact verified construction inputs for both publication adapters while keeping default output bounded and npm credentials temporary.
+    constraints: No publish, tag, push, release preparation, registry polling changes, CI sequencing, stable cutover, or adjacent TODO implementation.
+    unknowns: None remaining for this task.
+    scope: packages/cli package construction/publication scripts and tests, package publication contract, packaging documentation, verification routing, and typed plan/progress state.
+  inspiration: Plan task dxauzvwsfy and the shared transaction completed by fjcxvyigcc.
+  discovered: The tracked packages/cli/.npmrc caused token-substitution noise and was unnecessary once publication credentials became callback-scoped; npm pack warnings are now captured and summarized by count in default output.
+  verified: "Criteria 1 and 5: real development construction produced a cleaned temporary 690-file artifact for @next and real stable construction produced a cleaned temporary 6-file artifact for @latest; each exposed name, version, sizes, shasum, integrity, tag, and artifact. Criteria 2 and 3: pnpm run pack:dry-run emitted one bounded summary without files, while parsed --json retained all 690 files; focused default/JSON/verbose projection pass/fail tests passed. Criterion 4: mode-0600 credential lifecycle pass/fail tests proved npm/pnpm settings and token variables are removed and npmrc is deleted after success, child failure, and setup failure. Verification: 23 focused tests; pnpm test 2,614 passed and 1 skipped; verify:package 14 passed; typecheck; build; capability-contract validation; formatting; lint zero errors; git diff --check."
+  next: Stop after dxauzvwsfy; do not execute adjacent or remaining publication plan tasks.

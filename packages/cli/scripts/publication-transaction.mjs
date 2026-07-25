@@ -5,6 +5,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  formatConstruction,
+  normalizeConstruction,
+  npmChildEnvironment,
+  projectConstruction,
+} from "./package-construction.mjs";
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "../../..");
 const contractPath = path.join(repoRoot, "references/adapters/package-publication.json");
@@ -32,7 +39,8 @@ function result(adapterName, version, phase, outcome, nextAction, detail) {
     outcome,
     nextAction,
   };
-  if (detail) receipt.detail = String(detail).slice(0, PUBLICATION_CONTRACT.bounds.diagnosticCharacters);
+  if (detail)
+    receipt.detail = String(detail).slice(0, PUBLICATION_CONTRACT.bounds.diagnosticCharacters);
   return receipt;
 }
 
@@ -45,10 +53,11 @@ export function validateResult(value) {
 export function prepareMetadata(adapterName, manifest, head) {
   const adapter = PACKAGE_ADAPTERS[adapterName];
   if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
-  if (!/^[0-9a-f]{40}$/.test(head)) throw new Error("gitRef source must be a 40-character commit SHA");
+  if (!/^[0-9a-f]{40}$/.test(head))
+    throw new Error("gitRef source must be a 40-character commit SHA");
   const next = structuredClone(manifest);
   next.version = incrementVersion(next.version, adapter.preparation);
-  next.agentera = { ...(next.agentera ?? {}), gitRef: head };
+  next.agentera = { ...next.agentera, gitRef: head };
   return {
     manifest: next,
     receipt: result(
@@ -65,8 +74,10 @@ export function preflightPublication(adapterName, manifest, state) {
   const corrections = [];
   if (!state.authorized) corrections.push("rerun with --authorize");
   if (state.dirty) corrections.push("commit or stash all worktree changes");
-  if (!state.metadataCommitted) corrections.push(`commit ${PACKAGE_ADAPTERS[adapterName].manifestPath}`);
-  if (!state.gitRefExists) corrections.push("set agentera.gitRef to an existing immutable commit and commit it");
+  if (!state.metadataCommitted)
+    corrections.push(`commit ${PACKAGE_ADAPTERS[adapterName].manifestPath}`);
+  if (!state.gitRefExists)
+    corrections.push("set agentera.gitRef to an existing immutable commit and commit it");
   return result(
     adapterName,
     manifest.version,
@@ -87,7 +98,11 @@ function run(command, args, options = {}) {
   });
   if (invocation.error) throw invocation.error;
   if (invocation.status !== 0) {
-    const diagnostic = (invocation.stderr || invocation.stdout || `exit ${invocation.status}`).trim();
+    const diagnostic = (
+      invocation.stderr ||
+      invocation.stdout ||
+      `exit ${invocation.status}`
+    ).trim();
     throw new Error(`${command} ${args.join(" ")} failed: ${diagnostic}`);
   }
   return invocation.stdout.trim();
@@ -97,7 +112,7 @@ function git(args) {
   return run("git", args, { cwd: repoRoot });
 }
 
-function emit(receipt, json) {
+function emit(receipt, json, verbose = false) {
   const missing = validateResult(receipt);
   if (missing.length) throw new Error(`publication result missing: ${missing.join(", ")}`);
   if (json) {
@@ -106,6 +121,11 @@ function emit(receipt, json) {
     process.stdout.write(
       `${receipt.package}@${receipt.version} ${receipt.expectedTag} ${receipt.phase}: ${receipt.outcome}; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}\n`,
     );
+    if (receipt.construction) {
+      process.stdout.write(
+        `${formatConstruction(receipt.construction, verbose ? "verbose" : "default")}\n`,
+      );
+    }
   }
 }
 
@@ -114,7 +134,9 @@ function readManifest(adapter) {
 }
 
 function metadataCommitted(adapter) {
-  const tracked = spawnSync("git", ["diff", "--quiet", "HEAD", "--", adapter.manifestPath], { cwd: repoRoot });
+  const tracked = spawnSync("git", ["diff", "--quiet", "HEAD", "--", adapter.manifestPath], {
+    cwd: repoRoot,
+  });
   return tracked.status === 0;
 }
 
@@ -126,6 +148,32 @@ function gitRefExists(gitRef) {
 function npmJson(args, options = {}) {
   const output = run("npm", [...args, "--json"], options);
   return output ? JSON.parse(output) : null;
+}
+
+function npmPack(args, options = {}) {
+  const invocation = spawnSync("npm", [...args, "--json"], {
+    cwd: options.cwd ?? repoRoot,
+    encoding: "utf8",
+    env: options.env ?? process.env,
+    timeout: options.timeout ?? PUBLICATION_CONTRACT.bounds.commandTimeoutMs,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (invocation.error) throw invocation.error;
+  if (invocation.status !== 0) {
+    const diagnostic = (
+      invocation.stderr ||
+      invocation.stdout ||
+      `exit ${invocation.status}`
+    ).trim();
+    throw new Error(`npm ${args.join(" ")} failed: ${diagnostic}`);
+  }
+  return {
+    manifest: invocation.stdout ? JSON.parse(invocation.stdout) : null,
+    warnings: invocation.stderr
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean),
+  };
 }
 
 function registryState(manifest, adapter) {
@@ -143,33 +191,64 @@ function registryState(manifest, adapter) {
   };
 }
 
-export function constructPackage(adapterName, adapter, temporary, dependencies = {}) {
+export function constructPackage(adapterName, adapter, manifest, temporary, dependencies = {}) {
   const execute = dependencies.run ?? run;
-  const executeNpmJson = dependencies.npmJson ?? npmJson;
+  const executeNpmPack = dependencies.npmPack ?? npmPack;
   if (adapter.construction === "isolatedTypeScriptPackage") {
-    return JSON.parse(
-      execute(process.execPath, [
-        "scripts/pack-package.mjs",
-        "--output-dir",
-        temporary,
-        "--json",
-      ], { cwd: path.join(repoRoot, adapter.packagePath) }),
+    const packed = JSON.parse(
+      execute(process.execPath, ["scripts/pack-package.mjs", "--output-dir", temporary, "--json"], {
+        cwd: path.join(repoRoot, adapter.packagePath),
+      }),
     );
+    return normalizeConstruction(packed, {
+      expectedName: manifest.name,
+      expectedVersion: manifest.version,
+      expectedTag: adapter.expectedTag,
+      artifact: packed.artifact,
+      warnings: packed.warnings,
+    });
   }
   execute("pnpm", ["test"], { cwd: path.join(repoRoot, adapter.packagePath) });
-  const packed = executeNpmJson(
-    ["pack", "--ignore-scripts", "--pack-destination", temporary],
-    { cwd: path.join(repoRoot, adapter.packagePath) },
-  );
-  return Array.isArray(packed) ? packed[0] : Object.values(packed)[0];
+  const npmrc = path.join(temporary, "pack-npmrc");
+  let packed;
+  try {
+    fs.writeFileSync(npmrc, "", { mode: 0o600, flag: "wx" });
+    packed = executeNpmPack(["pack", "--ignore-scripts", "--pack-destination", temporary], {
+      cwd: path.join(repoRoot, adapter.packagePath),
+      env: npmChildEnvironment(process.env, npmrc),
+    });
+  } finally {
+    fs.rmSync(npmrc, { force: true });
+  }
+  const entry = Array.isArray(packed.manifest)
+    ? packed.manifest[0]
+    : Object.values(packed.manifest)[0];
+  return normalizeConstruction(entry, {
+    expectedName: manifest.name,
+    expectedVersion: manifest.version,
+    expectedTag: adapter.expectedTag,
+    artifact: path.join(temporary, entry.filename),
+    warnings: packed.warnings,
+  });
 }
 
-function credentialEnvironment(temporary) {
-  const token = process.env.NPM_TOKEN;
+export function withNpmCredentials(temporary, callback, environment = process.env) {
+  const token = environment.NPM_TOKEN;
   if (!token) throw new Error("NPM_TOKEN is absent; export a publish-capable token and retry");
   const npmrc = path.join(temporary, "npmrc");
-  fs.writeFileSync(npmrc, `registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${token}\n`, { mode: 0o600 });
-  return { ...process.env, NPM_CONFIG_USERCONFIG: npmrc };
+  try {
+    fs.writeFileSync(
+      npmrc,
+      `registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${token}\n`,
+      {
+        mode: 0o600,
+        flag: "wx",
+      },
+    );
+    return callback(npmChildEnvironment(environment, npmrc));
+  } finally {
+    fs.rmSync(npmrc, { force: true });
+  }
 }
 
 async function waitForConvergence(manifest, adapter, integrity) {
@@ -177,13 +256,17 @@ async function waitForConvergence(manifest, adapter, integrity) {
     const state = registryState(manifest, adapter);
     if (state.exists && state.integrity === integrity && state.tagged) return;
     if (attempt < PUBLICATION_CONTRACT.bounds.registryAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, PUBLICATION_CONTRACT.bounds.registryDelayMs));
+      await new Promise((resolve) =>
+        setTimeout(resolve, PUBLICATION_CONTRACT.bounds.registryDelayMs),
+      );
     }
   }
-  throw new Error(`registry did not converge on exact integrity and @${adapter.expectedTag} within the bounded retry window`);
+  throw new Error(
+    `registry did not converge on exact integrity and @${adapter.expectedTag} within the bounded retry window`,
+  );
 }
 
-async function publish(adapterName, json, authorized) {
+async function publish(adapterName, json, verbose, authorized) {
   const adapter = PACKAGE_ADAPTERS[adapterName];
   if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
   const manifest = readManifest(adapter);
@@ -196,7 +279,7 @@ async function publish(adapterName, json, authorized) {
       metadataCommitted: metadataCommitted(adapter),
       gitRefExists: gitRefExists(manifest.agentera?.gitRef),
     });
-    emit(preflight, json);
+    emit(preflight, json, verbose);
     if (preflight.outcome === "failed") {
       const error = new Error(preflight.nextAction);
       error.receiptEmitted = true;
@@ -205,40 +288,92 @@ async function publish(adapterName, json, authorized) {
 
     temporary = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-${adapterName}-publication-`));
     currentPhase = "construction";
-    const packed = constructPackage(adapterName, adapter, temporary);
-    const tarball = path.join(temporary, packed.filename);
-    emit(result(adapterName, manifest.version, "construction", "passed", "inspect registry state", packed.filename), json);
+    const packed = constructPackage(adapterName, adapter, manifest, temporary);
+    const tarball = packed.artifact;
+    const constructionReceipt = result(
+      adapterName,
+      manifest.version,
+      "construction",
+      "passed",
+      "inspect registry state",
+    );
+    constructionReceipt.construction = projectConstruction(packed, json || verbose);
+    emit(constructionReceipt, json, verbose);
 
     currentPhase = "publication";
     const existing = registryState(manifest, adapter);
     if (existing.exists) {
       if (existing.integrity !== packed.integrity) {
-        throw new Error(`agentera@${manifest.version} already exists with conflicting integrity; prepare a new version`);
+        throw new Error(
+          `agentera@${manifest.version} already exists with conflicting integrity; prepare a new version`,
+        );
       }
-      emit(result(adapterName, manifest.version, "publication", "replayed", existing.tagged ? "run exact-version smoke" : "wait for expected tag convergence"), json);
+      emit(
+        result(
+          adapterName,
+          manifest.version,
+          "publication",
+          "replayed",
+          existing.tagged ? "run exact-version smoke" : "wait for expected tag convergence",
+        ),
+        json,
+      );
       if (!existing.tagged) {
         currentPhase = "convergence";
         await waitForConvergence(manifest, adapter, packed.integrity);
-        emit(result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"), json);
+        emit(
+          result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"),
+          json,
+        );
       }
     } else {
-      const env = credentialEnvironment(temporary);
-      run("npm", ["publish", tarball, "--access", "public", "--tag", adapter.expectedTag], { cwd: repoRoot, env });
-      emit(result(adapterName, manifest.version, "publication", "published", "wait for exact registry convergence"), json);
+      withNpmCredentials(temporary, (env) => {
+        run("npm", ["publish", tarball, "--access", "public", "--tag", adapter.expectedTag], {
+          cwd: repoRoot,
+          env,
+        });
+      });
+      emit(
+        result(
+          adapterName,
+          manifest.version,
+          "publication",
+          "published",
+          "wait for exact registry convergence",
+        ),
+        json,
+      );
       currentPhase = "convergence";
       await waitForConvergence(manifest, adapter, packed.integrity);
-      emit(result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"), json);
+      emit(
+        result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"),
+        json,
+      );
     }
 
     currentPhase = "smoke";
     const smoke = adapter.smoke.map((part) => part.replace("{version}", manifest.version));
     const smokeOutput = run(smoke[0], smoke.slice(1), { cwd: temporary });
-    if (!smokeOutput.includes(manifest.version)) throw new Error(`exact-version smoke output did not identify ${manifest.version}`);
-    emit(result(adapterName, manifest.version, "smoke", "passed", "publication transaction complete"), json);
+    if (!smokeOutput.includes(manifest.version))
+      throw new Error(`exact-version smoke output did not identify ${manifest.version}`);
+    emit(
+      result(adapterName, manifest.version, "smoke", "passed", "publication transaction complete"),
+      json,
+    );
     emit(result(adapterName, manifest.version, "complete", "passed", "none"), json);
   } catch (error) {
     if (!error.receiptEmitted) {
-      emit(result(adapterName, manifest.version, currentPhase, "failed", "Correct the reported failure and safely retry the same command.", error.message), json);
+      emit(
+        result(
+          adapterName,
+          manifest.version,
+          currentPhase,
+          "failed",
+          "Correct the reported failure and safely retry the same command.",
+          error.message,
+        ),
+        json,
+      );
       error.receiptEmitted = true;
     }
     throw error;
@@ -250,17 +385,27 @@ async function publish(adapterName, json, authorized) {
 async function main() {
   const [phase, adapterName] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
   const json = process.argv.includes("--json");
+  const verbose = process.argv.includes("--verbose");
   if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "publish"].includes(phase)) {
-    throw new Error("usage: publication-transaction.mjs <prepare|publish> <development|stable> [--authorize] [--json]");
+    throw new Error(
+      "usage: publication-transaction.mjs <prepare|publish> <development|stable> [--authorize] [--json|--verbose]",
+    );
   }
   if (phase === "prepare") {
     const adapter = PACKAGE_ADAPTERS[adapterName];
-    const prepared = prepareMetadata(adapterName, readManifest(adapter), git(["rev-parse", "HEAD"]));
-    fs.writeFileSync(path.join(repoRoot, adapter.manifestPath), `${JSON.stringify(prepared.manifest, null, 2)}\n`);
+    const prepared = prepareMetadata(
+      adapterName,
+      readManifest(adapter),
+      git(["rev-parse", "HEAD"]),
+    );
+    fs.writeFileSync(
+      path.join(repoRoot, adapter.manifestPath),
+      `${JSON.stringify(prepared.manifest, null, 2)}\n`,
+    );
     emit(prepared.receipt, json);
     return;
   }
-  await publish(adapterName, json, process.argv.includes("--authorize"));
+  await publish(adapterName, json, verbose, process.argv.includes("--authorize"));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -272,9 +417,21 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       try {
         version = readManifest(PACKAGE_ADAPTERS[adapterName]).version;
       } catch {}
-      emit(result(adapterName, version, phase === "prepare" ? "preparation" : "preflight", "failed", "Correct the reported failure and retry.", message), process.argv.includes("--json"));
+      emit(
+        result(
+          adapterName,
+          version,
+          phase === "prepare" ? "preparation" : "preflight",
+          "failed",
+          "Correct the reported failure and retry.",
+          message,
+        ),
+        process.argv.includes("--json"),
+      );
     }
-    process.stderr.write(`publication-transaction: ${message.slice(0, PUBLICATION_CONTRACT.bounds.diagnosticCharacters)}\n`);
+    process.stderr.write(
+      `publication-transaction: ${message.slice(0, PUBLICATION_CONTRACT.bounds.diagnosticCharacters)}\n`,
+    );
     process.exitCode = 1;
   });
 }

@@ -30,7 +30,8 @@ agentera-<version>.tgz
 tree, and `packages/cli/scripts/copy-bundle.mjs` stages the registry-declared
 shared skill and reference inputs into that tree. It then runs `npm pack` with
 lifecycle scripts disabled. Checkout `prepack` is a guard that rejects direct
-`npm pack`; it does not compile or stage publication output.
+`npm pack`; it does not compile or stage publication output. Construction never
+publishes directly and refuses to overwrite a prior package artifact.
 
 ## Publication transaction
 
@@ -50,7 +51,11 @@ manifest diff, and commit it. Publication then runs from that clean commit with
 registry mutation unless `--authorize` is present internally, the entire tree
 is clean, the selected manifest is committed, and its 40-character `gitRef`
 names an existing commit. `NPM_TOKEN` is written only to a mode-`0600` temporary
-npm configuration used by `npm publish`, then removed.
+npm configuration used by `npm publish`, then removed as soon as that child
+exits. The npm child does not inherit token variables or caller-only
+npm/pnpm lifecycle settings, preventing credentials from escaping the
+restricted configuration and avoiding unrelated npm warnings from pnpm's
+environment.
 
 Each package is published directly to its existing expected tag; there is no
 candidate tag or promotion phase. The transaction polls exact version,
@@ -64,8 +69,11 @@ the dist-tag backward: correct the reported cause and retry.
 
 Every completed phase emits one bounded human line, or one JSON object when the
 runner receives `--json`, containing `package`, `version`, `expectedTag`,
-`phase`, `outcome`, and `nextAction`. Failures include a bounded diagnostic and
-a retry correction.
+`phase`, `outcome`, and `nextAction`. Construction additionally reports the
+exact npm name and version, file count, packed and unpacked sizes, shasum,
+integrity, expected tag, artifact path, and warnings. Default output omits the
+per-file list; `--json` and `--verbose` retain the complete npm pack manifest.
+Failures include a bounded diagnostic and a retry correction.
 
 ## Generated-output and verification ownership
 
@@ -193,7 +201,8 @@ pnpm -C packages/cli run generated:cleanup -- --force --json
 
 Cleanup requires either `--dry-run` or `--force`; retries are safe. To inspect
 the publication tarball surface, use
-`pnpm -C packages/cli run pack:dry-run`. Direct checkout `npm pack` remains
+`pnpm -C packages/cli run pack:dry-run`. Add `-- --json` or `-- --verbose` when
+the complete file manifest is needed. Direct checkout `npm pack` remains
 rejected because compatibility launchers and generations are not package
 inputs.
 
