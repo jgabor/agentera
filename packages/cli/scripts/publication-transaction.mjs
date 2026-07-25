@@ -209,8 +209,11 @@ function registryState(manifest, adapter) {
 }
 
 function publishableVersion(adapterName, version) {
-  const pattern = adapterName === "development" ? /^\d+\.\d+\.\d+-dev\.\d+$/ : /^\d+\.\d+\.\d+$/;
-  return typeof version === "string" && pattern.test(version);
+  if (typeof version !== "string" || version.length > 256) return false;
+  const numeric = "(0|[1-9]\\d*)";
+  const suffix = adapterName === "development" ? `-dev\\.${numeric}` : "";
+  const match = new RegExp(`^${numeric}\\.${numeric}\\.${numeric}${suffix}$`).exec(version);
+  return Boolean(match && match.slice(1, 4).every((part) => Number.isSafeInteger(Number(part))));
 }
 
 function versionParts(version) {

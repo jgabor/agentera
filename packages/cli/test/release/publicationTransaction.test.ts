@@ -481,30 +481,39 @@ describe.each([
 });
 
 describe("publication version preflight", () => {
+  const state = {
+    authorized: true,
+    dirty: false,
+    metadataCommitted: true,
+    gitRefExists: true,
+  };
+
   it("rejects adapter-incompatible local versions before mutation", () => {
     expect(
-      preflightPublication(
-        "development",
-        { ...manifest("development"), version: "3.0.0" },
-        {
-          authorized: true,
-          dirty: false,
-          metadataCommitted: true,
-          gitRefExists: true,
-        },
-      ),
+      preflightPublication("development", { ...manifest("development"), version: "3.0.0" }, state),
     ).toMatchObject({ outcome: "failed", nextAction: expect.stringContaining("X.Y.Z-dev.N") });
     expect(
-      preflightPublication(
-        "stable",
-        { ...manifest("stable"), version: "2.7.8-dev.1" },
-        {
-          authorized: true,
-          dirty: false,
-          metadataCommitted: true,
-          gitRefExists: true,
-        },
-      ),
+      preflightPublication("stable", { ...manifest("stable"), version: "2.7.8-dev.1" }, state),
     ).toMatchObject({ outcome: "failed", nextAction: expect.stringContaining("X.Y.Z") });
+  });
+
+  it.each([
+    ["development", "999999999999999999999999.0.0-dev.1"],
+    ["stable", "999999999999999999999999.0.0"],
+  ] as const)("rejects an npm-unpublishable oversized %s version", (adapter, version) => {
+    expect(preflightPublication(adapter, { ...manifest(adapter), version }, state)).toMatchObject({
+      outcome: "failed",
+    });
+  });
+
+  it.each([
+    ["development", "9007199254740991.0.0-dev.1"],
+    ["stable", "9007199254740991.0.0"],
+    ["development", "0.0.0-dev.0"],
+    ["stable", "0.0.0"],
+  ] as const)("accepts the npm-publishable %s boundary %s", (adapter, version) => {
+    expect(preflightPublication(adapter, { ...manifest(adapter), version }, state)).toMatchObject({
+      outcome: "passed",
+    });
   });
 });

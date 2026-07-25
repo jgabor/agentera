@@ -14,3 +14,13 @@ record:
     - GIVEN registry convergence succeeds WHEN the exact-version smoke runs THEN success is reported only after the package-specific non-mutating bootstrap passes; failure remains explicit and does not claim rollback.
   test_proportionality: Cover development and stable success, delayed visibility, matching replay, integrity conflict, tag conflict, timeout, and smoke failure.
   plan: kedmyhqqtb
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Preflight uses digit-shaped regexes rather than npm-valid semver validation, so oversized numeric versions that npm treats as tags pass for both adapters; tests cover only cross-adapter forms.
+    provenance:
+      attempt_id: task3-audit-1
+      source: independent audit ses_0668bdb38ffehE1W6VFoG3BHDp
+      recorded_at: 2026-07-25 15:31
+      writer_command: agentera state plan record-evaluation

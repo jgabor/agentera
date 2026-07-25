@@ -1,0 +1,15 @@
+id: qgdkqopytx
+artifact: progress
+record:
+  timestamp: 2026-07-25 15:36
+  type: fix
+  phase: build
+  what: Corrected task3-audit-1 in packages/cli/scripts/publication-transaction.mjs. Publication preflight now accepts only canonical npm-publishable numeric semver cores at or below Number.MAX_SAFE_INTEGER, while retaining exact X.Y.Z stable and X.Y.Z-dev.N development forms. Added both-adapter regressions for the cited oversized versions plus MAX_SAFE_INTEGER and zero boundary passes.
+  context:
+    intent: Fix only the audited npm publishability validation gap before registry mutation without changing publication, registry, CI, or release behavior.
+    constraints: No npm publication, dist-tag mutation, release preparation, CI work, tag, push, or adjacent task.
+    unknowns: none
+    scope: packages/cli/scripts/publication-transaction.mjs; packages/cli/test/release/publicationTransaction.test.ts; typed plan/progress state.
+  inspiration: Independent audit task3-audit-1 on plan task zcobvxqwmc.
+  verified: pnpm -C packages/cli test test/release/publicationTransaction.test.ts passed 46 tests; pnpm -C packages/cli test passed 2637 tests with 1 skipped; pnpm -C packages/cli run verify:package passed 14 tests; pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; node packages/cli/dist/bin/agentera.js check compact passed; pnpm -C packages/cli exec vp fmt --check scripts/publication-transaction.mjs test/release/publicationTransaction.test.ts passed; git diff --check passed.
+  next: Task zcobvxqwmc is complete after the task3-audit-1 correction; continue only with a separately requested plan task.
