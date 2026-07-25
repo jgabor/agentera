@@ -7,7 +7,7 @@ record:
     - dxauzvwsfy
     - zcobvxqwmc
     - nezgldddwg
-  status: pending
+  status: in_progress
   description: Align contributor guidance and release metadata, apply only the permitted development metadata change, verify the complete transaction, and close the owning TODO without absorbing adjacent reliability work.
   acceptance:
     - GIVEN contributor guidance is read WHEN development and stable paths are compared THEN preparation, commit, publication, retry, output, and recovery instructions agree.
@@ -17,3 +17,4 @@ record:
     - GIVEN no separate publication instruction exists WHEN implementation stops THEN no npm package, dist-tag, Git tag, or remote branch has changed.
   test_proportionality: One complete development and stable readiness conjunction plus metadata-divergence and unauthorized-publication failures.
   plan: kedmyhqqtb
+  evidence: Guidance now shares one preparation, commit, publication, bounded-output, retry/replay, and no-rollback contract for development and stable. Only development metadata advanced to 3.0.0-dev.33 at gitRef 059ffec8e3d9a007aa5fc3a790eadc46f7045f15; suite 3.0.0 and shim metadata are unchanged. Existing symmetric transaction tests cover readiness, divergence, and unauthorized mutation. verify:release, typecheck, build, compact, capability-contract, release-metadata, and pack:dry-run passed. Awaiting independent audit.

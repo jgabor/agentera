@@ -60,7 +60,11 @@ pnpm cli:publish:stable
 The shared transaction requires explicit authority and `NPM_TOKEN`, publishes
 directly to `latest`, verifies exact registry integrity and tag convergence,
 and runs `npx -y agentera@<version> --version` from a clean temporary directory.
-Safe retries do not republish matching registry state.
+Safe retries do not republish matching registry state. Output, retry, and
+recovery behavior is identical to the development adapter: the transaction
+emits bounded phase receipts, exposes the full manifest only through JSON or
+verbose output, and reports a correction that can be retried against the same
+committed version without rollback.
 
 The v3 CLI has a separate isolated package-construction and recovery contract
 in [v3 npm packaging and verification](../../../docs/packaging/v3-packaging.md);

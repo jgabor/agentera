@@ -4,7 +4,7 @@ record:
   name: Align local commands and CI publication
   depends_on:
     - zcobvxqwmc
-  status: in_progress
+  status: complete
   description: Make package scripts the shared publication interface, use them from CI, and remove workflow ordering that requires an unpublished exact version before its publication job.
   acceptance:
     - GIVEN a maintainer runs local preparation or publication WHEN behavior is compared with CI THEN both paths invoke the same transaction contract and package adapter.
@@ -16,3 +16,13 @@ record:
   test_proportionality: Cover local and CI development or stable selection, unchanged versions, missing credentials, pull requests, and corrected L2 ordering.
   plan: kedmyhqqtb
   evidence: "Implementation verified: root package scripts select both adapters; push-only CI runs them after gates; replay, missing-credential, PR/branch isolation, and publication-before-L2 ordering have regression coverage. Awaiting independent audit."
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: independent audit attempt 1
+      recorded_at: 2026-07-25 16:19
+      writer_command: agentera state plan record-evaluation

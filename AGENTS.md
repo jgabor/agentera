@@ -159,13 +159,21 @@ Generated-output construction, direct-pack rejection, retention, and recovery
 follow [`docs/packaging/v3-packaging.md`](./docs/packaging/v3-packaging.md).
 
 ```bash
-pnpm -C packages/cli test
+pnpm -C packages/cli run verify:release
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
+node packages/cli/dist/bin/agentera.js check compact
 node packages/cli/dist/bin/agentera.js check validate \
   capability-contract --format json
+node packages/cli/dist/bin/agentera.js check validate \
+  release-metadata --format json
 pnpm -C packages/cli run pack:dry-run
 ```
+
+`verify:release` is the canonical source, stress, performance, and package
+conjunction. The packaging guide owns the complete non-publishing readiness
+sequence and the publication contract owns transaction behavior; do not replace
+either with ad hoc version checks or direct `npm pack`/`npm publish` commands.
 
 Publish only after the release commit is clean and all gates pass. The v3
 development channel publishes `agentera` to npm `@next`; it loads `NPM_TOKEN`
@@ -196,7 +204,9 @@ the shared repository transaction. Publication never mutates tracked metadata,
 uses no candidate dist-tags, verifies bounded exact-version integrity and tag
 convergence, and runs only the adapter's no-project `--version` smoke. Matching
 registry state is a successful non-publishing replay; conflicts fail with a
-correction.
+correction. Both publishers use the same bounded phase receipts, JSON/verbose
+manifest modes, retry rule, and no-rollback recovery: correct the reported
+cause and rerun the same committed version.
 
 Never publish, tag, or push during normal capability execution without the
 user's explicit instruction.

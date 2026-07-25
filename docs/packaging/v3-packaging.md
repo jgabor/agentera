@@ -136,6 +136,25 @@ Release gates add the stress and performance owners plus metadata and dry-run
 publication checks, while using the same package construction path rather than
 adding another extracted-package matrix.
 
+Run the complete non-publishing release-readiness conjunction from the
+repository root:
+
+```bash
+pnpm -C packages/cli run verify:release
+pnpm -C packages/cli run typecheck
+pnpm -C packages/cli build
+node packages/cli/dist/bin/agentera.js check compact
+node packages/cli/dist/bin/agentera.js check validate \
+  capability-contract --format json
+node packages/cli/dist/bin/agentera.js check validate \
+  release-metadata --format json
+pnpm -C packages/cli run pack:dry-run
+```
+
+`verify:release` runs the source, stress, performance, and package owners in
+policy order. These commands construct and inspect packages locally; they do
+not publish, change a dist-tag, create a Git tag, or update a remote branch.
+
 `pnpm -C packages/cli run verify:generated-overlap` starts the complete source,
 build, and package participants from absent checkout output, releases their
 global-setup barrier once

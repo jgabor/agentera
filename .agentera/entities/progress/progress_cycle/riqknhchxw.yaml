@@ -1,0 +1,16 @@
+id: riqknhchxw
+artifact: progress
+record:
+  timestamp: 2026-07-25 16:27
+  type: docs
+  phase: build
+  what: Aligned development and stable release guidance, prepared the permitted 3.0.0-dev.33 metadata, and verified the complete non-publishing release transaction.
+  context:
+    intent: Close Task mybajqthfc and owning TODO qhvteprgdg without stable cutover or adjacent reliability work.
+    constraints: No publish, dist-tag mutation, Git tag, push, stable metadata change, or adjacent TODO resolution.
+    unknowns: none
+    scope: AGENTS.md, docs/packaging/v3-packaging.md, packages/cli/shim/README.md, packages/cli/package.json, and typed project state.
+  inspiration: Plan task mybajqthfc and TODO qhvteprgdg.
+  discovered: Existing transaction tests already cover both adapters, metadata divergence, authorization failures, replay, bounded output, retry, and no-rollback recovery; only contributor readiness guidance was incomplete.
+  verified: verify:release passed source (205 files, 2655 passed, 1 skipped), stress (1 file, 2 passed), performance (3 files, 3 passed), and package (2 files, 14 passed); typecheck, build, compact, capability-contract, release-metadata, and pack:dry-run passed.
+  next: Independent audit Task mybajqthfc; keep vptlelnadp, zxccscfiox, and huiepnrwav open.
