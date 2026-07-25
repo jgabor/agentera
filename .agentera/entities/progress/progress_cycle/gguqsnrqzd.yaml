@@ -1,0 +1,16 @@
+id: gguqsnrqzd
+artifact: progress
+record:
+  timestamp: 2026-07-25 14:36
+  type: fix
+  phase: build
+  what: Corrected stable publication construction to select the exact source-owned shim test and added regression coverage for the real canonical command plus fail-before-pack behavior.
+  context:
+    intent: Resolve independent evaluation failure task1-audit-1 for plan task fjcxvyigcc without changing publication metadata or adjacent plan work.
+    constraints: Fix only task1-audit-1; no publication, tag, push, metadata preparation, stable cutover, or adjacent plan task.
+    unknowns: none
+    scope: packages/cli/shim/package.json; packages/cli/scripts/publication-transaction.mjs; packages/cli/test/release/publicationTransaction.test.ts
+  inspiration: Independent audit task1-audit-1 found that the stable adapter's pnpm test path exited 2 on forbidden directory selector test/shim/.
+  discovered: The governed source inventory contains one shim TypeScript test at test/shim/runBackend.test.ts; selecting that exact file satisfies ownership while retaining all 25 shim Node tests.
+  verified: Canonical pnpm -C packages/cli/shim test passed the governed TypeScript test 3/3 and shim Node tests 25/25. Focused publication tests passed 15/15, including real-command success and test-failure-before-pack coverage. Full source passed 2606 with one skip; package passed 14/14; typecheck, build, compact, state validation, JSON formatting, and git diff check passed.
+  next: Task fjcxvyigcc is complete after this correction. Do not publish or execute another plan task without approval; release metadata remains a separate reviewed preparation step.

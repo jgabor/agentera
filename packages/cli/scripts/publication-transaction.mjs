@@ -143,10 +143,12 @@ function registryState(manifest, adapter) {
   };
 }
 
-function construct(adapterName, adapter, temporary) {
+export function constructPackage(adapterName, adapter, temporary, dependencies = {}) {
+  const execute = dependencies.run ?? run;
+  const executeNpmJson = dependencies.npmJson ?? npmJson;
   if (adapter.construction === "isolatedTypeScriptPackage") {
     return JSON.parse(
-      run(process.execPath, [
+      execute(process.execPath, [
         "scripts/pack-package.mjs",
         "--output-dir",
         temporary,
@@ -154,8 +156,8 @@ function construct(adapterName, adapter, temporary) {
       ], { cwd: path.join(repoRoot, adapter.packagePath) }),
     );
   }
-  run("pnpm", ["test"], { cwd: path.join(repoRoot, adapter.packagePath) });
-  const packed = npmJson(
+  execute("pnpm", ["test"], { cwd: path.join(repoRoot, adapter.packagePath) });
+  const packed = executeNpmJson(
     ["pack", "--ignore-scripts", "--pack-destination", temporary],
     { cwd: path.join(repoRoot, adapter.packagePath) },
   );
@@ -203,7 +205,7 @@ async function publish(adapterName, json, authorized) {
 
     temporary = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-${adapterName}-publication-`));
     currentPhase = "construction";
-    const packed = construct(adapterName, adapter, temporary);
+    const packed = constructPackage(adapterName, adapter, temporary);
     const tarball = path.join(temporary, packed.filename);
     emit(result(adapterName, manifest.version, "construction", "passed", "inspect registry state", packed.filename), json);
 

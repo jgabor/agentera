@@ -1,13 +1,18 @@
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
   PACKAGE_ADAPTERS,
+  constructPackage,
   prepareMetadata,
   preflightPublication,
   validateResult,
 } from "../../scripts/publication-transaction.mjs";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
 const manifest = (adapter: "development" | "stable") => ({
   name: "agentera",
@@ -31,6 +36,34 @@ describe("publication contract", () => {
       "npx", "-y", "agentera@{version}", "--version",
     ]);
     expect(PACKAGE_ADAPTERS.stable.smoke).toEqual(PACKAGE_ADAPTERS.development.smoke);
+  });
+
+  it("runs the canonical stable construction tests successfully", () => {
+    const invocation = spawnSync("pnpm", ["-C", "packages/cli/shim", "test"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
+
+    expect(invocation.status, invocation.stderr || invocation.stdout).toBe(0);
+    expect(invocation.stdout).toContain("test/shim/runBackend.test.ts");
+  });
+
+  it("stops stable construction before packing when its canonical tests fail", () => {
+    const calls: string[] = [];
+
+    expect(() =>
+      constructPackage("stable", PACKAGE_ADAPTERS.stable, "/unused", {
+        run: (command: string, args: string[]) => {
+          calls.push(`${command} ${args.join(" ")}`);
+          throw new Error("canonical stable tests failed");
+        },
+        npmJson: () => {
+          calls.push("npm pack");
+          return [];
+        },
+      }),
+    ).toThrow("canonical stable tests failed");
+    expect(calls).toEqual(["pnpm test"]);
   });
 });
 

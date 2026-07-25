@@ -27,7 +27,7 @@
   ],
   "type": "module",
   "scripts": {
-    "test": "pnpm -C .. test test/shim/ && node --test test/*.test.mjs",
+    "test": "pnpm -C .. test test/shim/runBackend.test.ts && node --test test/*.test.mjs",
     "release:prepare": "node ../scripts/publication-transaction.mjs prepare stable",
     "publish:stable": "set -a; [ -f ../../../.env ] && . ../../../.env; set +a; node ../scripts/publication-transaction.mjs publish stable --authorize"
   },
