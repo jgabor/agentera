@@ -2,8 +2,6 @@
 
 ## ⇶ Critical
 
-- [ ] [fix:3.0.0] Fix entity-state publication validation against secure pinned paths. In `agentera@next` 3.0.0-dev.28, post-publication validation passes the writer's `/proc/self/fd/<n>` pinned directory to logical entity validation; migrated `migration_provenance.source` paths then fail `validateRealProjectRoot` because `/proc/self/fd/<n>` is a symlink. This reproduces in an entity-mode migrated project with `agentera state plan create` and `agentera state todo create`, blocking otherwise valid mutations; plan graph creation rolls back, but a separately archived predecessor can leave the project without an active plan. Keep pinned-descriptor access for atomic publication and identity checks, but validate logical provenance against the already-validated real project root. Add integration coverage for plan and TODO creation with migrated decision/progress summary entities, transaction rollback without partial graph residue, and archive-then-create recovery.
-
 ## → Normal
 
 - [ ] [refactor:3.0.0] Refactor plan levels from skip/light/full to light/normal/full. Remove skip mode so every direct plan invocation produces at least a light plan: light for trivial or localized work, normal for clear single-cycle work, and full for multi-cycle or architecture-spanning work. Update the runtime startup contract, plan instructions, schemas, validation, and tests to use the new three-level taxonomy consistently.
@@ -38,6 +36,7 @@
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Fix entity-state publication validation against secure pinned paths. Resolved 2026-07-25: logical migration-provenance validation now uses the validated real-project-root identity while atomic publication and ownership checks remain descriptor-pinned. Integration coverage verifies plan and TODO creation beside migrated decision/progress summaries, complete graph rollback, root-substitution rejection, predecessor restoration, and successful archive-then-create retry.
 - [x] [docs:3.0.0] Decide long-term editor skill-bundle role (coexist vs eventual sunset). Resolved 2026-07-23: retain `skills/agentera/SKILL.md` and the CLI as the portable integration contract; native descriptor coexistence is retired.
 - [x] [fix:3.0.0] Resolve valid v2.7.11 compacted progress, decision, and health migration. Resolved 2026-07-22: summaries now migrate as source-bound immutable degraded entities, preserve inherited confidence during migration, use ordinary immutable readers and startup, report root/dependent diagnostics, and pass the Git-backed lifecycle proof. Read-only KTX preview reports 249 identities and 248 targets because of a pre-existing Decision 25 conflict; KTX was not migrated and its conflict remains owner work.
 - [x] [test:3.0.0] Prove verification ownership and source-run performance. Resolved 2026-07-21: all four independent owners and all seven policy compositions pass with 200 files assigned exactly once; three retained eight-worker source runs have a 42.908-second median, 47.330% below the four-worker baseline, with raw reports and recomputation provenance retained under `evidence/ymkdnqmroi/`. Historical `ymkdnqmroi` audit-2 provenance remains blocked; successor `qgkxggjber` restored all-capability retired-vocabulary runtime reconciliation without another prime projection.

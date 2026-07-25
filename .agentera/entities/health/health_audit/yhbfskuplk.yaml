@@ -1,0 +1,30 @@
+id: yhbfskuplk
+artifact: health
+record:
+  date: 2026-07-25
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: terminal-plan routing evidence is current and all four prior warnings are resolved."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Terminal-plan scope only, not codebase-wide. Plan kitqatxlxe has 6/6 complete tasks with final evaluator PASS provenance; build-owned progress, TODO, and changelog artifacts are current, and read-only verification plus state consistency are green.
+      findings:
+        []
+  trends:
+    comparison_target: Audit tmfxkjtoph
+    improved: The four routing warnings are resolved in current typed readiness, complete-state selection, and production-shaped regressions.
+    degraded: None in terminal-plan scope.
+    new_findings: None.
+    resolved: Discuss-first authority, complete-state eligibility and ordering, and routing regression coverage.
+    carried_forward: "Non-blocking outside plan acceptance: canonical-ID firstPending projection at packages/cli/src/cli/commands/prime/collectEntityOrientation.ts:178-185; audit criteria join at packages/cli/src/cli/capabilityContext/shared.ts:42-49 and evidence.ts:178-185; documented bounded degraded status envelope with dashboard and exact-state recovery."
+  patterns:
+    - Terminal closure publishes one limited artifact_freshness health record before completing the still-open plan.
+  appended_at: 2026-07-24T23:17:11.243Z
