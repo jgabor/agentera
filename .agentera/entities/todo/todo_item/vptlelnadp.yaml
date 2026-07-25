@@ -1,0 +1,6 @@
+id: vptlelnadp
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Make the documented v3 bootstrap one safe call across clean, v2, partially migrated, and v3 projects. Until stable promotion, derive bundled-skill, routing, and recovery invocations from the development-channel authority (`npx -y agentera@next`) without redirecting `@latest`. Allow `prime --context status --format json` before entity cutover and return a bounded `ok`, `degraded`, or `blocked` orientation with preview-first structured recovery. Package verification must execute the exact documented bootstrap command in all four states and prove a representative v2 migration preserves data and ends with `prime` and `doctor` passing."

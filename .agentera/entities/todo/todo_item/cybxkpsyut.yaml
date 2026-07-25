@@ -3,4 +3,4 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[refactor:3.0.0] Compile capability source instructions into concise validated runtime execution contracts covering objective, reads, writes, procedure, safety rails, exit conditions, output, and handoffs. Preserve full maintainer prose as authority, version/hash compiled contracts, and allow callers with a known version to avoid retransmitting an unchanged instruction body."
+  description: "[refactor:3.0.0] After the unified status capsule and reserve gate ship, measure whether repeated capability instructions remain a material startup cost. Only if they do, generate one concise, validated, versioned execution contract from the authoritative capability prose so callers can omit an unchanged instruction body without creating a second hand-maintained contract."
