@@ -1,5 +1,4 @@
-// Regression: CI L2 sandbox derives npm pin from packages/cli/package.json and
-// fails loud when that pin is unpublished (defect #44, G6, B5 task 6).
+// The bootstrap-owned L2 sandbox consumes, rather than gates, publication.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -30,11 +29,16 @@ describe("CI sandbox-l2 npm pin contract (B5-6, #44, G6)", () => {
     expect(l2).toContain('npm view "${AGENTERA_NPM_PIN}"');
   });
 
+  it("runs only after the development publication transaction", () => {
+    expect(l2).toContain("needs: [publish-next]");
+    expect(l2).toContain("TODO vptlelnadp owns the full exact-version bootstrap matrix");
+  });
+
   it("fails non-zero with a clear message when the computed pin is unpublished", () => {
     expect(l2).not.toMatch(/skip:.*not published/);
     expect(l2).not.toMatch(/exit\s+0/);
     expect(l2).toMatch(/exit\s+1/);
-    expect(l2).toMatch(/not published on npm/i);
+    expect(l2).toMatch(/not published on npm after the publication transaction/i);
     expect(l2).toMatch(/\$\{AGENTERA_NPM_PIN\}/);
   });
 });

@@ -11,3 +11,13 @@ record:
     - GIVEN the current next tag is newer than the local development version at any supported identifier size WHEN publication preflight runs THEN it fails before publish and reports the exact conflicting versions.
     - GIVEN development and stable versions at zero, ordinary, maximum supported, and oversized boundaries WHEN validation runs THEN npm-publishable forms are accepted and invalid forms are rejected consistently.
     - GIVEN the replacement regression suite runs WHEN publication callbacks are observed THEN every advanced-tag and invalid-version failure records zero registry mutations.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: replacement-audit-1
+      source: independent audit ses_0666f3627ffevEfBzEremvZ30D
+      recorded_at: 2026-07-25 16:04
+      writer_command: agentera state plan record-evaluation

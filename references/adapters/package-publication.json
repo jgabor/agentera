@@ -10,6 +10,7 @@
     "smoke": "Run one non-mutating no-project exact-version --version command after convergence; failure is explicit and does not imply rollback.",
     "construction": "Each adapter returns the exact npm name, version, file count, packed and unpacked sizes, shasum, integrity, expected tag, artifact path, warnings, and complete file manifest before publication.",
     "credentials": "Only the npm publish child receives credentials, through a mode-0600 temporary user config; inherited npm/pnpm lifecycle settings and token variables are removed from its environment, and the config is deleted when the child exits.",
+    "orchestration": "Root package scripts are the shared local and CI interface. Push-only development and stable jobs run the matching transaction after required gates; replay needs no credentials, mutation without credentials fails, and development publication precedes exact-version L2 bootstrap verification.",
     "outputModes": "Default construction output omits the per-file list; --json and --verbose retain the complete npm pack manifest.",
     "output": ["package", "version", "expectedTag", "phase", "outcome", "nextAction"]
   },

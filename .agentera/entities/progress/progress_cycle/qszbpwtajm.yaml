@@ -1,0 +1,15 @@
+id: qszbpwtajm
+artifact: progress
+record:
+  timestamp: 2026-07-25 16:13
+  type: fix
+  phase: build
+  what: Aligned CI development and stable publication with the root package-script transaction interface and moved exact-version L2 after development publication.
+  context:
+    intent: Use one publication contract locally and in CI while preserving idempotent replay, visible credential failures, and push-only npm mutation.
+    constraints: No npm publication, tagging, pushing, or remote mutation; registry mutation remained stubbed in tests.
+    scope: .github/workflows/ci.yml, publication contract/docs, and CI/publication regression tests.
+  inspiration: Active plan task nezgldddwg.
+  discovered: CI duplicated version ordering, skipped required publication when NPM_TOKEN was absent, and required unpublished exact-version L2 before publish-next.
+  verified: "Focused publication tests: 67 passed; source: 2655 passed, 1 skipped; typecheck, build, package verification (14 passed), capability-contract validation, compaction, and diff checks passed."
+  next: Independent audit should evaluate task nezgldddwg; bootstrap work vptlelnadp retains ownership of the full exact-version matrix.

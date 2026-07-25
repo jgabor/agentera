@@ -4,7 +4,7 @@ record:
   name: Implement bounded publication verification
   depends_on:
     - dxauzvwsfy
-  status: blocked
+  status: superseded
   description: Publish the verified package directly to its expected tag, observe bounded registry convergence, smoke the exact version, and make interrupted retries safe.
   acceptance:
     - GIVEN an unpublished committed version and valid authority WHEN publication runs THEN exactly that package is published once to its expected dist-tag.
@@ -24,3 +24,6 @@ record:
       source: independent audit ses_06680a446ffeyqXcerIFInUNTV
       recorded_at: 2026-07-25 15:44
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - fjzwlkkbxe
+  superseded_reason: Precision-safe replacement satisfies publication verification after the original task exhausted evaluation retries.

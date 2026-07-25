@@ -59,6 +59,16 @@ variables or caller-only npm/pnpm lifecycle settings, preventing credentials
 from escaping the restricted configuration and avoiding unrelated npm warnings
 from pnpm's environment.
 
+The root `pnpm cli:*` package scripts are also the CI publication interface.
+After the required repository gates, pushes to `feat/v3` run
+`pnpm cli:publish:dev` and pushes to `main` run `pnpm cli:publish:stable`.
+Pull requests and other branches never enter a publication job. CI does not
+compare versions or interpret credentials separately: matching registry state
+replays successfully without a token, while a required mutation with no
+`NPM_TOKEN` fails at the transaction's credential boundary. Development
+publication runs before the pinned exact-version L2 sandbox; the separate
+four-state bootstrap work owns expansion of that L2 proof.
+
 Each package is published directly to its existing expected tag; there is no
 candidate tag or promotion phase. The transaction polls exact version,
 integrity, and tag convergence with a bounded retry window, then runs only the

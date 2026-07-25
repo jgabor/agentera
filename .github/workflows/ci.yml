@@ -75,10 +75,30 @@ jobs:
           name: sandbox-reports-l1
           path: sandbox-report-*.json
 
-  sandbox-l2:
-    name: v2→v3 sandbox L2 (pinned npm)
+  publish-next:
+    name: Publish packages/cli to npm @next (feat/v3)
+    needs: [cli, sandbox-l1]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/feat/v3'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Publish or verify isolated package on npm @next
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm cli:publish:dev
+
+  sandbox-l2:
+    # TODO vptlelnadp owns the full exact-version bootstrap matrix. This L2
+    # scenario consumes the version only after the publication transaction.
+    name: v2→v3 sandbox L2 (pinned npm)
+    needs: [publish-next]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -96,60 +116,11 @@ jobs:
           AGENTERA_NPM_PIN="agentera@${CLI_VERSION}"
           echo "L2 npm pin: ${AGENTERA_NPM_PIN}"
           if ! npm view "${AGENTERA_NPM_PIN}" version >/dev/null 2>&1; then
-            echo "error: ${AGENTERA_NPM_PIN} is not published on npm; publish @next before L2 sandbox can run" >&2
+            echo "error: ${AGENTERA_NPM_PIN} is not published on npm after the publication transaction" >&2
             exit 1
           fi
           export AGENTERA_NPM_PIN
           bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
-
-  publish-next:
-    name: Publish packages/cli to npm @next (feat/v3)
-    needs: [cli, sandbox-l1, sandbox-l2]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - name: Compare local vs published @next version
-        id: version-check
-        run: |
-          set -euo pipefail
-          cd packages/cli
-          LOCAL_VERSION=$(node -p "require('./package.json').version")
-          echo "Local version: ${LOCAL_VERSION}"
-          PUBLISHED_VERSION=$(npm view agentera@next version 2>/dev/null || echo "none")
-          echo "Published @next version: ${PUBLISHED_VERSION}"
-          should_publish=false
-          if [ "${PUBLISHED_VERSION}" = "none" ]; then
-            echo "No @next published yet; will publish"
-            should_publish=true
-          elif [ "${LOCAL_VERSION}" = "${PUBLISHED_VERSION}" ]; then
-            echo "Committed version equals published @next; skip"
-          else
-            NEWER=$(printf '%s\n%s\n' "${LOCAL_VERSION}" "${PUBLISHED_VERSION}" | sort -V | tail -n1)
-            if [ "${NEWER}" = "${LOCAL_VERSION}" ]; then
-              echo "Committed version is newer than published @next; will publish"
-              should_publish=true
-            else
-              echo "Committed version is older than published @next; skip"
-            fi
-          fi
-          echo "should_publish=${should_publish}" >> $GITHUB_OUTPUT
-      - name: Publish isolated package to npm @next
-        if: steps.version-check.outputs.should_publish == 'true'
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${NPM_TOKEN}" ]; then
-            echo "NPM_TOKEN secret is not set; skipping publish"
-            exit 0
-          fi
-          pnpm -C packages/cli run publish:dev
 
   publish-latest:
     name: Publish stable shim to npm @latest (main)
@@ -163,39 +134,7 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Compare local vs published @latest version
-        id: version-check
-        run: |
-          set -euo pipefail
-          cd packages/cli/shim
-          LOCAL_VERSION=$(node -p "require('./package.json').version")
-          echo "Local shim version: ${LOCAL_VERSION}"
-          PUBLISHED_VERSION=$(npm view agentera@latest version 2>/dev/null || echo "none")
-          echo "Published @latest version: ${PUBLISHED_VERSION}"
-          should_publish=false
-          if [ "${PUBLISHED_VERSION}" = "none" ]; then
-            echo "No @latest published yet; will publish"
-            should_publish=true
-          elif [ "${LOCAL_VERSION}" = "${PUBLISHED_VERSION}" ]; then
-            echo "Committed shim version equals published @latest; skip"
-          else
-            NEWER=$(printf '%s\n%s\n' "${LOCAL_VERSION}" "${PUBLISHED_VERSION}" | sort -V | tail -n1)
-            if [ "${NEWER}" = "${LOCAL_VERSION}" ]; then
-              echo "Committed shim version is newer than published @latest; will publish"
-              should_publish=true
-            else
-              echo "Committed shim version is older than published @latest; skip"
-            fi
-          fi
-          echo "should_publish=${should_publish}" >> $GITHUB_OUTPUT
-      - name: Publish shim through the shared transaction
-        if: steps.version-check.outputs.should_publish == 'true'
+      - name: Publish or verify shim on npm @latest
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${NPM_TOKEN}" ]; then
-            echo "NPM_TOKEN secret is not set; skipping publish"
-            exit 0
-          fi
-          pnpm cli:publish:stable
+        run: pnpm cli:publish:stable
