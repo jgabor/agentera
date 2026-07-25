@@ -50,12 +50,14 @@ manifest diff, and commit it. Publication then runs from that clean commit with
 `pnpm cli:publish:dev` or `pnpm cli:publish:stable`. The publisher fails before
 registry mutation unless `--authorize` is present internally, the entire tree
 is clean, the selected manifest is committed, and its 40-character `gitRef`
-names an existing commit. `NPM_TOKEN` is written only to a mode-`0600` temporary
-npm configuration used by `npm publish`, then removed as soon as that child
-exits. The npm child does not inherit token variables or caller-only
-npm/pnpm lifecycle settings, preventing credentials from escaping the
-restricted configuration and avoiding unrelated npm warnings from pnpm's
-environment.
+names an existing commit. The committed version must match its adapter
+(`X.Y.Z-dev.N` for development or `X.Y.Z` for stable), and publication refuses
+to move an expected tag backward from a newer registry version. `NPM_TOKEN` is
+written only to a mode-`0600` temporary npm configuration used by `npm publish`,
+then removed as soon as that child exits. The npm child does not inherit token
+variables or caller-only npm/pnpm lifecycle settings, preventing credentials
+from escaping the restricted configuration and avoiding unrelated npm warnings
+from pnpm's environment.
 
 Each package is published directly to its existing expected tag; there is no
 candidate tag or promotion phase. The transaction polls exact version,
@@ -65,7 +67,9 @@ matrix is not inherited here. Repeating the same transaction succeeds without
 mutation when exact integrity and tag already match; an existing version with
 conflicting integrity or tag fails and requires an explicit correction or a new
 prepared version. A post-publication convergence or smoke failure does not move
-the dist-tag backward: correct the reported cause and retry.
+the dist-tag backward or trigger rollback: correct the reported cause and retry
+the same committed version. Registry lookup failures other than an explicit
+not-found response are errors, not evidence that a version is unpublished.
 
 Every completed phase emits one bounded human line, or one JSON object when the
 runner receives `--json`, containing `package`, `version`, `expectedTag`,

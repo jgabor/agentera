@@ -76,6 +76,13 @@ export function preflightPublication(adapterName, manifest, state) {
   if (state.dirty) corrections.push("commit or stash all worktree changes");
   if (!state.metadataCommitted)
     corrections.push(`commit ${PACKAGE_ADAPTERS[adapterName].manifestPath}`);
+  if (!publishableVersion(adapterName, manifest.version)) {
+    corrections.push(
+      adapterName === "development"
+        ? "set a development version matching X.Y.Z-dev.N and commit it"
+        : "set a stable version matching X.Y.Z and commit it",
+    );
+  }
   if (!state.gitRefExists)
     corrections.push("set agentera.gitRef to an existing immutable commit and commit it");
   return result(
@@ -176,19 +183,90 @@ function npmPack(args, options = {}) {
   };
 }
 
+function isRegistryNotFound(error) {
+  return /(?:E404|404 Not Found|is not in this registry|No match found)/i.test(error.message);
+}
+
+function optionalNpmJson(args) {
+  try {
+    return npmJson(args);
+  } catch (error) {
+    if (isRegistryNotFound(error)) return null;
+    throw error;
+  }
+}
+
 function registryState(manifest, adapter) {
   let exact;
-  try {
-    exact = npmJson(["view", `${manifest.name}@${manifest.version}`, "dist.integrity"]);
-  } catch {
-    return { exists: false };
-  }
-  const tags = npmJson(["view", manifest.name, "dist-tags"]);
+  exact = optionalNpmJson(["view", `${manifest.name}@${manifest.version}`, "dist.integrity"]);
+  const tags = optionalNpmJson(["view", manifest.name, "dist-tags"]) ?? {};
   return {
-    exists: true,
+    exists: exact !== null,
     integrity: typeof exact === "string" ? exact : exact?.["dist.integrity"],
+    expectedTagVersion: tags?.[adapter.expectedTag] ?? null,
     tagged: tags?.[adapter.expectedTag] === manifest.version,
   };
+}
+
+function publishableVersion(adapterName, version) {
+  const pattern = adapterName === "development" ? /^\d+\.\d+\.\d+-dev\.\d+$/ : /^\d+\.\d+\.\d+$/;
+  return typeof version === "string" && pattern.test(version);
+}
+
+function versionParts(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-dev\.(\d+))?$/.exec(version ?? "");
+  return match ? match.slice(1).map((part) => (part === undefined ? null : Number(part))) : null;
+}
+
+function compareVersions(left, right) {
+  const leftParts = versionParts(left);
+  const rightParts = versionParts(right);
+  if (!leftParts || !rightParts) return null;
+  for (let index = 0; index < 3; index++) {
+    if (leftParts[index] !== rightParts[index]) return leftParts[index] - rightParts[index];
+  }
+  if (leftParts[3] === rightParts[3]) return 0;
+  if (leftParts[3] === null) return 1;
+  if (rightParts[3] === null) return -1;
+  return leftParts[3] - rightParts[3];
+}
+
+function publicationError(message, phase, nextAction) {
+  const error = new Error(message);
+  error.publicationPhase = phase;
+  error.nextAction = nextAction;
+  return error;
+}
+
+function assertRegistryCompatible(
+  manifest,
+  adapter,
+  integrity,
+  state,
+  phase,
+  mutationAttempted = false,
+) {
+  const correction = mutationAttempted
+    ? "No rollback was attempted; inspect the conflicting registry state and retry the same committed version."
+    : "No registry mutation was attempted.";
+  if (state.exists && state.integrity !== integrity) {
+    throw publicationError(
+      `${manifest.name}@${manifest.version} already exists with conflicting integrity; prepare a new version`,
+      phase,
+      mutationAttempted ? correction : `Prepare and commit a new version; ${correction}`,
+    );
+  }
+  if (!state.expectedTagVersion || state.expectedTagVersion === manifest.version) return;
+  const comparison = compareVersions(state.expectedTagVersion, manifest.version);
+  if (comparison === null || comparison > 0) {
+    throw publicationError(
+      `@${adapter.expectedTag} already points to ${state.expectedTagVersion}, which is incompatible with committed ${manifest.version}`,
+      phase,
+      mutationAttempted
+        ? correction
+        : `Prepare a version newer than the expected tag; ${correction}`,
+    );
+  }
 }
 
 export function constructPackage(adapterName, adapter, manifest, temporary, dependencies = {}) {
@@ -251,19 +329,116 @@ export function withNpmCredentials(temporary, callback, environment = process.en
   }
 }
 
-async function waitForConvergence(manifest, adapter, integrity) {
-  for (let attempt = 1; attempt <= PUBLICATION_CONTRACT.bounds.registryAttempts; attempt++) {
-    const state = registryState(manifest, adapter);
-    if (state.exists && state.integrity === integrity && state.tagged) return;
-    if (attempt < PUBLICATION_CONTRACT.bounds.registryAttempts) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, PUBLICATION_CONTRACT.bounds.registryDelayMs),
+async function waitForConvergence(manifest, adapter, integrity, dependencies = {}) {
+  const inspect = dependencies.inspectRegistry ?? (() => registryState(manifest, adapter));
+  const attempts = dependencies.registryAttempts ?? PUBLICATION_CONTRACT.bounds.registryAttempts;
+  const sleep =
+    dependencies.sleep ?? ((delay) => new Promise((resolve) => setTimeout(resolve, delay)));
+  let state;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    state = inspect();
+    assertRegistryCompatible(
+      manifest,
+      adapter,
+      integrity,
+      state,
+      "convergence",
+      dependencies.mutationAttempted,
+    );
+    if (state.exists && state.integrity === integrity && state.tagged) return state;
+    if (attempt < attempts) await sleep(PUBLICATION_CONTRACT.bounds.registryDelayMs);
+  }
+  const observed = state?.exists
+    ? `integrity ${state.integrity ?? "missing"}`
+    : "exact version absent";
+  throw publicationError(
+    `registry did not converge after ${attempts} attempts: ${observed}; @${adapter.expectedTag} points to ${state?.expectedTagVersion ?? "nothing"}`,
+    "convergence",
+    "Retry the same committed version; publication will replay without republishing once registry state matches.",
+  );
+}
+
+export async function executePublication(adapterName, manifest, packed, dependencies = {}) {
+  const adapter = PACKAGE_ADAPTERS[adapterName];
+  if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
+  if (!publishableVersion(adapterName, manifest.version)) {
+    const expected = adapterName === "development" ? "X.Y.Z-dev.N" : "X.Y.Z";
+    throw publicationError(
+      `${adapterName} version '${manifest.version}' must match ${expected}`,
+      "preflight",
+      `Set and commit a version matching ${expected}; no registry mutation was attempted.`,
+    );
+  }
+  const inspect = dependencies.inspectRegistry ?? (() => registryState(manifest, adapter));
+  const receipts = [];
+  const record = (receipt) => {
+    receipts.push(receipt);
+    dependencies.onReceipt?.(receipt);
+  };
+  let existing = inspect();
+  assertRegistryCompatible(manifest, adapter, packed.integrity, existing, "publication");
+
+  if (!existing.exists && existing.expectedTagVersion === manifest.version) {
+    existing = await waitForConvergence(manifest, adapter, packed.integrity, dependencies);
+  }
+
+  if (existing.exists) {
+    record(
+      result(
+        adapterName,
+        manifest.version,
+        "publication",
+        "replayed",
+        existing.tagged ? "run exact-version smoke" : "wait for expected tag convergence",
+      ),
+    );
+    if (!existing.tagged) {
+      await waitForConvergence(manifest, adapter, packed.integrity, dependencies);
+      record(
+        result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"),
       );
     }
+  } else {
+    if (typeof dependencies.publishPackage !== "function") {
+      throw new Error("publication dependency is missing publishPackage");
+    }
+    await dependencies.publishPackage();
+    record(
+      result(
+        adapterName,
+        manifest.version,
+        "publication",
+        "published",
+        "wait for exact registry convergence",
+      ),
+    );
+    await waitForConvergence(manifest, adapter, packed.integrity, {
+      ...dependencies,
+      mutationAttempted: true,
+    });
+    record(
+      result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"),
+    );
   }
-  throw new Error(
-    `registry did not converge on exact integrity and @${adapter.expectedTag} within the bounded retry window`,
+
+  let smokeOutput;
+  try {
+    smokeOutput = await dependencies.smokePackage?.();
+    if (!String(smokeOutput).includes(manifest.version)) {
+      throw new Error(`exact-version smoke output did not identify ${manifest.version}`);
+    }
+  } catch (error) {
+    throw publicationError(
+      `exact-version smoke failed: ${error.message}`,
+      "smoke",
+      "No rollback was attempted; correct the smoke failure and retry the same committed version.",
+    );
+  }
+  record(
+    result(adapterName, manifest.version, "smoke", "passed", "publication transaction complete"),
   );
+  record(result(adapterName, manifest.version, "complete", "passed", "none"));
+  return receipts;
 }
 
 async function publish(adapterName, json, verbose, authorized) {
@@ -301,67 +476,25 @@ async function publish(adapterName, json, verbose, authorized) {
     emit(constructionReceipt, json, verbose);
 
     currentPhase = "publication";
-    const existing = registryState(manifest, adapter);
-    if (existing.exists) {
-      if (existing.integrity !== packed.integrity) {
-        throw new Error(
-          `agentera@${manifest.version} already exists with conflicting integrity; prepare a new version`,
-        );
-      }
-      emit(
-        result(
-          adapterName,
-          manifest.version,
-          "publication",
-          "replayed",
-          existing.tagged ? "run exact-version smoke" : "wait for expected tag convergence",
-        ),
-        json,
-      );
-      if (!existing.tagged) {
-        currentPhase = "convergence";
-        await waitForConvergence(manifest, adapter, packed.integrity);
-        emit(
-          result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"),
-          json,
-        );
-      }
-    } else {
-      withNpmCredentials(temporary, (env) => {
-        run("npm", ["publish", tarball, "--access", "public", "--tag", adapter.expectedTag], {
-          cwd: repoRoot,
-          env,
-        });
-      });
-      emit(
-        result(
-          adapterName,
-          manifest.version,
-          "publication",
-          "published",
-          "wait for exact registry convergence",
-        ),
-        json,
-      );
-      currentPhase = "convergence";
-      await waitForConvergence(manifest, adapter, packed.integrity);
-      emit(
-        result(adapterName, manifest.version, "convergence", "passed", "run exact-version smoke"),
-        json,
-      );
-    }
-
-    currentPhase = "smoke";
-    const smoke = adapter.smoke.map((part) => part.replace("{version}", manifest.version));
-    const smokeOutput = run(smoke[0], smoke.slice(1), { cwd: temporary });
-    if (!smokeOutput.includes(manifest.version))
-      throw new Error(`exact-version smoke output did not identify ${manifest.version}`);
-    emit(
-      result(adapterName, manifest.version, "smoke", "passed", "publication transaction complete"),
-      json,
-    );
-    emit(result(adapterName, manifest.version, "complete", "passed", "none"), json);
+    await executePublication(adapterName, manifest, packed, {
+      publishPackage: () =>
+        withNpmCredentials(temporary, (env) => {
+          run("npm", ["publish", tarball, "--access", "public", "--tag", adapter.expectedTag], {
+            cwd: repoRoot,
+            env,
+          });
+        }),
+      smokePackage: () => {
+        const smoke = adapter.smoke.map((part) => part.replace("{version}", manifest.version));
+        return run(smoke[0], smoke.slice(1), { cwd: temporary });
+      },
+      onReceipt: (receipt) => {
+        currentPhase = receipt.phase;
+        emit(receipt, json);
+      },
+    });
   } catch (error) {
+    currentPhase = error.publicationPhase ?? currentPhase;
     if (!error.receiptEmitted) {
       emit(
         result(
@@ -369,7 +502,7 @@ async function publish(adapterName, json, verbose, authorized) {
           manifest.version,
           currentPhase,
           "failed",
-          "Correct the reported failure and safely retry the same command.",
+          error.nextAction ?? "Correct the reported failure and safely retry the same command.",
           error.message,
         ),
         json,

@@ -1,0 +1,15 @@
+id: kxwznbtydi
+artifact: progress
+record:
+  timestamp: 2026-07-25 15:24
+  type: feat
+  phase: build
+  what: Implemented task zcobvxqwmc in packages/cli/scripts/publication-transaction.mjs with an injected bounded registry transaction shared by development and stable adapters. The transaction publishes an absent committed package once to its direct expected tag, polls exact integrity and tag visibility, replays matching state without publish, rejects invalid local versions, integrity conflicts, advanced tags, and registry errors before mutation, and runs exact-version smoke after convergence with explicit no-rollback failure guidance. Updated the publication contract, packaging guide, and 40-case adapter matrix.
+  context:
+    intent: Implement only the missing bounded npm publication verification behavior while preserving completed package construction and credential handling and performing no live registry mutation.
+    constraints: No npm publication, dist-tag mutation, release preparation, CI sequencing, push, tag, remote change, or adjacent TODO work.
+    unknowns: none
+    scope: packages/cli/scripts/publication-transaction.mjs; packages/cli/test/release/publicationTransaction.test.ts; references/adapters/package-publication.json; docs/packaging/v3-packaging.md; typed plan/progress state.
+  inspiration: Plan task zcobvxqwmc and the shared publication transaction introduced by 0c3259f4, be063ce9, and daa89c1c.
+  verified: "Criterion 1: development/stable tests assert one publish and direct expected tags. Criterion 2: injected stale exact/tag sequences converge within configured attempts and timeout reports observed state plus same-version retry. Criterion 3: matching exact integrity/tag produces replay with zero publish calls. Criterion 4: adapter-invalid versions, conflicting integrity, advanced tags, and registry lookup errors produce zero publish calls. Criterion 5: smoke runs only after convergence; failure identifies the smoke phase and states no rollback was attempted. pnpm -C packages/cli test: 204 files, 2631 passed, 1 skipped; verify:package: 14 passed; focused: 40 passed; typecheck, build, vp fmt --check, capability-contract validation, check compact, and git diff --check passed."
+  next: Continue with the separately scoped documentation/metadata or CI sequencing plan tasks; do not duplicate package construction or credentials.

@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   PACKAGE_ADAPTERS,
   constructPackage,
+  executePublication,
   prepareMetadata,
   preflightPublication,
   validateResult,
@@ -322,5 +323,188 @@ describe("npm credential lifecycle", () => {
     } finally {
       fs.rmSync(temporary, { recursive: true, force: true });
     }
+  });
+});
+
+describe.each([
+  ["development", "3.0.0-dev.33"],
+  ["stable", "2.7.8"],
+] as const)("%s bounded publication verification", (adapterName, version) => {
+  const adapter = PACKAGE_ADAPTERS[adapterName];
+  const committed = { ...manifest(adapterName), version };
+  const packed = normalizeConstruction(packedManifest(version), {
+    expectedName: "agentera",
+    expectedVersion: version,
+    expectedTag: adapter.expectedTag,
+    artifact: `/tmp/agentera-${version}.tgz`,
+    warnings: [],
+  });
+
+  function registry(exact: string | null, tag: string | null) {
+    return {
+      exists: exact !== null,
+      integrity: exact,
+      expectedTagVersion: tag,
+      tagged: tag === version,
+    };
+  }
+
+  it("publishes an absent exact version once and smokes after delayed convergence", async () => {
+    const states = [
+      registry(null, adapterName === "development" ? "3.0.0-dev.32" : "2.7.7"),
+      registry(null, adapterName === "development" ? "3.0.0-dev.32" : "2.7.7"),
+      registry(packed.integrity, version),
+    ];
+    let publishes = 0;
+    let smokes = 0;
+    const receipts = await executePublication(adapterName, committed, packed, {
+      inspectRegistry: () => states.shift()!,
+      publishPackage: () => publishes++,
+      smokePackage: () => {
+        smokes++;
+        return version;
+      },
+      sleep: async () => undefined,
+      registryAttempts: 3,
+    });
+
+    expect(publishes).toBe(1);
+    expect(smokes).toBe(1);
+    expect(receipts.map(({ phase, outcome }) => `${phase}:${outcome}`)).toEqual([
+      "publication:published",
+      "convergence:passed",
+      "smoke:passed",
+      "complete:passed",
+    ]);
+  });
+
+  it("replays matching registry state without publishing", async () => {
+    let publishes = 0;
+    const receipts = await executePublication(adapterName, committed, packed, {
+      inspectRegistry: () => registry(packed.integrity, version),
+      publishPackage: () => publishes++,
+      smokePackage: () => version,
+    });
+
+    expect(publishes).toBe(0);
+    expect(receipts[0]).toMatchObject({ phase: "publication", outcome: "replayed" });
+    expect(receipts.at(-1)).toMatchObject({ phase: "complete", outcome: "passed" });
+  });
+
+  it("polls inconsistent exact-version visibility before deciding to publish", async () => {
+    const states = [registry(null, version), registry(packed.integrity, version)];
+    let publishes = 0;
+    const receipts = await executePublication(adapterName, committed, packed, {
+      inspectRegistry: () => states.shift()!,
+      publishPackage: () => publishes++,
+      smokePackage: () => version,
+      sleep: async () => undefined,
+      registryAttempts: 2,
+    });
+
+    expect(publishes).toBe(0);
+    expect(receipts[0]).toMatchObject({ phase: "publication", outcome: "replayed" });
+  });
+
+  it("fails conflicting integrity before publication", async () => {
+    let publishes = 0;
+    await expect(
+      executePublication(adapterName, committed, packed, {
+        inspectRegistry: () => registry("sha512-conflict", version),
+        publishPackage: () => publishes++,
+        smokePackage: () => version,
+      }),
+    ).rejects.toThrow(/conflicting integrity/);
+    expect(publishes).toBe(0);
+  });
+
+  it("fails an expected tag already ahead before publication", async () => {
+    const ahead = adapterName === "development" ? "3.0.0-dev.34" : "2.7.9";
+    let publishes = 0;
+    await expect(
+      executePublication(adapterName, committed, packed, {
+        inspectRegistry: () => registry(null, ahead),
+        publishPackage: () => publishes++,
+        smokePackage: () => version,
+      }),
+    ).rejects.toThrow(new RegExp(`@${adapter.expectedTag} already points to ${ahead}`));
+    expect(publishes).toBe(0);
+  });
+
+  it("times out actionably when registry metadata never converges", async () => {
+    let publishes = 0;
+    await expect(
+      executePublication(adapterName, committed, packed, {
+        inspectRegistry: () => registry(null, null),
+        publishPackage: () => publishes++,
+        smokePackage: () => version,
+        sleep: async () => undefined,
+        registryAttempts: 2,
+      }),
+    ).rejects.toMatchObject({
+      publicationPhase: "convergence",
+      nextAction: expect.stringContaining("Retry the same committed version"),
+    });
+    expect(publishes).toBe(1);
+  });
+
+  it("does not treat a registry lookup failure as an unpublished version", async () => {
+    let publishes = 0;
+    await expect(
+      executePublication(adapterName, committed, packed, {
+        inspectRegistry: () => {
+          throw new Error("npm view failed: registry unavailable");
+        },
+        publishPackage: () => publishes++,
+        smokePackage: () => version,
+      }),
+    ).rejects.toThrow(/registry unavailable/);
+    expect(publishes).toBe(0);
+  });
+
+  it("reports smoke failure without claiming rollback", async () => {
+    let publishes = 0;
+    await expect(
+      executePublication(adapterName, committed, packed, {
+        inspectRegistry: () => registry(packed.integrity, version),
+        publishPackage: () => publishes++,
+        smokePackage: () => {
+          throw new Error("bootstrap failed");
+        },
+      }),
+    ).rejects.toMatchObject({
+      publicationPhase: "smoke",
+      nextAction: expect.stringContaining("No rollback was attempted"),
+    });
+    expect(publishes).toBe(0);
+  });
+});
+
+describe("publication version preflight", () => {
+  it("rejects adapter-incompatible local versions before mutation", () => {
+    expect(
+      preflightPublication(
+        "development",
+        { ...manifest("development"), version: "3.0.0" },
+        {
+          authorized: true,
+          dirty: false,
+          metadataCommitted: true,
+          gitRefExists: true,
+        },
+      ),
+    ).toMatchObject({ outcome: "failed", nextAction: expect.stringContaining("X.Y.Z-dev.N") });
+    expect(
+      preflightPublication(
+        "stable",
+        { ...manifest("stable"), version: "2.7.8-dev.1" },
+        {
+          authorized: true,
+          dirty: false,
+          metadataCommitted: true,
+          gitRefExists: true,
+        },
+      ),
+    ).toMatchObject({ outcome: "failed", nextAction: expect.stringContaining("X.Y.Z") });
   });
 });

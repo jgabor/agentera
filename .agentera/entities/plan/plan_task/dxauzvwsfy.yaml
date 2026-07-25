@@ -14,3 +14,13 @@ record:
     - GIVEN construction or authentication setup fails WHEN cleanup runs THEN temporary credentials and package state are removed without changing tracked files or prior artifacts.
   test_proportionality: One pass and one fail for each package construction adapter, credential lifecycle, and output projection.
   plan: kedmyhqqtb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: task2-audit-1
+      source: independent audit ses_0669deb71ffexZl8xKVwGbxtDU
+      recorded_at: 2026-07-25 15:12
+      writer_command: agentera state plan record-evaluation
