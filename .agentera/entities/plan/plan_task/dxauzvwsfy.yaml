@@ -1,0 +1,16 @@
+id: dxauzvwsfy
+artifact: plan
+record:
+  name: Bound package construction and credentials
+  depends_on:
+    - fjcxvyigcc
+  status: pending
+  description: Produce verified package identity and integrity through each package's governed construction path while isolating npm credentials and reducing default output noise.
+  acceptance:
+    - GIVEN either package is prepared WHEN construction succeeds THEN publication receives its exact name, version, file count, sizes, shasum, integrity, expected tag, and package artifact.
+    - GIVEN default output is requested WHEN construction succeeds THEN it reports identity, counts, sizes, integrity, and warnings without listing every file.
+    - GIVEN JSON or verbose output is requested WHEN construction succeeds THEN the complete package manifest remains available.
+    - GIVEN npm authentication is required WHEN an npm child process starts THEN credentials are supplied through a temporary restricted configuration and inherited package-manager-only settings do not produce unrelated warnings.
+    - GIVEN construction or authentication setup fails WHEN cleanup runs THEN temporary credentials and package state are removed without changing tracked files or prior artifacts.
+  test_proportionality: One pass and one fail for each package construction adapter, credential lifecycle, and output projection.
+  plan: kedmyhqqtb

@@ -169,25 +169,34 @@ pnpm -C packages/cli run pack:dry-run
 
 Publish only after the release commit is clean and all gates pass. The v3
 development channel publishes `agentera` to npm `@next`; it loads `NPM_TOKEN`
-from `.env` when present. npm rejects an already-published version, so compare
-the local package version with the current `@next` version before publishing.
-When they match, increment `packages/cli/package.json#version`, commit that
-bump, and rerun the checks before publishing:
+from `.env` when present. Compare the local package version with the current
+`@next` version, then prepare version and `gitRef` metadata without registry
+mutation. Review and commit that manifest and rerun the checks before
+publishing:
 
 ```bash
 npm view agentera@next version
+pnpm cli:prepare:dev
+# review and commit packages/cli/package.json
 pnpm cli:publish:dev
 ```
 
-The stable channel remains the transitional shim on npm `@latest`. Its publish
-script requires a clean tree, runs its regression tests, increments the shim
-patch version, pins its `gitRef`, and publishes. It intentionally leaves the
-successful bump in `packages/cli/shim/package.json`; commit that bump after a
-successful publication:
+The stable channel remains the transitional shim on npm `@latest`. Prepare its
+patch version and `gitRef` without publishing, review and commit the manifest,
+then publish from that clean commit:
 
 ```bash
+pnpm cli:prepare:stable
+# review and commit packages/cli/shim/package.json
 pnpm cli:publish:stable
 ```
+
+`references/adapters/package-publication.json` owns both package adapters and
+the shared repository transaction. Publication never mutates tracked metadata,
+uses no candidate dist-tags, verifies bounded exact-version integrity and tag
+convergence, and runs only the adapter's no-project `--version` smoke. Matching
+registry state is a successful non-publishing replay; conflicts fail with a
+correction.
 
 Never publish, tag, or push during normal capability execution without the
 user's explicit instruction.

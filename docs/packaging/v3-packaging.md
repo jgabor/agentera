@@ -1,8 +1,10 @@
 # v3 npm packaging and verification
 
 This document is the canonical authority for checkout generated output, npm
-package construction, verification ownership, retention, and recovery. Other
-contributor guides link here rather than restating the protocol.
+package construction, verification ownership, retention, and recovery. Shared
+development and stable publication behavior is owned by
+[`references/adapters/package-publication.json`](../../references/adapters/package-publication.json).
+Other contributor guides link to these authorities rather than restating them.
 
 Agentera v3 has one distribution boundary: the self-contained `agentera` npm
 package used by `npx -y agentera@next`. Native runtime packages, editor
@@ -29,6 +31,41 @@ tree, and `packages/cli/scripts/copy-bundle.mjs` stages the registry-declared
 shared skill and reference inputs into that tree. It then runs `npm pack` with
 lifecycle scripts disabled. Checkout `prepack` is a guard that rejects direct
 `npm pack`; it does not compile or stage publication output.
+
+## Publication transaction
+
+Publication is repository orchestration, not an Agentera CLI command. Both npm
+surfaces use `packages/cli/scripts/publication-transaction.mjs`, with adapters
+that keep package-specific behavior explicit:
+
+| Adapter | Preparation | Construction | Tag | Exact-version smoke |
+| ------- | ----------- | ------------ | --- | ------------------- |
+| `development` | Increment `X.Y.Z-dev.N`; set `agentera.gitRef` to `HEAD` | Build and pack the isolated TypeScript package | `next` | `npx -y agentera@<version> --version` |
+| `stable` | Increment the shim patch; set `agentera.gitRef` to `HEAD` | Test and pack the transitional shim | `latest` | `npx -y agentera@<version> --version` |
+
+Preparation is deliberately separate and never reads or mutates npm registry
+state. Run `pnpm cli:prepare:dev` or `pnpm cli:prepare:stable`, review the
+manifest diff, and commit it. Publication then runs from that clean commit with
+`pnpm cli:publish:dev` or `pnpm cli:publish:stable`. The publisher fails before
+registry mutation unless `--authorize` is present internally, the entire tree
+is clean, the selected manifest is committed, and its 40-character `gitRef`
+names an existing commit. `NPM_TOKEN` is written only to a mode-`0600` temporary
+npm configuration used by `npm publish`, then removed.
+
+Each package is published directly to its existing expected tag; there is no
+candidate tag or promotion phase. The transaction polls exact version,
+integrity, and tag convergence with a bounded retry window, then runs only the
+no-project `--version` smoke. The separate four-state bootstrap and migration
+matrix is not inherited here. Repeating the same transaction succeeds without
+mutation when exact integrity and tag already match; an existing version with
+conflicting integrity or tag fails and requires an explicit correction or a new
+prepared version. A post-publication convergence or smoke failure does not move
+the dist-tag backward: correct the reported cause and retry.
+
+Every completed phase emits one bounded human line, or one JSON object when the
+runner receives `--json`, containing `package`, `version`, `expectedTag`,
+`phase`, `outcome`, and `nextAction`. Failures include a bounded diagnostic and
+a retry correction.
 
 ## Generated-output and verification ownership
 

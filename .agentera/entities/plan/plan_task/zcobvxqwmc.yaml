@@ -1,0 +1,16 @@
+id: zcobvxqwmc
+artifact: plan
+record:
+  name: Implement bounded publication verification
+  depends_on:
+    - dxauzvwsfy
+  status: pending
+  description: Publish the verified package directly to its expected tag, observe bounded registry convergence, smoke the exact version, and make interrupted retries safe.
+  acceptance:
+    - GIVEN an unpublished committed version and valid authority WHEN publication runs THEN exactly that package is published once to its expected dist-tag.
+    - GIVEN npm initially serves stale version or tag metadata WHEN bounded polling runs THEN it observes matching exact version, integrity, and tag or fails with retry guidance.
+    - GIVEN the exact version already exists with matching integrity and expected tag WHEN publication is retried THEN the transaction reports a successful replay without another publish.
+    - GIVEN the version exists with different integrity, the expected tag advanced incompatibly, or the local version is not publishable WHEN preflight runs THEN it fails before another registry mutation.
+    - GIVEN registry convergence succeeds WHEN the exact-version smoke runs THEN success is reported only after the package-specific non-mutating bootstrap passes; failure remains explicit and does not claim rollback.
+  test_proportionality: Cover development and stable success, delayed visibility, matching replay, integrity conflict, tag conflict, timeout, and smoke failure.
+  plan: kedmyhqqtb

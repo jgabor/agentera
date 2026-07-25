@@ -28,7 +28,8 @@
   "type": "module",
   "scripts": {
     "test": "pnpm -C .. test test/shim/ && node --test test/*.test.mjs",
-    "publish:stable": "node ./scripts/publish-stable.mjs"
+    "release:prepare": "node ../scripts/publication-transaction.mjs prepare stable",
+    "publish:stable": "set -a; [ -f ../../../.env ] && . ../../../.env; set +a; node ../scripts/publication-transaction.mjs publish stable --authorize"
   },
   "engines": {
     "node": ">=22"

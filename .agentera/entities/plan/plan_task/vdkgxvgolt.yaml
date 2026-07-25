@@ -1,0 +1,16 @@
+id: vdkgxvgolt
+artifact: plan
+record:
+  name: Produce one verified package artifact
+  depends_on:
+    - zibzssgzds
+  status: pending
+  description: Make verification produce one retained isolated package and receipt that later phases consume without rebuilding.
+  acceptance:
+    - GIVEN release verification succeeds WHEN construction completes THEN the receipt binds the package to its version, source revision, shasum, integrity, and completed gates.
+    - GIVEN publication receives a receipt WHEN its revision, version, or integrity differs THEN publication fails before contacting npm.
+    - GIVEN default dry-run output is requested WHEN construction succeeds THEN it reports a concise summary rather than the complete file inventory.
+    - GIVEN detailed JSON is requested WHEN construction succeeds THEN the complete package manifest remains available.
+    - GIVEN construction fails WHEN cleanup runs THEN temporary state is removed without deleting prior valid artifacts.
+  test_proportionality: One valid receipt and one failure for each receipt binding.
+  plan: dwxhlhulow

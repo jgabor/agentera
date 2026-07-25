@@ -1,0 +1,17 @@
+id: tpghnfhojr
+artifact: plan
+record:
+  name: Repair CI release sequencing
+  depends_on:
+    - iykobotttq
+  status: pending
+  description: Replace the current release dependency cycle with gated candidate staging, exact-version L2 validation, and promotion.
+  acceptance:
+    - GIVEN a new committed development version WHEN CI runs on feat/v3 THEN candidate publication does not require that version to exist beforehand.
+    - GIVEN candidate staging succeeds WHEN L2 runs THEN L2 uses the exact committed version rather than next.
+    - GIVEN L2 fails WHEN the workflow terminates THEN next remains on the prior verified version.
+    - GIVEN L2 passes WHEN promotion runs THEN only the exact tested candidate becomes next.
+    - GIVEN publication is required but credentials are absent WHEN staging begins THEN CI fails visibly rather than reporting a successful skip.
+    - GIVEN a pull request WHEN CI runs THEN no npm mutation phase executes.
+  test_proportionality: Cover new, unchanged, missing-credential, failed-L2, and successful-promotion paths.
+  plan: dwxhlhulow

@@ -1,0 +1,16 @@
+id: fjcxvyigcc
+artifact: plan
+record:
+  name: Define the shared publication transaction
+  depends_on:
+    []
+  status: complete
+  description: Specify repository ownership, package adapters, committed metadata preparation, publication phases, output, retries, smoke behavior, and failure semantics for development and stable packages.
+  acceptance:
+    - GIVEN either package path is selected WHEN the contract is inspected THEN shared publication invariants and package-specific preparation or construction behavior are distinguishable.
+    - GIVEN metadata preparation runs WHEN it completes THEN it changes no registry state and leaves reviewable version and gitRef metadata for a separate commit.
+    - GIVEN publication begins WHEN metadata is uncommitted, the tree is dirty, or authority is absent THEN it fails before registry mutation with a working correction.
+    - GIVEN the bootstrap-smoke investigation completes WHEN the contract is finalized THEN each package has one bounded non-mutating exact-version smoke without inheriting the four-state migration matrix.
+    - GIVEN human-readable or JSON output is requested WHEN any phase finishes THEN the bounded result identifies package, version, expected tag, phase, outcome, and next action.
+  test_proportionality: At least one passing and one failing case for preparation, preflight, and output shape per package adapter.
+  plan: kedmyhqqtb

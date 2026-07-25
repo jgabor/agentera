@@ -39,6 +39,18 @@ bundle data disappears, or if a current host-native descriptor/runtime path
 enters the package. Contributors use `pnpm -C packages/cli run pack:dry-run`;
 direct checkout packing remains rejected by the canonical packaging authority.
 
+## Publication adapters
+
+[`package-publication.json`](./package-publication.json) owns the shared
+repository publication transaction and distinguishes the development
+TypeScript package from the transitional stable shim. Both require separately
+prepared and committed version and `gitRef` metadata, explicit publication
+authority, a clean tree, exact registry convergence, safe exact-version replay,
+and bounded phase results. Development retains isolated construction and the
+`next` tag; stable retains shim tests/construction and the `latest` tag. Each
+adapter's only publication smoke is its non-mutating, no-project exact-version
+`--version` invocation, so publication does not absorb migration coverage.
+
 ## Native package boundary
 
 The package registry defines no host-native manifest parity, package-manager

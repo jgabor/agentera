@@ -1,0 +1,20 @@
+id: xclsdjtxqu
+artifact: plan
+record:
+  name: Synchronize documentation, metadata, and project state
+  depends_on:
+    - zibzssgzds
+    - vdkgxvgolt
+    - iykobotttq
+    - tpghnfhojr
+    - wplbispazq
+  status: pending
+  description: Align contributor guidance and release metadata, apply the permitted development version change, and close the plan with complete evidence.
+  acceptance:
+    - GIVEN contributor guidance is read WHEN local and CI release paths are compared THEN ownership, candidate lifecycle, commands, and recovery steps agree.
+    - GIVEN implementation is complete WHEN release metadata is checked THEN version and gitRef satisfy the v3 cutover policy.
+    - GIVEN the final tree WHEN release verification runs THEN source, stress, performance, package, typecheck, build, compactness, metadata, and dry-run gates pass.
+    - GIVEN project state is updated WHEN commits are prepared THEN plan, progress, and related TODO state are folded into substantive commits.
+    - GIVEN no separate publication approval exists WHEN implementation stops THEN no npm tag, Git tag, or remote branch has changed.
+  test_proportionality: One complete release-readiness conjunction and one metadata-divergence failure.
+  plan: dwxhlhulow

@@ -11,6 +11,9 @@ const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-constr
 const construction = path.join(temporary, "package");
 const dryRun = process.argv.includes("--dry-run");
 const publish = process.argv.includes("--publish");
+const json = process.argv.includes("--json");
+const outputIndex = process.argv.indexOf("--output-dir");
+const outputDir = outputIndex >= 0 ? path.resolve(process.argv[outputIndex + 1]) : packageRoot;
 
 function run(command, args, cwd) {
   const result = spawnSync(command, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
@@ -37,9 +40,10 @@ try {
       const tag = tagIndex >= 0 ? process.argv[tagIndex + 1] : "next";
       process.stdout.write(run("npm", ["publish", tarball, "--tag", tag], packageRoot));
     } else {
-      const destination = path.join(packageRoot, entry.filename);
+      const destination = path.join(outputDir, entry.filename);
+      fs.mkdirSync(outputDir, { recursive: true });
       fs.copyFileSync(tarball, destination);
-      console.log(destination);
+      console.log(json ? JSON.stringify(entry) : destination);
     }
   }
 } catch (error) {

@@ -1,0 +1,43 @@
+id: kedmyhqqtb
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-25
+    status: open
+    reviewed: 2026-07-25
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: "Plan: Bounded Verified Package Publication"
+  what: Resolve TODO qhvteprgdg by making development and transitional stable package publication one bounded, verified repository-owned transaction, while retaining package-specific preparation and construction behavior.
+  why: Local and CI publication currently diverge, credentials and npm diagnostics are noisy, successful publication can precede observable registry convergence, and callers must manually prove the exact package and dist-tag before trusting success.
+  constraints: Keep orchestration outside the Agentera binary; make CI the primary publisher while supporting explicit local publication; require version and gitRef metadata to be committed before either path publishes; publish directly to each package's expected dist-tag without candidate tags; preserve isolated package construction, clean-tree validation, headless operation, safe retries, and explicit authorization for external mutation; do not automatically roll back a dist-tag after a post-publication smoke failure.
+  overall_acceptance: GIVEN committed development or stable package metadata and explicit publication authority WHEN the repository transaction runs THEN it verifies package identity and integrity, publishes once to the expected dist-tag, waits boundedly for exact registry convergence, runs an exact-version bootstrap smoke, emits a bounded result, and replays safely without adding release behavior to Agentera.
+  scope:
+    included:
+      - TODO qhvteprgdg and its exact retrieval contract
+      - Development TypeScript package publication to next
+      - Transitional stable shim publication to latest before cutover
+      - Non-publishing committed metadata preparation for both package paths
+      - Restricted temporary npm credential configuration
+      - Concise default package and publication diagnostics
+      - Explicit JSON or verbose package manifests
+      - Exact-version, integrity, and expected-dist-tag convergence checks
+      - Exact-version bootstrap smoke verification
+      - Shared local package commands and CI publication behavior
+    excluded:
+      - Agentera product release commands
+      - Candidate dist-tags or separate promotion phases
+      - Stable TypeScript cutover governed by TODO huiepnrwav
+      - Four-state bootstrap and migration proof governed by TODO vptlelnadp
+      - Verification process termination and targeted-test discoverability governed by TODO zxccscfiox
+      - Git tagging, remote pushing, or automatic commits
+      - npm provenance signing
+    deferred:
+      - Generalized publication tooling for packages outside packages/cli
+  design: Use one transaction contract with package-specific preparation and construction adapters. Preparation changes metadata without publishing and requires review and commit. Publication validates the clean committed state, constructs and verifies the intended package, supplies credentials through a temporary restricted configuration, publishes directly to the expected channel tag, polls the exact version, integrity, and tag with bounded retries, runs the selected exact-version bootstrap smoke, and emits one concise receipt. Matching registry state is a successful replay; conflicting state fails before another mutation.
+  unknowns:
+    - question: What is the minimum exact-version bootstrap smoke that is valid for both the TypeScript package and the transitional stable shim without absorbing the separate four-state bootstrap matrix?
+      affects_task: 1
+      resolve_by: Characterize each package's supported non-mutating no-project entry point; require --version as the shared minimum and add a package-specific smoke only when it remains bounded and does not invoke migration or legacy project behavior.
+  surprises:
+    []

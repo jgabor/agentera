@@ -1,0 +1,17 @@
+id: wplbispazq
+artifact: plan
+record:
+  name: Provide local and CI parity
+  depends_on:
+    - iykobotttq
+    - tpghnfhojr
+  status: pending
+  description: Expose the shared lifecycle through repository package commands while allowing CI to execute the same phases independently.
+  acceptance:
+    - GIVEN a maintainer runs local verification WHEN it succeeds THEN release readiness is proven without publication.
+    - GIVEN a maintainer explicitly runs local development publication WHEN prerequisites pass THEN verification, staging, L2, promotion, and final verification run in order.
+    - GIVEN CI executes split phases WHEN behavior is compared with local execution THEN both consume the same contracts and artifact receipt.
+    - GIVEN npm runs WHEN diagnostics are emitted THEN inherited package-manager configuration warnings do not obscure actionable output.
+    - GIVEN execution is interrupted WHEN rerun begins THEN matching completed phases are safely recognized or repeated.
+  test_proportionality: One local composite success, one preflight failure, and one interrupted replay.
+  plan: dwxhlhulow

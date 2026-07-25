@@ -1,0 +1,36 @@
+id: dwxhlhulow
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-25
+    status: archived
+    reviewed: 2026-07-25
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: Repository-Owned Development Releases"
+  what: Move development-release orchestration into shared repository scripts invoked through package entry points and CI, while keeping release validation available from Agentera without adding product release commands.
+  why: Remove duplicated checks, registry convergence gaps, noisy output, and the CI dependency cycle while preserving a safe CI-primary workflow with explicit local publication support.
+  constraints: Keep release orchestration outside the Agentera binary; preserve isolated package construction, clean-tree and immutable gitRef validation, headless operation, safe retries, pull-request publication exclusion, and explicit authorization for external mutation.
+  overall_acceptance: GIVEN a verified development release is requested locally or by trusted CI WHEN the repository-owned lifecycle runs THEN one receipt-bound candidate is verified before promotion, retries are safe, outputs are bounded, and the Agentera binary performs validation without owning publication.
+  scope:
+    included:
+      - Root and package release entry points
+      - Isolated package construction and verification receipts
+      - npm candidate staging, convergence checks, and next promotion
+      - CI release sequencing and exact-version L2 validation
+      - Local and CI behavior parity
+      - Release tests and contributor documentation
+    excluded:
+      - Agentera product release commands
+      - Stable latest promotion and v3 cutover
+      - Git tagging or remote pushing
+      - npm provenance signing
+    deferred:
+      - Generalized release tooling for packages other than packages/cli
+  design: Separate the lifecycle into verification, artifact construction, candidate staging, exact-version validation, channel promotion, and recording. Bind later phases to one verified artifact, let CI sequence the phases with trusted credentials, and let local maintainers invoke the same contracts explicitly. Keep the public development channel on its prior verified version until candidate validation succeeds.
+  unknowns:
+    - question: Can every supported local publishing environment satisfy the existing L2 prerequisites, including Bun, uv, and sandbox tooling?
+      affects_task: 5
+      resolve_by: Run the existing L2 workflow in a clean supported contributor environment; if prerequisites are unavailable, require an actionable pre-stage failure rather than silently omitting L2.
+  surprises:
+    []

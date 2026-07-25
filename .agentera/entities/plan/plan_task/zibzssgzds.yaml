@@ -1,0 +1,15 @@
+id: zibzssgzds
+artifact: plan
+record:
+  name: Establish the repository release contract
+  depends_on:
+    []
+  status: pending
+  description: Define phase ownership, command behavior, outputs, exit codes, safety boundaries, and idempotency rules before implementing orchestration.
+  acceptance:
+    - GIVEN release entry points are inspected WHEN ownership is evaluated THEN repository scripts own orchestration and Agentera owns only reusable validation.
+    - GIVEN release verification runs WHEN it completes THEN no registry, Git, or tracked-state mutation occurs.
+    - GIVEN publication lacks authorization or prerequisites WHEN preflight runs THEN it fails before external mutation with a working correction.
+    - GIVEN human-readable or JSON output is requested WHEN a phase finishes THEN the bounded result identifies version, source revision, phase, and next action.
+  test_proportionality: At least one passing and one failing case per phase contract.
+  plan: dwxhlhulow

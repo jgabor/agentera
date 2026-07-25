@@ -1,0 +1,16 @@
+id: rlvtoythaa
+artifact: progress
+record:
+  timestamp: 2026-07-25 14:19
+  type: feat
+  phase: build
+  what: Defined one repository-owned publication transaction for the development TypeScript package and transitional stable shim, with separate metadata preparation, package adapters, fail-before-mutation preflight, exact registry convergence, safe replay, bounded output, and exact-version no-project smoke behavior.
+  context:
+    intent: Complete plan task fjcxvyigcc by specifying and implementing shared publication invariants without changing stable cutover behavior or publishing.
+    constraints: No npm publication, dist-tag mutation, tagging, pushing, auto-commit, candidate tag, stable cutover change, or adjacent TODO implementation.
+    unknowns: "Resolved: --version is the shared minimum and no package-specific migration smoke is needed."
+    scope: references/adapters/package-publication.json; package publication scripts and manifests; publication tests; packaging and maintainer docs; stable CI publication entry point.
+  inspiration: Active plan kedmyhqqtb task fjcxvyigcc and its bounded bootstrap-smoke unknown.
+  discovered: Both shipped package entry points support a non-mutating no-project --version smoke. Supplemental release-metadata validation remains intentionally failed until a separate reviewed metadata-preparation commit updates version and gitRef for publication.
+  verified: Focused publication tests passed 13/13; full source tests passed 2604 with one skip; package tests passed 14/14; shim tests passed 25/25; typecheck, build, pack dry-run, capability-contract validation, compact, git diff check, script syntax checks, and real development/stable dirty-tree JSON preflight failures passed.
+  next: Proceed only to another approved plan task. Before publication, run the package-specific prepare command, review and commit its manifest, rerun release gates, then invoke the authorized publisher; do not absorb four-state bootstrap, verification termination, or stable cutover work here.

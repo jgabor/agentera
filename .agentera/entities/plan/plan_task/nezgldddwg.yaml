@@ -1,0 +1,17 @@
+id: nezgldddwg
+artifact: plan
+record:
+  name: Align local commands and CI publication
+  depends_on:
+    - zcobvxqwmc
+  status: pending
+  description: Make package scripts the shared publication interface, use them from CI, and remove workflow ordering that requires an unpublished exact version before its publication job.
+  acceptance:
+    - GIVEN a maintainer runs local preparation or publication WHEN behavior is compared with CI THEN both paths invoke the same transaction contract and package adapter.
+    - GIVEN a development or stable branch push has a newer committed package version WHEN required CI gates pass THEN the matching publication transaction runs with trusted credentials.
+    - GIVEN the committed version already matches the registry WHEN CI evaluates publication THEN it verifies or skips idempotently without treating normal convergence as a failure.
+    - GIVEN publication is required but credentials are absent WHEN CI reaches publication THEN the job fails visibly rather than reporting a successful skip.
+    - GIVEN a pull request or an unrelated branch WHEN CI runs THEN no npm mutation occurs.
+    - GIVEN exact-version L2 still requires a published package WHEN dependencies are evaluated THEN it no longer blocks that package's publication and remains owned by the bootstrap work.
+  test_proportionality: Cover local and CI development or stable selection, unchanged versions, missing credentials, pull requests, and corrected L2 ordering.
+  plan: kedmyhqqtb

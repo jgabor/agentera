@@ -1,0 +1,16 @@
+id: iykobotttq
+artifact: plan
+record:
+  name: Implement candidate publication and promotion
+  depends_on:
+    - vdkgxvgolt
+  status: pending
+  description: Add bounded registry convergence, exact integrity verification, safe replay, candidate staging, and explicit development-channel promotion.
+  acceptance:
+    - GIVEN a newer unpublished development version WHEN staging is authorized THEN it is published as a candidate without changing next.
+    - GIVEN npm initially serves stale metadata WHEN bounded verification retries THEN it observes the exact version or fails with retry guidance.
+    - GIVEN the exact version already exists with matching integrity WHEN staging is retried THEN the operation succeeds as an idempotent replay.
+    - GIVEN integrity differs, the local version is older, or next advanced concurrently WHEN publication runs THEN it fails before promotion.
+    - GIVEN candidate validation passes WHEN promotion occurs THEN next points directly to the receipt-bound exact version and is verified afterward.
+  test_proportionality: Passing stage, replay, and promotion cases plus failures for timeout, integrity mismatch, and concurrent advancement.
+  plan: dwxhlhulow

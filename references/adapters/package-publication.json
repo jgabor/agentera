@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "agentera.packagePublication.v1",
+  "owner": "repository/package scripts",
+  "invariants": {
+    "preparation": "Metadata preparation is non-publishing and leaves version and gitRef changes for review and commit.",
+    "preflight": "Publication requires explicit authority, a clean tree, committed package metadata, and an existing gitRef before registry mutation.",
+    "publication": "Publish directly to the expected tag, then require bounded exact-version integrity and tag convergence.",
+    "access": "Publish the unscoped package with public access.",
+    "retry": "An exact version with matching integrity and expected tag is a successful replay; any conflict fails without mutation.",
+    "smoke": "Run one non-mutating no-project exact-version --version command after convergence.",
+    "output": ["package", "version", "expectedTag", "phase", "outcome", "nextAction"]
+  },
+  "packages": {
+    "development": {
+      "label": "development TypeScript package",
+      "packagePath": "packages/cli",
+      "manifestPath": "packages/cli/package.json",
+      "expectedTag": "next",
+      "preparation": "incrementDevPrerelease",
+      "construction": "isolatedTypeScriptPackage",
+      "smoke": ["npx", "-y", "agentera@{version}", "--version"]
+    },
+    "stable": {
+      "label": "transitional stable shim",
+      "packagePath": "packages/cli/shim",
+      "manifestPath": "packages/cli/shim/package.json",
+      "expectedTag": "latest",
+      "preparation": "incrementPatch",
+      "construction": "stableShim",
+      "smoke": ["npx", "-y", "agentera@{version}", "--version"]
+    }
+  },
+  "bounds": {
+    "registryAttempts": 6,
+    "registryDelayMs": 5000,
+    "commandTimeoutMs": 120000,
+    "diagnosticCharacters": 1000
+  }
+}

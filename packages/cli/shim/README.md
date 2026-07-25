@@ -48,12 +48,19 @@ The shim does not bundle Python, skills, or hooks. Install paths for runtimes re
 
 ## Publishing (maintainers)
 
-This section applies only to the transitional 0.x stable shim. From the
-repository root after review, use its governed release script:
+This section applies only to the transitional 0.x stable shim. Prepare metadata
+without publishing, review and commit it, then publish from that clean commit:
 
 ```bash
+pnpm cli:prepare:stable
+# review and commit packages/cli/shim/package.json
 pnpm cli:publish:stable
 ```
+
+The shared transaction requires explicit authority and `NPM_TOKEN`, publishes
+directly to `latest`, verifies exact registry integrity and tag convergence,
+and runs `npx -y agentera@<version> --version` from a clean temporary directory.
+Safe retries do not republish matching registry state.
 
 The v3 CLI has a separate isolated package-construction and recovery contract
 in [v3 npm packaging and verification](../../../docs/packaging/v3-packaging.md);
@@ -62,7 +69,7 @@ do not apply direct checkout packing to it.
 Verify from a clean directory:
 
 ```bash
-npx agentera@0.0.0 --version
+npx -y agentera@<version> --version
 ```
 
 ## Development
