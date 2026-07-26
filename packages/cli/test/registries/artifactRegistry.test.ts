@@ -322,6 +322,43 @@ describe("artifact registry module", () => {
     const resolved = resolveArtifactPath(plan!, REPO_ROOT);
     expect(resolved.startsWith(REPO_ROOT)).toBe(true);
   });
+
+  it("registers the deferred project glossary without changing global profile identity", () => {
+    const records = loadArtifactRegistry();
+    const glossary = records.get("glossary");
+    const profile = records.get("profile");
+
+    expect(glossary).toMatchObject({
+      artifactId: "glossary",
+      displayName: "GLOSSARY.md",
+      defaultPath: ".agentera/glossary.yaml",
+      artifactType: "agent_facing",
+      scope: "project_agent_state",
+      docsYamlCanOverridePath: true,
+      implementationStatus: "declared_deferred",
+    });
+    expect(glossary?.producers).toEqual(new Set(["audit"]));
+    expect(profile).toMatchObject({
+      artifactId: "profile",
+      displayName: "PROFILE.md",
+      defaultPath: "$AGENTERA_PROFILE_DIR/PROFILE.md",
+      artifactType: "global_user_state",
+      scope: "global_user_state",
+      docsYamlCanOverridePath: false,
+    });
+  });
+
+  it("applies a known glossary docs override without admitting an unknown identity", () => {
+    const glossary = loadArtifactRecord("glossary");
+    expect(glossary).toBeDefined();
+    expect(resolveArtifactPath(glossary!, tmp, {
+      docsPathOverrides: {
+        "GLOSSARY.md": "docs/project-terms.yaml",
+        "UNKNOWN.md": "docs/unknown.yaml",
+      },
+    })).toBe(path.join(tmp, "docs/project-terms.yaml"));
+    expect(loadArtifactRecord("unknown")).toBeUndefined();
+  });
 });
 
 describe("artifact registry loader diagnostics", () => {

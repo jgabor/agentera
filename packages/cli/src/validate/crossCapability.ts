@@ -21,6 +21,7 @@ export interface CanonicalArtifact {
   displayName: string;
   producers: Set<string>;
   consumers: Set<string>;
+  implementationStatus: string;
 }
 
 export interface CapabilityArtifact {
@@ -50,6 +51,7 @@ export function loadCanonicalArtifacts(
       displayName: record.displayName,
       producers: record.producers,
       consumers: record.consumers,
+      implementationStatus: record.implementationStatus,
     });
   }
   return out;
@@ -176,6 +178,7 @@ export function validateGraph(
   }
 
   for (const [artifactId, artifact] of canonical) {
+    if (artifact.implementationStatus === "declared_deferred") continue;
     const records = byArtifactId.get(artifactId) ?? [];
     const producedBy = records.length ? unionSets(records.map((r) => r.producers)) : new Set<string>();
     const consumedBy = records.length ? unionSets(records.map((r) => r.consumers)) : new Set<string>();

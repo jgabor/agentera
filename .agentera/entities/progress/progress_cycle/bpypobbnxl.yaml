@@ -1,0 +1,15 @@
+id: bpypobbnxl
+artifact: progress
+record:
+  timestamp: 2026-07-26 10:10
+  type: feat
+  phase: build
+  what: Registered canonical project glossary identity and conformance without implementing production or consumption.
+  context:
+    intent: Make the repository-scoped glossary discoverable through one registry authority while preserving profile isolation and explicit deferral.
+    constraints: No profile, audit, or consumer capability contracts changed; no producer or consumer behavior, glossary data, live .agentera/glossary.yaml, PROFILE.md, version, or Task 3 work.
+    unknowns: Decision list was byte-budget degraded but returned firm prmnztjytv; satisfaction absent; vision/profile startup omitted; Task 2 retry state not_recorded with zero attempts. No missing state or satisfaction inferred.
+    scope: Artifact registry model and loader, glossary artifact schema, discovery introspection, cross-capability deferred handling, and focused tests.
+  inspiration: Plan vtyuglksxl Task hjmnkrzuas and firm Decision prmnztjytv.
+  verified: "AC1: local schema and artifact-list introspection discovered one glossary at .agentera/glossary.yaml with audit as producer, no live file, and tests preserved global PROFILE.md identity. AC2: every glossary implementation-status projection reports declared_deferred. AC3: registry tests proved known GLOSSARY.md override precedence and that unknown mappings cannot create identity. AC4: cross-capability and generic capability-reference matrices passed canonical ID/local-role validation without repeated registry facts. AC5: focused registry, glossary-contract, query, and cross-capability tests reused existing matrices and added only scope, path, profile isolation, ownership, provenance, and deferred-status failures (49 passed); full source suite passed 207 files, 2678 tests, 1 skipped; typecheck, build, cross-capability, vocabulary authority, capability contract, compact, and diff checks passed."
+  next: Leave hjmnkrzuas in_progress for independent Orchestrate evaluation; do not start Task 3.

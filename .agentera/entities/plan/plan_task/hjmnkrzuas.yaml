@@ -4,7 +4,7 @@ record:
   name: Register project glossary identity and conformance
   depends_on:
     - juchfoqrkp
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN canonical discovery WHEN project glossary identity is requested THEN one project-agent-state artifact has .agentera/glossary.yaml as its default and audit as its intended producer without altering profile identity.
     - GIVEN the intended producer relationship WHEN implementation status is inspected THEN project glossary production remains explicitly declared-deferred.

@@ -373,6 +373,7 @@ function describeArtifactSchemas(
       path: info.path || "unknown",
       location,
       artifact_type: meta.artifact_type ?? "unknown",
+      implementation_status: meta.implementation_status ?? "implemented",
       format: meta.format ?? "unknown",
       producer: meta.producer ?? "unknown",
       consumers: meta.consumers ?? "unknown",

@@ -36,7 +36,13 @@ function minimalRegistryModel(
   };
 }
 
-function schemaMeta(artifactId: string, p: string, producer: string, consumers: string[]): any {
+function schemaMeta(
+  artifactId: string,
+  p: string,
+  producer: string,
+  consumers: string[],
+  implementationStatus?: string,
+): any {
   return {
     meta: {
       name: artifactId,
@@ -45,6 +51,7 @@ function schemaMeta(artifactId: string, p: string, producer: string, consumers: 
       producer,
       consumers,
       artifact_type: "agent_facing",
+      ...(implementationStatus ? { implementation_status: implementationStatus } : {}),
     },
   };
 }
@@ -104,6 +111,21 @@ describe("validateGraph", () => {
 
     const errors = validateGraph(schemas, caps, model);
     expect(errors.some((e) => e.includes("producers"))).toBe(true);
+  });
+
+  it("leaves declared-deferred relationships unimplemented", () => {
+    const schemas = path.join(tmp, "schemas");
+    const caps = path.join(tmp, "capabilities");
+    const model = path.join(tmp, "model.yaml");
+    writeYaml(model, minimalRegistryModel([
+      { artifact_id: "glossary", display_name: "GLOSSARY.md", default_path: ".agentera/glossary.yaml" },
+    ]));
+    writeYaml(
+      path.join(schemas, "glossary.yaml"),
+      schemaMeta("glossary", ".agentera/glossary.yaml", "audit", ["audit"], "declared_deferred"),
+    );
+
+    expect(validateGraph(schemas, caps, model)).toEqual([]);
   });
 
   it("reports an unknown artifact without a display-name translation map", () => {

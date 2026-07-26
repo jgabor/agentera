@@ -12,19 +12,24 @@ source_of_truth:
   producer_field: meta.producer
   consumers_field: meta.consumers
   artifact_type_field: meta.artifact_type
+  implementation_status_field: meta.implementation_status
   added_contract_fields:
     display_name: >-
       Human-facing canonical artifact name used by capability schemas, docs.yaml
       mapping keys, validators, and bounded CLI override lookup.
     scope: >-
       Where the artifact lives and how path overrides may apply.
+    implementation_status: >-
+      Whether registry relationships describe shipped behavior or an explicitly
+      declared-deferred contract.
     path_template: >-
       Structured path facts when meta.path contains a placeholder or points to a
       global, archive, or local-harness location.
   single_authority_rule: >-
     Consumers may project these facts into views, but must not maintain separate
-    display-name, default-path, producer, consumer, scope, type, or special-case
-    maps outside this registry Interface and runtime docs.yaml override loading.
+    display-name, default-path, producer, consumer, scope, type, implementation
+    status, or special-case maps outside this registry Interface and runtime
+    docs.yaml override loading.
 record:
   required_groups:
     - identity
@@ -61,6 +66,7 @@ record:
       owns:
         - producer capability IDs
         - consumer capability IDs
+        - implementation status
       required_fields:
         producers: list[string]
         consumers: list[string]
@@ -172,6 +178,9 @@ required_artifact_identities:
     - artifact_id: vision
       display_name: VISION.md
       default_path: .agentera/vision.yaml
+    - artifact_id: glossary
+      display_name: GLOSSARY.md
+      default_path: .agentera/glossary.yaml
   project_root:
     - artifact_id: todo
       display_name: TODO.md

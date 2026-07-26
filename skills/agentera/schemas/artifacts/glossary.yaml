@@ -1,0 +1,19 @@
+# Project Glossary Artifact Schema
+
+meta:
+  name: glossary
+  version: "1.0.0"
+  description: >-
+    Repository-scoped canonical terminology governed by the shared glossary
+    entry and project ownership contracts. Production remains deferred.
+  artifact_type: agent_facing
+  path: ".agentera/glossary.yaml"
+  producer: audit
+  consumers: [audit]
+  format: yaml
+  implementation_status: declared_deferred
+
+CONFORMANCE:
+  authority: references/artifacts/glossary-entry-contract.yaml
+  ownership_contract: project
+  provenance_variant: project_file

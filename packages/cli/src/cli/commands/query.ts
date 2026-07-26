@@ -160,6 +160,8 @@ function artifactLocationRecord(
     name: artifactId,
     display_name: displayName,
     artifact_type: record !== null ? record.artifactType : meta.artifact_type ?? "unknown",
+    implementation_status:
+      record !== null ? record.implementationStatus : meta.implementation_status ?? "implemented",
     format: typeof meta === "object" ? meta.format ?? "unknown" : "unknown",
     producer: record !== null ? [...record.producers].sort() : meta.producer ?? "unknown",
     consumers: record !== null ? [...record.consumers].sort() : meta.consumers ?? "unknown",

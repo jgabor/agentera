@@ -24,6 +24,7 @@ export interface ArtifactRecord {
   scope: string;
   pathTemplate: Record<string, unknown> | null;
   docsYamlCanOverridePath: boolean;
+  implementationStatus: string;
 }
 
 function sourceRoot(): string {
@@ -232,6 +233,7 @@ function buildRequiredRecord(
         ? (template as Record<string, unknown>)
         : null,
     docsYamlCanOverridePath: true,
+    implementationStatus: String(meta.implementation_status ?? "implemented").trim(),
   };
 }
 
@@ -250,6 +252,7 @@ function buildSpecialCaseRecord(sp: Record<string, unknown>): ArtifactRecord {
         ? (template as Record<string, unknown>)
         : null,
     docsYamlCanOverridePath: Boolean(sp.docs_yaml_can_override_path),
+    implementationStatus: String(sp.implementation_status ?? "implemented").trim(),
   };
 }
 
