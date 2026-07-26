@@ -199,6 +199,13 @@ function assertDependencies(root: string, sourceRoot: string, record: JsonObject
     if (dependency === taskId) reject({ class: "schema_violation", message: "a task cannot depend on itself" });
   }
 }
+function hasSupersededPredecessor(entities: DiscoveredEntity[], planId: string, taskId: string): boolean {
+  return entities.some((entity) => entity.boundary === TASK
+    && entity.record?.plan === planId
+    && entity.record?.status === "superseded"
+    && Array.isArray(entity.record.superseded_by)
+    && entity.record.superseded_by.includes(taskId));
+}
 function assertProjectedTask(entities: DiscoveredEntity[], id: string, record: JsonObject): void {
   const violations = planTaskRecordViolations(record, `plan task '${id}'`);
   if (violations.length) reject({ class: "schema_violation", message: `plan task '${id}' would violate the task schema`, violations });
@@ -211,7 +218,7 @@ function assertProjectedTask(entities: DiscoveredEntity[], id: string, record: J
     visiting.add(current); const value = records.get(current); const cyclic = (Array.isArray(value?.depends_on) ? value.depends_on : []).some((dependency) => typeof dependency === "string" && records.has(dependency) && visit(dependency)); visiting.delete(current); visited.add(current); return cyclic;
   };
   if ([...records.keys()].some(visit)) reject({ class: "schema_violation", message: `task '${id}' would create a dependency cycle in plan '${planId}'` });
-  if (record.status !== "complete" && entities.some((entity) => entity.boundary === TASK && entity.record?.plan === planId && entity.record?.status === "superseded" && Array.isArray(entity.record.superseded_by) && entity.record.superseded_by.includes(id)))
+  if (record.status !== "complete" && hasSupersededPredecessor(entities, planId, id))
     reject({ class: "conflict", message: `task '${id}' must remain complete while it is referenced by a superseded task` });
   const plan = entities.find((entity) => entity.boundary === PLAN && entity.id === planId);
   if (plan && planStatus(plan) === "complete" && !["complete", "superseded"].includes(String(record.status))) reject({ class: "conflict", message: `task '${id}' cannot become incomplete while plan '${planId}' is complete` });
@@ -292,7 +299,8 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     assertDependencies(req.projectRoot, sourceRoot, record, taskId);
   } else if (req.spec.verb === "set-status") record.status = String(req.values.status);
   else if (req.spec.verb === "record-evaluation") {
-    const mutation = mutatePlanTaskEvaluation(record, req.values.evaluation, `plan task '${taskId}'`);
+    const completedReplacementRecovery = OPEN.has(planStatus(plan)) && hasSupersededPredecessor(entities, plan.id!, taskId);
+    const mutation = mutatePlanTaskEvaluation(record, req.values.evaluation, `plan task '${taskId}'`, completedReplacementRecovery);
     if (mutation.replay) return envelope("state plan record-evaluation", { id: taskId, path: task.path, replay: true }, record, req.dryRun);
   }
   assertProjectedTask(entities, taskId, record);

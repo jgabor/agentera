@@ -112,6 +112,9 @@
 
 ### Fixed
 
+- Fixed `agentera state plan record-evaluation` to recover the first PASS for an
+  unevaluated complete replacement named by a same-plan superseded predecessor
+  while the plan remains open, without relaxing other terminal or retry guards.
 - Fixed Discuss, Plan, and Build profile grounding to use `agentera report
   profile-grounding --format json`, which preserves non-glossary profile content
   while excluding the owned personal Glossary section and failing closed on

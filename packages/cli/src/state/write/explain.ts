@@ -155,7 +155,14 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
       "the CLI assigns bare IDs to the plan and each task and publishes one canonical file per entity",
       ...base,
     ];
-  if (entityArtifact && artifact === "plan" && ["update", "set-status", "supersede", "record-evaluation"].includes(verb))
+  if (entityArtifact && artifact === "plan" && verb === "record-evaluation")
+    return [
+      "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
+      "evaluate before completing a task during normal orchestration",
+      "a first PASS on an unevaluated complete replacement is recovery only when an open same-plan superseded predecessor names it in superseded_by",
+      ...base,
+    ];
+  if (entityArtifact && artifact === "plan" && ["update", "set-status", "supersede"].includes(verb))
     return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
   if (entityArtifact && artifact === "plan" && verb === "append")
     return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];

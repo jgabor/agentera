@@ -63,6 +63,9 @@ describe("producer capability writer integration", () => {
     expect(planInstructions).toContain("agentera state plan archive --format json");
     expect(orchestrateInstructions).toContain("agentera state plan set-status");
     expect(orchestrateInstructions).toContain("agentera state plan record-evaluation");
+    expect(orchestrateInstructions).toContain("before marking the task complete");
+    expect(orchestrateInstructions).toContain("recovery for persisted out-of-order replacement state");
+    expect(orchestrateInstructions).toContain("may receive its first PASS only");
     expect(auditInstructions).toContain("agentera state health append --input PATH");
   });
 

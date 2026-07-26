@@ -11,6 +11,7 @@ export function mutatePlanTaskEvaluation(
   task: Record<string, unknown>,
   inputValue: unknown,
   taskLabel: string,
+  allowCompletedReplacementRecovery = false,
 ): { replay: boolean; attemptCount: number; failureCount: number } {
   const input = mapping(inputValue);
   const attemptId = String(input.attempt_id ?? "").trim();
@@ -34,7 +35,11 @@ export function mutatePlanTaskEvaluation(
       reject({ class: "conflict", message: `evaluation attempt '${attemptId}' already exists with different result data` });
     return { replay: true, attemptCount: Number(prior.attempt_count ?? 0), failureCount: Number(prior.failure_count ?? 0) };
   }
-  if (["complete", "blocked", "superseded"].includes(String(task.status ?? "")))
+  const completedReplacementRecovery = allowCompletedReplacementRecovery
+    && task.status === "complete"
+    && task.evaluation === undefined
+    && verdict === "pass";
+  if (["complete", "blocked", "superseded"].includes(String(task.status ?? "")) && !completedReplacementRecovery)
     reject({ class: "conflict", message: `${taskLabel} is ${task.status} and cannot accept another evaluation` });
   const attemptCount = Number(prior.attempt_count ?? 0);
   const failureCount = Number(prior.failure_count ?? 0);

@@ -10,7 +10,7 @@ record:
     - gnwhzstoyg
     - hakmkqjfkj
     - jivwatgqpl
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN all prior tasks pass WHEN closeout runs THEN Decision prmnztjytv is verified unchanged with no satisfaction write, while producer TODOs, progress, plan state, docs inventory, and package metadata are synchronized.
     - GIVEN both producers ship WHEN TODO state is read THEN azytlqzxoa and guijxewees are resolved while ruzauoaotd remains open and dependent on both.

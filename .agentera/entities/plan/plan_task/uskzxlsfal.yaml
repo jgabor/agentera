@@ -10,3 +10,13 @@ record:
     - GIVEN a bounded evidence manifest WHEN its schema version is missing or unknown THEN personal admission returns corrupt unavailable recovery and no candidate.
     - GIVEN a publisher-generated current manifest WHEN admission runs THEN valid bounded evidence remains eligible.
     - GIVEN focused regressions and package typecheck WHEN verification runs THEN all checks pass and an independent audit finds no material defect.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: producer-manifest-replacement-audit-1
+      source: Audit ses_060b18c0dffe7MEOISXb46RLVt current-tree revalidation
+      recorded_at: 2026-07-26 19:17
+      writer_command: agentera state plan record-evaluation

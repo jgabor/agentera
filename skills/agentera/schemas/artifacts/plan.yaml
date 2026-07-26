@@ -374,7 +374,11 @@ TASK:
     description: >-
       CLI-owned evaluator state written only by `agentera state plan
       record-evaluation`. It records attempt and failure counts, the latest
-       verdict, retained failure evidence, and stable attempt provenance.
+      verdict, retained failure evidence, and stable attempt provenance. Normal
+      workflow records evaluation before completion. As recovery for persisted
+      out-of-order replacement state only, the writer accepts the first PASS on
+      an unevaluated complete task while its open same-plan superseded predecessor
+      names it in superseded_by; every other terminal evaluation remains rejected.
   7:
     id: PT21
     field: superseded_by

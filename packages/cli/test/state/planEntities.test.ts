@@ -50,6 +50,16 @@ function complete(root: string, title: string): any {
   expect(capture(root, ["state", "plan", "set-plan-status", "--plan", created.id, "--status", "complete", "--format", "json"]).rc).toBe(0);
   return created;
 }
+function persistedReplacement(root: string, title: string): { planId: string; predecessor: string; replacement: string } {
+  const created = create(root, title); const predecessor = created.tasks[0].id;
+  const appended = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "Completed replacement", "--format", "json"]);
+  expect(appended.rc, appended.err || appended.out).toBe(0); const replacement = JSON.parse(appended.out).id;
+  expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", predecessor, "--status", "blocked", "--format", "json"]).rc).toBe(0);
+  expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
+  const superseded = capture(root, ["state", "plan", "supersede", "--plan", created.id, "--id", predecessor, "--by", replacement, "--reason", "Replacement closes the failed work.", "--format", "json"]);
+  expect(superseded.rc, superseded.err || superseded.out).toBe(0);
+  return { planId: created.id, predecessor, replacement };
+}
 function fixtureId(index: number): string {
   let value = index;
   return Array.from({ length: 10 }, () => {
@@ -112,6 +122,10 @@ describe("plan and task entity authority", () => {
       expect(explanation.fields).toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--id", field: "id", required: true, type: "string" })]));
       expect(explanation.fields).not.toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--task" })]));
       expect(explanation.example).toContain("--id qjtrmnpvka");
+      if (verb === "record-evaluation") expect(explanation.guidance).toEqual(expect.arrayContaining([
+        expect.stringContaining("evaluate before completing"),
+        expect.stringContaining("first PASS on an unevaluated complete replacement"),
+      ]));
     }
   });
 
@@ -376,6 +390,82 @@ describe("plan and task entity authority", () => {
       ["--attempt-id", "audit-1", "--verdict", "fail", "--provenance", "audit", "--failure-evidence", "test:2"],
     ]) {
       const result = evaluate(...divergent); expect(result.rc).not.toBe(0); expect(JSON.parse(result.out).error.class).toBe("conflict"); expect(fs.readFileSync(target, "utf8")).toBe(once);
+    }
+  });
+
+  it("records one recovery PASS for an unevaluated complete replacement without changing its predecessor", () => {
+    const root = project(); const { planId, predecessor, replacement } = persistedReplacement(root, "replacement evaluation recovery");
+    const predecessorPath = path.join(root, `.agentera/entities/plan/plan_task/${predecessor}.yaml`);
+    const replacementPath = path.join(root, `.agentera/entities/plan/plan_task/${replacement}.yaml`);
+    const predecessorBytes = fs.readFileSync(predecessorPath, "utf8");
+    const evaluate = (...args: string[]) => capture(root, ["state", "plan", "record-evaluation", "--plan", planId, "--id", replacement, ...args, "--format", "json"]);
+    const attempt = ["--attempt-id", "replacement-audit-1", "--verdict", "pass", "--provenance", "independent audit"];
+
+    const recorded = evaluate(...attempt);
+    expect(recorded.rc, recorded.err || recorded.out).toBe(0);
+    expect(JSON.parse(recorded.out)).toMatchObject({
+      record: {
+        status: "complete",
+        evaluation: {
+          attempt_count: 1,
+          failure_count: 0,
+          last_verdict: "pass",
+          last_failure_evidence: null,
+          provenance: {
+            attempt_id: "replacement-audit-1",
+            source: "independent audit",
+            recorded_at: expect.any(String),
+            writer_command: "agentera state plan record-evaluation",
+          },
+        },
+      },
+      operation: { idempotent_replay: false },
+    });
+    expect(fs.readFileSync(predecessorPath, "utf8")).toBe(predecessorBytes);
+    expect(loadYamlMapping(predecessorBytes).record).toMatchObject({ status: "superseded", superseded_by: [replacement] });
+
+    const replacementBytes = fs.readFileSync(replacementPath, "utf8");
+    const replay = evaluate(...attempt);
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(JSON.parse(replay.out).operation.idempotent_replay).toBe(true);
+    expect(fs.readFileSync(replacementPath, "utf8")).toBe(replacementBytes);
+    for (const distinct of [
+      ["--attempt-id", "replacement-audit-1", "--verdict", "pass", "--provenance", "different audit"],
+      ["--attempt-id", "replacement-audit-2", "--verdict", "pass", "--provenance", "independent audit"],
+    ]) {
+      const rejected = evaluate(...distinct);
+      expect(rejected.rc).not.toBe(0); expect(JSON.parse(rejected.out).error.class).toBe("conflict");
+      expect(fs.readFileSync(replacementPath, "utf8")).toBe(replacementBytes);
+    }
+    expect(fs.readFileSync(predecessorPath, "utf8")).toBe(predecessorBytes);
+    expect(validateEntityState(root).valid).toBe(true);
+  });
+
+  it("rejects replacement recovery for FAIL, unrelated terminal tasks, terminal predecessors, and non-open plans", () => {
+    const assertRejected = (root: string, planId: string, taskId: string, args: string[]) => {
+      const target = path.join(root, `.agentera/entities/plan/plan_task/${taskId}.yaml`); const before = fs.readFileSync(target, "utf8");
+      const result = capture(root, ["state", "plan", "record-evaluation", "--plan", planId, "--id", taskId, ...args, "--format", "json"]);
+      expect(result.rc).not.toBe(0); expect(JSON.parse(result.out).error.class).toBe("conflict"); expect(fs.readFileSync(target, "utf8")).toBe(before);
+    };
+    const pass = ["--attempt-id", "audit-1", "--verdict", "pass", "--provenance", "audit"];
+
+    const failRoot = project(); const failed = persistedReplacement(failRoot, "reject recovery fail");
+    assertRejected(failRoot, failed.planId, failed.replacement, ["--attempt-id", "audit-1", "--verdict", "fail", "--provenance", "audit", "--failure-evidence", "still broken"]);
+    assertRejected(failRoot, failed.planId, failed.predecessor, pass);
+
+    const unreferencedRoot = project(); const unreferenced = create(unreferencedRoot, "unreferenced complete"); const unreferencedTask = unreferenced.tasks[0].id;
+    expect(capture(unreferencedRoot, ["state", "plan", "set-status", "--plan", unreferenced.id, "--id", unreferencedTask, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    assertRejected(unreferencedRoot, unreferenced.id, unreferencedTask, pass);
+
+    const blockedRoot = project(); const blocked = create(blockedRoot, "blocked terminal"); const blockedTask = blocked.tasks[0].id;
+    expect(capture(blockedRoot, ["state", "plan", "set-status", "--plan", blocked.id, "--id", blockedTask, "--status", "blocked", "--format", "json"]).rc).toBe(0);
+    assertRejected(blockedRoot, blocked.id, blockedTask, pass);
+
+    for (const lifecycle of ["complete", "archived"] as const) {
+      const root = project(); const persisted = persistedReplacement(root, `${lifecycle} plan recovery`);
+      expect(capture(root, ["state", "plan", "set-plan-status", "--plan", persisted.planId, "--status", "complete", "--format", "json"]).rc).toBe(0);
+      if (lifecycle === "archived") expect(capture(root, ["state", "plan", "archive", "--plan", persisted.planId, "--format", "json"]).rc).toBe(0);
+      assertRejected(root, persisted.planId, persisted.replacement, pass);
     }
   });
 

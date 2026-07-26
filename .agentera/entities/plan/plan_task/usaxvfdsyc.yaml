@@ -1,0 +1,22 @@
+id: usaxvfdsyc
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Repair completed replacement evaluation provenance
+  status: complete
+  depends_on:
+    - uskzxlsfal
+  acceptance:
+    - GIVEN an open plan has an unevaluated complete task referenced by a superseded predecessor WHEN its first independent PASS is recorded THEN the typed writer persists attempt_count 1 and failure_count 0 while preserving both terminal statuses and predecessor history.
+    - GIVEN the repair exception WHEN a FAIL, second distinct evaluation, unreferenced complete task, blocked or superseded task, or non-open plan is targeted THEN existing terminal and retry protections still reject the mutation, while exact replay remains byte-idempotent.
+    - GIVEN source contracts, capability prose, and focused regressions WHEN verification runs against the newly built local artifact THEN documentation, tests, typecheck, state validation, and package behavior agree.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: completed-replacement-evaluation-repair-audit-1
+      source: Audit ses_060998cf8ffe0T7HJeBg58mL8h independent implementation audit
+      recorded_at: 2026-07-26 19:17
+      writer_command: agentera state plan record-evaluation
