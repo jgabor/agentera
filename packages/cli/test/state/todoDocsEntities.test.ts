@@ -6,7 +6,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
@@ -52,6 +52,11 @@ function files(root: string): Record<string, string> {
   };
   walk(root);
   return result;
+}
+
+function recoveryFiles(root: string): string[] {
+  const recovery = path.join(root, ".agentera/.entity-recovery"); if (!fs.existsSync(recovery)) return [];
+  return fs.readdirSync(recovery, { recursive: true, encoding: "utf8" }).map((name) => path.join(recovery, name)).filter((file) => path.basename(file) !== ".gitignore" && fs.statSync(file).isFile());
 }
 
 function todo(root: string, description: string, severity = "normal"): any {
@@ -198,6 +203,88 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(fs.readFileSync(path.join(root, "TODO.md"))).toEqual(todoBytes);
     expect(fs.readFileSync(path.join(root, ".agentera/docs.yaml"))).toEqual(docsBytes);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 2 });
+  });
+
+  it("updates a valid noncanonical TODO through the public writer and publishes canonical bytes", () => {
+    const root = project(); const id = "ldzkfdcopb"; const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
+    const noncanonical = `id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: resolved\n  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n  readiness:\n    capability: plan\n    reason: Shared semantics and ownership shipped as the prerequisite for both glossary producers and their consumer.\n    dependencies: []\n    blocked: null\n    gate: null\n    queue_rank: 1\n    order_reason: Resolved prerequisite; downstream order is owned by the open producer and consumer TODOs.\n`.replaceAll("\n", "\r\n");
+    fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, noncanonical);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
+    expect(dumpYamlMapping(loadYamlMapping(noncanonical))).not.toBe(noncanonical);
+
+    const beforeDryRun = fs.readFileSync(file);
+    const dryRun = capture(root, ["state", "todo", "update", "--id", id, "--description", "Shipped and synchronized.", "--dry-run", "--format", "json"]);
+    expect(dryRun.rc, dryRun.err || dryRun.out).toBe(0);
+    expect(fs.readFileSync(file)).toEqual(beforeDryRun);
+
+    const updated = capture(root, ["state", "todo", "update", "--id", id, "--description", "Shipped and synchronized.", "--format", "json"]);
+    expect(updated.rc, updated.err || updated.out).toBe(0);
+    expect(fs.readFileSync(file, "utf8")).toBe(dumpYamlMapping({ id, artifact: "todo", record: updated.json.record }));
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
+  });
+
+  it("rejects a target byte change after discovery without overwriting the concurrent owner", () => {
+    const root = project(); const item = todo(root, "Original owner"); const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+    const competingBytes = dumpYamlMapping({ id: item.id, artifact: "todo", record: { ...item.record, description: "Concurrent owner" } });
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.replaceExisting.bind(binding.publicationContext);
+    vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => { fs.writeFileSync(file, competingBytes); return original(...args); });
+    const spec = operationSpec("todo", "update")!;
+    const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, description: "Writer update" }, callerPayload: { id: item.id, description: "Writer update" }, input: null };
+    let failure: unknown;
+    try { mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext }); }
+    catch (error) { failure = error; }
+    finally { binding.publicationContext.close(); }
+
+    expect(String(failure)).toMatch(/ownership changed before replacement/);
+    expect(fs.readFileSync(file, "utf8")).toBe(competingBytes);
+    expect(fs.readdirSync(path.dirname(file)).filter((name) => name.includes(".tmp") || name.includes(".previous"))).toEqual([]);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
+  });
+
+  it("preserves an in-place competitor write that lands while replacement bytes are staged", () => {
+    const root = project(); const item = todo(root, "Initial owner"); const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+    const baselineBytes = fs.readFileSync(file);
+    const competingBytes = dumpYamlMapping({ id: item.id, artifact: "todo", record: { ...item.record, description: "Competing in-place write" } });
+    const originalWrite = fs.writeFileSync.bind(fs); let injected = false;
+    vi.spyOn(fs, "writeFileSync").mockImplementation((target, data, options) => {
+      const result = originalWrite(target, data, options as never);
+      if (!injected && typeof target === "number") {
+        let descriptorPath = ""; try { descriptorPath = fs.readlinkSync(`/proc/self/fd/${target}`); } catch { /* not the replacement stage */ }
+        if (descriptorPath.includes("/.entity-recovery/entity-") && descriptorPath.endsWith("replacement.tmp")) { injected = true; originalWrite(file, competingBytes); }
+      }
+      return result as never;
+    });
+
+    const updated = capture(root, ["state", "todo", "update", "--id", item.id, "--description", "Writer replacement", "--format", "json"]);
+    expect(injected).toBe(true);
+    expect(updated.rc).toBe(1);
+    expect(updated.json?.error?.message ?? updated.err).toMatch(/competitor.*baseline snapshot|baseline snapshot.*competitor/i);
+    expect(fs.readFileSync(file, "utf8")).toBe(competingBytes);
+    const snapshots = recoveryFiles(root).filter((candidate) => candidate.endsWith("original.previous")); expect(snapshots).toHaveLength(1); expect(fs.readFileSync(snapshots[0])).toEqual(baselineBytes);
+    expect(fs.readdirSync(path.dirname(file)).filter((name) => name.includes(".tmp") || name.includes(".previous") || name.includes(".displaced"))).toEqual([]);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
+  });
+
+  it("rejects invalid UTF-8 through validation, reads, and updates without changing source bytes", () => {
+    const root = project(); const id = "cccccccccc"; const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
+    const invalid = Buffer.concat([
+      Buffer.from(`id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: open\n  description: "invalid `),
+      Buffer.from([0xc3, 0x28]),
+      Buffer.from(` bytes"\n`),
+    ]);
+    fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, invalid); const before = fs.readFileSync(file);
+
+    const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
+    expect(validation.rc).toBe(1);
+    expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "malformed_entity", path: expect.stringContaining(`${id}.yaml`), message: expect.stringMatching(/valid UTF-8/i), recovery: expect.stringMatching(/UTF-8 YAML/i) })]));
+    expect(JSON.stringify(validation.json)).not.toContain('"type":"Buffer"');
+    const read = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]);
+    const update = capture(root, ["state", "todo", "update", "--id", id, "--description", "Valid replacement description that must not publish.", "--format", "json"]);
+    expect(read.rc).toBe(1); expect(read.json.error).toMatchObject({ class: "corrupt", recovery: expect.stringContaining("check validate state") });
+    expect(update.rc).toBeGreaterThan(0); expect(update.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("no state was changed") });
+    expect(fs.readFileSync(file)).toEqual(before);
+    expect(validateEntityState(root)).toMatchObject({ valid: false, entityCount: 1, issues: expect.arrayContaining([expect.objectContaining({ code: "malformed_entity" })]) });
   });
 
   it("creates a valid TODO when logical validation reaches migrated summary sources through the real root", () => {

@@ -1,7 +1,7 @@
+import { isUtf8 } from "node:buffer";
 import { randomInt } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
@@ -50,7 +50,7 @@ interface RelationshipDefinition {
   cardinality: string;
 }
 interface EntityAuthority {
-  entityRoot: string;
+  entityRoot: string; maxEntityBytes: number;
   alphabet: string;
   length: number;
   pattern: RegExp;
@@ -79,12 +79,13 @@ export interface DiscoveredEntity {
   artifact: string | null;
   boundary: string | null;
   record: JsonObject | null;
-  migrationProvenance: JsonObject | null;
+  migrationProvenance: JsonObject | null; discoveredBytes: Buffer | null;
   path: string;
   relativePath: string;
   classification: EntityClassification;
 }
 
+export function exactDiscoveredEntityBytes(entity: DiscoveredEntity): Buffer { if (entity.discoveredBytes === null) throw new Error(`entity '${entity.relativePath}' has no exact discovery-byte baseline`); return entity.discoveredBytes; }
 export interface EntityDiscoveryResult {
   origin: {
     projectRoot: string;
@@ -275,18 +276,16 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   if (path.isAbsolute(entityRoot) || entityRoot.split(/[\\/]/).some((segment) => segment === "..")) {
     throw new Error(`unsafe shared entity storage root '${entityRoot}' in '${authorityPath}'`);
   }
-  return {
-    entityRoot,
-    alphabet,
-    length,
-    pattern: new RegExp(acceptedPattern),
-    entities,
-    relationships,
+  const exactGet = mapping(target.measurement_contract) && mapping(target.measurement_contract.targets) && mapping(target.measurement_contract.targets.exact_get) ? target.measurement_contract.targets.exact_get : null;
+  const maxEntityBytes = Number(exactGet?.max_utf8_bytes); if (!Number.isSafeInteger(maxEntityBytes) || maxEntityBytes < 1) throw new Error(`invalid exact entity byte limit in '${authorityPath}'`);
+  return { entityRoot, maxEntityBytes, alphabet, length, pattern: new RegExp(acceptedPattern), entities, relationships,
     artifacts: [...new Set(entities.map(({ artifact }) => artifact))].sort(),
     byBoundary: new Map(entities.map((entity) => [entity.boundary, entity])),
     forbiddenAliases: strings(target.public_schema.forbidden_canonical_aliases),
   };
 }
+
+export function entityExactGetMaxBytes(sourceRoot?: string): number { return authority(sourceRoot).maxEntityBytes; }
 
 export function canonicalEntityRecordViolations(boundary: string, record: JsonObject, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): string[] {
   return canonicalEntityRecordViolationsAgainstModel(boundary, record, authority(sourceRoot), sourceBinding);
@@ -390,7 +389,7 @@ function unsafeEntity(projectRoot: string, candidate: string): DiscoveredEntity 
     artifact: null,
     boundary: null,
     record: null,
-    migrationProvenance: null,
+    migrationProvenance: null, discoveredBytes: null,
     path: candidate,
     relativePath: relative(projectRoot, candidate),
     classification: "unsafe",
@@ -413,15 +412,14 @@ function discoverFile(
 ): DiscoveredEntity {
   const relativePath = relative(projectRoot, file);
   const filenameId = path.basename(file, path.extname(file));
-  let document: Record<string, unknown> | null = null;
-  try {
-    document = loadYamlMapping(fs.readFileSync(file, "utf8"));
+  let document: Record<string, unknown> | null = null; let discoveredBytes: Buffer | null = null;
+  try { discoveredBytes = fs.readFileSync(file); if (!isUtf8(discoveredBytes)) throw new Error("entity file is not valid UTF-8"); document = loadYamlMapping(discoveredBytes.toString("utf8"));
   } catch (error) {
     issues.push({
       code: "malformed_entity",
       path: relativePath,
       message: `entity '${relativePath}' is not a YAML mapping: ${(error as Error).message}`,
-      recovery: recovery(projectRoot, `replace '${relativePath}' with a valid id/artifact/record entity envelope or remove it`),
+      recovery: recovery(projectRoot, `replace '${relativePath}' with a valid UTF-8 YAML id/artifact/record entity envelope or remove it`),
     });
   }
   const id = typeof document?.id === "string" ? document.id : filenameId;
@@ -555,7 +553,7 @@ function discoverFile(
       issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has an invalid ${boundary} record: ${violations.join("; ")}`, recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared ${boundary} fields`) });
     }
   }
-  return { id, artifact, boundary, record, migrationProvenance, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
+  return { id, artifact, boundary, record, migrationProvenance, discoveredBytes, path: file, relativePath, classification: malformed ? "malformed" : "valid" };
 }
 
 export function discoverEntities(projectRoot: string, sourceRoot?: string, sourceBinding: MigrationSourceBindingContext = { kind: "project", projectRoot }): EntityDiscoveryResult {
@@ -785,14 +783,14 @@ export function validateCanonicalEntityTargets(projectRoot: string, targets: Can
   for (const target of targets) targetsById.set(target.id, [...(targetsById.get(target.id) ?? []), target]);
   for (const target of targets) {
     const expectedPath = path.posix.join(model.entityRoot, target.artifact, target.boundary, `${target.id}.yaml`);
-    let record: JsonObject | null = null;
+    let record: JsonObject | null = null; let discoveredBytes: Buffer | null = null;
     let message: string | null = target.path === expectedPath ? null : `canonical target path '${target.path}' must be '${expectedPath}'`;
     if (!message) {
-      try { record = canonicalEntityEnvelopeAgainstModel(canonicalEntityEnvelopeBytes(target), target, model, sourceRoot, { kind: "project", projectRoot }).record; }
+      try { const bytes = canonicalEntityEnvelopeBytes(target); discoveredBytes = Buffer.from(bytes); record = canonicalEntityEnvelopeAgainstModel(bytes, target, model, sourceRoot, { kind: "project", projectRoot }).record; }
       catch (error) { message = (error as Error).message; }
     }
     if (message) issues.push({ code: "malformed_entity", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message, recovery: recovery(projectRoot, `repair legacy source '${target.sourceIdentity}' so its canonical target satisfies the authority-backed boundary validator`) });
-    entities.push({ id: target.id, artifact: target.artifact, boundary: target.boundary, record, migrationProvenance: target.migrationProvenance ?? null, path: path.join(projectRoot, target.path), relativePath: target.path, classification: message ? "malformed" : "valid" });
+    entities.push({ id: target.id, artifact: target.artifact, boundary: target.boundary, record, migrationProvenance: target.migrationProvenance ?? null, discoveredBytes, path: path.join(projectRoot, target.path), relativePath: target.path, classification: message ? "malformed" : "valid" });
   }
   for (const duplicates of targetsById.values()) {
     if (duplicates.length < 2) continue;
@@ -844,7 +842,7 @@ export interface PublishEntityResult {
 }
 
 export interface ReplaceEntityRequest extends PublishEntityRequest {
-  expectedRecord: JsonObject;
+  expectedRecord: JsonObject; expectedBytes: Buffer; migrationProvenance?: JsonObject | null;
 }
 
 function publishEntityLocked(
@@ -928,8 +926,9 @@ export function replaceEntityUnderLock(request: ReplaceEntityRequest): PublishEn
     return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
   const replacement = context.replaceExisting(
     relativeTarget,
-    dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.expectedRecord }),
-    dumpYamlMapping({ id: request.id, artifact: request.artifact, record: request.record }),
+    request.expectedBytes,
+    canonicalEntityEnvelopeBytes({ id: request.id, artifact: request.artifact, record: request.record, migrationProvenance: request.migrationProvenance ?? undefined }),
+    model.maxEntityBytes,
   );
   return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false, publishedIdentity: replacement.publishedIdentity, previousBytes: replacement.previousBytes };
 }

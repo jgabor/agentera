@@ -1,0 +1,23 @@
+id: lmlxbqlknk
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Preserve typed entity updates through atomic recovery
+  status: complete
+  depends_on:
+    - usaxvfdsyc
+  acceptance:
+    - GIVEN a valid noncanonical entity WHEN a typed update runs THEN exact discovered bytes are owned, valid UTF-8 is enforced, canonical output is published, and dry-run or replay never mutates unexpectedly.
+    - GIVEN concurrent writes or filesystem failures before publication commits WHEN replacement or rollback fails THEN original and competing bytes remain recoverable, no canonical state is silently overwritten, and diagnostics identify the recovery action.
+    - GIVEN post-commit cleanup cannot remove recovery links WHEN state discovery and validation run THEN canonical entity boundaries remain valid because retained writer-owned recovery artifacts live outside discoverable entity paths.
+    - GIVEN focused adversarial regressions and package verification WHEN an independent audit runs THEN atomic replacement, rollback, multi-entity recovery, state validation, and release preparation semantics pass without material defect.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: atomic-entity-recovery-audit-1
+      source: Audit ses_060210c96ffeHiKM3xuw6j9Ki7 bounded re-review PASS
+      recorded_at: 2026-07-26 21:57
+      writer_command: agentera state plan record-evaluation

@@ -10,7 +10,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateEntityId, publishEntity, replaceEntity, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
+import { allocateEntityId, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntity, replaceEntity, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
@@ -151,7 +151,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
       const archivedHeader = mapping(archivedRecord.header) ? archivedRecord.header : {};
       archivedHeader.status = "archived";
       archivedRecord.header = archivedHeader;
-      const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: currentPredecessor.id!, expectedRecord: currentPredecessor.record!, record: archivedRecord });
+      const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: currentPredecessor.id!, expectedRecord: currentPredecessor.record!, expectedBytes: exactDiscoveredEntityBytes(currentPredecessor), migrationProvenance: currentPredecessor.migrationProvenance, record: archivedRecord });
       if (!archived.publishedIdentity || archived.previousBytes === undefined) throw new Error(`completed predecessor '${currentPredecessor.id}' archive did not retain its exact recovery identity and bytes`);
       predecessor = { relative: relative(req.projectRoot, archived.path), archivedIdentity: archived.publishedIdentity, bytes: archived.previousBytes };
     }
@@ -177,7 +177,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
       }
     }
     if (predecessor) {
-      try { options.publicationContext.restoreExact(predecessor.relative, predecessor.archivedIdentity, predecessor.bytes); }
+      try { options.publicationContext.restoreExact(predecessor.relative, predecessor.archivedIdentity, predecessor.bytes, entityExactGetMaxBytes(sourceRoot)); }
       catch (restoreError) { recoveryFailures.push(`predecessor restoration failed because ownership changed or publication was unsafe: ${(restoreError as Error).message}`); }
     }
     if (recoveryFailures.length) throw new Error(`plan replacement failed: ${(error as Error).message}; recovery failed: ${recoveryFailures.join("; ")}`, { cause: error });
@@ -272,7 +272,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     const command = req.spec.verb === "archive" ? "state plan archive" : "state plan set-plan-status";
     if (canonicalRecordJson(record) === canonicalRecordJson(plan.record)) return envelope(command, { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun);
     if (req.dryRun) return envelope(command, { id: plan.id!, path: plan.path, replay: false }, record, true);
-    const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, record });
+    const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, expectedBytes: exactDiscoveredEntityBytes(plan), migrationProvenance: plan.migrationProvenance, record });
     return envelope(command, result, record, false);
   }
   if (planStatus(plan) === "archived") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
@@ -281,7 +281,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     const superseded = supersedeTask(entities, task, taskId, plan.id!, req.values);
     if (canonicalRecordJson(superseded) === canonicalRecordJson(task.record)) return envelope("state plan supersede", { id: taskId, path: task.path, replay: true }, superseded, req.dryRun);
     if (req.dryRun) return envelope("state plan supersede", { id: taskId, path: task.path, replay: false }, superseded, true);
-    const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: TASK, id: taskId, expectedRecord: task.record!, record: superseded });
+    const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: TASK, id: taskId, expectedRecord: task.record!, expectedBytes: exactDiscoveredEntityBytes(task), migrationProvenance: task.migrationProvenance, record: superseded });
     return envelope("state plan supersede", result, superseded, false);
   }
   if (req.spec.verb === "update") {
@@ -292,7 +292,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
       if (!current.split("\n").includes(surprise)) planRecord.surprises = current ? `${current}\n${surprise}` : surprise;
       if (canonicalRecordJson(planRecord) === canonicalRecordJson(plan.record)) return envelope("state plan update", { id: plan.id!, path: plan.path, replay: true }, planRecord, req.dryRun);
       if (req.dryRun) return envelope("state plan update", { id: plan.id!, path: plan.path, replay: false }, planRecord, true);
-      const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, record: planRecord });
+      const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, expectedBytes: exactDiscoveredEntityBytes(plan), migrationProvenance: plan.migrationProvenance, record: planRecord });
       return envelope("state plan update", result, planRecord, false);
     }
     for (const field of taskFields) if (req.values[field] !== undefined) record[field] = req.values[field] as never;
@@ -306,7 +306,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
   assertProjectedTask(entities, taskId, record);
   if (canonicalRecordJson(record) === canonicalRecordJson(task.record)) return envelope(`state plan ${req.spec.verb}`, { id: taskId, path: task.path, replay: true }, record, req.dryRun);
   if (req.dryRun) return envelope(`state plan ${req.spec.verb}`, { id: taskId, path: task.path, replay: false }, record, true);
-  const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: TASK, id: taskId, expectedRecord: task.record!, record });
+  const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: TASK, id: taskId, expectedRecord: task.record!, expectedBytes: exactDiscoveredEntityBytes(task), migrationProvenance: task.migrationProvenance, record });
   return envelope(`state plan ${req.spec.verb}`, result, record, false);
 }
 

@@ -91,6 +91,11 @@ function entityNames(root: string): string[] {
   const entities = path.join(root, ".agentera/entities");
   return fs.existsSync(entities) ? fs.readdirSync(entities, { recursive: true, encoding: "utf8" }) : [];
 }
+function recoveryFiles(root: string): string[] {
+  const recovery = path.join(root, ".agentera/.entity-recovery");
+  if (!fs.existsSync(recovery)) return [];
+  return fs.readdirSync(recovery, { recursive: true, encoding: "utf8" }).map((name) => path.join(recovery, name)).filter((file) => path.basename(file) !== ".gitignore" && fs.statSync(file).isFile());
+}
 
 async function concurrentLifecycle(root: string, planId: string, blocked: string, replacement: string, action: "reopen" | "archive"): Promise<Array<{ ok: boolean; error?: string }>> {
   const start = path.join(root, `race-${action}.start`); const ready = ["supersede", action].map((name) => path.join(root, `race-${action}-${name}.ready`)); const results = ["supersede", action].map((name) => path.join(root, `race-${action}-${name}.json`));
@@ -585,6 +590,7 @@ describe("plan and task entity authority", () => {
   it("does not overwrite a competitor installed immediately before final predecessor restoration publication", () => {
     const root = project(); const predecessor = complete(root, "racing predecessor");
     const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`); const competing = "final-interval competitor bytes\n";
+    const predecessorBytes = fs.readFileSync(predecessorPath, "utf8");
     const competitorStage = path.join(root, "competitor.tmp"); fs.writeFileSync(competitorStage, competing);
     const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
     const originalRename = fs.renameSync.bind(fs); const originalLink = fs.linkSync.bind(fs); let recovering = false; let injected = false;
@@ -596,11 +602,14 @@ describe("plan and task entity authority", () => {
     vi.spyOn(fs, "linkSync").mockImplementation((source, destination) => { inject(source, destination); originalLink(source, destination); });
     vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation(() => { recovering = true; throw new Error("primary final-interval failure"); });
     const ids = ["cccccccccc", "dddddddddd"];
-    expect(() => createPlanEntities(request(root, "create", {}, plan("racing replacement")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/primary final-interval failure.*recovery failed.*ownership|recovery failed.*ownership.*primary final-interval failure/i);
+    let failure: unknown; try { createPlanEntities(request(root, "create", {}, plan("racing replacement")), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! }); } catch (error) { failure = error; }
     binding.publicationContext.close();
+    const recovery = recoveryFiles(root);
     expect(injected).toBe(true);
     expect(fs.readFileSync(predecessorPath, "utf8")).toBe(competing);
-    expect(entityNames(root).filter((name) => name.includes(".tmp") || name.includes(".previous") || name.includes(".displaced"))).toEqual([]);
+    expect(String(failure)).toMatch(/primary final-interval failure.*recovery failed.*ownership|recovery failed.*ownership.*primary final-interval failure/i);
+    expect(recovery.some((name) => name.endsWith(".tmp"))).toBe(true); expect(recovery.every((name) => String(failure).includes(path.basename(name)))).toBe(true);
+    expect(recovery.some((name) => fs.readFileSync(name, "utf8") === predecessorBytes)).toBe(true); expect(entityNames(root).filter((name) => name.includes(".tmp") || name.includes(".previous") || name.includes(".displaced"))).toEqual([]);
   });
 
   it("retains competing replacement residue and reports primary plus cleanup failure", () => {

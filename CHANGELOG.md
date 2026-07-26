@@ -112,6 +112,14 @@
 
 ### Fixed
 
+- Fixed typed entity updates to retain exact source bytes, reject invalid UTF-8,
+  and revalidate descriptor-pinned displaced bytes before no-clobber canonical
+  publication. Post-displacement failures now restore the exact prior target or
+  surface a retained recovery path without clobbering competing bytes, while
+  post-commit cleanup faults retain an independent exact-byte baseline snapshot
+  and attempt-owned links under the private, Git-ignored, same-filesystem
+  `.agentera/.entity-recovery/` namespace instead of invalidating canonical
+  entity discovery or misreporting durable updates as failed.
 - Fixed `agentera state plan record-evaluation` to recover the first PASS for an
   unevaluated complete replacement named by a same-plan superseded predecessor
   while the plan remains open, without relaxing other terminal or retry guards.

@@ -1,0 +1,15 @@
+id: fprlqvwipi
+artifact: progress
+record:
+  timestamp: 2026-07-26 22:01
+  type: fix
+  phase: build
+  what: Hardened typed entity replacement with exact byte snapshots, strict UTF-8 validation, no-clobber publication, and Git-confined external recovery; then synchronized canonical TODO and docs wording for both shipped glossary producers.
+  context:
+    intent: Preserve user-owned state across concurrent writes and filesystem failures while completing producer-state synchronization through typed writers.
+    constraints: Cross-glossary consumer behavior remains deferred; no decision satisfaction, live glossary, global profile mutation, publication, tag, or push.
+    unknowns: none
+    scope: Typed entity transaction internals, adversarial state-writer tests, changelog, producer TODO/docs authority, and plan/progress entities.
+  inspiration: Plan antsflnznb tasks lmlxbqlknk and yhqmhpwddq, plus accepted independent Audit findings on ownership and stale producer deferral.
+  verified: Independent Audit ses_060210c96ffeHiKM3xuw6j9Ki7 passed the final snapshot and Git-confinement review; full source, stress, performance, package, typecheck, build, state, compaction, lint, and focused adversarial checks passed; live typed updates left no recovery residue.
+  next: Commit the substantive repair and state, prepare the next development metadata against that immutable source, then rerun final producer synchronization evaluation and close the plan without archiving.

@@ -16,3 +16,13 @@ record:
     - GIVEN both producers ship WHEN TODO state is read THEN azytlqzxoa and guijxewees are resolved while ruzauoaotd remains open and dependent on both.
     - GIVEN final evidence WHEN the plan is evaluated THEN no stale producer deferral, dependency mismatch, live-test contamination, unresolved accepted finding, or contract drift remains.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Canonical TODO ldzkfdcopb, resolved producer readiness in azytlqzxoa and guijxewees, and docs inventory athqnszfow still describe shipped producers as deferred.
+    provenance:
+      attempt_id: final-producer-sync-audit-1
+      source: Audit ses_06082285effeVKznDr9MxDuRMr final-state audit
+      recorded_at: 2026-07-26 19:39
+      writer_command: agentera state plan record-evaluation

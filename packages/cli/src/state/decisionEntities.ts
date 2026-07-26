@@ -10,7 +10,7 @@ import { requestedSatisfaction, validateTransition } from "./decisionOverlay.js"
 import { decisionRevisionContract } from "./decisionRevision.js";
 import { decisionLegacyCoexistence, knownLegacyConfidenceCaveat } from "./decisionLegacyValidation.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateAndPublishEntity, allocateEntityId, assertEntityDiscoveryOrigin, discoverEntities, publishEntity, replaceEntity, type DiscoveredEntity } from "./entityStorage.js";
+import { allocateAndPublishEntity, allocateEntityId, assertEntityDiscoveryOrigin, discoverEntities, exactDiscoveredEntityBytes, publishEntity, replaceEntity, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
@@ -195,7 +195,7 @@ export function updateDecisionSatisfactionEntity(req: StateWriteRequest, options
   const record = { decision: id, ...requested };
   if (!current) return publish(req, SATISFACTION, record, options);
   if (req.dryRun) return envelope("state decisions update", { id: current.id!, artifact: ARTIFACT, path: current.path, replay: canonicalRecordJson(current.record) === canonicalRecordJson(record) }, record, true);
-  const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: SATISFACTION, id: current.id!, expectedRecord: current.record!, record });
+  const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: SATISFACTION, id: current.id!, expectedRecord: current.record!, expectedBytes: exactDiscoveredEntityBytes(current), migrationProvenance: current.migrationProvenance, record });
   return envelope("state decisions update", result, record);
 }
 

@@ -3,11 +3,12 @@ artifact: todo
 record:
   severity: normal
   status: resolved
-  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers azytlqzxoa and guijxewees and consumer ruzauoaotd remain deferred and open; no producer, persistence, lookup, or live `.agentera/glossary.yaml` exists."
+  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, personal and project glossary producers, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Personal producer azytlqzxoa and project producer guijxewees shipped; only cross-glossary consumer disambiguation and precedence remain deferred in open TODO ruzauoaotd. No glossary consumer lookup or live `.agentera/glossary.yaml` exists."
   readiness:
     capability: plan
     reason: Shared semantics and ownership shipped as the prerequisite for both glossary producers and their consumer.
-    dependencies: []
+    dependencies:
+      []
     blocked: null
     gate: null
     queue_rank: 1

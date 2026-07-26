@@ -13,6 +13,8 @@ import {
   assertEntityDiscoveryOrigin,
   canonicalEntityRecordViolations,
   discoverEntities,
+  entityExactGetMaxBytes,
+  exactDiscoveredEntityBytes,
   publishEntityUnderLock,
   replaceEntityUnderLock,
   validateEntityState,
@@ -165,10 +167,10 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     if (artifact === "todo" && mapping(req.values.readiness)) assertTodoReferences(id, record, entities);
     if (canonicalRecordJson(record) === canonicalRecordJson(entity.record)) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: true }, artifact, record, req.dryRun);
     if (req.dryRun) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: false }, artifact, record, true);
-    const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, expectedRecord: entity.record!, record };
-    let replaced = false;
-    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope(`state ${artifact} ${req.spec.verb}`, result, artifact, record, false); }
-    catch (error) { if (replaced) replaceEntityUnderLock({ ...request, expectedRecord: record, record: entity.record! }); throw error; }
+    const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, expectedRecord: entity.record!, expectedBytes: exactDiscoveredEntityBytes(entity), migrationProvenance: entity.migrationProvenance, record };
+    let replacement: { path: string; publishedIdentity?: PublishedTargetIdentity; previousBytes?: string } | undefined;
+    try { const result = replaceEntityUnderLock(request); replacement = result; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope(`state ${artifact} ${req.spec.verb}`, result, artifact, record, false); }
+    catch (error) { if (replacement?.publishedIdentity && replacement.previousBytes !== undefined) context.restoreExact(relative(req.projectRoot, replacement.path), replacement.publishedIdentity, replacement.previousBytes, entityExactGetMaxBytes(sourceRoot)); throw error; }
   });
 }
 

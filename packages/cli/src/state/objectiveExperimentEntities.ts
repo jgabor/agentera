@@ -9,7 +9,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateEntityId, canonicalEntityRecordViolations, publishEntityUnderLock, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
+import { allocateEntityId, canonicalEntityRecordViolations, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntityUnderLock, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { reject } from "./write/errors.js";
@@ -113,10 +113,10 @@ export function mutateObjectiveEntity(req: StateWriteRequest, options: Options =
     const objective = selectObjective(entities, String(req.values.id ?? ""));
     if (canonicalRecordJson(input) === canonicalRecordJson(objective.record)) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: true }, OBJECTIVE_ARTIFACT, input, req.dryRun);
     if (req.dryRun) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: false }, OBJECTIVE_ARTIFACT, input, true);
-    const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id: objective.id!, expectedRecord: objective.record!, record: input };
-    let replaced = false;
-    try { const result = replaceEntityUnderLock(request); replaced = !result.replay; assertValidState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope("state objective update", result, OBJECTIVE_ARTIFACT, input, false); }
-    catch (error) { if (replaced) replaceEntityUnderLock({ ...request, expectedRecord: input, record: objective.record! }); throw error; }
+    const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id: objective.id!, expectedRecord: objective.record!, expectedBytes: exactDiscoveredEntityBytes(objective), migrationProvenance: objective.migrationProvenance, record: input };
+    let replacement: { path: string; publishedIdentity?: PublishedTargetIdentity; previousBytes?: string } | undefined;
+    try { const result = replaceEntityUnderLock(request); replacement = result; assertValidState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope("state objective update", result, OBJECTIVE_ARTIFACT, input, false); }
+    catch (error) { if (replacement?.publishedIdentity && replacement.previousBytes !== undefined) context.restoreExact(relative(req.projectRoot, replacement.path), replacement.publishedIdentity, replacement.previousBytes, entityExactGetMaxBytes(sourceRoot)); throw error; }
   });
 }
 
