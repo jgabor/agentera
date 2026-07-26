@@ -6,7 +6,7 @@ record:
     - juchfoqrkp
     - hjmnkrzuas
     - xkgwculwfp
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN glossary contracts are feature work WHEN version metadata is prepared THEN the development package advances exactly one 3.0.0-dev.N increment and suite-bearing metadata remains 3.0.0.
     - GIVEN the v3 cutover hold WHEN metadata is validated THEN no stable version, tag, publication, or unrelated release surface changes.
