@@ -1,0 +1,15 @@
+id: ldzkfdcopb
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[feat:3.0.0] Define the shared glossary-entry primitive and artifact-specific contracts before either glossary producer ships. Reuse protocol CS1-CS5 integer confidence and existing evidence-anchor vocabulary; define common term, meaning, confidence, permanence, temporal, and anchor structure once. Specialize personal glossary rules for bounded history evidence, independent permanence classification, retention, and profile decay; specialize project glossary rules for repository scope, canonical terms, and file evidence. Keep collision precedence, inferred semantic-equivalence review, and advisory behavior in consumer contracts rather than persisted entry state. Update profile, audit, and validation contracts without claiming either producer or consumer is implemented."
+  readiness:
+    capability: plan
+    reason: The deliberation established contracts as the prerequisite for both glossary producers and their consumer.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Shared semantics and ownership must land before personal or project glossary behavior can be implemented safely.

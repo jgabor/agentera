@@ -1,0 +1,19 @@
+id: prmnztjytv
+artifact: decisions
+record:
+  date: 2026-07-26
+  question: How should Agentera model and sequence personal and project glossary support?
+  context: TODO azytlqzxoa would suppress the global PROFILE.md glossary when `.agentera/glossary.yaml` exists, while TODO ruzauoaotd expects the personal glossary to fill project gaps. Personal terminology is user-scoped; canonical project terminology is repository-scoped.
+  alternatives:
+    - name: Define one shared glossary-entry primitive first, then separate personal and project ownership contracts; apply project precedence only in consumers.
+      status: chosen
+    - name: Suppress the entire personal glossary, or overlapping entries, during profile synthesis.
+      status: rejected
+    - name: Define unrelated personal and project glossary schemas.
+      status: rejected
+    - name: Ship either glossary producer before the shared contracts.
+      status: rejected
+  choice: Define a shared glossary-entry primitive before producers azytlqzxoa and guijxewees. Personal synthesis never reads project glossaries. Consumers apply project authority for exact collisions and request review for inferred semantic equivalence. One reliable explicit definition admits a personal entry with one anchor; inferred usage requires two independent records and exposes both anchors. Confidence uses integer CS1-CS5 bands, permanence is classified independently, and retained entries reuse existing profile decay classes.
+  reasoning: This keeps PROFILE.md stable across repositories, preserves project authority at the point of use, makes inferred claims auditable, and prevents either producer from defining shared policy accidentally. Shared structure avoids duplicated rules while separate ownership contracts preserve different evidence and lifecycle semantics.
+  confidence: firm
+  feeds_into: TODO azytlqzxoa, TODO guijxewees, TODO ruzauoaotd, shared glossary contract, profile and audit output validation

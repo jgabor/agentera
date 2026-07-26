@@ -1,0 +1,14 @@
+id: juchfoqrkp
+artifact: plan
+record:
+  name: Establish shared semantics and ownership
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN either glossary entry kind WHEN its contract is inspected THEN term, meaning, integer confidence, permanence, temporal metadata, and provenance derive from one shared primitive.
+    - GIVEN an allowed explicit-definition evidence class WHEN personal admission is checked THEN one distinct source identity and its resolvable retained-history anchor are sufficient.
+    - GIVEN inferred personal usage WHEN admission is checked THEN two distinct retained-record identities are required, duplicate anchors to one record fail, and both anchors are exposed.
+    - GIVEN the personal input contract WHEN admissible sources are validated THEN project glossary identities, paths, and records are excluded and only bounded personal-history evidence is admitted.
+    - GIVEN retained personal terminology WHEN evidence ages THEN confidence uses existing permanence decay while permanence remains independently classified; focused tests cover one valid and one novel invalid case per provenance variant.
+  plan: vtyuglksxl

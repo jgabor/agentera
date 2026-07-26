@@ -1,0 +1,15 @@
+id: xkgwculwfp
+artifact: plan
+record:
+  name: Align deferred capability and evidence contracts
+  depends_on:
+    - juchfoqrkp
+    - hjmnkrzuas
+  status: pending
+  acceptance:
+    - GIVEN profile contracts WHEN inspected THEN personal admission, provenance, confidence, retention, and decay are declared without claiming synthesis exists.
+    - GIVEN audit and evidence contracts WHEN inspected THEN intended project output and confirmation remain deferred, personal bounded inputs stay reserved, and project file evidence is not represented as history evidence.
+    - GIVEN an exact personal and project term collision WHEN deferred consumer contracts are inspected THEN they assign project precedence without persisting precedence or suppressing personal entries.
+    - GIVEN inferred semantic equivalence WHEN deferred consumer contracts are inspected THEN user review is required and automatic merge, suppression, or precedence is forbidden while behavior remains unimplemented.
+    - GIVEN deferred contract validation WHEN representative fixtures run THEN one valid declaration passes and one false implementation claim fails for each affected capability family.
+  plan: vtyuglksxl

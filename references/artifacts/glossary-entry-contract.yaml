@@ -1,0 +1,110 @@
+schema_version: agentera.glossaryEntryContract.v1
+status: active_authority
+purpose: >-
+  Define glossary entry semantics once and specialize evidence ownership for
+  personal and project entries before either producer or any consumer ships.
+
+authority:
+  source: references/artifacts/glossary-entry-contract.yaml
+  confidence: skills/agentera/protocol.yaml#CONFIDENCE_SCALE
+  personal_history: references/analysis/evidence-tier-authority.yaml
+  permanence_decay: packages/cli/src/capabilities/profile/instructions.ts#Profile-format
+  single_source_rule: >-
+    Producers and consumers derive entry shape from shared_primitive and must
+    not restate confidence bands, decay constants, or provenance variants.
+
+shared_primitive:
+  required_fields: [term, meaning, confidence, permanence, temporal, provenance]
+  fields:
+    term:
+      type: non_empty_string
+    meaning:
+      type: non_empty_string
+    confidence:
+      type: integer
+      range_from: skills/agentera/protocol.yaml#CONFIDENCE_SCALE
+    permanence:
+      type: enum
+      values: [stable, durable, situational]
+      classification_rule: >-
+        Classify expected persistence independently from evidence strength.
+        Confidence changes never reclassify permanence.
+    temporal:
+      type: object
+      required_fields: [observed_at, last_confirmed_at]
+      field_type: iso_date
+    provenance:
+      type: discriminated_union
+      discriminator: kind
+      evidence_field: evidence
+      variants_from: provenance_variants
+
+provenance_variants:
+  personal_explicit_definition:
+    owner: personal
+    evidence_count: 1
+    required_evidence_fields: [source_id, evidence_anchor, signal_type]
+    allowed_signal_types: [correction, decision, instruction]
+    resolution_rule: >-
+      evidence_anchor resolves to source_id of exactly one retained
+      full-evidence shard through the bounded signal tier. One such distinct
+      retained record is sufficient; unanchored or unresolved evidence fails.
+  personal_inferred_usage:
+    owner: personal
+    evidence_count: 2
+    required_evidence_fields: [source_id, evidence_anchor, source_kind]
+    allowed_source_kinds: [instruction_document, project_config_signal]
+    resolution_rule: >-
+      Each evidence_anchor resolves to its source_id in retained full evidence.
+      Both source_id and evidence_anchor must be pairwise distinct, so two
+      signals or anchors resolving to one retained record fail. Both anchors
+      remain exposed on the entry.
+  project_file:
+    owner: project
+    evidence_count: 1
+    required_evidence_fields: [source_path, source_record_sha256]
+    resolution_rule: >-
+      source_path is a safe project-relative path and source_record_sha256 is
+      the lowercase SHA-256 of the cited parsed source record. These reuse the
+      repository source-path and record-digest provenance vocabulary from
+      references/artifacts/state-storage-authority.yaml.
+
+ownership_contracts:
+  personal:
+    scope: user
+    allowed_provenance:
+      - personal_explicit_definition
+      - personal_inferred_usage
+    input:
+      tier: signal
+      authority: references/analysis/evidence-tier-authority.yaml
+      bounded_rule: >-
+        Admit only bounded personal-history signals and resolve qualifying
+        evidence one anchor at a time to retained full-evidence shards. Never
+        scan unbounded history or load a monolithic corpus.
+      excluded_categories:
+        - project_glossary_artifact_identity
+        - project_glossary_path
+        - project_glossary_record
+        - project_file_provenance
+    retention_and_decay:
+      retention: Retained entries decay rather than disappearing solely because evidence ages.
+      confidence: Apply the existing profile permanence decay class to integer confidence.
+      permanence: Remains independently classified and is not changed by evidence age or confidence decay.
+      authority: packages/cli/src/capabilities/profile/instructions.ts#Profile-format
+  project:
+    scope: repository
+    allowed_provenance: [project_file]
+    input:
+      authority: repository_files
+      bounded_rule: Admit only the cited project-relative record bound by its record SHA-256.
+      excluded_categories: [personal_history_record, personal_history_anchor]
+
+consumer_boundary:
+  implementation: declared_deferred
+  owns_later: [exact_collision_precedence, semantic_equivalence_review, advisory_behavior]
+  forbidden_persisted_entry_fields: [precedence, collision, review]
+  rule: >-
+    This authority defines entry and ownership contracts only. It does not
+    register a project glossary artifact or path, implement either producer,
+    synthesize entries, or implement consumer precedence and review.

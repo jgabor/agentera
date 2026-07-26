@@ -12,6 +12,7 @@ import {
   APP_REPAIR_NEEDED,
   APP_UP_TO_DATE,
 } from "../upgrade/doctor.js";
+import { validateGlossaryEntryContract } from "../registries/glossaryEntryContract.js";
 
 /**
  * Validate vocabulary authority YAML contracts (Decision 54 lifecycle status
@@ -339,6 +340,9 @@ export function validateVocabularyAuthority(root: string = rootDefault()): strin
     ...validateUpdateChannelsAuthority(resolved),
     ...validateInstructionContract(resolved),
     ...validateVocabularyIndex(resolved),
+    ...validateGlossaryEntryContract(
+      authorityPath(resolved, "references/artifacts/glossary-entry-contract.yaml"),
+    ),
   ];
 }
 

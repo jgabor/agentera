@@ -1,0 +1,16 @@
+id: yxyfbcocuc
+artifact: progress
+record:
+  timestamp: 2026-07-26 09:29
+  type: feat
+  phase: build
+  what: Defined references/artifacts/glossary-entry-contract.yaml as one shared entry primitive with separate personal-history and project-file provenance contracts, plus executable admission validation and focused conformance coverage.
+  context:
+    intent: Complete plan task juchfoqrkp without implementing glossary producers, artifact registration, capability consumers, synthesis, persistence, or version changes.
+    constraints: Contracts and conformance only; no project glossary identity/path registration, profile or audit contract changes, producer/consumer behavior, glossary files, PROFILE.md changes, or versions.
+    unknowns: Resolved deterministically from references/analysis/evidence-tier-authority.yaml and references/artifacts/state-storage-authority.yaml; no new provenance vocabulary was needed.
+    scope: references/artifacts/glossary-entry-contract.yaml; packages/cli/src/registries/glossaryEntryContract.ts; vocabulary authority validation; focused registry tests.
+  inspiration: Plan vtyuglksxl task juchfoqrkp and firm Decision prmnztjytv.
+  discovered: "The existing evidence vocabulary is sufficient: retained history uses source_id plus evidence_anchor from evidence-tier authority; repository records use project-relative source_path plus source_record_sha256 from state-storage provenance."
+  verified: "AC1: production contract validator confirms term, meaning, integer confidence, permanence, temporal, and provenance share one primitive. AC2: explicit fixture passes with one retained source_id/anchor and mismatched resolution fails. AC3: inferred fixture passes with two anchors and duplicate identity/anchor fails. AC4: personal ownership excludes project identity/path/record/file provenance and rejects project_file admission. AC5: integer confidence and independent permanence are tested while decay delegates to the existing profile authority. Commands passed: focused 9/9; related 48/48; source 2,664 passed with one platform skip; typecheck; build; vocabularyAuthority and capability-contract validators; format and diff checks."
+  next: Stop after Task 1; Task 2 may register project glossary identity and path against this authority.

@@ -3,4 +3,14 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[feat:3.0.0] Add terminology-drift detection to audit (alongside the existing finding families) and emit findings that propose canonical terms; persist the resolved canonical set as `.agentera/glossary.yaml`. No conversation history needed — this is a structural codebase scan, independent of corpus.json and the tiered-extraction work. Audit detects drift when the same concept carries multiple names across the codebase (e.g., `Dict` vs `JsonValue` vs `Record<string, any>`), or when shipped code uses a term that diverges from any glossary the user carries in their `PROFILE.md`. Audit emits findings with proposed canonical term + list of drift variants + evidence anchors (file:line), using the existing severity/confidence vocabulary; the canonical set lands in `.agentera/glossary.yaml` only after `discuss` confirms each proposal, mirroring how audit findings flow through discuss before becoming decisions. Register `.agentera/glossary.yaml` in `.agentera/docs.yaml` artifact mapping so profilera's skip rule and other capabilities resolve it through the standard path. Add a `v1LegacyCruft` scan guard so a repo cannot reintroduce drift variants once `discuss` has confirmed the canonical term."
+  description: "[feat:3.0.0] Add terminology-drift detection to audit after shared glossary contract TODO ldzkfdcopb lands, and persist discussed canonical terms as `.agentera/glossary.yaml` using the project ownership contract. Detect multiple names for one codebase concept and divergence from personal PROFILE.md terminology, then emit findings with a proposed canonical term, drift variants, file evidence anchors, severity, and confidence. Persist only terms confirmed through `discuss`, register the project glossary through `.agentera/docs.yaml`, and add a `v1LegacyCruft` guard against confirmed drift variants. Keep project scope and file evidence distinct from personal glossary retention and decay; do not make this producer suppress or mutate the global personal glossary."
+  readiness:
+    capability: build
+    reason: Project glossary production is defined independently but must implement the shared entry and project ownership contracts first.
+    dependencies:
+      - artifact: todo
+        id: ldzkfdcopb
+    blocked: null
+    gate: null
+    queue_rank: 3
+    order_reason: Project production follows the shared contract and can proceed independently of personal synthesis.

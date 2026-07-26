@@ -3,4 +3,16 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[feat:3.0.0] Add real-time term disambiguation to the consuming capabilities (discuss, plan, build) as a pre-processing step that cross-references incoming user terms against both glossaries and flags ambiguity before proceeding. **Prerequisites: profilera glossary and audit glossary.** This is the consumer that makes the two glossary sources actionable — neither profilera nor audit can answer \"you said 'account' — Customer or User?\" on their own; profilera captures how the user talks, audit establishes how the codebase talks, but neither detects when a user's term is ambiguous against the project's concept set. The check runs when a capability receives user input containing a domain term: (1) look up the term in the project glossary (`.agentera/glossary.yaml`); (2) if absent or ambiguous, fall back to the user's glossary (`PROFILE.md` `## Glossary`); (3) if the term maps to multiple distinct concepts, emit an advisory asking the user to clarify before proceeding — \"You said 'account' — do you mean Customer or User? Those are different things.\" Precedence: project glossary is authoritative for project-scoped work; user glossary fills gaps when the project glossary is absent or doesn't cover the term; conflicts between the two (user says `account = User`, project says `account = Customer`) surface as a tension flagged to the user, not silently resolved. Scope: a shared glossary-lookup helper (resolved through `.agentera/docs.yaml` mapping) consumed by the three capabilities' startup context; no new artifact written. The advisory is non-blocking for capabilities that cannot pause for user input mid-cycle (e.g., autonomous build) — in those cases the ambiguity is logged as a caveat in the cycle evidence and surfaced in the next prime attention item."
+  description: "[feat:3.0.0] Add real-time glossary disambiguation to discuss, plan, and build after personal glossary TODO azytlqzxoa and project glossary TODO guijxewees land. Resolve glossaries through canonical artifact discovery. For project-scoped work, exact term collisions use the project definition; missing project terms fall back to the personal glossary; inferred semantic equivalence requires user review rather than silent suppression or merging; conflicting definitions surface as a tension. Keep advisories non-blocking where autonomous capabilities cannot pause and report the caveat through cycle evidence and prime attention. Implement precedence and review in consumers without writing conflict state into either glossary entry contract."
+  readiness:
+    capability: build
+    reason: Consumers own project precedence and semantic-equivalence review once both glossary producers are available.
+    dependencies:
+      - artifact: todo
+        id: azytlqzxoa
+      - artifact: todo
+        id: guijxewees
+    blocked: null
+    gate: null
+    queue_rank: 4
+    order_reason: Disambiguation requires both personal and project glossary producers and follows their contracts.

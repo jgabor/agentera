@@ -1,0 +1,15 @@
+id: rvdeqaejkq
+artifact: plan
+record:
+  name: Verify shipped contract coherence
+  depends_on:
+    - juchfoqrkp
+    - hjmnkrzuas
+    - xkgwculwfp
+    - lcweuyilam
+  status: pending
+  acceptance:
+    - GIVEN source and packaged installations WHEN glossary contracts are inspected THEN identity, ownership, provenance, and explicit deferred status are equivalent.
+    - GIVEN registry, capability, artifact, evidence, and release validation WHEN run together THEN canonical state passes and representative novel glossary drift is rejected without duplicating generic coverage.
+    - GIVEN repository quality gates WHEN executed THEN typecheck, tests, package verification, build, compact, and relevant contract validators pass.
+  plan: vtyuglksxl

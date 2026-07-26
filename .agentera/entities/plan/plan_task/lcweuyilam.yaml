@@ -1,0 +1,14 @@
+id: lcweuyilam
+artifact: plan
+record:
+  name: Apply permitted development version metadata
+  depends_on:
+    - juchfoqrkp
+    - hjmnkrzuas
+    - xkgwculwfp
+  status: pending
+  acceptance:
+    - GIVEN glossary contracts are feature work WHEN version metadata is prepared THEN the development package advances exactly one 3.0.0-dev.N increment and suite-bearing metadata remains 3.0.0.
+    - GIVEN the v3 cutover hold WHEN metadata is validated THEN no stable version, tag, publication, or unrelated release surface changes.
+    - GIVEN valid and drifting release metadata WHEN existing policy checks run THEN the permitted state passes and suite-version drift fails with a working correction.
+  plan: vtyuglksxl

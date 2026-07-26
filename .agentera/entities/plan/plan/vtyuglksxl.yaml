@@ -1,0 +1,38 @@
+id: vtyuglksxl
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-26
+    status: open
+    reviewed: 2026-07-26
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    title: "Plan: Shared glossary contracts"
+  what: Establish one authoritative glossary-entry primitive, separate personal and project ownership contracts, canonical project glossary identity, validated discovery, and truthful deferred capability contracts before either glossary producer ships.
+  why: Preserve global personal terminology, contextual project authority, bounded and auditable evidence, and one non-drifting contract across future producers and consumers.
+  constraints: Deliver contracts only. Do not implement synthesis, audit findings, glossary persistence, or runtime disambiguation. Preserve protocol confidence and profile decay authority, never load unbounded history, never duplicate canonical artifact facts, never claim deferred behavior has shipped, and keep suite metadata at 3.0.0 under the active v3 cutover hold.
+  overall_acceptance: GIVEN every task is complete WHEN contributors and packaged runtimes inspect glossary support THEN one validated shared primitive and separate ownership contracts are discoverable, deferred behavior remains explicit, version metadata follows the v3 hold, and downstream work has executable prerequisites.
+  scope:
+    included:
+      - Shared glossary-entry semantics and evidence provenance variants.
+      - Personal glossary ownership, admission, retention, and decay contracts.
+      - Project glossary ownership, identity, path resolution, and file-evidence contracts.
+      - Artifact discovery, validation, introspection, and package parity.
+      - Deferred profile, audit, evidence-tier, and consumer contract alignment.
+      - Permitted development-package version metadata and final state synchronization.
+    excluded:
+      - Personal glossary synthesis or changes to the global PROFILE.md.
+      - Audit terminology-drift findings or creation of .agentera/glossary.yaml.
+      - Runtime glossary lookup, collision handling, or disambiguation behavior.
+      - Changes to confidence bands, decay constants, or unrelated TODO items.
+    deferred:
+      - "TODO azytlqzxoa: personal glossary synthesis"
+      - "TODO guijxewees: project glossary production"
+      - "TODO ruzauoaotd: consumer disambiguation"
+  design: Establish shared semantics and distinct ownership first. Expose canonical identity and conformance only after provenance is unambiguous. Align future producer and consumer contracts while preserving their deferred status, then apply the permitted development version change, verify source and packaged surfaces together, and synchronize project state.
+  unknowns:
+    - question: Which existing evidence-anchor variants represent retained-history and repository-file provenance, and which fields make each deterministically resolvable?
+      affects_task: 1
+      resolve_by: Inventory current evidence and artifact contracts during Task 1; if either provenance cannot be represented, pause and revise the plan rather than inventing a new vocabulary during implementation.
+  surprises:
+    []

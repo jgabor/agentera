@@ -1,0 +1,14 @@
+id: hjmnkrzuas
+artifact: plan
+record:
+  name: Register project glossary identity and conformance
+  depends_on:
+    - juchfoqrkp
+  status: pending
+  acceptance:
+    - GIVEN canonical discovery WHEN project glossary identity is requested THEN one project-agent-state artifact has .agentera/glossary.yaml as its default and audit as its intended producer without altering profile identity.
+    - GIVEN the intended producer relationship WHEN implementation status is inspected THEN project glossary production remains explicitly declared-deferred.
+    - GIVEN documentation path mapping WHEN a known glossary override is used THEN registry precedence applies, while unknown mappings cannot create identity.
+    - GIVEN capability artifact references WHEN validated THEN they use canonical IDs and local roles without repeating registry-owned facts.
+    - GIVEN existing registry and validation matrices WHEN glossary coverage is added THEN generic cases are reused and focused failures cover only scope, path, profile isolation, ownership, provenance, and deferred status.
+  plan: vtyuglksxl
