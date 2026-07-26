@@ -1,0 +1,16 @@
+id: ihimxuqbun
+artifact: progress
+record:
+  timestamp: 2026-07-26 15:25
+  type: fix
+  phase: build
+  what: Rejected cross-set glossary terminology collisions and made v1LegacyCruft exclusions authority-driven and exact.
+  context:
+    intent: Address evaluator findings for task gnwhzstoyg without changing plan task or evaluation state.
+    constraints: Preserved exact replay, unrelated entries, canonical discovery, transaction semantics, existing progress pswcsghwau, and orchestrator-owned plan/evaluation state; no live glossary or docs mutation.
+    unknowns: No known blocker; basename exclusions intentionally do not hide similarly named ordinary source directories.
+    scope: Glossary publication validation/authority/schema, glossary contract loader, v1LegacyCruft exclusion consumption, and focused regression fixtures.
+  inspiration: Audit attempt 1 accepted findings on global terminology-set uniqueness and exclusion coverage.
+  discovered: The Audit reproduction accepted two canonical sets sharing LegacyJsonValue, then emitted contradictory corrections and scanned .venv, .vite, and target.
+  verified: Focused publication/guard/authority tests passed 84/84, including all canonical/variant collision directions and the complete exclusion matrix with a nearby non-excluded control. Typecheck and rebuild passed. Disposable rebuilt-CLI reproduction rejected the second set with exit 2, omitted .venv/.vite/target, and emitted only JsonValue corrections. Full source passed 2758 with 1 skipped; package passed 14/14; vocabulary authority, capability contract, and compact passed.
+  next: Evaluator retries gnwhzstoyg; consumer lookup, precedence, semantic review, profile integration, and advisory behavior remain deferred.

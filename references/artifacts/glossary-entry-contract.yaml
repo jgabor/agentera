@@ -3,7 +3,8 @@ status: active_authority
 purpose: >-
   Define glossary entry semantics once and specialize evidence ownership for
   personal and project entries, including build-owned publication of explicitly
-  confirmed project terminology. Consumer behavior remains deferred.
+  confirmed project terminology and guard approved canonical sets against
+  literal variant reintroduction. General consumer behavior remains deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -134,8 +135,8 @@ ownership_contracts:
   project:
     scope: repository
     implementation:
-      status: active_partial
-      active: [audit_proposal_digest, build_publication]
+      status: active
+      active: [audit_proposal_digest, build_publication, confirmed_variant_guard]
       inactive: [lookup, precedence, semantic_equivalence_review]
     allowed_provenance: [project_file]
     input:
@@ -214,6 +215,15 @@ ownership_contracts:
           type: list
           item: shared_primitive
           approval_fields: forbidden
+        terminology_set_identity:
+          normalization: lowercase
+          members: [paired_entry.term, paired_approval.proposal.variants.term]
+          uniqueness: global_across_complete_document
+          rule: >-
+            Every normalized canonical or variant term belongs to exactly one
+            approval-entry pair. Reject duplicate variants and every cross-set
+            canonical/variant collision before effects. An exact replay compares
+            against its existing pair and remains a no-op.
       transaction: >-
         Under the established project writer lock, resolve the registered
         project path, safely re-read every cited project-relative source line,
@@ -222,12 +232,63 @@ ownership_contracts:
         Creation follows the same path. Dry-run performs all validation without
         publication.
       merge_and_replay: >-
-        Preserve unrelated valid approvals and entries semantically unchanged. Term
-        identity is case-insensitive. An exact approval and derived-entry replay
-        is a no-op. An approval without its matching entry, a matching term with
-        changed entry or proposal, reuse of an old confirmation for changed
-        proposal content, duplicate identity, or malformed existing state is a
-        conflict and must never be repaired or overwritten implicitly.
+        Preserve unrelated valid approvals and entries semantically unchanged.
+        Canonical and variant identity is case-insensitive and globally unique
+        across confirmed canonical sets. An exact approval and derived-entry
+        replay is a no-op. An approval without its matching entry, a matching
+        term with changed entry or proposal, reuse of an old confirmation for
+        changed proposal content, duplicate identity, cross-set terminology
+        collision, or malformed existing state is a conflict and must never be
+        repaired or overwritten implicitly.
+    confirmed_variant_guard:
+      owner: packages/cli/src/validate/v1LegacyCruft.ts#scanPost30CruftViolations
+      validation_surface: packages/cli/test/cli/v1LegacyCruft.test.ts
+      loader: packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument
+      source_rule: >-
+        Resolve the glossary through the canonical artifact registry and consume
+        only complete validated approval-entry pairs. Derive each forbidden
+        variant from approval.proposal.variants and its canonical replacement
+        from the paired entry.term; never infer equivalence or consume personal
+        glossary state.
+      matching: exact_case_sensitive_boundary_aware_literal
+      approved_evidence_rule: >-
+        The exact source_path, line, and source_record_sha256 retained by the
+        immutable proposal is historical evidence and does not self-trigger.
+        Changed bytes at that location or a matching variant elsewhere fail.
+      exclusions:
+        - generated_output
+        - vendor_and_dependency_state
+        - cache_state
+        - repository_metadata
+        - historical_agentera_state
+        - project_glossary_document
+        - unrelated_agentera_state
+      excluded_directory_names:
+        - .agentera
+        - .agentera-generated
+        - .cache
+        - .git
+        - .next
+        - .pnpm
+        - .turbo
+        - .venv
+        - .vite
+        - build
+        - bundle
+        - coverage
+        - dist
+        - node_modules
+        - target
+        - vendor
+      exclusion_rule: >-
+        Skip a directory only when its basename exactly equals one declared
+        name. The validator and fixtures consume this list directly; prefixes,
+        suffixes, substrings, and nearby ordinary source names remain scanned.
+      failure_rule: >-
+        Emit one deterministic violation per variant location with the canonical
+        term, confirmed proposal evidence, offending source location, and the
+        runnable validation command. A malformed present glossary fails closed;
+        an absent glossary leaves the pre-existing legacy checks unchanged.
 
 consumer_boundary:
   implementation: declared_deferred
@@ -290,7 +351,7 @@ deferred_capability_contracts:
     forbidden_current_claims: [persistence, approval, docs_mapping_mutation, lookup]
   build_publication:
     capabilities: [build]
-    implementation: active_partial
+    implementation: active
     active_behavior: ownership_contracts.project.publication
     output: skills/agentera/schemas/artifacts/glossary.yaml
     inactive_behavior: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation, docs_mapping_mutation]

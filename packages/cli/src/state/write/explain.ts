@@ -102,6 +102,13 @@ export function buildExplain(
     };
   }
   if (artifact === "glossary") {
+    result.identity = {
+      display_name: record.displayName,
+      default_path: record.defaultPath,
+      authority: "artifact registry",
+    };
+    result.implementation_status = record.implementationStatus;
+    result.producer = [...record.producers].sort();
     result.request_schema_version = "agentera.glossaryPublicationRequest.v1";
     result.document_schema_version = "agentera.projectGlossary.v1";
     result.request_example = {
@@ -140,6 +147,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     "build is the only publisher; audit and discuss remain mutation-free",
     "confirmation.confirmed_by must be user and must bind the exact proposal digest and timestamp",
     "the writer revalidates every cited project source line and publishes approval plus entry as one atomic document",
+    "the v1LegacyCruft guard rejects literal confirmed variants while general glossary consumption remains deferred",
     "lookup, precedence, semantic-equivalence review, profile mutation, and docs-mapping mutation remain deferred",
   ];
   if (entityArtifact && artifact === "plan" && verb === "create")

@@ -13,5 +13,5 @@ cases:
     valid_declaration: declared_deferred
     false_implementation_claim: implemented
   - capability: build
-    valid_declaration: active_partial
+    valid_declaration: active
     false_implementation_claim: implemented

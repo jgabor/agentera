@@ -28,6 +28,10 @@ export interface PersonalGlossaryAdmissionContract {
   insufficientRecovery: string;
 }
 
+export interface ConfirmedVariantGuardContract {
+  excludedDirectories: string[];
+}
+
 const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
 export type DeferredGlossaryCapability = (typeof DEFERRED_CAPABILITIES)[number];
 
@@ -64,6 +68,15 @@ export function personalGlossaryAdmissionContract(
         ? admission.insufficient_recovery.trim()
         : "",
   };
+}
+
+export function confirmedVariantGuardContract(
+  pathname: string = glossaryEntryAuthorityPath(),
+): ConfirmedVariantGuardContract {
+  const authority = contract(pathname);
+  const project = mapping(mapping(authority.ownership_contracts)?.project);
+  const guard = mapping(project?.confirmed_variant_guard);
+  return { excludedDirectories: strings(guard?.excluded_directory_names) };
 }
 
 function sameStrings(actual: unknown, expected: readonly string[]): boolean {
@@ -301,8 +314,10 @@ export function validateGlossaryEntryContract(
   const proposalValidation = mapping(project?.proposal_validation);
   const entryDerivation = mapping(project?.entry_derivation);
   const publication = mapping(project?.publication);
+  const confirmedVariantGuard = mapping(project?.confirmed_variant_guard);
   const publicationRequest = mapping(publication?.request);
   const persistedDocument = mapping(publication?.persisted_document);
+  const terminologySetIdentity = mapping(persistedDocument?.terminology_set_identity);
   if (
     project?.scope !== "repository" ||
     !sameStrings(project?.allowed_provenance, ["project_file"])
@@ -310,14 +325,53 @@ export function validateGlossaryEntryContract(
     errors.push("project ownership must be repository-scoped project_file provenance");
   }
   if (
-    projectImplementation?.status !== "active_partial" ||
-    !sameStrings(projectImplementation?.active, ["audit_proposal_digest", "build_publication"]) ||
+    projectImplementation?.status !== "active" ||
+    !sameStrings(projectImplementation?.active, ["audit_proposal_digest", "build_publication", "confirmed_variant_guard"]) ||
     !sameStrings(projectImplementation?.inactive, ["lookup", "precedence", "semantic_equivalence_review"]) ||
     proposalDigest?.algorithm !== "sha256" ||
     proposalDigest?.encoding !== "lowercase_hex" ||
     !nonEmpty(proposalDigest?.canonicalization)
   ) {
     errors.push("project glossary digest and build publication must be active while consumers remain deferred");
+  }
+  if (
+    confirmedVariantGuard?.owner !== "packages/cli/src/validate/v1LegacyCruft.ts#scanPost30CruftViolations" ||
+    confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/v1LegacyCruft.test.ts" ||
+    confirmedVariantGuard?.loader !== "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
+    confirmedVariantGuard?.matching !== "exact_case_sensitive_boundary_aware_literal" ||
+    !nonEmpty(confirmedVariantGuard?.source_rule) ||
+    !nonEmpty(confirmedVariantGuard?.approved_evidence_rule) ||
+    !nonEmpty(confirmedVariantGuard?.failure_rule) ||
+    !sameStrings(confirmedVariantGuard?.exclusions, [
+      "generated_output",
+      "vendor_and_dependency_state",
+      "cache_state",
+      "repository_metadata",
+      "historical_agentera_state",
+      "project_glossary_document",
+      "unrelated_agentera_state",
+    ]) ||
+    !sameStrings(confirmedVariantGuard?.excluded_directory_names, [
+      ".agentera",
+      ".agentera-generated",
+      ".cache",
+      ".git",
+      ".next",
+      ".pnpm",
+      ".turbo",
+      ".venv",
+      ".vite",
+      "build",
+      "bundle",
+      "coverage",
+      "dist",
+      "node_modules",
+      "target",
+      "vendor",
+    ]) ||
+    !nonEmpty(confirmedVariantGuard?.exclusion_rule)
+  ) {
+    errors.push("confirmed variant guard must reuse validated project glossary pairs and bounded legacy-cruft exclusions");
   }
   if (
     proposalValidation?.owner !== "audit" ||
@@ -353,6 +407,10 @@ export function validateGlossaryEntryContract(
     !sameStrings(publicationRequest?.required_fields, ["schema_version", "proposal", "confirmation"]) ||
     persistedDocument?.schema_version !== "agentera.projectGlossary.v1" ||
     !sameStrings(persistedDocument?.required_fields, ["schema_version", "approvals", "entries"]) ||
+    terminologySetIdentity?.normalization !== "lowercase" ||
+    !sameStrings(terminologySetIdentity?.members, ["paired_entry.term", "paired_approval.proposal.variants.term"]) ||
+    terminologySetIdentity?.uniqueness !== "global_across_complete_document" ||
+    !nonEmpty(terminologySetIdentity?.rule) ||
     !nonEmpty(publication?.transaction) ||
     !nonEmpty(publication?.merge_and_replay)
   ) {
@@ -450,7 +508,7 @@ export function validateGlossaryEntryContract(
   }
   const buildPublication = mapping(capabilities?.build_publication);
   if (
-    buildPublication?.implementation !== "active_partial" ||
+    buildPublication?.implementation !== "active" ||
     !sameStrings(buildPublication?.capabilities, ["build"]) ||
     buildPublication?.active_behavior !== "ownership_contracts.project.publication" ||
     buildPublication?.output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||

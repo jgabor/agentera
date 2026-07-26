@@ -1,0 +1,16 @@
+id: pswcsghwau
+artifact: progress
+record:
+  timestamp: 2026-07-26 15:08
+  type: feat
+  phase: build
+  what: Activated canonical project-glossary discovery and confirmed literal variant enforcement through the existing v1LegacyCruft guard.
+  context:
+    intent: Execute plan task gnwhzstoyg without changing evaluator-owned task or plan evaluation state.
+    constraints: Preserved Audit/Discuss mutation-free behavior, unrelated docs/glossary entries, global profile state, package version, and orchestrator-owned plan-task status.
+    unknowns: No implementation blocker; guard remains the bounded v1LegacyCruft validation surface rather than a general glossary consumer.
+    scope: Glossary authority/schema/loader, artifact discovery/help, v1LegacyCruft validation and fixtures, changelog, and one typed progress entity.
+  inspiration: Plan antsflnznb task gnwhzstoyg and decisions mcsmqqitnm/prmnztjytv.
+  discovered: Artifact query previously resolved docs overrides internally but reported registry-default mapping metadata; discovery now reports the actual registry-mediated mapping source.
+  verified: "Focused Vitest: 102/102 and follow-up 80/80 passed; full source lane: 210 files, 2753 passed, 1 skipped; typecheck, two rebuilds, disposable publish/discovery/guard/replay smoke, build/audit capability validation, capability contract, vocabulary authority, package lane 14/14, and compact all passed."
+  next: Evaluator reviews task gnwhzstoyg; consumer lookup, precedence, semantic-equivalence review, profile mutation, docs-mapping mutation, personal output, and producer-wide readiness remain deferred.

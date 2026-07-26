@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import auditInstructions from "../../src/capabilities/audit/instructions.js";
 import {
+  confirmedVariantGuardContract,
   glossaryEntryAuthorityPath,
   validateGlossaryEntry,
   validateGlossaryEntryContract,
@@ -96,9 +97,29 @@ describe("shared glossary entry authority", () => {
     });
     expect(authority.deferred_capability_contracts.build_publication).toMatchObject({
       capabilities: ["build"],
-      implementation: "active_partial",
+      implementation: "active",
       active_behavior: "ownership_contracts.project.publication",
     });
+    expect(authority.ownership_contracts.project).toMatchObject({
+      implementation: {
+        status: "active",
+        active: ["audit_proposal_digest", "build_publication", "confirmed_variant_guard"],
+        inactive: ["lookup", "precedence", "semantic_equivalence_review"],
+      },
+      confirmed_variant_guard: {
+        matching: "exact_case_sensitive_boundary_aware_literal",
+      },
+    });
+    expect(confirmedVariantGuardContract().excludedDirectories).toEqual([
+      ".agentera", ".agentera-generated", ".cache", ".git", ".next", ".pnpm",
+      ".turbo", ".venv", ".vite", "build", "bundle", "coverage", "dist",
+      "node_modules", "target", "vendor",
+    ]);
+    expect(authority.ownership_contracts.project.publication.persisted_document.terminology_set_identity)
+      .toMatchObject({
+        normalization: "lowercase",
+        uniqueness: "global_across_complete_document",
+      });
   });
 
   it("aligns authority, Audit validation, and shipped instructions on active publication and deferred consumers", () => {

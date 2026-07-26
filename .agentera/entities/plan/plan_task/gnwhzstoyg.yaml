@@ -4,7 +4,7 @@ record:
   name: Activate project discovery and confirmed-variant enforcement
   depends_on:
     - nmewuhappg
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the first approved project write WHEN artifact discovery runs THEN the glossary and documentation mapping resolve through canonical identity without redefining registry-owned facts.
     - GIVEN a confirmed canonical set WHEN a drift variant is reintroduced THEN legacy-cruft validation fails with canonical-term evidence and a working correction.
@@ -12,3 +12,13 @@ record:
     - GIVEN disposable mapping, replay, preservation, and guard fixtures WHEN evaluated THEN controls pass without mutating this checkout or global profile state.
     - GIVEN project producer validation WHEN all behavior passes THEN confirmed persistence is truthfully implemented while consumer lookup remains deferred.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "AC2/AC3: reject cross-set canonical/variant identity collisions before publication so approved evidence cannot self-trigger or emit contradictory canonical corrections. AC4: align the bounded v1LegacyCruft exclusion vocabulary with declared dependency/cache/generated paths, including .venv, .vite, and target, with table-driven regressions."
+    provenance:
+      attempt_id: producer-task5-audit-2
+      source: Audit ses_0617407adffeZFwufIP3Cjj7MD bounded re-review
+      recorded_at: 2026-07-26 15:29
+      writer_command: agentera state plan record-evaluation

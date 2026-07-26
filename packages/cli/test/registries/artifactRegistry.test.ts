@@ -335,7 +335,7 @@ describe("artifact registry module", () => {
       artifactType: "agent_facing",
       scope: "project_agent_state",
       docsYamlCanOverridePath: true,
-      implementationStatus: "active_partial",
+      implementationStatus: "active",
     });
     expect(glossary?.producers).toEqual(new Set(["build"]));
     expect(profile).toMatchObject({

@@ -12,7 +12,7 @@ meta:
   producer: build
   consumers: [build]
   format: yaml
-  implementation_status: active_partial
+  implementation_status: active
 
 CONFORMANCE:
   authority: references/artifacts/glossary-entry-contract.yaml
@@ -32,15 +32,26 @@ DOCUMENT:
     type: list
     item: shared_primitive
     approval_fields: forbidden
+  terminology_set_identity:
+    normalization: lowercase
+    members: [paired_entry.term, paired_approval.proposal.variants.term]
+    uniqueness: global_across_complete_document
 
 PUBLICATION:
+  implementation: active
   owner: build
   command: agentera state glossary publish --input REQUEST --format json
   request_schema_version: agentera.glossaryPublicationRequest.v1
   atomic_unit: complete_document
   lock: established_project_writer_lock
   exact_replay: no_op
-  term_identity: case_insensitive
+  term_identity: case_insensitive_global_canonical_and_variant_set
   source_revalidation: safe_real_path_line_identity_and_sha256
   docs_mapping_mutation: forbidden
   deferred: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation]
+
+CONFIRMED_VARIANT_GUARD:
+  authority: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.confirmed_variant_guard
+  implementation: active
+  validation_surface: packages/cli/test/cli/v1LegacyCruft.test.ts
+  consumer_lookup: forbidden

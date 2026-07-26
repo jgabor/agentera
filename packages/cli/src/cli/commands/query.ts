@@ -1,7 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { resolveArtifactPath, ArtifactRecord } from "../../registries/artifactRegistry.js";
+import {
+  loadDocsPathOverrides,
+  resolveArtifactPath,
+  ArtifactRecord,
+} from "../../registries/artifactRegistry.js";
 import {
   activeObjectiveName,
   artifactPath,
@@ -130,8 +134,13 @@ function artifactLocationRecord(
   const artifactId = record !== null ? record.artifactId : name;
   const displayName = record !== null ? record.displayName : String(meta.name ?? name);
   const defaultPath = record !== null ? record.defaultPath : String(info.path ?? "");
-  const mappedPath = defaultPath;
-  const resolutionSource = record !== null ? "registry default" : "schema metadata";
+  const docsOverrides = record !== null ? loadDocsPathOverrides(process.cwd()) : {};
+  const mappedPath = record !== null && record.docsYamlCanOverridePath && record.displayName in docsOverrides
+    ? docsOverrides[record.displayName]!
+    : defaultPath;
+  const resolutionSource = record !== null
+    ? mappedPath === defaultPath ? "registry default" : "docs mapping for registry identity"
+    : "schema metadata";
   const caveats: string[] = [];
   const objectiveName = activeObjectiveName();
   let resolvedPath: string | null = null;
@@ -152,7 +161,7 @@ function artifactLocationRecord(
     display_path: resolvedPath !== null ? projectRelativeOrAbsolute(resolvedPath) : mappedPath,
     resolution_source: resolutionSource,
     exists: resolvedPath !== null ? fs.existsSync(resolvedPath) : false,
-    docs_yaml_can_override_path: false,
+    docs_yaml_can_override_path: record?.docsYamlCanOverridePath ?? false,
     project_boundary_check: resolvedPath !== null ? "enforced" : "not_resolved",
   };
   return {

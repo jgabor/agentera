@@ -30,15 +30,15 @@ interface Confirmation extends JsonObject {
   confirmed_at: string;
 }
 
-interface Approval extends JsonObject {
+export interface ProjectGlossaryApproval extends JsonObject {
   proposal_digest: string;
   proposal: TerminologyDriftFinding & JsonObject;
   confirmation: Confirmation;
 }
 
-interface GlossaryDocument extends JsonObject {
+export interface ProjectGlossaryDocument extends JsonObject {
   schema_version: typeof DOCUMENT_VERSION;
-  approvals: Approval[];
+  approvals: ProjectGlossaryApproval[];
   entries: JsonObject[];
 }
 
@@ -66,11 +66,15 @@ function validTimestamp(value: unknown): value is string {
     && Number(offsetMinute) <= 59;
 }
 
-function correction(message: string, classification: "schema_violation" | "conflict" = "schema_violation"): never {
+function correction(
+  message: string,
+  classification: "schema_violation" | "conflict" = "schema_violation",
+  recovery = "Rerun audit against current project files, obtain explicit user confirmation for the returned proposal_digest, and retry the same glossary publish command.",
+): never {
   reject({
     class: classification,
     message,
-    recovery: "Rerun audit against current project files, obtain explicit user confirmation for the returned proposal_digest, and retry the same glossary publish command.",
+    recovery,
     example: "agentera state glossary publish --input glossary-publication.yaml --format json",
   });
 }
@@ -99,7 +103,7 @@ function confirmation(value: unknown, digest: string): Confirmation {
   return value as Confirmation;
 }
 
-function containsTerm(line: string, term: string): boolean {
+export function containsGlossaryTerm(line: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const identifier = /[\p{L}\p{N}_$]/u;
   const characters = [...term];
@@ -132,7 +136,7 @@ function revalidateEvidence(root: ValidatedProjectRoot, proposalValue: Terminolo
       }
       const line = fs.readFileSync(resolved, "utf8").split(/\r?\n/)[record.line - 1];
       const digest = line === undefined ? "" : crypto.createHash("sha256").update(line).digest("hex");
-      if (line === undefined || digest !== record.source_record_sha256 || !containsTerm(line, group.term)) {
+      if (line === undefined || digest !== record.source_record_sha256 || !containsGlossaryTerm(line, group.term)) {
         correction(`source evidence '${record.source_path}:${record.line}' is stale or no longer identifies '${group.term}'`);
       }
     }
@@ -162,7 +166,7 @@ function same(left: unknown, right: unknown): boolean {
   return canonicalTerminologyJson(left) === canonicalTerminologyJson(right);
 }
 
-function parseApproval(value: unknown, index: number): { approval: Approval; entry: JsonObject } {
+function parseApproval(value: unknown, index: number): { approval: ProjectGlossaryApproval; entry: JsonObject } {
   if (!mapping(value) || !exactFields(value, ["proposal_digest", "proposal", "confirmation"])) {
     correction(`existing approvals[${index}] is malformed`, "conflict");
   }
@@ -177,7 +181,7 @@ function parseApproval(value: unknown, index: number): { approval: Approval; ent
   };
 }
 
-function existingDocument(bytes: string): GlossaryDocument {
+function existingDocument(bytes: string): ProjectGlossaryDocument {
   let value: Record<string, unknown>;
   try {
     value = loadYamlMapping(bytes);
@@ -190,18 +194,30 @@ function existingDocument(bytes: string): GlossaryDocument {
   const approvals = value.approvals.map((item, index) => parseApproval(item, index));
   const entries = value.entries as unknown[];
   if (entries.length !== approvals.length) correction("existing glossary approvals and entries do not form complete publication pairs", "conflict");
-  const termIdentities = new Set<string>();
+  const terminologyIdentities = new Map<string, { canonical: string; index: number }>();
   const digestIdentities = new Set<string>();
   for (const [index, item] of entries.entries()) {
     if (!mapping(item)) correction(`existing entries[${index}] is malformed`, "conflict");
     const violations = validateGlossaryEntry(item, "project");
     if (violations.length > 0) correction(`existing entries[${index}] is malformed: ${violations.join("; ")}`, "conflict");
     if (!same(item, approvals[index]!.entry)) correction(`existing approval and entry at index ${index} do not match`, "conflict");
-    const term = String(item.term).toLowerCase();
+    const canonical = String(item.term);
     const digest = approvals[index]!.approval.proposal_digest;
-    if (termIdentities.has(term) || digestIdentities.has(digest)) correction("existing glossary contains duplicate term or approval identity", "conflict");
-    termIdentities.add(term);
+    if (digestIdentities.has(digest)) correction("existing glossary contains duplicate term or approval identity", "conflict");
     digestIdentities.add(digest);
+    const terms = [canonical, ...approvals[index]!.approval.proposal.variants.map(({ term }) => term)];
+    for (const term of terms) {
+      const identity = term.toLowerCase();
+      const existing = terminologyIdentities.get(identity);
+      if (existing && existing.index !== index) {
+        correction(
+          `terminology identity collision for '${term}' between canonical sets '${existing.canonical}' and '${canonical}'`,
+          "conflict",
+          `Choose distinct canonical and variant terms for '${existing.canonical}' and '${canonical}', rerun audit, obtain confirmation for the corrected proposal, and retry the same glossary publish command.`,
+        );
+      }
+      terminologyIdentities.set(identity, { canonical, index });
+    }
   }
   return {
     schema_version: DOCUMENT_VERSION,
@@ -210,8 +226,18 @@ function existingDocument(bytes: string): GlossaryDocument {
   };
 }
 
-function validateCandidateBytes(bytes: string): GlossaryDocument {
+function validateCandidateBytes(bytes: string): ProjectGlossaryDocument {
   return existingDocument(bytes);
+}
+
+export function loadProjectGlossaryDocument(
+  projectRoot: string,
+): { path: string; document: ProjectGlossaryDocument } | null {
+  const record = loadArtifactRecord("glossary");
+  if (!record) correction("registered glossary artifact is unavailable");
+  const target = resolveArtifactPath(record, projectRoot);
+  if (!fs.existsSync(target)) return null;
+  return { path: target, document: existingDocument(fs.readFileSync(target, "utf8")) };
 }
 
 export function publishGlossary(
@@ -225,7 +251,7 @@ export function publishGlossary(
   const proposed = proposal(req.input.proposal);
   const confirmed = confirmation(req.input.confirmation, proposed.proposal_digest);
   const entry = deriveEntry(proposed, confirmed);
-  const approval: Approval = {
+  const approval: ProjectGlossaryApproval = {
     proposal_digest: proposed.proposal_digest,
     proposal: proposed as TerminologyDriftFinding & JsonObject,
     confirmation: confirmed,
@@ -239,7 +265,7 @@ export function publishGlossary(
     const relativePath = path.relative(root.path, target).split(path.sep).join("/");
     revalidateEvidence(root, proposed);
     const previousBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
-    const current: GlossaryDocument = previousBytes
+    const current: ProjectGlossaryDocument = previousBytes
       ? existingDocument(previousBytes)
       : { schema_version: DOCUMENT_VERSION, approvals: [], entries: [] };
     const approvalIndex = current.approvals.findIndex((item) => item.proposal_digest === proposed.proposal_digest);
@@ -258,7 +284,7 @@ export function publishGlossary(
       }
       correction(`confirmed term '${proposed.proposed_canonical_term}' conflicts with existing approval or entry state`, "conflict");
     }
-    const candidate: GlossaryDocument = {
+    const candidate: ProjectGlossaryDocument = {
       schema_version: DOCUMENT_VERSION,
       approvals: [...current.approvals, approval],
       entries: [...current.entries, entry],

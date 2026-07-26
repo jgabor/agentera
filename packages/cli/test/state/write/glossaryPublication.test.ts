@@ -45,6 +45,38 @@ function finding(root: string, term = "JsonValue", concept = "structured value")
   })[0]!;
 }
 
+function terminologySet(
+  root: string,
+  canonical: string,
+  variant: string,
+  concept: string,
+): TerminologyDriftFinding {
+  const slug = concept.replaceAll(" ", "-");
+  const canonicalFile = `${slug}-canonical.ts`;
+  const canonicalExtraFile = `${slug}-canonical-extra.ts`;
+  const variantFile = `${slug}-variant.ts`;
+  fs.writeFileSync(path.join(root, canonicalFile), `export type ${canonical} = string;\n`);
+  fs.writeFileSync(path.join(root, canonicalExtraFile), `export type CanonicalAlias = ${canonical};\n`);
+  fs.writeFileSync(path.join(root, variantFile), `export type ${variant} = string;\n`);
+  return assessTerminologyDrift({
+    projectRoot: root,
+    concepts: [{
+      concept,
+      confidence: 84,
+      severity: "warning",
+      terms: [
+        { term: canonical, evidence: [
+          { source_path: canonicalFile, line: 1 },
+          { source_path: canonicalExtraFile, line: 1 },
+        ] },
+        { term: variant, evidence: [{ source_path: variantFile, line: 1 }] },
+      ],
+    }],
+    deliberateDecisionConcepts: new Set(),
+    trackedIssueConcepts: new Set(),
+  })[0]!;
+}
+
 function request(proposal: TerminologyDriftFinding, confirmedBy = "user"): Record<string, unknown> {
   return {
     schema_version: "agentera.glossaryPublicationRequest.v1",
@@ -134,6 +166,41 @@ describe("typed project glossary publication", () => {
       temporal: { observed_at: "2026-07-26", last_confirmed_at: "2026-07-26" },
       provenance: { kind: "project_file", evidence: [{ source_path: "structured-value.ts" }] },
     });
+  });
+
+  it("discovers the canonical registry identity after first publish without changing docs mapping", () => {
+    const root = project();
+    const docsPath = path.join(root, ".agentera/docs.yaml");
+    const docsBytes = "mapping:\n  - artifact: DESIGN.md\n    path: docs/design.md\ncoverage:\n  status: partial\n";
+    fs.writeFileSync(docsPath, docsBytes);
+    expect(run(root, request(finding(root))).rc).toBe(0);
+
+    const previousCwd = process.cwd();
+    let out = "";
+    try {
+      process.chdir(root);
+      const rc = main(
+        ["node", "agentera", "state", "query", "--list-artifacts", "--format", "json"],
+        { out: (text) => { out += text; }, err: () => {} },
+      );
+      expect(rc).toBe(0);
+    } finally {
+      process.chdir(previousCwd);
+    }
+    const discovered = JSON.parse(out).artifacts.find((item: any) => item.artifact === "glossary");
+    expect(discovered).toMatchObject({
+      artifact: "glossary",
+      implementation_status: "active",
+      producer: ["build"],
+      path: {
+        default_path: ".agentera/glossary.yaml",
+        mapped_path: ".agentera/glossary.yaml",
+        display_path: ".agentera/glossary.yaml",
+        resolution_source: "registry default",
+        exists: true,
+      },
+    });
+    expect(fs.readFileSync(docsPath, "utf8")).toBe(docsBytes);
   });
 
   it.each([
@@ -232,6 +299,30 @@ describe("typed project glossary publication", () => {
     const malformed = fs.readFileSync(target, "utf8");
     expect(run(root, request(conflicting)).rc).not.toBe(0);
     expect(fs.readFileSync(target, "utf8")).toBe(malformed);
+  });
+
+  it.each([
+    ["duplicate variant", "RequestEnvelope", "LegacyJsonValue", "LegacyJsonValue"],
+    ["existing canonical as variant", "RequestEnvelope", "JsonValue", "JsonValue"],
+    ["existing variant as canonical", "LegacyJsonValue", "OldEnvelope", "LegacyJsonValue"],
+    ["case-normalized variant", "RequestEnvelope", "legacyjsonvalue", "legacyjsonvalue"],
+  ])("rejects cross-set %s before effects with both canonical sets in recovery", (_label, canonical, variant, collision) => {
+    const root = project();
+    const first = request(terminologySet(root, "JsonValue", "LegacyJsonValue", "structured value"));
+    expect(run(root, first).rc).toBe(0);
+    const target = path.join(root, ".agentera/glossary.yaml");
+    const before = fs.readFileSync(target, "utf8");
+    const second = request(terminologySet(root, canonical, variant, `second ${_label}`));
+
+    const result = run(root, second);
+    expect(result.rc).not.toBe(0);
+    expect(result.json?.error.class).toBe("conflict");
+    expect(result.json?.error.message).toContain(collision);
+    expect(result.json?.error.message).toContain("JsonValue");
+    expect(result.json?.error.message).toContain(canonical);
+    expect(result.json?.error.recovery).toMatch(/choose distinct canonical and variant terms.*rerun audit/i);
+    expect(fs.readFileSync(target, "utf8")).toBe(before);
+    expect(glossary(root).approvals).toHaveLength(1);
   });
 
   it.each([

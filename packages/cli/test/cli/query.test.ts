@@ -49,8 +49,13 @@ describe("cli query", () => {
     expect(progress.normal_read_command).toBe("agentera state progress list --limit 20 --format json");
     const glossary = payload.artifacts.find((a: { artifact: string }) => a.artifact === "glossary");
     expect(glossary).toMatchObject({
-      implementation_status: "active_partial",
+      implementation_status: "active",
       producer: ["build"],
+      path: {
+        default_path: ".agentera/glossary.yaml",
+        resolution_source: "registry default",
+        docs_yaml_can_override_path: true,
+      },
     });
   });
 

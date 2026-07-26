@@ -49,8 +49,8 @@ function validateProjectGlossary(model: any, schema: any): string[] {
   if (schema.CONFORMANCE?.provenance_variant !== "project_file") {
     errors.push("glossary must use project_file provenance");
   }
-  if (schema.meta?.implementation_status !== "active_partial") {
-    errors.push("glossary publication must be active_partial");
+  if (schema.meta?.implementation_status !== "active") {
+    errors.push("glossary producer and confirmed-variant guard must be active");
   }
   return errors;
 }
@@ -107,7 +107,7 @@ describe("project glossary artifact conformance", () => {
       (_model: any, schema: any) => {
         schema.meta.implementation_status = "declared_deferred";
       },
-      "glossary publication must be active_partial",
+      "glossary producer and confirmed-variant guard must be active",
     ],
   ])("rejects invalid %s", (_name, mutate, expected) => {
     const { model, schema } = load();

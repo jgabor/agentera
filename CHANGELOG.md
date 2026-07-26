@@ -33,6 +33,10 @@
 
 ### Added
 
+- Added canonical project-glossary discovery and a confirmed-variant guard to
+  `v1LegacyCruft`. Approved literal drift variants now fail validation when
+  reintroduced outside their retained evidence, with the canonical term,
+  source location, and correction; general glossary lookup remains deferred.
 - Added `agentera state glossary publish --input REQUEST` for explicitly
   confirmed Audit terminology proposals. The build-owned writer revalidates
   project evidence and atomically records separate approval and shared-entry
