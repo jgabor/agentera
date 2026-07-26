@@ -8,6 +8,7 @@ import { cmdUpgrade, UpgradeArgs, type UpgradeOnlyPhase } from "../commands/upgr
 import { cmdVerify, VerifyArgs } from "../commands/verify.js";
 import { cmdGate } from "../commands/compact.js";
 import { cmdReport, ReportArgs } from "../commands/report.js";
+import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
 import { runSessionStart } from "../../hooks/sessionStart.js";
 import { runSessionStop } from "../../hooks/sessionStop.js";
 import { runCursorSessionStart } from "../../hooks/cursorSessionStart.js";
@@ -474,6 +475,20 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
 }
 
 export function runReport(argv: string[], io: Io, prog: string): number {
+  if (argv[0] === "profile-glossary") {
+    if (prog !== "agentera report") {
+      return emitInvalidInput(io, {
+        format: "json",
+        body: {
+          class: "unsupported_target",
+          message: "profile-glossary has no stats alias",
+          valid_values: ["report profile-glossary"],
+          recovery: "Run agentera report profile-glossary with the same --input; no profile bytes were changed.",
+        },
+      });
+    }
+    return runPersonalGlossaryCommand(argv.slice(1), io);
+  }
   const args: ReportArgs = {
     action: null,
     format: "text",

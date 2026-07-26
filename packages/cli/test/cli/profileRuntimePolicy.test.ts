@@ -15,4 +15,15 @@ describe("served profile runtime policy", () => {
     expect(profile).not.toContain("all supported runtimes (codex, claude-code");
     expect(profile).not.toContain("--no-claude");
   });
+
+  it("serves active personal glossary output without claiming consumer lookup", () => {
+    const profile = CAPABILITY_INSTRUCTIONS.profile;
+    expect(profile).toContain("### Personal Glossary section");
+    expect(profile).toContain("agentera report profile-glossary --input - --format json");
+    expect(profile).toContain("agentera.personalGlossaryUpdateRequest.v1");
+    expect(profile).not.toContain("Invoke `updatePersonalGlossaryProfile`");
+    expect(profile).toContain("agentera.personalGlossarySection.v1");
+    expect(profile).toContain("It never reads a project glossary");
+    expect(profile).toContain("Lookup, project precedence, and semantic-equivalence review remain deferred");
+  });
 });

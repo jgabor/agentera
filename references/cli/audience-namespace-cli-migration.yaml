@@ -160,12 +160,23 @@ audience_namespaces:
           [--project-root PATH] [--format text|json]
         delegates_from: stats refresh
         behavior: Matches today's `agentera stats refresh` including consent gates.
+      profile_glossary:
+        canonical_shape: >-
+          agentera report profile-glossary --input <file|-> [--dry-run]
+          --format json
+        delegates_from: null
+        behavior: >-
+          Applies one versioned personal glossary update request to the exact
+          PROFILE.md path supplied by Profile Full. Runs headlessly without a
+          project checkout; never discovers or reads project state or a project
+          glossary. Dry-run validates and computes the candidate without a write.
     legacy_top_level_alias: stats
     rejected_top_level: corpus
     notes: >-
       `agentera usage` and `agentera usage` remain backward-compatible
       maintainer seams per AGENTS.md until separately classified; public user-facing
-      analytics consolidate under `report`.
+      analytics and Profile's bounded personal-output implementation consolidate
+      under `report`.
   check:
     audience: [maintainer]
     status: target_canonical_namespace

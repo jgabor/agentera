@@ -33,6 +33,11 @@
 
 ### Added
 
+- Added `agentera report profile-glossary --input <file|->` for Profile Full
+  personal glossary output in `PROFILE.md`, with bounded
+  personal provenance, byte-preserving section replacement, deterministic
+  confidence decay and refresh, retained permanence, and no project-glossary
+  reads. Glossary consumer lookup and precedence remain deferred.
 - Added canonical project-glossary discovery and a confirmed-variant guard to
   `v1LegacyCruft`. Approved literal drift variants now fail validation when
   reintroduced outside their retained evidence, with the canonical term,

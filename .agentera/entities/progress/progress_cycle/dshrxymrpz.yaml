@@ -1,0 +1,14 @@
+id: dshrxymrpz
+artifact: progress
+record:
+  timestamp: 2026-07-26 16:14
+  type: fix
+  phase: build
+  what: Added the supported headless packaged Profile Full execution seam under the existing report namespace, delegating to the established personal glossary lifecycle boundary with versioned input, JSON outcomes, dry-run, discovery, and project-independent dispatch.
+  context:
+    intent: Correct evaluator attempt 1 by making active personal glossary rendering and persistence executable through the packaged CLI without changing lifecycle semantics or orchestrator state.
+    constraints: Preserved progress uelnleohyp and all plan/evaluation state; no real global PROFILE.md or live project glossary access; no staging, commit, version bump, publication, tag, or push.
+    scope: Report profile-glossary command adapter, command authority/discovery/help, Profile Full invocation instructions, dry-run lifecycle option, source CLI tests, and packaged new-process regression.
+  inspiration: Plan antsflnznb Task qzgchaxmbp evaluator attempt 1 blocking integration finding.
+  verified: Executable command agentera report profile-glossary passed 59 focused lifecycle, CLI, contract, and Profile instruction tests; typecheck and rebuild passed. A disposable new process from packages/cli/.agentera-generated/current/dist/bin/agentera.js observed changed, unchanged_replay after restart with empty retained history, and later changed with confidence 49 while preserving non-glossary confidence 95 and ignoring a project-glossary trap. Constructed-package verification invoked its extracted dist/bin/agentera.js in new processes and passed 15 package tests. Full source lane passed 212 files and 2781 tests with 1 skipped; Profile and capability-contract validation and compact passed.
+  next: Leave task status and evaluation lifecycle to the orchestrator; consumer lookup, precedence, semantic review, version metadata, and producer-wide readiness remain deferred.

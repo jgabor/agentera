@@ -6,6 +6,8 @@ import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, inject, it } from "vitest";
 
+import { runServedProfileFullWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
 const V2_APP_HOME = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-app-home");
@@ -233,6 +235,26 @@ describe("npm distribution boundary", () => {
     }
     expect([...files].some((file) => file.startsWith("test/") || file.includes("upgrade/fixtures/")))
       .toBe(false);
+  });
+
+  it("runs packaged personal glossary rendering and restart-safe regeneration as new processes", () => {
+    expect(fixture.manifest.files.some((entry) => entry.path === "dist/analytics/personalGlossaryProfile.js")).toBe(true);
+    const root = fs.mkdtempSync(path.join(fixture.root, "personal-profile-"));
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const observation = runServedProfileFullWorkflow(bin, root);
+    expect(observation).toMatchObject({
+      firstStatus: "changed",
+      replayStatus: "unchanged_replay",
+      laterStatus: "changed",
+      laterConfidence: 49,
+      malformedCasesRejected: 4,
+    });
+    const authority = fs.readFileSync(
+      path.join(fixture.packageRoot, "bundle/references/artifacts/glossary-entry-contract.yaml"),
+      "utf8",
+    );
+    expect(authority).toContain("profile_full_rendering");
+    expect(authority).toContain("agentera report profile-glossary");
   });
 
   it("flags a reintroduced native descriptor path in the package inventory", () => {

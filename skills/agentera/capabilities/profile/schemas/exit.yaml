@@ -4,8 +4,9 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       PROFILE.md was written (Full mode) or updated (Validate mode).
-      Metadata changes were applied, prediction accuracy was assessed
-      (Full mode), and changes were summarized.
+      In Full mode its owned personal Glossary section was rendered and persisted,
+      metadata changes were applied, prediction accuracy was assessed, and
+      changes were summarized.
     exit_signal: complete
   2:
     id: E2

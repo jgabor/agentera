@@ -83,3 +83,33 @@ VALIDATION:
       - "Signal tier state, count, and sufficiency are read before synthesizing"
       - "Underrepresented families are surfaced with retained and intended counts"
       - "No high-confidence claims are fabricated from sparse or missing evidence"
+  7:
+    id: V7
+    rule: personal_glossary_output
+    description: >-
+      Profile Full MUST render and persist exactly one owned Glossary section
+      through `agentera report profile-glossary`. Entries use only the shared
+      primitive and personal provenance variants. Replacement preserves every
+      non-glossary byte, malformed or ambiguous boundaries fail before effects,
+      and personal production never reads a project glossary.
+    severity: critical
+    checks:
+      - "Explicit entries retain exactly one evidence anchor"
+      - "Inferred entries retain exactly two pairwise-distinct evidence anchors"
+      - "Non-glossary PROFILE.md bytes and decision-pattern confidence are unchanged"
+      - "No project glossary identity, path, parameter, import, or read is used"
+  8:
+    id: V8
+    rule: personal_glossary_lifecycle
+    description: >-
+      Established entries MUST survive regeneration without fresh evidence.
+      Confidence is deterministically derived from the retained confidence basis,
+      unchanged permanence class, injected date, existing Profile decay formula,
+      and floor; permanence and observed_at remain unchanged. Matching fresh
+      evidence follows the shared authority refresh rule. Lookup remains deferred.
+    severity: critical
+    checks:
+      - "Same-date replay is idempotent and decay never compounds from rendered confidence"
+      - "Stable, durable, and situational classes use their existing lambdas and floor"
+      - "Fresh evidence refreshes only matching meaning and provenance kind"
+      - "Glossary confidence never mutates decision-pattern confidence"

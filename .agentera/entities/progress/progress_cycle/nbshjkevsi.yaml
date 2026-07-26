@@ -1,0 +1,14 @@
+id: nbshjkevsi
+artifact: progress
+record:
+  timestamp: 2026-07-26 16:32
+  type: fix
+  phase: build
+  what: Corrected Profile Full publication so it validates and captures any owned Glossary section, writes regenerated non-glossary profile bytes while preserving that section exactly, and invokes the supported lifecycle command only after PROFILE.md exists.
+  context:
+    intent: Resolve replacement task kentdfdgmu by making first generation and regeneration follow one executable, byte-preserving glossary publication order.
+    constraints: Preserved all prior progress and orchestrator-owned plan/evaluation state; no real global PROFILE.md or live project glossary writes, staging, commit, version change, package publication, tag, or push.
+    scope: Profile Full served instruction order, source disposable workflow regression, and constructed-package new-process workflow regression.
+  inspiration: Plan antsflnznb task kentdfdgmu and the accepted evaluator finding that the prior command ran before Step 4 created or regenerated PROFILE.md.
+  verified: "Full ordered source/package workflow verified: focused Profile workflow/lifecycle tests passed 27/27; typecheck and rebuild passed; built CLI served capture-before-write-before-command order; Profile and capability-contract validation passed; constructed-package new-process lane passed 15/15 and observed first-generation changed with one populated section, realistic same-date regeneration unchanged_replay with exact owned bytes, and later changed with retained durable entry at confidence 49 while intended non-glossary bytes remained exact; full source passed 2784 with 1 skipped; compact and diff checks passed."
+  next: Leave task and evaluation lifecycle to the orchestrator; producer-wide readiness, versioning, lookup, precedence, and semantic review remain deferred.

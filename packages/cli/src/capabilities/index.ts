@@ -13,7 +13,7 @@ import buildInstructions from "./build/instructions.js";
 import optimizeInstructions from "./optimize/instructions.js";
 import auditInstructions from "./audit/instructions.js";
 import documentInstructions from "./document/instructions.js";
-import { instructions as profileInstructions } from "./profile/instructions.js";
+import profileInstructions from "./profile/instructions.js";
 import { instructions as designInstructions } from "./design/instructions.js";
 import orchestrateInstructions from "./orchestrate/instructions.js";
 

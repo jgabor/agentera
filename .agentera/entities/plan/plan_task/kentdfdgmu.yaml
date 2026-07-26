@@ -1,0 +1,22 @@
+id: kentdfdgmu
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Correct Profile Full glossary publication order
+  status: complete
+  depends_on:
+    - uskzxlsfal
+  acceptance:
+    - GIVEN a first Profile Full run WHEN the base profile and admitted glossary entries are generated THEN the base PROFILE.md is written first and the supported glossary command leaves one owned populated section.
+    - GIVEN an existing owned Glossary section WHEN Profile Full regenerates non-glossary content THEN the base write preserves that section until post-write lifecycle publication retains, refreshes, or decays it.
+    - GIVEN source and constructed-package workflow tests WHEN the documented Profile Full sequence runs in new processes THEN first generation, same-date replay, and later regeneration preserve the section and unrelated profile bytes.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "AC3: source workflow uses in-process main and both source/package behavioral tests hardcode the corrected base-write/publish order. Retrieve served Profile instructions from transient source and constructed-package executables in new processes and derive/validate workflow operation order from that response so reverting served order fails behaviorally."
+    provenance:
+      attempt_id: producer-profile-order-audit-2
+      source: Audit ses_06127e231ffeVjd6eIcnMywzBG bounded re-review
+      recorded_at: 2026-07-26 16:52
+      writer_command: agentera state plan record-evaluation

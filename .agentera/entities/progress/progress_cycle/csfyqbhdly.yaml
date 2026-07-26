@@ -1,0 +1,14 @@
+id: csfyqbhdly
+artifact: progress
+record:
+  timestamp: 2026-07-26 16:49
+  type: test
+  phase: build
+  what: Replaced hardcoded Profile Full workflow tests with one shared driver that fetches each executable's served Profile instructions, derives exact action markers, and executes capture, base write, and glossary publication in that served order through separate processes.
+  context:
+    intent: Apply evaluator attempt 1's accepted AC3 test-contract correction for replacement task kentdfdgmu without changing correct lifecycle behavior.
+    constraints: Preserved all earlier progress and orchestrator-owned plan/evaluation state; no real global profile or live glossary writes, staging, commit, version mutation, npm operation, tag, push, or remote action.
+    scope: Stable served Profile Full action markers, shared new-process workflow driver, transient-source executable test, and extracted-package workflow test.
+  inspiration: Accepted evaluator finding that prose ordering and behavioral workflows were disconnected because tests hardcoded the correct sequence.
+  verified: Both source and package workflows were driven by their served instruction order. The source workflow built a transient local executable, fetched prime in a new process, then passed the marker-driven first-generation, same-date, later-decay, exact-byte, malformed-section, and project-isolation checks; focused Profile tests passed 25/25. The package lane constructed and extracted the package, fetched its served Profile instructions in a new process, and passed the same shared new-process workflow, 15/15. Typecheck, rebuild, Profile and capability-contract validation, full source 2782 passed with 1 skipped, compact, and diff checks passed; the rebuilt CLI served capture-owned-glossary, write-base-profile, publish-profile-glossary.
+  next: Leave task and evaluation lifecycle to the orchestrator; no lifecycle API, consumer behavior, project lookup, version, or release work is included.

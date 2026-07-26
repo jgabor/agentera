@@ -1,6 +1,7 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact } from "../state/write/operations.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
+import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -311,15 +312,18 @@ export function printCheckHelp(sub?: string): string {
 }
 
 export function printReportHelp(): string {
+  const profileGlossary = personalGlossaryOutputContract();
   return [
     "usage: agentera report [-h] [--format {text,json}] [--project VALUE] [--sources {active,all}]",
     "                       | agentera report refresh [--dry-run|--consent local-history]",
     "                         [--import-source claude]",
     "                         [--no-<runtime> ...] [--accept-coverage-gap]",
+    `                       | ${profileGlossary.command} --input <file|-> [--dry-run] --format json`,
     "",
     "Privacy-gated usage analytics over an existing corpus.",
     "Default analytics use --sources active and exclude historical imports.",
     "Use --sources all to include historical records with visible provenance.",
+    `Profile Full sends ${profileGlossary.requestSchemaVersion} to the exact profile path returned by prime; this subcommand requires no project checkout.`,
     "",
     "Corpus extraction flags (report refresh with --consent local-history):",
     "  These flags deselect runtimes that would otherwise be included when their",

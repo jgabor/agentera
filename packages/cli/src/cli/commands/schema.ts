@@ -21,6 +21,7 @@ import {
 } from "../../runtime/nativeResourceCleanup.js";
 import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
+import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 
 export interface TransitionalTopLevelAlias {
   legacy: string;
@@ -428,6 +429,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   gaps.push(...schemaGaps);
   const nativeResourceCleanup = loadNativeResourceCleanupContract();
   const retrievalAuthority = loadStateRetrievalAuthority();
+  const profileGlossary = personalGlossaryOutputContract();
 
   const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
   const doctorContract = contractSection(contract, "doctor", gaps);
@@ -466,6 +468,13 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       supported_routes: {
         v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
         native_resource_cleanup: "agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
+        personal_glossary: `${profileGlossary.command} --input <file|-> [--dry-run] --format json`,
+      },
+      personal_glossary: {
+        command: profileGlossary.command,
+        request_schema_version: profileGlossary.requestSchemaVersion,
+        output_statuses: profileGlossary.outputStatuses,
+        project_checkout: "not_required",
       },
       native_resource_cleanup: {
         contract: nativeResourceCleanup.sourcePath,

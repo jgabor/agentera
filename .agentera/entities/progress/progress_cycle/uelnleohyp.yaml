@@ -1,0 +1,14 @@
+id: uelnleohyp
+artifact: progress
+record:
+  timestamp: 2026-07-26 15:49
+  type: feat
+  phase: build
+  what: Activated deterministic personal glossary rendering and lifecycle persistence inside PROFILE.md with bounded personal provenance, byte-preserving replacement, non-compounding permanence-class decay, refresh conflict handling, and packaged parity coverage.
+  context:
+    intent: Execute Plan antsflnznb Task qzgchaxmbp without changing orchestrator-owned task or evaluation state.
+    constraints: No project glossary reads, no real global PROFILE.md mutation, no plan task/evaluation mutation, no versioning, publication, staging, or commit.
+    scope: Personal glossary shared authority, Profile capability declarations/instructions, executable PROFILE.md rendering boundary, focused source/package tests, and Unreleased changelog.
+  inspiration: Plan antsflnznb Task qzgchaxmbp and Decision prmnztjytv.
+  verified: "Focused tests: 50 passed. Full source lane: 211 files, 2772 passed, 1 skipped. Package lane: 2 files, 15 passed. Typecheck and build passed. Profile and capability-contract validation passed. Compact passed. Disposable built-output render/regeneration smoke retained the term, decayed durable confidence 80 to 49, preserved permanence and decision confidence, and ignored a project-glossary trap directory."
+  next: Leave task completion and evaluation to the orchestrator; later tasks own producer-wide readiness, package metadata, and state closeout.

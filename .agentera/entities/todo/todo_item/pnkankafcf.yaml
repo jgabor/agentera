@@ -1,0 +1,15 @@
+id: pnkankafcf
+artifact: todo
+record:
+  severity: degraded
+  status: resolved
+  description: "[fix:3.0.0] Complete Profile Full personal-glossary publication sequencing after Plan antsflnznb Task qzgchaxmbp exhausted two evaluations. packages/cli/src/capabilities/profile/instructions.ts must generate the base PROFILE.md while preserving any owned Glossary section, then invoke agentera report profile-glossary after Step 4. Add ordered first-generation and regeneration regressions proving the section exists and survives."
+  readiness:
+    capability: plan
+    reason: The original plan task is terminally blocked; a bounded replacement must preserve evaluator history while correcting the remaining workflow sequence.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This is the sole blocker for personal output and every producer-readiness dependency.

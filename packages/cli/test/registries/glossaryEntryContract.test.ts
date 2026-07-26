@@ -10,6 +10,7 @@ import auditInstructions from "../../src/capabilities/audit/instructions.js";
 import {
   confirmedVariantGuardContract,
   glossaryEntryAuthorityPath,
+  personalGlossaryOutputContract,
   validateGlossaryEntry,
   validateGlossaryEntryContract,
   validateGlossaryCapabilityImplementationClaim,
@@ -79,8 +80,25 @@ function malformedAuthority(mutate: (authority: Record<string, any>) => void): s
 }
 
 describe("shared glossary entry authority", () => {
-  it("derives shared shape, bounded ownership, confidence, and decay rules from existing authorities", () => {
+  it("derives shared shape, active personal output, bounded ownership, confidence, and decay rules from existing authorities", () => {
     expect(validateGlossaryEntryContract(glossaryEntryAuthorityPath())).toEqual([]);
+    const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
+    expect(authority.ownership_contracts.personal.implementation).toMatchObject({
+      status: "active_partial",
+      active: expect.arrayContaining(["profile_full_rendering", "profile_persistence"]),
+      inactive: ["lookup"],
+    });
+    expect(authority.deferred_capability_contracts.profile).toMatchObject({
+      implementation: "active_partial",
+      inactive_behavior: ["lookup"],
+      forbidden_current_claims: ["lookup", "project_glossary_consumption"],
+    });
+    expect(personalGlossaryOutputContract()).toEqual({
+      command: "agentera report profile-glossary",
+      requestSchemaVersion: "agentera.personalGlossaryUpdateRequest.v1",
+      sectionSchemaVersion: "agentera.personalGlossarySection.v1",
+      outputStatuses: ["changed", "unchanged_replay", "dry_run_candidate"],
+    });
   });
 
   it("keeps audit read-only while build owns confirmed project publication", () => {
@@ -132,7 +150,7 @@ describe("shared glossary entry authority", () => {
       expect(surface).toMatch(/Audit remains mutation-free|mutation-free, read-only|mutation-free and read-only/);
       expect(surface).toMatch(/Build project-glossary\s+publication is active/);
       expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
-      expect(surface).toMatch(/profile mutation|personal-profile mutation/);
+      expect(surface).toMatch(/profile mutation|personal-profile mutation|personal-profile\s+mutation/);
       expect(surface).toMatch(/docs-mapping\s+mutation/);
       expect(surface).not.toMatch(/project glossary production and persistence.*deferred/i);
     }
@@ -175,11 +193,11 @@ describe("shared glossary entry authority", () => {
 
   it.each([
     [
-      "active profile output",
+      "deferred profile output",
       (authority: Record<string, any>) => {
-        authority.deferred_capability_contracts.profile.implementation = "implemented";
+        authority.deferred_capability_contracts.profile.inactive_behavior = ["rendering", "persistence", "lookup"];
       },
-      "profile glossary admission must be active_partial while output remains deferred",
+      "profile glossary rendering and persistence must be active while lookup remains deferred",
     ],
     [
       "mutable audit proposal",

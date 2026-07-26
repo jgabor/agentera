@@ -79,9 +79,13 @@ ownership_contracts:
     scope: user
     implementation:
       status: active_partial
-      active: [bounded_admission, explicit_classification, inferred_evidence_check]
-      inactive: [profile_rendering, persistence, lookup]
-      next_task: profile_glossary_output_and_lifecycle
+      active:
+        - bounded_admission
+        - explicit_classification
+        - inferred_evidence_check
+        - profile_full_rendering
+        - profile_persistence
+      inactive: [lookup]
     allowed_provenance:
       - personal_explicit_definition
       - personal_inferred_usage
@@ -132,6 +136,77 @@ ownership_contracts:
       confidence: Apply the existing profile permanence decay class to integer confidence.
       permanence: Remains independently classified and is not changed by evidence age or confidence decay.
       authority: packages/cli/src/capabilities/profile/instructions.ts#Profile-format
+    profile_output:
+      owner: profile_full
+      lifecycle_callable: packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile
+      command:
+        canonical: agentera report profile-glossary
+        namespace: report
+        input_flag: --input
+        stdin_value: "-"
+        format: json
+        dry_run_flag: --dry-run
+        project_checkout: not_required
+        request:
+          schema_version: agentera.personalGlossaryUpdateRequest.v1
+          required_fields: [schema_version, profile_path, as_of, fresh_entries, retained_history]
+          additional_fields: forbidden
+          profile_path_rule: >-
+            Pass exactly profile_context.profile.path returned by
+            agentera prime --context profile --format json. The command never
+            discovers a profile, project root, or project glossary.
+          retained_history_shape: >-
+            A list of source_id, evidence_anchor, source_kind, and signal_type
+            records sufficient to validate fresh admitted entries. It may be
+            empty when regeneration supplies no fresh entries because retained
+            entries carry persisted provenance.
+        output_statuses: [changed, unchanged_replay, dry_run_candidate]
+        rule: >-
+          The packaged headless command validates the complete request before
+          effects and invokes the lifecycle_callable without duplicating merge,
+          decay, replacement, or persistence behavior. JSON is written to
+          stdout; diagnostics use the shared invalid-input envelope. Dry-run
+          computes the candidate without writing PROFILE.md.
+      section:
+        heading: "## Glossary"
+        start_marker: "<!-- agentera:personal-glossary:start -->"
+        end_marker: "<!-- agentera:personal-glossary:end -->"
+        encoding: deterministic_json_fence
+        document_schema_version: agentera.personalGlossarySection.v1
+        entry_shape: shared_primitive
+        lifecycle_metadata: [as_of, confidence_basis]
+        boundary_rule: >-
+          Add one owned section when absent or replace exactly the bytes from its
+          start marker through its end marker. Reject unmatched markers,
+          duplicate owned sections, or an unowned Glossary heading before any
+          write. Preserve every other profile byte exactly.
+      merge_identity:
+        normalization: unicode_lowercase
+        rule: >-
+          One case-insensitive term identity may occur once. Preserve the
+          established spelling and observed_at date. Fresh qualifying evidence
+          may refresh an entry only when meaning and provenance kind are
+          unchanged; divergent meaning or provenance kind is a conflict rather
+          than an implicit overwrite.
+      refresh_rule: >-
+        For matching fresh qualifying evidence, set confidence and its
+        confidence_basis to the fresh evidence-based integer, replace only the
+        same-kind personal evidence anchors, and set last_confirmed_at to the
+        injected as_of date. Preserve observed_at and permanence. This rule is
+        stable for identical input and as_of.
+      decay_rule: >-
+        Without matching fresh evidence, retain the entry and permanence. Derive
+        confidence from its unchanged confidence_basis, its permanence-class
+        lambda, and calendar days from last_confirmed_at to injected as_of using
+        the Profile formula; round to the nearest integer after applying the
+        existing floor. The section-level basis prevents same-date drift and
+        repeated compounding from already-decayed confidence. Age alone never
+        removes an entry.
+      isolation_rule: >-
+        The command and callable accept only a PROFILE.md path, fresh personal
+        entries, retained personal-history evidence, and an injected ISO date.
+        They have no project root, project glossary parameter, artifact lookup,
+        or project file read.
   project:
     scope: repository
     implementation:
@@ -305,23 +380,25 @@ consumer_boundary:
     precedence: forbidden
   rule: >-
     Audit remains mutation-free and Build project-glossary publication is active.
-    Personal profile rendering and persistence, glossary lookup, precedence,
-    semantic-equivalence review, personal-profile mutation, and docs-mapping
-    mutation remain deferred.
+    Personal Profile Full rendering and persistence are active. Glossary lookup,
+    precedence, semantic-equivalence review, project-driven personal-profile
+    mutation, and docs-mapping mutation remain deferred.
 
 deferred_capability_contracts:
   profile:
     capabilities: [profile]
     implementation: active_partial
     intended_behavior: personal_glossary_synthesis
-    active_behavior: ownership_contracts.personal.admission
-    inactive_behavior: [rendering, persistence, lookup]
+    active_behavior:
+      - ownership_contracts.personal.admission
+      - ownership_contracts.personal.profile_output
+    inactive_behavior: [lookup]
     contracts:
       admission: ownership_contracts.personal.input
       provenance: ownership_contracts.personal.allowed_provenance
       confidence: shared_primitive.fields.confidence
       retention_and_decay: ownership_contracts.personal.retention_and_decay
-    forbidden_current_claims: [synthesis, persistence, lookup]
+    forbidden_current_claims: [lookup, project_glossary_consumption]
   audit:
     capabilities: [audit]
     implementation: active_partial

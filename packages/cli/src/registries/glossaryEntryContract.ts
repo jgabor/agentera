@@ -32,6 +32,13 @@ export interface ConfirmedVariantGuardContract {
   excludedDirectories: string[];
 }
 
+export interface PersonalGlossaryOutputContract {
+  command: string;
+  requestSchemaVersion: string;
+  sectionSchemaVersion: string;
+  outputStatuses: string[];
+}
+
 const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
 export type DeferredGlossaryCapability = (typeof DEFERRED_CAPABILITIES)[number];
 
@@ -77,6 +84,23 @@ export function confirmedVariantGuardContract(
   const project = mapping(mapping(authority.ownership_contracts)?.project);
   const guard = mapping(project?.confirmed_variant_guard);
   return { excludedDirectories: strings(guard?.excluded_directory_names) };
+}
+
+export function personalGlossaryOutputContract(
+  pathname: string = glossaryEntryAuthorityPath(),
+): PersonalGlossaryOutputContract {
+  const authority = contract(pathname);
+  const personal = mapping(mapping(authority.ownership_contracts)?.personal);
+  const output = mapping(personal?.profile_output);
+  const command = mapping(output?.command);
+  const request = mapping(command?.request);
+  const section = mapping(output?.section);
+  return {
+    command: typeof command?.canonical === "string" ? command.canonical : "",
+    requestSchemaVersion: typeof request?.schema_version === "string" ? request.schema_version : "",
+    sectionSchemaVersion: typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
+    outputStatuses: strings(command?.output_statuses),
+  };
 }
 
 function sameStrings(actual: unknown, expected: readonly string[]): boolean {
@@ -267,10 +291,12 @@ export function validateGlossaryEntryContract(
       "bounded_admission",
       "explicit_classification",
       "inferred_evidence_check",
+      "profile_full_rendering",
+      "profile_persistence",
     ]) ||
-    !sameStrings(personalImplementation?.inactive, ["profile_rendering", "persistence", "lookup"])
+    !sameStrings(personalImplementation?.inactive, ["lookup"])
   ) {
-    errors.push("personal admission must be active_partial while profile output remains inactive");
+    errors.push("personal rendering and persistence must be active_partial while lookup remains inactive");
   }
   if (
     !sameStrings(mapping(admission?.explicit)?.candidate_signal_types, [
@@ -305,6 +331,44 @@ export function validateGlossaryEntryContract(
   }
   for (const field of ["retention", "confidence", "permanence"]) {
     if (!nonEmpty(decay?.[field])) errors.push(`personal retention_and_decay.${field} is required`);
+  }
+  const profileOutput = mapping(personal?.profile_output);
+  const profileSection = mapping(profileOutput?.section);
+  const mergeIdentity = mapping(profileOutput?.merge_identity);
+  const profileCommand = mapping(profileOutput?.command);
+  const profileRequest = mapping(profileCommand?.request);
+  if (
+    profileOutput?.owner !== "profile_full" ||
+    profileOutput?.lifecycle_callable !== "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
+    profileCommand?.canonical !== "agentera report profile-glossary" ||
+    profileCommand?.namespace !== "report" ||
+    profileCommand?.input_flag !== "--input" ||
+    profileCommand?.stdin_value !== "-" ||
+    profileCommand?.format !== "json" ||
+    profileCommand?.dry_run_flag !== "--dry-run" ||
+    profileCommand?.project_checkout !== "not_required" ||
+    profileRequest?.schema_version !== "agentera.personalGlossaryUpdateRequest.v1" ||
+    !sameStrings(profileRequest?.required_fields, ["schema_version", "profile_path", "as_of", "fresh_entries", "retained_history"]) ||
+    profileRequest?.additional_fields !== "forbidden" ||
+    !nonEmpty(profileRequest?.profile_path_rule) ||
+    !nonEmpty(profileRequest?.retained_history_shape) ||
+    !sameStrings(profileCommand?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"]) ||
+    !nonEmpty(profileCommand?.rule) ||
+    profileSection?.heading !== "## Glossary" ||
+    profileSection?.start_marker !== "<!-- agentera:personal-glossary:start -->" ||
+    profileSection?.end_marker !== "<!-- agentera:personal-glossary:end -->" ||
+    profileSection?.encoding !== "deterministic_json_fence" ||
+    profileSection?.document_schema_version !== "agentera.personalGlossarySection.v1" ||
+    profileSection?.entry_shape !== "shared_primitive" ||
+    !sameStrings(profileSection?.lifecycle_metadata, ["as_of", "confidence_basis"]) ||
+    !nonEmpty(profileSection?.boundary_rule) ||
+    mergeIdentity?.normalization !== "unicode_lowercase" ||
+    !nonEmpty(mergeIdentity?.rule) ||
+    !nonEmpty(profileOutput?.refresh_rule) ||
+    !nonEmpty(profileOutput?.decay_rule) ||
+    !nonEmpty(profileOutput?.isolation_rule)
+  ) {
+    errors.push("personal profile output must define deterministic isolated rendering and lifecycle rules");
   }
 
   const project = mapping(ownership?.project);
@@ -464,15 +528,18 @@ export function validateGlossaryEntryContract(
   if (
     profile?.implementation !== "active_partial" ||
     !sameStrings(profile?.capabilities, ["profile"]) ||
-    profile?.active_behavior !== "ownership_contracts.personal.admission" ||
-    !sameStrings(profile?.inactive_behavior, ["rendering", "persistence", "lookup"]) ||
+    !sameStrings(profile?.active_behavior, [
+      "ownership_contracts.personal.admission",
+      "ownership_contracts.personal.profile_output",
+    ]) ||
+    !sameStrings(profile?.inactive_behavior, ["lookup"]) ||
     profileContracts?.admission !== "ownership_contracts.personal.input" ||
     profileContracts?.provenance !== "ownership_contracts.personal.allowed_provenance" ||
     profileContracts?.confidence !== "shared_primitive.fields.confidence" ||
     profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
-    !sameStrings(profile?.forbidden_current_claims, ["synthesis", "persistence", "lookup"])
+    !sameStrings(profile?.forbidden_current_claims, ["lookup", "project_glossary_consumption"])
   ) {
-    errors.push("profile glossary admission must be active_partial while output remains deferred");
+    errors.push("profile glossary rendering and persistence must be active while lookup remains deferred");
   }
   const audit = mapping(capabilities?.audit);
   const findingFamily = mapping(audit?.finding_family);

@@ -4,7 +4,7 @@ record:
   name: Activate personal glossary output and lifecycle
   depends_on:
     - raehsqxgvm
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN admitted entries WHEN profile Full completes THEN an independent Glossary section records the shared fields, required anchor cardinality, confidence, permanence, and temporal metadata.
     - GIVEN regeneration without fresh qualifying evidence WHEN a term was established THEN the entry remains, confidence decays with its existing permanence-class parameters, and permanence remains unchanged.
@@ -12,3 +12,16 @@ record:
     - GIVEN an existing profile WHEN its Glossary section is replaced THEN non-glossary content is unchanged and project glossaries are never read.
     - GIVEN personal producer validation WHEN source and disposable-profile tests pass THEN profile synthesis/output is truthfully implemented while persistence and consumer lookup claims remain scoped correctly.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "AC2/AC5: Profile Full invokes personal glossary publication before Step 4 creates or regenerates PROFILE.md. First generation lacks the required target, and regeneration can overwrite the emitted section. Preserve any owned prior section while writing the base profile, then invoke report profile-glossary after Step 4, with ordered workflow regressions."
+    provenance:
+      attempt_id: producer-task2-audit-2
+      source: Audit ses_061492327ffeVYzi1ZOzMKkr90 bounded re-review
+      recorded_at: 2026-07-26 16:20
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kentdfdgmu
+  superseded_reason: The completed replacement preserves evaluator history while correcting Profile Full base-write and packaged glossary-publication order.
