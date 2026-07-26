@@ -1,0 +1,12 @@
+id: uskzxlsfal
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Enforce bounded manifest schema identity
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN a bounded evidence manifest WHEN its schema version is missing or unknown THEN personal admission returns corrupt unavailable recovery and no candidate.
+    - GIVEN a publisher-generated current manifest WHEN admission runs THEN valid bounded evidence remains eligible.
+    - GIVEN focused regressions and package typecheck WHEN verification runs THEN all checks pass and an independent audit finds no material defect.

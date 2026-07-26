@@ -1,0 +1,16 @@
+id: kkmfdeuarn
+artifact: progress
+record:
+  timestamp: 2026-07-26 14:02
+  type: fix
+  phase: build
+  what: Required exact evidence-tier schema identity before personal glossary admission and added missing and unknown-version recovery regressions.
+  context:
+    intent: Close TODO jgujgmzqee and replace exhausted Plan antsflnznb Task raehsqxgvm without widening producer scope.
+    constraints: No project glossary persistence, profile output, consumer lookup, version metadata, publication, tag, or push.
+    unknowns: None.
+    scope: packages/cli/src/analytics/extractCorpus/evidenceTiers.ts and packages/cli/test/analytics/personalGlossaryAdmission.test.ts.
+  inspiration: Plan antsflnznb replacement task uskzxlsfal and bounded Audit review.
+  discovered: Plan append discovery labels dependencies as integers although entity mode requires bare task IDs; tracked separately.
+  verified: Targeted personal-admission tests passed 16/16; package typecheck and build passed; independent Audit passed and its evidence-tier suite passed 21/21.
+  next: Execute dependency-ready Task dydjhciwcn for confirmed project glossary publication.

@@ -99,6 +99,9 @@
 
 ### Fixed
 
+- Fixed bounded personal glossary admission to reject missing or unknown
+  evidence-tier schema versions before reading signals, returning corrupt-state
+  recovery without candidates.
 - Fixed `agentera state plan create` and `agentera state todo create` rejecting
   valid migrated decision and progress summaries during descriptor-pinned
   publication; logical provenance now validates against the real project root,

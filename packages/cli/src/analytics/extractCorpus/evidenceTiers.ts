@@ -559,6 +559,7 @@ function isEvidenceTierManifest(value: unknown): value is EvidenceTierManifest {
   const signal = value.signal;
   const coverage = value.coverage;
   if (
+    value.schema_version !== TIER_SCHEMA_VERSION ||
     !isMapping(bounds) ||
     typeof bounds.shard_byte_cap !== "number" ||
     typeof bounds.signal_byte_cap !== "number" ||

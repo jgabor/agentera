@@ -1,0 +1,21 @@
+id: mcsmqqitnm
+artifact: decisions
+record:
+  date: 2026-07-26
+  question: How should Agentera authorize and publish confirmed project glossary proposals?
+  context: Audit emits read-only terminology-drift findings, but packages/cli/src/state/write/operations.ts has no glossary writer and .agentera/glossary.yaml has no durable proposal-specific approval or replay contract. Decision prmnztjytv keeps producer ownership separate from consumer behavior.
+  alternatives:
+    - name: Use one build-owned typed publication operation with digest-bound approval and one atomic glossary document.
+      status: chosen
+    - name: Let audit or discuss mutate project glossary state.
+      status: rejected
+    - name: Reuse decision satisfaction or plan state as proposal approval.
+      status: rejected
+    - name: Store approval sidecars and add a cross-file transaction.
+      status: rejected
+    - name: Allow an approved proposal to overwrite conflicting confirmed state.
+      status: rejected
+  choice: Build owns one agentera state glossary publish operation. Audit emits a deterministic proposal digest. Explicit user confirmation binds that digest, source finding, and timestamp. The operation stores an immutable approval record beside the entry in .agentera/glossary.yaml under one validation and atomic replacement boundary. It revalidates source evidence, preserves unrelated entries, no-ops exact replay, and rejects stale or conflicting changes before effects.
+  reasoning: One publication unit keeps audit and discuss mutation-free, makes consent durable without a cross-file transaction, and prevents old approval from authorizing changed content.
+  confidence: firm
+  feeds_into: TODO jwbhvfbqke, TODO guijxewees, Plan antsflnznb replacement work, glossary schema, state writer, audit findings, and build instructions.

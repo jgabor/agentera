@@ -1,0 +1,15 @@
+id: jwbhvfbqke
+artifact: todo
+record:
+  severity: degraded
+  status: resolved
+  description: "[feat:3.0.0] Define the missing project glossary persistence authority required by Plan antsflnznb Task nmewuhappg. Decide a non-audit/non-discuss writer owner, a durable proposal-specific user approval record linked to terminology findings while keeping confirmation outside glossary entries, and an atomic/idempotent storage contract that validates before effects, locks publication, preserves unrelated confirmed entries, and supports safe replay. Current state writer discovery has no glossary target; decision satisfaction is not proposal approval; the generic atomic writer does not own validation, merging, or replay. Replan producer persistence only after these authorities are firm."
+  readiness:
+    capability: discuss
+    reason: Writer ownership, approval identity, and mutation authority are consequential unresolved design decisions that block safe implementation.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This prerequisite blocks project glossary persistence and every downstream producer-readiness task.

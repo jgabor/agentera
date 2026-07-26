@@ -2,7 +2,7 @@ id: jgujgmzqee
 artifact: todo
 record:
   severity: degraded
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Complete bounded personal glossary admission manifest identity validation after Plan antsflnznb Task raehsqxgvm exhausted its evaluation budget. `isEvidenceTierManifest()` must require `schema_version` to equal the authoritative tier schema version so missing or unknown versions return deterministic corrupt recovery without candidates. Add focused missing-version and divergent-version regressions while preserving actual-file-size bounds, semantic-only recurrence, project isolation, and deferred profile output."
   readiness:
     capability: build

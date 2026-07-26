@@ -1,0 +1,13 @@
+id: dydjhciwcn
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Implement confirmed project glossary publication
+  status: pending
+  depends_on:
+    - xlrtdarzcs
+  acceptance:
+    - GIVEN a read-only terminology proposal and explicit proposal-specific user confirmation WHEN authorized publication runs THEN one immutable approval record and one shared-field project entry publish together while audit and discuss remain mutation-free.
+    - GIVEN missing confirmation, stale source evidence, invalid provenance, malformed entry state, or a conflicting confirmed term WHEN publication is requested THEN it fails before effects with a working correction.
+    - GIVEN the same approved proposal or unrelated confirmed entries WHEN publication repeats THEN exact replay is a no-op and unrelated entries remain unchanged.
+    - GIVEN project publication completes WHEN producer state is inspected THEN persistence is active and consumer lookup, precedence, semantic review, and personal-profile mutation remain deferred.

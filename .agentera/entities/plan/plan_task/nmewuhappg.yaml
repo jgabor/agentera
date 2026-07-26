@@ -4,7 +4,7 @@ record:
   name: Deliver confirmation-gated project persistence
   depends_on:
     - xlrtdarzcs
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN Task 4 is selected WHEN execution begins THEN an authoritative writer, external approval record, and atomic mutation contract are all identified; otherwise the task blocks and triggers replanning.
     - GIVEN a proposal lacks approval or is rejected WHEN persistence is requested THEN no glossary or documentation state changes, and audit and discuss executions remain mutation-free.

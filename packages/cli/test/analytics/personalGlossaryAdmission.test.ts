@@ -14,6 +14,7 @@ import {
   publishEvidenceTiers,
   resolveEvidenceAnchor,
 } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { recoveryForState } from "../../src/analytics/extractCorpus/tierReader.js";
 
 let root: string;
 let tiersDir: string;
@@ -220,6 +221,27 @@ describe("bounded personal evidence admission", () => {
     const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] });
     expect(result).toMatchObject({ state: "corrupt", status: "unavailable", candidates: [] });
     expect(result.recovery).toBeTruthy();
+  });
+
+  it.each([
+    ["missing", (manifest: Record<string, unknown>) => delete manifest.schema_version],
+    ["unknown", (manifest: Record<string, unknown>) => {
+      manifest.schema_version = "agentera.evidenceTiers.v999";
+    }],
+  ])("rejects a manifest with a %s schema version without admitting a candidate", (_case, mutate) => {
+    publish([
+      record("explicit", "conversation_turn", "correction", {
+        text: "Actually, `ship shape` means the complete form of a deliverable.",
+      }),
+    ]);
+    const manifestPath = currentGenerationFile("manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+    mutate(manifest);
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest), "utf8");
+
+    const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] });
+    expect(result).toMatchObject({ state: "corrupt", status: "unavailable", candidates: [] });
+    expect(result.recovery).toBe(recoveryForState("corrupt"));
   });
 
   it("rejects an actually oversized signal file before reading stale manifest bytes", () => {
