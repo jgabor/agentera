@@ -155,4 +155,116 @@ describe("read-only terminology-drift findings", () => {
     expect(snapshot(root)).toBe(before);
     expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
   });
+
+  it("counts path aliases for one resolved file and line as one evidence anchor", () => {
+    const root = fixture({ "terms.ts": "export type Canonical = Variant;\n" });
+    const before = snapshot(root);
+
+    const findings = assessTerminologyDrift({
+      projectRoot: root,
+      concepts: [
+        {
+          concept: "path-alias",
+          confidence: 90,
+          severity: "warning",
+          terms: [
+            { term: "Canonical", evidence: [{ source_path: "terms.ts", line: 1 }] },
+            {
+              term: "Variant",
+              evidence: [
+                { source_path: "terms.ts", line: 1 },
+                { source_path: "./terms.ts", line: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+      deliberateDecisionConcepts: new Set(),
+      trackedIssueConcepts: new Set(),
+    });
+
+    expect(findings[0].proposed_canonical_term).toBe("Canonical");
+    expect(findings[0].variants).toEqual([
+      {
+        term: "Variant",
+        evidence: [expect.objectContaining({ source_path: "terms.ts", line: 1 })],
+      },
+    ]);
+    expect(snapshot(root)).toBe(before);
+  });
+
+  it("consolidates case-insensitive duplicate term candidates before ranking", () => {
+    const root = fixture({ "terms.ts": "export type Alpha = Zulu | zulu;\n" });
+
+    const findings = assessTerminologyDrift({
+      projectRoot: root,
+      concepts: [
+        {
+          concept: "duplicate-term",
+          confidence: 90,
+          severity: "warning",
+          terms: [
+            { term: "Alpha", evidence: [{ source_path: "terms.ts", line: 1 }] },
+            { term: "Zulu", evidence: [{ source_path: "terms.ts", line: 1 }] },
+            { term: "zulu", evidence: [{ source_path: "terms.ts", line: 1 }] },
+          ],
+        },
+      ],
+      deliberateDecisionConcepts: new Set(),
+      trackedIssueConcepts: new Set(),
+    });
+
+    expect(findings[0].proposed_canonical_term).toBe("Alpha");
+    expect(findings[0].variants.map((variant) => variant.term)).toEqual(["Zulu"]);
+  });
+
+  it("does not accept Dict evidence found only inside Dictionary", () => {
+    const root = fixture({ "terms.ts": "export type Dictionary = JsonValue;\n" });
+
+    expect(
+      assessTerminologyDrift({
+        projectRoot: root,
+        concepts: [
+          {
+            concept: "term-boundary",
+            confidence: 90,
+            severity: "warning",
+            terms: [
+              { term: "JsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
+              { term: "Dict", evidence: [{ source_path: "terms.ts", line: 1 }] },
+            ],
+          },
+        ],
+        deliberateDecisionConcepts: new Set(),
+        trackedIssueConcepts: new Set(),
+      }),
+    ).toEqual([]);
+  });
+
+  it("emits valid drift without fabricating absent profile evidence or mutating files", () => {
+    const root = fixture({ "terms.ts": "export type JsonValue = Dict;\n" });
+    const before = snapshot(root);
+
+    const findings = assessTerminologyDrift({
+      projectRoot: root,
+      concepts: [
+        {
+          concept: "absent-profile",
+          confidence: 90,
+          severity: "warning",
+          terms: [
+            { term: "JsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
+            { term: "Dict", evidence: [{ source_path: "terms.ts", line: 1 }] },
+          ],
+        },
+      ],
+      deliberateDecisionConcepts: new Set(),
+      trackedIssueConcepts: new Set(),
+    });
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).not.toHaveProperty("personal_divergence");
+    expect(snapshot(root)).toBe(before);
+    expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
+  });
 });

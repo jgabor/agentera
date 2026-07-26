@@ -60,6 +60,15 @@ function confidenceFloor(): number {
   return Number(range[0]);
 }
 
+function containsLiteralTerm(line: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const characters = [...term];
+  const identifierCharacter = /[\p{L}\p{N}_$]/u;
+  const prefix = identifierCharacter.test(characters[0] ?? "") ? "(?<![\\p{L}\\p{N}_$])" : "";
+  const suffix = identifierCharacter.test(characters.at(-1) ?? "") ? "(?![\\p{L}\\p{N}_$])" : "";
+  return new RegExp(`${prefix}${escaped}${suffix}`, "u").test(line);
+}
+
 function verifiedEvidence(
   projectRoot: string,
   term: string,
@@ -81,12 +90,13 @@ function verifiedEvidence(
     }
     if (!realPath.startsWith(`${root}${path.sep}`) || !fs.statSync(realPath).isFile()) return null;
     const line = fs.readFileSync(realPath, "utf8").split(/\r?\n/)[item.line - 1];
-    if (line === undefined || !line.includes(term)) return null;
-    const identity = `${item.source_path}:${item.line}`;
+    if (line === undefined || !containsLiteralTerm(line, term)) return null;
+    const sourcePath = path.relative(root, realPath).split(path.sep).join(path.posix.sep);
+    const identity = `${sourcePath}:${item.line}`;
     if (identities.has(identity)) continue;
     identities.add(identity);
     verified.push({
-      source_path: item.source_path,
+      source_path: sourcePath,
       line: item.line,
       source_record_sha256: crypto.createHash("sha256").update(line).digest("hex"),
     });
@@ -108,27 +118,41 @@ export function assessTerminologyDrift(input: TerminologyDriftInput): Terminolog
     )
       continue;
 
-    const terms = concept.terms.map((candidate) => ({
-      term: candidate.term.trim(),
-      evidence: candidate.term.trim()
-        ? verifiedEvidence(input.projectRoot, candidate.term.trim(), candidate.evidence)
-        : null,
+    const consolidated = new Map<
+      string,
+      { term: string; evidence: Map<string, ProjectTermEvidence> }
+    >();
+    let invalidEvidence = false;
+    for (const candidate of concept.terms) {
+      const term = candidate.term.trim();
+      const evidence = term ? verifiedEvidence(input.projectRoot, term, candidate.evidence) : null;
+      if (!evidence) {
+        invalidEvidence = true;
+        break;
+      }
+      const key = term.toLowerCase();
+      const group = consolidated.get(key) ?? { term, evidence: new Map() };
+      for (const item of evidence) group.evidence.set(`${item.source_path}:${item.line}`, item);
+      consolidated.set(key, group);
+    }
+    if (invalidEvidence || consolidated.size < 2) continue;
+    const terms = [...consolidated.values()].map((term) => ({
+      term: term.term,
+      evidence: [...term.evidence.values()],
     }));
-    if (terms.length < 2 || terms.some((term) => !term.evidence)) continue;
-    if (new Set(terms.map((term) => term.term.toLocaleLowerCase())).size < 2) continue;
 
     const ordered = [...terms].sort(
       (left, right) =>
-        right.evidence!.length - left.evidence!.length || left.term.localeCompare(right.term),
+        right.evidence.length - left.evidence.length || left.term.localeCompare(right.term),
     );
     const [canonical, ...variants] = ordered;
     const finding: TerminologyDriftFinding = {
       family: "terminology_drift",
       concept: concept.concept,
       proposed_canonical_term: canonical.term,
-      canonical_evidence: canonical.evidence!,
+      canonical_evidence: canonical.evidence,
       variants: variants
-        .map((variant) => ({ term: variant.term, evidence: variant.evidence! }))
+        .map((variant) => ({ term: variant.term, evidence: variant.evidence }))
         .sort((left, right) => left.term.localeCompare(right.term)),
       severity: concept.confidence < 70 ? "info" : concept.severity,
       confidence: concept.confidence,

@@ -12,3 +12,13 @@ record:
     - GIVEN weak evidence, known deliberate decisions, tracked issues, or no supported drift WHEN assessed THEN existing filtering applies and no finding is fabricated.
     - GIVEN disposable drift and no-drift fixtures WHEN evaluated THEN one positive and negative case per novel finding rule passes while the project artifact producer remains deferred.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "AC2/AC4/AC5: normalize physical project-file anchor identity before distinct-evidence ranking; consolidate case-insensitive duplicate term candidates so canonical cannot appear as its own variant; replace substring evidence matching with boundary-aware literal evidence; add isolated negatives for path aliases, duplicate terms, Dict vs Dictionary, and valid drift without profile evidence."
+    provenance:
+      attempt_id: producer-task3-audit-1
+      source: Audit ses_061d39c84ffepJq2GjJFprWUWB
+      recorded_at: 2026-07-26 13:32
+      writer_command: agentera state plan record-evaluation

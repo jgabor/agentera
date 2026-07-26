@@ -1,0 +1,15 @@
+id: pcvloexbng
+artifact: progress
+record:
+  timestamp: 2026-07-26 13:38
+  type: fix
+  phase: build
+  what: Normalized terminology evidence identities, consolidated duplicate term candidates, and enforced boundary-aware literal evidence after evaluator retry.
+  context:
+    intent: Correct only producer-task3-audit-1 findings while preserving read-only audit behavior and all deferred producer boundaries.
+    constraints: No glossary persistence, approval, docs mapping, v1LegacyCruft guard, consumer behavior, personal output, version, or adjacent-task changes; xlrtdarzcs remains in_progress.
+    unknowns: Decision list remains byte-budget degraded, but exact prmnztjytv is available with satisfaction null. Vision/profile startup remains omitted. Independent retry verdict is pending.
+    scope: packages/cli/src/audit/terminologyDrift.ts, its disposable focused tests, failed evaluation state, and this progress entity only. Blocked raehsqxgvm and open jgujgmzqee remain untouched.
+  inspiration: Plan Task xlrtdarzcs evaluation producer-task3-audit-1 and firm Decision prmnztjytv.
+  verified: "AC1/AC3 preserved: authority/instructions unchanged; findings remain read-only and artifact production/confirmation declared_deferred. AC2: canonical resolved project path plus line owns identity before count/rank; terms.ts and ./terms.ts emit one terms.ts:1 anchor. AC4: case-insensitive candidates consolidate with anchor dedup before rank, canonical cannot recur as a variant, and literal boundaries reject Dict within Dictionary. AC5: isolated disposable regressions cover aliases, duplicates, boundary false positives, and valid absent-profile drift while prior filters/snapshots pass. Focused 40/40, source 2721 passed/1 skipped, package 14/14, typecheck, build, lint, format, diff, capability, contract, vocabulary, self-audit, state, and compact checks passed."
+  next: Independent reevaluation of xlrtdarzcs; preserve attempt_count 1/failure_count 1 and in_progress until evaluator-owned transition.
