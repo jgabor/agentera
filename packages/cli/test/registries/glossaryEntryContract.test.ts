@@ -175,6 +175,53 @@ describe("shared glossary entry authority", () => {
   );
 });
 
+describe("persisted glossary entry boundary", () => {
+  it("admits an entry without deferred consumer fields", () => {
+    expect(
+      validateGlossaryEntry(
+        entry({
+          kind: "project_file",
+          evidence: [{ source_path: "docs/terms.yaml", source_record_sha256: "a".repeat(64) }],
+        }),
+        "project",
+      ),
+    ).toEqual([]);
+  });
+
+  it("rejects every consumer-only persisted field declared by the authority", () => {
+    for (const field of ["precedence", "collision", "review"]) {
+      const candidate = entry({
+        kind: "project_file",
+        evidence: [{ source_path: "docs/terms.yaml", source_record_sha256: "a".repeat(64) }],
+      });
+      candidate[field] = "deferred";
+      expect(validateGlossaryEntry(candidate, "project")).toContain(
+        `entry contains forbidden persisted fields: ${field}`,
+      );
+    }
+  });
+
+  it("accepts a real ISO calendar date", () => {
+    const candidate = entry({
+      kind: "project_file",
+      evidence: [{ source_path: "docs/terms.yaml", source_record_sha256: "a".repeat(64) }],
+    });
+    (candidate.temporal as Record<string, unknown>).observed_at = "2024-02-29";
+    expect(validateGlossaryEntry(candidate, "project")).toEqual([]);
+  });
+
+  it("rejects a date-shaped value that is not a calendar date", () => {
+    const candidate = entry({
+      kind: "project_file",
+      evidence: [{ source_path: "docs/terms.yaml", source_record_sha256: "a".repeat(64) }],
+    });
+    (candidate.temporal as Record<string, unknown>).observed_at = "2026-99-99";
+    expect(validateGlossaryEntry(candidate, "project")).toContain(
+      "temporal.observed_at must be an ISO date",
+    );
+  });
+});
+
 describe("personal explicit-definition provenance", () => {
   it("admits one allowed retained record and exposes its anchor", () => {
     const candidate = entry({
@@ -279,6 +326,29 @@ describe("project-file provenance", () => {
       entry({
         kind: "project_file",
         evidence: [{ source_path: "../terms.yaml", source_record_sha256: "a".repeat(64) }],
+      }),
+      "project",
+    );
+    expect(errors).toContain("project source_path must be safe and project-relative");
+  });
+
+  it("admits a Windows-separated project-relative source path", () => {
+    expect(
+      validateGlossaryEntry(
+        entry({
+          kind: "project_file",
+          evidence: [{ source_path: "docs\\terms.yaml", source_record_sha256: "a".repeat(64) }],
+        }),
+        "project",
+      ),
+    ).toEqual([]);
+  });
+
+  it("rejects a Windows-absolute project source path on every host platform", () => {
+    const errors = validateGlossaryEntry(
+      entry({
+        kind: "project_file",
+        evidence: [{ source_path: "C:\\secret\\terms.yaml", source_record_sha256: "a".repeat(64) }],
       }),
       "project",
     );

@@ -50,6 +50,20 @@ function nonEmpty(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function isIsoCalendarDate(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const [, year, month, day] = match.map(Number);
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() + 1 === month &&
+    date.getUTCDate() === day
+  );
+}
+
 export function validateGlossaryEntryContract(
   pathname: string = glossaryEntryAuthorityPath(),
 ): string[] {
@@ -325,6 +339,13 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   const errors: string[] = [];
   const primitive = mapping(authority.shared_primitive);
   const fields = mapping(primitive?.fields);
+  const consumer = mapping(authority.consumer_boundary);
+  const forbidden = strings(consumer?.forbidden_persisted_entry_fields).filter(
+    (field) => field in entry,
+  );
+  if (forbidden.length > 0) {
+    errors.push(`entry contains forbidden persisted fields: ${forbidden.join(", ")}`);
+  }
   for (const field of strings(primitive?.required_fields)) {
     if (!(field in entry)) errors.push(`${field} is required`);
   }
@@ -344,10 +365,7 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   }
   const temporal = mapping(entry.temporal);
   for (const field of strings(mapping(fields?.temporal)?.required_fields)) {
-    if (
-      typeof temporal?.[field] !== "string" ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(temporal[field] as string)
-    ) {
+    if (!isIsoCalendarDate(temporal?.[field])) {
       errors.push(`temporal.${field} must be an ISO date`);
     }
   }
@@ -477,7 +495,8 @@ export function validateGlossaryEntry(
       if (
         typeof sourcePath !== "string" ||
         sourcePath.length === 0 ||
-        path.isAbsolute(sourcePath) ||
+        path.posix.isAbsolute(sourcePath) ||
+        path.win32.isAbsolute(sourcePath) ||
         sourcePath.split(/[\\/]/).includes("..")
       ) {
         errors.push("project source_path must be safe and project-relative");
