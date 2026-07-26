@@ -1,0 +1,16 @@
+id: dtflyehqfo
+artifact: progress
+record:
+  timestamp: 2026-07-26 18:24
+  type: feat
+  phase: build
+  what: Recorded reproducible metadata-preparation evidence after evaluator attempt 1 without changing metadata, source, tests, changelog, or prior progress.
+  context:
+    intent: Close the evidence gaps for unchanged byte hashes and the release-metadata drift correction while preserving orchestrator lifecycle state.
+    constraints: Evidence-only retry; preserve progress sfhhyxjvba and all metadata/source/test/changelog bytes.
+    unknowns: Remote absence is based on read-only npm view at evidence time; no registry mutation was attempted.
+    scope: "Current development agentera 3.0.0-dev.35, suite 3.0.0, gitRef/HEAD 83984cde757f85f6888e6ed180108a985fecb164, tag next; stable agentera 0.0.2, suite 2.7.7, gitRef ce4a7054a8438b8b0aac013bac4b86ba1a9de3dd; changelog Unreleased. Local tags: 46 entries, digest 5e37a0b4c5d39aa80dac3bc36712488c51e896b3b3051ab3c6facb1844d93987, no dev.35 tag. Git refs: 60 entries, digest a4ffbacb4d7016069882676a31424f0b6941051c1c2580f81a8d6d461ff9dc70."
+  inspiration: Plan antsflnznb task jivwatgqpl evaluator attempt 1 evidence correction.
+  discovered: "Exact SHA-256 HEAD=current pairs: shim package 56a36539e3bdd852bfd064bf3b31af1f4f951aed9513f7af8e76152b1fb15946; skill dd15875b8c92f2c28b48c35b043909ee63a76cf056523c379d88bb963af55345; registry 69f0b3b09f84a701378c82d3cf275391e651dfccc813972d5deab619181bca0e; changelog 7093afb96071e189ed7f8cc50dddc7e576d79d0cb52797e5025b9a66deb056bd; update-channels 4881923ca83c74567787eaf2c5b26acc08a6fc0dc79bf653f43f89004a2c3aab; tracked pnpm-lock 7443e7ed78eaa3ba9069c0557619ea981759b4428b877685cebc9bab241824c3; root package d728f76c42113baf525f9aeb99fc0ede5126f0a71f4f65566f87d08e4b5c8d65. packages/cli/package-lock.json is ignored/untracked, not a HEAD/version-preparation lock surface; current hash c59c07b50dba1235b6268a3fffff41e8039023bd40fc5bd702de11bc36f6a210."
+  verified: 'Real manifest SHA-256 stayed 6c916e87f1723ef8c434e20aa1c9c68288f315c487094004c6ef5e7512828e36 before/after disposable drift validation. Fixture differed only at agentera.suiteVersion 3.0.0->3.0.1; actual local built validator exited 1, status fail, target release-metadata, engine exit_code 1, diagnostic: release-metadata divergence: registry.json skills[0].version is "3.0.0" but packages/cli/package.json agentera.suiteVersion is "3.0.1"; the agentera.suiteVersion mirror must equal the registry version exactly. Current valid validation exited 0, status pass, engine exit_code 0, stdout release-metadata ok. Pack dry-run reported agentera@3.0.0-dev.35, tag next, artifact not created; no dev.35 tarball and no publish command. npm read-only tags latest=0.0.2,next=3.0.0-dev.32; agentera@3.0.0-dev.35 returned E404/exit 1.'
+  next: Leave task/evaluation state in progress for the orchestrator/evaluator; do not stage, commit, tag, or publish.

@@ -4,9 +4,19 @@ record:
   name: Apply permitted development version metadata
   depends_on:
     - hakmkqjfkj
-  status: pending
+  status: complete
   acceptance:
     - GIVEN producer work is feature scope WHEN metadata is prepared THEN the package advances exactly once from 3.0.0-dev.34 to 3.0.0-dev.35 and suite-bearing metadata remains 3.0.0.
     - GIVEN development metadata is prepared WHEN repository metadata is compared THEN stable metadata, changelog release state, tags, publication state, and unrelated surfaces are unchanged.
     - GIVEN valid and drifting metadata WHEN policy checks run THEN valid state passes and suite drift fails with a working correction.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Evidence audit: progress sfhhyxjvba claims stable/suite/changelog/tag hashes stayed unchanged without recording exact before/after digests, and cites a 22-case suite whose suite-drift assertion does not verify the full corrective clause. Append immutable evidence with exact digests/status and a disposable drift exit/output containing the working correction; metadata itself already passes."
+    provenance:
+      attempt_id: development-metadata-audit-2
+      source: Audit ses_060ca496fffexcYGAKvQAP8ySv bounded re-review
+      recorded_at: 2026-07-26 18:29
+      writer_command: agentera state plan record-evaluation
