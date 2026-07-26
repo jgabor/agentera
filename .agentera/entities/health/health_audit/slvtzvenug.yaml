@@ -1,0 +1,30 @@
+id: slvtzvenug
+artifact: health
+record:
+  date: 2026-07-26
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: producer authority wording and all accepted closure findings are resolved; terminal evidence is current"
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-plan audit for antsflnznb. Exact plan, 15 task, TODO, docs, decision, and progress reads show ten complete and five superseded tasks with evaluated PASS replacements, firm decisions with satisfaction null, resolved producer TODOs, and consumer TODO ruzauoaotd intentionally open on exactly both producers. Glossary authority reports personal active_partial, project active, and consumers declared_deferred. Package 3.0.0-dev.37 retains suite 3.0.0; progress qrzzskyqvv records the 2,806-test release conjunction, and current state, compact, capability-contract, and release-metadata validators pass. No live glossary, recovery directory, package archive, blocking finding, or known scoped issue remains.
+      findings:
+        []
+  trends:
+    comparison_target: Plan antsflnznb objective and accepted final findings
+    improved: Both glossary producers, isolation boundaries, canonical state, docs wording, package metadata, and non-publishing closure evidence are current.
+    degraded: None in the limited terminal-plan scope.
+    new_findings: None.
+    resolved: Completed-replacement evaluation provenance, atomic entity recovery and Git confinement, and stale producer TODO/docs wording.
+    carried_forward: Consumer TODO ruzauoaotd remains intentionally open and declared deferred; decision satisfaction remains untouched.
+  patterns:
+    - Terminal closure appends one limited artifact_freshness health record before setting the open plan complete; the plan is not archived.
+  appended_at: 2026-07-26T20:32:44.010Z

@@ -12,4 +12,4 @@ record:
     blocked: null
     gate: null
     queue_rank: 1
-    order_reason: Resolved prerequisite; downstream order is owned by the open producer and consumer TODOs.
+    order_reason: Resolved prerequisite and producers; downstream order is owned by open cross-glossary consumer TODO ruzauoaotd.

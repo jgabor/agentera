@@ -1,0 +1,22 @@
+id: exniftakay
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Correct remaining producer authority wording
+  status: complete
+  depends_on:
+    - lmlxbqlknk
+  acceptance:
+    - GIVEN both glossary producer TODOs are resolved WHEN canonical TODO authority is read THEN ldzkfdcopb contains no claim that producer TODOs remain open or deferred and identifies only cross-glossary consumer work as open.
+    - GIVEN the one-field correction WHEN final producer state is rechecked THEN decisions, producer statuses, consumer dependencies, docs inventory, package metadata, evaluator provenance, and live-state isolation remain unchanged and valid.
+    - GIVEN targeted current-state evidence WHEN an independent bounded audit runs THEN the accepted stale-wording finding is resolved with no material regression.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Current docs entry ybhwitjvib still labels the active project glossary producer as deferred production.
+    provenance:
+      attempt_id: final-authority-wording-audit-2
+      source: Audit ses_05fef8242ffe2eLpgS7NeoWASl bounded second evaluation PASS
+      recorded_at: 2026-07-26 22:25
+      writer_command: agentera state plan record-evaluation

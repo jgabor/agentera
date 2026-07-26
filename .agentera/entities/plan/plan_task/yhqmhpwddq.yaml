@@ -10,19 +10,22 @@ record:
     - gnwhzstoyg
     - hakmkqjfkj
     - jivwatgqpl
-  status: in_progress
+  status: superseded
   acceptance:
     - GIVEN all prior tasks pass WHEN closeout runs THEN Decision prmnztjytv is verified unchanged with no satisfaction write, while producer TODOs, progress, plan state, docs inventory, and package metadata are synchronized.
     - GIVEN both producers ship WHEN TODO state is read THEN azytlqzxoa and guijxewees are resolved while ruzauoaotd remains open and dependent on both.
     - GIVEN final evidence WHEN the plan is evaluated THEN no stale producer deferral, dependency mismatch, live-test contamination, unresolved accepted finding, or contract drift remains.
   plan: antsflnznb
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Canonical TODO ldzkfdcopb, resolved producer readiness in azytlqzxoa and guijxewees, and docs inventory athqnszfow still describe shipped producers as deferred.
+    last_failure_evidence: TODO ldzkfdcopb readiness.order_reason still says downstream order is owned by open producer and consumer TODOs although both producer TODOs are resolved.
     provenance:
-      attempt_id: final-producer-sync-audit-1
-      source: Audit ses_06082285effeVKznDr9MxDuRMr final-state audit
-      recorded_at: 2026-07-26 19:39
+      attempt_id: final-producer-sync-audit-2
+      source: Audit ses_06082285effeVKznDr9MxDuRMr bounded second final-state evaluation
+      recorded_at: 2026-07-26 22:11
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - exniftakay
+  superseded_reason: Replacement corrected the remaining current TODO/docs producer-authority wording and passed independent evaluation.

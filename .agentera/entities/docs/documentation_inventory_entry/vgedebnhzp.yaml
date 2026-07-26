@@ -1,7 +1,7 @@
 id: vgedebnhzp
 artifact: docs
 record:
-  document: Artifact registry interface — canonical glossary identity with deferred behavior
+  document: Artifact registry interface — canonical glossary identity with deferred consumer behavior
   path: references/artifacts/artifact-registry-interface-model.yaml
   last_updated: 2026-07-26
   status: current
