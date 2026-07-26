@@ -7,7 +7,7 @@ record:
     - dxauzvwsfy
     - zcobvxqwmc
     - nezgldddwg
-  status: in_progress
+  status: complete
   description: Align contributor guidance and release metadata, apply only the permitted development metadata change, verify the complete transaction, and close the owning TODO without absorbing adjacent reliability work.
   acceptance:
     - GIVEN contributor guidance is read WHEN development and stable paths are compared THEN preparation, commit, publication, retry, output, and recovery instructions agree.
@@ -18,3 +18,13 @@ record:
   test_proportionality: One complete development and stable readiness conjunction plus metadata-divergence and unauthorized-publication failures.
   plan: kedmyhqqtb
   evidence: Guidance now shares one preparation, commit, publication, bounded-output, retry/replay, and no-rollback contract for development and stable. Only development metadata advanced to 3.0.0-dev.33 at gitRef 059ffec8e3d9a007aa5fc3a790eadc46f7045f15; suite 3.0.0 and shim metadata are unchanged. Existing symmetric transaction tests cover readiness, divergence, and unauthorized mutation. verify:release, typecheck, build, compact, capability-contract, release-metadata, and pack:dry-run passed. Awaiting independent audit.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: independent audit attempt 1
+      recorded_at: 2026-07-25 16:38
+      writer_command: agentera state plan record-evaluation

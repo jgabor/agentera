@@ -1,0 +1,30 @@
+id: orsttayndc
+artifact: health
+record:
+  date: 2026-07-25
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: delegated-owner artifacts and terminal closure evidence are current"
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-plan audit for kedmyhqqtb. All ten build/document-owned artifacts were modified on the plan creation date. Five tasks are complete with independent PASS evaluations; zcobvxqwmc is superseded by completed PASS replacement fjzwlkkbxe. Final progress contains substantive gate evidence, qhvteprgdg is resolved, adjacent TODOs remain open, and no plan-window publication, tag, push, or remote mutation is evidenced.
+      findings:
+        []
+  trends:
+    comparison_target: Plan kedmyhqqtb creation
+    improved: Publication implementation, contract, tests, CI, metadata, and guidance are current.
+    degraded: None in scoped artifact freshness.
+    new_findings: None.
+    resolved: Owning publication TODO and superseded precision-ordering task.
+    carried_forward: vptlelnadp, zxccscfiox, and huiepnrwav remain open outside plan scope.
+  patterns:
+    - Terminal closure published one limited artifact_freshness health record before plan completion.
+  appended_at: 2026-07-25T14:42:23.503Z
