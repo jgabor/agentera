@@ -3,14 +3,14 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[feat:3.0.0] Add repository-independent personal glossary synthesis to the canonical `profile` Full workflow after shared glossary contract TODO ldzkfdcopb lands. During Step 3, select candidates from the bounded rank-2 `signal` tier and resolve only qualifying `evidence_anchor`s to individual full-evidence shards; never load legacy `corpus.json` whole or rescan unbounded history. Admit a reliably classified explicit correction or clarification with one anchor; admit inferred recurring terminology only from two independent `instruction_document` or `project_config_signal` records and expose both anchors. During Step 4, generate or replace an independent `## Glossary` section in the user-level `PROFILE.md`; retain established entries across regeneration and decay confidence through the existing permanence classes, with permanence classified independently from evidence strength. Each entry follows the shared primitive and glossary confidence remains separate from decision-pattern confidence. Profile synthesis never reads or suppresses against project glossaries; consumers own project precedence. Add classifier coverage and regressions for explicit correction, two-record recurrence, bounded per-anchor retrieval, retention and decay, and repository independence."
+  description: "[feat:3.0.0] Add repository-independent personal glossary synthesis to the canonical `profile` Full workflow using the shipped shared glossary contract from TODO ldzkfdcopb. During Step 3, select candidates from the bounded rank-2 `signal` tier and resolve only qualifying `evidence_anchor`s to individual full-evidence shards; never load legacy `corpus.json` whole or rescan unbounded history. Admit a reliably classified explicit correction or clarification with one anchor; admit inferred recurring terminology only from two independent `instruction_document` or `project_config_signal` records and expose both anchors. During Step 4, generate or replace an independent `## Glossary` section in the user-level `PROFILE.md`; retain established entries across regeneration and decay confidence through the existing permanence classes, with permanence classified independently from evidence strength. Each entry follows the shared primitive and glossary confidence remains separate from decision-pattern confidence. Profile synthesis never reads or suppresses against project glossaries; consumers own project precedence. Add classifier coverage and regressions for explicit correction, two-record recurrence, bounded per-anchor retrieval, retention and decay, and repository independence."
   readiness:
     capability: build
-    reason: The glossary policy is decided; implementation starts after the shared entry and personal ownership contracts land.
+    reason: The shared entry and personal ownership contracts have shipped; personal producer implementation can proceed against them.
     dependencies:
       - artifact: todo
         id: ldzkfdcopb
     blocked: null
     gate: null
     queue_rank: 2
-    order_reason: Personal synthesis is the first producer after the shared glossary contract.
+    order_reason: Personal synthesis is the first deferred producer after the shared glossary contract.

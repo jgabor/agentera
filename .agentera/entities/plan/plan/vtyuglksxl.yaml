@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-07-26
-    status: open
+    status: complete
     reviewed: 2026-07-26
     critic_issues: 7 found, 7 addressed, 0 dismissed
     title: "Plan: Shared glossary contracts"
@@ -34,5 +34,4 @@ record:
     - question: Which existing evidence-anchor variants represent retained-history and repository-file provenance, and which fields make each deterministically resolvable?
       affects_task: 1
       resolve_by: Inventory current evidence and artifact contracts during Task 1; if either provenance cannot be represented, pause and revise the plan rather than inventing a new vocabulary during implementation.
-  surprises:
-    []
+  surprises: []

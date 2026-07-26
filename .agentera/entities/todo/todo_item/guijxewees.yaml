@@ -3,14 +3,14 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[feat:3.0.0] Add terminology-drift detection to audit after shared glossary contract TODO ldzkfdcopb lands, and persist discussed canonical terms as `.agentera/glossary.yaml` using the project ownership contract. Detect multiple names for one codebase concept and divergence from personal PROFILE.md terminology, then emit findings with a proposed canonical term, drift variants, file evidence anchors, severity, and confidence. Persist only terms confirmed through `discuss`, register the project glossary through `.agentera/docs.yaml`, and add a `v1LegacyCruft` guard against confirmed drift variants. Keep project scope and file evidence distinct from personal glossary retention and decay; do not make this producer suppress or mutate the global personal glossary."
+  description: "[feat:3.0.0] Add terminology-drift detection to audit using the shipped shared glossary contract from TODO ldzkfdcopb, and persist discussed canonical terms as `.agentera/glossary.yaml` using the project ownership contract. Detect multiple names for one codebase concept and divergence from personal PROFILE.md terminology, then emit findings with a proposed canonical term, drift variants, file evidence anchors, severity, and confidence. Persist only terms confirmed through `discuss`, register the project glossary through `.agentera/docs.yaml`, and add a `v1LegacyCruft` guard against confirmed drift variants. Keep project scope and file evidence distinct from personal glossary retention and decay; do not make this producer suppress or mutate the global personal glossary."
   readiness:
     capability: build
-    reason: Project glossary production is defined independently but must implement the shared entry and project ownership contracts first.
+    reason: The shared entry and project ownership contracts have shipped; project producer implementation can proceed against them.
     dependencies:
       - artifact: todo
         id: ldzkfdcopb
     blocked: null
     gate: null
     queue_rank: 3
-    order_reason: Project production follows the shared contract and can proceed independently of personal synthesis.
+    order_reason: Project production is deferred but can proceed independently of personal synthesis against the shipped shared contract.
