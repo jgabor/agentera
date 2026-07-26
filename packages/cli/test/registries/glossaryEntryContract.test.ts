@@ -81,6 +81,20 @@ describe("shared glossary entry authority", () => {
     expect(validateGlossaryEntryContract(glossaryEntryAuthorityPath())).toEqual([]);
   });
 
+  it("implements only read-only audit findings while project artifact production remains deferred", () => {
+    const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
+    const audit = authority.deferred_capability_contracts.audit;
+    expect(audit).toMatchObject({
+      implementation: "active_partial",
+      active_behavior: "terminology_drift_finding_generation",
+      finding_family: { status: "implemented", mutation: "forbidden" },
+      artifact_producer: {
+        implementation: "declared_deferred",
+        confirmation: { status: "declared_deferred" },
+      },
+    });
+  });
+
   it("rejects a primitive with the shared term removed", () => {
     const pathname = malformedAuthority((authority) => {
       authority.shared_primitive.required_fields =
@@ -125,11 +139,12 @@ describe("shared glossary entry authority", () => {
       "profile glossary admission must be active_partial while output remains deferred",
     ],
     [
-      "active audit confirmation",
+      "active audit artifact producer",
       (authority: Record<string, any>) => {
-        authority.deferred_capability_contracts.audit.confirmation.status = "implemented";
+        authority.deferred_capability_contracts.audit.artifact_producer.implementation =
+          "implemented";
       },
-      "audit glossary output, confirmation, and separated evidence inputs must remain deferred",
+      "audit findings must be read-only while glossary production and confirmation remain deferred",
     ],
     [
       "persisted exact-collision precedence",

@@ -171,16 +171,33 @@ deferred_capability_contracts:
     forbidden_current_claims: [synthesis, persistence, lookup]
   audit:
     capabilities: [audit]
-    implementation: declared_deferred
-    intended_output: skills/agentera/schemas/artifacts/glossary.yaml
-    confirmation:
-      status: declared_deferred
-      required_before_write: explicit_user_confirmation
+    implementation: active_partial
+    active_behavior: terminology_drift_finding_generation
+    finding_family:
+      status: implemented
+      mutation: forbidden
+      evidence: ownership_contracts.project.input
+      confidence: skills/agentera/protocol.yaml#CONFIDENCE_SCALE
+      filtering: skills/agentera/capabilities/audit/schemas/validation.yaml
+      canonical_proposal_rule: >-
+        Propose the term with the most distinct verified project-file anchors;
+        break ties lexicographically. A proposal is an audit finding, never a
+        decision or persisted glossary entry.
+      personal_comparison_rule: >-
+        A supplied personal-profile term may annotate divergence for the same
+        assessed concept. Missing profile evidence adds no divergence and never
+        invents a personal term.
+    artifact_producer:
+      implementation: declared_deferred
+      intended_output: skills/agentera/schemas/artifacts/glossary.yaml
+      confirmation:
+        status: declared_deferred
+        required_before_write: explicit_user_confirmation
     inputs:
       personal_history: ownership_contracts.personal.input
       project_file: ownership_contracts.project.input
       project_file_history_classification: forbidden
-    forbidden_current_claims: [drift_detection, finding_generation, persistence, lookup]
+    forbidden_current_claims: [persistence, approval, docs_mapping_mutation, lookup]
   consumers:
     capabilities: [discuss, plan, build]
     implementation: declared_deferred

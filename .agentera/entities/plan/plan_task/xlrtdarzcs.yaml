@@ -4,7 +4,7 @@ record:
   name: Specify and deliver read-only terminology-drift findings
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN this cycle begins WHEN audit authority is inspected THEN the new finding family and read-only status are declared before tests and implementation.
     - GIVEN one repository concept with multiple terms WHEN audit assesses terminology THEN a finding proposes one canonical term and cites each variant with project-file evidence.

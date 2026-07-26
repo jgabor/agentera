@@ -1,0 +1,15 @@
+id: jgujgmzqee
+artifact: todo
+record:
+  severity: degraded
+  status: open
+  description: "[fix:3.0.0] Complete bounded personal glossary admission manifest identity validation after Plan antsflnznb Task raehsqxgvm exhausted its evaluation budget. `isEvidenceTierManifest()` must require `schema_version` to equal the authoritative tier schema version so missing or unknown versions return deterministic corrupt recovery without candidates. Add focused missing-version and divergent-version regressions while preserving actual-file-size bounds, semantic-only recurrence, project isolation, and deferred profile output."
+  readiness:
+    capability: build
+    reason: The producer admission task is blocked by an independently reproduced schema-identity gap after two failed evaluations.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This correction blocks personal glossary output and the producer readiness chain.

@@ -74,6 +74,16 @@ function nonEmpty(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+export function isSafeProjectSourcePath(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    !path.posix.isAbsolute(value) &&
+    !path.win32.isAbsolute(value) &&
+    !value.split(/[\\/]/).includes("..")
+  );
+}
+
 function isIsoCalendarDate(value: unknown): value is string {
   if (typeof value !== "string") return false;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -351,20 +361,37 @@ export function validateGlossaryEntryContract(
     errors.push("profile glossary admission must be active_partial while output remains deferred");
   }
   const audit = mapping(capabilities?.audit);
-  const confirmation = mapping(audit?.confirmation);
+  const findingFamily = mapping(audit?.finding_family);
+  const artifactProducer = mapping(audit?.artifact_producer);
+  const confirmation = mapping(artifactProducer?.confirmation);
   const auditInputs = mapping(audit?.inputs);
   if (
-    audit?.implementation !== "declared_deferred" ||
+    audit?.implementation !== "active_partial" ||
     !sameStrings(audit?.capabilities, ["audit"]) ||
-    audit?.intended_output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||
+    audit?.active_behavior !== "terminology_drift_finding_generation" ||
+    findingFamily?.status !== "implemented" ||
+    findingFamily?.mutation !== "forbidden" ||
+    findingFamily?.evidence !== "ownership_contracts.project.input" ||
+    findingFamily?.confidence !== "skills/agentera/protocol.yaml#CONFIDENCE_SCALE" ||
+    findingFamily?.filtering !== "skills/agentera/capabilities/audit/schemas/validation.yaml" ||
+    !nonEmpty(findingFamily?.canonical_proposal_rule) ||
+    !nonEmpty(findingFamily?.personal_comparison_rule) ||
+    artifactProducer?.implementation !== "declared_deferred" ||
+    artifactProducer?.intended_output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||
     confirmation?.status !== "declared_deferred" ||
     confirmation?.required_before_write !== "explicit_user_confirmation" ||
     auditInputs?.personal_history !== "ownership_contracts.personal.input" ||
     auditInputs?.project_file !== "ownership_contracts.project.input" ||
-    auditInputs?.project_file_history_classification !== "forbidden"
+    auditInputs?.project_file_history_classification !== "forbidden" ||
+    !sameStrings(audit?.forbidden_current_claims, [
+      "persistence",
+      "approval",
+      "docs_mapping_mutation",
+      "lookup",
+    ])
   ) {
     errors.push(
-      "audit glossary output, confirmation, and separated evidence inputs must remain deferred",
+      "audit findings must be read-only while glossary production and confirmation remain deferred",
     );
   }
   const consumers = mapping(capabilities?.consumers);
@@ -558,13 +585,7 @@ export function validateGlossaryEntry(
     } else {
       const sourcePath = evidence[0].source_path;
       const digest = evidence[0].source_record_sha256;
-      if (
-        typeof sourcePath !== "string" ||
-        sourcePath.length === 0 ||
-        path.posix.isAbsolute(sourcePath) ||
-        path.win32.isAbsolute(sourcePath) ||
-        sourcePath.split(/[\\/]/).includes("..")
-      ) {
+      if (!isSafeProjectSourcePath(sourcePath)) {
         errors.push("project source_path must be safe and project-relative");
       }
       if (typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest)) {
