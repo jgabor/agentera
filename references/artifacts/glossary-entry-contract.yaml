@@ -44,6 +44,7 @@ provenance_variants:
     owner: personal
     evidence_count: 1
     required_evidence_fields: [source_id, evidence_anchor, signal_type]
+    additional_evidence_fields: forbidden
     allowed_signal_types: [correction, decision, instruction]
     resolution_rule: >-
       evidence_anchor resolves to source_id of exactly one retained
@@ -53,6 +54,7 @@ provenance_variants:
     owner: personal
     evidence_count: 2
     required_evidence_fields: [source_id, evidence_anchor, source_kind]
+    additional_evidence_fields: forbidden
     allowed_source_kinds: [instruction_document, project_config_signal]
     resolution_rule: >-
       Each evidence_anchor resolves to its source_id in retained full evidence.
@@ -63,6 +65,7 @@ provenance_variants:
     owner: project
     evidence_count: 1
     required_evidence_fields: [source_path, source_record_sha256]
+    additional_evidence_fields: forbidden
     resolution_rule: >-
       source_path is a safe project-relative path and source_record_sha256 is
       the lowercase SHA-256 of the cited parsed source record. These reuse the

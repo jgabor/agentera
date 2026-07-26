@@ -1,0 +1,16 @@
+id: mbojaoutwm
+artifact: progress
+record:
+  timestamp: 2026-07-26 09:51
+  type: fix
+  phase: build
+  what: Corrected task1-audit-1 by making glossary admission enforce authority-declared evidence fields and by validating every Task 1 acceptance-bearing authority structure.
+  context:
+    intent: Reject project-only provenance fields on personal entries and make malformed Task 1 glossary authorities fail deterministically while preserving previously green behavior.
+    constraints: Task 1 correction only; no project artifact registration, capability alignment, versions, producer or consumer behavior, synthesis, persistence, glossary file, or PROFILE.md change.
+    unknowns: none
+    scope: references/artifacts/glossary-entry-contract.yaml; packages/cli/src/registries/glossaryEntryContract.ts; packages/cli/test/registries/glossaryEntryContract.test.ts; typed retry state.
+  inspiration: Independent evaluation task1-audit-1, failure_count 1.
+  discovered: Required evidence fields were previously treated as a minimum rather than an exact variant shape, and authority validation sampled references without pinning evidence counts, bounded personal input, or the complete shared primitive.
+  verified: "Finding 1: a valid explicit personal record carrying source_path plus source_record_sha256 now fails with the exact forbidden-field diagnostic; valid personal explicit and inferred fixtures still pass. Finding 2: disposable authorities now fail when shared term is removed, explicit evidence_count changes from 1 to 2, or personal bounded_rule is removed; production vocabularyAuthority passes. Commands passed: focused 13/13; related 52/52; full source 2,668 passed with one platform skip across 206 files; typecheck; build; local vocabularyAuthority, capability-contract, and state validators; compact; format and diff checks."
+  next: Keep task juchfoqrkp in_progress for independent retry evaluation; do not begin Task 2 until Orchestrate records PASS and advances state.

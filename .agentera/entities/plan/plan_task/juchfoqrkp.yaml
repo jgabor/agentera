@@ -4,7 +4,7 @@ record:
   name: Establish shared semantics and ownership
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN either glossary entry kind WHEN its contract is inspected THEN term, meaning, integer confidence, permanence, temporal metadata, and provenance derive from one shared primitive.
     - GIVEN an allowed explicit-definition evidence class WHEN personal admission is checked THEN one distinct source identity and its resolvable retained-history anchor are sufficient.
@@ -12,3 +12,13 @@ record:
     - GIVEN the personal input contract WHEN admissible sources are validated THEN project glossary identities, paths, and records are excluded and only bounded personal-history evidence is admitted.
     - GIVEN retained personal terminology WHEN evidence ages THEN confidence uses existing permanence decay while permanence remains independently classified; focused tests cover one valid and one novel invalid case per provenance variant.
   plan: vtyuglksxl
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "AC4: personal admission accepts project-only source_path/source_record_sha256 fields. Evidence audit: authority validation does not enforce shared term presence, explicit evidence_count=1, or the personal bounded_rule. Add variant-specific field rejection and malformed-contract fixtures; make executable admission consume validated authority or otherwise remove duplicated unenforced rules."
+    provenance:
+      attempt_id: task1-audit-1
+      source: Audit ses_062a5fc6bffegRoQC6fDYNBscs
+      recorded_at: 2026-07-26 09:42
+      writer_command: agentera state plan record-evaluation

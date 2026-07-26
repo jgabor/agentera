@@ -1,3 +1,8 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -43,9 +48,56 @@ function entry(provenance: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+function malformedAuthority(mutate: (authority: Record<string, any>) => void): string {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "glossary-contract-"));
+  const pathname = path.join(directory, "authority.yaml");
+  const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8")) as Record<
+    string,
+    any
+  >;
+  mutate(authority);
+  fs.writeFileSync(pathname, YAML.stringify(authority), "utf8");
+  return pathname;
+}
+
 describe("shared glossary entry authority", () => {
   it("derives shared shape, bounded ownership, confidence, and decay rules from existing authorities", () => {
     expect(validateGlossaryEntryContract(glossaryEntryAuthorityPath())).toEqual([]);
+  });
+
+  it("rejects a primitive with the shared term removed", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.shared_primitive.required_fields =
+        authority.shared_primitive.required_fields.filter((field: string) => field !== "term");
+      delete authority.shared_primitive.fields.term;
+    });
+    expect(validateGlossaryEntryContract(pathname)).toEqual(
+      expect.arrayContaining([
+        "shared_primitive.required_fields must define the canonical entry shape once",
+        "shared_primitive.fields.term is required",
+      ]),
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it("rejects explicit-definition evidence count drift", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.provenance_variants.personal_explicit_definition.evidence_count = 2;
+    });
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "personal_explicit_definition.evidence_count must be 1",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it("rejects removal of the bounded personal-history rule", () => {
+    const pathname = malformedAuthority((authority) => {
+      delete authority.ownership_contracts.personal.input.bounded_rule;
+    });
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "personal input bounded_rule is required",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 });
 
@@ -171,6 +223,28 @@ describe("ownership and shared semantics", () => {
       retainedHistory,
     );
     expect(errors).toContain("personal entries admit only bounded personal-history provenance");
+  });
+
+  it("rejects project-only fields attached to otherwise valid personal evidence", () => {
+    const errors = validateGlossaryEntry(
+      entry({
+        kind: "personal_explicit_definition",
+        evidence: [
+          {
+            source_id: "record-explicit",
+            evidence_anchor: "anchor-explicit",
+            signal_type: "correction",
+            source_path: "docs/terms.yaml",
+            source_record_sha256: "a".repeat(64),
+          },
+        ],
+      }),
+      "personal",
+      retainedHistory,
+    );
+    expect(errors).toContain(
+      "provenance.evidence[0] contains fields forbidden for personal_explicit_definition: source_path, source_record_sha256",
+    );
   });
 
   it("keeps permanence independent while confidence remains an integer", () => {
