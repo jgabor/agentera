@@ -49,8 +49,8 @@ describe("cli query", () => {
     expect(progress.normal_read_command).toBe("agentera state progress list --limit 20 --format json");
     const glossary = payload.artifacts.find((a: { artifact: string }) => a.artifact === "glossary");
     expect(glossary).toMatchObject({
-      implementation_status: "declared_deferred",
-      producer: ["audit"],
+      implementation_status: "active_partial",
+      producer: ["build"],
     });
   });
 

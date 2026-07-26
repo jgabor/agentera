@@ -5,15 +5,42 @@ meta:
   version: "1.0.0"
   description: >-
     Repository-scoped canonical terminology governed by the shared glossary
-    entry and project ownership contracts. Production remains deferred.
+    entry and project publication contracts. Build atomically publishes an
+    explicitly confirmed audit proposal; audit and discuss remain read-only.
   artifact_type: agent_facing
   path: ".agentera/glossary.yaml"
-  producer: audit
-  consumers: [audit]
+  producer: build
+  consumers: [build]
   format: yaml
-  implementation_status: declared_deferred
+  implementation_status: active_partial
 
 CONFORMANCE:
   authority: references/artifacts/glossary-entry-contract.yaml
   ownership_contract: project
   provenance_variant: project_file
+
+DOCUMENT:
+  schema_version: agentera.projectGlossary.v1
+  required_fields: [schema_version, approvals, entries]
+  additional_fields: forbidden
+  approvals:
+    type: list
+    immutable: true
+    record_fields: [proposal_digest, proposal, confirmation]
+    additional_record_fields: forbidden
+  entries:
+    type: list
+    item: shared_primitive
+    approval_fields: forbidden
+
+PUBLICATION:
+  owner: build
+  command: agentera state glossary publish --input REQUEST --format json
+  request_schema_version: agentera.glossaryPublicationRequest.v1
+  atomic_unit: complete_document
+  lock: established_project_writer_lock
+  exact_replay: no_op
+  term_identity: case_insensitive
+  source_revalidation: safe_real_path_line_identity_and_sha256
+  docs_mapping_mutation: forbidden
+  deferred: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation]

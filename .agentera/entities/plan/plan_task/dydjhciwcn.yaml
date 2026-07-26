@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: antsflnznb
   name: Implement confirmed project glossary publication
-  status: pending
+  status: complete
   depends_on:
     - xlrtdarzcs
   acceptance:
@@ -11,3 +11,13 @@ record:
     - GIVEN missing confirmation, stale source evidence, invalid provenance, malformed entry state, or a conflicting confirmed term WHEN publication is requested THEN it fails before effects with a working correction.
     - GIVEN the same approved proposal or unrelated confirmed entries WHEN publication repeats THEN exact replay is a no-op and unrelated entries remain unchanged.
     - GIVEN project publication completes WHEN producer state is inspected THEN persistence is active and consumer lookup, precedence, semantic review, and personal-profile mutation remain deferred.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: producer-task4-replacement-audit-1
+      source: Audit ses_0619c0989ffeY1KEZDYNr0eTq0 bounded re-review
+      recorded_at: 2026-07-26 14:48
+      writer_command: agentera state plan record-evaluation

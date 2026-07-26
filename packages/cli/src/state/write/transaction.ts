@@ -7,6 +7,7 @@ import { appendProgressEntity } from "../progressEntities.js";
 import { requireEntityStateBinding } from "../stateMode.js";
 import { mutateTodoDocsEntity } from "../todoDocsEntities.js";
 import { reject } from "./errors.js";
+import { publishGlossary } from "./glossaryPublication.js";
 import type { StateMutationOptions } from "./mutation.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./operations.js";
 
@@ -19,6 +20,7 @@ export function executeStateWrite(
   const binding = requireEntityStateBinding(req.projectRoot);
   const publicationContext = binding.publicationContext;
   try {
+    if (req.artifact === "glossary") return publishGlossary(req, binding.root, _options);
     if (req.artifact === "progress") return appendProgressEntity(req, { publicationContext });
     if (req.artifact === "decisions") {
       if (req.spec.verb === "append") return appendDecisionEntity(req, { publicationContext });

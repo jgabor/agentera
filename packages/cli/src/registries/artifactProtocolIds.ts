@@ -15,6 +15,7 @@ export const ARTIFACT_PROTOCOL_PATHS: Readonly<Record<string, string>> = {
   todo: "TODO.md",
   changelog: "CHANGELOG.md",
   design: "DESIGN.md",
+  glossary: ".agentera/glossary.yaml",
 };
 
 export const HUMAN_FACING_ARTIFACT_IDS = new Set(["todo", "changelog", "design"]);
@@ -41,6 +42,7 @@ export const VALIDATE_ARTIFACT_PROTOCOL_IDS: readonly string[] = [
   "progress",
   "todo",
   "vision",
+  "glossary",
 ];
 
 function artifactProtocolStem(input: string): string {

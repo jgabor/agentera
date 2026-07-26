@@ -9,3 +9,4 @@ export * from "./transaction.js";
 export * from "./validate.js";
 export * from "./serialize.js";
 export * from "./errors.js";
+export * from "./glossaryPublication.js";

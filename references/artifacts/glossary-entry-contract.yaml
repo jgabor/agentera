@@ -2,7 +2,8 @@ schema_version: agentera.glossaryEntryContract.v1
 status: active_authority
 purpose: >-
   Define glossary entry semantics once and specialize evidence ownership for
-  personal and project entries before either producer or any consumer ships.
+  personal and project entries, including build-owned publication of explicitly
+  confirmed project terminology. Consumer behavior remains deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -132,11 +133,101 @@ ownership_contracts:
       authority: packages/cli/src/capabilities/profile/instructions.ts#Profile-format
   project:
     scope: repository
+    implementation:
+      status: active_partial
+      active: [audit_proposal_digest, build_publication]
+      inactive: [lookup, precedence, semantic_equivalence_review]
     allowed_provenance: [project_file]
     input:
       authority: repository_files
       bounded_rule: Admit only the cited project-relative record bound by its record SHA-256.
       excluded_categories: [personal_history_record, personal_history_anchor]
+    proposal_digest:
+      algorithm: sha256
+      encoding: lowercase_hex
+      canonicalization: >-
+        Hash the complete terminology finding except proposal_digest as canonical
+        JSON with mapping keys sorted recursively. Sort canonical_evidence and
+        each variant evidence by source_path, line, then source_record_sha256;
+        sort variants by case-insensitive term and then exact term. The digest
+        therefore changes when any proposal, confidence, severity, divergence,
+        term, source path, line identity, or source-record digest changes, but not
+        when equivalent evidence or variant arrays arrive in a different order.
+    proposal_validation:
+      owner: audit
+      shared_runtime: packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal
+      required_rules:
+        - safe_distinct_evidence_identities_per_term
+        - case_insensitive_unique_term_identities
+        - best_supported_canonical_term_with_lexicographic_tie_break
+        - authority_confidence_floor_and_range
+        - confidence_below_70_forces_info_severity
+        - canonical_evidence_and_variant_order
+        - canonical_proposal_digest
+      publication_rule: >-
+        Build publication accepts only the complete canonical finding that this
+        Audit-owned validator can emit. Publication reuses this validator and
+        must not duplicate or weaken Audit proposal semantics.
+    entry_derivation:
+      term: proposal.proposed_canonical_term
+      meaning: proposal.concept
+      confidence: proposal.confidence
+      permanence: stable
+      temporal.observed_at: confirmation.confirmed_at calendar date
+      temporal.last_confirmed_at: confirmation.confirmed_at calendar date
+      provenance.kind: project_file
+      provenance.evidence: >-
+        Exactly the first canonical_evidence record after proposal-digest
+        canonical ordering, projected to source_path and source_record_sha256.
+        Line identifies and revalidates the source record during publication but
+        is not persisted because it is not part of the shared project_file
+        provenance variant.
+      rejection_rule: >-
+        Reject before effects when any required proposal or derived entry value
+        is absent or invalid; never invent a field or extend the shared entry.
+    publication:
+      owner: build
+      command: agentera state glossary publish --input REQUEST --format json
+      request:
+        schema_version: agentera.glossaryPublicationRequest.v1
+        required_fields: [schema_version, proposal, confirmation]
+        additional_fields: forbidden
+        proposal_shape: complete_terminology_drift_finding_with_proposal_digest
+        confirmation:
+          required_fields: [proposal_digest, confirmed_by, confirmed_at]
+          additional_fields: forbidden
+          confirmed_by: user
+          confirmed_at: iso_8601_timestamp
+          binding: >-
+            proposal_digest must equal the digest recomputed from proposal and
+            therefore binds the exact finding, every cited source record, and
+            the user's timestamped confirmation.
+      persisted_document:
+        schema_version: agentera.projectGlossary.v1
+        required_fields: [schema_version, approvals, entries]
+        additional_fields: forbidden
+        approvals:
+          type: list
+          immutable_record_fields: [proposal_digest, proposal, confirmation]
+          additional_record_fields: forbidden
+        entries:
+          type: list
+          item: shared_primitive
+          approval_fields: forbidden
+      transaction: >-
+        Under the established project writer lock, resolve the registered
+        project path, safely re-read every cited project-relative source line,
+        recompute its SHA-256 and the proposal digest, validate the complete
+        candidate bytes, then atomically replace the single glossary document.
+        Creation follows the same path. Dry-run performs all validation without
+        publication.
+      merge_and_replay: >-
+        Preserve unrelated valid approvals and entries semantically unchanged. Term
+        identity is case-insensitive. An exact approval and derived-entry replay
+        is a no-op. An approval without its matching entry, a matching term with
+        changed entry or proposal, reuse of an old confirmation for changed
+        proposal content, duplicate identity, or malformed existing state is a
+        conflict and must never be repaired or overwritten implicitly.
 
 consumer_boundary:
   implementation: declared_deferred
@@ -152,9 +243,10 @@ consumer_boundary:
     suppression: forbidden
     precedence: forbidden
   rule: >-
-    This authority defines entry, ownership, and deferred integration contracts
-    only. It does not implement either producer, synthesize entries, persist or
-    look up glossary state, or implement consumer precedence and review.
+    Audit remains mutation-free and Build project-glossary publication is active.
+    Personal profile rendering and persistence, glossary lookup, precedence,
+    semantic-equivalence review, personal-profile mutation, and docs-mapping
+    mutation remain deferred.
 
 deferred_capability_contracts:
   profile:
@@ -187,19 +279,24 @@ deferred_capability_contracts:
         A supplied personal-profile term may annotate divergence for the same
         assessed concept. Missing profile evidence adds no divergence and never
         invents a personal term.
-    artifact_producer:
-      implementation: declared_deferred
-      intended_output: skills/agentera/schemas/artifacts/glossary.yaml
-      confirmation:
-        status: declared_deferred
-        required_before_write: explicit_user_confirmation
+    proposal_output:
+      implementation: active
+      intended_output: read_only_terminology_drift_finding
+      digest: ownership_contracts.project.proposal_digest
     inputs:
       personal_history: ownership_contracts.personal.input
       project_file: ownership_contracts.project.input
       project_file_history_classification: forbidden
     forbidden_current_claims: [persistence, approval, docs_mapping_mutation, lookup]
+  build_publication:
+    capabilities: [build]
+    implementation: active_partial
+    active_behavior: ownership_contracts.project.publication
+    output: skills/agentera/schemas/artifacts/glossary.yaml
+    inactive_behavior: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation, docs_mapping_mutation]
+    forbidden_current_claims: [lookup, precedence, review, personal_profile_mutation, docs_mapping_mutation]
   consumers:
-    capabilities: [discuss, plan, build]
+    capabilities: [discuss, plan]
     implementation: declared_deferred
     behavior: consumer_boundary
     forbidden_current_claims: [lookup, precedence, review]

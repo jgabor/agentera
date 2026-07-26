@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
+import auditInstructions from "../../src/capabilities/audit/instructions.js";
 import {
   glossaryEntryAuthorityPath,
   validateGlossaryEntry,
@@ -81,18 +82,39 @@ describe("shared glossary entry authority", () => {
     expect(validateGlossaryEntryContract(glossaryEntryAuthorityPath())).toEqual([]);
   });
 
-  it("implements only read-only audit findings while project artifact production remains deferred", () => {
+  it("keeps audit read-only while build owns confirmed project publication", () => {
     const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
     const audit = authority.deferred_capability_contracts.audit;
     expect(audit).toMatchObject({
       implementation: "active_partial",
       active_behavior: "terminology_drift_finding_generation",
       finding_family: { status: "implemented", mutation: "forbidden" },
-      artifact_producer: {
-        implementation: "declared_deferred",
-        confirmation: { status: "declared_deferred" },
+      proposal_output: {
+        implementation: "active",
+        digest: "ownership_contracts.project.proposal_digest",
       },
     });
+    expect(authority.deferred_capability_contracts.build_publication).toMatchObject({
+      capabilities: ["build"],
+      implementation: "active_partial",
+      active_behavior: "ownership_contracts.project.publication",
+    });
+  });
+
+  it("aligns authority, Audit validation, and shipped instructions on active publication and deferred consumers", () => {
+    const authority = fs.readFileSync(glossaryEntryAuthorityPath(), "utf8");
+    const validation = fs.readFileSync(
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../skills/agentera/capabilities/audit/schemas/validation.yaml"),
+      "utf8",
+    );
+    for (const surface of [authority, validation, auditInstructions]) {
+      expect(surface).toMatch(/Audit remains mutation-free|mutation-free, read-only|mutation-free and read-only/);
+      expect(surface).toMatch(/Build project-glossary\s+publication is active/);
+      expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
+      expect(surface).toMatch(/profile mutation|personal-profile mutation/);
+      expect(surface).toMatch(/docs-mapping\s+mutation/);
+      expect(surface).not.toMatch(/project glossary production and persistence.*deferred/i);
+    }
   });
 
   it("rejects a primitive with the shared term removed", () => {
@@ -139,12 +161,11 @@ describe("shared glossary entry authority", () => {
       "profile glossary admission must be active_partial while output remains deferred",
     ],
     [
-      "active audit artifact producer",
+      "mutable audit proposal",
       (authority: Record<string, any>) => {
-        authority.deferred_capability_contracts.audit.artifact_producer.implementation =
-          "implemented";
+        authority.deferred_capability_contracts.audit.proposal_output.implementation = "mutable";
       },
-      "audit findings must be read-only while glossary production and confirmation remain deferred",
+      "audit findings and proposal digests must be active and read-only",
     ],
     [
       "persisted exact-collision precedence",

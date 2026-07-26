@@ -323,7 +323,7 @@ describe("artifact registry module", () => {
     expect(resolved.startsWith(REPO_ROOT)).toBe(true);
   });
 
-  it("registers the deferred project glossary without changing global profile identity", () => {
+  it("registers active build-owned project glossary publication without changing global profile identity", () => {
     const records = loadArtifactRegistry();
     const glossary = records.get("glossary");
     const profile = records.get("profile");
@@ -335,9 +335,9 @@ describe("artifact registry module", () => {
       artifactType: "agent_facing",
       scope: "project_agent_state",
       docsYamlCanOverridePath: true,
-      implementationStatus: "declared_deferred",
+      implementationStatus: "active_partial",
     });
-    expect(glossary?.producers).toEqual(new Set(["audit"]));
+    expect(glossary?.producers).toEqual(new Set(["build"]));
     expect(profile).toMatchObject({
       artifactId: "profile",
       displayName: "PROFILE.md",

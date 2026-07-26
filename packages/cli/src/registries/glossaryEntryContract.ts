@@ -296,11 +296,67 @@ export function validateGlossaryEntryContract(
 
   const project = mapping(ownership?.project);
   const projectInput = mapping(project?.input);
+  const projectImplementation = mapping(project?.implementation);
+  const proposalDigest = mapping(project?.proposal_digest);
+  const proposalValidation = mapping(project?.proposal_validation);
+  const entryDerivation = mapping(project?.entry_derivation);
+  const publication = mapping(project?.publication);
+  const publicationRequest = mapping(publication?.request);
+  const persistedDocument = mapping(publication?.persisted_document);
   if (
     project?.scope !== "repository" ||
     !sameStrings(project?.allowed_provenance, ["project_file"])
   ) {
     errors.push("project ownership must be repository-scoped project_file provenance");
+  }
+  if (
+    projectImplementation?.status !== "active_partial" ||
+    !sameStrings(projectImplementation?.active, ["audit_proposal_digest", "build_publication"]) ||
+    !sameStrings(projectImplementation?.inactive, ["lookup", "precedence", "semantic_equivalence_review"]) ||
+    proposalDigest?.algorithm !== "sha256" ||
+    proposalDigest?.encoding !== "lowercase_hex" ||
+    !nonEmpty(proposalDigest?.canonicalization)
+  ) {
+    errors.push("project glossary digest and build publication must be active while consumers remain deferred");
+  }
+  if (
+    proposalValidation?.owner !== "audit" ||
+    proposalValidation?.shared_runtime !== "packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal" ||
+    !sameStrings(proposalValidation?.required_rules, [
+      "safe_distinct_evidence_identities_per_term",
+      "case_insensitive_unique_term_identities",
+      "best_supported_canonical_term_with_lexicographic_tie_break",
+      "authority_confidence_floor_and_range",
+      "confidence_below_70_forces_info_severity",
+      "canonical_evidence_and_variant_order",
+      "canonical_proposal_digest",
+    ]) ||
+    !nonEmpty(proposalValidation?.publication_rule)
+  ) {
+    errors.push("project publication must reuse the Audit-owned canonical proposal validator");
+  }
+  if (
+    entryDerivation?.term !== "proposal.proposed_canonical_term" ||
+    entryDerivation?.meaning !== "proposal.concept" ||
+    entryDerivation?.confidence !== "proposal.confidence" ||
+    entryDerivation?.permanence !== "stable" ||
+    entryDerivation?.["provenance.kind"] !== "project_file" ||
+    !nonEmpty(entryDerivation?.["provenance.evidence"]) ||
+    !nonEmpty(entryDerivation?.rejection_rule)
+  ) {
+    errors.push("project entry derivation must produce only the shared project_file primitive");
+  }
+  if (
+    publication?.owner !== "build" ||
+    publication?.command !== "agentera state glossary publish --input REQUEST --format json" ||
+    publicationRequest?.schema_version !== "agentera.glossaryPublicationRequest.v1" ||
+    !sameStrings(publicationRequest?.required_fields, ["schema_version", "proposal", "confirmation"]) ||
+    persistedDocument?.schema_version !== "agentera.projectGlossary.v1" ||
+    !sameStrings(persistedDocument?.required_fields, ["schema_version", "approvals", "entries"]) ||
+    !nonEmpty(publication?.transaction) ||
+    !nonEmpty(publication?.merge_and_replay)
+  ) {
+    errors.push("project publication must define one versioned atomic build-owned request and document");
   }
   if (
     projectInput?.authority !== "repository_files" ||
@@ -362,8 +418,7 @@ export function validateGlossaryEntryContract(
   }
   const audit = mapping(capabilities?.audit);
   const findingFamily = mapping(audit?.finding_family);
-  const artifactProducer = mapping(audit?.artifact_producer);
-  const confirmation = mapping(artifactProducer?.confirmation);
+  const proposalOutput = mapping(audit?.proposal_output);
   const auditInputs = mapping(audit?.inputs);
   if (
     audit?.implementation !== "active_partial" ||
@@ -376,10 +431,9 @@ export function validateGlossaryEntryContract(
     findingFamily?.filtering !== "skills/agentera/capabilities/audit/schemas/validation.yaml" ||
     !nonEmpty(findingFamily?.canonical_proposal_rule) ||
     !nonEmpty(findingFamily?.personal_comparison_rule) ||
-    artifactProducer?.implementation !== "declared_deferred" ||
-    artifactProducer?.intended_output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||
-    confirmation?.status !== "declared_deferred" ||
-    confirmation?.required_before_write !== "explicit_user_confirmation" ||
+    proposalOutput?.implementation !== "active" ||
+    proposalOutput?.intended_output !== "read_only_terminology_drift_finding" ||
+    proposalOutput?.digest !== "ownership_contracts.project.proposal_digest" ||
     auditInputs?.personal_history !== "ownership_contracts.personal.input" ||
     auditInputs?.project_file !== "ownership_contracts.project.input" ||
     auditInputs?.project_file_history_classification !== "forbidden" ||
@@ -391,13 +445,29 @@ export function validateGlossaryEntryContract(
     ])
   ) {
     errors.push(
-      "audit findings must be read-only while glossary production and confirmation remain deferred",
+      "audit findings and proposal digests must be active and read-only",
     );
+  }
+  const buildPublication = mapping(capabilities?.build_publication);
+  if (
+    buildPublication?.implementation !== "active_partial" ||
+    !sameStrings(buildPublication?.capabilities, ["build"]) ||
+    buildPublication?.active_behavior !== "ownership_contracts.project.publication" ||
+    buildPublication?.output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||
+    !sameStrings(buildPublication?.inactive_behavior, [
+      "lookup",
+      "precedence",
+      "semantic_equivalence_review",
+      "personal_profile_mutation",
+      "docs_mapping_mutation",
+    ])
+  ) {
+    errors.push("build must own only active typed glossary publication");
   }
   const consumers = mapping(capabilities?.consumers);
   if (
     consumers?.implementation !== "declared_deferred" ||
-    !sameStrings(consumers?.capabilities, ["discuss", "plan", "build"]) ||
+    !sameStrings(consumers?.capabilities, ["discuss", "plan"]) ||
     consumers?.behavior !== "consumer_boundary" ||
     !sameStrings(consumers?.forbidden_current_claims, ["lookup", "precedence", "review"])
   ) {
@@ -439,7 +509,10 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   if (forbidden.length > 0) {
     errors.push(`entry contains forbidden persisted fields: ${forbidden.join(", ")}`);
   }
-  for (const field of strings(primitive?.required_fields)) {
+  const requiredFields = strings(primitive?.required_fields);
+  const additional = Object.keys(entry).filter((field) => !requiredFields.includes(field));
+  if (additional.length > 0) errors.push(`entry contains fields outside the shared primitive: ${additional.join(", ")}`);
+  for (const field of requiredFields) {
     if (!(field in entry)) errors.push(`${field} is required`);
   }
   if (typeof entry.term !== "string" || entry.term.trim() === "")

@@ -6,7 +6,7 @@ export default instructions
 
 Progress, plans, health audits, and decisions use entity authority: each record has \`id\` and \`artifact\`, lives in one writer-owned entity file, and is read through exact, list, or bounded CLI commands. Use \`agentera state <artifact> explain --format json\` before every supported mutation; never edit entity paths directly. Vision, docs policy, changelog, design, and profile remain intentional singletons.
 
-Build appends progress with \`agentera state progress append\`, advances a plan task with its bare ID through \`agentera state plan set-status --id ID\`, and reads context from \`agentera prime --context build --format json\` plus declared fallback commands. Root \`TODO.md\` and \`CHANGELOG.md\` remain capability-owned editorial files.
+Build appends progress with \`agentera state progress append\`, advances a plan task with its bare ID through \`agentera state plan set-status --id ID\`, and is the sole owner of explicitly confirmed project terminology publication through \`agentera state glossary publish --input REQUEST\`. Glossary publication records the approval and shared entry atomically; it does not authorize glossary lookup, personal-profile mutation, or docs-mapping mutation. Build reads context from \`agentera prime --context build --format json\` plus declared fallback commands. Root \`TODO.md\` and \`CHANGELOG.md\` remain capability-owned editorial files.
 
 ## Workflow phases: The cycle`)
   .replaceAll("--number N", "--id ID")

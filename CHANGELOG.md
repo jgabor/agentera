@@ -33,6 +33,10 @@
 
 ### Added
 
+- Added `agentera state glossary publish --input REQUEST` for explicitly
+  confirmed Audit terminology proposals. The build-owned writer revalidates
+  project evidence and atomically records separate approval and shared-entry
+  state, with dry-run, conflict rejection, and idempotent replay.
 - Added typed TODO readiness publication to `agentera state todo create` and
   `update`, including explain discovery, canonical dependency references,
   complete nested validation, replay-safe publication, and list/get round-tripping.

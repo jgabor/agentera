@@ -40,7 +40,7 @@ function validateProjectGlossary(model: any, schema: any): string[] {
     errors.push("profile identity must remain isolated global user state");
   }
   if (
-    schema.meta?.producer !== "audit" ||
+    schema.meta?.producer !== "build" ||
     schema.CONFORMANCE?.authority !== AUTHORITY ||
     schema.CONFORMANCE?.ownership_contract !== "project"
   ) {
@@ -49,14 +49,14 @@ function validateProjectGlossary(model: any, schema: any): string[] {
   if (schema.CONFORMANCE?.provenance_variant !== "project_file") {
     errors.push("glossary must use project_file provenance");
   }
-  if (schema.meta?.implementation_status !== "declared_deferred") {
-    errors.push("glossary implementation status must remain declared_deferred");
+  if (schema.meta?.implementation_status !== "active_partial") {
+    errors.push("glossary publication must be active_partial");
   }
   return errors;
 }
 
 describe("project glossary artifact conformance", () => {
-  it("conforms to project identity, ownership, provenance, and deferred production", () => {
+  it("conforms to project identity, build ownership, provenance, and active publication", () => {
     const { model, schema } = load();
     expect(validateProjectGlossary(model, schema)).toEqual([]);
   });
@@ -103,11 +103,11 @@ describe("project glossary artifact conformance", () => {
       "glossary must use project_file provenance",
     ],
     [
-      "deferred status",
+      "publication status",
       (_model: any, schema: any) => {
-        schema.meta.implementation_status = "implemented";
+        schema.meta.implementation_status = "declared_deferred";
       },
-      "glossary implementation status must remain declared_deferred",
+      "glossary publication must be active_partial",
     ],
   ])("rejects invalid %s", (_name, mutate, expected) => {
     const { model, schema } = load();

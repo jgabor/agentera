@@ -5,7 +5,11 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { assessTerminologyDrift } from "../../src/audit/terminologyDrift.js";
+import {
+  assessTerminologyDrift,
+  terminologyProposalDigest,
+  validateTerminologyProposal,
+} from "../../src/audit/terminologyDrift.js";
 
 const roots: string[] = [];
 
@@ -83,6 +87,7 @@ describe("read-only terminology-drift findings", () => {
       proposed_canonical_term: "JsonValue",
       severity: "warning",
       confidence: 82,
+      proposal_digest: expect.stringMatching(/^[a-f0-9]{64}$/),
       personal_divergence: { personal_term: "Mapping", project_term: "JsonValue" },
     });
     expect(findings[0].variants.map((variant) => variant.term)).toEqual([
@@ -101,6 +106,67 @@ describe("read-only terminology-drift findings", () => {
     ).toBe(true);
     expect(snapshot(root)).toBe(before);
     expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
+  });
+
+  it("derives the same proposal digest from equivalent evidence and variant ordering", () => {
+    const base: any = {
+      family: "terminology_drift",
+      concept: "structured-value",
+      proposed_canonical_term: "JsonValue",
+      canonical_evidence: [
+        { source_path: "z.ts", line: 2, source_record_sha256: "b".repeat(64) },
+        { source_path: "a.ts", line: 1, source_record_sha256: "a".repeat(64) },
+      ],
+      variants: [
+        { term: "Record", evidence: [{ source_path: "r.ts", line: 3, source_record_sha256: "c".repeat(64) }] },
+        { term: "Dict", evidence: [{ source_path: "d.ts", line: 4, source_record_sha256: "d".repeat(64) }] },
+      ],
+      severity: "warning",
+      confidence: 82,
+    };
+    const reordered = {
+      ...base,
+      canonical_evidence: [...base.canonical_evidence].reverse(),
+      variants: [...base.variants].reverse(),
+    };
+
+    expect(terminologyProposalDigest(base)).toBe(terminologyProposalDigest(reordered));
+    expect(terminologyProposalDigest({ ...base, confidence: 83 })).not.toBe(
+      terminologyProposalDigest(base),
+    );
+  });
+
+  it("shares canonical ranking, evidence identity, and severity validation with publication", () => {
+    const root = fixture({ "terms.ts": "export type JsonValue = Dict;\n" });
+    const emitted = assessTerminologyDrift({
+      projectRoot: root,
+      concepts: [{
+        concept: "structured-value",
+        confidence: 60,
+        severity: "warning",
+        terms: [
+          { term: "JsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
+          { term: "Dict", evidence: [{ source_path: "terms.ts", line: 1 }] },
+        ],
+      }],
+      deliberateDecisionConcepts: new Set(),
+      trackedIssueConcepts: new Set(),
+    })[0]!;
+    expect(emitted.severity).toBe("info");
+    expect(validateTerminologyProposal(emitted)).toEqual({ proposal: emitted, violations: [] });
+
+    const impossibleSeverity = { ...emitted, severity: "warning" };
+    impossibleSeverity.proposal_digest = terminologyProposalDigest(impossibleSeverity);
+    expect(validateTerminologyProposal(impossibleSeverity).violations).toContain(
+      "confidence below 70 requires info severity",
+    );
+
+    const duplicateEvidence = structuredClone(emitted);
+    duplicateEvidence.canonical_evidence.push(duplicateEvidence.canonical_evidence[0]!);
+    duplicateEvidence.proposal_digest = terminologyProposalDigest(duplicateEvidence);
+    expect(validateTerminologyProposal(duplicateEvidence).violations).toContain(
+      "canonical_evidence identities must be distinct",
+    );
   });
 
   it("filters no-drift, weak, deliberate, tracked, and unsupported evidence without fabricating profile usage or writes", () => {

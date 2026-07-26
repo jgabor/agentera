@@ -165,6 +165,18 @@ export function printStateHelp(sub?: string): string {
       "Discover writes: agentera state experiments explain --verb publish --format json",
     ].join("\n");
   }
+  if (sub === "glossary") {
+    return [
+      "usage: agentera state glossary publish --input REQUEST.yaml [--dry-run] --format json",
+      "       agentera state glossary explain [--verb publish] --format json",
+      "",
+      "Build-owned publication validates one audit terminology proposal and proposal-specific user confirmation.",
+      "The writer revalidates cited source lines and atomically records a separate immutable approval and shared glossary entry.",
+      "Audit and discuss remain mutation-free; terminology lookup and precedence remain deferred.",
+      "",
+      "Discover writes: agentera state glossary explain --verb publish --format json",
+    ].join("\n");
+  }
   if (sub === "objective") {
     return [
       "usage: agentera state objective [-h] [--format {text,json,yaml}]",

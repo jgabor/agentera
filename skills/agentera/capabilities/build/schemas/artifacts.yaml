@@ -83,3 +83,15 @@ ARTIFACTS:
       Build treats design state missing from execution_context as a caveat or
       fallback-only need, and reads it only when building user-facing features
       after listed CLI fallbacks are exhausted.
+  11:
+    id: A11
+    artifact: glossary
+    local_role: produces_and_consumes
+    description: >-
+      Build alone publishes one explicitly user-confirmed terminology proposal
+      through `agentera state glossary publish --input REQUEST`. The typed writer
+      revalidates audit source evidence and atomically records the immutable
+      approval beside the shared-only project entry. Build does not consume the
+      glossary only to validate replay and preserve unrelated publication state;
+      it performs no terminology lookup and does not mutate personal profiles or
+      docs mappings.

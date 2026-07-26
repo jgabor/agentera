@@ -1,7 +1,7 @@
 import type { JsonObject } from "../../core/jsonValue.js";
 import { loadTodoReadinessContract } from "../../registries/todoReadinessContract.js";
 
-export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs"] as const;
+export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs", "glossary"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
 
 export const WRITE_VERBS = [
@@ -37,7 +37,7 @@ export interface OperationSpec {
   artifact: WritableArtifact;
   verb: Exclude<WriteVerb, "explain">;
   fields: OperationField[];
-  inputRoot?: "one audit entry" | "complete plan document" | "one objective document" | "one experiment entry" | "one documentation inventory entry";
+  inputRoot?: "one audit entry" | "complete plan document" | "one objective document" | "one experiment entry" | "one documentation inventory entry" | "one glossary publication request";
   cliOwnedFields?: string[];
   allowForce?: boolean;
   compacts?: boolean;
@@ -368,6 +368,12 @@ const SPECS: OperationSpec[] = [
     fields: [{ flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter documentation inventory ID returned by create or list." }],
     inputRoot: "one documentation inventory entry",
     cliOwnedFields: ["id", "artifact"],
+  },
+  {
+    artifact: "glossary",
+    verb: "publish",
+    fields: [],
+    inputRoot: "one glossary publication request",
   },
 ];
 

@@ -120,9 +120,12 @@ VALIDATION:
       project-relative file and line evidence. Canonical terms are proposals,
       never decisions or writes. Optional personal-profile divergence is
       comparison evidence only; missing profile evidence produces no claim.
-      Glossary production and persistence remain deferred.
+      Audit remains mutation-free and read-only. Build project-glossary
+      publication is active; lookup, precedence, semantic-equivalence review,
+      profile mutation, and docs-mapping mutation remain deferred.
     severity: critical
     checks:
       - "Every reported drift variant has project-file evidence"
       - "Weak, deliberate, tracked, and no-drift candidates produce no finding"
-      - "No glossary, profile, docs mapping, code, or project file is mutated"
+      - "Audit mutates no glossary, profile, docs mapping, code, or project file"
+      - "Build publication is active while glossary consumers remain deferred"

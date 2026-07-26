@@ -2,9 +2,6 @@ import path from "node:path";
 
 import { ArtifactSchemaValidator } from "../../hooks/validateArtifact/index.js";
 import { loadArtifactRegistry, resolveArtifactPath } from "../../registries/artifactRegistry.js";
-import { loadYamlMapping } from "../../core/yaml.js";
-import fs from "node:fs";
-import { nextEntryNumber, nextTaskNumber } from "./assign.js";
 import { schemaBudget, projectedFields } from "./fields.js";
 import {
   operationSpec,
@@ -14,13 +11,8 @@ import {
 } from "./operations.js";
 import { reject } from "./errors.js";
 
-function liveDoc(p: string): Record<string, unknown> {
-  if (!fs.existsSync(p)) return {};
-  return loadYamlMapping(fs.readFileSync(p, "utf8"));
-}
-
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
-  return artifact === "experiments" ? "publish" : ["objective", "todo", "docs"].includes(artifact) ? "create" : "append";
+  return ["experiments", "glossary"].includes(artifact) ? "publish" : ["objective", "todo", "docs"].includes(artifact) ? "create" : "append";
 }
 
 export function buildExplain(
@@ -40,24 +32,10 @@ export function buildExplain(
   const record = loadArtifactRegistry().get(artifact);
   if (!record)
     reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityArtifact = true;
+  const entityArtifact = artifact !== "glossary";
   const resolved = entityArtifact
     ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "plan" ? ["append", "update", "set-status", "supersede", "record-evaluation"].includes(verb) ? "plan_task" : "plan" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
-    : artifact === "experiments"
-    ? path.join(projectRoot, ".agentera", "optimize", "<objective>", "experiments.yaml")
     : resolveArtifactPath(record, projectRoot, { strictWrite: true });
-  const doc = artifact === "experiments" || entityArtifact ? {} : liveDoc(resolved);
-  const next =
-    artifact === "experiments" || entityArtifact
-      ? {}
-      : artifact === "plan"
-      ? { task_number: nextTaskNumber(doc) }
-      : {
-          number: nextEntryNumber(
-            doc,
-            artifact === "progress" ? "cycles" : artifact === "decisions" ? "decisions" : "audits",
-          ),
-        };
   const validator = new ArtifactSchemaValidator();
   const fields = (entityArtifact && artifact === "plan" && verb === "supersede"
     ? [{ flag: "--id", field: "id", kind: "string" as const, required: true }, ...projectedFields(spec, validator)]
@@ -92,16 +70,12 @@ export function buildExplain(
     artifact,
     path: path.relative(projectRoot, resolved) || resolved,
     verbs: verbsForArtifact(artifact),
-    next,
+    next: {},
     budget: schemaBudget(artifact, validator),
     fields,
   };
   if (spec.compacts) {
-    result.compaction = entityArtifact
-      ? `not applicable; each canonical ${artifact} entity is authority and no aggregate projection or numbered archive is written`
-      : artifact === "experiments"
-      ? "uniform_10_40_50 (10 active full-detail and 40 one-line archive entries); runs automatically on publication; durable archival is deferred"
-      : "uniform_10_40_50 (bounded active/archive projections: 10 active full-detail and 40 archive entries; verified numbered archives remain authoritative; no destructive deletion; recovery refuses to omit entries when archive evidence is missing); runs automatically on append";
+    result.compaction = `not applicable; each canonical ${artifact} entity is authority and no aggregate projection or numbered archive is written`;
   }
   if (spec.inputRoot) {
     result.input_schema = {
@@ -118,12 +92,37 @@ export function buildExplain(
         : entityArtifact && ["docs", "plan"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
-        artifact === "health"
+        artifact === "glossary"
+          ? ["PROPOSAL", "CONFIRMATION"]
+          : artifact === "health"
           ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
           : artifact === "experiments"
             ? ["EXPERIMENT"]
             : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
+  }
+  if (artifact === "glossary") {
+    result.request_schema_version = "agentera.glossaryPublicationRequest.v1";
+    result.document_schema_version = "agentera.projectGlossary.v1";
+    result.request_example = {
+      schema_version: "agentera.glossaryPublicationRequest.v1",
+      proposal: {
+        family: "terminology_drift",
+        concept: "structured value",
+        proposed_canonical_term: "JsonValue",
+        canonical_evidence: [{ source_path: "src/value.ts", line: 1, source_record_sha256: "<lowercase-sha256>" }],
+        variants: [{ term: "Dict", evidence: [{ source_path: "src/dict.ts", line: 1, source_record_sha256: "<lowercase-sha256>" }] }],
+        severity: "warning",
+        confidence: 84,
+        proposal_digest: "<audit-emitted-lowercase-sha256>",
+      },
+      confirmation: {
+        proposal_digest: "<same-audit-emitted-lowercase-sha256>",
+        confirmed_by: "user",
+        confirmed_at: "2026-07-26T14:00:00Z",
+      },
+    };
+    result.recovery = "Rerun audit against current project files, obtain explicit user confirmation for its proposal_digest, and retry with the new request.";
   }
   result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "decisions", entityArtifact && artifact === "health", entityArtifact);
   result.example = entityArtifact && artifact === "health" && verb === "repair"
@@ -136,6 +135,12 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
   const base = [
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
+  ];
+  if (artifact === "glossary") return [
+    "build is the only publisher; audit and discuss remain mutation-free",
+    "confirmation.confirmed_by must be user and must bind the exact proposal digest and timestamp",
+    "the writer revalidates every cited project source line and publishes approval plus entry as one atomic document",
+    "lookup, precedence, semantic-equivalence review, profile mutation, and docs-mapping mutation remain deferred",
   ];
   if (entityArtifact && artifact === "plan" && verb === "create")
     return [
@@ -222,6 +227,8 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
 }
 
 export function exampleFor(artifact: WritableArtifact, verb: string, entityDecisions = false, entityArtifact = false): string {
+  if (artifact === "glossary")
+    return "agentera state glossary publish --input glossary-publication.yaml --format json";
   if (artifact === "progress")
     return 'agentera state progress append --type fix --phase build --what "..." --intent "..." --format json';
   if (artifact === "decisions" && verb === "update")
