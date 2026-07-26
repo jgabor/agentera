@@ -1,0 +1,16 @@
+id: afixhpbixc
+artifact: progress
+record:
+  timestamp: 2026-07-26 11:40
+  type: fix
+  phase: build
+  what: Corrected Task rvdeqaejkq glossary entry validation after accepted evaluation failure task5-audit-1 and reconstructed the self-contained package.
+  context:
+    intent: Reject the three accepted-invalid entry shapes while preserving valid glossary contracts, package version 3.0.0-dev.34, and deferred scope.
+    constraints: No glossary producer/consumer implementation, persistence, live glossary, PROFILE.md, version increment, publication, tag, push, registry/dist-tag mutation, or Task 6.
+    unknowns: None within the accepted finding; independent retry evaluation remains pending.
+    scope: Glossary entry validator and focused tests; package gitRef metadata and typed retry progress only.
+  inspiration: Accepted evaluation task5-audit-1 and firm Decision prmnztjytv.
+  discovered: The validator consumed provenance authority but not consumer forbidden fields, used shape-only date checks, and used host-native absolute-path detection. All three gaps were local to entry validation.
+  verified: "Focused red proof failed exactly the forbidden-field, invalid-date, and Windows-absolute cases. After correction, 5 files/87 tests passed with valid no-consumer-field, 2024-02-29, POSIX-relative, and Windows-relative controls; forbidden precedence, 2026-99-99, and C:\\secret\\terms.yaml were rejected. Full source: 207 files/2700 passed, 1 skipped; typecheck and build passed; verify:package 2 files/14 passed; compact/state passed with 1848 entities and zero issues; 12 capabilities, cross-capability, vocabulary/evidence, contract/protocol/readiness, and release metadata passed. verify:release passed source 207/2700+1 skipped, stress 1/2, performance 3/3, package 2/14. Reconstructed package: 3.0.0-dev.34, suite 3.0.0, gitRef 1ac7a0082263776606f4a5203d13912a7c405d5a, 694 files, 1343161 B packed, 6326241 B unpacked, shasum 3faa29643f6e1fd9155ffecf743f95ee88782de0. Source/package hashes matched: authority e4d23dac, registry b6f5d1b2, evidence 5fc6fd85, schema a422d31a, package f22c2524, compiled validator f03ba73c. The extracted installed package reproduced all three valid controls and negative rejections."
+  next: Leave rvdeqaejkq in_progress with attempt_count 1 and failure_count 1 for independent retry evaluation. Do not start Task 6.
