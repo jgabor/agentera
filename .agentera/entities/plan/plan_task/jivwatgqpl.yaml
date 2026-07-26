@@ -1,0 +1,12 @@
+id: jivwatgqpl
+artifact: plan
+record:
+  name: Apply permitted development version metadata
+  depends_on:
+    - hakmkqjfkj
+  status: pending
+  acceptance:
+    - GIVEN producer work is feature scope WHEN metadata is prepared THEN the package advances exactly once from 3.0.0-dev.34 to 3.0.0-dev.35 and suite-bearing metadata remains 3.0.0.
+    - GIVEN development metadata is prepared WHEN repository metadata is compared THEN stable metadata, changelog release state, tags, publication state, and unrelated surfaces are unchanged.
+    - GIVEN valid and drifting metadata WHEN policy checks run THEN valid state passes and suite drift fails with a working correction.
+  plan: antsflnznb

@@ -1,0 +1,41 @@
+id: antsflnznb
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-26
+    status: open
+    reviewed: 2026-07-26
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    title: "Plan: Personal and project glossary producers"
+  what: "Deliver two independent glossary producers against the shipped shared contract: personal terminology maintained by the profile Full workflow and confirmed repository terminology persisted after read-only audit findings and explicit approval."
+  why: Make both trustworthy glossary sources available before separately implementing cross-glossary lookup, precedence, review, or advisory behavior.
+  constraints: Follow document-test-code order within every producer cycle and keep implementation status truthful at each partial boundary. Never load the monolithic corpus or rescan unbounded history. Personal synthesis never reads project glossaries; project production never mutates the global profile. Audit and discuss remain mutation-free; only an identified authorized writer may persist explicitly approved project terms. Confirmation stays outside glossary entries. All mutation tests use disposable project and profile roots, never this checkout or the real user profile. Consumer behavior remains deferred. Preserve shared confidence, permanence, decay, artifact identity, and suite version 3.0.0. Never publish, tag, or push.
+  overall_acceptance: GIVEN every task is complete WHEN profile Full and audit-to-approved-write producer flows are exercised THEN personal and project glossaries are independently produced under one shared contract, ownership and approval boundaries hold, source and packaged behavior agree, and consumer integration remains deferred.
+  scope:
+    included:
+      - Personal correction and recurring-terminology classification and admission.
+      - Bounded per-anchor evidence retrieval and insufficiency recovery.
+      - Personal glossary rendering, retention, confidence decay, and profile isolation.
+      - Read-only terminology-drift findings with project-file evidence.
+      - Explicitly approved, atomic project glossary persistence through an authorized writer.
+      - Canonical discovery, documentation mapping, and confirmed-variant regression guard.
+      - Producer/package parity, permitted development metadata, and state closeout.
+    excluded:
+      - Runtime cross-glossary lookup, precedence, semantic review, or advisories.
+      - Profile or audit light/normal/full level refactors.
+      - Changes to shared confidence bands, permanence classes, or decay constants.
+      - Live mutation of this checkout or the real user profile during tests.
+      - Publication, stable cutover, unrelated TODOs, and decision satisfaction.
+    deferred:
+      - "TODO ruzauoaotd: consumer glossary disambiguation"
+  design: Run independent personal and project producer branches from the shared authority. Each branch updates its authoritative intent and truthful status before tests and implementation. Personal evidence qualification precedes profile output activation. Project findings remain read-only; persistence is blocked until an authorized approval and mutation seam is proven, then discovery and regression enforcement activate the complete project producer. The branches converge only for package readiness, metadata, and state closeout.
+  unknowns:
+    - question: Do current bounded signals and classifier semantics provide enough identities and evidence classes for explicit and two-record inferred personal terms without widening extraction or resolving unselected history?
+      affects_task: 1
+      resolve_by: Inventory current contracts and run bounded fixtures before Task 2. If extraction semantics must change, stop and revise downstream acceptance.
+    - question: Which existing protected or typed writer, approval record, and atomic mutation contract can persist a confirmed project glossary while audit and discuss remain mutation-free?
+      affects_task: 4
+      resolve_by: Resolve all three authorities before Task 4 begins. If no safe seam exists, block Task 4 and re-plan rather than hand-editing project state or assigning mutation to audit or discuss.
+  surprises:
+    []

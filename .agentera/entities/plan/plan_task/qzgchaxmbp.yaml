@@ -1,0 +1,14 @@
+id: qzgchaxmbp
+artifact: plan
+record:
+  name: Activate personal glossary output and lifecycle
+  depends_on:
+    - raehsqxgvm
+  status: pending
+  acceptance:
+    - GIVEN admitted entries WHEN profile Full completes THEN an independent Glossary section records the shared fields, required anchor cardinality, confidence, permanence, and temporal metadata.
+    - GIVEN regeneration without fresh qualifying evidence WHEN a term was established THEN the entry remains, confidence decays with its existing permanence-class parameters, and permanence remains unchanged.
+    - GIVEN evidence strength and permanence WHEN values are assigned THEN they vary independently and glossary confidence never changes decision-pattern confidence.
+    - GIVEN an existing profile WHEN its Glossary section is replaced THEN non-glossary content is unchanged and project glossaries are never read.
+    - GIVEN personal producer validation WHEN source and disposable-profile tests pass THEN profile synthesis/output is truthfully implemented while persistence and consumer lookup claims remain scoped correctly.
+  plan: antsflnznb

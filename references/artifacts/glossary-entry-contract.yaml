@@ -75,6 +75,11 @@ provenance_variants:
 ownership_contracts:
   personal:
     scope: user
+    implementation:
+      status: active_partial
+      active: [bounded_admission, explicit_classification, inferred_evidence_check]
+      inactive: [profile_rendering, persistence, lookup]
+      next_task: profile_glossary_output_and_lifecycle
     allowed_provenance:
       - personal_explicit_definition
       - personal_inferred_usage
@@ -90,6 +95,36 @@ ownership_contracts:
         - project_glossary_path
         - project_glossary_record
         - project_file_provenance
+    admission:
+      explicit:
+        candidate_signal_types: [correction, decision]
+        language_rule: >-
+          Admit only a quoted or code-delimited term followed by explicit
+          `means` language, or clarification language that combines `to clarify`
+          with `prefer` and `to mean`. The classifier returns the stated term
+          and meaning; unrelated correction or decision language abstains.
+        evidence_count: 1
+      inferred:
+        candidate_signal_types: [instruction, configuration]
+        source_kinds: [instruction_document, project_config_signal]
+        identity_rule: >-
+          A requested term must occur as a complete case-insensitive token in
+          two pairwise-distinct retained source identities and anchors. Duplicate
+          identities or anchors fail and successful admission exposes both.
+        evidence_count: 2
+      read_rule: >-
+        Read the bounded signal tier once, select only authority-declared signal
+        types and source kinds, and resolve each selected evidence_anchor through
+        direct single-shard retrieval. Never iterate full history or read legacy
+        corpus.json. Missing, legacy, corrupt, or insufficient evidence returns
+        deterministic recovery without a candidate.
+      insufficient_recovery: >-
+        Refresh bounded local-history evidence or provide another distinct
+        qualifying record; no personal glossary candidate was admitted.
+      isolation_rule: >-
+        Admission accepts only the personal tiers directory and optional legacy
+        corpus location. It has no project-glossary identity, path, or record
+        input, and its result is invariant to project-glossary presence.
     retention_and_decay:
       retention: Retained entries decay rather than disappearing solely because evidence ages.
       confidence: Apply the existing profile permanence decay class to integer confidence.
@@ -124,8 +159,10 @@ consumer_boundary:
 deferred_capability_contracts:
   profile:
     capabilities: [profile]
-    implementation: declared_deferred
+    implementation: active_partial
     intended_behavior: personal_glossary_synthesis
+    active_behavior: ownership_contracts.personal.admission
+    inactive_behavior: [rendering, persistence, lookup]
     contracts:
       admission: ownership_contracts.personal.input
       provenance: ownership_contracts.personal.allowed_provenance

@@ -1,0 +1,18 @@
+id: yhqmhpwddq
+artifact: plan
+record:
+  name: Synchronize producer state
+  depends_on:
+    - raehsqxgvm
+    - qzgchaxmbp
+    - xlrtdarzcs
+    - nmewuhappg
+    - gnwhzstoyg
+    - hakmkqjfkj
+    - jivwatgqpl
+  status: pending
+  acceptance:
+    - GIVEN all prior tasks pass WHEN closeout runs THEN Decision prmnztjytv is verified unchanged with no satisfaction write, while producer TODOs, progress, plan state, docs inventory, and package metadata are synchronized.
+    - GIVEN both producers ship WHEN TODO state is read THEN azytlqzxoa and guijxewees are resolved while ruzauoaotd remains open and dependent on both.
+    - GIVEN final evidence WHEN the plan is evaluated THEN no stale producer deferral, dependency mismatch, live-test contamination, unresolved accepted finding, or contract drift remains.
+  plan: antsflnznb

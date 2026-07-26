@@ -1,0 +1,14 @@
+id: gnwhzstoyg
+artifact: plan
+record:
+  name: Activate project discovery and confirmed-variant enforcement
+  depends_on:
+    - nmewuhappg
+  status: pending
+  acceptance:
+    - GIVEN the first approved project write WHEN artifact discovery runs THEN the glossary and documentation mapping resolve through canonical identity without redefining registry-owned facts.
+    - GIVEN a confirmed canonical set WHEN a drift variant is reintroduced THEN legacy-cruft validation fails with canonical-term evidence and a working correction.
+    - GIVEN approved updates WHEN mapping and guard state change THEN repeated runs converge and preserve unrelated documentation and glossary entries.
+    - GIVEN disposable mapping, replay, preservation, and guard fixtures WHEN evaluated THEN controls pass without mutating this checkout or global profile state.
+    - GIVEN project producer validation WHEN all behavior passes THEN confirmed persistence is truthfully implemented while consumer lookup remains deferred.
+  plan: antsflnznb

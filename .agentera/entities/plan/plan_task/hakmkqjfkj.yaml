@@ -1,0 +1,18 @@
+id: hakmkqjfkj
+artifact: plan
+record:
+  name: Verify producer and package readiness
+  depends_on:
+    - raehsqxgvm
+    - qzgchaxmbp
+    - xlrtdarzcs
+    - nmewuhappg
+    - gnwhzstoyg
+  status: pending
+  acceptance:
+    - GIVEN both producers WHEN independently exercised THEN each emits shared entry semantics while preserving global-personal and repository-project ownership.
+    - GIVEN source and constructed package WHEN producer flows are exercised THEN behavior, validation, artifacts, and implementation status are equivalent.
+    - GIVEN producer packages are built WHEN discuss, plan, and build start THEN no glossary lookup, precedence, semantic review, or advisory behavior occurs, and ruzauoaotd remains dependent on both producers.
+    - GIVEN malformed evidence, output, approval, mapping, or drift state WHEN focused validators run THEN novel failures are rejected without duplicating generic matrices.
+    - GIVEN repository gates WHEN executed THEN full tests, typecheck, build, package verification, compact, and relevant validators pass.
+  plan: antsflnznb

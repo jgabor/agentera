@@ -1,0 +1,14 @@
+id: raehsqxgvm
+artifact: plan
+record:
+  name: Specify and deliver bounded personal evidence admission
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN this cycle begins WHEN producer authority is inspected THEN personal admission behavior and its inactive partial status are declared before tests and implementation; output remains deferred to Task 2.
+    - GIVEN supported explicit correction or clarification language WHEN classified THEN one reliable retained identity and resolvable anchor admit a candidate, while unrelated language does not.
+    - GIVEN inferred recurring terminology WHEN evaluated THEN two distinct instruction or configuration identities are required, duplicates fail, and both anchors are exposed.
+    - GIVEN bounded, missing, legacy, corrupt, or insufficient evidence WHEN admission runs THEN only qualifying individual anchors resolve and deterministic recovery appears without ungrounded claims or whole-history reads.
+    - GIVEN project glossary presence or absence WHEN personal admission runs THEN inputs and results are identical and exclude project records and paths; focused fixtures cover one pass and fail per novel evidence class.
+  plan: antsflnznb

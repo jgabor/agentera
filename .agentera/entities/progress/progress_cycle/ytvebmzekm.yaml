@@ -1,0 +1,16 @@
+id: ytvebmzekm
+artifact: progress
+record:
+  timestamp: 2026-07-26 12:37
+  type: feat
+  phase: build
+  what: Implemented bounded personal evidence classification and admission with active-partial authority; profile glossary rendering, persistence, and lookup remain deferred.
+  context:
+    intent: Deliver Task raehsqxgvm admission only, proving current bounded evidence is sufficient without widening extraction or reading project glossary state.
+    constraints: "Admission/classification only. No profile output, lifecycle, project drift, persistence, consumers, version, release, project glossary read, unbounded history scan, or legacy corpus load. Caveats preserved: decision list byte-budget degraded but exact firm prmnztjytv available; satisfaction null; vision/profile omitted; profile startup tiers legacy; retry not_recorded/zero."
+    unknowns: "Resolved: existing bounded signal classes, source identities, and evidence anchors are sufficient for explicit and two-record inferred admission. No extraction change, unbounded history, or unsafe record selection is required."
+    scope: references/artifacts/glossary-entry-contract.yaml; glossary contract registry; personal admission module; focused fixtures/tests; approved Plan antsflnznb entities.
+  inspiration: Firm Decision prmnztjytv, references/artifacts/glossary-entry-contract.yaml, and Plan antsflnznb Task raehsqxgvm.
+  discovered: Current correction/decision signals can select explicit definitions and clarifications, while instruction/configuration signals supply recurring-term identities. The bounded signal tier lacks claim content by design, so selected anchors resolve individually to retained shards for classification.
+  verified: "AC1: glossary-entry-contract.yaml declares active_partial admission and inactive rendering/persistence/lookup before tests and code. AC2: correction and clarification fixtures each admit one resolved identity/anchor; unrelated correction abstains. AC3: inferred recurrence requires two distinct instruction/configuration source IDs and anchors, exposes both, and duplicate evidence returns insufficiency. AC4: signal.json is read once; only authority-selected anchors call direct single-shard resolution; corpus.json is never loaded; missing, legacy, corrupt, and insufficient tiers return deterministic recovery without candidates. AC5: disposable profile/project roots prove identical results with project glossary absent or present and no project path/record output. Focused authority/admission/evidence tests: 90 passed; final focused: 44 passed. Full source: 208 files, 2711 passed, 1 skipped. Package: 14 passed. Typecheck, build, profile capability, capability-contract, cross-capability, vocabularyAuthority, compact, format, lint (153 existing warnings, 0 errors), and git diff checks passed."
+  next: Leave raehsqxgvm in_progress for independent evaluation. Task qzgchaxmbp may activate rendering and lifecycle only after evaluation; no adjacent task started.

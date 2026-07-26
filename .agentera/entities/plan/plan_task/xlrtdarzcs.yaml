@@ -1,0 +1,14 @@
+id: xlrtdarzcs
+artifact: plan
+record:
+  name: Specify and deliver read-only terminology-drift findings
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN this cycle begins WHEN audit authority is inspected THEN the new finding family and read-only status are declared before tests and implementation.
+    - GIVEN one repository concept with multiple terms WHEN audit assesses terminology THEN a finding proposes one canonical term and cites each variant with project-file evidence.
+    - GIVEN project terminology diverges from personal profile usage WHEN assessed THEN audit reports the divergence without mutating either glossary, profile, documentation mapping, or code.
+    - GIVEN weak evidence, known deliberate decisions, tracked issues, or no supported drift WHEN assessed THEN existing filtering applies and no finding is fabricated.
+    - GIVEN disposable drift and no-drift fixtures WHEN evaluated THEN one positive and negative case per novel finding rule passes while the project artifact producer remains deferred.
+  plan: antsflnznb

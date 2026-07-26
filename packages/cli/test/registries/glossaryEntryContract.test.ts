@@ -118,11 +118,11 @@ describe("shared glossary entry authority", () => {
 
   it.each([
     [
-      "active profile synthesis",
+      "active profile output",
       (authority: Record<string, any>) => {
         authority.deferred_capability_contracts.profile.implementation = "implemented";
       },
-      "profile glossary synthesis must remain deferred and derive personal entry policy from shared contracts",
+      "profile glossary admission must be active_partial while output remains deferred",
     ],
     [
       "active audit confirmation",
@@ -154,22 +154,19 @@ describe("shared glossary entry authority", () => {
   it.each(CAPABILITY_FIXTURES)(
     "accepts the deferred $capability declaration",
     ({ capability, valid_declaration }) => {
-      expect(
-        validateGlossaryCapabilityImplementationClaim(capability, valid_declaration),
-      ).toEqual([]);
+      expect(validateGlossaryCapabilityImplementationClaim(capability, valid_declaration)).toEqual(
+        [],
+      );
     },
   );
 
   it.each(CAPABILITY_FIXTURES)(
     "rejects the false $capability implementation claim",
-    ({ capability, false_implementation_claim }) => {
+    ({ capability, valid_declaration, false_implementation_claim }) => {
       expect(
-        validateGlossaryCapabilityImplementationClaim(
-          capability,
-          false_implementation_claim,
-        ),
+        validateGlossaryCapabilityImplementationClaim(capability, false_implementation_claim),
       ).toEqual([
-        `${capability} glossary behavior is declared_deferred; implemented is a false implementation claim`,
+        `${capability} glossary behavior is ${valid_declaration}; implemented is a false implementation claim`,
       ]);
     },
   );

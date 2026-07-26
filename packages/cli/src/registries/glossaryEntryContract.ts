@@ -21,6 +21,13 @@ export interface GlossaryAdmissionContext {
   retainedHistory: ReadonlyMap<string, RetainedEvidence>;
 }
 
+export interface PersonalGlossaryAdmissionContract {
+  explicitSignalTypes: string[];
+  inferredSignalTypes: string[];
+  inferredSourceKinds: string[];
+  insufficientRecovery: string;
+}
+
 const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
 export type DeferredGlossaryCapability = (typeof DEFERRED_CAPABILITIES)[number];
 
@@ -40,6 +47,23 @@ function strings(value: unknown): string[] {
 
 function contract(pathname: string): Mapping {
   return loadYamlMappingFile(pathname) as Mapping;
+}
+
+export function personalGlossaryAdmissionContract(
+  pathname: string = glossaryEntryAuthorityPath(),
+): PersonalGlossaryAdmissionContract {
+  const authority = contract(pathname);
+  const personal = mapping(mapping(authority.ownership_contracts)?.personal);
+  const admission = mapping(personal?.admission);
+  return {
+    explicitSignalTypes: strings(mapping(admission?.explicit)?.candidate_signal_types),
+    inferredSignalTypes: strings(mapping(admission?.inferred)?.candidate_signal_types),
+    inferredSourceKinds: strings(mapping(admission?.inferred)?.source_kinds),
+    insufficientRecovery:
+      typeof admission?.insufficient_recovery === "string"
+        ? admission.insufficient_recovery.trim()
+        : "",
+  };
 }
 
 function sameStrings(actual: unknown, expected: readonly string[]): boolean {
@@ -212,6 +236,40 @@ export function validateGlossaryEntryContract(
   if (!nonEmpty(personalInput?.bounded_rule)) {
     errors.push("personal input bounded_rule is required");
   }
+  const personalImplementation = mapping(personal?.implementation);
+  const admission = mapping(personal?.admission);
+  if (
+    personalImplementation?.status !== "active_partial" ||
+    !sameStrings(personalImplementation?.active, [
+      "bounded_admission",
+      "explicit_classification",
+      "inferred_evidence_check",
+    ]) ||
+    !sameStrings(personalImplementation?.inactive, ["profile_rendering", "persistence", "lookup"])
+  ) {
+    errors.push("personal admission must be active_partial while profile output remains inactive");
+  }
+  if (
+    !sameStrings(mapping(admission?.explicit)?.candidate_signal_types, [
+      "correction",
+      "decision",
+    ]) ||
+    !sameStrings(mapping(admission?.inferred)?.candidate_signal_types, [
+      "instruction",
+      "configuration",
+    ]) ||
+    !sameStrings(mapping(admission?.inferred)?.source_kinds, [
+      "instruction_document",
+      "project_config_signal",
+    ]) ||
+    !nonEmpty(admission?.read_rule) ||
+    !nonEmpty(admission?.insufficient_recovery) ||
+    !nonEmpty(admission?.isolation_rule)
+  ) {
+    errors.push(
+      "personal admission must declare bounded classifier, recovery, and isolation rules",
+    );
+  }
 
   const decay = mapping(personal?.retention_and_decay);
   if (decay?.authority !== "packages/cli/src/capabilities/profile/instructions.ts#Profile-format") {
@@ -260,7 +318,9 @@ export function validateGlossaryEntryContract(
     exactCollision?.persistence !== "forbidden" ||
     exactCollision?.personal_entry_suppression !== "forbidden"
   ) {
-    errors.push("exact collisions must defer project precedence to consumption without persistence or suppression");
+    errors.push(
+      "exact collisions must defer project precedence to consumption without persistence or suppression",
+    );
   }
   const inferred = mapping(consumer?.inferred_semantic_equivalence);
   if (
@@ -269,22 +329,26 @@ export function validateGlossaryEntryContract(
     inferred?.suppression !== "forbidden" ||
     inferred?.precedence !== "forbidden"
   ) {
-    errors.push("inferred equivalence must defer to user review without merge, suppression, or precedence");
+    errors.push(
+      "inferred equivalence must defer to user review without merge, suppression, or precedence",
+    );
   }
 
   const capabilities = mapping(authority.deferred_capability_contracts);
   const profile = mapping(capabilities?.profile);
   const profileContracts = mapping(profile?.contracts);
   if (
-    profile?.implementation !== "declared_deferred" ||
+    profile?.implementation !== "active_partial" ||
     !sameStrings(profile?.capabilities, ["profile"]) ||
+    profile?.active_behavior !== "ownership_contracts.personal.admission" ||
+    !sameStrings(profile?.inactive_behavior, ["rendering", "persistence", "lookup"]) ||
     profileContracts?.admission !== "ownership_contracts.personal.input" ||
     profileContracts?.provenance !== "ownership_contracts.personal.allowed_provenance" ||
     profileContracts?.confidence !== "shared_primitive.fields.confidence" ||
     profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
     !sameStrings(profile?.forbidden_current_claims, ["synthesis", "persistence", "lookup"])
   ) {
-    errors.push("profile glossary synthesis must remain deferred and derive personal entry policy from shared contracts");
+    errors.push("profile glossary admission must be active_partial while output remains deferred");
   }
   const audit = mapping(capabilities?.audit);
   const confirmation = mapping(audit?.confirmation);
@@ -299,7 +363,9 @@ export function validateGlossaryEntryContract(
     auditInputs?.project_file !== "ownership_contracts.project.input" ||
     auditInputs?.project_file_history_classification !== "forbidden"
   ) {
-    errors.push("audit glossary output, confirmation, and separated evidence inputs must remain deferred");
+    errors.push(
+      "audit glossary output, confirmation, and separated evidence inputs must remain deferred",
+    );
   }
   const consumers = mapping(capabilities?.consumers);
   if (
@@ -329,7 +395,7 @@ export function validateGlossaryCapabilityImplementationClaim(
   if (!declaration) return [`${capability} has no deferred glossary declaration`];
   if (claimedImplementation !== declaration.implementation) {
     return [
-      `${capability} glossary behavior is declared_deferred; ${claimedImplementation} is a false implementation claim`,
+      `${capability} glossary behavior is ${String(declaration.implementation)}; ${claimedImplementation} is a false implementation claim`,
     ];
   }
   return [];
