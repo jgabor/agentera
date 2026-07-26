@@ -65,9 +65,10 @@ ARTIFACTS:
     artifact: profile
     local_role: consumes
     description: >-
-      Build consumes status profile summary first. Missing or stale profile state
-      is a caveat and does not authorize profile refresh or direct profile reads
-      during normal startup.
+      Build consumes status profile summary first and reads profile grounding
+      only from `agentera report profile-grounding --format json`. Missing,
+      stale, or malformed state is a caveat and does not authorize refresh or
+      direct profile reads during normal startup.
   9:
     id: A9
     artifact: docs

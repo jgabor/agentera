@@ -7,8 +7,9 @@ export default instructions
 
 Plans and tasks use entity authority: each plan and task has \`id\` and \`artifact\` and lives in one writer-owned entity file; task relationships carry the bare plan ID. Read plans and tasks through bounded list or exact \`get --id ID\` commands. Discover creation and mutation contracts with \`agentera state plan explain --verb <verb> --format json\`, and use bare task IDs for task writes. Never edit entity paths directly. Vision, docs policy, design, changelog, and profile retain their declared singleton boundaries.
 
-Create with \`agentera state plan create --input PATH --format json\`, update tasks through the discovered bare-ID commands, and archive completed plan entities with \`agentera state plan archive --format json\`.
+Create with \`agentera state plan create --input PATH --format json\`, update tasks through the discovered bare-ID commands, and archive completed plan entities with \`agentera state plan archive --format json\`. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\`; never direct-read \`planning_context.profile.path\`. The grounding command excludes the owned personal Glossary section and fails closed when its boundaries are malformed.
 
 ## Workflow phases`)
   .replaceAll("--number N", "--id ID")
-  .replaceAll("--task N", "--id ID");
+  .replaceAll("--task N", "--id ID")
+  .replace("served via `planning_context.profile.path` — read directly when `status: loaded`; if missing or stale, proceed without persona grounding", "served through `agentera report profile-grounding --format json` — use only returned `content` when `status: ok`; if unavailable or invalid, proceed without persona grounding and preserve its recovery");

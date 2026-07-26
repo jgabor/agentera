@@ -12,6 +12,7 @@ type Action = "capture-owned-glossary" | "write-base-profile" | "publish-profile
 type CommandOutput = { status: string; entry_count: number };
 
 export interface ProfileFullWorkflowObservation {
+  profilePath: string;
   servedActions: Action[];
   firstStatus: string;
   replayStatus: string;
@@ -192,7 +193,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(captureOwnedGlossary(replayed), establishedOwned);
   assert.equal(withoutOwnedGlossary(replayed), `${sameDateBase}\n\n`);
 
-  const laterBase = "# Decision Profile: Served Workflow\n\n<!-- regenerated later -->\n## Process\n\nlater base\n";
+  const laterBase = "# Decision Profile: Served Workflow\n\n<!-- regenerated later -->\n## Decision Patterns\n\n- High confidence: preserve semantic seams.\n\n## Process\n\nlater base\n";
   const later = runCycle(actions, executable, root, profilePath, laterBase, "2026-10-09", false);
   assert.equal(later.ownedBeforePublication, establishedOwned, "later base regeneration did not preserve exact owned bytes");
   assert.equal(later.publication?.status, "changed");
@@ -221,8 +222,10 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
     assert.equal(fs.readFileSync(profilePath, "utf8"), original, "malformed existing section changed before rejection");
     malformedCasesRejected += 1;
   }
+  fs.writeFileSync(profilePath, decayed);
 
   return {
+    profilePath,
     servedActions: actions,
     firstStatus: first.publication.status,
     replayStatus: replay.publication.status,

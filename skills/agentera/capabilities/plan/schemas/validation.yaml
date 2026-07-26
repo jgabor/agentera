@@ -87,3 +87,13 @@ VALIDATION:
     checks:
       - "Full plans with dismissed critic findings have `rejected:` entries"
       - "Each rejection has issue and rationale fields"
+  9:
+    id: V9
+    rule: sanitized_profile_grounding
+    description: >-
+      Plan MUST ground only from the `content` returned by `agentera report
+      profile-grounding --format json`; it MUST NOT direct-read PROFILE.md.
+    severity: critical
+    checks:
+      - "Sanitized grounding command used during Orient"
+      - "Raw profile path not read"

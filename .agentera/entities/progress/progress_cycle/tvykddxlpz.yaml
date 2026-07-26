@@ -1,0 +1,16 @@
+id: tvykddxlpz
+artifact: progress
+record:
+  timestamp: 2026-07-26 17:34
+  type: fix
+  phase: build
+  what: Added fail-closed non-glossary profile grounding for Discuss, Plan, and Build and extended source/package readiness proof through the served post-prime path.
+  context:
+    intent: Correct evaluator attempt 1 AC3 by preventing deferred glossary terms from entering consumer grounding while preserving full Profile ownership and all producer semantics.
+    constraints: No plan task/evaluation/TODO mutation, glossary lookup, precedence, semantic review, project glossary read, advisory behavior, profile mutation, version metadata, npm, tags, remotes, staging, or commit.
+    unknowns: None within retry scope; TODO ruzauoaotd remains the sole owner of future glossary consumption behavior.
+    scope: Profile grounding parser and report seam; Discuss/Plan/Build startup context, instructions, schemas; glossary authority; focused source/package readiness coverage; changelog; one new progress entity.
+  inspiration: Evaluator attempt producer-readiness-audit-1 for Plan antsflnznb Task hakmkqjfkj and firm Decisions prmnztjytv and mcsmqqitnm.
+  discovered: The served Discuss and Plan prose still instructed raw profile reads, while Build promised effective-profile grounding without a safe content seam. The existing personal glossary parser could own exact exclusion and malformed-boundary rejection without adding marker parsing or consumer semantics.
+  verified: "AC3 RETRY PASS: source and independently packed/extracted package prime contexts for discuss, plan, and build each advertise only agentera report profile-grounding --format json with raw_profile_read forbidden; each served instruction names that exact command and removes prior direct-read/effective-profile directives. Following all six served paths in new processes returned status ok and preserved the high-confidence non-glossary line while excluding term, meaning, provenance, and anchor traps. Exact owned marker ranges were removed while all surrounding bytes were preserved; four malformed, duplicate, unmatched, or unowned ambiguous sections per source/package failed nonzero without returning trap text. Profile, project glossary, and trap bytes remained unchanged, Profile Full retained full-section regeneration, and TODO ruzauoaotd remained open on azytlqzxoa and guijxewees. Focused grounding/readiness tests, typecheck, fresh build, full source 214 files/2784 passed/1 skipped, package 2 files/16 passed, Discuss/Plan/Build/Profile capability validation, capability-contract, cross-capability, vocabularyAuthority, compact, state validation, and git diff checks passed; version remained 3.0.0-dev.34 and no live glossary/version diff appeared."
+  next: Leave Task hakmkqjfkj in progress for evaluator retry; consumer lookup, precedence, semantic review, and advisory behavior remain deferred to TODO ruzauoaotd.

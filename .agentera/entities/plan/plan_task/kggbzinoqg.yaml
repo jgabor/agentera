@@ -1,0 +1,22 @@
+id: kggbzinoqg
+artifact: plan
+record:
+  plan: antsflnznb
+  name: Sanitize profile grounding and revalidate readiness
+  status: complete
+  depends_on:
+    - kentdfdgmu
+  acceptance:
+    - GIVEN malformed, duplicate, unmatched, unowned, or oversized personal Glossary state WHEN consumer grounding fails THEN every public source/package error is static and contains no term, meaning, provenance, anchor, or raw profile bytes.
+    - GIVEN valid personal and project producer state WHEN Discuss, Plan, and Build follow served grounding THEN non-glossary profile context remains available while producer entries and bytes remain isolated and unchanged.
+    - GIVEN the corrected readiness matrix WHEN source, package, malformed-boundary, and repository gates run THEN all producer-readiness criteria pass except the explicitly deferred version-metadata transition.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: producer-readiness-replacement-audit-1
+      source: Audit ses_060dd1b72ffeqsoc9d3hG4r5fA
+      recorded_at: 2026-07-26 18:04
+      writer_command: agentera state plan record-evaluation

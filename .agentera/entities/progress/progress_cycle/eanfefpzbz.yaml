@@ -1,0 +1,16 @@
+id: eanfefpzbz
+artifact: progress
+record:
+  timestamp: 2026-07-26 17:53
+  type: fix
+  phase: build
+  what: Sanitized public profile grounding failures and extended producer-readiness regressions across source and constructed-package processes.
+  context:
+    intent: Resolve Plan Task kggbzinoqg by preventing malformed personal Glossary state from reaching Discuss, Plan, or Build diagnostics while preserving valid non-glossary grounding and producer bytes.
+    constraints: No plan/evaluation/TODO edits, producer semantic changes, real global profile, live project glossary/docs, version metadata, npm, tag, push, stage, or commit.
+    unknowns: No task-scoped unknowns; only the explicitly deferred gitRef transition remains.
+    scope: Public profile-grounding command sanitization, existing producer-readiness source/package helper matrix, and this new progress entity.
+  inspiration: Plan antsflnznb Task kggbzinoqg, replacement for exhausted Task hakmkqjfkj, and Audit producer-readiness-audit-2.
+  discovered: The previous readiness helper checked only one generic trap in stdout; report profile-grounding forwarded internal parser messages that include structured private values, and request values were also interpolated publicly.
+  verified: Source and independently constructed-package new-process lanes passed. Eight malformed families (unowned, unmatched marker, duplicate marker, invalid JSON, YAML body, invalid structured entry, duplicate term, oversized) used unique traps in term, meaning, source_id, evidence_anchor, source_kind, signal_type, and raw marker/body text; no trap appeared in stdout or stderr, rejection stayed nonzero, all malformed bytes stayed exact, and request/path/read branches were sanitized. All three served Discuss/Plan/Build paths returned exact non-glossary bytes while personal profile, project glossary, and trap files stayed unchanged. Focused source passed 1/1; full source passed 214 files, 2784 tests with 1 skipped; package passed 2 files/16 tests; typecheck, fresh build, Discuss/Plan/Build/Profile capability validation, capability-contract 3/3, cross-capability, vocabularyAuthority, state validation (1887 entities), compact, and diff checks passed. release-metadata reported only the deferred agentera.gitRef mismatch owned by Task jivwatgqpl.
+  next: Leave plan task and evaluation state unchanged for orchestrator evaluation; Task jivwatgqpl owns the deferred version-metadata transition and TODO ruzauoaotd retains deferred consumer behavior.

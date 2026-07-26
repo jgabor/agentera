@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  personalProfileGrounding,
   updatePersonalGlossaryProfile,
   type PersonalGlossaryEntry,
 } from "../../src/analytics/personalGlossaryProfile.js";
@@ -154,6 +155,17 @@ describe("personal PROFILE.md glossary output", () => {
     const trap = path.join(path.dirname(pathname), ".agentera", "glossary.yaml");
     fs.mkdirSync(trap, { recursive: true });
     expect(() => update(pathname, [explicit()])).not.toThrow();
+  });
+
+  it("excludes exactly the validated owned range and preserves all other profile bytes", () => {
+    const pathname = profilePath();
+    update(pathname, [explicit()]);
+    const stored = fs.readFileSync(pathname, "utf8");
+    const start = stored.indexOf("<!-- agentera:personal-glossary:start -->");
+    const end = stored.indexOf("<!-- agentera:personal-glossary:end -->", start)
+      + "<!-- agentera:personal-glossary:end -->".length;
+    expect(personalProfileGrounding(stored)).toBe(`${stored.slice(0, start)}${stored.slice(end)}`);
+    expect(personalProfileGrounding(stored)).not.toContain("ship shape");
   });
 });
 

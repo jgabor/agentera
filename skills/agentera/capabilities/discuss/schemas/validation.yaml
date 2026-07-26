@@ -76,3 +76,13 @@ VALIDATION:
       - "Provisional satisfaction requires evidence"
       - "Only the user confirms final satisfaction"
       - "Missing or compacted satisfaction caveats are preserved"
+  8:
+    id: V8
+    rule: sanitized_profile_grounding
+    description: >-
+      Discuss MUST ground only from the `content` returned by `agentera report
+      profile-grounding --format json`; it MUST NOT direct-read PROFILE.md.
+    severity: critical
+    checks:
+      - "Sanitized grounding command used at session start"
+      - "Raw profile path not read"

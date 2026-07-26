@@ -39,6 +39,12 @@ export interface PersonalGlossaryOutputContract {
   outputStatuses: string[];
 }
 
+export interface PersonalProfileGroundingContract {
+  command: string;
+  schemaVersion: string;
+  maxProfileUtf8Bytes: number;
+}
+
 const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
 export type DeferredGlossaryCapability = (typeof DEFERRED_CAPABILITIES)[number];
 
@@ -100,6 +106,19 @@ export function personalGlossaryOutputContract(
     requestSchemaVersion: typeof request?.schema_version === "string" ? request.schema_version : "",
     sectionSchemaVersion: typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
     outputStatuses: strings(command?.output_statuses),
+  };
+}
+
+export function personalProfileGroundingContract(
+  pathname: string = glossaryEntryAuthorityPath(),
+): PersonalProfileGroundingContract {
+  const grounding = mapping(mapping(contract(pathname).consumer_boundary)?.profile_grounding);
+  return {
+    command: typeof grounding?.command === "string" ? grounding.command : "",
+    schemaVersion: typeof grounding?.schema_version === "string" ? grounding.schema_version : "",
+    maxProfileUtf8Bytes: typeof grounding?.max_profile_utf8_bytes === "number"
+      ? grounding.max_profile_utf8_bytes
+      : 0,
   };
 }
 
@@ -494,11 +513,21 @@ export function validateGlossaryEntryContract(
   }
 
   const consumer = mapping(authority.consumer_boundary);
+  const profileGrounding = mapping(consumer?.profile_grounding);
   if (
     consumer?.implementation !== "declared_deferred" ||
-    !sameStrings(consumer?.forbidden_persisted_entry_fields, ["precedence", "collision", "review"])
+    !sameStrings(consumer?.forbidden_persisted_entry_fields, ["precedence", "collision", "review"]) ||
+    profileGrounding?.implementation !== "active_exclusion_only" ||
+    !sameStrings(profileGrounding?.capabilities, ["discuss", "plan", "build"]) ||
+    profileGrounding?.command !== "agentera report profile-grounding --format json" ||
+    profileGrounding?.schema_version !== "agentera.profileGrounding.v1" ||
+    profileGrounding?.parser !== "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
+    profileGrounding?.max_profile_utf8_bytes !== 65536 ||
+    profileGrounding?.raw_profile_read !== "forbidden" ||
+    !nonEmpty(profileGrounding?.content_rule) ||
+    !nonEmpty(profileGrounding?.failure_rule)
   ) {
-    errors.push("consumer behavior must remain deferred and outside persisted entry state");
+    errors.push("consumer behavior must remain deferred while sanitized profile grounding excludes the owned glossary");
   }
   const exactCollision = mapping(consumer?.exact_collision);
   if (

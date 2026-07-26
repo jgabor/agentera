@@ -8,7 +8,7 @@ record:
     - xlrtdarzcs
     - nmewuhappg
     - gnwhzstoyg
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN both producers WHEN independently exercised THEN each emits shared entry semantics while preserving global-personal and repository-project ownership.
     - GIVEN source and constructed package WHEN producer flows are exercised THEN behavior, validation, artifacts, and implementation status are equivalent.
@@ -16,3 +16,16 @@ record:
     - GIVEN malformed evidence, output, approval, mapping, or drift state WHEN focused validators run THEN novel failures are rejected without duplicating generic matrices.
     - GIVEN repository gates WHEN executed THEN full tests, typecheck, build, package verification, compact, and relevant validators pass.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "AC3: profile-grounding rejects malformed structured entries but exposes private glossary terms through parser-derived public error messages, e.g. duplicate case-insensitive term values. Return one static sanitized malformed/ambiguous error while retaining internal detail, and add source/package trap regressions."
+    provenance:
+      attempt_id: producer-readiness-audit-2
+      source: Audit ses_061067cd0ffefU6gLewbQ5tuQW bounded re-review
+      recorded_at: 2026-07-26 17:42
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kggbzinoqg
+  superseded_reason: The completed replacement preserves readiness evaluation history while sanitizing deferred profile grounding and revalidating source/package producer parity.

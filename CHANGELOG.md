@@ -112,6 +112,10 @@
 
 ### Fixed
 
+- Fixed Discuss, Plan, and Build profile grounding to use `agentera report
+  profile-grounding --format json`, which preserves non-glossary profile content
+  while excluding the owned personal Glossary section and failing closed on
+  ambiguous boundaries.
 - Fixed bounded personal glossary admission to reject missing or unknown
   evidence-tier schema versions before reading signals, returning corrupt-state
   recovery without candidates.

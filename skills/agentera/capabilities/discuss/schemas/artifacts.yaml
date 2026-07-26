@@ -39,8 +39,9 @@ ARTIFACTS:
     artifact: profile
     local_role: consumes
     description: >-
-      Discuss reads this at session start to acknowledge high-confidence
-      entries and avoid re-deliberating settled ground.
+      Discuss reads only sanitized non-glossary content from `agentera report
+      profile-grounding --format json` at session start. It never direct-reads
+      the profile path; malformed owned Glossary boundaries fail closed.
   6:
     id: A6
     artifact: docs

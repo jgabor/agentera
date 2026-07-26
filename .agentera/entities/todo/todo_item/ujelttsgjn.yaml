@@ -1,0 +1,15 @@
+id: ujelttsgjn
+artifact: todo
+record:
+  severity: degraded
+  status: resolved
+  description: "[fix:3.0.0] Sanitize profile-grounding malformed-section diagnostics after Plan antsflnznb Task hakmkqjfkj exhausted two evaluations. packages/cli/src/cli/commands/profileGrounding.ts must never interpolate personal glossary terms, meanings, provenance, or anchors into public error envelopes; return one static malformed-or-ambiguous correction and add source/package structured trap regressions."
+  readiness:
+    capability: plan
+    reason: The readiness task is terminally blocked; a bounded replacement must close the remaining private-content error leak before producer readiness can pass.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This is the sole blocker for producer readiness and downstream version metadata.

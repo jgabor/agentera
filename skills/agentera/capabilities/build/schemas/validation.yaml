@@ -108,3 +108,13 @@ VALIDATION:
       - "Provisional satisfaction requires evidence"
       - "Only the user confirms final satisfaction"
       - "Missing or compacted satisfaction caveats are preserved"
+  11:
+    id: V11
+    rule: sanitized_profile_grounding
+    description: >-
+      Build MUST ground only from the `content` returned by `agentera report
+      profile-grounding --format json`; it MUST NOT direct-read PROFILE.md.
+    severity: critical
+    checks:
+      - "Sanitized grounding command used after prime startup"
+      - "Raw profile path not read"

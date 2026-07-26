@@ -7,6 +7,10 @@ import YAML from "yaml";
 import { describe, expect, inject, it } from "vitest";
 
 import { runServedProfileFullWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+import {
+  EXPECTED_PRODUCER_READINESS,
+  runProducerReadinessWorkflow,
+} from "../helpers/producerReadinessWorkflow.js";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
@@ -255,6 +259,20 @@ describe("npm distribution boundary", () => {
     );
     expect(authority).toContain("profile_full_rendering");
     expect(authority).toContain("agentera report profile-glossary");
+  });
+
+  it("matches source and extracted-package producer readiness", { timeout: 120_000 }, async () => {
+    fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(fixture.constructionRoot, "node_modules"), "dir");
+    const source = await runProducerReadinessWorkflow(
+      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
+      path.join(fixture.root, "producer-source"),
+    );
+    const packaged = await runProducerReadinessWorkflow(
+      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
+      path.join(fixture.root, "producer-package"),
+    );
+    expect(source).toEqual(EXPECTED_PRODUCER_READINESS);
+    expect(packaged).toEqual(source);
   });
 
   it("flags a reintroduced native descriptor path in the package inventory", () => {

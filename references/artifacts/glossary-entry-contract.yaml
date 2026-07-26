@@ -369,6 +369,24 @@ consumer_boundary:
   implementation: declared_deferred
   owns_later: [exact_collision_precedence, semantic_equivalence_review, advisory_behavior]
   forbidden_persisted_entry_fields: [precedence, collision, review]
+  profile_grounding:
+    implementation: active_exclusion_only
+    capabilities: [discuss, plan, build]
+    command: agentera report profile-grounding --format json
+    schema_version: agentera.profileGrounding.v1
+    parser: packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding
+    max_profile_utf8_bytes: 65536
+    raw_profile_read: forbidden
+    content_rule: >-
+      Return the complete profile with exactly the validated owned personal
+      Glossary marker range removed. Preserve every byte outside that range.
+      This is profile grounding only and performs no glossary lookup, project
+      glossary read, precedence, matching, review, collision, or advisory work.
+      Profile Full retains access to the complete stored profile for regeneration.
+    failure_rule: >-
+      Missing profiles return structured unavailable state. Oversized profiles
+      and malformed, duplicate, unmatched, or unowned ambiguous Glossary
+      sections fail closed with actionable recovery and no profile content.
   exact_collision:
     behavior: project_precedence_at_consumption
     persistence: forbidden

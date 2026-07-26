@@ -17,6 +17,24 @@ import {
 import type { JsonObject } from "../../core/jsonValue.js";
 import { boundStartupValue } from "../../state/startupProjection.js";
 import type { OrientationState } from "../contracts/orientationState.js";
+import { personalProfileGroundingContract } from "../../registries/glossaryEntryContract.js";
+
+const SANITIZED_PROFILE_CONSUMERS = new Set(["discuss", "plan", "build"]);
+
+function startupProfileSummary(capability: string, profile: JsonObject): JsonObject {
+  const summary = capabilityContextProfileSummary(profile);
+  if (!SANITIZED_PROFILE_CONSUMERS.has(capability)) return summary;
+  const { path: _path, ...withoutPath } = summary;
+  return {
+    ...withoutPath,
+    grounding: {
+      command: personalProfileGroundingContract().command,
+      content_field: "content",
+      policy: "sanitized_non_glossary_only",
+      raw_profile_read: "forbidden",
+    },
+  };
+}
 
 export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
@@ -134,7 +152,7 @@ export function genericSlimStartupContext(
 ): JsonObject {
   const decisionsPointer = fallbackStatePointer("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
   const docsState = slimDocsState(docs);
-  const profileState = capabilityContextProfileSummary(profile);
+  const profileState = startupProfileSummary(capability, profile);
   if (capability === "vision") {
     return {
       vision_startup_context: {
@@ -250,7 +268,7 @@ export function slimCapabilityContext(
     capability,
     mode,
     app: capabilityContextAppSummary(appHome, bundle),
-    profile: capabilityContextProfileSummary(profile),
+    profile: startupProfileSummary(capability, profile),
     state: {
       declared_read_needs: context.declared_state_needs ?? [],
       declared_write_targets: context.declared_write_targets ?? [],

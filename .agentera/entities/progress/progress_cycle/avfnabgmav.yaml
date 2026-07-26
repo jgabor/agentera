@@ -1,0 +1,16 @@
+id: avfnabgmav
+artifact: progress
+record:
+  timestamp: 2026-07-26 17:08
+  type: test
+  phase: build
+  what: Added a focused producer-readiness integration matrix and verified source and independently constructed package behavior without changing product behavior.
+  context:
+    intent: Verify Plan antsflnznb Task hakmkqjfkj producer and package readiness while preserving orchestrator-owned task state and deferred consumer behavior.
+    constraints: No plan task/evaluation/TODO mutation, product behavior, version metadata, live PROFILE.md, live project glossary, docs mapping, npm, tags, remotes, staging, or commit.
+    unknowns: Release-metadata validation remains outside this no-version task and currently reports the pre-existing governed gitRef mismatch owned by Task jivwatgqpl; all task-relevant validators passed.
+    scope: Producer readiness test helpers, source executable integration coverage, extracted-package parity coverage, and one typed progress entity.
+  inspiration: Plan antsflnznb Task hakmkqjfkj and firm Decisions prmnztjytv and mcsmqqitnm.
+  discovered: No producer product gap was reproduced. Existing focused validators already reject malformed personal evidence/manifest/rendered output and project proposal/digest/confirmation/provenance/document/mapping/guard cases, so the change adds only cross-boundary readiness evidence rather than another generic matrix.
+  verified: "AC1 PASS: disposable source and package runs admitted personal explicit evidence with one anchor and inferred evidence with two anchors, rendered/replayed/decayed the global personal profile, and emitted project shared-only entry fields with separate external approval while Audit and publication left the profile unchanged. AC2 PASS: normalized source construction and independently packed/extracted npm observations matched exactly for producer behavior, validation, discovery active status, replay, guard, statuses, and deferred declarations; verify:package passed 16 tests. AC3 PASS: source/package discuss, plan, and build prime startups hid producer/trap terms and preserved profile, glossary, and trap bytes; authority remained personal active_partial, project active, consumers declared_deferred with lookup/precedence/semantic review inactive; canonical TODO ruzauoaotd remained open with dependencies azytlqzxoa and guijxewees. AC4 PASS: 131 focused producer/contract tests plus the readiness smoke passed, covering malformed evidence/manifest/rendered output/proposal/digest/confirmation/provenance/existing document/mapping/confirmed-variant drift through existing focused validators. AC5 PASS: full source suite 214 files/2783 passed/1 skipped, typecheck, fresh build, package verification, compact, state, profile/audit/discuss/plan/build capability, capability-contract, cross-capability, vocabularyAuthority, and git diff checks passed; local version remained 3.0.0-dev.34 and no live project glossary or version diff appeared."
+  next: Leave Task hakmkqjfkj in progress for orchestrator evaluation; Task jivwatgqpl owns metadata and TODO ruzauoaotd remains deferred on both producers.

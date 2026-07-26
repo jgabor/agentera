@@ -6,12 +6,13 @@ export default instructions
 
 Progress, plans, health audits, and decisions use entity authority: each record has \`id\` and \`artifact\`, lives in one writer-owned entity file, and is read through exact, list, or bounded CLI commands. Use \`agentera state <artifact> explain --format json\` before every supported mutation; never edit entity paths directly. Vision, docs policy, changelog, design, and profile remain intentional singletons.
 
-Build appends progress with \`agentera state progress append\`, advances a plan task with its bare ID through \`agentera state plan set-status --id ID\`, and is the sole owner of explicitly confirmed project terminology publication through \`agentera state glossary publish --input REQUEST\`. Glossary publication records the approval and shared entry atomically; it does not authorize glossary lookup, personal-profile mutation, or docs-mapping mutation. Build reads context from \`agentera prime --context build --format json\` plus declared fallback commands. Root \`TODO.md\` and \`CHANGELOG.md\` remain capability-owned editorial files.
+Build appends progress with \`agentera state progress append\`, advances a plan task with its bare ID through \`agentera state plan set-status --id ID\`, and is the sole owner of explicitly confirmed project terminology publication through \`agentera state glossary publish --input REQUEST\`. Glossary publication records the approval and shared entry atomically; it does not authorize glossary lookup, personal-profile mutation, or docs-mapping mutation. Build reads context from \`agentera prime --context build --format json\` plus declared fallback commands. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\`; never direct-read the profile path. The grounding command excludes the owned personal Glossary section and fails closed when its boundaries are malformed. Root \`TODO.md\` and \`CHANGELOG.md\` remain capability-owned editorial files.
 
 ## Workflow phases: The cycle`)
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")
   .replaceAll("progress.yaml aggregate cycle entry", "progress entity record")
+  .replace("Every cycle runs the effective profile.", "Every cycle uses only the sanitized non-glossary profile content returned by `agentera report profile-grounding --format json`.")
   .replaceAll("**Dual-write**: build maintains `.agentera/progress.yaml` and root `CHANGELOG.md`.", "Build records entity progress through the typed writer and maintains root `CHANGELOG.md` separately.")
   .replaceAll("`.agentera/health.yaml` findings", "Health findings returned by `agentera state health list --format json`")
   .replace("If `.agentera/plan.yaml` has `header.status: complete` and every task is complete", "If the selected plan entity is complete and every related task entity is complete");

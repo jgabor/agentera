@@ -139,6 +139,14 @@ function parseSection(profile: string): { document: PersonalGlossaryDocument | n
   return { document, start, end };
 }
 
+/** Return profile grounding with the validated owned glossary range excluded byte-for-byte. */
+export function personalProfileGrounding(profile: string): string {
+  const section = parseSection(profile);
+  return section.document === null
+    ? profile
+    : `${profile.slice(0, section.start)}${profile.slice(section.end)}`;
+}
+
 function orderedEntry(entry: PersonalGlossaryEntry): PersonalGlossaryEntry {
   return {
     term: entry.term,

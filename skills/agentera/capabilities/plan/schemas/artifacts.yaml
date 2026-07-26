@@ -53,7 +53,10 @@ ARTIFACTS:
     artifact: profile
     local_role: consumes
     description: >-
-      Plan reads this to calibrate planning depth and pattern preferences.
+      Plan reads only sanitized non-glossary content from `agentera report
+      profile-grounding --format json` to calibrate planning depth and pattern
+      preferences. It never direct-reads the profile path; malformed owned
+      Glossary boundaries fail closed.
   9:
     id: A9
     artifact: docs
