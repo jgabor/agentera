@@ -9,6 +9,7 @@ import {
   classifyExplicitGlossaryLanguage,
 } from "../../src/analytics/personalGlossaryAdmission.js";
 import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
 import {
   publishEvidenceTiers,
   resolveEvidenceAnchor,
@@ -52,6 +53,13 @@ function publish(records: Array<Record<string, unknown>>): void {
     adapterVersion: ADAPTER_VERSION,
     publishedAt: "2026-07-26T00:00:00.000Z",
   });
+}
+
+function currentGenerationFile(filename: string): string {
+  const pointer = JSON.parse(fs.readFileSync(path.join(tiersDir, "current.json"), "utf8")) as {
+    generation: string;
+  };
+  return path.join(tiersDir, "generations", pointer.generation, filename);
 }
 
 describe("explicit personal glossary classification", () => {
@@ -176,6 +184,57 @@ describe("bounded personal evidence admission", () => {
     expect(result.status).toBe("insufficient");
     expect(result.candidates).toEqual([]);
     expect(result.recovery).toContain("another distinct qualifying record");
+  });
+
+  it("does not infer terminology from instruction record field names", () => {
+    publish([
+      record("instruction-a", "instruction_document", "instruction", {
+        content: "Keep the ship shape small.",
+      }),
+      record("instruction-b", "instruction_document", "instruction", {
+        content: "Verify each ship shape directly.",
+      }),
+    ]);
+
+    const absent = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: ["content"] });
+    expect(absent.status).toBe("insufficient");
+    expect(absent.candidates).toEqual([]);
+
+    const present = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: ["ship shape"] });
+    expect(present.status).toBe("admitted");
+    expect(present.candidates).toHaveLength(1);
+  });
+
+  it("returns corrupt recovery when the manifest omits required signal structure", () => {
+    publish([
+      record("explicit", "conversation_turn", "correction", {
+        text: "Actually, `ship shape` means the complete form of a deliverable.",
+      }),
+    ]);
+    const manifestPath = currentGenerationFile("manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+    delete manifest.signal;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest), "utf8");
+
+    expect(() => admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] })).not.toThrow();
+    const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] });
+    expect(result).toMatchObject({ state: "corrupt", status: "unavailable", candidates: [] });
+    expect(result.recovery).toBeTruthy();
+  });
+
+  it("rejects an actually oversized signal file before reading stale manifest bytes", () => {
+    publish([
+      record("explicit", "conversation_turn", "correction", {
+        text: "Actually, `ship shape` means the complete form of a deliverable.",
+      }),
+    ]);
+    const signalPath = currentGenerationFile("signal.json");
+    fs.truncateSync(signalPath, evidenceTierBounds().signalByteCap + 1);
+    fs.chmodSync(signalPath, 0);
+
+    const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] });
+    expect(result).toMatchObject({ state: "oversized", status: "unavailable", candidates: [] });
+    expect(result.recovery).toBeTruthy();
   });
 
   it.each(["missing", "legacy", "corrupt"] as const)(

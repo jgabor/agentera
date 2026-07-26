@@ -1,0 +1,16 @@
+id: bjqtibdwzb
+artifact: progress
+record:
+  timestamp: 2026-07-26 12:59
+  type: fix
+  phase: build
+  what: Corrected bounded signal safety and semantic recurrence after accepted evaluation producer-task1-audit-1.
+  context:
+    intent: Address only the two material Task raehsqxgvm evaluation findings while preserving active-partial admission and deferred output boundaries.
+    constraints: "No extraction widening, profile output/lifecycle, project work, versions, consumer behavior, whole-corpus reads, real profile changes, publication, push, or adjacent task. Caveats preserved: decision list byte-budget degraded but exact firm prmnztjytv available; satisfaction null; vision/profile omitted; profile startup tiers legacy."
+    unknowns: None beyond the accepted findings; both were reproduced by focused red tests and corrected locally.
+    scope: Signal manifest/size reader safety, personal semantic-value recurrence, focused regressions, accepted evaluation state, and retry progress only.
+  inspiration: Accepted evaluator attempt producer-task1-audit-1 with attempt_count 1 and failure_count 1.
+  discovered: Manifest shape checks previously stopped at shards, actual signal bytes were trusted from stale metadata, and serialized record keys participated in inferred term matching.
+  verified: "AC3 correction: recurrence searches only instruction_document data.content and project_config_signal data.signals string values. Two records whose structural key is content return insufficient for term content, while two semantic ship shape values admit; distinct source-ID and anchor checks still pass. AC4 correction: current manifest bounds, signal, coverage, and shard path/bytes/source_ids are validated before access. Compatibility stats signal.json and compares its actual size to the authority 64 MiB cap; readSignalTier repeats that check before readFileSync. Missing manifest.signal returns corrupt recovery without throwing or candidates; an unreadable actual 64 MiB+1 signal with stale small manifest bytes returns oversized recovery without candidates. AC1, AC2, AC5 and project isolation regressions remain green. Focused: 4 files, 70 tests passed. Full source: 208 files, 2714 passed, 1 skipped. Typecheck and build passed. Package: 2 files, 14 tests passed. Profile, capability-contract, cross-capability, and vocabularyAuthority validation; compact; diff; format; lint with 153 existing warnings and 0 errors passed."
+  next: Leave raehsqxgvm in_progress with evaluator provenance and retry counters unchanged for bounded re-review. Do not start an adjacent task.

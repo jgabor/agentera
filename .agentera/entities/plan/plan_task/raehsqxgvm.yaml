@@ -12,3 +12,13 @@ record:
     - GIVEN bounded, missing, legacy, corrupt, or insufficient evidence WHEN admission runs THEN only qualifying individual anchors resolve and deterministic recovery appears without ungrounded claims or whole-history reads.
     - GIVEN project glossary presence or absence WHEN personal admission runs THEN inputs and results are identical and exclude project records and paths; focused fixtures cover one pass and fail per novel evidence class.
   plan: antsflnznb
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "AC3: inferred admission searches serialized object keys, allowing structural field names such as content to masquerade as recurring terminology. AC4: required manifest structure is not validated before manifest.signal access and actual signal file size is not checked before read, so corrupt manifests can throw and oversized files can bypass the bound. Search only source-semantic values; validate manifest structure and actual signal size before read; add regressions."
+    provenance:
+      attempt_id: producer-task1-audit-1
+      source: Audit ses_061f92f2bffelS3Fgt0ABcL8kX
+      recorded_at: 2026-07-26 12:52
+      writer_command: agentera state plan record-evaluation

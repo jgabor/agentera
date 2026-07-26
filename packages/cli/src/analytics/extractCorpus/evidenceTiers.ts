@@ -549,6 +549,38 @@ export interface GenerationDir {
   manifest: EvidenceTierManifest;
 }
 
+function isMapping(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isEvidenceTierManifest(value: unknown): value is EvidenceTierManifest {
+  if (!isMapping(value)) return false;
+  const bounds = value.bounds;
+  const signal = value.signal;
+  const coverage = value.coverage;
+  if (
+    !isMapping(bounds) ||
+    typeof bounds.shard_byte_cap !== "number" ||
+    typeof bounds.signal_byte_cap !== "number" ||
+    !isMapping(signal) ||
+    typeof signal.path !== "string" ||
+    typeof signal.bytes !== "number" ||
+    !isMapping(coverage) ||
+    !Array.isArray(coverage.skipped) ||
+    !Array.isArray(value.shards)
+  ) {
+    return false;
+  }
+  return value.shards.every(
+    (shard) =>
+      isMapping(shard) &&
+      typeof shard.path === "string" &&
+      typeof shard.bytes === "number" &&
+      Array.isArray(shard.source_ids) &&
+      shard.source_ids.every((sourceId) => typeof sourceId === "string"),
+  );
+}
+
 /** Resolve the current generation directory and manifest, or null. */
 export function readCurrentGeneration(tiersDir: string): GenerationDir | null {
   const pointer = readCurrentPointer(tiersDir);
@@ -557,8 +589,8 @@ export function readCurrentGeneration(tiersDir: string): GenerationDir | null {
   const manifestPath = path.join(dir, "manifest.json");
   if (!fs.existsSync(manifestPath)) return null;
   try {
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as EvidenceTierManifest;
-    if (!manifest || typeof manifest !== "object" || !Array.isArray(manifest.shards)) return null;
+    const manifest: unknown = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+    if (!isEvidenceTierManifest(manifest)) return null;
     return { pointer, dir, manifest };
   } catch {
     return null;
@@ -572,9 +604,12 @@ export function readSignalTier(tiersDir: string): { records: SignalRecord[]; byt
   const signalPath = path.join(gen.dir, gen.manifest.signal.path);
   if (!fs.existsSync(signalPath)) return null;
   try {
+    const bytes = fs.statSync(signalPath).size;
+    const signalByteCap = evidenceTierBounds().signalByteCap;
+    if (bytes > signalByteCap) return null;
     const data = JSON.parse(fs.readFileSync(signalPath, "utf-8")) as { records?: SignalRecord[] };
     if (!data || !Array.isArray(data.records)) return null;
-    return { records: data.records, bytes: gen.manifest.signal.bytes, manifest: gen.manifest };
+    return { records: data.records, bytes, manifest: gen.manifest };
   } catch {
     return null;
   }
@@ -632,13 +667,26 @@ export function evidenceTierCompatibility(tiersDir: string, corpusPath?: string)
   if (!gen) {
     return { state: "corrupt", reason: "unreadable_or_schema_divergent" };
   }
+  const signalPath = path.join(gen.dir, gen.manifest.signal.path);
+  let actualSignalBytes: number;
+  try {
+    actualSignalBytes = fs.statSync(signalPath).size;
+  } catch {
+    return { state: "corrupt", reason: "unreadable_or_schema_divergent" };
+  }
+  if (actualSignalBytes > evidenceTierBounds().signalByteCap) {
+    return { state: "oversized", reason: "oversized", artifact: gen.manifest.signal.path };
+  }
   // Oversized: any shard or the signal tier exceeds its declared cap.
   for (const shard of gen.manifest.shards) {
     if (shard.bytes > gen.manifest.bounds.shard_byte_cap) {
       return { state: "oversized", reason: "oversized", artifact: shard.path };
     }
   }
-  if (gen.manifest.signal.bytes > gen.manifest.bounds.signal_byte_cap) {
+  if (
+    gen.manifest.signal.bytes > gen.manifest.bounds.signal_byte_cap ||
+    gen.manifest.signal.bytes > evidenceTierBounds().signalByteCap
+  ) {
     return { state: "oversized", reason: "oversized", artifact: gen.manifest.signal.path };
   }
   // Incomplete: a supported source family is skipped/sparse/missing.

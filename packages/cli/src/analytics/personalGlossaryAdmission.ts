@@ -73,9 +73,19 @@ function recordText(record: JsonObject): string {
   return "";
 }
 
-function searchableRecord(record: JsonObject): string {
+function semanticValues(record: JsonObject): string[] {
   const data = record.data;
-  return data && typeof data === "object" ? JSON.stringify(data) : "";
+  if (!data || typeof data !== "object" || Array.isArray(data)) return [];
+  const object = data as JsonObject;
+  if (record.source_kind === "instruction_document") {
+    return typeof object.content === "string" ? [object.content] : [];
+  }
+  if (record.source_kind === "project_config_signal") {
+    return Array.isArray(object.signals)
+      ? object.signals.filter((value): value is string => typeof value === "string")
+      : [];
+  }
+  return [];
 }
 
 function containsCompleteTerm(text: string, term: string): boolean {
@@ -152,7 +162,7 @@ export function admitPersonalGlossaryEvidence(
         ({ signal, record }) =>
           inferredTypes.has(signal.signal_type) &&
           inferredKinds.has(signal.source_kind) &&
-          containsCompleteTerm(searchableRecord(record), term),
+          semanticValues(record).some((value) => containsCompleteTerm(value, term)),
       )
       .map(({ signal }) => ({
         source_id: signal.source_id,

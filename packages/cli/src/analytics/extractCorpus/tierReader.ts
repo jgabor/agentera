@@ -117,7 +117,7 @@ export function readBoundedMetadata(tiersDir: string): BoundedMetadata {
   const signal = readSignalTier(tiersDir);
   const corpusMetadata = readTierCorpusMetadata(tiersDir);
   const bounds = evidenceTierBounds();
-  if (signal && signal.bytes > bounds.signalByteCap) {
+  if (signal && (signal.bytes > bounds.signalByteCap || signal.manifest.signal.bytes > bounds.signalByteCap)) {
     return { corpusMetadata: null, signal: null, manifest: signal.manifest };
   }
   return { corpusMetadata, signal, manifest: signal?.manifest ?? null };
