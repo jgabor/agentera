@@ -304,6 +304,8 @@ consumer_map:
     glossary:
       tier: signal
       status: declared_deferred
+      input_scope: bounded_personal_history
+      excluded_evidence_classes: [project_file]
       required_semantics:
         - correction
         - decision
@@ -314,9 +316,12 @@ consumer_map:
         - date
         - evidence_anchor
       rule: >-
-        The glossary is out of scope to implement, but its required semantics
-        are fixed here so the signal contract reserves them. Implementation must
-        not drop a reserved semantic or remove the field that carries it.
+        Personal glossary synthesis is out of scope to implement, but its
+        required bounded-history semantics are fixed here so the signal contract
+        reserves them. Project-file provenance remains repository evidence under
+        the shared glossary ownership contract and is never represented as
+        retained-history evidence. Implementation must not drop a reserved
+        semantic or remove the field that carries it.
 
 profile_sufficiency:
   question: >-

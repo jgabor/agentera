@@ -21,6 +21,9 @@ export interface GlossaryAdmissionContext {
   retainedHistory: ReadonlyMap<string, RetainedEvidence>;
 }
 
+const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
+export type DeferredGlossaryCapability = (typeof DEFERRED_CAPABILITIES)[number];
+
 export function glossaryEntryAuthorityPath(root: string = resolveSourceRoot()): string {
   return path.join(root, "references", "artifacts", "glossary-entry-contract.yaml");
 }
@@ -237,7 +240,85 @@ export function validateGlossaryEntryContract(
   ) {
     errors.push("consumer behavior must remain deferred and outside persisted entry state");
   }
+  const exactCollision = mapping(consumer?.exact_collision);
+  if (
+    exactCollision?.behavior !== "project_precedence_at_consumption" ||
+    exactCollision?.persistence !== "forbidden" ||
+    exactCollision?.personal_entry_suppression !== "forbidden"
+  ) {
+    errors.push("exact collisions must defer project precedence to consumption without persistence or suppression");
+  }
+  const inferred = mapping(consumer?.inferred_semantic_equivalence);
+  if (
+    inferred?.behavior !== "user_review" ||
+    inferred?.automatic_merge !== "forbidden" ||
+    inferred?.suppression !== "forbidden" ||
+    inferred?.precedence !== "forbidden"
+  ) {
+    errors.push("inferred equivalence must defer to user review without merge, suppression, or precedence");
+  }
+
+  const capabilities = mapping(authority.deferred_capability_contracts);
+  const profile = mapping(capabilities?.profile);
+  const profileContracts = mapping(profile?.contracts);
+  if (
+    profile?.implementation !== "declared_deferred" ||
+    !sameStrings(profile?.capabilities, ["profile"]) ||
+    profileContracts?.admission !== "ownership_contracts.personal.input" ||
+    profileContracts?.provenance !== "ownership_contracts.personal.allowed_provenance" ||
+    profileContracts?.confidence !== "shared_primitive.fields.confidence" ||
+    profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
+    !sameStrings(profile?.forbidden_current_claims, ["synthesis", "persistence", "lookup"])
+  ) {
+    errors.push("profile glossary synthesis must remain deferred and derive personal entry policy from shared contracts");
+  }
+  const audit = mapping(capabilities?.audit);
+  const confirmation = mapping(audit?.confirmation);
+  const auditInputs = mapping(audit?.inputs);
+  if (
+    audit?.implementation !== "declared_deferred" ||
+    !sameStrings(audit?.capabilities, ["audit"]) ||
+    audit?.intended_output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||
+    confirmation?.status !== "declared_deferred" ||
+    confirmation?.required_before_write !== "explicit_user_confirmation" ||
+    auditInputs?.personal_history !== "ownership_contracts.personal.input" ||
+    auditInputs?.project_file !== "ownership_contracts.project.input" ||
+    auditInputs?.project_file_history_classification !== "forbidden"
+  ) {
+    errors.push("audit glossary output, confirmation, and separated evidence inputs must remain deferred");
+  }
+  const consumers = mapping(capabilities?.consumers);
+  if (
+    consumers?.implementation !== "declared_deferred" ||
+    !sameStrings(consumers?.capabilities, ["discuss", "plan", "build"]) ||
+    consumers?.behavior !== "consumer_boundary" ||
+    !sameStrings(consumers?.forbidden_current_claims, ["lookup", "precedence", "review"])
+  ) {
+    errors.push("discuss, plan, and build glossary consumption must remain deferred");
+  }
   return errors;
+}
+
+export function validateGlossaryCapabilityImplementationClaim(
+  capability: string,
+  claimedImplementation: string,
+  pathname: string = glossaryEntryAuthorityPath(),
+): string[] {
+  if (!DEFERRED_CAPABILITIES.includes(capability as DeferredGlossaryCapability)) {
+    return [`${capability} is not an affected glossary capability`];
+  }
+  const authority = contract(pathname);
+  const declarations = mapping(authority.deferred_capability_contracts);
+  const declaration = Object.values(declarations ?? {})
+    .map(mapping)
+    .find((candidate) => strings(candidate?.capabilities).includes(capability));
+  if (!declaration) return [`${capability} has no deferred glossary declaration`];
+  if (claimedImplementation !== declaration.implementation) {
+    return [
+      `${capability} glossary behavior is declared_deferred; ${claimedImplementation} is a false implementation claim`,
+    ];
+  }
+  return [];
 }
 
 function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {

@@ -1,0 +1,17 @@
+schema_version: agentera.glossaryDeferredCapabilityFixtures.v1
+cases:
+  - capability: profile
+    valid_declaration: declared_deferred
+    false_implementation_claim: implemented
+  - capability: audit
+    valid_declaration: declared_deferred
+    false_implementation_claim: implemented
+  - capability: discuss
+    valid_declaration: declared_deferred
+    false_implementation_claim: implemented
+  - capability: plan
+    valid_declaration: declared_deferred
+    false_implementation_claim: implemented
+  - capability: build
+    valid_declaration: declared_deferred
+    false_implementation_claim: implemented

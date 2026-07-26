@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
@@ -9,6 +10,7 @@ import {
   glossaryEntryAuthorityPath,
   validateGlossaryEntry,
   validateGlossaryEntryContract,
+  validateGlossaryCapabilityImplementationClaim,
   type GlossaryAdmissionContext,
 } from "../../src/registries/glossaryEntryContract.js";
 
@@ -36,6 +38,20 @@ const retainedHistory: GlossaryAdmissionContext = {
     ],
   ]),
 };
+
+const CAPABILITY_FIXTURES = YAML.parse(
+  fs.readFileSync(
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../fixtures/glossary-deferred-capabilities.yaml",
+    ),
+    "utf8",
+  ),
+).cases as Array<{
+  capability: string;
+  valid_declaration: string;
+  false_implementation_claim: string;
+}>;
 
 function entry(provenance: Record<string, unknown>): Record<string, unknown> {
   return {
@@ -99,6 +115,64 @@ describe("shared glossary entry authority", () => {
     );
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
+
+  it.each([
+    [
+      "active profile synthesis",
+      (authority: Record<string, any>) => {
+        authority.deferred_capability_contracts.profile.implementation = "implemented";
+      },
+      "profile glossary synthesis must remain deferred and derive personal entry policy from shared contracts",
+    ],
+    [
+      "active audit confirmation",
+      (authority: Record<string, any>) => {
+        authority.deferred_capability_contracts.audit.confirmation.status = "implemented";
+      },
+      "audit glossary output, confirmation, and separated evidence inputs must remain deferred",
+    ],
+    [
+      "persisted exact-collision precedence",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.exact_collision.persistence = "allowed";
+      },
+      "exact collisions must defer project precedence to consumption without persistence or suppression",
+    ],
+    [
+      "automatic inferred-equivalence merge",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.inferred_semantic_equivalence.automatic_merge = "allowed";
+      },
+      "inferred equivalence must defer to user review without merge, suppression, or precedence",
+    ],
+  ])("rejects %s", (_name, mutate, expected) => {
+    const pathname = malformedAuthority(mutate);
+    expect(validateGlossaryEntryContract(pathname)).toContain(expected);
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it.each(CAPABILITY_FIXTURES)(
+    "accepts the deferred $capability declaration",
+    ({ capability, valid_declaration }) => {
+      expect(
+        validateGlossaryCapabilityImplementationClaim(capability, valid_declaration),
+      ).toEqual([]);
+    },
+  );
+
+  it.each(CAPABILITY_FIXTURES)(
+    "rejects the false $capability implementation claim",
+    ({ capability, false_implementation_claim }) => {
+      expect(
+        validateGlossaryCapabilityImplementationClaim(
+          capability,
+          false_implementation_claim,
+        ),
+      ).toEqual([
+        `${capability} glossary behavior is declared_deferred; implemented is a false implementation claim`,
+      ]);
+    },
+  );
 });
 
 describe("personal explicit-definition provenance", () => {

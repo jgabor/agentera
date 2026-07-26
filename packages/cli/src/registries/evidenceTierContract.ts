@@ -48,6 +48,8 @@ export interface DeferredConsumerDefinition {
   consumer_id: string;
   tier: TierId;
   status: string;
+  input_scope?: string;
+  excluded_evidence_classes: string[];
   required_semantics: string[];
 }
 
@@ -303,6 +305,13 @@ export function loadEvidenceTierContract(
       consumer_id: consumerId,
       tier: asString(entry.tier, `consumer_map.deferred_consumers.${consumerId}.tier`) as TierId,
       status: asString(entry.status, `consumer_map.deferred_consumers.${consumerId}.status`),
+      input_scope: typeof entry.input_scope === "string" ? entry.input_scope : undefined,
+      excluded_evidence_classes: Array.isArray(entry.excluded_evidence_classes)
+        ? asStringArray(
+            entry.excluded_evidence_classes,
+            `consumer_map.deferred_consumers.${consumerId}.excluded_evidence_classes`,
+          )
+        : [],
       required_semantics: asStringArray(
         entry.required_semantics,
         `consumer_map.deferred_consumers.${consumerId}.required_semantics`,
@@ -499,6 +508,16 @@ export function validateEvidenceTierContract(
         errors.push(`deferred consumer ${name} requires unknown semantic ${kind}`);
       }
     }
+  }
+  const glossary = model.deferredConsumers.get("glossary");
+  if (
+    glossary?.status !== "declared_deferred" ||
+    glossary.input_scope !== "bounded_personal_history" ||
+    !glossary.excluded_evidence_classes.includes("project_file")
+  ) {
+    errors.push(
+      "deferred glossary evidence must reserve bounded personal history and exclude project files",
+    );
   }
 
   // AC4: every compatibility state is deterministic and actionable.

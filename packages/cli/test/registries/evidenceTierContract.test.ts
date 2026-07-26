@@ -122,7 +122,13 @@ function validContractObject(): Record<string, unknown> {
     consumer_map: {
       consumers,
       deferred_consumers: {
-        glossary: { tier: "signal", status: "declared_deferred", required_semantics: [...REQUIRED_SIGNAL_KINDS] },
+        glossary: {
+          tier: "signal",
+          status: "declared_deferred",
+          input_scope: "bounded_personal_history",
+          excluded_evidence_classes: ["project_file"],
+          required_semantics: [...REQUIRED_SIGNAL_KINDS],
+        },
       },
     },
     signal_semantics: { kinds: semantics },
@@ -259,6 +265,24 @@ describe("AC3 — signal semantics required meaning available to current and def
     for (const kind of glossary!.required_semantics) {
       expect(model.signalSemantics.has(kind), `glossary requires undefined ${kind}`).toBe(true);
     }
+  });
+
+  it("reserves bounded personal history without classifying project files as history evidence", () => {
+    const glossary = loadEvidenceTierContract(PRODUCTION_CONTRACT).deferredConsumers.get("glossary");
+    expect(glossary?.input_scope).toBe("bounded_personal_history");
+    expect(glossary?.excluded_evidence_classes).toContain("project_file");
+  });
+
+  it("rejects a deferred glossary declaration that admits project files as history evidence", () => {
+    const errors = validateEvidenceTierContract(
+      writeFixture((obj) => {
+        const deferred = (obj.consumer_map as Record<string, any>).deferred_consumers;
+        deferred.glossary.excluded_evidence_classes = [];
+      }),
+    );
+    expect(errors).toContain(
+      "deferred glossary evidence must reserve bounded personal history and exclude project files",
+    );
   });
 
   it("rejects a contract that drops a reserved signal semantic", () => {

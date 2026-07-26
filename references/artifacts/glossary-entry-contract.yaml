@@ -107,7 +107,45 @@ consumer_boundary:
   implementation: declared_deferred
   owns_later: [exact_collision_precedence, semantic_equivalence_review, advisory_behavior]
   forbidden_persisted_entry_fields: [precedence, collision, review]
+  exact_collision:
+    behavior: project_precedence_at_consumption
+    persistence: forbidden
+    personal_entry_suppression: forbidden
+  inferred_semantic_equivalence:
+    behavior: user_review
+    automatic_merge: forbidden
+    suppression: forbidden
+    precedence: forbidden
   rule: >-
-    This authority defines entry and ownership contracts only. It does not
-    register a project glossary artifact or path, implement either producer,
-    synthesize entries, or implement consumer precedence and review.
+    This authority defines entry, ownership, and deferred integration contracts
+    only. It does not implement either producer, synthesize entries, persist or
+    look up glossary state, or implement consumer precedence and review.
+
+deferred_capability_contracts:
+  profile:
+    capabilities: [profile]
+    implementation: declared_deferred
+    intended_behavior: personal_glossary_synthesis
+    contracts:
+      admission: ownership_contracts.personal.input
+      provenance: ownership_contracts.personal.allowed_provenance
+      confidence: shared_primitive.fields.confidence
+      retention_and_decay: ownership_contracts.personal.retention_and_decay
+    forbidden_current_claims: [synthesis, persistence, lookup]
+  audit:
+    capabilities: [audit]
+    implementation: declared_deferred
+    intended_output: skills/agentera/schemas/artifacts/glossary.yaml
+    confirmation:
+      status: declared_deferred
+      required_before_write: explicit_user_confirmation
+    inputs:
+      personal_history: ownership_contracts.personal.input
+      project_file: ownership_contracts.project.input
+      project_file_history_classification: forbidden
+    forbidden_current_claims: [drift_detection, finding_generation, persistence, lookup]
+  consumers:
+    capabilities: [discuss, plan, build]
+    implementation: declared_deferred
+    behavior: consumer_boundary
+    forbidden_current_claims: [lookup, precedence, review]
