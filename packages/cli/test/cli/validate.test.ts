@@ -28,6 +28,59 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
   return { rc, out, err };
 }
 
+function runMalformedVocabularyAuthority(mutate: (authority: Record<string, any>) => void): {
+  rc: number;
+  out: string;
+  err: string;
+  implementation: Record<string, string>;
+} {
+  const repoRoot = path.resolve(import.meta.dirname, "../../../..");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "vocabulary-authority-"));
+  const previousRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+  try {
+    fs.mkdirSync(path.join(root, "references", "artifacts"), { recursive: true });
+    fs.symlinkSync(
+      path.join(repoRoot, "references", "cli"),
+      path.join(root, "references", "cli"),
+      "dir",
+    );
+    fs.symlinkSync(
+      path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
+      path.join(root, "references", "artifacts", "state-storage-authority.yaml"),
+      "file",
+    );
+    fs.symlinkSync(path.join(repoRoot, "skills"), path.join(root, "skills"), "dir");
+    fs.symlinkSync(path.join(repoRoot, "registry.json"), path.join(root, "registry.json"), "file");
+    const authorityPath = path.join(
+      root,
+      "references",
+      "artifacts",
+      "glossary-entry-contract.yaml",
+    );
+    const authority = YAML.parse(
+      fs.readFileSync(
+        path.join(repoRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
+        "utf8",
+      ),
+    );
+    mutate(authority);
+    fs.writeFileSync(authorityPath, YAML.stringify(authority));
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = root;
+    const result = capture((io) =>
+      main(
+        ["node", "agentera", "check", "validate", "vocabularyAuthority", "--format", "json"],
+        io,
+      ),
+    );
+    const persisted = YAML.parse(fs.readFileSync(authorityPath, "utf8"));
+    return { ...result, implementation: persisted.consumer_boundary.implementation };
+  } finally {
+    if (previousRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previousRoot;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
 describe("cli validate (delegated families)", () => {
   it("recognizes the delegated families", () => {
     expect(isDelegatedValidateFamily("cross-capability")).toBe(true);
@@ -68,50 +121,71 @@ describe("cli validate (delegated families)", () => {
   });
 
   it("fails the documented vocabularyAuthority command on an overlapping consumer matrix", () => {
-    const repoRoot = path.resolve(import.meta.dirname, "../../../..");
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vocabulary-authority-"));
-    const previousRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
-    try {
-      fs.mkdirSync(path.join(root, "references", "artifacts"), { recursive: true });
-      fs.symlinkSync(path.join(repoRoot, "references", "cli"), path.join(root, "references", "cli"), "dir");
-      fs.symlinkSync(
-        path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
-        path.join(root, "references", "artifacts", "state-storage-authority.yaml"),
-        "file",
+    const { rc, out } = runMalformedVocabularyAuthority((authority) => {
+      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate.push(
+        "present",
       );
-      fs.symlinkSync(path.join(repoRoot, "skills"), path.join(root, "skills"), "dir");
-      fs.symlinkSync(path.join(repoRoot, "registry.json"), path.join(root, "registry.json"), "file");
-      const authority = YAML.parse(
-        fs.readFileSync(
-          path.join(repoRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
-          "utf8",
-        ),
-      );
-      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate.push("present");
-      fs.writeFileSync(
-        path.join(root, "references", "artifacts", "glossary-entry-contract.yaml"),
-        YAML.stringify(authority),
-      );
-      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = root;
+    });
+    const payload = JSON.parse(out);
+    expect(rc).toBe(1);
+    expect(payload.status).toBe("fail");
+    expect(payload.engine.stdout.join("\n")).toContain(
+      "consumer_boundary.primary_selection must be exhaustive and non-overlapping",
+    );
+    expect(payload.engine.stdout.join("\n")).toContain(
+      "correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority --format json",
+    );
+  });
 
-      const { rc, out } = capture((io) =>
-        main(["node", "agentera", "check", "validate", "vocabularyAuthority", "--format", "json"], io),
-      );
+  it.each([
+    ["judgment", "equivalent_exact_collision", "host_reviewed"],
+    ["selected_owner", "no_applicable_entry", "personal"],
+    ["selected_meaning", "equivalent_exact_collision", "personal"],
+    ["review", "divergent_exact_collision", "required_when_meaning_sensitive"],
+    ["tension", "no_applicable_entry", "inferred_equivalence"],
+  ])("fails the documented command on contradictory %s semantics", (field, outcomeName, value) => {
+    const { rc, out, implementation } = runMalformedVocabularyAuthority((authority) => {
+      authority.consumer_boundary.outcome_matrix[outcomeName][field] = value;
+    });
+    const payload = JSON.parse(out);
+    expect(rc).toBe(1);
+    expect(payload.status).toBe("fail");
+    expect(payload.engine.stdout.join("\n")).toContain(
+      `consumer_boundary.outcome_matrix.${outcomeName}.${field}`,
+    );
+    expect(payload.engine.stdout.join("\n")).toContain(
+      "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json",
+    );
+    expect(implementation).toEqual({
+      acquisition: "declared_deferred",
+      advice_resolution: "declared_deferred",
+      capability_integrations: "declared_deferred",
+    });
+  });
+
+  it.each(["judgment", "selected_owner", "selected_meaning", "review", "tension"])(
+    "fails the documented command on missing %s semantics without activating integrations",
+    (field) => {
+      const { rc, out, implementation } = runMalformedVocabularyAuthority((authority) => {
+        delete authority.consumer_boundary.outcome_matrix.equivalent_exact_collision[field];
+      });
       const payload = JSON.parse(out);
       expect(rc).toBe(1);
       expect(payload.status).toBe("fail");
       expect(payload.engine.stdout.join("\n")).toContain(
-        "consumer_boundary.primary_selection must be exhaustive and non-overlapping",
+        `consumer_boundary.outcome_matrix.equivalent_exact_collision.${field}`,
       );
+      expect(payload.engine.stdout.join("\n")).toContain("(found missing)");
       expect(payload.engine.stdout.join("\n")).toContain(
-        "correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority --format json",
+        "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json",
       );
-    } finally {
-      if (previousRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
-      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previousRoot;
-      fs.rmSync(root, { recursive: true, force: true });
-    }
-  });
+      expect(implementation).toEqual({
+        acquisition: "declared_deferred",
+        advice_resolution: "declared_deferred",
+        capability_integrations: "declared_deferred",
+      });
+    },
+  );
 
   it("validates self-audit conventions against the repo", () => {
     const { rc, out } = capture((io) => cmdValidate("selfAudit", {}, io));
@@ -126,17 +200,23 @@ describe("cli validate (delegated families)", () => {
 
 describe("cli dispatch: validate routing", () => {
   it("routes check validate cross-capability", () => {
-    const { rc } = capture((io) => main(["node", "agentera", "check", "validate", "cross-capability"], io));
+    const { rc } = capture((io) =>
+      main(["node", "agentera", "check", "validate", "cross-capability"], io),
+    );
     expect(rc).toBe(0);
   });
 
   it("emits a deprecation alias for top-level validate", () => {
     const { err } = capture((io) => main(["node", "agentera", "validate", "cross-capability"], io));
-    expect(err).toContain("Deprecation: agentera validate is deprecated; use agentera check validate");
+    expect(err).toContain(
+      "Deprecation: agentera validate is deprecated; use agentera check validate",
+    );
   });
 
   it("requires a family", () => {
-    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "--format", "json"], io));
+    const { rc, out } = capture((io) =>
+      main(["node", "agentera", "check", "validate", "--format", "json"], io),
+    );
     expect(rc).toBe(2);
     const payload = JSON.parse(out);
     expect(payload.error.valid_values).not.toContain("descriptors");
@@ -147,9 +227,20 @@ describe("cli validate state", () => {
   it("emits a successful whole-state JSON envelope", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "validate-state-"));
     fixtureRoots.push(root);
-    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"], io));
+    const { rc, out } = capture((io) =>
+      main(
+        ["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"],
+        io,
+      ),
+    );
     expect(rc).toBe(0);
-    expect(JSON.parse(out)).toMatchObject({ command: "check validate state", target_family: "state", status: "pass", valid: true, issues: [] });
+    expect(JSON.parse(out)).toMatchObject({
+      command: "check validate state",
+      target_family: "state",
+      status: "pass",
+      valid: true,
+      issues: [],
+    });
   });
 
   it("exits nonzero with bounded actionable diagnostics", () => {
@@ -161,7 +252,11 @@ describe("cli validate state", () => {
     const { rc, out } = capture((io) => cmdValidateState({ cwd: root, format: "json" }, io));
     const payload = JSON.parse(out);
     expect(rc).toBe(1);
-    expect(payload).toMatchObject({ command: "check validate state", status: "fail", valid: false });
+    expect(payload).toMatchObject({
+      command: "check validate state",
+      status: "fail",
+      valid: false,
+    });
     expect(payload.issues[0]).toMatchObject({ code: "invalid_artifact", artifact: "unknown" });
     expect(payload.issues[0].recovery).toContain("valid artifact values:");
     expect(payload.issues[0].recovery).toContain("agentera check validate state --cwd");
@@ -173,26 +268,60 @@ describe("cli validate state", () => {
     const id = "0123456789abcdefabcd";
     const fingerprint = "a".repeat(64);
     const digest = "b".repeat(64);
-    const marker = Buffer.from(`schemaVersion: agentera.stateMode.v1\nmode: entities\nmigration_id: ${id}\nsource_fingerprint: ${fingerprint}\npreview_digest: ${digest}\n`);
+    const marker = Buffer.from(
+      `schemaVersion: agentera.stateMode.v1\nmode: entities\nmigration_id: ${id}\nsource_fingerprint: ${fingerprint}\npreview_digest: ${digest}\n`,
+    );
     const target = ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml";
-    const entity = Buffer.from("id: aaaaaaaaaa\nartifact: progress\nrecord:\n  timestamp: 2026-07-18 12:00\n  type: fix\n  phase: build\n  what: retained evidence\n  context:\n    intent: validate historical cutover\n");
+    const entity = Buffer.from(
+      "id: aaaaaaaaaa\nartifact: progress\nrecord:\n  timestamp: 2026-07-18 12:00\n  type: fix\n  phase: build\n  what: retained evidence\n  context:\n    intent: validate historical cutover\n",
+    );
     const hash = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
-    const manifest = Buffer.from(JSON.stringify({ schemaVersion: "agentera.entityMigrationManifest.v1", migration_id: id, source_fingerprint: fingerprint, preview_digest: digest, entries: [{ artifact: "progress", source_identity: "progress:1", proposed_target: { path: target, id: "aaaaaaaaaa" }, target_sha256: hash(entity) }], receipts: { ".agentera/state-mode.yaml": { sha256: hash(marker) } } }));
+    const manifest = Buffer.from(
+      JSON.stringify({
+        schemaVersion: "agentera.entityMigrationManifest.v1",
+        migration_id: id,
+        source_fingerprint: fingerprint,
+        preview_digest: digest,
+        entries: [
+          {
+            artifact: "progress",
+            source_identity: "progress:1",
+            proposed_target: { path: target, id: "aaaaaaaaaa" },
+            target_sha256: hash(entity),
+          },
+        ],
+        receipts: { ".agentera/state-mode.yaml": { sha256: hash(marker) } },
+      }),
+    );
     const operation = path.join(root, ".agentera/migrations/entities", id);
     fs.mkdirSync(operation, { recursive: true });
     fs.mkdirSync(path.dirname(path.join(root, target)), { recursive: true });
     fs.writeFileSync(path.join(root, target), entity);
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), marker);
     fs.writeFileSync(path.join(operation, "manifest.yaml"), manifest);
-    fs.writeFileSync(path.join(operation, "journal.yaml"), JSON.stringify({ schemaVersion: "agentera.entityMigrationJournal.v1", migration_id: id, source_fingerprint: fingerprint, preview_digest: digest, phase: "cutover_complete", manifest_sha256: hash(manifest) }));
+    fs.writeFileSync(
+      path.join(operation, "journal.yaml"),
+      JSON.stringify({
+        schemaVersion: "agentera.entityMigrationJournal.v1",
+        migration_id: id,
+        source_fingerprint: fingerprint,
+        preview_digest: digest,
+        phase: "cutover_complete",
+        manifest_sha256: hash(manifest),
+      }),
+    );
 
     const { rc, out } = capture((io) => cmdValidateState({ cwd: root, format: "json" }, io));
 
-    expect(JSON.parse(out)).toMatchObject({ status: "pass", valid: true, issue_count: 0, issues: [] });
+    expect(JSON.parse(out)).toMatchObject({
+      status: "pass",
+      valid: true,
+      issue_count: 0,
+      issues: [],
+    });
     expect(rc).toBe(0);
   });
 });
-
 
 describe("cli validate capability (structure; exact output covered by parity harness)", () => {
   it("prints the validation header and contract line (text)", () => {
@@ -210,14 +339,18 @@ describe("cli validate capability (structure; exact output covered by parity har
   });
 
   it("rejects an unknown capability name", () => {
-    expect(() => cmdValidateCapability("notacapability", {}, {})).toThrow(/unsupported capability target/);
+    expect(() => cmdValidateCapability("notacapability", {}, {})).toThrow(
+      /unsupported capability target/,
+    );
   });
 });
 
 describe("cli validate capability-contract (structure)", () => {
   it("prints contract, protocol, and TODO readiness headers (text)", () => {
     const { out } = capture((io) => cmdValidateCapabilityContract({}, io));
-    expect(out).toContain("Self-validating contract: skills/agentera/capability_schema_contract.yaml");
+    expect(out).toContain(
+      "Self-validating contract: skills/agentera/capability_schema_contract.yaml",
+    );
     expect(out).toContain("Validating protocol: skills/agentera/protocol.yaml");
     expect(out).toContain("Validating TODO readiness: skills/agentera/schemas/artifacts/todo.yaml");
   });
@@ -235,17 +368,17 @@ describe("cli validate capability-contract (structure)", () => {
   });
 });
 
-
 describe("retired cli validate descriptors", () => {
   it("rejects the retired family with the bounded current-family correction", () => {
-    const { rc, out } = capture((io) => main([
-      "node", "agentera", "check", "validate", "descriptors", "--format", "json",
-    ], io));
+    const { rc, out } = capture((io) =>
+      main(["node", "agentera", "check", "validate", "descriptors", "--format", "json"], io),
+    );
     expect(rc).toBe(2);
     const payload = JSON.parse(out);
     expect(payload.error).toMatchObject({
       class: "unsupported_target",
-      message: "unsupported validate family 'descriptors'; valid families are listed in valid_values.",
+      message:
+        "unsupported validate family 'descriptors'; valid families are listed in valid_values.",
     });
     expect(payload.error.valid_values).toEqual([
       "cross-capability",
@@ -261,7 +394,6 @@ describe("retired cli validate descriptors", () => {
   });
 });
 
-
 const fixtureRoots: string[] = [];
 afterEach(() => {
   while (fixtureRoots.length) cleanupFixtureProject(fixtureRoots.pop()!);
@@ -271,7 +403,9 @@ describe("cli validate artifact", () => {
   it("validates a canonical artifact against a repo-state fixture (text)", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
-    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", cwd: root }, io));
+    const { rc, out } = capture((io) =>
+      cmdValidateArtifact({ artifact: "PLAN.md", cwd: root }, io),
+    );
     expect(rc).toBe(0);
     expect(out).toContain("status=pass | artifact=PLAN.md");
     expect(out).toContain("path_source=docs_mapped_default");
@@ -280,7 +414,9 @@ describe("cli validate artifact", () => {
   it("emits a wrapped JSON envelope", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
-    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: root, format: "json" }, io));
+    const { rc, out } = capture((io) =>
+      cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: root, format: "json" }, io),
+    );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("validate");
@@ -293,7 +429,9 @@ describe("cli validate artifact", () => {
     const f = fs.mkdtempSync(path.join(os.tmpdir(), "va-"));
     const bad = path.join(f, "bad.yaml");
     fs.writeFileSync(bad, "x");
-    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io));
+    const { rc, out } = capture((io) =>
+      cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io),
+    );
     expect(rc).toBe(2);
     const payload = JSON.parse(out);
     expect(payload.status).toBe("fail");

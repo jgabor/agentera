@@ -4,7 +4,7 @@ record:
   name: Establish consumer semantics and caveat lifecycle
   depends_on:
     []
-  status: complete
+  status: superseded
   acceptance:
     - GIVEN the producer contracts and governing decisions WHEN consumer semantics are declared THEN one explicit matrix distinguishes project-only terms, equivalent and divergent exact collisions, valid project gaps, inferred equivalence, and invalid or unavailable inputs.
     - GIVEN capability input can evolve WHEN governed events are declared THEN meaning-sensitive initial input and later requirement or intent changes require advice while unrelated turns and background rereads do not.
@@ -13,12 +13,15 @@ record:
     - GIVEN downstream capability work WHEN the contract is incomplete or contradictory THEN integration remains blocked with actionable validation evidence.
   plan: upicwqdskc
   evaluation:
-    attempt_count: 2
-    failure_count: 1
-    last_verdict: pass
-    last_failure_evidence: Consumer outcome rows overlap for unavailable personal input and inferred equivalence, and the declared downstream gate points to capability-contract instead of the vocabularyAuthority command that runs glossary validation.
+    attempt_count: 3
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: The documented vocabularyAuthority gate accepts materially incomplete or contradictory primary-outcome semantics because canonical judgment, selected_owner, selected_meaning, review, and tension values are not validated per row.
     provenance:
-      attempt_id: consumer-contract-audit-2
-      source: Audit ses_05e65f66dffeqMiWARsL7Bu4mD bounded re-review PASS
-      recorded_at: 2026-07-27 05:45
+      attempt_id: consumer-contract-postcommit-audit-3
+      source: Audit ses_05e47bbd7ffeJ6aGtO0cMCexoK exact committed-tree evaluation
+      recorded_at: 2026-07-27 06:05
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ricymcgbyq
+  superseded_reason: The evaluated replacement enforces canonical semantic fields for every consumer outcome while preserving the original contract task failure history.

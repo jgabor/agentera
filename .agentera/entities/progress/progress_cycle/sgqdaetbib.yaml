@@ -1,0 +1,15 @@
+id: sgqdaetbib
+artifact: progress
+record:
+  timestamp: 2026-07-27 05:56
+  type: fix
+  phase: build
+  what: Recorded the two hook-required post-audit corrections for glossary consumer semantics.
+  context:
+    intent: Preserve audited task evidence for the authority-derived capability integration status and behavior-preserving consumer-validator split.
+    constraints: Progress evidence only; no source, test, contract, package, plan, evaluation, staging, commit, publication, tag, or push mutation.
+    unknowns: None.
+    scope: Post-audit hook corrections within task ucmjabyvad.
+  discovered: Producer readiness now projects consumer capability_integrations from authority, and consumer validation lives in its own sub-1,000-line module without contract semantic changes.
+  verified: "Final commit hooks passed Agentera checks, Python/TypeScript parity, and the full test suite: 2,819 passed, 1 skipped. The working tree was clean at commit."
+  next: Downstream glossary acquisition, advice resolution, and Discuss/Plan/Build integrations remain deferred.

@@ -1,0 +1,23 @@
+id: ricymcgbyq
+artifact: plan
+record:
+  plan: upicwqdskc
+  name: Enforce canonical consumer outcome semantics
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN each authoritative primary outcome row WHEN vocabulary authority validates THEN canonical judgment, selected owner, selected meaning, review, and tension values are enforced from one bounded expected-row model.
+    - GIVEN a missing semantic field or contradictory deterministic judgment, owner, meaning, review, or tension WHEN the documented vocabularyAuthority command runs THEN it fails with actionable recovery and no downstream status becomes active.
+    - GIVEN a valid consumer contract WHEN validation and source/package-facing projections run THEN the single YAML authority passes, all previously accepted matrix, event, privacy, lifecycle, and publication-isolation semantics remain unchanged, and acquisition/advice/integrations stay deferred.
+    - GIVEN focused command and contract regressions plus repository gates WHEN an independent audit runs THEN the replacement passes without material defect.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: consumer-semantics-replacement-audit-1
+      source: Audit ses_05e33eedfffezvnV5Em21yxfeY independent replacement evaluation
+      recorded_at: 2026-07-27 06:27
+      writer_command: agentera state plan record-evaluation

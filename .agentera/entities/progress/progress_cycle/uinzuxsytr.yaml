@@ -1,0 +1,15 @@
+id: uinzuxsytr
+artifact: progress
+record:
+  timestamp: 2026-07-27 06:17
+  type: fix
+  phase: build
+  what: Enforced canonical glossary consumer outcome semantics from one bounded validator model and added direct contract and documented-command regressions for missing and contradictory fields.
+  context:
+    intent: Make vocabularyAuthority fail closed when any primary outcome changes or omits its canonical judgment, selected owner, selected meaning, review, or tension semantics.
+    constraints: No staging, commit, publication, tag, push, task completion/evaluation, TODO resolution, decision satisfaction, or downstream work.
+    unknowns: None.
+    scope: packages/cli/src/registries/glossaryConsumerContractValidation.ts and focused glossary contract/CLI validation tests.
+  discovered: The YAML authority already defines explicit none and unavailable values for every semantic field; the defect was limited to partial validator assertions.
+  verified: "Focused regressions passed: 90 tests. Typecheck and build passed at agentera 3.0.0-dev.37. Full source suite passed: 214 files, 2,838 passed, 1 skipped. Package verification passed: 2 files, 16 tests. Local built vocabularyAuthority, capability-contract, and compact validators passed. Focused lint and format passed; full lint completed with 152 pre-existing warnings and no errors. Full format inspection is blocked by the intentional invalid-YAML fixture test/fixtures/repo-state/invalid-progress-yaml/.agentera/progress.yaml; changed files pass formatting and git diff --check."
+  next: Independent evaluation may audit replacement task ricymcgbyq; keep acquisition, advice resolution, capability integrations, and orchestration status unchanged.

@@ -1,0 +1,15 @@
+id: epmdioztgw
+artifact: todo
+record:
+  severity: degraded
+  status: resolved
+  description: "[fix:3.0.0] Make the glossary consumer vocabularyAuthority gate reject incomplete or contradictory primary-outcome semantics. Validate each authoritative outcome row canonical judgment, selected owner, selected meaning, review requirement, and tension requirement; add command-level negatives for missing semantic fields and contradictory values while preserving the single YAML authority and deferred downstream integrations. This blocks Plan upicwqdskc Task ucmjabyvad after its second failed evaluation."
+  readiness:
+    capability: build
+    reason: The committed consumer contract matrix is exclusive and exhaustive, but its documented gate still passes semantically contradictory rows, so downstream integration is not fail-closed.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Repair the blocking contract validator before bounded acquisition or any capability integration proceeds.

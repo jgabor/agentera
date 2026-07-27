@@ -5,6 +5,73 @@ import { loadYamlMappingFile } from "../core/yaml.js";
 
 type Mapping = Record<string, unknown>;
 
+const OUTCOME_SEMANTICS = {
+  invalid_or_unavailable_project: {
+    judgment: "deterministic",
+    selected_owner: "none",
+    selected_meaning: "none",
+    review: "unavailable",
+    tension: "authority_unavailable",
+  },
+  equivalent_exact_collision: {
+    judgment: "deterministic",
+    selected_owner: "project",
+    selected_meaning: "project",
+    review: "none",
+    tension: "none",
+  },
+  divergent_exact_collision: {
+    judgment: "deterministic",
+    selected_owner: "project",
+    selected_meaning: "project",
+    review: "none",
+    tension: "divergent_exact_collision",
+  },
+  project_only: {
+    judgment: "deterministic",
+    selected_owner: "project",
+    selected_meaning: "project",
+    review: "none_for_primary",
+    tension: "none",
+  },
+  proven_project_gap: {
+    judgment: "deterministic",
+    selected_owner: "personal",
+    selected_meaning: "personal",
+    review: "none",
+    tension: "none",
+  },
+  inferred_equivalence: {
+    judgment: "host_reviewed",
+    selected_owner: "none_until_review",
+    selected_meaning: "none_until_review",
+    review: "required_when_meaning_sensitive",
+    tension: "inferred_equivalence",
+  },
+  invalid_or_unavailable_personal: {
+    judgment: "deterministic",
+    selected_owner: "none",
+    selected_meaning: "none",
+    review: "unavailable",
+    tension: "input_unavailable",
+  },
+  no_applicable_entry: {
+    judgment: "deterministic",
+    selected_owner: "none",
+    selected_meaning: "none",
+    review: "none",
+    tension: "none",
+  },
+} as const;
+
+const OUTCOME_SEMANTIC_FIELDS = [
+  "judgment",
+  "selected_owner",
+  "selected_meaning",
+  "review",
+  "tension",
+] as const;
+
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Mapping)
@@ -77,16 +144,9 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const selection = mapping(consumer?.primary_selection);
   const dimensions = mapping(selection?.dimensions);
   const matrix = mapping(consumer?.outcome_matrix);
-  const expectedOutcomes = [
-    "invalid_or_unavailable_project",
-    "equivalent_exact_collision",
-    "divergent_exact_collision",
-    "project_only",
-    "proven_project_gap",
-    "inferred_equivalence",
-    "invalid_or_unavailable_personal",
-    "no_applicable_entry",
-  ];
+  // These literals validate the authority's fixed primary-outcome shape; runtime
+  // behavior and predicates remain owned by the YAML contract below this gate.
+  const expectedOutcomes = Object.keys(OUTCOME_SEMANTICS) as Array<keyof typeof OUTCOME_SEMANTICS>;
   const matrixValid =
     sameStrings(dimensions?.project_input, ["invalid", "valid_gap", "valid_exact"]) &&
     sameStrings(dimensions?.personal_input, ["invalid", "valid_without_exact", "valid_exact"]) &&
@@ -101,8 +161,6 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       const match = mapping(outcome?.match);
       return (
         nonEmpty(outcome?.when) &&
-        nonEmpty(outcome?.judgment) &&
-        "review" in (outcome ?? {}) &&
         strings(match?.project_input).length > 0 &&
         strings(match?.project_input).every((value) =>
           strings(dimensions?.project_input).includes(value),
@@ -120,21 +178,23 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
           strings(dimensions?.inferred_candidate).includes(value),
         )
       );
-    }) &&
-    mapping(matrix?.project_only)?.selected_owner === "project" &&
-    mapping(matrix?.equivalent_exact_collision)?.selected_owner === "project" &&
-    mapping(matrix?.divergent_exact_collision)?.selected_owner === "project" &&
-    mapping(matrix?.divergent_exact_collision)?.review === "none" &&
-    mapping(matrix?.divergent_exact_collision)?.tension === "divergent_exact_collision" &&
-    mapping(matrix?.proven_project_gap)?.selected_owner === "personal" &&
-    mapping(matrix?.inferred_equivalence)?.judgment === "host_reviewed" &&
-    mapping(matrix?.inferred_equivalence)?.selected_owner === "none_until_review" &&
-    mapping(matrix?.invalid_or_unavailable_project)?.selected_owner === "none" &&
-    mapping(matrix?.invalid_or_unavailable_personal)?.selected_owner === "none";
+    });
   if (!matrixValid) {
     errors.push(
       "consumer_boundary outcome matrix and primary_selection must define all eight ordered collision, gap, review, absence, and invalid-input outcomes",
     );
+  }
+
+  for (const outcomeName of expectedOutcomes) {
+    const outcome = mapping(matrix?.[outcomeName]);
+    const expected = OUTCOME_SEMANTICS[outcomeName];
+    for (const field of OUTCOME_SEMANTIC_FIELDS) {
+      if (outcome?.[field] === expected[field]) continue;
+      const actual = outcome && field in outcome ? JSON.stringify(outcome[field]) : "missing";
+      errors.push(
+        `consumer_boundary.outcome_matrix.${outcomeName}.${field} must be ${JSON.stringify(expected[field])} (found ${actual}); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json`,
+      );
+    }
   }
 
   const validStates: Array<Record<string, string>> = [];

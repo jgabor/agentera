@@ -383,6 +383,41 @@ describe("shared glossary entry authority", () => {
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 
+  it.each([
+    ["judgment", "equivalent_exact_collision", "host_reviewed", "deterministic"],
+    ["selected_owner", "no_applicable_entry", "personal", "none"],
+    ["selected_meaning", "equivalent_exact_collision", "personal", "project"],
+    ["review", "divergent_exact_collision", "required_when_meaning_sensitive", "none"],
+    ["tension", "no_applicable_entry", "inferred_equivalence", "none"],
+  ])(
+    "rejects contradictory primary outcome %s semantics",
+    (field, outcomeName, contradictory, expected) => {
+      const pathname = malformedAuthority((authority) => {
+        authority.consumer_boundary.outcome_matrix[outcomeName][field] = contradictory;
+      });
+      expect(validateGlossaryEntryContract(pathname)).toContain(
+        `consumer_boundary.outcome_matrix.${outcomeName}.${field} must be ${JSON.stringify(expected)} (found ${JSON.stringify(contradictory)}); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json`,
+      );
+      fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+    },
+  );
+
+  it.each([
+    ["judgment", "deterministic"],
+    ["selected_owner", "project"],
+    ["selected_meaning", "project"],
+    ["review", "none"],
+    ["tension", "none"],
+  ])("rejects a missing primary outcome %s field", (field, expected) => {
+    const pathname = malformedAuthority((authority) => {
+      delete authority.consumer_boundary.outcome_matrix.equivalent_exact_collision[field];
+    });
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      `consumer_boundary.outcome_matrix.equivalent_exact_collision.${field} must be ${JSON.stringify(expected)} (found missing); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json`,
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
   it.each(CAPABILITY_FIXTURES)(
     "accepts the deferred $capability declaration",
     ({ capability, valid_declaration }) => {
