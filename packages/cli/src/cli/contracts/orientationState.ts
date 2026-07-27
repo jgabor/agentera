@@ -217,6 +217,11 @@ export interface OrientationState {
   todo_detail: TodoDetailSummary;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;
+  glossary_caveat_attention: string | null;
+  glossary_caveat_attention_policy: {
+    public_limit: number;
+    reserved_slots: number;
+  } | null;
   next_action: ReadinessHint;
   attention: string[];
   history: Record<string, StartupHistorySummary>;

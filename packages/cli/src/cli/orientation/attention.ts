@@ -15,6 +15,7 @@ export function buildOrientationAttention(state: OrientationState): string[] {
     health,
     plan,
     decision_attention: decisionAttention,
+    glossary_caveat_attention: glossaryCaveatAttention,
     corpus_coverage: corpusCoverage,
     todo_items: todoItems,
   } = state;
@@ -78,6 +79,7 @@ export function buildOrientationAttention(state: OrientationState): string[] {
       worst ? `critical: health needs attention (${worst[0]}:${worst[1]})` : "critical: health is degrading",
     );
   }
+  if (glossaryCaveatAttention) attention.push(glossaryCaveatAttention);
   const pending = plan.first_pending;
   if (pending && typeof pending === "object" && !Array.isArray(pending)) {
     const title = firstPresent(pending, ["name", "title"], "pending task");

@@ -436,7 +436,7 @@ describe("progress entity authority", () => {
       path.join(progressDir, "dddddddddd.yaml"),
       dumpYamlMapping({ id: "eeeeeeeeee", artifact: "progress", record: {} }),
     );
-    expect(() => getProgressEntity(root, "dddddddddd")).toThrow(/does not match its canonical ID/);
+    expect(() => getProgressEntity(root, "dddddddddd")).toThrow(/canonical progress evidence is corrupt/);
 
     fs.writeFileSync(
       path.join(progressDir, "cccccccccc.yaml"),

@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type { JsonObject, JsonValue } from "../../../core/jsonValue.js";
 import { listProgressEntities } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
@@ -24,6 +26,8 @@ import type {
 } from "../../contracts/orientationState.js";
 import { issueCounts } from "../../orientation.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "../../todoReadinessSelection.js";
+import { projectCurrentGlossaryCaveats } from "../../../state/progressGlossaryCaveat.js";
+import { glossaryCaveatContract } from "../../../registries/glossaryCaveatContract.js";
 
 function entries(payload: JsonObject): JsonObject[] {
   return Array.isArray(payload.entries)
@@ -124,13 +128,23 @@ export interface EntityOrientationProjection {
   todoReadiness: TodoReadinessQueueSelection;
   decision: DecisionFollowUp | null;
   decisionAttention: DecisionReviewAttention | null;
+  glossaryCaveatAttention: string | null;
+  glossaryCaveatAttentionPolicy: { public_limit: number; reserved_slots: number } | null;
   history: Record<string, StartupHistorySummary>;
 }
 
 /** Bounded startup projection built only from canonical entity readers. */
 export function collectEntityOrientation(projectRoot: string, sourceRoot: string): EntityOrientationProjection {
   const discovery = discoverEntities(projectRoot, sourceRoot);
-  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, { sourceRoot, format: "json", discovery });
+  const caveatContract = glossaryCaveatContract(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"));
+  const glossaryCaveatProjection = projectCurrentGlossaryCaveats(discovery.entities, caveatContract);
+  const invalidProgress = (entity: (typeof discovery.entities)[number]): boolean =>
+    (entity.artifact === "progress" || ["progress_cycle", "progress_summary"].includes(entity.boundary ?? "")) &&
+    entity.classification !== "valid";
+  const progressDiscovery = discovery.entities.some(invalidProgress)
+    ? { ...discovery, entities: discovery.entities.filter((entity) => !invalidProgress(entity)) }
+    : discovery;
+  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, { sourceRoot, format: "json", discovery: progressDiscovery });
   const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json", discovery });
   const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json", discovery });
   const planList = listPlanEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
@@ -314,6 +328,11 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
 
   const projection = bounded({
     plan, docs, progress, health, objective, todoItems, todoCounts, decision, decisionAttention,
+    glossaryCaveatAttention: glossaryCaveatProjection.attention,
+    glossaryCaveatAttentionPolicy: glossaryCaveatProjection.attention ? {
+      public_limit: glossaryCaveatProjection.publicAttentionLimit,
+      reserved_slots: glossaryCaveatProjection.reservedGlossarySlots,
+    } : null,
     history: {
       progress: projectedHistory(progressList, "progress", progressFullCount, progressSummaryCount, progressHistory),
       decisions: projectedHistory(decisionList, "decisions", decisionFullCount, decisionSummaryCount, decisionHistory),

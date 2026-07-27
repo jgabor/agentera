@@ -544,7 +544,7 @@ export function validateGlossaryEntryContract(
     !nonEmpty(proposalDigest?.canonicalization)
   ) {
     errors.push(
-      "project glossary digest and build publication must be active while consumers remain deferred",
+      "project glossary digest and build publication must remain active under the declared consumer boundary",
     );
   }
   if (
@@ -776,13 +776,13 @@ export function validateGlossaryEntryContract(
     consumerImplementations?.build !== "active" ||
     consumerImplementations?.discuss !== "active" ||
     consumerImplementations?.plan !== "active" ||
-    consumerImplementations?.prime !== "declared_deferred" ||
-    !sameStrings(consumers?.capabilities, ["discuss", "plan", "build"]) ||
+    consumerImplementations?.prime !== "active" ||
+    !sameStrings(consumers?.capabilities, ["discuss", "plan", "build", "prime"]) ||
     consumers?.behavior !== "consumer_boundary" ||
-    !sameStrings(consumers?.forbidden_current_claims, ["prime_projection"])
+    !sameStrings(consumers?.forbidden_current_claims, [])
   ) {
     errors.push(
-      "build, discuss, and plan glossary consumption must be active while prime integration remains deferred",
+      "build, discuss, plan, and prime glossary consumption must be active",
     );
   }
   return errors;

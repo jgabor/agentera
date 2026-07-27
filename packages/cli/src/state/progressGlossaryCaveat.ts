@@ -1,5 +1,6 @@
 import type { JsonObject } from "../core/jsonValue.js";
 import {
+  glossaryCaveatPairAllowed,
   glossaryCaveatContract,
   type GlossaryCaveatContract,
 } from "../registries/glossaryCaveatContract.js";
@@ -21,6 +22,8 @@ export type GlossaryCaveatValidation =
 interface CaveatEntity {
   record: JsonObject | null;
   classification: string;
+  artifact?: string | null;
+  boundary?: string | null;
 }
 
 interface CaveatDiscoveredEntity extends CaveatEntity {
@@ -54,6 +57,10 @@ function boundedString(value: unknown, contract: GlossaryCaveatContract): value 
     value.length > 0 &&
     Buffer.byteLength(value, "utf8") <= contract.maxStringUtf8Bytes
   );
+}
+
+function isProjectionSource(entity: CaveatEntity, contract: GlossaryCaveatContract): boolean {
+  return entity.artifact === contract.primeSourceArtifact && entity.boundary === contract.primeSourceBoundary;
 }
 
 export function validateProgressGlossaryCaveat(
@@ -91,6 +98,8 @@ export function validateProgressGlossaryCaveat(
     violations.push("glossary_caveat event is outside the bounded vocabulary");
   if (!contract.capabilities.includes(typeof value.capability === "string" ? value.capability : ""))
     violations.push("glossary_caveat capability is outside the bounded vocabulary");
+  if (value.capability !== contract.primeSourceCapability)
+    violations.push("glossary_caveat capability does not own prime projection evidence");
   if (!contract.reasons.includes(typeof value.reason === "string" ? value.reason : ""))
     violations.push("glossary_caveat reason is outside the bounded vocabulary");
   if (
@@ -99,6 +108,12 @@ export function validateProgressGlossaryCaveat(
     )
   )
     violations.push("glossary_caveat ownership_state is outside the bounded vocabulary");
+  if (
+    typeof value.reason === "string" &&
+    typeof value.ownership_state === "string" &&
+    !glossaryCaveatPairAllowed(contract, value.reason, value.ownership_state)
+  )
+    violations.push("glossary_caveat reason and ownership_state pair is not allowed");
   const transition = value.transition_id;
   if (!(transition === null || boundedString(transition, contract)))
     violations.push("glossary_caveat transition_id must be null or one bounded opaque ID");
@@ -111,7 +126,8 @@ export function validateProgressGlossaryCaveat(
     (typeof transition !== "string" || transition === value.caveat_id)
   )
     violations.push("superseded glossary_caveat requires one different successor ID");
-  if (violations.length) return { status: "invalid", caveat: null, violations: [...new Set(violations)] };
+  if (violations.length)
+    return { status: "invalid", caveat: null, violations: [...new Set(violations)] };
   return { status: "valid", caveat: value as GlossaryCaveatEnvelope, violations: [] };
 }
 
@@ -128,11 +144,18 @@ export function glossaryCaveatLifecycleInvalidEntities<T extends CaveatEntity>(
   const byId = new Map<string, typeof rows>();
   for (const row of rows)
     byId.set(row.caveat.caveat_id, [...(byId.get(row.caveat.caveat_id) ?? []), row]);
-  const transitions = new Map<string, string>();
+  const transitions = new Map<string, { target: string; entity: T }>();
   for (const [id, matches] of byId) {
     const current = matches.filter(({ caveat }) => caveat.event === "current");
     const terminal = matches.filter(({ caveat }) => caveat.event !== "current");
-    if (current.length !== 1 || terminal.length > 1) matches.forEach(({ entity }) => invalid.add(entity));
+    if (current.length !== 1) {
+      matches.forEach(({ entity }) => invalid.add(entity));
+      continue;
+    }
+    if (terminal.length > 1) {
+      terminal.forEach(({ entity }) => invalid.add(entity));
+      continue;
+    }
     if (terminal.length && current.length === 1) {
       const base = current[0]!.caveat;
       for (const row of terminal) {
@@ -142,13 +165,14 @@ export function glossaryCaveatLifecycleInvalidEntities<T extends CaveatEntity>(
           row.caveat.ownership_state !== base.ownership_state
         ) {
           invalid.add(row.entity);
-          invalid.add(current[0]!.entity);
+          continue;
         }
         if (row.caveat.event === "superseded") {
           const target = byId.get(row.caveat.transition_id as string) ?? [];
           if (target.filter(({ caveat }) => caveat.event === "current").length !== 1) {
             invalid.add(row.entity);
-          } else transitions.set(id, row.caveat.transition_id as string);
+          } else
+            transitions.set(id, { target: row.caveat.transition_id as string, entity: row.entity });
         }
       }
     }
@@ -158,11 +182,58 @@ export function glossaryCaveatLifecycleInvalidEntities<T extends CaveatEntity>(
     let cursor: string | undefined = start;
     while (cursor && !seen.has(cursor)) {
       seen.add(cursor);
-      cursor = transitions.get(cursor);
+      cursor = transitions.get(cursor)?.target;
     }
-    if (cursor) for (const id of seen) (byId.get(id) ?? []).forEach(({ entity }) => invalid.add(entity));
+    if (cursor)
+      for (const id of seen) {
+        const transition = transitions.get(id);
+        if (transition) invalid.add(transition.entity);
+      }
   }
   return invalid;
+}
+
+export interface GlossaryCaveatPrimeProjection {
+  currentCount: number;
+  attention: string | null;
+  publicAttentionLimit: number;
+  reservedGlossarySlots: number;
+}
+
+/** Project only validated lifecycle state; opaque identities never leave this module. */
+export function projectCurrentGlossaryCaveats<T extends CaveatEntity>(
+  entities: T[],
+  contract: GlossaryCaveatContract = glossaryCaveatContract(),
+): GlossaryCaveatPrimeProjection {
+  const byId = new Map<string, GlossaryCaveatEnvelope[]>();
+  for (const entity of entities) {
+    if (
+      entity.classification !== "valid" ||
+      !entity.record ||
+      !isProjectionSource(entity, contract)
+    )
+      continue;
+    const result = validateProgressGlossaryCaveat(entity.record, contract);
+    if (result.status !== "valid") continue;
+    byId.set(result.caveat.caveat_id, [
+      ...(byId.get(result.caveat.caveat_id) ?? []),
+      result.caveat,
+    ]);
+  }
+  let currentCount = 0;
+  for (const events of byId.values()) {
+    if (
+      events.some(({ event }) => event === "current") &&
+      !events.some(({ event }) => event !== "current")
+    )
+      currentCount += 1;
+  }
+  return {
+    currentCount,
+    attention: currentCount > 0 && contract.primeAttentionText ? contract.primeAttentionText : null,
+    publicAttentionLimit: contract.primePublicAttentionLimit,
+    reservedGlossarySlots: contract.primeReservedGlossarySlots,
+  };
 }
 
 export function applyGlossaryCaveatLifecycleValidation<T extends CaveatDiscoveredEntity>(
@@ -172,7 +243,7 @@ export function applyGlossaryCaveatLifecycleValidation<T extends CaveatDiscovere
   contract: GlossaryCaveatContract,
 ): void {
   for (const entity of glossaryCaveatLifecycleInvalidEntities(
-    entities.filter((candidate) => candidate.boundary === "progress_cycle"),
+    entities.filter((candidate) => isProjectionSource(candidate, contract)),
     contract,
   )) {
     entity.classification = "malformed";

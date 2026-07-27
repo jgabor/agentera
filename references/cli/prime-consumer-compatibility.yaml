@@ -235,7 +235,13 @@ field_classification:
       recommendation is active.
   - field: attention
     status: required
-    rationale: Bounded; opencode and status dashboard consume it.
+    rationale: >-
+      Bounded; opencode and status dashboard consume it. Valid current glossary
+      caveats add at most one generic review item through the glossary authority's
+      declared prime projection. When current, its one reserved final slot leaves
+      the first five unrelated items in their existing order under the six-item
+      public cap; lifecycle identity and private semantics remain internal, and
+      next_action is unchanged.
   - field: history
     status: diagnostic
     rationale: >-

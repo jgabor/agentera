@@ -47,6 +47,17 @@ function nextActionPayload(state: OrientationState): Record<string, unknown> {
 
 const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 
+const DEFAULT_PUBLIC_ATTENTION_LIMIT = 6;
+
+export function projectPublicOrientationAttention(state: OrientationState): string[] {
+  const glossary = state.glossary_caveat_attention;
+  const policy = state.glossary_caveat_attention_policy;
+  if (!glossary || !policy) return state.attention.slice(0, DEFAULT_PUBLIC_ATTENTION_LIMIT);
+  const unrelated = state.attention.filter((item) => item !== glossary);
+  const unrelatedLimit = Math.max(0, policy.public_limit - policy.reserved_slots);
+  return [...unrelated.slice(0, unrelatedLimit), glossary].slice(0, policy.public_limit);
+}
+
 const ISSUES_FIELD_DEPRECATION_MESSAGE =
   "Deprecation: prime JSON field 'issues' is deprecated; use 'todo'. The 'issues' field will be removed at the 3.0.0 stable cut.\n";
 
@@ -185,7 +196,7 @@ export function buildOrientationJsonPayload(
     progress: state.progress,
     objective: state.objective,
     state_presence: state.state_presence,
-    attention: state.attention.slice(0, 6),
+    attention: projectPublicOrientationAttention(state),
     decision_attention: state.decision_attention,
     history: state.history,
     next_action: nextActionPayload(state),
@@ -399,7 +410,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   }
   if (attention.length > 0) {
     out("attention:\n");
-    for (const item of attention.slice(0, 6)) out(`- ${item}\n`);
+    for (const item of projectPublicOrientationAttention(state)) out(`- ${item}\n`);
   }
   out("next_action:\n");
   out(`- ${formatNextAction(nextAction.recommended)}\n`);

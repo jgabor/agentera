@@ -4,8 +4,8 @@ purpose: >-
   Define glossary entry semantics once, specialize evidence ownership for
   personal and project entries, and declare one consumer-semantics and caveat
   lifecycle contract with bounded acquisition and shared advice resolution.
-  Build, Discuss, and Plan consumption are active, Build alone owns durable
-  caveat publication, and prime integration remains deferred.
+  Build, Discuss, Plan, and prime consumption are active. Build alone owns
+  durable caveat publication; prime projects only bounded review attention.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -396,7 +396,7 @@ consumer_boundary:
       build: active
       discuss: active
       plan: active
-      prime: declared_deferred
+      prime: active
   forbidden_persisted_entry_fields: [precedence, collision, review]
   deterministic_judgments:
     term_identity: unicode_caseless_exact_no_normalization
@@ -849,15 +849,7 @@ consumer_boundary:
       durable_writer: build
       writer_interface: agentera state progress explain --verb append --format json
       writer_result: authoritative_identity_and_six_field_envelope
-      allowed_reason_state_pairs:
-        - reason: inferred_equivalence
-          ownership_state: review_required
-        - reason: inferred_equivalence
-          ownership_state: project_governs_exact
-        - reason: authority_unavailable
-          ownership_state: authority_unavailable
-        - reason: personal_input_unavailable
-          ownership_state: authority_unavailable
+      allowed_reason_state_pairs: consumer_boundary.autonomous_caveat.allowed_current_pairs
       rule: >-
         Emit one intent only when autonomous meaning-sensitive work has unresolved
         review or unavailable authority. The emitted-only intent contains exactly
@@ -992,6 +984,15 @@ consumer_boundary:
     writer_interface: agentera state progress explain --verb append --format json
     envelope_validator: packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat
     lifecycle_validator: packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities
+    allowed_current_pairs:
+      - reason: inferred_equivalence
+        ownership_state: review_required
+      - reason: inferred_equivalence
+        ownership_state: project_governs_exact
+      - reason: authority_unavailable
+        ownership_state: authority_unavailable
+      - reason: personal_input_unavailable
+        ownership_state: authority_unavailable
     identity:
       field: caveat_id
       type: opaque_non_content_id
@@ -1046,6 +1047,56 @@ consumer_boundary:
       expiration_rule: >-
         Time alone never resolves or hides a caveat. Only an explicit matching
         resolved or valid superseded transition makes it noncurrent.
+    prime_projection:
+      status: active
+      runtime: packages/cli/src/state/progressGlossaryCaveat.ts#projectCurrentGlossaryCaveats
+      retrieval: canonical_validated_progress_entities
+      attention_text: "normal: glossary review required before meaning-sensitive work"
+      max_attention_entries: 1
+      source:
+        artifact: progress
+        boundary: progress_cycle
+        capability: build
+      capacity:
+        public_attention_limit: 6
+        reserved_glossary_slots: 1
+        policy: reserve_final_slot_when_current
+        unrelated_retention: first_five_in_existing_order
+      insertion: reserved_final_slot_when_current
+      rule: >-
+        Reconstruct current caveats by opaque identity from validated canonical
+        progress entities. A matching resolved event or valid superseded event
+        removes only that identity. Invalid, orphan, mismatched, or duplicate
+        terminal evidence is omitted and cannot suppress a valid current event.
+        Emit at most the declared generic attention text when one or more current
+        caveats remain; preserve the relative order of every unrelated attention
+        entry and do not change next-action selection.
+      expiration: none
+      forbidden_sources:
+        - timestamp
+        - recency
+        - plan_state
+        - transient_plan_handoff
+        - profile_presence
+        - unrelated_progress
+      forbidden_output:
+        - caveat_id
+        - transition_id
+        - reason
+        - ownership_state
+        - definition
+        - meaning
+        - anchor
+        - path
+        - raw_section
+        - provenance
+        - source_bytes
+      malformed_evidence:
+        prime: omit
+        direct_progress_retrieval: fail_closed_generic_corrupt_entity
+        allowed_diagnostic: canonical progress evidence is corrupt; run state validation
+        forbidden_diagnostic_content:
+          [stored_filename, stored_path, parser_text, raw_value, raw_bytes, provenance]
     handoff:
       plan: >-
         Plan cannot write progress. In autonomous mode it emits at most one
@@ -1117,10 +1168,10 @@ consumer_boundary:
     precedence: forbidden
   rule: >-
     Audit remains mutation-free and Build project-glossary publication is active.
-    Build, Discuss, and Plan bounded glossary consumption are active, and Build
-    progress caveat publication is active. Personal Profile Full rendering and
-    persistence are active. Prime integration, project-driven personal-profile
-    mutation, and docs-mapping mutation remain deferred.
+    Build, Discuss, Plan, and prime bounded glossary consumption are active, and
+    Build progress caveat publication is active. Personal Profile Full rendering
+    and persistence are active. Project-driven personal-profile mutation and
+    docs-mapping mutation remain deferred.
 
 deferred_capability_contracts:
   profile:
@@ -1180,11 +1231,11 @@ deferred_capability_contracts:
     forbidden_current_claims:
       [lookup, precedence, review, personal_profile_mutation, docs_mapping_mutation]
   consumers:
-    capabilities: [discuss, plan, build]
+    capabilities: [discuss, plan, build, prime]
     implementation:
       build: active
       discuss: active
       plan: active
-      prime: declared_deferred
+      prime: active
     behavior: consumer_boundary
-    forbidden_current_claims: [prime_projection]
+    forbidden_current_claims: []

@@ -98,6 +98,13 @@ function sameMappings(actual: unknown, expected: readonly Mapping[]): boolean {
   return Array.isArray(actual) && JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+const ALLOWED_CAVEAT_PAIRS = [
+  { reason: "inferred_equivalence", ownership_state: "review_required" },
+  { reason: "inferred_equivalence", ownership_state: "project_governs_exact" },
+  { reason: "authority_unavailable", ownership_state: "authority_unavailable" },
+  { reason: "personal_input_unavailable", ownership_state: "authority_unavailable" },
+] as const;
+
 export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const errors: string[] = [];
   const implementation = mapping(consumer?.implementation);
@@ -109,10 +116,10 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     integrations?.build !== "active" ||
     integrations?.discuss !== "active" ||
     integrations?.plan !== "active" ||
-    integrations?.prime !== "declared_deferred"
+    integrations?.prime !== "active"
   ) {
     errors.push(
-      "consumer_boundary.implementation must activate Build, Discuss, and Plan while prime integration remains declared_deferred",
+      "consumer_boundary.implementation must activate Build, Discuss, Plan, and prime",
     );
   }
 
@@ -221,12 +228,8 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     handoffIntent?.writer_interface !==
       "agentera state progress explain --verb append --format json" ||
     handoffIntent?.writer_result !== "authoritative_identity_and_six_field_envelope" ||
-    !sameMappings(handoffIntent?.allowed_reason_state_pairs, [
-      { reason: "inferred_equivalence", ownership_state: "review_required" },
-      { reason: "inferred_equivalence", ownership_state: "project_governs_exact" },
-      { reason: "authority_unavailable", ownership_state: "authority_unavailable" },
-      { reason: "personal_input_unavailable", ownership_state: "authority_unavailable" },
-    ]) ||
+    handoffIntent?.allowed_reason_state_pairs !==
+      "consumer_boundary.autonomous_caveat.allowed_current_pairs" ||
     !nonEmpty(handoffIntent?.rule) ||
     !nonEmpty(plan?.output_rule) ||
     plan?.handoff !== "consumer_boundary.autonomous_caveat.handoff.plan" ||
@@ -686,6 +689,10 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const currentAppend = mapping(envelope?.current_append);
   const lifecycle = mapping(caveat?.lifecycle);
   const handoff = mapping(caveat?.handoff);
+  const primeProjection = mapping(caveat?.prime_projection);
+  const primeSource = mapping(primeProjection?.source);
+  const primeCapacity = mapping(primeProjection?.capacity);
+  const malformedEvidence = mapping(primeProjection?.malformed_evidence);
   if (
     caveat?.durable_owner !== "build" ||
     caveat?.durable_channel !== "progress" ||
@@ -699,6 +706,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat" ||
     caveat?.lifecycle_validator !==
       "packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities" ||
+    !sameMappings(caveat?.allowed_current_pairs, ALLOWED_CAVEAT_PAIRS) ||
     identity?.field !== "caveat_id" ||
     identity?.type !== "opaque_non_content_id" ||
     identity?.alphabet !== "abcdefghijklmnopqrstuvwxyz" ||
@@ -742,12 +750,60 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     !nonEmpty(lifecycle?.matching_rule) ||
     lifecycle?.expiration !== "none" ||
     !nonEmpty(lifecycle?.expiration_rule) ||
+    primeProjection?.status !== "active" ||
+    primeProjection?.runtime !==
+      "packages/cli/src/state/progressGlossaryCaveat.ts#projectCurrentGlossaryCaveats" ||
+    primeProjection?.retrieval !== "canonical_validated_progress_entities" ||
+    !nonEmpty(primeProjection?.attention_text) ||
+    primeProjection?.max_attention_entries !== 1 ||
+    primeProjection?.insertion !== "reserved_final_slot_when_current" ||
+    !nonEmpty(primeProjection?.rule) ||
+    primeProjection?.expiration !== "none" ||
+    !sameStrings(primeProjection?.forbidden_sources, [
+      "timestamp",
+      "recency",
+      "plan_state",
+      "transient_plan_handoff",
+      "profile_presence",
+      "unrelated_progress",
+    ]) ||
+    !sameStrings(primeProjection?.forbidden_output, [
+      "caveat_id",
+      "transition_id",
+      "reason",
+      "ownership_state",
+      "definition",
+      "meaning",
+      "anchor",
+      "path",
+      "raw_section",
+      "provenance",
+      "source_bytes",
+    ]) ||
+    primeSource?.artifact !== "progress" ||
+    primeSource?.boundary !== "progress_cycle" ||
+    primeSource?.capability !== "build" ||
+    primeCapacity?.public_attention_limit !== 6 ||
+    primeCapacity?.reserved_glossary_slots !== 1 ||
+    primeCapacity?.policy !== "reserve_final_slot_when_current" ||
+    primeCapacity?.unrelated_retention !== "first_five_in_existing_order" ||
+    malformedEvidence?.prime !== "omit" ||
+    malformedEvidence?.direct_progress_retrieval !== "fail_closed_generic_corrupt_entity" ||
+    !nonEmpty(malformedEvidence?.allowed_diagnostic) ||
+    !sameStrings(malformedEvidence?.forbidden_diagnostic_content, [
+      "stored_filename",
+      "stored_path",
+      "parser_text",
+      "raw_value",
+      "raw_bytes",
+      "provenance",
+    ]) ||
     !nonEmpty(handoff?.plan) ||
     !nonEmpty(handoff?.discuss) ||
     !nonEmpty(handoff?.build)
   ) {
     errors.push(
-      "consumer_boundary.autonomous_caveat must use Build-owned progress evidence with an opaque identity, current/resolved/superseded transitions, Plan handoff, and explicit no-expiration",
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
     );
   }
 
@@ -814,8 +870,11 @@ export function validateConsumerEvidenceOwner(consumer: Mapping | null): string[
       "references/artifacts/glossary-entry-contract.yaml#consumer_boundary.autonomous_caveat" ||
     schema?.schema_version !== envelope?.schema_version ||
     schema?.implementation_status !== "active_build" ||
+    mapping(schema?.reader_status)?.prime !== "active" ||
     schema?.envelope_validator !== caveat?.envelope_validator ||
     schema?.lifecycle_validator !== caveat?.lifecycle_validator ||
+    schema?.allowed_current_pairs !==
+      "references/artifacts/glossary-entry-contract.yaml#consumer_boundary.autonomous_caveat.allowed_current_pairs" ||
     !sameStrings(Object.keys(fields ?? {}), strings(envelope?.fields)) ||
     !sameStrings(mapping(fields?.capability)?.values, strings(envelope?.capabilities)) ||
     !sameStrings(mapping(fields?.reason)?.values, strings(envelope?.reasons)) ||
@@ -832,7 +891,9 @@ export function validateConsumerEvidenceOwner(consumer: Mapping | null): string[
     ) ||
     JSON.stringify(mapping(schemaCurrentAppend?.writer_fixed_values)) !==
       JSON.stringify(mapping(authorityCurrentAppend?.writer_fixed_values)) ||
-    !nonEmpty(schemaCurrentAppend?.rule)
+    !nonEmpty(schemaCurrentAppend?.rule) ||
+    schema?.prime_projection !==
+      "references/artifacts/glossary-entry-contract.yaml#consumer_boundary.autonomous_caveat.prime_projection"
   ) {
     return [
       "consumer_boundary.autonomous_caveat must match the active Build-owned progress_cycle.glossary_caveat schema",

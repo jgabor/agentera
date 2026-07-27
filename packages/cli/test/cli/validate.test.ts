@@ -163,7 +163,7 @@ describe("cli validate (delegated families)", () => {
         build: "active",
         discuss: "active",
         plan: "active",
-        prime: "declared_deferred",
+        prime: "active",
       },
     });
   });
@@ -191,7 +191,7 @@ describe("cli validate (delegated families)", () => {
           build: "active",
           discuss: "active",
           plan: "active",
-          prime: "declared_deferred",
+          prime: "active",
         },
       });
     },

@@ -654,7 +654,7 @@ export const EXPECTED_PRODUCER_READINESS: ProducerReadinessObservation = {
       build: "active",
       discuss: "active",
       plan: "active",
-      prime: "declared_deferred",
+      prime: "active",
     },
     inactiveConsumerBehavior: ["lookup", "precedence", "semantic_equivalence_review"],
   },

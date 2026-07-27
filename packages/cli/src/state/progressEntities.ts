@@ -24,6 +24,7 @@ import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./lis
 import { localTimestamp } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import {
+  glossaryCaveatPairAllowed,
   glossaryCaveatContract,
   type GlossaryCaveatContract,
 } from "../registries/glossaryCaveatContract.js";
@@ -100,9 +101,10 @@ function prepareGlossaryCaveat(
   if (
     !contract.events.includes(event) ||
     !contract.reasons.includes(reason) ||
-    !contract.ownershipStates.includes(ownership)
+    !contract.ownershipStates.includes(ownership) ||
+    !glossaryCaveatPairAllowed(contract, reason, ownership)
   )
-    throw new Error("glossary caveat requires contract-declared event, reason, and ownership state");
+    throw new Error("glossary caveat requires one contract-declared reason and ownership state pair");
   const entities = discovery.entities.filter((entity) => entity.classification === "valid" && entity.artifact === ARTIFACT && entity.boundary === BOUNDARY);
   const rows = entities.flatMap((entity) => {
     const parsed = validateProgressGlossaryCaveat(entity.record!, contract);
@@ -334,7 +336,7 @@ function sortedProgress(discovery: ReturnType<typeof discoverEntities>): Discove
   if (duplicate)
     throw listFailure(
       "ambiguous",
-      `progress entity ID '${duplicate.id}' has multiple canonical candidates`,
+      "canonical progress evidence has conflicting identities",
       "Run agentera check validate state, assign unique IDs, and retry.",
     );
   const corrupt = progress.find(
@@ -347,7 +349,7 @@ function sortedProgress(discovery: ReturnType<typeof discoverEntities>): Discove
   if (corrupt)
     throw listFailure(
       "corrupt",
-      `progress entity '${corrupt.relativePath}' is corrupt or violates the progress record contract`,
+      "canonical progress evidence is corrupt or violates the progress record contract",
       "Run agentera check validate state, repair the canonical entity file, and retry.",
     );
   return progress.sort(
@@ -472,7 +474,7 @@ export function getProgressEntity(
   if (!selected && corruptAtCanonicalPath)
     throw failure(
       "corrupt",
-      `progress entity '${corruptAtCanonicalPath.relativePath}' does not match its canonical ID envelope`,
+      "canonical progress evidence is corrupt or does not match its identity envelope",
       "Run agentera check validate state, repair the canonical entity file, and retry.",
       id,
     );
@@ -490,7 +492,7 @@ export function getProgressEntity(
   )
     throw failure(
       "corrupt",
-      `progress entity '${selected.relativePath}' is corrupt or violates the progress record contract`,
+      "canonical progress evidence is corrupt or violates the progress record contract",
       "Run agentera check validate state, repair the canonical entity file, and retry.",
       id,
     );

@@ -156,7 +156,7 @@ describe("shared glossary entry authority", () => {
     });
   });
 
-  it("aligns active Build, Discuss, and Plan consumption with mutation-free Audit and deferred prime integration", () => {
+  it("aligns active Build, Discuss, Plan, and prime consumption with mutation-free Audit", () => {
     const authority = fs.readFileSync(glossaryEntryAuthorityPath(), "utf8");
     const validation = fs.readFileSync(
       path.resolve(
@@ -178,11 +178,12 @@ describe("shared glossary entry authority", () => {
     }
     for (const surface of [validation, auditInstructions])
       expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
-    expect(authority).toMatch(/Build, Discuss, and Plan bounded glossary consumption are active/);
-    expect(authority).toMatch(/Prime integration[\s\S]*remain deferred/i);
+    expect(authority).toMatch(/Build, Discuss, Plan, and prime bounded glossary consumption are active/);
+    expect(authority).not.toContain("prime: declared_deferred");
+    expect(authority).not.toContain("forbidden_current_claims: [prime_projection]");
   });
 
-  it("loads active bounded acquisition and Build/Discuss/Plan advice while prime remains deferred", () => {
+  it("loads active bounded acquisition and Build/Discuss/Plan/prime integration", () => {
     expect(glossaryConsumerContract()).toEqual({
       contractStatus: "active",
       implementation: {
@@ -193,7 +194,7 @@ describe("shared glossary entry authority", () => {
         build: "active",
         discuss: "active",
         plan: "active",
-        prime: "declared_deferred",
+        prime: "active",
       },
       outcomes: [
         "invalid_or_unavailable_project",
@@ -241,6 +242,17 @@ describe("shared glossary entry authority", () => {
       currentAppendCallerFixedValues: { event: "current" },
       currentAppendWriterFields: ["caveat_id", "capability", "transition_id"],
       currentAppendWriterFixedValues: { capability: "build", transition_id: null },
+      allowedCurrentPairs: [
+        { reason: "inferred_equivalence", ownershipState: "review_required" },
+        { reason: "inferred_equivalence", ownershipState: "project_governs_exact" },
+        { reason: "authority_unavailable", ownershipState: "authority_unavailable" },
+        { reason: "personal_input_unavailable", ownershipState: "authority_unavailable" },
+      ],
+      primeSourceArtifact: "progress",
+      primeSourceBoundary: "progress_cycle",
+      primeSourceCapability: "build",
+      primePublicAttentionLimit: 6,
+      primeReservedGlossarySlots: 1,
     });
   });
 
@@ -457,11 +469,11 @@ describe("shared glossary entry authority", () => {
     [
       "invalid Plan reason-state cross-pair",
       (authority: Record<string, any>) => {
-        authority.consumer_boundary.plan_integration.autonomous_handoff_intent.allowed_reason_state_pairs.push(
+        authority.consumer_boundary.autonomous_caveat.allowed_current_pairs.push(
           { reason: "personal_input_unavailable", ownership_state: "project_governs_exact" },
         );
       },
-      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
     ],
     [
       "personal-unavailable exact project handoff",
@@ -493,14 +505,35 @@ describe("shared glossary entry authority", () => {
       (authority: Record<string, any>) => {
         authority.consumer_boundary.autonomous_caveat.durable_owner = "plan";
       },
-      "consumer_boundary.autonomous_caveat must use Build-owned progress evidence with an opaque identity, current/resolved/superseded transitions, Plan handoff, and explicit no-expiration",
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
     ],
     [
       "clock-based caveat expiration",
       (authority: Record<string, any>) => {
         authority.consumer_boundary.autonomous_caveat.lifecycle.expiration = "30_days";
       },
-      "consumer_boundary.autonomous_caveat must use Build-owned progress evidence with an opaque identity, current/resolved/superseded transitions, Plan handoff, and explicit no-expiration",
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
+    ],
+    [
+      "non-progress prime caveat source",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.autonomous_caveat.prime_projection.source.artifact = "plan";
+      },
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
+    ],
+    [
+      "unreserved prime attention capacity",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.autonomous_caveat.prime_projection.capacity.reserved_glossary_slots = 0;
+      },
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
+    ],
+    [
+      "path-leaking malformed prime diagnostics",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.autonomous_caveat.prime_projection.malformed_evidence.forbidden_diagnostic_content = [];
+      },
+      "consumer_boundary.autonomous_caveat must define Build-owned progress evidence, exact pairs, lifecycle, and bounded active prime projection",
     ],
     [
       "consumer advice as project publication authority",

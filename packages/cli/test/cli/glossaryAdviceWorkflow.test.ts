@@ -502,13 +502,15 @@ describe("packaged Build glossary advice seam", () => {
       writer_owned_fields: ["caveat_id", "capability", "transition_id"],
       forbidden_fields: ["caveat_id", "capability", "transition_id"],
       forbidden_claims: ["delivered", "stored", "persisted", "published", "durable_envelope"],
-      allowed_reason_state_pairs: [
-        { reason: "inferred_equivalence", ownership_state: "review_required" },
-        { reason: "inferred_equivalence", ownership_state: "project_governs_exact" },
-        { reason: "authority_unavailable", ownership_state: "authority_unavailable" },
-        { reason: "personal_input_unavailable", ownership_state: "authority_unavailable" },
-      ],
+      allowed_reason_state_pairs:
+        "consumer_boundary.autonomous_caveat.allowed_current_pairs",
     });
+    expect(consumerAuthority().autonomous_caveat.allowed_current_pairs).toEqual([
+      { reason: "inferred_equivalence", ownership_state: "review_required" },
+      { reason: "inferred_equivalence", ownership_state: "project_governs_exact" },
+      { reason: "authority_unavailable", ownership_state: "authority_unavailable" },
+      { reason: "personal_input_unavailable", ownership_state: "authority_unavailable" },
+    ]);
     expect(plan.exact_project_personal_unavailable).toMatchObject({
       primary_outcome: "project_only",
       plan_action: "ground_exact_project_meaning",
@@ -552,7 +554,11 @@ describe("packaged Build glossary advice seam", () => {
   it("submits the authority-derived three-field Plan intent through the typed progress writer", () => {
     const root = project();
     const handoff = planAuthority().autonomous_handoff_intent;
-    const reasonState = handoff.allowed_reason_state_pairs[0] as Record<string, string>;
+    expect(handoff.allowed_reason_state_pairs).toBe(
+      "consumer_boundary.autonomous_caveat.allowed_current_pairs",
+    );
+    const reasonState = consumerAuthority().autonomous_caveat
+      .allowed_current_pairs[0] as Record<string, string>;
     const intent = { ...handoff.fixed_values, ...reasonState } as Record<string, string>;
     const explained = progressAppendContract(root);
     expect(explained.status, explained.stderr).toBe(0);
@@ -590,7 +596,7 @@ describe("packaged Build glossary advice seam", () => {
     );
     expect(rejected.status).not.toBe(0);
     expect(rejected.stdout + rejected.stderr).toContain(
-      "glossary caveat requires contract-declared event, reason, and ownership state",
+      "glossary caveat requires one contract-declared reason and ownership state pair",
     );
     expect(snapshotTree(missingEventRoot)).toEqual(before);
   });

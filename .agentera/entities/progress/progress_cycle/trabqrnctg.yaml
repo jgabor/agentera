@@ -1,0 +1,16 @@
+id: trabqrnctg
+artifact: progress
+record:
+  timestamp: 2026-07-27 12:33
+  type: feat
+  phase: build
+  what: Projected validated current glossary caveats into one privacy-safe prime attention item while preserving unrelated attention and explicit lifecycle transitions.
+  context:
+    intent: Implement Plan task tnupicrjhe without changing glossary consumer semantics or lifecycle ownership.
+    constraints: No task completion, staging, commit, TODO/decision changes, profile/app refresh, publication, or Discuss/Plan/Build semantic changes.
+    unknowns: Touched-source whole-file oxfmt would reformat legacy files broadly, so only the new test was formatter-checked; existing style was preserved in established source files.
+    scope: Prime glossary caveat projection authority, canonical lifecycle projection, attention assembly, compatibility contract, and disposable-repo regression coverage.
+  inspiration: Active Plan task tnupicrjhe and the committed Build-owned six-field glossary caveat envelope.
+  discovered: Prime can reuse the canonical entity discovery and lifecycle validator; invalid caveat entities are omitted only from prime's progress projection while direct progress reads remain fail-closed.
+  verified: Focused 110-test projection/lifecycle suite, 2965-test source lane, typecheck, build, 16-test package boundary, local prime/status, validators, compact, lint, format check, and diff check passed; lint retained 152 baseline warnings.
+  next: Prime should audit the diff and own task evaluation/completion and commit.

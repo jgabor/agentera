@@ -1,0 +1,16 @@
+id: casyxekvfy
+artifact: progress
+record:
+  timestamp: 2026-07-27 13:16
+  type: feat
+  phase: build
+  what: Corrected prime glossary caveat projection after Audit by enforcing canonical source ownership and shared reason-state pairs, reserving bounded attention capacity, activating all prime matrices, and sanitizing malformed progress reads.
+  context:
+    intent: Resolve all six accepted Audit findings for Plan task tnupicrjhe in one bounded retry without completing or evaluating the task.
+    constraints: No staging, commit, task evaluation/completion, TODO/decision changes, app/profile refresh, publication, tag, or push.
+    unknowns: Whole-file vp fmt --check still reports legacy formatting drift in 12 established touched files; applying it would create broad unrelated reformatting, so established style was preserved. Lint passes with 152 baseline warnings.
+    scope: Shared glossary caveat authority/model, progress validation/writer/retrieval, prime attention projection and capacity, active implementation matrices and validators, plus semantic source and built-path tests.
+  inspiration: Independent Audit attempt audit-1 and its accepted source-boundary, pair-model, capacity, activation, malformed-error, and test-fidelity findings.
+  discovered: The six-item public attention cap required an authority-loaded reserved slot; Plan's handoff now points to the same four-pair model consumed by validation, writing, and projection. Prime can omit invalid progress entities while exact progress list/get remain generic fail-closed reads.
+  verified: "Focused contract/projection suite: 118 passed; freshly built dist semantic prime/status suite: 15 passed; full source: 2973 passed and 1 skipped after one unrelated heap benchmark retry; typecheck/build, local prime text/JSON/status, status/vocabulary/state/cross/capability-contract validators, 16 package tests, compact, lint, new-test format, and diff checks passed."
+  next: Prime should audit all six corrections, then own evaluation/completion and commit if satisfied.

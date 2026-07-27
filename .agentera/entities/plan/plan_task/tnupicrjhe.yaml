@@ -5,7 +5,7 @@ record:
   depends_on:
     - htxxuwkqsg
     - aibhqqgbsp
-  status: pending
+  status: complete
   acceptance:
     - GIVEN current unresolved glossary caveat evidence WHEN prime is read THEN bounded attention identifies the review need without exposing disputed meanings or private source content.
     - GIVEN matching resolution or supersession evidence WHEN prime is read THEN only the matching noncurrent caveat is omitted and unrelated attention is preserved.
@@ -13,3 +13,13 @@ record:
     - GIVEN malformed, stale, unrelated, or privacy-trap evidence WHEN prime is read THEN it fails closed or omits the caveat without leaking personal definitions, anchors, profile paths, raw bytes, or provenance.
     - GIVEN proportional evidence histories WHEN behavior is verified THEN current, resolved, superseded, absent, malformed, unrelated, and privacy-sensitive cases pass.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Prime accepted non-progress envelopes and invalid reason/state pairs, could truncate glossary attention behind the six-item cap, retained contradictory deferred authority, leaked malformed entity paths, and lacked built semantic tests for these branches.
+    provenance:
+      attempt_id: audit-2
+      source: "Independent retry-2 Audit PASS closed all six findings: canonical Build progress boundary, shared four-pair enforcement, reserved bounded attention slot, active prime authority, path-safe malformed reads, and fresh-built semantic coverage. Final source and targeted evidence passed."
+      recorded_at: 2026-07-27 13:24
+      writer_command: agentera state plan record-evaluation
