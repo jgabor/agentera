@@ -556,7 +556,7 @@ describe("read-only migration fixture state listing", () => {
 
   it("keeps JSON, YAML, and text list output within the authority byte budget", () => {
     const root = project();
-    writeProjection(root, [cycle(1, "🙂漢字".repeat(20_000))]);
+    writeProjection(root, [cycle(1, "\u{10400}\u20ac\u2030".repeat(20_000))]);
     const response = directList(root, 1);
     const json = JSON.stringify(boundStateList(response, "json", sourceRoot), null, 2) + "\n";
     const yaml = YAML.stringify(boundStateList(response, "yaml", sourceRoot));

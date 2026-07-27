@@ -134,10 +134,11 @@ describe("objective and experiment entity authority", () => {
   it("bounds Unicode experiment pages and executes objective-bound omission recovery", () => {
     const root = project();
     const owner = createObjective(root, "unicode experiments");
+    const unicodeSample = "\u{10400}\u20ac\u2030";
     const published: any[] = [];
     for (let index = 0; index < 12; index += 1) {
-      const record = experiment(`${index}-${"😀漢字".repeat(450)}`, index === 0 ? "baseline" : "kept", `2026-07-${String(index + 1).padStart(2, "0")} 09:00`);
-      record.hypothesis = `Unicode hypothesis ${"é🙂漢字".repeat(450)}`;
+      const record = experiment(`${index}-${unicodeSample.repeat(450)}`, index === 0 ? "baseline" : "kept", `2026-07-${String(index + 1).padStart(2, "0")} 09:00`);
+      record.hypothesis = `Unicode hypothesis ${`\u00e9${unicodeSample}`.repeat(450)}`;
       published.push(publish(root, owner.id, record));
     }
     const expectedIds = new Set(published.map((entry) => entry.id));

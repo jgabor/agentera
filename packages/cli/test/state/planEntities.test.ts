@@ -148,7 +148,8 @@ describe("plan and task entity authority", () => {
   it("bounds Unicode task pages and emits executable relationship-bound continuations", () => {
     const root = project();
     const input = plan("unicode task pages") as Record<string, any>;
-    const names = Array.from({ length: 12 }, (_, index) => `${index}-${"😀漢字".repeat(500)}`);
+    const unicodeSample = "\u{10400}\u20ac\u2030";
+    const names = Array.from({ length: 12 }, (_, index) => `${index}-${unicodeSample.repeat(500)}`);
     input.tasks = names.map((name, index) => ({
       number: index + 1,
       name,

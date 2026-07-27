@@ -136,13 +136,14 @@ describe("semantic route receipt validator", () => {
 
   it("counts clarification length in Unicode code points", () => {
     const request = "Which capability should handle this?";
+    const nonBmpLetter = "\u{10400}";
     expect(validateRouteReceiptSubmission(api(request, {
       outcome: "clarify",
-      question: "😀".repeat(280),
+      question: nonBmpLetter.repeat(280),
     }), ROOT)).toMatchObject({ outcome: "clarification" });
     expect(() => validateRouteReceiptSubmission(api(request, {
       outcome: "clarify",
-      question: "😀".repeat(281),
+      question: nonBmpLetter.repeat(281),
     }), ROOT)).toThrow(RouteReceiptValidationError);
   });
 

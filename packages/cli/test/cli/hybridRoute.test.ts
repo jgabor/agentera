@@ -156,6 +156,7 @@ describe("route receipt CLI", () => {
 
   it("counts clarification question length in Unicode code points", () => {
     const request = "Which capability should handle this?";
+    const nonBmpLetter = "\u{10400}";
     const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
     const capsuleDigest = semanticCapsuleDigest(request);
     const receipt = (question: string) => JSON.stringify({
@@ -163,8 +164,8 @@ describe("route receipt CLI", () => {
       receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, semantic_capsule_sha256: capsuleDigest, outcome: "clarify", capability: null, compound: null, question, remainder_span: null },
     });
 
-    expect(invokeReceipt(receipt("😀".repeat(280))).rc).toBe(0);
-    expect(invokeReceipt(receipt("😀".repeat(281))).rc).toBe(64);
+    expect(invokeReceipt(receipt(nonBmpLetter.repeat(280))).rc).toBe(0);
+    expect(invokeReceipt(receipt(nonBmpLetter.repeat(281))).rc).toBe(64);
   });
 });
 

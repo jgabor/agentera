@@ -145,9 +145,10 @@ describe("lossless projection policy", () => {
   });
 
   it("omits complete detail deterministically rather than truncating Unicode", () => {
+    const unicodeSample = "\u{10400}\u20ac\u2030\u20ac\u2030\u2042";
     const entries = Array.from({ length: 40 }, (_, index) => ({
       number: index + 1,
-      detail: "日本語🙂漢字".repeat(1200),
+      detail: unicodeSample.repeat(1200),
     }));
     const value = {
       command: "progress",
@@ -194,12 +195,13 @@ describe("lossless projection policy", () => {
   });
 
   it("does not emit a ghost get pointer for unnumbered TODO output", () => {
+    const nonBmpLetter = "\u{10400}";
     const value = {
       command: "todo",
       status: "ok",
       entries: Array.from({ length: 20 }, (_, index) => ({
         number: index + 1,
-        detail: "TODO🙂".repeat(3000),
+        detail: `TODO${nonBmpLetter}`.repeat(3000),
       })),
       counts: { entries: 20 },
       source: { artifact: "todo", exists: true },
@@ -218,6 +220,7 @@ describe("lossless projection policy", () => {
 
   it("enforces the same budget at the state progress response surface", () => {
     const root = project();
+    const unicodeSample = "\u00e9\u{10400}\u20ac\u2030";
     const directory = path.join(root, ".agentera/entities/progress/progress_cycle");
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
@@ -226,7 +229,7 @@ describe("lossless projection policy", () => {
       fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
         id,
         artifact: "progress",
-        record: { timestamp: `2026-07-${String(index + 1).padStart(2, "0")} 10:00`, type: "test", phase: "build", what: "é🙂漢字".repeat(500), context: { intent: "budget" } },
+        record: { timestamp: `2026-07-${String(index + 1).padStart(2, "0")} 10:00`, type: "test", phase: "build", what: unicodeSample.repeat(500), context: { intent: "budget" } },
       }));
     }
     let output = "";

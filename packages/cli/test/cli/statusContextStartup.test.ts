@@ -451,8 +451,9 @@ describe("status capability self-contained startup", () => {
   });
 
   it("bounds adversarial UTF-8 state without moving diagnostics to stdout", () => {
+    const unicodeSample = "\u{10400}\u20ac\u2030";
     const rows = Array.from({ length: 400 }, (_, index) => {
-      return `  - number: ${index + 1}\n    status: open\n    what: ${"😀漢字".repeat(300)}\n`;
+      return `  - number: ${index + 1}\n    status: open\n    what: ${unicodeSample.repeat(300)}\n`;
     }).join("");
     writeProjectFile(".agentera/progress.yaml", `cycles:\n${rows}`);
     writeProjectFile(".agentera/decisions.yaml", `decisions:\n${rows}`);
@@ -460,7 +461,7 @@ describe("status capability self-contained startup", () => {
     const result = runStatus();
     expect(result.rc).toBe(0);
     expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
-    expect(result.out).not.toContain("😀漢字".repeat(100));
+    expect(result.out).not.toContain(unicodeSample.repeat(100));
     expect(result.err).toBe("");
   });
 });

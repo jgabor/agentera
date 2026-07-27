@@ -65,10 +65,11 @@ function hasUnpairedSurrogateInValue(value: unknown): boolean {
 }
 
 function boundaryAlignedFixtureText(): { taskName: string; blockedReason: string; todoText: string } {
+  const nonBmpLetter = "\u{10400}";
   return {
-    taskName: `${"a".repeat(93)}😀${"b".repeat(160)}😀tail`,
-    blockedReason: `${"r".repeat(158)}😀${"s".repeat(18)}😀tail`,
-    todoText: `${"t".repeat(158)}😀${"u".repeat(18)}😀tail`,
+    taskName: `${"a".repeat(93)}${nonBmpLetter}${"b".repeat(160)}${nonBmpLetter}tail`,
+    blockedReason: `${"r".repeat(158)}${nonBmpLetter}${"s".repeat(18)}${nonBmpLetter}tail`,
+    todoText: `${"t".repeat(158)}${nonBmpLetter}${"u".repeat(18)}${nonBmpLetter}tail`,
   };
 }
 
@@ -216,7 +217,7 @@ describe("prime projection contract", () => {
   });
 
   it("preserves Unicode-safe identity, status, and continuation metadata", () => {
-    const unicode = "😀漢字".repeat(1_000);
+    const unicode = "\u{10400}\u20ac\u2030".repeat(1_000);
     const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
@@ -257,7 +258,7 @@ describe("prime projection contract", () => {
     }
   });
 
-  it("keeps boundary-aligned emoji intact on every prime output surface", () => {
+  it("keeps boundary-aligned non-BMP code points intact on every prime output surface", () => {
     const { taskName, blockedReason, todoText } = boundaryAlignedFixtureText();
     writeArtifact("plan.yaml", [
       "header:",
