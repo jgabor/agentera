@@ -97,3 +97,23 @@ VALIDATION:
     checks:
       - "Sanitized grounding command used during Orient"
       - "Raw profile path not read"
+  10:
+    id: V10
+    rule: governed_terminology_advice
+    description: >-
+      Plan MUST consume terminology advice through the shared glossary consumer
+      authority at governed meaning-sensitive user events. Interactive review
+      MUST precede fixing affected requirements. Autonomous unresolved review
+      MUST abstain, defer the affected requirements, and emit at most one bounded
+      current writer intent without delivering or storing it or writing plan
+      conflict or progress state.
+    severity: critical
+    checks:
+      - "Advice refreshes only for authority-declared Plan events"
+      - "Mode follows explicit authority precedence and unknown mode waits"
+      - "Interactive review precedes affected requirements and acceptance"
+      - "Autonomous unresolved meaning remains deferred without a Plan write"
+      - "Emitted-only handoff intent contains exactly event=current, reason, and ownership state"
+      - "Writer owns caveat identity, Build capability, and transition fields"
+      - "Exact project authority suppresses personal-unavailable durable handoff"
+      - "Plan artifacts exclude private glossary content"

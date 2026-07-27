@@ -5,6 +5,10 @@ type Mapping = Record<string, unknown>;
 
 export interface GlossaryCaveatContract {
   fields: string[];
+  currentAppendCallerFields: string[];
+  currentAppendCallerFixedValues: Record<string, string>;
+  currentAppendWriterFields: string[];
+  currentAppendWriterFixedValues: Record<string, string | null>;
   events: string[];
   capabilities: string[];
   reasons: string[];
@@ -25,6 +29,17 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
 }
 
+function fixedValues(value: unknown): Record<string, string | null> {
+  const source = mapping(value);
+  if (!source) return {};
+  return Object.fromEntries(
+    Object.entries(source).filter(
+      (entry): entry is [string, string | null] =>
+        typeof entry[1] === "string" || entry[1] === null,
+    ),
+  );
+}
+
 export function glossaryCaveatContract(
   pathname: string = glossaryEntryAuthorityPath(),
 ): GlossaryCaveatContract {
@@ -32,8 +47,17 @@ export function glossaryCaveatContract(
   const caveat = mapping(mapping(authority.consumer_boundary)?.autonomous_caveat);
   const identity = mapping(caveat?.identity);
   const envelope = mapping(caveat?.envelope);
+  const currentAppend = mapping(envelope?.current_append);
   return {
     fields: strings(envelope?.fields),
+    currentAppendCallerFields: strings(currentAppend?.caller_fields),
+    currentAppendCallerFixedValues: Object.fromEntries(
+      Object.entries(fixedValues(currentAppend?.caller_fixed_values)).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
+    currentAppendWriterFields: strings(currentAppend?.writer_fields),
+    currentAppendWriterFixedValues: fixedValues(currentAppend?.writer_fixed_values),
     events: strings(envelope?.events),
     capabilities: strings(envelope?.capabilities),
     reasons: strings(envelope?.reasons),

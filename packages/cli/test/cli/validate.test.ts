@@ -162,7 +162,7 @@ describe("cli validate (delegated families)", () => {
       capability_integrations: {
         build: "active",
         discuss: "active",
-        plan: "declared_deferred",
+        plan: "active",
         prime: "declared_deferred",
       },
     });
@@ -190,7 +190,7 @@ describe("cli validate (delegated families)", () => {
         capability_integrations: {
           build: "active",
           discuss: "active",
-          plan: "declared_deferred",
+          plan: "active",
           prime: "declared_deferred",
         },
       });

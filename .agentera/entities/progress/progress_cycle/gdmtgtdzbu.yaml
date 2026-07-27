@@ -1,0 +1,14 @@
+id: gdmtgtdzbu
+artifact: progress
+record:
+  timestamp: 2026-07-27 11:26
+  type: fix
+  phase: build
+  what: Corrected Plan glossary mode, privacy, and autonomous handoff semantics after independent Audit.
+  context:
+    intent: Close the accepted Audit findings for task htxxuwkqsg without changing Build, Discuss, prime, task lifecycle, TODO, or decision behavior.
+    constraints: Plan emits only transient reason and ownership-state intent; Build remains the sole durable writer and creates identity and envelope; no consumer conflict or caveat state was written.
+    scope: Structured glossary Plan authority; served Plan instructions; vocabulary validator; Plan/progress validation schemas; authority-driven behavioral, privacy, source, and package tests.
+  discovered: The live progress writer accepts only caveat reason and ownership state for a current event, rejects caller identity, supplies capability=build, and creates the authoritative six-field envelope.
+  verified: Focused 106 tests passed; full source 2954 passed with 1 skipped; package boundary 16 passed; typecheck/build, Plan/vocabulary/cross/capability-contract validators, constructed-dist and live writer-contract checks, compact, lint, touched format, and diff-check passed.
+  next: Prime should audit this final ordinary retry; task evaluation/completion and commit remain coordinator-owned.

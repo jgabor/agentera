@@ -1,0 +1,15 @@
+id: bcbnsffzkm
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: Plan autonomous glossary handoff omits the progress writer's required event=current input after two failed evaluations.
+  readiness:
+    capability: build
+    reason: A narrow replacement must align transient Plan intent with the live Build-owned progress writer and execute that intent through the writer.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This defect blocks the active Plan integration task and all downstream glossary verification.

@@ -1,0 +1,14 @@
+id: vjvdgyenke
+artifact: progress
+record:
+  timestamp: 2026-07-27 12:03
+  type: fix
+  phase: build
+  what: Aligned Plan's autonomous glossary handoff with the live typed progress writer contract.
+  context:
+    intent: Correct replacement task egcoqgiagk while preserving the accepted Plan mode, review, privacy, abstention, refresh, unavailable-authority, and mutation-isolation behavior.
+    constraints: Plan emits only transient writer intent; Build remains the sole durable progress producer; no task evaluation, completion, supersession, TODO resolution, staging, commit, publication, tag, or push.
+    scope: Glossary consumer authority and loader validation; progress schema ownership metadata; served Plan instructions; source/package integration and parity tests.
+  discovered: The prior handoff omitted the writer-required event input and contradicted the runtime by claiming the writer assigned event. The live append contract requires event, reason, and ownership state; the writer creates caveat identity, capability=build, and transition_id=null for current.
+  verified: Authority-derived event=current, inferred_equivalence, and review_required passed through the real local typed CLI in disposable state; omitting event failed before mutation. Focused 165 tests, full source 2955 passed with 1 skipped, package boundary 16 passed, typecheck/build, Plan/vocabulary/cross/capability-contract validators, compact, lint with 0 errors and 152 existing warnings, touched format, and diff-check passed.
+  next: Prime owns independent evaluation, task lifecycle, TODO lifecycle, and commit; replacement task egcoqgiagk remains in progress.

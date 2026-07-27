@@ -7,6 +7,7 @@ import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 import auditInstructions from "../../src/capabilities/audit/instructions.js";
+import { glossaryCaveatContract } from "../../src/registries/glossaryCaveatContract.js";
 import {
   confirmedVariantGuardContract,
   glossaryConsumerContract,
@@ -155,7 +156,7 @@ describe("shared glossary entry authority", () => {
     });
   });
 
-  it("aligns active Build and Discuss consumption with mutation-free Audit and deferred Plan/prime integrations", () => {
+  it("aligns active Build, Discuss, and Plan consumption with mutation-free Audit and deferred prime integration", () => {
     const authority = fs.readFileSync(glossaryEntryAuthorityPath(), "utf8");
     const validation = fs.readFileSync(
       path.resolve(
@@ -177,12 +178,11 @@ describe("shared glossary entry authority", () => {
     }
     for (const surface of [validation, auditInstructions])
       expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
-    expect(authority).toMatch(/Build and Discuss bounded glossary consumption are active/);
-    expect(authority).toMatch(/Build and Discuss bounded glossary consumption are active/);
-    expect(authority).toMatch(/Plan and prime integration[\s\S]*remain deferred/);
+    expect(authority).toMatch(/Build, Discuss, and Plan bounded glossary consumption are active/);
+    expect(authority).toMatch(/Prime integration[\s\S]*remain deferred/i);
   });
 
-  it("loads active bounded acquisition and Build/Discuss advice while Plan and prime remain deferred", () => {
+  it("loads active bounded acquisition and Build/Discuss/Plan advice while prime remains deferred", () => {
     expect(glossaryConsumerContract()).toEqual({
       contractStatus: "active",
       implementation: {
@@ -192,7 +192,7 @@ describe("shared glossary entry authority", () => {
       capabilityIntegrations: {
         build: "active",
         discuss: "active",
-        plan: "declared_deferred",
+        plan: "active",
         prime: "declared_deferred",
       },
       outcomes: [
@@ -235,6 +235,12 @@ describe("shared glossary entry authority", () => {
       caveatEvents: ["current", "resolved", "superseded"],
       caveatExpiration: "none",
       downstreamGateStatus: "blocked_until_contract_valid",
+    });
+    expect(glossaryCaveatContract()).toMatchObject({
+      currentAppendCallerFields: ["event", "reason", "ownership_state"],
+      currentAppendCallerFixedValues: { event: "current" },
+      currentAppendWriterFields: ["caveat_id", "capability", "transition_id"],
+      currentAppendWriterFixedValues: { capability: "build", transition_id: null },
     });
   });
 
@@ -415,6 +421,67 @@ describe("shared glossary entry authority", () => {
       "consumer_boundary.refresh_events must require meaning-sensitive initial and changed intent inputs and exclude unrelated turns and background rereads",
     ],
     [
+      "Plan conflict persistence",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.plan_integration.forbidden_effects =
+          authority.consumer_boundary.plan_integration.forbidden_effects.filter(
+            (effect: string) => effect !== "plan_conflict",
+          );
+      },
+      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+    ],
+    [
+      "ambiguous mode inferred as autonomous",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.plan_integration.mode.signals.unknown_or_ambiguous.result =
+          "autonomous";
+      },
+      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+    ],
+    [
+      "interactive finalization before review",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.plan_integration.interaction.review.interactive_sequence.reverse();
+      },
+      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+    ],
+    [
+      "Plan-owned caveat identity",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.plan_integration.autonomous_handoff_intent.caller_fields.push(
+          "caveat_id",
+        );
+      },
+      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+    ],
+    [
+      "invalid Plan reason-state cross-pair",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.plan_integration.autonomous_handoff_intent.allowed_reason_state_pairs.push(
+          { reason: "personal_input_unavailable", ownership_state: "project_governs_exact" },
+        );
+      },
+      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+    ],
+    [
+      "personal-unavailable exact project handoff",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.plan_integration.exact_project_personal_unavailable.autonomous_handoff_intent =
+          "emitted";
+      },
+      "consumer_boundary.plan_integration must separate exact-project personal-input advice from unresolved autonomous handoff",
+    ],
+    [
+      "personal definition in Plan artifacts",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.disclosure.plan_artifacts.forbidden_content =
+          authority.consumer_boundary.disclosure.plan_artifacts.forbidden_content.filter(
+            (field: string) => field !== "personal_glossary_definition",
+          );
+      },
+      "consumer_boundary.disclosure must forbid private glossary content in every durable Plan surface while allowing user-authored terms and derived requirements",
+    ],
+    [
       "private definitions on durable surfaces",
       (authority: Record<string, any>) => {
         authority.consumer_boundary.disclosure.durable_surfaces.allowed.push("personal_definition");
@@ -451,11 +518,11 @@ describe("shared glossary entry authority", () => {
       "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",
     ],
     [
-      "a downstream gate that omits active Discuss integration",
+      "a downstream gate that omits active Plan integration",
       (authority: Record<string, any>) => {
         authority.consumer_boundary.downstream_gate.required_sections =
           authority.consumer_boundary.downstream_gate.required_sections.filter(
-            (section: string) => section !== "consumer_boundary.discuss_integration",
+            (section: string) => section !== "consumer_boundary.plan_integration",
           );
       },
       "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",

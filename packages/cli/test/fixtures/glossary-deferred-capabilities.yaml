@@ -10,7 +10,7 @@ cases:
     valid_declaration: active
     false_implementation_claim: implemented
   - capability: plan
-    valid_declaration: declared_deferred
+    valid_declaration: active
     false_implementation_claim: implemented
   - capability: build
     valid_declaration: active

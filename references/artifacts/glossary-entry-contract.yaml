@@ -4,8 +4,8 @@ purpose: >-
   Define glossary entry semantics once, specialize evidence ownership for
   personal and project entries, and declare one consumer-semantics and caveat
   lifecycle contract with bounded acquisition and shared advice resolution.
-  Build and Discuss consumption are active, Build alone owns caveat publication,
-  and Plan and prime integration remain deferred.
+  Build, Discuss, and Plan consumption are active, Build alone owns durable
+  caveat publication, and prime integration remains deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -395,7 +395,7 @@ consumer_boundary:
     capability_integrations:
       build: active
       discuss: active
-      plan: declared_deferred
+      plan: active
       prime: declared_deferred
   forbidden_persisted_entry_fields: [precedence, collision, review]
   deterministic_judgments:
@@ -745,6 +745,9 @@ consumer_boundary:
       - background_state_reread
       - status_or_progress_render
       - tool_output_without_requirement_or_intent_change
+      - artifact_rendering
+      - evaluator_text_without_user_change
+      - control_only_continuation
     rule: >-
       Refresh only at a governed event whose changed input can alter the meaning
       used by the capability. Rereads and incidental turns do not refresh advice.
@@ -783,6 +786,144 @@ consumer_boundary:
       - progress_caveat
       - plan_conflict
       - decision_conflict
+  plan_integration:
+    implementation: active
+    invocation: consumer_boundary.advice_resolution.invocation
+    governed_events: consumer_boundary.refresh_events
+    outcome_authority: consumer_boundary.outcome_matrix
+    disclosure: consumer_boundary.disclosure.transient_advice
+    mode:
+      precedence:
+        - explicit_delegated_or_orchestrated_no_pause
+        - direct_user_invocation_with_available_clarification_turn
+        - unknown_or_ambiguous
+      signals:
+        explicit_delegated_or_orchestrated_no_pause:
+          result: autonomous
+        direct_user_invocation_with_available_clarification_turn:
+          result: interactive
+        unknown_or_ambiguous:
+          result: interactive_waiting
+      silence_or_timeout: never_autonomous
+      rule: >-
+        Use the first matching signal. Unknown or conflicting mode evidence waits
+        for interactive clarification; silence and elapsed time never imply
+        autonomous execution.
+    interaction:
+      scope: current_user_authored_meaning_sensitive_input
+      transcript_scan: forbidden
+      control_only_continuation: no_refresh
+      review:
+        interactive_sequence:
+          - emit_one_focused_clarification
+          - wait_for_user_answer
+          - refresh_advice_for_affected_term
+          - finalize_affected_scope_requirements_tasks_acceptance
+        autonomous_sequence:
+          - abstain_from_disputed_meaning
+          - defer_affected_scope_requirements_tasks_acceptance
+          - emit_transient_handoff_intent
+        clarification_effects:
+          - not_plan_approval
+          - not_decision_confirmation
+          - not_glossary_approval
+          - not_publication_consent
+      exact_collision_rule: >-
+        Use an applicable project meaning for a divergent exact collision. Where
+        the divergence materially affects planning, represent only the bounded
+        tension and never disclose the personal definition.
+      unavailable_rule: >-
+        Continue without glossary grounding when advice is unavailable, invalid,
+        or has no applicable entry. In interactive Plan, ask ordinary focused
+        clarification only when the term is necessary and meaning-critical.
+    autonomous_handoff_intent:
+      status: transient_emitted_not_delivered
+      caller_fields: [event, reason, ownership_state]
+      fixed_values:
+        event: current
+      accepted_writer_flags:
+        [--glossary-caveat-event, --glossary-caveat-reason, --glossary-caveat-ownership-state]
+      writer_owned_fields: [caveat_id, capability, transition_id]
+      forbidden_fields: [caveat_id, capability, transition_id]
+      forbidden_claims: [delivered, stored, persisted, published, durable_envelope]
+      durable_writer: build
+      writer_interface: agentera state progress explain --verb append --format json
+      writer_result: authoritative_identity_and_six_field_envelope
+      allowed_reason_state_pairs:
+        - reason: inferred_equivalence
+          ownership_state: review_required
+        - reason: inferred_equivalence
+          ownership_state: project_governs_exact
+        - reason: authority_unavailable
+          ownership_state: authority_unavailable
+        - reason: personal_input_unavailable
+          ownership_state: authority_unavailable
+      rule: >-
+        Emit one intent only when autonomous meaning-sensitive work has unresolved
+        review or unavailable authority. The emitted-only intent contains exactly
+        event=current, reason, and ownership_state, the three caller inputs accepted
+        by the Build writer. It is not delivered, stored, persisted, or published.
+        The writer creates caveat_id, capability=build, and transition_id=null to
+        complete the authoritative current envelope.
+    exact_project_personal_unavailable:
+      primary_outcome: project_only
+      advisory_reason: personal_input_unavailable
+      advisory_ownership_state: project_governs_exact
+      plan_action: ground_exact_project_meaning
+      autonomous_handoff_intent: none
+      durable_unresolved_caveat: none
+      rule: >-
+        Unavailable personal input does not make exact project authority
+        unresolved. Keep the advisory transient and never emit or publish it as
+        an autonomous unresolved handoff.
+    unavailable:
+      invalid_project:
+        interactive: clarify_or_wait_when_meaning_critical
+        autonomous: abstain_defer_and_emit_authority_unavailable
+        handoff_pair: [authority_unavailable, authority_unavailable]
+      invalid_personal_after_project_gap:
+        interactive: clarify_or_wait_when_meaning_critical
+        autonomous: abstain_defer_and_emit_personal_input_unavailable
+        handoff_pair: [personal_input_unavailable, authority_unavailable]
+    behavior_matrix:
+      interactive_review_required:
+        mode: interactive
+        plan_action: clarify_refresh_then_finalize
+        handoff_intent: none
+      autonomous_review_required:
+        mode: autonomous
+        plan_action: abstain_and_defer
+        handoff_intent: emitted
+      exact_project_personal_unavailable:
+        mode: any
+        plan_action: ground_exact_project_meaning
+        handoff_intent: none
+      unavailable_unresolved:
+        mode: autonomous
+        plan_action: abstain_and_defer
+        handoff_intent: emitted
+      divergent_exact_collision:
+        mode: any
+        plan_action: ground_project_and_bound_tension
+        handoff_intent: none
+      irrelevant_or_no_applicable_entry:
+        mode: any
+        plan_action: leave_unaffected_planning_unchanged
+        handoff_intent: none
+    output_rule: >-
+      Use only the transient applicable meaning and owner needed for affected
+      planning. An autonomous handoff intent is emitted, not delivered or stored,
+      and contains exactly event=current, reason, and ownership_state for a later
+      Build write.
+    handoff: consumer_boundary.autonomous_caveat.handoff.plan
+    mutation: forbidden
+    forbidden_effects:
+      - glossary_write
+      - glossary_approval
+      - publication_consent
+      - progress_caveat
+      - plan_conflict
+      - decision_conflict
   disclosure:
     transient_advice:
       allowed: [outcome, applicable_meaning, applicable_owner, review, tension, advisory]
@@ -812,6 +953,34 @@ consumer_boundary:
       failure_rule: >-
         Errors identify only the invalid input class and a public recovery command;
         they never quote private bytes, definitions, paths, anchors, or provenance.
+    plan_artifacts:
+      surfaces:
+        [
+          scope,
+          requirements,
+          constraints,
+          tasks,
+          task_acceptance,
+          overall_acceptance,
+          diagnostics,
+          handoff,
+        ]
+      allowed_sources:
+        [user_authored_term, user_authored_clarification, derived_behavioral_requirement]
+      forbidden_content:
+        - profile_derived_definition
+        - personal_glossary_definition
+        - personal_evidence_anchor
+        - personal_profile_path
+        - raw_personal_glossary_section
+        - raw_project_glossary_section
+        - unrelated_entry
+        - provenance
+        - project_source_path
+      user_term_rule: >-
+        A term already supplied by the user may remain in the plan. Never copy or
+        quote a profile-derived or personal glossary definition; express only the
+        derived behavioral requirement needed by the plan.
   autonomous_caveat:
     durable_owner: build
     durable_channel: progress
@@ -839,13 +1008,25 @@ consumer_boundary:
       additional_fields: forbidden
       max_string_utf8_bytes: 64
       events: [current, resolved, superseded]
-      capabilities: [discuss, plan, build]
+      capabilities: [build]
       reasons: [inferred_equivalence, authority_unavailable, personal_input_unavailable]
       ownership_states: [project_governs_exact, review_required, authority_unavailable]
       transition_rule: >-
         current and resolved require null transition_id. Superseded requires one
         different opaque successor caveat_id. Every field is required; only
         transition_id may be null.
+      current_append:
+        caller_fields: [event, reason, ownership_state]
+        caller_fixed_values:
+          event: current
+        writer_fields: [caveat_id, capability, transition_id]
+        writer_fixed_values:
+          capability: build
+          transition_id: null
+        rule: >-
+          A current append requires the caller to submit event=current, reason,
+          and ownership_state. The writer creates the opaque identity, Build
+          capability, and null current-transition field; it never defaults event.
     lifecycle:
       current: >-
         Append current once when autonomous meaning-sensitive work cannot pause
@@ -867,15 +1048,20 @@ consumer_boundary:
         resolved or valid superseded transition makes it noncurrent.
     handoff:
       plan: >-
-        Plan cannot write progress. In autonomous mode it returns exactly one
-        privacy-safe envelope to Build for typed publication and stores no caveat
-        or conflict in plan state.
+        Plan cannot write progress. In autonomous mode it emits at most one
+        transient intent containing exactly event=current, reason, and
+        ownership_state and stores no caveat or conflict in plan state. It never
+        emits identity, capability, transition_id, or a purported complete or
+        delivered durable envelope.
       discuss: >-
         Discuss pauses for clarification; it does not persist caveat evidence or
         turn review into decision approval.
       build: >-
-        Build is the sole durable writer and later appends the envelope through
-        the typed progress writer. Advice never invokes glossary publication.
+        Build is the sole durable writer and may later pass all three emitted
+        intent inputs to the typed progress writer. The writer preserves the
+        caller-owned event, reason, and ownership_state and creates authoritative
+        identity, capability, and transition_id fields. Advice never invokes
+        glossary publication.
   publication_isolation:
     rule: >-
       Advice, tension, review, clarification, caveat publication, resolution, and
@@ -894,6 +1080,7 @@ consumer_boundary:
       - consumer_boundary.orthogonal_advisories
       - consumer_boundary.refresh_events
       - consumer_boundary.discuss_integration
+      - consumer_boundary.plan_integration
       - consumer_boundary.disclosure
       - consumer_boundary.autonomous_caveat
       - consumer_boundary.publication_isolation
@@ -930,9 +1117,9 @@ consumer_boundary:
     precedence: forbidden
   rule: >-
     Audit remains mutation-free and Build project-glossary publication is active.
-    Build and Discuss bounded glossary consumption are active, and Build progress
-    caveat publication is active. Personal Profile Full rendering and persistence
-    are active. Plan and prime integration, project-driven personal-profile
+    Build, Discuss, and Plan bounded glossary consumption are active, and Build
+    progress caveat publication is active. Personal Profile Full rendering and
+    persistence are active. Prime integration, project-driven personal-profile
     mutation, and docs-mapping mutation remain deferred.
 
 deferred_capability_contracts:
@@ -997,7 +1184,7 @@ deferred_capability_contracts:
     implementation:
       build: active
       discuss: active
-      plan: declared_deferred
+      plan: active
       prime: declared_deferred
     behavior: consumer_boundary
-    forbidden_current_claims: [plan_integration, prime_projection]
+    forbidden_current_claims: [prime_projection]

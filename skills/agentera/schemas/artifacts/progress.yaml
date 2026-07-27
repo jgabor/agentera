@@ -6,8 +6,8 @@
 #
 # The optional glossary_caveat envelope and Build writer are active. Readers and
 # non-Build capability integrations remain declared deferred. Build remains the
-# sole progress producer; Plan may only hand the bounded envelope to Build and
-# never persists it in plan state.
+# sole progress producer; Plan may only emit the bounded current writer intent
+# for Build and never delivers or persists it in plan state.
 #
 # The active authority is one progress_cycle entity per writer-owned file. The
 # numbered projection model below is retained only as an exact legacy migration
@@ -252,6 +252,18 @@ GLOSSARY_CAVEAT:
   implementation_status: active_build
   envelope_validator: packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat
   lifecycle_validator: packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities
+  current_append:
+    caller_fields: [event, reason, ownership_state]
+    caller_fixed_values:
+      event: current
+    writer_fields: [caveat_id, capability, transition_id]
+    writer_fixed_values:
+      capability: build
+      transition_id: null
+    rule: >-
+      The caller must submit event=current, reason, and ownership_state. The
+      writer creates caveat_id, capability=build, and transition_id=null; it does
+      not default the caller-owned event.
   fields:
     caveat_id:
       type: opaque_non_content_id
@@ -262,7 +274,7 @@ GLOSSARY_CAVEAT:
       required: true
     capability:
       type: enum
-      values: [discuss, plan, build]
+      values: [build]
       required: true
     reason:
       type: enum

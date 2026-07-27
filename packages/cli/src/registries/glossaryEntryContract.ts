@@ -775,14 +775,14 @@ export function validateGlossaryEntryContract(
   if (
     consumerImplementations?.build !== "active" ||
     consumerImplementations?.discuss !== "active" ||
-    consumerImplementations?.plan !== "declared_deferred" ||
+    consumerImplementations?.plan !== "active" ||
     consumerImplementations?.prime !== "declared_deferred" ||
     !sameStrings(consumers?.capabilities, ["discuss", "plan", "build"]) ||
     consumers?.behavior !== "consumer_boundary" ||
-    !sameStrings(consumers?.forbidden_current_claims, ["plan_integration", "prime_projection"])
+    !sameStrings(consumers?.forbidden_current_claims, ["prime_projection"])
   ) {
     errors.push(
-      "build and discuss glossary consumption must be active while plan and prime integrations remain deferred",
+      "build, discuss, and plan glossary consumption must be active while prime integration remains deferred",
     );
   }
   return errors;

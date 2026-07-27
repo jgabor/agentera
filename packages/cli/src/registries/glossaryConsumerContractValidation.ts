@@ -94,6 +94,10 @@ function nonEmpty(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function sameMappings(actual: unknown, expected: readonly Mapping[]): boolean {
+  return Array.isArray(actual) && JSON.stringify(actual) === JSON.stringify(expected);
+}
+
 export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const errors: string[] = [];
   const implementation = mapping(consumer?.implementation);
@@ -104,11 +108,11 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     implementation?.advice_resolution !== "active" ||
     integrations?.build !== "active" ||
     integrations?.discuss !== "active" ||
-    integrations?.plan !== "declared_deferred" ||
+    integrations?.plan !== "active" ||
     integrations?.prime !== "declared_deferred"
   ) {
     errors.push(
-      "consumer_boundary.implementation must activate Build and Discuss while Plan and prime integrations remain declared_deferred",
+      "consumer_boundary.implementation must activate Build, Discuss, and Plan while prime integration remains declared_deferred",
     );
   }
 
@@ -139,6 +143,152 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   ) {
     errors.push(
       "consumer_boundary.discuss_integration must use bounded transient advice without mutation",
+    );
+  }
+
+  const plan = mapping(consumer?.plan_integration);
+  const planMode = mapping(plan?.mode);
+  const planSignals = mapping(planMode?.signals);
+  const planInteraction = mapping(plan?.interaction);
+  const planReview = mapping(planInteraction?.review);
+  const handoffIntent = mapping(plan?.autonomous_handoff_intent);
+  const exactProjectUnavailable = mapping(plan?.exact_project_personal_unavailable);
+  const unavailable = mapping(plan?.unavailable);
+  const invalidProject = mapping(unavailable?.invalid_project);
+  const invalidPersonalGap = mapping(unavailable?.invalid_personal_after_project_gap);
+  const behavior = mapping(plan?.behavior_matrix);
+  if (
+    plan?.implementation !== "active" ||
+    plan?.invocation !== "consumer_boundary.advice_resolution.invocation" ||
+    plan?.governed_events !== "consumer_boundary.refresh_events" ||
+    plan?.outcome_authority !== "consumer_boundary.outcome_matrix" ||
+    plan?.disclosure !== "consumer_boundary.disclosure.transient_advice" ||
+    !sameStrings(planMode?.precedence, [
+      "explicit_delegated_or_orchestrated_no_pause",
+      "direct_user_invocation_with_available_clarification_turn",
+      "unknown_or_ambiguous",
+    ]) ||
+    mapping(planSignals?.explicit_delegated_or_orchestrated_no_pause)?.result !== "autonomous" ||
+    mapping(planSignals?.direct_user_invocation_with_available_clarification_turn)?.result !==
+      "interactive" ||
+    mapping(planSignals?.unknown_or_ambiguous)?.result !== "interactive_waiting" ||
+    planMode?.silence_or_timeout !== "never_autonomous" ||
+    !nonEmpty(planMode?.rule) ||
+    planInteraction?.scope !== "current_user_authored_meaning_sensitive_input" ||
+    planInteraction?.transcript_scan !== "forbidden" ||
+    planInteraction?.control_only_continuation !== "no_refresh" ||
+    !sameStrings(planReview?.interactive_sequence, [
+      "emit_one_focused_clarification",
+      "wait_for_user_answer",
+      "refresh_advice_for_affected_term",
+      "finalize_affected_scope_requirements_tasks_acceptance",
+    ]) ||
+    !sameStrings(planReview?.autonomous_sequence, [
+      "abstain_from_disputed_meaning",
+      "defer_affected_scope_requirements_tasks_acceptance",
+      "emit_transient_handoff_intent",
+    ]) ||
+    !sameStrings(planReview?.clarification_effects, [
+      "not_plan_approval",
+      "not_decision_confirmation",
+      "not_glossary_approval",
+      "not_publication_consent",
+    ]) ||
+    !nonEmpty(planInteraction?.exact_collision_rule) ||
+    !nonEmpty(planInteraction?.unavailable_rule) ||
+    handoffIntent?.status !== "transient_emitted_not_delivered" ||
+    !sameStrings(handoffIntent?.caller_fields, ["event", "reason", "ownership_state"]) ||
+    JSON.stringify(mapping(handoffIntent?.fixed_values)) !== JSON.stringify({ event: "current" }) ||
+    !sameStrings(handoffIntent?.accepted_writer_flags, [
+      "--glossary-caveat-event",
+      "--glossary-caveat-reason",
+      "--glossary-caveat-ownership-state",
+    ]) ||
+    !sameStrings(handoffIntent?.writer_owned_fields, [
+      "caveat_id",
+      "capability",
+      "transition_id",
+    ]) ||
+    !sameStrings(handoffIntent?.forbidden_fields, ["caveat_id", "capability", "transition_id"]) ||
+    !sameStrings(handoffIntent?.forbidden_claims, [
+      "delivered",
+      "stored",
+      "persisted",
+      "published",
+      "durable_envelope",
+    ]) ||
+    handoffIntent?.durable_writer !== "build" ||
+    handoffIntent?.writer_interface !==
+      "agentera state progress explain --verb append --format json" ||
+    handoffIntent?.writer_result !== "authoritative_identity_and_six_field_envelope" ||
+    !sameMappings(handoffIntent?.allowed_reason_state_pairs, [
+      { reason: "inferred_equivalence", ownership_state: "review_required" },
+      { reason: "inferred_equivalence", ownership_state: "project_governs_exact" },
+      { reason: "authority_unavailable", ownership_state: "authority_unavailable" },
+      { reason: "personal_input_unavailable", ownership_state: "authority_unavailable" },
+    ]) ||
+    !nonEmpty(handoffIntent?.rule) ||
+    !nonEmpty(plan?.output_rule) ||
+    plan?.handoff !== "consumer_boundary.autonomous_caveat.handoff.plan" ||
+    plan?.mutation !== "forbidden" ||
+    !sameStrings(plan?.forbidden_effects, [
+      "glossary_write",
+      "glossary_approval",
+      "publication_consent",
+      "progress_caveat",
+      "plan_conflict",
+      "decision_conflict",
+    ])
+  ) {
+    errors.push(
+      "consumer_boundary.plan_integration must define deterministic mode, ordered review, autonomous abstention, and an emitted event/reason/state writer intent",
+    );
+  }
+  if (
+    exactProjectUnavailable?.primary_outcome !== "project_only" ||
+    exactProjectUnavailable?.advisory_reason !== "personal_input_unavailable" ||
+    exactProjectUnavailable?.advisory_ownership_state !== "project_governs_exact" ||
+    exactProjectUnavailable?.plan_action !== "ground_exact_project_meaning" ||
+    exactProjectUnavailable?.autonomous_handoff_intent !== "none" ||
+    exactProjectUnavailable?.durable_unresolved_caveat !== "none" ||
+    !nonEmpty(exactProjectUnavailable?.rule) ||
+    invalidProject?.interactive !== "clarify_or_wait_when_meaning_critical" ||
+    invalidProject?.autonomous !== "abstain_defer_and_emit_authority_unavailable" ||
+    !sameStrings(invalidProject?.handoff_pair, [
+      "authority_unavailable",
+      "authority_unavailable",
+    ]) ||
+    invalidPersonalGap?.interactive !== "clarify_or_wait_when_meaning_critical" ||
+    invalidPersonalGap?.autonomous !== "abstain_defer_and_emit_personal_input_unavailable" ||
+    !sameStrings(invalidPersonalGap?.handoff_pair, [
+      "personal_input_unavailable",
+      "authority_unavailable",
+    ]) ||
+    mapping(behavior?.interactive_review_required)?.mode !== "interactive" ||
+    mapping(behavior?.interactive_review_required)?.plan_action !==
+      "clarify_refresh_then_finalize" ||
+    mapping(behavior?.interactive_review_required)?.handoff_intent !== "none" ||
+    mapping(behavior?.autonomous_review_required)?.mode !== "autonomous" ||
+    mapping(behavior?.autonomous_review_required)?.plan_action !== "abstain_and_defer" ||
+    mapping(behavior?.autonomous_review_required)?.handoff_intent !== "emitted" ||
+    mapping(behavior?.exact_project_personal_unavailable)?.mode !== "any" ||
+    mapping(behavior?.exact_project_personal_unavailable)?.plan_action !==
+      "ground_exact_project_meaning" ||
+    mapping(behavior?.exact_project_personal_unavailable)?.handoff_intent !== "none" ||
+    mapping(behavior?.unavailable_unresolved)?.mode !== "autonomous" ||
+    mapping(behavior?.unavailable_unresolved)?.plan_action !== "abstain_and_defer" ||
+    mapping(behavior?.unavailable_unresolved)?.handoff_intent !== "emitted" ||
+    mapping(behavior?.divergent_exact_collision)?.mode !== "any" ||
+    mapping(behavior?.divergent_exact_collision)?.plan_action !==
+      "ground_project_and_bound_tension" ||
+    mapping(behavior?.divergent_exact_collision)?.handoff_intent !== "none" ||
+    mapping(behavior?.irrelevant_or_no_applicable_entry)?.mode !== "any" ||
+    mapping(behavior?.irrelevant_or_no_applicable_entry)?.plan_action !==
+      "leave_unaffected_planning_unchanged" ||
+    mapping(behavior?.irrelevant_or_no_applicable_entry)?.handoff_intent !== "none"
+  ) {
+    errors.push(
+      "consumer_boundary.plan_integration must separate exact-project personal-input advice from unresolved autonomous handoff",
     );
   }
 
@@ -439,6 +589,9 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "background_state_reread",
       "status_or_progress_render",
       "tool_output_without_requirement_or_intent_change",
+      "artifact_rendering",
+      "evaluator_text_without_user_change",
+      "control_only_continuation",
     ]) ||
     !nonEmpty(refresh?.rule)
   ) {
@@ -450,6 +603,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const disclosure = mapping(consumer?.disclosure);
   const transient = mapping(disclosure?.transient_advice);
   const durable = mapping(disclosure?.durable_surfaces);
+  const planArtifacts = mapping(disclosure?.plan_artifacts);
   const durableForbidden = [
     "personal_definition",
     "project_definition",
@@ -492,10 +646,44 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "consumer_boundary.disclosure must bound transient advice and exclude definitions, anchors, paths, raw sections, unrelated entries, and provenance from durable output and errors",
     );
   }
+  if (
+    !sameStrings(planArtifacts?.surfaces, [
+      "scope",
+      "requirements",
+      "constraints",
+      "tasks",
+      "task_acceptance",
+      "overall_acceptance",
+      "diagnostics",
+      "handoff",
+    ]) ||
+    !sameStrings(planArtifacts?.allowed_sources, [
+      "user_authored_term",
+      "user_authored_clarification",
+      "derived_behavioral_requirement",
+    ]) ||
+    !sameStrings(planArtifacts?.forbidden_content, [
+      "profile_derived_definition",
+      "personal_glossary_definition",
+      "personal_evidence_anchor",
+      "personal_profile_path",
+      "raw_personal_glossary_section",
+      "raw_project_glossary_section",
+      "unrelated_entry",
+      "provenance",
+      "project_source_path",
+    ]) ||
+    !nonEmpty(planArtifacts?.user_term_rule)
+  ) {
+    errors.push(
+      "consumer_boundary.disclosure must forbid private glossary content in every durable Plan surface while allowing user-authored terms and derived requirements",
+    );
+  }
 
   const caveat = mapping(consumer?.autonomous_caveat);
   const identity = mapping(caveat?.identity);
   const envelope = mapping(caveat?.envelope);
+  const currentAppend = mapping(envelope?.current_append);
   const lifecycle = mapping(caveat?.lifecycle);
   const handoff = mapping(caveat?.handoff);
   if (
@@ -529,7 +717,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "ownership_state",
       "transition_id",
     ]) ||
-    !sameStrings(envelope?.capabilities, ["discuss", "plan", "build"]) ||
+    !sameStrings(envelope?.capabilities, ["build"]) ||
     !sameStrings(envelope?.reasons, [
       "inferred_equivalence",
       "authority_unavailable",
@@ -540,6 +728,13 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "review_required",
       "authority_unavailable",
     ]) ||
+    !sameStrings(currentAppend?.caller_fields, ["event", "reason", "ownership_state"]) ||
+    JSON.stringify(mapping(currentAppend?.caller_fixed_values)) !==
+      JSON.stringify({ event: "current" }) ||
+    !sameStrings(currentAppend?.writer_fields, ["caveat_id", "capability", "transition_id"]) ||
+    JSON.stringify(mapping(currentAppend?.writer_fixed_values)) !==
+      JSON.stringify({ capability: "build", transition_id: null }) ||
+    !nonEmpty(currentAppend?.rule) ||
     !nonEmpty(envelope?.transition_rule) ||
     !nonEmpty(lifecycle?.current) ||
     !nonEmpty(lifecycle?.resolved) ||
@@ -580,6 +775,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "consumer_boundary.orthogonal_advisories",
       "consumer_boundary.refresh_events",
       "consumer_boundary.discuss_integration",
+      "consumer_boundary.plan_integration",
       "consumer_boundary.disclosure",
       "consumer_boundary.autonomous_caveat",
       "consumer_boundary.publication_isolation",
@@ -607,8 +803,10 @@ export function validateConsumerEvidenceOwner(consumer: Mapping | null): string[
   const cycle = mapping(mapping(progress.CYCLE)?.["11"]);
   const schema = mapping(progress.GLOSSARY_CAVEAT);
   const fields = mapping(schema?.fields);
+  const schemaCurrentAppend = mapping(schema?.current_append);
   const caveat = mapping(consumer?.autonomous_caveat);
   const envelope = mapping(caveat?.envelope);
+  const authorityCurrentAppend = mapping(envelope?.current_append);
   if (
     cycle?.field !== "glossary_caveat" ||
     cycle?.implementation_status !== "active_build" ||
@@ -621,7 +819,20 @@ export function validateConsumerEvidenceOwner(consumer: Mapping | null): string[
     !sameStrings(Object.keys(fields ?? {}), strings(envelope?.fields)) ||
     !sameStrings(mapping(fields?.capability)?.values, strings(envelope?.capabilities)) ||
     !sameStrings(mapping(fields?.reason)?.values, strings(envelope?.reasons)) ||
-    !sameStrings(mapping(fields?.ownership_state)?.values, strings(envelope?.ownership_states))
+    !sameStrings(mapping(fields?.ownership_state)?.values, strings(envelope?.ownership_states)) ||
+    !sameStrings(
+      schemaCurrentAppend?.caller_fields,
+      strings(authorityCurrentAppend?.caller_fields),
+    ) ||
+    JSON.stringify(mapping(schemaCurrentAppend?.caller_fixed_values)) !==
+      JSON.stringify(mapping(authorityCurrentAppend?.caller_fixed_values)) ||
+    !sameStrings(
+      schemaCurrentAppend?.writer_fields,
+      strings(authorityCurrentAppend?.writer_fields),
+    ) ||
+    JSON.stringify(mapping(schemaCurrentAppend?.writer_fixed_values)) !==
+      JSON.stringify(mapping(authorityCurrentAppend?.writer_fixed_values)) ||
+    !nonEmpty(schemaCurrentAppend?.rule)
   ) {
     return [
       "consumer_boundary.autonomous_caveat must match the active Build-owned progress_cycle.glossary_caveat schema",

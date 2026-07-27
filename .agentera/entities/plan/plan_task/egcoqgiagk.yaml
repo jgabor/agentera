@@ -1,0 +1,23 @@
+id: egcoqgiagk
+artifact: plan
+record:
+  plan: upicwqdskc
+  name: Align Plan handoff with progress writer
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN autonomous Plan cannot pause on unresolved glossary review WHEN it emits transient handoff intent THEN the intent contains exactly event=current, reason, and ownership_state and claims neither delivery nor persistence.
+    - GIVEN the transient intent WHEN Build submits it to the live typed progress writer THEN the writer accepts it and creates the authoritative identity, capability, and transition fields.
+    - GIVEN the shared contract and served Plan instructions WHEN caller-owned and writer-owned fields are validated THEN no contradictory event ownership statement or invalid reason-state pair remains.
+    - GIVEN the corrected handoff WHEN Plan integration is regression-tested THEN the previously passing mode, review ordering, privacy, abstention, no-refresh, and mutation-isolation behavior remains intact.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "Independent Audit PASS: exact three-field emitted-only intent passed through the freshly built local typed writer in disposable state; missing event rejected before mutation; authority ownership, pairs, privacy, mode, sequencing, and regressions passed."
+      recorded_at: 2026-07-27 12:08
+      writer_command: agentera state plan record-evaluation

@@ -29,14 +29,26 @@ const forbiddenCurrentSupportPatterns = [
     "Claude install command",
     /(?:\bnpx\s+(?:-y\s+)?skills\s+add[^\n]*(?:\bclaude\b|claude-code)|\bclaude\s+(?:plugin|install|setup|configure)\b[^\n]*agentera)/i,
   ],
-  ["active native runtime roster", /Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot/i],
+  [
+    "active native runtime roster",
+    /Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot/i,
+  ],
   ["runtime selector write requirement", /runtime writes require an explicit selector/i],
   ["managed native repair", /managed runtime config, plugins, hooks, commands, and safe cleanup/i],
   ["active package-update flag", /External package manager changes require `--update-packages`/i],
-  ["active narrow bundle selector", /`--only bundle`\s*\|\s*Compatibility selector for narrow app-file work/i],
-  ["active runtime adapter", /Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation/i],
+  [
+    "active narrow bundle selector",
+    /`--only bundle`\s*\|\s*Compatibility selector for narrow app-file work/i,
+  ],
+  [
+    "active runtime adapter",
+    /Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation/i,
+  ],
   ["active plugin hooks", /Hooks that are shipped by active runtime plugin package surfaces/i],
-  ["named native worker roster", /worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI/i],
+  [
+    "named native worker roster",
+    /worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI/i,
+  ],
   ["runtime setup doctor", /Diagnostic command surface for install\/runtime health/i],
 ] as const;
 
@@ -83,12 +95,9 @@ function read(relativePath: string): string {
 
 function decodeRawCapabilityModule(relativePath: string): string {
   const source = read(relativePath);
-  const marker = "JSON.parse(String.raw`";
-  const start = source.indexOf(marker);
-  const end = source.indexOf("`);", start + marker.length);
-  expect(start, `${relativePath} instruction marker`).toBeGreaterThanOrEqual(0);
-  expect(end, `${relativePath} instruction terminator`).toBeGreaterThan(start);
-  return JSON.parse(source.slice(start + marker.length, end)) as string;
+  const literal = source.match(/JSON\.parse\(\s*String\.raw`([\s\S]*?)`,?\s*\);/);
+  expect(literal, `${relativePath} instruction literal`).not.toBeNull();
+  return JSON.parse(literal![1]) as string;
 }
 
 function currentSupportViolations(content: string): string[] {
@@ -98,18 +107,17 @@ function currentSupportViolations(content: string): string[] {
 }
 
 function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void {
-  if (
-    path.isAbsolute(relativePath)
-    || relativePath.startsWith("~")
-    || relativePath.includes("{")
-  ) {
+  if (path.isAbsolute(relativePath) || relativePath.startsWith("~") || relativePath.includes("{")) {
     return;
   }
 
   const wildcard = relativePath.search(/[?*[]/);
   if (wildcard >= 0) {
     const prefix = relativePath.slice(0, wildcard);
-    collectTextSurfaces(prefix.endsWith("/") ? prefix.slice(0, -1) : path.dirname(prefix), surfaces);
+    collectTextSurfaces(
+      prefix.endsWith("/") ? prefix.slice(0, -1) : path.dirname(prefix),
+      surfaces,
+    );
     return;
   }
 
@@ -147,11 +155,13 @@ describe("retired runtime current-surface policy", () => {
   it("keeps public install surfaces free of active Claude claims", () => {
     const surfaces = new Set<string>([packageRegistryPath, "references/cli/vocabulary.md"]);
     for (const value of publicInstallSurfaceRoots) collectTextSurfaces(value, surfaces);
-    expect([...surfaces]).toEqual(expect.arrayContaining([
-      "README.md",
-      "packages/cli/README.md",
-      "packages/cli/shim/lib/exec.mjs",
-    ]));
+    expect([...surfaces]).toEqual(
+      expect.arrayContaining([
+        "README.md",
+        "packages/cli/README.md",
+        "packages/cli/shim/lib/exec.mjs",
+      ]),
+    );
     for (const surface of surfaces) {
       expect(currentSupportViolations(read(surface)), surface).toEqual([]);
     }
@@ -163,14 +173,26 @@ describe("retired runtime current-surface policy", () => {
     ["supported list", "All supported runtimes: codex, claude-code, cursor"],
     ["opt-out flag", "Run profile with --no-claude"],
     ["install command", "npx skills add jgabor/agentera -g -a claude-code"],
-    ["active native roster", "Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot."],
+    [
+      "active native roster",
+      "Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot.",
+    ],
     ["selector write contract", "Runtime writes require an explicit selector and --yes."],
-    ["managed native repair", "App repair includes managed runtime config, plugins, hooks, commands, and safe cleanup."],
+    [
+      "managed native repair",
+      "App repair includes managed runtime config, plugins, hooks, commands, and safe cleanup.",
+    ],
     ["package update flag", "External package manager changes require `--update-packages`."],
     ["bundle selector", "| `--only bundle` | Compatibility selector for narrow app-file work |"],
-    ["runtime adapter", "Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation."],
+    [
+      "runtime adapter",
+      "Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation.",
+    ],
     ["plugin hooks", "Hooks that are shipped by active runtime plugin package surfaces."],
-    ["native worker roster", "Runtime support for worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI."],
+    [
+      "native worker roster",
+      "Runtime support for worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI.",
+    ],
     ["setup doctor", "Diagnostic command surface for install/runtime health."],
   ])("rejects %s regressions", (_label, claim) => {
     expect(currentSupportViolations(claim)).not.toEqual([]);
@@ -187,7 +209,9 @@ describe("retired runtime current-surface policy", () => {
   it("documents host-neutral shared-skill support and retired Claude only", () => {
     const vocabulary = read("references/cli/vocabulary.md");
     expect(vocabulary).toContain("does not ship host-native package surfaces");
-    expect(vocabulary).toContain("Claude Code is a retired migration and consent-gated historical-import source");
+    expect(vocabulary).toContain(
+      "Claude Code is a retired migration and consent-gated historical-import source",
+    );
   });
 
   it("documents the shared-skill and CLI active contract", () => {
@@ -222,8 +246,12 @@ describe("retired runtime current-surface policy", () => {
     }
 
     expect(read("README.md")).toContain("app, project-state, shared-skill, and CLI evidence");
-    expect(read("packages/cli/src/cli/help.ts")).toContain("Home directory for shared-skill diagnosis");
-    expect(read("references/cli/agent-ready-state-contract.yaml")).toContain("canonical shared-skill diagnosis");
+    expect(read("packages/cli/src/cli/help.ts")).toContain(
+      "Home directory for shared-skill diagnosis",
+    );
+    expect(read("references/cli/agent-ready-state-contract.yaml")).toContain(
+      "canonical shared-skill diagnosis",
+    );
     expect(read("references/cli/prime-consumer-compatibility.yaml")).toContain(
       "app and project-state recommendation",
     );
@@ -244,10 +272,7 @@ describe("retired runtime current-surface policy", () => {
       expect(content, surface).not.toContain("install-agentera-skill");
       expect(content, surface).not.toMatch(/OpenCode portable-skill install/i);
     }
-    for (const surface of [
-      "packages/cli/README.md",
-      "packages/cli/shim/lib/exec.mjs",
-    ]) {
+    for (const surface of ["packages/cli/README.md", "packages/cli/shim/lib/exec.mjs"]) {
       const content = read(surface);
       expect(content, surface).toContain("shared skill");
       expect(content, surface).toContain("CLI");

@@ -4,7 +4,7 @@ record:
   name: Integrate Plan disambiguation and autonomous evidence
   depends_on:
     - jthktiznyn
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN known terminology at a governed planning event WHEN scope and acceptance are specified THEN they consistently use the authoritative or reviewed meaning without rereading unrelated turns.
     - GIVEN ambiguity could alter downstream requirements WHEN interactive planning can pause THEN review occurs before affected requirements are fixed.
@@ -12,3 +12,16 @@ record:
     - GIVEN caveat and error traps WHEN Plan output is inspected THEN no private definition, anchor, profile path, raw section, unrelated entry, or provenance leaks.
     - GIVEN proportional planning sequences WHEN behavior is verified THEN pass, review, autonomous caveat, unavailable, and no-refresh cases are covered.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Plan's transient writer intent omits required caller input event=current and falsely says the writer assigns event. Tests assert the two-field shape without submitting it through the live writer, so autonomous handoff remains unusable.
+    provenance:
+      attempt_id: audit-2
+      source: Independent retry-2 Audit ses_05d2fce84ffeZ35pfAnB0eJ49G. Criteria 1, 2, and 4 passed; criteria 3 and 5 failed at Plan instructions, glossary authority, progress writer, and workflow tests.
+      recorded_at: 2026-07-27 11:38
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - egcoqgiagk
+  superseded_reason: Completed replacement aligns autonomous Plan handoff with the live writer and preserves all other audited Plan integration criteria.
