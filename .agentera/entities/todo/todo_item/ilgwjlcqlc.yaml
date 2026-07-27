@@ -1,0 +1,15 @@
+id: ilgwjlcqlc
+artifact: todo
+record:
+  severity: degraded
+  status: resolved
+  description: Same-minute progress writes use opaque ID tie-breaking, allowing Prime to report an older publication as latest and breaking package parity.
+  readiness:
+    capability: build
+    reason: Progress needs persisted writer-owned publication ordering with legacy fallback, cursor-safe retrieval, and source/package regression evidence.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This correctness defect blocks constructed-package parity and development metadata preparation.

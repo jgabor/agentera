@@ -16,6 +16,7 @@ import {
   discoverEntities,
   publishEntity,
   publishEntityUnderLock,
+  withEntityWriterLock,
   type DiscoveredEntity,
 } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
@@ -32,12 +33,18 @@ import {
   validateProgressGlossaryCaveat,
   type GlossaryCaveatEnvelope,
 } from "./progressGlossaryCaveat.js";
+import {
+  nextProgressPublicationOrder,
+  progressPublicationOrder,
+  PROGRESS_PUBLICATION_ORDER_FIELD,
+} from "./progressPublicationOrder.js";
+import { detectStateModeBinding } from "./stateMode.js";
 
 const ARTIFACT = "progress";
 const BOUNDARY = "progress_cycle";
 const SUMMARY = "progress_summary";
-const ORDER = "timestamp_desc_then_id_asc";
-const CURSOR_VERSION = 1;
+const ORDER = "timestamp_desc_then_publication_order_desc_then_id_asc";
+const CURSOR_VERSION = 2;
 
 interface ProgressContract {
   authorityPath: string;
@@ -257,9 +264,29 @@ export function appendProgressEntity(
   options: AppendProgressEntityOptions = {},
 ): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  if (!req.dryRun && !options.publicationContext) {
+    const binding = detectStateModeBinding(req.projectRoot, sourceRoot);
+    if (binding.mode !== "entities") {
+      throw new Error("progress publication requires the durable entity-mode marker; legacy mode remains authoritative");
+    }
+    try {
+      return withEntityWriterLock(binding.publicationContext, () => appendProgressEntity(req, {
+        ...options,
+        publicationContext: binding.publicationContext,
+      }));
+    } finally {
+      binding.publicationContext.close();
+    }
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(req.values, PROGRESS_PUBLICATION_ORDER_FIELD) ||
+    Object.prototype.hasOwnProperty.call(req.callerPayload, PROGRESS_PUBLICATION_ORDER_FIELD)
+  ) {
+    throw new Error("progress publication_order is writer-owned and cannot be supplied by callers");
+  }
   const contract = progressContract(sourceRoot);
   const discovery = discoverEntities(req.projectRoot, sourceRoot);
-  sortedProgress(discovery);
+  const existing = sortedProgress(discovery);
   const caveatContract = glossaryCaveatContract(
     path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
   );
@@ -268,7 +295,34 @@ export function appendProgressEntity(
     return { schemaVersion: "agentera.stateWrite.v1", command: "state progress append", status: "pass", path: prepared.replay.path, id: prepared.replay.id as string, artifact: ARTIFACT, record: prepared.replay.record as JsonObject, operation: { verb: "append", dry_run: req.dryRun, idempotent_replay: true }, validation: { status: "pass", violations: [] } };
   }
   if (prepared.caveat) req.values.glossary_caveat = prepared.caveat;
-  const record = progressRecord(req.values, caveatContract);
+  const unsequencedRecord = progressRecord(req.values, caveatContract);
+  const exactReplay = options.id
+    ? existing.find(({ id }) => id === options.id)
+    : undefined;
+  if (exactReplay?.record) {
+    const { publication_order: _publicationOrder, ...existingCallerFields } = exactReplay.record;
+    if (canonicalRecordJson(existingCallerFields) === canonicalRecordJson(unsequencedRecord)) {
+      return {
+        schemaVersion: "agentera.stateWrite.v1",
+        command: "state progress append",
+        status: "pass",
+        path: exactReplay.path,
+        id: exactReplay.id!,
+        artifact: ARTIFACT,
+        record: exactReplay.record,
+        operation: { verb: "append", dry_run: req.dryRun, idempotent_replay: true },
+        validation: { status: "pass", violations: [] },
+      };
+    }
+  }
+  const record = req.dryRun
+    ? unsequencedRecord
+    : {
+        ...unsequencedRecord,
+        [PROGRESS_PUBLICATION_ORDER_FIELD]: nextProgressPublicationOrder(
+          existing.flatMap(({ record }) => record ? [record] : []),
+        ),
+      };
   if (req.dryRun) {
     options.publicationContext?.assertValid();
     const allocationRoot = options.publicationContext?.pinnedPath() ?? req.projectRoot;
@@ -325,7 +379,11 @@ export function appendProgressEntity(
 }
 
 function sortKey(entity: DiscoveredEntity): string {
-  return `${String(entity.record?.timestamp ?? "")}\0${entity.id}`;
+  return canonicalRecordJson([
+    String(entity.record?.timestamp ?? ""),
+    progressPublicationOrder(entity.record),
+    entity.id,
+  ]);
 }
 
 function sortedProgress(discovery: ReturnType<typeof discoverEntities>): DiscoveredEntity[] {
@@ -353,9 +411,16 @@ function sortedProgress(discovery: ReturnType<typeof discoverEntities>): Discove
       "Run agentera check validate state, repair the canonical entity file, and retry.",
     );
   return progress.sort(
-    (left, right) =>
-      String(right.record!.timestamp ?? "").localeCompare(String(left.record!.timestamp ?? "")) ||
-      left.id!.localeCompare(right.id!),
+    (left, right) => {
+      const timestamp = String(right.record!.timestamp ?? "").localeCompare(String(left.record!.timestamp ?? ""));
+      if (timestamp) return timestamp;
+      const leftOrder = progressPublicationOrder(left.record);
+      const rightOrder = progressPublicationOrder(right.record);
+      if (leftOrder !== null && rightOrder !== null && leftOrder !== rightOrder) return rightOrder - leftOrder;
+      if (leftOrder !== null && rightOrder === null) return -1;
+      if (leftOrder === null && rightOrder !== null) return 1;
+      return left.id!.localeCompare(right.id!);
+    },
   );
 }
 
@@ -378,7 +443,7 @@ function snapshotId(projectRoot: string, entities: DiscoveredEntity[], filters: 
     order: ORDER,
     filters,
     source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: entityRoot },
-    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: entities.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
+    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: entities.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor_v2" },
     entries: entities.map((entity) => entry(projectRoot, entity)),
   });
 }
@@ -392,8 +457,8 @@ function decodeCursor(token: string, projectRoot: string, authorityPath: string)
   if (!encoded || !signed || extra)
     throw listFailure(
       "cursor_invalid",
-      "progress cursor is malformed",
-      "Copy next_cursor exactly, or omit --cursor to start from the current snapshot.",
+      "progress cursor is malformed or was issued for a prior ordering contract",
+      "Omit --cursor to establish a new version 2 progress snapshot.",
     );
   let payload: unknown;
   try {
@@ -401,8 +466,8 @@ function decodeCursor(token: string, projectRoot: string, authorityPath: string)
   } catch {
     throw listFailure(
       "cursor_invalid",
-      "progress cursor is malformed",
-      "Copy next_cursor exactly, or omit --cursor to start from the current snapshot.",
+      "progress cursor is malformed or was issued for a prior ordering contract",
+      "Omit --cursor to establish a new version 2 progress snapshot.",
     );
   }
   if (
@@ -416,8 +481,8 @@ function decodeCursor(token: string, projectRoot: string, authorityPath: string)
   ) {
     throw listFailure(
       "cursor_invalid",
-      "progress cursor does not match the progress entity list contract",
-      "Omit --cursor to establish a new snapshot.",
+      "progress cursor does not match the version 2 progress ordering contract",
+      "Omit --cursor to establish a new version 2 snapshot.",
     );
   }
   return payload as unknown as ProgressCursor;
@@ -617,7 +682,7 @@ export function listProgressEntities(
       source_contract: {
         authority: "references/artifacts/state-storage-authority.yaml",
         detail: filtered.some(isSummaryEntity) ? "mixed" : "full",
-        cursor: "opaque_snapshot_cursor",
+        cursor: "opaque_snapshot_cursor_v2",
       },
       ...(remaining > 0
         ? {

@@ -61,6 +61,20 @@ ENTITY_AUTHORITY:
   mutation: agentera state progress explain --verb append --format json
   direct_file_edits: forbidden
   legacy_schema_below: migration_input_only
+  semantic_recency:
+    primary: timestamp_desc
+    same_minute: publication_order_desc
+    final_fallback: opaque_id_asc_for_missing_or_duplicate_publication_order
+    latest: first_full_progress_cycle_in_canonical_list_order
+  publication_order:
+    type: positive_safe_integer
+    presence: optional_for_legacy_required_for_new_publications
+    visibility: public_record_metadata
+    owner: progress_writer
+    assignment: max_valid_existing_plus_one_under_publication_lock
+    caller_input: forbidden
+    dry_run: omitted
+    copy_and_restart: persisted_with_entity
 
 GROUP_PREFIXES:
   BUDGET: PB
@@ -246,6 +260,19 @@ CYCLE:
       appends it through the typed progress writer. It is never glossary
       publication, decision approval, plan state, or a container for meanings,
       definitions, anchors, paths, raw sections, unrelated entries, or provenance.
+  12:
+    id: PR12
+    field: publication_order
+    type: integer
+    required: false
+    cli_owned: true
+    description: >-
+      Positive safe integer assigned by the progress writer under the publication
+      lock. New full records use it to resolve equal-minute semantic recency.
+      Legacy records may omit it; callers cannot supply or override it.
+    validation:
+      - "When present, must be a positive safe integer"
+      - "Must be omitted from caller input and assigned by the CLI writer"
 
 GLOSSARY_CAVEAT:
   schema_version: agentera.glossaryConsumerCaveat.v1

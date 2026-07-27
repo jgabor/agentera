@@ -33,6 +33,129 @@ function isolatedPackageEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEn
   return env;
 }
 
+interface ProgressPrimeObservation {
+  json: unknown;
+  status: unknown;
+  text: string;
+  publicationOrders: number[];
+}
+
+function sameMinuteProgressPrimeWorkflow(
+  bin: string,
+  root: string,
+): ProgressPrimeObservation {
+  const project = path.join(root, "project");
+  const home = path.join(root, "home");
+  fs.rmSync(root, { recursive: true, force: true });
+  fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+  fs.mkdirSync(home, { recursive: true });
+  fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  const seedId = "aaaaaaaaaa";
+  const seedWhat = "adversarial markerless lexical minimum";
+  const seedDirectory = path.join(project, ".agentera/entities/progress/progress_cycle");
+  fs.mkdirSync(seedDirectory, { recursive: true });
+  fs.writeFileSync(path.join(seedDirectory, `${seedId}.yaml`), YAML.stringify({
+    id: seedId,
+    artifact: "progress",
+    record: {
+      timestamp: "2026-07-27 17:00",
+      type: "fix",
+      phase: "build",
+      what: seedWhat,
+      context: { intent: "prove publication order defeats opaque ID order" },
+    },
+  }));
+  const env = isolatedPackageEnv({ HOME: home });
+  const invoke = (args: string[]) => {
+    const result = run(process.execPath, [bin, ...args], project, env);
+    expect(result.status, `${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
+    return result.stdout;
+  };
+  const append = (what: string, flags: string[]) => JSON.parse(invoke([
+    "state", "progress", "append", "--timestamp", "2026-07-27 17:00",
+    "--type", "fix", "--phase", "build", "--what", what,
+    "--intent", "verify source and package same-minute lifecycle parity",
+    "--verified", "same-minute lifecycle publication verified", "--format", "json",
+    ...flags,
+  ]));
+  const current = append("current publication", [
+    "--glossary-caveat-event", "current", "--glossary-caveat-reason", "inferred_equivalence",
+    "--glossary-caveat-ownership-state", "review_required",
+  ]);
+  const successor = append("successor publication", [
+    "--glossary-caveat-event", "current", "--glossary-caveat-reason", "authority_unavailable",
+    "--glossary-caveat-ownership-state", "authority_unavailable",
+  ]);
+  const superseded = append("superseded publication", [
+    "--glossary-caveat-event", "superseded", "--glossary-caveat-reason", "inferred_equivalence",
+    "--glossary-caveat-ownership-state", "review_required",
+    "--glossary-caveat-id", current.record.glossary_caveat.caveat_id,
+    "--glossary-caveat-transition-id", successor.record.glossary_caveat.caveat_id,
+  ]);
+  const resolved = append("final resolved publication", [
+    "--glossary-caveat-event", "resolved", "--glossary-caveat-reason", "authority_unavailable",
+    "--glossary-caveat-ownership-state", "authority_unavailable",
+    "--glossary-caveat-id", successor.record.glossary_caveat.caveat_id,
+  ]);
+  const publications = [current, successor, superseded, resolved];
+  expect(publications.map((entry) => entry.record.publication_order)).toEqual([1, 2, 3, 4]);
+  expect(superseded.record.glossary_caveat).toMatchObject({
+    caveat_id: current.record.glossary_caveat.caveat_id,
+    transition_id: successor.record.glossary_caveat.caveat_id,
+  });
+  expect(resolved.record.glossary_caveat).toMatchObject({
+    caveat_id: successor.record.glossary_caveat.caveat_id,
+    transition_id: null,
+  });
+  const listed = JSON.parse(invoke(["state", "progress", "list", "--format", "json"]));
+  expect(listed.entries[0]).toMatchObject({ id: resolved.id, record: { what: "final resolved publication", publication_order: 4 } });
+  expect(listed.entries.slice(0, 4).map((entry: any) => entry.id)).toEqual(publications.toReversed().map((entry) => entry.id));
+  expect(listed.entries[4]).toMatchObject({ id: seedId, record: { what: seedWhat } });
+  expect(listed.entries[4].record).not.toHaveProperty("publication_order");
+  expect(listed.entries.map((entry: any) => entry.id).toSorted()[0]).toBe(seedId);
+  expect(listed.entries[0].id).not.toBe(seedId);
+  const idOnlyLatest = listed.entries.toSorted((left: any, right: any) =>
+    right.record.timestamp.localeCompare(left.record.timestamp) || left.id.localeCompare(right.id));
+  expect(idOnlyLatest[0]).toMatchObject({ id: seedId, record: { what: seedWhat } });
+  const json = JSON.parse(invoke(["prime", "--format", "json"]));
+  const status = JSON.parse(invoke(["prime", "--context", "status", "--format", "json"]));
+  const text = invoke(["prime"]);
+  expect(json.progress.latest).toMatchObject({ id: resolved.id, what: "final resolved publication" });
+  expect(JSON.stringify(json.progress.latest)).not.toContain(seedWhat);
+  expect(JSON.stringify(status.capability_context.context.status_context)).toContain("final resolved publication");
+  expect(JSON.stringify(status.capability_context.context.status_context)).not.toContain(seedWhat);
+  expect(text).toContain("final resolved publication");
+  expect(text).not.toContain(seedWhat);
+  expect(JSON.stringify(json.attention ?? [])).not.toContain("Glossary meaning review required");
+
+  const replacements = new Map<string, string>([
+    [current.id, "<cycle-current>"],
+    [successor.id, "<cycle-successor>"],
+    [superseded.id, "<cycle-superseded>"],
+    [resolved.id, "<cycle-resolved>"],
+    [current.record.glossary_caveat.caveat_id, "<caveat-current>"],
+    [successor.record.glossary_caveat.caveat_id, "<caveat-successor>"],
+  ]);
+  const normalize = (value: unknown): unknown => {
+    if (typeof value === "string") {
+      let normalized = value;
+      for (const [actual, replacement] of replacements) normalized = normalized.replaceAll(actual, replacement);
+      return normalized;
+    }
+    if (Array.isArray(value)) return value.map((item) => normalize(item));
+    if (value && typeof value === "object") return Object.fromEntries(
+      Object.entries(value).map(([field, item]) => [field, normalize(item)]),
+    );
+    return value;
+  };
+  return {
+    json: normalize(json),
+    status: normalize(status),
+    text: normalize(text) as string,
+    publicationOrders: publications.map((entry) => entry.record.publication_order),
+  };
+}
+
 function isContained(root: string, candidate: string): boolean {
   const relative = path.relative(root, candidate);
   return relative === "" || (
@@ -273,6 +396,34 @@ describe("npm distribution boundary", () => {
     );
     expect(source).toEqual(EXPECTED_PRODUCER_READINESS);
     expect(packaged).toEqual(source);
+  });
+
+  it("matches complete source and constructed-package Prime envelopes after same-minute lifecycle publications", { timeout: 120_000 }, () => {
+    const workflowRoot = path.join(fixture.root, "same-minute-prime-parity");
+    const executableRoot = path.join(fixture.root, "same-minute-executable");
+    fs.cpSync(fixture.constructionRoot, executableRoot, { recursive: true });
+    if (!fs.existsSync(path.join(executableRoot, "node_modules"))) {
+      fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(executableRoot, "node_modules"), "dir");
+    }
+    const source = sameMinuteProgressPrimeWorkflow(
+      path.join(executableRoot, "dist/bin/agentera.js"),
+      workflowRoot,
+    );
+    fs.rmSync(executableRoot, { recursive: true, force: true });
+    fs.cpSync(fixture.packageRoot, executableRoot, { recursive: true });
+    const packaged = sameMinuteProgressPrimeWorkflow(
+      path.join(executableRoot, "dist/bin/agentera.js"),
+      workflowRoot,
+    );
+    expect(packaged.json).toEqual(source.json);
+    expect(packaged.status).toEqual(source.status);
+    expect(packaged.text).toEqual(source.text);
+    expect(packaged.publicationOrders).toEqual(source.publicationOrders);
+    expect(fs.existsSync(workflowRoot)).toBe(true);
+    fs.rmSync(workflowRoot, { recursive: true, force: true });
+    fs.rmSync(executableRoot, { recursive: true, force: true });
+    expect(fs.existsSync(workflowRoot)).toBe(false);
+    expect(fs.existsSync(executableRoot)).toBe(false);
   });
 
   it("flags a reintroduced native descriptor path in the package inventory", () => {

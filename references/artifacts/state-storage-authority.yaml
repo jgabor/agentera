@@ -176,14 +176,42 @@ entity_target:
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
         temporal_fields: [timestamp]
         timestamp_format: 'YYYY-MM-DD HH:MM'
+        publication_order:
+          field: publication_order
+          type: positive_safe_integer
+          presence: optional_for_legacy_required_for_new_publications
+          visibility: public_record_metadata
+          ownership: progress_writer_only
+          assignment: max_valid_existing_progress_publication_order_plus_one
+          synchronization: .agentera/.writer.lock
+          dry_run: omitted_without_consuming_or_mutating_order
+          caller_input: forbidden
+          malformed_or_spoofed_input: reject_before_mutation_with_bounded_diagnostics
+          durability: persisted_in_each_new_progress_cycle_entity
+          privacy: bounded_ordinal_without_time_identity_or_content
       retrieval:
         exact: agentera state progress get --id ID --format json
         list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
-        ordering: timestamp_desc_then_id_asc
+        ordering: timestamp_desc_then_publication_order_desc_then_id_asc
+        semantic_recency: >-
+          The first full progress cycle is latest. Timestamp remains the public
+          minute-compatible primary key. Within one timestamp, a valid writer-owned
+          publication_order sorts descending; a marked publication sorts after all
+          unmarked legacy records observed by that publication and therefore before
+          them in newest-first retrieval. Missing markers are legacy unordered ties.
+          Equal valid markers can result from independently published histories and
+          do not establish relative publication order. Missing or equal markers use
+          opaque ID ascending only as a deterministic final fallback and never claim
+          reconstructed publication chronology.
         default_limit: 20
         maximum_limit: 100
         max_utf8_bytes: 32768
-        cursor: opaque_snapshot_cursor
+        cursor: opaque_snapshot_cursor_v2
+        cursor_compatibility: >-
+          Version 2 continuation keys include timestamp, publication_order presence
+          and value, and opaque ID. Version 1 progress cursors are rejected with
+          recovery to omit --cursor and establish a new snapshot; authority changes
+          also invalidate prior cursor signatures by design.
         mutation_after_snapshot: cursor_snapshot_unavailable
         omission: whole_entries_only_with_count_reason_continuation_and_exact_get
         scalar_truncation: forbidden
@@ -647,7 +675,7 @@ entity_target:
           detail_availability: summary
           compatibility: degraded
           caveats: required
-          ordering: full_timestamp_desc_then_id_asc_then_summary_id_asc
+          ordering: full_timestamp_desc_then_publication_order_desc_then_id_asc_then_summary_id_asc
           summary_ordering: canonical_id_asc_without_chronology_claim
           mutation: read_only
       - boundary: decision_summary

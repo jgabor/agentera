@@ -1,0 +1,24 @@
+id: niuqlusbxt
+artifact: plan
+record:
+  plan: upicwqdskc
+  name: Make progress recency publication-ordered
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN multiple progress writes share a public minute timestamp WHEN list and Prime read them THEN the last committed publication is latest regardless of opaque ID ordering.
+    - GIVEN progress publication ordering WHEN records are written or copied and the process restarts THEN ordering is persisted, writer-owned, monotonic under the publication lock, and cannot be spoofed by caller input.
+    - GIVEN paginated and legacy progress histories WHEN retrieval runs THEN cursors remain deterministic without duplicate or skipped records, legacy records without ordering metadata remain readable, and only genuinely unordered legacy ties use the declared fallback.
+    - GIVEN fresh source and canonically constructed package processes WHEN same-minute lifecycle workflows run THEN complete relation-normalized Prime JSON, status, and text envelopes match and report the final publication as latest.
+    - GIVEN the recency correction WHEN repository and package gates run THEN state authority, schemas, tests, typecheck, build, compact, validators, privacy, cleanup, and no-publication boundaries pass without metadata preparation.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Runtime recency passes, but compacted-summary authority still declares old ID-only ordering, and package regression uses random IDs plus collapsed publication orders so the old comparator can pass probabilistically.
+    provenance:
+      attempt_id: audit-2
+      source: "Independent retry-2 Audit PASS: publication-ordered recency, lock/concurrency, cursor/legacy behavior, deterministic adversarial source/package parity, complete Prime envelopes, discovery, gates, and cleanup all pass."
+      recorded_at: 2026-07-27 18:30
+      writer_command: agentera state plan record-evaluation

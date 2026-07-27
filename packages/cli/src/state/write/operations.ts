@@ -411,11 +411,18 @@ export function isWritableArtifact(value: string): value is WritableArtifact {
   return WRITABLE_ARTIFACTS.includes(value as WritableArtifact);
 }
 
+export function writerOwnedFields(artifact: string): string[] {
+  if (artifact === "progress") return ["id", "artifact", "publication_order"];
+  if (artifact === "health") return ["id", "artifact", "appended_at"];
+  return [];
+}
+
 export function stateWriterArtifactContract(artifact: string, projectRoot = process.cwd()): JsonObject | null {
   if (!isWritableArtifact(artifact)) return null;
   void projectRoot;
   const verbs = verbsForArtifact(artifact);
   const mutations = verbs.filter((verb) => verb !== "explain");
+  const owned = writerOwnedFields(artifact);
   return {
     artifact,
     mutations,
@@ -427,6 +434,7 @@ export function stateWriterArtifactContract(artifact: string, projectRoot = proc
       ]),
     ),
     supports_dry_run: true,
+    ...(owned.length ? { writer_owned_fields: owned } : {}),
   };
 }
 

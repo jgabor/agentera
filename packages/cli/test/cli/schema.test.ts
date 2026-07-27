@@ -188,6 +188,18 @@ describe("cli schema", () => {
       artifact: "decisions",
       explain_command: "agentera state decisions explain --format json",
     });
+    const progress = (
+      payload.artifact_schemas as Array<{ name: string; write_interface: unknown; fields: unknown[] }>
+    ).find((artifact) => artifact.name === "progress");
+    expect(progress?.write_interface).toMatchObject({
+      artifact: "progress",
+      writer_owned_fields: ["id", "artifact", "publication_order"],
+    });
+    expect(progress?.fields).toContainEqual(expect.objectContaining({
+      field: "publication_order",
+      type: "integer",
+      required: false,
+    }));
     const experiments = (
       payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
     ).find((artifact) => artifact.name === "experiments");

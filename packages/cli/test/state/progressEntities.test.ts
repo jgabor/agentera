@@ -1,9 +1,11 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+import YAML from "yaml";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { main } from "../../src/cli/dispatch.js";
@@ -19,8 +21,11 @@ import { detectStateMode } from "../../src/state/stateMode.js";
 import { executeStateWrite } from "../../src/state/write/transaction.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { buildExplain } from "../../src/state/write/explain.js";
+import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
+import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 const roots: string[] = [];
+const progressPublicationWorker = fileURLToPath(new URL("./progressPublicationWorker.mjs", import.meta.url));
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-progress-entities-"));
@@ -249,6 +254,7 @@ describe("progress entity authority", () => {
       artifact: "progress",
       path: ".agentera/entities/progress/progress_cycle/<id>.yaml",
       next: {},
+      writer_owned_fields: ["id", "artifact", "publication_order"],
     });
 
     const dryRunRoot = project();
@@ -322,6 +328,7 @@ describe("progress entity authority", () => {
     });
     expect(replay).toMatchObject({ id: "aaaaaaaaaa", operation: { idempotent_replay: true } });
     expect(first.record).not.toHaveProperty("number");
+    expect(first.record).toMatchObject({ publication_order: 1 });
     expect(getProgressEntity(root, "aaaaaaaaaa")).toMatchObject({
       entry: {
         id: "aaaaaaaaaa",
@@ -392,6 +399,7 @@ describe("progress entity authority", () => {
 
     const first = listProgressEntities(root, 2) as any;
     expect(first.entries.map((entry: any) => entry.id)).toEqual(["aaaaaaaaaa", "cccccccccc"]);
+    expect(first.entries.map((entry: any) => entry.record.publication_order)).toEqual([3, 2]);
     expect(first).toMatchObject({
       omitted: true,
       omitted_count: 1,
@@ -414,6 +422,179 @@ describe("progress entity authority", () => {
 
     const filtered = listProgressEntities(root, 1, { status: "feat" }) as any;
     expect(filtered.retrieval.continue).toContain('--status "feat"');
+
+    const authorityPath = path.resolve(import.meta.dirname, "../../../..", "references/artifacts/state-storage-authority.yaml");
+    const prior = decodeListCursor(first.next_cursor, root, authorityPath) as any;
+    const priorCursor = encodeListCursor({
+      ...prior,
+      version: 1,
+      order: "timestamp_desc_then_id_asc",
+    }, root, authorityPath);
+    expect(() => listProgressEntities(root, 2, {}, priorCursor)).toThrow(/version 2 progress ordering contract/);
+  });
+
+  it("makes the last same-minute publication latest across restart and copy regardless of opaque ID", () => {
+    const root = project();
+    activate(root);
+    appendProgressEntity(request(root, "published first"), { id: "aaaaaaaaaa" });
+    appendProgressEntity(request(root, "published last"), { id: "zzzzzzzzzz" });
+
+    const listed = listProgressEntities(root, 20) as any;
+    expect(listed.entries.map((entry: any) => [entry.id, entry.record.publication_order])).toEqual([
+      ["zzzzzzzzzz", 2],
+      ["aaaaaaaaaa", 1],
+    ]);
+
+    const copied = project();
+    fs.rmSync(copied, { recursive: true });
+    fs.cpSync(root, copied, { recursive: true });
+    expect((listProgressEntities(copied, 1) as any).entries[0]).toMatchObject({
+      id: "zzzzzzzzzz",
+      record: { what: "published last", publication_order: 2 },
+    });
+  });
+
+  it("projects the final same-minute publication as latest in complete Prime JSON, status, and text", () => {
+    const root = project();
+    activate(root);
+    appendProgressEntity(request(root, "lexically first but published first"), { id: "aaaaaaaaaa" });
+    appendProgressEntity(request(root, "final resolved publication"), { id: "zzzzzzzzzz" });
+    const prime = (args: string[]) => {
+      const cwd = process.cwd();
+      let out = "";
+      let err = "";
+      process.chdir(root);
+      try {
+        const rc = main(["node", "agentera", "prime", ...args], {
+          out: (text) => { out += text; },
+          err: (text) => { err += text; },
+        });
+        expect(rc, err || out).toBe(0);
+        return out;
+      } finally {
+        process.chdir(cwd);
+      }
+    };
+    const json = JSON.parse(prime(["--format", "json"]));
+    expect(json.progress.latest).toMatchObject({ id: "zzzzzzzzzz", what: "final resolved publication" });
+    const status = JSON.parse(prime(["--context", "status", "--format", "json"]));
+    expect(JSON.stringify(status.capability_context.context.status_context)).toContain("final resolved publication");
+    const text = prime([]);
+    expect(text).toContain("final resolved publication");
+    expect(text).not.toContain("lexically first but published first");
+  });
+
+  it("assigns unique monotonic same-minute order under the cross-process publication lock", async () => {
+    const root = project();
+    activate(root);
+    const start = path.join(root, "race.start");
+    const ready = ["first", "second"].map((name) => path.join(root, `${name}.ready`));
+    const results = ["first", "second"].map((name) => path.join(root, `${name}.json`));
+    const children = results.map((result, index) => new Promise<void>((resolve, reject) => {
+      const child = spawn(process.execPath, [progressPublicationWorker], {
+        cwd: path.resolve(import.meta.dirname, "../.."),
+        env: {
+          ...sourceSubprocessEnv(),
+          AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."),
+          AGENTERA_PROGRESS_RACE_ROOT: root,
+          AGENTERA_PROGRESS_RACE_READY: ready[index],
+          AGENTERA_PROGRESS_RACE_START: start,
+          AGENTERA_PROGRESS_RACE_RESULT: result,
+          AGENTERA_PROGRESS_RACE_WHAT: `publisher ${index}`,
+        },
+        stdio: "pipe",
+      });
+      let stderr = "";
+      child.stderr.setEncoding("utf8");
+      child.stderr.on("data", (chunk) => { stderr += chunk; });
+      child.on("error", reject);
+      child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`progress worker exited ${code}: ${stderr}`)));
+    }));
+    const deadline = Date.now() + 10_000;
+    while (!ready.every((file) => fs.existsSync(file))) {
+      if (Date.now() > deadline) throw new Error("progress workers did not become ready");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    fs.writeFileSync(start, "start\n");
+    await Promise.all(children);
+    for (const result of results.map((file) => JSON.parse(fs.readFileSync(file, "utf8")))) {
+      expect(result.code, result.stderr).toBe(0);
+    }
+    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.record.publication_order)).toEqual([2, 1]);
+  });
+
+  it("orders mixed legacy and duplicate-marker ties deterministically without inventing chronology", () => {
+    const root = project();
+    activate(root);
+    const directory = path.join(root, ".agentera/entities/progress/progress_cycle");
+    fs.mkdirSync(directory, { recursive: true });
+    const write = (id: string, what: string, publicationOrder?: number) => fs.writeFileSync(
+      path.join(directory, `${id}.yaml`),
+      dumpYamlMapping({
+        id,
+        artifact: "progress",
+        record: {
+          timestamp: "2026-07-17 12:00",
+          type: "feat",
+          phase: "build",
+          what,
+          context: { intent: what },
+          ...(publicationOrder === undefined ? {} : { publication_order: publicationOrder }),
+        },
+      }),
+    );
+    write("dddddddddd", "legacy d");
+    write("bbbbbbbbbb", "legacy b");
+    write("cccccccccc", "duplicate c", 4);
+    write("aaaaaaaaaa", "duplicate a", 4);
+
+    expect(validateEntityState(root).valid).toBe(true);
+    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id)).toEqual([
+      "aaaaaaaaaa",
+      "cccccccccc",
+      "bbbbbbbbbb",
+      "dddddddddd",
+    ]);
+    const published = appendProgressEntity(request(root, "new publication"), { id: "zzzzzzzzzz" });
+    expect(published.record.publication_order).toBe(5);
+    expect((listProgressEntities(root, 1) as any).entries[0].id).toBe("zzzzzzzzzz");
+  });
+
+  it("rejects malformed or spoofed publication order and leaves dry-run ordering unconsumed", () => {
+    const root = project();
+    activate(root);
+    let out = "";
+    let err = "";
+    const rc = main([
+      "node", "agentera", "state", "progress", "append", "--project", root,
+      "--type", "fix", "--phase", "build", "--what", "spoofed", "--intent", "spoofed",
+      "--publication-order", "99", "--format", "json",
+    ], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+    expect(rc).toBe(2);
+    expect(out + err).toMatch(/publication-order|unrecognized/);
+    expect(Buffer.byteLength(out + err)).toBeLessThan(2048);
+    expectNoProgressWrite(root);
+
+    const spoofed = request(root, "spoofed");
+    spoofed.values.publication_order = 99;
+    spoofed.callerPayload.publication_order = 99;
+    expect(() => appendProgressEntity(spoofed)).toThrow(/writer-owned/);
+    expectNoProgressWrite(root);
+
+    const preview = request(root, "preview");
+    preview.dryRun = true;
+    expect(appendProgressEntity(preview, { id: "aaaaaaaaaa" }).record).not.toHaveProperty("publication_order");
+    expectNoProgressWrite(root);
+    expect(appendProgressEntity(request(root, "published"), { id: "zzzzzzzzzz" }).record.publication_order).toBe(1);
+
+    const target = path.join(root, ".agentera/entities/progress/progress_cycle/zzzzzzzzzz.yaml");
+    const malformed = YAML.parse(fs.readFileSync(target, "utf8"));
+    malformed.record.publication_order = "private-spoof";
+    fs.writeFileSync(target, dumpYamlMapping(malformed));
+    const validation = validateEntityState(root);
+    expect(validation.valid).toBe(false);
+    expect(validation.issues[0]?.message).toMatch(/positive safe integer/);
+    expect(() => listProgressEntities(root, 20)).toThrow(/corrupt/);
   });
 
   it("refuses scalar truncation when one canonical entry exceeds the list budget", () => {
@@ -482,6 +663,10 @@ describe("progress entity authority", () => {
     expect(
       (listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id).sort(),
     ).toEqual(["aaaaaaaaaa", "bbbbbbbbbb"]);
+    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id)).toEqual([
+      "aaaaaaaaaa",
+      "bbbbbbbbbb",
+    ]);
     expect(fs.existsSync(path.join(root, ".agentera/progress.yaml"))).toBe(false);
   });
 });

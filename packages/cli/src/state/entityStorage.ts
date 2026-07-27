@@ -19,6 +19,7 @@ import { planTaskRecordViolations } from "./write/planEvaluation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 import { glossaryCaveatContract, type GlossaryCaveatContract } from "../registries/glossaryCaveatContract.js";
 import { applyGlossaryCaveatLifecycleValidation, validateProgressGlossaryCaveat } from "./progressGlossaryCaveat.js";
+import { progressPublicationOrderViolations } from "./progressPublicationOrder.js";
 const MAX_DIAGNOSTICS = 100;
 const heldEntityWriterLocks = new Set<string>();
 interface EntityDefinition {
@@ -323,7 +324,7 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
     ...missingPaths.map((field) => `${field} is required by the canonical ${boundary} record contract`),
     ...forbidden.map((field) => `${field} is forbidden by the canonical entity authority`),
     ...shapeViolations,
-    ...(boundary === "progress_cycle" ? validateProgressGlossaryCaveat(record, model.glossaryCaveat).violations : []),
+    ...(boundary === "progress_cycle" ? [...progressPublicationOrderViolations(record), ...validateProgressGlossaryCaveat(record, model.glossaryCaveat).violations] : []),
     ...(definition.summaryMigrationProvenance ? summaryMigrationProvenanceViolations(boundary, record, definition.summaryMigrationProvenance, model.forbiddenAliases, sourceBinding) : []),
   ];
 }

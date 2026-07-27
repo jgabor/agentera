@@ -4,7 +4,7 @@ record:
   name: Verify constructed-package parity
   depends_on:
     - uargzxttzx
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN a constructed package without repository source files WHEN consumer workflows run in new processes THEN advice, capability, caveat, attention, privacy, and failure behavior matches source execution.
     - GIVEN disposable package fixtures WHEN workflows run THEN live project state, the real profile, user-owned glossaries, and source fixtures remain unchanged.
@@ -12,3 +12,16 @@ record:
     - GIVEN source and package evidence WHEN compared THEN any divergence blocks metadata preparation with an actionable correction.
     - GIVEN the substantive feature result WHEN package parity passes THEN it is ready for immutable source selection without publication or retained package artifacts.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Strict package parity found same-minute progress writes ordered by opaque ID rather than publication order, so source/package and real Prime can report different older records as latest; distinct-minute control passes.
+    provenance:
+      attempt_id: audit-2
+      source: Independent retry-2 Audit ses_05c6703dbffemS5Eo4iO2clkEU reproduced the defect from minute timestamp authority, ID tie-break, and Prime first-record selection. Criteria 2-5 pass; criterion 1 fails and Task 10 remains blocked.
+      recorded_at: 2026-07-27 17:26
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - niuqlusbxt
+  superseded_reason: Completed replacement fixes same-minute recency and provides deterministic complete source/package parity evidence.

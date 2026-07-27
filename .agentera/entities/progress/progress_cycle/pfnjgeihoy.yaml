@@ -1,0 +1,17 @@
+id: pfnjgeihoy
+artifact: progress
+record:
+  timestamp: 2026-07-27 18:20
+  type: fix
+  phase: build
+  what: Made compacted-summary authority and package parity prove publication-ordered progress recency adversarially
+  context:
+    intent: Correct Audit blockers for task niuqlusbxt without changing its accepted runtime ordering design
+    constraints: No staging, commit, evaluation mutation, task completion, TODO resolution, metadata or changelog preparation, publication, registry mutation, app refresh, or profile refresh
+    unknowns: Independent evaluator verdict remains pending
+    scope: Compacted-summary progress authority/test, mixed full-summary ordering regression, adversarial package parity, and writer-owned schema/explain discovery
+  inspiration: Independent Audit found stale compacted-summary authority and probabilistic package evidence
+  discovered: "A markerless same-minute aaaaaaaaaa seed deterministically models the old comparator failure: lexical ID order selects the seed while publication order places all four writer events ahead of it"
+  verified: Focused authority, order, summary, schema, and health tests passed 63/63; adversarial package test passed 13/13; full source passed 220 files with 2981 passed and 1 skipped after one bounded heap measurement retry; typecheck and fresh build passed; state, vocabularyAuthority, cross-capability, and capability-contract validators passed; compact passed; verify:package passed 17/17; lint had 0 errors; canonical pack dry-run retained no artifact; diff check passed
+  next: Prime owns independent evaluation, task lifecycle, TODO ilgwjlcqlc, commit, and Task 10 release synchronization
+  publication_order: 2

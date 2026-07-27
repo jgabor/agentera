@@ -1,0 +1,17 @@
+id: dnwmcxiphk
+artifact: progress
+record:
+  timestamp: 2026-07-27 17:49
+  type: fix
+  phase: build
+  what: Made equal-minute progress recency follow persisted writer-owned publication order under the existing publication lock
+  context:
+    intent: Fix task niuqlusbxt so list and Prime select the last committed same-minute progress publication regardless of opaque ID
+    constraints: No staging, commit, task lifecycle mutation, TODO resolution, metadata preparation, publication, registry mutation, app refresh, or profile refresh
+    unknowns: Independent evaluator verdict remains pending
+    scope: references/artifacts/state-storage-authority.yaml; progress schema/model, writer, retrieval/cursor, Prime and package regressions
+  inspiration: Package-parity reproduction in task niuqlusbxt exposed timestamp ties falling through to random ID order
+  discovered: Existing entity authority permits a per-record monotonic ordinal without a singleton; independently merged duplicate ordinals remain genuinely unordered and use the declared ID fallback
+  verified: pnpm test passed 220 files and 2980 tests with 1 skipped; typecheck and fresh build passed; state, vocabularyAuthority, cross-capability, and capability-contract validators passed; compact passed; verify:package passed 17 tests; complete constructed-source/package Prime envelopes matched; lint had 0 errors; pack:dry-run created no artifact
+  next: Prime owns evaluation, lifecycle completion, TODO ilgwjlcqlc, commit, and any later dev.38 metadata; do not perform those actions in this worker
+  publication_order: 1

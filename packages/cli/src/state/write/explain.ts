@@ -5,6 +5,7 @@ import { loadArtifactRegistry, resolveArtifactPath } from "../../registries/arti
 import { schemaBudget, projectedFields } from "./fields.js";
 import {
   operationSpec,
+  writerOwnedFields,
   verbsForArtifact,
   type WritableArtifact,
   type WriteVerb,
@@ -74,6 +75,8 @@ export function buildExplain(
     budget: schemaBudget(artifact, validator),
     fields,
   };
+  const owned = writerOwnedFields(artifact);
+  if (owned.length) result.writer_owned_fields = owned;
   if (spec.compacts) {
     result.compaction = `not applicable; each canonical ${artifact} entity is authority and no aggregate projection or numbered archive is written`;
   }

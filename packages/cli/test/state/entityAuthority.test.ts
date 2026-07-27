@@ -110,11 +110,17 @@ describe("Decision 94 entity authority", () => {
         forbidden_fields: expect.arrayContaining(["number", "stable_id", "artifact_id", "entry_number"]),
         required_paths: ["context.intent"],
         temporal_fields: ["timestamp"],
+        publication_order: {
+          field: "publication_order",
+          type: "positive_safe_integer",
+          ownership: "progress_writer_only",
+          caller_input: "forbidden",
+        },
       },
       retrieval: {
         exact: "agentera state progress get --id ID --format json",
-        ordering: "timestamp_desc_then_id_asc",
-        cursor: "opaque_snapshot_cursor",
+        ordering: "timestamp_desc_then_publication_order_desc_then_id_asc",
+        cursor: "opaque_snapshot_cursor_v2",
         scalar_truncation: "forbidden",
       },
     });
@@ -263,7 +269,7 @@ describe("Decision 94 entity authority", () => {
         "progress_summary",
         "progress",
         "agentera state progress get --id ID --format json",
-        "full_timestamp_desc_then_id_asc_then_summary_id_asc",
+        "full_timestamp_desc_then_publication_order_desc_then_id_asc_then_summary_id_asc",
       ],
       [
         "decision_summary",

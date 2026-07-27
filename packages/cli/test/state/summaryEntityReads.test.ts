@@ -137,6 +137,20 @@ describe("summary entity ordinary reads", () => {
     expect(() => listProgressEntities(root, 1, {}, first.next_cursor, { sourceRoot: SOURCE_ROOT })).toThrow(/changed after this cursor snapshot/);
   });
 
+  it("orders same-minute full progress by publication order before compacted summaries", () => {
+    const root = project();
+    summary(root, "progress", "aaaaaaaaaa", "retained compacted history");
+    appendProgressEntity(request(root, "progress", "append", { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "first full", context: { intent: "first" } }), { id: "zzzzzzzzzz", sourceRoot: SOURCE_ROOT });
+    appendProgressEntity(request(root, "progress", "append", { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "last full", context: { intent: "last" } }), { id: "yyyyyyyyyy", sourceRoot: SOURCE_ROOT });
+    const listed = listProgressEntities(root, 20, {}, undefined, { sourceRoot: SOURCE_ROOT }) as any;
+    expect(listed.entries.map((entry: any) => [entry.id, entry.record.publication_order ?? null])).toEqual([
+      ["yyyyyyyyyy", 2],
+      ["zzzzzzzzzz", 1],
+      ["aaaaaaaaaa", null],
+    ]);
+    expect(listed.entries[2]).toMatchObject({ boundary: "progress_summary", detail_availability: "summary" });
+  });
+
   it("hashes the exact composed decision list projection and contract", () => {
     const root = project(); mixed(root);
     const listed = listDecisionEntities(root, 20, undefined, undefined, { sourceRoot: SOURCE_ROOT }) as any;
