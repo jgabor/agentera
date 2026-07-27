@@ -9,6 +9,18 @@ Decisions use entity authority: every decision, revision, and satisfaction recor
 
 Append with \`agentera state decisions append\`; update satisfaction with \`agentera state decisions update --id ID\` after checking the live explain contract. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\`; never direct-read \`deliberation_context.profile.path\`. The grounding command excludes the owned personal Glossary section and fails closed when its boundaries are malformed.
 
+### Governed terminology advice
+
+At initial meaning-sensitive user input, identify the requested term from that current input and invoke the exact structured, headless \`agentera report glossary-advice --input <file|-> --format json\` interface. Invoke it again only when a later user-authored change to a deliberation premise, or a clarification answer for the affected term, can alter the meaning in use. Do not invoke it for unchanged replay, scratchpad or status rendering, unrelated turns, tool output, background rereads, or Done-only control. Inspect only the current user-authored meaning-sensitive input; never add an unbounded or persistent transcript scan.
+
+Use only \`advice.applicable_meaning\` with \`advice.applicable_owner\` for the current deliberation. An exact project meaning governs, while a personal meaning applies only after the CLI proves a project gap. Do not quote unrelated glossary content or silently infer that differently named terms are equivalent.
+
+When \`review\` requires acknowledgment, ask one focused clarification first—before meaning-sensitive reasoning or decision framing—with a Done option and no second question. A clarification answer may identify the one host-reviewed \`inferred_equivalence\` relation allowed by the existing request contract; then rerun advice for that affected term before relying on either meaning. This clarification is not a confirmed Discuss decision, glossary approval, or publication consent.
+
+For a divergent exact collision, apply the project meaning and add the bounded divergence as a concise scratchpad tension or Crux. Do not ask the user to choose project versus personal authority; clarify only downstream intent when genuinely needed. For unavailable, invalid, or no-applicable advice, continue without glossary grounding unless the term is necessary and ambiguous, then ask an ordinary focused clarification without fabricating glossary facts.
+
+Advice and its clarification are transient and mutation-free. They never write glossary, approval, progress caveat, plan conflict, or decision conflict state; never call \`agentera state glossary publish\`; and never alter ordinary confirmed-decision semantics. Discuss pauses when review is required and publishes no consumer caveat.
+
 ## The deliberation loop`)
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")

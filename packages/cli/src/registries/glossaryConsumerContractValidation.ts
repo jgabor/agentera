@@ -103,12 +103,42 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     implementation?.acquisition !== "active" ||
     implementation?.advice_resolution !== "active" ||
     integrations?.build !== "active" ||
-    integrations?.discuss !== "declared_deferred" ||
+    integrations?.discuss !== "active" ||
     integrations?.plan !== "declared_deferred" ||
     integrations?.prime !== "declared_deferred"
   ) {
     errors.push(
-      "consumer_boundary.implementation must activate Build while Discuss, Plan, and prime integrations remain declared_deferred",
+      "consumer_boundary.implementation must activate Build and Discuss while Plan and prime integrations remain declared_deferred",
+    );
+  }
+
+  const discuss = mapping(consumer?.discuss_integration);
+  const discussInteraction = mapping(discuss?.interaction);
+  if (
+    discuss?.implementation !== "active" ||
+    discuss?.invocation !== "consumer_boundary.advice_resolution.invocation" ||
+    discuss?.governed_events !== "consumer_boundary.refresh_events" ||
+    discuss?.outcome_authority !== "consumer_boundary.outcome_matrix" ||
+    discuss?.disclosure !== "consumer_boundary.disclosure.transient_advice" ||
+    discussInteraction?.scope !== "current_user_authored_meaning_sensitive_input" ||
+    discussInteraction?.transcript_scan !== "forbidden" ||
+    discussInteraction?.done_only_control !== "no_refresh" ||
+    !nonEmpty(discussInteraction?.review_rule) ||
+    !nonEmpty(discussInteraction?.exact_collision_rule) ||
+    !nonEmpty(discussInteraction?.unavailable_rule) ||
+    !nonEmpty(discuss?.output_rule) ||
+    discuss?.mutation !== "forbidden" ||
+    !sameStrings(discuss?.forbidden_effects, [
+      "glossary_write",
+      "glossary_approval",
+      "publication_consent",
+      "progress_caveat",
+      "plan_conflict",
+      "decision_conflict",
+    ])
+  ) {
+    errors.push(
+      "consumer_boundary.discuss_integration must use bounded transient advice without mutation",
     );
   }
 
@@ -130,7 +160,12 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     invocation?.acquisition !== "internal_bounded_owned_sources" ||
     invocation?.project_root !== "current_working_directory" ||
     invocation?.profile_path !== "canonical_registry_resolution" ||
-    !sameStrings(invocation?.output_envelope_fields, ["schemaVersion", "command", "status", "advice"]) ||
+    !sameStrings(invocation?.output_envelope_fields, [
+      "schemaVersion",
+      "command",
+      "status",
+      "advice",
+    ]) ||
     !nonEmpty(invocation?.rule) ||
     !sameStrings(adviceInput?.fields, ["requested_term", "acquired", "host_review"]) ||
     adviceInput?.requested_term_utf8_bound !==
@@ -472,8 +507,10 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     caveat?.publication_status !== "active_build" ||
     caveat?.writer_runtime !== "packages/cli/src/state/progressEntities.ts#appendProgressEntity" ||
     caveat?.writer_interface !== "agentera state progress explain --verb append --format json" ||
-    caveat?.envelope_validator !== "packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat" ||
-    caveat?.lifecycle_validator !== "packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities" ||
+    caveat?.envelope_validator !==
+      "packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat" ||
+    caveat?.lifecycle_validator !==
+      "packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities" ||
     identity?.field !== "caveat_id" ||
     identity?.type !== "opaque_non_content_id" ||
     identity?.alphabet !== "abcdefghijklmnopqrstuvwxyz" ||
@@ -542,6 +579,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "consumer_boundary.outcome_matrix",
       "consumer_boundary.orthogonal_advisories",
       "consumer_boundary.refresh_events",
+      "consumer_boundary.discuss_integration",
       "consumer_boundary.disclosure",
       "consumer_boundary.autonomous_caveat",
       "consumer_boundary.publication_isolation",

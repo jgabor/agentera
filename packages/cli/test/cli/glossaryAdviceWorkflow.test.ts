@@ -12,6 +12,7 @@ import {
 } from "../../src/analytics/personalGlossaryProfile.js";
 import { assessTerminologyDrift } from "../../src/audit/terminologyDrift.js";
 import { main } from "../../src/cli/dispatch.js";
+import { glossaryConsumerContract } from "../../src/registries/glossaryEntryContract.js";
 import { sourceModuleUrl, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 const roots: string[] = [];
@@ -144,6 +145,39 @@ function advice(root: string, profileRoot: string, request: Record<string, unkno
       },
     },
   );
+}
+
+function discussInstructions(root: string, profileRoot: string): string {
+  const result = spawnSync(
+    process.execPath,
+    [CLI, "prime", "--context", "discuss", "--format", "json"],
+    {
+      cwd: root,
+      encoding: "utf8",
+      env: {
+        ...sourceSubprocessEnv(),
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
+        AGENTERA_PROFILE_DIR: profileRoot,
+      },
+    },
+  );
+  expect(result.status, result.stderr).toBe(0);
+  return JSON.parse(result.stdout).capability_context.instructions as string;
+}
+
+function snapshotTree(root: string): Record<string, string> {
+  const snapshot: Record<string, string> = {};
+  const visit = (directory: string): void => {
+    for (const entry of fs
+      .readdirSync(directory, { withFileTypes: true })
+      .sort((a, b) => a.name.localeCompare(b.name))) {
+      const pathname = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(pathname);
+      else snapshot[path.relative(root, pathname)] = fs.readFileSync(pathname).toString("base64");
+    }
+  };
+  visit(root);
+  return snapshot;
 }
 
 afterEach(() => {
@@ -279,5 +313,93 @@ describe("packaged Build glossary advice seam", () => {
     expect(instructions).toContain(
       "Explicit project publication remains the separate Build-owned digest-confirmed operation",
     );
+  });
+
+  it("serves bounded Discuss event, review, tension, fallback, and mutation-isolation semantics", () => {
+    const root = project();
+    const profileRoot = profile("Ship Shape", "Project meaning");
+    const instructions = discussInstructions(root, profileRoot);
+    const command = "agentera report glossary-advice --input <file|-> --format json";
+
+    expect(instructions).toContain("initial meaning-sensitive user input");
+    expect(instructions).toContain(command);
+    expect(instructions).toContain("later user-authored change to a deliberation premise");
+    expect(instructions).toContain("Do not invoke it for unchanged replay");
+    expect(instructions).toContain("Done-only control");
+    expect(instructions).toContain("never add an unbounded or persistent transcript scan");
+    expect(instructions.indexOf("ask one focused clarification first")).toBeLessThan(
+      instructions.indexOf("meaning-sensitive reasoning or decision framing"),
+    );
+    expect(instructions).toContain("with a Done option and no second question");
+    expect(instructions).toContain("apply the project meaning");
+    expect(instructions).toContain("scratchpad tension or Crux");
+    expect(instructions).toContain("continue without glossary grounding");
+    expect(instructions).toContain("never call `agentera state glossary publish`");
+    expect(instructions).toContain("publishes no consumer caveat");
+  });
+
+  it("runs advice only at governed Discuss turns and leaves every project and profile byte unchanged", () => {
+    const root = project();
+    const profileRoot = profile("Ship Shape", "Project meaning");
+    publishProject(root, "Ship Shape", "Project meaning");
+    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), "sentinel: docs\n");
+    fs.mkdirSync(path.join(root, ".agentera/entities/decisions"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, ".agentera/entities/decisions/sentinel.yaml"),
+      "decision: unchanged\n",
+    );
+    fs.mkdirSync(path.join(root, ".agentera/entities/progress"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, ".agentera/entities/progress/sentinel.yaml"),
+      "progress: unchanged\n",
+    );
+    const projectBefore = snapshotTree(root);
+    const profileBefore = snapshotTree(profileRoot);
+    const contract = glossaryConsumerContract();
+    const requests = {
+      project: {
+        schema_version: "agentera.glossaryAdviceRequest.v1",
+        requested_term: "Ship Shape",
+      },
+      irrelevant: {
+        schema_version: "agentera.glossaryAdviceRequest.v1",
+        requested_term: "Unrelated term",
+      },
+    };
+    const turns = [
+      { event: "initial_meaning_sensitive_input", request: requests.project },
+      { event: "unrelated_conversation_turn" },
+      { event: "unchanged_input_replay" },
+      { event: "status_or_progress_render" },
+      { event: "tool_output_without_requirement_or_intent_change" },
+      { event: "done_only_control" },
+      {
+        event: "later_deliberation_premise_change_that_can_change_meaning",
+        request: requests.irrelevant,
+      },
+      { event: "clarification_answer_for_a_reviewed_term", request: requests.project },
+    ];
+    const outputs = turns.flatMap((turn) => {
+      if (!contract.refreshRequired.includes(turn.event) || !turn.request) return [];
+      const result = advice(root, profileRoot, turn.request);
+      expect(result.status, result.stderr).toBe(0);
+      return [JSON.parse(result.stdout).advice];
+    });
+
+    expect(outputs.map((output) => output.outcome)).toEqual([
+      "equivalent_exact_collision",
+      "no_applicable_entry",
+      "equivalent_exact_collision",
+    ]);
+    expect(contract.refreshNotRequired).toEqual(
+      expect.arrayContaining([
+        "unrelated_conversation_turn",
+        "unchanged_input_replay",
+        "status_or_progress_render",
+        "tool_output_without_requirement_or_intent_change",
+      ]),
+    );
+    expect(snapshotTree(root)).toEqual(projectBefore);
+    expect(snapshotTree(profileRoot)).toEqual(profileBefore);
   });
 });

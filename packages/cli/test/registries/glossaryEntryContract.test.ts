@@ -155,7 +155,7 @@ describe("shared glossary entry authority", () => {
     });
   });
 
-  it("aligns active Build consumption with mutation-free Audit and deferred non-Build integrations", () => {
+  it("aligns active Build and Discuss consumption with mutation-free Audit and deferred Plan/prime integrations", () => {
     const authority = fs.readFileSync(glossaryEntryAuthorityPath(), "utf8");
     const validation = fs.readFileSync(
       path.resolve(
@@ -177,18 +177,24 @@ describe("shared glossary entry authority", () => {
     }
     for (const surface of [validation, auditInstructions])
       expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
-    expect(authority).toMatch(/Build bounded glossary consumption[\s\S]*active/);
-    expect(authority).toMatch(/Discuss,[\s\S]*Plan,[\s\S]*prime integration[\s\S]*remain deferred/);
+    expect(authority).toMatch(/Build and Discuss bounded glossary consumption are active/);
+    expect(authority).toMatch(/Build and Discuss bounded glossary consumption are active/);
+    expect(authority).toMatch(/Plan and prime integration[\s\S]*remain deferred/);
   });
 
-  it("loads active bounded acquisition and Build advice while other integrations remain deferred", () => {
+  it("loads active bounded acquisition and Build/Discuss advice while Plan and prime remain deferred", () => {
     expect(glossaryConsumerContract()).toEqual({
       contractStatus: "active",
       implementation: {
         acquisition: "active",
         advice_resolution: "active",
       },
-      capabilityIntegrations: { build: "active", discuss: "declared_deferred", plan: "declared_deferred", prime: "declared_deferred" },
+      capabilityIntegrations: {
+        build: "active",
+        discuss: "active",
+        plan: "declared_deferred",
+        prime: "declared_deferred",
+      },
       outcomes: [
         "invalid_or_unavailable_project",
         "equivalent_exact_collision",
@@ -444,6 +450,16 @@ describe("shared glossary entry authority", () => {
       },
       "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",
     ],
+    [
+      "a downstream gate that omits active Discuss integration",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.downstream_gate.required_sections =
+          authority.consumer_boundary.downstream_gate.required_sections.filter(
+            (section: string) => section !== "consumer_boundary.discuss_integration",
+          );
+      },
+      "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",
+    ],
   ])("rejects %s", (_name, mutate, expected) => {
     const pathname = malformedAuthority(mutate);
     expect(validateGlossaryEntryContract(pathname)).toContain(expected);
@@ -516,7 +532,7 @@ describe("shared glossary entry authority", () => {
   });
 
   it.each(CAPABILITY_FIXTURES)(
-    "accepts the deferred $capability declaration",
+    "accepts the governed $capability declaration",
     ({ capability, valid_declaration }) => {
       expect(validateGlossaryCapabilityImplementationClaim(capability, valid_declaration)).toEqual(
         [],

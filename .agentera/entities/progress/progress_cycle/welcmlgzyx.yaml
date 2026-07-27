@@ -1,0 +1,16 @@
+id: welcmlgzyx
+artifact: progress
+record:
+  timestamp: 2026-07-27 10:14
+  type: feat
+  phase: build
+  what: Activated mutation-free Discuss glossary disambiguation through the shared structured advice command, including governed refresh events, review-before-reliance, project-authoritative divergence tension, and unavailable-input abstention.
+  context:
+    intent: Implement active Discuss glossary disambiguation for plan task cgarzlqmwp without changing Build, Plan, prime, publication, or decision semantics.
+    constraints: No Plan or prime integration, Build behavior change, glossary publication, consumer caveat, decision/TODO mutation, task completion, staging, or commit.
+    unknowns: Independent Prime audit remains pending.
+    scope: Discuss authority and served instructions, vocabulary validator expectations, Discuss validation schema, and proportional glossary advice workflow tests.
+  inspiration: Active plan task cgarzlqmwp and the committed glossary advice foundation in 0d40e4da.
+  discovered: Full source verification ran 2,943 tests with 2,939 passed, 1 skipped, and 3 unrelated pre-existing failures in monolith limits, status instruction fixture parsing, and pinned v2 compaction hashes. Repo-wide format remains blocked by the intentional invalid-progress-yaml fixture; scoped formatting passed.
+  verified: "Focused glossary workflow, authority, and validator suite: 107 passed. Typecheck and build passed. Discuss, vocabulary authority, cross-capability, and capability-contract validators passed. Package boundary: 16 passed. Constructed dist served all required Discuss markers. Repository compact check passed; lint reported 0 errors."
+  next: Prime should audit the diff and own task evaluation/completion and commit sequencing.

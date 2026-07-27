@@ -86,3 +86,57 @@ VALIDATION:
     checks:
       - "Sanitized grounding command used at session start"
       - "Raw profile path not read"
+  9:
+    id: V9
+    rule: governed_glossary_advice_events
+    description: >-
+      Discuss MUST invoke `agentera report glossary-advice --input <file|->
+      --format json` for initial meaning-sensitive user input and later
+      user-authored premise changes or affected clarification answers that can
+      change meaning. It MUST NOT invoke advice for unchanged replay, rendering,
+      unrelated turns, tool output, background rereads, or Done-only control,
+      and MUST NOT use an unbounded or persistent transcript scan.
+    severity: critical
+    checks:
+      - "Initial and changed meaning-sensitive user events refresh advice"
+      - "Incidental, unchanged, and Done-only events do not refresh advice"
+      - "Only current user-authored meaning-sensitive input is inspected"
+  10:
+    id: V10
+    rule: glossary_review_before_reliance
+    description: >-
+      When advice requires inferred-equivalence review, Discuss MUST ask one
+      focused clarification with Done before meaning-sensitive reasoning or
+      decision framing relies on either meaning. It MUST NOT silently infer
+      equivalence, and the clarification MUST NOT count as decision confirmation.
+    severity: critical
+    checks:
+      - "Focused review question precedes reliance"
+      - "One-question-per-turn and Done behavior are preserved"
+      - "Clarification is not decision confirmation"
+  11:
+    id: V11
+    rule: glossary_authority_and_disclosure
+    description: >-
+      Discuss MUST use only the transient applicable meaning and owner. Project
+      meaning governs a divergent exact collision and the divergence appears as
+      a concise scratchpad tension or Crux; Discuss MUST NOT ask the user to
+      choose project versus personal authority or quote unrelated entries.
+    severity: critical
+    checks:
+      - "Applicable project or proven personal fallback meaning is used"
+      - "Divergence appears as tension or Crux without an authority-choice question"
+      - "Unrelated glossary content is not disclosed"
+  12:
+    id: V12
+    rule: glossary_consumer_mutation_isolation
+    description: >-
+      Advice, divergence, and consumer clarification are transient. Discuss MUST
+      NOT write glossary, approval, publication consent, progress caveat, plan
+      conflict, or decision conflict state, and MUST NOT call glossary publish.
+      Unavailable or no-applicable advice adds no glossary facts.
+    severity: critical
+    checks:
+      - "No glossary or consumer-caveat mutation occurs"
+      - "No approval, consent, or conflict bookkeeping occurs"
+      - "Unavailable advice does not fabricate glossary grounding"

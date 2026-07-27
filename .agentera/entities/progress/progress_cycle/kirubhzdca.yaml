@@ -1,0 +1,15 @@
+id: kirubhzdca
+artifact: progress
+record:
+  timestamp: 2026-07-27 10:32
+  type: fix
+  phase: build
+  what: Added active Discuss integration to the downstream-gate required-section inventory and regression-checked omission rejection.
+  context:
+    intent: Apply the single accepted Audit correction for active plan task cgarzlqmwp without changing Discuss semantics or any other implementation behavior.
+    constraints: No additional implementation change, semantic duplication, task completion/evaluation, staging, commit, TODO state, or decision state.
+    unknowns: none
+    scope: Glossary authority downstream-gate list, its contract validator list, and one negative omission test.
+  inspiration: Audit finding that consumer_boundary.discuss_integration was validated but absent from downstream_gate.required_sections.
+  verified: "Focused authority, validator, and Discuss tests passed: 108/108. Typecheck and build passed. Vocabulary authority, Discuss, cross-capability, and capability-contract validators passed. Repository compact and diff checks passed."
+  next: Prime should audit and commit; task evaluation and completion remain outside this correction.

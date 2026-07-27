@@ -4,8 +4,8 @@ purpose: >-
   Define glossary entry semantics once, specialize evidence ownership for
   personal and project entries, and declare one consumer-semantics and caveat
   lifecycle contract with bounded acquisition and shared advice resolution.
-  Build consumption and caveat publication are active; Discuss, Plan, and prime
-  integration remain deferred.
+  Build and Discuss consumption are active, Build alone owns caveat publication,
+  and Plan and prime integration remain deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -394,7 +394,7 @@ consumer_boundary:
     advice_resolution: active
     capability_integrations:
       build: active
-      discuss: declared_deferred
+      discuss: active
       plan: declared_deferred
       prime: declared_deferred
   forbidden_persisted_entry_fields: [precedence, collision, review]
@@ -748,6 +748,41 @@ consumer_boundary:
     rule: >-
       Refresh only at a governed event whose changed input can alter the meaning
       used by the capability. Rereads and incidental turns do not refresh advice.
+  discuss_integration:
+    implementation: active
+    invocation: consumer_boundary.advice_resolution.invocation
+    governed_events: consumer_boundary.refresh_events
+    outcome_authority: consumer_boundary.outcome_matrix
+    disclosure: consumer_boundary.disclosure.transient_advice
+    interaction:
+      scope: current_user_authored_meaning_sensitive_input
+      transcript_scan: forbidden
+      done_only_control: no_refresh
+      review_rule: >-
+        Before meaning-sensitive reasoning or decision framing relies on an
+        inferred relation, ask one focused clarification question under the
+        existing one-question-per-turn and Done contract. The clarification may
+        identify a host-reviewed relation for a fresh advice request but is not
+        decision confirmation, approval, or publication consent.
+      exact_collision_rule: >-
+        Use an applicable project meaning for a divergent exact collision and
+        surface the bounded divergence as a concise scratchpad tension or Crux.
+        Never ask the user to choose project versus personal authority.
+      unavailable_rule: >-
+        Continue without glossary grounding when advice is unavailable, invalid,
+        or has no applicable entry. Ask ordinary clarification only when the term
+        is necessary and ambiguous, without fabricating glossary facts.
+    output_rule: >-
+      Use only the transient applicable meaning and owner needed for the current
+      deliberation, and never quote unrelated glossary content.
+    mutation: forbidden
+    forbidden_effects:
+      - glossary_write
+      - glossary_approval
+      - publication_consent
+      - progress_caveat
+      - plan_conflict
+      - decision_conflict
   disclosure:
     transient_advice:
       allowed: [outcome, applicable_meaning, applicable_owner, review, tension, advisory]
@@ -793,7 +828,7 @@ consumer_boundary:
       type: opaque_non_content_id
       alphabet: abcdefghijklmnopqrstuvwxyz
       length: 10
-      pattern: '^[a-z]{10}$'
+      pattern: "^[a-z]{10}$"
       rule: >-
         Assign a fresh opaque ID for a current caveat and carry it unchanged to
         its matching terminal event. The ID must not encode a term, meaning,
@@ -858,6 +893,7 @@ consumer_boundary:
       - consumer_boundary.outcome_matrix
       - consumer_boundary.orthogonal_advisories
       - consumer_boundary.refresh_events
+      - consumer_boundary.discuss_integration
       - consumer_boundary.disclosure
       - consumer_boundary.autonomous_caveat
       - consumer_boundary.publication_isolation
@@ -894,10 +930,10 @@ consumer_boundary:
     precedence: forbidden
   rule: >-
     Audit remains mutation-free and Build project-glossary publication is active.
-    Build bounded glossary consumption and progress caveat publication are also
-    active. Personal Profile Full rendering and persistence are active. Discuss,
-    Plan, and prime integration, project-driven personal-profile mutation, and
-    docs-mapping mutation remain deferred.
+    Build and Discuss bounded glossary consumption are active, and Build progress
+    caveat publication is active. Personal Profile Full rendering and persistence
+    are active. Plan and prime integration, project-driven personal-profile
+    mutation, and docs-mapping mutation remain deferred.
 
 deferred_capability_contracts:
   profile:
@@ -960,8 +996,8 @@ deferred_capability_contracts:
     capabilities: [discuss, plan, build]
     implementation:
       build: active
-      discuss: declared_deferred
+      discuss: active
       plan: declared_deferred
       prime: declared_deferred
     behavior: consumer_boundary
-    forbidden_current_claims: [discuss_integration, plan_integration, prime_projection]
+    forbidden_current_claims: [plan_integration, prime_projection]
