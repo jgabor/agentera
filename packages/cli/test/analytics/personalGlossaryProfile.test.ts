@@ -150,6 +150,31 @@ describe("personal PROFILE.md glossary output", () => {
     expect(fs.readFileSync(conflictPath, "utf8")).toBe(established);
   });
 
+  it("uses Unicode caseless identity without normalizing distinct spellings", () => {
+    const duplicatePath = profilePath();
+    expect(() => update(duplicatePath, [
+      explicit({ term: "ΟΣ" }),
+      inferred({ term: "οσ" }),
+    ])).toThrow(/duplicate/i);
+    expect(fs.readFileSync(duplicatePath, "utf8")).toBe(baseProfile);
+
+    const refreshPath = profilePath();
+    update(refreshPath, [explicit({ term: "ΟΣ" })]);
+    update(refreshPath, [explicit({
+      term: "οσ",
+      confidence: 91,
+      provenance: {
+        kind: "personal_explicit_definition",
+        evidence: [{ source_id: "source-refresh", evidence_anchor: "anchor-refresh", signal_type: "decision" }],
+      },
+    })], "2026-07-02");
+    expect(document(refreshPath).entries).toMatchObject([{ term: "ΟΣ", confidence: 91 }]);
+
+    const distinctPath = profilePath();
+    update(distinctPath, [explicit({ term: "é" }), inferred({ term: "e\u0301" })]);
+    expect(document(distinctPath).entries.map((entry: any) => entry.term).sort()).toEqual(["é", "e\u0301"].sort());
+  });
+
   it("is invariant to a project-glossary trap path", () => {
     const pathname = profilePath();
     const trap = path.join(path.dirname(pathname), ".agentera", "glossary.yaml");

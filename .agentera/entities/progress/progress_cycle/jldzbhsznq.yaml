@@ -1,0 +1,16 @@
+id: jldzbhsznq
+artifact: progress
+record:
+  timestamp: 2026-07-27 08:00
+  type: fix
+  phase: build
+  what: Corrected shared glossary term identity after independent Audit failure. One locale-independent Unicode caseless-exact comparator now governs advice lookup and duplicate checks, host candidates, personal merge/parser confidence keys, Audit proposal consolidation and validation, and project publication collisions.
+  context:
+    intent: Retry active Plan task jthktiznyn by eliminating lowercasing-based identity disagreement without integrating capabilities or changing advice lifecycle status.
+    constraints: No task completion or evaluation, capability integration, decisions or TODO mutation, staging, commit, publish, tag, or push. Resolver remains read-only and no conflict state is persisted.
+    unknowns: Independent Prime re-audit remains pending.
+    scope: Shared glossary term identity authority/runtime plus resolver, acquisition parser, personal producer/parser, Audit producer, project publication, and focused regressions.
+  inspiration: Audit ses_05dea4984ffeRBPa1i1fg87e5h failure on Greek final sigma and duplicate first-selection behavior.
+  discovered: Personal confidence_basis keys also participated in term matching; they now pair through the shared comparator and render established exact spelling, allowing canonically distinct terms without collapsing keys. Audit lowercase remains only as a documented deterministic variant sort key, never identity.
+  verified: Focused resolver, acquisition, personal profile, Audit proposal, publication, authority, CLI validation, and identity suites passed 195 tests. Full source passed 217 files with 2895 tests and 1 skipped. Typecheck and build passed. Built local CLI 3.0.0-dev.37 passed vocabularyAuthority, cross-capability, capability-contract, and compact checks. Lint completed with 0 errors and 152 pre-existing warnings; targeted contract/new-file formatting and git diff --check passed. Regressions cover Greek final sigma authority/collision/duplicate/candidate paths, ASCII, escaped regex metacharacters, controls, non-BMP case, Turkish I, and canonically distinct composed/decomposed terms.
+  next: Prime should independently audit and evaluate task jthktiznyn; capability integrations remain deferred.

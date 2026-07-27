@@ -3,8 +3,8 @@ status: active_authority
 purpose: >-
   Define glossary entry semantics once, specialize evidence ownership for
   personal and project entries, and declare one consumer-semantics and caveat
-  lifecycle contract with bounded acquisition active while advice and
-  capability integrations remain deferred.
+  lifecycle contract with bounded acquisition and shared advice resolution
+  active while capability integrations remain deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -40,6 +40,21 @@ shared_primitive:
       discriminator: kind
       evidence_field: evidence
       variants_from: provenance_variants
+
+term_occurrence:
+  runtime: packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm
+  consumers: [audit_evidence, project_publication_revalidation, confirmed_variant_guard]
+  comparison: exact_case_sensitive_literal
+  normalization: none
+  identifier_continuation: unicode_ID_Continue_plus_dollar_ZWNJ_ZWJ
+  rule: >-
+    Match one escaped literal without case folding or Unicode normalization.
+    When a term edge is an identifier-continuation character, reject an
+    occurrence adjacent to Unicode ID_Continue, dollar sign, U+200C ZERO WIDTH
+    NON-JOINER, or U+200D ZERO WIDTH JOINER. These are the ECMAScript identifier
+    continuation characters relevant to source-line terminology boundaries.
+    Literal escaping and fixed-width boundary assertions prevent regex syntax,
+    partial identifier matches, and input-dependent backtracking.
 
 provenance_variants:
   personal_explicit_definition:
@@ -181,13 +196,15 @@ ownership_contracts:
           duplicate owned sections, or an unowned Glossary heading before any
           write. Preserve every other profile byte exactly.
       merge_identity:
-        normalization: unicode_lowercase
+        normalization: unicode_caseless_exact_no_normalization
         rule: >-
-          One case-insensitive term identity may occur once. Preserve the
-          established spelling and observed_at date. Fresh qualifying evidence
-          may refresh an entry only when meaning and provenance kind are
-          unchanged; divergent meaning or provenance kind is a conflict rather
-          than an implicit overwrite.
+          One locale-independent Unicode caseless-exact term identity may occur
+          once. Identity performs no Unicode normalization, accent folding, or
+          compatibility folding; canonically distinct strings remain distinct.
+          Preserve the established spelling and observed_at date. Fresh
+          qualifying evidence may refresh an entry only when meaning and
+          provenance kind are unchanged; divergent meaning or provenance kind is
+          a conflict rather than an implicit overwrite.
       refresh_rule: >-
         For matching fresh qualifying evidence, set confidence and its
         confidence_basis to the fresh evidence-based integer, replace only the
@@ -229,12 +246,14 @@ ownership_contracts:
         therefore changes when any proposal, confidence, severity, divergence,
         term, source path, line identity, or source-record digest changes, but not
         when equivalent evidence or variant arrays arrive in a different order.
+        Locale-independent lowercase ordering is only a deterministic sort key;
+        it does not define term identity.
     proposal_validation:
       owner: audit
       shared_runtime: packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal
       required_rules:
         - safe_distinct_evidence_identities_per_term
-        - case_insensitive_unique_term_identities
+        - unicode_caseless_exact_unique_term_identities
         - best_supported_canonical_term_with_lexicographic_tie_break
         - authority_confidence_floor_and_range
         - confidence_below_70_forces_info_severity
@@ -291,14 +310,16 @@ ownership_contracts:
           item: shared_primitive
           approval_fields: forbidden
         terminology_set_identity:
-          normalization: lowercase
+          normalization: unicode_caseless_exact_no_normalization
           members: [paired_entry.term, paired_approval.proposal.variants.term]
           uniqueness: global_across_complete_document
           rule: >-
-            Every normalized canonical or variant term belongs to exactly one
-            approval-entry pair. Reject duplicate variants and every cross-set
-            canonical/variant collision before effects. An exact replay compares
-            against its existing pair and remains a no-op.
+            Every Unicode caseless-exact canonical or variant term belongs to
+            exactly one approval-entry pair. Identity performs no Unicode
+            normalization, accent folding, or compatibility folding. Reject
+            duplicate variants and every cross-set canonical/variant collision
+            before effects. An exact replay compares against its existing pair
+            and remains a no-op.
       transaction: >-
         Under the established project writer lock, resolve the registered
         project path, safely re-read every cited project-relative source line,
@@ -369,11 +390,12 @@ consumer_boundary:
   contract_status: active
   implementation:
     acquisition: active
-    advice_resolution: declared_deferred
+    advice_resolution: active
     capability_integrations: declared_deferred
   forbidden_persisted_entry_fields: [precedence, collision, review]
   deterministic_judgments:
-    term_identity: case_insensitive_exact
+    term_identity: unicode_caseless_exact_no_normalization
+    term_identity_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#unicodeCaselessExact
     meaning_identity: exact_string
     project_state_validity: schema_and_bound_validation
     project_gap: valid_project_state_without_exact_term_identity
@@ -488,6 +510,45 @@ consumer_boundary:
         profile paths, unrelated profile sections, project approval records, or
         project source provenance. Acquisition does not select precedence,
         fallback, tension, review, or a primary outcome.
+  advice_resolution:
+    implementation: active
+    runtime: packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice
+    mutation: forbidden
+    input:
+      fields: [requested_term, acquired, host_review]
+      requested_term_utf8_bound: consumer_boundary.acquisition.bounds.max_source_utf8_bytes
+      acquired_contract: consumer_boundary.acquisition.output
+      host_review:
+        optional: true
+        fields: [relation, candidate_owner, candidate_term]
+        relations: [inferred_equivalence]
+        candidate_owners: [personal]
+        rule: >-
+          A host may report only one explicit inferred-equivalence relation to
+          one differently named, valid acquired personal candidate. Omission
+          means no inferred candidate. Unknown relations, owners, fields, or
+          candidates fail before selection and never echo input content.
+      additional_fields: forbidden
+    output:
+      schema_version: agentera.glossaryAdvice.v1
+      fields: [outcome, applicable_meaning, applicable_owner, review, tension, advisory]
+      owners: [personal, project]
+      advisory_fields: [reason, ownership_state]
+      advisory_reasons: [personal_input_unavailable, inferred_equivalence]
+      advisory_ownership_states: [project_governs_exact]
+      rule: >-
+        Return exactly one matrix outcome and its authority-declared semantics.
+        Include only the selected meaning and owner. An orthogonal advisory may
+        expose only its bounded reason and ownership state. Never return the
+        requested or candidate term, acquisition diagnostics, source content,
+        paths, anchors, approvals, provenance, unrelated entries, or conflict
+        state.
+    failure:
+      classes: [invalid_request, invalid_acquisition, invalid_host_review]
+      rule: >-
+        Fail once before selection with only a bounded class and public recovery;
+        never quote or serialize an input term, meaning, diagnostic, path, raw
+        entry, profile or project content, approval, anchor, or provenance.
   primary_selection:
     dimensions:
       project_input: [invalid, valid_gap, valid_exact]
@@ -622,6 +683,11 @@ consumer_boundary:
     personal_input_unavailable_with_project_exact:
       primary_outcome: project_only
       when: personal_input is invalid and project_input is valid_exact
+      match:
+        project_input: [valid_exact]
+        personal_input: [invalid]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [absent, present]
       caveat_reason: personal_input_unavailable
       ownership_state: project_governs_exact
       rule: >-
@@ -633,6 +699,11 @@ consumer_boundary:
       when: >-
         personal_input is valid_without_exact, project_input is valid_exact, and
         inferred_candidate is present
+      match:
+        project_input: [valid_exact]
+        personal_input: [valid_without_exact]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [present]
       review: required_when_the_inferred_relation_is_meaning_sensitive
       caveat_reason: inferred_equivalence
       ownership_state: project_governs_exact
@@ -660,7 +731,7 @@ consumer_boundary:
       used by the capability. Rereads and incidental turns do not refresh advice.
   disclosure:
     transient_advice:
-      allowed: [outcome, applicable_meaning, applicable_owner, review, tension]
+      allowed: [outcome, applicable_meaning, applicable_owner, review, tension, advisory]
       minimum_rule: >-
         Include a meaning only when that meaning is selected by the matrix and
         needed for the current meaning-sensitive work. Never include unrelated entries.
@@ -749,6 +820,7 @@ consumer_boundary:
     command: agentera check validate vocabularyAuthority --format json
     required_sections:
       - consumer_boundary.acquisition
+      - consumer_boundary.advice_resolution
       - consumer_boundary.primary_selection
       - consumer_boundary.outcome_matrix
       - consumer_boundary.orthogonal_advisories

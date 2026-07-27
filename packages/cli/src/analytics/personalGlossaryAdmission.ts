@@ -89,6 +89,8 @@ function semanticValues(record: JsonObject): string[] {
 }
 
 function containsCompleteTerm(text: string, term: string): boolean {
+  // Personal admission intentionally classifies case-insensitive prose signals;
+  // it is not project terminology's exact-case source occurrence contract.
   const escaped = term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return escaped.length > 0 && new RegExp(`(^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`, "i").test(text);
 }

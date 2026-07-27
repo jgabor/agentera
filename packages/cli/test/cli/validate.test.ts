@@ -158,7 +158,7 @@ describe("cli validate (delegated families)", () => {
     );
     expect(implementation).toEqual({
       acquisition: "active",
-      advice_resolution: "declared_deferred",
+      advice_resolution: "active",
       capability_integrations: "declared_deferred",
     });
   });
@@ -181,7 +181,7 @@ describe("cli validate (delegated families)", () => {
       );
       expect(implementation).toEqual({
         acquisition: "active",
-        advice_resolution: "declared_deferred",
+        advice_resolution: "active",
         capability_integrations: "declared_deferred",
       });
     },

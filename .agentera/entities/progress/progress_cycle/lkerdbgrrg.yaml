@@ -1,0 +1,16 @@
+id: lkerdbgrrg
+artifact: progress
+record:
+  timestamp: 2026-07-27 08:30
+  type: fix
+  phase: build
+  what: Corrected glossary terminology occurrence boundaries after independent Audit failure. One escaped, exact-case, non-normalizing matcher now serves Audit evidence, publication revalidation, and confirmed-variant guard scanning with Unicode ID_Continue plus dollar, ZWNJ, and ZWJ boundaries.
+  context:
+    intent: Retry active replacement qufvcltxrk by eliminating duplicate combining-mark-unsafe literal boundary logic without changing term identity, advice, or capability integration.
+    constraints: No task completion or evaluation, TODO resolution, capability integration, staging, commit, publish, tag, or push. Source evidence anchors, line locations, exclusions, corrections, canonical terms, rerun guidance, and Unicode caseless identity remain unchanged.
+    unknowns: Independent Prime re-audit remains pending.
+    scope: Shared glossary occurrence authority/runtime, Audit and publication/guard call sites, direct boundary tests, and guard/evidence regressions.
+  inspiration: Audit ses_05dc94870ffeD3nISEVsgzS0uo found decomposed e plus combining acute falsely matched inside e-plus-combining-acute-Suffix.
+  discovered: The duplicate project terminology boundary implementations were limited to Audit evidence and publication/guard paths. Personal glossary admission retains its separately contracted case-insensitive prose-signal classifier and is explicitly documented as outside the exact-case project occurrence contract.
+  verified: Focused guard, evidence, proposal, publication, personal, acquisition, resolver, identity, occurrence, contract, and CLI validation suites passed 236 tests. Full source passed 218 files with 2920 tests and 1 skipped. Typecheck and build passed. Built local CLI 3.0.0-dev.37 passed vocabularyAuthority, cross-capability, capability-contract, and compact checks. Lint completed with 0 errors and 152 pre-existing warnings; targeted formatter checks and git diff --check passed. Regressions cover decomposed combining-mark prefix/suffix negatives, Unicode ID_Continue, dollar-compatible identifier edges, ZWNJ/ZWJ, exact case, no normalization, regex metacharacters, and standalone/punctuation positives.
+  next: Prime should independently audit and evaluate replacement qufvcltxrk; capability integrations remain deferred.

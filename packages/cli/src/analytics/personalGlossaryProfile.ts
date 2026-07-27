@@ -7,6 +7,7 @@ import {
   validateGlossaryEntry,
   type GlossaryAdmissionContext,
 } from "../registries/glossaryEntryContract.js";
+import { unicodeCaselessExact } from "../registries/glossaryTermIdentity.js";
 
 const START = "<!-- agentera:personal-glossary:start -->";
 const END = "<!-- agentera:personal-glossary:end -->";
@@ -50,10 +51,6 @@ export interface UpdatePersonalGlossaryProfileResult {
   entries: PersonalGlossaryEntry[];
 }
 
-function identity(term: string): string {
-  return term.trim().normalize("NFC").toLowerCase();
-}
-
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -95,12 +92,20 @@ function validateEntry(entry: PersonalGlossaryEntry, context: GlossaryAdmissionC
 }
 
 function validateUnique(entries: PersonalGlossaryEntry[], label: string): void {
-  const seen = new Set<string>();
-  for (const entry of entries) {
-    const key = identity(entry.term);
-    if (seen.has(key)) throw new Error(`${label} contains duplicate case-insensitive term '${entry.term}'`);
-    seen.add(key);
+  for (const [index, entry] of entries.entries()) {
+    if (entries.slice(0, index).some((candidate) => unicodeCaselessExact(candidate.term, entry.term))) {
+      throw new Error(`${label} contains duplicate Unicode caseless-exact term '${entry.term}'`);
+    }
   }
+}
+
+function matchingIndex(entries: readonly PersonalGlossaryEntry[], term: string): number {
+  return entries.findIndex((entry) => unicodeCaselessExact(entry.term, term));
+}
+
+function confidenceBasisFor(document: PersonalGlossaryDocument, term: string): number {
+  const key = Object.keys(document.confidence_basis).find((candidate) => unicodeCaselessExact(candidate, term));
+  return key === undefined ? Number.NaN : document.confidence_basis[key]!;
 }
 
 function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): { document: PersonalGlossaryDocument | null; start: number; end: number } {
@@ -130,12 +135,13 @@ function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): {
   if (document.entries.length > maxEntries) throw new GlossaryEntryBoundError("personal glossary exceeds the consumer entry bound");
   calendarDate(document.as_of);
   validateUnique(document.entries, "existing personal glossary");
-  const expectedKeys = document.entries.map((entry) => identity(entry.term)).sort();
-  const basisKeys = Object.keys(document.confidence_basis).sort();
-  if (JSON.stringify(expectedKeys) !== JSON.stringify(basisKeys)) throw new Error("PROFILE.md Glossary section confidence basis is malformed");
+  const basisKeys = Object.keys(document.confidence_basis);
+  if (basisKeys.length !== document.entries.length || basisKeys.some((key, index) => basisKeys.slice(0, index).some((candidate) => unicodeCaselessExact(candidate, key)) || matchingIndex(document.entries, key) < 0)) {
+    throw new Error("PROFILE.md Glossary section confidence basis is malformed");
+  }
   for (const entry of document.entries) {
     validateEntry(entry, persistedContext(entry));
-    const basis = document.confidence_basis[identity(entry.term)];
+    const basis = confidenceBasisFor(document, entry.term);
     if (!Number.isInteger(basis) || basis < 0 || basis > 100) throw new Error("PROFILE.md Glossary section confidence basis is malformed");
     daysBetween(entry.temporal.last_confirmed_at, document.as_of);
   }
@@ -193,18 +199,19 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
   validateUnique(input.freshEntries, "fresh personal glossary evidence");
   for (const entry of input.freshEntries) validateEntry(entry, input.retainedHistory);
 
-  const fresh = new Map(input.freshEntries.map((entry) => [identity(entry.term), entry]));
-  const established = new Map((section.document?.entries ?? []).map((entry) => [identity(entry.term), entry]));
-  const basis = section.document?.confidence_basis ?? {};
+  const fresh = input.freshEntries;
+  const established = section.document?.entries ?? [];
   const merged: PersonalGlossaryEntry[] = [];
   const confidenceBasis = new Map<string, number>();
+  const usedFresh = new Set<number>();
 
-  for (const key of new Set([...established.keys(), ...fresh.keys()])) {
-    const previous = established.get(key);
-    const current = fresh.get(key);
+  for (const previous of established) {
+    const freshIndex = matchingIndex(fresh, previous.term);
+    const current = freshIndex >= 0 ? fresh[freshIndex] : undefined;
+    if (freshIndex >= 0) usedFresh.add(freshIndex);
     let entry: PersonalGlossaryEntry;
     let entryBasis: number;
-    if (previous && current) {
+    if (current) {
       if (previous.meaning !== current.meaning || previous.provenance.kind !== current.provenance.kind) {
         throw new Error(`personal glossary conflict for established term '${previous.term}'`);
       }
@@ -216,27 +223,31 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
         permanence: previous.permanence,
         temporal: { observed_at: previous.temporal.observed_at, last_confirmed_at: input.asOf },
       });
-    } else if (previous) {
-      entryBasis = basis[key];
+    } else {
+      entryBasis = confidenceBasisFor(section.document!, previous.term);
       const days = daysBetween(previous.temporal.last_confirmed_at, input.asOf);
       entry = orderedEntry({
         ...previous,
         confidence: Math.max(DECAY.floor, Math.round(entryBasis * Math.exp(-DECAY.lambdas[previous.permanence] * days))),
       });
-    } else {
-      entryBasis = current!.confidence;
-      if (calendarDate(current!.temporal.observed_at).getTime() > calendarDate(input.asOf).getTime()) throw new Error(`observed_at for '${current!.term}' is after as_of`);
-      entry = orderedEntry({
-        ...current!,
-        temporal: { observed_at: current!.temporal.observed_at, last_confirmed_at: input.asOf },
-      });
     }
     merged.push(entry);
-    confidenceBasis.set(key, entryBasis);
+    confidenceBasis.set(entry.term, entryBasis);
+  }
+  for (const [index, current] of fresh.entries()) {
+    if (usedFresh.has(index)) continue;
+    const entryBasis = current.confidence;
+    if (calendarDate(current.temporal.observed_at).getTime() > calendarDate(input.asOf).getTime()) throw new Error(`observed_at for '${current.term}' is after as_of`);
+    const entry = orderedEntry({
+      ...current,
+      temporal: { observed_at: current.temporal.observed_at, last_confirmed_at: input.asOf },
+    });
+    merged.push(entry);
+    confidenceBasis.set(entry.term, entryBasis);
   }
 
-  merged.sort((left, right) => compareText(identity(left.term), identity(right.term)) || compareText(left.term, right.term));
-  const orderedBasis = Object.fromEntries(merged.map((entry) => [identity(entry.term), confidenceBasis.get(identity(entry.term))!]));
+  merged.sort((left, right) => compareText(left.term, right.term));
+  const orderedBasis = Object.fromEntries(merged.map((entry) => [entry.term, confidenceBasis.get(entry.term)!]));
   const document: PersonalGlossaryDocument = { schema_version: SCHEMA_VERSION, as_of: input.asOf, confidence_basis: orderedBasis, entries: merged };
   const rendered = render(document);
   const candidate = section.document

@@ -5,6 +5,8 @@ import path from "node:path";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { isSafeProjectSourcePath } from "../registries/glossaryEntryContract.js";
+import { unicodeCaselessExact } from "../registries/glossaryTermIdentity.js";
+import { containsGlossaryTerm } from "../registries/glossaryTermOccurrence.js";
 
 export type FindingSeverity = "critical" | "warning" | "info";
 
@@ -60,6 +62,11 @@ function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+/** Deterministic variant ordering only; never use this key for term identity. */
+function variantSortKey(term: string): string {
+  return term.toLowerCase();
+}
+
 function orderedEvidence(evidence: ProjectTermEvidence[]): ProjectTermEvidence[] {
   return [...evidence].sort(
     (left, right) =>
@@ -82,7 +89,7 @@ function proposalWithoutDigest(proposal: TerminologyDriftFinding | ProposalWitho
       .map((variant) => ({ ...variant, evidence: orderedEvidence(variant.evidence) }))
       .sort(
         (left, right) =>
-          compareText(left.term.toLowerCase(), right.term.toLowerCase())
+          compareText(variantSortKey(left.term), variantSortKey(right.term))
           || compareText(left.term, right.term),
       ),
   };
@@ -126,7 +133,7 @@ function canonicalProposal(
     canonical_evidence: canonical!.evidence,
     variants: variants.sort(
       (left, right) =>
-        compareText(left.term.toLowerCase(), right.term.toLowerCase())
+        compareText(variantSortKey(left.term), variantSortKey(right.term))
         || compareText(left.term, right.term),
     ),
     severity: seed.confidence < 70 ? "info" : seed.severity,
@@ -212,8 +219,9 @@ export function validateTerminologyProposal(value: unknown): TerminologyProposal
       readTerm(variant.term, variant.evidence, `variants[${index}].evidence`);
     });
   }
-  const termIdentities = terms.map((term) => term.term.toLowerCase());
-  if (new Set(termIdentities).size !== termIdentities.length) violations.push("proposal term identities must be case-insensitively unique");
+  if (terms.some((term, index) => terms.slice(0, index).some((candidate) => unicodeCaselessExact(candidate.term, term.term)))) {
+    violations.push("proposal term identities must be Unicode caseless-exact unique");
+  }
 
   let divergence: { personal_term: string; project_term: string } | undefined;
   if (value.personal_divergence !== undefined) {
@@ -256,15 +264,6 @@ function confidenceFloor(): number {
   return Number(range[0]);
 }
 
-function containsLiteralTerm(line: string, term: string): boolean {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const characters = [...term];
-  const identifierCharacter = /[\p{L}\p{N}_$]/u;
-  const prefix = identifierCharacter.test(characters[0] ?? "") ? "(?<![\\p{L}\\p{N}_$])" : "";
-  const suffix = identifierCharacter.test(characters.at(-1) ?? "") ? "(?![\\p{L}\\p{N}_$])" : "";
-  return new RegExp(`${prefix}${escaped}${suffix}`, "u").test(line);
-}
-
 function verifiedEvidence(
   projectRoot: string,
   term: string,
@@ -286,7 +285,7 @@ function verifiedEvidence(
     }
     if (!realPath.startsWith(`${root}${path.sep}`) || !fs.statSync(realPath).isFile()) return null;
     const line = fs.readFileSync(realPath, "utf8").split(/\r?\n/)[item.line - 1];
-    if (line === undefined || !containsLiteralTerm(line, term)) return null;
+    if (line === undefined || !containsGlossaryTerm(line, term)) return null;
     const sourcePath = path.relative(root, realPath).split(path.sep).join(path.posix.sep);
     const identity = `${sourcePath}:${item.line}`;
     if (identities.has(identity)) continue;
@@ -314,10 +313,7 @@ export function assessTerminologyDrift(input: TerminologyDriftInput): Terminolog
     )
       continue;
 
-    const consolidated = new Map<
-      string,
-      { term: string; evidence: Map<string, ProjectTermEvidence> }
-    >();
+    const consolidated: Array<{ term: string; evidence: Map<string, ProjectTermEvidence> }> = [];
     let invalidEvidence = false;
     for (const candidate of concept.terms) {
       const term = candidate.term.trim();
@@ -326,13 +322,12 @@ export function assessTerminologyDrift(input: TerminologyDriftInput): Terminolog
         invalidEvidence = true;
         break;
       }
-      const key = term.toLowerCase();
-      const group = consolidated.get(key) ?? { term, evidence: new Map() };
+      const group = consolidated.find((item) => unicodeCaselessExact(item.term, term)) ?? { term, evidence: new Map() };
       for (const item of evidence) group.evidence.set(`${item.source_path}:${item.line}`, item);
-      consolidated.set(key, group);
+      if (!consolidated.includes(group)) consolidated.push(group);
     }
-    if (invalidEvidence || consolidated.size < 2) continue;
-    const terms = [...consolidated.values()].map((term) => ({
+    if (invalidEvidence || consolidated.length < 2) continue;
+    const terms = consolidated.map((term) => ({
       term: term.term,
       evidence: orderedEvidence([...term.evidence.values()]),
     }));
@@ -346,7 +341,7 @@ export function assessTerminologyDrift(input: TerminologyDriftInput): Terminolog
     } as const;
     let finding = canonicalProposal(seed);
     const personalTerm = input.personalTerms?.get(concept.concept)?.trim();
-    if (personalTerm && personalTerm.toLowerCase() !== finding.proposed_canonical_term.toLowerCase()) {
+    if (personalTerm && !unicodeCaselessExact(personalTerm, finding.proposed_canonical_term)) {
       finding = canonicalProposal({
         ...seed,
         personal_divergence: {

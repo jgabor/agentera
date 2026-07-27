@@ -18,6 +18,8 @@ CONFORMANCE:
   authority: references/artifacts/glossary-entry-contract.yaml
   ownership_contract: project
   provenance_variant: project_file
+  term_identity_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#unicodeCaselessExact
+  term_occurrence_runtime: packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm
 
 DOCUMENT:
   schema_version: agentera.projectGlossary.v1
@@ -33,7 +35,7 @@ DOCUMENT:
     item: shared_primitive
     approval_fields: forbidden
   terminology_set_identity:
-    normalization: lowercase
+    normalization: unicode_caseless_exact_no_normalization
     members: [paired_entry.term, paired_approval.proposal.variants.term]
     uniqueness: global_across_complete_document
 
@@ -45,7 +47,7 @@ PUBLICATION:
   atomic_unit: complete_document
   lock: established_project_writer_lock
   exact_replay: no_op
-  term_identity: case_insensitive_global_canonical_and_variant_set
+  term_identity: unicode_caseless_exact_no_normalization_global_canonical_and_variant_set
   source_revalidation: safe_real_path_line_identity_and_sha256
   docs_mapping_mutation: forbidden
   deferred: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation]
@@ -62,7 +64,16 @@ CONSUMER_ACQUISITION:
   utf8_decoding: fatal
   project_read: descriptor_bound_no_follow_with_parent_identity_checks
   mutation: forbidden
-  deferred: [advice_resolution, capability_integrations, precedence, fallback, tension, semantic_review]
+  deferred: [capability_integrations, precedence, fallback, tension, semantic_review]
+
+ADVICE_RESOLUTION:
+  implementation: active
+  authority: references/artifacts/glossary-entry-contract.yaml#consumer_boundary.advice_resolution
+  runtime: packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice
+  input: [requested_term, acquired, host_review]
+  output_schema_version: agentera.glossaryAdvice.v1
+  mutation: forbidden
+  capability_integrations: deferred
 
 CONFIRMED_VARIANT_GUARD:
   authority: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.confirmed_variant_guard

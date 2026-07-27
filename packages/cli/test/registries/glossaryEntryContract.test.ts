@@ -150,7 +150,7 @@ describe("shared glossary entry authority", () => {
     expect(
       authority.ownership_contracts.project.publication.persisted_document.terminology_set_identity,
     ).toMatchObject({
-      normalization: "lowercase",
+      normalization: "unicode_caseless_exact_no_normalization",
       uniqueness: "global_across_complete_document",
     });
   });
@@ -178,12 +178,12 @@ describe("shared glossary entry authority", () => {
     }
   });
 
-  it("loads active bounded acquisition while advice and capability integrations remain deferred", () => {
+  it("loads active bounded acquisition and advice while capability integrations remain deferred", () => {
     expect(glossaryConsumerContract()).toEqual({
       contractStatus: "active",
       implementation: {
         acquisition: "active",
-        advice_resolution: "declared_deferred",
+        advice_resolution: "active",
         capability_integrations: "declared_deferred",
       },
       outcomes: [
@@ -205,7 +205,14 @@ describe("shared glossary entry authority", () => {
         "unrelated_conversation_turn",
         "background_state_reread",
       ]),
-      transientAllowed: ["outcome", "applicable_meaning", "applicable_owner", "review", "tension"],
+      transientAllowed: [
+        "outcome",
+        "applicable_meaning",
+        "applicable_owner",
+        "review",
+        "tension",
+        "advisory",
+      ],
       durableAllowed: [
         "caveat_id",
         "event",
@@ -255,6 +262,39 @@ describe("shared glossary entry authority", () => {
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 
+  it.each([
+    [
+      "runtime",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.advice_resolution.runtime = "private/runtime";
+      },
+    ],
+    [
+      "host relation",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.advice_resolution.input.host_review.relations.push("fuzzy");
+      },
+    ],
+    [
+      "private output",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.advice_resolution.output.fields.push("candidate_term");
+      },
+    ],
+    [
+      "failure vocabulary",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.advice_resolution.failure.classes.push("raw_error");
+      },
+    ],
+  ])("rejects advice-resolution contract drift in %s", (_label, mutate) => {
+    const pathname = malformedAuthority(mutate);
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "consumer_boundary.advice_resolution must define the active bounded read-only runtime, host-review input, transient output, and privacy-safe failure contract",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
   it("rejects a primitive with the shared term removed", () => {
     const pathname = malformedAuthority((authority) => {
       authority.shared_primitive.required_fields =
@@ -286,6 +326,27 @@ describe("shared glossary entry authority", () => {
     });
     expect(validateGlossaryEntryContract(pathname)).toContain(
       "personal input bounded_rule is required",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it("rejects drift from the shared Unicode caseless-exact identity runtime", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.consumer_boundary.deterministic_judgments.term_identity_runtime =
+        "packages/cli/src/registries/other.ts#lowercase";
+    });
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "consumer_boundary judgments must separate deterministic exact identity and valid gaps from host-reviewed inferred equivalence and invalid project state",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it("rejects drift from the shared exact-case terminology occurrence runtime", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.term_occurrence.identifier_continuation = "letters_and_numbers";
+    });
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "term_occurrence must define one exact-case escaped literal matcher with ECMAScript identifier-continuation boundaries",
     );
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });

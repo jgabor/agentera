@@ -1,0 +1,15 @@
+id: ozyvicqgvt
+artifact: todo
+record:
+  severity: degraded
+  status: resolved
+  description: "[fix:3.0.0] Align confirmed project glossary variant enforcement with the shared Unicode caseless-exact term identity. The active v1LegacyCruft guard still filters canonical and variant terms with locale lowercasing, so distinct Turkish-I forms can be removed before scanning even though proposal validation accepts them as separate identities. Replace or delete the redundant filter, add identity-control regressions, and preserve deterministic sorting-only lowercase uses."
+  readiness:
+    capability: build
+    reason: Plan upicwqdskc Task jthktiznyn exhausted evaluation after Audit proved one producer-side guard still disagrees with the shared consumer and publication identity contract.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Fix the last shared identity disagreement before Discuss, Plan, or Build consume glossary advice.

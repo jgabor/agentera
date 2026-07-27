@@ -325,6 +325,32 @@ describe("typed project glossary publication", () => {
     expect(glossary(root).approvals).toHaveLength(1);
   });
 
+  it("rejects a Greek final-sigma canonical collision before effects", () => {
+    const root = project();
+    expect(run(root, request(terminologySet(root, "ΟΣ", "παλιό", "greek first"))).rc).toBe(0);
+    const target = path.join(root, ".agentera/glossary.yaml");
+    const before = fs.readFileSync(target, "utf8");
+
+    const result = run(root, request(terminologySet(root, "οσ", "νεότερο", "greek second")));
+    expect(result.rc).not.toBe(0);
+    expect(result.json?.error.class).toBe("conflict");
+    expect(fs.readFileSync(target, "utf8")).toBe(before);
+  });
+
+  it("rejects an equivalent canonical/variant identity at proposal validation", () => {
+    const root = project();
+    const proposal = terminologySet(root, "ΟΣ", "παλιό", "equivalent Greek identity");
+    proposal.variants[0]!.term = "οσ";
+    proposal.proposal_digest = terminologyProposalDigest(proposal);
+    const value: any = request(proposal);
+    value.confirmation.proposal_digest = proposal.proposal_digest;
+
+    const result = run(root, value);
+    expect(result.rc).not.toBe(0);
+    expect(result.json?.error.message).toMatch(/canonical Audit output|identity/i);
+    expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
+  });
+
   it.each([
     ["approval without entry", (document: any) => { document.entries = []; }],
     ["entry with approval data", (document: any) => { document.entries[0].proposal_digest = document.approvals[0].proposal_digest; }],

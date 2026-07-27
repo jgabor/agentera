@@ -6,13 +6,14 @@ import YAML from "yaml";
 
 import { resolvePath } from "../core/paths.js";
 import { confirmedVariantGuardContract } from "../registries/glossaryEntryContract.js";
+import { containsGlossaryTerm } from "../registries/glossaryTermOccurrence.js";
 import {
-  containsGlossaryTerm,
   loadProjectGlossaryDocument,
   type ProjectGlossaryDocument,
 } from "../state/write/glossaryPublication.js";
 
 const EXCLUDED_DIRECTORIES = new Set(confirmedVariantGuardContract().excludedDirectories);
+// Lowercased extensions classify ASCII path suffixes; they are not term identities.
 const TEXT_EXTENSIONS = new Set([
   ".cjs", ".css", ".go", ".html", ".js", ".json", ".jsonc", ".jsx",
   ".md", ".mjs", ".py", ".rs", ".sh", ".toml", ".ts", ".tsx", ".txt",
@@ -71,8 +72,9 @@ function confirmedVariants(document: ProjectGlossaryDocument): ConfirmedVariant[
   return document.approvals.flatMap((approval, index) => {
     const entry = document.entries[index]!;
     const canonical = String(entry.term);
+    // Project-glossary validation already rejects every canonical/variant
+    // identity collision. Preserve all validated variants for guard scanning.
     return approval.proposal.variants
-      .filter(({ term }) => term.toLocaleLowerCase() !== canonical.toLocaleLowerCase())
       .map(({ term, evidence }) => ({
         variant: term,
         canonical,

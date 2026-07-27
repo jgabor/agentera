@@ -100,11 +100,60 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   if (
     consumer?.contract_status !== "active" ||
     implementation?.acquisition !== "active" ||
-    implementation?.advice_resolution !== "declared_deferred" ||
+    implementation?.advice_resolution !== "active" ||
     implementation?.capability_integrations !== "declared_deferred"
   ) {
     errors.push(
-      "consumer_boundary.implementation must activate acquisition while advice resolution and capability integrations remain declared_deferred",
+      "consumer_boundary.implementation must activate acquisition and advice resolution while capability integrations remain declared_deferred",
+    );
+  }
+
+  const advice = mapping(consumer?.advice_resolution);
+  const adviceInput = mapping(advice?.input);
+  const hostReview = mapping(adviceInput?.host_review);
+  const adviceOutput = mapping(advice?.output);
+  const adviceFailure = mapping(advice?.failure);
+  if (
+    advice?.implementation !== "active" ||
+    advice?.runtime !==
+      "packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice" ||
+    advice?.mutation !== "forbidden" ||
+    !sameStrings(adviceInput?.fields, ["requested_term", "acquired", "host_review"]) ||
+    adviceInput?.requested_term_utf8_bound !==
+      "consumer_boundary.acquisition.bounds.max_source_utf8_bytes" ||
+    adviceInput?.acquired_contract !== "consumer_boundary.acquisition.output" ||
+    hostReview?.optional !== true ||
+    !sameStrings(hostReview?.fields, ["relation", "candidate_owner", "candidate_term"]) ||
+    !sameStrings(hostReview?.relations, ["inferred_equivalence"]) ||
+    !sameStrings(hostReview?.candidate_owners, ["personal"]) ||
+    !nonEmpty(hostReview?.rule) ||
+    adviceInput?.additional_fields !== "forbidden" ||
+    adviceOutput?.schema_version !== "agentera.glossaryAdvice.v1" ||
+    !sameStrings(adviceOutput?.fields, [
+      "outcome",
+      "applicable_meaning",
+      "applicable_owner",
+      "review",
+      "tension",
+      "advisory",
+    ]) ||
+    !sameStrings(adviceOutput?.owners, ["personal", "project"]) ||
+    !sameStrings(adviceOutput?.advisory_fields, ["reason", "ownership_state"]) ||
+    !sameStrings(adviceOutput?.advisory_reasons, [
+      "personal_input_unavailable",
+      "inferred_equivalence",
+    ]) ||
+    !sameStrings(adviceOutput?.advisory_ownership_states, ["project_governs_exact"]) ||
+    !nonEmpty(adviceOutput?.rule) ||
+    !sameStrings(adviceFailure?.classes, [
+      "invalid_request",
+      "invalid_acquisition",
+      "invalid_host_review",
+    ]) ||
+    !nonEmpty(adviceFailure?.rule)
+  ) {
+    errors.push(
+      "consumer_boundary.advice_resolution must define the active bounded read-only runtime, host-review input, transient output, and privacy-safe failure contract",
     );
   }
 
@@ -176,7 +225,9 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const hostJudgments = mapping(consumer?.host_reviewed_judgments);
   const projectState = mapping(consumer?.project_state);
   if (
-    judgments?.term_identity !== "case_insensitive_exact" ||
+    judgments?.term_identity !== "unicode_caseless_exact_no_normalization" ||
+    judgments?.term_identity_runtime !==
+      "packages/cli/src/registries/glossaryTermIdentity.ts#unicodeCaselessExact" ||
     judgments?.meaning_identity !== "exact_string" ||
     judgments?.project_state_validity !== "schema_and_bound_validation" ||
     judgments?.project_gap !== "valid_project_state_without_exact_term_identity" ||
@@ -300,10 +351,18 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const inferredAdvisory = mapping(advisories?.inferred_equivalence_with_project_exact);
   if (
     unavailableAdvisory?.primary_outcome !== "project_only" ||
+    !sameStrings(mapping(unavailableAdvisory?.match)?.project_input, ["valid_exact"]) ||
+    !sameStrings(mapping(unavailableAdvisory?.match)?.personal_input, ["invalid"]) ||
+    !sameStrings(mapping(unavailableAdvisory?.match)?.exact_meaning, ["not_applicable"]) ||
+    !sameStrings(mapping(unavailableAdvisory?.match)?.inferred_candidate, ["absent", "present"]) ||
     unavailableAdvisory?.caveat_reason !== "personal_input_unavailable" ||
     unavailableAdvisory?.ownership_state !== "project_governs_exact" ||
     !nonEmpty(unavailableAdvisory?.rule) ||
     inferredAdvisory?.primary_outcome !== "project_only" ||
+    !sameStrings(mapping(inferredAdvisory?.match)?.project_input, ["valid_exact"]) ||
+    !sameStrings(mapping(inferredAdvisory?.match)?.personal_input, ["valid_without_exact"]) ||
+    !sameStrings(mapping(inferredAdvisory?.match)?.exact_meaning, ["not_applicable"]) ||
+    !sameStrings(mapping(inferredAdvisory?.match)?.inferred_candidate, ["present"]) ||
     inferredAdvisory?.caveat_reason !== "inferred_equivalence" ||
     inferredAdvisory?.ownership_state !== "project_governs_exact" ||
     !nonEmpty(inferredAdvisory?.review) ||
@@ -360,6 +419,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "applicable_owner",
       "review",
       "tension",
+      "advisory",
     ]) ||
     !nonEmpty(transient?.minimum_rule) ||
     !sameStrings(durable?.surfaces, [
@@ -452,6 +512,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     gate?.command !== "agentera check validate vocabularyAuthority --format json" ||
     !sameStrings(gate?.required_sections, [
       "consumer_boundary.acquisition",
+      "consumer_boundary.advice_resolution",
       "consumer_boundary.primary_selection",
       "consumer_boundary.outcome_matrix",
       "consumer_boundary.orthogonal_advisories",

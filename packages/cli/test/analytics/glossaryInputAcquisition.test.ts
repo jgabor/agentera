@@ -529,6 +529,25 @@ describe("bounded glossary input acquisition", () => {
     fs.writeFileSync(projectPath, projectBefore);
   });
 
+  it("fails closed when acquired personal entries duplicate under Unicode caseless identity", () => {
+    const pathname = profilePath();
+    writePersonalGlossary(pathname);
+    const profile = fs.readFileSync(pathname, "utf8");
+    const match = /```json\n([\s\S]*?)\n```/.exec(profile);
+    expect(match).not.toBeNull();
+    const document = JSON.parse(match![1]);
+    document.entries[0].term = "ΟΣ";
+    document.entries.push({ ...structuredClone(document.entries[0]), term: "οσ" });
+    document.confidence_basis = { ΟΣ: 82, οσ: 82 };
+    fs.writeFileSync(pathname, profile.replace(match![1], JSON.stringify(document, null, 2)));
+
+    expect(acquirePersonalGlossaryInput(pathname)).toMatchObject({
+      availability: "malformed",
+      entries: [],
+      gap_proving: false,
+    });
+  });
+
   it("is read-only and keeps personal synthesis invariant to project glossary presence", () => {
     const root = projectRoot();
     const pathname = profilePath();

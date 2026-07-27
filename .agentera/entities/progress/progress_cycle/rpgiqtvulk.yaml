@@ -1,0 +1,16 @@
+id: rpgiqtvulk
+artifact: progress
+record:
+  timestamp: 2026-07-27 07:38
+  type: feat
+  phase: build
+  what: Activated shared, read-only glossary advice resolution over bounded acquired inputs. Exact project authority, divergent tension, proven-gap personal fallback, host-reviewed inferred equivalence, and bounded orthogonal advisories now resolve from the validated matrix without persistence.
+  context:
+    intent: Implement only active Plan task jthktiznyn shared advice resolution over the committed acquisition result.
+    constraints: No Discuss, Plan, Build, or prime integration; no task completion or evaluation; no decisions or TODO mutation; no staging, commit, publish, tag, or push; no advice-side writes or conflict persistence.
+    unknowns: Independent Prime audit and evaluation remain pending.
+    scope: Glossary advice authority/schema, contract loader and validator, minimum resolver, and proportional matrix/privacy regression coverage.
+  inspiration: Active Plan task jthktiznyn and committed consumer/acquisition authorities 6153cf2a, c8e498b6, and 8091ef51.
+  discovered: The existing glossary registry crossed the 1000-line monolith gate when advice loading was added, so the advice authority loader was isolated by responsibility while retaining one authority load per resolution.
+  verified: Focused advice, acquisition, authority, CLI validation, and monolith suites passed 128 tests; final full source lane passed 216 files with 2875 tests and 1 skipped. Typecheck and build passed. Built local CLI 3.0.0-dev.37 passed vocabularyAuthority, cross-capability, capability-contract, and compact checks. Lint completed with 0 errors and 152 pre-existing warnings; targeted formatting and git diff --check passed.
+  next: Prime should independently audit the unstaged diff, evaluate task jthktiznyn, and commit if accepted; capability integration remains deferred.

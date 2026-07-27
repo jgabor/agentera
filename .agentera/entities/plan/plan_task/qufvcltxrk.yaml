@@ -1,0 +1,23 @@
+id: qufvcltxrk
+artifact: plan
+record:
+  plan: upicwqdskc
+  name: Align confirmed-variant Unicode identity
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN a validated canonical term and confirmed variant WHEN the legacy-cruft guard prepares scan identities THEN every Unicode caseless-distinct variant is retained and Unicode caseless-equivalent identities are rejected by the owning validation boundary rather than silently filtered.
+    - GIVEN Greek final sigma, Turkish dotted-I, composed/decomposed accents, regex metacharacters, non-BMP pairs, and ASCII controls WHEN proposal, publication, parser, resolver, and guard paths run THEN every path agrees with the shared locale-independent caseless-exact primitive.
+    - GIVEN the corrected guard WHEN shared advice regressions run THEN project authority, divergent tension, personal fallback, inferred review, privacy, and deferred capability statuses remain unchanged.
+    - GIVEN focused and repository verification WHEN independent audit runs THEN no residual term-identity comparison disagrees except documented sorting or non-term normalization.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Boundary-aware literal matching excludes Unicode combining marks, so a decomposed confirmed term falsely matches as standalone inside a larger valid identifier such as e-combining-acute-Suffix; guard and terminology evidence duplicate the defect.
+    provenance:
+      attempt_id: confirmed-variant-identity-audit-2
+      source: Audit ses_05dc94870ffeD3nISEVsgzS0uo bounded re-review PASS
+      recorded_at: 2026-07-27 08:37
+      writer_command: agentera state plan record-evaluation

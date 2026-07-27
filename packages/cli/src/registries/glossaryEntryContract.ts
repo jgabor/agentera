@@ -248,6 +248,25 @@ export function validateGlossaryEntryContract(
     errors.push("schema_version must be agentera.glossaryEntryContract.v1");
   }
 
+  const occurrence = mapping(authority.term_occurrence);
+  if (
+    occurrence?.runtime !==
+      "packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm" ||
+    !sameStrings(occurrence?.consumers, [
+      "audit_evidence",
+      "project_publication_revalidation",
+      "confirmed_variant_guard",
+    ]) ||
+    occurrence?.comparison !== "exact_case_sensitive_literal" ||
+    occurrence?.normalization !== "none" ||
+    occurrence?.identifier_continuation !== "unicode_ID_Continue_plus_dollar_ZWNJ_ZWJ" ||
+    !nonEmpty(occurrence?.rule)
+  ) {
+    errors.push(
+      "term_occurrence must define one exact-case escaped literal matcher with ECMAScript identifier-continuation boundaries",
+    );
+  }
+
   const primitive = mapping(authority.shared_primitive);
   const required = strings(primitive?.required_fields);
   const expected = ["term", "meaning", "confidence", "permanence", "temporal", "provenance"];
@@ -473,7 +492,7 @@ export function validateGlossaryEntryContract(
     profileSection?.entry_shape !== "shared_primitive" ||
     !sameStrings(profileSection?.lifecycle_metadata, ["as_of", "confidence_basis"]) ||
     !nonEmpty(profileSection?.boundary_rule) ||
-    mergeIdentity?.normalization !== "unicode_lowercase" ||
+    mergeIdentity?.normalization !== "unicode_caseless_exact_no_normalization" ||
     !nonEmpty(mergeIdentity?.rule) ||
     !nonEmpty(profileOutput?.refresh_rule) ||
     !nonEmpty(profileOutput?.decay_rule) ||
@@ -570,7 +589,7 @@ export function validateGlossaryEntryContract(
       "packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal" ||
     !sameStrings(proposalValidation?.required_rules, [
       "safe_distinct_evidence_identities_per_term",
-      "case_insensitive_unique_term_identities",
+      "unicode_caseless_exact_unique_term_identities",
       "best_supported_canonical_term_with_lexicographic_tie_break",
       "authority_confidence_floor_and_range",
       "confidence_below_70_forces_info_severity",
@@ -603,7 +622,7 @@ export function validateGlossaryEntryContract(
     ]) ||
     persistedDocument?.schema_version !== "agentera.projectGlossary.v1" ||
     !sameStrings(persistedDocument?.required_fields, ["schema_version", "approvals", "entries"]) ||
-    terminologySetIdentity?.normalization !== "lowercase" ||
+    terminologySetIdentity?.normalization !== "unicode_caseless_exact_no_normalization" ||
     !sameStrings(terminologySetIdentity?.members, [
       "paired_entry.term",
       "paired_approval.proposal.variants.term",

@@ -167,6 +167,14 @@ describe("read-only terminology-drift findings", () => {
     expect(validateTerminologyProposal(duplicateEvidence).violations).toContain(
       "canonical_evidence identities must be distinct",
     );
+
+    const greekDuplicate = structuredClone(emitted);
+    greekDuplicate.proposed_canonical_term = "ΟΣ";
+    greekDuplicate.variants[0]!.term = "οσ";
+    greekDuplicate.proposal_digest = terminologyProposalDigest(greekDuplicate);
+    expect(validateTerminologyProposal(greekDuplicate).violations).toContain(
+      "proposal term identities must be Unicode caseless-exact unique",
+    );
   });
 
   it("filters no-drift, weak, deliberate, tracked, and unsupported evidence without fabricating profile usage or writes", () => {
@@ -305,6 +313,32 @@ describe("read-only terminology-drift findings", () => {
         trackedIssueConcepts: new Set(),
       }),
     ).toEqual([]);
+  });
+
+  it("shares decomposed ID_Continue boundaries with confirmed-variant scanning", () => {
+    const term = "e\u0301";
+    const root = fixture({ "terms.ts": `export type é = ${term}Suffix;\n` });
+    const assess = () =>
+      assessTerminologyDrift({
+        projectRoot: root,
+        concepts: [
+          {
+            concept: "decomposed-boundary",
+            confidence: 90,
+            severity: "warning",
+            terms: [
+              { term: "é", evidence: [{ source_path: "terms.ts", line: 1 }] },
+              { term, evidence: [{ source_path: "terms.ts", line: 1 }] },
+            ],
+          },
+        ],
+        deliberateDecisionConcepts: new Set(),
+        trackedIssueConcepts: new Set(),
+      });
+
+    expect(assess()).toEqual([]);
+    fs.writeFileSync(path.join(root, "terms.ts"), `export type é = (${term});\n`);
+    expect(assess()).toHaveLength(1);
   });
 
   it("emits valid drift without fabricating absent profile evidence or mutating files", () => {

@@ -1,0 +1,16 @@
+id: ixbngwtpkw
+artifact: progress
+record:
+  timestamp: 2026-07-27 08:14
+  type: fix
+  phase: build
+  what: Corrected confirmed-variant guard preparation by deleting its redundant locale-lowercase canonical filter. Validated project glossary documents now pass every owning-validator-approved variant to exact guard scanning, while equivalent canonical/variant identities continue to fail before publication.
+  context:
+    intent: Execute replacement task qufvcltxrk without changing shared advice outcomes, lifecycle statuses, or capability integrations.
+    constraints: No task completion or evaluation, TODO resolution, capability integration, staging, commit, publish, tag, or push. Existing source-evidence, exclusion, line-boundary, and correction behavior is unchanged.
+    unknowns: Independent Prime re-audit remains pending.
+    scope: Confirmed-variant preparation and guard regressions, owning publication negative coverage, and residual identity-use documentation.
+  inspiration: Independent Audit found that canonical İ caused distinct variant i plus combining dot to be silently filtered from v1LegacyCruft scanning.
+  discovered: The only remaining glossary-term lowercasing is the authority-documented deterministic Audit variant sort key; v1LegacyCruft locale comparison sorts paths and lowercases ASCII file extensions only. No residual term-identity normalization remains outside unicodeCaselessExact.
+  verified: Focused guard, proposal, publication, personal, acquisition, resolver, identity, contract, and CLI validation suites passed 217 tests. Full source passed 217 files with 2901 tests and 1 skipped. Typecheck and build passed. Built local CLI 3.0.0-dev.37 passed vocabularyAuthority, cross-capability, capability-contract, and compact checks. Lint completed with 0 errors and 152 pre-existing warnings; targeted formatter checks and git diff --check passed. Guard regressions scan accepted Greek, Turkish dotted-I, composed/decomposed, regex-metacharacter, and non-BMP variants; publication rejects an equivalent Greek canonical/variant before effects.
+  next: Prime should independently audit and evaluate replacement task qufvcltxrk; shared capability integration remains deferred.

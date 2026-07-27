@@ -29,17 +29,26 @@ function project(): string {
   return root;
 }
 
-function publishConfirmedSet(root: string): string {
-  fs.writeFileSync(path.join(root, "terms.ts"), "export type JsonValue = LegacyJsonValue;\n");
+function publishConfirmedSet(
+  root: string,
+  canonical = "JsonValue",
+  variant = "LegacyJsonValue",
+  concept = "structured value",
+): string {
+  fs.writeFileSync(path.join(root, "terms.ts"), `export type ${canonical} = ${variant};\n`);
+  fs.writeFileSync(path.join(root, "terms-extra.ts"), `export type Canonical = ${canonical};\n`);
   const proposal = assessTerminologyDrift({
     projectRoot: root,
     concepts: [{
-      concept: "structured value",
+      concept,
       confidence: 84,
       severity: "warning",
       terms: [
-        { term: "JsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
-        { term: "LegacyJsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
+        { term: canonical, evidence: [
+          { source_path: "terms.ts", line: 1 },
+          { source_path: "terms-extra.ts", line: 1 },
+        ] },
+        { term: variant, evidence: [{ source_path: "terms.ts", line: 1 }] },
       ],
     }],
     deliberateDecisionConcepts: new Set(),
@@ -123,6 +132,52 @@ describe("v1 legacy cruft removal (post-3.0 boundary)", () => {
       expect(violations[0]).toContain("terms.ts:1");
       expect(violations[0]).toContain("pnpm -C packages/cli exec vitest run test/cli/v1LegacyCruft.test.ts");
       expect(scanPost30CruftViolations(root)).toEqual(violations);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ["Greek sigma control", "ΟΣ", "οσx"],
+    ["Turkish dotted-I", "İ", "i\u0307"],
+    ["composed/decomposed accent", "é", "e\u0301"],
+    ["regex metacharacter", "A+B", "A*B"],
+    ["non-BMP", "𐐀", "𐐨x"],
+  ])("scans an accepted caseless-distinct %s variant", (label, canonical, variant) => {
+    const root = project();
+    try {
+      publishConfirmedSet(root, canonical, variant, label);
+      fs.mkdirSync(path.join(root, "src"));
+      fs.writeFileSync(path.join(root, "src/reintroduced.ts"), `type Reintroduced = ${variant};\n`);
+
+      const violations = scanPost30CruftViolations(root);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toContain(`confirmed variant '${variant}'`);
+      expect(violations[0]).toContain(`canonical term '${canonical}'`);
+      expect(violations[0]).toContain("src/reintroduced.ts:1");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not flag a decomposed variant inside ID_Continue identifiers", () => {
+    const root = project();
+    const variant = "e\u0301";
+    try {
+      publishConfirmedSet(root, "é", variant, "decomposed boundary");
+      fs.mkdirSync(path.join(root, "src"));
+      const target = path.join(root, "src/reintroduced.ts");
+      fs.writeFileSync(
+        target,
+        [`type A = ${variant}Suffix;`, `type B = Prefix${variant};`, `type C = ${variant}\u200Cnext;`].join("\n"),
+      );
+      expect(scanPost30CruftViolations(root)).toEqual([]);
+
+      fs.writeFileSync(target, `const value = (${variant});\n`);
+      const violations = scanPost30CruftViolations(root);
+      expect(violations).toHaveLength(1);
+      expect(violations[0]).toContain("src/reintroduced.ts:1");
+      expect(violations[0]).toContain(`confirmed variant '${variant}'`);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

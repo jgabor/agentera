@@ -4,7 +4,7 @@ record:
   name: Resolve shared glossary advice
   depends_on:
     - hyoaodzkww
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN an exact project-only term or equivalent exact collision WHEN advice is formed THEN project meaning governs without unnecessary review.
     - GIVEN an exact collision with divergent meanings WHEN advice is formed THEN project meaning governs and a tension is surfaced.
@@ -12,3 +12,16 @@ record:
     - GIVEN inferred equivalence or unresolved availability WHEN advice is formed THEN no disputed meaning is silently selected and the declared review, abstention, or caveat outcome is returned without conflict persistence.
     - GIVEN privacy and bounds traps across structured output and diagnostics WHEN advice is verified THEN only permitted transient meaning and ownership appear, with one pass and one failure or abstention per matrix unit.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Confirmed-variant guard v1LegacyCruft still filters term identity with toLocaleLowerCase, disagreeing with Unicode caseless-exact semantics and allowing distinct Turkish-I variants to escape scanning.
+    provenance:
+      attempt_id: glossary-advice-audit-2
+      source: Audit ses_05dea4984ffeRBPa1i1fg87e5h bounded Unicode identity re-review
+      recorded_at: 2026-07-27 08:07
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - qufvcltxrk
+  superseded_reason: The evaluated replacement unifies Unicode caseless term identity and exact identifier-boundary occurrence matching while preserving shared advice behavior.

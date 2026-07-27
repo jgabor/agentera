@@ -14,6 +14,8 @@ import {
   resolveArtifactPath,
 } from "../../registries/artifactRegistry.js";
 import { GlossaryEntryBoundError, validateGlossaryEntry } from "../../registries/glossaryEntryContract.js";
+import { unicodeCaselessExact } from "../../registries/glossaryTermIdentity.js";
+import { containsGlossaryTerm } from "../../registries/glossaryTermOccurrence.js";
 import type { ValidatedProjectRoot } from "../projectRoot.js";
 import { assertValidatedProjectRoot } from "../projectRoot.js";
 import { reject } from "./errors.js";
@@ -103,15 +105,6 @@ function confirmation(value: unknown, digest: string): Confirmation {
   return value as Confirmation;
 }
 
-export function containsGlossaryTerm(line: string, term: string): boolean {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const identifier = /[\p{L}\p{N}_$]/u;
-  const characters = [...term];
-  const prefix = identifier.test(characters[0] ?? "") ? "(?<![\\p{L}\\p{N}_$])" : "";
-  const suffix = identifier.test(characters.at(-1) ?? "") ? "(?![\\p{L}\\p{N}_$])" : "";
-  return new RegExp(`${prefix}${escaped}${suffix}`, "u").test(line);
-}
-
 function revalidateEvidence(root: ValidatedProjectRoot, proposalValue: TerminologyDriftFinding): void {
   const groups = [
     { term: proposalValue.proposed_canonical_term, evidence: proposalValue.canonical_evidence },
@@ -195,7 +188,7 @@ export function parseProjectGlossaryDocument(bytes: string, maxEntries = Number.
   const approvals = value.approvals.map((item, index) => parseApproval(item, index));
   const entries = value.entries as unknown[];
   if (entries.length !== approvals.length) correction("existing glossary approvals and entries do not form complete publication pairs", "conflict");
-  const terminologyIdentities = new Map<string, { canonical: string; index: number }>();
+  const terminologyIdentities: Array<{ term: string; canonical: string }> = [];
   const digestIdentities = new Set<string>();
   for (const [index, item] of entries.entries()) {
     if (!mapping(item)) correction(`existing entries[${index}] is malformed`, "conflict");
@@ -208,16 +201,15 @@ export function parseProjectGlossaryDocument(bytes: string, maxEntries = Number.
     digestIdentities.add(digest);
     const terms = [canonical, ...approvals[index]!.approval.proposal.variants.map(({ term }) => term)];
     for (const term of terms) {
-      const identity = term.toLowerCase();
-      const existing = terminologyIdentities.get(identity);
-      if (existing && existing.index !== index) {
+      const existing = terminologyIdentities.find((identity) => unicodeCaselessExact(identity.term, term));
+      if (existing) {
         correction(
           `terminology identity collision for '${term}' between canonical sets '${existing.canonical}' and '${canonical}'`,
           "conflict",
           `Choose distinct canonical and variant terms for '${existing.canonical}' and '${canonical}', rerun audit, obtain confirmation for the corrected proposal, and retry the same glossary publish command.`,
         );
       }
-      terminologyIdentities.set(identity, { canonical, index });
+      terminologyIdentities.push({ term, canonical });
     }
   }
   return {
@@ -270,7 +262,7 @@ export function publishGlossary(
       ? parseProjectGlossaryDocument(previousBytes)
       : { schema_version: DOCUMENT_VERSION, approvals: [], entries: [] };
     const approvalIndex = current.approvals.findIndex((item) => item.proposal_digest === proposed.proposal_digest);
-    const termIndex = current.entries.findIndex((item) => String(item.term).toLowerCase() === proposed.proposed_canonical_term.toLowerCase());
+    const termIndex = current.entries.findIndex((item) => unicodeCaselessExact(String(item.term), proposed.proposed_canonical_term));
     if (approvalIndex >= 0 || termIndex >= 0) {
       if (approvalIndex === termIndex && approvalIndex >= 0 && same(current.approvals[approvalIndex], approval) && same(current.entries[termIndex], entry)) {
         return {
