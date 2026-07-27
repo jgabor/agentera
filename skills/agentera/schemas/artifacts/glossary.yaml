@@ -50,7 +50,7 @@ PUBLICATION:
   term_identity: unicode_caseless_exact_no_normalization_global_canonical_and_variant_set
   source_revalidation: safe_real_path_line_identity_and_sha256
   docs_mapping_mutation: forbidden
-  deferred: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation]
+  excluded_behavior: [consumer_lookup, consumer_precedence, consumer_semantic_review, personal_profile_mutation]
 
 CONSUMER_ACQUISITION:
   implementation: active
@@ -64,7 +64,7 @@ CONSUMER_ACQUISITION:
   utf8_decoding: fatal
   project_read: descriptor_bound_no_follow_with_parent_identity_checks
   mutation: forbidden
-  deferred: [capability_integrations, precedence, fallback, tension, semantic_review]
+  consumer_semantics: [project_precedence, proven_gap_personal_fallback, divergent_tension, host_review]
 
 ADVICE_RESOLUTION:
   implementation: active
@@ -73,7 +73,7 @@ ADVICE_RESOLUTION:
   input: [requested_term, acquired, host_review]
   output_schema_version: agentera.glossaryAdvice.v1
   mutation: forbidden
-  capability_integrations: deferred
+  capability_integrations: [discuss, plan, build, prime]
 
 CONFIRMED_VARIANT_GUARD:
   authority: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.confirmed_variant_guard

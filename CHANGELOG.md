@@ -37,11 +37,20 @@
   personal glossary output in `PROFILE.md`, with bounded
   personal provenance, byte-preserving section replacement, deterministic
   confidence decay and refresh, retained permanence, and no project-glossary
-  reads. Glossary consumer lookup and precedence remain deferred.
+  reads. Discuss, Plan, and Build consume it only through bounded glossary
+  advice after project-state acquisition proves the applicable authority.
 - Added canonical project-glossary discovery and a confirmed-variant guard to
   `v1LegacyCruft`. Approved literal drift variants now fail validation when
   reintroduced outside their retained evidence, with the canonical term,
-  source location, and correction; general glossary lookup remains deferred.
+  source location, and correction.
+- Added `agentera report glossary-advice --input <file|-> --format json` for
+  active read-only glossary lookup. Exact project entries govern project work;
+  personal entries apply only after a valid project gap is proven; and inferred
+  equivalence requires host review. Discuss and interactive Plan/Build clarify
+  before disputed reliance. Autonomous Plan emits a bounded handoff intent for
+  Build, which owns privacy-safe progress caveat lifecycle writes. `prime`
+  reserves at most one of six attention slots for current glossary review while
+  preserving unrelated attention and next-action selection.
 - Added `agentera state glossary publish --input REQUEST` for explicitly
   confirmed Audit terminology proposals. The build-owned writer revalidates
   project evidence and atomically records separate approval and shared-entry
@@ -57,7 +66,7 @@
 - Added post-cutover decision entities for immutable bases and content revisions, replaceable satisfaction ownership, bare-ID exact and bounded reads, deterministic effective provenance, stale-base and transition validation, and explicit same-decision conflict detection; marker-absent projects retain the legacy numbered authority without dual writes.
 - Added the post-cutover progress entity writer and `state progress get|list` reads with bare IDs, one canonical file per cycle, atomic replay-safe publication, full provenance, bounded snapshot pagination, and no legacy projection or archive writes; legacy projects remain unchanged until the durable cutover marker exists.
 - Added authority-driven, one-file-per-entity storage primitives with secure project-wide IDs, symlink-safe discovery, conflict-safe publication, relationship validation, and `agentera check validate state` diagnostics.
-- Added an authoritative evidence-tier contract (`references/analysis/evidence-tier-authority.yaml`) and contract-model loader (`packages/cli/src/registries/evidenceTierContract.ts`) fixing the bounded full-evidence and signal tiers, supported Codex, Cursor, OpenCode, Copilot, and historical Claude source coverage, the consumer field-supply map including the latent startup-analysis reader, reserved signal semantics for the deferred glossary, and deterministic recovery outcomes for oversized, legacy, missing, corrupt, and incomplete state.
+- Added an authoritative evidence-tier contract (`references/analysis/evidence-tier-authority.yaml`) and contract-model loader (`packages/cli/src/registries/evidenceTierContract.ts`) fixing the bounded full-evidence and signal tiers, supported Codex, Cursor, OpenCode, Copilot, and historical Claude source coverage, the consumer field-supply map including the latent startup-analysis reader, bounded personal-glossary synthesis semantics, and deterministic recovery outcomes for oversized, legacy, missing, corrupt, and incomplete state.
 - Added bounded tier publication and direct retrieval (`packages/cli/src/analytics/extractCorpus/evidenceTiers.ts`): complete local evidence is retained as independently bounded, source-family shards that split when exceeding the reader cap; a derived, content-addressable bounded signal tier carries only contract-required fields plus a resolvable `evidence_anchor`; generations are staged and revealed by an atomic current-pointer swap so no consumer observes a partial publication; and direct retrieval resolves a signal identity to its full record. The monolithic `corpus.json` write is eliminated; tiers are the only canonical publication output.
 - Added bounded tier-aware reads for usage analytics, report status, prime corpus coverage, startup analysis, and profile synthesis so every analytics consumer reads from bounded evidence shards one at a time instead of loading the monolithic `corpus.json`. A new `tierReader.ts` module projects contract compatibility states and recovery guidance, streams full-evidence records, and reads signal-tier metadata. A new `profileSignals.ts` module reads the bounded signal tier, assesses per-family retention sufficiency against the contract threshold, and resolves synthesized claims' evidence anchors to retained full-evidence shards. Legacy `corpus.json` remains a fallback when no tiers are published; oversized legacy state is never loaded whole.
 - Added a schema-owned verbosity-budget authority that classifies numeric word limits, explicit no-limit declarations, and token-only budgets while rejecting malformed, ambiguous, unreadable, and unsupported ownership without fallback limits.
@@ -112,6 +121,11 @@
 
 ### Fixed
 
+- Fixed same-minute progress recency to use persisted writer-owned publication
+  order instead of opaque IDs. List and `prime` now select the final committed
+  publication after restart or copy. Version 2 snapshot cursors preserve
+  deterministic pagination and reject prior-ordering continuations with an
+  actionable omit-`--cursor` recovery.
 - Fixed typed entity updates to retain exact source bytes, reject invalid UTF-8,
   and revalidate descriptor-pinned displaced bytes before no-clobber canonical
   publication. Post-displacement failures now restore the exact prior target or

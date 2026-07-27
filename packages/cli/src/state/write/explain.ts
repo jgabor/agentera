@@ -150,8 +150,8 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
     "build is the only publisher; audit and discuss remain mutation-free",
     "confirmation.confirmed_by must be user and must bind the exact proposal digest and timestamp",
     "the writer revalidates every cited project source line and publishes approval plus entry as one atomic document",
-    "the v1LegacyCruft guard rejects literal confirmed variants while general glossary consumption remains deferred",
-    "lookup, precedence, semantic-equivalence review, profile mutation, and docs-mapping mutation remain deferred",
+    "the v1LegacyCruft guard rejects literal confirmed variants; read-only consumer advice is active through agentera report glossary-advice",
+    "the publication operation never performs consumer lookup, precedence, semantic review, profile mutation, or docs-mapping mutation",
   ];
   if (entityArtifact && artifact === "plan" && verb === "create")
     return [

@@ -44,7 +44,7 @@ export interface ConsumerDefinition {
   input_contract: string;
 }
 
-export interface DeferredConsumerDefinition {
+export interface SemanticConsumerDefinition {
   consumer_id: string;
   tier: TierId;
   status: string;
@@ -57,7 +57,7 @@ export interface SignalSemanticDefinition {
   kind: string;
   meaning: string;
   derivable_from: string;
-  deferred_consumer: string;
+  consumer: string;
   current_consumer?: string;
 }
 
@@ -88,7 +88,7 @@ interface ContractModel {
   tierIds: TierId[];
   families: Map<string, SourceFamilyDefinition>;
   consumers: Map<string, ConsumerDefinition>;
-  deferredConsumers: Map<string, DeferredConsumerDefinition>;
+  semanticConsumers: Map<string, SemanticConsumerDefinition>;
   signalSemantics: Map<string, SignalSemanticDefinition>;
   compatibilityStates: Map<CompatibilityStateId, CompatibilityStateDefinition>;
   bounds: EvidenceTierBounds;
@@ -298,23 +298,23 @@ export function loadEvidenceTierContract(
     });
   }
 
-  const deferredMap = asMappingMap(consumerMapRoot.deferred_consumers, "consumer_map.deferred_consumers");
-  const deferredConsumers = new Map<string, DeferredConsumerDefinition>();
-  for (const [consumerId, entry] of deferredMap) {
-    deferredConsumers.set(consumerId, {
+  const semanticMap = asMappingMap(consumerMapRoot.semantic_consumers, "consumer_map.semantic_consumers");
+  const semanticConsumers = new Map<string, SemanticConsumerDefinition>();
+  for (const [consumerId, entry] of semanticMap) {
+    semanticConsumers.set(consumerId, {
       consumer_id: consumerId,
-      tier: asString(entry.tier, `consumer_map.deferred_consumers.${consumerId}.tier`) as TierId,
-      status: asString(entry.status, `consumer_map.deferred_consumers.${consumerId}.status`),
+      tier: asString(entry.tier, `consumer_map.semantic_consumers.${consumerId}.tier`) as TierId,
+      status: asString(entry.status, `consumer_map.semantic_consumers.${consumerId}.status`),
       input_scope: typeof entry.input_scope === "string" ? entry.input_scope : undefined,
       excluded_evidence_classes: Array.isArray(entry.excluded_evidence_classes)
         ? asStringArray(
             entry.excluded_evidence_classes,
-            `consumer_map.deferred_consumers.${consumerId}.excluded_evidence_classes`,
+            `consumer_map.semantic_consumers.${consumerId}.excluded_evidence_classes`,
           )
         : [],
       required_semantics: asStringArray(
         entry.required_semantics,
-        `consumer_map.deferred_consumers.${consumerId}.required_semantics`,
+        `consumer_map.semantic_consumers.${consumerId}.required_semantics`,
       ),
     });
   }
@@ -329,7 +329,7 @@ export function loadEvidenceTierContract(
       kind,
       meaning: asString(entry.meaning, `signal_semantics.kinds.${kind}.meaning`),
       derivable_from: asString(entry.derivable_from, `signal_semantics.kinds.${kind}.derivable_from`),
-      deferred_consumer: asString(entry.deferred_consumer, `signal_semantics.kinds.${kind}.deferred_consumer`),
+      consumer: asString(entry.consumer, `signal_semantics.kinds.${kind}.consumer`),
       current_consumer: typeof entry.current_consumer === "string" ? entry.current_consumer : undefined,
     });
   }
@@ -387,7 +387,7 @@ export function loadEvidenceTierContract(
     tierIds,
     families,
     consumers,
-    deferredConsumers,
+    semanticConsumers,
     signalSemantics,
     compatibilityStates,
     bounds,
@@ -412,7 +412,7 @@ export function consumerMap(
   return [...loadEvidenceTierContract(contractPath).consumers.values()];
 }
 
-/** All declared signal semantics available to current and deferred consumers. */
+/** All declared signal semantics available to current consumers. */
 export function signalSemantics(
   contractPath: string = evidenceTierAuthorityPath(),
 ): SignalSemanticDefinition[] {
@@ -491,32 +491,32 @@ export function validateEvidenceTierContract(
   }
 
   // AC3: signal semantics required meaning remains available to current and
-  // declared deferred consumers.
+  // declared semantic consumers.
   for (const kind of REQUIRED_SIGNAL_KINDS) {
     const semantic = model.signalSemantics.get(kind);
     if (!semantic) {
       errors.push(`signal semantic ${kind} is omitted`);
       continue;
     }
-    if (!semantic.deferred_consumer) {
-      errors.push(`signal semantic ${kind} has no declared deferred consumer`);
+    if (!semantic.consumer) {
+      errors.push(`signal semantic ${kind} has no declared consumer`);
     }
   }
-  for (const [name, deferred] of model.deferredConsumers) {
-    for (const kind of deferred.required_semantics) {
+  for (const [name, consumer] of model.semanticConsumers) {
+    for (const kind of consumer.required_semantics) {
       if (!model.signalSemantics.has(kind)) {
-        errors.push(`deferred consumer ${name} requires unknown semantic ${kind}`);
+        errors.push(`semantic consumer ${name} requires unknown semantic ${kind}`);
       }
     }
   }
-  const glossary = model.deferredConsumers.get("glossary");
+  const glossary = model.semanticConsumers.get("glossary");
   if (
-    glossary?.status !== "declared_deferred" ||
+    glossary?.status !== "active" ||
     glossary.input_scope !== "bounded_personal_history" ||
     !glossary.excluded_evidence_classes.includes("project_file")
   ) {
     errors.push(
-      "deferred glossary evidence must reserve bounded personal history and exclude project files",
+      "active glossary evidence must use bounded personal history and exclude project files",
     );
   }
 

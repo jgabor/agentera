@@ -171,69 +171,67 @@ source_families:
 
 signal_semantics:
   fixed_taxonomy_rule: >-
-    The signal semantics below are fixed. Current consumers and the deferred
-    glossary consumer depend on their meaning; the contract must preserve that
-    meaning even though glossary implementation and profile levels remain out
-    of scope. A semantic kind present here must remain derivable from a bounded
-    signal record without restoring unbounded transcript content.
+    The signal semantics below are fixed. Current profile and personal-glossary
+    consumers depend on their meaning. A semantic kind present here must remain
+    derivable from a bounded signal record without restoring unbounded
+    transcript content.
   kinds:
     correction:
       meaning: >-
         A user signal that revises a prior position ("no", "not quite",
         "actually", "instead"). Used to detect decision drift and overrides.
       derivable_from: history_prompt and conversation_turn records
-      deferred_consumer: glossary
+      consumer: glossary
     decision:
       meaning: >-
         A decision-bearing signal (decide, prefer, trade-off, scope, approve,
         reject). The primary profile-synthesis input.
       derivable_from: history_prompt and conversation_turn records
-      deferred_consumer: glossary
+      consumer: glossary
       current_consumer: profile_synthesis
     question:
       meaning: >-
         An interrogative signal ("why", "how", "should", or a "?"). Surfaces
         uncertainty and information-gathering intent.
       derivable_from: history_prompt and conversation_turn records
-      deferred_consumer: glossary
+      consumer: glossary
     instruction:
       meaning: >-
         Explicit user-authored instructions (AGENTS.md and project memory
         documents). The highest-signal, most durable evidence.
       derivable_from: instruction_document records
-      deferred_consumer: glossary
+      consumer: glossary
       current_consumer: profile_synthesis
     configuration:
       meaning: >-
         Recurring config patterns across projects (manifest names, scripts,
         dependencies, build/tool config). Objective evidence of what shipped.
       derivable_from: project_config_signal records
-      deferred_consumer: glossary
+      consumer: glossary
       current_consumer: profile_synthesis
     record_identity:
       meaning: >-
         The stable, addressable identity (`source_id`) of one full record. Lets
         any consumer cite evidence without retaining its content.
       derivable_from: every record's source_id
-      deferred_consumer: glossary
+      consumer: glossary
     date:
       meaning: >-
         The record timestamp anchoring evidence in time. Drives decay,
         recency, and watermark windows.
       derivable_from: every record's timestamp field
-      deferred_consumer: glossary
+      consumer: glossary
     evidence_anchor:
       meaning: >-
         The resolvable link from a bounded signal record back to exactly one
         retained full-evidence shard. Guarantees that bounded analysis never
         severs the citation chain.
       derivable_from: signal record evidence_anchor -> full_evidence source_id
-      deferred_consumer: glossary
+      consumer: glossary
   preservation_rule: >-
     Fixing the contract must not remove the required meaning of any kind above
-    from current or declared deferred consumers. A deferred consumer (glossary)
-    is named here so the contract reserves the fields and semantics it will
-    need, even though its implementation is out of scope.
+    from current consumers. Personal glossary synthesis is named here because it
+    actively consumes these bounded-history fields and semantics.
 
 consumer_map:
   supply_rule: >-
@@ -300,10 +298,10 @@ consumer_map:
         - evidence_anchor
       source_identity: source_id and evidence_anchor for every synthesized claim
       input_contract: signal tier instruction/decision/question/config projection
-  deferred_consumers:
+  semantic_consumers:
     glossary:
       tier: signal
-      status: declared_deferred
+      status: active
       input_scope: bounded_personal_history
       excluded_evidence_classes: [project_file]
       required_semantics:
@@ -316,12 +314,11 @@ consumer_map:
         - date
         - evidence_anchor
       rule: >-
-        Personal glossary synthesis is out of scope to implement, but its
-        required bounded-history semantics are fixed here so the signal contract
-        reserves them. Project-file provenance remains repository evidence under
-        the shared glossary ownership contract and is never represented as
-        retained-history evidence. Implementation must not drop a reserved
-        semantic or remove the field that carries it.
+        Personal glossary synthesis actively consumes bounded personal-history
+        signals. Project-file provenance remains repository evidence under the
+        shared glossary ownership contract and is never represented as retained-
+        history evidence. Implementations must not drop a required semantic or
+        remove the field that carries it.
 
 profile_sufficiency:
   question: >-

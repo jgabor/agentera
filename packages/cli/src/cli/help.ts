@@ -173,8 +173,8 @@ export function printStateHelp(sub?: string): string {
       "",
       "Build-owned publication validates one audit terminology proposal and proposal-specific user confirmation.",
       "The writer revalidates cited source lines and atomically records a separate immutable approval and shared glossary entry.",
-      "Confirmed project variants are enforced by the v1LegacyCruft validation guard; lookup, precedence, semantic review, profile mutation, and docs-mapping mutation remain deferred.",
-      "Audit and discuss remain mutation-free; terminology lookup and precedence remain deferred.",
+      "Confirmed project variants are enforced by the v1LegacyCruft validation guard; profile and docs-mapping mutation remain outside publication.",
+      "Audit and discuss remain mutation-free. Discuss, Plan, and Build use read-only glossary advice with project precedence, proven-gap personal fallback, and host review for inferred equivalence.",
       "",
       "Discover writes: agentera state glossary explain --verb publish --format json",
     ].join("\n");

@@ -21,7 +21,7 @@ Show the non-glossary change summary (added, updated, removed) after publication
 
 ### Personal Glossary section
 
-Profile Full actively synthesizes and persists personal glossary entries. It never reads a project glossary: do not accept, resolve, import, or inspect a project root, \`.agentera/glossary.yaml\`, project glossary artifact identity, or project-file provenance. Lookup, project precedence, and semantic-equivalence review remain deferred.
+Profile Full actively synthesizes and persists personal glossary entries. It never reads a project glossary: do not accept, resolve, import, or inspect a project root, \`.agentera/glossary.yaml\`, project glossary artifact identity, or project-file provenance. Profile itself performs no consumer lookup, project precedence, or semantic-equivalence review; Discuss, Plan, and Build obtain that active behavior separately through \`agentera report glossary-advice\`.
 
 Each entry is exactly the shared primitive from \`references/artifacts/glossary-entry-contract.yaml\`: \`term\`, \`meaning\`, \`confidence\`, \`permanence\`, \`temporal\`, and personal \`provenance\`. Do not restate or replace that authority's confidence, permanence, or provenance rules. Decision-pattern confidence and glossary-entry confidence are separate domains; glossary work MUST NOT alter decision headings, metadata, or confidence.
 

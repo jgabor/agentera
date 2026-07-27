@@ -171,13 +171,15 @@ describe("shared glossary entry authority", () => {
       );
       expect(surface).toMatch(/Build project-glossary\s+publication is active/);
       expect(surface).toMatch(
-        /profile mutation|personal-profile mutation|personal-profile\s+mutation/,
+        /profile mutation|personal-profile mutation|personal-profile\s+mutation/i,
       );
       expect(surface).toMatch(/docs-mapping\s+mutation/);
       expect(surface).not.toMatch(/project glossary production and persistence.*deferred/i);
     }
-    for (const surface of [validation, auditInstructions])
-      expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
+    for (const surface of [validation, auditInstructions]) {
+      expect(surface).toMatch(/active read-only advice path/);
+      expect(surface).not.toMatch(/glossary consumers remain deferred/);
+    }
     expect(authority).toMatch(/Build, Discuss, Plan, and prime bounded glossary consumption are active/);
     expect(authority).not.toContain("prime: declared_deferred");
     expect(authority).not.toContain("forbidden_current_claims: [prime_projection]");
@@ -380,7 +382,7 @@ describe("shared glossary entry authority", () => {
 
   it.each([
     [
-      "deferred profile output",
+      "inactive profile output",
       (authority: Record<string, any>) => {
         authority.deferred_capability_contracts.profile.inactive_behavior = [
           "rendering",
@@ -388,7 +390,7 @@ describe("shared glossary entry authority", () => {
           "lookup",
         ];
       },
-      "profile glossary rendering and persistence must be active while lookup remains deferred",
+      "profile glossary rendering and persistence must be active while Profile itself performs no consumer lookup",
     ],
     [
       "mutable audit proposal",

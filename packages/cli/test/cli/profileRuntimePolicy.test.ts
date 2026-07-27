@@ -24,6 +24,7 @@ describe("served profile runtime policy", () => {
     expect(profile).not.toContain("Invoke `updatePersonalGlossaryProfile`");
     expect(profile).toContain("agentera.personalGlossarySection.v1");
     expect(profile).toContain("It never reads a project glossary");
-    expect(profile).toContain("Lookup, project precedence, and semantic-equivalence review remain deferred");
+    expect(profile).toContain("Profile itself performs no consumer lookup");
+    expect(profile).toContain("Discuss, Plan, and Build obtain that active behavior separately");
   });
 });

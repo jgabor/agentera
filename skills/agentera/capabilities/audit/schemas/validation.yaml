@@ -121,11 +121,12 @@ VALIDATION:
       never decisions or writes. Optional personal-profile divergence is
       comparison evidence only; missing profile evidence produces no claim.
       Audit remains mutation-free and read-only. Build project-glossary
-      publication is active; lookup, precedence, semantic-equivalence review,
-      profile mutation, and docs-mapping mutation remain deferred.
+      publication is active. Audit performs no consumer lookup; Discuss, Plan,
+      and Build use the separate active read-only advice path. Personal-profile
+      mutation and docs-mapping mutation remain outside both paths.
     severity: critical
     checks:
       - "Every reported drift variant has project-file evidence"
       - "Weak, deliberate, tracked, and no-drift candidates produce no finding"
       - "Audit mutates no glossary, profile, docs mapping, code, or project file"
-      - "Build publication is active while glossary consumers remain deferred"
+      - "Build publication and read-only glossary consumers are active under separate mutation boundaries"

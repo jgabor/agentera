@@ -721,7 +721,7 @@ export function validateGlossaryEntryContract(
     !sameStrings(profile?.forbidden_current_claims, ["lookup", "project_glossary_consumption"])
   ) {
     errors.push(
-      "profile glossary rendering and persistence must be active while lookup remains deferred",
+      "profile glossary rendering and persistence must be active while Profile itself performs no consumer lookup",
     );
   }
   const audit = mapping(capabilities?.audit);
