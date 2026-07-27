@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
@@ -64,6 +65,52 @@ describe("cli validate (delegated families)", () => {
     const { rc, out } = capture((io) => cmdValidate("vocabularyAuthority", {}, io));
     expect(rc).toBe(0);
     expect(out.trim()).toBe("vocabulary authority ok");
+  });
+
+  it("fails the documented vocabularyAuthority command on an overlapping consumer matrix", () => {
+    const repoRoot = path.resolve(import.meta.dirname, "../../../..");
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vocabulary-authority-"));
+    const previousRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    try {
+      fs.mkdirSync(path.join(root, "references", "artifacts"), { recursive: true });
+      fs.symlinkSync(path.join(repoRoot, "references", "cli"), path.join(root, "references", "cli"), "dir");
+      fs.symlinkSync(
+        path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
+        path.join(root, "references", "artifacts", "state-storage-authority.yaml"),
+        "file",
+      );
+      fs.symlinkSync(path.join(repoRoot, "skills"), path.join(root, "skills"), "dir");
+      fs.symlinkSync(path.join(repoRoot, "registry.json"), path.join(root, "registry.json"), "file");
+      const authority = YAML.parse(
+        fs.readFileSync(
+          path.join(repoRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
+          "utf8",
+        ),
+      );
+      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate.push("present");
+      fs.writeFileSync(
+        path.join(root, "references", "artifacts", "glossary-entry-contract.yaml"),
+        YAML.stringify(authority),
+      );
+      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = root;
+
+      const { rc, out } = capture((io) =>
+        main(["node", "agentera", "check", "validate", "vocabularyAuthority", "--format", "json"], io),
+      );
+      const payload = JSON.parse(out);
+      expect(rc).toBe(1);
+      expect(payload.status).toBe("fail");
+      expect(payload.engine.stdout.join("\n")).toContain(
+        "consumer_boundary.primary_selection must be exhaustive and non-overlapping",
+      );
+      expect(payload.engine.stdout.join("\n")).toContain(
+        "correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority --format json",
+      );
+    } finally {
+      if (previousRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previousRoot;
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("validates self-audit conventions against the repo", () => {

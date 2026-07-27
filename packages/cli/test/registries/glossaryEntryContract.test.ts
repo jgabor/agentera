@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import auditInstructions from "../../src/capabilities/audit/instructions.js";
 import {
   confirmedVariantGuardContract,
+  glossaryConsumerContract,
   glossaryEntryAuthorityPath,
   personalGlossaryOutputContract,
   validateGlossaryEntry,
@@ -129,31 +130,96 @@ describe("shared glossary entry authority", () => {
       },
     });
     expect(confirmedVariantGuardContract().excludedDirectories).toEqual([
-      ".agentera", ".agentera-generated", ".cache", ".git", ".next", ".pnpm",
-      ".turbo", ".venv", ".vite", "build", "bundle", "coverage", "dist",
-      "node_modules", "target", "vendor",
+      ".agentera",
+      ".agentera-generated",
+      ".cache",
+      ".git",
+      ".next",
+      ".pnpm",
+      ".turbo",
+      ".venv",
+      ".vite",
+      "build",
+      "bundle",
+      "coverage",
+      "dist",
+      "node_modules",
+      "target",
+      "vendor",
     ]);
-    expect(authority.ownership_contracts.project.publication.persisted_document.terminology_set_identity)
-      .toMatchObject({
-        normalization: "lowercase",
-        uniqueness: "global_across_complete_document",
-      });
+    expect(
+      authority.ownership_contracts.project.publication.persisted_document.terminology_set_identity,
+    ).toMatchObject({
+      normalization: "lowercase",
+      uniqueness: "global_across_complete_document",
+    });
   });
 
   it("aligns authority, Audit validation, and shipped instructions on active publication and deferred consumers", () => {
     const authority = fs.readFileSync(glossaryEntryAuthorityPath(), "utf8");
     const validation = fs.readFileSync(
-      path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../skills/agentera/capabilities/audit/schemas/validation.yaml"),
+      path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "../../../../skills/agentera/capabilities/audit/schemas/validation.yaml",
+      ),
       "utf8",
     );
     for (const surface of [authority, validation, auditInstructions]) {
-      expect(surface).toMatch(/Audit remains mutation-free|mutation-free, read-only|mutation-free and read-only/);
+      expect(surface).toMatch(
+        /Audit remains mutation-free|mutation-free, read-only|mutation-free and read-only/,
+      );
       expect(surface).toMatch(/Build project-glossary\s+publication is active/);
       expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
-      expect(surface).toMatch(/profile mutation|personal-profile mutation|personal-profile\s+mutation/);
+      expect(surface).toMatch(
+        /profile mutation|personal-profile mutation|personal-profile\s+mutation/,
+      );
       expect(surface).toMatch(/docs-mapping\s+mutation/);
       expect(surface).not.toMatch(/project glossary production and persistence.*deferred/i);
     }
+  });
+
+  it("loads one active consumer contract while every consumer implementation remains deferred", () => {
+    expect(glossaryConsumerContract()).toEqual({
+      contractStatus: "active",
+      implementation: {
+        acquisition: "declared_deferred",
+        advice_resolution: "declared_deferred",
+        capability_integrations: "declared_deferred",
+      },
+      outcomes: [
+        "invalid_or_unavailable_project",
+        "equivalent_exact_collision",
+        "divergent_exact_collision",
+        "project_only",
+        "proven_project_gap",
+        "inferred_equivalence",
+        "invalid_or_unavailable_personal",
+        "no_applicable_entry",
+      ],
+      refreshRequired: expect.arrayContaining([
+        "initial_meaning_sensitive_input",
+        "later_user_requirement_change_that_can_change_meaning",
+        "later_user_intent_change_that_can_change_meaning",
+      ]),
+      refreshNotRequired: expect.arrayContaining([
+        "unrelated_conversation_turn",
+        "background_state_reread",
+      ]),
+      transientAllowed: ["outcome", "applicable_meaning", "applicable_owner", "review", "tension"],
+      durableAllowed: [
+        "caveat_id",
+        "event",
+        "capability",
+        "reason",
+        "ownership_state",
+        "transition_id",
+      ],
+      caveatOwner: "build",
+      caveatChannel: "progress",
+      caveatEvents: ["current", "resolved", "superseded"],
+      caveatExpiration: "none",
+      downstreamGateStatus: "blocked_until_contract_valid",
+    });
   });
 
   it("rejects a primitive with the shared term removed", () => {
@@ -195,7 +261,11 @@ describe("shared glossary entry authority", () => {
     [
       "deferred profile output",
       (authority: Record<string, any>) => {
-        authority.deferred_capability_contracts.profile.inactive_behavior = ["rendering", "persistence", "lookup"];
+        authority.deferred_capability_contracts.profile.inactive_behavior = [
+          "rendering",
+          "persistence",
+          "lookup",
+        ];
       },
       "profile glossary rendering and persistence must be active while lookup remains deferred",
     ],
@@ -220,9 +290,96 @@ describe("shared glossary entry authority", () => {
       },
       "inferred equivalence must defer to user review without merge, suppression, or precedence",
     ],
+    [
+      "an incomplete consumer outcome matrix",
+      (authority: Record<string, any>) => {
+        delete authority.consumer_boundary.outcome_matrix.proven_project_gap;
+      },
+      "consumer_boundary outcome matrix and primary_selection must define all eight ordered collision, gap, review, absence, and invalid-input outcomes",
+    ],
+    [
+      "malformed project state as gap proof",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.project_state.gap_proving_states.push("malformed");
+      },
+      "consumer_boundary judgments must separate deterministic exact identity and valid gaps from host-reviewed inferred equivalence and invalid project state",
+    ],
+    [
+      "background rereads as governed refresh events",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.refresh_events.required.push("background_state_reread");
+      },
+      "consumer_boundary.refresh_events must require meaning-sensitive initial and changed intent inputs and exclude unrelated turns and background rereads",
+    ],
+    [
+      "private definitions on durable surfaces",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.disclosure.durable_surfaces.allowed.push("personal_definition");
+      },
+      "consumer_boundary.disclosure must bound transient advice and exclude definitions, anchors, paths, raw sections, unrelated entries, and provenance from durable output and errors",
+    ],
+    [
+      "Plan as the durable caveat writer",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.autonomous_caveat.durable_owner = "plan";
+      },
+      "consumer_boundary.autonomous_caveat must use Build-owned progress evidence with an opaque identity, current/resolved/superseded transitions, Plan handoff, and explicit no-expiration",
+    ],
+    [
+      "clock-based caveat expiration",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.autonomous_caveat.lifecycle.expiration = "30_days";
+      },
+      "consumer_boundary.autonomous_caveat must use Build-owned progress evidence with an opaque identity, current/resolved/superseded transitions, Plan handoff, and explicit no-expiration",
+    ],
+    [
+      "consumer advice as project publication authority",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.publication_isolation.project_publication_authority =
+          "consumer_boundary";
+      },
+      "consumer_boundary.publication_isolation must keep advice and caveat lifecycle separate from Build-owned digest-confirmed publication and approval",
+    ],
+    [
+      "an unblocked contradictory downstream gate",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.downstream_gate.status = "ready";
+      },
+      "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",
+    ],
   ])("rejects %s", (_name, mutate, expected) => {
     const pathname = malformedAuthority(mutate);
     expect(validateGlossaryEntryContract(pathname)).toContain(expected);
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it("rejects overlapping primary outcome predicates", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate.push(
+        "present",
+      );
+    });
+    expect(validateGlossaryEntryContract(pathname)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /^consumer_boundary\.primary_selection must be exhaustive and non-overlapping: .*matched \[inferred_equivalence, no_applicable_entry\].*rerun agentera check validate vocabularyAuthority --format json$/,
+        ),
+      ]),
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it("rejects an unexpectedly unclassified primary input state", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate = [];
+    });
+    expect(validateGlossaryEntryContract(pathname)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /^consumer_boundary\.primary_selection must be exhaustive and non-overlapping: .*matched \[\].*rerun agentera check validate vocabularyAuthority --format json$/,
+        ),
+      ]),
+    );
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 

@@ -1,0 +1,15 @@
+id: qnxhsaxrjd
+artifact: todo
+record:
+  severity: normal
+  status: open
+  description: "[fix:3.0.0] Prevent new out-of-order replacement evaluation deadlocks. Require every task selected as a superseded_by replacement to be complete with a latest persisted PASS before supersession succeeds, and reject new plan completion when a superseded task points to a replacement without PASS provenance. Preserve historical records and the narrow first-PASS recovery for already-persisted open-plan state. Add regressions for unevaluated replacements, failed replacements, exact replay, closeout validation, and actionable correction guidance."
+  readiness:
+    capability: build
+    reason: The completed-replacement RCA proved that status-only supersession can create valid but unrepairable evaluator state; future mutations should enforce PASS provenance without retroactively invalidating history.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 5
+    order_reason: The typed recovery path already repairs persisted cases; harden future supersession and closeout after the ready consumer plan while remaining before stable release.

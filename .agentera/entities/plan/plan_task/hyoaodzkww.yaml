@@ -1,0 +1,14 @@
+id: hyoaodzkww
+artifact: plan
+record:
+  name: Prove bounded glossary input acquisition
+  depends_on:
+    - ucmjabyvad
+  status: pending
+  acceptance:
+    - GIVEN project-scoped work WHEN project input is acquired THEN canonical discovery and project-boundary rules are used and no alternate identity or path authority is introduced.
+    - GIVEN a personal glossary WHEN consumer input is acquired THEN only bounded owned glossary entries needed for advice are available and unrelated profile content or provenance remains private.
+    - GIVEN absent, valid-empty, malformed, unreadable, ambiguous, or over-bound input WHEN availability is classified THEN valid absence may prove a gap, invalid project state cannot, valid project meanings remain usable without personal input, and dual unavailability yields no glossary grounding.
+    - GIVEN acquisition runs with either producer present WHEN state is inspected THEN personal synthesis remains project-invariant and neither glossary is mutated.
+    - GIVEN proportional fixtures WHEN acquisition is verified THEN each availability class has at least one passing and one fail-closed or abstention case.
+  plan: upicwqdskc

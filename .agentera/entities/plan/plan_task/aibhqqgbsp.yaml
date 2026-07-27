@@ -1,0 +1,14 @@
+id: aibhqqgbsp
+artifact: plan
+record:
+  name: Integrate Build disambiguation and publication isolation
+  depends_on:
+    - jthktiznyn
+  status: pending
+  acceptance:
+    - GIVEN an exact project term or proven project-gap personal term at a governed Build event WHEN cycle intent is established THEN the correct authority grounds meaning-sensitive work.
+    - GIVEN review is required WHEN interaction is available THEN Build requests clarification before executing meaning-sensitive work.
+    - GIVEN autonomous Build cannot pause WHEN review remains unresolved THEN it avoids assuming the disputed meaning, proceeds conservatively, and records the bounded privacy-safe caveat.
+    - GIVEN advice, tension, or clarification WHEN publication boundaries are inspected THEN none invokes publication, creates or reuses approval, substitutes for digest-bound confirmation, or grants Discuss or Audit publication authority.
+    - GIVEN proportional cycles WHEN behavior is verified THEN authority, fallback, review, autonomy, privacy, no-refresh, and zero-write publication cases pass.
+  plan: upicwqdskc

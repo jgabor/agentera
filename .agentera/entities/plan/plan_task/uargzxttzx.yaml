@@ -1,0 +1,17 @@
+id: uargzxttzx
+artifact: plan
+record:
+  name: Verify source consumer conjunction
+  depends_on:
+    - cgarzlqmwp
+    - htxxuwkqsg
+    - aibhqqgbsp
+    - tnupicrjhe
+  status: pending
+  acceptance:
+    - GIVEN the complete advice and capability matrix WHEN source verification runs THEN every availability, collision, fallback, review, autonomy, lifecycle, attention, and publication-isolation unit has proportional pass and failure or abstention evidence.
+    - GIVEN disposable project and personal roots WHEN source workflows execute THEN they may load repository source read-only but never discover, read, or mutate live project state, the real profile, or user-owned glossary data, and sentinel bytes remain unchanged.
+    - GIVEN trap values across stdout, stderr, structured results, durable evidence, and prime attention WHEN privacy verification runs THEN no prohibited personal or project source material is exposed.
+    - GIVEN consumer execution WHEN state is inspected THEN neither glossary, decisions, nor plans contain conflict bookkeeping and explicit publication remains unchanged.
+    - GIVEN repository source gates WHEN verification completes THEN tests, typecheck, build, compaction, and relevant contract validation pass.
+  plan: upicwqdskc

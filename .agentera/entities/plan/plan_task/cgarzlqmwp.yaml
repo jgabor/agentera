@@ -1,0 +1,14 @@
+id: cgarzlqmwp
+artifact: plan
+record:
+  name: Integrate Discuss disambiguation
+  depends_on:
+    - jthktiznyn
+  status: pending
+  acceptance:
+    - GIVEN unambiguous known terminology at a governed deliberation event WHEN Discuss interprets it THEN the applicable meaning grounds deliberation without unnecessary interruption or rereads on unrelated turns.
+    - GIVEN inferred equivalence requires review WHEN Discuss reaches meaning-sensitive reliance THEN it asks one focused clarification question first.
+    - GIVEN divergent exact definitions WHEN deliberation proceeds THEN project meaning remains authoritative and the divergence appears as a tension.
+    - GIVEN consumer advice or clarification WHEN state and publication are inspected THEN no glossary write, approval, publication consent, or decision conflict bookkeeping is created.
+    - GIVEN proportional turn sequences WHEN behavior is verified THEN refresh-required and no-refresh cases cover unambiguous, review, tension, unavailable, and irrelevant inputs.
+  plan: upicwqdskc

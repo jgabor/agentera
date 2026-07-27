@@ -1,0 +1,15 @@
+id: inqqtcyeaj
+artifact: progress
+record:
+  timestamp: 2026-07-27 05:41
+  type: fix
+  phase: build
+  what: Corrected the glossary consumer contract after Audit found overlapping outcomes and a mismatched downstream validator command.
+  context:
+    intent: Make task ucmjabyvad primary outcome selection unambiguous and prove the documented glossary-owning validation command fails malformed authority.
+    constraints: No downstream work, task completion, evaluation, decision satisfaction, staging, commit, publication, tag, or push.
+    unknowns: No new unknowns; this retry resolves the accepted overlap and validator-command findings.
+    scope: Glossary consumer authority, progress caveat enum schema, glossary validator/tests, and vocabularyAuthority command regression.
+  discovered: Primary selection requires explicit input dimensions and one ordered first-match rule. Personal unavailability and differently named inferred equivalence are orthogonal advisories when an exact project meaning is usable, not competing outcomes. Glossary contract validation is owned by vocabularyAuthority, not capability-contract.
+  verified: "Focused tests passed: test/registries/glossaryEntryContract.test.ts, test/validate/vocabularyAuthority.test.ts, and test/cli/validate.test.ts; 3 files, 86 tests. Regressions cover overlapping predicates, unexpectedly unclassified states, and command-level malformed authority with actionable vocabularyAuthority recovery. Typecheck, build, lint (0 errors), targeted formatting, local vocabularyAuthority/capability-contract/Plan/Build/Discuss/cross-capability/state validators, and git diff --check passed."
+  next: Prime should independently reaudit task ucmjabyvad. Acquisition, advice resolution, capability integration, progress caveat publication, and prime projection remain deferred.

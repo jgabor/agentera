@@ -2,6 +2,10 @@ import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
+import {
+  validateConsumerBoundary,
+  validateConsumerEvidenceOwner,
+} from "./glossaryConsumerContractValidation.js";
 
 type Mapping = Record<string, unknown>;
 
@@ -43,6 +47,21 @@ export interface PersonalProfileGroundingContract {
   command: string;
   schemaVersion: string;
   maxProfileUtf8Bytes: number;
+}
+
+export interface GlossaryConsumerContract {
+  contractStatus: string;
+  implementation: Record<string, string>;
+  outcomes: string[];
+  refreshRequired: string[];
+  refreshNotRequired: string[];
+  transientAllowed: string[];
+  durableAllowed: string[];
+  caveatOwner: string;
+  caveatChannel: string;
+  caveatEvents: string[];
+  caveatExpiration: string;
+  downstreamGateStatus: string;
 }
 
 const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
@@ -104,7 +123,8 @@ export function personalGlossaryOutputContract(
   return {
     command: typeof command?.canonical === "string" ? command.canonical : "",
     requestSchemaVersion: typeof request?.schema_version === "string" ? request.schema_version : "",
-    sectionSchemaVersion: typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
+    sectionSchemaVersion:
+      typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
     outputStatuses: strings(command?.output_statuses),
   };
 }
@@ -116,9 +136,43 @@ export function personalProfileGroundingContract(
   return {
     command: typeof grounding?.command === "string" ? grounding.command : "",
     schemaVersion: typeof grounding?.schema_version === "string" ? grounding.schema_version : "",
-    maxProfileUtf8Bytes: typeof grounding?.max_profile_utf8_bytes === "number"
-      ? grounding.max_profile_utf8_bytes
-      : 0,
+    maxProfileUtf8Bytes:
+      typeof grounding?.max_profile_utf8_bytes === "number" ? grounding.max_profile_utf8_bytes : 0,
+  };
+}
+
+export function glossaryConsumerContract(
+  pathname: string = glossaryEntryAuthorityPath(),
+): GlossaryConsumerContract {
+  const consumer = mapping(contract(pathname).consumer_boundary);
+  const implementation = mapping(consumer?.implementation);
+  const matrix = mapping(consumer?.outcome_matrix);
+  const refresh = mapping(consumer?.refresh_events);
+  const disclosure = mapping(consumer?.disclosure);
+  const transient = mapping(disclosure?.transient_advice);
+  const durable = mapping(disclosure?.durable_surfaces);
+  const caveat = mapping(consumer?.autonomous_caveat);
+  const lifecycle = mapping(caveat?.lifecycle);
+  const gate = mapping(consumer?.downstream_gate);
+  return {
+    contractStatus: typeof consumer?.contract_status === "string" ? consumer.contract_status : "",
+    implementation: Object.fromEntries(
+      Object.entries(implementation ?? {}).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
+    outcomes: Object.keys(matrix ?? {}),
+    refreshRequired: strings(refresh?.required),
+    refreshNotRequired: strings(refresh?.not_required),
+    transientAllowed: strings(transient?.allowed),
+    durableAllowed: strings(durable?.allowed),
+    caveatOwner: typeof caveat?.durable_owner === "string" ? caveat.durable_owner : "",
+    caveatChannel: typeof caveat?.durable_channel === "string" ? caveat.durable_channel : "",
+    caveatEvents: ["current", "resolved", "superseded"].filter((event) =>
+      nonEmpty(lifecycle?.[event]),
+    ),
+    caveatExpiration: typeof lifecycle?.expiration === "string" ? lifecycle.expiration : "",
+    downstreamGateStatus: typeof gate?.status === "string" ? gate.status : "",
   };
 }
 
@@ -315,7 +369,9 @@ export function validateGlossaryEntryContract(
     ]) ||
     !sameStrings(personalImplementation?.inactive, ["lookup"])
   ) {
-    errors.push("personal rendering and persistence must be active_partial while lookup remains inactive");
+    errors.push(
+      "personal rendering and persistence must be active_partial while lookup remains inactive",
+    );
   }
   if (
     !sameStrings(mapping(admission?.explicit)?.candidate_signal_types, [
@@ -358,7 +414,8 @@ export function validateGlossaryEntryContract(
   const profileRequest = mapping(profileCommand?.request);
   if (
     profileOutput?.owner !== "profile_full" ||
-    profileOutput?.lifecycle_callable !== "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
+    profileOutput?.lifecycle_callable !==
+      "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
     profileCommand?.canonical !== "agentera report profile-glossary" ||
     profileCommand?.namespace !== "report" ||
     profileCommand?.input_flag !== "--input" ||
@@ -367,11 +424,21 @@ export function validateGlossaryEntryContract(
     profileCommand?.dry_run_flag !== "--dry-run" ||
     profileCommand?.project_checkout !== "not_required" ||
     profileRequest?.schema_version !== "agentera.personalGlossaryUpdateRequest.v1" ||
-    !sameStrings(profileRequest?.required_fields, ["schema_version", "profile_path", "as_of", "fresh_entries", "retained_history"]) ||
+    !sameStrings(profileRequest?.required_fields, [
+      "schema_version",
+      "profile_path",
+      "as_of",
+      "fresh_entries",
+      "retained_history",
+    ]) ||
     profileRequest?.additional_fields !== "forbidden" ||
     !nonEmpty(profileRequest?.profile_path_rule) ||
     !nonEmpty(profileRequest?.retained_history_shape) ||
-    !sameStrings(profileCommand?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"]) ||
+    !sameStrings(profileCommand?.output_statuses, [
+      "changed",
+      "unchanged_replay",
+      "dry_run_candidate",
+    ]) ||
     !nonEmpty(profileCommand?.rule) ||
     profileSection?.heading !== "## Glossary" ||
     profileSection?.start_marker !== "<!-- agentera:personal-glossary:start -->" ||
@@ -387,7 +454,9 @@ export function validateGlossaryEntryContract(
     !nonEmpty(profileOutput?.decay_rule) ||
     !nonEmpty(profileOutput?.isolation_rule)
   ) {
-    errors.push("personal profile output must define deterministic isolated rendering and lifecycle rules");
+    errors.push(
+      "personal profile output must define deterministic isolated rendering and lifecycle rules",
+    );
   }
 
   const project = mapping(ownership?.project);
@@ -409,18 +478,30 @@ export function validateGlossaryEntryContract(
   }
   if (
     projectImplementation?.status !== "active" ||
-    !sameStrings(projectImplementation?.active, ["audit_proposal_digest", "build_publication", "confirmed_variant_guard"]) ||
-    !sameStrings(projectImplementation?.inactive, ["lookup", "precedence", "semantic_equivalence_review"]) ||
+    !sameStrings(projectImplementation?.active, [
+      "audit_proposal_digest",
+      "build_publication",
+      "confirmed_variant_guard",
+    ]) ||
+    !sameStrings(projectImplementation?.inactive, [
+      "lookup",
+      "precedence",
+      "semantic_equivalence_review",
+    ]) ||
     proposalDigest?.algorithm !== "sha256" ||
     proposalDigest?.encoding !== "lowercase_hex" ||
     !nonEmpty(proposalDigest?.canonicalization)
   ) {
-    errors.push("project glossary digest and build publication must be active while consumers remain deferred");
+    errors.push(
+      "project glossary digest and build publication must be active while consumers remain deferred",
+    );
   }
   if (
-    confirmedVariantGuard?.owner !== "packages/cli/src/validate/v1LegacyCruft.ts#scanPost30CruftViolations" ||
+    confirmedVariantGuard?.owner !==
+      "packages/cli/src/validate/v1LegacyCruft.ts#scanPost30CruftViolations" ||
     confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/v1LegacyCruft.test.ts" ||
-    confirmedVariantGuard?.loader !== "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
+    confirmedVariantGuard?.loader !==
+      "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
     confirmedVariantGuard?.matching !== "exact_case_sensitive_boundary_aware_literal" ||
     !nonEmpty(confirmedVariantGuard?.source_rule) ||
     !nonEmpty(confirmedVariantGuard?.approved_evidence_rule) ||
@@ -454,11 +535,14 @@ export function validateGlossaryEntryContract(
     ]) ||
     !nonEmpty(confirmedVariantGuard?.exclusion_rule)
   ) {
-    errors.push("confirmed variant guard must reuse validated project glossary pairs and bounded legacy-cruft exclusions");
+    errors.push(
+      "confirmed variant guard must reuse validated project glossary pairs and bounded legacy-cruft exclusions",
+    );
   }
   if (
     proposalValidation?.owner !== "audit" ||
-    proposalValidation?.shared_runtime !== "packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal" ||
+    proposalValidation?.shared_runtime !==
+      "packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal" ||
     !sameStrings(proposalValidation?.required_rules, [
       "safe_distinct_evidence_identities_per_term",
       "case_insensitive_unique_term_identities",
@@ -487,17 +571,26 @@ export function validateGlossaryEntryContract(
     publication?.owner !== "build" ||
     publication?.command !== "agentera state glossary publish --input REQUEST --format json" ||
     publicationRequest?.schema_version !== "agentera.glossaryPublicationRequest.v1" ||
-    !sameStrings(publicationRequest?.required_fields, ["schema_version", "proposal", "confirmation"]) ||
+    !sameStrings(publicationRequest?.required_fields, [
+      "schema_version",
+      "proposal",
+      "confirmation",
+    ]) ||
     persistedDocument?.schema_version !== "agentera.projectGlossary.v1" ||
     !sameStrings(persistedDocument?.required_fields, ["schema_version", "approvals", "entries"]) ||
     terminologySetIdentity?.normalization !== "lowercase" ||
-    !sameStrings(terminologySetIdentity?.members, ["paired_entry.term", "paired_approval.proposal.variants.term"]) ||
+    !sameStrings(terminologySetIdentity?.members, [
+      "paired_entry.term",
+      "paired_approval.proposal.variants.term",
+    ]) ||
     terminologySetIdentity?.uniqueness !== "global_across_complete_document" ||
     !nonEmpty(terminologySetIdentity?.rule) ||
     !nonEmpty(publication?.transaction) ||
     !nonEmpty(publication?.merge_and_replay)
   ) {
-    errors.push("project publication must define one versioned atomic build-owned request and document");
+    errors.push(
+      "project publication must define one versioned atomic build-owned request and document",
+    );
   }
   if (
     projectInput?.authority !== "repository_files" ||
@@ -513,21 +606,29 @@ export function validateGlossaryEntryContract(
   }
 
   const consumer = mapping(authority.consumer_boundary);
+  errors.push(...validateConsumerBoundary(consumer));
+  errors.push(...validateConsumerEvidenceOwner(consumer));
   const profileGrounding = mapping(consumer?.profile_grounding);
   if (
-    consumer?.implementation !== "declared_deferred" ||
-    !sameStrings(consumer?.forbidden_persisted_entry_fields, ["precedence", "collision", "review"]) ||
+    !sameStrings(consumer?.forbidden_persisted_entry_fields, [
+      "precedence",
+      "collision",
+      "review",
+    ]) ||
     profileGrounding?.implementation !== "active_exclusion_only" ||
     !sameStrings(profileGrounding?.capabilities, ["discuss", "plan", "build"]) ||
     profileGrounding?.command !== "agentera report profile-grounding --format json" ||
     profileGrounding?.schema_version !== "agentera.profileGrounding.v1" ||
-    profileGrounding?.parser !== "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
+    profileGrounding?.parser !==
+      "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
     profileGrounding?.max_profile_utf8_bytes !== 65536 ||
     profileGrounding?.raw_profile_read !== "forbidden" ||
     !nonEmpty(profileGrounding?.content_rule) ||
     !nonEmpty(profileGrounding?.failure_rule)
   ) {
-    errors.push("consumer behavior must remain deferred while sanitized profile grounding excludes the owned glossary");
+    errors.push(
+      "sanitized profile grounding must continue excluding the owned glossary while consumer implementation remains deferred",
+    );
   }
   const exactCollision = mapping(consumer?.exact_collision);
   if (
@@ -568,7 +669,9 @@ export function validateGlossaryEntryContract(
     profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
     !sameStrings(profile?.forbidden_current_claims, ["lookup", "project_glossary_consumption"])
   ) {
-    errors.push("profile glossary rendering and persistence must be active while lookup remains deferred");
+    errors.push(
+      "profile glossary rendering and persistence must be active while lookup remains deferred",
+    );
   }
   const audit = mapping(capabilities?.audit);
   const findingFamily = mapping(audit?.finding_family);
@@ -598,9 +701,7 @@ export function validateGlossaryEntryContract(
       "lookup",
     ])
   ) {
-    errors.push(
-      "audit findings and proposal digests must be active and read-only",
-    );
+    errors.push("audit findings and proposal digests must be active and read-only");
   }
   const buildPublication = mapping(capabilities?.build_publication);
   if (
@@ -621,11 +722,11 @@ export function validateGlossaryEntryContract(
   const consumers = mapping(capabilities?.consumers);
   if (
     consumers?.implementation !== "declared_deferred" ||
-    !sameStrings(consumers?.capabilities, ["discuss", "plan"]) ||
+    !sameStrings(consumers?.capabilities, ["discuss", "plan", "build"]) ||
     consumers?.behavior !== "consumer_boundary" ||
     !sameStrings(consumers?.forbidden_current_claims, ["lookup", "precedence", "review"])
   ) {
-    errors.push("discuss, plan, and build glossary consumption must remain deferred");
+    errors.push("discuss, plan, and build glossary integrations must remain deferred");
   }
   return errors;
 }
@@ -665,7 +766,8 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   }
   const requiredFields = strings(primitive?.required_fields);
   const additional = Object.keys(entry).filter((field) => !requiredFields.includes(field));
-  if (additional.length > 0) errors.push(`entry contains fields outside the shared primitive: ${additional.join(", ")}`);
+  if (additional.length > 0)
+    errors.push(`entry contains fields outside the shared primitive: ${additional.join(", ")}`);
   for (const field of requiredFields) {
     if (!(field in entry)) errors.push(`${field} is required`);
   }

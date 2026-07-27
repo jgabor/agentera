@@ -1,0 +1,14 @@
+id: sjtpykhgwy
+artifact: plan
+record:
+  name: Verify constructed-package parity
+  depends_on:
+    - uargzxttzx
+  status: pending
+  acceptance:
+    - GIVEN a constructed package without repository source files WHEN consumer workflows run in new processes THEN advice, capability, caveat, attention, privacy, and failure behavior matches source execution.
+    - GIVEN disposable package fixtures WHEN workflows run THEN live project state, the real profile, user-owned glossaries, and source fixtures remain unchanged.
+    - GIVEN package-mode malformed, unavailable, collision, review, and publication-isolation cases WHEN verified THEN outcomes and diagnostics retain source-equivalent bounds and privacy.
+    - GIVEN source and package evidence WHEN compared THEN any divergence blocks metadata preparation with an actionable correction.
+    - GIVEN the substantive feature result WHEN package parity passes THEN it is ready for immutable source selection without publication or retained package artifacts.
+  plan: upicwqdskc

@@ -407,7 +407,7 @@ export async function runProducerReadinessWorkflow(executable: string, root: str
       producerTermsHidden,
       personalStatus: authority.ownership_contracts.personal.implementation.status,
       projectStatus: authority.ownership_contracts.project.implementation.status,
-      consumerStatus: authority.consumer_boundary.implementation,
+      consumerStatus: authority.consumer_boundary.implementation.capability_integrations,
       inactiveConsumerBehavior: authority.ownership_contracts.project.implementation.inactive,
     },
   };

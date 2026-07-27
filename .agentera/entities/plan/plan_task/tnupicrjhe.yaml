@@ -1,0 +1,15 @@
+id: tnupicrjhe
+artifact: plan
+record:
+  name: Project current caveats through prime attention
+  depends_on:
+    - htxxuwkqsg
+    - aibhqqgbsp
+  status: pending
+  acceptance:
+    - GIVEN current unresolved glossary caveat evidence WHEN prime is read THEN bounded attention identifies the review need without exposing disputed meanings or private source content.
+    - GIVEN matching resolution or supersession evidence WHEN prime is read THEN only the matching noncurrent caveat is omitted and unrelated attention is preserved.
+    - GIVEN the Task 1 lifecycle includes or rejects expiration WHEN attention is evaluated THEN prime follows exactly that declared behavior and never infers time-based expiry independently.
+    - GIVEN malformed, stale, unrelated, or privacy-trap evidence WHEN prime is read THEN it fails closed or omits the caveat without leaking personal definitions, anchors, profile paths, raw bytes, or provenance.
+    - GIVEN proportional evidence histories WHEN behavior is verified THEN current, resolved, superseded, absent, malformed, unrelated, and privacy-sensitive cases pass.
+  plan: upicwqdskc

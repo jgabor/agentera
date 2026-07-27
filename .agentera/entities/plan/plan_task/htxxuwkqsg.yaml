@@ -1,0 +1,14 @@
+id: htxxuwkqsg
+artifact: plan
+record:
+  name: Integrate Plan disambiguation and autonomous evidence
+  depends_on:
+    - jthktiznyn
+  status: pending
+  acceptance:
+    - GIVEN known terminology at a governed planning event WHEN scope and acceptance are specified THEN they consistently use the authoritative or reviewed meaning without rereading unrelated turns.
+    - GIVEN ambiguity could alter downstream requirements WHEN interactive planning can pause THEN review occurs before affected requirements are fixed.
+    - GIVEN autonomous planning cannot pause WHEN review remains unresolved THEN it does not assume the disputed meaning and emits or hands off the bounded caveat through the Task 1 authority without storing conflict in plan state.
+    - GIVEN caveat and error traps WHEN Plan output is inspected THEN no private definition, anchor, profile path, raw section, unrelated entry, or provenance leaks.
+    - GIVEN proportional planning sequences WHEN behavior is verified THEN pass, review, autonomous caveat, unavailable, and no-refresh cases are covered.
+  plan: upicwqdskc

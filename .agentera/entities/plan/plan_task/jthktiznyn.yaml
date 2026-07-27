@@ -1,0 +1,14 @@
+id: jthktiznyn
+artifact: plan
+record:
+  name: Resolve shared glossary advice
+  depends_on:
+    - hyoaodzkww
+  status: pending
+  acceptance:
+    - GIVEN an exact project-only term or equivalent exact collision WHEN advice is formed THEN project meaning governs without unnecessary review.
+    - GIVEN an exact collision with divergent meanings WHEN advice is formed THEN project meaning governs and a tension is surfaced.
+    - GIVEN a proven project gap and valid personal term WHEN advice is formed THEN the personal meaning is returned as ownership-preserving fallback.
+    - GIVEN inferred equivalence or unresolved availability WHEN advice is formed THEN no disputed meaning is silently selected and the declared review, abstention, or caveat outcome is returned without conflict persistence.
+    - GIVEN privacy and bounds traps across structured output and diagnostics WHEN advice is verified THEN only permitted transient meaning and ownership appear, with one pass and one failure or abstention per matrix unit.
+  plan: upicwqdskc

@@ -1,0 +1,15 @@
+id: tnzouotnqv
+artifact: progress
+record:
+  timestamp: 2026-07-27 05:22
+  type: feat
+  phase: build
+  what: Declared the active glossary consumer semantics and caveat lifecycle contract without implementing deferred consumers.
+  context:
+    intent: Establish authoritative consumer outcomes, refresh events, privacy, lifecycle ownership, publication isolation, and a fail-closed downstream gate for task ucmjabyvad.
+    constraints: No capability integration, glossary publication, decision satisfaction, task completion, evaluation, commit, or release mutation.
+    unknowns: Resolved all four task unknowns in the glossary consumer authority.
+    scope: Glossary entry authority, deferred progress caveat schema, glossary contract loader/validator, and focused validator tests.
+  discovered: Build-owned progress is the existing lawful durable evidence channel; Plan cannot write it and must hand off the bounded envelope. Exact identity and gap validity are deterministic, while inferred semantic equivalence is host-reviewed. Caveats have explicit matching resolution or supersession and no clock expiration.
+  verified: "Focused glossary and vocabulary tests passed: 2 files, 60 tests. Typecheck and build passed. Targeted formatting passed. Local vocabularyAuthority, capability-contract, Plan, Build, Discuss, cross-capability, and state validators passed; git diff --check passed."
+  next: Prime should independently audit this contract task. Acquisition, advice resolution, Discuss/Plan/Build integration, progress caveat publication, and prime projection remain deferred to downstream tasks.

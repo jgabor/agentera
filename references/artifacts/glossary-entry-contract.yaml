@@ -1,10 +1,10 @@
 schema_version: agentera.glossaryEntryContract.v1
 status: active_authority
 purpose: >-
-  Define glossary entry semantics once and specialize evidence ownership for
-  personal and project entries, including build-owned publication of explicitly
-  confirmed project terminology and guard approved canonical sets against
-  literal variant reintroduction. General consumer behavior remains deferred.
+  Define glossary entry semantics once, specialize evidence ownership for
+  personal and project entries, and declare one consumer-semantics and caveat
+  lifecycle contract without implementing deferred acquisition, advice, or
+  capability integrations.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -366,9 +366,300 @@ ownership_contracts:
         an absent glossary leaves the pre-existing legacy checks unchanged.
 
 consumer_boundary:
-  implementation: declared_deferred
-  owns_later: [exact_collision_precedence, semantic_equivalence_review, advisory_behavior]
+  contract_status: active
+  implementation:
+    acquisition: declared_deferred
+    advice_resolution: declared_deferred
+    capability_integrations: declared_deferred
   forbidden_persisted_entry_fields: [precedence, collision, review]
+  deterministic_judgments:
+    term_identity: case_insensitive_exact
+    meaning_identity: exact_string
+    project_state_validity: schema_and_bound_validation
+    project_gap: valid_project_state_without_exact_term_identity
+    forbidden_semantic_heuristics: [scores, thresholds, embeddings, automatic_merge]
+  host_reviewed_judgments:
+    inferred_semantic_equivalence: >-
+      The host may identify a possible equivalence only from the current
+      meaning-sensitive input and bounded candidate meanings. It never selects
+      authority, merges entries, or resolves the review itself.
+  project_state:
+    gap_proving_states: [canonically_absent, valid_empty, valid_nonmatching]
+    invalid_states: [malformed, unreadable, ambiguous_path, over_bound]
+    invalid_rule: >-
+      An invalid project state cannot prove a project gap. Abstain rather than
+      falling back to a personal meaning, repairing state, or guessing authority.
+  primary_selection:
+    dimensions:
+      project_input: [invalid, valid_gap, valid_exact]
+      personal_input: [invalid, valid_without_exact, valid_exact]
+      exact_meaning: [not_applicable, equivalent, divergent]
+      inferred_candidate: [absent, present]
+    valid_state_rule: >-
+      exact_meaning is equivalent or divergent exactly when both inputs have an
+      exact term; otherwise it is not_applicable. inferred_candidate is
+      considered only when no personal exact term exists.
+    order:
+      - invalid_or_unavailable_project
+      - equivalent_exact_collision
+      - divergent_exact_collision
+      - project_only
+      - proven_project_gap
+      - inferred_equivalence
+      - invalid_or_unavailable_personal
+      - no_applicable_entry
+    rule: >-
+      Evaluate rows in this order and select exactly the first matching primary
+      outcome. The declared valid input state space must match exactly one row;
+      availability and inferred-equivalence advisories never compete with a
+      usable exact project meaning.
+  outcome_matrix:
+    invalid_or_unavailable_project:
+      when: project input is malformed, unreadable, ambiguous, or over bound
+      match:
+        project_input: [invalid]
+        personal_input: [invalid, valid_without_exact, valid_exact]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [absent, present]
+      judgment: deterministic
+      selected_owner: none
+      selected_meaning: none
+      review: unavailable
+      tension: authority_unavailable
+    equivalent_exact_collision:
+      when: valid personal and project entries have exact term identity and exact meaning identity
+      match:
+        project_input: [valid_exact]
+        personal_input: [valid_exact]
+        exact_meaning: [equivalent]
+        inferred_candidate: [absent, present]
+      judgment: deterministic
+      selected_owner: project
+      selected_meaning: project
+      review: none
+      tension: none
+    divergent_exact_collision:
+      when: valid personal and project entries have exact term identity but not exact meaning identity
+      match:
+        project_input: [valid_exact]
+        personal_input: [valid_exact]
+        exact_meaning: [divergent]
+        inferred_candidate: [absent, present]
+      judgment: deterministic
+      selected_owner: project
+      selected_meaning: project
+      review: none
+      tension: divergent_exact_collision
+    project_only:
+      when: >-
+        valid project input has an exact term and personal input is invalid,
+        unavailable, valid without an exact term, or only a differently named
+        inferred-equivalence candidate
+      match:
+        project_input: [valid_exact]
+        personal_input: [invalid, valid_without_exact]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [absent, present]
+      judgment: deterministic
+      selected_owner: project
+      selected_meaning: project
+      review: none_for_primary
+      tension: none
+    proven_project_gap:
+      when: project state is gap-proving and one valid personal exact term exists
+      match:
+        project_input: [valid_gap]
+        personal_input: [valid_exact]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [absent, present]
+      judgment: deterministic
+      selected_owner: personal
+      selected_meaning: personal
+      review: none
+      tension: none
+    inferred_equivalence:
+      when: >-
+        project state is gap-proving, personal input is valid without an exact
+        term, and the host identifies a possible semantic-equivalence candidate
+      match:
+        project_input: [valid_gap]
+        personal_input: [valid_without_exact]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [present]
+      judgment: host_reviewed
+      selected_owner: none_until_review
+      selected_meaning: none_until_review
+      review: required_when_meaning_sensitive
+      tension: inferred_equivalence
+    invalid_or_unavailable_personal:
+      when: >-
+        project state is gap-proving and personal input is malformed,
+        unavailable, or over bound, so no fallback can be proven
+      match:
+        project_input: [valid_gap]
+        personal_input: [invalid]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [absent, present]
+      judgment: deterministic
+      selected_owner: none
+      selected_meaning: none
+      review: unavailable
+      tension: input_unavailable
+    no_applicable_entry:
+      when: >-
+        project state is gap-proving, personal input is valid without an exact
+        term, and no inferred-equivalence candidate is present
+      match:
+        project_input: [valid_gap]
+        personal_input: [valid_without_exact]
+        exact_meaning: [not_applicable]
+        inferred_candidate: [absent]
+      judgment: deterministic
+      selected_owner: none
+      selected_meaning: none
+      review: none
+      tension: none
+  orthogonal_advisories:
+    personal_input_unavailable_with_project_exact:
+      primary_outcome: project_only
+      when: personal_input is invalid and project_input is valid_exact
+      caveat_reason: personal_input_unavailable
+      ownership_state: project_governs_exact
+      rule: >-
+        Preserve the exact project meaning. The bounded availability caveat may
+        report only reason and ownership state; it never becomes another primary
+        outcome or exposes personal content.
+    inferred_equivalence_with_project_exact:
+      primary_outcome: project_only
+      when: >-
+        personal_input is valid_without_exact, project_input is valid_exact, and
+        inferred_candidate is present
+      review: required_when_the_inferred_relation_is_meaning_sensitive
+      caveat_reason: inferred_equivalence
+      ownership_state: project_governs_exact
+      rule: >-
+        Project authority remains the usable primary meaning. Host review governs
+        only the possible differently named relation and cannot displace, merge,
+        or suppress the exact project entry.
+  refresh_events:
+    required:
+      - initial_meaning_sensitive_input
+      - later_user_requirement_change_that_can_change_meaning
+      - later_user_intent_change_that_can_change_meaning
+      - later_acceptance_change_that_can_change_meaning
+      - later_deliberation_premise_change_that_can_change_meaning
+      - later_cycle_intent_change_that_can_change_meaning
+      - clarification_answer_for_a_reviewed_term
+    not_required:
+      - unrelated_conversation_turn
+      - unchanged_input_replay
+      - background_state_reread
+      - status_or_progress_render
+      - tool_output_without_requirement_or_intent_change
+    rule: >-
+      Refresh only at a governed event whose changed input can alter the meaning
+      used by the capability. Rereads and incidental turns do not refresh advice.
+  disclosure:
+    transient_advice:
+      allowed: [outcome, applicable_meaning, applicable_owner, review, tension]
+      minimum_rule: >-
+        Include a meaning only when that meaning is selected by the matrix and
+        needed for the current meaning-sensitive work. Never include unrelated entries.
+      forbidden:
+        - personal_evidence_anchor
+        - personal_profile_path
+        - raw_personal_glossary_section
+        - unrelated_entry
+        - provenance
+        - project_source_path
+    durable_surfaces:
+      surfaces: [progress_evidence, prime_attention, diagnostics, errors]
+      allowed: [caveat_id, event, capability, reason, ownership_state, transition_id]
+      forbidden:
+        - personal_definition
+        - project_definition
+        - personal_evidence_anchor
+        - personal_profile_path
+        - raw_personal_glossary_section
+        - raw_project_glossary_section
+        - unrelated_entry
+        - provenance
+        - project_source_path
+      failure_rule: >-
+        Errors identify only the invalid input class and a public recovery command;
+        they never quote private bytes, definitions, paths, anchors, or provenance.
+  autonomous_caveat:
+    durable_owner: build
+    durable_channel: progress
+    authority: skills/agentera/schemas/artifacts/progress.yaml#ENTITY_AUTHORITY
+    publication_command: agentera state progress append
+    publication_boundary: progress_cycle.glossary_caveat
+    publication_status: declared_deferred
+    identity:
+      field: caveat_id
+      type: opaque_non_content_id
+      rule: >-
+        Assign a fresh opaque ID for a current caveat and carry it unchanged to
+        its matching terminal event. The ID must not encode a term, meaning,
+        anchor, path, provenance, or project identity.
+    envelope:
+      schema_version: agentera.glossaryConsumerCaveat.v1
+      fields: [caveat_id, event, capability, reason, ownership_state, transition_id]
+      capabilities: [discuss, plan, build]
+      reasons: [inferred_equivalence, authority_unavailable, personal_input_unavailable]
+      ownership_states: [project_governs_exact, review_required, authority_unavailable]
+    lifecycle:
+      current: >-
+        Append current once when autonomous meaning-sensitive work cannot pause
+        and review or authority remains unresolved.
+      resolved: >-
+        Append resolved with the same caveat_id after explicit clarification or
+        a governed refresh proves the caveat no longer applies.
+      superseded: >-
+        Append superseded with the old caveat_id and the fresh successor ID as
+        transition_id when a governed refresh replaces, rather than resolves,
+        the caveat.
+      matching_rule: >-
+        The latest valid event for one caveat_id determines whether it is current.
+        A terminal event affects only its matching identity. Supersession is valid
+        only when a matching current successor event also exists.
+      expiration: none
+      expiration_rule: >-
+        Time alone never resolves or hides a caveat. Only an explicit matching
+        resolved or valid superseded transition makes it noncurrent.
+    handoff:
+      plan: >-
+        Plan cannot write progress. In autonomous mode it returns exactly one
+        privacy-safe envelope to Build for typed publication and stores no caveat
+        or conflict in plan state.
+      discuss: >-
+        Discuss pauses for clarification; it does not persist caveat evidence or
+        turn review into decision approval.
+      build: >-
+        Build is the sole durable writer and later appends the envelope through
+        the typed progress writer. Advice never invokes glossary publication.
+  publication_isolation:
+    rule: >-
+      Advice, tension, review, clarification, caveat publication, resolution, and
+      supersession never invoke glossary publication, authorize a proposal, reuse
+      confirmation, satisfy a decision, or approve plan state.
+    project_publication_authority: ownership_contracts.project.publication
+  downstream_gate:
+    status: blocked_until_contract_valid
+    validator: packages/cli/src/registries/glossaryEntryContract.ts#validateGlossaryEntryContract
+    command: agentera check validate vocabularyAuthority --format json
+    required_sections:
+      - consumer_boundary.primary_selection
+      - consumer_boundary.outcome_matrix
+      - consumer_boundary.orthogonal_advisories
+      - consumer_boundary.refresh_events
+      - consumer_boundary.disclosure
+      - consumer_boundary.autonomous_caveat
+      - consumer_boundary.publication_isolation
+    failure_rule: >-
+      Discuss, Plan, Build, acquisition, advice, and prime integration remain
+      blocked when validation reports a missing or contradictory section. Each
+      issue names the invalid section and required correction.
   profile_grounding:
     implementation: active_exclusion_only
     capabilities: [discuss, plan, build]
@@ -449,10 +740,18 @@ deferred_capability_contracts:
     implementation: active
     active_behavior: ownership_contracts.project.publication
     output: skills/agentera/schemas/artifacts/glossary.yaml
-    inactive_behavior: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation, docs_mapping_mutation]
-    forbidden_current_claims: [lookup, precedence, review, personal_profile_mutation, docs_mapping_mutation]
+    inactive_behavior:
+      [
+        lookup,
+        precedence,
+        semantic_equivalence_review,
+        personal_profile_mutation,
+        docs_mapping_mutation,
+      ]
+    forbidden_current_claims:
+      [lookup, precedence, review, personal_profile_mutation, docs_mapping_mutation]
   consumers:
-    capabilities: [discuss, plan]
+    capabilities: [discuss, plan, build]
     implementation: declared_deferred
     behavior: consumer_boundary
     forbidden_current_claims: [lookup, precedence, review]

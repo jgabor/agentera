@@ -1,0 +1,47 @@
+id: upicwqdskc
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-27
+    status: open
+    reviewed: 2026-07-27
+    critic_issues: 12 found, 12 addressed, 0 dismissed
+    title: "Plan: Real-time glossary disambiguation"
+  what: Add one shared, read-only glossary consumer boundary for Discuss, Plan, and Build. In project-scoped work, project definitions govern exact collisions, valid project gaps fall back to personal definitions, divergent definitions retain project authority while surfacing tension, and inferred semantic equivalence requires review. Interactive capabilities pause for meaning-sensitive clarification; autonomous work proceeds without assuming disputed meaning and emits privacy-safe caveat evidence for prime attention.
+  why: Personal and project glossary producers now ship independently, but consumers cannot use them together. Shared consumer semantics make terminology actionable without weakening producer ownership, leaking personal information, duplicating precedence rules, or writing conflict state into either glossary, decisions, or plans.
+  constraints: Preserve personal and project ownership, evidence, and lifecycle boundaries. Personal synthesis remains invariant to project glossary presence. Resolve project glossaries only through canonical discovery. Consumer advice, clarification, and tension resolution cannot publish, authorize, merge, suppress, repair, or mutate either glossary; explicit digest-bound project publication remains separate and Build-owned. Exact divergent collisions use project meaning and surface tension; inferred equivalence never silently selects a meaning. Canonically absent or valid-empty project state may establish a personal fallback, but malformed, unreadable, ambiguous, or over-bound project state cannot. Transient advice exposes only the minimum applicable meaning and ownership; durable evidence, attention, diagnostics, and errors expose no personal definitions, anchors, profile paths, raw sections, unrelated entries, or private provenance. Autonomous caveats use one contract-owned evidence lifecycle outside glossary, decision, and plan conflict state. Only glossary-caveat projection and required closeout evidence may change prime or progress behavior; generic status, progress, profile, and replacement-evaluation redesign remain excluded. Suite metadata stays 3.0.0. Never publish, tag, push, promote, or change channels.
+  overall_acceptance: GIVEN valid and partially available personal and project glossary inputs WHEN Discuss, Plan, Build, and prime execute through source and constructed-package paths THEN exact project authority, personal fallback, divergent-definition tension, review-required equivalence, interactive clarification, autonomous privacy-safe caveats, and caveat lifecycle behave consistently without producer or conflict-state mutation; ruzauoaotd resolves only after all evidence passes, qnxhsaxrjd and unrelated work remain open, Decisions prmnztjytv and mcsmqqitnm retain their existing satisfaction state, package metadata is exactly 3.0.0-dev.38 with suite 3.0.0, and no publication, tag, push, promotion, or channel mutation occurs.
+  scope:
+    included:
+      - Shared glossary consumer outcome and caveat lifecycle contracts.
+      - Canonical project discovery and bounded private personal glossary consumption.
+      - Precedence, fallback, divergent-definition tension, semantic review, availability, and abstention outcomes.
+      - Discuss, Plan, and Build integration at governed meaning-sensitive events.
+      - Privacy-safe autonomous caveat evidence and bounded prime attention lifecycle.
+      - Source conjunction and constructed-package new-process parity.
+      - Unreleased changelog, development metadata, and canonical state closeout.
+    excluded:
+      - Personal glossary admission, retention, decay, or producer redesign.
+      - Audit proposal behavior or explicit project publication and approval changes.
+      - Automatic semantic merging, suppression, repair, or persisted conflict records.
+      - Generic status-capsule, progress-tracking, profile-maintenance, or replacement-evaluation RCA work.
+      - Stable promotion, publication, tags, pushes, or dist-tag changes.
+    deferred:
+      []
+  design: First establish one observable consumer and caveat lifecycle contract that resolves the planning unknowns before capability work begins. Then prove bounded acquisition of independently owned inputs and resolve them into one advice matrix. Discuss, Plan, and Build consume that advice at explicitly governed meaning-sensitive events without redefining precedence or publication. Interactive paths clarify before relying on disputed meaning; autonomous paths avoid the disputed meaning and hand privacy-safe caveats to the contract-owned evidence channel. Prime projects only current caveats and preserves unrelated attention. Source behavior is verified before constructed-package parity. After substantive source is selected, development metadata and canonical state close together under final non-publishing gates.
+  unknowns:
+    - question: Which semantic judgments are deterministic and which require host review?
+      affects_task: 3
+      resolve_by: Task 1 must classify exact identity, equivalent exact definitions, definite non-match, divergent exact definitions, and review-required inferred equivalence before downstream integration starts.
+    - question: Which initial and later user events require advice refresh without rereading on unrelated turns?
+      affects_task: 4
+      resolve_by: Task 1 must enumerate meaning-sensitive initial inputs and later changes that can alter deliberation, requirements, acceptance, or cycle intent, plus explicit no-refresh events.
+    - question: Which existing authority can own autonomous caveat evidence without using glossary, decision, or plan conflict state?
+      affects_task: 5
+      resolve_by: Task 1 must select one lawful owner and bounded envelope, including Plan handoff behavior if Plan cannot write that evidence directly.
+    - question: Does the caveat lifecycle need expiration in addition to matching resolution and supersession?
+      affects_task: 7
+      resolve_by: Task 1 must either define an observable expiration event or explicitly reject clock-based expiration; Task 7 implements only the declared lifecycle.
+  surprises:
+    []

@@ -1,0 +1,24 @@
+id: ucmjabyvad
+artifact: plan
+record:
+  name: Establish consumer semantics and caveat lifecycle
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the producer contracts and governing decisions WHEN consumer semantics are declared THEN one explicit matrix distinguishes project-only terms, equivalent and divergent exact collisions, valid project gaps, inferred equivalence, and invalid or unavailable inputs.
+    - GIVEN capability input can evolve WHEN governed events are declared THEN meaning-sensitive initial input and later requirement or intent changes require advice while unrelated turns and background rereads do not.
+    - GIVEN autonomous review cannot pause WHEN caveat behavior is declared THEN one lawful owner, privacy-safe envelope, identity, current, resolved, and superseded transitions, and either explicit expiration or explicit no-expiration are defined outside glossary, decision, and plan conflict state.
+    - GIVEN advice crosses transient and durable surfaces WHEN privacy rules are validated THEN only the minimum applicable meaning and ownership may be transient while private definitions, anchors, paths, raw sections, unrelated entries, and provenance are excluded from durable output and errors.
+    - GIVEN downstream capability work WHEN the contract is incomplete or contradictory THEN integration remains blocked with actionable validation evidence.
+  plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Consumer outcome rows overlap for unavailable personal input and inferred equivalence, and the declared downstream gate points to capability-contract instead of the vocabularyAuthority command that runs glossary validation.
+    provenance:
+      attempt_id: consumer-contract-audit-2
+      source: Audit ses_05e65f66dffeqMiWARsL7Bu4mD bounded re-review PASS
+      recorded_at: 2026-07-27 05:45
+      writer_command: agentera state plan record-evaluation
