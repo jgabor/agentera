@@ -1,0 +1,16 @@
+id: svygtcfeaz
+artifact: progress
+record:
+  timestamp: 2026-07-27 06:46
+  type: feat
+  phase: build
+  what: Activated bounded, read-only acquisition of independently classified project and personal glossary inputs. Canonical registry and docs overrides govern project discovery; the owned profile marker range yields only term, meaning, and owner. Availability now distinguishes absent, valid_empty, valid_present, malformed, unreadable, ambiguous, and over_bound without selecting consumer outcomes.
+  context:
+    intent: Implement only Plan task hyoaodzkww bounded glossary input acquisition and availability classification.
+    constraints: No task completion or evaluation, decision satisfaction, TODO resolution, glossary mutation, advice resolution, Discuss/Plan/Build/prime integration, staging, commit, publish, tag, or push.
+    unknowns: No acquisition unknown remains; independent evaluation and outcome resolution remain outside this cycle.
+    scope: references/artifacts/glossary-entry-contract.yaml; skills/agentera/schemas/artifacts/glossary.yaml; glossary contract validation; personal/project parser projections; shared acquisition runtime; proportional tests.
+  inspiration: Active Plan task hyoaodzkww and the committed glossary consumer semantics in 6153cf2a and c8e498b6.
+  discovered: The existing profile grounding parser safely owns the marker grammar but intentionally excludes glossary content, so acquisition uses a separate projection over the same validated owned section. Repository-wide vp fmt is blocked by the intentionally malformed invalid-progress-yaml fixture after attempting broad formatting; formatter collateral was removed.
+  verified: "Focused acquisition, producer, publication, contract, and CLI tests: 144 passed. Full source lane: 215 files, 2852 passed, 1 skipped. Typecheck and build passed. Local built CLI 3.0.0-dev.37 passed vocabularyAuthority, cross-capability, capability-contract, and compact validation. Lint completed with 0 errors and 152 pre-existing warnings. git diff --check passed. Disposable-root tests prove canonical override and boundary handling, all seven availability states, byte and 100-entry bounds, sanitized diagnostics, personal project-invariance, dual abstention, and unchanged profile/project/sentinel bytes."
+  next: Prime should audit and commit this acquisition seam. Task jthktiznyn remains responsible for precedence, fallback, tension, semantic review, and advice resolution; capability and prime integrations remain deferred.

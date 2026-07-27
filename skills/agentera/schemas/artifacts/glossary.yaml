@@ -50,6 +50,20 @@ PUBLICATION:
   docs_mapping_mutation: forbidden
   deferred: [lookup, precedence, semantic_equivalence_review, personal_profile_mutation]
 
+CONSUMER_ACQUISITION:
+  implementation: active
+  authority: references/artifacts/glossary-entry-contract.yaml#consumer_boundary.acquisition
+  runtime: packages/cli/src/analytics/glossaryInputAcquisition.ts#acquireGlossaryInputs
+  availability: [absent, valid_empty, valid_present, malformed, unreadable, ambiguous, over_bound]
+  output_entry_fields: [term, meaning, owner]
+  source_output_fields: [owner, availability, entries, gap_proving, diagnostic]
+  raw_byte_bound: 65536
+  entry_bound: 100
+  utf8_decoding: fatal
+  project_read: descriptor_bound_no_follow_with_parent_identity_checks
+  mutation: forbidden
+  deferred: [advice_resolution, capability_integrations, precedence, fallback, tension, semantic_review]
+
 CONFIRMED_VARIANT_GUARD:
   authority: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.confirmed_variant_guard
   implementation: active

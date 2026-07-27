@@ -1,0 +1,16 @@
+id: rgmnzmccly
+artifact: progress
+record:
+  timestamp: 2026-07-27 07:06
+  type: fix
+  phase: build
+  what: Corrected bounded glossary acquisition after independent Audit failure. Project docs overrides and glossary targets now use raw-byte-bounded O_NOFOLLOW descriptor reads with path-component and parent identity checks; UTF-8 decoding is fatal; runtime output uses gap_proving exactly; and exact inclusive byte and entry boundaries are covered.
+  context:
+    intent: Address all accepted findings from Audit ses_05e19a1edffeHmST81B4XQ0MBk without implementing advice or capability behavior.
+    constraints: No task completion or evaluation, advice resolution, capability integration, decision satisfaction, TODO resolution, staging, commit, publish, tag, or push.
+    unknowns: Independent re-evaluation remains outside this cycle. The filesystem guarantee intentionally does not claim detection of an identity swapped away and restored between observations; descriptor pinning prevents such an undetected transient swap from changing accepted bytes.
+    scope: Glossary acquisition authority/schema, acquisition runtime trust boundary, contract validation, and proportional acquisition/contract tests.
+  inspiration: Audit attempt glossary-acquisition-audit-1 on active Plan task hyoaodzkww.
+  discovered: The existing general registry resolver reads strict docs mappings by pathname and follows symlinks, so the consumer now supplies canonical overrides parsed from its own descriptor-bound read while leaving ordinary registry behavior unchanged. A valid 100-entry personal section remains below the independent 65,536-byte source ceiling.
+  verified: Focused acquisition/producer/publication/contract/CLI suite passed 148 tests; final acquisition-only rerun passed 14 tests. Full source lane passed 215 files with 2856 tests and 1 skipped. Typecheck and build passed. Built local CLI 3.0.0-dev.37 passed vocabularyAuthority, cross-capability, capability-contract, and compact checks. Lint completed with 0 errors and 152 pre-existing warnings; targeted formatting passed; git diff --check passed. Disposable fixtures prove symlinked docs rejection, deterministic docs-parent and target-parent swaps at the post-snapshot boundary, external docs abstention, fatal invalid UTF-8 for docs/project/personal, exact 65,536-byte and 100-entry acceptance, 65,537/101 rejection, snake_case-only output, privacy, invariance, and unchanged bytes.
+  next: Prime should independently audit and commit. Task jthktiznyn still owns advice outcomes; Discuss, Plan, Build, and prime integrations remain deferred.

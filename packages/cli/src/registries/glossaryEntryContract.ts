@@ -10,6 +10,8 @@ import {
 type Mapping = Record<string, unknown>;
 
 export type GlossaryOwner = "personal" | "project";
+
+export class GlossaryEntryBoundError extends Error {}
 export type GlossaryProvenanceKind =
   | "personal_explicit_definition"
   | "personal_inferred_usage"
@@ -62,6 +64,13 @@ export interface GlossaryConsumerContract {
   caveatEvents: string[];
   caveatExpiration: string;
   downstreamGateStatus: string;
+}
+
+export interface GlossaryAcquisitionContract {
+  maxSourceUtf8Bytes: number;
+  maxEntries: number;
+  availabilityStates: string[];
+  outputEntryFields: string[];
 }
 
 const DEFERRED_CAPABILITIES = ["profile", "audit", "discuss", "plan", "build"] as const;
@@ -173,6 +182,22 @@ export function glossaryConsumerContract(
     ),
     caveatExpiration: typeof lifecycle?.expiration === "string" ? lifecycle.expiration : "",
     downstreamGateStatus: typeof gate?.status === "string" ? gate.status : "",
+  };
+}
+
+export function glossaryAcquisitionContract(
+  pathname: string = glossaryEntryAuthorityPath(),
+): GlossaryAcquisitionContract {
+  const acquisition = mapping(mapping(contract(pathname).consumer_boundary)?.acquisition);
+  const bounds = mapping(acquisition?.bounds);
+  const availability = mapping(acquisition?.availability);
+  const output = mapping(acquisition?.output);
+  return {
+    maxSourceUtf8Bytes:
+      typeof bounds?.max_source_utf8_bytes === "number" ? bounds.max_source_utf8_bytes : 0,
+    maxEntries: typeof bounds?.max_entries === "number" ? bounds.max_entries : 0,
+    availabilityStates: strings(availability?.states),
+    outputEntryFields: strings(output?.entry_fields),
   };
 }
 
@@ -627,7 +652,7 @@ export function validateGlossaryEntryContract(
     !nonEmpty(profileGrounding?.failure_rule)
   ) {
     errors.push(
-      "sanitized profile grounding must continue excluding the owned glossary while consumer implementation remains deferred",
+      "sanitized profile grounding must continue excluding the owned glossary while consumer acquisition remains separate",
     );
   }
   const exactCollision = mapping(consumer?.exact_collision);

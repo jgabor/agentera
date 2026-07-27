@@ -99,12 +99,76 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const implementation = mapping(consumer?.implementation);
   if (
     consumer?.contract_status !== "active" ||
-    implementation?.acquisition !== "declared_deferred" ||
+    implementation?.acquisition !== "active" ||
     implementation?.advice_resolution !== "declared_deferred" ||
     implementation?.capability_integrations !== "declared_deferred"
   ) {
     errors.push(
-      "consumer_boundary.implementation must activate only the contract while acquisition, advice resolution, and capability integrations remain declared_deferred",
+      "consumer_boundary.implementation must activate acquisition while advice resolution and capability integrations remain declared_deferred",
+    );
+  }
+
+  const acquisition = mapping(consumer?.acquisition);
+  const bounds = mapping(acquisition?.bounds);
+  const availability = mapping(acquisition?.availability);
+  const projectAcquisition = mapping(acquisition?.project);
+  const personalAcquisition = mapping(acquisition?.personal);
+  const acquisitionOutput = mapping(acquisition?.output);
+  if (
+    acquisition?.implementation !== "active" ||
+    acquisition?.runtime !==
+      "packages/cli/src/analytics/glossaryInputAcquisition.ts#acquireGlossaryInputs" ||
+    acquisition?.mutation !== "forbidden" ||
+    bounds?.authority !== "consumer_boundary.profile_grounding.max_profile_utf8_bytes" ||
+    bounds?.max_source_utf8_bytes !== 65536 ||
+    bounds?.max_entries !== 100 ||
+    !nonEmpty(bounds?.rule) ||
+    !sameStrings(availability?.states, [
+      "absent",
+      "valid_empty",
+      "valid_present",
+      "malformed",
+      "unreadable",
+      "ambiguous",
+      "over_bound",
+    ]) ||
+    !sameStrings(availability?.valid, ["absent", "valid_empty", "valid_present"]) ||
+    !sameStrings(availability?.invalid, ["malformed", "unreadable", "ambiguous", "over_bound"]) ||
+    !sameStrings(availability?.project_gap_proving, ["absent", "valid_empty"]) ||
+    !nonEmpty(availability?.rule) ||
+    projectAcquisition?.identity !== "glossary" ||
+    projectAcquisition?.discovery !==
+      "packages/cli/src/registries/artifactRegistry.ts#loadArtifactRecord" ||
+    projectAcquisition?.path_resolution !==
+      "packages/cli/src/registries/artifactRegistry.ts#resolveArtifactPath" ||
+    projectAcquisition?.docs_override_read !== "bounded_no_follow_regular_file" ||
+    projectAcquisition?.project_root !==
+      "packages/cli/src/state/projectRoot.ts#validateRealProjectRoot" ||
+    !nonEmpty(projectAcquisition?.filesystem_guarantee) ||
+    !nonEmpty(projectAcquisition?.external_docs_rule) ||
+    projectAcquisition?.approval_output !== "forbidden" ||
+    projectAcquisition?.raw_source_provenance_output !== "forbidden" ||
+    personalAcquisition?.parser !==
+      "packages/cli/src/analytics/personalGlossaryProfile.ts#personalGlossaryConsumerEntries" ||
+    personalAcquisition?.provenance_output !== "forbidden" ||
+    !nonEmpty(personalAcquisition?.profile_path_input) ||
+    !nonEmpty(personalAcquisition?.grounding_parser_isolation) ||
+    !nonEmpty(personalAcquisition?.producer_invariance) ||
+    !sameStrings(acquisitionOutput?.entry_fields, ["term", "meaning", "owner"]) ||
+    !sameStrings(acquisitionOutput?.owners, ["personal", "project"]) ||
+    !sameStrings(acquisitionOutput?.source_fields, [
+      "owner",
+      "availability",
+      "entries",
+      "gap_proving",
+      "diagnostic",
+    ]) ||
+    !sameStrings(acquisitionOutput?.diagnostic_fields, ["class", "recovery"]) ||
+    !nonEmpty(acquisitionOutput?.diagnostic_rule) ||
+    !nonEmpty(acquisitionOutput?.entry_rule)
+  ) {
+    errors.push(
+      "consumer_boundary.acquisition must define canonical bounded independent project and personal reads with sanitized term/meaning/owner output",
     );
   }
 
@@ -387,6 +451,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "packages/cli/src/registries/glossaryEntryContract.ts#validateGlossaryEntryContract" ||
     gate?.command !== "agentera check validate vocabularyAuthority --format json" ||
     !sameStrings(gate?.required_sections, [
+      "consumer_boundary.acquisition",
       "consumer_boundary.primary_selection",
       "consumer_boundary.outcome_matrix",
       "consumer_boundary.orthogonal_advisories",

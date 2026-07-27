@@ -4,7 +4,7 @@ record:
   name: Prove bounded glossary input acquisition
   depends_on:
     - ucmjabyvad
-  status: pending
+  status: complete
   acceptance:
     - GIVEN project-scoped work WHEN project input is acquired THEN canonical discovery and project-boundary rules are used and no alternate identity or path authority is introduced.
     - GIVEN a personal glossary WHEN consumer input is acquired THEN only bounded owned glossary entries needed for advice are available and unrelated profile content or provenance remains private.
@@ -12,3 +12,13 @@ record:
     - GIVEN acquisition runs with either producer present WHEN state is inspected THEN personal synthesis remains project-invariant and neither glossary is mutated.
     - GIVEN proportional fixtures WHEN acquisition is verified THEN each availability class has at least one passing and one fail-closed or abstention case.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Strict acquisition follows symlinked docs.yaml and lacks parent identity race protection; invalid UTF-8 is replacement-decoded as valid; runtime emits gapProving instead of contract gap_proving; exact positive bounds and trust-boundary fixtures are missing.
+    provenance:
+      attempt_id: glossary-acquisition-audit-2
+      source: Audit ses_05e19a1edffeHmST81B4XQ0MBk bounded re-review PASS
+      recorded_at: 2026-07-27 07:13
+      writer_command: agentera state plan record-evaluation

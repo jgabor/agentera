@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { loadProfileDecayParameters } from "../capabilities/profile/instructions.js";
 import { writeFileAtomic } from "../core/atomicWriter.js";
 import {
+  GlossaryEntryBoundError,
   validateGlossaryEntry,
   type GlossaryAdmissionContext,
 } from "../registries/glossaryEntryContract.js";
@@ -102,12 +103,13 @@ function validateUnique(entries: PersonalGlossaryEntry[], label: string): void {
   }
 }
 
-function parseSection(profile: string): { document: PersonalGlossaryDocument | null; start: number; end: number } {
+function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): { document: PersonalGlossaryDocument | null; start: number; end: number } {
   const starts = count(profile, START);
   const ends = count(profile, END);
   const headings = [...profile.matchAll(/^## Glossary\s*$/gm)].length;
   if (starts === 0 && ends === 0 && headings === 0) return { document: null, start: -1, end: -1 };
-  if (starts !== 1 || ends !== 1 || headings !== 1) throw new Error("PROFILE.md Glossary section has malformed or ambiguous owned boundaries");
+  if (starts > 1 || ends > 1 || headings > 1 || (headings > 0 && starts === 0 && ends === 0)) throw new PersonalGlossaryBoundaryError("ambiguous");
+  if (starts !== 1 || ends !== 1 || headings !== 1) throw new PersonalGlossaryBoundaryError("malformed");
   const start = profile.indexOf(START);
   const end = profile.indexOf(END, start) + END.length;
   if (start < 0 || end < END.length || end <= start) throw new Error("PROFILE.md Glossary section has malformed or ambiguous owned boundaries");
@@ -125,6 +127,7 @@ function parseSection(profile: string): { document: PersonalGlossaryDocument | n
   if (JSON.stringify(Object.keys(document)) !== JSON.stringify(["schema_version", "as_of", "confidence_basis", "entries"]) || document.schema_version !== SCHEMA_VERSION || !Array.isArray(document.entries) || !document.confidence_basis || typeof document.confidence_basis !== "object" || Array.isArray(document.confidence_basis)) {
     throw new Error("PROFILE.md Glossary section document is malformed");
   }
+  if (document.entries.length > maxEntries) throw new GlossaryEntryBoundError("personal glossary exceeds the consumer entry bound");
   calendarDate(document.as_of);
   validateUnique(document.entries, "existing personal glossary");
   const expectedKeys = document.entries.map((entry) => identity(entry.term)).sort();
@@ -137,6 +140,18 @@ function parseSection(profile: string): { document: PersonalGlossaryDocument | n
     daysBetween(entry.temporal.last_confirmed_at, document.as_of);
   }
   return { document, start, end };
+}
+
+export class PersonalGlossaryBoundaryError extends Error {
+  constructor(readonly availability: "malformed" | "ambiguous") {
+    super("PROFILE.md Glossary section has malformed or ambiguous owned boundaries");
+  }
+}
+
+/** Parse only the owned glossary range and project only consumer-safe fields. */
+export function personalGlossaryConsumerEntries(profile: string, maxEntries: number): Array<{ term: string; meaning: string }> | null {
+  const document = parseSection(profile, maxEntries).document;
+  return document?.entries.map(({ term, meaning }) => ({ term, meaning })) ?? null;
 }
 
 /** Return profile grounding with the validated owned glossary range excluded byte-for-byte. */

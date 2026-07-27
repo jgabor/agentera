@@ -157,7 +157,7 @@ describe("cli validate (delegated families)", () => {
       "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json",
     );
     expect(implementation).toEqual({
-      acquisition: "declared_deferred",
+      acquisition: "active",
       advice_resolution: "declared_deferred",
       capability_integrations: "declared_deferred",
     });
@@ -180,7 +180,7 @@ describe("cli validate (delegated families)", () => {
         "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json",
       );
       expect(implementation).toEqual({
-        acquisition: "declared_deferred",
+        acquisition: "active",
         advice_resolution: "declared_deferred",
         capability_integrations: "declared_deferred",
       });

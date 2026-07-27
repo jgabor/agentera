@@ -13,7 +13,7 @@ import {
   loadArtifactRecord,
   resolveArtifactPath,
 } from "../../registries/artifactRegistry.js";
-import { validateGlossaryEntry } from "../../registries/glossaryEntryContract.js";
+import { GlossaryEntryBoundError, validateGlossaryEntry } from "../../registries/glossaryEntryContract.js";
 import type { ValidatedProjectRoot } from "../projectRoot.js";
 import { assertValidatedProjectRoot } from "../projectRoot.js";
 import { reject } from "./errors.js";
@@ -181,7 +181,7 @@ function parseApproval(value: unknown, index: number): { approval: ProjectGlossa
   };
 }
 
-function existingDocument(bytes: string): ProjectGlossaryDocument {
+export function parseProjectGlossaryDocument(bytes: string, maxEntries = Number.POSITIVE_INFINITY): ProjectGlossaryDocument {
   let value: Record<string, unknown>;
   try {
     value = loadYamlMapping(bytes);
@@ -191,6 +191,7 @@ function existingDocument(bytes: string): ProjectGlossaryDocument {
   if (!exactFields(value, ["schema_version", "approvals", "entries"]) || value.schema_version !== DOCUMENT_VERSION || !Array.isArray(value.approvals) || !Array.isArray(value.entries)) {
     correction(`existing glossary document must use ${DOCUMENT_VERSION} with approvals and entries lists`, "conflict");
   }
+  if (value.entries.length > maxEntries || value.approvals.length > maxEntries) throw new GlossaryEntryBoundError("project glossary exceeds the consumer entry bound");
   const approvals = value.approvals.map((item, index) => parseApproval(item, index));
   const entries = value.entries as unknown[];
   if (entries.length !== approvals.length) correction("existing glossary approvals and entries do not form complete publication pairs", "conflict");
@@ -227,7 +228,7 @@ function existingDocument(bytes: string): ProjectGlossaryDocument {
 }
 
 function validateCandidateBytes(bytes: string): ProjectGlossaryDocument {
-  return existingDocument(bytes);
+  return parseProjectGlossaryDocument(bytes);
 }
 
 export function loadProjectGlossaryDocument(
@@ -237,7 +238,7 @@ export function loadProjectGlossaryDocument(
   if (!record) correction("registered glossary artifact is unavailable");
   const target = resolveArtifactPath(record, projectRoot);
   if (!fs.existsSync(target)) return null;
-  return { path: target, document: existingDocument(fs.readFileSync(target, "utf8")) };
+  return { path: target, document: parseProjectGlossaryDocument(fs.readFileSync(target, "utf8")) };
 }
 
 export function publishGlossary(
@@ -266,7 +267,7 @@ export function publishGlossary(
     revalidateEvidence(root, proposed);
     const previousBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
     const current: ProjectGlossaryDocument = previousBytes
-      ? existingDocument(previousBytes)
+      ? parseProjectGlossaryDocument(previousBytes)
       : { schema_version: DOCUMENT_VERSION, approvals: [], entries: [] };
     const approvalIndex = current.approvals.findIndex((item) => item.proposal_digest === proposed.proposal_digest);
     const termIndex = current.entries.findIndex((item) => String(item.term).toLowerCase() === proposed.proposed_canonical_term.toLowerCase());

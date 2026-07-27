@@ -178,11 +178,11 @@ describe("shared glossary entry authority", () => {
     }
   });
 
-  it("loads one active consumer contract while every consumer implementation remains deferred", () => {
+  it("loads active bounded acquisition while advice and capability integrations remain deferred", () => {
     expect(glossaryConsumerContract()).toEqual({
       contractStatus: "active",
       implementation: {
-        acquisition: "declared_deferred",
+        acquisition: "active",
         advice_resolution: "declared_deferred",
         capability_integrations: "declared_deferred",
       },
@@ -220,6 +220,39 @@ describe("shared glossary entry authority", () => {
       caveatExpiration: "none",
       downstreamGateStatus: "blocked_until_contract_valid",
     });
+  });
+
+  it.each([
+    [
+      "entry bound",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.acquisition.bounds.max_entries = 101;
+      },
+    ],
+    [
+      "project identity",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.acquisition.project.identity = "alternate_glossary";
+      },
+    ],
+    [
+      "docs no-follow boundary",
+      (authority: Record<string, any>) => {
+        delete authority.consumer_boundary.acquisition.project.docs_override_read;
+      },
+    ],
+    [
+      "private output",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.acquisition.output.entry_fields.push("provenance");
+      },
+    ],
+  ])("rejects acquisition contract drift in %s", (_label, mutate) => {
+    const pathname = malformedAuthority(mutate);
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "consumer_boundary.acquisition must define canonical bounded independent project and personal reads with sanitized term/meaning/owner output",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 
   it("rejects a primitive with the shared term removed", () => {

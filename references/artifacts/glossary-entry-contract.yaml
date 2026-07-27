@@ -3,8 +3,8 @@ status: active_authority
 purpose: >-
   Define glossary entry semantics once, specialize evidence ownership for
   personal and project entries, and declare one consumer-semantics and caveat
-  lifecycle contract without implementing deferred acquisition, advice, or
-  capability integrations.
+  lifecycle contract with bounded acquisition active while advice and
+  capability integrations remain deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -368,7 +368,7 @@ ownership_contracts:
 consumer_boundary:
   contract_status: active
   implementation:
-    acquisition: declared_deferred
+    acquisition: active
     advice_resolution: declared_deferred
     capability_integrations: declared_deferred
   forbidden_persisted_entry_fields: [precedence, collision, review]
@@ -389,6 +389,105 @@ consumer_boundary:
     invalid_rule: >-
       An invalid project state cannot prove a project gap. Abstain rather than
       falling back to a personal meaning, repairing state, or guessing authority.
+  acquisition:
+    implementation: active
+    runtime: packages/cli/src/analytics/glossaryInputAcquisition.ts#acquireGlossaryInputs
+    mutation: forbidden
+    bounds:
+      authority: consumer_boundary.profile_grounding.max_profile_utf8_bytes
+      max_source_utf8_bytes: 65536
+      max_entries: 100
+      rule: >-
+        Apply the existing bounded profile-read byte ceiling to each source and
+        admit at most 100 entries from either owned glossary. The entry ceiling
+        is declared only here and consumed by the runtime and schema validator.
+        Reject raw bytes above the source ceiling before decoding, decode UTF-8
+        fatally, and reject a parsed document above the entry ceiling; never
+        replacement-decode, truncate, or partially admit input. Exactly 65,536
+        raw bytes and 100 entries are permitted.
+    availability:
+      states:
+        - absent
+        - valid_empty
+        - valid_present
+        - malformed
+        - unreadable
+        - ambiguous
+        - over_bound
+      valid: [absent, valid_empty, valid_present]
+      invalid: [malformed, unreadable, ambiguous, over_bound]
+      project_gap_proving: [absent, valid_empty]
+      rule: >-
+        Classify the two sources independently. Project absence means the
+        canonical artifact does not exist; personal absence means PROFILE.md or
+        its owned Glossary section does not exist. A present empty owned document
+        is valid_empty. Invalid states expose no entries and cannot prove a
+        project gap. Dual invalid or absent input exposes no glossary entries;
+        valid project entries remain available when personal input is invalid.
+    project:
+      identity: glossary
+      discovery: packages/cli/src/registries/artifactRegistry.ts#loadArtifactRecord
+      path_resolution: packages/cli/src/registries/artifactRegistry.ts#resolveArtifactPath
+      docs_override: canonical_GLOSSARY.md_mapping_only
+      docs_override_read: bounded_no_follow_regular_file
+      project_root: packages/cli/src/state/projectRoot.ts#validateRealProjectRoot
+      boundary_rule: >-
+        Resolve only the registered glossary identity and its canonical docs
+        override under one validated real project root. Missing canonical
+        artifacts are absent. Unsafe overrides, path escapes, symlink ambiguity,
+        or unavailable registry identity classify ambiguous; malformed present
+        docs mappings or glossary documents fail closed and never fall back to a
+        default path.
+      filesystem_guarantee: >-
+        Open the canonical .agentera/docs.yaml and resolved glossary target with
+        O_NOFOLLOW after lstat snapshots of every existing project-relative path
+        component. Match the opened regular-file descriptor to the snapshotted
+        device and inode, read raw bytes from that descriptor, and require its
+        size, mtime, ctime, device, and inode plus every snapshotted parent path
+        identity to remain unchanged through the read. For an absent target,
+        require the first missing component to remain missing while all existing
+        parent identities remain unchanged. The descriptor pins accepted bytes;
+        a symlink, parent swap, changed identity, unsupported no-follow boundary,
+        or failed stability check is ambiguous. This does not claim detection of
+        an identity swapped away and restored between observations, because such
+        a swap cannot change bytes already pinned to the verified descriptor.
+      external_docs_rule: >-
+        A symlinked, escaped, changed, unreadable, malformed, over-bound, or
+        non-UTF-8 docs mapping is ambiguous and never selects a glossary target.
+      document_validation: ownership_contracts.project.publication
+      approval_output: forbidden
+      raw_source_provenance_output: forbidden
+    personal:
+      owner: ownership_contracts.personal.profile_output.owner
+      profile_path_input: >-
+        The caller passes exactly the profile path already returned by canonical
+        profile context. Acquisition does not discover or return that path and
+        accepts no project identity, root, glossary path, or project record.
+      section: ownership_contracts.personal.profile_output.section
+      parser: packages/cli/src/analytics/personalGlossaryProfile.ts#personalGlossaryConsumerEntries
+      grounding_parser_isolation: >-
+        profile-grounding continues to remove the owned section and never
+        exposes it. Consumer acquisition separately parses exactly the existing
+        single owned marker range and returns no bytes outside that range.
+      provenance_output: forbidden
+      producer_invariance: >-
+        Personal parsing accepts only profile bytes and therefore returns the
+        same result regardless of project glossary presence.
+    output:
+      entry_fields: [term, meaning, owner]
+      owners: [personal, project]
+      source_fields: [owner, availability, entries, gap_proving, diagnostic]
+      diagnostic_fields: [class, recovery]
+      diagnostic_rule: >-
+        Diagnostics name only the availability class and a public recovery.
+        They never contain profile paths, artifact paths, raw bytes, sections,
+        definitions, entries, anchors, approval records, or provenance.
+      entry_rule: >-
+        Return only validated term and meaning plus source ownership. Do not
+        return confidence, permanence, temporal metadata, personal anchors,
+        profile paths, unrelated profile sections, project approval records, or
+        project source provenance. Acquisition does not select precedence,
+        fallback, tension, review, or a primary outcome.
   primary_selection:
     dimensions:
       project_input: [invalid, valid_gap, valid_exact]
@@ -649,6 +748,7 @@ consumer_boundary:
     validator: packages/cli/src/registries/glossaryEntryContract.ts#validateGlossaryEntryContract
     command: agentera check validate vocabularyAuthority --format json
     required_sections:
+      - consumer_boundary.acquisition
       - consumer_boundary.primary_selection
       - consumer_boundary.outcome_matrix
       - consumer_boundary.orthogonal_advisories
@@ -657,9 +757,9 @@ consumer_boundary:
       - consumer_boundary.autonomous_caveat
       - consumer_boundary.publication_isolation
     failure_rule: >-
-      Discuss, Plan, Build, acquisition, advice, and prime integration remain
-      blocked when validation reports a missing or contradictory section. Each
-      issue names the invalid section and required correction.
+      Discuss, Plan, Build, advice, and prime integration remain blocked when
+      validation reports a missing or contradictory section. Acquisition itself
+      fails closed. Each issue names the invalid section and required correction.
   profile_grounding:
     implementation: active_exclusion_only
     capabilities: [discuss, plan, build]
