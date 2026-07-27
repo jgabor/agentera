@@ -2,7 +2,7 @@ id: ruzauoaotd
 artifact: todo
 record:
   severity: normal
-  status: open
+  status: resolved
   description: "[feat:3.0.0] Add real-time glossary disambiguation to discuss, plan, and build after personal glossary TODO azytlqzxoa and project glossary TODO guijxewees land. Resolve glossaries through canonical artifact discovery. For project-scoped work, exact term collisions use the project definition; missing project terms fall back to the personal glossary; inferred semantic equivalence requires user review rather than silent suppression or merging; conflicting definitions surface as a tension. Keep advisories non-blocking where autonomous capabilities cannot pause and report the caveat through cycle evidence and prime attention. Implement precedence and review in consumers without writing conflict state into either glossary entry contract."
   readiness:
     capability: build

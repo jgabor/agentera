@@ -1,0 +1,30 @@
+id: jwxufqmjlj
+artifact: health
+record:
+  dimensions:
+    - version_health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the development candidate and bounded release evidence now align; independent retry-2 Audit remains pending"
+  grades:
+    version_health: A
+  dimension_details:
+    - name: version_health
+      grade: A
+      summary: "Limited version-health verification for active task xefdapidur: package 3.0.0-dev.38 retains suite 3.0.0 and the selected immutable source; release policy, source, package, metadata, state, compact, validator, lint, and pack dry-run gates pass without publication. This record does not assess codebase-wide health or terminal artifact freshness."
+      findings:
+        []
+  trends:
+    comparison_target: Task xefdapidur Phase B metadata and nonpublishing release readiness
+    improved: Development metadata, active glossary documentation state, and source/package release evidence agree.
+    degraded: None in the bounded version-health scope.
+    new_findings: None.
+    resolved: The prior source-selection metadata blocker is removed from the local candidate.
+    carried_forward: Retry-2 Audit, terminal artifact_freshness health, task completion, and plan completion remain Prime-owned.
+  patterns:
+    - Keep substantive source selection separate from final development metadata and terminal lifecycle closure.
+  date: 2026-07-27
+  appended_at: 2026-07-27T17:33:16.268Z

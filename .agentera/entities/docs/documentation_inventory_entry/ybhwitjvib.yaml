@@ -1,7 +1,7 @@
 id: ybhwitjvib
 artifact: docs
 record:
-  document: Project glossary schema — authority conformance, active production, and deferred consumer semantics
+  document: Project glossary schema — authority conformance, active publication, and active bounded consumer semantics
   path: skills/agentera/schemas/artifacts/glossary.yaml
-  last_updated: 2026-07-26
+  last_updated: 2026-07-27
   status: current

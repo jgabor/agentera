@@ -1,0 +1,30 @@
+id: zgeqvsdehf
+artifact: health
+record:
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: all expected plan artifacts are current and bounded closure gates pass"
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: "Limited terminal-plan closure Audit for upicwqdskc. All 15 tasks are terminal: 10 complete and 5 superseded, with every superseded task pointing only to a completed independently PASS-evaluated replacement. Every delegated expected artifact changed after plan creation, and current Phase B metadata, state, and evaluation changes are present. Source/package provenance, deterministic parity, state validation, compact, and release metadata pass. No stale expected artifact, degraded plan diagnostic, scoped conflict bookkeeping, or retained package artifact was found. This is not a codebase-wide health assessment."
+      findings:
+        []
+  trends:
+    comparison_target: Plan upicwqdskc terminal-task artifacts and Phase B closure evidence
+    improved: All delegated artifacts and final metadata/state evidence are current relative to plan creation.
+    degraded: None in the limited artifact-freshness scope.
+    new_findings: None.
+    resolved: Terminal staleness and closure evidence were independently audited with PASS.
+    carried_forward: The stale legacy profile caveat and unrelated open TODO work remain outside this plan.
+  patterns:
+    - Keep terminal artifact freshness distinct from codebase-wide health and profile maintenance.
+  date: 2026-07-27
+  appended_at: 2026-07-27T17:50:23.381Z
