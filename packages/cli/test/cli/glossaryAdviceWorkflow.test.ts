@@ -59,14 +59,13 @@ function personalEntry(term: string, meaning: string): PersonalGlossaryEntry {
   };
 }
 
-function profile(term: string, meaning: string): string {
+function profileWithEntries(entries: Array<{ term: string; meaning: string }>): string {
   const root = temporary("profile");
   const pathname = path.join(root, "PROFILE.md");
   fs.writeFileSync(pathname, "# Profile\n\nPRIVATE_UNRELATED_PROFILE_BYTES\n");
-  const entry = personalEntry(term, meaning);
   updatePersonalGlossaryProfile({
     profilePath: pathname,
-    freshEntries: [entry],
+    freshEntries: entries.map(({ term, meaning }) => personalEntry(term, meaning)),
     retainedHistory: {
       retainedHistory: new Map([
         [
@@ -78,6 +77,10 @@ function profile(term: string, meaning: string): string {
     asOf: "2026-07-27",
   });
   return root;
+}
+
+function profile(term: string, meaning: string): string {
+  return profileWithEntries([{ term, meaning }]);
 }
 
 function publishProject(root: string, term: string, meaning: string): void {
@@ -265,6 +268,15 @@ function planAuthority(): Record<string, any> {
 
 function consumerAuthority(): Record<string, any> {
   return YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8")).consumer_boundary;
+}
+
+function adviceEventClass(
+  refresh: Record<"required" | "not_required", string[]>,
+  event: string,
+): "refresh" | "no_refresh" {
+  if (refresh.required.includes(event)) return "refresh";
+  if (refresh.not_required.includes(event)) return "no_refresh";
+  throw new Error(`undeclared glossary advice event: ${event}`);
 }
 
 afterEach(() => {
@@ -502,8 +514,7 @@ describe("packaged Build glossary advice seam", () => {
       writer_owned_fields: ["caveat_id", "capability", "transition_id"],
       forbidden_fields: ["caveat_id", "capability", "transition_id"],
       forbidden_claims: ["delivered", "stored", "persisted", "published", "durable_envelope"],
-      allowed_reason_state_pairs:
-        "consumer_boundary.autonomous_caveat.allowed_current_pairs",
+      allowed_reason_state_pairs: "consumer_boundary.autonomous_caveat.allowed_current_pairs",
     });
     expect(consumerAuthority().autonomous_caveat.allowed_current_pairs).toEqual([
       { reason: "inferred_equivalence", ownership_state: "review_required" },
@@ -557,8 +568,10 @@ describe("packaged Build glossary advice seam", () => {
     expect(handoff.allowed_reason_state_pairs).toBe(
       "consumer_boundary.autonomous_caveat.allowed_current_pairs",
     );
-    const reasonState = consumerAuthority().autonomous_caveat
-      .allowed_current_pairs[0] as Record<string, string>;
+    const reasonState = consumerAuthority().autonomous_caveat.allowed_current_pairs[0] as Record<
+      string,
+      string
+    >;
     const intent = { ...handoff.fixed_values, ...reasonState } as Record<string, string>;
     const explained = progressAppendContract(root);
     expect(explained.status, explained.stderr).toBe(0);
@@ -728,9 +741,384 @@ describe("packaged Build glossary advice seam", () => {
     }
   });
 
-  it("runs advice only for governed Plan changes and keeps consumer state mutation-free", () => {
+  it("invokes source advice for every authority-required Plan event and no excluded event", () => {
     const root = project();
-    const profileRoot = profile("Ready to sail", "Personal fallback meaning");
+    const profileRoot = profile("Ready to sail", "A release may proceed after checks pass");
+    publishProject(root, "Ship Shape", "Project meaning");
+    const projectBefore = snapshotTree(root);
+    const profileBefore = snapshotTree(profileRoot);
+    const authority = consumerAuthority();
+    const refresh = authority.refresh_events as Record<"required" | "not_required", string[]>;
+    const clarificationEvent = refresh.required.find((event) => event.includes("clarification"))!;
+    const turns = [
+      ...refresh.required.map((event, index) => ({
+        event,
+        request: {
+          schema_version: "agentera.glossaryAdviceRequest.v1",
+          requested_term:
+            index === 0
+              ? "Ship Shape"
+              : event === clarificationEvent
+                ? "Ready to sail"
+                : `Changed Plan meaning ${index}`,
+        },
+      })),
+      ...refresh.not_required.map((event) => ({ event, request: undefined })),
+    ];
+    const invokedEvents: string[] = [];
+    const outcomes = turns.flatMap((turn) => {
+      if (adviceEventClass(refresh, turn.event) === "no_refresh") return [];
+      invokedEvents.push(turn.event);
+      expect(Buffer.byteLength(JSON.stringify(turn.request), "utf8")).toBeLessThanOrEqual(
+        authority.advice_resolution.invocation.max_request_utf8_bytes,
+      );
+      const result = advice(root, profileRoot, turn.request!);
+      expect(result.status, result.stderr).toBe(0);
+      return [JSON.parse(result.stdout).advice.outcome as string];
+    });
+
+    expect(turns.slice(0, refresh.required.length).map(({ event }) => event)).toEqual(
+      refresh.required,
+    );
+    expect(turns.slice(refresh.required.length).map(({ event }) => event)).toEqual(
+      refresh.not_required,
+    );
+    expect(invokedEvents).toEqual(refresh.required);
+    expect(invokedEvents).toHaveLength(refresh.required.length);
+    expect(outcomes).toEqual(
+      refresh.required.map((event, index) =>
+        index === 0
+          ? "project_only"
+          : event === clarificationEvent
+            ? "proven_project_gap"
+            : "no_applicable_entry",
+      ),
+    );
+    expect(snapshotTree(root)).toEqual(projectBefore);
+    expect(snapshotTree(profileRoot)).toEqual(profileBefore);
+  });
+
+  it("replays connected interactive and autonomous Plan review flows from authority", () => {
+    const plan = planAuthority();
+    const consumer = consumerAuthority();
+    const reviewRoot = project();
+    const reviewProfile = profileWithEntries([
+      { term: "Ready to sail", meaning: "A release may proceed after checks pass" },
+      { term: "Unrelated private term", meaning: "PRIVATE_DISPUTED_MEANING" },
+    ]);
+    const reviewProjectBefore = snapshotTree(reviewRoot);
+    const reviewProfileBefore = snapshotTree(reviewProfile);
+    const reviewedRequest = {
+      schema_version: "agentera.glossaryAdviceRequest.v1",
+      requested_term: "Ship Shape",
+      host_review: {
+        relation: "inferred_equivalence",
+        candidate_owner: "personal",
+        candidate_term: "Ready to sail",
+      },
+    };
+    const initial = advice(reviewRoot, reviewProfile, reviewedRequest);
+    expect(initial.status, initial.stderr).toBe(0);
+    const initialAdvice = JSON.parse(initial.stdout).advice as Record<string, unknown>;
+    expect(initialAdvice).toMatchObject({
+      outcome: "inferred_equivalence",
+      applicable_meaning: null,
+      review: "required_when_meaning_sensitive",
+    });
+
+    const interactive = plan.interaction.review.interactive_sequence as string[];
+    const createInteractiveReplay = () => {
+      const planning = {
+        affected: {
+          scope: "blocked",
+          requirements: "blocked",
+          tasks: "blocked",
+          acceptance: "blocked",
+        },
+        unrelated: { constraint: "UNCHANGED_UNRELATED_FIELD" },
+      };
+      const unrelatedBefore = structuredClone(planning.unrelated);
+      let index = 0;
+      let clarificationCount = 0;
+      let refreshInvocationCount = 0;
+      let refreshedRequest: Record<string, unknown> | null = null;
+      let refreshedAdvice: Record<string, unknown> | null = null;
+      const finalize = (): void => {
+        if (
+          clarificationCount !== 1 ||
+          refreshInvocationCount !== 1 ||
+          typeof refreshedAdvice?.applicable_meaning !== "string" ||
+          !["project", "personal"].includes(String(refreshedAdvice.applicable_owner)) ||
+          refreshedAdvice.review !== "none"
+        ) {
+          throw new Error("affected Plan fields require one usable refreshed advice outcome");
+        }
+        for (const field of Object.keys(planning.affected) as Array<
+          keyof typeof planning.affected
+        >) {
+          planning.affected[field] = "finalized_after_review";
+        }
+      };
+      const step = (event: string, userAnswer?: string, invokeRefresh = true): void => {
+        if (event !== interactive[index]) {
+          throw new Error(`contradictory Plan replay order: expected ${interactive[index]}`);
+        }
+        if (event === "emit_one_focused_clarification") clarificationCount += 1;
+        if (event === "refresh_advice_for_affected_term") {
+          const answer = userAnswer?.trim() ?? "";
+          const prefix = "Use exact term: ";
+          if (!answer.startsWith(prefix) || answer.slice(prefix.length).trim().length === 0) {
+            throw new Error("review refresh requires a material clarification answer");
+          }
+          const requestedTerm = answer.slice(prefix.length).trim();
+          if (requestedTerm === reviewedRequest.requested_term) {
+            throw new Error("review refresh request must change the affected meaning");
+          }
+          refreshedRequest = {
+            schema_version: reviewedRequest.schema_version,
+            requested_term: requestedTerm,
+          };
+          expect(Buffer.byteLength(JSON.stringify(refreshedRequest), "utf8")).toBeLessThanOrEqual(
+            consumer.advice_resolution.invocation.max_request_utf8_bytes,
+          );
+          if (invokeRefresh) {
+            const refreshed = advice(reviewRoot, reviewProfile, refreshedRequest);
+            expect(refreshed.status, refreshed.stderr).toBe(0);
+            refreshInvocationCount += 1;
+            refreshedAdvice = JSON.parse(refreshed.stdout).advice;
+          }
+        }
+        if (event === "finalize_affected_scope_requirements_tasks_acceptance") finalize();
+        index += 1;
+      };
+      return {
+        planning,
+        unrelatedBefore,
+        step,
+        finalize,
+        result: () => ({ refreshedRequest, refreshedAdvice, refreshInvocationCount }),
+      };
+    };
+    const readyForRefresh = () => {
+      const replay = createInteractiveReplay();
+      replay.step(interactive[0]!);
+      replay.step(interactive[1]!);
+      return replay;
+    };
+
+    expect(() => createInteractiveReplay().step(interactive.at(-1)!)).toThrow(
+      "contradictory Plan replay order",
+    );
+    expect(() => createInteractiveReplay().finalize()).toThrow(
+      "affected Plan fields require one usable refreshed advice outcome",
+    );
+    expect(() => readyForRefresh().step(interactive[2]!, "   ")).toThrow(
+      "material clarification answer",
+    );
+    expect(() => readyForRefresh().step(interactive[2]!, "Use exact term: Ship Shape")).toThrow(
+      "request must change the affected meaning",
+    );
+    const missingRefresh = readyForRefresh();
+    missingRefresh.step(interactive[2]!, "Use exact term: Ready to sail", false);
+    expect(() => missingRefresh.step(interactive[3]!)).toThrow(
+      "one usable refreshed advice outcome",
+    );
+
+    const successfulInteractive = readyForRefresh();
+    successfulInteractive.step(interactive[2]!, "Use exact term: Ready to sail");
+    expect(successfulInteractive.result()).toMatchObject({
+      refreshedRequest: {
+        schema_version: "agentera.glossaryAdviceRequest.v1",
+        requested_term: "Ready to sail",
+      },
+      refreshedAdvice: {
+        outcome: "proven_project_gap",
+        applicable_meaning: "A release may proceed after checks pass",
+        applicable_owner: "personal",
+        review: "none",
+      },
+      refreshInvocationCount: 1,
+    });
+    successfulInteractive.step(interactive[3]!);
+    expect(new Set(Object.values(successfulInteractive.planning.affected))).toEqual(
+      new Set(["finalized_after_review"]),
+    );
+    expect(successfulInteractive.planning.unrelated).toEqual(successfulInteractive.unrelatedBefore);
+
+    const unavailableRoot = project();
+    const unavailableProfile = profile("Ready to sail", "PRIVATE_UNAVAILABLE_MEANING");
+    fs.writeFileSync(path.join(unavailableRoot, ".agentera/glossary.yaml"), "PRIVATE_BAD_PROJECT");
+    const unavailableProjectBefore = snapshotTree(unavailableRoot);
+    const unavailableProfileBefore = snapshotTree(unavailableProfile);
+    const unavailable = advice(unavailableRoot, unavailableProfile, {
+      schema_version: "agentera.glossaryAdviceRequest.v1",
+      requested_term: "Ship Shape",
+    });
+    expect(unavailable.status, unavailable.stderr).toBe(0);
+    const unavailableAdvice = JSON.parse(unavailable.stdout).advice as Record<string, unknown>;
+    expect(unavailableAdvice.outcome).toBe("invalid_or_unavailable_project");
+
+    const modeSignal = plan.mode.precedence[0] as string;
+    expect(modeSignal).toBe("explicit_delegated_or_orchestrated_no_pause");
+    expect(plan.mode.signals[modeSignal].result).toBe("autonomous");
+    const autonomous = plan.interaction.review.autonomous_sequence as string[];
+    const handoff = plan.autonomous_handoff_intent;
+    const allowedPairs = consumer.autonomous_caveat.allowed_current_pairs as Array<
+      Record<string, string>
+    >;
+    const replayAutonomous = (
+      adviceOutcome: Record<string, unknown>,
+      pair: Record<string, string>,
+    ) => {
+      let index = 0;
+      const planningContent = {
+        affected: {
+          scope: "unresolved",
+          requirements: "unresolved",
+          tasks: "unresolved",
+          acceptance: "unresolved",
+        },
+        unrelated: {
+          title: "UNCHANGED_AUTONOMOUS_TITLE",
+          constraints: ["UNCHANGED_AUTONOMOUS_CONSTRAINT"],
+          tasks: [{ name: "UNCHANGED_AUTONOMOUS_TASK", acceptance: ["UNCHANGED_ACCEPTANCE"] }],
+        },
+      };
+      const unrelatedBeforeValue = structuredClone(planningContent.unrelated);
+      const unrelatedBeforeBytes = Buffer.from(JSON.stringify(planningContent.unrelated));
+      let usedMeaning: string | null = null;
+      let intent: Record<string, string> | null = null;
+      const step = (event: string): void => {
+        if (event !== autonomous[index]) throw new Error("contradictory autonomous Plan order");
+        if (event === "abstain_from_disputed_meaning") usedMeaning = null;
+        if (event === "defer_affected_scope_requirements_tasks_acceptance") {
+          for (const field of Object.keys(planningContent.affected) as Array<
+            keyof typeof planningContent.affected
+          >) {
+            planningContent.affected[field] = "explicitly_deferred";
+          }
+        }
+        if (event === "emit_transient_handoff_intent") {
+          if (
+            new Set(Object.values(planningContent.affected)).size !== 1 ||
+            planningContent.affected.scope !== "explicitly_deferred"
+          ) {
+            throw new Error("autonomous handoff cannot precede affected-field deferral");
+          }
+          intent = { ...handoff.fixed_values, ...pair };
+        }
+        index += 1;
+      };
+      expect(() => step(autonomous.at(-1)!)).toThrow("contradictory autonomous Plan order");
+      for (const event of autonomous) step(event);
+      expect(adviceOutcome.applicable_meaning).toBeNull();
+      expect(usedMeaning).toBeNull();
+      expect(new Set(Object.values(planningContent.affected))).toEqual(
+        new Set(["explicitly_deferred"]),
+      );
+      expect(Object.keys(intent!).sort()).toEqual([...handoff.caller_fields].sort());
+      expect(intent).toEqual({
+        event: handoff.fixed_values.event,
+        reason: pair.reason,
+        ownership_state: pair.ownership_state,
+      });
+      expect(handoff.status).toBe("transient_emitted_not_delivered");
+      return {
+        status: handoff.status as string,
+        intent: intent!,
+        unrelatedBeforeValue,
+        unrelatedAfterValue: planningContent.unrelated,
+        unrelatedBeforeBytes,
+        unrelatedAfterBytes: Buffer.from(JSON.stringify(planningContent.unrelated)),
+      };
+    };
+    const reviewPair = allowedPairs.find(
+      (pair) =>
+        pair.reason === "inferred_equivalence" && pair.ownership_state === "review_required",
+    )!;
+    const unavailablePair = allowedPairs.find(
+      (pair) =>
+        pair.reason === plan.unavailable.invalid_project.handoff_pair[0] &&
+        pair.ownership_state === plan.unavailable.invalid_project.handoff_pair[1],
+    )!;
+    const reviewReplay = replayAutonomous(initialAdvice, reviewPair);
+    const unavailableReplay = replayAutonomous(unavailableAdvice, unavailablePair);
+    expect(reviewReplay.status).toBe("transient_emitted_not_delivered");
+    expect(unavailableReplay.status).toBe("transient_emitted_not_delivered");
+    for (const replay of [reviewReplay, unavailableReplay]) {
+      expect(replay.unrelatedAfterValue).toEqual(replay.unrelatedBeforeValue);
+      expect(replay.unrelatedAfterBytes).toEqual(replay.unrelatedBeforeBytes);
+    }
+    const reviewIntent = reviewReplay.intent;
+    const unavailableIntent = unavailableReplay.intent;
+    const validateIntent = (intent: Record<string, string>): void => {
+      if (
+        Object.keys(intent).join("\0") !== handoff.caller_fields.join("\0") ||
+        intent.event !== handoff.fixed_values.event ||
+        !allowedPairs.some(
+          (pair) =>
+            pair.reason === intent.reason && pair.ownership_state === intent.ownership_state,
+        )
+      ) {
+        throw new Error("invalid emitted-only Plan handoff intent");
+      }
+    };
+    validateIntent(reviewIntent);
+    validateIntent(unavailableIntent);
+    expect(() => validateIntent({ ...reviewIntent, capability: "plan" })).toThrow(
+      "invalid emitted-only Plan handoff intent",
+    );
+
+    const writerRoot = project();
+    const explained = progressAppendContract(writerRoot);
+    expect(explained.status, explained.stderr).toBe(0);
+    const flags = new Map(
+      JSON.parse(explained.stdout).fields.map((field: Record<string, string>) => [
+        field.field,
+        field.flag,
+      ]),
+    );
+    const writerFlags = handoff.caller_fields.map((field: string) =>
+      flags.get(`glossary_caveat.${field}`),
+    );
+    for (const intent of [reviewIntent, unavailableIntent]) {
+      const written = appendProgress(writerRoot, intent, handoff.caller_fields, writerFlags);
+      expect(written.status, written.stderr).toBe(0);
+      expect(JSON.parse(written.stdout).record.glossary_caveat).toMatchObject(intent);
+    }
+
+    const replaySurfaces = [
+      initial.stdout,
+      initial.stderr,
+      JSON.stringify(successfulInteractive.result().refreshedAdvice),
+      unavailable.stdout,
+      unavailable.stderr,
+      JSON.stringify(successfulInteractive.planning),
+      JSON.stringify(reviewIntent),
+      JSON.stringify(unavailableIntent),
+    ].join("\n");
+    for (const trap of [
+      "PRIVATE_DISPUTED_MEANING",
+      "PRIVATE_UNAVAILABLE_MEANING",
+      "PRIVATE_BAD_PROJECT",
+      "PRIVATE_ANCHOR",
+      "PRIVATE_SOURCE",
+      "PROFILE.md",
+    ]) {
+      expect(replaySurfaces).not.toContain(trap);
+    }
+    expect(snapshotTree(reviewRoot)).toEqual(reviewProjectBefore);
+    expect(snapshotTree(reviewProfile)).toEqual(reviewProfileBefore);
+    expect(snapshotTree(unavailableRoot)).toEqual(unavailableProjectBefore);
+    expect(snapshotTree(unavailableProfile)).toEqual(unavailableProfileBefore);
+  });
+
+  it("replays Build advice only for initial and changed cycle intent events", () => {
+    const root = project();
+    const profileRoot = profileWithEntries([
+      { term: "Ready to sail", meaning: "Changed cycle personal meaning" },
+      { term: "Unrelated private term", meaning: "PRIVATE_UNRELATED_PROFILE_MEANING" },
+    ]);
     publishProject(root, "Ship Shape", "Project meaning");
     fs.mkdirSync(path.join(root, ".agentera/entities/plan"), { recursive: true });
     fs.writeFileSync(path.join(root, ".agentera/entities/plan/sentinel.yaml"), "plan: unchanged\n");
@@ -746,48 +1134,62 @@ describe("packaged Build glossary advice seam", () => {
     );
     const projectBefore = snapshotTree(root);
     const profileBefore = snapshotTree(profileRoot);
-    const contract = glossaryConsumerContract();
-    const request = (requested_term: string) => ({
+    const authority = consumerAuthority();
+    const refresh = authority.refresh_events as Record<"required" | "not_required", string[]>;
+    const initialRequest = {
       schema_version: "agentera.glossaryAdviceRequest.v1",
-      requested_term,
-    });
+      requested_term: "Ship Shape",
+    };
+    const changedRequest = {
+      schema_version: "agentera.glossaryAdviceRequest.v1",
+      requested_term: "Ready to sail",
+    };
     const events = [
-      { event: "initial_meaning_sensitive_input", request: request("Ship Shape") },
-      { event: "unchanged_input_replay" },
-      { event: "background_state_reread" },
-      { event: "status_or_progress_render" },
-      { event: "tool_output_without_requirement_or_intent_change" },
-      { event: "artifact_rendering" },
-      { event: "evaluator_text_without_user_change" },
-      { event: "control_only_continuation" },
+      { event: refresh.required[0], request: initialRequest },
       {
-        event: "later_user_requirement_change_that_can_change_meaning",
-        request: request("Ready to sail"),
+        event: refresh.required.find((event) => event.includes("cycle_intent_change"))!,
+        request: changedRequest,
       },
-      {
-        event: "later_acceptance_change_that_can_change_meaning",
-        request: request("Unrelated term"),
-      },
+      ...refresh.not_required.map((event) => ({ event })),
     ];
+    const invokedEvents: string[] = [];
+    const subprocessSurfaces: string[] = [];
     const outcomes = events.flatMap((event) => {
-      if (!contract.refreshRequired.includes(event.event) || !event.request) return [];
-      const result = advice(root, profileRoot, event.request);
+      if (adviceEventClass(refresh, event.event) === "no_refresh") return [];
+      invokedEvents.push(event.event);
+      expect(Object.keys(event.request!).sort()).toEqual(
+        authority.advice_resolution.invocation.request_fields
+          .filter((field: string) => field !== "host_review")
+          .sort(),
+      );
+      expect(Buffer.byteLength(JSON.stringify(event.request), "utf8")).toBeLessThanOrEqual(
+        authority.advice_resolution.invocation.max_request_utf8_bytes,
+      );
+      const result = advice(root, profileRoot, event.request!);
       expect(result.status, result.stderr).toBe(0);
+      subprocessSurfaces.push(
+        result.stdout,
+        result.stderr,
+        JSON.stringify(JSON.parse(result.stdout)),
+      );
       return [JSON.parse(result.stdout).advice.outcome as string];
     });
 
-    expect(outcomes).toEqual(["project_only", "proven_project_gap", "no_applicable_entry"]);
-    expect(contract.refreshNotRequired).toEqual(
-      expect.arrayContaining([
-        "unchanged_input_replay",
-        "background_state_reread",
-        "status_or_progress_render",
-        "tool_output_without_requirement_or_intent_change",
-        "artifact_rendering",
-        "evaluator_text_without_user_change",
-        "control_only_continuation",
-      ]),
-    );
+    expect(events[0]!.event).toBe("initial_meaning_sensitive_input");
+    expect(events[1]!.event).toBe("later_cycle_intent_change_that_can_change_meaning");
+    expect(events[0]!.request).not.toEqual(events[1]!.request);
+    expect(invokedEvents).toEqual([events[0]!.event, events[1]!.event]);
+    expect(outcomes).toEqual(["project_only", "proven_project_gap"]);
+    expect(events.slice(2).map(({ event }) => event)).toEqual(refresh.not_required);
+    for (const trap of [
+      "PRIVATE_UNRELATED_PROFILE_MEANING",
+      "PRIVATE_UNRELATED_PROFILE_BYTES",
+      "PRIVATE_ANCHOR",
+      "PRIVATE_SOURCE",
+      "PROFILE.md",
+    ]) {
+      expect(subprocessSurfaces.join("\n")).not.toContain(trap);
+    }
     expect(snapshotTree(root)).toEqual(projectBefore);
     expect(snapshotTree(profileRoot)).toEqual(profileBefore);
   });

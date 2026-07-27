@@ -1,0 +1,24 @@
+id: smwsmzocch
+artifact: plan
+record:
+  plan: upicwqdskc
+  name: Complete executable glossary consumer replays
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN Build initial and changed-cycle events WHEN the source replay runs THEN distinct bounded inputs produce their corresponding real advice outcomes, while every authority-declared no-refresh event invokes no advice.
+    - GIVEN Plan initial, relevant-change, unchanged, unrelated, tool, evaluator, and control events WHEN source replay runs THEN authority-derived cadence invokes advice exactly where required and nowhere else.
+    - GIVEN interactive Plan receives review-required advice WHEN a clarification answer changes the bounded request THEN refreshed real advice is usable before affected content can finalize, and contradictory or unchanged refresh cannot finalize.
+    - GIVEN autonomous Plan receives review-required or unavailable advice WHEN it cannot pause THEN affected content is deferred, unrelated content remains byte-equivalent, and the exact emitted-only three-field intent passes through the real writer.
+    - GIVEN corrected replays and prior conjunction evidence WHEN source gates run THEN privacy, mutation, publication, lifecycle, full tests, typecheck, build, compact, and contract validators pass.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "Independent Audit PASS: distinct Build requests, complete Plan cadence, usable answer-driven interactive finalization, autonomous affected-only deferral and real writer handoff close the source conjunction; prior privacy, isolation, publication, lifecycle, and gates remain passed."
+      recorded_at: 2026-07-27 14:26
+      writer_command: agentera state plan record-evaluation

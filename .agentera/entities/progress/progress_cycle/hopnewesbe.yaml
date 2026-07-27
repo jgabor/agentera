@@ -1,0 +1,16 @@
+id: hopnewesbe
+artifact: progress
+record:
+  timestamp: 2026-07-27 14:22
+  type: test
+  phase: build
+  what: Corrected executable glossary consumer replays for replacement smwsmzocch
+  context:
+    intent: Close the accepted Build input, Plan cadence, interactive refresh, and autonomous preservation evidence gaps without production changes
+    constraints: Test-only; preserve existing uncommitted state and all privacy, isolation, publication, package-parity, and Prime-owned lifecycle boundaries
+    unknowns: Independent evaluation remains outside this cycle
+    scope: packages/cli/test/cli/glossaryAdviceWorkflow.test.ts
+  inspiration: Replacement task smwsmzocch and the four accepted Audit findings from blocked task uargzxttzx
+  discovered: The prior replay passed while reusing identical Build and interactive requests; the obsolete vitest executable was not the repository test authority, so verification used vp test against source
+  verified: Target replay 14/14; focused glossary conjunction 244/244; full source 220 files, 2975 passed and 1 skipped; typecheck and fresh build passed; compact passed with 0 errors and 0 changes; Discuss, Plan, Build, status, vocabularyAuthority, state (1938 entities, 0 issues), cross-capability, and capability-contract validators passed
+  next: Leave replacement lifecycle and TODO bewcxwfwcv to Prime and independent evaluation; do not claim package parity

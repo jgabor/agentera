@@ -1,0 +1,15 @@
+id: bewcxwfwcv
+artifact: todo
+record:
+  severity: normal
+  status: resolved
+  description: Source conjunction replays do not yet prove changed Build input or usable answer-driven Plan finalization after two failed evaluations.
+  readiness:
+    capability: build
+    reason: A narrow replacement must correct executable test inputs, restore Plan cadence coverage, and preserve unrelated autonomous content.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This evidence gap blocks source conjunction and constructed-package verification.

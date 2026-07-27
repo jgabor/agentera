@@ -7,7 +7,7 @@ record:
     - htxxuwkqsg
     - aibhqqgbsp
     - tnupicrjhe
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN the complete advice and capability matrix WHEN source verification runs THEN every availability, collision, fallback, review, autonomy, lifecycle, attention, and publication-isolation unit has proportional pass and failure or abstention evidence.
     - GIVEN disposable project and personal roots WHEN source workflows execute THEN they may load repository source read-only but never discover, read, or mutate live project state, the real profile, or user-owned glossary data, and sentinel bytes remain unchanged.
@@ -15,3 +15,16 @@ record:
     - GIVEN consumer execution WHEN state is inspected THEN neither glossary, decisions, nor plans contain conflict bookkeeping and explicit publication remains unchanged.
     - GIVEN repository source gates WHEN verification completes THEN tests, typecheck, build, compaction, and relevant contract validation pass.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Interactive Plan refresh reruns unchanged unusable advice then finalizes; prior Plan cadence replay was removed; Build's changed-cycle event reuses identical command input; autonomous replay omits unrelated-content preservation.
+    provenance:
+      attempt_id: audit-2
+      source: Independent retry-2 Audit ses_05c9afd66ffepAGx18oAnn3XcS. Criteria 2-5 pass, but complete executable matrix remains unproved in glossaryAdviceWorkflow tests.
+      recorded_at: 2026-07-27 14:10
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - smwsmzocch
+  superseded_reason: Completed replacement provides the missing executable Build and Plan replays while preserving all previously verified source-conjunction criteria.
