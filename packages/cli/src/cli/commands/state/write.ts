@@ -113,9 +113,12 @@ function converted(field: OperationField, raw: string): unknown {
     });
   }
   if (field.validValues && !field.validValues.includes(raw)) {
+    const privacySafe = field.field.startsWith("glossary_caveat.");
     invalid({
       class: "invalid_choice",
-      message: `argument ${field.flag}: invalid choice: '${raw}' (choose from ${field.validValues.map((v) => `'${v}'`).join(", ")})`,
+      message: privacySafe
+        ? `argument ${field.flag}: invalid bounded glossary caveat value`
+        : `argument ${field.flag}: invalid choice: '${raw}' (choose from ${field.validValues.map((v) => `'${v}'`).join(", ")})`,
       valid_values: field.validValues,
     });
   }

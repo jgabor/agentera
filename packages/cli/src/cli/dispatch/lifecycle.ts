@@ -8,6 +8,7 @@ import { cmdUpgrade, UpgradeArgs, type UpgradeOnlyPhase } from "../commands/upgr
 import { cmdVerify, VerifyArgs } from "../commands/verify.js";
 import { cmdGate } from "../commands/compact.js";
 import { cmdReport, ReportArgs } from "../commands/report.js";
+import { runGlossaryAdviceCommand } from "../commands/glossaryAdvice.js";
 import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
 import { runSessionStart } from "../../hooks/sessionStart.js";
@@ -476,6 +477,20 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
 }
 
 export function runReport(argv: string[], io: Io, prog: string): number {
+  if (argv[0] === "glossary-advice") {
+    if (prog !== "agentera report") {
+      return emitInvalidInput(io, {
+        format: "json",
+        body: {
+          class: "unsupported_target",
+          message: "glossary-advice has no stats alias",
+          valid_values: ["report glossary-advice"],
+          recovery: "Run agentera report glossary-advice --input - --format json; no state was changed.",
+        },
+      });
+    }
+    return runGlossaryAdviceCommand(argv.slice(1), io);
+  }
   if (argv[0] === "profile-grounding") {
     if (prog !== "agentera report") {
       return emitInvalidInput(io, {

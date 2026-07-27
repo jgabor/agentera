@@ -118,3 +118,43 @@ VALIDATION:
     checks:
       - "Sanitized grounding command used after prime startup"
       - "Raw profile path not read"
+  12:
+    id: V12
+    rule: governed_glossary_advice
+    description: >-
+      At initial meaning-sensitive cycle intent and later user-authored changes
+      or clarification answers that can alter intent, Build MUST request bounded
+      advice through `agentera report glossary-advice --input REQUEST --format
+      json`. Unchanged replay, unrelated turns, rendering, and tool output MUST
+      NOT refresh advice.
+    severity: critical
+    checks:
+      - "Exact project authority or proven-gap personal fallback grounds intent"
+      - "Governed changes refresh only the affected meaning"
+      - "Incidental turns and unchanged replay do not refresh"
+  13:
+    id: V13
+    rule: glossary_review_and_autonomy
+    description: >-
+      Interactive Build MUST ask one focused clarification before disputed
+      meaning-sensitive reliance whenever review is required. If autonomous Build
+      cannot pause, it MUST avoid the disputed meaning, proceed conservatively
+      only where safe, and append one idempotent privacy-safe glossary_caveat
+      lifecycle envelope through the typed progress writer.
+    severity: critical
+    checks:
+      - "Clarification precedes meaning-sensitive execution and re-evaluates only the affected meaning"
+      - "Autonomous work does not assume disputed meaning"
+      - "Current, resolved, and superseded caveat events obey opaque identity lifecycle"
+  14:
+    id: V14
+    rule: glossary_publication_isolation
+    description: >-
+      Advice, tension, clarification, and progress caveat lifecycle MUST NOT call
+      `agentera state glossary publish`, create or reuse approval, substitute for
+      digest-bound user confirmation, satisfy decisions or plan state, or grant
+      Discuss or Audit publication authority.
+    severity: critical
+    checks:
+      - "Advice and caveat paths perform zero glossary publication writes"
+      - "Only separately supplied digest-confirmed publication retains Build authority"

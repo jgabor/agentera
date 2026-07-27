@@ -6,6 +6,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { main } from "../../src/cli/dispatch.js";
 import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { runStateList } from "../../src/cli/commands/state/list.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
@@ -33,6 +34,36 @@ function activate(root: string): void {
     path.join(root, ".agentera/state-mode.yaml"),
     "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
   );
+}
+
+function writeProgressEnvelope(root: string, id: string, caveat: unknown): string {
+  const target = path.join(root, ".agentera/entities/progress/progress_cycle", `${id}.yaml`);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, dumpYamlMapping({
+    id,
+    artifact: "progress",
+    record: {
+      timestamp: "2026-07-27 09:30",
+      type: "test",
+      phase: "build",
+      what: "fixture",
+      context: { intent: "validate caveat" },
+      glossary_caveat: caveat,
+    },
+  }));
+  return target;
+}
+
+function validCaveat(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    caveat_id: "caveatidxx",
+    event: "current",
+    capability: "build",
+    reason: "inferred_equivalence",
+    ownership_state: "review_required",
+    transition_id: null,
+    ...overrides,
+  };
 }
 
 function request(
@@ -92,6 +123,111 @@ function expectNoProgressWrite(...projectRoots: string[]): void {
 }
 
 describe("progress entity authority", () => {
+  it("publishes bounded Build caveat lifecycle events idempotently without glossary writes", () => {
+    const root = project(); activate(root);
+    const append = (extra: string[], what = "conservative work") => { let out = ""; let err = ""; const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--type", "feat", "--phase", "build", "--what", what, "--intent", "Avoid disputed terminology", "--verified", "bounded caveat verified", "--format", "json", ...extra], { out: (text) => { out += text; }, err: (text) => { err += text; } }); return { rc, out, err, json: out ? JSON.parse(out) : null }; };
+    const currentFlags = ["--glossary-caveat-event", "current", "--glossary-caveat-reason", "inferred_equivalence", "--glossary-caveat-ownership-state", "review_required"];
+    const current = append(currentFlags);
+    expect(current.rc).toBe(0);
+    expect(current.json.record.glossary_caveat).toEqual({ caveat_id: expect.stringMatching(/^[a-z]{10}$/), event: "current", capability: "build", reason: "inferred_equivalence", ownership_state: "review_required", transition_id: null });
+    const caveatId = current.json.record.glossary_caveat.caveat_id as string;
+    expect(append(currentFlags, "retried work").json).toMatchObject({ id: current.json.id, operation: { idempotent_replay: true } });
+    const successor = append(["--glossary-caveat-event", "current", "--glossary-caveat-reason", "authority_unavailable", "--glossary-caveat-ownership-state", "authority_unavailable"]);
+    const successorId = successor.json.record.glossary_caveat.caveat_id as string;
+    const supersededFlags = ["--glossary-caveat-event", "superseded", "--glossary-caveat-reason", "inferred_equivalence", "--glossary-caveat-ownership-state", "review_required", "--glossary-caveat-id", caveatId, "--glossary-caveat-transition-id", successorId];
+    const superseded = append(supersededFlags);
+    expect(superseded.json.record.glossary_caveat).toMatchObject({ caveat_id: caveatId, event: "superseded", transition_id: successorId });
+    expect(append(supersededFlags).json).toMatchObject({ id: superseded.json.id, operation: { idempotent_replay: true } });
+    const resolvedFlags = ["--glossary-caveat-event", "resolved", "--glossary-caveat-reason", "authority_unavailable", "--glossary-caveat-ownership-state", "authority_unavailable", "--glossary-caveat-id", successorId];
+    expect(append(resolvedFlags).json.record.glossary_caveat).toMatchObject({ caveat_id: successorId, event: "resolved", transition_id: null });
+    expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
+    expect(fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"))).toHaveLength(4);
+  });
+
+  it("rejects private caveat vocabulary without echoing or writing it", () => {
+    const root = project(); activate(root); const trap = "PRIVATE_TERM_MEANING_ANCHOR_PATH_PROVENANCE"; let out = ""; let err = "";
+    const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--type", "feat", "--phase", "build", "--what", "safe", "--intent", "safe", "--glossary-caveat-event", "current", "--glossary-caveat-reason", trap, "--glossary-caveat-ownership-state", "review_required", "--format", "json"], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+    expect(rc).not.toBe(0); expect(out + err).not.toContain(trap); expectNoProgressWrite(root); expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
+  });
+
+  it("distinguishes absent caveats from present-invalid mutation input", () => {
+    const root = project(); activate(root);
+    expect(executeStateWrite(request(root))).toMatchObject({ status: "pass" });
+    for (const glossary_caveat of [
+      null,
+      { event: "current", reason: "inferred_equivalence", ownership_state: "review_required", PRIVATE_TRAP_FIELD: "PRIVATE_TRAP_VALUE" },
+    ]) {
+      const candidate = request(root, "invalid mutation");
+      candidate.values.glossary_caveat = glossary_caveat;
+      expect(() => executeStateWrite(candidate)).toThrow(/glossary caveat mutation/);
+    }
+    expect(fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"))).toHaveLength(1);
+  });
+
+  it.each([
+    ["null envelope", null],
+    ["malformed ID", validCaveat({ caveat_id: "PRIVATE_TRAP_VALUE" })],
+    ["capability", validCaveat({ capability: "PRIVATE_TRAP_VALUE" })],
+    ["reason", validCaveat({ reason: "PRIVATE_TRAP_VALUE" })],
+    ["ownership", validCaveat({ ownership_state: "PRIVATE_TRAP_VALUE" })],
+    ["null reason", validCaveat({ reason: null })],
+    ["over bound", validCaveat({ reason: "P".repeat(65) })],
+    ["current transition", validCaveat({ transition_id: "privatetrap" })],
+    ["superseded null transition", validCaveat({ event: "superseded" })],
+    ["private field", { ...validCaveat(), PRIVATE_TRAP_FIELD: "PRIVATE_TRAP_VALUE" }],
+  ])("fails closed across validation, retrieval, and append for %s", (_name, caveat) => {
+    const root = project();
+    activate(root);
+    executeStateWrite(request(root, "preserved ordinary progress"));
+    writeProgressEnvelope(root, "zzzzzzzzzz", caveat);
+    const before = fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle")).sort();
+
+    const validation = validateEntityState(root);
+    expect(validation.valid).toBe(false);
+    expect(validation.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "malformed_entity", id: "zzzzzzzzzz" }),
+    ]));
+
+    for (const argv of [
+      ["state", "progress", "list", "--format", "json"],
+      ["state", "progress", "get", "--id", "zzzzzzzzzz", "--format", "json"],
+      ["state", "progress", "append", "--type", "test", "--phase", "build", "--what", "blocked", "--intent", "fail before effects", "--format", "json"],
+      ["check", "validate", "state", "--cwd", root, "--format", "json"],
+    ]) {
+      let out = ""; let err = "";
+      const rc = main(["node", "agentera", ...argv, ...(argv[0] === "state" ? ["--project", root] : [])], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+      expect(rc).not.toBe(0);
+      expect(out + err).not.toContain("PRIVATE_TRAP");
+      expect(out + err).not.toContain("P".repeat(65));
+    }
+    expect(fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle")).sort()).toEqual(before);
+    expect(getProgressEntity(root, before.find((name) => name !== "zzzzzzzzzz.yaml")!.replace(".yaml", ""))).toMatchObject({ entry: { record: { what: "preserved ordinary progress" } } });
+  });
+
+  it("marks invalid caveat lifecycle relationships malformed while accepting valid lifecycles", () => {
+    const valid = project(); activate(valid);
+    writeProgressEnvelope(valid, "aaaaaaaaaa", validCaveat({ caveat_id: "firstcavea" }));
+    writeProgressEnvelope(valid, "bbbbbbbbbb", validCaveat({ caveat_id: "firstcavea", event: "resolved" }));
+    writeProgressEnvelope(valid, "cccccccccc", validCaveat({ caveat_id: "nextcaveat", reason: "authority_unavailable", ownership_state: "authority_unavailable" }));
+    writeProgressEnvelope(valid, "dddddddddd", validCaveat({ caveat_id: "oldcaveatx" }));
+    writeProgressEnvelope(valid, "eeeeeeeeee", validCaveat({ caveat_id: "oldcaveatx", event: "superseded", transition_id: "nextcaveat" }));
+    expect(validateEntityState(valid)).toMatchObject({ valid: true, entityCount: 5 });
+
+    const missingCurrent = project(); activate(missingCurrent);
+    writeProgressEnvelope(missingCurrent, "aaaaaaaaaa", validCaveat({ event: "resolved" }));
+    expect(validateEntityState(missingCurrent)).toMatchObject({ valid: false });
+
+    const duplicateCurrent = project(); activate(duplicateCurrent);
+    writeProgressEnvelope(duplicateCurrent, "aaaaaaaaaa", validCaveat());
+    writeProgressEnvelope(duplicateCurrent, "bbbbbbbbbb", validCaveat());
+    expect(validateEntityState(duplicateCurrent)).toMatchObject({ valid: false });
+
+    const missingSuccessor = project(); activate(missingSuccessor);
+    writeProgressEnvelope(missingSuccessor, "aaaaaaaaaa", validCaveat());
+    writeProgressEnvelope(missingSuccessor, "bbbbbbbbbb", validCaveat({ event: "superseded", transition_id: "nextcaveat" }));
+    expect(validateEntityState(missingSuccessor)).toMatchObject({ valid: false });
+  });
+
   it("requires entity authority and never publishes a marker-absent aggregate", () => {
     const legacy = project();
     expect(detectStateMode(legacy)).toBe("legacy");

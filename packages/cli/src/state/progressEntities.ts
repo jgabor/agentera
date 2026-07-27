@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomInt } from "node:crypto";
 
 import YAML from "yaml";
 
@@ -14,6 +15,7 @@ import {
   assertEntityDiscoveryOrigin,
   discoverEntities,
   publishEntity,
+  publishEntityUnderLock,
   type DiscoveredEntity,
 } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
@@ -21,6 +23,14 @@ import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEnti
 import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
 import { localTimestamp } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
+import {
+  glossaryCaveatContract,
+  type GlossaryCaveatContract,
+} from "../registries/glossaryCaveatContract.js";
+import {
+  validateProgressGlossaryCaveat,
+  type GlossaryCaveatEnvelope,
+} from "./progressGlossaryCaveat.js";
 
 const ARTIFACT = "progress";
 const BOUNDARY = "progress_cycle";
@@ -60,6 +70,75 @@ export interface AppendProgressEntityOptions {
 
 function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function opaqueCaveatId(existing: Set<string>, contract: GlossaryCaveatContract): string {
+  const alphabet = contract.idAlphabet;
+  for (;;) {
+    let id = "";
+    for (let index = 0; index < contract.idLength; index += 1)
+      id += alphabet[randomInt(alphabet.length)];
+    if (!existing.has(id)) return id;
+  }
+}
+
+function prepareGlossaryCaveat(
+  values: Record<string, unknown>,
+  discovery: ReturnType<typeof discoverEntities>,
+  contract: GlossaryCaveatContract,
+): { caveat?: GlossaryCaveatEnvelope; replay?: DiscoveredEntity } {
+  if (!Object.prototype.hasOwnProperty.call(values, "glossary_caveat")) return {};
+  if (!mapping(values.glossary_caveat))
+    throw new Error("glossary caveat mutation must be one privacy-safe mapping");
+  const requested = values.glossary_caveat;
+  const mutationFields = contract.fields.filter((field) => field !== "capability");
+  if (Object.keys(requested).some((field) => !mutationFields.includes(field)))
+    throw new Error("glossary caveat mutation contains a non-contract field");
+  const event = String(requested.event ?? "");
+  const reason = String(requested.reason ?? "");
+  const ownership = String(requested.ownership_state ?? "");
+  if (
+    !contract.events.includes(event) ||
+    !contract.reasons.includes(reason) ||
+    !contract.ownershipStates.includes(ownership)
+  )
+    throw new Error("glossary caveat requires contract-declared event, reason, and ownership state");
+  const entities = discovery.entities.filter((entity) => entity.classification === "valid" && entity.artifact === ARTIFACT && entity.boundary === BOUNDARY);
+  const rows = entities.flatMap((entity) => {
+    const parsed = validateProgressGlossaryCaveat(entity.record!, contract);
+    return parsed.status === "valid" ? [{ entity, caveat: parsed.caveat }] : [];
+  });
+  const terminalIds = new Set(rows.filter(({ caveat }) => caveat.event !== "current").map(({ caveat }) => caveat.caveat_id));
+  const open = rows.filter(({ caveat }) => caveat.event === "current" && !terminalIds.has(caveat.caveat_id));
+  if (event === "current") {
+    if (requested.caveat_id !== undefined || requested.transition_id !== undefined) throw new Error("current glossary caveat identity is CLI-assigned and has no transition identity");
+    const replay = open.find(({ caveat }) => caveat.reason === reason && caveat.ownership_state === ownership);
+    if (replay) return { replay: replay.entity };
+    const caveat_id = opaqueCaveatId(
+      new Set(
+        rows.flatMap(({ caveat }) =>
+          [caveat.caveat_id, caveat.transition_id].filter((id): id is string => id !== null),
+        ),
+      ),
+      contract,
+    );
+    return { caveat: { ...requested, caveat_id, event, capability: "build", reason, ownership_state: ownership, transition_id: null } as GlossaryCaveatEnvelope };
+  }
+  const caveatId = String(requested.caveat_id ?? "");
+  if (!contract.idPattern.test(caveatId))
+    throw new Error("terminal glossary caveat requires one opaque caveat ID");
+  const existingTerminal = rows.find(({ caveat }) => caveat.caveat_id === caveatId && caveat.event === event && caveat.reason === reason && caveat.ownership_state === ownership && caveat.transition_id === (requested.transition_id ?? null));
+  if (existingTerminal) return { replay: existingTerminal.entity };
+  const current = open.find(({ caveat }) => caveat.caveat_id === caveatId);
+  if (!current || current.caveat.reason !== reason || current.caveat.ownership_state !== ownership) throw new Error("terminal glossary caveat must match one current caveat identity and vocabulary");
+  if (event === "resolved") {
+    if (requested.transition_id !== undefined) throw new Error("resolved glossary caveat cannot have a transition identity");
+    return { caveat: { ...requested, ...current.caveat, event, transition_id: null } };
+  }
+  if (event !== "superseded") throw new Error("glossary caveat event is invalid");
+  const transitionId = String(requested.transition_id ?? "");
+  if (!contract.idPattern.test(transitionId) || transitionId === caveatId || !open.some(({ caveat }) => caveat.caveat_id === transitionId)) throw new Error("superseded glossary caveat requires one different current successor identity");
+  return { caveat: { ...requested, ...current.caveat, event, transition_id: transitionId } };
 }
 
 function positive(value: unknown, field: string): number {
@@ -137,7 +216,10 @@ function listFailure(
   return result;
 }
 
-function progressRecord(values: Record<string, unknown>): JsonObject {
+function progressRecord(
+  values: Record<string, unknown>,
+  caveatContract: GlossaryCaveatContract,
+): JsonObject {
   const context = mapping(values.context) ? values.context : {};
   const record: JsonObject = {
     timestamp: typeof values.timestamp === "string" ? values.timestamp : localTimestamp(),
@@ -153,6 +235,10 @@ function progressRecord(values: Record<string, unknown>): JsonObject {
     if (typeof context[field] === "string")
       (record.context as JsonObject)[field] = context[field] as string;
   }
+  if (Object.prototype.hasOwnProperty.call(values, "glossary_caveat"))
+    record.glossary_caveat = values.glossary_caveat as JsonObject;
+  const caveat = validateProgressGlossaryCaveat(record, caveatContract);
+  if (caveat.status === "invalid") throw new Error(caveat.violations.join("; "));
   if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp)))
     throw new Error("progress entity timestamp must use YYYY-MM-DD HH:MM");
   if (!record.type || !record.phase || !record.what || !(record.context as JsonObject).intent)
@@ -170,7 +256,17 @@ export function appendProgressEntity(
 ): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const contract = progressContract(sourceRoot);
-  const record = progressRecord(req.values);
+  const discovery = discoverEntities(req.projectRoot, sourceRoot);
+  sortedProgress(discovery);
+  const caveatContract = glossaryCaveatContract(
+    path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
+  );
+  const prepared = prepareGlossaryCaveat(req.values, discovery, caveatContract);
+  if (prepared.replay) {
+    return { schemaVersion: "agentera.stateWrite.v1", command: "state progress append", status: "pass", path: prepared.replay.path, id: prepared.replay.id as string, artifact: ARTIFACT, record: prepared.replay.record as JsonObject, operation: { verb: "append", dry_run: req.dryRun, idempotent_replay: true }, validation: { status: "pass", violations: [] } };
+  }
+  if (prepared.caveat) req.values.glossary_caveat = prepared.caveat;
+  const record = progressRecord(req.values, caveatContract);
   if (req.dryRun) {
     options.publicationContext?.assertValid();
     const allocationRoot = options.publicationContext?.pinnedPath() ?? req.projectRoot;
@@ -195,24 +291,21 @@ export function appendProgressEntity(
       validation: { status: "pass", violations: [] },
     };
   }
-  const published = options.id
-    ? publishEntity({
+  const publicationRequest = {
         projectRoot: req.projectRoot,
         sourceRoot,
         publicationContext: options.publicationContext,
         artifact: ARTIFACT,
         boundary: BOUNDARY,
-        id: options.id,
         record,
-      })
-    : allocateAndPublishEntity(
+      };
+  const published = options.publicationContext
+    ? publishEntityUnderLock({ ...publicationRequest, id: options.id ?? allocateEntityId(options.publicationContext.pinnedPath(), options.candidate, sourceRoot) })
+    : options.id
+      ? publishEntity({ ...publicationRequest, id: options.id })
+      : allocateAndPublishEntity(
         {
-          projectRoot: req.projectRoot,
-          sourceRoot,
-          publicationContext: options.publicationContext,
-          artifact: ARTIFACT,
-          boundary: BOUNDARY,
-          record,
+          ...publicationRequest,
         },
         options.candidate,
       );

@@ -82,6 +82,11 @@ describe("shared glossary advice resolution", () => {
     expect(contract).toMatchObject({
       implementation: "active",
       runtime: "packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice",
+      command: "agentera report glossary-advice --input REQUEST --format json",
+      requestSchemaVersion: "agentera.glossaryAdviceRequest.v1",
+      requestFields: ["schema_version", "requested_term", "host_review"],
+      maxRequestUtf8Bytes: 131072,
+      hostReviewFields: ["relation", "candidate_owner", "candidate_term"],
       hostReviewRelations: ["inferred_equivalence"],
       hostReviewCandidateOwners: ["personal"],
       schemaVersion: "agentera.glossaryAdvice.v1",

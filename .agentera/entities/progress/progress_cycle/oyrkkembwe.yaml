@@ -1,0 +1,16 @@
+id: oyrkkembwe
+artifact: progress
+record:
+  timestamp: 2026-07-27 09:45
+  type: fix
+  phase: build
+  what: Made malformed glossary caveats fail closed across canonical progress validation, retrieval, and mutation.
+  context:
+    intent: Correct Audit ses_05d95ca21ffe8ksqffiAYDooc5 findings without changing Build advice, publication isolation, or deferred integrations.
+    constraints: No task completion/evaluation, decisions, TODO, other capability integration, publication, commit, tag, or push.
+    unknowns: None within the accepted Audit corrections.
+    scope: Shared caveat contract/validator, progress entity validation/retrieval/writer preflight, authority summaries, adversarial and concurrent regressions.
+  inspiration: Active Plan task aibhqqgbsp retry after independent Audit failure.
+  discovered: The source monolith gate required keeping entityStorage.ts at 1000 lines; caveat lifecycle diagnostics moved into the shared validator module. The formatter check remains blocked by the intentionally invalid YAML fixture.
+  verified: 276 focused tests passed; full source passed 2,940 tests with one skip; typecheck, build, verify:package (16 tests), state/Build/cross-capability/vocabulary/capability-contract validators, compact, lint, and git diff --check passed. Formatter check was run and failed only at test/fixtures/repo-state/invalid-progress-yaml/.agentera/progress.yaml.
+  next: Prime should re-audit and commit the Build-only correction; Discuss, Plan, and prime integration remain deferred.

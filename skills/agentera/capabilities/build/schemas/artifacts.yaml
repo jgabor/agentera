@@ -28,7 +28,8 @@ ARTIFACTS:
     artifact: progress
     local_role: produces_and_consumes
     description: >-
-      Operational cycle log. Build consumes latest progress evidence from
+      Operational cycle log and the sole durable channel for bounded autonomous
+      glossary caveat lifecycle evidence. Build consumes latest progress evidence from
       execution_context first, then bounded `agentera state progress list --limit
        20 --format json` discovery or exact `state progress get --id ID`
       retrieval, and appends one entry per cycle with mandatory Verified field.
@@ -93,6 +94,9 @@ ARTIFACTS:
       through `agentera state glossary publish --input REQUEST`. The typed writer
       revalidates audit source evidence and atomically records the immutable
       approval beside the shared-only project entry. Build does not consume the
-      glossary only to validate replay and preserve unrelated publication state;
-      it performs no terminology lookup and does not mutate personal profiles or
-      docs mappings.
+      glossary only to validate replay and preserve unrelated publication state.
+      Separately, at governed meaning-sensitive Build events it requests bounded
+      read-only advice through `agentera report glossary-advice --input REQUEST
+      --format json`. Advice and progress caveats never publish terminology,
+      approve a proposal, reuse confirmation, mutate personal profiles or docs
+      mappings, or grant publication authority to another capability.

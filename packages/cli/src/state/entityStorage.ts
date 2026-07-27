@@ -17,10 +17,10 @@ import { validateCompactedSummarySourceRowAuthority } from "./summarySourceRowAu
 import { acquireWriterLock } from "./write/lock.js";
 import { planTaskRecordViolations } from "./write/planEvaluation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
-
+import { glossaryCaveatContract, type GlossaryCaveatContract } from "../registries/glossaryCaveatContract.js";
+import { applyGlossaryCaveatLifecycleValidation, validateProgressGlossaryCaveat } from "./progressGlossaryCaveat.js";
 const MAX_DIAGNOSTICS = 100;
 const heldEntityWriterLocks = new Set<string>();
-
 interface EntityDefinition {
   boundary: string;
   artifact: string;
@@ -59,9 +59,9 @@ interface EntityAuthority {
   artifacts: string[];
   byBoundary: Map<string, EntityDefinition>;
   forbiddenAliases: string[];
+  glossaryCaveat: GlossaryCaveatContract;
 }
 export type EntityClassification = "valid" | "duplicate" | "malformed" | "unsafe";
-
 export interface EntityDiagnostic {
   code: "duplicate_id" | "malformed_entity" | "unsafe_path" | "invalid_artifact" | "conflicting_ownership" | "unresolved_relation";
   path: string;
@@ -73,7 +73,6 @@ export interface EntityDiagnostic {
   relation?: string;
   targetId?: string;
 }
-
 export interface DiscoveredEntity {
   id: string | null;
   artifact: string | null;
@@ -84,7 +83,6 @@ export interface DiscoveredEntity {
   relativePath: string;
   classification: EntityClassification;
 }
-
 export function exactDiscoveredEntityBytes(entity: DiscoveredEntity): Buffer { if (entity.discoveredBytes === null) throw new Error(`entity '${entity.relativePath}' has no exact discovery-byte baseline`); return entity.discoveredBytes; }
 export interface EntityDiscoveryResult {
   origin: {
@@ -95,7 +93,6 @@ export interface EntityDiscoveryResult {
   issues: EntityDiagnostic[];
   validArtifactValues: string[];
 }
-
 export interface EntityValidationResult extends EntityDiscoveryResult {
   valid: boolean;
   entityCount: number;
@@ -282,6 +279,7 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     artifacts: [...new Set(entities.map(({ artifact }) => artifact))].sort(),
     byBoundary: new Map(entities.map((entity) => [entity.boundary, entity])),
     forbiddenAliases: strings(target.public_schema.forbidden_canonical_aliases),
+    glossaryCaveat: glossaryCaveatContract(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml")),
   };
 }
 
@@ -325,6 +323,7 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
     ...missingPaths.map((field) => `${field} is required by the canonical ${boundary} record contract`),
     ...forbidden.map((field) => `${field} is forbidden by the canonical entity authority`),
     ...shapeViolations,
+    ...(boundary === "progress_cycle" ? validateProgressGlossaryCaveat(record, model.glossaryCaveat).violations : []),
     ...(definition.summaryMigrationProvenance ? summaryMigrationProvenanceViolations(boundary, record, definition.summaryMigrationProvenance, model.forbiddenAliases, sourceBinding) : []),
   ];
 }
@@ -617,6 +616,7 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string, sourc
       });
     }
   }
+  applyGlossaryCaveatLifecycleValidation(root, entities, issues, model.glossaryCaveat);
   const rank: Record<EntityClassification, number> = { duplicate: 0, malformed: 1, unsafe: 2, valid: 3 };
   entities.sort((left, right) => rank[left.classification] - rank[right.classification] || left.relativePath.localeCompare(right.relativePath));
   issues.sort(diagnosticSort);

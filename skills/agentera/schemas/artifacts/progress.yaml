@@ -4,9 +4,10 @@
 # in one development cycle: phase, work done, discoveries, verification,
 # next steps, and context envelope.
 #
-# The optional glossary_caveat envelope is contract-active but its writer and
-# readers are declared deferred. Build remains the sole progress producer; Plan
-# may only hand the bounded envelope to Build and never persists it in plan state.
+# The optional glossary_caveat envelope and Build writer are active. Readers and
+# non-Build capability integrations remain declared deferred. Build remains the
+# sole progress producer; Plan may only hand the bounded envelope to Build and
+# never persists it in plan state.
 #
 # The active authority is one progress_cycle entity per writer-owned file. The
 # numbered projection model below is retained only as an exact legacy migration
@@ -238,7 +239,7 @@ CYCLE:
     field: glossary_caveat
     type: mapping
     required: false
-    implementation_status: declared_deferred
+    implementation_status: active_build
     authority: references/artifacts/glossary-entry-contract.yaml#consumer_boundary.autonomous_caveat
     description: >-
       Privacy-safe autonomous glossary-review lifecycle evidence. Build alone
@@ -248,7 +249,9 @@ CYCLE:
 
 GLOSSARY_CAVEAT:
   schema_version: agentera.glossaryConsumerCaveat.v1
-  implementation_status: declared_deferred
+  implementation_status: active_build
+  envelope_validator: packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat
+  lifecycle_validator: packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities
   fields:
     caveat_id:
       type: opaque_non_content_id

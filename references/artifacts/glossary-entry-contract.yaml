@@ -3,8 +3,9 @@ status: active_authority
 purpose: >-
   Define glossary entry semantics once, specialize evidence ownership for
   personal and project entries, and declare one consumer-semantics and caveat
-  lifecycle contract with bounded acquisition and shared advice resolution
-  active while capability integrations remain deferred.
+  lifecycle contract with bounded acquisition and shared advice resolution.
+  Build consumption and caveat publication are active; Discuss, Plan, and prime
+  integration remain deferred.
 
 authority:
   source: references/artifacts/glossary-entry-contract.yaml
@@ -391,7 +392,11 @@ consumer_boundary:
   implementation:
     acquisition: active
     advice_resolution: active
-    capability_integrations: declared_deferred
+    capability_integrations:
+      build: active
+      discuss: declared_deferred
+      plan: declared_deferred
+      prime: declared_deferred
   forbidden_persisted_entry_fields: [precedence, collision, review]
   deterministic_judgments:
     term_identity: unicode_caseless_exact_no_normalization
@@ -514,6 +519,20 @@ consumer_boundary:
     implementation: active
     runtime: packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice
     mutation: forbidden
+    invocation:
+      command: agentera report glossary-advice --input REQUEST --format json
+      request_schema_version: agentera.glossaryAdviceRequest.v1
+      request_fields: [schema_version, requested_term, host_review]
+      max_request_utf8_bytes: 131072
+      acquisition: internal_bounded_owned_sources
+      project_root: current_working_directory
+      profile_path: canonical_registry_resolution
+      output_envelope_fields: [schemaVersion, command, status, advice]
+      rule: >-
+        Consumers send the requested term and optional host review through one
+        structured stdin or file request. The CLI acquires both owned sources;
+        callers never read raw project glossary or profile files. The command is
+        read-only, headless, JSON-only, and never refreshes either source.
     input:
       fields: [requested_term, acquired, host_review]
       requested_term_utf8_bound: consumer_boundary.acquisition.bounds.max_source_utf8_bytes
@@ -764,10 +783,17 @@ consumer_boundary:
     authority: skills/agentera/schemas/artifacts/progress.yaml#ENTITY_AUTHORITY
     publication_command: agentera state progress append
     publication_boundary: progress_cycle.glossary_caveat
-    publication_status: declared_deferred
+    publication_status: active_build
+    writer_runtime: packages/cli/src/state/progressEntities.ts#appendProgressEntity
+    writer_interface: agentera state progress explain --verb append --format json
+    envelope_validator: packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat
+    lifecycle_validator: packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities
     identity:
       field: caveat_id
       type: opaque_non_content_id
+      alphabet: abcdefghijklmnopqrstuvwxyz
+      length: 10
+      pattern: '^[a-z]{10}$'
       rule: >-
         Assign a fresh opaque ID for a current caveat and carry it unchanged to
         its matching terminal event. The ID must not encode a term, meaning,
@@ -775,9 +801,16 @@ consumer_boundary:
     envelope:
       schema_version: agentera.glossaryConsumerCaveat.v1
       fields: [caveat_id, event, capability, reason, ownership_state, transition_id]
+      additional_fields: forbidden
+      max_string_utf8_bytes: 64
+      events: [current, resolved, superseded]
       capabilities: [discuss, plan, build]
       reasons: [inferred_equivalence, authority_unavailable, personal_input_unavailable]
       ownership_states: [project_governs_exact, review_required, authority_unavailable]
+      transition_rule: >-
+        current and resolved require null transition_id. Superseded requires one
+        different opaque successor caveat_id. Every field is required; only
+        transition_id may be null.
     lifecycle:
       current: >-
         Append current once when autonomous meaning-sensitive work cannot pause
@@ -861,9 +894,10 @@ consumer_boundary:
     precedence: forbidden
   rule: >-
     Audit remains mutation-free and Build project-glossary publication is active.
-    Personal Profile Full rendering and persistence are active. Glossary lookup,
-    precedence, semantic-equivalence review, project-driven personal-profile
-    mutation, and docs-mapping mutation remain deferred.
+    Build bounded glossary consumption and progress caveat publication are also
+    active. Personal Profile Full rendering and persistence are active. Discuss,
+    Plan, and prime integration, project-driven personal-profile mutation, and
+    docs-mapping mutation remain deferred.
 
 deferred_capability_contracts:
   profile:
@@ -924,6 +958,10 @@ deferred_capability_contracts:
       [lookup, precedence, review, personal_profile_mutation, docs_mapping_mutation]
   consumers:
     capabilities: [discuss, plan, build]
-    implementation: declared_deferred
+    implementation:
+      build: active
+      discuss: declared_deferred
+      plan: declared_deferred
+      prime: declared_deferred
     behavior: consumer_boundary
-    forbidden_current_claims: [lookup, precedence, review]
+    forbidden_current_claims: [discuss_integration, plan_integration, prime_projection]

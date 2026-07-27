@@ -24,11 +24,16 @@ export interface GlossaryAdviceAdvisory {
 export interface GlossaryAdviceContract {
   implementation: string;
   runtime: string;
+  command: string;
+  requestSchemaVersion: string;
+  requestFields: string[];
+  maxRequestUtf8Bytes: number;
   maxRequestedTermUtf8Bytes: number;
   maxEntries: number;
   availabilityStates: string[];
   hostReviewRelations: string[];
   hostReviewCandidateOwners: string[];
+  hostReviewFields: string[];
   schemaVersion: string;
   outputFields: string[];
   advisoryFields: string[];
@@ -58,6 +63,7 @@ export function glossaryAdviceContract(
   const availability = mapping(acquisition?.availability);
   const advice = mapping(consumer?.advice_resolution);
   const input = mapping(advice?.input);
+  const invocation = mapping(advice?.invocation);
   const hostReview = mapping(input?.host_review);
   const output = mapping(advice?.output);
   const failure = mapping(advice?.failure);
@@ -67,6 +73,12 @@ export function glossaryAdviceContract(
   return {
     implementation: typeof advice?.implementation === "string" ? advice.implementation : "",
     runtime: typeof advice?.runtime === "string" ? advice.runtime : "",
+    command: typeof invocation?.command === "string" ? invocation.command : "",
+    requestSchemaVersion:
+      typeof invocation?.request_schema_version === "string" ? invocation.request_schema_version : "",
+    requestFields: strings(invocation?.request_fields),
+    maxRequestUtf8Bytes:
+      typeof invocation?.max_request_utf8_bytes === "number" ? invocation.max_request_utf8_bytes : 0,
     maxRequestedTermUtf8Bytes:
       typeof acquisitionBounds?.max_source_utf8_bytes === "number"
         ? acquisitionBounds.max_source_utf8_bytes
@@ -76,6 +88,7 @@ export function glossaryAdviceContract(
     availabilityStates: strings(availability?.states),
     hostReviewRelations: strings(hostReview?.relations),
     hostReviewCandidateOwners: strings(hostReview?.candidate_owners),
+    hostReviewFields: strings(hostReview?.fields),
     schemaVersion: typeof output?.schema_version === "string" ? output.schema_version : "",
     outputFields: strings(output?.fields),
     advisoryFields: strings(output?.advisory_fields),

@@ -4,7 +4,7 @@ record:
   name: Integrate Build disambiguation and publication isolation
   depends_on:
     - jthktiznyn
-  status: pending
+  status: complete
   acceptance:
     - GIVEN an exact project term or proven project-gap personal term at a governed Build event WHEN cycle intent is established THEN the correct authority grounds meaning-sensitive work.
     - GIVEN review is required WHEN interaction is available THEN Build requests clarification before executing meaning-sensitive work.
@@ -12,3 +12,13 @@ record:
     - GIVEN advice, tension, or clarification WHEN publication boundaries are inspected THEN none invokes publication, creates or reuses approval, substitutes for digest-bound confirmation, or grants Discuss or Audit publication authority.
     - GIVEN proportional cycles WHEN behavior is verified THEN authority, fallback, review, autonomy, privacy, no-refresh, and zero-write publication cases pass.
   plan: upicwqdskc
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Malformed persisted glossary caveat envelopes are treated as absent, pass state validation, leak raw values through progress reads, and do not block writes; vocabulary authority prose also still says all Build consumption is deferred despite structured active status.
+    provenance:
+      attempt_id: build-glossary-integration-audit-2
+      source: Audit ses_05d95ca21ffe8ksqffiAYDooc5 bounded re-review PASS
+      recorded_at: 2026-07-27 09:54
+      writer_command: agentera state plan record-evaluation

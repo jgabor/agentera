@@ -45,6 +45,7 @@ function runProcess(
   project: string,
   artifact: "progress" | "decisions",
   suffix: string,
+  caveat = false,
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
   const args =
     artifact === "progress"
@@ -64,6 +65,16 @@ function runProcess(
           "prove serialization",
           "--format",
           "json",
+          ...(caveat
+            ? [
+                "--glossary-caveat-event",
+                "current",
+                "--glossary-caveat-reason",
+                "inferred_equivalence",
+                "--glossary-caveat-ownership-state",
+                "review_required",
+              ]
+            : []),
         ]
       : [
           "state",
@@ -111,6 +122,24 @@ function entityProject(prefix: string): string {
 }
 
 describe("real-process writer serialization", () => {
+  it("serializes concurrent current caveat replay to one progress entity", async () => {
+    const project = entityProject("agentera-writer-caveat-");
+    try {
+      const results = await Promise.all([
+        runProcess(project, "progress", "one", true),
+        runProcess(project, "progress", "two", true),
+      ]);
+      expect(results.map((result) => result.code), JSON.stringify(results)).toEqual([0, 0]);
+      const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
+      expect(fs.readdirSync(directory)).toHaveLength(1);
+      const payloads = results.map((result) => JSON.parse(result.stdout));
+      expect(new Set(payloads.map((payload) => payload.id)).size).toBe(1);
+      expect(payloads.filter((payload) => payload.operation.idempotent_replay)).toHaveLength(1);
+    } finally {
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+
   it("serializes same-artifact entity writers without lost entries or duplicate IDs", async () => {
     const project = entityProject("agentera-writer-same-");
     try {

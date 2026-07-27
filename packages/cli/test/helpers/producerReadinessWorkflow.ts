@@ -49,7 +49,7 @@ export interface ProducerReadinessObservation {
     producerTermsHidden: boolean;
     personalStatus: string;
     projectStatus: string;
-    consumerStatus: string;
+    consumerStatus: Record<string, string>;
     inactiveConsumerBehavior: string[];
   };
 }
@@ -440,7 +440,7 @@ export const EXPECTED_PRODUCER_READINESS: ProducerReadinessObservation = {
     producerTermsHidden: true,
     personalStatus: "active_partial",
     projectStatus: "active",
-    consumerStatus: "declared_deferred",
+    consumerStatus: { build: "active", discuss: "declared_deferred", plan: "declared_deferred", prime: "declared_deferred" },
     inactiveConsumerBehavior: ["lookup", "precedence", "semantic_equivalence_review"],
   },
 };

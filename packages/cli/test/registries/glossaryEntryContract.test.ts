@@ -155,7 +155,7 @@ describe("shared glossary entry authority", () => {
     });
   });
 
-  it("aligns authority, Audit validation, and shipped instructions on active publication and deferred consumers", () => {
+  it("aligns active Build consumption with mutation-free Audit and deferred non-Build integrations", () => {
     const authority = fs.readFileSync(glossaryEntryAuthorityPath(), "utf8");
     const validation = fs.readFileSync(
       path.resolve(
@@ -169,23 +169,26 @@ describe("shared glossary entry authority", () => {
         /Audit remains mutation-free|mutation-free, read-only|mutation-free and read-only/,
       );
       expect(surface).toMatch(/Build project-glossary\s+publication is active/);
-      expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
       expect(surface).toMatch(
         /profile mutation|personal-profile mutation|personal-profile\s+mutation/,
       );
       expect(surface).toMatch(/docs-mapping\s+mutation/);
       expect(surface).not.toMatch(/project glossary production and persistence.*deferred/i);
     }
+    for (const surface of [validation, auditInstructions])
+      expect(surface).toMatch(/lookup[\s\S]*precedence[\s\S]*semantic-equivalence review/);
+    expect(authority).toMatch(/Build bounded glossary consumption[\s\S]*active/);
+    expect(authority).toMatch(/Discuss,[\s\S]*Plan,[\s\S]*prime integration[\s\S]*remain deferred/);
   });
 
-  it("loads active bounded acquisition and advice while capability integrations remain deferred", () => {
+  it("loads active bounded acquisition and Build advice while other integrations remain deferred", () => {
     expect(glossaryConsumerContract()).toEqual({
       contractStatus: "active",
       implementation: {
         acquisition: "active",
         advice_resolution: "active",
-        capability_integrations: "declared_deferred",
       },
+      capabilityIntegrations: { build: "active", discuss: "declared_deferred", plan: "declared_deferred", prime: "declared_deferred" },
       outcomes: [
         "invalid_or_unavailable_project",
         "equivalent_exact_collision",

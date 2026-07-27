@@ -11,6 +11,19 @@ Build appends progress with \`agentera state progress append\`, advances a plan 
 ## Workflow phases: The cycle`)
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")
+  .replace("Use `status.profile` for profile summary; stale or missing profile is a caveat, not approval to refresh profile state.", `Use \`status.profile\` for profile summary; stale or missing profile is a caveat, not approval to refresh profile state.
+
+#### Governed terminology advice
+
+At initial meaning-sensitive cycle intent, request acquisition and advice with the structured, headless interface declared by \`agentera report glossary-advice --help\` and the vocabulary authority. Repeat only when a later user-authored requirement, intent, acceptance change, cycle-intent change, or clarification answer can alter the affected meaning. Do not refresh for unchanged replay, unrelated turns, background rereads, rendering, or tool output.
+
+Use only \`advice.applicable_meaning\` with \`advice.applicable_owner\`: an exact project entry governs, including an exact divergent collision, while a personal entry applies only after the CLI proves a valid project gap. Invalid or unavailable acquisition abstains; never fabricate fallback. Preserve bounded tension without changing authority.
+
+When \`review\` requires acknowledgment before disputed reliance and interaction is available, ask one focused clarification before meaning-sensitive execution. Re-run advice only for that affected meaning using the clarification answer and an authority-declared host review when applicable. Clarification is not approval or publication consent.
+
+When autonomous or no-pause execution cannot resolve required review, do not use the disputed meaning. Continue only conservatively safe work and append one Build-owned \`glossary_caveat\` current event through \`agentera state progress append\`; discover its exact flags with \`agentera state progress explain --verb append --format json\`. The writer assigns an opaque caveat identity, suppresses duplicate current events, and supports explicit resolved or superseded lifecycle events after a governed refresh. Never put a term, meaning, definition, anchor, path, raw section, provenance, or clock expiry in the caveat.
+
+Advice, tension, clarification, and caveat lifecycle never call \`agentera state glossary publish\`, create or reuse an approval, replace proposal-digest confirmation, satisfy decisions or plan state, or grant Discuss or Audit publication authority. Explicit project publication remains the separate Build-owned digest-confirmed operation.`)
   .replaceAll("progress.yaml aggregate cycle entry", "progress entity record")
   .replace("Every cycle runs the effective profile.", "Every cycle uses only the sanitized non-glossary profile content returned by `agentera report profile-grounding --format json`.")
   .replaceAll("**Dual-write**: build maintains `.agentera/progress.yaml` and root `CHANGELOG.md`.", "Build records entity progress through the typed writer and maintains root `CHANGELOG.md` separately.")

@@ -159,7 +159,7 @@ describe("cli validate (delegated families)", () => {
     expect(implementation).toEqual({
       acquisition: "active",
       advice_resolution: "active",
-      capability_integrations: "declared_deferred",
+      capability_integrations: { build: "active", discuss: "declared_deferred", plan: "declared_deferred", prime: "declared_deferred" },
     });
   });
 
@@ -182,7 +182,7 @@ describe("cli validate (delegated families)", () => {
       expect(implementation).toEqual({
         acquisition: "active",
         advice_resolution: "active",
-        capability_integrations: "declared_deferred",
+        capability_integrations: { build: "active", discuss: "declared_deferred", plan: "declared_deferred", prime: "declared_deferred" },
       });
     },
   );

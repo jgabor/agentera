@@ -1,5 +1,6 @@
 import type { JsonObject } from "../../core/jsonValue.js";
 import { loadTodoReadinessContract } from "../../registries/todoReadinessContract.js";
+import { glossaryCaveatContract } from "../../registries/glossaryCaveatContract.js";
 
 export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs", "glossary"] as const;
 export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
@@ -76,6 +77,8 @@ const todoReadinessFields: OperationField[] = [
 const EXISTING_DECISION_NUMBER_DESCRIPTION =
   "Existing decision number to update or amend. Caller-selected: it must match a numbered decision in the active projection or numbered archive and is never assigned by the CLI.";
 
+const glossaryCaveat = glossaryCaveatContract();
+
 const progressAppend: OperationField[] = [
   {
     flag: "--type",
@@ -94,6 +97,11 @@ const progressAppend: OperationField[] = [
   { flag: "--what", field: "what", kind: "string", required: true },
   { flag: "--intent", field: "context.intent", kind: "string", required: true },
   { flag: "--timestamp", field: "timestamp", kind: "datetime", required: false },
+  { flag: "--glossary-caveat-event", field: "glossary_caveat.event", kind: "string", validValues: glossaryCaveat.events, description: "Build-owned glossary caveat lifecycle event. Other caveat flags are conditionally required; identity is CLI-assigned for current." },
+  { flag: "--glossary-caveat-reason", field: "glossary_caveat.reason", kind: "string", validValues: glossaryCaveat.reasons, description: "Bounded glossary caveat reason; never include a term, meaning, path, anchor, or provenance." },
+  { flag: "--glossary-caveat-ownership-state", field: "glossary_caveat.ownership_state", kind: "string", validValues: glossaryCaveat.ownershipStates, description: "Bounded authority state for the glossary caveat." },
+  { flag: "--glossary-caveat-id", field: "glossary_caveat.caveat_id", kind: "string", description: "Existing opaque caveat identity for resolved or superseded; forbidden for current." },
+  { flag: "--glossary-caveat-transition-id", field: "glossary_caveat.transition_id", kind: "string", description: "Fresh successor caveat identity for superseded; forbidden for current and resolved." },
   { flag: "--inspiration", field: "inspiration", kind: "string" },
   { flag: "--discovered", field: "discovered", kind: "string" },
   { flag: "--verified", field: "verified", kind: "string" },

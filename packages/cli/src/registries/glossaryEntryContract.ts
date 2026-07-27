@@ -54,6 +54,7 @@ export interface PersonalProfileGroundingContract {
 export interface GlossaryConsumerContract {
   contractStatus: string;
   implementation: Record<string, string>;
+  capabilityIntegrations: Record<string, string>;
   outcomes: string[];
   refreshRequired: string[];
   refreshNotRequired: string[];
@@ -155,6 +156,7 @@ export function glossaryConsumerContract(
 ): GlossaryConsumerContract {
   const consumer = mapping(contract(pathname).consumer_boundary);
   const implementation = mapping(consumer?.implementation);
+  const integrations = mapping(implementation?.capability_integrations);
   const matrix = mapping(consumer?.outcome_matrix);
   const refresh = mapping(consumer?.refresh_events);
   const disclosure = mapping(consumer?.disclosure);
@@ -167,6 +169,11 @@ export function glossaryConsumerContract(
     contractStatus: typeof consumer?.contract_status === "string" ? consumer.contract_status : "",
     implementation: Object.fromEntries(
       Object.entries(implementation ?? {}).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
+    capabilityIntegrations: Object.fromEntries(
+      Object.entries(integrations ?? {}).filter(
         (entry): entry is [string, string] => typeof entry[1] === "string",
       ),
     ),
@@ -764,13 +771,17 @@ export function validateGlossaryEntryContract(
     errors.push("build must own only active typed glossary publication");
   }
   const consumers = mapping(capabilities?.consumers);
+  const consumerImplementations = mapping(consumers?.implementation);
   if (
-    consumers?.implementation !== "declared_deferred" ||
+    consumerImplementations?.build !== "active" ||
+    consumerImplementations?.discuss !== "declared_deferred" ||
+    consumerImplementations?.plan !== "declared_deferred" ||
+    consumerImplementations?.prime !== "declared_deferred" ||
     !sameStrings(consumers?.capabilities, ["discuss", "plan", "build"]) ||
     consumers?.behavior !== "consumer_boundary" ||
-    !sameStrings(consumers?.forbidden_current_claims, ["lookup", "precedence", "review"])
+    !sameStrings(consumers?.forbidden_current_claims, ["discuss_integration", "plan_integration", "prime_projection"])
   ) {
-    errors.push("discuss, plan, and build glossary integrations must remain deferred");
+    errors.push("build glossary consumption must be active while discuss, plan, and prime integrations remain deferred");
   }
   return errors;
 }
@@ -789,9 +800,10 @@ export function validateGlossaryCapabilityImplementationClaim(
     .map(mapping)
     .find((candidate) => strings(candidate?.capabilities).includes(capability));
   if (!declaration) return [`${capability} has no deferred glossary declaration`];
-  if (claimedImplementation !== declaration.implementation) {
+  const declaredImplementation = mapping(declaration.implementation)?.[capability] ?? declaration.implementation;
+  if (claimedImplementation !== declaredImplementation) {
     return [
-      `${capability} glossary behavior is ${String(declaration.implementation)}; ${claimedImplementation} is a false implementation claim`,
+      `${capability} glossary behavior is ${String(declaredImplementation)}; ${claimedImplementation} is a false implementation claim`,
     ];
   }
   return [];

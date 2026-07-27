@@ -1,0 +1,16 @@
+id: trxmkzemar
+artifact: progress
+record:
+  timestamp: 2026-07-27 09:10
+  type: feat
+  phase: build
+  what: Added the structured Build glossary-advice command and Build-owned privacy-safe progress caveat lifecycle.
+  context:
+    intent: Ground meaning-sensitive Build work with governed glossary authority while isolating clarification and caveats from publication consent.
+    constraints: No task evaluation/completion, decisions, TODO, Discuss, Plan, prime integration, publication, commit, tag, or push.
+    unknowns: None within Build scope.
+    scope: Build instructions and schemas, glossary advice CLI/contract, typed progress caveat writer, focused source and package-facing tests.
+  inspiration: Active Plan task aibhqqgbsp and firm Decisions prmnztjytv and mcsmqqitnm.
+  discovered: pnpm run fmt partially rewrites the repository before failing on the intentionally invalid YAML fixture; all partial formatter edits were reverted and intended files pass git diff --check.
+  verified: 147 focused tests passed; full source passed 2,927 tests with one skip; typecheck, build, verify:package, Build/cross-capability/vocabulary/capability-contract validators, compact, lint, local CLI smoke, and git diff --check passed.
+  next: Prime should audit and commit this Build-only integration; Discuss, Plan, and prime projection remain deferred.

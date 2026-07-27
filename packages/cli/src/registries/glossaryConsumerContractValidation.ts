@@ -97,18 +97,23 @@ function nonEmpty(value: unknown): boolean {
 export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const errors: string[] = [];
   const implementation = mapping(consumer?.implementation);
+  const integrations = mapping(implementation?.capability_integrations);
   if (
     consumer?.contract_status !== "active" ||
     implementation?.acquisition !== "active" ||
     implementation?.advice_resolution !== "active" ||
-    implementation?.capability_integrations !== "declared_deferred"
+    integrations?.build !== "active" ||
+    integrations?.discuss !== "declared_deferred" ||
+    integrations?.plan !== "declared_deferred" ||
+    integrations?.prime !== "declared_deferred"
   ) {
     errors.push(
-      "consumer_boundary.implementation must activate acquisition and advice resolution while capability integrations remain declared_deferred",
+      "consumer_boundary.implementation must activate Build while Discuss, Plan, and prime integrations remain declared_deferred",
     );
   }
 
   const advice = mapping(consumer?.advice_resolution);
+  const invocation = mapping(advice?.invocation);
   const adviceInput = mapping(advice?.input);
   const hostReview = mapping(adviceInput?.host_review);
   const adviceOutput = mapping(advice?.output);
@@ -118,6 +123,15 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     advice?.runtime !==
       "packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice" ||
     advice?.mutation !== "forbidden" ||
+    invocation?.command !== "agentera report glossary-advice --input REQUEST --format json" ||
+    invocation?.request_schema_version !== "agentera.glossaryAdviceRequest.v1" ||
+    !sameStrings(invocation?.request_fields, ["schema_version", "requested_term", "host_review"]) ||
+    invocation?.max_request_utf8_bytes !== 131072 ||
+    invocation?.acquisition !== "internal_bounded_owned_sources" ||
+    invocation?.project_root !== "current_working_directory" ||
+    invocation?.profile_path !== "canonical_registry_resolution" ||
+    !sameStrings(invocation?.output_envelope_fields, ["schemaVersion", "command", "status", "advice"]) ||
+    !nonEmpty(invocation?.rule) ||
     !sameStrings(adviceInput?.fields, ["requested_term", "acquired", "host_review"]) ||
     adviceInput?.requested_term_utf8_bound !==
       "consumer_boundary.acquisition.bounds.max_source_utf8_bytes" ||
@@ -455,11 +469,21 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     caveat?.authority !== "skills/agentera/schemas/artifacts/progress.yaml#ENTITY_AUTHORITY" ||
     caveat?.publication_command !== "agentera state progress append" ||
     caveat?.publication_boundary !== "progress_cycle.glossary_caveat" ||
-    caveat?.publication_status !== "declared_deferred" ||
+    caveat?.publication_status !== "active_build" ||
+    caveat?.writer_runtime !== "packages/cli/src/state/progressEntities.ts#appendProgressEntity" ||
+    caveat?.writer_interface !== "agentera state progress explain --verb append --format json" ||
+    caveat?.envelope_validator !== "packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat" ||
+    caveat?.lifecycle_validator !== "packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities" ||
     identity?.field !== "caveat_id" ||
     identity?.type !== "opaque_non_content_id" ||
+    identity?.alphabet !== "abcdefghijklmnopqrstuvwxyz" ||
+    identity?.length !== 10 ||
+    identity?.pattern !== "^[a-z]{10}$" ||
     !nonEmpty(identity?.rule) ||
     envelope?.schema_version !== "agentera.glossaryConsumerCaveat.v1" ||
+    envelope?.additional_fields !== "forbidden" ||
+    envelope?.max_string_utf8_bytes !== 64 ||
+    !sameStrings(envelope?.events, ["current", "resolved", "superseded"]) ||
     !sameStrings(envelope?.fields, [
       "caveat_id",
       "event",
@@ -479,6 +503,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
       "review_required",
       "authority_unavailable",
     ]) ||
+    !nonEmpty(envelope?.transition_rule) ||
     !nonEmpty(lifecycle?.current) ||
     !nonEmpty(lifecycle?.resolved) ||
     !nonEmpty(lifecycle?.superseded) ||
@@ -548,18 +573,20 @@ export function validateConsumerEvidenceOwner(consumer: Mapping | null): string[
   const envelope = mapping(caveat?.envelope);
   if (
     cycle?.field !== "glossary_caveat" ||
-    cycle?.implementation_status !== "declared_deferred" ||
+    cycle?.implementation_status !== "active_build" ||
     cycle?.authority !==
       "references/artifacts/glossary-entry-contract.yaml#consumer_boundary.autonomous_caveat" ||
     schema?.schema_version !== envelope?.schema_version ||
-    schema?.implementation_status !== "declared_deferred" ||
+    schema?.implementation_status !== "active_build" ||
+    schema?.envelope_validator !== caveat?.envelope_validator ||
+    schema?.lifecycle_validator !== caveat?.lifecycle_validator ||
     !sameStrings(Object.keys(fields ?? {}), strings(envelope?.fields)) ||
     !sameStrings(mapping(fields?.capability)?.values, strings(envelope?.capabilities)) ||
     !sameStrings(mapping(fields?.reason)?.values, strings(envelope?.reasons)) ||
     !sameStrings(mapping(fields?.ownership_state)?.values, strings(envelope?.ownership_states))
   ) {
     return [
-      "consumer_boundary.autonomous_caveat must match the deferred progress_cycle.glossary_caveat schema owned by Build",
+      "consumer_boundary.autonomous_caveat must match the active Build-owned progress_cycle.glossary_caveat schema",
     ];
   }
   return [];
