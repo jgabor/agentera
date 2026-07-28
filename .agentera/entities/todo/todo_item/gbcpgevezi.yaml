@@ -1,0 +1,16 @@
+id: gbcpgevezi
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Convert TODO record writes to structured input. Require `state todo create --input <path|->` and `state todo update --id ID --input <path|->`; keep `resolve --id ID` as a simple transition. Support full and patch YAML or JSON through files and stdin, validate readiness graphs and CLI-owned fields, reject content flags before effects, preserve exact replay and dry-run behavior, and synchronize schema, explain, help, package projection, and tests before the separate TODO Markdown-projection decision is implemented."
+  readiness:
+    capability: build
+    reason: TODO create and update still use record-content flags and must converge before one mutation/projection authority can be implemented.
+    dependencies:
+      - artifact: todo
+        id: htmgqhyasy
+    blocked: null
+    gate: null
+    queue_rank: 70
+    order_reason: Convert the TODO payload grammar in parallel with other writer families, then unblock the existing projection-authority fix.

@@ -1,0 +1,15 @@
+id: ezkdeggmgm
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Establish retained-reference and runbook authority for all `references/` and `skills/agentera/references/` files. Inventory each file as current, migration-only, runbook, historical, or delete; retain current or migration-only material only with a named production owner and runtime or validator consumer; retain a runbook only with a maintainer and tracked noninteractive command proven from its documented location. Test imports, bundle inclusion, historical decisions, and source comments do not create authority. Delete or relocate unowned material and publish a machine-validated inventory."
+  readiness:
+    capability: build
+    reason: Decision imumkmffwh requires every retained reference to have a real product responsibility and every retained runbook command to work.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 20
+    order_reason: Establish the complete inventory before retiring the large legacy contract and before the final activation gate validates surviving references.

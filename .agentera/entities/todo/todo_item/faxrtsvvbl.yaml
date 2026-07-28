@@ -2,5 +2,5 @@ id: faxrtsvvbl
 artifact: todo
 record:
   severity: normal
-  status: open
-  description: "[chore:3.0.0] Remove deprecated `PROFILERA_PROFILE_DIR` alias fallback from `setProfileDir()` in `.opencode/plugins/agentera.js` before v3 stable release. Task 12 of the D70 cleanup plan added the fallback as a migration bridge; the upgrade migration step (Task 13) rewires config files automatically. Before v3 stable, verify no v2 users still depend on the old name, then remove the fallback code and the `profileraDeprecation` flag. The v2→v3 upgrade window is the only period where the alias is needed."
+  status: resolved
+  description: "~~[chore:3.0.0] Superseded 2026-07-28 by TODOs `wwojgufooz` and `nolmwusfat`: the native OpenCode plugin is retired rather than maintained, so its `PROFILERA_PROFILE_DIR` fallback disappears with the whole resource.~~"

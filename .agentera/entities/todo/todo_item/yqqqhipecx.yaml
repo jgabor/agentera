@@ -3,4 +3,14 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Establish one TODO mutation and projection authority. `agentera state todo create` writes `.agentera/entities/...` but does not update root `TODO.md`, forcing agents to duplicate issue text manually; entity listing sorts critical items by opaque ID, so callers cannot request top insertion. Generate or update the Markdown projection atomically or retire it, and support deterministic priority order."
+  description: "[fix:3.0.0] Establish one TODO mutation and projection authority after TODO record writes adopt structured input. `agentera state todo create` currently writes canonical entities without updating root `TODO.md`, forcing duplicate text edits, while entity listing orders critical work by opaque ID. Choose and implement exactly one model: atomically generate or update the Markdown projection from entity state, or formally retire `TODO.md` as mutable state and route consumers to `state todo list/get`. Declare deterministic priority order and eliminate every direct duplicate-text workflow."
+  readiness:
+    capability: build
+    reason: Decision imumkmffwh requires one state grammar and one mutation authority; TODO projection cannot remain independently edited.
+    dependencies:
+      - artifact: todo
+        id: gbcpgevezi
+    blocked: null
+    gate: null
+    queue_rank: 80
+    order_reason: Choose and implement the projection only after TODO create/update uses the final structured-input grammar.

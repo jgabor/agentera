@@ -1,6 +1,19 @@
 id: huiepnrwav
 artifact: todo
 record:
-  severity: normal
+  severity: critical
   status: open
-  description: "[release:3.0.0] At the approved stable cutover, promote the TypeScript package to npm `@latest`, update the channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation stub, remove retired Python and shim delegation sources, migrate remaining runtime hooks, and execute the clean, v2, partially migrated, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution before this gate."
+  description: "[fix:3.0.0] At the explicitly approved stable cutover, promote the TypeScript package to npm `@latest`, update channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation response, and delete the quarantined v2 parsers, migrations, cleanup-only compatibility, native rewrite paths, retired Python, and shim delegation sources identified by TODO `fxddfkldsr`. Remove remaining native runtime hooks and run the clean, v2, partial, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution or delete compatibility before the approval gate and final activation conjunction pass."
+  readiness:
+    capability: build
+    reason: Decision imumkmffwh requires upgrade-only compatibility to be deleted at stable cutover, but the externally visible cutover remains explicitly approval-gated.
+    dependencies:
+      - artifact: todo
+        id: odiytubocn
+    blocked: null
+    gate:
+      state: pending
+      reason: Stable dist-tag promotion and deletion of the final compatibility boundary require explicit user approval after all decision lanes pass.
+      recovery: Obtain explicit stable-cutover approval after TODO odiytubocn passes, then run the documented release transaction.
+    queue_rank: 200
+    order_reason: Execute last, only after the activation gate proves runtime, reference, and state boundaries are complete.

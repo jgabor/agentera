@@ -3,13 +3,14 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Align `packages/cli/src/state/write/operations.ts` dependency discovery with entity-mode bare task IDs. `agentera state plan explain --verb append` reports `integer_list` and task numbers, but runtime rejects `3` and requires a ten-letter task ID. Make discovery, parsing, examples, and command regressions agree."
+  description: "[fix:3.0.0] Make plan task record writes follow the structured-input state grammar and entity identity vocabulary. Require `plan append [--plan PLAN_ID] --input <path|->` and `plan update --id TASK_ID [--plan PLAN_ID] --input <path|->`; keep status, supersession, evaluation, plan-status, and archive operations as flag-only transitions. Discovery currently reports `integer_list` and task numbers while runtime requires ten-letter IDs. Make dependencies, replacements, task selectors, and optional plan selection agree across parsing, schema, explain, help, `SKILL.md`, and regressions; never advertise `set-plan-status --id`."
   readiness:
     capability: build
-    reason: The typed writer discovery contract must describe the accepted task-identity vocabulary.
+    reason: The plan writer must migrate record payloads and repair its identity contract as one bounded family conversion.
     dependencies:
-      []
+      - artifact: todo
+        id: htmgqhyasy
     blocked: null
     gate: null
     queue_rank: 50
-    order_reason: Bare task IDs provide a working correction, so this does not block the glossary producer plan.
+    order_reason: Convert plan tasks in parallel with progress/decision and TODO writers after the shared mutation grammar lands.

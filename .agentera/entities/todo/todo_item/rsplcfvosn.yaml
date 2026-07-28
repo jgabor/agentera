@@ -3,4 +3,14 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Make `agentera prime --context <capability> --format json` one bounded, unambiguous startup contract. Replace overlapping `included`, `missing`, `missing_state`, and `fallback_only` with one per-family availability projection; stop duplicating writer contracts and copied prose; emit exact detail commands. Keep the status payload at or below 22,500 bytes and deprecate `prime --dashboard`. Emit one aggregate `ok`, `degraded`, or `blocked` outcome; require top-level status, `brief.status`, and the status-context outcome to agree. Add boundary regressions at 22,500 and 25,000 bytes and prove a healthy startup never needs a second dashboard call."
+  description: "[fix:3.0.0] Make `agentera prime --context <capability> --format json` one bounded, unambiguous, aggregation-only startup contract. Replace overlapping `included`, `missing`, `missing_state`, and `fallback_only` with one per-family availability projection; stop duplicating writer contracts and copied prose; emit exact detail commands. Prime must not embed operation fields, examples, or payload schemas and may expose only an exact `schema` or `state ... explain` discovery pointer. Keep status at or below 22,500 bytes, deprecate `prime --dashboard`, emit one aggregate `ok`, `degraded`, or `blocked` outcome, require all status layers to agree, and prove healthy startup needs no second dashboard or fallback call."
+  readiness:
+    capability: build
+    reason: Decision imumkmffwh reserves prime for bounded aggregation and moves mutation detail to the declarative state grammar.
+    dependencies:
+      - artifact: todo
+        id: htmgqhyasy
+    blocked: null
+    gate: null
+    queue_rank: 90
+    order_reason: Remove embedded writer contracts after the canonical mutation grammar can supply exact discovery pointers.

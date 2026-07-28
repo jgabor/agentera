@@ -3,4 +3,14 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Remove every tracked and installed reference to the retired top-level `agentera hook` command. `.codex/hooks.json` and `~/.config/opencode/plugins/agentera.js` invoke `hook validate-artifact`, while `agentera@next` rejects `hook` as unknown. Extend retirement and package tests to scan host-native config and ensure shipped hooks invoke only current commands or are absent."
+  description: "[fix:3.0.0] Remove every tracked, generated, migrated, bundled, tested, and installed reference to the retired top-level `agentera hook` command and native hook integration. Upgrade must remove a whole-resource-proven v2 hook or preserve it with bounded manual guidance; it must never rewrite that hook into another native Agentera integration. Remove or replace the doctor hook smoke, convert migration tests from native-hook creation to removal-or-preservation proofs, scan host configuration and package output, and ensure shipped hooks invoke only current CLI commands or are absent."
+  readiness:
+    capability: build
+    reason: Native hook rewrites violate the shared-skill-plus-CLI boundary and currently recreate a command the v3 CLI rejects.
+    dependencies:
+      - artifact: todo
+        id: wwojgufooz
+    blocked: null
+    gate: null
+    queue_rank: 14
+    order_reason: Retire hook generation and recognition after the resource inventory names every affected native surface; this can run alongside doctor and cleanup isolation.

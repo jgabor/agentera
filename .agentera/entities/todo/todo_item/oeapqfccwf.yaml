@@ -1,0 +1,16 @@
+id: oeapqfccwf
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Convert progress and decision record writes to structured input. Require `progress append --input <path|->`, `decisions append --input <path|->`, and `decisions amend --id ID --base-sha256 HASH --input <path|->`; retain decision satisfaction update as a selector-and-transition flag operation. Support file and stdin YAML or JSON, reject record-content flags and CLI-owned fields before effects, preserve dry-run, replay, amendment preconditions, and existing publication order, and synchronize schema, explain, help, skills, package projection, and tests."
+  readiness:
+    capability: build
+    reason: These event and amendment writers still encode record payloads in flags, contrary to decision imumkmffwh.
+    dependencies:
+      - artifact: todo
+        id: htmgqhyasy
+    blocked: null
+    gate: null
+    queue_rank: 60
+    order_reason: Convert progress and decisions in parallel with plan and TODO writers after the shared mutation grammar lands.

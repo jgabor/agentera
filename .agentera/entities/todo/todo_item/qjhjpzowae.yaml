@@ -1,0 +1,18 @@
+id: qjhjpzowae
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases that emit the identical canonical list shape. Generate filters, bounds, formats, cursors, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. Integrate the focused limit and list-help fixes without creating another grammar map."
+  readiness:
+    capability: build
+    reason: Decision imumkmffwh selects list/get reads and rejects parallel artifact-specific read grammars.
+    dependencies:
+      - artifact: todo
+        id: hykqpkcsix
+      - artifact: todo
+        id: qmcyjnxskc
+    blocked: null
+    gate: null
+    queue_rank: 40
+    order_reason: The read-grammar lane can run in parallel with mutation conversion after the focused bounds and help fixes settle their contracts.
