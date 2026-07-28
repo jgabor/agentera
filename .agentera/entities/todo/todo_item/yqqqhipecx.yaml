@@ -3,14 +3,14 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Reads report drift without mutation. Before any Agentera TODO write, use a three-way baseline to import one-sided Markdown edits and project one-sided entity edits in the same atomic transaction; reject divergent field edits, stale baselines, and removal of unchecked rows before effects. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, and `check validate state` drift checks so duplicate prose editing disappears without making the public document generated or read-only."
+  description: "[fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass."
   readiness:
     capability: build
     reason: Decision kpybrsfywb keeps TODO.md public and editable while requiring one conflict-safe write-time reconciliation authority.
     dependencies:
       - artifact: todo
-        id: kbjrvrilzj
+        id: frpdshynmd
     blocked: null
     gate: null
     queue_rank: 80
-    order_reason: Implement reconciliation after transactional batch apply supplies the typed mutation and publication seam.
+    order_reason: Implement managed-row reconciliation after TODO frpdshynmd supplies the atomic publication and recovery seam.
