@@ -1,0 +1,16 @@
+id: dihuacizek
+artifact: progress
+record:
+  timestamp: 2026-07-28 14:00
+  type: fix
+  phase: build
+  what: Captured 18 directly observed Agentera CLI and priming defects as critical 3.0.0 fixes, elevating three existing items and creating fifteen canonical TODO records.
+  context:
+    intent: Preserve fresh evidence from the cleanup deliberation before resuming it.
+    constraints: Document only directly observed CLI or priming issues; do not implement fixes, mutate installed runtime resources, or add release-facing changelog content.
+    unknowns: None for documentation scope; prioritization and implementation remain future work.
+    scope: TODO.md and canonical todo entities under .agentera/entities/todo/todo_item/.
+  discovered: The defects cluster around routing and startup contracts, native-resource retirement, state discoverability, and Build priming.
+  verified: All 18 TODO drafts passed agentera lint; state validation reported 1,961 entities and 0 issues; canonical and Markdown critical sets matched 18/18; compact, markdownlint, and git diff checks passed.
+  next: Resume the paused simplification deliberation; no product fix was implemented in this cycle.
+  publication_order: 4

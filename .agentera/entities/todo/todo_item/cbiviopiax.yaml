@@ -1,0 +1,6 @@
+id: cbiviopiax
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Make `execution_context.verification_expectations.expected_commands` project-aware and deduplicated. In this TypeScript and Vitest repository, Build prime prescribed `focused pytest targets` and both `agentera check compact` and `compaction check`. Derive runnable commands from `AGENTS.md` and package scripts, preserve provenance, and reject placeholders or duplicate aliases."

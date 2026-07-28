@@ -1,0 +1,6 @@
+id: yqqqhipecx
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Establish one TODO mutation and projection authority. `agentera state todo create` writes `.agentera/entities/...` but does not update root `TODO.md`, forcing agents to duplicate issue text manually; entity listing sorts critical items by opaque ID, so callers cannot request top insertion. Generate or update the Markdown projection atomically or retire it, and support deterministic priority order."

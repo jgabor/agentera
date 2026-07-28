@@ -1,0 +1,6 @@
+id: qmcyjnxskc
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Generate artifact-specific `state ... list --help` from the retrieval authority. `agentera state decisions list --help` omitted the supported `--topic` filter, forcing source inspection. Show each artifact's valid filters, bounds, formats, and runnable examples, and test help/runtime parity."

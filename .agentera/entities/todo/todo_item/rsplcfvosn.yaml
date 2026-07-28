@@ -1,6 +1,6 @@
 id: rsplcfvosn
 artifact: todo
 record:
-  severity: degraded
+  severity: critical
   status: open
-  description: "[refactor:3.0.0] Make the status capsule the sole dashboard contract. Use one aggregate `ok`, `degraded`, or `blocked` outcome; replace overlapping `included`, `missing`, and `missing_state` concepts with one bounded per-family availability projection; emit structured attention and canonical entity references with exact detail commands instead of delimiter strings or copied prose; and deprecate `prime --dashboard` as a separate payload. Enforce a 22,500-byte release target and the existing 25,000-byte hard ceiling, reporting utilization and reserve in test and release diagnostics rather than the capsule."
+  description: "[fix:3.0.0] Make `agentera prime --context <capability> --format json` one bounded, unambiguous startup contract. Replace overlapping `included`, `missing`, `missing_state`, and `fallback_only` with one per-family availability projection; stop duplicating writer contracts and copied prose; emit exact detail commands. Keep the status payload at or below 22,500 bytes and deprecate `prime --dashboard`."

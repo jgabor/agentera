@@ -1,0 +1,6 @@
+id: hykqpkcsix
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Make bounded state list limits predictable. `agentera state decisions list --limit 20 --format json` returned 9 records because full entries exhausted the byte budget; TODO listing similarly stopped early. Add a summary/detail projection or define the limit as requested candidates, and always return exact `get --id` pointers plus deterministic omission metadata."

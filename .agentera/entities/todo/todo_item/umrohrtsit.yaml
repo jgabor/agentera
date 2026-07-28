@@ -1,0 +1,6 @@
+id: umrohrtsit
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Make `agentera doctor --format json` diagnose retired Agentera-native resources. It returned `up_to_date` with no signals while `~/.config/opencode` still contained the restoring plugin, managed commands and agents, broken skill links, and `~/.codex/agents` held 24 managed descriptors. Emit bounded cleanup previews without treating names or matching content as ownership."

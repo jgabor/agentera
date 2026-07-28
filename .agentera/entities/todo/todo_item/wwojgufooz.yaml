@@ -1,0 +1,6 @@
+id: wwojgufooz
+artifact: todo
+record:
+  severity: critical
+  status: open
+  description: "[fix:3.0.0] Complete `references/adapters/runtime-retired-resources.yaml` and cleanup discovery for every retired Agentera-native surface. Include proven OpenCode plugin, `agentera` and `hej` commands, primary and Swedish agents, stale skill links, and Codex English and Swedish descriptors plus Agentera plugin, marketplace, skill, and hook registrations. Remove restorers before leaf resources and preserve user-owned state."

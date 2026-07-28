@@ -1,9 +1,9 @@
 id: auwlbuobdw
 artifact: todo
 record:
-  severity: annoying
+  severity: critical
   status: open
-  description: "[fix:3.0.0] Align packages/cli/src/state/write/operations.ts dependency discovery with entity-mode bare task IDs. agentera state plan explain --verb append reports integer_list and task numbers, but runtime rejects 3 and requires a ten-letter task ID. Make discovery, parsing, examples, and command regressions agree."
+  description: "[fix:3.0.0] Align `packages/cli/src/state/write/operations.ts` dependency discovery with entity-mode bare task IDs. `agentera state plan explain --verb append` reports `integer_list` and task numbers, but runtime rejects `3` and requires a ten-letter task ID. Make discovery, parsing, examples, and command regressions agree."
   readiness:
     capability: build
     reason: The typed writer discovery contract must describe the accepted task-identity vocabulary.
