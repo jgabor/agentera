@@ -1,0 +1,15 @@
+id: xghiltndjy
+artifact: todo
+record:
+  severity: degraded
+  status: open
+  description: "[fix:3.0.0] Keep initial status orientation informational until the user expresses execution intent. Render `next_action` and wait for free-form acceptance; do not open a native Proceed/Cancel question merely because the suggestion is state-changing. After explicit acceptance, apply the ordinary confirmation boundary before dispatch. Add host-contract regressions for bare status, explicit build requests, accepted suggestions, cancellation, and autonomous orchestration."
+  readiness:
+    capability: build
+    reason: Four of eight reviewed root sessions dismissed the immediate post-prime build question; the status and host handoff contract owns that repeated interaction.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 20
+    order_reason: Resolve the concrete user-facing handoff friction after publication parsing and before the broader activation-conjunction gate.

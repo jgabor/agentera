@@ -3,4 +3,4 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Make `agentera prime --context <capability> --format json` one bounded, unambiguous startup contract. Replace overlapping `included`, `missing`, `missing_state`, and `fallback_only` with one per-family availability projection; stop duplicating writer contracts and copied prose; emit exact detail commands. Keep the status payload at or below 22,500 bytes and deprecate `prime --dashboard`."
+  description: "[fix:3.0.0] Make `agentera prime --context <capability> --format json` one bounded, unambiguous startup contract. Replace overlapping `included`, `missing`, `missing_state`, and `fallback_only` with one per-family availability projection; stop duplicating writer contracts and copied prose; emit exact detail commands. Keep the status payload at or below 22,500 bytes and deprecate `prime --dashboard`. Emit one aggregate `ok`, `degraded`, or `blocked` outcome; require top-level status, `brief.status`, and the status-context outcome to agree. Add boundary regressions at 22,500 and 25,000 bytes and prove a healthy startup never needs a second dashboard call."

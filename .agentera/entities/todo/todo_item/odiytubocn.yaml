@@ -1,0 +1,15 @@
+id: odiytubocn
+artifact: todo
+record:
+  severity: degraded
+  status: open
+  description: "[test:3.0.0] Add an executable activation-conjunction release gate for every active CLI and capability surface. Derive checks from owning authorities and require schema or contract, CLI discovery and help, runtime acceptance, bounded privacy-safe diagnostics, package projection, served instructions, and adversarial tests to agree before a feature is declared active. Seed coverage with route receipts, state list/help and plan identity, profile validity, changelog, verification expectations, Build ordering, and TODO projection; report the exact owner and correction for each mismatch."
+  readiness:
+    capability: build
+    reason: Repeated session failures show that point validators can pass while declared authority, public discovery, runtime behavior, and packaged instructions disagree.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 30
+    order_reason: Land after the concrete critical parity fixes so the release gate encodes settled authorities instead of current drift.
