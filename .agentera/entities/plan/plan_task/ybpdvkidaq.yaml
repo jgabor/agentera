@@ -1,0 +1,12 @@
+id: ybpdvkidaq
+artifact: plan
+record:
+  name: Make bounded summary limits predictable (hykqpkcsix)
+  depends_on:
+    - ztsnvyfcdh
+  status: pending
+  acceptance:
+    - GIVEN N candidates WHEN limit N is requested THEN N summary rows return despite optional-detail pressure.
+    - GIVEN selected fields or continuation WHEN read THEN order, rank, counts, omissions, and exact recovery are deterministic.
+    - GIVEN selectors and byte pressure WHEN tested THEN each has one pass and one degradation.
+  plan: frkpjqmpnj

@@ -1,0 +1,12 @@
+id: pfredurfew
+artifact: plan
+record:
+  name: Make cleanup targeted and collision-independent (valpzunokj, nxgovfcjss)
+  depends_on:
+    - cspavuhaus
+  status: pending
+  acceptance:
+    - GIVEN one resource WHEN dry-run executes THEN only its bounded actions, summaries, and relevant blockers appear.
+    - GIVEN owned resources beside a collision WHEN cleanup runs THEN removals converge while the collision is preserved.
+    - GIVEN cleanup outcomes WHEN tested THEN each has pass, collision, and fail-closed cases.
+  plan: frkpjqmpnj

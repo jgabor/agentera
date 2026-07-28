@@ -1,0 +1,12 @@
+id: qllgiterft
+artifact: plan
+record:
+  name: Convert progress and decision writers (oeapqfccwf)
+  depends_on:
+    - mascmjrpug
+  status: pending
+  acceptance:
+    - GIVEN progress or decision content WHEN written THEN structured input preserves amendments, dry-run, replay, and publication order.
+    - GIVEN owned fields, stale amendments, or old flags WHEN submitted THEN reject before effects with correction.
+    - GIVEN writer operations WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

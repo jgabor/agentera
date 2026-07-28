@@ -1,0 +1,13 @@
+id: jmxzwlqfhw
+artifact: plan
+record:
+  name: Quarantine compatibility and retire native hooks (fxddfkldsr, nolmwusfat)
+  depends_on:
+    - cspavuhaus
+    - pfredurfew
+  status: pending
+  acceptance:
+    - GIVEN routine v3 surfaces WHEN inspected THEN no v2 or native-hook public shape escapes upgrade.
+    - GIVEN a legacy hook WHEN upgrade runs THEN remove proven ownership or preserve it with guidance, never rewrite it.
+    - GIVEN compatibility classes WHEN tested THEN each has pass and rejection cases plus a cutover deletion inventory.
+  plan: frkpjqmpnj

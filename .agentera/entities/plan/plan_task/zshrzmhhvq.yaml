@@ -1,0 +1,12 @@
+id: zshrzmhhvq
+artifact: plan
+record:
+  name: Establish retained-reference authority (ezkdeggmgm)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN each retained reference WHEN validated THEN every current or migration reference names a production owner and runtime or validator consumer, and every runbook names a maintainer and a tracked noninteractive command that passes from its documented location.
+    - GIVEN unowned, stale, or misplaced material WHEN validated THEN remove or reject it without test-created authority.
+    - GIVEN inventory classes WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

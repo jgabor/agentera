@@ -1,0 +1,12 @@
+id: tryphyimhc
+artifact: plan
+record:
+  name: Convert plan-task writers and identities (auwlbuobdw)
+  depends_on:
+    - mascmjrpug
+  status: pending
+  acceptance:
+    - GIVEN task content WHEN written THEN structured input and bare identities agree across relationships and plan selection.
+    - GIVEN transition discovery WHEN read THEN each operation exposes only valid selectors and vocabulary.
+    - GIVEN task operations WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

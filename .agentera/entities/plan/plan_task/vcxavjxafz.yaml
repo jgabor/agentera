@@ -1,0 +1,12 @@
+id: vcxavjxafz
+artifact: plan
+record:
+  name: Retire the legacy contract reference (jwnvbdcadl)
+  depends_on:
+    - zshrzmhhvq
+  status: pending
+  acceptance:
+    - GIVEN the legacy contract WHEN classified THEN unique current clauses move to owners and duplicate or v2 material is deleted.
+    - GIVEN no unowned clause remains WHEN consumers run THEN the file and boilerplate pointers are absent.
+    - GIVEN clause classes WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

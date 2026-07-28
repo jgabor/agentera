@@ -1,0 +1,12 @@
+id: ohkbezkixj
+artifact: plan
+record:
+  name: Make Build verification project-aware (cbiviopiax)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN repository guidance WHEN Build starts THEN expectations contain only runnable project commands with provenance.
+    - GIVEN placeholders, aliases, or conflicts WHEN projected THEN one documented precedence rule rejects or resolves them.
+    - GIVEN command sources WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

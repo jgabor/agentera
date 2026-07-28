@@ -1,0 +1,12 @@
+id: xufuibtial
+artifact: plan
+record:
+  name: Make TODO reconciliation atomic (frpdshynmd)
+  depends_on:
+    - nkguykzeum
+  status: pending
+  acceptance:
+    - GIVEN stable state and one-sided edits WHEN mutation runs THEN all reconciled outputs advance together or none do.
+    - GIVEN stale, divergent, duplicate, missing, removal, interrupted, or merged input WHEN attempted THEN no partial effect survives and retry converges.
+    - GIVEN transaction outcomes WHEN tested THEN each has pass, conflict, replay, and recovery cases.
+  plan: frkpjqmpnj

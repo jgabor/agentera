@@ -1,0 +1,12 @@
+id: cspavuhaus
+artifact: plan
+record:
+  name: Complete retired-resource authority and identity migration (wwojgufooz, xzpqpryxit)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN named native surfaces and historical IDs WHEN discovered THEN one resource vocabulary covers them.
+    - GIVEN ownership, historical identity, or collision WHEN previewed THEN replay recognizes owned resources and preserves unowned ones.
+    - GIVEN resource classes WHEN tested THEN each has one pass and one fail-closed case.
+  plan: frkpjqmpnj

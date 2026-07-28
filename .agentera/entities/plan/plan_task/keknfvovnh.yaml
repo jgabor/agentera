@@ -1,0 +1,12 @@
+id: keknfvovnh
+artifact: plan
+record:
+  name: Gate replacement supersession on PASS (qnxhsaxrjd)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN no complete latest replacement PASS WHEN supersession or closeout runs THEN reject with missing evidence.
+    - GIVEN historical deadlock WHEN recovered THEN first PASS repairs without history rewrite and replay converges.
+    - GIVEN changed lifecycle units WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

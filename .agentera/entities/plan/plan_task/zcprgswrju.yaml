@@ -1,0 +1,14 @@
+id: zcprgswrju
+artifact: plan
+record:
+  name: Diagnose every retired resource (umrohrtsit)
+  depends_on:
+    - cspavuhaus
+    - pfredurfew
+    - jmxzwlqfhw
+  status: pending
+  acceptance:
+    - GIVEN stale resources in an isolated home WHEN doctor runs THEN bounded evidence names every ID and preview.
+    - GIVEN user-owned or clean state WHEN doctor runs THEN no contents leak or mutate and status is truthful.
+    - GIVEN diagnostic classes WHEN tested THEN each has pass and fail-closed cases without touching the real installation.
+  plan: frkpjqmpnj

@@ -1,0 +1,15 @@
+id: ghoargedhq
+artifact: plan
+record:
+  name: Prove channel-correct one-call bootstrap (vptlelnadp)
+  depends_on:
+    - zcprgswrju
+    - wucudfywvo
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  status: pending
+  acceptance:
+    - GIVEN pre-cutover bootstrap WHEN invoked THEN one @next call reaches truthful prime and doctor without @latest or fallback.
+    - GIVEN clean, v2, partial, or v3 projects WHEN tested THEN each reaches one bounded outcome with safe recovery.
+    - GIVEN source and package surfaces WHEN tested THEN each has pass and wrong-channel rejection cases.
+  plan: frkpjqmpnj

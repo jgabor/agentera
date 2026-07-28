@@ -1,0 +1,12 @@
+id: nkpclbjyny
+artifact: plan
+record:
+  name: Generate family-specific retrieval help (qmcyjnxskc)
+  depends_on:
+    - ybpdvkidaq
+  status: pending
+  acceptance:
+    - GIVEN a record family WHEN help is requested THEN filters, summaries, bounds, examples, and corrections match runtime.
+    - GIVEN unsupported selectors WHEN invoked THEN failure names valid vocabulary and one correction.
+    - GIVEN family help WHEN tested THEN each has one pass and one parity rejection.
+  plan: frkpjqmpnj

@@ -1,0 +1,12 @@
+id: mascmjrpug
+artifact: plan
+record:
+  name: Establish declarative mutation grammar (htmgqhyasy)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN each mutation WHEN discovered THEN one authority classifies fields, preconditions, recovery, examples, and bounds.
+    - GIVEN explain, schema, help, and runtime WHEN compared THEN contracts match and unsupported flags fail before effects.
+    - GIVEN verb classes WHEN tested THEN each has one pass and one rejection.
+  plan: frkpjqmpnj

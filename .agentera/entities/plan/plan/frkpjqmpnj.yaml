@@ -1,0 +1,38 @@
+id: frkpjqmpnj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-07-28
+    status: open
+    reviewed: 2026-07-28
+    critic_issues: 13 found, 12 addressed, 1 dismissed
+    title: "Plan: Critical 3.0.0 release fixes"
+  what: Resolve all 30 Critical fix:3.0.0 items through one release-readiness lifecycle while preserving independent closure evidence and stable-cutover approval.
+  why: Startup, state, compatibility, runtime, reference, and release surfaces disagree. Dependency-ordered work prevents duplicate authority, unsafe cleanup, false closure, and premature promotion.
+  constraints: Honor Decisions imumkmffwh and kpybrsfywb. The shared skill plus CLI is permanent; v2 remains upgrade-only until approved cutover. Preserve user collisions and the stale installation until approved cleanup. Planning resolves nothing. Each task follows docs-test-code, resolves completed TODOs, and synchronizes state before its final commit. Each testable unit gets one pass and one fail-safe case unless justified. Suite metadata remains 3.0.0; before cutover only 3.0.0-dev.N+1 is allowed. Never publish, tag, push, promote, or delete final compatibility without explicit approval. Use the rebuilt local CLI after source changes.
+  overall_acceptance: GIVEN every task and cutover approval complete WHEN all source, package, runtime, state, registry, and release checks run THEN all 30 TODOs are resolved with evidence, permanent surfaces agree, user data is preserved, TypeScript 3.0.0 is verified on npm @latest, and no unapproved mutation occurred.
+  scope:
+    included:
+      - Replacement lifecycle, Build startup, profile validity, and reference ownership.
+      - Runtime retirement, state contracts, TODO reconciliation, and prime aggregation.
+      - Route discovery, bootstrap, activation gating, approved cutover, and state verification.
+    excluded:
+      - Lower-severity TODOs and unrelated capability refactors.
+      - General transactional TODO batch apply.
+      - Publication or stable metadata changes before explicit cutover approval.
+    deferred:
+      - General transactional TODO batch apply.
+  design: Repair independent defects and establish inventories first. Run reference, runtime-retirement, and state-contract lanes in dependency order. Collapse startup after state and profile results stabilize, prove one bootstrap, then run activation. Stable preparation and publication stay separate and approval-gated. Each cycle closes its own state; final verification creates no bookkeeping-only work.
+  unknowns:
+    - question: Can visible IDs and public TODO order survive supported merges while TODO.md stays ordinarily editable?
+      affects_task: 18
+      resolve_by: Task 18 proves one-sided and divergent merges; failure requires replanning before Tasks 19-21.
+    - question: Will explicit stable-cutover approval be granted after the activation gate passes?
+      affects_task: 27
+      resolve_by: Stop after Task 26; absent approval leaves Tasks 27-29 and huiepnrwav open.
+  rejected:
+    - issue: Split the retained-reference inventory solely because it covers many files.
+      rationale: Classification, enforcement, and validation form one authority-setting lifecycle. File count creates no behavioral boundary; Task 8 isolates the large migration.
+  surprises:
+    []

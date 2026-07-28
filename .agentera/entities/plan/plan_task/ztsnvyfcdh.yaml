@@ -1,0 +1,12 @@
+id: ztsnvyfcdh
+artifact: plan
+record:
+  name: Activate repository-first TODO reconciliation (yqqqhipecx)
+  depends_on:
+    - xufuibtial
+  status: pending
+  acceptance:
+    - GIVEN managed rows WHEN read THEN stable IDs and public order stay visible while operations remain entity-owned.
+    - GIVEN one-sided or divergent edits WHEN accessed THEN reads report drift and writes use one reconciliation boundary.
+    - GIVEN edit classes WHEN tested THEN each has one pass and one conflict.
+  plan: frkpjqmpnj

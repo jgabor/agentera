@@ -1,0 +1,14 @@
+id: iddsqjadki
+artifact: plan
+record:
+  name: Enforce canonical list and get reads (qjhjpzowae)
+  depends_on:
+    - ztsnvyfcdh
+    - ybpdvkidaq
+    - nkpclbjyny
+  status: pending
+  acceptance:
+    - GIVEN any record family WHEN read THEN list and exact get are canonical; bare reads alias or correct.
+    - GIVEN TODO reads WHEN listed THEN identity, order, actionability, filters, drift, and recovery appear without mutation.
+    - GIVEN record families WHEN tested THEN each has one pass and one structured rejection.
+  plan: frkpjqmpnj

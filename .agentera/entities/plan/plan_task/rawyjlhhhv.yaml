@@ -1,0 +1,12 @@
+id: rawyjlhhhv
+artifact: plan
+record:
+  name: Prepare an explicitly approved stable cutover (huiepnrwav)
+  depends_on:
+    - jvkovrswpv
+  status: pending
+  acceptance:
+    - GIVEN no post-gate approval WHEN preparation is considered THEN source, metadata, channels, compatibility, and huiepnrwav stay unchanged.
+    - GIVEN approval WHEN prepared THEN compatibility is removed, bootstrap changes, package and suite metadata equal 3.0.0, and release provenance passes gates.
+    - GIVEN a clean preparation commit WHEN verified THEN huiepnrwav stays open pending registry and matrix evidence.
+  plan: frkpjqmpnj

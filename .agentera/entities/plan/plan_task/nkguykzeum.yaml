@@ -1,0 +1,12 @@
+id: nkguykzeum
+artifact: plan
+record:
+  name: Define typed TODO records and lifecycle (gbcpgevezi)
+  depends_on:
+    - mascmjrpug
+  status: pending
+  acceptance:
+    - GIVEN create or patch input WHEN applied THEN typed fields preserve omissions, explicit clears, and stable identity.
+    - GIVEN invalid graphs, owned fields, old flags, or lifecycle misuse WHEN submitted THEN reject before effects with correction.
+    - GIVEN TODO operations WHEN tested THEN each has pass and rejection cases across inputs, replay, and migration.
+  plan: frkpjqmpnj

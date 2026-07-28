@@ -1,0 +1,12 @@
+id: qxdcaimwoe
+artifact: plan
+record:
+  name: Unify profile validity (tkpzveyvjt)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN one profile WHEN prime and grounding read it THEN both report the same validity result.
+    - GIVEN malformed input WHEN either responds THEN no profile bytes leak and one recovery is returned.
+    - GIVEN validity classes WHEN tested THEN each has one pass and one fail-closed case.
+  plan: frkpjqmpnj

@@ -1,0 +1,39 @@
+id: xciolahywn
+artifact: plan
+record:
+  name: Verify final current-state synchronization
+  depends_on:
+    - keknfvovnh
+    - acazhcocpm
+    - rngcxaezhb
+    - ohkbezkixj
+    - nrpvauxexj
+    - qxdcaimwoe
+    - zshrzmhhvq
+    - vcxavjxafz
+    - cspavuhaus
+    - pfredurfew
+    - jmxzwlqfhw
+    - zcprgswrju
+    - mascmjrpug
+    - qllgiterft
+    - tryphyimhc
+    - nkguykzeum
+    - xufuibtial
+    - ztsnvyfcdh
+    - ybpdvkidaq
+    - nkpclbjyny
+    - iddsqjadki
+    - wucudfywvo
+    - wfbpsymlxi
+    - vlxwhwqxqf
+    - ghoargedhq
+    - jvkovrswpv
+    - rawyjlhhhv
+    - yinngnhcup
+  status: pending
+  acceptance:
+    - GIVEN prior closeouts WHEN state is read THEN all 30 TODOs resolve and artifacts, entities, and the clean tree agree.
+    - GIVEN drift or missing evidence WHEN verified THEN its prior task reopens without a bookkeeping commit.
+    - GIVEN synchronized state WHEN final gates run THEN release, build, contract, package, activation, and exact-version checks pass.
+  plan: frkpjqmpnj

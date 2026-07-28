@@ -1,0 +1,12 @@
+id: nrpvauxexj
+artifact: plan
+record:
+  name: Put Build logging before commit (lfvwrkcsuf)
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN a successful cycle WHEN instructions run THEN TODO, progress, and changelog updates precede its commit.
+    - GIVEN current state behavior WHEN instructions are read THEN obsolete numbering and compaction claims are absent.
+    - GIVEN workflow variants WHEN tested THEN each has one pass and one policy rejection.
+  plan: frkpjqmpnj

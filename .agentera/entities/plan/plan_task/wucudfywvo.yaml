@@ -1,0 +1,18 @@
+id: wucudfywvo
+artifact: plan
+record:
+  name: Collapse prime to one aggregation contract (rsplcfvosn)
+  depends_on:
+    - acazhcocpm
+    - rngcxaezhb
+    - ohkbezkixj
+    - nrpvauxexj
+    - qxdcaimwoe
+    - mascmjrpug
+    - iddsqjadki
+  status: pending
+  acceptance:
+    - GIVEN capability startup WHEN prime runs THEN one bounded availability projection and outcome provide detail discovery without writer payloads.
+    - GIVEN any health state WHEN status layers run THEN they agree and healthy startup needs no second call.
+    - GIVEN startup states WHEN tested THEN each has pass and fail-safe cases within budget.
+  plan: frkpjqmpnj

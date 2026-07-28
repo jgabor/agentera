@@ -1,0 +1,12 @@
+id: wfbpsymlxi
+artifact: plan
+record:
+  name: Remove the duplicate issues alias (otmknmduwi)
+  depends_on:
+    - wucudfywvo
+  status: pending
+  acceptance:
+    - GIVEN prime JSON WHEN returned THEN only canonical TODO output appears without the issues alias or warning.
+    - GIVEN a retired-field request WHEN rejected THEN one structured correction points to TODO.
+    - GIVEN projections WHEN tested THEN each has one pass and one alias rejection.
+  plan: frkpjqmpnj
