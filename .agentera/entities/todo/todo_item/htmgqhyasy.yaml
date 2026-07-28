@@ -3,7 +3,7 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Establish one declarative state mutation grammar in `references/artifacts/state-storage-authority.yaml`. Classify every public verb as a record payload or simple transition; require `--input <path|->` for record payloads; enumerate permitted selectors, preconditions, CLI-owned fields, recovery, examples, and bounds; and retire unsupported `health repair`. Derive operations, explain, schema, and help from that projection while TypeScript code remains the behavior owner. Add a generated parity matrix and reject record-content flags before effects."
+  description: "[fix:3.0.0] Establish one declarative state mutation grammar in `references/artifacts/state-storage-authority.yaml`. Classify every public verb as a record payload, simple transition, or batch transaction; require `--input <path|->` for record payloads; enumerate selectors, preconditions, CLI-owned fields, recovery, examples, and bounds; and retire unsupported `health repair`. For every writable family, make `state <family> explain --all` return every verb and schema once with a contract digest; derive per-verb explain, operations, schema, and help from that projection while TypeScript remains the behavior owner. Add a generated parity matrix and reject record-content flags before effects."
   readiness:
     capability: build
     reason: Decision imumkmffwh requires one structured-input mutation grammar without letting schema, help, or tests create parallel behavioral authority.

@@ -3,4 +3,4 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] Make bounded state list limits predictable. `agentera state decisions list --limit 20 --format json` returned 9 records because full entries exhausted the byte budget; TODO listing similarly stopped early. Add a summary/detail projection or define the limit as requested candidates, and always return exact `get --id` pointers plus deterministic omission metadata."
+  description: "[fix:3.0.0] Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation."

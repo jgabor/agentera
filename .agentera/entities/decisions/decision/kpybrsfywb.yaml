@@ -1,0 +1,19 @@
+id: kpybrsfywb
+artifact: decisions
+record:
+  date: 2026-07-28
+  question: How should Agentera reconcile `TODO.md` with operational TODO entity state?
+  context: "`TODO.md` is a front-facing repository document that humans and ordinary tools must edit without Agentera. `.agentera/entities/todo/todo_item/<id>.yaml` carries dependencies, readiness, gates, and evidence that Markdown should not have to encode. Making the public document generated and read-only would impose Agentera storage choices on the repository."
+  alternatives:
+    - name: Keep `TODO.md` publicly editable with visible stable IDs and reconcile public fields with Agentera operational state.
+      status: chosen
+    - name: Generate a read-only `TODO.md` from entity state.
+      status: rejected
+    - name: Make Markdown the sole full-fidelity state store, including operational metadata.
+      status: rejected
+    - name: Silently prefer entity state or last-writer-wins when both sides change.
+      status: rejected
+  choice: Managed TODO rows carry visible ten-letter IDs. `TODO.md` owns public description, severity, checkbox status, and within-severity execution order. Agentera owns dependencies, readiness, gates, and evidence. Reads such as `agentera state todo list` report drift without mutation. Before the next Agentera TODO write, a three-way baseline imports one-sided public edits and updates `TODO.md` for one-sided entity edits in one atomic transaction; divergent field edits fail before effects. Removing an open row is a conflict until it is checked resolved. Dependencies and gates continue to constrain actionability.
+  reasoning: Field-level authority preserves ordinary Git collaboration while retaining Agentera operational value. Visible IDs avoid fuzzy matching, three-way reconciliation prevents silent overwrite, and write-time synchronization keeps reads safe. This makes Agentera adapt to the repository instead of turning a public document into generated implementation output.
+  confidence: provisional
+  feeds_into: TODOs yqqqhipecx, gbcpgevezi, htmgqhyasy, and qjhjpzowae; managed-row syntax, baseline storage, and branch-merge behavior.

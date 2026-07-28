@@ -1,0 +1,16 @@
+id: kbjrvrilzj
+artifact: todo
+record:
+  severity: degraded
+  status: open
+  description: "[feat:3.0.0] Add transactional TODO batch apply. `agentera state todo apply --input <path|->` must execute create, patch, severity changes, supersede, resolve, reopen, and dependency edits atomically, with local symbolic references between new items. Dry-run reads a lock-free snapshot and returns a bounded receipt with stable IDs, an operation digest, and a state baseline; apply reuses that receipt idempotently, rejects stale or divergent state before effects, and reports bounded retry timing. Prove one preview, one apply, and one validation replace serial CRUD without partial publication."
+  readiness:
+    capability: build
+    reason: The dominant TODO workflow cost is serial mutation and reconciliation, so one transaction must compose the typed family operations safely.
+    dependencies:
+      - artifact: todo
+        id: gbcpgevezi
+    blocked: null
+    gate: null
+    queue_rank: 10
+    order_reason: Implement immediately after the typed TODO contract, before repository reconciliation consumes the transaction.
