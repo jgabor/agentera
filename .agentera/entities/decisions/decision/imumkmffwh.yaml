@@ -1,0 +1,19 @@
+id: imumkmffwh
+artifact: decisions
+record:
+  date: 2026-07-28
+  question: What permanent surface and retirement boundaries should Agentera use for runtime integration, references, and state?
+  context: Decisions llavvlpcmb and nksvqmnevm already select `~/.agents/skills/agentera` plus the CLI, but stale native resources remain installed. `references/` has 37 files and 10,738 lines, while `packages/cli/src/state` has 80 files and 21,811 lines with current entity behavior mixed with migration and obsolete interfaces.
+  alternatives:
+    - name: Use one permanent v3 surface, quarantine temporary migration support, and retain only demonstrably live contracts and runbooks.
+      status: chosen
+    - name: Keep legacy compatibility embedded in routine paths and retain references whenever any test imports them.
+      status: rejected
+    - name: Delete v2 migration support and every external contract immediately.
+      status: rejected
+    - name: Preserve native runtime conveniences and artifact-specific read and write grammars.
+      status: rejected
+  choice: The shared skill plus CLI is the sole permanent integration surface. Keep v2 compatibility exclusively beneath `upgrade` until stable cutover, then delete it. Keep under `references/` only contracts with a real production responsibility and maintained runbooks whose commands work; tests do not create authority. State uses structured `--input` for record payloads, flags only for selectors and simple transitions, `list` and `get` for reads, `prime` for aggregation, and declarative schemas and bounds while code and tests own behavior. Preserve the current stale installation as bounded cleanup acceptance evidence until the repaired CLI removes it.
+  reasoning: "Explicit retirement boundaries remove duplicate authority, compatibility leakage, and test-sustained prose without abandoning the supported one-way migration or inspectable schemas. Production loading is necessary but not sufficient: every retained reference still needs a product owner. Quarantined migration may share low-level safety primitives but cannot expose legacy public shapes. Generated help and examples preserve discoverability after reducing flags."
+  confidence: firm
+  feeds_into: TODOs umrohrtsit, wwojgufooz, xzpqpryxit, valpzunokj, nxgovfcjss, nolmwusfat, rsplcfvosn, hykqpkcsix, qmcyjnxskc, auwlbuobdw, yqqqhipecx, and jwnvbdcadl; future runtime, references, and state simplification plan.
