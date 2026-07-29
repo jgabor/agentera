@@ -1,6 +1,6 @@
 {
   "schemaVersion": "agentera.validateFamilyOracle.v1",
-  "notes": "Frozen contract for the canonical current `check validate <family> --format json` envelope. Repository-native lifecycle adapter validation is retired and is not a current family. Pin is structural: required keys, value types, and the small set of literal values (command='validate', status union, target_family values). Field content that legitimately varies by family/fixture is not pinned; see the live envelope test in packages/cli/test/cli/validateVerifyOracles.test.ts.",
+  "notes": "Frozen contract for selected parity-covered `check validate <family> --format json` envelopes. This is not the exhaustive validate-family inventory. Pin is structural: required keys, value types, and the small set of literal values (command='validate', status union, target_family values). Field content that legitimately varies by family or fixture is not pinned; see the live envelope test in packages/cli/test/cli/validateVerifyOracles.test.ts.",
   "format": "json",
   "commandValue": "validate",
   "statusUnion": ["pass", "fail"],

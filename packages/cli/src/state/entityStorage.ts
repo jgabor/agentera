@@ -7,7 +7,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { decisionRevisionContract, decisionRevisionEntityViolations } from "./decisionRevision.js";
-import { decisionMigrationProvenanceViolations, type MigrationProvenanceDeclaration } from "./decisionMigrationProvenance.js";
+import { decisionMigrationProvenanceViolations, decisionRevisionMigrationProvenanceViolations, type MigrationProvenanceDeclaration } from "./decisionMigrationProvenance.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { healthEntityViolations } from "./healthEntityValidation.js";
 import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js";
@@ -163,7 +163,7 @@ function canonicalEntityEnvelopeAgainstModel(
   const violations = canonicalEntityRecordViolationsAgainstModel(expected.boundary, record, model, sourceBinding);
   violations.push(...migrationProvenanceViolations(expected.boundary, record, migrationProvenanceValue, model, sourceRoot, sourceBinding));
   if (owner.record?.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""))) violations.push("timestamp must use YYYY-MM-DD HH:MM");
-  if (expected.boundary === "decision_revision") violations.push(...decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot)));
+  if (expected.boundary === "decision_revision") violations.push(...decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot), migrationProvenance?.kind === "inherited_decision_revision_confidence"));
   if (expected.boundary === "health_audit") violations.push(...healthEntityViolations(record));
   if (expected.boundary === "plan") {
     const header = mapping(record.header) ? record.header : {};
@@ -340,8 +340,9 @@ function migrationProvenanceViolations(
   const definition = model.byBoundary.get(boundary);
   const declared = definition?.migrationProvenance;
   if (!declared) return provenance === null || provenance === undefined ? [] : ["migration_provenance is not allowed on this entity boundary"];
-  if (boundary !== "decision") return ["migration_provenance is declared only for canonical decisions"];
-  return decisionMigrationProvenanceViolations(record, provenance, declared, model.forbiddenAliases, sourceRoot, sourceBinding);
+  if (boundary === "decision") return decisionMigrationProvenanceViolations(record, provenance, declared, model.forbiddenAliases, sourceRoot, sourceBinding);
+  if (boundary === "decision_revision") return decisionRevisionMigrationProvenanceViolations(record, provenance, declared, sourceRoot, sourceBinding);
+  return ["migration_provenance is declared only for canonical decisions and decision revisions"];
 }
 
 function relative(projectRoot: string, candidate: string): string {
@@ -498,7 +499,7 @@ function discoverFile(
     }
   }
   if (!malformed && boundary === "decision_revision" && record) {
-    const violations = decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot));
+    const violations = decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot), migrationProvenance?.kind === "inherited_decision_revision_confidence");
     if (violations.length) {
       malformed = true;
       issues.push({
@@ -787,7 +788,7 @@ export function validateCanonicalEntityTargets(projectRoot: string, targets: Can
     let record: JsonObject | null = null; let discoveredBytes: Buffer | null = null;
     let message: string | null = target.path === expectedPath ? null : `canonical target path '${target.path}' must be '${expectedPath}'`;
     if (!message) {
-      try { const bytes = canonicalEntityEnvelopeBytes(target); discoveredBytes = Buffer.from(bytes); record = canonicalEntityEnvelopeAgainstModel(bytes, target, model, sourceRoot, { kind: "project", projectRoot }).record; }
+      try { const bytes = canonicalEntityEnvelopeBytes(target); discoveredBytes = Buffer.from(bytes); record = canonicalEntityEnvelopeAgainstModel(bytes, target, model, sourceRoot, { kind: "migration_preview", projectRoot }).record; }
       catch (error) { message = (error as Error).message; }
     }
     if (message) issues.push({ code: "malformed_entity", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message, recovery: recovery(projectRoot, `repair legacy source '${target.sourceIdentity}' so its canonical target satisfies the authority-backed boundary validator`) });
@@ -980,9 +981,7 @@ export function allocateAndPublishEntity(
 ): PublishEntityResult {
   const model = authority(request.sourceRoot);
   return withPublicationContext(request, (context) => {
-    context.assertValid();
-    const lock = acquireWriterLock(context.pinnedPath(), 2000);
-    try {
+    return withEntityWriterLock(context, () => {
       context.assertValid();
       const existing = new Set(discoverEntities(context.pinnedPath(), request.sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
       for (let attempt = 0; attempt < 1024; attempt += 1) {
@@ -992,8 +991,6 @@ export function allocateAndPublishEntity(
         return publishEntityLocked({ ...request, id }, model, context);
       }
       throw new Error("could not allocate a unique entity ID after 1024 attempts; run agentera check validate state and retry");
-    } finally {
-      lock.release();
-    }
+    });
   });
 }

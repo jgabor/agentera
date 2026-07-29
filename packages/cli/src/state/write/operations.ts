@@ -73,10 +73,6 @@ const todoReadinessFields: OperationField[] = [
   { flag: "--order-reason", field: "readiness.order_reason", kind: "string", description: "Durable reason for the queue rank." },
 ];
 
-/** Caller-selected existing decision number (update/amend). Never CLI-assigned. */
-const EXISTING_DECISION_NUMBER_DESCRIPTION =
-  "Existing decision number to update or amend. Caller-selected: it must match a numbered decision in the active projection or numbered archive and is never assigned by the CLI.";
-
 const glossaryCaveat = glossaryCaveatContract();
 
 const progressAppend: OperationField[] = [
@@ -137,13 +133,6 @@ const decisionAppend: OperationField[] = [
 const decisionUpdate: OperationField[] = [
   { flag: "--id", field: "id", kind: "string" },
   {
-    flag: "--number",
-    field: "number",
-    kind: "integer",
-    required: false,
-    description: EXISTING_DECISION_NUMBER_DESCRIPTION,
-  },
-  {
     flag: "--satisfaction-state",
     field: "satisfaction.state",
     kind: "string",
@@ -155,25 +144,10 @@ const decisionUpdate: OperationField[] = [
   { flag: "--confirmed-at", field: "satisfaction.user_confirmation.confirmed_at", kind: "string" },
 ];
 
-/**
- * Amending decision content fields. `--number` is caller-selected (an existing
- * decision). At least one amendable content field must be supplied; individual
- * fields are optional so the writer can validate the union requirement.
- * `--alternative-rejected` is repeatable and appends rejected alternatives.
- * Confidence values must be current vocabulary (firm|provisional|exploratory).
- * Amendment publication publishes a record-local revision document override
- * with recovery; the decisions projection is never rewritten.
- */
+/** Current decision amendments publish immutable revision entities by bare ID. */
 const decisionAmend: OperationField[] = [
   { flag: "--id", field: "id", kind: "string" },
   { flag: "--base-sha256", field: "base_sha256", kind: "string" },
-  {
-    flag: "--number",
-    field: "number",
-    kind: "integer",
-    required: false,
-    description: EXISTING_DECISION_NUMBER_DESCRIPTION,
-  },
   { flag: "--question", field: "question", kind: "string", required: false },
   { flag: "--context", field: "context", kind: "string", required: false },
   { flag: "--alternative-chosen", field: "alternatives.chosen", kind: "string", required: false },

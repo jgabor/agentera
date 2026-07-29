@@ -1004,15 +1004,6 @@ VITE+ - The Unified Toolchain for the Web
    `----
   help: Consider removing this import.
 
-  ! eslint(no-unused-vars): Identifier 'fs' is imported but never used.
-   ,-[test/cli/inspekteraEvaluationReport.test.ts:1:8]
- 1 | import fs from "node:fs";
-   :        ^|
-   :         `-- 'fs' is imported here
- 2 | import path from "node:path";
-   `----
-  help: Consider removing this import.
-
   ! eslint(no-unused-vars): Identifier 'isEmptyRequired' is imported but never used.
     ,-[src/hooks/validateArtifact/markdown.ts:13:21]
  12 | } from "../compaction/parse.js";

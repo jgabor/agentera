@@ -28,16 +28,24 @@ function nonGitProject(): string {
 }
 
 function git(root: string, args: string[]): string {
-  const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
+  const result = spawnSync(
+    "git",
+    [
+      "-c", "user.email=durability-test@example.invalid",
+      "-c", "user.name=Durability Test",
+      "-c", "commit.gpgsign=false",
+      ...args,
+    ],
+    { cwd: root, encoding: "utf8", shell: false },
+  );
   if (result.status !== 0) throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
   return String(result.stdout ?? "").trim();
 }
 
-function initGit(root: string): void {
+function gitProject(): string {
+  const root = project();
   git(root, ["init", "--quiet"]);
-  git(root, ["config", "user.email", "durability-test@example.invalid"]);
-  git(root, ["config", "user.name", "Durability Test"]);
-  git(root, ["config", "commit.gpgsign", "false"]);
+  return root;
 }
 
 function entityBytes(artifact = "progress", id = "aaaaaaaaaa"): string {
@@ -107,8 +115,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it("reports committed, dirty, and locally missing entity recovery through Git", () => {
-    const root = project();
-    initGit(root);
+    const root = gitProject();
     const target = writeEntity(root);
     const bytes = fs.readFileSync(target, "utf8");
     git(root, ["add", ".agentera"]);
@@ -121,8 +128,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it("never accepts a committed entity from an authority-undeclared boundary", () => {
-    const root = project();
-    initGit(root);
+    const root = gitProject();
     const directory = path.join(root, ".agentera/entities/progress/wrong_boundary");
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
@@ -138,8 +144,7 @@ describe("read-only entity and Git durability", () => {
     ["wrong artifact", entityBytes("health")],
     ["wrong id", entityBytes("progress", "bbbbbbbbbb")],
   ])("does not claim committed recovery for a canonical-path %s", (_label, bytes) => {
-    const root = project();
-    initGit(root);
+    const root = gitProject();
     const directory = path.join(root, ".agentera/entities/progress/progress_cycle");
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
@@ -160,8 +165,7 @@ describe("read-only entity and Git durability", () => {
       ["plan_task", { plan: "bbbbbbbbbb", name: "T", status: "pending", depends_on: [], acceptance: ["pass"] }],
     ]],
   ] as const)("reports conflicting committed recovery across every multi-boundary %s artifact", (artifact, candidates) => {
-    const root = project();
-    initGit(root);
+    const root = gitProject();
     fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     for (const [boundary, record] of candidates) {
@@ -176,7 +180,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it("does not verify a committed entity through a cross-artifact duplicate identity", () => {
-    const root = project(); initGit(root);
+    const root = gitProject();
     writeEntity(root);
     git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity"]);
     const duplicate = path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml");
@@ -190,7 +194,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it("does not verify a committed entity through same-artifact boundary ambiguity", () => {
-    const root = project(); initGit(root);
+    const root = gitProject();
     writeEntity(root);
     git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity"]);
     const source = { number: 1, summary: "ambiguous summary" };
@@ -219,7 +223,7 @@ describe("read-only entity and Git durability", () => {
     { label: "dirty", shallow: false },
     { label: "shallow", shallow: true },
   ])("rejects an uncommitted malformed provenance entity before $label Git fallbacks", ({ shallow }) => {
-    const root = project(); initGit(root);
+    const root = gitProject();
     fs.writeFileSync(path.join(root, "README.md"), "fixture\n");
     git(root, ["add", "README.md"]); git(root, ["commit", "--quiet", "-m", "baseline"]);
     const target = path.join(root, ".agentera/entities/progress/progress_summary/aaaaaaaaaa.yaml");
@@ -254,7 +258,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it("fails Git evidence closed when an entity path is replaced before its bytes are pinned", () => {
-    const root = project(); initGit(root);
+    const root = gitProject();
     const target = writeEntity(root);
     git(root, ["add", ".agentera"]); git(root, ["commit", "--quiet", "-m", "entity"]);
     const outside = path.join(root, "outside.yaml");
@@ -281,8 +285,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it("binds committed compacted summaries to the preserved aggregate blob from the same commit", () => {
-    const root = project();
-    initGit(root);
+    const root = gitProject();
     const source = { number: 1, summary: "committed summary" };
     const sourceDigest = createHash("sha256").update(canonicalRecordJson(source)).digest("hex");
     const directory = path.join(root, ".agentera/entities/progress/progress_summary");
@@ -338,7 +341,7 @@ describe("read-only entity and Git durability", () => {
   });
 
   it.each(["current_projection", "verified_archive"] as const)("binds inherited-confidence %s durability to its exact same-commit source", (sourceKind) => {
-    const root = project(); initGit(root);
+    const root = gitProject();
     const canonical = { date: "2026-07-17", question: "Q", context: "C", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "R", confidence: "high" };
     const sourceRecord = { number: 1, ...canonical };
     const digest = createHash("sha256").update(canonicalRecordJson(sourceRecord)).digest("hex");

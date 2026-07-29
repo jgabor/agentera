@@ -55,6 +55,46 @@ describe("decision entity authority", () => {
     expect(JSON.stringify(result)).not.toMatch(/stable_id|artifact_id|entry_number|"number"/);
   });
 
+  it("amends chosen and rejected alternatives through the advertised flags", () => {
+    const root = project(); base(root);
+    const current = getDecisionEntity(root, "aaaaaaaaaa") as any;
+    amendDecisionEntity(request(root, "amend", {
+      id: "aaaaaaaaaa",
+      base_sha256: current.entry.effective_sha256,
+      alternatives: { chosen: "Canonical entities", rejected: ["Aggregate", "Mutable archive"] },
+    }), { id: "bbbbbbbbbb" });
+    expect((getDecisionEntity(root, "aaaaaaaaaa") as any).entry.record.alternatives).toEqual([
+      { name: "Canonical entities", status: "chosen" },
+      { name: "Aggregate", status: "rejected" },
+      { name: "Mutable archive", status: "rejected" },
+    ]);
+  });
+
+  it("rejects malformed decision revision value types during entity validation", () => {
+    const root = project(); base(root);
+    const current = getDecisionEntity(root, "aaaaaaaaaa") as any;
+    const directory = path.join(root, ".agentera/entities/decisions/decision_revision");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, "bbbbbbbbbb.yaml"), dumpYamlMapping({ id: "bbbbbbbbbb", artifact: "decisions", record: { decision: "aaaaaaaaaa", date: "2026-07-18", provenance: "historical_revision", base_sha256: current.entry.effective_sha256, changes: { choice: 42 } } }));
+
+    const validation = validateEntityState(root);
+    expect(validation.valid).toBe(false);
+    expect(validation.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "malformed_entity", boundary: "decision_revision", message: expect.stringContaining("choice must be a non-empty string") })]));
+  });
+
+  it.each([
+    ["mixed alternatives", { alternatives: [{ name: "Replacement", status: "chosen" }], "alternatives.chosen": "Granular" }, "must not mix migration-only alternatives replacement"],
+    ["unproven legacy confidence", { confidence: "high" }, "requires mapping migration_provenance"],
+  ])("rejects %s in canonical revision entities", (_case, changes, message) => {
+    const root = project(); base(root);
+    const current = getDecisionEntity(root, "aaaaaaaaaa") as any;
+    const directory = path.join(root, ".agentera/entities/decisions/decision_revision");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, "bbbbbbbbbb.yaml"), dumpYamlMapping({ id: "bbbbbbbbbb", artifact: "decisions", record: { decision: "aaaaaaaaaa", date: "2026-07-18", provenance: "historical_revision", base_sha256: current.entry.effective_sha256, changes } }));
+
+    expect(validateEntityState(root).issues).toEqual(expect.arrayContaining([expect.objectContaining({ boundary: "decision_revision", message: expect.stringContaining(message) })]));
+  });
+
   it.each(["high", "medium", "low"])("reports migration-proven inherited confidence %s in exact and list reads", (confidence) => {
     const root = project(); base(root);
     const entityPath = path.join(root, ".agentera/entities/decisions/decision/aaaaaaaaaa.yaml");

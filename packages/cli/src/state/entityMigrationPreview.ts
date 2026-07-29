@@ -15,6 +15,8 @@ import { canonicalEntityEnvelopeBytes, entityForbiddenCanonicalAliases, entityPr
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 import { classifyCompleteDecisionConfidence, decisionLegacyCoexistence } from "./decisionLegacyValidation.js";
+import { migrateDecisionRevisionEntries } from "./decisionRevisionMigration.js";
+import { entityMigrationId } from "./entityMigrationIdentity.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 import { yamlArchiveEntry } from "../hooks/compaction/retention.js";
@@ -653,11 +655,6 @@ function preservedSingletons(files: SourceFile[]): EntityMigrationPreview["prese
   });
 }
 
-function previewId(fingerprint: string, key: string): string {
-  const bytes = createHash("sha256").update(`agentera.entity-preview.v1\0${fingerprint}\0${key}`, "utf8").digest();
-  return Array.from(bytes.subarray(0, 10), (byte) => String.fromCharCode(97 + byte % 26)).join("");
-}
-
 function summaryBoundary(artifact: string, fallback: string): string {
   return ({ progress: "progress_summary", decisions: "decision_summary", health: "health_summary" } as const)[artifact as "progress" | "decisions" | "health"] ?? fallback;
 }
@@ -679,7 +676,6 @@ function classify(group: Observation[], forbiddenAliases: readonly string[]): En
   const full = group.filter((item) => item.detail === "full" && item.record);
   const bodies = new Set(full.map((item) => canonicalRecordJson(item.record)));
   if (bodies.size > 1) return "duplicate";
-  const projections = full.filter((item) => item.provenance === "current_projection");
   const archive = group.find((item) => item.provenance === "verified_archive" && item.record);
   const summaries = group.filter((item) => item.detail === "summary" && item.record);
   if (full.length && summaries.length) {
@@ -702,7 +698,7 @@ function exactProjectionMirror(artifact: string, full: JsonObject, summary: Json
   return canonicalRecordJson(yamlArchiveEntry(artifact, full)) === canonicalRecordJson(summary);
 }
 
-function buildEntries(project: string, fingerprint: string, observations: Observation[], forbiddenAliases: readonly string[]): DurableEntityMigrationEntry[] {
+function buildEntries(project: string, sourceRoot: string, fingerprint: string, observations: Observation[], forbiddenAliases: readonly string[]): DurableEntityMigrationEntry[] {
   const groups = new Map<string, Observation[]>();
   for (const observation of observations) groups.set(observation.key, [...(groups.get(observation.key) ?? []), observation]);
   const ids = new Map<string, string>();
@@ -712,7 +708,7 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
       ? [...canonicalSummaryBodies(group, forbiddenAliases)].sort()
       : [];
     const identityBinding = canonicalSummaries.length === 1 ? hash(canonicalRecordJson(canonicalSummaries)) : fingerprint;
-    ids.set(key, previewId(identityBinding, key));
+    ids.set(key, entityMigrationId(identityBinding, key));
   }
   const collisions = new Set<string>();
   const idOwners = new Map<string, string>();
@@ -772,20 +768,13 @@ function buildEntries(project: string, fingerprint: string, observations: Observ
     };
   }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
   const decisions = new Map(entries.filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target).map((entry) => [entry.proposed_target!.id, entry.record]));
-  const groupedRevisions = new Map<string, DurableEntityMigrationEntry[]>();
-  for (const entry of entries.filter(({ boundary }) => boundary === "decision_revision")) {
-    const decision = entry.relationships.find(({ field }) => field === "decision")?.target_id ?? "";
-    groupedRevisions.set(decision, [...(groupedRevisions.get(decision) ?? []), entry]);
-  }
-  for (const [decision, revisions] of groupedRevisions) {
-    let effective = structuredClone(decisions.get(decision) ?? {});
-    for (const entry of revisions.sort((left, right) => left.source_identity.localeCompare(right.source_identity, undefined, { numeric: true }))) {
-      const source = entry.record;
-      const changes = mapping(source.changes) ? structuredClone(source.changes) as JsonObject : Object.fromEntries(Object.entries(source).filter(([field]) => !["decision", "date", "provenance", "base_sha256"].includes(field))) as JsonObject;
-      entry.record = { decision, date: source.date, provenance: source.provenance, base_sha256: hash(canonicalRecordJson(effective)), changes };
-      effective = { ...effective, ...structuredClone(changes) };
-    }
-  }
+  const legacyDecisions = new Map(entries.filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target).flatMap((entry) => {
+    const group = groups.get(entry.source_identity) ?? [];
+    const source = group.find((item) => item.provenance === "verified_archive" && item.detail === "full" && item.record)
+      ?? group.find((item) => item.detail === "full" && item.record);
+    return source?.record ? [[entry.proposed_target!.id, source.record] as const] : [];
+  }));
+  migrateDecisionRevisionEntries(entries, decisions, legacyDecisions, sourceRoot, forbiddenAliases, fingerprint);
   return entries;
 }
 
@@ -821,7 +810,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   objectiveObservations(project, files, observations);
   todoAndDocs(project, todoPath, files, observations);
   const preserved = preservedSingletons(files);
-  const completeInventory = buildEntries(project, fingerprint, observations, entityForbiddenCanonicalAliases(sourceRoot));
+  const completeInventory = buildEntries(project, sourceRoot, fingerprint, observations, entityForbiddenCanonicalAliases(sourceRoot));
   const preservedResidues = completeInventory.filter((entry) => entry.classification === "historical_projection_residue");
   const completeEntries = completeInventory.filter((entry) => entry.classification !== "historical_projection_residue");
   for (const entry of completeEntries) {
@@ -835,7 +824,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
     entry.classification = "corrupt";
     entry.proposed_target = null;
     entry.target_sha256 = null;
-    entry.recovery = recovery(project, entry.source_paths[0]);
+    if (entry.recovery === "none") entry.recovery = recovery(project, entry.source_paths[0]);
     causal.rootReasons.set(entry.source_identity, `target_invalid: ${diagnostic.message}`);
   }
   causal = applyCausalBlockers(completeEntries, project, (sourcePath) => recovery(project, sourcePath), causal.rootReasons);

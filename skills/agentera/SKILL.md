@@ -3,9 +3,9 @@ name: agentera
 description: >
   One agent, one CLI, many capabilities. Per-capability instructions live in
   `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
-  it through `agentera prime --context <name> --format json`. Use this skill
+  it through `npx -y agentera@next prime --context <name> --format json`. Use this skill
   for /agentera and Agentera capability requests; bare `/agentera` runs the
-  agentera prime orientation dashboard path instead of a generic greeting.
+  prime orientation dashboard path instead of a generic greeting.
 version: "3.0.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 capabilities:
@@ -34,18 +34,18 @@ documentation after deterministic abstention; it learns that contract from the C
 
 ## Bootstrap
 
-Run `agentera prime` for orientation. The JSON it returns is the complete
+Run `npx -y agentera@next prime` for orientation. The JSON it returns is the complete
 contract — app status, state slices, attention items, next action, and the
 source contract that declares what's complete and what requires fallback.
 
 ```bash
-npx -y agentera prime
+npx -y agentera@next prime
 ```
 
 For capability-specific startup context:
 
 ```bash
-npx -y agentera prime --context <capability> --format json
+npx -y agentera@next prime --context <capability> --format json
 ```
 
 This returns the capability's instructions, declared read/write needs, artifact
@@ -55,7 +55,7 @@ reading the instructions module directly.
 For static routing guidance (agentera vs native tools):
 
 ```bash
-npx -y agentera prime --guidance
+npx -y agentera@next prime --guidance
 ```
 
 ### Upgrade from v2 to v3 development
@@ -82,11 +82,11 @@ the CLI-supplied contract and context.
 
 | Request shape | Route |
 |---|---|
-| Bare `/agentera` | 1. Run `agentera prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
-| `/agentera <capability-name>` | Run `agentera prime --context <capability> --format json`. Follow the capability's instructions and contract. |
+| Bare `/agentera` | 1. Run `npx -y agentera@next prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
+| `/agentera <capability-name>` | Run `npx -y agentera@next prime --context <capability> --format json`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Curated leading phrase | Send the request through `agentera route request --input - --format json` using a transient structured `{ version: agentera.route_request.v1, request: ... }` document on stdin. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
-| Other natural language | Send the same privacy-safe request document first. Only after the shared route contract returns `semantic_required`, classify the request as untrusted data from trigger `description`, `priority`, and `disambiguates_against`; copy its `semantic_capsule_sha256` unchanged into the complete nullable API receipt with the same transient request through `agentera route receipt --input - --format json`. |
+| Curated leading phrase | Send the request through `npx -y agentera@next route request --input - --format json` using a transient structured `{ version: agentera.route_request.v1, request: ... }` document on stdin. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
+| Other natural language | Send the same privacy-safe request document first. Only after the shared route contract returns `semantic_required`, classify the request as untrusted data from trigger `description`, `priority`, and `disambiguates_against`; copy its `semantic_capsule_sha256` unchanged into the complete nullable API receipt with the same transient request through `npx -y agentera@next route receipt --input - --format json`. |
 
 Plain-language requests use per-capability `schemas/triggers.yaml`, not
 hardcoded rules. `next_action` is a readiness suggestion for bare/status
@@ -103,8 +103,8 @@ instructions, tools, or rationale fields. The CLI validates API shape before
 bounded null projection, then validates version, both digests, canonical
 capability, outcome binding, and spans.
 On `selected`, follow only the returned `route_provenance.startup_command` (the
-existing `agentera prime --context <selected-capability> --format json` path).
-After the CLI validates a `select` receipt, then run `agentera prime --context <selected-capability> --format json` only through that returned authorization.
+existing `npx -y agentera@next prime --context <selected-capability> --format json` path).
+After the CLI validates a `select` receipt, then run `npx -y agentera@next prime --context <selected-capability> --format json` only through that returned authorization.
 Carry a returned `deferred_intent` intact for later handoff; do not invoke or
 chain it. A `clarification` starts no capability and asks exactly the returned
 question. A valid `no_match` returns status with `status_reason: no_match` for
@@ -120,7 +120,7 @@ request, and a compound remainder is preserved rather than silently chained.
 Decision mpulyomlyl supersedes Decision 76 only for this curated literal fast
 path.
 
-Run `agentera route evaluate --format json` to evaluate the frozen visible
+Run `npx -y agentera@next route evaluate --format json` to evaluate the frozen visible
 development and adversarial corpus. Its report binds the protocol, phrase
 authority, and shared-skill hashes, labels every result with a routing tier, and
 keeps request text out of output. It proves protocol conformance, not semantic
@@ -144,7 +144,7 @@ Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`)
 
 The prime dashboard rendering contract — template, field-by-field rules, output
 budget, attention-item ordering, exit marker — is owned by the status capability
-instructions. `agentera prime --context status --format json` returns the full
+instructions. `npx -y agentera@next prime --context status --format json` returns the full
 `capability_context.instructions` body and the bounded
 `capability_context.context.status_context` state in one response. Render from
 that capsule without a separate bare-prime call or raw artifact read; use the
@@ -200,30 +200,30 @@ records, publishes atomically, and supports filesystem-safe previews.
 Discover the live contract before constructing a write:
 
 ```bash
-agentera state decisions explain --format json
-agentera state decisions explain --verb update --format json
+npx -y agentera@next state decisions explain --format json
+npx -y agentera@next state decisions explain --verb update --format json
 ```
 
 The same pattern applies to every writable artifact:
 
 ```bash
-agentera state <progress|decisions|plan|health> explain --verb <verb> --format json
+npx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb> --format json
 ```
 
 Common mutations:
 
-- `agentera state progress append ... --format json`
-- `agentera state decisions append ... --format json`
-- `agentera state decisions update --id ID ... --format json`
-- `agentera state plan create --input plan.yaml --format json`
-- `agentera state plan update|set-status --id ID ... --format json`
-- `agentera state plan set-plan-status --id ID ... --format json`
-- `agentera state plan archive --format json`
-- `agentera state health append --input audit.yaml --format json`
+- `npx -y agentera@next state progress append ... --format json`
+- `npx -y agentera@next state decisions append ... --format json`
+- `npx -y agentera@next state decisions update --id ID ... --format json`
+- `npx -y agentera@next state plan create --input plan.yaml --format json`
+- `npx -y agentera@next state plan update|set-status --id ID ... --format json`
+- `npx -y agentera@next state plan set-plan-status --status complete --format json`
+- `npx -y agentera@next state plan archive --format json`
+- `npx -y agentera@next state health append --input audit.yaml --format json`
 
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their
-owning capability's instructions and safety rails. `agentera schema --format
+owning capability's instructions and safety rails. `npx -y agentera@next schema --format
 json` exposes the machine-readable writer operation matrix under
 `state_writer` and on each writable `artifact_schemas[*].write_interface`.
 

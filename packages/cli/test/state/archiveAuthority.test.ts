@@ -24,7 +24,7 @@ function authorityErrors(value: Record<string, any>): string[] {
   if (JSON.stringify(artifactIds) !== JSON.stringify(["progress", "decisions", "health"])) errors.push("supported_artifacts");
   if (value.storage?.project_root?.archive_path_template !== ".agentera/archive/<artifact-id>/<entry-number>.yaml") errors.push("archive_path_template");
   if (value.envelope?.schema_version !== "agentera.stateArchiveEntry.v1") errors.push("envelope.schema_version");
-  if (value.api?.direct_get?.command !== "agentera state <artifact-id> get --number N --format json") errors.push("direct_get.command");
+  if (value.api?.direct_get?.command !== "agentera state <artifact-id> get --id ID --format json") errors.push("direct_get.command");
   if (value.api?.list?.command !== "agentera state <artifact-id> list [--limit N] [--cursor TOKEN] --format json") errors.push("list.command");
   if (value.api?.list?.maximum_limit < value.api?.list?.minimum_limit) errors.push("list.limit_range");
   if (!String(value.api?.cursor?.append_behavior ?? "").includes("excluded")) errors.push("cursor.append_behavior");
@@ -55,6 +55,7 @@ describe("state storage authority", () => {
       expect.arrayContaining(["commit", "commit_hash", "git_commit", "git_ref"]),
     );
     expect(authority.overlays.location).toBe(".agentera/overlays/decisions.yaml");
+    expect(authority.overlays).toMatchObject({ legacy_source_state: "migration_input_only", current_entity_boundary: "decision_satisfaction" });
     expect(authority.overlays.mutable_paths).toEqual([
       "satisfaction.state",
       "satisfaction.evidence",
@@ -64,8 +65,9 @@ describe("state storage authority", () => {
     expect(authority.overlays.derived_paths).toEqual(
       expect.arrayContaining(["satisfaction.review_needed", "satisfaction.caveats"]),
     );
-    expect(authority.projections.archive.role).toContain("complete immutable");
-    expect(authority.projections.current.role).toContain("bounded active");
+    expect(authority.projections.archive).toMatchObject({ source_state: "migration_input_only", role: expect.stringContaining("complete immutable") });
+    expect(authority.projections.current).toMatchObject({ source_state: "migration_input_only", role: expect.stringContaining("bounded aggregate") });
+    expect(authority.projections.startup.source_state).toBe("canonical_entity_authority");
     expect(authority.projections.current.default_capacity).toEqual({
       active_entries: 10,
       summary_entries: 40,
@@ -141,11 +143,15 @@ describe("state storage authority", () => {
     const api = authority.api;
 
     expect(api.namespace).toBe("agentera state");
-    expect(api.direct_get.required_selector).toBe("--number N");
+    expect(api.direct_get.required_selector).toBe("--id ID");
     expect(api.list.default_limit).toBe(20);
     expect(api.list.minimum_limit).toBe(1);
     expect(api.list.maximum_limit).toBe(100);
-    expect(api.list.ordering).toBe("identity.ordering.list");
+    expect(api.list.ordering).toEqual({
+      progress: "timestamp_desc_then_publication_order_desc_then_id_asc",
+      decisions: "date_desc_then_id_asc",
+      health: "appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc",
+    });
     expect(api.cursor.snapshot_identity).toContain("deterministic hash");
     expect(api.cursor.append_behavior).toContain("excluded");
     expect(api.cursor.unavailable).toContain("cursor_snapshot_unavailable");
@@ -153,7 +159,7 @@ describe("state storage authority", () => {
       expect.arrayContaining(["entries", "counts", "snapshot", "source_contract"]),
     );
     expect(api.durability).toMatchObject({
-      command: "agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json",
+      command: "agentera check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N] --format json",
       default_limit: 100,
       maximum_limit: 100,
       status_values: ["complete", "degraded", "unavailable"],

@@ -1,106 +1,42 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { loadYamlMapping } from "../../../src/core/yaml.js";
+import { canonicalRecordJson } from "../../../src/state/archiveDiscovery.js";
+import { dumpYamlMapping, loadYamlMapping } from "../../../src/core/yaml.js";
+import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../../helpers/sourceSubprocess.js";
 
-const PACKAGE_ROOT = path.resolve(__dirname, "../../..");
-const REPO_ROOT = path.resolve(PACKAGE_ROOT, "../..");
-let buildRoot = "";
-let cliBundle = "";
-
-beforeAll(() => {
-  buildRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-writer-process-test-"));
-  cliBundle = path.join(buildRoot, "agentera.mjs");
-  const built = spawnSync(
-    "pnpm",
-    [
-      "exec",
-      "esbuild",
-      "src/bin/agentera.ts",
-      "--bundle",
-      "--platform=node",
-      "--format=esm",
-      "--external:yaml",
-      `--outfile=${cliBundle}`,
-    ],
-    { cwd: PACKAGE_ROOT, encoding: "utf8" },
-  );
-  if (built.status !== 0)
-    throw new Error(`failed to bundle writer process fixture: ${built.stderr}`);
-  fs.symlinkSync(
-    path.join(PACKAGE_ROOT, "node_modules"),
-    path.join(buildRoot, "node_modules"),
-    "dir",
-  );
-});
-
-afterAll(() => {
-  if (buildRoot) fs.rmSync(buildRoot, { recursive: true, force: true });
-});
+const REPO_ROOT = path.resolve(__dirname, "../../../../..");
+const CLI = path.join(sourceBuildOutputRoot(), "bin/agentera.js");
 
 function runProcess(
   project: string,
-  artifact: "progress" | "decisions",
   suffix: string,
   caveat = false,
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
-  const args =
-    artifact === "progress"
-      ? [
-          "state",
-          "progress",
-          "append",
-          "--project",
-          project,
-          "--type",
-          "test",
-          "--phase",
-          "build",
-          "--what",
-          `process ${suffix}`,
-          "--intent",
-          "prove serialization",
-          "--format",
-          "json",
-          ...(caveat
-            ? [
-                "--glossary-caveat-event",
-                "current",
-                "--glossary-caveat-reason",
-                "inferred_equivalence",
-                "--glossary-caveat-ownership-state",
-                "review_required",
-              ]
-            : []),
-        ]
-      : [
-          "state",
-          "decisions",
-          "append",
-          "--project",
-          project,
-          "--question",
-          `Question ${suffix}?`,
-          "--context",
-          "process coverage",
-          "--alternative-chosen",
-          "writer lock",
-          "--choice",
-          "serialize",
-          "--reasoning",
-          "prevent lost updates",
-          "--confidence",
-          "firm",
-          "--format",
-          "json",
-        ];
+  return runCli(project, [
+    "state", "progress", "append", "--project", project,
+    "--type", "test", "--phase", "build", "--what", `process ${suffix}`,
+    "--intent", "prove serialization", "--format", "json",
+    ...(caveat ? [
+      "--glossary-caveat-event", "current",
+      "--glossary-caveat-reason", "inferred_equivalence",
+      "--glossary-caveat-ownership-state", "review_required",
+    ] : []),
+  ]);
+}
+
+function runCli(
+  project: string,
+  args: string[],
+): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [cliBundle, ...args], {
+    const child = spawn(process.execPath, [CLI, ...args], {
       cwd: REPO_ROOT,
-      env: { ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT },
+      env: sourceSubprocessEnv({ ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT }),
     });
     let stdout = "";
     let stderr = "";
@@ -114,6 +50,23 @@ function runProcess(
   });
 }
 
+function decision(project: string): { id: string; sha256: string } {
+  const id = "aaaaaaaaaa";
+  const record = {
+    date: "2026-07-29",
+    question: "Where should decision state live?",
+    context: "Concurrency must preserve one owner.",
+    alternatives: [{ name: "Entities", status: "chosen" }],
+    choice: "Canonical entities",
+    reasoning: "One writer owns each mutation boundary.",
+    confidence: "firm",
+  };
+  const directory = path.join(project, ".agentera/entities/decisions/decision");
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "decisions", record }));
+  return { id, sha256: createHash("sha256").update(canonicalRecordJson(record)).digest("hex") };
+}
+
 function entityProject(prefix: string): string {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   fs.mkdirSync(path.join(project, ".agentera"));
@@ -121,13 +74,13 @@ function entityProject(prefix: string): string {
   return project;
 }
 
-describe("real-process writer serialization", () => {
+describe("real-process writer concurrency", () => {
   it("serializes concurrent current caveat replay to one progress entity", async () => {
     const project = entityProject("agentera-writer-caveat-");
     try {
       const results = await Promise.all([
-        runProcess(project, "progress", "one", true),
-        runProcess(project, "progress", "two", true),
+        runProcess(project, "one", true),
+        runProcess(project, "two", true),
       ]);
       expect(results.map((result) => result.code), JSON.stringify(results)).toEqual([0, 0]);
       const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
@@ -140,12 +93,12 @@ describe("real-process writer serialization", () => {
     }
   });
 
-  it("serializes same-artifact entity writers without lost entries or duplicate IDs", async () => {
+  it("publishes concurrent same-artifact entities without lost entries or duplicate IDs", async () => {
     const project = entityProject("agentera-writer-same-");
     try {
       const results = await Promise.all([
-        runProcess(project, "progress", "one"),
-        runProcess(project, "progress", "two"),
+        runProcess(project, "one"),
+        runProcess(project, "two"),
       ]);
       expect(
         results.map((result) => result.code),
@@ -163,23 +116,38 @@ describe("real-process writer serialization", () => {
     }
   });
 
-  it("uses the project lock across different artifacts", async () => {
-    const project = entityProject("agentera-writer-cross-");
+  it("converges concurrent satisfaction updates on one owner", async () => {
+    const project = entityProject("agentera-writer-decision-update-");
+    const { id } = decision(project);
     try {
-      const results = await Promise.all([
-        runProcess(project, "progress", "progress"),
-        runProcess(project, "decisions", "decision"),
-      ]);
-      expect(
-        results.map((result) => result.code),
-        JSON.stringify(results),
-      ).toEqual([0, 0]);
-      expect(fs.readdirSync(path.join(project, ".agentera/entities/progress/progress_cycle"))).toHaveLength(1);
-      expect(fs.readdirSync(path.join(project, ".agentera/entities/decisions/decision"))).toHaveLength(1);
-      expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(false);
-      expect(fs.existsSync(path.join(project, ".agentera/decisions.yaml"))).toBe(false);
+      const args = ["state", "decisions", "update", "--project", project, "--id", id, "--satisfaction-state", "provisionally_satisfied", "--satisfaction-evidence", "verified", "--format", "json"];
+      const results = await Promise.all(Array.from({ length: 8 }, () => runCli(project, args)));
+      expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual(Array(8).fill(0));
+      const directory = path.join(project, ".agentera/entities/decisions/decision_satisfaction");
+      expect(fs.readdirSync(directory)).toHaveLength(1);
+      const payloads = results.map(({ stdout }) => JSON.parse(stdout));
+      expect(new Set(payloads.map(({ id: owner }) => owner)).size).toBe(1);
+      expect(payloads.filter(({ operation }) => operation.idempotent_replay)).toHaveLength(7);
     } finally {
       fs.rmSync(project, { recursive: true, force: true });
     }
   });
+
+  it("converges concurrent identical amendments on one revision", async () => {
+    const project = entityProject("agentera-writer-decision-amend-");
+    const { id, sha256 } = decision(project);
+    try {
+      const args = ["state", "decisions", "amend", "--project", project, "--id", id, "--base-sha256", sha256, "--choice", "Entity revisions", "--format", "json"];
+      const results = await Promise.all(Array.from({ length: 8 }, () => runCli(project, args)));
+      expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual(Array(8).fill(0));
+      const directory = path.join(project, ".agentera/entities/decisions/decision_revision");
+      expect(fs.readdirSync(directory)).toHaveLength(1);
+      const payloads = results.map(({ stdout }) => JSON.parse(stdout));
+      expect(new Set(payloads.map(({ id: owner }) => owner)).size).toBe(1);
+      expect(payloads.filter(({ operation }) => operation.idempotent_replay)).toHaveLength(7);
+    } finally {
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+
 });

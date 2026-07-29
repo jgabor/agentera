@@ -438,15 +438,19 @@ describe("cli validate artifact", () => {
   it("fails an invalid artifact file (rc 2)", () => {
     const f = fs.mkdtempSync(path.join(os.tmpdir(), "va-"));
     const bad = path.join(f, "bad.yaml");
-    fs.writeFileSync(bad, "x");
-    const { rc, out } = capture((io) =>
-      cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io),
-    );
-    expect(rc).toBe(2);
-    const payload = JSON.parse(out);
-    expect(payload.status).toBe("fail");
-    expect(payload.violations.length).toBeGreaterThan(0);
-    fs.rmSync(f, { recursive: true, force: true });
+    try {
+      fs.writeFileSync(bad, "x");
+      const { rc, out } = capture((io) =>
+        cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io),
+      );
+      expect(rc).toBe(2);
+      const payload = JSON.parse(out);
+      expect(payload.status).toBe("fail");
+      expect(payload.violations.length).toBeGreaterThan(0);
+      expect(payload.engine).toEqual({ command: "validate-artifact", exit_code: 2 });
+    } finally {
+      fs.rmSync(f, { recursive: true, force: true });
+    }
   });
 
   it("rejects an unsupported artifact label", () => {

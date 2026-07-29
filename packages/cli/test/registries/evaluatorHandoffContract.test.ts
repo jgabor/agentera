@@ -11,7 +11,6 @@ import {
   validateEvaluationReport,
   verifyWarnCitationAtLine,
 } from "../../src/registries/evaluatorHandoffContract.js";
-import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -50,8 +49,10 @@ describe("evaluator handoff contract loader", () => {
       },
       contract,
     );
-    expect(errors.some((e) => e.includes("missing citation"))).toBe(true);
-    expect(errors.length).toBeGreaterThanOrEqual(2);
+    expect(errors).toEqual([
+      "rows[0]: WARN/FAIL row missing citation",
+      "rows[1]: WARN/FAIL row missing citation",
+    ]);
   });
 
   it("fails validation when WARN row with file:line citation lacks verify_command", () => {
@@ -116,25 +117,4 @@ describe("inspektera evaluation report citation regression", () => {
     }
   });
 
-  it("stays green when project TODO.md ledger lines shift", () => {
-    const root = useFixtureProject("ok");
-    try {
-      const todoPath = path.join(root, "TODO.md");
-      const original = fs.readFileSync(todoPath, "utf8");
-      const shifted =
-        "# TODO\n\n## ⇶ Critical\n\n- [chore:3.0.0] Decoy line inserted above real items\n\n" +
-        original.replace(/^# TODO\n\n/, "");
-      fs.writeFileSync(todoPath, shifted);
-      for (const row of report.rows.filter(
-        (r: { status: string; verify_command?: string }) =>
-          String(r.status).toUpperCase() === "WARN" && r.verify_command,
-      )) {
-        expect(verifyWarnCitationAtLine(row, REPO_ROOT).ok, row.citation).toBe(true);
-      }
-      const errors = validateEvaluationReport(report, contract);
-      expect(errors).toEqual([]);
-    } finally {
-      cleanupFixtureProject(root);
-    }
-  });
 });

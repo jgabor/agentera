@@ -217,13 +217,31 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     });
   });
 
+  it.each([
+    ["invalid-input-envelope.json", ["test/cli/invalidInputEnvelope.test.ts"]],
+    ["npm-cli-surface.json", ["test/cli/npmParityMatrix.test.ts"]],
+    ["parity-remaining-families.json", [
+      "test/cli/npmParityMatrix.test.ts",
+      "test/cli/validateParity.test.ts",
+      "test/cli/compactParity.test.ts",
+      "test/cli/doctorUpgradeParity.test.ts",
+      "test/scripts/pyTsParity.test.ts",
+    ]],
+    ["source-contract.json", ["test/cli/sourceContractOracles.test.ts"]],
+    ["validate-family.json", ["test/cli/validateVerifyOracles.test.ts", "test/cli/validateParity.test.ts"]],
+    ["verify-eval-family.json", ["test/cli/validateVerifyOracles.test.ts"]],
+    ["inspektera-evaluation-report.json", ["test/registries/evaluatorHandoffContract.test.ts"]],
+  ] as const)("routes oracle %s to its owners", (fixture, targets) => {
+    expect(runPrecommitVitest(`packages/cli/test/cli/fixtures/oracle/${fixture}`)).toEqual({
+      mode: "targeted",
+      targets: [...targets],
+    });
+  });
+
   it("falls back to targeted smoke tests for unrelated staged paths", () => {
     expect(runPrecommitVitest("README.md")).toEqual({
       mode: "targeted",
-      targets: [
-        "test/registries/evaluatorHandoffContract.test.ts",
-        "test/cli/inspekteraEvaluationReport.test.ts",
-      ],
+      targets: ["test/registries/evaluatorHandoffContract.test.ts"],
     });
   });
 });

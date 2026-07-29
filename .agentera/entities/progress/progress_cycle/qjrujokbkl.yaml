@@ -1,0 +1,16 @@
+id: qjrujokbkl
+artifact: progress
+record:
+  timestamp: 2026-07-29 20:33
+  type: fix
+  phase: build
+  what: Retired aggregate decision-revision runtime and redundant oracle, evaluator, and concurrency tests; made decision update and amend ownership atomic; migrated legacy revision chains with exact alternative replacement, dateless evidence, value and hash validation, and source-bound legacy-confidence provenance; aligned entity-only API, skill, oracle, startup, and durability contracts.
+  context:
+    intent: Address every review finding while reducing duplicate test ownership and preserving one canonical entity-state contract.
+    constraints: No publish, push, or merge; aggregate decision files remain read-only migration inputs.
+    scope: Decision entity mutation and migration, state authority, CLI examples, oracle ownership, startup tests, evaluator ownership, concurrency and durability tests.
+  inspiration: User-requested test review cleanup and independent final diff review.
+  discovered: Independent process review exposed competing decision owners and migration cases that sampled tests had hidden.
+  verified: "Isolated source lane: 217 files, 2949 passed, 1 skipped; package: 17 passed; performance and stress owners passed; typecheck, build, lint, compact, capability-contract, build capability, and diff checks passed."
+  next: Commit the verified change and request explicit permission before merging into feat/v3.
+  publication_order: 6

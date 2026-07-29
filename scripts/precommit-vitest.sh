@@ -30,7 +30,6 @@ done
 
 SMOKE=(
   test/registries/evaluatorHandoffContract.test.ts
-  test/cli/inspekteraEvaluationReport.test.ts
 )
 
 RUN_POLICY=""
@@ -75,9 +74,34 @@ for f in "${STAGED[@]}"; do
           add_target test/cli/state.test.ts
           add_target test/cli/orientation.test.ts
           ;;
-        packages/cli/test/cli/fixtures/oracle/*|packages/cli/test/cli/fixtures/citation-anchor-todo.md)
+        packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json)
+          add_target test/cli/invalidInputEnvelope.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json)
+          add_target test/cli/npmParityMatrix.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json)
+          add_target test/cli/npmParityMatrix.test.ts
+          add_target test/cli/validateParity.test.ts
+          add_target test/cli/compactParity.test.ts
+          add_target test/cli/doctorUpgradeParity.test.ts
+          add_target test/scripts/pyTsParity.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/source-contract.json)
+          add_target test/cli/sourceContractOracles.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/validate-family.json)
+          add_target test/cli/validateVerifyOracles.test.ts
+          add_target test/cli/validateParity.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/verify-eval-family.json)
+          add_target test/cli/validateVerifyOracles.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/inspektera-evaluation-report.json|packages/cli/test/cli/fixtures/citation-anchor-todo.md)
           add_target test/registries/evaluatorHandoffContract.test.ts
-          add_target test/cli/inspekteraEvaluationReport.test.ts
+          ;;
+        packages/cli/test/cli/fixtures/oracle/*)
+          select_local_policy
           ;;
         *)
           select_local_policy

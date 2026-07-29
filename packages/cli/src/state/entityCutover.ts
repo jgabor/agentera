@@ -17,7 +17,6 @@ export const FORWARD_MANIFEST = `${MIGRATION_ROOT}/forward.yaml`;
 export const ENTITY_MODE_MARKER = ".agentera/state-mode.yaml";
 
 const MANIFEST_SCHEMA = "agentera.entityCutoverManifest.v1";
-const MARKER_BYTES = dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities" });
 const SHA256 = /^[a-f0-9]{64}$/;
 
 interface HistoricalForwardManifest {
@@ -262,17 +261,18 @@ function publishTargets(project: string, plan: DurableEntityMigrationPlan): void
   }
 }
 
-function publishMarker(project: string): void {
+function publishMarker(project: string, plan: DurableEntityMigrationPlan): void {
+  const markerBytes = dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities", source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest });
   const existing = markerSnapshot(project);
   if (existing.kind === "file") {
-    if (!existing.bytes.equals(Buffer.from(MARKER_BYTES))) throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker has unexpected bytes`);
+    if (!existing.bytes.equals(Buffer.from(markerBytes))) throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker has unexpected bytes`);
     return;
   }
   if (existing.kind !== "missing") throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker path is unsafe`);
   ensureDirectory(project, ".agentera");
   const temporary = path.join(project, `.agentera/.state-mode-${randomUUID()}.tmp`);
   try {
-    writeDurable(temporary, MARKER_BYTES);
+    writeDurable(temporary, markerBytes);
     fault("before_marker");
     if (fs.existsSync(path.join(project, ENTITY_MODE_MARKER))) throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker appeared during publication`);
     fs.renameSync(temporary, path.join(project, ENTITY_MODE_MARKER));
@@ -293,12 +293,12 @@ export function applyPreparedEntityCutover(prepared: PreparedEntityCutover, acti
     const plan = current.plan!;
     if (current.head !== prepared.head || plan.source_fingerprint !== prepared.sourceFingerprint || plan.preview_digest !== prepared.previewDigest) throw new EntityCutoverError("first unresolved path '.agentera': converted input changed before its first effect");
     publishTargets(prepared.project, plan);
-    const validation = validateEntityState(prepared.project, prepared.sourceRoot);
+    const validation = validateEntityState(prepared.project, prepared.sourceRoot, { kind: "migration_preview", projectRoot: prepared.project });
     if (!validation.valid || validation.entityCount !== plan.entries.length) {
       const issue = validation.issues[0];
       throw new EntityCutoverError(`first unresolved path '${issue?.path ?? ".agentera/entities"}': converted entity graph is invalid (${validation.entityCount}/${plan.entries.length})${issue ? `: ${issue.message}` : ""}`);
     }
-    publishMarker(prepared.project);
+    publishMarker(prepared.project, plan);
     const marker = markerSnapshot(prepared.project);
     if (marker.kind !== "file") throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker was not published`);
     return { status: "complete", phase: "active", idempotent: false, mutation_performed: true, entity_count: validateActiveEntityCutover(prepared.project, marker.bytes, prepared.sourceRoot) };

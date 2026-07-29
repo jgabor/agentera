@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,8 +8,12 @@ import YAML from "yaml";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
+import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
 import { printStateHelp } from "../../src/cli/help.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
+import { decisionRevisionContract, decisionRevisionViolations } from "../../src/state/decisionRevision.js";
+import { getDecisionEntity, listDecisionEntities } from "../../src/state/decisionEntities.js";
+import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import { yamlArchiveEntry } from "../../src/hooks/compaction/retention.js";
 import { collectMigrationPreviewPages } from "../helpers/entityMigrationPagination.js";
 import {
@@ -217,19 +222,81 @@ describe("entity migration read-only preview", () => {
   it("inventories authority-valid ordered decision revisions and classifies malformed provenance separately", () => {
     const root = project();
     write(root, ".agentera/decisions.yaml", `decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Validate revision targets.\n    alternatives:\n      - name: Preserve\n        status: chosen\n    choice: Choice.\n    reasoning: Reason.\n    confidence: firm\n`);
-    write(root, ".agentera/revisions/decisions.yaml", `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: historical_revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: degraded_projection\ndecisions:8:\n  - choice: Invalid provenance.\n    provenance: revision\ndecisions:bad: not-a-list\n`);
+    write(root, ".agentera/revisions/decisions.yaml", `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: historical_revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: degraded_projection\n  - date: 2026-07-18\n    choice: Stale base claim.\n    provenance: historical_revision\n    base_sha256: ${"f".repeat(64)}\ndecisions:8:\n  - choice: Invalid provenance.\n    provenance: revision\ndecisions:9:\n  - number: 9\n    choice: Identity is immutable.\n    provenance: historical_revision\ndecisions:10:\n  - satisfaction:\n      state: open\n    provenance: historical_revision\ndecisions:11:\n  - provenance: historical_revision\ndecisions:12:\n  - choice: Wrong provenance claim.\n    provenance: historical_archive\ndecisions:bad: not-a-list\n`);
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     const revisions = preview.entries.filter((entry) => entry.boundary === "decision_revision");
-    expect(revisions.map((entry) => entry.source_identity)).toEqual([
-      "decision_revision:decisions:7:0",
-      "decision_revision:decisions:7:1",
-      "decision_revision:decisions:8:0",
-      "decision_revision:decisions:bad",
-    ]);
-    expect(revisions.slice(0, 2).every((entry) => entry.relationships.some((relation) => relation.field === "decision" && relation.target_source_identity === "decisions:7" && relation.status === "resolved"))).toBe(true);
-    expect(revisions.slice(0, 2).every((entry) => entry.classification === "verified_full")).toBe(true);
-    expect(revisions.slice(0, 2).map((entry) => entry.provenance)).toEqual([["revision"], ["revision"]]);
-    expect(revisions.slice(2).every((entry) => entry.classification === "corrupt")).toBe(true);
+    const byIdentity = new Map(revisions.map((entry) => [entry.source_identity, entry]));
+    const valid = [byIdentity.get("decision_revision:decisions:7:0")!, byIdentity.get("decision_revision:decisions:7:1")!];
+    expect(valid.every((entry) => entry.relationships.some((relation) => relation.field === "decision" && relation.target_source_identity === "decisions:7" && relation.status === "resolved"))).toBe(true);
+    expect(valid.every((entry) => entry.classification === "verified_full")).toBe(true);
+    expect(valid.map((entry) => entry.provenance)).toEqual([["revision"], ["revision"]]);
+    for (const identity of ["decision_revision:decisions:7:2", "decision_revision:decisions:8:0", "decision_revision:decisions:9:0", "decision_revision:decisions:10:0", "decision_revision:decisions:11:0", "decision_revision:decisions:12:0", "decision_revision:decisions:bad"]) {
+      expect(byIdentity.get(identity)?.classification, identity).toBe("corrupt");
+    }
+    expect(byIdentity.get("decision_revision:decisions:7:2")?.recovery).toContain("claims base");
+    const violations = decisionRevisionViolations({
+      "decisions:8": [{ choice: "Invalid provenance.", provenance: "revision" }],
+      "decisions:9": [{ number: 9, choice: "Identity is immutable.", provenance: "historical_revision" }],
+      "decisions:10": [{ satisfaction: { state: "open" }, provenance: "historical_revision" }],
+      "decisions:11": [{ provenance: "historical_revision" }],
+      "decisions:12": [{ choice: "Wrong provenance claim.", provenance: "historical_archive" }],
+      "decisions:bad": "not-a-list",
+    }, decisionRevisionContract(REPO_ROOT));
+    expect(violations.join("\n")).toMatch(/not one of/);
+    expect(violations.join("\n")).toMatch(/not an amendable content path/);
+    expect(violations.join("\n")).toMatch(/must amend at least one content field/);
+    expect(violations.join("\n")).toMatch(/must never claim historical_archive provenance/);
+    expect(violations.join("\n")).toMatch(/not a valid decisions:<decision-number> key/);
+  });
+
+  it("cuts aggregate revisions over to effective exact, list, and startup entity reads", () => {
+    const root = project();
+    const base = {
+      number: 7,
+      date: "2026-07-16",
+      question: "Where should revision authority live?",
+      context: "Migration must preserve ordered evidence.",
+      alternatives: [{ name: "Entities", status: "chosen" }, { name: "Legacy aggregate", status: "rejected" }],
+      choice: "Aggregate files",
+      reasoning: "Legacy source.",
+      confidence: "firm",
+    };
+    const baseSha256 = createHash("sha256").update(canonicalRecordJson(base)).digest("hex");
+    write(root, ".agentera/decisions.yaml", YAML.stringify({ decisions: [base] }));
+    write(root, ".agentera/revisions/decisions.yaml", YAML.stringify({
+      "decisions:7": [{ question: "Where do canonical revisions live?", alternatives: [{ name: "Canonical entities", status: "chosen" }, { name: "Aggregate files", status: "rejected" }], choice: "Canonical entities", reasoning: "Current authority.", confidence: "high", provenance: "historical_revision", base_sha256: baseSha256 }],
+    }));
+    write(root, ".agentera/overlays/decisions.yaml", YAML.stringify({
+      "decisions:7": { satisfaction: { state: "provisionally_satisfied", evidence: "migration verified", review_needed: true } },
+    }));
+    const sourcePaths = [".agentera/decisions.yaml", ".agentera/revisions/decisions.yaml", ".agentera/overlays/decisions.yaml"];
+    const sourceBytes = new Map(sourcePaths.map((relative) => [relative, fs.readFileSync(path.join(root, relative))]));
+    const env = { ...process.env };
+    delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE; delete env.GIT_COMMON_DIR;
+    execFileSync("git", ["init", "--quiet"], { cwd: root, env });
+    execFileSync("git", ["add", "."], { cwd: root, env });
+    execFileSync("git", ["-c", "user.email=entity-migration@example.invalid", "-c", "user.name=Entity Migration", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "legacy state"], { cwd: root, env });
+
+    expect(applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(root, REPO_ROOT))).toMatchObject({ status: "complete", mutation_performed: true });
+    const listed = listDecisionEntities(root, 10, undefined, undefined, { sourceRoot: REPO_ROOT }) as any;
+    const id = listed.entries[0].id as string;
+    const expected = { question: "Where do canonical revisions live?", alternatives: [{ name: "Canonical entities", status: "chosen" }, { name: "Aggregate files", status: "rejected" }], choice: "Canonical entities", reasoning: "Current authority.", confidence: "high", satisfaction: { state: "provisionally_satisfied", evidence: "migration verified", review_needed: true } };
+    expect(listed.entries[0].record).toMatchObject(expected);
+    const exact = (getDecisionEntity(root, id, REPO_ROOT) as any).entry;
+    expect(exact.record).toMatchObject(expected);
+    expect(exact.caveats).toEqual([expect.stringContaining("explicit legacy state")]);
+    expect((collectEntityOrientation(root, REPO_ROOT).decisionAttention?.entries as any[])?.[0]?.title).toBe(expected.question);
+    for (const [relative, bytes] of sourceBytes) expect(fs.readFileSync(path.join(root, relative))).toEqual(bytes);
+  });
+
+  it("blocks legacy revisions with invalid effective decision values", () => {
+    const root = project();
+    write(root, ".agentera/decisions.yaml", YAML.stringify({ decisions: [{ number: 7, date: "2026-07-16", question: "Question?", context: "Validate revision values.", alternatives: [{ name: "Preserve", status: "chosen" }], choice: "Preserve", reasoning: "Valid base.", confidence: "firm" }] }));
+    write(root, ".agentera/revisions/decisions.yaml", YAML.stringify({ "decisions:7": [{ date: "2026-07-17", choice: 42, provenance: "historical_revision" }] }));
+
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    expect(preview.entries.find(({ source_identity }) => source_identity === "decision_revision:decisions:7:0")).toMatchObject({ classification: "corrupt", proposed_target: null });
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
   });
 
   it("retains complete parity for every safe exact source path", () => {

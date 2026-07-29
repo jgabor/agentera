@@ -248,7 +248,7 @@ describe("one-way Git entity cutover", () => {
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
     expect(capture(root, ["check", "validate", "state", "--format", "json"]).code).toBe(0);
     const marker = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
-    expect(marker).toEqual(Buffer.from(dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities" })));
+    expect(marker).toEqual(Buffer.from(dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities", source_fingerprint: preview.source_fingerprint, preview_digest: preview.preview_digest })));
     const finalEntities = treeBytes(root, ".agentera/entities");
     expect(Object.keys(finalEntities)).toHaveLength(preview.counts.publishable_entities);
     expect(Object.entries(entitiesAfterInterrupt).every(([relative, bytes]) => finalEntities[relative] === bytes)).toBe(true);

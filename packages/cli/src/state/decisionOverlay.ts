@@ -10,12 +10,6 @@ import {
   decisionOverlayContract,
   type DecisionOverlayContract,
 } from "./archiveDiscovery.js";
-import {
-  composeDecisionRevision,
-  decisionRevisionContract,
-  loadDecisionRevision,
-  type DecisionRevisionList,
-} from "./decisionRevision.js";
 import type { StateMutationTransaction } from "./write/mutation.js";
 import { reject } from "./write/errors.js";
 
@@ -170,35 +164,12 @@ export function hydrateDecisionRecords(
 ): JsonObject[] {
   const overlay = typeof source === "string" ? loadDecisionOverlay(source) : source;
   const contract = decisionOverlayContract();
-  // Revisions (content authority) compose over the base before and separately
-  // from the satisfaction overlay. When the source is a project root, load the
-  // revision document once so the compaction consumer sees one latest effective
-  // record per decision. Skipped for explicit overlay documents (decision-only
-  // callers) where no project root is available.
-  const revisionDocument: Record<string, unknown> =
-    typeof source === "string" ? loadRevisionDocument(source) : {};
-  const revisionContract = revisionDocument ? decisionRevisionContract() : null;
   return entries.map((entry) => {
     const number = entry.number;
     const stableId =
       typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
-    const effective = stableId && revisionContract && revisionDocument[stableId]
-      ? composeDecisionRevision(entry, revisionDocument[stableId] as DecisionRevisionList, { contract: revisionContract }).record
-      : entry;
-    return composeDecisionOverlay(effective, stableId ? overlay[stableId] : undefined, contract);
+    return composeDecisionOverlay(entry, stableId ? overlay[stableId] : undefined, contract);
   });
-}
-
-function loadRevisionDocument(projectRoot: string): Record<string, unknown> {
-  try {
-    return loadDecisionRevision(projectRoot) as unknown as Record<string, unknown>;
-  } catch {
-    // A missing revision document is the common case (no amendments yet). A
-    // corrupt document surfaces at read time via the focused read consumers;
-    // compaction degrades rather than forcing amendment awareness for plain
-    // overlay composition paths.
-    return {};
-  }
 }
 
 export function composeDecisionOverlay(
@@ -230,9 +201,9 @@ export function requestedSatisfaction(
       class: "schema_violation",
       message: "decision satisfaction update contains invalid overlay fields",
       violations,
-      syntax: "agentera state decisions update --number N --satisfaction-state STATE --format json",
+      syntax: "agentera state decisions update --id ID --satisfaction-state STATE --format json",
       example:
-        "agentera state decisions update --number 53 --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified' --format json",
+        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified' --format json",
     });
   }
   const result: Record<string, unknown> = {};
@@ -282,9 +253,9 @@ export function validateTransition(
     reject({
       class: "schema_violation",
       message: "provisionally_satisfied requires non-empty --satisfaction-evidence",
-      syntax: "agentera state decisions update --number N --satisfaction-state STATE --satisfaction-evidence TEXT --format json",
+      syntax: "agentera state decisions update --id ID --satisfaction-state STATE --satisfaction-evidence TEXT --format json",
       example:
-        "agentera state decisions update --number 53 --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified' --format json",
+        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified' --format json",
     });
   }
   if (nextState === "user_confirmed_satisfied") {
@@ -293,9 +264,9 @@ export function validateTransition(
       reject({
         class: "schema_violation",
         message: "user_confirmed_satisfied requires explicit current user confirmation metadata",
-        syntax: "agentera state decisions update --number N --satisfaction-state user_confirmed_satisfied --confirmed-by USER --confirmed-at TIME --format json",
+        syntax: "agentera state decisions update --id ID --satisfaction-state user_confirmed_satisfied --confirmed-by USER --confirmed-at TIME --format json",
         example:
-          "agentera state decisions update --number 53 --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z --format json",
+          "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z --format json",
       });
     }
   }
@@ -309,9 +280,9 @@ export function validateTransition(
         reject({
           class: "conflict",
           message: `decision satisfaction cannot transition from ${currentState} to ${String(nextState)} without explicit current user confirmation`,
-          syntax: "agentera state decisions update --number N --satisfaction-state STATE --format json",
+          syntax: "agentera state decisions update --id ID --satisfaction-state STATE --format json",
           example:
-            "agentera state decisions update --number 53 --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z --format json",
+            "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z --format json",
         });
       }
     }

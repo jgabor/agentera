@@ -117,10 +117,12 @@ function baseFor(root: string, id: string, sourceRoot: string, mutation?: "amend
   if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", matches.length ? `decision ID '${id}' has multiple base entities` : `decision ID '${id}' was not found`, "Run agentera check validate state and resolve duplicate ownership, or use an ID returned by list.", id);
   return { base: matches[0], all };
 }
-function applyChanges(record: JsonObject, changes: JsonObject): JsonObject {
+export function applyDecisionChanges(record: JsonObject, changes: JsonObject): JsonObject {
   const result = structuredClone(record);
   for (const [field, value] of Object.entries(changes)) {
-    if (field === "alternatives.chosen" || field === "alternatives.rejected") {
+    if (field === "alternatives") {
+      result.alternatives = structuredClone(value) as never;
+    } else if (field === "alternatives.chosen" || field === "alternatives.rejected") {
       const alternatives = Array.isArray(result.alternatives) ? structuredClone(result.alternatives).filter(mapping) : [];
       if (field.endsWith("chosen")) {
         const chosen = alternatives.find((entry) => entry.status === "chosen");
@@ -138,6 +140,8 @@ function applyChanges(record: JsonObject, changes: JsonObject): JsonObject {
 function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], sourceRoot: string): JsonObject {
   let effective = structuredClone(base.record!);
   let hash = createHash("sha256").update(canonicalRecordJson(effective)).digest("hex");
+  let legacyConfidenceEvidence = base.migrationProvenance?.kind === "inherited_decision_confidence"
+    && base.migrationProvenance.confidence === effective.confidence;
   const revisions: JsonObject[] = [];
   const candidates = all.filter((entity) => entity.boundary === REVISION && entity.record?.decision === base.id);
   const unused = new Set(candidates);
@@ -147,7 +151,11 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], 
     if (next.length === 0) break;
     const revision = next[0]; unused.delete(revision);
     if (!mapping(revision.record!.changes)) throw failure("corrupt", `decision revision '${revision.id}' has invalid changes`, "Repair the canonical revision entity.", base.id!);
-    effective = applyChanges(effective, revision.record!.changes as JsonObject);
+    if ("confidence" in revision.record!.changes) {
+      legacyConfidenceEvidence = revision.migrationProvenance?.kind === "inherited_decision_revision_confidence"
+        && revision.migrationProvenance.confidence === revision.record!.changes.confidence;
+    }
+    effective = applyDecisionChanges(effective, revision.record!.changes as JsonObject);
     hash = createHash("sha256").update(canonicalRecordJson(effective)).digest("hex");
     revisions.push({ id: revision.id!, artifact: ARTIFACT, base_sha256: revision.record!.base_sha256 as string, effective_sha256: hash, fields: Object.keys(revision.record!.changes as JsonObject), path: relative(root, revision.path) });
   }
@@ -162,7 +170,7 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], 
   }
   const inherited = base.migrationProvenance;
   const caveatSource = inherited?.source === "verified_archive" ? "archive" : "active";
-  const legacyCaveat = inherited?.kind === "inherited_decision_confidence" && inherited.confidence === effective.confidence
+  const legacyCaveat = legacyConfidenceEvidence
     ? knownLegacyConfidenceCaveat(effective, decisionLegacyCoexistence(sourceRoot), caveatSource)
     : null;
   return { id: base.id!, artifact: ARTIFACT, ...detailMetadata(base), record: effective, effective_sha256: hash, provenance: { ...detailProvenance(relative(root, base.path), base), base: { id: base.id!, artifact: ARTIFACT, path: relative(root, base.path), ...(inherited ? { migration_provenance: inherited } : {}) }, revisions, satisfaction: satisfactionProvenance }, ...(legacyCaveat ? { caveats: [legacyCaveat.caveat] } : {}), retrieval: { get: `agentera state decisions get --id ${base.id} --format json` } };
@@ -226,7 +234,7 @@ export function amendDecisionEntity(req: StateWriteRequest, options: Options = {
   const current = getDecisionEntity(req.projectRoot, id, sourceRoot).entry as JsonObject;
   if (current.effective_sha256 !== expected) throw failure("immutable_conflict", `decision '${id}' changed from requested base ${expected}`, "Get the decision again, review the effective provenance, and retry with its current effective_sha256.", id);
   const effective = current.record as JsonObject;
-  const projected = applyChanges(effective, changes);
+  const projected = applyDecisionChanges(effective, changes);
   if (canonicalRecordJson(projected) === canonicalRecordJson(effective)) return { schemaVersion: "agentera.stateWrite.v1", command: "state decisions amend", status: "pass", path: String(((current.provenance as JsonObject).base as JsonObject).path), id, artifact: ARTIFACT, record: changes, operation: { verb: "amend", dry_run: req.dryRun, idempotent_replay: true }, validation: { status: "pass", violations: [] } };
   return publish(req, REVISION, { decision: id, date: localDate(), provenance: "historical_revision", base_sha256: expected, changes }, options);
 }

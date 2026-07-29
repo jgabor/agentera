@@ -77,6 +77,17 @@ describe("producer capability writer integration", () => {
     expect(orchestrateInstructions).not.toMatch(/(?:\.codex\/agents|\.cursor\/agents|\.opencode\/agents)/);
   });
 
+  it("keeps evaluator report fields in the Surface 2 delegation template", () => {
+    const start = orchestrateInstructions.indexOf("**Surface 2:");
+    const end = orchestrateInstructions.indexOf("### Step 4:", start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const surface = orchestrateInstructions.slice(start, end);
+    expect(surface).toContain("citation: `<file>:<line>` OR `not-applicable: <reason>`");
+    expect(surface).toContain("verify_command");
+    expect(surface).toContain("evaluator_handoff.output_requirements");
+  });
+
   it("orders terminal-open health closure before plan completion and preserves failure follow-up", () => {
     const artifacts = YAML.parse(
       fs.readFileSync(
@@ -185,10 +196,10 @@ describe("producer capability writer integration", () => {
   it("keeps cold-start agent surfaces discoverable", () => {
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const agents = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
-    for (const surface of [skill, agents]) {
-      expect(surface).toContain("agentera state decisions explain");
-      expect(surface).toContain("--dry-run");
-    }
+    expect(skill).toContain("npx -y agentera@next state decisions explain");
+    expect(agents).toContain("agentera state decisions explain");
+    expect(skill).toContain("--dry-run");
+    expect(agents).toContain("--dry-run");
     expect(skill).toContain("not edit `.agentera/entities/` directly");
     expect(agents).toContain("instead of editing `.agentera/entities/`");
   });

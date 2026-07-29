@@ -19,8 +19,9 @@ authority:
     plus one-way forward import, are implemented but activate entity authority only
     from the durable cutover marker. The preserved
     singleton families remain legacy files. The
-    current numbered archive and retrieval groups remain migration input while
-    that marker is absent; no independent legacy repair mutation remains.
+    numbered archives, aggregate overlays, and aggregate revision documents
+    remain migration input while that marker is absent; no independent legacy
+    read or repair mutation remains.
 
 entity_target:
   status: progress_decisions_health_plan_objective_experiment_todo_and_docs_implemented_other_families_declared
@@ -313,9 +314,25 @@ entity_target:
       publication: immutable
       ownership: { fields: [decision, base_sha256], cardinality: zero_or_one }
       record:
-        required_fields: [decision, date, provenance, base_sha256, changes]
+        required_fields: [decision, provenance, base_sha256, changes]
+        legacy_optional_fields: [date]
         required_paths: []
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number, satisfaction]
+      canonical_metadata:
+        migration_provenance:
+          applicability: inherited_unsupported_revision_confidence_only
+          required_fields: [kind, source, source_path, source_identity, source_fingerprint, source_record_sha256, confidence]
+          additional_fields: forbidden
+          kind: inherited_decision_revision_confidence
+          sources: [revision_document]
+          semantics: >-
+            Cutover persists this envelope-level metadata only when a legacy
+            aggregate revision carries high, medium, or low confidence and the
+            composed decision is otherwise valid. source_identity selects the
+            exact ordered row in .agentera/revisions/decisions.yaml,
+            source_fingerprint binds the deterministic canonical decision ID, and
+            source_record_sha256 binds that complete row. Ordinary decision
+            amendments accept only the current confidence vocabulary.
     - boundary: health_audit
       artifact: health
       independently_mutable: true
@@ -799,6 +816,8 @@ entity_migration:
     entity_mode:
       schemaVersion: agentera.stateMode.v1
       mode: entities
+      source_fingerprint: lowercase_sha256_of_bound_migration_inputs
+      preview_digest: lowercase_sha256_of_bound_migration_preview
     absent_mode: legacy
     invalid_behavior: fail_without_fallback
     detection: read_only
@@ -1300,33 +1319,33 @@ retrieval:
     - collection_id: progress.records
       artifact_id: progress
       growth: append_only_unbounded
-      identity: 'progress:<positive-entry-number>'
-      storage_ownership: immutable_numbered_archive_with_bounded_current_projection
-      ordering: entry_number_desc
+      identity: bare_ten_letter_entity_id
+      storage_ownership: canonical_progress_entities
+      ordering: timestamp_desc_then_publication_order_desc_then_id_asc
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
-      get: agentera state progress get --number N --format json
+      get: agentera state progress get --id ID --format json
     - collection_id: decisions.records
       artifact_id: decisions
-      growth: append_only_unbounded_with_declared_mutable_overlay
-      identity: 'decisions:<positive-entry-number>'
-      storage_ownership: immutable_numbered_archive_plus_decision_overlay_with_bounded_current_projection
-      ordering: entry_number_desc
+      growth: immutable_base_and_revision_entities_with_replaceable_satisfaction_entity
+      identity: bare_ten_letter_entity_id
+      storage_ownership: canonical_decision_entities
+      ordering: date_desc_then_id_asc
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
-      get: agentera state decisions get --number N --format json
+      get: agentera state decisions get --id ID --format json
     - collection_id: health.records
       artifact_id: health
       growth: append_only_unbounded
-      identity: 'health:<positive-entry-number>'
-      storage_ownership: immutable_numbered_archive_with_bounded_current_projection
-      ordering: entry_number_desc
+      identity: bare_ten_letter_entity_id
+      storage_ownership: canonical_health_entities
+      ordering: appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
-      get: agentera state health get --number N --format json
+      get: agentera state health get --id ID --format json
     - collection_id: plan.plans
       artifact_id: plan
       growth: one_active_plus_append_only_immutable_file_archives
@@ -1666,6 +1685,7 @@ identity:
       not emitted on the current bounded page.
 
 envelope:
+  legacy_source_state: migration_input_only
   schema_version: agentera.stateArchiveEntry.v1
   required_fields:
     - schemaVersion
@@ -1702,15 +1722,18 @@ envelope:
 
 overlays:
   location: .agentera/overlays/decisions.yaml
+  legacy_source_state: migration_input_only
+  current_entity_boundary: decision_satisfaction
   project_root_fixed: true
   docs_yaml_override: forbidden
   schema_version: agentera.decisionOverlay.v1
   supported_artifact: decisions
   identity_key: decisions:<decision-number>
   storage_shape: >-
-    A mapping keyed by stable decision ID. Each value contains only the
-    authority-declared mutable paths and never replaces the immutable archive
-    record.
+    The legacy migration source is a mapping keyed by numbered decision ID.
+    Entity migration converts each value into one decision_satisfaction entity
+    related to the canonical decision ID. Current reads and writes use that
+    entity and never read or publish the aggregate overlay document.
   mutable_paths:
     - satisfaction.state
     - satisfaction.evidence
@@ -1753,18 +1776,29 @@ overlays:
 
 revisions:
   location: .agentera/revisions/decisions.yaml
+  legacy_source_state: migration_input_only
   project_root_fixed: true
   docs_yaml_override: forbidden
   schema_version: agentera.decisionRevision.v1
   supported_artifact: decisions
   identity_key: decisions:<decision-number>
   storage_shape: >-
-    A mapping keyed by stable decision ID. Each value is an ordered list of
-    immutable revision records carrying only authority-declared amendable
-    content paths plus revision provenance. A revision never replaces the
-    immutable numbered archive record and never replaces the satisfaction
-    overlay; it is additional immutable evidence composed at read time.
+    The legacy migration source is a mapping keyed by numbered decision ID.
+    Entity migration converts each ordered row into one decision_revision
+    entity related to the canonical decision ID. Current reads and writes use
+    those entities and never read or publish the aggregate revision document.
   amendable_paths:
+    - question
+    - context
+    - alternatives.chosen
+    - alternatives.rejected
+    - choice
+    - reasoning
+    - confidence
+    - feeds_into
+  migration_amendable_paths:
+    - alternatives
+  legacy_amendable_paths:
     - question
     - context
     - alternatives
@@ -1777,14 +1811,15 @@ revisions:
   temporal_paths:
     - date
   separation_from_overlay: >-
-    Amendments never touch satisfaction overlay paths. Satisfaction updates
-    remain under overlays; content amendments remain under revisions. Each
-    authority composes its own evidence and neither rewrites the other.
+    Legacy content amendments never touch legacy aggregate satisfaction paths;
+    migration converts both sources independently. Current satisfaction and
+    content mutations publish decision_satisfaction and decision_revision
+    entities, and neither entity boundary rewrites the other.
   immutability: >-
-    Original numbered archive records remain immutable historical evidence.
-    Revisions are additional immutable evidence appended in declared order;
-    no revision overwrites, reorders, or deletes a prior revision. A revision
-    is byte-stable after publication and an identical revision is an
+    Imported numbered archive records remain immutable historical evidence.
+    Current decision_revision entities are additional immutable evidence;
+    no revision overwrites, reorders, or deletes a prior revision. An entity
+    revision is byte-stable after publication and an identical revision is an
     idempotent replay.
   provenance: >-
     Revision evidence carries revision provenance only. It is never labeled
@@ -1792,33 +1827,32 @@ revisions:
     legacy projection record may carry degraded_projection provenance and
     never historical_archive provenance.
   publication_order:
-    - validate_target_identity
+    - validate_entity_target_identity
     - validate_amendment_vocabulary
-    - stage_revision
-    - publish_revision
-    - update_effective_projection
-  apply_state: implemented
+    - validate_base_sha256
+    - publish_decision_revision_entity
+    - compose_effective_entity_read
+  apply_state: entity_implemented_legacy_source_retired
   apply_state_note: >-
-    The revision authority and amend command publish record-local amendments
-    with recovery. A valid dry-run reports the exact revision, effective record,
-    and projection effect without writing any file. Apply writes a
-    record-local override to the revision document only (preserving unrelated
-    entries' bytes), retries converge on a stable revision identity, and an
-    identical re-submission is an idempotent replay. The decisions projection
-    is never rewritten by an amendment; effective detail composes
-    base→revisions→overlay. Amend execution still refuses before side effects
-    for an unsafe target-only change, a duplicate-revision conflict, a stale
-    base hash, or an unsafe target identity, returning an actionable retry or
-    repair action. Discover the contract with
+    The entity amend command publishes one immutable decision_revision entity
+    related to the selected bare decision ID. A valid dry-run reports the
+    candidate without writing; retries converge through canonical entity
+    replay. Effective entity reads compose base, ordered revision entities, and
+    satisfaction entities. The aggregate revision document is read only by
+    migration preview and cutover and is never a current publication target.
+    Amend execution refuses before side effects for an unsafe target, duplicate
+    same-base claim, or stale base hash. Discover the current contract with
     `agentera state decisions explain --verb amend --format json`.
 
 projections:
   archive:
-    role: complete immutable historical detail
+    source_state: migration_input_only
+    role: complete immutable historical migration detail
     source_of_truth_for: historical_record_fields
     omission: never omit fields from an archive record
   current:
-    role: bounded active projection for current artifact consumers
+    source_state: migration_input_only
+    role: bounded aggregate migration projection
     default_capacity:
       active_entries: 10
       summary_entries: 40
@@ -1842,14 +1876,15 @@ projections:
       progress: .agentera/progress.yaml
       decisions: .agentera/decisions.yaml
       health: .agentera/health.yaml
-    source_of_truth_for: current_projection_and_legacy_compatibility_state
+    source_of_truth_for: legacy_migration_and_compatibility_state_only
     archive_relationship: >-
-      A current entry may be full, summary-only, or absent from the projection;
+      A legacy aggregate entry may be full, summary-only, or absent from the projection;
       archive presence and hash verification determine whether full detail is
-      available. Current mutable decision overlay values are composed at read
-      time and do not rewrite archive bytes.
+      available during migration. Legacy decision overlay values are converted
+      independently and do not rewrite archive bytes.
   summary:
-    role: bounded list and startup representation
+    source_state: migration_input_only
+    role: bounded aggregate migration representation
     required_item_fields: [stable_id, artifact_id, entry_number, addressable, classification, detail_availability, source]
     nullable_item_fields:
       - stable_id
@@ -1870,6 +1905,7 @@ projections:
       truncated, represented as a fabricated summary, or treated as missing
       history without provenance.
   startup:
+    source_state: canonical_entity_authority
     role: bounded orientation and capability-startup projection
     required_fields: [command, status, source, source_contract]
     allowed_payload: >-
@@ -1886,17 +1922,17 @@ api:
   artifact_syntax: agentera state <artifact-id>
   formats: [text, json, yaml]
   direct_get:
-    command: agentera state <artifact-id> get --number N --format json
+    command: agentera state <artifact-id> get --id ID --format json
     examples:
-      progress: agentera state progress get --number 747 --format json
-      decisions: agentera state decisions get --number 53 --format json
-      health: agentera state health get --number 29 --format json
-    required_selector: --number N
+      progress: agentera state progress get --id qjtrmnpvka --format json
+      decisions: agentera state decisions get --id imumkmffwh --format json
+      health: agentera state health get --id abcdefghij --format json
+    required_selector: --id ID
     result: >-
-      One complete record composed from the immutable archive and only the
-      authority-declared current overlay fields, with stable_id, source,
-      detail_availability, compatibility, and provenance metadata.
-    archive_only: direct retrieval reads the exact numbered record without scanning unrelated records
+      One complete canonical entity record with id, artifact, detail availability,
+      compatibility, effective content, and provenance metadata. Decision reads
+      compose immutable base, ordered revisions, and current satisfaction entities.
+    exact_only: direct retrieval resolves one canonical entity ID without scanning unrelated records
   list:
     command: agentera state <artifact-id> list [--limit N] [--cursor TOKEN] --format json
     examples:
@@ -1905,20 +1941,21 @@ api:
     default_limit: 20
     minimum_limit: 1
     maximum_limit: 100
-    ordering: identity.ordering.list
+    ordering:
+      progress: timestamp_desc_then_publication_order_desc_then_id_asc
+      decisions: date_desc_then_id_asc
+      health: appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc
     response_fields:
       required: [command, status, entries, counts, source, filters, snapshot, source_contract]
-      entry: [stable_id, artifact_id, entry_number, current_status, detail_availability, source, compatibility, provenance]
-      optional_entry: [summary, record_status, overlay_applied, retrieval]
+      entry: [id, artifact, detail_availability, compatibility, record, provenance, retrieval]
+      optional_entry: [summary, caveats]
     empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
   durability:
-    command: agentera check durability [--project PATH] [--artifact ARTIFACT] [--number N] [--limit N] --format json
-    entity_command: agentera check durability --project PATH --artifact ARTIFACT --id ID --format json
+    command: agentera check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N] --format json
     formats: [text, json, yaml]
     selectors:
-      artifact: optional supported numbered archive artifact ID
-      number: optional positive entry number; requires artifact
-      id: entity-mode bare entity ID; requires artifact and replaces number after cutover
+      artifact: optional supported entity artifact ID
+      id: optional bare entity ID; requires artifact
       limit: optional bounded result count
     default_limit: 100
     maximum_limit: 100
@@ -1927,7 +1964,7 @@ api:
     git_values: [verified, degraded, unavailable]
     response_fields:
       required: [command, status, project, read_only, remote_contact, head, counts, entries, diagnostics, source_contract]
-      entry: [stable_id, artifact_id, entry_number, status, local, git]
+      entry: [id, artifact, status, local, git]
     guarantees:
       read_only: true
       remote_contact: forbidden
@@ -1948,14 +1985,14 @@ api:
     syntax: opaque TOKEN returned as response.next_cursor
     first_page: omit --cursor to establish a snapshot
     snapshot_identity: >-
-      deterministic hash of ordered candidate IDs, archive hashes, legacy
-      projection hashes when no archive exists, filters, and overlay revision.
+      deterministic hash of ordered canonical entity IDs, projected record
+      hashes, and filters.
     snapshot_scope: artifact and filters are bound to the cursor; limit may change between pages
     append_behavior: >-
       Entries appended after the first page are excluded from that cursor's
       snapshot. They appear only in a new listing without the old cursor.
     continuation: >-
-      Continue strictly after the last emitted numeric entry number. Never
+      Continue strictly after the last emitted entity ordering key. Never
       restart from page one, skip an entry, or duplicate an entry.
     unavailable: return cursor_snapshot_unavailable rather than silently creating a new snapshot
     opacity: callers must not parse, construct, or compare token internals
@@ -1970,7 +2007,7 @@ failures:
     required_fields: [schemaVersion, status, error]
     status: fail
     error_required_fields: [class, message, syntax, example, recovery]
-    error_optional_fields: [artifact_id, entry_number, stable_id, details, valid_values]
+    error_optional_fields: [artifact, id, details, valid_values]
   exit_codes:
     invalid_input: 2
     operational_failure: 1

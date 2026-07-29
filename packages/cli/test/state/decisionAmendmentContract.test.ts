@@ -106,7 +106,7 @@ function decisionAppendArgs(): string[] {
 }
 
 describe("decision amendment revision authority", () => {
-  it("declares amendable content paths, separate immutable revisions, and an unimplemented apply state", () => {
+  it("declares entity amendments and a migration-only aggregate source", () => {
     const contract = decisionRevisionContract();
 
     expect(contract.location).toBe(".agentera/revisions/decisions.yaml");
@@ -115,17 +115,21 @@ describe("decision amendment revision authority", () => {
     expect(contract.amendablePaths).toEqual([
       "question",
       "context",
-      "alternatives",
+      "alternatives.chosen",
+      "alternatives.rejected",
       "choice",
       "reasoning",
       "confidence",
       "feeds_into",
     ]);
+    expect(contract.migrationAmendablePaths).toEqual(["alternatives"]);
+    expect(contract.legacyAmendablePaths).toContain("alternatives");
     expect(contract.identityPaths).toEqual(["number"]);
     expect(contract.temporalPaths).toEqual(["date"]);
-    expect(contract.applyState).toBe("implemented");
+    expect(contract.legacySourceState).toBe("migration_input_only");
+    expect(contract.applyState).toBe("entity_implemented_legacy_source_retired");
     expect(contract.immutability).toContain("immutable historical evidence");
-    expect(contract.separationFromOverlay).toContain("Satisfaction updates");
+    expect(contract.separationFromOverlay).toContain("Current satisfaction");
     expect(contract.publicationOrder.length).toBeGreaterThan(0);
   });
 
@@ -353,8 +357,10 @@ describe("legacy confidence label coexistence", () => {
     const amendLegacy = run(root, [
       "decisions",
       "amend",
-      "--number",
-      "53",
+      "--id",
+      "qjtrmnpvka",
+      "--base-sha256",
+      "0".repeat(64),
       "--confidence",
       "high",
       "--dry-run",
@@ -364,7 +370,7 @@ describe("legacy confidence label coexistence", () => {
     expect(amendLegacy.rc).toBe(2);
     expect(amendLegacy.json?.error.class).toBe("invalid_choice");
     expect(amendLegacy.json?.error.valid_values).toEqual(["firm", "provisional", "exploratory"]);
-    expect(fs.existsSync(path.join(root, ".agentera", "revisions", "decisions.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera", "entities", "decisions", "decision_revision"))).toBe(false);
   });
 
   it("rejects a new appended decision confidence outside the current vocabulary", () => {

@@ -287,7 +287,13 @@ describe("cli prime", () => {
     expect(ctx.orchestration_context).toBeTruthy();
     expect(ctx.orchestration_context.capability).toBe("orchestrate");
     expect(ctx.orchestration_context.task_queue).toBeTruthy();
-    expect(ctx.orchestration_context.evaluator_handoff).toBeTruthy();
+    expect(ctx.orchestration_context.evaluator_handoff).toMatchObject({
+      output_requirements: {
+        citation_required_for: ["WARN", "FAIL"],
+        warn_verify_command_required: true,
+        schema_authority: "references/cli/capability-instruction-contract.yaml#evaluator_handoff",
+      },
+    });
   });
 
   it("emits the execution bespoke context for realisera", () => {

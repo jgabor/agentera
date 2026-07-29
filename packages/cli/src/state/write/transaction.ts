@@ -24,8 +24,9 @@ export function executeStateWrite(
     if (req.artifact === "progress") return withEntityWriterLock(publicationContext, () => appendProgressEntity(req, { publicationContext }));
     if (req.artifact === "decisions") {
       if (req.spec.verb === "append") return appendDecisionEntity(req, { publicationContext });
-      if (req.spec.verb === "update") return updateDecisionSatisfactionEntity(req, { publicationContext });
-      return amendDecisionEntity(req, { publicationContext });
+      return withEntityWriterLock(publicationContext, () => req.spec.verb === "update"
+        ? updateDecisionSatisfactionEntity(req, { publicationContext })
+        : amendDecisionEntity(req, { publicationContext }));
     }
     if (req.artifact === "health") {
       if (req.spec.verb === "repair") {

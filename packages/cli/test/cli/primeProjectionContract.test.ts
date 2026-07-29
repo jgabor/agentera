@@ -159,8 +159,7 @@ describe("prime projection contract", () => {
     });
     expect(history.counts.omitted).toBeGreaterThan(0);
     expect(history.retrieval).toEqual({
-      list: "agentera state decisions list --limit 20 --format json",
-      get: "agentera state decisions get --number N --format json",
+      migrate: `agentera state migrate entities --project ${JSON.stringify(project)} --dry-run --format json`,
     });
     expect(JSON.stringify(history)).not.toContain("not emitted in startup detail");
   });

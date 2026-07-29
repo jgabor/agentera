@@ -25,7 +25,7 @@ function corpus(): any {
 }
 
 describe("classifyStartupRecords", () => {
-  it("builds a state-gathering sequence and detects redundant raw access", () => {
+  it("classifies state gathering and degradation reasons in one pass", () => {
     const result = classifyStartupRecords(corpus(), { salt: "SALT", contract: CONTRACT });
     expect(result.contract_version).toBe("vT");
     expect(result.boundary_source).toBe("test-boundary");
@@ -39,10 +39,6 @@ describe("classifyStartupRecords", () => {
     // plan.yaml read after `agentera plan` is redundant; health.yaml is not.
     expect(seq.redundant_raw_artifact_labels).toEqual(["plan"]);
     expect(Object.keys(seq.estimated_raw_after_cli_tokens_by_artifact).sort()).toEqual(["health", "plan"]);
-  });
-
-  it("records pre-boundary and no-state-sequence degradations", () => {
-    const result = classifyStartupRecords(corpus(), { salt: "SALT", contract: CONTRACT });
     const reasons = result.degradations.map((d: any) => d.reason);
     expect(reasons).toContain("pre_boundary_record");
     expect(reasons).toContain("no_agentera_state_sequence");

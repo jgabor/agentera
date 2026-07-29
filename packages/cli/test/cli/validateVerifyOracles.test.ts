@@ -1,221 +1,139 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { afterEach, describe, expect, it } from "vitest";
 
-import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
-
 import {
-  cmdValidate,
   cmdValidateArtifact,
   cmdValidateCapability,
-  cmdValidateCapabilityContract,
 } from "../../src/cli/commands/validate.js";
-import { cmdVerify } from "../../src/cli/commands/verify.js";
 import { main } from "../../src/cli/dispatch.js";
+import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
-const VALIDATE_FAMILY_ORACLE_PATH = path.join(
-  __dirname,
-  "fixtures",
-  "oracle",
-  "validate-family.json",
-);
-const VERIFY_EVAL_FAMILY_ORACLE_PATH = path.join(
-  __dirname,
-  "fixtures",
-  "oracle",
-  "verify-eval-family.json",
-);
+interface AlternateShape {
+  targetFamilyValue: string;
+  requiredTopLevelKeys: string[];
+}
 
-const VALIDATE_FAMILY_ORACLE = JSON.parse(fs.readFileSync(VALIDATE_FAMILY_ORACLE_PATH, "utf8")) as {
+interface ValidateFamilySpec {
+  argv: string[];
+  exitCode: number;
+  requiredTopLevelKeys: string[];
+  targetFamilyValue: string;
+  engine?: {
+    requiredKeys: string[];
+    commandValue?: string;
+  };
+  altShape?: AlternateShape;
+}
+
+interface ValidateFamilyOracle {
   format: "json";
   commandValue: "validate";
-  statusUnion: ["pass", "fail"];
-  violationsValueType: "array<string>";
-  families: Record<
-    string,
-    {
-      argv: string[];
-      exitCode: number;
-      requiredTopLevelKeys: string[];
-      targetFamilyValue: string;
-      targetValueType: "string";
-      engine?: {
-        requiredKeys: string[];
-        commandValueType?: "string";
-        commandValue?: string;
-        exitCodeValueType?: "number";
-        stdoutValueType?: "array<string>";
-        stderrValueType?: "array<string>";
-      };
-      altShape?: {
-        targetFamilyValue: string;
-        requiredTopLevelKeys: string[];
-        summaryRequiredKeys?: string[];
-        failExitCode?: number;
-        failStatusValue?: "fail";
-      };
-    }
-  >;
-};
+  families: Record<string, ValidateFamilySpec>;
+}
 
-const VERIFY_EVAL_FAMILY_ORACLE = JSON.parse(fs.readFileSync(VERIFY_EVAL_FAMILY_ORACLE_PATH, "utf8")) as {
-  format: "json";
+interface VerifyEvalOracle {
   commandValue: "verify";
   familyValue: "eval";
-  statusUnion: ["pass", "fail"];
-  formatValueUnion: ["text", "json"];
   requiredTopLevelKeys: string[];
-  engine: {
-    requiredKeys: string[];
-    commandValueType: "array<string>";
-    exitCodeValueType: "number";
-  };
-  diagnostics: {
-    requiredKeys: string[];
-    stdoutValueType: "array<string>";
-    stderrValueType: "array<string>";
-    lineLimitValueType: "number";
-    lineLimitValue: number;
-  };
-  safety: {
-    requiredKeys: string[];
-    modeValueUnion: string[];
-    summaryValueType: "string";
-    liveValueType: "boolean";
-    longRunningDefaultValueType: "boolean";
-  };
+  engine: { requiredKeys: string[] };
+  diagnostics: { requiredKeys: string[]; lineLimitValue: number };
+  safety: { requiredKeys: string[] };
   targets: Record<
     string,
     {
-      argv: string[];
-      exitCode: number;
-      targetValueType: "string";
-      targetValue: string;
+      argv?: string[];
+      exitCode?: number;
+      targetValue?: string;
       safetyMode: string;
       live: boolean;
     }
   >;
-};
+}
 
-const REPO_ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "..",
-  "..",
-);
-const SEMANTIC_FIXTURE = path.join(REPO_ROOT, "fixtures", "semantic", "status-bare-message.md");
-const ARTIFACT_VALIDATE_TARGET = "PLAN.md";
-
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
+const ORACLE_ROOT = path.join(import.meta.dirname, "fixtures", "oracle");
+const VALIDATE_FAMILY_ORACLE = JSON.parse(
+  fs.readFileSync(path.join(ORACLE_ROOT, "validate-family.json"), "utf8"),
+) as ValidateFamilyOracle;
+const VERIFY_EVAL_FAMILY_ORACLE = JSON.parse(
+  fs.readFileSync(path.join(ORACLE_ROOT, "verify-eval-family.json"), "utf8"),
+) as VerifyEvalOracle;
 const fixtureRoots: string[] = [];
 afterEach(() => {
   while (fixtureRoots.length) cleanupFixtureProject(fixtureRoots.pop()!);
 });
 
 function capture(
-  fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number,
-): { rc: number; out: string; err: string } {
+  fn: (io: { out: (text: string) => void; err: (text: string) => void }) => number,
+): { rc: number; payload: Record<string, unknown> } {
   let out = "";
-  let err = "";
-  const rc = fn({ out: (t) => (out += t), err: (t) => (err += t) });
-  return { rc, out, err };
+  const rc = fn({ out: (text) => (out += text), err: () => {} });
+  return { rc, payload: JSON.parse(out) as Record<string, unknown> };
 }
 
-function readJson(stdout: string): Record<string, unknown> {
-  return JSON.parse(stdout) as Record<string, unknown>;
+function captureFromRepoRoot(
+  fn: (io: { out: (text: string) => void; err: (text: string) => void }) => number,
+): { rc: number; payload: Record<string, unknown> } {
+  const previous = process.cwd();
+  try {
+    process.chdir(REPO_ROOT);
+    return capture(fn);
+  } finally {
+    process.chdir(previous);
+  }
 }
 
-function assertRequiredKeys(
+function expectExactTopLevelKeys(
   payload: Record<string, unknown>,
   required: string[],
   family: string,
-  oraclePath: string,
+  altShape?: AlternateShape,
 ): void {
-  for (const key of required) {
-    if (!(key in payload)) {
-      throw new Error(
-        `oracle contract drift on family '${family}': required top-level key '${key}' is missing from the live envelope. Update ${oraclePath} with an intentional key addition or revert the field change.`,
-      );
-    }
-    expect(payload, `family '${family}' envelope`).toHaveProperty(key);
-  }
+  const expected =
+    altShape && altShape.targetFamilyValue === payload.target_family
+      ? altShape.requiredTopLevelKeys
+      : required;
+  expect(Object.keys(payload).sort(), `${family} top-level keys`).toEqual([...expected].sort());
 }
 
-function assertValueTypes(
+function expectEngine(
   payload: Record<string, unknown>,
-  expected: Record<string, "string" | "number" | "boolean" | "array" | "object">,
+  spec: ValidateFamilySpec,
   family: string,
-  oraclePath: string,
 ): void {
-  for (const [key, type] of Object.entries(expected)) {
-    const v = payload[key];
-    const actual = Array.isArray(v) ? "array" : typeof v;
-    if (actual !== type) {
-      throw new Error(
-        `oracle contract drift on family '${family}': key '${key}' expected type '${type}' but live envelope has '${actual}'. Update ${oraclePath} with an intentional type change or revert the field.`,
-      );
-    }
+  if (!spec.engine) return;
+  const engine = payload.engine as Record<string, unknown>;
+  for (const key of spec.engine.requiredKeys) {
+    expect(engine, `${family} engine key '${key}'`).toHaveProperty(key);
   }
+  if (spec.engine.commandValue !== undefined) {
+    expect(engine.command, `${family} engine command`).toBe(spec.engine.commandValue);
+  }
+  expect(typeof engine.exit_code, `${family} engine exit code`).toBe("number");
+  if (spec.engine.requiredKeys.includes("stdout")) expect(Array.isArray(engine.stdout)).toBe(true);
+  if (spec.engine.requiredKeys.includes("stderr")) expect(Array.isArray(engine.stderr)).toBe(true);
 }
 
-/**
- * Drift detection: assert that the live envelope's top-level key set is exactly
- * the union of the family's required keys and any alt-shape keys. If a new
- * field is added to the live envelope, this test fails with a clear diff naming
- * the extra key, requiring the developer to update the oracle (or revert).
- *
- * The altShape is only consulted when the live envelope's target_family matches
- * the altShape's targetFamilyValue; otherwise only the base required keys apply
- * (this is how capability's single-target vs. capability-set cases are kept
- * separate).
- */
-function assertExactTopLevelKeys(
-  payload: Record<string, unknown>,
-  required: string[],
-  altShape: { targetFamilyValue?: string; requiredTopLevelKeys?: string[] } | undefined,
-  family: string,
-  oraclePath: string,
-): void {
-  const expected = new Set<string>(required);
-  if (
-    altShape?.targetFamilyValue !== undefined &&
-    altShape.requiredTopLevelKeys !== undefined &&
-    payload.target_family === altShape.targetFamilyValue
-  ) {
-    for (const key of altShape.requiredTopLevelKeys) expected.add(key);
+function captureValidateFamily(family: string, spec: ValidateFamilySpec): { rc: number; payload: Record<string, unknown> } {
+  if (family === "artifact") {
+    const root = useFixtureProject("ok");
+    fixtureRoots.push(root);
+    const artifactIndex = spec.argv.indexOf("--artifact");
+    const artifact = spec.argv[artifactIndex + 1];
+    return capture((io) =>
+      cmdValidateArtifact({ artifact, cwd: root, format: VALIDATE_FAMILY_ORACLE.format }, io),
+    );
   }
-  const actual = new Set(Object.keys(payload));
-  const missing: string[] = [...expected].filter((k) => !actual.has(k)).sort();
-  const extra: string[] = [...actual].filter((k) => !expected.has(k)).sort();
-  if (missing.length > 0 || extra.length > 0) {
-    const lines: string[] = [
-      `oracle contract drift on family '${family}': top-level key set does not match the frozen contract.`,
-    ];
-    if (missing.length > 0) {
-      lines.push(
-        `  missing keys: [${missing.join(", ")}] (the oracle requires these but the live envelope does not emit them — likely a regression).`,
-      );
-    }
-    if (extra.length > 0) {
-      lines.push(
-        `  extra keys: [${extra.join(", ")}] (the live envelope emits these but the oracle does not declare them — update ${oraclePath} with an intentional key addition or revert the field).`,
-      );
-    }
-    throw new Error(lines.join("\n"));
-  }
+  return capture((io) => main(["node", "agentera", ...spec.argv], io));
 }
 
-function runDispatch(argv: string[]): { rc: number; payload: Record<string, unknown> } {
-  const { rc, out } = capture((io) => main(["node", "agentera", ...argv], io));
-  return { rc, payload: readJson(out) };
-}
-
-describe("validate family envelope (oracle parity)", () => {
+describe("validate family envelope oracle", () => {
   const familyNames = Object.keys(VALIDATE_FAMILY_ORACLE.families);
 
-  it("declares the current families in the oracle", () => {
+  it("declares the oracle-covered families", () => {
     expect(new Set(familyNames)).toEqual(
       new Set([
         "cross-capability",
@@ -227,358 +145,101 @@ describe("validate family envelope (oracle parity)", () => {
     );
   });
 
-  // The per-family live envelope is captured by calling the cmd* functions
-  // directly, matching the existing validate.test.ts pattern (process.cwd()
-  // resolves to packages/cli at vitest time; the cmd* helpers walk up to the
-  // repo source root). The dispatch wiring is covered separately below.
-  function capturePassEnvelope(family: string): { rc: number; payload: Record<string, unknown> } {
-    if (family === "cross-capability" || family === "app-home-contract") {
-      const { rc, out } = capture((io) => cmdValidate(family, { format: "json" }, io));
-      return { rc, payload: readJson(out) };
-    }
-    if (family === "capability") {
-      const { rc, out } = capture((io) => cmdValidateCapability("build", { format: "json" }, io));
-      return { rc, payload: readJson(out) };
-    }
+  it.each(familyNames)("family '%s' matches its complete pass-envelope contract", (family) => {
+    const spec = VALIDATE_FAMILY_ORACLE.families[family];
+    const { rc, payload } = captureValidateFamily(family, spec);
+
+    expect(rc).toBe(spec.exitCode);
+    expect(payload.command).toBe(VALIDATE_FAMILY_ORACLE.commandValue);
+    expect(payload.status).toBe("pass");
+    expect(payload.target_family).toBe(spec.targetFamilyValue);
+    expect(typeof payload.target).toBe("string");
+    expect(Array.isArray(payload.violations)).toBe(true);
+    expectExactTopLevelKeys(payload, spec.requiredTopLevelKeys, family, spec.altShape);
+    expectEngine(payload, spec, family);
+
+    if (family === "capability") expect(typeof payload.path).toBe("string");
     if (family === "capability-contract") {
-      const { rc, out } = capture((io) => cmdValidateCapabilityContract({ format: "json" }, io));
-      return { rc, payload: readJson(out) };
+      const checks = payload.checks as Array<Record<string, unknown>>;
+      const summary = payload.summary as Record<string, unknown>;
+      expect(Array.isArray(checks)).toBe(true);
+      expect(typeof summary.passed).toBe("number");
+      expect(typeof summary.failed).toBe("number");
+      for (const check of checks) {
+        expect(check.command).toBe("validate");
+        expect((check.engine as Record<string, unknown>).command).toBe("validate_capability.py");
+      }
     }
     if (family === "artifact") {
-      const root = useFixtureProject("ok");
-      fixtureRoots.push(root);
-      const { rc, out } = capture((io) =>
-        cmdValidateArtifact({ artifact: ARTIFACT_VALIDATE_TARGET, cwd: root, format: "json" }, io),
-      );
-      return { rc, payload: readJson(out) };
-    }
-    throw new Error(`unknown family '${family}' in capturePassEnvelope`);
-  }
-
-  it.each(familyNames)("family '%s' pass envelope matches the oracle", (family) => {
-    const spec = VALIDATE_FAMILY_ORACLE.families[family];
-    const { rc, payload } = capturePassEnvelope(family);
-    expect(rc, `rc for family '${family}'`).toBe(spec.exitCode);
-    // Top-level literal pins.
-    expect(payload.command, `command for family '${family}'`).toBe(VALIDATE_FAMILY_ORACLE.commandValue);
-    expect(VALIDATE_FAMILY_ORACLE.statusUnion, "status union is fixed").toContain(payload.status as string);
-    expect(payload.target_family, `target_family for family '${family}'`).toBe(spec.targetFamilyValue);
-    // Required keys per family.
-    assertRequiredKeys(payload, spec.requiredTopLevelKeys, family, "validate-family.json");
-    // Strict drift detection: the live envelope must not add undeclared keys.
-    assertExactTopLevelKeys(
-      payload,
-      spec.requiredTopLevelKeys,
-      spec.altShape,
-      family,
-      "validate-family.json",
-    );
-    // Generic value types shared across families.
-    assertValueTypes(
-      payload,
-      {
-        command: "string",
-        status: "string",
-        target_family: "string",
-        target: "string",
-        violations: "array",
-      },
-      family,
-      "validate-family.json",
-    );
-  });
-
-  it("delegated families expose the engine.command script name", () => {
-    for (const family of ["cross-capability", "app-home-contract"]) {
-      const spec = VALIDATE_FAMILY_ORACLE.families[family];
-      const { payload } = capturePassEnvelope(family);
-      const engine = payload.engine as Record<string, unknown>;
-      for (const key of spec.engine!.requiredKeys) {
-        expect(engine, `engine key '${key}' for '${family}'`).toHaveProperty(key);
-      }
-      expect(engine.command, `engine.command for '${family}'`).toBe(spec.engine!.commandValue);
-      expect(typeof engine.exit_code, `engine.exit_code type for '${family}'`).toBe("number");
-      expect(Array.isArray(engine.stdout), `engine.stdout array for '${family}'`).toBe(true);
-      expect(Array.isArray(engine.stderr), `engine.stderr array for '${family}'`).toBe(true);
+      expect(typeof payload.artifact).toBe("string");
+      expect(typeof payload.file).toBe("string");
+      expect(typeof payload.docs_mapped_default).toBe("string");
+      expect(typeof payload.path_source).toBe("string");
     }
   });
 
-  it("capability family does not embed engine.command (delegated runner is not a script)", () => {
-    const spec = VALIDATE_FAMILY_ORACLE.families["capability"];
-    const { payload } = capturePassEnvelope("capability");
-    const engine = payload.engine as Record<string, unknown>;
-    for (const key of spec.engine!.requiredKeys) {
-      expect(engine, `engine key '${key}' for 'capability'`).toHaveProperty(key);
-    }
-    expect(typeof engine.exit_code, "engine.exit_code is numeric").toBe("number");
-    expect(Array.isArray(engine.stdout), "engine.stdout is an array").toBe(true);
-    expect(Array.isArray(engine.stderr), "engine.stderr is an array").toBe(true);
-    // The path field carries the resolved capability directory.
-    expect(typeof payload.path, "path field is a string").toBe("string");
-  });
-
-  it("capability-contract family exposes checks[] and summary { passed, failed }", () => {
-    const spec = VALIDATE_FAMILY_ORACLE.families["capability-contract"];
-    const { rc, payload } = capturePassEnvelope("capability-contract");
-    expect(rc).toBe(spec.exitCode);
+  it("matches the real capability-set alternate envelope", () => {
+    const spec = VALIDATE_FAMILY_ORACLE.families.capability;
+    const target = path.join(REPO_ROOT, "skills", "agentera", "capabilities");
+    const { rc, payload } = capture((io) => cmdValidateCapability(target, { format: "json" }, io));
     const checks = payload.checks as Array<Record<string, unknown>>;
-    const summary = payload.summary as Record<string, unknown>;
-    expect(Array.isArray(checks), "checks is an array").toBe(true);
-    expect(summary, "summary has passed and failed").toHaveProperty("passed");
-    expect(summary, "summary has passed and failed").toHaveProperty("failed");
-    expect(typeof summary.passed, "summary.passed is numeric").toBe("number");
-    expect(typeof summary.failed, "summary.failed is numeric").toBe("number");
-    // Each check has the delegated envelope shape.
-    for (const check of checks) {
-      expect(check.command, "check.command").toBe("validate");
-      const engine = check.engine as Record<string, unknown>;
-      expect(engine.command, "check.engine.command").toBe("validate_capability.py");
-      expect(typeof engine.exit_code, "check.engine.exit_code").toBe("number");
-    }
-  });
+    const summary = payload.summary as Record<string, number>;
 
-  it("artifact family exposes engine.command='validate-artifact' and the resolved file", () => {
-    const spec = VALIDATE_FAMILY_ORACLE.families["artifact"];
-    const { rc, payload } = capturePassEnvelope("artifact");
-    expect(rc).toBe(spec.exitCode);
-    const engine = payload.engine as Record<string, unknown>;
-    expect(engine.command, "artifact engine.command").toBe("validate-artifact");
-    expect(typeof engine.exit_code, "artifact engine.exit_code is numeric").toBe("number");
-    expect(typeof payload.artifact, "artifact field is a string").toBe("string");
-    expect(typeof payload.file, "file field is a string").toBe("string");
-    expect(typeof payload.docs_mapped_default, "docs_mapped_default is a string").toBe("string");
-    expect(typeof payload.path_source, "path_source is a string").toBe("string");
-  });
-
-  it("artifact fail envelope (rc 2) populates violations and engine.exit_code=2", () => {
-    // Reuse the wired dispatch path: emitInvalidInput is the canonical fail envelope
-    // for unsupported_target, and cmdValidateArtifact returns rc 2 when the engine
-    // reports a violation. The structural contract is owned by the invalid-input oracle.
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "va-"));
-    const badFile = path.join(dir, "bad.yaml");
-    fs.writeFileSync(badFile, "x");
-    try {
-      const { rc, out } = capture((io) =>
-        cmdValidateArtifact({ artifact: "PLAN.md", file: badFile, format: "json" }, io),
-      );
-      const payload = readJson(out);
-      expect(rc, "artifact fail envelope returns rc 2").toBe(2);
-      expect(payload.status, "artifact fail envelope status is 'fail'").toBe("fail");
-      const violations = payload.violations as string[];
-      expect(Array.isArray(violations), "fail envelope has a violations array").toBe(true);
-      expect(violations.length, "fail envelope has at least one violation").toBeGreaterThan(0);
-      const engine = payload.engine as Record<string, unknown>;
-      expect(engine.exit_code, "fail engine.exit_code is 2").toBe(2);
-    } finally {
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  it("dispatch wiring: unsupported family returns the canonical invalid-input envelope (rc 2)", () => {
-    // Cross-check that the validate family oracle does not duplicate the
-    // invalid-input contract: the unsupported_target case is owned by
-    // invalid-input-envelope.json and enforced by invalidInputEnvelope.test.ts.
-    const { rc, payload } = runDispatch(["check", "validate", "bogus", "--format", "json"]);
-    expect(rc).toBe(2);
-    expect(payload.status).toBe("fail");
-    const error = payload.error as Record<string, unknown>;
-    expect(error.class, "unsupported family class").toBe("unsupported_target");
-  });
-
-  it("dispatch wiring: missing family returns the canonical invalid-input envelope (rc 2)", () => {
-    const { rc, payload } = runDispatch(["check", "validate", "--format", "json"]);
-    expect(rc).toBe(2);
-    expect(payload.status).toBe("fail");
-    const error = payload.error as Record<string, unknown>;
-    expect(error.class, "missing family class").toBe("missing_argument");
+    expect(rc).toBe(0);
+    expect(payload.target_family).toBe("capability-set");
+    expectExactTopLevelKeys(payload, spec.requiredTopLevelKeys, "capability-set", spec.altShape);
+    expect(checks.length).toBeGreaterThan(0);
+    expect(summary.passed + summary.failed).toBe(checks.length);
   });
 });
 
-describe("verify eval family envelope (oracle parity)", () => {
+describe("verify eval pass-envelope oracle", () => {
   const targetNames = Object.keys(VERIFY_EVAL_FAMILY_ORACLE.targets).filter(
-    (t) =>
-      Array.isArray(VERIFY_EVAL_FAMILY_ORACLE.targets[t].argv) &&
-      VERIFY_EVAL_FAMILY_ORACLE.targets[t].argv.length > 0,
+    (target) => (VERIFY_EVAL_FAMILY_ORACLE.targets[target].argv?.length ?? 0) > 0,
   );
 
-  it("declares the eval target entries in the oracle", () => {
-    // The semantic + skills_dry_run targets must stay pinned. The skills_run
-    // entry is documentation-only (no argv pinned, see oracle note).
-    expect(new Set(targetNames)).toEqual(new Set(["semantic", "skills_dry_run"]));
+  it("declares the oracle-covered eval targets", () => {
+    expect(new Set(targetNames)).toEqual(new Set(["semantic", "routing", "skills_dry_run"]));
   });
 
-  function captureEvalPassEnvelope(target: string): { rc: number; payload: Record<string, unknown> } {
-    if (target === "semantic") {
-      const { rc, out } = capture((io) =>
-        cmdVerify(
-          { family: "eval", target: "semantic", fixtures: [SEMANTIC_FIXTURE], format: "json" },
-          io,
-        ),
-      );
-      return { rc, payload: readJson(out) };
-    }
-    if (target === "skills_dry_run") {
-      const { rc, out } = capture((io) =>
-        cmdVerify({ family: "eval", target: "skills", dryRun: true, format: "json" }, io),
-      );
-      return { rc, payload: readJson(out) };
-    }
-    throw new Error(`unknown target '${target}' in captureEvalPassEnvelope`);
-  }
-
-  it.each(targetNames)("target '%s' pass envelope matches the oracle", (target) => {
+  it.each(targetNames)("target '%s' matches its complete pass-envelope contract", (target) => {
     const spec = VERIFY_EVAL_FAMILY_ORACLE.targets[target];
-    const { rc, payload } = captureEvalPassEnvelope(target);
-    expect(rc, `rc for verify eval '${target}'`).toBe(spec.exitCode);
-    expect(payload.command, `command for verify eval '${target}'`).toBe(
-      VERIFY_EVAL_FAMILY_ORACLE.commandValue,
+    const { rc, payload } = captureFromRepoRoot((io) =>
+      main(["node", "agentera", ...(spec.argv ?? [])], io),
     );
-    expect(payload.family, `family for verify eval '${target}'`).toBe(
-      VERIFY_EVAL_FAMILY_ORACLE.familyValue,
-    );
-    expect(payload.target, `target for verify eval '${target}'`).toBe(spec.targetValue);
-    expect(VERIFY_EVAL_FAMILY_ORACLE.statusUnion).toContain(payload.status as string);
-    expect(VERIFY_EVAL_FAMILY_ORACLE.formatValueUnion).toContain(payload.format as string);
-    // Top-level required keys.
-    assertRequiredKeys(
+
+    expect(rc).toBe(spec.exitCode);
+    expect(payload.command).toBe(VERIFY_EVAL_FAMILY_ORACLE.commandValue);
+    expect(payload.family).toBe(VERIFY_EVAL_FAMILY_ORACLE.familyValue);
+    expect(payload.target).toBe(spec.targetValue);
+    expect(payload.status).toBe("pass");
+    expect(payload.format).toBe("json");
+    expectExactTopLevelKeys(
       payload,
       VERIFY_EVAL_FAMILY_ORACLE.requiredTopLevelKeys,
       `eval ${target}`,
-      "verify-eval-family.json",
     );
-    // Strict drift detection: the live envelope must not add undeclared keys.
-    assertExactTopLevelKeys(
-      payload,
-      VERIFY_EVAL_FAMILY_ORACLE.requiredTopLevelKeys,
-      undefined,
-      `eval ${target}`,
-      "verify-eval-family.json",
-    );
-  });
 
-  it("engine, diagnostics, and safety sub-objects match the pinned shape", () => {
-    for (const target of targetNames) {
-      const spec = VERIFY_EVAL_FAMILY_ORACLE.targets[target];
-      const { payload } = captureEvalPassEnvelope(target);
-      const engine = payload.engine as Record<string, unknown>;
-      for (const key of VERIFY_EVAL_FAMILY_ORACLE.engine.requiredKeys) {
-        expect(engine, `engine key '${key}' for '${target}'`).toHaveProperty(key);
-      }
-      expect(Array.isArray(engine.command), `engine.command is an array for '${target}'`).toBe(true);
-      expect(typeof engine.exit_code, `engine.exit_code is numeric for '${target}'`).toBe("number");
+    const engine = payload.engine as Record<string, unknown>;
+    for (const key of VERIFY_EVAL_FAMILY_ORACLE.engine.requiredKeys)
+      expect(engine).toHaveProperty(key);
+    expect(Array.isArray(engine.command)).toBe(true);
+    expect(typeof engine.exit_code).toBe("number");
 
-      const diagnostics = payload.diagnostics as Record<string, unknown>;
-      for (const key of VERIFY_EVAL_FAMILY_ORACLE.diagnostics.requiredKeys) {
-        expect(diagnostics, `diagnostics key '${key}' for '${target}'`).toHaveProperty(key);
-      }
-      expect(Array.isArray(diagnostics.stdout), `diagnostics.stdout is an array for '${target}'`).toBe(
-        true,
-      );
-      expect(Array.isArray(diagnostics.stderr), `diagnostics.stderr is an array for '${target}'`).toBe(
-        true,
-      );
-      expect(diagnostics.line_limit, `diagnostics.line_limit for '${target}'`).toBe(
-        VERIFY_EVAL_FAMILY_ORACLE.diagnostics.lineLimitValue,
-      );
+    const diagnostics = payload.diagnostics as Record<string, unknown>;
+    for (const key of VERIFY_EVAL_FAMILY_ORACLE.diagnostics.requiredKeys)
+      expect(diagnostics).toHaveProperty(key);
+    expect(Array.isArray(diagnostics.stdout)).toBe(true);
+    expect(Array.isArray(diagnostics.stderr)).toBe(true);
+    expect(diagnostics.line_limit).toBe(VERIFY_EVAL_FAMILY_ORACLE.diagnostics.lineLimitValue);
 
-      const safety = payload.safety as Record<string, unknown>;
-      for (const key of VERIFY_EVAL_FAMILY_ORACLE.safety.requiredKeys) {
-        expect(safety, `safety key '${key}' for '${target}'`).toHaveProperty(key);
-      }
-      expect(VERIFY_EVAL_FAMILY_ORACLE.safety.modeValueUnion, `safety.mode union for '${target}'`).toContain(
-        safety.mode as string,
-      );
-      expect(typeof safety.summary, `safety.summary is a string for '${target}'`).toBe("string");
-      expect(typeof safety.live, `safety.live is boolean for '${target}'`).toBe("boolean");
-      expect(
-        typeof safety.long_running_default,
-        `safety.long_running_default is boolean for '${target}'`,
-      ).toBe("boolean");
-      expect(safety.live, `safety.live for '${target}'`).toBe(spec.live);
-      expect(safety.mode, `safety.mode for '${target}'`).toBe(spec.safetyMode);
-    }
-  });
-
-  it("documents the verify unsupported-target text-mode gap (pre-existing, see verify.test.ts:63-67)", () => {
-    // Pre-existing gap: cmdVerify catches validateVerifyRequest errors and writes
-    // a text-mode `Error: ...` line to stderr instead of routing through
-    // emitInvalidInput. The pass envelope oracle (this file) freezes the
-    // canonical eval envelope; the text-mode error path is owned by
-    // verify.test.ts and is intentionally out of scope for this cycle (it
-    // would require a dispatch-level fix in runVerify, which the plan
-    // defers to a future cycle).
-    const { rc } = capture((io) => main(["node", "agentera", "check", "verify", "eval", "bogus", "--format", "json"], io));
-    expect(rc).toBe(2);
-  });
-});
-
-describe("oracle pinning", () => {
-  it("validate-family oracle pins the cross-cutting constants", () => {
-    expect(VALIDATE_FAMILY_ORACLE.format).toBe("json");
-    expect(VALIDATE_FAMILY_ORACLE.commandValue).toBe("validate");
-    expect(VALIDATE_FAMILY_ORACLE.statusUnion).toEqual(["pass", "fail"]);
-    expect(VALIDATE_FAMILY_ORACLE.violationsValueType).toBe("array<string>");
-  });
-
-  it("validate-family oracle references the invalid-input envelope oracle for the fail path", () => {
-    expect(VALIDATE_FAMILY_ORACLE.failEnvelope.referencedOracle).toBe("invalid-input-envelope.json");
-    expect(VALIDATE_FAMILY_ORACLE.failEnvelope.referencedOraclePath).toBe(
-      "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
-    );
-    expect(VALIDATE_FAMILY_ORACLE.relatedOracles.invalidInputEnvelope).toBe(
-      "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
-    );
-  });
-
-  it("verify-eval-family oracle pins the cross-cutting constants", () => {
-    expect(VERIFY_EVAL_FAMILY_ORACLE.format).toBe("json");
-    expect(VERIFY_EVAL_FAMILY_ORACLE.commandValue).toBe("verify");
-    expect(VERIFY_EVAL_FAMILY_ORACLE.familyValue).toBe("eval");
-    expect(VERIFY_EVAL_FAMILY_ORACLE.statusUnion).toEqual(["pass", "fail"]);
-    expect(VERIFY_EVAL_FAMILY_ORACLE.diagnostics.lineLimitValue).toBe(20);
-  });
-
-  it("verify-eval-family oracle references the invalid-input envelope oracle for the fail path", () => {
-    expect(VERIFY_EVAL_FAMILY_ORACLE.failEnvelope.referencedOracle).toBe("invalid-input-envelope.json");
-    expect(VERIFY_EVAL_FAMILY_ORACLE.relatedOracles.invalidInputEnvelope).toBe(
-      "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
-    );
-  });
-
-  it("drift detector fails with a named diff when a new field is added (AC3)", () => {
-    // The drift detector is the AC3 enforcement: a new field in the live
-    // envelope must surface a diff naming the extra key so the developer is
-    // forced to update the oracle (or revert). Sanity-check the helper here
-    // so the contract is self-tested.
-    const baseRequired = ["command", "status", "target_family", "target", "violations"];
-    const matching = { command: "validate", status: "pass", target_family: "x", target: "x", violations: [] };
-    expect(() => assertExactTopLevelKeys(matching, baseRequired, undefined, "x", "oracle.json")).not.toThrow();
-    const extra = { ...matching, brand_new_field: "x" };
-    expect(() => assertExactTopLevelKeys(extra, baseRequired, undefined, "x", "oracle.json")).toThrow(
-      /brand_new_field/,
-    );
-    const missing = { command: "validate", status: "pass", target_family: "x", target: "x" };
-    expect(() => assertExactTopLevelKeys(missing, baseRequired, undefined, "x", "oracle.json")).toThrow(
-      /violations/,
-    );
-  });
-
-  it("drift detector consults altShape only when the live target_family matches", () => {
-    // The capability family has an altShape for the root-target 'capability-set'
-    // case. The detector must only apply the altShape keys when the live
-    // envelope's target_family actually matches.
-    const required = ["command", "status", "target_family", "target", "violations", "engine", "path"];
-    const altShape = { targetFamilyValue: "capability-set", requiredTopLevelKeys: ["checks", "summary"] };
-    // single-capability target: altShape must NOT be applied.
-    const single = { command: "validate", status: "pass", target_family: "capability", target: "x", violations: [], engine: {}, path: "x" };
-    expect(() => assertExactTopLevelKeys(single, required, altShape, "capability", "oracle.json")).not.toThrow();
-    // capability-set target: altShape keys are required.
-    const set = { ...single, target_family: "capability-set", checks: [], summary: {} };
-    expect(() => assertExactTopLevelKeys(set, required, altShape, "capability", "oracle.json")).not.toThrow();
-    // capability-set target missing checks/summary: drift detector names the missing keys.
-    const setMissing = { ...single, target_family: "capability-set" };
-    expect(() => assertExactTopLevelKeys(setMissing, required, altShape, "capability", "oracle.json")).toThrow(
-      /checks/,
-    );
+    const safety = payload.safety as Record<string, unknown>;
+    for (const key of VERIFY_EVAL_FAMILY_ORACLE.safety.requiredKeys)
+      expect(safety).toHaveProperty(key);
+    expect(typeof safety.summary).toBe("string");
+    expect(typeof safety.live).toBe("boolean");
+    expect(typeof safety.long_running_default).toBe("boolean");
+    expect(safety.live).toBe(spec.live);
+    expect(safety.mode).toBe(spec.safetyMode);
   });
 });
