@@ -1,0 +1,17 @@
+id: bwlnvlrefx
+artifact: progress
+record:
+  timestamp: 2026-07-29 13:26
+  type: fix
+  phase: build
+  what: Updated packages/cli/src/state/planEntities.ts to require complete latest-PASS replacements before supersession and open-plan completion while retaining historical first-PASS repair.
+  context:
+    intent: Prevent new valid-but-unrepairable replacement evaluation state without invalidating persisted history.
+    constraints: No global historical validation, generic task-completion gate, evaluator refactor, archival change, version bump, publication, push, profile refresh, glossary write, vision edit, or installed-app refresh.
+    unknowns: None remain for this task.
+    scope: Plan lifecycle writer, plan contract, writer discovery, orchestrate guidance, regressions, CHANGELOG.md, TODO.md, and typed plan/TODO state.
+  inspiration: Plan task keknfvovnh and TODO qnxhsaxrjd.
+  discovered: The published @next executable was stale relative to checkout source; rebuilding the local CLI changed the authoritative selected task. Existing task-selection changes also required full-graph consistency before dispatch.
+  verified: "Full source suite: 220 files, 2,988 passed and 1 skipped; typecheck and build passed; orchestrate capability, capability contract, entity state, compact, and git diff checks passed; independent audit approved; built CLI rejected missing PASS, repaired historical state without predecessor changes, and replayed supersession and closeout."
+  next: "Implement nrpvauxexj / lfvwrkcsuf: put Build artifact logging before commit."
+  publication_order: 5

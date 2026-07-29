@@ -232,7 +232,7 @@ const planEvaluationFields: OperationField[] = [
 ];
 
 const planSupersedeFields: OperationField[] = [
-  { flag: "--by", field: "superseded_by", kind: "string_list", required: true, repeatable: true, description: "Distinct completed replacement task IDs in the same plan." },
+  { flag: "--by", field: "superseded_by", kind: "string_list", required: true, repeatable: true, description: "Distinct same-plan replacement task IDs that are complete with latest persisted PASS." },
   { flag: "--reason", field: "superseded_reason", kind: "string", required: true, description: "Required explanation, at most 500 characters." },
 ];
 

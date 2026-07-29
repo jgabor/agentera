@@ -206,6 +206,11 @@ function hasSupersededPredecessor(entities: DiscoveredEntity[], planId: string, 
     && Array.isArray(entity.record.superseded_by)
     && entity.record.superseded_by.includes(taskId));
 }
+function isCompletePassingReplacement(entity: DiscoveredEntity | undefined): boolean {
+  const candidate = entity?.record?.evaluation;
+  const evaluation = mapping(candidate) ? candidate : undefined;
+  return entity?.record?.status === "complete" && evaluation?.last_verdict === "pass";
+}
 function assertProjectedTask(entities: DiscoveredEntity[], id: string, record: JsonObject): void {
   const violations = planTaskRecordViolations(record, `plan task '${id}'`);
   if (violations.length) reject({ class: "schema_violation", message: `plan task '${id}' would violate the task schema`, violations });
@@ -242,7 +247,19 @@ function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, tas
     if (!ID.test(replacementId)) reject({ class: "schema_violation", message: `supersede replacement task ID '${replacementId}' must be ten lowercase letters` });
     if (replacementId === taskId) reject({ class: "schema_violation", message: "a task cannot supersede itself" });
     const replacement = taskFor(entities, replacementId, planId);
-    if (replacement.record?.status !== "complete") reject({ class: "conflict", message: `supersede replacement task '${replacementId}' must be complete` });
+    if (!isCompletePassingReplacement(replacement)) {
+      const historicallyReferenced = hasSupersededPredecessor(entities, planId, replacementId);
+      const hasEvaluation = mapping(replacement.record?.evaluation);
+      reject({
+        class: "conflict",
+        message: `supersede replacement task '${replacementId}' must be complete with latest persisted PASS evidence`,
+        recovery: historicallyReferenced
+          ? hasEvaluation
+            ? `Replacement task '${replacementId}' already has non-PASS evaluation state, so historical first-PASS recovery is unavailable; use another complete latest-PASS replacement, or keep the plan open or archive it without claiming completion as applicable.`
+            : `Record the allowed first PASS for historical replacement task '${replacementId}' while it remains complete, then retry supersession; no state was changed.`
+          : `Reopen replacement task '${replacementId}', record PASS, complete it, then retry supersession; no state was changed.`,
+      });
+    }
   }
   const record = structuredClone(task.record!);
   record.status = "superseded";
@@ -266,11 +283,26 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
   if (req.spec.verb === "set-plan-status" || req.spec.verb === "archive") {
     const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id);
     const requested = req.spec.verb === "archive" ? "archived" : String(req.values.status);
-    if (requested === "complete" && tasks.some((task) => !["complete", "superseded"].includes(String(task.record?.status)))) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
     if (planStatus(plan) === "archived" && req.spec.verb !== "archive") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
     const record = structuredClone(plan.record!); const header = mapping(record.header) ? record.header : {}; header.status = requested; record.header = header;
     const command = req.spec.verb === "archive" ? "state plan archive" : "state plan set-plan-status";
     if (canonicalRecordJson(record) === canonicalRecordJson(plan.record)) return envelope(command, { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun);
+    if (requested === "complete" && tasks.some((task) => !["complete", "superseded"].includes(String(task.record?.status)))) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
+    if (requested === "complete") {
+      for (const task of tasks.filter((candidate) => candidate.record?.status === "superseded")) {
+        for (const replacementId of Array.isArray(task.record?.superseded_by) ? task.record.superseded_by : []) {
+          if (typeof replacementId !== "string") continue;
+          const replacement = tasks.find((candidate) => candidate.id === replacementId);
+          if (!isCompletePassingReplacement(replacement)) reject({
+            class: "conflict",
+            message: `plan '${plan.id}' cannot be completed because replacement task '${replacementId}' lacks complete latest persisted PASS evidence`,
+            recovery: mapping(replacement?.record?.evaluation)
+              ? `Replacement task '${replacementId}' cannot use historical first-PASS recovery because it already has evaluation state; keep the plan open or archive it without claiming completion.`
+              : `Record the allowed first PASS for replacement task '${replacementId}' with agentera state plan record-evaluation --id ${replacementId}, then retry plan completion; no state was changed.`,
+          });
+        }
+      }
+    }
     if (req.dryRun) return envelope(command, { id: plan.id!, path: plan.path, replay: false }, record, true);
     const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, expectedBytes: exactDiscoveredEntityBytes(plan), migrationProvenance: plan.migrationProvenance, record });
     return envelope(command, result, record, false);

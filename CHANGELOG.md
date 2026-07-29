@@ -124,6 +124,9 @@
 
 ### Fixed
 
+- Fixed plan supersession and open-plan completion to require every replacement
+  task to be complete with latest persisted PASS evidence. Existing records
+  remain readable, and affected open plans retain the narrow first-PASS repair.
 - Fixed same-minute progress recency to use persisted writer-owned publication
   order instead of opaque IDs. List and `prime` now select the final committed
   publication after restart or copy. Version 2 snapshot cursors preserve

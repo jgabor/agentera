@@ -385,9 +385,9 @@ TASK:
     type: list[string]
     required: false
     description: >-
-      CLI-owned completed replacement task IDs from the same plan. Required only
-      when status is superseded; IDs must be distinct and the replacements remain
-      complete.
+      CLI-owned replacement task IDs from the same plan. Prospective supersession
+      requires every replacement to be complete with evaluation.last_verdict pass.
+      Required only when status is superseded; IDs must be distinct.
   8:
     id: PT22
     field: superseded_reason
@@ -489,7 +489,17 @@ LIFECYCLE_CONTRACT:
     forced_archive:
       unfinished_status: archived
       effect: Move the plan to immutable history without claiming completion or changing tasks.
+    replacement_evidence_transition:
+      predicate: A replacement is complete and its latest persisted evaluation.last_verdict is pass.
+      supersession: Every superseded_by replacement must satisfy the predicate before a new supersession is published.
+      completion: Every replacement named by a superseded task must satisfy the predicate before an open plan becomes complete.
+      replay: Exact supersession and plan-completion replays remain idempotent no-ops.
   compatibility:
+    historical_replacement_evidence:
+      readable: Existing superseded records without replacement PASS evidence remain readable and are not rewritten or invalidated.
+      closeout: An affected open plan cannot become complete until every replacement satisfies the current predicate.
+      recovery: An unevaluated complete replacement named by an open same-plan superseded predecessor may persist its first PASS, then closeout can retry.
+      scope: The first-PASS exception repairs already-persisted out-of-order state only; it does not permit new supersession without PASS evidence.
     legacy_read_window:
       scope: >-
         Read normalization and typed-writer canonicalization of plan-level

@@ -2,7 +2,7 @@ id: qnxhsaxrjd
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Prevent new out-of-order replacement evaluation deadlocks. Require every task selected as a superseded_by replacement to be complete with a latest persisted PASS before supersession succeeds, and reject new plan completion when a superseded task points to a replacement without PASS provenance. Preserve historical records and the narrow first-PASS recovery for already-persisted open-plan state. Add regressions for unevaluated replacements, failed replacements, exact replay, closeout validation, and actionable correction guidance."
   readiness:
     capability: build

@@ -165,12 +165,25 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityDecis
       "a first PASS on an unevaluated complete replacement is recovery only when an open same-plan superseded predecessor names it in superseded_by",
       ...base,
     ];
-  if (entityArtifact && artifact === "plan" && ["update", "set-status", "supersede"].includes(verb))
+  if (entityArtifact && artifact === "plan" && verb === "supersede")
+    return [
+      "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
+      "each --by replacement must be complete with latest persisted PASS",
+      "if a non-PASS replacement is not already referenced by a historical superseded predecessor, reopen it, record PASS, complete it, and retry",
+      "if a referenced historical replacement is unevaluated complete, record its allowed first PASS while it remains complete, then retry",
+      "if a referenced historical replacement has an existing non-PASS evaluation, first-PASS recovery is unavailable; use another complete latest-PASS replacement, or keep or archive the plan without claiming completion as applicable",
+      ...base,
+    ];
+  if (entityArtifact && artifact === "plan" && ["update", "set-status"].includes(verb))
     return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
   if (entityArtifact && artifact === "plan" && verb === "append")
     return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];
   if (entityArtifact && artifact === "plan")
-    return ["the active plan entity is selected by lifecycle state", ...base];
+    return [
+      "the active plan entity is selected by lifecycle state",
+      ...(verb === "set-plan-status" ? ["open-to-complete requires every superseded_by replacement to be complete with latest persisted PASS; historical unevaluated complete replacements may record their allowed first PASS, then retry"] : []),
+      ...base,
+    ];
   if (artifact === "plan" && verb === "create")
     return [
       "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI",

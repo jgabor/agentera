@@ -3,8 +3,8 @@
 ## Current execution
 
 - **Current milestone:** M1 · Trust the execution loop.
-- **Next plan task:** `keknfvovnh`.
-- **Associated TODO:** `qnxhsaxrjd` — Prevent new out-of-order replacement evaluation deadlocks.
+- **Next plan task:** `nrpvauxexj`.
+- **Associated TODO:** `lfvwrkcsuf` — Put Build logging before commit.
 - **Exact request:** `/agentera implement next todo`.
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task.
@@ -21,8 +21,7 @@ Milestone debt is measured in three categories: (1) duplicate authorities, gramm
 
 Exit when execution selection, verification, logging, and closeout agree and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `qnxhsaxrjd` **NEXT** Prevent new out-of-order replacement evaluation deadlocks. Require every task selected as a superseded_by replacement to be complete with a latest persisted PASS before supersession succeeds, and reject new plan completion when a superseded task points to a replacement without PASS provenance. Preserve historical records and the narrow first-PASS recovery for already-persisted open-plan state. Add regressions for unevaluated replacements, failed replacements, exact replay, closeout validation, and actionable correction guidance.
-- [ ] [fix:3.0.0] `lfvwrkcsuf` Put Build artifact logging before its single commit. `packages/cli/src/capabilities/build/instructions.ts` currently orders Step 7 Commit before Step 8 Log, which writes TODO, progress, and changelog after the commit and contradicts the same-commit rule. Remove stale claims that entity progress assigns numbers or compacts aggregate files, and test served instructions against commit policy.
+- [ ] [fix:3.0.0] `lfvwrkcsuf` **NEXT** Put Build artifact logging before its single commit. `packages/cli/src/capabilities/build/instructions.ts` currently orders Step 7 Commit before Step 8 Log, which writes TODO, progress, and changelog after the commit and contradicts the same-commit rule. Remove stale claims that entity progress assigns numbers or compacts aggregate files, and test served instructions against commit policy.
 - [ ] [fix:3.0.0] `cbiviopiax` Make `execution_context.verification_expectations.expected_commands` project-aware and deduplicated. In this TypeScript and Vitest repository, Build prime prescribed `focused pytest targets` and both `agentera check compact` and `compaction check`. Derive runnable commands from `AGENTS.md` and package scripts, preserve provenance, and reject placeholders or duplicate aliases.
 - [ ] [fix:3.0.0] `zqxbpgregt` Make `agentera prime --context build --format json` ready for explicit no-plan work. It reported `mode: no_plan` but `complete_for_execution_context: false`, then prescribed `agentera state plan --format json`, which failed `not_found`. Represent no open plan as valid `no_plan`, accept user-scoped acceptance, and avoid non-advancing fallback loops.
 - [ ] [fix:3.0.0] `boprhkfddc` Make `agentera state query changelog --format json` expose the same changelog boundary used by Build prime. The fallback returned `status: ok` and `entries: []` for an existing `CHANGELOG.md`, while `execution_context.changelog_boundary` found `## [Unreleased]` and the latest release. Use one scanner and return headings, boundary, and provenance consistently.
@@ -120,6 +119,7 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Prevent new out-of-order replacement evaluation deadlocks. Resolved 2026-07-29: supersession and open-plan completion now require complete replacements with latest persisted PASS evidence; historical records stay readable, affected open plans retain one first-PASS repair, and rejection, recovery, and replay behavior passed source and built-CLI checks.
 - [x] ~~[chore:3.0.0] Superseded 2026-07-28 by TODOs `wwojgufooz` and `nolmwusfat`: the native OpenCode plugin is retired rather than maintained, so its `PROFILERA_PROFILE_DIR` fallback disappears with the whole resource.~~
 - [x] [fix:3.0.0] Make development and stable package publication one bounded, verified transaction. Load credentials through a temporary restricted npm configuration; report package identity, file count, sizes, integrity, and warnings by default while retaining full manifests behind explicit JSON or verbose output; publish; poll the exact version and expected dist-tag with bounded retries; and run an exact-version bootstrap smoke test before reporting success.
 - [x] ~~[refactor:3.0.0] Superseded 2026-07-25 by TODO rsplcfvosn, which consolidates structured attention into the sole bounded status dashboard contract.~~

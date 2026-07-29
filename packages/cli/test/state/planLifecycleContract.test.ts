@@ -114,6 +114,22 @@ describe("plan lifecycle contract", () => {
     expect(contract.canonical.forced_archive.unfinished_status).toBe("archived");
   });
 
+  it("requires prospective replacement PASS evidence without invalidating historical state", () => {
+    const contract = lifecycleContract();
+    const transition = contract.canonical.replacement_evidence_transition;
+    const historical = contract.compatibility.historical_replacement_evidence;
+
+    expect(transition.predicate).toContain("complete");
+    expect(transition.predicate).toContain("last_verdict is pass");
+    expect(transition.supersession).toContain("before a new supersession");
+    expect(transition.completion).toContain("before an open plan becomes complete");
+    expect(transition.replay).toContain("idempotent no-ops");
+    expect(historical.readable).toContain("remain readable");
+    expect(historical.readable).toContain("not rewritten or invalidated");
+    expect(historical.recovery).toContain("first PASS");
+    expect(historical.scope).toContain("does not permit new supersession");
+  });
+
   it("bounds legacy reads and classifies every lifecycle-bearing repository surface", () => {
     const contract = lifecycleContract();
     const window = contract.compatibility.legacy_read_window;

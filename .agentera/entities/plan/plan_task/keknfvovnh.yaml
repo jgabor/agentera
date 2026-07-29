@@ -4,10 +4,20 @@ record:
   name: M1 · Gate replacement supersession on PASS (qnxhsaxrjd)
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN no complete latest replacement PASS WHEN supersession or closeout runs THEN reject with missing evidence.
     - GIVEN historical deadlock WHEN recovered THEN first PASS repairs without history rewrite and replay converges.
     - GIVEN changed lifecycle units WHEN tested THEN each has one pass and one rejection.
     - GIVEN task closeout WHEN committed THEN TODO.md names the next selectable plan task and TODO.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: replacement-pass-gate-audit-1
+      source: independent audit and local verification
+      recorded_at: 2026-07-29 13:24
+      writer_command: agentera state plan record-evaluation

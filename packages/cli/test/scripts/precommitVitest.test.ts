@@ -36,7 +36,40 @@ function gitOutput(...args: string[]): string {
   expect(result.status, result.stderr).toBe(0);
   return result.stdout.trim();
 }
+
+function normalizeLocalGitConfig(config: string): string {
+  return config
+    .split("\n")
+    .filter((line) => {
+      const separator = line.indexOf("=");
+      return separator === -1 || !/^worktrunk\.state\..+\.marker$/.test(line.slice(0, separator));
+    })
+    .join("\n");
+}
+
 describe("scripts/precommit-vitest.sh staged routing", () => {
+  it("ignores only complete volatile Worktrunk marker records", () => {
+    const visibleConfig = [
+      "user.name=Test User",
+      "core.bare=false",
+      "worktrunk.state.feat/test.vars={}",
+      "worktrunk.state.feat/test.vars=payload.marker=changed",
+      "worktrunk.state.feat/test.marker-extra=keep",
+      "worktrunk.state..marker=keep",
+      "xworktrunk.state.feat/test.marker=keep",
+    ].join("\n");
+
+    expect(normalizeLocalGitConfig([
+      visibleConfig,
+      'worktrunk.state.feat/test.marker={"marker":"🤖","set_at":100,"status":"active"}',
+    ].join("\n"))).toBe(visibleConfig);
+    expect(normalizeLocalGitConfig([
+      'worktrunk.state.feat/test.marker={"marker":"💬","set_at":200,"status":"idle"}',
+      visibleConfig,
+    ].join("\n"))).toBe(visibleConfig);
+    expect(normalizeLocalGitConfig(visibleConfig)).toBe(visibleConfig);
+  });
+
   it("removes parent-hook repository routing before verification", () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "precommit-vitest-"));
     const binDir = path.join(tempDir, "bin");
@@ -91,7 +124,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
   it("clears hook-local Git environment before fixture repositories run", () => {
     const before = {
       head: gitOutput("rev-parse", "HEAD"),
-      localConfig: gitOutput("config", "--local", "--list"),
+      localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
     };
     const result = spawnSync(
       "bash",
@@ -112,7 +145,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     expect(result.status, result.stderr || result.stdout).toBe(0);
     expect({
       head: gitOutput("rev-parse", "HEAD"),
-      localConfig: gitOutput("config", "--local", "--list"),
+      localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
     }).toEqual(before);
   });
   it("routes broad source changes through the local source-owner policy", () => {
