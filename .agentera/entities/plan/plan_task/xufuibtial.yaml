@@ -1,7 +1,7 @@
 id: xufuibtial
 artifact: plan
 record:
-  name: Make TODO reconciliation atomic (frpdshynmd)
+  name: M3 · Make TODO reconciliation atomic (frpdshynmd)
   depends_on:
     - nkguykzeum
   status: pending

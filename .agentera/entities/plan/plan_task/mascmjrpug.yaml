@@ -1,9 +1,9 @@
 id: mascmjrpug
 artifact: plan
 record:
-  name: Establish declarative mutation grammar (htmgqhyasy)
+  name: M2 · Establish declarative mutation grammar (htmgqhyasy)
   depends_on:
-    []
+    - qxdcaimwoe
   status: pending
   acceptance:
     - GIVEN each mutation WHEN discovered THEN one authority classifies fields, preconditions, recovery, examples, and bounds.

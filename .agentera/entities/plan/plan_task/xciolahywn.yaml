@@ -1,7 +1,7 @@
 id: xciolahywn
 artifact: plan
 record:
-  name: Verify final current-state synchronization
+  name: M7 tail · Verify final current-state synchronization
   depends_on:
     - keknfvovnh
     - acazhcocpm

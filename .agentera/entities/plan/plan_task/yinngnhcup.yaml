@@ -1,7 +1,7 @@
 id: yinngnhcup
 artifact: plan
 record:
-  name: Publish and verify the stable cutover (huiepnrwav)
+  name: M7 · Publish and verify the stable cutover (huiepnrwav)
   depends_on:
     - rawyjlhhhv
   status: pending

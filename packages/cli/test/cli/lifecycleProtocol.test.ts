@@ -226,6 +226,60 @@ describe("final lifecycle protocol", () => {
     });
   });
 
+  it("advertises and executes a dependency-ready task outside the bounded plan projection", () => {
+    const root = cutoverProject();
+    fs.rmSync(path.join(root, ".agentera/entities/plan/plan_task"), { recursive: true });
+    const readyId = "zzzzzzzzzz";
+    for (let index = 0; index < 20; index += 1) {
+      entity(root, "plan", "plan_task", alphaId(100 + index), {
+        plan: "dddddddddd",
+        name: `Blocked task ${index}`,
+        status: "pending",
+        depends_on: [readyId],
+        acceptance: ["blocked acceptance"],
+      });
+    }
+    entity(root, "plan", "plan_task", readyId, {
+      plan: "dddddddddd",
+      name: "Ready outside projection",
+      status: "pending",
+      depends_on: [],
+      acceptance: ["outside projection acceptance"],
+    });
+
+    const prime = capture(root, ["prime", "--format", "json"]);
+    expect(prime.rc, prime.out + prime.err).toBe(0);
+    const orientation = JSON.parse(prime.out);
+    expect(orientation.plan).toMatchObject({
+      total: 21,
+      first_pending: { id: readyId, artifact: "plan", name: "Ready outside projection" },
+    });
+    expect(orientation.plan.tasks.length).toBeLessThan(orientation.plan.total);
+    expect(orientation.plan.tasks).not.toContainEqual(expect.objectContaining({ id: readyId }));
+    expect(orientation.next_action).toMatchObject({
+      object: "PLAN Task ?: Ready outside projection",
+      capability: "orchestrate",
+    });
+
+    const build = capture(root, ["prime", "--context", "build", "--format", "json"]);
+    expect(build.rc, build.out + build.err).toBe(0);
+    expect(JSON.parse(build.out).capability_context.context.execution_context).toMatchObject({
+      work_selection: { task: { id: readyId, name: "Ready outside projection" } },
+      plan_task: { id: readyId, depends_on: [] },
+      acceptance_criteria: { items: ["outside projection acceptance"] },
+    });
+
+    const audit = capture(root, ["prime", "--context", "audit", "--format", "json"]);
+    expect(audit.rc, audit.out + audit.err).toBe(0);
+    expect(JSON.parse(audit.out).capability_context.context.evidence_context).toMatchObject({
+      evaluation_target: { task: { id: readyId, name: "Ready outside projection" } },
+      plan_criteria: {
+        target: { id: readyId, name: "Ready outside projection" },
+        criteria: ["outside projection acceptance"],
+      },
+    });
+  });
+
   it.each([
     ["plan", "plan", "plan", "open", planRecord] as const,
     ["objective", "objective", "objective", "active", objectiveRecord] as const,

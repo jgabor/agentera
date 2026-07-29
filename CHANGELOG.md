@@ -4,6 +4,9 @@
 
 ### Changed
 
+- `agentera prime` now selects Build and Audit work from the complete plan task
+  graph, prioritizes in-progress work before dependency-ready pending tasks, and
+  keeps status recommendations aligned when the public task list is bounded.
 - Status now selects TODO recommendations from complete typed readiness state
   before applying startup bounds, preserves the selected TODO ID and exact
   retrieval command across JSON, terminal, and host projections, and abstains

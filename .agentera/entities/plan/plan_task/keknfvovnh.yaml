@@ -1,7 +1,7 @@
 id: keknfvovnh
 artifact: plan
 record:
-  name: Gate replacement supersession on PASS (qnxhsaxrjd)
+  name: M1 · Gate replacement supersession on PASS (qnxhsaxrjd)
   depends_on:
     []
   status: pending
@@ -9,4 +9,5 @@ record:
     - GIVEN no complete latest replacement PASS WHEN supersession or closeout runs THEN reject with missing evidence.
     - GIVEN historical deadlock WHEN recovered THEN first PASS repairs without history rewrite and replay converges.
     - GIVEN changed lifecycle units WHEN tested THEN each has one pass and one rejection.
+    - GIVEN task closeout WHEN committed THEN TODO.md names the next selectable plan task and TODO.
   plan: frkpjqmpnj

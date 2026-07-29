@@ -1,9 +1,9 @@
 id: vlxwhwqxqf
 artifact: plan
 record:
-  name: Make route receipts self-describing (atylhmpfrk)
+  name: M5 · Make route receipts self-describing (atylhmpfrk)
   depends_on:
-    []
+    - zcprgswrju
   status: pending
   acceptance:
     - GIVEN semantic abstention WHEN request output is read THEN it identifies the nullable receipt contract and outcomes.

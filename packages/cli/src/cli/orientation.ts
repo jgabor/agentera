@@ -33,7 +33,7 @@ import {
 import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
 import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./planArtifacts.js";
 import { planLifecycleState } from "./planLifecycleState.js";
-import { dependencyReadyTasks } from "./capabilityContext/planState.js";
+import { firstActionablePlanTask } from "./capabilityContext/planState.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { scanYamlCollection } from "../state/startupProjection.js";
 import { numberedArchiveContract } from "../state/archiveDiscovery.js";
@@ -412,7 +412,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   const completePlan = DONE_STATUSES.has(status.toLowerCase()) && complete === total;
   const firstPending = completePlan
     ? null
-    : dependencyReadyTasks(tasks).find((task) => entryStatusPy(task, "pending") === "pending") ?? null;
+    : firstActionablePlanTask(tasks);
   const summary: PlanSummary = {
     exists: true,
     status,

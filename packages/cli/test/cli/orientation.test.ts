@@ -18,6 +18,7 @@ import {
 } from "../../src/cli/orientation.js";
 import { orchestrationContext } from "../../src/cli/capabilityContext/orchestration.js";
 import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
+import { auditEvidenceContext } from "../../src/cli/capabilityContext/evidence.js";
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import type {
   DecisionFollowUp,
@@ -249,6 +250,96 @@ describe("orientation: artifact summaries", () => {
     const summary = planSummary(schema("plan", p));
     expect(summary.first_pending).toBeNull();
     expect(selectStatusNextAction(summary, { exists: false }, { exists: false }, [], null, false).object).not.toContain("PLAN Task");
+  });
+
+  it("resolves Build's selected entity task by canonical ID", () => {
+    const build = buildExecutionContext(
+      "build",
+      {},
+      {
+        exists: true,
+        active: true,
+        complete_plan: false,
+        status: "open",
+        tasks: [
+          {
+            id: "acazhcocpm",
+            artifact: "plan",
+            name: "Dependent task",
+            status: "pending",
+            depends_on: ["keknfvovnh"],
+            acceptance: ["dependent acceptance"],
+          },
+          {
+            id: "keknfvovnh",
+            artifact: "plan",
+            name: "Ready root",
+            status: "pending",
+            depends_on: [],
+            acceptance: ["root acceptance"],
+          },
+        ],
+      },
+      { exists: true },
+      { exists: true },
+      [{ severity: "critical", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { status: "up_to_date" },
+    );
+
+    expect(build).toMatchObject({
+      mode: "plan_driven",
+      work_selection: { task: { id: "keknfvovnh", name: "Ready root" } },
+      plan_task: { id: "keknfvovnh", depends_on: [] },
+      acceptance_criteria: { items: ["root acceptance"] },
+    });
+  });
+
+  it("resolves Audit's selected entity task and criteria by canonical ID", () => {
+    const audit = auditEvidenceContext(
+      "audit",
+      {},
+      {
+        exists: true,
+        active: true,
+        complete_plan: false,
+        status: "open",
+        tasks: [
+          {
+            id: "acazhcocpm",
+            artifact: "plan",
+            name: "Blocked dependent",
+            status: "pending",
+            depends_on: ["keknfvovnh"],
+            acceptance: ["no-plan acceptance"],
+          },
+          {
+            id: "keknfvovnh",
+            artifact: "plan",
+            name: "Ready root",
+            status: "pending",
+            depends_on: [],
+            acceptance: ["qnxhsaxrjd acceptance"],
+          },
+        ],
+      },
+      { exists: true },
+      { exists: true },
+      [{ severity: "critical", status: "open", text: "issue" }],
+      { exists: true },
+      { status: "loaded" },
+      { status: "up_to_date" },
+      { command: "state decisions list", entries: [], counts: { total: 0, returned: 0, remaining: 0 } },
+    );
+
+    expect(audit).toMatchObject({
+      evaluation_target: { task: { id: "keknfvovnh", name: "Ready root" } },
+      plan_criteria: {
+        target: { id: "keknfvovnh", name: "Ready root" },
+        criteria: ["qnxhsaxrjd acceptance"],
+      },
+    });
   });
 
   it("normalizes a completed plan with pending tasks back to open", () => {

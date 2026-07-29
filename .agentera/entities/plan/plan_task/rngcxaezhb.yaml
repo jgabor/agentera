@@ -1,12 +1,13 @@
 id: rngcxaezhb
 artifact: plan
 record:
-  name: Unify Build changelog reads (boprhkfddc)
+  name: M1 · Unify Build changelog reads (boprhkfddc)
   depends_on:
-    []
+    - acazhcocpm
   status: pending
   acceptance:
     - GIVEN a changelog WHEN Build and state query read it THEN headings, boundary, status, and provenance match.
     - GIVEN absent or malformed input WHEN read THEN both surfaces fail or degrade with the same recovery.
     - GIVEN changelog classes WHEN tested THEN each has one pass and one fail-safe case.
+    - GIVEN task closeout WHEN committed THEN TODO.md names the next selectable plan task and TODO.
   plan: frkpjqmpnj

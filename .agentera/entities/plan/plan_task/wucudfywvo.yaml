@@ -1,7 +1,7 @@
 id: wucudfywvo
 artifact: plan
 record:
-  name: Collapse prime to one aggregation contract (rsplcfvosn)
+  name: M5 · Collapse prime to one aggregation contract (rsplcfvosn)
   depends_on:
     - acazhcocpm
     - rngcxaezhb
@@ -10,6 +10,8 @@ record:
     - qxdcaimwoe
     - mascmjrpug
     - iddsqjadki
+    - zcprgswrju
+    - vlxwhwqxqf
   status: pending
   acceptance:
     - GIVEN capability startup WHEN prime runs THEN one bounded availability projection and outcome provide detail discovery without writer payloads.

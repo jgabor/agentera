@@ -1,12 +1,13 @@
 id: nrpvauxexj
 artifact: plan
 record:
-  name: Put Build logging before commit (lfvwrkcsuf)
+  name: M1 · Put Build logging before commit (lfvwrkcsuf)
   depends_on:
-    []
+    - keknfvovnh
   status: pending
   acceptance:
     - GIVEN a successful cycle WHEN instructions run THEN TODO, progress, and changelog updates precede its commit.
     - GIVEN current state behavior WHEN instructions are read THEN obsolete numbering and compaction claims are absent.
     - GIVEN workflow variants WHEN tested THEN each has one pass and one policy rejection.
+    - GIVEN task closeout WHEN committed THEN TODO.md names the next selectable plan task and TODO.
   plan: frkpjqmpnj

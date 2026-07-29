@@ -12,6 +12,7 @@ import { discoverEntities } from "../../../state/entityStorage.js";
 import { summaryCaveat } from "../../../state/summaryEntityRead.js";
 import { boundStartupValue, STARTUP_ARRAY_LIMIT } from "../../../state/startupProjection.js";
 import { rememberPlanTaskIndex } from "../../planTaskIndex.js";
+import { firstActionablePlanTask } from "../../capabilityContext/planState.js";
 import type {
   DecisionFollowUp,
   DecisionReviewAttention,
@@ -195,7 +196,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
       .sort((left, right) => left.id!.localeCompare(right.id!))
       .map((entry): JsonObject => ({ ...entry.record!, id: entry.id!, artifact: entry.artifact!, provenance: { storage: "canonical_entity_file", path: entry.relativePath } }))
     : [];
-  const firstPending = allTaskEntries.find((entry) => !terminal(entry.status));
+  const firstPending = firstActionablePlanTask(allTaskEntries);
   const taskStatusCounts = allTaskEntries.reduce<Record<string, number>>((counts, entry) => {
     const status = String(entry.status ?? "pending").toLowerCase(); counts[status] = (counts[status] ?? 0) + 1; return counts;
   }, {});

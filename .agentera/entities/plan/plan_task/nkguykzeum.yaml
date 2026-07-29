@@ -1,9 +1,9 @@
 id: nkguykzeum
 artifact: plan
 record:
-  name: Define typed TODO records and lifecycle (gbcpgevezi)
+  name: M2 tail · Define typed TODO records and lifecycle (gbcpgevezi)
   depends_on:
-    - mascmjrpug
+    - tryphyimhc
   status: pending
   acceptance:
     - GIVEN create or patch input WHEN applied THEN typed fields preserve omissions, explicit clears, and stable identity.

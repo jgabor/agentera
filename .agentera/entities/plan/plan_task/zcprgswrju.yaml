@@ -1,7 +1,7 @@
 id: zcprgswrju
 artifact: plan
 record:
-  name: Diagnose every retired resource (umrohrtsit)
+  name: M4B tail · Diagnose every retired resource (umrohrtsit)
   depends_on:
     - cspavuhaus
     - pfredurfew

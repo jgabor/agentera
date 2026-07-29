@@ -1,7 +1,7 @@
 id: ybpdvkidaq
 artifact: plan
 record:
-  name: Make bounded summary limits predictable (hykqpkcsix)
+  name: M3 · Make bounded summary limits predictable (hykqpkcsix)
   depends_on:
     - ztsnvyfcdh
   status: pending

@@ -4,7 +4,7 @@ import { artifactPath } from "../appContext.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { docsConventions, entryStatus, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
-import { selectEvidenceTarget } from "./planState.js";
+import { selectEvidenceTarget, taskByRef } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -177,11 +177,7 @@ export function evidenceVersionChecks(docs: JsonObject): JsonObject {
 
 export function evidencePlanCriteria(plan: JsonObject, target: JsonObject): JsonObject {
   const taskRefObj = target.task && typeof target.task === "object" && !Array.isArray(target.task) ? target.task : null;
-  let selected: JsonObject | null = null;
-  if (taskRefObj) {
-    const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
-    selected = tasks.find((t) => t.number === taskRefObj.number) ?? null;
-  }
+  const selected = taskByRef(plan, taskRefObj);
   const criteria = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
   return {
     status: criteria.length > 0 ? "available" : "incomplete",

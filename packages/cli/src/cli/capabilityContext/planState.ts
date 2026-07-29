@@ -12,6 +12,7 @@ import {
 } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { JsonValue } from "../../core/jsonValue.js";
+import { planTaskIndex } from "../planTaskIndex.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 
 export function orchestrationTaskSummary(task: JsonObject): JsonObject {
@@ -96,8 +97,14 @@ export function dependencyReadyTasks(tasks: JsonObject[]): JsonObject[] {
   return ready;
 }
 
+export function firstActionablePlanTask(tasks: JsonObject[]): JsonObject | null {
+  return tasks.find((task) => entryStatus(task, "pending") === "in_progress")
+    ?? dependencyReadyTasks(tasks)[0]
+    ?? null;
+}
+
 export function selectEvidenceTarget(plan: JsonObject): JsonObject {
-  const tasks = asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const tasks = planTaskIndex(plan);
   const noTarget = {
     status: "no_target",
     target_type: "repository",
@@ -107,25 +114,21 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
     caveats: ["No plan task target was selected; evaluate repository-level evidence only."],
   };
   if (!plan.exists || tasks.length === 0) return noTarget;
-  const inProgress = tasks.find((task) => entryStatus(task, "pending") === "in_progress");
-  if (inProgress) {
+  const actionable = firstActionablePlanTask(tasks);
+  if (actionable) {
+    const inProgress = entryStatus(actionable, "pending") === "in_progress";
     return {
       status: "selected",
       target_type: "plan_task",
-      task: taskRef(inProgress),
-      selection_reason: "in_progress_task",
-      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.status"),
-      caveats: [],
-    };
-  }
-  const ready = dependencyReadyTasks(tasks);
-  if (ready.length > 0) {
-    return {
-      status: "selected",
-      target_type: "plan_task",
-      task: taskRef(ready[0]),
-      selection_reason: "first_dependency_ready_pending_task",
-      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.depends_on"),
+      task: taskRef(actionable),
+      selection_reason: inProgress
+        ? "in_progress_task"
+        : "first_dependency_ready_pending_task",
+      source_provenance: sourceProvenance(
+        "plan",
+        STATE_FAMILY_FALLBACK_COMMANDS.plan,
+        inProgress ? "entries.status" : "entries.depends_on",
+      ),
       caveats: [],
     };
   }
@@ -147,10 +150,8 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
 
 export function taskByRef(plan: JsonObject, ref: JsonObject | null): JsonObject | null {
   if (!ref) return null;
-  for (const task of asList(plan.tasks)) {
-    if (task && typeof task === "object" && !Array.isArray(task) && task.number === ref.number) return task;
-  }
-  return null;
+  const tasks = planTaskIndex(plan);
+  return resolvePlanTaskByRef(indexPlanTasksByNumber(tasks), ref) ?? null;
 }
 
 export function planContextField(plan: JsonObject, field: string): any {
