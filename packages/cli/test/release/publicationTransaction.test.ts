@@ -9,8 +9,11 @@ import {
   PACKAGE_ADAPTERS,
   constructPackage,
   executePublication,
+  normalizeRegistryField,
+  parseNpmRegistryJson,
   prepareMetadata,
   preflightPublication,
+  registryState,
   validateResult,
   withNpmCredentials,
 } from "../../scripts/publication-transaction.mjs";
@@ -22,6 +25,9 @@ import {
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const PUBLISHED_VERSION = "3.0.0-dev.39";
+const PUBLISHED_INTEGRITY =
+  "sha512-cWRi+6n8XJdumtwTVvZLXCTKIXZvnjRuE6P33XT7VpmqrDGP9Hec4ZiAx4SZHDJejtJD2qfO3pMWt+Ws5cAN4w==";
 
 const manifest = (adapter: "development" | "stable") => ({
   name: "agentera",
@@ -323,6 +329,125 @@ describe("npm credential lifecycle", () => {
     } finally {
       fs.rmSync(temporary, { recursive: true, force: true });
     }
+  });
+});
+
+describe("npm registry response normalization", () => {
+  it.each([
+    ["scalar", PUBLISHED_INTEGRITY],
+    ["legacy object", { "dist.integrity": PUBLISHED_INTEGRITY }],
+    ["nested object", { dist: { integrity: PUBLISHED_INTEGRITY } }],
+    ["npm 12 scalar array", [PUBLISHED_INTEGRITY]],
+    ["npm 12 object array", [{ "dist.integrity": PUBLISHED_INTEGRITY }]],
+  ])("accepts the %s exact-version fixture", (_name, fixture) => {
+    expect(normalizeRegistryField(fixture, "dist.integrity")).toBe(PUBLISHED_INTEGRITY);
+  });
+
+  it.each([
+    ["scalar", PUBLISHED_VERSION],
+    ["legacy object", { next: PUBLISHED_VERSION }],
+    ["npm 12 scalar array", [PUBLISHED_VERSION]],
+    ["npm 12 object array", [{ next: PUBLISHED_VERSION }]],
+  ])("accepts the %s dist-tag fixture", (_name, fixture) => {
+    expect(normalizeRegistryField(fixture, "next")).toBe(PUBLISHED_VERSION);
+  });
+
+  it.each([
+    ["empty array", []],
+    ["multi-result array", [PUBLISHED_INTEGRITY, PUBLISHED_INTEGRITY]],
+    ["nested array", [[PUBLISHED_INTEGRITY]]],
+    ["null", null],
+    ["wrong scalar", 12],
+    ["missing field", { integrity: PUBLISHED_INTEGRITY }],
+    ["malformed field", { "dist.integrity": { value: PUBLISHED_INTEGRITY } }],
+    ["malformed nested field", { "dist.integrity": PUBLISHED_INTEGRITY, dist: "invalid" }],
+    [
+      "contradictory duplicate fields",
+      { "dist.integrity": PUBLISHED_INTEGRITY, dist: { integrity: "sha512-conflict" } },
+    ],
+  ])("rejects the %s fixture as a registry-shape error", (_name, fixture) => {
+    expect(() => normalizeRegistryField(fixture, "dist.integrity")).toThrow(
+      /npm registry shape error for dist\.integrity/,
+    );
+  });
+
+  it("replays the observed npm 12 exact-version and dist-tag objects through smoke", async () => {
+    const committed = { ...manifest("development"), version: PUBLISHED_VERSION };
+    const packed = normalizeConstruction(
+      { ...packedManifest(PUBLISHED_VERSION), integrity: PUBLISHED_INTEGRITY },
+      {
+        expectedName: "agentera",
+        expectedVersion: PUBLISHED_VERSION,
+        expectedTag: "next",
+        artifact: `/tmp/agentera-${PUBLISHED_VERSION}.tgz`,
+        warnings: [],
+      },
+    );
+    const queries: string[] = [];
+    const state = registryState(committed, PACKAGE_ADAPTERS.development, (args: string[]) => {
+      queries.push(args.join(" "));
+      return args.at(-1) === "dist.integrity"
+        ? [{ "dist.integrity": PUBLISHED_INTEGRITY }]
+        : [{ next: PUBLISHED_VERSION }];
+    });
+    let publishes = 0;
+    let smokes = 0;
+
+    const receipts = await executePublication("development", committed, packed, {
+      inspectRegistry: () => state,
+      publishPackage: () => publishes++,
+      smokePackage: () => {
+        smokes++;
+        return PUBLISHED_VERSION;
+      },
+    });
+
+    expect(queries).toEqual([
+      `view agentera@${PUBLISHED_VERSION} dist.integrity`,
+      "view agentera dist-tags",
+    ]);
+    expect(publishes).toBe(0);
+    expect(smokes).toBe(1);
+    expect(receipts.map(({ phase, outcome }) => `${phase}:${outcome}`)).toEqual([
+      "publication:replayed",
+      "smoke:passed",
+      "complete:passed",
+    ]);
+  });
+
+  it("does not classify unmarked lookup errors as registry absence", () => {
+    const committed = { ...manifest("development"), version: PUBLISHED_VERSION };
+    expect(() =>
+      registryState(committed, PACKAGE_ADAPTERS.development, () => {
+        throw new Error("parser or dependency error containing E404");
+      }),
+    ).toThrow("parser or dependency error containing E404");
+  });
+
+  it("fails malformed E404 JSON before publication with a bounded shape diagnostic", async () => {
+    const committed = { ...manifest("development"), version: PUBLISHED_VERSION };
+    const packed = normalizeConstruction(
+      { ...packedManifest(PUBLISHED_VERSION), integrity: PUBLISHED_INTEGRITY },
+      {
+        expectedName: "agentera",
+        expectedVersion: PUBLISHED_VERSION,
+        expectedTag: "next",
+        artifact: `/tmp/agentera-${PUBLISHED_VERSION}.tgz`,
+        warnings: [],
+      },
+    );
+    let publishes = 0;
+
+    await expect(
+      executePublication("development", committed, packed, {
+        inspectRegistry: () =>
+          registryState(committed, PACKAGE_ADAPTERS.development, () =>
+            parseNpmRegistryJson("malformed stdout containing E404"),
+          ),
+        publishPackage: () => publishes++,
+      }),
+    ).rejects.toThrow(/^npm registry shape error: invalid JSON response$/);
+    expect(publishes).toBe(0);
   });
 });
 

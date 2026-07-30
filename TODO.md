@@ -85,7 +85,6 @@ Exit only after explicit approval, publication verification, final synchronizati
 ## ⇉ Degraded
 
 - [ ] [feat:3.0.0] Add general transactional TODO batch apply after the decision-required reconciliation transaction. `agentera state todo apply --input <path|->` must compose create, patch, severity changes, supersede, resolve, reopen, and dependency edits atomically, including local symbolic references between new items. Reuse the canonical snapshot, CAS, idempotency, receipt, and recovery primitive; prove one preview, one apply, and one validation replace serial CRUD without partial publication. Partial for Decision `kpybrsfywb`: this improves arbitrary batch workflows but does not own Markdown reconciliation or release correctness.
-- [ ] [fix:3.0.0] Normalize npm registry JSON before publication convergence checks. Accept scalar, object, and singleton-array shapes from supported npm versions for exact-version integrity and dist-tags; retain string-safe prerelease ordering; add npm 12 fixtures; and prove matching exact package and tag state replays as non-publishing success rather than an integrity conflict.
 - [ ] [fix:3.0.0] Keep initial status orientation informational until the user expresses execution intent. Render `next_action` and wait for free-form acceptance; do not open a native Proceed/Cancel question merely because the suggestion is state-changing. After explicit acceptance, apply the ordinary confirmation boundary before dispatch. Add host-contract regressions for bare status, explicit build requests, accepted suggestions, cancellation, and autonomous orchestration.
 
 ## → Normal
@@ -115,6 +114,7 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Normalize npm registry JSON before publication convergence checks. Resolved 2026-07-30: `publication-transaction.mjs` accepts scalar, object, and singleton-array exact-version and dist-tag shapes, rejects malformed responses before mutation, and lets `pnpm cli:publish:dev` replay matching npm 12 state without republishing.
 - [x] [fix:3.0.0] Unify Build changelog reads. Resolved 2026-07-30: one bounded `changelog.ts` reader now drives `state query changelog`, Build, and Document with matching recognized headings, boundary, status, provenance, and recovery; malformed, unsafe, ambiguous, oversized, and invalid-authority inputs fail closed. Focused, source, package, smoke, and independent audit checks passed.
 - [x] [fix:3.0.0] Isolate explicit-home upgrades from inherited OpenCode configuration. Resolved 2026-07-30: upgrade planning now discards `OPENCODE_CONFIG_DIR` outside the selected home while retaining in-home overrides; 133 targeted tests, all 2,999 source tests, and all 17 package tests pass under the normal environment.
 - [x] [fix:3.0.0] Make Build no-plan work executable. Resolved 2026-07-30: `agentera prime --context build --input <file|-> --format json` now accepts bounded transient scope and acceptance, completes no-plan execution without plan fallback, rejects active-plan conflicts, and includes pass/fail-safe tests, built-CLI smoke, and independent audit.

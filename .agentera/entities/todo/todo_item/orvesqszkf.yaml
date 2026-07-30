@@ -2,7 +2,7 @@ id: orvesqszkf
 artifact: todo
 record:
   severity: degraded
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Normalize npm registry JSON before publication convergence checks. Accept scalar, object, and singleton-array shapes from supported npm versions for exact-version integrity and dist-tags; retain string-safe prerelease ordering; add npm 12 fixtures; and prove matching exact package and tag state replays as non-publishing success rather than an integrity conflict."
   readiness:
     capability: build

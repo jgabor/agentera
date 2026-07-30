@@ -152,9 +152,26 @@ function gitRefExists(gitRef) {
   return spawnSync("git", ["cat-file", "-e", `${gitRef}^{commit}`], { cwd: repoRoot }).status === 0;
 }
 
+const NPM_COMMAND_FAILURE = Symbol("npm-command-failure");
+
+export function parseNpmRegistryJson(output) {
+  if (!output) throw new Error("npm registry shape error: empty JSON response");
+  try {
+    return JSON.parse(output);
+  } catch {
+    throw new Error("npm registry shape error: invalid JSON response");
+  }
+}
+
 function npmJson(args, options = {}) {
-  const output = run("npm", [...args, "--json"], options);
-  return output ? JSON.parse(output) : null;
+  let output;
+  try {
+    output = run("npm", [...args, "--json"], options);
+  } catch (error) {
+    if (error && typeof error === "object") error[NPM_COMMAND_FAILURE] = true;
+    throw error;
+  }
+  return parseNpmRegistryJson(output);
 }
 
 function npmPack(args, options = {}) {
@@ -184,27 +201,82 @@ function npmPack(args, options = {}) {
 }
 
 function isRegistryNotFound(error) {
-  return /(?:E404|404 Not Found|is not in this registry|No match found)/i.test(error.message);
+  return (
+    error?.[NPM_COMMAND_FAILURE] === true &&
+    /(?:E404|404 Not Found|is not in this registry|No match found)/i.test(error.message)
+  );
 }
 
-function optionalNpmJson(args) {
+const REGISTRY_NOT_FOUND = Symbol("registry-not-found");
+
+function optionalNpmJson(args, query = npmJson) {
   try {
-    return npmJson(args);
+    return query(args);
   } catch (error) {
-    if (isRegistryNotFound(error)) return null;
+    if (isRegistryNotFound(error)) return REGISTRY_NOT_FOUND;
     throw error;
   }
 }
 
-function registryState(manifest, adapter) {
-  let exact;
-  exact = optionalNpmJson(["view", `${manifest.name}@${manifest.version}`, "dist.integrity"]);
-  const tags = optionalNpmJson(["view", manifest.name, "dist-tags"]) ?? {};
+function registryShapeError(field, reason) {
+  return new Error(`npm registry shape error for ${field}: ${reason}`);
+}
+
+export function normalizeRegistryField(response, field) {
+  let value = response;
+  if (Array.isArray(value)) {
+    if (value.length !== 1)
+      throw registryShapeError(field, `expected one result, received ${value.length}`);
+    value = value[0];
+    if (Array.isArray(value)) throw registryShapeError(field, "nested arrays are ambiguous");
+  }
+  if (typeof value === "string" && value.length > 0) return value;
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    throw registryShapeError(field, "expected a non-empty string or plain object");
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null)
+    throw registryShapeError(field, "expected a plain object");
+
+  const candidates = [];
+  if (Object.hasOwn(value, field)) candidates.push(value[field]);
+  const parts = field.split(".");
+  if (parts.length > 1 && Object.hasOwn(value, parts[0])) {
+    let nested = value;
+    for (const part of parts) {
+      if (
+        nested === null ||
+        typeof nested !== "object" ||
+        Array.isArray(nested) ||
+        !Object.hasOwn(nested, part)
+      ) {
+        throw registryShapeError(field, "nested queried field is malformed");
+      }
+      nested = nested[part];
+    }
+    candidates.push(nested);
+  }
+  if (candidates.length === 0) throw registryShapeError(field, "queried field is absent");
+  if (candidates.some((candidate) => typeof candidate !== "string" || candidate.length === 0))
+    throw registryShapeError(field, "queried field must be a non-empty string");
+  if (new Set(candidates).size !== 1)
+    throw registryShapeError(field, "contradictory duplicate fields");
+  return candidates[0];
+}
+
+export function registryState(manifest, adapter, query = npmJson) {
+  const exact = optionalNpmJson(
+    ["view", `${manifest.name}@${manifest.version}`, "dist.integrity"],
+    query,
+  );
+  const tags = optionalNpmJson(["view", manifest.name, "dist-tags"], query);
+  const integrity = exact === REGISTRY_NOT_FOUND ? null : normalizeRegistryField(exact, "dist.integrity");
+  const expectedTagVersion =
+    tags === REGISTRY_NOT_FOUND ? null : normalizeRegistryField(tags, adapter.expectedTag);
   return {
-    exists: exact !== null,
-    integrity: typeof exact === "string" ? exact : exact?.["dist.integrity"],
-    expectedTagVersion: tags?.[adapter.expectedTag] ?? null,
-    tagged: tags?.[adapter.expectedTag] === manifest.version,
+    exists: exact !== REGISTRY_NOT_FOUND,
+    integrity,
+    expectedTagVersion,
+    tagged: expectedTagVersion === manifest.version,
   };
 }
 
