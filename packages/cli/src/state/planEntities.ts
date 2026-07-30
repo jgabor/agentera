@@ -7,7 +7,7 @@ import { serializedProjectionBytes } from "./projectionPolicy.js";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
+import { dumpYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { allocateEntityId, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntity, replaceEntity, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
@@ -18,6 +18,7 @@ import { validatePlanCreateInput, validatePlanPublicationCandidate } from "./wri
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { mutatePlanTaskEvaluation, planTaskRecordViolations } from "./write/planEvaluation.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 const ARTIFACT = "plan";
 const PLAN = "plan";
@@ -37,8 +38,7 @@ interface Contract { authorityPath: string; entityRoot: string; defaultLimit: nu
 
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function contract(sourceRoot = resolveSourceRoot()): Contract {
-  const authorityPath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = mapping(authority.entity_target) ? authority.entity_target : {};
   const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives) ? target.storage_boundary.shared_primitives : {};
   const definitions = Array.isArray(target.entities) ? target.entities : [];

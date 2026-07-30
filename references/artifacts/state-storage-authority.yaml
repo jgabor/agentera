@@ -778,7 +778,11 @@ entity_target:
       repetitions: 5
       pass_rule: every repetition stays within every applicable limit
       elapsed: wall-clock milliseconds from process start through complete serialized output
-      heap: process heapUsed peak minus heapUsed before fixture discovery
+      heap: process heapUsed peak minus the normalized heapUsed baseline before fixture discovery
+      heap_baseline:
+        boundary: after CLI import reaches the fixture boundary and before the measured operation
+        normalization: await successful Node inspector HeapProfiler.collectGarbage, then read Runtime.getHeapUsage
+        measured_operation_collection: forbidden
       bytes: UTF-8 byte length of stdout including the trailing newline
     targets:
       exact_get:

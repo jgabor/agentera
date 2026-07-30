@@ -27,9 +27,9 @@ import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js"
 import { detectStateModeBinding } from "./stateMode.js";
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
-import { loadYamlMapping } from "../core/yaml.js";
 import { TODO_SEVERITIES, TODO_STATUSES, todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 import { todoReadinessReferenceViolations } from "../registries/todoReadinessContract.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 const ID = /^[a-z]{10}$/;
 const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_id" } as const;
@@ -44,8 +44,7 @@ function shell(value: unknown): string { return `'${String(value).replaceAll("'"
 function definition(artifact: "todo" | "docs") { return artifact === "todo" ? TODO : DOCS; }
 
 function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract {
-  const authorityPath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = mapping(authority.entity_target) ? authority.entity_target : {};
   const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives) ? target.storage_boundary.shared_primitives : {};
   const entity = (Array.isArray(target.entities) ? target.entities : []).find((value) => mapping(value) && value.boundary === boundary);

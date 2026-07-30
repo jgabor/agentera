@@ -26,10 +26,21 @@ import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 const roots: string[] = [];
 const progressPublicationWorker = fileURLToPath(new URL("./progressPublicationWorker.mjs", import.meta.url));
+const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-progress-entities-"));
   roots.push(root);
+  return root;
+}
+
+function authoritySource(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-progress-authority-"));
+  roots.push(root);
+  const directory = path.join(root, "references", "artifacts");
+  fs.mkdirSync(directory, { recursive: true });
+  for (const name of ["state-storage-authority.yaml", "glossary-entry-contract.yaml"])
+    fs.copyFileSync(path.join(SOURCE_ROOT, "references", "artifacts", name), path.join(directory, name));
   return root;
 }
 
@@ -128,6 +139,29 @@ function expectNoProgressWrite(...projectRoots: string[]): void {
 }
 
 describe("progress entity authority", () => {
+  it("refreshes glossary authority when unchanged state authority remains cached", () => {
+    const root = project(); activate(root); writeProgressEnvelope(root, "caveatidxx", validCaveat());
+    const sourceRoot = authoritySource();
+    const statePath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
+    const glossaryPath = path.join(sourceRoot, "references/artifacts/glossary-entry-contract.yaml");
+    const stateBytes = fs.readFileSync(statePath);
+    expect(validateEntityState(root, sourceRoot).valid).toBe(true);
+
+    const glossary = fs.readFileSync(glossaryPath, "utf8");
+    const changed = glossary.replace(
+      "reasons: [inferred_equivalence, authority_unavailable, personal_input_unavailable]",
+      "reasons: [authority_unavailable, personal_input_unavailable]",
+    );
+    expect(changed).not.toBe(glossary);
+    fs.writeFileSync(glossaryPath, changed);
+
+    const refreshed = validateEntityState(root, sourceRoot);
+    expect(fs.readFileSync(statePath)).toEqual(stateBytes);
+    expect(refreshed.valid).toBe(false);
+    expect(refreshed.entities).toEqual([expect.objectContaining({ id: "caveatidxx", classification: "malformed" })]);
+    expect(refreshed.issues.some(({ message }) => message.includes("glossary_caveat"))).toBe(true);
+  });
+
   it("publishes bounded Build caveat lifecycle events idempotently without glossary writes", () => {
     const root = project(); activate(root);
     const append = (extra: string[], what = "conservative work") => { let out = ""; let err = ""; const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--type", "feat", "--phase", "build", "--what", what, "--intent", "Avoid disputed terminology", "--verified", "bounded caveat verified", "--format", "json", ...extra], { out: (text) => { out += text; }, err: (text) => { err += text; } }); return { rc, out, err, json: out ? JSON.parse(out) : null }; };

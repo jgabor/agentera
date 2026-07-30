@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import { randomInt } from "node:crypto";
 
@@ -6,7 +5,6 @@ import YAML from "yaml";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import {
@@ -39,6 +37,7 @@ import {
   PROGRESS_PUBLICATION_ORDER_FIELD,
 } from "./progressPublicationOrder.js";
 import { detectStateModeBinding } from "./stateMode.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 const ARTIFACT = "progress";
 const BOUNDARY = "progress_cycle";
@@ -158,13 +157,7 @@ function positive(value: unknown, field: string): number {
 }
 
 function progressContract(sourceRoot = resolveSourceRoot()): ProgressContract {
-  const authorityPath = path.join(
-    sourceRoot,
-    "references",
-    "artifacts",
-    "state-storage-authority.yaml",
-  );
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = authority.entity_target;
   const storage =
     mapping(target) && mapping(target.storage_boundary)

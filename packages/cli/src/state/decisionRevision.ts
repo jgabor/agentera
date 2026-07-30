@@ -1,11 +1,9 @@
-import fs from "node:fs";
 import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { loadYamlMapping } from "../core/yaml.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
-const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.yaml";
 const EXPECTED_AUTHORITY_SCHEMA = "agentera.stateStorageAuthority.v1";
 
 type Mapping = Record<string, unknown>;
@@ -70,9 +68,7 @@ function requiredList(value: unknown, field: string): string[] {
 }
 
 function readAuthority(sourceRoot: string): Mapping {
-  const authority = loadYamlMapping(
-    fs.readFileSync(path.join(sourceRoot, AUTHORITY_RELATIVE_PATH), "utf8"),
-  );
+  const authority = loadStateStorageAuthority(sourceRoot).document;
   if (authority.schema_version !== EXPECTED_AUTHORITY_SCHEMA) {
     throw new Error("state storage authority schema_version is unsupported");
   }

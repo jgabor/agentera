@@ -6,7 +6,7 @@ import YAML from "yaml";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
+import { dumpYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { allocateEntityId, canonicalEntityRecordViolations, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntityUnderLock, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
@@ -15,6 +15,7 @@ import { detectStateModeBinding } from "./stateMode.js";
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { validateArtifactBytes } from "./write/validate.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 const OBJECTIVE_ARTIFACT = "objective";
 const EXPERIMENT_ARTIFACT = "experiments";
@@ -31,8 +32,7 @@ interface Contract { authorityPath: string; entityRoot: string; defaultLimit: nu
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
 function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract {
-  const authorityPath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8")); const target = mapping(authority.entity_target) ? authority.entity_target : {};
+  const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot); const target = mapping(authority.entity_target) ? authority.entity_target : {};
   const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives) ? target.storage_boundary.shared_primitives : {};
   const definition = (Array.isArray(target.entities) ? target.entities : []).find((value) => mapping(value) && value.boundary === boundary); const retrieval = mapping(definition) && mapping(definition.retrieval) ? definition.retrieval : {};
   const positive = (value: unknown, name: string): number => { const result = Number(value); if (!Number.isSafeInteger(result) || result < 1) throw new Error(`invalid ${boundary} ${name} authority`); return result; };

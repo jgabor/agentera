@@ -19,6 +19,20 @@ let home: string;
 let previousCwd: string;
 let previousEnv: Record<string, string | undefined>;
 
+function measurementDiagnostic(
+  label: string,
+  measured: Awaited<ReturnType<typeof measureColdCli>>,
+): string {
+  return `${label}: ${JSON.stringify({
+    baselineHeapBytes: measured.baselineHeapBytes,
+    peakHeapBytes: measured.peakHeapBytes,
+    heapDeltaBytes: measured.heapDeltaBytes,
+    inspectorSamples: measured.inspectorSamples,
+    baselineNormalization: measured.baselineNormalization,
+    runtime: measured.runtime,
+  })}`;
+}
+
 function capture(fn: (out: (text: string) => void, err: (text: string) => void) => number): {
   rc: number;
   out: string;
@@ -78,6 +92,7 @@ describe("entity authority performance", () => {
     ) as Record<"small" | "large", number>;
     const samples: Array<Record<string, number | string>> = [];
     const fixtures: Record<string, unknown> = {};
+    let runtime: Awaited<ReturnType<typeof measureColdCli>>["runtime"] | undefined;
 
     expect(measurementContract.environment).toContain("one cold CLI process per sample");
     expect(repetitions).toBe(5);
@@ -116,6 +131,8 @@ describe("entity authority performance", () => {
               : ["state", "progress", "list", "--limit", "100", "--format", "json"];
           const limits = targets[`${operation}_${scale}`];
           const measured = await measureColdCli({ args, project, home, repoRoot: REPO_ROOT });
+          runtime ??= measured.runtime;
+          expect(measured.runtime).toEqual(runtime);
           const outputBytes = Buffer.byteLength(measured.stdout, "utf8");
           const maxOutputBytes =
             operation === "startup"
@@ -123,11 +140,11 @@ describe("entity authority performance", () => {
               : limits.max_utf8_bytes;
           expect(
             measured.elapsedMs,
-            `${operation} ${scale} repetition ${repetition}`,
+            measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured),
           ).toBeLessThanOrEqual(limits.max_latency_ms);
           expect(
             measured.heapDeltaBytes,
-            `${operation} ${scale} repetition ${repetition}`,
+            measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured),
           ).toBeLessThanOrEqual(limits.max_heap_delta_bytes);
           expect(outputBytes, `${operation} ${scale} repetition ${repetition}`).toBeLessThanOrEqual(
             maxOutputBytes,
@@ -157,11 +174,19 @@ describe("entity authority performance", () => {
             home,
             repoRoot: REPO_ROOT,
           });
+          runtime ??= measured.runtime;
+          expect(measured.runtime).toEqual(runtime);
           const outputBytes = Buffer.byteLength(measured.stdout, "utf8");
-          expect(measured.elapsedMs, `exact_get repetition ${repetition}`).toBeLessThanOrEqual(
+          expect(
+            measured.elapsedMs,
+            measurementDiagnostic(`exact_get repetition ${repetition}`, measured),
+          ).toBeLessThanOrEqual(
             targets.exact_get.max_latency_ms,
           );
-          expect(measured.heapDeltaBytes, `exact_get repetition ${repetition}`).toBeLessThanOrEqual(
+          expect(
+            measured.heapDeltaBytes,
+            measurementDiagnostic(`exact_get repetition ${repetition}`, measured),
+          ).toBeLessThanOrEqual(
             targets.exact_get.max_heap_delta_bytes,
           );
           expect(outputBytes, `exact_get repetition ${repetition}`).toBeLessThanOrEqual(
@@ -207,8 +232,23 @@ describe("entity authority performance", () => {
             maxHeapDeltaBytes: Math.max(
               ...targetSamples.map((sample) => Number(sample.heapDeltaBytes)),
             ),
+            minHeapDeltaBytes: Math.min(
+              ...targetSamples.map((sample) => Number(sample.heapDeltaBytes)),
+            ),
+            minBaselineHeapBytes: Math.min(
+              ...targetSamples.map((sample) => Number(sample.baselineHeapBytes)),
+            ),
+            maxBaselineHeapBytes: Math.max(
+              ...targetSamples.map((sample) => Number(sample.baselineHeapBytes)),
+            ),
+            maxPeakHeapBytes: Math.max(
+              ...targetSamples.map((sample) => Number(sample.peakHeapBytes)),
+            ),
             maxOutputBytes: Math.max(...targetSamples.map((sample) => Number(sample.outputBytes))),
             minInspectorSamples: Math.min(
+              ...targetSamples.map((sample) => Number(sample.inspectorSamples)),
+            ),
+            maxInspectorSamples: Math.max(
               ...targetSamples.map((sample) => Number(sample.inspectorSamples)),
             ),
           },
@@ -225,7 +265,9 @@ describe("entity authority performance", () => {
         platform: process.platform,
         release: os.release(),
         architecture: process.arch,
-        node: process.version,
+        node: runtime?.node,
+        v8: runtime?.v8,
+        effectiveChildFlags: runtime?.effectiveChildFlags,
         logicalCpus: os.cpus().length,
         coldProcessPerSample: true,
       },
@@ -238,6 +280,7 @@ describe("entity authority performance", () => {
         elapsed: measurementContract.sampling.elapsed,
         heap: measurementContract.sampling.heap,
         bytes: measurementContract.sampling.bytes,
+        heapBaseline: measurementContract.sampling.heap_baseline,
         heapSampling: {
           method: "Node inspector Runtime.getHeapUsage",
           intervalMs: 1,

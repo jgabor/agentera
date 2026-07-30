@@ -6,7 +6,7 @@ function mapping(value: unknown): value is Record<string, unknown> {
 }
 
 function strings(value: unknown): string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? [...value] : [];
 }
 
 /** Validate the one source-row digest semantic contract used by every summary boundary. */

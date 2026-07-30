@@ -17,9 +17,11 @@ import { validateCompactedSummarySourceRowAuthority } from "./summarySourceRowAu
 import { acquireWriterLock } from "./write/lock.js";
 import { planTaskRecordViolations } from "./write/planEvaluation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
-import { glossaryCaveatContract, type GlossaryCaveatContract } from "../registries/glossaryCaveatContract.js";
+import type { GlossaryCaveatContract } from "../registries/glossaryCaveatContract.js";
 import { applyGlossaryCaveatLifecycleValidation, validateProgressGlossaryCaveat } from "./progressGlossaryCaveat.js";
 import { progressPublicationOrderViolations } from "./progressPublicationOrder.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
+import { loadEntityGlossaryAuthority } from "./entityGlossaryAuthority.js";
 const MAX_DIAGNOSTICS = 100;
 const heldEntityWriterLocks = new Set<string>();
 interface EntityDefinition {
@@ -182,7 +184,7 @@ export function canonicalEntityEnvelopeBytes(target: Pick<CanonicalEntityTarget,
 
 function mapping(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function strings(value: unknown): string[] { return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : []; }
-
+let entityAuthorityCache: { revision: symbol; model: Omit<EntityAuthority, "glossaryCaveat"> } | undefined;
 function fieldShapes(value: unknown, authorityPath: string): Record<string, FieldShape> {
   if (value === undefined) return {};
   if (!mapping(value)) throw new Error(`invalid entity field_shapes declaration in '${authorityPath}'`);
@@ -209,8 +211,8 @@ function fieldShapes(value: unknown, authorityPath: string): Record<string, Fiel
 }
 
 function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
-  const authorityPath = path.join(sourceRoot, "references", "artifacts", "state-storage-authority.yaml");
-  const document = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const { authorityPath, document, revision } = loadStateStorageAuthority(sourceRoot);
+  if (entityAuthorityCache?.revision === revision) return { ...entityAuthorityCache.model, glossaryCaveat: loadEntityGlossaryAuthority(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml")) };
   const target = document.entity_target;
   if (!mapping(target) || !mapping(target.identity) || !mapping(target.storage_boundary) || !mapping(target.public_schema) || !Array.isArray(target.entities) || !mapping(target.relationships)) {
     throw new Error(`invalid entity authority '${authorityPath}'`);
@@ -276,12 +278,13 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   }
   const exactGet = mapping(target.measurement_contract) && mapping(target.measurement_contract.targets) && mapping(target.measurement_contract.targets.exact_get) ? target.measurement_contract.targets.exact_get : null;
   const maxEntityBytes = Number(exactGet?.max_utf8_bytes); if (!Number.isSafeInteger(maxEntityBytes) || maxEntityBytes < 1) throw new Error(`invalid exact entity byte limit in '${authorityPath}'`);
-  return { entityRoot, maxEntityBytes, alphabet, length, pattern: new RegExp(acceptedPattern), entities, relationships,
+  const model = { entityRoot, maxEntityBytes, alphabet, length, pattern: new RegExp(acceptedPattern), entities, relationships,
     artifacts: [...new Set(entities.map(({ artifact }) => artifact))].sort(),
     byBoundary: new Map(entities.map((entity) => [entity.boundary, entity])),
     forbiddenAliases: strings(target.public_schema.forbidden_canonical_aliases),
-    glossaryCaveat: glossaryCaveatContract(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml")),
   };
+  entityAuthorityCache = { revision, model };
+  return { ...model, glossaryCaveat: loadEntityGlossaryAuthority(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml")) };
 }
 
 export function entityExactGetMaxBytes(sourceRoot?: string): number { return authority(sourceRoot).maxEntityBytes; }

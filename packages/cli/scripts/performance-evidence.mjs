@@ -3,6 +3,8 @@ import path from "node:path";
 
 import YAML from "yaml";
 
+export const EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT = 512;
+
 function sameValue(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
@@ -16,6 +18,20 @@ export function performanceEvidenceRecords(stdout, schemaVersion) {
       return [];
     }
   });
+}
+
+export function effectiveChildFlagsAreComplete(flags) {
+  if (!Array.isArray(flags?.execArgv)
+    || flags.execArgv.length > 16
+    || flags.execArgv.some((flag) => typeof flag !== "string" || flag.length > 512)
+    || flags.nodeOptionsUtf8Limit !== EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT) return false;
+  if (flags.nodeOptions === null) return true;
+  const nodeOptions = flags.nodeOptions;
+  return typeof nodeOptions?.value === "string"
+    && nodeOptions.truncated === false
+    && Number.isInteger(nodeOptions.utf8Bytes)
+    && nodeOptions.utf8Bytes === Buffer.byteLength(nodeOptions.value, "utf8")
+    && nodeOptions.utf8Bytes <= EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT;
 }
 
 export function validatePerformanceEvidence(stdout, definition, root) {
@@ -36,12 +52,15 @@ export function validatePerformanceEvidence(stdout, definition, root) {
     return count === undefined ? [] : [[name, Number(count)]];
   }));
   const errors = [];
+  const heapBaseline = measurement.sampling.heap_baseline;
+  if (heapBaseline?.normalization !== "await successful Node inspector HeapProfiler.collectGarbage, then read Runtime.getHeapUsage" || heapBaseline?.measured_operation_collection !== "forbidden" || typeof heapBaseline?.boundary !== "string") errors.push("authority does not require pre-baseline inspector GC normalization");
   if (bytes > evidenceDefinition.max_utf8_bytes) errors.push(`evidence is ${bytes} UTF-8 bytes; limit ${evidenceDefinition.max_utf8_bytes}`);
   if (evidence.status !== "pass") errors.push("status is not pass");
-  if (!evidence.runner || typeof evidence.runner.platform !== "string" || typeof evidence.runner.release !== "string" || typeof evidence.runner.architecture !== "string" || typeof evidence.runner.node !== "string" || !Number.isInteger(evidence.runner.logicalCpus) || evidence.runner.logicalCpus < 1 || evidence.runner.coldProcessPerSample !== true) errors.push("runner conditions are incomplete");
+  if (!evidence.runner || typeof evidence.runner.platform !== "string" || typeof evidence.runner.release !== "string" || typeof evidence.runner.architecture !== "string" || typeof evidence.runner.node !== "string" || typeof evidence.runner.v8 !== "string" || !effectiveChildFlagsAreComplete(evidence.runner.effectiveChildFlags) || !Number.isInteger(evidence.runner.logicalCpus) || evidence.runner.logicalCpus < 1 || evidence.runner.coldProcessPerSample !== true) errors.push("runner conditions are incomplete or unbounded");
   if (evidence.measurement?.authority !== evidenceDefinition.authority) errors.push("measurement authority does not match policy");
   if (!sameValue(evidence.measurement?.scales, scales) || !sameValue(evidence.measurement?.declaredFixtures, measurement.fixtures)) errors.push("declared scales or fixtures changed");
   if (!["elapsed", "heap", "bytes"].every((field) => evidence.measurement?.[field] === measurement.sampling[field])) errors.push("sampling conditions changed");
+  if (!sameValue(evidence.measurement?.heapBaseline, measurement.sampling.heap_baseline)) errors.push("heap baseline normalization changed");
   if (evidence.measurement?.repetitions !== measurement.sampling.repetitions || evidence.measurement?.heapSampling?.intervalMs !== 1 || evidence.measurement?.heapSampling?.cadenceChanged !== false) errors.push("repetitions or 1 ms heap cadence changed");
   if (!sameValue(evidence.limits, measurement.targets)) errors.push("declared limits changed");
   if (!Array.isArray(evidence.samples) || evidence.samples.length !== targetNames.length * measurement.sampling.repetitions) {
@@ -52,7 +71,10 @@ export function validatePerformanceEvidence(stdout, definition, root) {
     const complete = targetNames.every((target) => sameValue(
       evidence.samples.filter((sample) => targetFor(sample) === target).map((sample) => sample.repetition).sort(),
       expectedRepetitions,
-    )) && evidence.samples.every((sample) => sample.status === "pass");
+    )) && evidence.samples.every((sample) => sample.status === "pass"
+      && [sample.baselineHeapBytes, sample.peakHeapBytes, sample.heapDeltaBytes, sample.inspectorSamples].every(Number.isFinite)
+      && sample.inspectorSamples >= 2
+      && sample.peakHeapBytes - sample.baselineHeapBytes === sample.heapDeltaBytes);
     if (!complete) errors.push("samples do not cover every target and repetition");
   }
   const maximaMatch = sameValue(Object.keys(evidence.maxima ?? {}), targetNames) && targetNames.every((target) => {
@@ -61,8 +83,13 @@ export function validatePerformanceEvidence(stdout, definition, root) {
       repetitions: samples.length,
       maxElapsedMs: Math.max(...samples.map((sample) => Number(sample.elapsedMs))),
       maxHeapDeltaBytes: Math.max(...samples.map((sample) => Number(sample.heapDeltaBytes))),
+      minHeapDeltaBytes: Math.min(...samples.map((sample) => Number(sample.heapDeltaBytes))),
+      minBaselineHeapBytes: Math.min(...samples.map((sample) => Number(sample.baselineHeapBytes))),
+      maxBaselineHeapBytes: Math.max(...samples.map((sample) => Number(sample.baselineHeapBytes))),
+      maxPeakHeapBytes: Math.max(...samples.map((sample) => Number(sample.peakHeapBytes))),
       maxOutputBytes: Math.max(...samples.map((sample) => Number(sample.outputBytes))),
       minInspectorSamples: Math.min(...samples.map((sample) => Number(sample.inspectorSamples))),
+      maxInspectorSamples: Math.max(...samples.map((sample) => Number(sample.inspectorSamples))),
     });
   });
   if (!maximaMatch) errors.push("maxima do not match the declared samples");

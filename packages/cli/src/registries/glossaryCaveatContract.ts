@@ -70,7 +70,12 @@ export function glossaryCaveatPairAllowed(
 export function glossaryCaveatContract(
   pathname: string = glossaryEntryAuthorityPath(),
 ): GlossaryCaveatContract {
-  const authority = loadYamlMappingFile(pathname) as Mapping;
+  return glossaryCaveatContractFromDocument(loadYamlMappingFile(pathname));
+}
+
+export function glossaryCaveatContractFromDocument(
+  authority: Record<string, unknown>,
+): GlossaryCaveatContract {
   const caveat = mapping(mapping(authority.consumer_boundary)?.autonomous_caveat);
   const identity = mapping(caveat?.identity);
   const envelope = mapping(caveat?.envelope);

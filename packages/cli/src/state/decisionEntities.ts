@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
-import fs from "node:fs";
 import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson, decisionOverlayContract } from "./archiveDiscovery.js";
 import { serializedProjectionBytes } from "./projectionPolicy.js";
 import { requestedSatisfaction, validateTransition } from "./decisionOverlay.js";
@@ -16,6 +14,7 @@ import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEntityRead.js";
 import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 const ARTIFACT = "decisions";
 const BASE = "decision";
@@ -34,8 +33,7 @@ function requiredText(value: unknown, field: string): string {
   return value;
 }
 function contract(sourceRoot = resolveSourceRoot()): Contract {
-  const authorityPath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = mapping(authority.entity_target) ? authority.entity_target : {};
   const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives) ? target.storage_boundary.shared_primitives : {};
   const entities = Array.isArray(target.entities) ? target.entities : [];

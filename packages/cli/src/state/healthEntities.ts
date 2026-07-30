@@ -1,11 +1,9 @@
-import fs from "node:fs";
 import path from "node:path";
 
 import YAML from "yaml";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import {
@@ -22,6 +20,7 @@ import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEnti
 import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
 import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
+import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 const ARTIFACT = "health";
 const BOUNDARY = "health_audit";
@@ -55,8 +54,7 @@ function positive(value: unknown, field: string): number {
 }
 
 function contract(sourceRoot = resolveSourceRoot()): HealthContract {
-  const authorityPath = path.join(sourceRoot, "references", "artifacts", "state-storage-authority.yaml");
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
+  const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = mapping(authority.entity_target) ? authority.entity_target : {};
   const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives)
     ? target.storage_boundary.shared_primitives
