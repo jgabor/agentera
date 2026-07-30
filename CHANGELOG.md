@@ -124,10 +124,6 @@
 
 ### Fixed
 
-- Fixed `pnpm cli:publish:dev` and `cli:publish:stable` convergence to normalize
-  scalar, object, and singleton-array npm registry JSON, reject malformed shapes
-  before mutation, and treat matching exact integrity and dist-tag state as a
-  non-publishing replay.
 - Fixed `agentera state query changelog`, Build Prime, and Document closeout to
   use one bounded Keep-a-Changelog reader with matching headings, boundary,
   provenance, and fail-safe recovery for missing, malformed, unsafe, ambiguous,
