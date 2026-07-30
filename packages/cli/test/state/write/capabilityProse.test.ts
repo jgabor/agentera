@@ -51,6 +51,89 @@ function documentedFullPlan(): string {
   return match![1];
 }
 
+function servedBuildInstructions(): string {
+  let output = "";
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-build-prime-"));
+  const previous = process.cwd();
+  try {
+    fs.mkdirSync(path.join(root, ".agentera"));
+    fs.writeFileSync(
+      path.join(root, ".agentera/state-mode.yaml"),
+      "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
+    );
+    process.chdir(root);
+    const rc = main(
+      ["node", "agentera", "prime", "--context", "build", "--format", "json"],
+      {
+        out: (text) => {
+          output += text;
+        },
+        err: (text) => {
+          output += text;
+        },
+        stdin: () => "",
+      },
+    );
+    expect(rc, output).toBe(0);
+    return (JSON.parse(output) as Record<string, any>).capability_context.instructions as string;
+  } finally {
+    process.chdir(previous);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+const BUILD_TERMINAL_ORDER_POLICIES = [
+  {
+    current: "orient through commit, exit signal reported",
+    stale: "orient through log, exit signal reported",
+    violation: "cycle_must_end_through_commit",
+  },
+  {
+    current: "Steps: orient, select, research, plan, dispatch, verify, log, commit.",
+    stale: "Steps: orient, select, research, plan, dispatch, verify, commit, log.",
+    violation: "workflow_summary_must_log_before_commit",
+  },
+  {
+    current: "implemented, verified, artifacts updated, committed",
+    stale: "implemented, verified, committed, artifacts updated",
+    violation: "complete_exit_must_update_artifacts_before_commit",
+  },
+] as const;
+
+function buildCycleOrderViolations(text: string): string[] {
+  const violations: string[] = [];
+  const log = text.search(/### Step \d+: Log/);
+  const commit = text.search(/### Step \d+: Commit/);
+  if (log < 0 || commit < 0 || log >= commit) violations.push("log_must_precede_commit");
+  if (!text.includes("### Step 7: Log")) violations.push("log_must_be_step_7");
+  if (!text.includes("### Step 8: Commit")) violations.push("commit_must_be_step_8");
+  for (const requiredWrite of [
+    "**TODO.md**",
+    "agentera state progress append",
+    "**CHANGELOG.md**",
+    "agentera state plan set-status",
+  ]) {
+    const write = text.indexOf(requiredWrite, Math.max(log, 0));
+    if (write < log || write >= commit) violations.push(`write_before_commit:${requiredWrite}`);
+  }
+  for (const policy of BUILD_TERMINAL_ORDER_POLICIES) {
+    if (!text.includes(policy.current) || text.includes(policy.stale)) violations.push(policy.violation);
+  }
+  return violations;
+}
+
+function restoreOldCommitBeforeLogOrder(text: string): string {
+  const log = text.indexOf("### Step 7: Log");
+  const commit = text.indexOf("### Step 8: Commit", log);
+  const end = text.indexOf("\n---\n\n## Safety rails", commit);
+  expect(log).toBeGreaterThanOrEqual(0);
+  expect(commit).toBeGreaterThan(log);
+  expect(end).toBeGreaterThan(commit);
+  const logSection = text.slice(log, commit).replace("### Step 7: Log", "### Step 8: Log");
+  const commitSection = text.slice(commit, end).replace("### Step 8: Commit", "### Step 7: Commit");
+  return `${text.slice(0, log)}${commitSection}${logSection}${text.slice(end)}`;
+}
+
 describe("producer capability writer integration", () => {
   it("routes every writable capability artifact through the state writer", () => {
     expect(buildInstructions).toContain("agentera state progress append");
@@ -68,6 +151,56 @@ describe("producer capability writer integration", () => {
     expect(orchestrateInstructions).toContain("may receive its first PASS only");
     expect(orchestrateInstructions).toContain("Every replacement must be complete with latest persisted PASS before supersession");
     expect(auditInstructions).toContain("agentera state health append --input PATH");
+  });
+
+  it("requires Build artifact logging before its single commit on source and served surfaces", () => {
+    const variants = {
+      source: buildInstructions,
+      served: servedBuildInstructions(),
+    };
+    const staleClaims = [
+      "assigns the number",
+      "inserts newest-first",
+      "validates, compacts",
+      "Progress compaction is writer-owned",
+    ];
+
+    for (const [variant, text] of Object.entries(variants)) {
+      expect(buildCycleOrderViolations(text), `${variant} valid order`).toEqual([]);
+      expect(
+        buildCycleOrderViolations(restoreOldCommitBeforeLogOrder(text)),
+        `${variant} old Commit-before-Log order`,
+      ).toContain("log_must_precede_commit");
+      expect(text, `${variant} single commit`).toContain("Commit once with a conventional commit message");
+      for (const policy of BUILD_TERMINAL_ORDER_POLICIES) {
+        expect(text, `${variant} terminal order`).toContain(policy.current);
+        expect(text, `${variant} stale terminal order`).not.toContain(policy.stale);
+        expect(
+          buildCycleOrderViolations(text.replace(policy.current, policy.stale)),
+          `${variant} terminal-order regression: ${policy.violation}`,
+        ).toContain(policy.violation);
+      }
+      for (const claim of staleClaims) expect(text, `${variant} stale claim: ${claim}`).not.toContain(claim);
+    }
+  });
+
+  it("keeps Build validation and exit schemas aligned with Log Step 7 and Commit Step 8", () => {
+    const validation = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/validation.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
+    const exit = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/exit.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
+
+    expect(validation.VALIDATION[2].description).toContain("logging required artifacts (Step 7)");
+    expect(validation.VALIDATION[2].description).toContain("committing once (Step 8)");
+    expect(exit.EXIT_CONDITIONS[1].description).toContain("updates preceded the cycle's single");
   });
 
   it("keeps orchestration delegation runtime-neutral", () => {

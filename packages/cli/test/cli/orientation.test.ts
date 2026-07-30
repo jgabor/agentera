@@ -178,6 +178,7 @@ describe("orientation: artifact summaries", () => {
       { exists: true },
       { status: "loaded" },
       { status: "up_to_date" },
+      tmp,
     );
 
     expect(summary).toMatchObject({ active: false, complete_plan: false, tasks: [] });
@@ -218,6 +219,7 @@ describe("orientation: artifact summaries", () => {
       { exists: true },
       { status: "loaded" },
       { status: "up_to_date" },
+      tmp,
     );
 
     expect(summary).toMatchObject({ active: true, complete_plan: true });
@@ -286,6 +288,7 @@ describe("orientation: artifact summaries", () => {
       { exists: true },
       { status: "loaded" },
       { status: "up_to_date" },
+      tmp,
     );
 
     expect(build).toMatchObject({
@@ -384,6 +387,7 @@ describe("orientation: artifact summaries", () => {
       { exists: true },
       { status: "loaded" },
       { status: "up_to_date" },
+      tmp,
     );
     expect(build?.plan_lifecycle_state).toMatchObject({ status: "available" });
   });

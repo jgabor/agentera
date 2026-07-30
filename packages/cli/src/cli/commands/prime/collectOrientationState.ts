@@ -27,7 +27,7 @@ const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
   const home = opts.home ? opts.home : os.homedir();
-  const project = process.cwd();
+  const project = path.resolve(opts.projectRoot ?? process.cwd());
   const { bundle, channel, install, successorAnnounced } = statusBundleContext(opts);
   const sourceRoot = bundle.sourceRoot;
   const schemasDir = path.join(sourceRoot, "skills", "agentera", "schemas", "artifacts");
@@ -98,6 +98,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const nextAction = selectProjectIntegrationNextAction(readiness, projectIntegration);
 
   const attention = buildOrientationAttention({
+    project_root: project,
     schemas_dir: schemasDir,
     schemas,
     app: bundle,
@@ -127,6 +128,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   });
 
   return {
+    project_root: project,
     schemas_dir: schemasDir,
     schemas,
     app: bundle,

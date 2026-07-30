@@ -124,6 +124,21 @@
 
 ### Fixed
 
+- Fixed explicit-home upgrade planning to ignore inherited
+  `OPENCODE_CONFIG_DIR` values outside the selected home, preventing unrelated
+  OpenCode resources from blocking fixture, package, or isolated project
+  upgrades while retaining in-home overrides.
+- Fixed `agentera prime --context build` to accept bounded, transient no-plan
+  scope and acceptance through `--input <file|->`, complete execution context
+  without creating plan state or returning non-advancing plan recovery, and
+  reject active-plan conflicts.
+- Fixed `agentera prime --context build` to derive bounded verification commands
+  from `AGENTS.md` and package scripts, preserve exact provenance, canonicalize
+  aliases, and reject placeholders, conflicts, unsafe paths, missing targets,
+  and over-limit input.
+- Fixed `agentera prime --context build` instructions to log TODO, progress,
+  changelog, and plan closeout before one commit, and to describe canonical
+  progress entity publication instead of numbered aggregate compaction.
 - Fixed plan supersession and open-plan completion to require every replacement
   task to be complete with latest persisted PASS evidence. Existing records
   remain readable, and affected open plans retain the narrow first-PASS repair.

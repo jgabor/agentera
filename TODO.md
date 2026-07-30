@@ -3,9 +3,9 @@
 ## Current execution
 
 - **Current milestone:** M1 · Trust the execution loop.
-- **Next plan task:** `nrpvauxexj`.
-- **Associated TODO:** `lfvwrkcsuf` — Put Build logging before commit.
-- **Exact request:** `/agentera implement next todo`.
+- **Next plan task:** `rngcxaezhb`.
+- **Associated TODO:** `boprhkfddc` — Unify Build changelog reads.
+- **Exact request:** `commit. implement next todo or todos if suitable to bundle them.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task.
 
@@ -21,10 +21,7 @@ Milestone debt is measured in three categories: (1) duplicate authorities, gramm
 
 Exit when execution selection, verification, logging, and closeout agree and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `lfvwrkcsuf` **NEXT** Put Build artifact logging before its single commit. `packages/cli/src/capabilities/build/instructions.ts` currently orders Step 7 Commit before Step 8 Log, which writes TODO, progress, and changelog after the commit and contradicts the same-commit rule. Remove stale claims that entity progress assigns numbers or compacts aggregate files, and test served instructions against commit policy.
-- [ ] [fix:3.0.0] `cbiviopiax` Make `execution_context.verification_expectations.expected_commands` project-aware and deduplicated. In this TypeScript and Vitest repository, Build prime prescribed `focused pytest targets` and both `agentera check compact` and `compaction check`. Derive runnable commands from `AGENTS.md` and package scripts, preserve provenance, and reject placeholders or duplicate aliases.
-- [ ] [fix:3.0.0] `zqxbpgregt` Make `agentera prime --context build --format json` ready for explicit no-plan work. It reported `mode: no_plan` but `complete_for_execution_context: false`, then prescribed `agentera state plan --format json`, which failed `not_found`. Represent no open plan as valid `no_plan`, accept user-scoped acceptance, and avoid non-advancing fallback loops.
-- [ ] [fix:3.0.0] `boprhkfddc` Make `agentera state query changelog --format json` expose the same changelog boundary used by Build prime. The fallback returned `status: ok` and `entries: []` for an existing `CHANGELOG.md`, while `execution_context.changelog_boundary` found `## [Unreleased]` and the latest release. Use one scanner and return headings, boundary, and provenance consistently.
+- [ ] [fix:3.0.0] `boprhkfddc` **NEXT** Make `agentera state query changelog --format json` expose the same changelog boundary used by Build prime. The fallback returned `status: ok` and `entries: []` for an existing `CHANGELOG.md`, while `execution_context.changelog_boundary` found `## [Unreleased]` and the latest release. Use one scanner and return headings, boundary, and provenance consistently.
 - [ ] [fix:3.0.0] `tkpzveyvjt` Use one profile validity result in `agentera prime --context discuss --format json` and `agentera report profile-grounding --format json`. Prime currently reports `profile.status: loaded` and `stale` while grounding rejects the same `PROFILE.md` as malformed. Report `invalid` or `repair_needed` with exact recovery and add malformed-profile parity coverage.
 
 ### M2 · Unify state mutation
@@ -119,6 +116,10 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Isolate explicit-home upgrades from inherited OpenCode configuration. Resolved 2026-07-30: upgrade planning now discards `OPENCODE_CONFIG_DIR` outside the selected home while retaining in-home overrides; 133 targeted tests, all 2,999 source tests, and all 17 package tests pass under the normal environment.
+- [x] [fix:3.0.0] Make Build no-plan work executable. Resolved 2026-07-30: `agentera prime --context build --input <file|-> --format json` now accepts bounded transient scope and acceptance, completes no-plan execution without plan fallback, rejects active-plan conflicts, and includes pass/fail-safe tests, built-CLI smoke, and independent audit.
+- [x] [fix:3.0.0] Make Build verification project-aware. Resolved 2026-07-30: `projectVerification.ts` now derives bounded runnable commands from `AGENTS.md` and package scripts with exact provenance, safe alias resolution, explicit rejection and omission metadata, 76 focused tests, built-CLI smoke, and independent audit.
+- [x] [fix:3.0.0] Put Build artifact logging before its single commit. Resolved 2026-07-29: `packages/cli/src/capabilities/build/instructions.ts` now logs TODO, progress, changelog, and plan closeout before Commit; 11 focused tests cover source and served instructions without numbered aggregate progress claims.
 - [x] [fix:3.0.0] Prevent new out-of-order replacement evaluation deadlocks. Resolved 2026-07-29: supersession and open-plan completion now require complete replacements with latest persisted PASS evidence; historical records stay readable, affected open plans retain one first-PASS repair, and rejection, recovery, and replay behavior passed source and built-CLI checks.
 - [x] ~~[chore:3.0.0] Superseded 2026-07-28 by TODOs `wwojgufooz` and `nolmwusfat`: the native OpenCode plugin is retired rather than maintained, so its `PROFILERA_PROFILE_DIR` fallback disappears with the whole resource.~~
 - [x] [fix:3.0.0] Make development and stable package publication one bounded, verified transaction. Load credentials through a temporary restricted npm configuration; report package identity, file count, sizes, integrity, and warnings by default while retaining full manifests behind explicit JSON or verbose output; publish; poll the exact version and expected dist-tag with bounded retries; and run an exact-version bootstrap smoke test before reporting success.

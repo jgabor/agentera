@@ -137,6 +137,8 @@ describe("cli help", () => {
     expect(rc).toBe(0);
     expect(out).toContain("agentera prime [-h]");
     expect(out).toContain("--context CAPABILITY");
+    expect(out).toContain("--input FILE|-");
+    expect(out).toContain("agentera.buildExecutionRequest.v1");
     expect(out).toContain("artifact_writes discovery metadata");
     expect(out).toContain("bare prime is at most 12000 UTF-8 bytes");
     expect(out).toContain("status context at most 25000");

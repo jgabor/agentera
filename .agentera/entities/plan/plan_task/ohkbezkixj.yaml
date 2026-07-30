@@ -4,7 +4,7 @@ record:
   name: M1 · Make Build verification project-aware (cbiviopiax)
   depends_on:
     - nrpvauxexj
-  status: pending
+  status: complete
   acceptance:
     - GIVEN repository guidance WHEN Build starts THEN expectations contain only runnable project commands with provenance.
     - GIVEN placeholders, aliases, or conflicts WHEN projected THEN one documented precedence rule rejects or resolves them.

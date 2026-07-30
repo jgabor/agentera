@@ -296,13 +296,18 @@ export function orientationAppHome(bundle: JsonObject): JsonObject {
   };
 }
 
-export function buildPrimeCapabilityContextPayload(state: OrientationState, capabilityName: string, command = "prime"): JsonObject {
+export function buildPrimeCapabilityContextPayload(
+  state: OrientationState,
+  capabilityName: string,
+  command = "prime",
+  buildRequest: import("../commands/prime/buildExecutionRequest.js").BuildExecutionRequest | null = null,
+): JsonObject {
   // cast: orientation state is assembled from parsed .agentera artifacts; slim/bespoke
   // builders consume JsonObject shapes for these state families.
   const stateDict = state as unknown as JsonObject;
   const bundlePublic = publicDoctorStatus(state.app);
   const appHome = orientationAppHome(stateDict.app as JsonObject);
-  const bespoke = bespokeCapabilityContexts(capabilityName, stateDict);
+  const bespoke = bespokeCapabilityContexts(capabilityName, stateDict, buildRequest);
   return {
     command,
     status: "ok",

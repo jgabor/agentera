@@ -6,7 +6,7 @@ export default instructions
 
 Progress, plans, health audits, and decisions use entity authority: each record has \`id\` and \`artifact\`, lives in one writer-owned entity file, and is read through exact, list, or bounded CLI commands. Use \`agentera state <artifact> explain --format json\` before every supported mutation; never edit entity paths directly. Vision, docs policy, changelog, design, and profile remain intentional singletons.
 
-Build appends progress with \`agentera state progress append\`, advances a plan task with its bare ID through \`agentera state plan set-status --id ID\`, and is the sole owner of explicitly confirmed project terminology publication through \`agentera state glossary publish --input REQUEST\`. Glossary publication records the approval and shared entry atomically; it does not authorize glossary lookup, personal-profile mutation, or docs-mapping mutation. Build reads context from \`agentera prime --context build --format json\` plus declared fallback commands. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\`; never direct-read the profile path. The grounding command excludes the owned personal Glossary section and fails closed when its boundaries are malformed. Root \`TODO.md\` and \`CHANGELOG.md\` remain capability-owned editorial files.
+Build appends progress with \`agentera state progress append\`, advances a plan task with its bare ID through \`agentera state plan set-status --id ID\`, and is the sole owner of explicitly confirmed project terminology publication through \`agentera state glossary publish --input REQUEST\`. Glossary publication records the approval and shared entry atomically; it does not authorize glossary lookup, personal-profile mutation, or docs-mapping mutation. Build reads context from \`agentera prime --context build --format json\` plus declared fallback commands. When no current executable plan exists, explicit transient work may instead start through \`agentera prime --context build --input <file|-> --format json\` with an \`agentera.buildExecutionRequest.v1\` mapping containing exactly \`schema_version\`, \`scope\`, and \`acceptance\`. This input is bounded, read-only, never persists or creates plan state, and conflicts with current plan-owned execution. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\`; never direct-read the profile path. The grounding command excludes the owned personal Glossary section and fails closed when its boundaries are malformed. Root \`TODO.md\` and \`CHANGELOG.md\` remain capability-owned editorial files.
 
 ## Workflow phases: The cycle`)
   .replaceAll("--number N", "--id ID")
@@ -28,4 +28,29 @@ Advice, tension, clarification, and caveat lifecycle never call \`agentera state
   .replace("Every cycle runs the effective profile.", "Every cycle uses only the sanitized non-glossary profile content returned by `agentera report profile-grounding --format json`.")
   .replaceAll("**Dual-write**: build maintains `.agentera/progress.yaml` and root `CHANGELOG.md`.", "Build records entity progress through the typed writer and maintains root `CHANGELOG.md` separately.")
   .replaceAll("`.agentera/health.yaml` findings", "Health findings returned by `agentera state health list --format json`")
-  .replace("If `.agentera/plan.yaml` has `header.status: complete` and every task is complete", "If the selected plan entity is complete and every related task entity is complete");
+  .replace("If `.agentera/plan.yaml` has `header.status: complete` and every task is complete", "If the selected plan entity is complete and every related task entity is complete")
+  .replace("orient through log, exit signal reported", "orient through commit, exit signal reported")
+  .replace("Steps: orient, select, research, plan, dispatch, verify, commit, log.", "Steps: orient, select, research, plan, dispatch, verify, log, commit.")
+  .replace("implemented, verified, committed, artifacts updated", "implemented, verified, artifacts updated, committed")
+  .replace(/### Step 7: Commit[\s\S]*?Then stop\. One cycle complete\./, `### Step 7: Log
+
+**Before writing**, run \`agentera check lint --artifact <artifact> --text "<draft>"\` (or \`--file <path>\`) on the draft entry to check verbosity overruns, abstraction creep, and filler accumulation. Max 3 revision attempts. Flag with \`[post-audit-flagged]\` if still failing.
+
+Build records entity progress through the typed writer and maintains root \`CHANGELOG.md\` separately. Complete every required artifact update before committing so implementation, tests, and cycle state land together.
+
+- **TODO.md**: add newly discovered open issues in severity bands with \`- [ ]\`. Move completed work to \`## ✓ Resolved\` as \`- [x]\` with a resolution summary.
+- **progress**: run \`agentera state progress append --type TYPE --phase build --what TEXT --intent TEXT --verified TEXT --format json\`. The writer assigns \`id\`, \`artifact\`, and \`publication_order\`, validates the record, atomically publishes one entity, and returns post-write state.
+- **CHANGELOG.md**: append a one-line entry under \`## [Unreleased]\`.
+- **plan**: when a plan task closes, run \`agentera state plan set-status --id ID --status complete --format json\` rather than editing the plan directly.
+
+TODO.md Resolved compaction follows the 10/40/50 cap via the validate-artifact hook or \`agentera check compact --mode fix\`.
+
+### Step 8: Commit
+
+Commit once with a conventional commit message: \`type(scope): summary\`.
+
+Types: \`feat\`, \`fix\`, \`docs\`, \`refactor\`, \`chore\`, \`test\`. Include implementation, tests, and all required artifact updates. MUST NOT commit partial or broken work.
+
+If the current task is a version bump: read \`.agentera/docs.yaml\` for the \`versioning\` section. Update every file in \`version_files\` before committing.
+
+Then stop. One cycle complete.`);

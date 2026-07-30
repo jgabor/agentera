@@ -1,0 +1,17 @@
+id: hqufnnxosd
+artifact: progress
+record:
+  timestamp: 2026-07-30 06:57
+  type: fix
+  phase: build
+  what: Added packages/cli/src/cli/commands/prime/buildExecutionRequest.ts and tests so Build accepts bounded transient no-plan scope and acceptance, completes context without plan fallback, and rejects active-plan conflicts.
+  context:
+    intent: Allow user-scoped Build work to start safely when no executable plan exists without persisting plan state or prescribing a failing plan fallback.
+    constraints: Preserved plan-owned execution, did not persist transient requests, did not refresh profile or app state, and did not push, tag, publish, or bypass hooks.
+    unknowns: None remaining for this task.
+    scope: Prime Build startup parsing, execution-context projection, help, plan consumer inventory, schemas, contracts, and focused tests.
+  inspiration: Plan task acazhcocpm and TODO zqxbpgregt.
+  discovered: Independent audit found file and stdin descriptor acquisition was initially unbounded; acquisition now enforces the 32 KiB request limit before parsing.
+  verified: Typecheck, build, 139 focused tests, built-CLI no-plan and conflict smokes, Build capability validation, capability-contract validation, state validation, compaction, and diff checks passed. Full source retained 16 known upgrade failures with 2981 passes and 1 skip; package retained one known real-home cleanup failure with 16 passes. Independent re-audit passed.
+  next: Continue with plan task rngcxaezhb and TODO boprhkfddc to unify Build and state-query changelog reads.
+  publication_order: 9

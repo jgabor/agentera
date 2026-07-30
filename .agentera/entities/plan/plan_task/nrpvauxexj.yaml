@@ -4,7 +4,7 @@ record:
   name: M1 · Put Build logging before commit (lfvwrkcsuf)
   depends_on:
     - keknfvovnh
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a successful cycle WHEN instructions run THEN TODO, progress, and changelog updates precede its commit.
     - GIVEN current state behavior WHEN instructions are read THEN obsolete numbering and compaction claims are absent.

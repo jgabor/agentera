@@ -6,6 +6,7 @@ import { auditEvidenceContext } from "./evidence.js";
 import { optimizeBenchmarkContext } from "./benchmark.js";
 import { buildExecutionContext } from "./build.js";
 import { slimOrchestrationContext, slimEvidenceContext, slimCloseoutContext, slimBenchmarkContext } from "./slim.js";
+import type { BuildExecutionRequest } from "../commands/prime/buildExecutionRequest.js";
 
 export function slimBespokeContext(name: string, value: JsonObject): JsonObject {
   if (name === "orchestration_context") return slimOrchestrationContext(value);
@@ -15,7 +16,11 @@ export function slimBespokeContext(name: string, value: JsonObject): JsonObject 
   return value;
 }
 
-export function bespokeCapabilityContexts(capabilityName: string | null, state: JsonObject): JsonObject {
+export function bespokeCapabilityContexts(
+  capabilityName: string | null,
+  state: JsonObject,
+  buildRequest: BuildExecutionRequest | null = null,
+): JsonObject {
   // cast: orientation state fields are assembled from parsed .agentera artifacts;
   // bespoke builders consume JsonObject/typed shapes for these state families.
   const plan = state.plan as JsonObject;
@@ -27,6 +32,7 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
   const bundle = state.app as JsonObject;
   const todoItems = state.todo_items as unknown as Array<Record<string, string>>;
   const schemas = state.schemas as unknown as Record<string, SchemaInfo>;
+  const projectRoot = String(state.project_root);
   const history = state.history && typeof state.history === "object" && !Array.isArray(state.history)
     ? state.history as JsonObject
     : {};
@@ -78,6 +84,8 @@ export function bespokeCapabilityContexts(capabilityName: string | null, state: 
       docs,
       profile,
       bundle,
+      projectRoot,
+      buildRequest,
     ),
   };
 }

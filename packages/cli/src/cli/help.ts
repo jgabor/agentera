@@ -348,7 +348,7 @@ export function printReportHelp(): string {
 export function printPrimeHelp(): string {
   return [
     "usage: agentera prime [-h] [--format {text,json,yaml}] [--context CAPABILITY]",
-    "                       [--guidance] [--dashboard] [--orientation] [--fields FIELDS]",
+    "                       [--input FILE|-] [--guidance] [--dashboard] [--orientation] [--fields FIELDS]",
     "",
     "Composite orientation briefing, capability startup context, or static guidance.",
     "",
@@ -356,6 +356,7 @@ export function printPrimeHelp(): string {
     "  -h, --help            show this help message and end",
     "  --format FORMAT       Output format: text, json, or yaml",
     "  --context CAPABILITY  Emit startup context for a capability (e.g. plan)",
+    "  --input FILE|-         Transient agentera.buildExecutionRequest.v1 input; valid only with --context build",
     "  --guidance            Emit static routing guidance",
     "  --dashboard           Emit the prime orientation dashboard",
     "  --orientation         Emit orientation briefing sections",

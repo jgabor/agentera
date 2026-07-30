@@ -1,0 +1,17 @@
+id: cugbbnmjkm
+artifact: progress
+record:
+  timestamp: 2026-07-30 08:22
+  type: fix
+  phase: build
+  what: Updated packages/cli/src/upgrade/upgradeOrchestrator.ts to constrain inherited OPENCODE_CONFIG_DIR to the explicitly selected home while preserving equal-home and descendant overrides.
+  context:
+    intent: Repair the upgrade verification baseline that blocked the staged Build commit without weakening selected-home upgrade isolation.
+    constraints: Did not modify external runtime files, alter cleanup semantics, refresh protected state, bypass hooks, push, tag, or publish.
+    unknowns: The generic runtime-migration diagnostic remains imprecise for managed files without recognized legacy entrypoints; it is outside this isolation repair.
+    scope: Upgrade planning environment construction, selected-home OpenCode override regressions, TODO.md, CHANGELOG.md, and verification evidence.
+  inspiration: User request to repair the failed mandatory verification baseline after the Build commit was blocked.
+  discovered: One inherited OPENCODE_CONFIG_DIR outside fixture HOME explained all 16 source failures and the package failure; removing only that variable made every failing group pass.
+  verified: The seven previously failing source files pass 133 tests under the normal inherited environment; full source passes 2,999 tests with 1 skip; package verification passes 17 tests; typecheck, build, diff checks, and independent audit pass.
+  next: Retry the normal commit with hooks; after it lands, continue with plan task rngcxaezhb and TODO boprhkfddc.
+  publication_order: 10

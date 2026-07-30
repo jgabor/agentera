@@ -18,6 +18,22 @@ import { progressVerificationSummary } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { discoverProjectVerification } from "./projectVerification.js";
+import type { BuildExecutionRequest } from "../commands/prime/buildExecutionRequest.js";
+
+const TRANSIENT_BUILD_INPUT_COMMAND = "agentera prime --context build --input <file|-> --format json";
+const TRANSIENT_BUILD_STDIN_COMMAND = "agentera prime --context build --input - --format json";
+
+function transientSourceProvenance(request: BuildExecutionRequest, field: string): JsonObject {
+  return {
+    source_family: "transient_build_execution_request",
+    command: TRANSIENT_BUILD_INPUT_COMMAND,
+    field,
+    schema_version: request.schema_version,
+    source_kind: request.source.kind,
+    persisted: false,
+  };
+}
 
 export function buildExecutionContext(
   capability: string | null,
@@ -29,6 +45,8 @@ export function buildExecutionContext(
   docs: JsonObject,
   profile: JsonObject,
   bundle: JsonObject,
+  projectRoot: string,
+  buildRequest: BuildExecutionRequest | null = null,
 ): JsonObject | null {
   if (capability !== "build") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
@@ -39,7 +57,8 @@ export function buildExecutionContext(
       : asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const target = selectEvidenceTarget(plan);
   const selected = taskByRef(plan, (target && typeof target === "object" ? target.task : null) as JsonObject | null);
-  const acceptance = selected && typeof selected === "object" ? asList(selected.acceptance) : [];
+  const acceptance = buildRequest?.acceptance
+    ?? (selected && typeof selected === "object" ? asList(selected.acceptance) : []);
   const progressVerification = progressVerificationSummary(progress);
   const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
   const sweep = buildPlanCompletionSweep(plan);
@@ -47,6 +66,7 @@ export function buildExecutionContext(
 
   let mode: string;
   if (plan.active === true && plan.complete_plan) mode = "completed_plan_sweep";
+  else if (buildRequest !== null && plan.active !== true) mode = "no_plan";
   else if (archiveOnly) mode = "archive_only_history";
   else if (!plan.exists || tasks.length === 0) mode = "no_plan";
   else if (target.status === "selected" && selected !== null) mode = "plan_driven";
@@ -58,10 +78,6 @@ export function buildExecutionContext(
     stateCaveats.push(`${family} state is not included in prime --context startup context.`);
   }
   fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
-  if (!plan.exists) {
-    stateCaveats.push("plan state is unavailable; execution context cannot select plan-driven work.");
-    fallbackCommands.push("agentera state plan --format json");
-  }
   if (lifecycle.status === "degraded") {
     stateCaveats.push(...((lifecycle.caveats ?? []) as string[]));
     fallbackCommands.push("agentera state plan --format json");
@@ -102,7 +118,18 @@ export function buildExecutionContext(
   if (bundle.status !== "up_to_date") {
     stateCaveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
   }
-  const scopeBoundary = buildScopeBoundary(plan, selected);
+  const scopeBoundary = buildRequest === null
+    ? buildScopeBoundary(plan, selected)
+    : {
+        artifact_families: ["progress", "todo", "docs", "health", "changelog", "decisions", "vision", "profile", "design"],
+        explicit_scope: buildRequest.scope,
+        source_scope: {
+          status: "unspecified",
+          explicit_paths: [],
+          policy: "The transient scope defines work intent only; no source-file allowlist or exclusion is inferred from its text.",
+        },
+        source_provenance: transientSourceProvenance(buildRequest, "scope"),
+      };
   const sourceScope =
     scopeBoundary.source_scope && typeof scopeBoundary.source_scope === "object" && !Array.isArray(scopeBoundary.source_scope)
       ? scopeBoundary.source_scope
@@ -110,42 +137,70 @@ export function buildExecutionContext(
   if (sourceScope.status === "unspecified") {
     stateCaveats.push("source-file scope is unspecified; no allowed or prohibited source paths were inferred.");
   }
+  const noCurrentPlan = plan.active !== true && lifecycle.status !== "degraded";
+  if (noCurrentPlan) {
+    fallbackCommands = fallbackCommands.filter((command) => command !== STATE_FAMILY_FALLBACK_COMMANDS.plan);
+    if (buildRequest === null) {
+      stateCaveats.push("Explicit no-plan scope and acceptance are required before Build can execute without a current plan.");
+      fallbackCommands.push(TRANSIENT_BUILD_STDIN_COMMAND);
+    }
+  }
   fallbackCommands = uniqueList(fallbackCommands);
   stateCaveats = uniqueList(stateCaveats);
   const requiredState: Record<string, boolean> = {
-    work_selection: mode === "plan_driven" || mode === "completed_plan_sweep",
+    work_selection: mode === "plan_driven" || mode === "completed_plan_sweep" || buildRequest !== null,
     acceptance_criteria: mode === "completed_plan_sweep" || acceptance.length > 0,
     artifact_update_requirements: Boolean(docs.exists),
     progress_logging_requirements: progressVerification.status === "available" || ((progressVerification.caveats ?? []) as string[]).length > 0,
     changelog_boundary: changelogBoundary.status === "available",
     scope_boundary: true,
     safety_boundaries: true,
+    plan_state_healthy: lifecycle.status !== "degraded",
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
   const caveated = stateCaveats.length > 0;
-  const complete = (mode === "plan_driven" || mode === "completed_plan_sweep") && missingRequired.length === 0;
+  const complete = (mode === "plan_driven" || mode === "completed_plan_sweep" || buildRequest !== null)
+    && missingRequired.length === 0;
+  const workSelection: JsonObject = buildRequest === null
+    ? {
+        status: target.status,
+        selection_reason: target.selection_reason,
+        task: selected && typeof selected === "object" ? taskRef(selected) : null,
+        source_provenance: target.source_provenance,
+        caveats: target.caveats ?? [],
+      }
+    : {
+        status: "selected",
+        selection_reason: "explicit_no_plan_scope",
+        task: null,
+        scope: buildRequest.scope,
+        source_provenance: transientSourceProvenance(buildRequest, "scope"),
+        caveats: [],
+      };
+  const artifactUpdateRequirements = buildArtifactUpdateRequirements(plan, docs);
+  if (buildRequest !== null) {
+    artifactUpdateRequirements.required_families = ["progress", "todo", "changelog"];
+    artifactUpdateRequirements.plan_status_update_required = false;
+    artifactUpdateRequirements.policy = "Transient no-plan work does not create, mutate, or require plan state.";
+  }
   return {
     capability: "build",
     mode,
-    work_selection: {
-      status: target.status,
-      selection_reason: target.selection_reason,
-      task: selected && typeof selected === "object" ? taskRef(selected) : null,
-      source_provenance: target.source_provenance,
-      caveats: target.caveats ?? [],
-    },
+    work_selection: workSelection,
     plan_task: selected && typeof selected === "object" ? orchestrationTaskSummary(selected) : null,
     acceptance_criteria: {
       status: acceptance.length > 0 ? "available" : "incomplete",
       items: acceptance,
       count: acceptance.length,
-      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance"),
+      source_provenance: buildRequest === null
+        ? sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance")
+        : transientSourceProvenance(buildRequest, "acceptance"),
     },
     constraints: {
-      plan_constraints_present: hasRecordedValue(planContextField(plan, "constraints")),
-      plan_constraints_summary:
-        "Plan constraints are represented here as structured safety and fallback policy; " +
-        "run the plan CLI fallback only if full wording is needed.",
+      plan_constraints_present: buildRequest === null && hasRecordedValue(planContextField(plan, "constraints")),
+      plan_constraints_summary: buildRequest === null
+        ? "Plan constraints are represented here as structured safety and fallback policy; run the plan CLI fallback only if full wording is needed."
+        : "Transient no-plan input supplies scope and acceptance only; no plan constraints are inferred.",
       protected_actions: [
         "no profile refresh",
         "no installed app refresh",
@@ -155,17 +210,18 @@ export function buildExecutionContext(
         "no commit/push/tag/publication without explicit approval",
       ],
       unsupported_cli_command_policy: "Do not introduce capability-name or slash-alias CLI commands for Build.",
-      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.constraints"),
+      source_provenance: buildRequest === null
+        ? sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.constraints")
+        : transientSourceProvenance(buildRequest, "scope"),
     },
     scope_boundary: scopeBoundary,
     verification_expectations: {
       latest_progress_verification: progressVerification,
-      expected_commands: ["focused pytest targets", "Build capability validation", "self-validation", "agentera check compact", "compaction check", "git diff --check"],
-      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance"),
+      ...discoverProjectVerification(projectRoot),
     },
-    artifact_update_requirements: buildArtifactUpdateRequirements(plan, docs),
+    artifact_update_requirements: artifactUpdateRequirements,
     progress_logging_requirements: {
-      append_cycle: !archiveOnly,
+      append_cycle: buildRequest !== null || !archiveOnly,
       verified_field_mandatory: true,
       latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
        source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),

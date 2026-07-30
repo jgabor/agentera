@@ -1,0 +1,17 @@
+id: zmafkwlfhr
+artifact: progress
+record:
+  timestamp: 2026-07-29 22:55
+  type: fix
+  phase: build
+  what: Updated `packages/cli/src/capabilities/build/instructions.ts` so Log Step 7 precedes Commit Step 8; replaced progress numbering and compaction claims with entity-writer fields; aligned Build schemas; added source and `prime --context build` regression tests.
+  context:
+    intent: Make Build terminal ordering honor the repository same-commit policy.
+    constraints: No profile refresh, vision edit, publication, push, tag, or commit; user did not explicitly authorize a commit.
+    unknowns: Profile grounding and project glossary authority were unavailable; explicit plan and TODO acceptance defined the task.
+    scope: Build instructions, validation and exit schemas, capability prose tests, TODO.md, CHANGELOG.md, typed plan/TODO state, and one progress entity.
+  inspiration: Plan task nrpvauxexj and TODO lfvwrkcsuf.
+  discovered: Full source and package lanes remain blocked by a pre-existing installed runtime cleanup failure outside the changed Build instruction path.
+  verified: "Focused tests: 11 passed. Typecheck, build, Build capability validation, built-CLI order smoke, compact, state validation, diff check, and independent audit passed. Full source and package lanes reached unrelated upgrade failures caused by existing runtime cleanup state."
+  next: "Implement ohkbezkixj / cbiviopiax: make Build verification commands project-aware."
+  publication_order: 7

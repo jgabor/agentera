@@ -1,6 +1,7 @@
 export type Env = Record<string, string | undefined>;
 
 export interface PrimeOpts {
+  projectRoot?: string | null;
   home?: string | null;
   installRoot?: string | null;
   expectedVersion?: string | null;
@@ -8,6 +9,7 @@ export interface PrimeOpts {
 }
 
 export interface PrimeArgs {
+  projectRoot?: string | null;
   command?: string;
   guidance?: boolean;
   context?: string | null;
@@ -15,9 +17,10 @@ export interface PrimeArgs {
   orientation?: boolean;
   format?: string;
   fields?: string | null;
+  input?: string | null;
   home?: string | null;
   installRoot?: string | null;
   expectedVersion?: string | null;
 }
 
-export type Io = { out?: (t: string) => void; err?: (t: string) => void };
+export type Io = { out?: (t: string) => void; err?: (t: string) => void; stdin?: () => string | Buffer };

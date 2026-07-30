@@ -3,9 +3,10 @@ EXIT_CONDITIONS:
     id: E1
     condition: complete
     description: >-
-      One full cycle completed. Work was selected, implemented, verified
-      against the project's test/build suite, committed with a conventional
-      message, and progress.yaml and TODO.md were updated.
+      One full cycle completed. Work was selected, implemented, and verified
+      against the project's test/build suite. Required TODO, progress,
+      changelog, and plan closeout updates preceded the cycle's single
+      conventional commit.
     exit_signal: complete
   2:
     id: E2
@@ -14,7 +15,7 @@ EXIT_CONDITIONS:
       The cycle completed but with notable issues. Possible causes:
       verification passed but with warnings, the committed work is narrower
       than intended due to scope reduction, or discoveries logged in
-      progress.yaml suggest the next cycle may face blockers.
+      progress state suggests the next cycle may face blockers.
     exit_signal: flagged
   3:
     id: E3

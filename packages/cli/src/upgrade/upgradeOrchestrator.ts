@@ -336,21 +336,25 @@ function buildUpgradePlanUnlocked(
   activeUpgradeLockPaths: readonly string[],
 ): UpgradePlanV2 {
   const sourceRoot = resolveSourceRootStrict();
-  const inheritedXdgConfigHome = process.env.XDG_CONFIG_HOME
-    ? resolvePath(process.env.XDG_CONFIG_HOME)
-    : null;
-  const xdgRelative = inheritedXdgConfigHome ? path.relative(home, inheritedXdgConfigHome) : null;
-  const xdgConfigHome = inheritedXdgConfigHome
-    && xdgRelative !== null
-    && !xdgRelative.startsWith(`..${path.sep}`)
-    && !path.isAbsolute(xdgRelative)
-    ? inheritedXdgConfigHome
-    : path.join(home, ".config");
+  const homeScopedPath = (value: string | undefined): string | null => {
+    if (!value) return null;
+    // Relative overrides retain their normal process-cwd meaning before the
+    // resolved path is checked. The home itself and its descendants are valid.
+    const resolved = resolvePath(value);
+    const relative = path.relative(home, resolved);
+    const withinHome = relative === ""
+      || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+    return withinHome ? resolved : null;
+  };
+  const xdgConfigHome = homeScopedPath(process.env.XDG_CONFIG_HOME) ?? path.join(home, ".config");
   const env: Record<string, string | undefined> = {
     ...process.env,
     HOME: home,
     XDG_CONFIG_HOME: xdgConfigHome,
   };
+  if (!homeScopedPath(process.env.OPENCODE_CONFIG_DIR)) {
+    delete env.OPENCODE_CONFIG_DIR;
+  }
   const [installRoot] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
   const channel = resolveInvokedUpdateChannel({
     channel: args.channel ?? null,

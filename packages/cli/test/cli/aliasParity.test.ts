@@ -144,9 +144,14 @@ describe("schema-advertised alias/runtime parity", () => {
     expect(printTopLevelHelp()).not.toContain("  gate ");
 
     const prime = capturePrimeBuild();
-    expect(prime.execution_context.verification_expectations.expected_commands).toContain(
-      "agentera check compact",
-    );
+    const expected = prime.execution_context.verification_expectations.expected_commands as Array<{
+      command: string;
+      source_provenance: unknown;
+    }>;
+    expect(expected).toEqual([
+      expect.objectContaining({ command: "pnpm run verify", source_provenance: expect.any(Array) }),
+    ]);
+    expect(expected.some(({ command }) => command.split(/\s+/).includes("gate"))).toBe(false);
     expect(JSON.stringify(prime)).not.toContain("agentera gate");
 
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "gate-retirement-"));
@@ -173,9 +178,18 @@ describe("schema-advertised alias/runtime parity", () => {
 });
 
 function capturePrimeBuild(): Record<string, any> {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-build-verification-"));
+  temporaryProjects.push(project);
+  fs.writeFileSync(path.join(project, "AGENTS.md"), [
+    "| When | Command |",
+    "| ---- | ------- |",
+    "| Verification | `pnpm verify` |",
+    "",
+  ].join("\n"));
+  fs.writeFileSync(path.join(project, "package.json"), JSON.stringify({ scripts: { verify: "node verify.mjs" } }));
   let out = "";
   const rc = cmdPrime(
-    { command: "prime", context: "build", format: "json" },
+    { command: "prime", context: "build", format: "json", projectRoot: project },
     { out: (text) => { out += text; }, err: () => {} },
   );
   expect(rc).toBe(0);

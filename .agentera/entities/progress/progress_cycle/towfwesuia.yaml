@@ -1,0 +1,17 @@
+id: towfwesuia
+artifact: progress
+record:
+  timestamp: 2026-07-30 00:09
+  type: fix
+  phase: build
+  what: Updated `packages/cli/src/cli/capabilityContext/projectVerification.ts` and Build startup to derive bounded repository verification commands with exact `AGENTS.md` lines and package-script fields; added safe canonicalization, rejection, omission, and Prime projection coverage.
+  context:
+    intent: Make Build startup prescribe only runnable project verification commands with provenance.
+    constraints: No upgrade cleanup, profile refresh, glossary write, vision edit, publication, push, tag, or hook bypass.
+    unknowns: Profile grounding and project glossary authority were unavailable; explicit plan and TODO acceptance governed the task.
+    scope: Build execution context, project verification discovery, Prime project-root threading, startup contract, focused CLI tests, TODO.md, CHANGELOG.md, typed plan/TODO state, and one progress entity.
+  inspiration: Plan task ohkbezkixj and TODO cbiviopiax.
+  discovered: Independent audit found four false-confidence risks in generated-target inference, startup truncation, Node arguments, and alias conflict ordering; all were corrected. Mandatory hooks retain the same unrelated upgrade baseline failures.
+  verified: "Focused tests: 4 files and 76 tests passed. Typecheck, build, built-CLI Prime smoke, Build capability and capability-contract validation, state validation, compact, diff check, and bounded re-audit passed. Full source lane: 2,949 passed, 1 skipped, 16 unrelated upgrade failures; package lane: 16 passed, 1 unrelated real-home runtime cleanup failure."
+  next: "Implement acazhcocpm / zqxbpgregt: make explicit no-plan Build context executable without a plan fallback loop."
+  publication_order: 8

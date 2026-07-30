@@ -14,9 +14,9 @@ VALIDATION:
     id: V2
     rule: one_cycle_per_invocation
     description: >-
-      Build executes exactly one cycle per invocation. After logging (Step 8),
-      the capability MUST stop. Multiple cycles require separate invocations or
-      an explicit user request.
+      Build executes exactly one cycle per invocation. After logging required
+      artifacts (Step 7) and committing once (Step 8), the capability MUST stop.
+      Multiple cycles require separate invocations or an explicit user request.
     severity: critical
     checks:
       - "Only one progress entity is appended per invocation"
@@ -158,3 +158,17 @@ VALIDATION:
     checks:
       - "Advice and caveat paths perform zero glossary publication writes"
       - "Only separately supplied digest-confirmed publication retains Build authority"
+  15:
+    id: V15
+    rule: transient_no_plan_execution_input
+    description: >-
+      When no current executable plan owns startup, Build MAY accept one bounded
+      `agentera.buildExecutionRequest.v1` through `prime --context build --input
+      <file|-> --format json`. The request supplies explicit scope and acceptance
+      transiently; it MUST NOT persist, create, or mutate plan state. Current
+      plan-owned execution conflicts instead of silently ignoring the request.
+    severity: critical
+    checks:
+      - "Transient input is used only when no current executable plan owns startup"
+      - "No request content is placed in argv or persisted"
+      - "No-plan execution requires explicit scope and acceptance"

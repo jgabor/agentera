@@ -45,8 +45,8 @@ export function classifyParseError(raw: string): InvalidInputErrorBody {
 }
 
 /** Coerce the loose `string` format field on parsed args to the literal union. */
-export function asEnvelopeFormat(format: string | undefined | null): "text" | "json" {
-  return format === "json" ? "json" : "text";
+export function asEnvelopeFormat(format: string | undefined | null): "text" | "json" | "yaml" {
+  return format === "json" || format === "yaml" ? format : "text";
 }
 
 /**

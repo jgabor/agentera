@@ -196,6 +196,7 @@ export interface CorpusCoverageSummary {
 
 /** Internal orientation state assembled by collectOrientationState. */
 export interface OrientationState {
+  project_root: string;
   schemas_dir: string;
   schemas: Record<string, SchemaInfo>;
   app: BundleStatus;

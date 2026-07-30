@@ -4,7 +4,7 @@ record:
   name: M1 · Make Build no-plan work executable (zqxbpgregt)
   depends_on:
     - ohkbezkixj
-  status: pending
+  status: complete
   acceptance:
     - GIVEN explicit no-plan scope and acceptance WHEN Build starts THEN context is complete without a plan fallback.
     - GIVEN no open plan WHEN context is read THEN no recovery loop appears.

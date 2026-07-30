@@ -324,7 +324,20 @@ structured_output:
             constraints, verification expectations, artifact update requirements,
             progress logging requirements, changelog boundary, scope boundary,
             fallback commands, caveats, read-only plan-completion sweep metadata,
-            and a raw-read-last-resort source contract. It must not introduce
+            and a raw-read-last-resort source contract. Verification commands are
+            selected only from bounded verification-labelled rows in the root
+            AGENTS.md `When | Command` recipe table. Explicit root or `pnpm -C`
+            package.json scripts validate those references; exact script aliases are
+            resolved before duplicate-label conflict checks, and equivalent canonical
+            commands are deduplicated with bounded line/field source pointers retained.
+            Command, provenance, rejection, and diagnostic omissions are reported by
+            explicit counts below generic startup projection limits. Malformed
+            recipes, placeholders, shorthand, unsupported syntax, symlinked sources,
+            targets, or existing ancestors, missing scripts, cycles, out-of-root paths,
+            every missing Node entrypoint, and conflicting canonical label sets are
+            rejected with bounded diagnostics rather than inferred or executed. Node
+            arguments use tokens only and reject absolute or parent-traversing values,
+            including values after `=`; discovery never executes a recipe. It must not introduce
             `agentera realisera`, `agentera build`, new top-level commands, or new subcommands.
           decision_attention_semantics: >-
             `agentera prime --format json` may include one bounded `decision_attention`
@@ -369,7 +382,7 @@ startup_completeness:
     - docs artifact mapping and source-contract completeness metadata
     - latest progress verification metadata needed for Orkestrera evaluation
     - Optimera benchmark_context metadata for retained startup benchmark summaries
-    - Realisera execution_context metadata for plan-driven implementation startup
+    - Realisera execution_context metadata for plan-driven or explicit transient no-plan implementation startup
   empty_state_behavior: >-
     agentera prime reports absent plan, docs, and progress state explicitly through
     structured summaries and state_presence absence metadata instead of forcing
@@ -381,6 +394,75 @@ startup_completeness:
     - Do not add Decision 43 slash-route aliases to the CLI command surface.
     - Do not remove or rename routine state commands.
     - Do not add a separate benchmark command; Optimera benchmark comparison stays inside benchmark_context.
+build_transient_execution_request:
+  status: implemented
+  command: agentera prime --context build --input <file|-> --format json
+  schema_version: agentera.buildExecutionRequest.v1
+  transport:
+    sources:
+      - file
+      - stdin
+    request_text_in_argv: forbidden
+    max_utf8_bytes: 32768
+    malformed_utf8: fatal
+    document: YAML or JSON mapping
+    acquisition:
+      file: >-
+        Regular files only; symlinks and non-regular inputs fail closed. Open
+        no-follow where supported, verify the opened descriptor identity against
+        the observed file, precheck known size, and incrementally read at most
+        max_utf8_bytes + 1 before rejecting overflow.
+      stdin: >-
+        Incrementally read fd 0 in bounded chunks through max_utf8_bytes + 1;
+        reject overflow and never close fd 0. Injected test stdin is capped
+        immediately after the supplied value returns.
+  fields:
+    exact_required:
+      - schema_version
+      - scope
+      - acceptance
+    additional_fields: forbidden
+    scope:
+      type: string
+      non_empty: true
+      max_unicode_code_points: 160
+      control_characters: forbidden
+    acceptance:
+      type: list_of_strings
+      min_items: 1
+      max_items: 12
+      duplicate_items: forbidden
+      item_non_empty: true
+      item_max_unicode_code_points: 160
+      item_control_characters: forbidden
+  validation_failure:
+    envelope: agentera.invalidInputEnvelope.v2
+    exit_code: 2
+    sensitive_input_echo: forbidden
+  availability:
+    only_with_context: build
+    active_or_completed_current_plan: conflict
+    archived_history_without_current_executable_plan: allowed
+    malformed_or_degraded_plan_state: fail_safe
+  persistence:
+    request_persisted: false
+    orientation_state_extended: false
+    state_mutation: none
+    plan_creation_or_mutation: forbidden
+  no_plan_execution_context:
+    mode: no_plan
+    valid_request:
+      work_selection_reason: explicit_no_plan_scope
+      acceptance_source: exact transient request
+      source_path_inference: forbidden
+      plan_fallback: forbidden
+      plan_status_update_required: false
+      complete_for_execution_context: true when all non-plan required execution state is available
+    missing_request:
+      complete_for_execution_context: false
+      plan_fallback: forbidden
+      advancing_recovery: agentera prime --context build --input - --format json
+      caveat: Explicit scope and acceptance are required for no-plan execution.
 evidence_context_target_contract:
   status: task_1_design_contract
   planned_context_name: evidence_context

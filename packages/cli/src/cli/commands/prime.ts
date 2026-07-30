@@ -13,6 +13,12 @@ import { briefUtf8Bytes } from "./prime/briefOrientation.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 import { startupSurfaceBudget } from "../../state/retrievalAuthority.js";
+import { emitInvalidInput } from "../errors.js";
+import {
+  BuildExecutionRequestError,
+  loadBuildExecutionRequest,
+  type BuildExecutionRequest,
+} from "./prime/buildExecutionRequest.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -74,6 +80,17 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const capability = args.context ?? null;
   const dashboard = Boolean(args.dashboard || args.orientation);
   const guidance = Boolean(args.guidance);
+  const input = args.input ?? null;
+  const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : "text";
+  const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
+    emitInvalidInput(io, { format: inputErrorFormat, body });
+  if (input !== null && (capability !== "build" || dashboard || guidance)) {
+    return rejectInput({
+      class: "unsupported_target",
+      message: "--input is valid only with prime --context build",
+      syntax: "agentera prime --context build --input <file|-> --format json",
+    });
+  }
   if (capability !== null && dashboard) {
     err("Error: prime --context and prime --dashboard/--orientation are mutually exclusive\n");
     return 2;
@@ -91,7 +108,12 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return 0;
   }
   const format = args.format ?? "text";
-  const collectOpts = { home: args.home, installRoot: args.installRoot, expectedVersion: args.expectedVersion };
+  const collectOpts = {
+    projectRoot: args.projectRoot,
+    home: args.home,
+    installRoot: args.installRoot,
+    expectedVersion: args.expectedVersion,
+  };
 
   if (capability !== null) {
     try {
@@ -104,10 +126,26 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       err("Error: prime --context requires --format json\n");
       return 2;
     }
+    let buildRequest: BuildExecutionRequest | null = null;
+    if (input !== null) {
+      try {
+        buildRequest = loadBuildExecutionRequest(input, io.stdin);
+      } catch (error) {
+        if (error instanceof BuildExecutionRequestError) return rejectInput(error.body);
+        return rejectInput({ class: "invalid_format", message: "Build execution request input could not be read" });
+      }
+    }
     const state = collectOrientationState(collectOpts);
+    if (buildRequest !== null && state.plan.active === true) {
+      return rejectInput({
+        class: "conflict",
+        message: "Transient no-plan Build input conflicts with the current plan-owned execution context",
+        recovery: "Run Build without --input for the current plan, or close/archive that plan before retrying; no state was changed.",
+      });
+    }
     const payload = capability === "status"
       ? buildStatusCapabilityContextPayload(state, command)
-      : buildPrimeCapabilityContextPayload(state, capability, command);
+      : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest);
     return emitPrime(command, payload, format, args.fields, out, err, {
       maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
     });

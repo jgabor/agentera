@@ -61,7 +61,7 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
 }
 
 export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
-  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text" };
+  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text", input: null };
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -73,7 +73,26 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
     else if (a === "--dashboard") args.dashboard = true;
     else if (a === "--orientation") args.orientation = true;
     else if ((v = value("--context")) !== null) args.context = v;
-    else if ((v = value("--format")) !== null) {
+    else if (a === "--input" && (!argv[i + 1] || argv[i + 1].startsWith("--"))) {
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "missing_argument", message: "--input requires a file path or -", syntax: "--input <file|->" },
+      });
+    } else if ((v = value("--input")) !== null) {
+      if (v.length === 0) {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: { class: "missing_argument", message: "--input requires a file path or -", syntax: "--input <file|->" },
+        });
+      }
+      if (args.input !== null) {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: { class: "mutually_exclusive", message: "--input may only be supplied once" },
+        });
+      }
+      args.input = v;
+    } else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json" && v !== "yaml") {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
