@@ -308,6 +308,10 @@ export function buildPrimeCapabilityContextPayload(
   const bundlePublic = publicDoctorStatus(state.app);
   const appHome = orientationAppHome(stateDict.app as JsonObject);
   const bespoke = bespokeCapabilityContexts(capabilityName, stateDict, buildRequest);
+  const profileSummary = {
+    ...(stateDict.profile_dict as JsonObject),
+    ...(capabilityName === "profile" && state.profile ? { path: state.profile } : {}),
+  };
   return {
     command,
     status: "ok",
@@ -318,7 +322,7 @@ export function buildPrimeCapabilityContextPayload(
       appHome,
       // cast: bundlePublic is a distilled app-bundle status (interface) consumed as JsonObject by slim context
       bundlePublic as unknown as JsonObject,
-      stateDict.profile_dict as JsonObject,
+      profileSummary,
       stateDict.plan as JsonObject,
       stateDict.docs as JsonObject,
       stateDict.progress as JsonObject,

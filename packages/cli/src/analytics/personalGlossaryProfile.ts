@@ -119,7 +119,8 @@ function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): {
   const end = profile.indexOf(END, start) + END.length;
   if (start < 0 || end < END.length || end <= start) throw new Error("PROFILE.md Glossary section has malformed or ambiguous owned boundaries");
   const owned = profile.slice(start, end);
-  const match = new RegExp(`^${START}\n${HEADING}\n\n\`\`\`json\n([\\s\\S]+)\n\`\`\`\n${END}$`).exec(owned);
+  const newline = "\\r?\\n";
+  const match = new RegExp(`^${START}${newline}${HEADING}${newline}${newline}\`\`\`json${newline}([\\s\\S]+)${newline}\`\`\`${newline}${END}$`).exec(owned);
   if (!match) throw new Error("PROFILE.md Glossary section is malformed");
   let value: unknown;
   try {

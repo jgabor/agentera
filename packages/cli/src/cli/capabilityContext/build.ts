@@ -110,7 +110,7 @@ export function buildExecutionContext(
     stateCaveats.push(...((changelogBoundary.caveats ?? []) as string[]));
     fallbackCommands.push("agentera state query changelog --format json");
   }
-  if (profile.status !== "loaded") {
+  if (profile.status !== "valid") {
     stateCaveats.push("profile-derived state is unavailable in prime --context response.");
   } else if (profile.stale === true) {
     stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");

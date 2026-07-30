@@ -505,7 +505,7 @@ export async function runProducerReadinessWorkflow(
     })(),
   ];
   let malformedGroundingCasesRejected = 0;
-  const malformedEnvelopes = new Set<string>();
+  let groundingErrorsSanitized = true;
   for (const { family, traps, profile: malformed } of malformedProfiles) {
     fs.writeFileSync(profile.profilePath, malformed);
     const before = fs.readFileSync(profile.profilePath);
@@ -521,7 +521,13 @@ export async function runProducerReadinessWorkflow(
       fs.readFileSync(profile.profilePath).equals(before),
       `${family} profile bytes changed after rejection`,
     );
-    malformedEnvelopes.add(`${rejected.stdout}\0${rejected.stderr}`);
+    const rejectedPayload = JSON.parse(rejected.stdout);
+    groundingErrorsSanitized &&=
+      rejected.stderr === "" &&
+      rejectedPayload.status === "repair_needed" &&
+      ["malformed", "ambiguous", "oversized"].includes(rejectedPayload.validity?.class) &&
+      rejectedPayload.content === null &&
+      rejectedPayload.recovery === rejectedPayload.validity?.recovery;
     malformedGroundingCasesRejected += 1;
   }
   fs.writeFileSync(profile.profilePath, validProfile);
@@ -549,8 +555,14 @@ export async function runProducerReadinessWorkflow(
     project,
     { ...env, AGENTERA_PROFILE_DIR: trappedProfileDir },
   );
-  assert.equal(unavailable.status, 0, unavailable.stderr || unavailable.stdout);
-  assert.equal(JSON.parse(unavailable.stdout).status, "unavailable");
+  assert.notEqual(unavailable.status, 0, "missing profile grounding succeeded");
+  const unavailablePayload = JSON.parse(unavailable.stdout);
+  assert.equal(unavailablePayload.status, "absent");
+  assert.deepEqual(unavailablePayload.validity, {
+    status: "absent",
+    class: "absent",
+    recovery: "Run agentera profile to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
+  });
   assertTrapsAbsent(unavailable, pathTraps, "path");
 
   const readTraps = groundingTraps("read");
@@ -560,10 +572,10 @@ export async function runProducerReadinessWorkflow(
     [
       'import fs from "node:fs";',
       'import { syncBuiltinESMExports } from "node:module";',
-      "const original = fs.readFileSync;",
+      "const original = fs.openSync;",
       `const profilePath = ${JSON.stringify(profile.profilePath)};`,
       `const failure = ${JSON.stringify(trapValues(readTraps).join(" "))};`,
-      "fs.readFileSync = function (target, ...args) {",
+      "fs.openSync = function (target, ...args) {",
       "  if (String(target) === profilePath) throw new Error(failure);",
       "  return original.call(this, target, ...args);",
       "};",
@@ -588,7 +600,6 @@ export async function runProducerReadinessWorkflow(
     "profile bytes changed after read failure",
   );
 
-  const groundingErrorsSanitized = malformedEnvelopes.size === 1;
   return {
     personal: {
       explicitEvidence: explicit.evidence.length,

@@ -255,6 +255,8 @@ describe("status dashboard contract", () => {
           schema_error: null,
         }),
       );
+      expect(emittedState.profile.validity).toEqual(state.profile_dict.validity);
+      expect(emittedState.profile).not.toHaveProperty("path");
       expect(emittedCapability.context).toHaveProperty("first_invocation_read");
       expect(emittedCapability.context).toHaveProperty("schema_error", null);
       expect(emittedState.brief).toMatchObject({
@@ -336,6 +338,7 @@ describe("status dashboard contract", () => {
         PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
       );
       const malformedEmitted = JSON.parse(malformedOut) as Record<string, any>;
+      expect(malformedEmitted.capability_context.context.status_context.brief.status).toBe("degraded");
       expect(malformedEmitted.capability_context.state.schema_error).toBe(
         "s".repeat(stateDiagnosticBytes),
       );
@@ -343,10 +346,12 @@ describe("status dashboard contract", () => {
         "c".repeat(contextDiagnosticBytes),
       );
       expect(malformedEmitted.capability_context.context.status_context).toMatchObject({
+        profile: { validity: boundaryState.profile_dict.validity },
         todo: { critical: 1, detail: { total: 33, returned: 20, omitted: 13 } },
         attention: expect.any(Array),
         next_action: { capability: "build" },
       });
+      expect(malformedEmitted.capability_context.context.status_context.profile).not.toHaveProperty("path");
     });
   });
 });

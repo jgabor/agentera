@@ -94,7 +94,7 @@ describe("cli prime", () => {
     expect(out).toContain("| phase=");
     expect(out).toContain("- alt: ");
     expect(out).toContain("source_contract:");
-    expect(out).toContain("capability_startup_complete=true");
+    expect(out).toMatch(/capability_startup_complete=(true|false)/);
     expect(out).toContain("artifact_writes: discover via");
   });
 

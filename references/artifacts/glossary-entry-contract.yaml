@@ -1146,6 +1146,17 @@ consumer_boundary:
     schema_version: agentera.profileGrounding.v1
     parser: packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding
     max_profile_utf8_bytes: 65536
+    validity:
+      statuses: [absent, valid, repair_needed]
+      classes: [absent, valid, malformed, ambiguous, unreadable, unsafe, oversized, invalid_utf8]
+    freshness:
+      states: [current, stale, unknown]
+      rule: Freshness is computed only after one source passes validity and never changes validity.
+    recovery:
+      repair: >-
+        Run agentera profile to repair or regenerate PROFILE.md, then retry agentera report profile-grounding --format json; no profile bytes were changed.
+      absent: >-
+        Run agentera profile to generate PROFILE.md, then retry agentera report profile-grounding --format json.
     raw_profile_read: forbidden
     content_rule: >-
       Return the complete profile with exactly the validated owned personal
@@ -1154,9 +1165,10 @@ consumer_boundary:
       glossary read, precedence, matching, review, collision, or advisory work.
       Profile Full retains access to the complete stored profile for regeneration.
     failure_rule: >-
-      Missing profiles return structured unavailable state. Oversized profiles
-      and malformed, duplicate, unmatched, or unowned ambiguous Glossary
-      sections fail closed with actionable recovery and no profile content.
+      Absent and repair-needed profiles return nonzero with the shared validity
+      object, exact advancing recovery, unknown freshness, and no profile
+      content. Oversized, unsafe, unreadable, invalid UTF-8, and malformed or
+      ambiguous owned Glossary sources fail closed without path or byte leaks.
   exact_collision:
     behavior: project_precedence_at_consumption
     persistence: forbidden

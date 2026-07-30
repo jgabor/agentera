@@ -329,7 +329,6 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   const bundle = state.app;
   const mode = state.mode;
   const profileStatus = state.profile_status;
-  const profile = state.profile;
   const health = state.health;
   const counts = state.counts;
   const plan = state.plan;
@@ -355,7 +354,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     out(`project_integration_message: ${projectIntegration.message}\n`);
   }
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
-  out(`profile: ${profileStatus} | path=${profile}\n`);
+  out(`profile: ${profileStatus} | class=${state.profile_dict.validity.class}\n`);
   if (health.exists && health.id) {
     const worst = health.worst;
     const worstText = worst ? `${worst[0]}:${worst[1]}` : "none";

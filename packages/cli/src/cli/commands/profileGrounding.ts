@@ -1,28 +1,15 @@
-import fs from "node:fs";
-
-import { personalProfileGrounding } from "../../analytics/personalGlossaryProfile.js";
 import { personalProfileGroundingContract } from "../../registries/glossaryEntryContract.js";
-import { discoverSchemasDir } from "../appContext.js";
 import type { Io } from "../dispatch/shared.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
-import { registryArtifactPath } from "../orientation.js";
+import { acquireProfile } from "../profileAcquisition.js";
 import { emitStructured } from "../structured.js";
 
 const COMMAND = "agentera report profile-grounding --format json";
-const PROFILE_RECOVERY = `Run agentera profile to repair or regenerate PROFILE.md, then retry ${COMMAND}; no profile bytes were changed.`;
 const REQUEST_RECOVERY = `Run ${COMMAND}; no profile bytes were changed.`;
-const INVALID_PROFILE_MESSAGE = "PROFILE.md cannot be used for grounding because it is malformed, ambiguous, unreadable, or exceeds the supported size limit.";
+const INVALID_PROFILE_MESSAGE = "PROFILE.md is unavailable for bounded profile grounding.";
 
 function invalid(io: Io, body: InvalidInputErrorBody, recovery: string): number {
   return emitInvalidInput(io, { format: "json", body: { ...body, recovery } });
-}
-
-function invalidProfile(io: Io): number {
-  return invalid(io, {
-    class: "invalid_request",
-    message: INVALID_PROFILE_MESSAGE,
-    valid_values: ["one readable, size-bounded PROFILE.md with no Glossary section or one valid owned personal Glossary section"],
-  }, PROFILE_RECOVERY);
 }
 
 export function runProfileGroundingCommand(argv: string[], io: Io): number {
@@ -39,42 +26,36 @@ export function runProfileGroundingCommand(argv: string[], io: Io): number {
   }
 
   const contract = personalProfileGroundingContract();
-  let profilePath: string;
-  try {
-    profilePath = registryArtifactPath("profile", discoverSchemasDir());
-  } catch {
-    return invalidProfile(io);
-  }
-  let stat: fs.Stats;
-  try {
-    stat = fs.statSync(profilePath);
-    if (!stat.isFile()) throw new Error("not a regular file");
-  } catch {
+  const acquired = acquireProfile();
+  const output = io.out ?? ((text: string) => process.stdout.write(text));
+  if (acquired.validity.status !== "valid" || acquired.groundingContent === null) {
     emitStructured({
       schemaVersion: contract.schemaVersion,
       command: "report profile-grounding",
-      status: "unavailable",
+      status: acquired.validity.status,
+      validity: acquired.validity,
+      freshness: acquired.freshness,
       content: null,
-      recovery: "Run agentera profile to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
-    }, "json", io.out ?? ((text) => process.stdout.write(text)));
-    return 0;
-  }
-  if (stat.size > contract.maxProfileUtf8Bytes) {
-    return invalidProfile(io);
+      recovery: acquired.validity.recovery,
+      error: {
+        class: "profile_unavailable",
+        message: INVALID_PROFILE_MESSAGE,
+        recovery: acquired.validity.recovery,
+      },
+    }, "json", output);
+    return 2;
   }
 
-  try {
-    const content = personalProfileGrounding(fs.readFileSync(profilePath, "utf8"));
-    emitStructured({
-      schemaVersion: contract.schemaVersion,
-      command: "report profile-grounding",
-      status: "ok",
-      content,
-      content_utf8_bytes: Buffer.byteLength(content),
-      excluded: "owned_personal_glossary_section",
-    }, "json", io.out ?? ((text) => process.stdout.write(text)));
-    return 0;
-  } catch {
-    return invalidProfile(io);
-  }
+  emitStructured({
+    schemaVersion: contract.schemaVersion,
+    command: "report profile-grounding",
+    status: "ok",
+    validity: acquired.validity,
+    freshness: acquired.freshness,
+    content: acquired.groundingContent,
+    content_utf8_bytes: Buffer.byteLength(acquired.groundingContent),
+    excluded: "owned_personal_glossary_section",
+    recovery: null,
+  }, "json", output);
+  return 0;
 }

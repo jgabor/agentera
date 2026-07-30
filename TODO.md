@@ -2,9 +2,9 @@
 
 ## Current execution
 
-- **Current milestone:** M1 · Trust the execution loop.
-- **Next plan task:** `qxdcaimwoe`.
-- **Associated TODO:** `tkpzveyvjt` — Unify profile validity.
+- **Current milestone:** M2 · Unify state mutation.
+- **Next plan task:** `mascmjrpug`.
+- **Associated TODO:** `htmgqhyasy` — Establish declarative mutation grammar.
 - **Exact request:** `Implement next todo, or todos if suitable to bundle them.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task.
@@ -17,17 +17,15 @@ Milestone debt is measured in three categories: (1) duplicate authorities, gramm
 
 ## ⇶ Critical
 
-### M1 · Trust the execution loop — current
+### M1 · Trust the execution loop — complete
 
 Exit when execution selection, verification, logging, and closeout agree and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `tkpzveyvjt` **NEXT** Use one profile validity result in `agentera prime --context discuss --format json` and `agentera report profile-grounding --format json`. Prime currently reports `profile.status: loaded` and `stale` while grounding rejects the same `PROFILE.md` as malformed. Report `invalid` or `repair_needed` with exact recovery and add malformed-profile parity coverage.
-
-### M2 · Unify state mutation
+### M2 · Unify state mutation — current
 
 Exit when one mutation grammar governs the converted writer families and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `htmgqhyasy` Establish one declarative state mutation grammar in `references/artifacts/state-storage-authority.yaml`. Classify every public verb as a record payload, simple transition, or batch transaction; require `--input <path|->` for record payloads; enumerate selectors, preconditions, CLI-owned fields, recovery, examples, and bounds; and retire unsupported `health repair`. For every writable family, make `state <family> explain --all` return every verb and schema once with a contract digest; derive per-verb explain, operations, schema, and help from that projection while TypeScript remains the behavior owner. Add a generated parity matrix and reject record-content flags before effects.
+- [ ] [fix:3.0.0] `htmgqhyasy` **NEXT** Establish one declarative state mutation grammar in `references/artifacts/state-storage-authority.yaml`. Classify every public verb as a record payload, simple transition, or batch transaction; require `--input <path|->` for record payloads; enumerate selectors, preconditions, CLI-owned fields, recovery, examples, and bounds; and retire unsupported `health repair`. For every writable family, make `state <family> explain --all` return every verb and schema once with a contract digest; derive per-verb explain, operations, schema, and help from that projection while TypeScript remains the behavior owner. Add a generated parity matrix and reject record-content flags before effects.
 - [ ] [fix:3.0.0] `oeapqfccwf` Convert progress and decision record writes to structured input. Require `progress append --input <path|->`, `decisions append --input <path|->`, and `decisions amend --id ID --base-sha256 HASH --input <path|->`; retain decision satisfaction update as a selector-and-transition flag operation. Support file and stdin YAML or JSON, reject record-content flags and CLI-owned fields before effects, preserve dry-run, replay, amendment preconditions, and existing publication order, and synchronize schema, explain, help, skills, package projection, and tests.
 - [ ] [fix:3.0.0] `auwlbuobdw` Make plan task record writes follow the structured-input state grammar and entity identity vocabulary. Require `plan append [--plan PLAN_ID] --input <path|->` and `plan update --id TASK_ID [--plan PLAN_ID] --input <path|->`; keep status, supersession, evaluation, plan-status, and archive operations as flag-only transitions. Discovery currently reports `integer_list` and task numbers while runtime requires ten-letter IDs. Make dependencies, replacements, task selectors, and optional plan selection agree across parsing, schema, explain, help, `SKILL.md`, and regressions; never advertise `set-plan-status --id`.
 - [ ] [fix:3.0.0] `gbcpgevezi` Define the typed TODO record and lifecycle contract while converting writes to structured input. Require `state todo create --input <path|->` and `state todo update --id ID --input <path|->` with full and patch YAML or JSON from files and stdin. Omitted patch fields preserve state and explicit typed clears remove it; callers never repeat complete readiness merely to retain it. Add `kind`, `target_version`, `title`, `requirements`, `acceptance`, and `release_blocker` separately from severity, and render `[kind:target]` rather than store it in prose. Severity remains immediate impact; release gates use `release_blocker` and `target_version` so stable-cut dependencies need not be critical. Keep `set-severity`, `supersede`, `resolve`, and `reopen` as typed transitions with reason, date, and replacement fields, never Markdown strikethrough. Validate graphs and CLI-owned fields before effects and synchronize schema, explain, help, package projection, exact replay, dry-run, migration, and tests for batch and reconciliation consumers.
@@ -114,6 +112,7 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Unify profile validity. Resolved 2026-07-30: `profileAcquisition.ts` gives Prime and `report profile-grounding` one bounded validity and freshness result across valid, absent, malformed, ambiguous, unreadable, unsafe, oversized, and invalid UTF-8 profiles. Invalid sources leak no profile data and return one recovery. Task PASS, focused/source/package gates, built smoke, and independent audit passed.
 - [x] [fix:3.0.0] Normalize npm registry JSON before publication convergence checks. Resolved 2026-07-30: `publication-transaction.mjs` accepts scalar, object, and singleton-array exact-version and dist-tag shapes, rejects malformed responses before mutation, and lets `pnpm cli:publish:dev` replay matching npm 12 state without republishing.
 - [x] [fix:3.0.0] Unify Build changelog reads. Resolved 2026-07-30: one bounded `changelog.ts` reader now drives `state query changelog`, Build, and Document with matching recognized headings, boundary, status, provenance, and recovery; malformed, unsafe, ambiguous, oversized, and invalid-authority inputs fail closed. Focused, source, package, smoke, and independent audit checks passed.
 - [x] [fix:3.0.0] Isolate explicit-home upgrades from inherited OpenCode configuration. Resolved 2026-07-30: upgrade planning now discards `OPENCODE_CONFIG_DIR` outside the selected home while retaining in-home overrides; 133 targeted tests, all 2,999 source tests, and all 17 package tests pass under the normal environment.

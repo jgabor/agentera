@@ -7,7 +7,7 @@ export default instructions
 
 Decisions use entity authority: every decision, revision, and satisfaction record has \`id\` and \`artifact\` and lives in one writer-owned entity file. Start from \`agentera prime --context discuss --format json\`; use bounded \`agentera state decisions list\` and exact \`get --id ID\` reads. Discover writes through \`agentera state decisions explain --format json\` and mutate only through the typed entity writer. Never edit entity paths directly. Vision, objective, TODO, docs policy, and profile retain their own protected or singleton boundaries.
 
-Append with \`agentera state decisions append\`; update satisfaction with \`agentera state decisions update --id ID\` after checking the live explain contract. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\`; never direct-read \`deliberation_context.profile.path\`. The grounding command excludes the owned personal Glossary section and fails closed when its boundaries are malformed.
+Append with \`agentera state decisions append\`; update satisfaction with \`agentera state decisions update --id ID\` after checking the live explain contract. Read profile grounding only from the \`content\` returned by \`agentera report profile-grounding --format json\` when its shared validity is \`valid\`; preserve exact absent or repair-needed recovery and never direct-read PROFILE.md. The grounding command excludes the owned personal Glossary section and fails closed on invalid sources.
 
 ### Governed terminology advice
 
@@ -24,5 +24,6 @@ Advice and its clarification are transient and mutation-free. They never write g
 ## The deliberation loop`)
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")
+  .replaceAll("deliberation_context.profile.path", "the shared profile validity summary")
   .replace("profile path for high-confidence entries", "sanitized profile grounding for high-confidence entries")
   .replace("new numbered decision entry", "new decision entity");

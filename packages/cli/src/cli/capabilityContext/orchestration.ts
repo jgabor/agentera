@@ -89,7 +89,7 @@ export function orchestrationContext(
     stateCaveats.push("todo state has no open entries in prime --context response; absence may mean none open or unavailable.");
     fallbackCommands.push("agentera state todo --format json");
   }
-  if (profile.status !== "loaded") {
+  if (profile.status !== "valid") {
     stateCaveats.push("profile-derived state is unavailable in prime --context response.");
   } else if (profile.stale === true) {
     stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");

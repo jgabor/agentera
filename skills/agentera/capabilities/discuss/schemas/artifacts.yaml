@@ -41,7 +41,8 @@ ARTIFACTS:
     description: >-
       Discuss reads only sanitized non-glossary content from `agentera report
       profile-grounding --format json` at session start. It never direct-reads
-      the profile path; malformed owned Glossary boundaries fail closed.
+      the profile path. It uses content only when the shared validity object is
+      valid; absent or repair-needed results fail closed with exact recovery.
   6:
     id: A6
     artifact: docs

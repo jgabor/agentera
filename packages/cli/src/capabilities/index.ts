@@ -3,7 +3,7 @@
 // CAPABILITY_INSTRUCTIONS lookup keyed by capability name. The CLI loader
 // imports this barrel from `../capabilities/index.js` so source-mode (vitest)
 // and dist-mode (npm install) resolve the same path.
-import { instructions as statusInstructions } from "./status/instructions.js";
+import statusInstructions from "./status/instructions.js";
 import { statusStartupInstructions } from "./status/startupInstructions.js";
 import { instructions as visionInstructions } from "./vision/instructions.js";
 import discussInstructions from "./discuss/instructions.js";

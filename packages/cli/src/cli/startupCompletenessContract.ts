@@ -46,9 +46,9 @@ export function startupCompletenessContract(input: StartupCompletenessInput = {}
   if (schemaError) {
     missingState.push(schemaError);
   }
-  if (input.profileStatus === "not found") {
-    missingState.push("profile not found");
-  }
+  if (input.profileStatus === "not found") missingState.push("profile not found");
+  if (input.profileStatus === "absent") missingState.push("profile absent");
+  if (input.profileStatus === "repair_needed") missingState.push("profile repair needed");
   const complete = missingState.length === 0;
   return {
     complete_for_capability_startup: complete,

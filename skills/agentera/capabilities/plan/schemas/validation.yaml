@@ -92,10 +92,12 @@ VALIDATION:
     rule: sanitized_profile_grounding
     description: >-
       Plan MUST ground only from the `content` returned by `agentera report
-      profile-grounding --format json`; it MUST NOT direct-read PROFILE.md.
+      profile-grounding --format json` when shared validity is valid; it MUST
+      preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical
     checks:
       - "Sanitized grounding command used during Orient"
+      - "Prime and report validity objects agree before content use"
       - "Raw profile path not read"
   10:
     id: V10

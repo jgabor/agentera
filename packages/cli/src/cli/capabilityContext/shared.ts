@@ -90,10 +90,10 @@ export function capabilityContextAppSummary(appHome: JsonObject, bundle: JsonObj
 
 export function capabilityContextProfileSummary(profile: JsonObject): JsonObject {
   const caveats: string[] = [];
-  if (profile.status !== "loaded") caveats.push("profile-derived state is unavailable in prime --context response.");
+  if (profile.status !== "valid") caveats.push("profile-derived state is unavailable in prime --context response.");
   else if (profile.stale === true) caveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
   const summary: JsonObject = {};
-  for (const key of ["status", "path", "stale", "days_since_generated", "stale_threshold_days", "suggested_action", "bounded_signals"]) {
+  for (const key of ["status", "validity", "freshness", "path", "stale", "days_since_generated", "stale_threshold_days", "suggested_action", "bounded_signals"]) {
     if (key in profile) summary[key] = profile[key];
   }
   summary.caveats = caveats;

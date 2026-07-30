@@ -108,7 +108,7 @@ describe("split-brain prime profile env fallback (G1)", () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
-  it("reports profile loaded when only PROFILERA_PROFILE_DIR is set", () => {
+  it("reports profile valid when only PROFILERA_PROFILE_DIR is set", () => {
     const profileDir = path.join(tmp, "profile");
     fs.mkdirSync(profileDir, { recursive: true });
     fs.writeFileSync(path.join(profileDir, "PROFILE.md"), "# Profile\n");
@@ -123,7 +123,7 @@ describe("split-brain prime profile env fallback (G1)", () => {
         HOME: tmp,
       },
     });
-    expect(state.profile_status).toBe("loaded");
+    expect(state.profile_status).toBe("valid");
     expect(state.profile).toBe(path.join(profileDir, "PROFILE.md"));
   });
 });

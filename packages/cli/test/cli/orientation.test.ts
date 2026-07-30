@@ -5,7 +5,6 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  checkProfileStaleness,
   healthSummary,
   issueCounts,
   loadTodoItems,
@@ -517,34 +516,7 @@ describe("orientation: artifact summaries", () => {
   });
 });
 
-function isoDaysAgo(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function writeProfile(tmpDir: string, header: string): string {
-  const profilePath = path.join(tmpDir, "PROFILE.md");
-  fs.writeFileSync(profilePath, `# Decision Profile\n\n${header}\n`);
-  return profilePath;
-}
-
-describe("checkProfileStaleness", () => {
-  it("marks profiles stale from Generated when Validated is absent", () => {
-    const profilePath = writeProfile(tmp, `<!-- Generated: ${isoDaysAgo(10)} | Data: x -->`);
-    const result = checkProfileStaleness(profilePath, { AGENTERA_PROFILE_MAX_AGE_DAYS: "7" });
-    expect(result).toEqual([true, 10, 7]);
-  });
-
-  it("treats recent Validated as fresh even when Generated is old", () => {
-    const profilePath = writeProfile(
-      tmp,
-      `<!-- Generated: ${isoDaysAgo(10)} | Data: x | Validated: ${isoDaysAgo(1)} -->`,
-    );
-    const result = checkProfileStaleness(profilePath, { AGENTERA_PROFILE_MAX_AGE_DAYS: "7" });
-    expect(result).toEqual([false, 1, 7]);
-  });
-
+describe("parseProfileHeaderDates", () => {
   it("parses Generated and Validated header dates", () => {
     const text = "<!-- Generated: 2026-05-30 | Data: x | Validated: 2026-06-07 -->";
     expect(parseProfileHeaderDates(text)).toEqual({

@@ -1,0 +1,17 @@
+id: lgvhqurcky
+artifact: progress
+record:
+  timestamp: 2026-07-30 21:41
+  type: fix
+  phase: build
+  what: Unified Prime and profile-grounding validity through one bounded acquisition result, reducing two independent profile presence, read, and parser paths to one shared authority.
+  context:
+    intent: Implement next todo, or todos if suitable to bundle them.
+    constraints: No push, tag, publish, profile refresh, glossary write, vision edit, or direct read of the project profile. Preserve producer-only canonical path access and fail closed without invalid profile bytes.
+    unknowns: Whether the recurring list heap benchmark fluctuation needs a separate stabilization task if it appears again.
+    scope: Profile acquisition, Prime and grounding consumers, glossary profile parsing, contracts, capability schemas, tests, TODO.md, CHANGELOG.md, and closeout state.
+  inspiration: Plan task qxdcaimwoe and TODO tkpzveyvjt required Prime and report profile-grounding to agree on validity, exact recovery, and malformed-profile behavior.
+  discovered: The project profile is oversized and repair_needed; this cycle did not read or modify its content. One full-source attempt hit the known list heap benchmark fluctuation, while the targeted test and complete rerun passed.
+  verified: Task evaluation PASS. 181 focused tests, 3,079 source tests with 1 skip, 17 package tests, typecheck, build, capability, contract, vocabulary, state, compact, built privacy smoke, and independent audit passed.
+  next: Implement dependency-ready plan task mascmjrpug for TODO htmgqhyasy in M2 after this change set is committed.
+  publication_order: 12

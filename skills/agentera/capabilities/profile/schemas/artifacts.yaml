@@ -9,7 +9,9 @@ ARTIFACTS:
       deterministic personal Glossary section containing shared glossary entries
       and lifecycle metadata; rendering and persistence are active while lookup
       remains deferred. Profile writes this in both Full and Validate modes,
-      then reads it for validation and update context.
+      then reads it for validation and update context. Prime exposes its
+      canonical resolved path only inside `prime --context profile`; no other
+      Prime context or profile-grounding failure may serialize that path.
   2:
     id: A2
     artifact: decisions

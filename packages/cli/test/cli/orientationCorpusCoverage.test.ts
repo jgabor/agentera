@@ -32,7 +32,7 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
     app: { status: "ok", appHome: "/tmp", appHomeSource: "test", managedAppRoot: "/tmp", userDataRoot: "/tmp" },
     mode: "returning",
     profile_dict: { status: "loaded", path: "/tmp/PROFILE.md" },
-    profile_status: "loaded",
+    profile_status: "valid",
     profile: "/tmp/PROFILE.md",
     v1_migration: {
       detected: false,

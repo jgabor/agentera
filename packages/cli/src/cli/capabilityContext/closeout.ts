@@ -189,7 +189,7 @@ export function documentCloseoutContext(
     stateCaveats.push(...((component.caveats ?? []) as string[]));
   }
   if (bundle.status !== "up_to_date") stateCaveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
-  if (profile.status !== "loaded") stateCaveats.push("profile-derived state is unavailable in prime --context response.");
+  if (profile.status !== "valid") stateCaveats.push("profile-derived state is unavailable in prime --context response.");
   else if (profile.stale === true) stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
   stateCaveats = uniqueList(stateCaveats);
   const fallbackCommands = uniqueList([

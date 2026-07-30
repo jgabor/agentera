@@ -371,7 +371,7 @@ export function auditEvidenceContext(
     stateCaveats.push(message);
     attributedRisks.push(residualRiskEntry("installed_app_state", "caveated", message, sourceProvenance("status", "agentera prime --format json", "app.status")));
   }
-  if (profile.status !== "loaded") {
+  if (profile.status !== "valid") {
     const message = "profile-derived state is unavailable in prime --context response.";
     stateCaveats.push(message);
     attributedRisks.push(residualRiskEntry("profile_state", "unavailable", message, sourceProvenance("status", "agentera prime --format json", "profile.status")));

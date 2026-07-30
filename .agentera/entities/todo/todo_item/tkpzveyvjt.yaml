@@ -2,5 +2,5 @@ id: tkpzveyvjt
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Use one profile validity result in `agentera prime --context discuss --format json` and `agentera report profile-grounding --format json`. Prime currently reports `profile.status: loaded` and `stale` while grounding rejects the same `PROFILE.md` as malformed. Report `invalid` or `repair_needed` with exact recovery and add malformed-profile parity coverage."

@@ -80,8 +80,6 @@ const TODO_SECTION_SEVERITIES: Record<string, string> = Object.fromEntries(
   TODO_SEVERITY_ORDER_KEYS.map((key) => [key, key]),
 );
 
-const PROFILE_STALE_DAYS_ENV = "AGENTERA_PROFILE_MAX_AGE_DAYS";
-const DEFAULT_PROFILE_STALE_DAYS = 7;
 const AUDIT_STALE_DAYS_ENV = "AGENTERA_AUDIT_MAX_AGE_DAYS";
 const DEFAULT_AUDIT_STALE_DAYS = 30;
 const AUDIT_STALE_CYCLES_ENV = "AGENTERA_AUDIT_MAX_CYCLES";
@@ -140,6 +138,7 @@ export function registryArtifactPath(
   artifactId: string,
   schemasDir: string,
   env: Record<string, string | undefined> = process.env,
+  options: { warn?: boolean } = {},
 ): string {
   // Targeted lookup: resolving a single identity (e.g. `profile` against a
   // v2-shaped install) must not walk the full registry and warn about every
@@ -150,7 +149,9 @@ export function registryArtifactPath(
   try {
     record = loadArtifactRecord(artifactId, schemasDir, resolveRegistryModelPath(schemasDir));
   } catch (exc) {
-    process.stderr.write(`warning: failed to load artifact registry for schemas: ${(exc as Error).message}\n`);
+    if (options.warn !== false) {
+      process.stderr.write(`warning: failed to load artifact registry for schemas: ${(exc as Error).message}\n`);
+    }
     record = undefined;
   }
   if (record === undefined) throw new Error(`artifact registry does not define '${artifactId}'`);
@@ -175,30 +176,6 @@ export function parseProfileHeaderDates(text: string): {
   const validatedDate = valMatch ? valMatch[1] : null;
   const validatedUtc = validatedDate ? dateFromIso(validatedDate) : null;
   return { generatedDate, validatedDate, generatedUtc, validatedUtc };
-}
-
-function profileRefreshAnchorUtc(text: string): number | null {
-  const { generatedUtc, validatedUtc } = parseProfileHeaderDates(text);
-  if (generatedUtc === null && validatedUtc === null) return null;
-  if (generatedUtc === null) return validatedUtc;
-  if (validatedUtc === null) return generatedUtc;
-  return Math.max(generatedUtc, validatedUtc);
-}
-
-export function checkProfileStaleness(profilePath: string, env: Env = process.env): [boolean, number, number] | null {
-  if (!fs.existsSync(profilePath)) return null;
-  let text: string;
-  try {
-    text = fs.readFileSync(profilePath, "utf8");
-  } catch (exc) {
-    process.stderr.write(`warning: failed to read profile path ${profilePath}: ${(exc as Error).message}\n`);
-    return null;
-  }
-  const anchor = profileRefreshAnchorUtc(text);
-  if (anchor === null) return null;
-  const staleDays = intEnv(env, PROFILE_STALE_DAYS_ENV, DEFAULT_PROFILE_STALE_DAYS);
-  const since = daysSince(anchor);
-  return [since >= staleDays, since, staleDays];
 }
 
 export function healthAuditDate(entry: JsonObject): number | null {

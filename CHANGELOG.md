@@ -124,6 +124,10 @@
 
 ### Fixed
 
+- Fixed Prime and `agentera report profile-grounding` to share one bounded
+  profile validity result, separate structural validity from freshness,
+  preserve producer-only profile path access, and fail closed without profile
+  bytes for absent, malformed, unsafe, oversized, or invalid UTF-8 sources.
 - Fixed `agentera state query changelog`, Build Prime, and Document closeout to
   use one bounded Keep-a-Changelog reader with matching headings, boundary,
   provenance, and fail-safe recovery for missing, malformed, unsafe, ambiguous,

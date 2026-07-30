@@ -326,7 +326,7 @@ export function printReportHelp(): string {
     "Default analytics use --sources active and exclude historical imports.",
     "Use --sources all to include historical records with visible provenance.",
     `Profile Full sends ${profileGlossary.requestSchemaVersion} to the exact profile path returned by prime; this subcommand requires no project checkout.`,
-    "Discuss, Plan, and Build read non-glossary profile grounding through report profile-grounding; malformed owned sections fail closed.",
+    "Profile grounding reports one bounded validity object (valid, absent, or repair_needed); only valid responses include non-glossary content.",
     "Build requests bounded glossary advice through structured input; the command is read-only and does not publish or refresh state.",
     "",
     "Corpus extraction flags (report refresh with --consent local-history):",

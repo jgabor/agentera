@@ -49,6 +49,8 @@ export interface PersonalProfileGroundingContract {
   command: string;
   schemaVersion: string;
   maxProfileUtf8Bytes: number;
+  validityStatuses: string[]; validityClasses: string[]; freshnessStates: string[];
+  repairRecovery: string; absentRecovery: string;
 }
 
 export interface GlossaryConsumerContract {
@@ -148,6 +150,11 @@ export function personalProfileGroundingContract(
     schemaVersion: typeof grounding?.schema_version === "string" ? grounding.schema_version : "",
     maxProfileUtf8Bytes:
       typeof grounding?.max_profile_utf8_bytes === "number" ? grounding.max_profile_utf8_bytes : 0,
+    validityStatuses: strings(mapping(grounding?.validity)?.statuses),
+    validityClasses: strings(mapping(grounding?.validity)?.classes),
+    freshnessStates: strings(mapping(grounding?.freshness)?.states),
+    repairRecovery: typeof mapping(grounding?.recovery)?.repair === "string" ? String(mapping(grounding?.recovery)?.repair) : "",
+    absentRecovery: typeof mapping(grounding?.recovery)?.absent === "string" ? String(mapping(grounding?.recovery)?.absent) : "",
   };
 }
 
@@ -673,6 +680,11 @@ export function validateGlossaryEntryContract(
     profileGrounding?.parser !==
       "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
     profileGrounding?.max_profile_utf8_bytes !== 65536 ||
+    !sameStrings(mapping(profileGrounding?.validity)?.statuses, ["absent", "valid", "repair_needed"]) ||
+    !sameStrings(mapping(profileGrounding?.validity)?.classes, ["absent", "valid", "malformed", "ambiguous", "unreadable", "unsafe", "oversized", "invalid_utf8"]) ||
+    !sameStrings(mapping(profileGrounding?.freshness)?.states, ["current", "stale", "unknown"]) ||
+    !nonEmpty(mapping(profileGrounding?.recovery)?.repair) ||
+    !nonEmpty(mapping(profileGrounding?.recovery)?.absent) ||
     profileGrounding?.raw_profile_read !== "forbidden" ||
     !nonEmpty(profileGrounding?.content_rule) ||
     !nonEmpty(profileGrounding?.failure_rule)

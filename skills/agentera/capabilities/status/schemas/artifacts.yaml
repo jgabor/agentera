@@ -69,4 +69,5 @@ ARTIFACTS:
     artifact: profile
     local_role: consumes
     description: >-
-      Status reads this to report profile status (loaded/not found) in the briefing.
+      Status reports profile validity as valid, absent, or repair_needed and
+      keeps freshness separate without exposing profile paths or content.

@@ -2,10 +2,16 @@ import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import type { SchemaInfo } from "../appContext.js";
 import type { BundleStatus } from "./bundleStatus.js";
 import type { ProjectIntegrationSummary } from "../../upgrade/projectIntegration.js";
+import type {
+  ProfileFreshnessResult,
+  ProfileValidityResult,
+  ProfileValidityStatus,
+} from "../profileAcquisition.js";
 
 export interface ProfileSummary {
-  status: string;
-  path: string;
+  status: ProfileValidityStatus;
+  validity: ProfileValidityResult;
+  freshness: ProfileFreshnessResult;
   suggested_action?: string;
   days_since_generated?: number;
   stale?: boolean;
@@ -202,7 +208,7 @@ export interface OrientationState {
   app: BundleStatus;
   mode: "returning" | "fresh";
   profile_dict: ProfileSummary;
-  profile_status: string;
+  profile_status: ProfileValidityStatus;
   profile: string;
   v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;

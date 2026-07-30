@@ -228,7 +228,8 @@ function briefProfile(profile: unknown): Record<string, unknown> {
   // `agentera profile --format json`.
   return pick(profile, [
     "status",
-    "path",
+    "validity",
+    "freshness",
     "days_since_generated",
     "stale",
     "stale_threshold_days",
@@ -518,6 +519,7 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
     command: boundedEnvelopeScalar(payload.command, "prime"),
     status: boundedEnvelopeScalar(payload.status, "ok"),
     mode: boundedEnvelopeScalar(payload.mode, "unknown"),
+    profile: briefProfile(payload.profile),
     state_presence: briefStatePresence(payload.state_presence),
     source_contract: briefSourceContract(payload.source_contract, projection),
   };

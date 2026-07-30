@@ -6,9 +6,6 @@ import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.j
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
 import type { SchemaInfo } from "../../appContext.js";
 import {
-  checkProfileStaleness,
-  parseProfileHeaderDates,
-  registryArtifactPath,
   selectStatusReadiness,
   statePresence,
 } from "../../orientation.js";
@@ -21,6 +18,7 @@ import type { PrimeOpts } from "./types.js";
 import { v1MigrationSummary } from "./v1Migration.js";
 import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
+import { acquireProfile } from "../../profileAcquisition.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
 
@@ -39,30 +37,24 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     savedContext = false;
   }
   const mode = savedContext ? "returning" : "fresh";
-  const profile = registryArtifactPath("profile", schemasDir, env);
-  const profileExists = fs.existsSync(profile);
-  const profileStatus = profileExists ? "loaded" : "not found";
-  const profileStaleness = profileExists ? checkProfileStaleness(profile, env) : null;
-  const profileDict: ProfileSummary = { status: profileStatus, path: profile };
-  if (profileStatus === "not found") profileDict.suggested_action = "Run profile to generate PROFILE.md";
-  if (profileStaleness !== null) {
-    const [isStale, daysSince, staleDays] = profileStaleness;
-    profileDict.days_since_generated = daysSince;
-    profileDict.stale = isStale;
-    profileDict.stale_threshold_days = staleDays;
-    if (profileExists) {
-      try {
-        const headerDates = parseProfileHeaderDates(fs.readFileSync(profile, "utf8"));
-        if (headerDates.generatedDate) profileDict.generated_date = headerDates.generatedDate;
-        if (headerDates.validatedDate) profileDict.validated_date = headerDates.validatedDate;
-      } catch {
-        // profile metadata is optional for prime output
-      }
-    }
-    if (isStale) profileDict.suggested_action = "Run profile to refresh PROFILE.md";
+  const acquiredProfile = acquireProfile(schemasDir, env);
+  const profile = acquiredProfile.profilePath ?? "";
+  const profileStatus = acquiredProfile.validity.status;
+  const profileDict: ProfileSummary = {
+    status: profileStatus,
+    validity: acquiredProfile.validity,
+    freshness: acquiredProfile.freshness,
+  };
+  if (acquiredProfile.validity.status === "valid" && acquiredProfile.freshness.state !== "unknown") {
+    profileDict.days_since_generated = acquiredProfile.freshness.days_since_generated ?? undefined;
+    profileDict.stale = acquiredProfile.freshness.state === "stale";
+    profileDict.stale_threshold_days = acquiredProfile.freshness.stale_threshold_days;
+    if (acquiredProfile.freshness.generated_date) profileDict.generated_date = acquiredProfile.freshness.generated_date;
+    if (acquiredProfile.freshness.validated_date) profileDict.validated_date = acquiredProfile.freshness.validated_date;
   }
   const boundedSignals = profileSignalsStatus(env, process.platform);
-  profileDict.bounded_signals = boundedSignals as unknown as ProfileSummary["bounded_signals"];
+  const { tiers_dir: _tiersDir, signal_path: _signalPath, ...publicBoundedSignals } = boundedSignals;
+  profileDict.bounded_signals = publicBoundedSignals as unknown as ProfileSummary["bounded_signals"];
   const v1Artifacts = detectV1ArtifactPairs(project);
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
   const entity = collectEntityOrientation(project, sourceRoot);

@@ -8,7 +8,6 @@ import { TODO_SEVERITY_ORDER } from "../todoSeverity.js";
 export function buildOrientationAttention(state: OrientationState): string[] {
   const {
     profile_status: profileStatus,
-    profile,
     profile_dict: profileDict,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
@@ -49,10 +48,10 @@ export function buildOrientationAttention(state: OrientationState): string[] {
       `degraded: v1 artifacts detected; preview \`${v1Migration.dry_run_command}\`; files=${v1Migration.affected_files.join(", ")}`,
     );
   }
-  if (profileStatus === "not found") {
-    attention.push(
-      `degraded: PROFILE.md not found at ${profile}; suggest running profile to generate PROFILE.md`,
-    );
+  if (profileStatus === "absent") {
+    attention.push(`degraded: PROFILE.md absent; ${profileDict.validity.recovery ?? "generate the profile before retrying"}`);
+  } else if (profileStatus === "repair_needed") {
+    attention.push(`degraded: PROFILE.md repair needed; ${profileDict.validity.recovery ?? "repair the profile before retrying"}`);
   } else if (profileDict.stale) {
     const daysSince = profileDict.days_since_generated ?? "?";
     const staleDays = profileDict.stale_threshold_days ?? "?";
