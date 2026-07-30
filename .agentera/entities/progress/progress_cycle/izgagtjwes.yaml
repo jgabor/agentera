@@ -1,0 +1,17 @@
+id: izgagtjwes
+artifact: progress
+record:
+  timestamp: 2026-07-30 13:44
+  type: fix
+  phase: build
+  what: Added packages/cli/src/state/changelog.ts as the single bounded changelog reader for state query, Build, and Document, with shared headings, boundary, status, provenance, and recovery.
+  context:
+    intent: Make the public changelog fallback and capability closeout contexts report one trustworthy changelog boundary instead of divergent empty and scanned results.
+    constraints: Did not add public project-selection flags, change unrelated generic queries, implement profile validity, refresh protected state, commit without approval, push, tag, or publish.
+    unknowns: Glossary authority was unavailable, so no glossary meaning was applied. Public commands remain same-checkout operations; internal non-CWD recovery is not a public contract.
+    scope: Changelog scanning and safe reads, structured state query, Build and Document closeout context, path mapping, output bounds, focused tests, TODO.md, CHANGELOG.md, and typed plan/TODO state.
+  inspiration: Plan task rngcxaezhb and TODO boprhkfddc.
+  discovered: Audit found oversized headings, mapped paths, target versions, malformed docs authority, invalid UTF-8, and target-specific recovery could break parity or fail open; all material findings were corrected with bounded fail-safe coverage.
+  verified: Focused tests pass 101 cases; full source passes 3,032 tests with 1 skip; package verification passes 17 tests; typecheck, build, Build capability and contract validation, built-CLI query/Build/Document parity smoke, and diff checks pass. Independent audit findings were accepted or dismissed against scope, corrected, and rechecked.
+  next: Continue with plan task qxdcaimwoe and TODO tkpzveyvjt to unify profile validity and complete M1.
+  publication_order: 11

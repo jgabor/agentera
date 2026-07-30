@@ -2,5 +2,5 @@ id: boprhkfddc
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Make `agentera state query changelog --format json` expose the same changelog boundary used by Build prime. The fallback returned `status: ok` and `entries: []` for an existing `CHANGELOG.md`, while `execution_context.changelog_boundary` found `## [Unreleased]` and the latest release. Use one scanner and return headings, boundary, and provenance consistently."

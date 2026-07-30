@@ -124,6 +124,10 @@
 
 ### Fixed
 
+- Fixed `agentera state query changelog`, Build Prime, and Document closeout to
+  use one bounded Keep-a-Changelog reader with matching headings, boundary,
+  provenance, and fail-safe recovery for missing, malformed, unsafe, ambiguous,
+  or oversized input.
 - Fixed explicit-home upgrade planning to ignore inherited
   `OPENCODE_CONFIG_DIR` values outside the selected home, preventing unrelated
   OpenCode resources from blocking fixture, package, or isolated project

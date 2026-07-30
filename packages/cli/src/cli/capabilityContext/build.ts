@@ -60,7 +60,7 @@ export function buildExecutionContext(
   const acceptance = buildRequest?.acceptance
     ?? (selected && typeof selected === "object" ? asList(selected.acceptance) : []);
   const progressVerification = progressVerificationSummary(progress);
-  const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
+  const changelogBoundary = closeoutChangelogBoundary(projectRoot, plan);
   const sweep = buildPlanCompletionSweep(plan);
   const archiveOnly = Boolean(plan.exists) && plan.active === false;
 

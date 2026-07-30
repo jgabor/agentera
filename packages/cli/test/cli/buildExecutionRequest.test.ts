@@ -151,7 +151,7 @@ describe("Build execution request parser", () => {
 describe("Build no-plan execution context", () => {
   it("is complete from explicit transient scope and acceptance when other execution state is available", () => {
     const changelog = path.join(tmp, "CHANGELOG.md");
-    fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n");
+    fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n## [1.0.0] - 2026-01-01\n");
     const context = buildExecutionContext(
       "build",
       schema("changelog", changelog),
@@ -209,7 +209,7 @@ describe("Build no-plan execution context", () => {
 
   it("allows healthy archived-only history with transient work but keeps degraded history fail-safe", () => {
     const changelog = path.join(tmp, "CHANGELOG.md");
-    fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n");
+    fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n## [1.0.0] - 2026-01-01\n");
     const base = [
       "build", schema("changelog", changelog), undefined, { exists: true }, { exists: true },
       [{ status: "open", severity: "normal", text: "bounded work" }], { exists: true, mapping: [] },
@@ -225,7 +225,7 @@ describe("Build no-plan execution context", () => {
 
   it("preserves plan-driven and completed-plan pass and fail-safe completeness", () => {
     const changelog = path.join(tmp, "CHANGELOG.md");
-    fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n");
+    fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n## [1.0.0] - 2026-01-01\n");
     const run = (plan: Record<string, unknown>, docsExists = true) => buildExecutionContext(
       "build", schema("changelog", changelog), plan, { exists: true }, { exists: true },
       [{ status: "open", severity: "normal", text: "bounded work" }],

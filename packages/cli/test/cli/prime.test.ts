@@ -15,6 +15,12 @@ import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import { appendHealthEntity } from "../../src/state/healthEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
+import { cmdQuery } from "../../src/cli/commands/query.js";
+import {
+  CHANGELOG_MAX_HEADING_BYTES,
+  CHANGELOG_MAX_OUTPUT_BYTES,
+  CHANGELOG_MAX_SOURCE_PATH_BYTES,
+} from "../../src/state/changelog.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -336,6 +342,104 @@ describe("cli prime", () => {
     expect(ctx.closeout_context.release_boundary).toBeTruthy();
     expect(ctx.closeout_context.version_policy).toBeTruthy();
   });
+
+  it("keeps Build and Document changelog projections aligned for an injected project root", () => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-project-"));
+    fs.writeFileSync(path.join(project, "CHANGELOG.md"), "## [Unreleased]\n## [4.2.0] - 2026-07-30\n");
+    try {
+      const build = JSON.parse(capture((io) => cmdPrime({
+        command: "prime", context: "build", format: "json", projectRoot: project,
+      }, io)).out).capability_context.context.execution_context.changelog_boundary;
+      const document = JSON.parse(capture((io) => cmdPrime({
+        command: "prime", context: "document", format: "json", projectRoot: project,
+      }, io)).out).capability_context.context.closeout_context.changelog_boundary;
+      expect(build).toMatchObject({
+        status: "available",
+        recognized_headings: ["## [Unreleased]", "## [4.2.0] - 2026-07-30"],
+        boundary: "## [Unreleased]",
+      });
+      expect(document).toMatchObject({
+        status: build.status,
+        recognized_headings: build.recognized_headings,
+        boundary: build.boundary,
+        recovery: build.recovery,
+        source_provenance: build.source_provenance,
+      });
+    } finally {
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it("gives Build and Document identical malformed-changelog recovery", () => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-malformed-"));
+    fs.writeFileSync(path.join(project, "CHANGELOG.md"), "## [Unreleased]\n## Notes\n## [4.2.0] - 2026-07-30\n");
+    try {
+      const context = (capability: "build" | "document", field: "execution_context" | "closeout_context") =>
+        JSON.parse(capture((io) => cmdPrime({ command: "prime", context: capability, format: "json", projectRoot: project }, io)).out)
+          .capability_context.context[field].changelog_boundary;
+      const build = context("build", "execution_context");
+      const document = context("document", "closeout_context");
+      expect(build).toMatchObject({ status: "incomplete", boundary: null });
+      expect(document).toMatchObject({
+        status: build.status,
+        boundary: build.boundary,
+        recovery: build.recovery,
+        source_provenance: build.source_provenance,
+      });
+    } finally {
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it.each(["oversized heading", "oversized mapped path"])(
+    "keeps query, Build, and Document on one bounded envelope for an %s",
+    (kind) => {
+      const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-bound-"));
+      const previousCwd = process.cwd();
+      fs.mkdirSync(path.join(project, ".agentera"));
+      if (kind === "oversized heading") {
+        const prefix = "## [1.0.0-";
+        const suffix = "] - 2026-07-30";
+        fs.writeFileSync(
+          path.join(project, "CHANGELOG.md"),
+          `${prefix}${"a".repeat(CHANGELOG_MAX_HEADING_BYTES + 1 - prefix.length - suffix.length)}${suffix}\n`,
+        );
+      } else {
+        const parts = ["p".repeat(200), "p".repeat(200), "p".repeat(CHANGELOG_MAX_SOURCE_PATH_BYTES - 400)];
+        const mapped = parts.join("/");
+        fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), `mapping:\n  - artifact: CHANGELOG.md\n    path: ${mapped}\n`);
+      }
+      process.chdir(project);
+      try {
+        const query = JSON.parse(capture((io) => cmdQuery({ query: "changelog", format: "json" }, io)).out);
+        const build = JSON.parse(capture((io) => cmdPrime({
+          command: "prime", context: "build", format: "json", projectRoot: project,
+        }, io)).out).capability_context.context.execution_context.changelog_boundary;
+        const document = JSON.parse(capture((io) => cmdPrime({
+          command: "prime", context: "document", format: "json", projectRoot: project,
+        }, io)).out).capability_context.context.closeout_context.changelog_boundary;
+        const shared = (value: Record<string, unknown>) => ({
+          schemaVersion: value.schemaVersion,
+          status: value.status,
+          recognized_headings: value.recognized_headings,
+          boundary: value.boundary,
+          source: value.source,
+          source_provenance: value.source_provenance,
+          caveats: value.caveats,
+          recovery: value.recovery,
+        });
+        expect(shared(build)).toEqual(shared(query));
+        expect(shared(document)).toEqual(shared(query));
+        for (const projection of [query, build, document]) {
+          expect(projection).toMatchObject({ status: "unavailable", source: { path: null } });
+          expect(Buffer.byteLength(`${JSON.stringify(projection, null, 2)}\n`)).toBeLessThanOrEqual(CHANGELOG_MAX_OUTPUT_BYTES);
+        }
+      } finally {
+        process.chdir(previousCwd);
+        fs.rmSync(project, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("derives audit and document decision pressure only from bounded decision entities", () => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-entity-decisions-"));

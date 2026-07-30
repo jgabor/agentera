@@ -89,6 +89,41 @@ describe("cli query", () => {
     expect(rc).toBe(1);
     expect(err).toContain("Unknown query: definitelynotanartifact");
   });
+
+  it("routes structured changelog reads through the shared projection", () => {
+    fs.writeFileSync(path.join(tmp, "CHANGELOG.md"), "## [Unreleased]\n## [1.2.3] - 2026-07-30\n");
+    const prior = process.cwd();
+    process.chdir(tmp);
+    try {
+      const { rc, out } = capture((io) => cmdQuery({ query: "changelog", format: "json" }, io));
+      expect(rc).toBe(0);
+      expect(JSON.parse(out)).toMatchObject({
+        status: "available",
+        recognized_headings: ["## [Unreleased]", "## [1.2.3] - 2026-07-30"],
+        boundary: "## [Unreleased]",
+        source_provenance: {
+          command: "agentera state query changelog --format json",
+          scanner: "agentera.changelogHeadingScanner.v1",
+        },
+      });
+    } finally {
+      process.chdir(prior);
+    }
+  });
+
+  it("leaves other generic structured artifact queries unchanged", () => {
+    const prior = process.cwd();
+    process.chdir(tmp);
+    try {
+      const { rc, out } = capture((io) => cmdQuery({ query: "vision", format: "json" }, io));
+      expect(rc).toBe(0);
+      const payload = JSON.parse(out);
+      expect(payload).toMatchObject({ command: "vision", status: "empty", entries: [] });
+      expect(payload).not.toHaveProperty("recognized_headings");
+    } finally {
+      process.chdir(prior);
+    }
+  });
 });
 
 describe("cli dispatch: query routing", () => {

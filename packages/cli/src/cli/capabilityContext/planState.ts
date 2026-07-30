@@ -1,8 +1,5 @@
-import fs from "node:fs";
 import { asList } from "../stateQuery.js";
-import { artifactPath, type SchemaInfo } from "../appContext.js";
 import { loadNamedArtifact } from "../orientation.js";
-import { sourceMetadata } from "../stateQuery.js";
 import {
   entryStatus,
   sourceProvenance,
@@ -14,6 +11,11 @@ import type { JsonObject } from "../../core/jsonValue.js";
 import type { JsonValue } from "../../core/jsonValue.js";
 import { planTaskIndex } from "../planTaskIndex.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
+import {
+  boundedChangelogUnavailable,
+  CHANGELOG_MAX_OUTPUT_BYTES,
+  readChangelog,
+} from "../../state/changelog.js";
 
 export function orchestrationTaskSummary(task: JsonObject): JsonObject {
   const evidence = task.evidence;
@@ -77,6 +79,7 @@ export const DONE_STATUSES_ORCH = new Set(["complete", "completed", "closed", "d
 export const BLOCKED_STATUSES_ORCH = new Set(["blocked", "stuck"]);
 
 export const TARGET_VERSION_RE = /\b\d+\.\d+\.\d+\b/;
+export const TARGET_VERSION_MAX_BYTES = 64;
 
 export function dependencyReadyTasks(tasks: JsonObject[]): JsonObject[] {
   const taskByNumber = indexPlanTasksByNumber(tasks);
@@ -215,7 +218,7 @@ export function buildPlanCompletionSweep(plan: JsonObject): JsonObject {
   };
 }
 
-export function selectedTargetVersion(plan: JsonObject): string | null {
+function selectedTargetVersionState(plan: JsonObject): { value: string | null; boundExceeded: boolean } {
   const textParts = [String(plan.title ?? "")];
   const firstPending = plan.first_pending;
   if (firstPending && typeof firstPending === "object" && !Array.isArray(firstPending)) {
@@ -227,62 +230,56 @@ export function selectedTargetVersion(plan: JsonObject): string | null {
     }
   }
   const match = TARGET_VERSION_RE.exec(textParts.join("\n"));
-  return match ? match[0] : null;
-}
-
-export function changelogRecordsTarget(text: string, targetVersion: string | null): boolean {
-  if (!targetVersion) return false;
-  const escaped = targetVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(`(?<![\\d.])${escaped}(?![\\d.+-])`);
-  return text.split(/\r\n|\r|\n/).some((line) => re.test(line));
-}
-
-export function closeoutChangelogBoundary(schemas: Record<string, SchemaInfo>, plan: JsonObject): JsonObject {
-  const info: SchemaInfo = schemas.changelog ?? { path: "CHANGELOG.md", record: undefined, schema: {}, fields: {} };
-  const p = artifactPath(info, "changelog");
-  const source = sourceMetadata("changelog", p);
-  const targetVersion = selectedTargetVersion(plan);
-  const unavailable = (caveat: string): JsonObject => ({
-    status: "unavailable",
-    source,
-    source_provenance: sourceProvenance("changelog", "agentera query changelog --format json"),
-    selected_target_version: targetVersion,
-    selected_target_recorded: false,
-    unreleased_present: false,
-    latest_release_heading: null,
-    boundary_present: false,
-    boundary: null,
-    caveats: [caveat],
-  });
-  if (!fs.existsSync(p)) return unavailable("CHANGELOG state is unavailable in CLI state.");
-  let text: string;
-  try {
-    text = fs.readFileSync(p, "utf8");
-  } catch (exc) {
-    return unavailable(`CHANGELOG state could not be read by the CLI: ${(exc as Error).message}`);
+  if (!match) return { value: null, boundExceeded: false };
+  if (Buffer.byteLength(match[0], "utf8") > TARGET_VERSION_MAX_BYTES) {
+    return { value: null, boundExceeded: true };
   }
-  const headings = text.split(/\r\n|\r|\n/).filter((line) => line.startsWith("## ")).map((line) => line.trim());
-  const unreleased = headings.find((h) => h.toLowerCase().includes("unreleased")) ?? null;
-  const latestRelease = headings.find((h) => !h.toLowerCase().includes("unreleased")) ?? null;
-  const selectedRecorded = changelogRecordsTarget(text, targetVersion);
-  const caveats: string[] = [];
-  if (headings.length === 0) caveats.push("CHANGELOG state has no release headings.");
-  if (targetVersion && !selectedRecorded) caveats.push(`CHANGELOG state has no ${targetVersion} closeout entry yet.`);
-  const boundary = unreleased || latestRelease;
-  return {
-    status: headings.length > 0 ? "available" : "incomplete",
-    source,
-    source_provenance: {
-      ...sourceProvenance("changelog", "agentera query changelog --format json", "release_headings"),
-      internal_source: "CLI-resolved CHANGELOG.md heading scan",
-    },
+  return { value: match[0], boundExceeded: false };
+}
+
+export function selectedTargetVersion(plan: JsonObject): string | null {
+  return selectedTargetVersionState(plan).value;
+}
+
+function serializedProjectionBytes(projection: JsonObject): number {
+  return Buffer.byteLength(`${JSON.stringify(projection, null, 2)}\n`, "utf8");
+}
+
+export function closeoutChangelogBoundary(projectRoot: string, plan: JsonObject): JsonObject {
+  const shared = readChangelog(projectRoot);
+  const target = selectedTargetVersionState(plan);
+  const targetVersion = target.value;
+  const selectedRecorded = shared.projection.status === "available"
+    && targetVersion !== null
+    && shared.recognizedReleaseVersions.includes(targetVersion);
+  const caveats = [...((shared.projection.caveats ?? []) as string[])];
+  if (shared.projection.status === "available" && targetVersion && !selectedRecorded) {
+    caveats.push(`CHANGELOG state has no ${targetVersion} closeout entry yet.`);
+  }
+  if (target.boundExceeded) {
+    caveats.push("Selected target version is unavailable because its identity exceeds the supported bound.");
+  }
+  const boundary: JsonObject = {
+    ...shared.projection,
     selected_target_version: targetVersion,
     selected_target_recorded: selectedRecorded,
-    unreleased_present: unreleased !== null,
-    latest_release_heading: latestRelease,
-    boundary_present: boundary !== null,
-    boundary,
     release_state: selectedRecorded ? "selected_target_recorded" : "no_selected_target_closeout_entry",
     caveats,
+    recovery: shared.projection.recovery ?? null,
   };
+  if (serializedProjectionBytes(boundary) <= CHANGELOG_MAX_OUTPUT_BYTES) return boundary;
+
+  const bounded = boundedChangelogUnavailable(
+    "CHANGELOG closeout state is unavailable because its bounded target overlay exceeds the supported output limit.",
+  ).projection;
+  const fallback: JsonObject = {
+    ...bounded,
+    selected_target_version: null,
+    selected_target_recorded: false,
+    release_state: "no_selected_target_closeout_entry",
+  };
+  if (serializedProjectionBytes(fallback) > CHANGELOG_MAX_OUTPUT_BYTES) {
+    throw new Error("fixed changelog closeout projection exceeds its output limit");
+  }
+  return fallback;
 }

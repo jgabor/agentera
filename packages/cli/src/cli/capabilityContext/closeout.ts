@@ -159,13 +159,14 @@ export function documentCloseoutContext(
   profile: JsonObject,
   bundle: JsonObject,
   decisionHistory: JsonObject,
+  projectRoot: string,
 ): JsonObject | null {
   if (capability !== "document") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const artifactMappings = closeoutArtifactMappings(docs);
   const versionPolicy = closeoutVersionPolicy(docs);
   const todoBlockers = closeoutTodoBlockers(schemas, todoItems);
-  const changelogBoundary = closeoutChangelogBoundary(schemas, plan);
+  const changelogBoundary = closeoutChangelogBoundary(projectRoot, plan);
   const progressEvidence = progressVerificationSummary(progress);
   const benchmarkEvidence = closeoutBenchmarkEvidence(docs);
   const releaseBoundary = closeoutReleaseBoundary(changelogBoundary, bundle);

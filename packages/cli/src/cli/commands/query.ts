@@ -35,6 +35,7 @@ import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabi
 import type { JsonObject } from "../../core/jsonValue.js";
 import { entityPublicRetrieval } from "../../state/retrievalAuthority.js";
 import { listProgressEntities } from "../../state/progressEntities.js";
+import { readChangelog } from "../../state/changelog.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
@@ -392,6 +393,9 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
   if (name !== null) {
     if (STATE_COMMAND_NAMES.has(name)) {
       return rejectEntityAggregateQuery(args, name, query, io);
+    }
+    if (name === "changelog" && format !== "text") {
+      return emitStateStructured(name, readChangelog(process.cwd()).projection, format, args.fields, o, e);
     }
     return queryGeneric(args, schemas, name, io);
   }

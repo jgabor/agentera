@@ -3,9 +3,9 @@
 ## Current execution
 
 - **Current milestone:** M1 · Trust the execution loop.
-- **Next plan task:** `rngcxaezhb`.
-- **Associated TODO:** `boprhkfddc` — Unify Build changelog reads.
-- **Exact request:** `commit. implement next todo or todos if suitable to bundle them.`
+- **Next plan task:** `qxdcaimwoe`.
+- **Associated TODO:** `tkpzveyvjt` — Unify profile validity.
+- **Exact request:** `Implement next todo, or todos if suitable to bundle them.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task.
 
@@ -21,8 +21,7 @@ Milestone debt is measured in three categories: (1) duplicate authorities, gramm
 
 Exit when execution selection, verification, logging, and closeout agree and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `boprhkfddc` **NEXT** Make `agentera state query changelog --format json` expose the same changelog boundary used by Build prime. The fallback returned `status: ok` and `entries: []` for an existing `CHANGELOG.md`, while `execution_context.changelog_boundary` found `## [Unreleased]` and the latest release. Use one scanner and return headings, boundary, and provenance consistently.
-- [ ] [fix:3.0.0] `tkpzveyvjt` Use one profile validity result in `agentera prime --context discuss --format json` and `agentera report profile-grounding --format json`. Prime currently reports `profile.status: loaded` and `stale` while grounding rejects the same `PROFILE.md` as malformed. Report `invalid` or `repair_needed` with exact recovery and add malformed-profile parity coverage.
+- [ ] [fix:3.0.0] `tkpzveyvjt` **NEXT** Use one profile validity result in `agentera prime --context discuss --format json` and `agentera report profile-grounding --format json`. Prime currently reports `profile.status: loaded` and `stale` while grounding rejects the same `PROFILE.md` as malformed. Report `invalid` or `repair_needed` with exact recovery and add malformed-profile parity coverage.
 
 ### M2 · Unify state mutation
 
@@ -116,6 +115,7 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Unify Build changelog reads. Resolved 2026-07-30: one bounded `changelog.ts` reader now drives `state query changelog`, Build, and Document with matching recognized headings, boundary, status, provenance, and recovery; malformed, unsafe, ambiguous, oversized, and invalid-authority inputs fail closed. Focused, source, package, smoke, and independent audit checks passed.
 - [x] [fix:3.0.0] Isolate explicit-home upgrades from inherited OpenCode configuration. Resolved 2026-07-30: upgrade planning now discards `OPENCODE_CONFIG_DIR` outside the selected home while retaining in-home overrides; 133 targeted tests, all 2,999 source tests, and all 17 package tests pass under the normal environment.
 - [x] [fix:3.0.0] Make Build no-plan work executable. Resolved 2026-07-30: `agentera prime --context build --input <file|-> --format json` now accepts bounded transient scope and acceptance, completes no-plan execution without plan fallback, rejects active-plan conflicts, and includes pass/fail-safe tests, built-CLI smoke, and independent audit.
 - [x] [fix:3.0.0] Make Build verification project-aware. Resolved 2026-07-30: `projectVerification.ts` now derives bounded runnable commands from `AGENTS.md` and package scripts with exact provenance, safe alias resolution, explicit rejection and omission metadata, 76 focused tests, built-CLI smoke, and independent audit.

@@ -21,7 +21,7 @@ export type ProjectPathSnapshot =
 export type ProjectFileSnapshot =
   | { kind: "file"; bytes: Buffer; dev: bigint; ino: bigint; type: "file"; mode: number }
   | { kind: "missing"; bytes: null; reason: "missing"; absolute: string }
-  | { kind: "unsafe"; bytes: null; reason: "symlink" | "type" | "unreadable" | "changed" };
+  | { kind: "unsafe"; bytes: null; reason: "symlink" | "type" | "unreadable" | "changed" | "over_limit" };
 
 function projectPathType(stat: fs.BigIntStats): ProjectPathType {
   if (stat.isFile()) return "file";
@@ -117,6 +117,7 @@ export function readProjectFileSnapshot(
   projectRoot: string | ValidatedProjectRoot,
   relativePath: string,
   descriptorPathResolver: ProjectDescriptorPathResolver = resolveProjectDescriptorPath,
+  maxBytes: number | null = null,
 ): ProjectFileSnapshot {
   const root = typeof projectRoot === "string" ? projectRoot : projectRoot.path;
   const verifyRoot = (): void => {
@@ -139,6 +140,9 @@ export function readProjectFileSnapshot(
     const opened = fs.fstatSync(descriptor, { bigint: true });
     if (!opened.isFile() || !samePathIdentity(pathSnapshot.leaf, opened) || !projectPathIsStable(pathSnapshot)) {
       return { bytes: null, kind: "unsafe", reason: "changed" };
+    }
+    if (maxBytes !== null && opened.size > BigInt(maxBytes)) {
+      return { bytes: null, kind: "unsafe", reason: "over_limit" };
     }
     let descriptorRealPath: string | null = null;
     try { descriptorRealPath = descriptorPathResolver(descriptor); } catch { /* Descriptor paths are optional strengthening. */ }
