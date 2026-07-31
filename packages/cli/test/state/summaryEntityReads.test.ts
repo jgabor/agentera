@@ -63,7 +63,7 @@ function cli(root: string, args: string[]): { rc: number; out: string; err: stri
   process.chdir(root); process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = SOURCE_ROOT;
   let out = ""; let err = "";
   try {
-    const rc = main(["node", "agentera", ...args], { out: (value) => { out += value; }, err: (value) => { err += value; } });
+    const rc = main(["node", "agentera", ...args], { out: (value) => { out += value; }, err: (value) => { err += value; }, stdin: () => args.includes("--input") ? JSON.stringify({ choice: "cannot amend" }) : "" });
     return { rc, out, err };
   } finally {
     process.chdir(previous);
@@ -332,7 +332,7 @@ describe("summary entity ordinary reads", () => {
     const root = project(); mixed(root);
     const before = fs.readdirSync(path.join(root, ".agentera/entities/decisions")).sort();
     for (const args of [
-      ["state", "decisions", "amend", "--id", "eeeeeeeeee", "--base-sha256", "a".repeat(64), "--choice", "cannot amend"],
+      ["state", "decisions", "amend", "--id", "eeeeeeeeee", "--base-sha256", "a".repeat(64), "--input", "-"],
       ["state", "decisions", "update", "--id", "eeeeeeeeee", "--satisfaction-state", "open"],
     ]) {
       for (const dryRun of [false, true]) {

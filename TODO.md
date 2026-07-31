@@ -3,8 +3,8 @@
 ## Current execution
 
 - **Current milestone:** M2 · Unify state mutation.
-- **Next plan task:** `qllgiterft` — Convert progress and decision writers.
-- **Associated TODO:** `oeapqfccwf` — Convert progress and decision record writes to structured input.
+- **Next plan task:** `tryphyimhc` — Convert plan-task writers and identities.
+- **Associated TODO:** `auwlbuobdw` — Make plan task record writes follow the structured-input state grammar and entity identity vocabulary.
 - **Exact request:** `Proceed with reopening, resume orchestration when unblocked.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task—or the plan reports no selectable task with an exact blocker and recovery.
@@ -25,8 +25,7 @@ Exit when execution selection, verification, logging, and closeout agree and mea
 
 Exit when one mutation grammar governs the converted writer families and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `oeapqfccwf` **NEXT** Convert progress and decision record writes to structured input. Require `progress append --input <path|->`, `decisions append --input <path|->`, and `decisions amend --id ID --base-sha256 HASH --input <path|->`; retain decision satisfaction update as a selector-and-transition flag operation. Support file and stdin YAML or JSON, reject record-content flags and CLI-owned fields before effects, preserve dry-run, replay, amendment preconditions, and existing publication order, and synchronize schema, explain, help, skills, package projection, and tests.
-- [ ] [fix:3.0.0] `auwlbuobdw` Make plan task record writes follow the structured-input state grammar and entity identity vocabulary. Require `plan append [--plan PLAN_ID] --input <path|->` and `plan update --id TASK_ID [--plan PLAN_ID] --input <path|->`; keep status, supersession, evaluation, plan-status, and archive operations as flag-only transitions. Discovery currently reports `integer_list` and task numbers while runtime requires ten-letter IDs. Make dependencies, replacements, task selectors, and optional plan selection agree across parsing, schema, explain, help, `SKILL.md`, and regressions; never advertise `set-plan-status --id`.
+- [ ] [fix:3.0.0] `auwlbuobdw` **NEXT** Make plan task record writes follow the structured-input state grammar and entity identity vocabulary. Require `plan append [--plan PLAN_ID] --input <path|->` and `plan update --id TASK_ID [--plan PLAN_ID] --input <path|->`; keep status, supersession, evaluation, plan-status, and archive operations as flag-only transitions. Discovery currently reports `integer_list` and task numbers while runtime requires ten-letter IDs. Make dependencies, replacements, task selectors, and optional plan selection agree across parsing, schema, explain, help, `SKILL.md`, and regressions; never advertise `set-plan-status --id`.
 
 ### M3 · Reconcile TODO and canonical reads
 
@@ -110,6 +109,7 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Convert progress and decision record writes to structured input. Resolved 2026-07-31: progress append, decision append, and decision amend now accept bounded YAML/JSON file-or-stdin records; satisfaction remains flag-only, CLI-owned and retired fields reject before effects, and dry-run, replay, amendment preconditions, publication order, schema, explain, help, skills, package projection, and regressions agree. 258 focused tests across 10 files, 3,098 source tests with 1 skipped, 17 package tests, typecheck, build, state validation, compaction, capability-contract validation, and independent audit passed.
 - [x] [fix:3.0.0] Convert TODO writes to typed records and transitions. Resolved 2026-07-31: typed fields and YAML/JSON file-or-stdin full-create and omission-preserving patch input now support explicit clears; exact lifecycle retries replay while divergent severity, supersession, resolve, and reopen attempts conflict before effects. Mapped `TODO.md` public authority, target-specific release blockers, fatal UTF-8, retired or owned fields, reason bounds, and dependency graphs fail safely. Replacement `oeprigteku` earned independent PASS and superseded `nkguykzeum`; 253 focused tests, 3,092 source tests with 1 skipped, 17 package tests, typecheck, build, state validation, compaction, and contract validation passed.
 - [x] [fix:3.0.0] Establish one shared state mutation grammar. Resolved 2026-07-31: the code-owned runtime registry and parity-only YAML discovery authority now agree on 22 operations across three mutation classes; per-verb explain, `explain --all`, schema, help, and package projections share one digest and parity matrix. Retired health repair, contradictory content flags, oversized structured input, authority drift, and missing mandatory selectors fail before effects, while optional plan and experiment selectors retain inference and default behavior. Replacement task `aiujszrciq` earned independent PASS and superseded blocked predecessor `mascmjrpug`; 7 focused grammar tests, 3,086 source tests with 1 skipped, 17 package tests, state validation, compaction, typecheck, build, and 3 capability-contract checks passed.
 - [x] [fix:3.0.0] Unify profile validity. Resolved 2026-07-30: `profileAcquisition.ts` gives Prime and `report profile-grounding` one bounded validity and freshness result across valid, absent, malformed, ambiguous, unreadable, unsafe, oversized, and invalid UTF-8 profiles. Invalid sources leak no profile data and return one recovery. Task PASS, focused/source/package gates, built smoke, and independent audit passed.

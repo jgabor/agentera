@@ -100,13 +100,13 @@ describe("final lifecycle protocol", () => {
       ["state", "decisions", "list", "--format", "json"],
       ["state", "todo", "create", "--severity", "normal", "--description", "x", "--format", "json"],
       ["state", "query", "progress", "--format", "json"],
-      ["state", "progress", "append", "--type", "fix", "--phase", "build", "--what", "evidence", "--intent", "test", "--format", "json"],
+      ["state", "progress", "append", "--input", "-", "--format", "json"],
       ["state", "backfill", "--apply", "--force", "--format", "json"],
       ["state", "migrate", "--artifact", "progress", "--apply", "--force", "--format", "json"],
       ["state", "removed-repair", "--apply", "--force", "--format", "json"],
       ["check", "compact", "--project", root, "--mode", "fix", "--format", "json"],
     ]) {
-      const result = capture(root, args);
+      const result = capture(root, args, args[1] === "progress" && args[2] === "append" ? "type: fix\nphase: build\nwhat: evidence\ncontext:\n  intent: test\n" : "");
       expect(result.rc).toBe(1); expect(result.err).toBe("");
       expect(JSON.parse(result.out).error).toEqual(expect.objectContaining({
         class: "migration_required",

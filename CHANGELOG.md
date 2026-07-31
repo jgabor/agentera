@@ -41,6 +41,13 @@
 - Corrected packaged experiment-publication authority to declare validated objective-scoped archive-before-projection ownership and reject contradictory structured scope metadata.
 - Synchronized bounded plan, plan-task, and experiment retrieval across help, schema introspection, capability guidance, operator docs, packaged contracts, output bounds, archive ownership, and structured recovery errors.
 
+### Fixed
+
+- Fixed progress and decision record mutations to require bounded YAML/JSON
+  input from a file or stdin, converge exact logical-content retries before ID
+  allocation, expose complete structured descriptors, and keep Discuss append,
+  amend, and flag-only satisfaction guidance aligned with execution.
+
 ### Added
 
 - Added `agentera report profile-glossary --input <file|->` for Profile Full

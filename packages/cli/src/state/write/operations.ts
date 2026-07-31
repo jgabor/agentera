@@ -16,6 +16,7 @@ import {
   type RuntimeWritableArtifact,
   type RuntimeWriteVerb,
 } from "./runtimeOperations.js";
+import { structuredInputDescriptor, structuredInputSchemaProjection } from "./input.js";
 
 export const WRITABLE_ARTIFACTS = RUNTIME_WRITABLE_ARTIFACTS;
 export type WritableArtifact = RuntimeWritableArtifact;
@@ -86,6 +87,7 @@ function declarationFor(grammar: ReturnType<typeof loadMutationGrammar>, artifac
 }
 
 function operationProjection(operation: MutationOperationDeclaration): JsonObject {
+  const structured = structuredInputDescriptor(operation.artifact, operation.verb);
   return {
     verb: operation.verb,
     class: operation.mutationClass,
@@ -98,6 +100,7 @@ function operationProjection(operation: MutationOperationDeclaration): JsonObjec
       sources: operation.input.sources,
       structured_sources: operation.input.structuredSources ?? [],
       cli_owned_fields: operation.input.cliOwnedFields,
+      ...(structured ? { schema: structuredInputSchemaProjection(structured) as JsonObject } : {}),
     },
     recovery: operation.recovery,
     examples: operation.examples,

@@ -242,6 +242,15 @@ export function printStateHelp(sub?: string): string {
       "       agentera state <artifact> get --id ID --format {text,json,yaml}",
       "       agentera state <artifact> list [--limit N] [--cursor TOKEN] --format {text,json,yaml}",
       ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
+      ...(sub === "progress"
+        ? ["       agentera state progress append --input <path|-> --format json"]
+        : sub === "decisions"
+          ? [
+              "       agentera state decisions append --input <path|-> --format json",
+              "       agentera state decisions update --id ID --satisfaction-state STATE [transition flags] --format json",
+              "       agentera state decisions amend --id ID --base-sha256 HASH --input <path|-> --format json",
+            ]
+          : []),
       ...(verbs.length
         ? [
             "",
@@ -250,6 +259,11 @@ export function printStateHelp(sub?: string): string {
             `Per verb:        agentera state ${sub} explain --verb VERB --format json`,
           ]
         : []),
+      ...(sub === "progress"
+        ? ["Record content is one bounded YAML/JSON mapping; content flags are retired and the writer assigns id, artifact, and publication_order."]
+        : sub === "decisions"
+          ? ["Append and amend accept one bounded YAML/JSON mapping; satisfaction update is a flag-only transition and rejects --input."]
+          : []),
       "",
       "options:",
       "  -h, --help            show this help message and exit",

@@ -212,8 +212,9 @@ npx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb
 
 Common mutations:
 
-- `npx -y agentera@next state progress append ... --format json`
-- `npx -y agentera@next state decisions append ... --format json`
+- `npx -y agentera@next state progress append --input <path|-> --format json`
+- `npx -y agentera@next state decisions append --input <path|-> --format json`
+- `npx -y agentera@next state decisions amend --id ID --base-sha256 HASH --input <path|-> --format json`
 - `npx -y agentera@next state decisions update --id ID ... --format json`
 - `npx -y agentera@next state plan create --input plan.yaml --format json`
 - `npx -y agentera@next state plan update|set-status --id ID ... --format json`

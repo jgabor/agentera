@@ -196,9 +196,8 @@ function appendProgress(
   callerFields: string[],
   writerFlags: string[],
 ) {
-  const intentFlags = callerFields.flatMap((field, index) =>
-    intent[field] === undefined ? [] : [writerFlags[index], intent[field]],
-  );
+  void writerFlags;
+  const glossary_caveat = Object.fromEntries(callerFields.filter((field) => intent[field] !== undefined).map((field) => [field, intent[field]]));
   return spawnSync(
     process.execPath,
     [
@@ -208,21 +207,15 @@ function appendProgress(
       "append",
       "--project",
       root,
-      "--type",
-      "fix",
-      "--phase",
-      "build",
-      "--what",
-      "Verify Plan writer intent",
-      "--intent",
-      "Submit the emitted Plan intent through the typed progress writer",
-      ...intentFlags,
+       "--input",
+       "-",
       "--format",
       "json",
     ],
     {
       cwd: root,
       encoding: "utf8",
+      input: JSON.stringify({ type: "fix", phase: "build", what: "Verify Plan writer intent", context: { intent: "Submit the emitted Plan intent through the typed progress writer" }, glossary_caveat }),
       env: {
         ...sourceSubprocessEnv(),
         AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
@@ -506,11 +499,7 @@ describe("packaged Build glossary advice seam", () => {
       status: "transient_emitted_not_delivered",
       caller_fields: ["event", "reason", "ownership_state"],
       fixed_values: { event: "current" },
-      accepted_writer_flags: [
-        "--glossary-caveat-event",
-        "--glossary-caveat-reason",
-        "--glossary-caveat-ownership-state",
-      ],
+       accepted_writer_flags: ["--input"],
       writer_owned_fields: ["caveat_id", "capability", "transition_id"],
       forbidden_fields: ["caveat_id", "capability", "transition_id"],
       forbidden_claims: ["delivered", "stored", "persisted", "published", "durable_envelope"],
@@ -584,7 +573,7 @@ describe("packaged Build glossary advice seam", () => {
     );
 
     expect(Object.keys(intent)).toEqual(handoff.caller_fields);
-    expect(writerFlags).toEqual(handoff.accepted_writer_flags);
+    expect(writerContract.input.mode).toBe("structured");
     const accepted = appendProgress(root, intent, handoff.caller_fields, writerFlags);
     expect(accepted.status, accepted.stderr).toBe(0);
     const output = JSON.parse(accepted.stdout);

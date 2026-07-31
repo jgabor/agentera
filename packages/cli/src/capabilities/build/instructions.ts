@@ -39,7 +39,7 @@ Advice, tension, clarification, and caveat lifecycle never call \`agentera state
 Build records entity progress through the typed writer and maintains root \`CHANGELOG.md\` separately. Complete every required artifact update before committing so implementation, tests, and cycle state land together.
 
 - **TODO.md**: add newly discovered open issues in severity bands with \`- [ ]\`. Move completed work to \`## ✓ Resolved\` as \`- [x]\` with a resolution summary.
-- **progress**: run \`agentera state progress append --type TYPE --phase build --what TEXT --intent TEXT --verified TEXT --format json\`. The writer assigns \`id\`, \`artifact\`, and \`publication_order\`, validates the record, atomically publishes one entity, and returns post-write state.
+- **progress**: write one YAML/JSON cycle mapping and run \`agentera state progress append --input <path|-> --format json\`. The writer assigns \`id\`, \`artifact\`, and \`publication_order\`, validates the record, atomically publishes one entity, and returns post-write state. Record-content flags are retired.
 - **CHANGELOG.md**: append a one-line entry under \`## [Unreleased]\`.
 - **plan**: when a plan task closes, run \`agentera state plan set-status --id ID --status complete --format json\` rather than editing the plan directly.
 

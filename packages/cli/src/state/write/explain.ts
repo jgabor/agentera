@@ -16,6 +16,7 @@ import {
   type OperationField,
 } from "./operations.js";
 import { reject } from "./errors.js";
+import { structuredInputDescriptor, structuredInputSchemaProjection } from "./input.js";
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
   const verb = verbsForArtifact(artifact).find((candidate) => candidate !== "explain");
@@ -133,25 +134,48 @@ export function buildExplain(
     result.compaction = `not applicable; each canonical ${artifact} entity is authority and no aggregate projection or numbered archive is written`;
   }
   if (spec.inputMode === "structured") {
+    const structured = structuredInputDescriptor(artifact, verb);
     result.input_schema = {
       flag: "--input",
       sources: spec.inputSources,
-      parser: "yaml",
+       parser: "yaml_or_json_mapping",
       accepts_json: true,
       root: spec.inputRoot,
       cli_owned_fields: spec.cliOwnedFields,
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
-        artifact === "glossary"
-          ? ["PROPOSAL", "CONFIRMATION"]
-          : artifact === "health"
-            ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
-            : artifact === "experiments"
-              ? ["EXPERIMENT"]
-              : artifact === "todo"
-                ? ["TODO_PUBLIC", "TODO_OPERATIONAL"]
-              : ["HEADER", "PLAN", "SCOPE", "TASK"],
-   };
+         artifact === "glossary"
+           ? ["PROPOSAL", "CONFIRMATION"]
+           : artifact === "health"
+             ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
+             : artifact === "experiments"
+               ? ["EXPERIMENT"]
+               : artifact === "todo"
+                 ? ["TODO_PUBLIC", "TODO_OPERATIONAL"]
+                 : artifact === "progress"
+                   ? ["CYCLE", "CONTEXT", "GLOSSARY_CAVEAT"]
+                   : artifact === "decisions"
+                     ? ["DECISION", "ALTERNATIVES"]
+                     : ["HEADER", "PLAN", "SCOPE", "TASK"],
+    };
+    if (structured) {
+      const projection = structuredInputSchemaProjection(structured);
+      result.input_schema = {
+        ...(result.input_schema as Record<string, unknown>),
+        structured_fields: projection.fields,
+        semantics: projection.semantics,
+        owned_fields: projection.owned_fields,
+        immutable_fields: projection.immutable_fields,
+        bounds: projection.bounds,
+        examples: projection.examples,
+      };
+    }
+    if (artifact === "progress" && verb === "append")
+      result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["timestamp", "type", "phase", "what", "inspiration", "discovered", "verified", "next", "context", "glossary_caveat"] };
+    if (artifact === "decisions" && verb === "append")
+      result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["date", "question", "context", "alternatives", "choice", "reasoning", "confidence", "feeds_into"] };
+    if (artifact === "decisions" && verb === "amend")
+      result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["question", "context", "alternatives", "choice", "reasoning", "confidence", "feeds_into"] };
     if (artifact === "todo") {
       result.input_schema = {
         ...(result.input_schema as Record<string, unknown>),
@@ -252,8 +276,10 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   ];
   if (entityArtifact && artifact === "docs" && verb === "update") return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];
   if (entityArtifact && artifact === "docs") return ["a bare ten-letter documentation inventory ID is assigned by the CLI; path remains record data", ...base];
+  if (artifact === "progress" && verb === "append") return ["supply one progress cycle mapping with --input PATH or --input -; the writer assigns id, artifact, and publication_order", "record content flags are retired; inspect the structured record_fields in explain before writing", ...base];
+  if (artifact === "decisions" && verb === "append") return ["a bare ten-letter ID is assigned by the CLI; do not pass an identity", "supply one decision record mapping with --input PATH or --input -; the writer assigns id and artifact", "record content flags are retired; satisfaction remains a separate flag-only transition", ...base];
   if (artifact === "decisions" && verb === "update") return ["select one base decision with its bare --id; numeric selectors are unavailable", "update replaces only that decision's authority-owned satisfaction entity after transition validation", ...base];
-  if (artifact === "decisions" && verb === "amend") return ["select one base decision with its bare --id and current --base-sha256", "supply at least one amendable content field; satisfaction remains a separate mutation", "apply publishes one immutable revision entity; identical retries converge and same-base divergence conflicts", ...base];
+  if (artifact === "decisions" && verb === "amend") return ["select one base decision with its bare --id and current --base-sha256", "supply amendable decision content with --input PATH or --input -; record content flags are retired", "apply publishes one immutable revision entity; identical retries converge and same-base divergence conflicts", ...base];
   return [entityArtifact ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "the writer assigns canonical identity", ...base];
 }
 

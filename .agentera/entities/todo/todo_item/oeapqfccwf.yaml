@@ -2,7 +2,7 @@ id: oeapqfccwf
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Convert progress and decision record writes to structured input. Require `progress append --input <path|->`, `decisions append --input <path|->`, and `decisions amend --id ID --base-sha256 HASH --input <path|->`; retain decision satisfaction update as a selector-and-transition flag operation. Support file and stdin YAML or JSON, reject record-content flags and CLI-owned fields before effects, preserve dry-run, replay, amendment preconditions, and existing publication order, and synchronize schema, explain, help, skills, package projection, and tests."
   readiness:
     capability: build
@@ -14,3 +14,7 @@ record:
     gate: null
     queue_rank: 60
     order_reason: Convert progress and decisions in parallel with plan and TODO writers after the shared mutation grammar lands.
+  lifecycle:
+    operation: resolve
+    reason: Structured YAML/JSON file-or-stdin inputs now drive progress append, decision append, and decision amend; satisfaction remains flag-only, owned and retired fields reject before effects, and replay, dry-run, amendment preconditions, publication order, schema, explain, help, skills, package projection, and regressions are synchronized. Focused/source/package tests, typecheck, build, state validation, compaction, capability contracts, and independent audit passed.
+    date: 2026-07-31

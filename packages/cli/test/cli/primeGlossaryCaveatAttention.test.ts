@@ -131,7 +131,7 @@ function projection() {
   );
 }
 
-function runBuilt(args: string[]): { rc: number | null; out: string; err: string } {
+function runBuilt(args: string[], stdin = ""): { rc: number | null; out: string; err: string } {
   const result = spawnSync(
     process.execPath,
     [
@@ -141,6 +141,7 @@ function runBuilt(args: string[]): { rc: number | null; out: string; err: string
     ],
     {
       cwd: project,
+      input: stdin,
       env: sourceSubprocessEnv({
         ...process.env,
         AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
@@ -158,20 +159,8 @@ function appendArgs(reason: string, ownershipState: string): string[] {
     "state",
     "progress",
     "append",
-    "--type",
-    "test",
-    "--phase",
-    "build",
-    "--what",
-    "pair fixture",
-    "--intent",
-    "validate shared pair",
-    "--glossary-caveat-event",
-    "current",
-    "--glossary-caveat-reason",
-    reason,
-    "--glossary-caveat-ownership-state",
-    ownershipState,
+    "--input",
+    "-",
     "--format",
     "json",
   ];
@@ -331,7 +320,7 @@ describe("prime glossary caveat attention", () => {
         );
         expect(parsed.status, pair).toBe(valid.has(pair) ? "valid" : "invalid");
         const before = snapshot(project);
-        const written = runBuilt(appendArgs(reason, ownershipState));
+        const written = runBuilt(appendArgs(reason, ownershipState), JSON.stringify({ type: "test", phase: "build", what: "pair fixture", context: { intent: "validate shared pair" }, glossary_caveat: { event: "current", reason, ownership_state: ownershipState } }));
         expect(written.rc, `${pair}: ${written.out}${written.err}`).toBe(valid.has(pair) ? 0 : 1);
         if (!valid.has(pair)) expect(snapshot(project), pair).toEqual(before);
       }

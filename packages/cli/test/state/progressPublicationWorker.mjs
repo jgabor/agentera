@@ -26,16 +26,8 @@ const code = main(
     "append",
     "--project",
     project,
-    "--timestamp",
-    "2026-07-17 12:00",
-    "--type",
-    "fix",
-    "--phase",
-    "build",
-    "--what",
-    what,
-    "--intent",
-    "exercise locked same-minute publication",
+    "--input",
+    "-",
     "--format",
     "json",
   ],
@@ -43,9 +35,16 @@ const code = main(
     out: (text) => {
       stdout += text;
     },
-    err: (text) => {
+      err: (text) => {
       stderr += text;
     },
+    stdin: () => JSON.stringify({
+      timestamp: "2026-07-17 12:00",
+      type: "fix",
+      phase: "build",
+      what,
+      context: { intent: "exercise locked same-minute publication" },
+    }),
   },
 );
 fs.writeFileSync(result, JSON.stringify({ code, stdout, stderr }));

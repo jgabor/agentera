@@ -40,6 +40,10 @@ interface Captured {
 }
 
 function run(root: string, args: string[], stdin = ""): Captured {
+  if (!stdin && args.includes("--input") && args[args.indexOf("--input") + 1] === "-") {
+    if (args[0] === "decisions" && args[1] === "append") stdin = JSON.stringify({ question: "Where should writes live?", context: "The read side already lives under state", alternatives: { chosen: "state family", rejected: ["top-level write"] }, choice: "Use the state family", reasoning: "One artifact namespace", confidence: "firm" });
+    else if (args[0] === "decisions" && args[1] === "amend") stdin = JSON.stringify({ choice: "revised choice" });
+  }
   let out = "";
   let err = "";
   const argv = ["node", "agentera", "state", ...args, "--project", root];
@@ -86,20 +90,8 @@ function decisionAppendArgs(): string[] {
   return [
     "decisions",
     "append",
-    "--question",
-    "Where should writes live?",
-    "--context",
-    "The read side already lives under state",
-    "--alternative-chosen",
-    "state family",
-    "--alternative-rejected",
-    "top-level write",
-    "--choice",
-    "Use the state family",
-    "--reasoning",
-    "One artifact namespace",
-    "--confidence",
-    "firm",
+    "--input",
+    "-",
     "--format",
     "json",
   ];
@@ -189,17 +181,9 @@ describe("decision amend command discovery", () => {
     expect(idField).toMatchObject({ required: true, type: "string" });
     const baseHash = (result.json?.fields as any[]).find((f) => f.flag === "--base-sha256");
     expect(baseHash).toMatchObject({ required: true, type: "string" });
-    const confidence = (result.json?.fields as any[]).find((f) => f.flag === "--confidence");
-    expect(confidence.valid_values).toEqual(["firm", "provisional", "exploratory"]);
-    for (const flag of [
-      "--question",
-      "--context",
-      "--choice",
-      "--reasoning",
-      "--feeds-into",
-    ]) {
-      expect((result.json?.fields as any[]).some((f) => f.flag === flag)).toBe(true);
-    }
+    expect(result.json?.input.mode).toBe("structured");
+    expect(result.json?.input.sources).toEqual(["file", "stdin"]);
+    expect(result.json?.input_schema.record_fields).toEqual(expect.arrayContaining(["question", "alternatives", "confidence"]));
     const guidance = result.json?.guidance as string[];
     expect(guidance.some((g) => g.includes("bare --id") && g.includes("--base-sha256"))).toBe(true);
     expect(guidance.some((g) => g.includes("immutable revision entity"))).toBe(true);
@@ -234,16 +218,12 @@ describe("decision amend command discovery", () => {
       "aaaaaaaaaa",
       "--base-sha256",
       "0".repeat(64),
-      "--choice",
-      "revised choice",
-      "--reasoning",
-      "revised reasoning",
-      "--confidence",
-      "firm",
+      "--input",
+      "-",
       "--dry-run",
       "--format",
       "json",
-    ]);
+    ], JSON.stringify({ choice: "revised choice", reasoning: "revised reasoning", confidence: "firm" }));
 
     expect(result.rc).toBe(1);
     expect(JSON.parse(result.out).error).toMatchObject({ id: "aaaaaaaaaa", message: expect.stringMatching(/not found|does not exist/) });
@@ -361,28 +341,23 @@ describe("legacy confidence label coexistence", () => {
       "qjtrmnpvka",
       "--base-sha256",
       "0".repeat(64),
-      "--confidence",
-      "high",
+      "--input",
+      "-",
       "--dry-run",
       "--format",
       "json",
-    ]);
+    ], JSON.stringify({ confidence: "high" }));
     expect(amendLegacy.rc).toBe(2);
-    expect(amendLegacy.json?.error.class).toBe("invalid_choice");
-    expect(amendLegacy.json?.error.valid_values).toEqual(["firm", "provisional", "exploratory"]);
+    expect(amendLegacy.json?.error.class).toBe("schema_violation");
     expect(fs.existsSync(path.join(root, ".agentera", "entities", "decisions", "decision_revision"))).toBe(false);
   });
 
   it("rejects a new appended decision confidence outside the current vocabulary", () => {
     const root = project();
 
-    const args = decisionAppendArgs();
-    const legacyIndex = args.indexOf("--confidence") + 1;
-    args[legacyIndex] = "high";
-    const appended = run(root, args);
+    const appended = run(root, decisionAppendArgs(), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence: "high" }));
 
     expect(appended.rc).toBe(2);
-    expect(appended.json?.error.class).toBe("invalid_choice");
-    expect(appended.json?.error.valid_values).toEqual(["firm", "provisional", "exploratory"]);
+    expect(appended.json?.error.class).toBe("schema_violation");
   });
 });

@@ -1,0 +1,14 @@
+id: ruzrefnoac
+artifact: progress
+record:
+  timestamp: 2026-07-31 08:05
+  type: fix
+  phase: build
+  what: Corrected public logical replay, structured descriptor parity, and served Discuss decision guidance after accepted Audit findings.
+  context:
+    intent: Converge identical progress and decision appends under the writer lock while preserving distinct payloads, lifecycle semantics, and transition separation.
+    scope: Public append replay, code-owned structured schema projections, and source/built/package Discuss instructions.
+  discovered: Exact normalized retries now return the canonical ID and publication order before allocation; dry-runs remain non-consuming; decision alternative list ordering remains significant; current caveat retries replay while resolved events publish separately.
+  verified: Focused regressions passed 258 tests across 10 files; full source passed 3098 tests with 1 skipped across 224 files; package verification passed 17 tests across 2 files; typecheck, build, package dry-run, state validation, compact, capability-contract, and built replay/concurrency/descriptors/Discuss smokes passed.
+  next: Keep qllgiterft pending and oeapqfccwf open for bounded re-audit; independent Audit result remains external.
+  publication_order: 20

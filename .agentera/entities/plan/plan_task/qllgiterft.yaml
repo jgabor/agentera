@@ -4,10 +4,20 @@ record:
   name: M2 · Convert progress and decision writers (oeapqfccwf)
   depends_on:
     - mascmjrpug
-  status: pending
+  status: complete
   acceptance:
     - GIVEN valid progress or decision record input from a YAML or JSON file or stdin WHEN appended or amended THEN the write preserves dry-run, replay, concurrency, and publication semantics.
     - GIVEN a satisfaction transition WHEN valid selectors are supplied THEN it remains flag-only and accepts no record content.
     - GIVEN malformed input, owned fields, stale amendment state, or retired content flags WHEN submitted THEN rejection occurs before effects.
     - GIVEN discovery and execution WHEN compared THEN accepted inputs, transitions, preconditions, and rejection behavior agree.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Criteria 1 and 4 failed: exact public progress and decision append retries allocate duplicate IDs/orders; explain exposes only field names instead of complete structured schemas and amendment semantics; Discuss runtime still serves retired append guidance."
+    provenance:
+      attempt_id: qllgiterft-audit-2
+      source: Bounded independent re-review ses_049553341ffeDIWjRtyd76kPOi
+      recorded_at: 2026-07-31 08:14
+      writer_command: agentera state plan record-evaluation

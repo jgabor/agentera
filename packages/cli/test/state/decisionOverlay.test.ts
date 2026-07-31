@@ -44,7 +44,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
-function run(root: string, args: string[]): Captured {
+function run(root: string, args: string[], stdin = ""): Captured {
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", "state", ...args, "--project", root], {
@@ -54,6 +54,7 @@ function run(root: string, args: string[]): Captured {
     err: (text) => {
       err += text;
     },
+    stdin: () => stdin,
   });
   return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
 }
@@ -62,23 +63,11 @@ function appendDecision(root: string, suffix = ""): Captured {
   const result = run(root, [
       "decisions",
       "append",
-      "--question",
-      `Where should review state live${suffix}?`,
-      "--context",
-      "The immutable archive must remain unchanged.",
-      "--alternative-chosen",
-      "An ID-keyed overlay",
-      "--alternative-rejected",
-      "The archive record",
-      "--choice",
-      "An ID-keyed overlay",
-      "--reasoning",
-      "Current satisfaction is mutable review state.",
-      "--confidence",
-      "firm",
+      "--input",
+      "-",
       "--format",
       "json",
-    ]);
+    ], JSON.stringify({ question: `Where should review state live${suffix}?`, context: "The immutable archive must remain unchanged.", alternatives: { chosen: "An ID-keyed overlay", rejected: ["The archive record"] }, choice: "An ID-keyed overlay", reasoning: "Current satisfaction is mutable review state.", confidence: "firm" }));
   expect(result.rc).toBe(0);
   return result;
 }
@@ -279,21 +268,11 @@ describe("decision review overlays", () => {
     expect(run(root, [
       "decisions",
       "append",
-      "--question",
-      "Q52",
-      "--context",
-      "c",
-      "--alternative-chosen",
-      "a",
-      "--choice",
-      "a",
-      "--reasoning",
-      "r",
-      "--confidence",
-      "firm",
+      "--input",
+      "-",
       "--format",
       "json",
-    ]).rc).toBe(0);
+    ], JSON.stringify({ question: "Q52", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence: "firm" })).rc).toBe(0);
     expect(checkCompaction(root).some((item) => item.status.artifact === "decisions")).toBe(false);
     expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))).toHaveLength(2);
     expect(loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/decisions.yaml"), "utf8")).decisions).toHaveLength(51);

@@ -160,8 +160,7 @@ function artifactOrReject(raw: string): WritableArtifact {
       class: "unsupported_target",
       message: `artifact "${normalized}" is read-only through the state writer`,
       valid_values: [...WRITABLE_ARTIFACTS],
-      example:
-        'agentera state progress append --type fix --phase build --what "..." --intent "..."',
+      example: "agentera state progress append --input progress.yaml --format json",
     });
   }
   return normalized;
@@ -258,10 +257,12 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     }
     const field = byFlag.get(parsed.name);
     if (!field) {
-      if (spec.inputRoot)
+      if (spec.inputRoot && inputSource)
         invalid({
           class: "mutually_exclusive",
           message: `--input cannot be combined with ${parsed.name}`,
+          syntax: "--input PATH",
+          example: exampleFor(artifact, verb),
         });
       invalid({
         class: "unrecognized_argument",

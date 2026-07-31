@@ -8,13 +8,15 @@ import { requestedSatisfaction, validateTransition } from "./decisionOverlay.js"
 import { decisionRevisionContract } from "./decisionRevision.js";
 import { decisionLegacyCoexistence, knownLegacyConfidenceCaveat } from "./decisionLegacyValidation.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import { allocateAndPublishEntity, allocateEntityId, assertEntityDiscoveryOrigin, discoverEntities, exactDiscoveredEntityBytes, publishEntity, replaceEntity, type DiscoveredEntity } from "./entityStorage.js";
+import { allocateAndPublishEntity, allocateEntityId, assertEntityDiscoveryOrigin, discoverEntities, exactDiscoveredEntityBytes, publishEntity, replaceEntity, withEntityWriterLock, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEntityRead.js";
 import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
+import { normalizeDecisionRecordInput } from "./write/input.js";
+import { detectStateModeBinding } from "./stateMode.js";
 
 const ARTIFACT = "decisions";
 const BASE = "decision";
@@ -51,7 +53,7 @@ function failure(kind: StateFailureClass, message: string, recovery: string, id?
 }
 function summaryMutationFailure(id: string, verb: "amend" | "update"): StateRetrievalFailure {
   const syntax = verb === "amend"
-    ? "agentera state decisions amend --id ID --base-sha256 SHA256 --choice TEXT --format json"
+    ? "agentera state decisions amend --id ID --base-sha256 SHA256 --input PATH --format json"
     : "agentera state decisions update --id ID --satisfaction-state STATE --format json";
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
@@ -61,7 +63,7 @@ function summaryMutationFailure(id: string, verb: "amend" | "update"): StateRetr
       message: `decision '${id}' is an immutable migrated summary: incomplete historical evidence is read-only`,
       syntax,
       example: `agentera state decisions get --id ${id} --format json`,
-      recovery: `Run agentera state decisions get --id ${id} --format json to inspect retained evidence and caveats. For new deliberation, run agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm --format json.`,
+      recovery: `Run agentera state decisions get --id ${id} --format json to inspect retained evidence and caveats. For new deliberation, run agentera state decisions append --input decision.yaml --format json.`,
       artifact: ARTIFACT,
       id,
     },
@@ -96,7 +98,53 @@ function publish(req: StateWriteRequest, boundary: string, record: JsonObject, o
     : allocateAndPublishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary, record }, options.candidate);
   return envelope(`state decisions ${req.spec.verb}`, result, record);
 }
-export function appendDecisionEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope { return publish(req, BASE, entityRecord(req.values), options); }
+
+function decisionLogicalReplay(
+  root: string,
+  sourceRoot: string,
+  record: JsonObject,
+): DiscoveredEntity | undefined {
+  return discoverEntities(root, sourceRoot).entities.find(
+    (entity) => entity.artifact === ARTIFACT
+      && entity.boundary === BASE
+      && entity.classification === "valid"
+      && entity.record
+      && canonicalRecordJson(entity.record) === canonicalRecordJson(record),
+  );
+}
+
+function appendDecisionEntityUnderLock(req: StateWriteRequest, options: Options, record: JsonObject): StateWriteEnvelope {
+  if (!options.id) {
+    const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+    const replay = decisionLogicalReplay(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot, record);
+    if (replay?.record) {
+      return envelope(
+        "state decisions append",
+        { id: replay.id!, artifact: ARTIFACT, path: replay.path, replay: true },
+        replay.record,
+        req.dryRun,
+      );
+    }
+  }
+  return publish(req, BASE, record, options);
+}
+
+export function appendDecisionEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
+  const record = entityRecord(req.input ? normalizeDecisionRecordInput(req.input) : req.values);
+  if (options.id || options.publicationContext) {
+    if (!options.id && options.publicationContext)
+      return withEntityWriterLock(options.publicationContext, () => appendDecisionEntityUnderLock(req, options, record));
+    return publish(req, BASE, record, options);
+  }
+  if (req.dryRun) return publish(req, BASE, record, options);
+  const binding = detectStateModeBinding(req.projectRoot, options.sourceRoot);
+  if (binding.mode !== "entities") throw new Error("decision publication requires the durable entity-mode marker; legacy mode remains authoritative");
+  try {
+    return withEntityWriterLock(binding.publicationContext, () => appendDecisionEntityUnderLock(req, { ...options, publicationContext: binding.publicationContext }, record));
+  } finally {
+    binding.publicationContext.close();
+  }
+}
 
 function decisionEntities(root: string, sourceRoot: string, supplied?: ReturnType<typeof discoverEntities>): DiscoveredEntity[] {
   if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
@@ -210,8 +258,9 @@ export function amendDecisionEntity(req: StateWriteRequest, options: Options = {
   const id = requiredText(req.values.id, "id");
   const expected = requiredText(req.values.base_sha256, "base_sha256");
   const allowed = new Set(decisionRevisionContract(sourceRoot).amendablePaths);
+  const content = req.input ? normalizeDecisionRecordInput(req.input) : req.values;
   const changes: JsonObject = {};
-  for (const [field, value] of Object.entries(req.values)) if (!["id", "base_sha256"].includes(field)) {
+  for (const [field, value] of Object.entries(content)) if (!["id", "base_sha256"].includes(field)) {
     if (field === "alternatives" && mapping(value)) {
       for (const [name, alternative] of Object.entries(value)) {
         const target = `alternatives.${name}`;

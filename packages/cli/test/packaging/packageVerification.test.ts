@@ -19,8 +19,8 @@ const V2_RUNTIME = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-run
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const PLAN_ID = "plan:123e4567-e89b-42d3-a456-426614174000";
 
-function run(command: string, args: string[], cwd: string, env = process.env) {
-  return spawnSync(command, args, { cwd, env, encoding: "utf8" });
+function run(command: string, args: string[], cwd: string, env = process.env, input?: string) {
+  return spawnSync(command, args, { cwd, env, encoding: "utf8", ...(input === undefined ? {} : { input }) });
 }
 
 function isolatedPackageEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
@@ -66,18 +66,17 @@ function sameMinuteProgressPrimeWorkflow(
     },
   }));
   const env = isolatedPackageEnv({ HOME: home });
-  const invoke = (args: string[]) => {
-    const result = run(process.execPath, [bin, ...args], project, env);
+  const invoke = (args: string[], input?: string) => {
+    const result = run(process.execPath, [bin, ...args], project, env, input);
     expect(result.status, `${args.join(" ")} failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
     return result.stdout;
   };
-  const append = (what: string, flags: string[]) => JSON.parse(invoke([
-    "state", "progress", "append", "--timestamp", "2026-07-27 17:00",
-    "--type", "fix", "--phase", "build", "--what", what,
-    "--intent", "verify source and package same-minute lifecycle parity",
-    "--verified", "same-minute lifecycle publication verified", "--format", "json",
-    ...flags,
-  ]));
+  const append = (what: string, flags: string[]) => {
+    const caveat: Record<string, string> = {};
+    const fields: Record<string, string> = { "--glossary-caveat-event": "event", "--glossary-caveat-reason": "reason", "--glossary-caveat-ownership-state": "ownership_state", "--glossary-caveat-id": "caveat_id", "--glossary-caveat-transition-id": "transition_id" };
+    for (let index = 0; index < flags.length; index += 2) caveat[fields[flags[index]]] = flags[index + 1];
+    return JSON.parse(invoke(["state", "progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ timestamp: "2026-07-27 17:00", type: "fix", phase: "build", what, context: { intent: "verify source and package same-minute lifecycle parity" }, verified: "same-minute lifecycle publication verified", glossary_caveat: caveat })));
+  };
   const current = append("current publication", [
     "--glossary-caveat-event", "current", "--glossary-caveat-reason", "inferred_equivalence",
     "--glossary-caveat-ownership-state", "review_required",

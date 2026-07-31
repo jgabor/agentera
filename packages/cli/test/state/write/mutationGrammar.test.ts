@@ -107,6 +107,34 @@ describe("declarative state mutation grammar", () => {
     }
   });
 
+  it("keeps complete structured descriptors identical across schema, explain, and explain --all", () => {
+    const root = project();
+    const schema = runCli(root, ["schema", "--format", "json"], "", false);
+    expect(schema.rc, schema.err).toBe(0);
+    const schemaOperations = new Map<string, any>();
+    for (const artifact of schema.json.state_writer.artifacts)
+      for (const operation of artifact.operations) schemaOperations.set(`${artifact.artifact}.${operation.verb}`, operation);
+
+    for (const [artifact, verb] of [["progress", "append"], ["decisions", "append"], ["decisions", "amend"]]) {
+      const key = `${artifact}.${verb}`;
+      const explain = run(root, [artifact, "explain", "--verb", verb, "--format", "json"]);
+      const all = run(root, [artifact, "explain", "--all", "--format", "json"]);
+      expect(explain.rc, explain.err).toBe(0);
+      expect(all.rc, all.err).toBe(0);
+      const operation = schemaOperations.get(key);
+      const allOperation = all.json.operations.find((entry: any) => entry.requested_verb === verb);
+      const input = explain.json.input_schema;
+      expect(operation.input.schema.fields).toEqual(input.structured_fields);
+      expect(operation.input.schema.semantics).toEqual(input.semantics);
+      expect(operation.input.schema.owned_fields).toEqual(input.owned_fields);
+      expect(operation.input.schema.immutable_fields).toEqual(input.immutable_fields);
+      expect(operation.input.schema.bounds).toEqual(input.bounds);
+      expect(operation.input.schema.examples).toEqual(input.examples);
+      expect(allOperation.input_schema.structured_fields).toEqual(input.structured_fields);
+      expect(input.structured_fields.every((entry: any) => typeof entry.path === "string" && typeof entry.type === "string" && typeof entry.required === "boolean" && typeof entry.update === "string")).toBe(true);
+    }
+  });
+
   it("preserves optional selector inference and rejects mandatory decision omissions before effects", () => {
     const root = project();
     const planInput = dumpYamlMapping({
@@ -158,7 +186,7 @@ describe("declarative state mutation grammar", () => {
       example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence \"...\" --format json",
       recovery: "Correct the input and retry; no state was changed.",
     });
-    const amendId = run(rejectRoot, ["decisions", "amend", "--base-sha256", "abc", "--choice", "x", "--format", "json"]);
+    const amendId = run(rejectRoot, ["decisions", "amend", "--base-sha256", "abc", "--input", "-", "--format", "json"]);
     expect(amendId.rc).toBe(2);
     expect(amendId.json.error).toMatchObject({
       class: "missing_argument",
@@ -166,7 +194,7 @@ describe("declarative state mutation grammar", () => {
       syntax: "--id VALUE",
       recovery: "Correct the input and retry; no state was changed.",
     });
-    const amendBase = run(rejectRoot, ["decisions", "amend", "--id", "qjtrmnpvka", "--choice", "x", "--format", "json"]);
+    const amendBase = run(rejectRoot, ["decisions", "amend", "--id", "qjtrmnpvka", "--input", "-", "--format", "json"]);
     expect(amendBase.rc).toBe(2);
     expect(amendBase.json.error).toMatchObject({
       class: "missing_argument",
@@ -205,13 +233,13 @@ describe("declarative state mutation grammar", () => {
 
   it("proves one pass and one fail-before-effects for each mutation class", () => {
     const root = project();
-    const recordPass = run(root, ["progress", "append", "--type", "test", "--phase", "build", "--what", "grammar", "--intent", "record", "--dry-run", "--format", "json"]);
+    const recordPass = run(root, ["progress", "append", "--input", "-", "--dry-run", "--format", "json"], "type: test\nphase: build\nwhat: grammar\ncontext:\n  intent: record\n");
     expect(recordPass.rc, recordPass.err).toBe(0);
     const recordReject = run(root, ["progress", "append", "--input", "-", "--format", "json"], "{}");
     expect(recordReject.rc).not.toBe(0);
-    expect(recordReject.json.error.class).toBe("mutually_exclusive");
+    expect(recordReject.json.error.class).toBe("schema_violation");
 
-    const decision = run(root, ["decisions", "append", "--question", "q", "--context", "c", "--alternative-chosen", "a", "--choice", "a", "--reasoning", "r", "--confidence", "firm", "--format", "json"]);
+    const decision = run(root, ["decisions", "append", "--input", "-", "--format", "json"], "question: q\ncontext: c\nalternatives:\n  chosen: a\nchoice: a\nreasoning: r\nconfidence: firm\n");
     expect(decision.rc, decision.err).toBe(0);
     const transitionPass = run(root, ["decisions", "update", "--id", decision.json.id, "--satisfaction-state", "open", "--format", "json"]);
     expect(transitionPass.rc, transitionPass.err).toBe(0);

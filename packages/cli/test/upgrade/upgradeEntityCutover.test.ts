@@ -106,13 +106,13 @@ function json(root: string, args: string[]): any {
   return JSON.parse(result.out);
 }
 
-function capture(root: string, args: string[]): { code: number; out: string; err: string } {
+function capture(root: string, args: string[], stdin = ""): { code: number; out: string; err: string } {
   const previous = process.cwd();
   let out = "";
   let err = "";
   process.chdir(root);
   try {
-    const code = main(["node", "agentera", ...args], { out: (value) => { out += value; }, err: (value) => { err += value; } });
+    const code = main(["node", "agentera", ...args], { out: (value) => { out += value; }, err: (value) => { err += value; }, stdin: () => stdin });
     return { code, out, err };
   } finally {
     process.chdir(previous);
@@ -531,7 +531,7 @@ describe("one-way Git entity cutover", () => {
     expect(applyUpgrade(root, appHome, home).code).toBe(0);
     const markerBefore = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
 
-    expect(capture(root, ["state", "progress", "append", "--type", "fix", "--phase", "build", "--what", "post-cutover write", "--intent", "prove entity authority", "--format", "json"]).code).toBe(0);
+    expect(capture(root, ["state", "progress", "append", "--input", "-", "--format", "json"], "type: fix\nphase: build\nwhat: post-cutover write\ncontext:\n  intent: prove entity authority\n").code).toBe(0);
     expect(capture(root, ["state", "progress", "list", "--format", "json"]).code).toBe(0);
     managedV2(home);
 

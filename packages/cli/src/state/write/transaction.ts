@@ -7,8 +7,10 @@ import { appendProgressEntity } from "../progressEntities.js";
 import { requireEntityStateBinding } from "../stateMode.js";
 import { mutateTodoDocsEntity } from "../todoDocsEntities.js";
 import { publishGlossary } from "./glossaryPublication.js";
+import { structuredRecordInputViolations } from "./input.js";
 import type { StateMutationOptions } from "./mutation.js";
 import { assertMutationGrammarParity, type StateWriteEnvelope, type StateWriteRequest } from "./operations.js";
+import { reject } from "./errors.js";
 
 export type { StateWriteEnvelope, StateWriteRequest } from "./operations.js";
 
@@ -17,6 +19,15 @@ export function executeStateWrite(
   _options: StateMutationOptions = {},
 ): StateWriteEnvelope {
   assertMutationGrammarParity();
+  const inputViolations = structuredRecordInputViolations(req.artifact, req.spec.verb, req.input);
+  if (inputViolations.length > 0)
+    reject({
+      class: "schema_violation",
+      message: inputViolations[0],
+      violations: inputViolations,
+      syntax: `agentera state ${req.artifact} ${req.spec.verb} --input PATH --format json`,
+      example: `agentera state ${req.artifact} ${req.spec.verb} --input - --format json`,
+    });
   const binding = requireEntityStateBinding(req.projectRoot);
   const publicationContext = binding.publicationContext;
   try {

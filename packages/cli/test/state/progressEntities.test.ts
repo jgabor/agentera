@@ -164,7 +164,15 @@ describe("progress entity authority", () => {
 
   it("publishes bounded Build caveat lifecycle events idempotently without glossary writes", () => {
     const root = project(); activate(root);
-    const append = (extra: string[], what = "conservative work") => { let out = ""; let err = ""; const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--type", "feat", "--phase", "build", "--what", what, "--intent", "Avoid disputed terminology", "--verified", "bounded caveat verified", "--format", "json", ...extra], { out: (text) => { out += text; }, err: (text) => { err += text; } }); return { rc, out, err, json: out ? JSON.parse(out) : null }; };
+    const append = (extra: string[], what = "conservative work") => {
+      let out = ""; let err = "";
+      const caveat: Record<string, unknown> = {};
+      const fields: Record<string, string> = { "--glossary-caveat-event": "event", "--glossary-caveat-reason": "reason", "--glossary-caveat-ownership-state": "ownership_state", "--glossary-caveat-id": "caveat_id", "--glossary-caveat-transition-id": "transition_id" };
+      for (let index = 0; index < extra.length; index += 2) caveat[fields[extra[index]]] = extra[index + 1];
+      const input = { type: "feat", phase: "build", what, verified: "bounded caveat verified", context: { intent: "Avoid disputed terminology" }, glossary_caveat: caveat };
+      const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify(input) });
+      return { rc, out, err, json: out ? JSON.parse(out) : null };
+    };
     const currentFlags = ["--glossary-caveat-event", "current", "--glossary-caveat-reason", "inferred_equivalence", "--glossary-caveat-ownership-state", "review_required"];
     const current = append(currentFlags);
     expect(current.rc).toBe(0);
@@ -185,7 +193,7 @@ describe("progress entity authority", () => {
 
   it("rejects private caveat vocabulary without echoing or writing it", () => {
     const root = project(); activate(root); const trap = "PRIVATE_TERM_MEANING_ANCHOR_PATH_PROVENANCE"; let out = ""; let err = "";
-    const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--type", "feat", "--phase", "build", "--what", "safe", "--intent", "safe", "--glossary-caveat-event", "current", "--glossary-caveat-reason", trap, "--glossary-caveat-ownership-state", "review_required", "--format", "json"], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+    const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify({ type: "feat", phase: "build", what: "safe", context: { intent: "safe" }, glossary_caveat: { event: "current", reason: trap, ownership_state: "review_required" } }) });
     expect(rc).not.toBe(0); expect(out + err).not.toContain(trap); expectNoProgressWrite(root); expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
   });
 
@@ -230,11 +238,11 @@ describe("progress entity authority", () => {
     for (const argv of [
       ["state", "progress", "list", "--format", "json"],
       ["state", "progress", "get", "--id", "zzzzzzzzzz", "--format", "json"],
-      ["state", "progress", "append", "--type", "test", "--phase", "build", "--what", "blocked", "--intent", "fail before effects", "--format", "json"],
+      ["state", "progress", "append", "--input", "-", "--format", "json"],
       ["check", "validate", "state", "--cwd", root, "--format", "json"],
     ]) {
       let out = ""; let err = "";
-      const rc = main(["node", "agentera", ...argv, ...(argv[0] === "state" ? ["--project", root] : [])], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+      const rc = main(["node", "agentera", ...argv, ...(argv[0] === "state" ? ["--project", root] : [])], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify({ type: "test", phase: "build", what: "blocked", context: { intent: "fail before effects" } }) });
       expect(rc).not.toBe(0);
       expect(out + err).not.toContain("PRIVATE_TRAP");
       expect(out + err).not.toContain("P".repeat(65));
@@ -601,11 +609,10 @@ describe("progress entity authority", () => {
     let err = "";
     const rc = main([
       "node", "agentera", "state", "progress", "append", "--project", root,
-      "--type", "fix", "--phase", "build", "--what", "spoofed", "--intent", "spoofed",
-      "--publication-order", "99", "--format", "json",
-    ], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+      "--input", "-", "--format", "json",
+    ], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify({ timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "spoofed", context: { intent: "spoofed" }, publication_order: 99 }) });
     expect(rc).toBe(2);
-    expect(out + err).toMatch(/publication-order|unrecognized/);
+    expect(out + err).toMatch(/publication[_-]order|unrecognized/);
     expect(Buffer.byteLength(out + err)).toBeLessThan(2048);
     expectNoProgressWrite(root);
 

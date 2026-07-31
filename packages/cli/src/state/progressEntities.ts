@@ -252,6 +252,11 @@ function relative(projectRoot: string, candidate: string): string {
   return path.relative(path.resolve(projectRoot), candidate).split(path.sep).join("/");
 }
 
+function logicalProgressRecord(record: JsonObject): JsonObject {
+  const { [PROGRESS_PUBLICATION_ORDER_FIELD]: _publicationOrder, ...logical } = record;
+  return logical;
+}
+
 export function appendProgressEntity(
   req: StateWriteRequest,
   options: AppendProgressEntityOptions = {},
@@ -283,12 +288,31 @@ export function appendProgressEntity(
   const caveatContract = glossaryCaveatContract(
     path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
   );
-  const prepared = prepareGlossaryCaveat(req.values, discovery, caveatContract);
+  const values = req.input ?? req.values;
+  const prepared = prepareGlossaryCaveat(values, discovery, caveatContract);
   if (prepared.replay) {
     return { schemaVersion: "agentera.stateWrite.v1", command: "state progress append", status: "pass", path: prepared.replay.path, id: prepared.replay.id as string, artifact: ARTIFACT, record: prepared.replay.record as JsonObject, operation: { verb: "append", dry_run: req.dryRun, idempotent_replay: true }, validation: { status: "pass", violations: [] } };
   }
-  if (prepared.caveat) req.values.glossary_caveat = prepared.caveat;
-  const unsequencedRecord = progressRecord(req.values, caveatContract);
+  if (prepared.caveat) values.glossary_caveat = prepared.caveat;
+  const unsequencedRecord = progressRecord(values, caveatContract);
+  if (!options.id) {
+    const logicalReplay = existing.find(
+      (entity) => entity.record && canonicalRecordJson(logicalProgressRecord(entity.record)) === canonicalRecordJson(unsequencedRecord),
+    );
+    if (logicalReplay?.record) {
+      return {
+        schemaVersion: "agentera.stateWrite.v1",
+        command: "state progress append",
+        status: "pass",
+        path: logicalReplay.path,
+        id: logicalReplay.id!,
+        artifact: ARTIFACT,
+        record: logicalReplay.record,
+        operation: { verb: "append", dry_run: req.dryRun, idempotent_replay: true },
+        validation: { status: "pass", violations: [] },
+      };
+    }
+  }
   const exactReplay = options.id
     ? existing.find(({ id }) => id === options.id)
     : undefined;

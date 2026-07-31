@@ -1,0 +1,14 @@
+id: dolitlytqe
+artifact: progress
+record:
+  timestamp: 2026-07-31 07:26
+  type: fix
+  phase: build
+  what: Converted progress and decision record writers to bounded structured input.
+  context:
+    intent: Preserve transition separation, replay, dry-run, concurrency, amendment preconditions, and atomic publication.
+    scope: Progress append, decision append/amend, and discovery parity only.
+  discovered: Structured YAML/JSON is loaded through the fatal UTF-8 and 32768-byte seam before writer effects.
+  verified: Focused and full source tests, package verification, typecheck, build, state validation, compact, capability-contract validation, and built CLI file/stdin rejection and replay smokes passed.
+  next: Independent audit remains pending.
+  publication_order: 19

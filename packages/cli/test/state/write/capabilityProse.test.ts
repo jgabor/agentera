@@ -141,6 +141,10 @@ describe("producer capability writer integration", () => {
       "agentera state plan set-status --id ID --status complete",
     );
     expect(discussInstructions).toContain("agentera state decisions append");
+    expect(discussInstructions).toContain("agentera state decisions append --input <path|->");
+    expect(discussInstructions).toContain("agentera state decisions amend --id ID --base-sha256 HASH --input <path|->");
+    expect(discussInstructions).toContain("satisfaction remains flag-only");
+    expect(discussInstructions).not.toContain("Append with `agentera state decisions append`");
     expect(discussInstructions).toContain("agentera state decisions update --id ID");
     expect(planInstructions).toContain("agentera state plan create --input PATH");
     expect(planInstructions).toContain("agentera state plan archive --format json");

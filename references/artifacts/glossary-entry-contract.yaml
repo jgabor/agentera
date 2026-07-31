@@ -842,7 +842,8 @@ consumer_boundary:
       fixed_values:
         event: current
       accepted_writer_flags:
-        [--glossary-caveat-event, --glossary-caveat-reason, --glossary-caveat-ownership-state]
+        [--input]
+      input: one progress cycle YAML/JSON mapping whose glossary_caveat contains the three caller fields
       writer_owned_fields: [caveat_id, capability, transition_id]
       forbidden_fields: [caveat_id, capability, transition_id]
       forbidden_claims: [delivered, stored, persisted, published, durable_envelope]
@@ -854,7 +855,7 @@ consumer_boundary:
         Emit one intent only when autonomous meaning-sensitive work has unresolved
         review or unavailable authority. The emitted-only intent contains exactly
         event=current, reason, and ownership_state, the three caller inputs accepted
-        by the Build writer. It is not delivered, stored, persisted, or published.
+        by the Build writer in one bounded structured record input. It is not delivered, stored, persisted, or published.
         The writer creates caveat_id, capability=build, and transition_id=null to
         complete the authoritative current envelope.
     exact_project_personal_unavailable:

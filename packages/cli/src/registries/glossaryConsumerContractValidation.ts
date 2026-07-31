@@ -206,11 +206,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     handoffIntent?.status !== "transient_emitted_not_delivered" ||
     !sameStrings(handoffIntent?.caller_fields, ["event", "reason", "ownership_state"]) ||
     JSON.stringify(mapping(handoffIntent?.fixed_values)) !== JSON.stringify({ event: "current" }) ||
-    !sameStrings(handoffIntent?.accepted_writer_flags, [
-      "--glossary-caveat-event",
-      "--glossary-caveat-reason",
-      "--glossary-caveat-ownership-state",
-    ]) ||
+    !sameStrings(handoffIntent?.accepted_writer_flags, ["--input"]) ||
     !sameStrings(handoffIntent?.writer_owned_fields, [
       "caveat_id",
       "capability",

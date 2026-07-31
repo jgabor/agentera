@@ -34,6 +34,13 @@ afterEach(() => {
 });
 
 function run(root: string, args: string[], stdin = ""): Captured {
+  if (!stdin && args.includes("--input") && args[args.indexOf("--input") + 1] === "-") {
+    if (args[0] === "progress" && args[1] === "append")
+      stdin = JSON.stringify({ type: "test", phase: "build", what: "Entity writer", context: { intent: "Verify entity publication" } });
+    else if (args[0] === "decisions" && args[1] === "append")
+      stdin = JSON.stringify({ question: "Where should state live?", context: "Parallel writes", alternatives: { chosen: "Entities", rejected: ["Aggregates"] }, choice: "Entities", reasoning: "Independent ownership", confidence: "firm" });
+    else if (args[0] === "decisions" && args[1] === "amend") stdin = JSON.stringify({ choice: "Canonical entities" });
+  }
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", "state", ...args, "--project", root], {
@@ -58,11 +65,11 @@ function files(root: string): Record<string, string> {
 }
 
 function progressArgs(what = "Entity writer"): string[] {
-  return ["progress", "append", "--type", "test", "--phase", "build", "--what", what, "--intent", "Verify entity publication", "--format", "json"];
+  return ["progress", "append", "--input", "-", "--format", "json"];
 }
 
-function decisionArgs(): string[] {
-  return ["decisions", "append", "--question", "Where should state live?", "--context", "Parallel writes", "--alternative-chosen", "Entities", "--alternative-rejected", "Aggregates", "--choice", "Entities", "--reasoning", "Independent ownership", "--confidence", "firm", "--format", "json"];
+function decisionArgs(confidence = "firm"): string[] {
+  return ["decisions", "append", "--input", "-", "--format", "json"];
 }
 
 describe("typed state writer on active entity authority", () => {
@@ -107,11 +114,47 @@ describe("typed state writer on active entity authority", () => {
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
   });
 
+  it("converges exact public progress and decision appends without consuming IDs or order", () => {
+    const root = project();
+    const progressPath = path.join(root, "progress-replay.yaml");
+    const progressInput = { timestamp: "2026-07-31 08:00", type: "fix", phase: "build", what: "exact progress replay", context: { intent: "prove logical replay" }, verified: "same record converges" };
+    fs.writeFileSync(progressPath, dumpYamlMapping(progressInput));
+    const progressDry = run(root, ["progress", "append", "--input", progressPath, "--dry-run", "--format", "json"]);
+    expect(progressDry.rc).toBe(0);
+    expect(progressDry.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: false });
+    expect(validateEntityState(root).entityCount).toBe(0);
+    const progressFirst = run(root, ["progress", "append", "--input", progressPath, "--format", "json"]);
+    const progressRetry = run(root, ["progress", "append", "--input", "-", "--format", "json"], JSON.stringify(progressInput));
+    const progressDryReplay = run(root, ["progress", "append", "--input", progressPath, "--dry-run", "--format", "json"]);
+    const progressDifferent = run(root, ["progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ ...progressInput, what: "different progress record" }));
+    expect(progressFirst.rc).toBe(0);
+    expect(progressRetry).toMatchObject({ rc: 0, json: { id: progressFirst.json?.id, record: { publication_order: progressFirst.json?.record.publication_order }, operation: { idempotent_replay: true } } });
+    expect(progressDryReplay.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: true });
+    expect(progressDifferent.rc).toBe(0);
+    expect(progressDifferent.json?.id).not.toBe(progressFirst.json?.id);
+    expect(progressDifferent.json?.record.publication_order).toBe(progressFirst.json?.record.publication_order + 1);
+
+    const decisionInput = { date: "2026-07-31", question: "What is the replay boundary?", context: "Public append retries must converge.", alternatives: { chosen: "Logical content", rejected: ["Generated identity"] }, choice: "Logical content", reasoning: "IDs are writer-owned metadata.", confidence: "firm" };
+    const decisionDry = run(root, ["decisions", "append", "--input", "-", "--dry-run", "--format", "json"], JSON.stringify(decisionInput));
+    expect(decisionDry.rc).toBe(0);
+    expect(decisionDry.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: false });
+    const decisionFirst = run(root, ["decisions", "append", "--input", "-", "--format", "json"], JSON.stringify(decisionInput));
+    fs.writeFileSync(path.join(root, "decision-replay.json"), JSON.stringify(decisionInput));
+    const decisionRetry = run(root, ["decisions", "append", "--input", path.join(root, "decision-replay.json"), "--format", "json"]);
+    const decisionDryReplay = run(root, ["decisions", "append", "--input", path.join(root, "decision-replay.json"), "--dry-run", "--format", "json"]);
+    const decisionDifferent = run(root, ["decisions", "append", "--input", "-", "--format", "json"], JSON.stringify({ ...decisionInput, alternatives: { chosen: "Logical content", rejected: ["Generated identity", "Different order"] } }));
+    expect(decisionFirst.rc).toBe(0);
+    expect(decisionRetry).toMatchObject({ rc: 0, json: { id: decisionFirst.json?.id, operation: { idempotent_replay: true } } });
+    expect(decisionDryReplay.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: true });
+    expect(decisionDifferent.rc).toBe(0);
+    expect(decisionDifferent.json?.id).not.toBe(decisionFirst.json?.id);
+  });
+
   it("validates decision input before effects and composes satisfaction and amendments", () => {
     const root = project();
-    const invalid = run(root, decisionArgs().map((value) => value === "firm" ? "high" : value));
+    const invalid = run(root, decisionArgs(), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence: "high" }));
     expect(invalid.rc).toBe(2);
-    expect(invalid.json?.error.class).toBe("invalid_choice");
+    expect(invalid.json?.error.class).toBe("schema_violation");
     expect(validateEntityState(root).entityCount).toBe(0);
 
     const appended = run(root, decisionArgs());
@@ -120,11 +163,11 @@ describe("typed state writer on active entity authority", () => {
     const base = String((getDecisionEntity(root, id) as any).entry.effective_sha256);
     const provisional = run(root, ["decisions", "update", "--id", id, "--satisfaction-state", "provisionally_satisfied", "--satisfaction-evidence", "focused tests", "--format", "json"]);
     expect(provisional.rc).toBe(0);
-    const amendment = run(root, ["decisions", "amend", "--id", id, "--base-sha256", base, "--choice", "Canonical entities", "--dry-run", "--format", "json"]);
+    const amendment = run(root, ["decisions", "amend", "--id", id, "--base-sha256", base, "--input", "-", "--dry-run", "--format", "json"], JSON.stringify({ choice: "Canonical entities" }));
     expect(amendment.rc).toBe(0);
     expect(amendment.json?.operation.dry_run).toBe(true);
     expect(fs.existsSync(path.join(root, ".agentera/entities/decisions/decision_revision"))).toBe(false);
-    expect(run(root, ["decisions", "amend", "--id", id, "--base-sha256", base, "--choice", "Canonical entities", "--format", "json"]).rc).toBe(0);
+    expect(run(root, ["decisions", "amend", "--id", id, "--base-sha256", base, "--input", "-", "--format", "json"], JSON.stringify({ choice: "Canonical entities" })).rc).toBe(0);
     const effective = (getDecisionEntity(root, id) as any).entry;
     expect(effective.record).toMatchObject({ choice: "Canonical entities", satisfaction: { state: "provisionally_satisfied", evidence: "focused tests" } });
     expect(effective.provenance.revisions).toHaveLength(1);
@@ -205,7 +248,7 @@ describe("retained entity writer contract matrix", () => {
 
   it.each(["feat", "fix", "docs", "refactor", "chore", "test"])("publishes progress type %s as one canonical entity", (type) => {
     const root = project();
-    const result = run(root, ["progress", "append", "--type", type, "--phase", "build", "--what", `Published ${type}`, "--intent", "Exercise allowed type", "--format", "json"]);
+    const result = run(root, ["progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ type, phase: "build", what: `Published ${type}`, context: { intent: "Exercise allowed type" } }));
     expect(result.rc, result.err).toBe(0);
     expect(result.json).toMatchObject({ artifact: "progress", id: expect.stringMatching(/^[a-z]{10}$/), record: { type, what: `Published ${type}` } });
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
@@ -213,9 +256,7 @@ describe("retained entity writer contract matrix", () => {
 
   it.each(["firm", "provisional", "exploratory"])("publishes current decision confidence %s", (confidence) => {
     const root = project();
-    const args = decisionArgs();
-    args[args.indexOf("firm")] = confidence;
-    const result = run(root, args);
+    const result = run(root, decisionArgs(confidence), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence }));
     expect(result.rc, result.err).toBe(0);
     expect(result.json?.record.confidence).toBe(confidence);
     expect(validateEntityState(root).valid).toBe(true);
@@ -223,11 +264,9 @@ describe("retained entity writer contract matrix", () => {
 
   it.each(["high", "medium", "low", "certain"])("rejects retired decision confidence %s before publication", (confidence) => {
     const root = project();
-    const args = decisionArgs();
-    args[args.indexOf("firm")] = confidence;
-    const result = run(root, args);
+    const result = run(root, decisionArgs(), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence }));
     expect(result.rc).toBe(2);
-    expect(result.json?.error).toMatchObject({ class: "invalid_choice", valid_values: ["firm", "provisional", "exploratory"] });
+    expect(result.json?.error.class).toBe("schema_violation");
     expect(validateEntityState(root).entityCount).toBe(0);
   });
 
@@ -264,19 +303,33 @@ describe("retained entity writer contract matrix", () => {
   });
 
   it.each([
-    ["missing progress type", ["progress", "append", "--phase", "build", "--what", "x", "--intent", "y", "--format", "json"], "missing_argument"],
-    ["invalid progress type", ["progress", "append", "--type", "feature", "--phase", "build", "--what", "x", "--intent", "y", "--format", "json"], "invalid_choice"],
-    ["invalid timestamp", ["progress", "append", "--type", "test", "--phase", "build", "--what", "x", "--intent", "y", "--timestamp", "8 Jul", "--format", "json"], "invalid_format"],
-    ["caller progress number", ["progress", "append", "--number", "4", "--type", "test", "--phase", "build", "--what", "x", "--intent", "y", "--format", "json"], "unrecognized_argument"],
-    ["duplicate chosen alternatives", ["decisions", "append", "--question", "q", "--context", "c", "--alternative-chosen", "a", "--alternative-chosen", "b", "--choice", "a", "--reasoning", "r", "--confidence", "firm", "--format", "json"], "mutually_exclusive"],
+    ["missing progress input", ["progress", "append", "--format", "json"], "missing_argument"],
+    ["retired progress content flag", ["progress", "append", "--type", "test", "--format", "json"], "unrecognized_argument"],
+    ["retired decision content flag", ["decisions", "append", "--question", "q", "--format", "json"], "unrecognized_argument"],
+    ["missing decision input", ["decisions", "append", "--format", "json"], "missing_argument"],
     ["missing health input", ["health", "append", "--format", "json"], "missing_argument"],
-    ["progress input flag", ["progress", "append", "--input", "x", "--format", "json"], "mutually_exclusive"],
+    ["decision satisfaction input", ["decisions", "update", "--id", "aaaaaaaaaa", "--input", "-", "--format", "json"], "mutually_exclusive"],
     ["numeric plan selector", ["plan", "set-status", "--task", "1", "--status", "complete", "--format", "json"], "unrecognized_argument"],
     ["missing decision target", ["decisions", "update", "--satisfaction-state", "open", "--format", "json"], "missing_argument"],
     ["unknown write verb", ["progress", "archive", "--format", "json"], "invalid_choice"],
   ])("rejects %s before entity publication", (_label, args, classification) => {
     const root = project();
     const result = run(root, args as string[]);
+    expect(result.rc).not.toBe(0);
+    expect(result.json?.error.class).toBe(classification);
+    expect(validateEntityState(root).entityCount).toBe(0);
+  });
+
+  it.each([
+    ["malformed YAML", "type: [", "invalid_format"],
+    ["owned progress field", "id: aaaaaaaaaa\ntype: test\nphase: build\nwhat: x\ncontext:\n  intent: y\n", "schema_violation"],
+    ["unknown decision field", "question: q\ncontext: c\nalternatives:\n  chosen: a\nchoice: a\nreasoning: r\nconfidence: firm\nnumber: 4\n", "schema_violation"],
+  ])("rejects structured %s before publication", (_label, stdin, classification) => {
+    const root = project();
+    const args = _label === "unknown decision field"
+      ? ["decisions", "append", "--input", "-", "--format", "json"]
+      : ["progress", "append", "--input", "-", "--format", "json"];
+    const result = run(root, args, stdin);
     expect(result.rc).not.toBe(0);
     expect(result.json?.error.class).toBe(classification);
     expect(validateEntityState(root).entityCount).toBe(0);

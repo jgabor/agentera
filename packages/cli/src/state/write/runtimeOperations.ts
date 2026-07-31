@@ -1,4 +1,3 @@
-import { glossaryCaveatContract } from "../../registries/glossaryCaveatContract.js";
 import { loadTodoReadinessContract } from "../../registries/todoReadinessContract.js";
 
 export const RUNTIME_WRITABLE_ARTIFACTS = [
@@ -41,7 +40,6 @@ export const RUNTIME_WRITE_VERBS = [
 ] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
-const caveat = glossaryCaveatContract();
 const readiness = loadTodoReadinessContract();
 
 const f = (
@@ -62,43 +60,6 @@ const todoReadinessFields: RuntimeOperationField[] = [
   f("--gate-recovery", "readiness.gate.recovery", "string", { description: "Bounded action for the declared gate." }),
   f("--queue-rank", "readiness.queue_rank", "integer", { description: "Reviewer-assigned intent order within severity; lower values run first." }),
   f("--order-reason", "readiness.order_reason", "string", { description: "Durable reason for the queue rank." }),
-];
-
-const progressFields: RuntimeOperationField[] = [
-  f("--type", "type", "string", { required: true, validValues: ["feat", "fix", "docs", "refactor", "chore", "test"] }),
-  f("--phase", "phase", "string", { required: true, validValues: ["envision", "deliberate", "plan", "build", "audit"] }),
-  f("--what", "what", "string", { required: true }),
-  f("--intent", "context.intent", "string", { required: true }),
-  f("--timestamp", "timestamp", "datetime", { required: false }),
-  f("--glossary-caveat-event", "glossary_caveat.event", "string", { validValues: caveat.events, validValuesSource: "glossary_caveat.events" }),
-  f("--glossary-caveat-reason", "glossary_caveat.reason", "string", { validValues: caveat.reasons, validValuesSource: "glossary_caveat.reasons" }),
-  f("--glossary-caveat-ownership-state", "glossary_caveat.ownership_state", "string", { validValues: caveat.ownershipStates, validValuesSource: "glossary_caveat.ownershipStates" }),
-  f("--glossary-caveat-id", "glossary_caveat.caveat_id", "string"),
-  f("--glossary-caveat-transition-id", "glossary_caveat.transition_id", "string"),
-  f("--inspiration", "inspiration", "string"), f("--discovered", "discovered", "string"),
-  f("--verified", "verified", "string"), f("--next", "next", "string"),
-  f("--constraints", "context.constraints", "string"), f("--unknowns", "context.unknowns", "string"), f("--scope", "context.scope", "string"),
-];
-
-const decisionAppendFields: RuntimeOperationField[] = [
-  f("--question", "question", "string", { required: true }),
-  f("--context", "context", "string", { required: true }),
-  f("--alternative-chosen", "alternatives.chosen", "string", { required: true }),
-  f("--alternative-rejected", "alternatives.rejected", "string_list", { repeatable: true }),
-  f("--choice", "choice", "string", { required: true }),
-  f("--reasoning", "reasoning", "string", { required: true }),
-  f("--confidence", "confidence", "string", { required: true, validValues: ["firm", "provisional", "exploratory"] }),
-  f("--feeds-into", "feeds_into", "string"), f("--date", "date", "date", { required: false }),
-];
-
-const decisionAmendFields: RuntimeOperationField[] = [
-  f("--id", "id", "string", { required: true }), f("--base-sha256", "base_sha256", "string", { required: true }),
-  f("--question", "question", "string", { required: false }), f("--context", "context", "string", { required: false }),
-  f("--alternative-chosen", "alternatives.chosen", "string", { required: false }),
-  f("--alternative-rejected", "alternatives.rejected", "string_list", { repeatable: true, required: false }),
-  f("--choice", "choice", "string", { required: false }), f("--reasoning", "reasoning", "string", { required: false }),
-  f("--confidence", "confidence", "string", { required: false, validValues: ["firm", "provisional", "exploratory"] }),
-  f("--feeds-into", "feeds_into", "string", { required: false }),
 ];
 
 const taskContentFields: RuntimeOperationField[] = [
@@ -133,10 +94,10 @@ const op = (
 });
 
 const RUNTIME_OPERATIONS: RuntimeOperationSpec[] = [
-  op("progress", "append", progressFields, { ownedFields: ["id", "artifact", "publication_order"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact", "publication_order"], compacts: true }),
-  op("decisions", "append", decisionAppendFields, { ownedFields: ["id", "artifact"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact"], compacts: true }),
+  op("progress", "append", [], { ownedFields: ["id", "artifact", "publication_order"], inputMode: "structured", inputRoot: "one progress cycle record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "publication_order"], inputMaxBytes: 32768, compacts: true }),
+  op("decisions", "append", [], { ownedFields: ["id", "artifact"], inputMode: "structured", inputRoot: "one decision record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact"], inputMaxBytes: 32768, compacts: true }),
   op("decisions", "update", [f("--id", "id", "string", { required: true }), f("--satisfaction-state", "satisfaction.state", "string", { required: true, validValues: ["open", "provisionally_satisfied", "user_confirmed_satisfied"] }), f("--satisfaction-evidence", "satisfaction.evidence", "string"), f("--confirmed-by", "satisfaction.user_confirmation.confirmed_by", "string"), f("--confirmed-at", "satisfaction.user_confirmation.confirmed_at", "string")], { selectors: ["--id"], ownedFields: ["id", "artifact", "satisfaction"] }),
-  op("decisions", "amend", decisionAmendFields, { selectors: ["--id", "--base-sha256"], ownedFields: ["id", "artifact", "base_sha256"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact", "base_sha256"] }),
+  op("decisions", "amend", [f("--id", "id", "string", { required: true }), f("--base-sha256", "base_sha256", "string", { required: true })], { selectors: ["--id", "--base-sha256"], ownedFields: ["id", "artifact", "base_sha256"], inputMode: "structured", inputRoot: "amendable decision content", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "base_sha256"], inputMaxBytes: 32768 }),
   op("plan", "append", planAppendFields, { selectors: ["--plan"], ownedFields: ["id", "artifact", "plan"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact", "plan"] }),
   op("plan", "update", planUpdateFields, { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact", "plan"] }),
   op("plan", "set-status", [f("--id", "id", "string", { required: true }), f("--plan", "plan", "string"), f("--status", "status", "string", { required: true, validValues: ["complete", "in_progress", "pending", "blocked"], description: "Task execution status. Does not change the plan lifecycle." })], { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "status"] }),

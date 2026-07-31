@@ -2260,31 +2260,16 @@ mutation_grammar:
       preconditions: [entity_mode_marker_is_valid]
       owned_fields: [id, artifact, publication_order]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
+        mode: structured
+        root: one progress cycle record
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, publication_order]
       recovery: Run agentera state progress explain --verb append --format json and correct the rejected field; no state was changed.
-      examples: ['agentera state progress append --type fix --phase build --what "..." --intent "..." --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      examples: ['agentera state progress append --input progress.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       compacts: true
-      fields:
-        - { flag: --type, field: type, kind: string, required: true, valid_values: [feat, fix, docs, refactor, chore, test] }
-        - { flag: --phase, field: phase, kind: string, required: true, valid_values: [envision, deliberate, plan, build, audit] }
-        - { flag: --what, field: what, kind: string, required: true }
-        - { flag: --intent, field: context.intent, kind: string, required: true }
-        - { flag: --timestamp, field: timestamp, kind: datetime }
-        - { flag: --glossary-caveat-event, field: glossary_caveat.event, kind: string, valid_values_source: glossary_caveat.events }
-        - { flag: --glossary-caveat-reason, field: glossary_caveat.reason, kind: string, valid_values_source: glossary_caveat.reasons }
-        - { flag: --glossary-caveat-ownership-state, field: glossary_caveat.ownership_state, kind: string, valid_values_source: glossary_caveat.ownershipStates }
-        - { flag: --glossary-caveat-id, field: glossary_caveat.caveat_id, kind: string }
-        - { flag: --glossary-caveat-transition-id, field: glossary_caveat.transition_id, kind: string }
-        - { flag: --inspiration, field: inspiration, kind: string }
-        - { flag: --discovered, field: discovered, kind: string }
-        - { flag: --verified, field: verified, kind: string }
-        - { flag: --next, field: next, kind: string }
-        - { flag: --constraints, field: context.constraints, kind: string }
-        - { flag: --unknowns, field: context.unknowns, kind: string }
-        - { flag: --scope, field: context.scope, kind: string }
+      fields: []
 
     - artifact: decisions
       verb: append
@@ -2293,23 +2278,16 @@ mutation_grammar:
       preconditions: [entity_mode_marker_is_valid, exactly_one_chosen_alternative]
       owned_fields: [id, artifact]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
+        mode: structured
+        root: one decision record
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact]
       recovery: Run agentera state decisions explain --verb append --format json and supply every required field; no state was changed.
-      examples: ['agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      examples: ['agentera state decisions append --input decision.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       compacts: true
-      fields:
-        - { flag: --question, field: question, kind: string, required: true }
-        - { flag: --context, field: context, kind: string, required: true }
-        - { flag: --alternative-chosen, field: alternatives.chosen, kind: string, required: true }
-        - { flag: --alternative-rejected, field: alternatives.rejected, kind: string_list, repeatable: true }
-        - { flag: --choice, field: choice, kind: string, required: true }
-        - { flag: --reasoning, field: reasoning, kind: string, required: true }
-        - { flag: --confidence, field: confidence, kind: string, required: true, valid_values: [firm, provisional, exploratory] }
-        - { flag: --feeds-into, field: feeds_into, kind: string }
-        - { flag: --date, field: date, kind: date }
+      fields: []
 
     - artifact: decisions
       verb: update
@@ -2335,23 +2313,17 @@ mutation_grammar:
       preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, base_sha256_matches_current_effective_record]
       owned_fields: [id, artifact, base_sha256]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
+        mode: structured
+        root: amendable decision content
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, base_sha256]
       recovery: Reread the exact decision, copy its current effective SHA-256, and retry with at least one amendable field; no state was changed.
-      examples: ['agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --choice "..." --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      examples: ['agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
         - { flag: --base-sha256, field: base_sha256, kind: string, required: true }
-        - { flag: --question, field: question, kind: string }
-        - { flag: --context, field: context, kind: string }
-        - { flag: --alternative-chosen, field: alternatives.chosen, kind: string }
-        - { flag: --alternative-rejected, field: alternatives.rejected, kind: string_list, repeatable: true }
-        - { flag: --choice, field: choice, kind: string }
-        - { flag: --reasoning, field: reasoning, kind: string }
-        - { flag: --confidence, field: confidence, kind: string, valid_values: [firm, provisional, exploratory] }
-        - { flag: --feeds-into, field: feeds_into, kind: string }
 
     - artifact: plan
       verb: append
