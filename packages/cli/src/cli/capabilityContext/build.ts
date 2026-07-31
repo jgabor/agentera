@@ -41,7 +41,7 @@ export function buildExecutionContext(
   plan: JsonObject,
   progress: JsonObject,
   health: JsonObject,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   docs: JsonObject,
   profile: JsonObject,
   bundle: JsonObject,

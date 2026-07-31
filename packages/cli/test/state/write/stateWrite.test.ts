@@ -251,7 +251,7 @@ describe("retained entity writer contract matrix", () => {
     ["health append", ["health", "append", "--input", "-", "--format", "json"]],
     ["plan create", ["plan", "create", "--input", "-", "--format", "json"]],
     ["objective create", ["objective", "create", "--input", "-", "--format", "json"]],
-    ["todo create", ["todo", "create", "--severity", "normal", "--description", "blocked", "--format", "json"]],
+    ["todo create", ["todo", "create", "--input", "-", "--format", "json"]],
     ["docs create", ["docs", "create", "--document", "Blocked", "--path", "blocked.md", "--status", "current", "--format", "json"]],
     ["compact mutation", ["query", "progress", "--format", "json"]],
   ])("gates marker-absent %s with one upgrade recovery", (_label, args) => {

@@ -21,6 +21,7 @@ export type MutationInputMode = (typeof MUTATION_INPUT_MODES)[number];
 
 export type MutationFieldKind =
   | "string"
+  | "boolean"
   | "integer"
   | "string_list"
   | "integer_list"
@@ -110,7 +111,7 @@ function fields(value: unknown, path: string): MutationFieldDeclaration[] {
     const flag = requiredString(raw.flag, `${fieldPath}.flag`);
     const field = requiredString(raw.field, `${fieldPath}.field`);
     const kind = requiredString(raw.kind, `${fieldPath}.kind`) as MutationFieldKind;
-    if (!["string", "integer", "string_list", "integer_list", "date", "datetime"].includes(kind))
+    if (!["string", "boolean", "integer", "string_list", "integer_list", "date", "datetime"].includes(kind))
       throw new Error(`invalid mutation grammar: ${fieldPath}.kind '${kind}' is unsupported`);
     if (seenFlags.has(flag) || seenFields.has(field))
       throw new Error(`invalid mutation grammar: duplicate field ${flag}/${field} in ${path}`);

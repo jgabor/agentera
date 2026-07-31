@@ -30,7 +30,7 @@ export function bespokeCapabilityContexts(
   const profile = state.profile_dict as JsonObject;
   const nextAction = (state.next_action as { recommended: JsonObject }).recommended;
   const bundle = state.app as JsonObject;
-  const todoItems = state.todo_items as unknown as Array<Record<string, string>>;
+  const todoItems = state.todo_items as unknown as JsonObject[];
   const schemas = state.schemas as unknown as Record<string, SchemaInfo>;
   const projectRoot = String(state.project_root);
   const history = state.history && typeof state.history === "object" && !Array.isArray(state.history)

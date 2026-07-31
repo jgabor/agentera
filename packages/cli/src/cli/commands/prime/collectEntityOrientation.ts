@@ -29,6 +29,7 @@ import { issueCounts } from "../../orientation.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "../../todoReadinessSelection.js";
 import { projectCurrentGlossaryCaveats } from "../../../state/progressGlossaryCaveat.js";
 import { glossaryCaveatContract } from "../../../registries/glossaryCaveatContract.js";
+import { renderTodoPublicRecord } from "../../todoMarkdown.js";
 
 function entries(payload: JsonObject): JsonObject[] {
   return Array.isArray(payload.entries)
@@ -123,7 +124,7 @@ export interface EntityOrientationProjection {
   progress: ProgressSummary;
   health: HealthSummary;
   objective: ObjectiveSummary;
-  todoItems: Array<Record<string, string>>;
+  todoItems: JsonObject[];
   todoCounts: IssueCounts;
   todoDetail: TodoDetailSummary;
   todoReadiness: TodoReadinessQueueSelection;
@@ -284,12 +285,21 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     .filter((entry) => entry.boundary === "todo_item" && entry.classification === "valid" && entry.id && entry.artifact && entry.record)
     .map((entry) => ({ id: entry.id!, artifact: entry.artifact!, record: entry.record! }));
   const todoReadiness = evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot);
-  const todoItems = todoEntries.map((entry) => ({
-    id: String(entry.id), artifact: String(entry.artifact),
-    severity: String(record(entry).severity ?? "normal"),
-    status: String(record(entry).status ?? "open"),
-    text: String(record(entry).description ?? ""),
-  }));
+  const todoItems = todoEntries.map((entry) => {
+    const todo = record(entry);
+    return {
+      id: String(entry.id), artifact: String(entry.artifact),
+      severity: String(todo.severity ?? "normal"),
+      status: String(todo.status ?? "open"),
+      kind: typeof todo.kind === "string" ? todo.kind : null,
+      target_version: typeof todo.target_version === "string" ? todo.target_version : null,
+      title: typeof todo.title === "string" ? todo.title : null,
+      requirements: Array.isArray(todo.requirements) ? todo.requirements : [],
+      acceptance: Array.isArray(todo.acceptance) ? todo.acceptance : [],
+      release_blocker: todo.release_blocker === true,
+      text: renderTodoPublicRecord(todo),
+    };
+  });
   const todoCounts = issueCounts(
     discovery.entities
       .filter((entry) => entry.boundary === "todo_item" && entry.record?.status === "open")

@@ -2,6 +2,7 @@ import path from "node:path";
 
 import { loadTodoReadinessContract } from "../registries/todoReadinessContract.js";
 import { TODO_SEVERITY_ORDER } from "./todoSeverity.js";
+import { renderTodoPublicRecord } from "./todoMarkdown.js";
 
 export interface TodoReadinessEntity {
   id: string;
@@ -121,7 +122,7 @@ export function evaluateTodoReadinessQueue(
       id: entity.id,
       artifact: entity.artifact,
       severity: String(record.severity ?? "normal"),
-      description: String(record.description ?? ""),
+       description: renderTodoPublicRecord(record),
       outcome,
       result: String(authority.result),
       eligible: authority.eligible === true,

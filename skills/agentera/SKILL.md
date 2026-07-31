@@ -220,6 +220,16 @@ Common mutations:
 - `npx -y agentera@next state plan set-plan-status --status complete --format json`
 - `npx -y agentera@next state plan archive --format json`
 - `npx -y agentera@next state health append --input audit.yaml --format json`
+- `npx -y agentera@next state todo create --input todo.yaml --format json`
+- `npx -y agentera@next state todo update --id ID --input todo-patch.yaml --format json`
+- `npx -y agentera@next state todo set-severity|supersede|resolve|reopen --id ID ... --format json`
+
+TODO create input is a full YAML/JSON typed record. TODO update input is a
+patch: omitted fields remain unchanged and only `target_version`,
+`requirements`, `acceptance`, and `readiness` accept typed clears. Public TODO
+fields remain TODO.md-owned; readiness, dependencies, gates, evidence, and
+lifecycle metadata remain Agentera-owned. Lifecycle verbs are flag-only and do
+not accept record payloads.
 
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their

@@ -8,10 +8,10 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
-import { parseTodoMarkdownListItem } from "../cli/todoMarkdown.js";
+import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { assertRealpathBoundary, docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
-import { canonicalEntityEnvelopeBytes, entityForbiddenCanonicalAliases, entityPreservedAggregateCollections, validateCanonicalEntityTargets } from "./entityStorage.js";
+import { canonicalEntityEnvelopeBytes, discoverEntities, entityForbiddenCanonicalAliases, entityPreservedAggregateCollections, validateCanonicalEntityTargets } from "./entityStorage.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 import { classifyCompleteDecisionConfidence, decisionLegacyCoexistence } from "./decisionLegacyValidation.js";
@@ -610,13 +610,26 @@ function todoAndDocs(root: string, todoPath: string, files: SourceFile[], observ
       if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : section;
       const item = parseTodoMarkdownListItem(line.trim());
       if (!item) return;
-      const severity = section === "resolved" ? "normal" : section;
-      const record = { severity, status: item.status, description: item.description };
+       const severity = section === "resolved" ? "normal" : section;
+       const record: JsonObject = item.kind
+         ? { kind: item.kind, target_version: item.target_version ?? null, title: item.title ?? item.description, requirements: [], acceptance: [], release_blocker: false, severity, status: item.status }
+         : { severity, status: item.status, description: item.description };
       const violations = todoDocsRecordViolations("todo_item", record);
       observations.push({ key: `${todoPath}:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
     });
   } else if (todo?.kind === "unsafe") {
     observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(todoPath) });
+  }
+  const existingTodos = discoverEntities(root, resolveSourceRoot()).entities.filter((entity) => entity.boundary === "todo_item" && entity.id && entity.record);
+  for (const entity of existingTodos) {
+    const row = todoMarkdownRowForMigration(todo?.kind === "file" && todo.bytes ? todo.bytes.toString("utf8") : "", entity.id!);
+    if (!row) continue;
+    const severityMatches = row.severity === "resolved" || row.severity === null || entity.record!.severity === row.severity;
+    const publicText = row.item.public_description ?? row.item.description;
+    const entityText = renderTodoPublicRecord(entity.record!);
+    const textMatches = entity.record!.title !== undefined ? entityText === publicText : entityText === row.item.description || entityText === publicText;
+    const publicMatches = entity.record!.status === row.item.status && severityMatches && textMatches;
+    if (!publicMatches) observations.push({ key: `conflict:todo:public:${entity.id}`, artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "public_authority_conflict", record: null, detail: "corrupt", relationships: [], message: `TODO.md and Agentera disagree on public values for TODO '${entity.id}'` });
   }
   const docs = files.find((source) => source.relative === ".agentera/docs.yaml");
   if (docs?.kind === "file") {
@@ -638,6 +651,17 @@ function todoAndDocs(root: string, todoPath: string, files: SourceFile[], observ
   } else if (docs?.kind === "unsafe") {
     observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(docs.relative) });
   }
+}
+
+function todoMarkdownRowForMigration(text: string, id: string): { severity: string | null; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> } | null {
+  let section = "normal";
+  for (const line of text.split(/\r?\n/)) {
+    const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
+    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : section;
+    const item = parseTodoMarkdownListItem(line.trim());
+    if (item?.id === id) return { severity: section === "resolved" ? "resolved" : ["critical", "degraded", "normal", "annoying"].includes(section) ? section : null, item };
+  }
+  return null;
 }
 
 function preservedSingletons(files: SourceFile[]): EntityMigrationPreview["preserved_singletons"] {
@@ -667,6 +691,7 @@ function canonicalSummaryBodies(group: Observation[], forbiddenAliases: readonly
 
 function classify(group: Observation[], forbiddenAliases: readonly string[]): EntityMigrationClassification {
   if (group.some((item) => item.provenance === "historical_projection_residue")) return "historical_projection_residue";
+  if (group.some((item) => item.key.startsWith("conflict:"))) return "conflict";
   if (group.some((item) => item.key.startsWith("unsupported:"))) return "unsupported";
   if (group.some((item) => item.detail === "corrupt")) return "corrupt";
   if (group.every((item) => item.detail === "summary")) {

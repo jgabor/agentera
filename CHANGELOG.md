@@ -4,7 +4,7 @@
 
 ### Changed
 
-- State mutation behavior now comes from one code-owned 22-operation registry,
+- State mutation behavior now comes from one code-owned 25-operation registry,
   with declarative discovery in `references/artifacts/state-storage-authority.yaml`
   required to match it before commands run. `state <family> explain --all`,
   per-verb explain, schema, help, and package projections share a contract digest
@@ -131,6 +131,10 @@
 
 ### Fixed
 
+- Fixed TODO writes to use typed file-or-stdin create records and
+  omission-preserving patches with explicit clears, mapped `TODO.md` public
+  authority, target-specific release blockers, and flag-only lifecycle
+  transitions that replay exactly and reject divergent retries before effects.
 - Fixed Prime and `agentera report profile-grounding` to share one bounded
   profile validity result, separate structural validity from freshness,
   preserve producer-only profile path access, and fail closed without profile

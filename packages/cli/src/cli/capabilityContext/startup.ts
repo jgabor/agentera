@@ -126,7 +126,7 @@ function slimHistoryState(history: JsonObject): JsonObject {
   return result;
 }
 
-export function slimTodoState(todoItems: Array<Record<string, string>>): JsonObject {
+export function slimTodoState(todoItems: JsonObject[]): JsonObject {
   const severityCounts: Record<string, number> = {};
   for (const item of todoItems) {
     const severity = String(item.severity ?? "normal");
@@ -147,7 +147,7 @@ export function genericSlimStartupContext(
   docs: JsonObject,
   progress: JsonObject,
   health: JsonObject,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   profile: JsonObject,
 ): JsonObject {
   const decisionsPointer = fallbackStatePointer("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
@@ -233,7 +233,7 @@ export function slimCapabilityContext(
   docs: JsonObject,
   progress: JsonObject,
   health: JsonObject,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   history: JsonObject,
   bespokeContexts: JsonObject | null,
 ): JsonObject {

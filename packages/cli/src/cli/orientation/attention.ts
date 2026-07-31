@@ -87,9 +87,9 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   if (decisionAttention !== null) attention.push(String(decisionAttention.attention));
   if (!(pending && typeof pending === "object" && !Array.isArray(pending)) && todoItems.length > 0) {
     const firstTodo = [...todoItems].sort(
-      (a, b) => (TODO_SEVERITY_ORDER[a.severity] ?? 2) - (TODO_SEVERITY_ORDER[b.severity] ?? 2),
+      (a, b) => (TODO_SEVERITY_ORDER[String(a.severity)] ?? 2) - (TODO_SEVERITY_ORDER[String(b.severity)] ?? 2),
     )[0];
-    attention.push(`${firstTodo.severity}: TODO: ${firstTodo.text}`);
+    attention.push(`${String(firstTodo.severity)}: TODO: ${String(firstTodo.text)}`);
   }
   return attention;
 }

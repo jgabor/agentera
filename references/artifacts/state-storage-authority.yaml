@@ -490,9 +490,12 @@ entity_target:
       implementation: implemented
       publication: replace_owned_entity
       record:
-        required_fields: [severity, status, description]
+        required_fields: [severity, status]
         required_paths: []
-        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number, path]
+        forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number, path, public_order]
+      ownership:
+        fields: [kind, target_version, title, requirements, acceptance, release_blocker, severity, status, readiness, lifecycle]
+        cardinality: TODO.md owns public fields; Agentera owns operational fields
       retrieval:
         exact: agentera state todo get --id ID --format json
         list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
@@ -2558,68 +2561,97 @@ mutation_grammar:
       verb: create
       class: record_payload
       selectors: []
-      preconditions: [entity_mode_marker_is_valid, severity_is_valid, readiness_is_complete_or_needs_triage]
-      owned_fields: [id, artifact, status, public_order]
+      preconditions: [entity_mode_marker_is_valid, full_typed_record_is_valid, readiness_is_complete_or_needs_triage, dependency_graph_is_valid]
+      owned_fields: [id, artifact, status, public_order, lifecycle]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
-        cli_owned_fields: [id, artifact, status, public_order]
-      recovery: Run agentera state todo explain --verb create --format json, provide the valid severity and readiness vocabulary, and retry.
-      examples: ['agentera state todo create --severity normal --description "..." --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
-      fields:
-        - { flag: --severity, field: severity, kind: string, required: true, valid_values: [critical, degraded, normal, annoying] }
-        - { flag: --description, field: description, kind: string, required: true }
-        - { flag: --capability, field: readiness.capability, kind: string, valid_values_source: todo_readiness.allowed_destinations }
-        - { flag: --reason, field: readiness.reason, kind: string }
-        - { flag: --dependency, field: readiness.dependencies, kind: string_list, repeatable: true }
-        - { flag: --blocked-reason, field: readiness.blocked.reason, kind: string }
-        - { flag: --blocked-recovery, field: readiness.blocked.recovery, kind: string }
-        - { flag: --gate-state, field: readiness.gate.state, kind: string, valid_values: [pending, satisfied] }
-        - { flag: --gate-reason, field: readiness.gate.reason, kind: string }
-        - { flag: --gate-recovery, field: readiness.gate.recovery, kind: string }
-        - { flag: --queue-rank, field: readiness.queue_rank, kind: integer }
-        - { flag: --order-reason, field: readiness.order_reason, kind: string }
+        mode: structured
+        root: full typed TODO record
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
+        cli_owned_fields: [id, artifact, status, public_order, lifecycle]
+      recovery: Run agentera state todo explain --verb create --format json, remove CLI-owned fields, provide the full typed TODO record, and retry.
+      examples: ['agentera state todo create --input todo.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
+      fields: []
 
     - artifact: todo
       verb: update
       class: record_payload
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, supplied_readiness_is_complete]
-      owned_fields: [id, artifact, status, public_order]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, typed_patch_is_valid, dependency_graph_is_valid, public_authority_matches]
+      owned_fields: [id, artifact, status, public_order, lifecycle]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
-        cli_owned_fields: [id, artifact, status, public_order]
-      recovery: Reread the TODO item, use its bare ID, and provide either no readiness flags or the complete readiness group.
-      examples: ['agentera state todo update --id qjtrmnpvka --description "..." --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+        mode: structured
+        root: TODO record patch
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
+        cli_owned_fields: [id, artifact, status, public_order, lifecycle]
+      recovery: Reread the TODO item, use its bare ID, supply only typed patch fields, and use null or an empty list only for declared clearable fields.
+      examples: ['agentera state todo update --id qjtrmnpvka --input todo-patch.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
+      fields: [{ flag: --id, field: id, kind: string, required: true }]
+
+    - artifact: todo
+      verb: set-severity
+      class: simple_transition
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, severity_is_valid, reason_and_date_are_present, public_authority_matches]
+      owned_fields: [id, artifact, severity, lifecycle]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Use the bare TODO ID, one immediate-impact severity, a reason, and a YYYY-MM-DD date; no record input is accepted.
+      examples: ['agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31 --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
-        - { flag: --severity, field: severity, kind: string, valid_values: [critical, degraded, normal, annoying] }
-        - { flag: --description, field: description, kind: string }
-        - { flag: --capability, field: readiness.capability, kind: string, valid_values_source: todo_readiness.allowed_destinations }
-        - { flag: --reason, field: readiness.reason, kind: string }
-        - { flag: --dependency, field: readiness.dependencies, kind: string_list, repeatable: true }
-        - { flag: --blocked-reason, field: readiness.blocked.reason, kind: string }
-        - { flag: --blocked-recovery, field: readiness.blocked.recovery, kind: string }
-        - { flag: --gate-state, field: readiness.gate.state, kind: string, valid_values: [pending, satisfied] }
-        - { flag: --gate-reason, field: readiness.gate.reason, kind: string }
-        - { flag: --gate-recovery, field: readiness.gate.recovery, kind: string }
-        - { flag: --queue-rank, field: readiness.queue_rank, kind: integer }
-        - { flag: --order-reason, field: readiness.order_reason, kind: string }
+        - { flag: --severity, field: severity, kind: string, required: true, valid_values: [critical, degraded, normal, annoying] }
+        - { flag: --reason, field: lifecycle.reason, kind: string, required: true }
+        - { flag: --date, field: lifecycle.date, kind: date, required: true }
+
+    - artifact: todo
+      verb: supersede
+      class: simple_transition
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, replacement_is_distinct_existing_todo, reason_and_date_are_present, public_authority_matches]
+      owned_fields: [id, artifact, status, lifecycle]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Use the selected bare TODO ID, an existing distinct replacement ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
+      examples: ['agentera state todo supersede --id qjtrmnpvka --replacement zqtrmnpvka --reason "Replaced by narrower work" --date 2026-07-31 --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --replacement, field: lifecycle.replacement, kind: string, required: true }
+        - { flag: --reason, field: lifecycle.reason, kind: string, required: true }
+        - { flag: --date, field: lifecycle.date, kind: date, required: true }
 
     - artifact: todo
       verb: resolve
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, item_is_open]
-      owned_fields: [id, artifact, status]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, item_is_open, reason_and_date_are_present, public_authority_matches]
+      owned_fields: [id, artifact, status, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
-      recovery: Use the bare TODO ID returned by state todo list or get; no content flags are accepted.
-      examples: ['agentera state todo resolve --id qjtrmnpvka --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
-      fields: [{ flag: --id, field: id, kind: string, required: true }]
+      recovery: Use the bare TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
+      examples: ['agentera state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31 --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --reason, field: lifecycle.reason, kind: string, required: true }
+        - { flag: --date, field: lifecycle.date, kind: date, required: true }
+
+    - artifact: todo
+      verb: reopen
+      class: simple_transition
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, item_is_resolved, reason_and_date_are_present, public_authority_matches]
+      owned_fields: [id, artifact, status, lifecycle]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Use the bare resolved TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
+      examples: ['agentera state todo reopen --id qjtrmnpvka --reason "Scope returned" --date 2026-07-31 --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --reason, field: lifecycle.reason, kind: string, required: true }
+        - { flag: --date, field: lifecycle.date, kind: date, required: true }
 
     - artifact: docs
       verb: create

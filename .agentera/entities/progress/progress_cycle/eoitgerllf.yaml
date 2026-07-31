@@ -1,0 +1,13 @@
+id: eoitgerllf
+artifact: progress
+record:
+  timestamp: 2026-07-31 05:45
+  type: fix
+  phase: build
+  what: Implemented typed TODO records, omission-preserving patches, lifecycle transitions, graph validation, and TODO.md public-authority conflict checks.
+  context:
+    intent: Verify the TODO-family conversion before independent Audit without closing its orchestration task.
+  discovered: "The code-owned registry and parity-only authority now expose six TODO write verbs: two structured record payloads and four flag-only transitions."
+  verified: Focused TODO writer/read/migration/reconciliation-boundary tests passed (179 tests in the selected TODO lane); full source passed 3,088 tests with 1 skipped; package verification passed 17 tests; typecheck, build, state validation, compact, capability-contract validation, mutation grammar parity, and built-CLI file/stdin create/update, omission, clear, replay, dry-run, lifecycle, retired-flag, owned-field, invalid-graph, migration, and divergence/no-effect smokes passed. Release-metadata remains intentionally unrun-successful because the governed package gitRef is stale and version/ref mutation is prohibited for this task.
+  next: Hand the substantive change to independent Audit; keep nkguykzeum and gbcpgevezi as the current TODO pointer until Audit PASS.
+  publication_order: 16

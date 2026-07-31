@@ -1,0 +1,23 @@
+id: oeprigteku
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M2 retry · Correct TODO lifecycle replay conflicts (gbcpgevezi)
+  status: complete
+  depends_on:
+    - mascmjrpug
+  acceptance:
+    - GIVEN a completed set-severity transition WHEN retried identically THEN it replays, while a changed severity conflicts before effects.
+    - GIVEN an established supersession WHEN retried with the same replacement THEN it replays, while a different replacement conflicts without rewriting lifecycle state.
+    - GIVEN all four TODO lifecycle verbs WHEN identical and divergent retries are tested THEN receipts and persisted state agree and all previously passing typed-record criteria remain green.
+    - GIVEN independent Audit returns PASS WHEN the replacement closes THEN blocked task nkguykzeum is superseded and its downstream dependency becomes eligible.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: oeprigteku-audit-1
+      source: Independent Audit ses_049868471ffeKZ02h4li7bUesB
+      recorded_at: 2026-07-31 06:48
+      writer_command: agentera state plan record-evaluation

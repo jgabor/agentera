@@ -220,7 +220,7 @@ export interface OrientationState {
   objective: ObjectiveSummary;
   state_presence: StatePresenceSummary;
   corpus_coverage: CorpusCoverageSummary;
-  todo_items: Array<Record<string, string>>;
+  todo_items: JsonObject[];
   todo_detail: TodoDetailSummary;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;

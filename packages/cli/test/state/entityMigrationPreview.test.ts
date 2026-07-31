@@ -350,6 +350,18 @@ describe("entity migration read-only preview", () => {
     ]));
   });
 
+  it("blocks migration when a managed TODO row disagrees with an existing entity public projection", () => {
+    const root = project();
+    const id = "aaaaaaaaaa";
+    write(root, "TODO.md", `# TODO\n\n## → Normal\n- [ ] [id:${id}] [fix:3.0.0] Markdown title\n`);
+    write(root, `.agentera/entities/todo/todo_item/${id}.yaml`, `id: ${id}\nartifact: todo\nrecord:\n  kind: fix\n  target_version: 3.0.0\n  title: Agentera title\n  requirements: []\n  acceptance: []\n  release_blocker: false\n  severity: normal\n  status: open\n`);
+    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
+    const conflict = preview.entries.find((entry) => entry.source_identity === `conflict:todo:public:${id}`);
+    expect(conflict).toMatchObject({ classification: "conflict", artifact: "todo", boundary: "todo_item", detail_availability: "unavailable", recovery: expect.any(String) });
+    expect(conflict?.recovery).toContain("TODO.md");
+    expect(preview.status).not.toBe("ready");
+  });
+
   it("inventories the docs-mapped TODO authority when the root default is absent", () => {
     const root = project();
     write(root, ".agentera/docs.yaml", "mapping:\n  - artifact: TODO.md\n    path: project/TASKS.md\n");

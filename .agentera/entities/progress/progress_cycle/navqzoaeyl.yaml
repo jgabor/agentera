@@ -1,0 +1,14 @@
+id: navqzoaeyl
+artifact: progress
+record:
+  timestamp: 2026-07-31 06:25
+  type: fix
+  phase: audit
+  what: "Corrected the independent TODO Audit findings: mapped TODO public-authority checks, typed TODO projections and target-specific closeout blockers, fatal UTF-8 and retired-description input rejection, bounded lifecycle reasons, and idempotent resolve/reopen retries."
+  context:
+    intent: Make the typed TODO and lifecycle implementation satisfy the failed independent Audit without resolving the orchestration task or changing protected state.
+    constraints: Do not modify vision or profile state; do not resolve or complete the TODO task; do not publish, tag, push, or repair stale release metadata; repository-first three-way reconciliation remains deferred.
+    scope: packages/cli/src/state/todoDocsEntities.ts, packages/cli/src/state/todoDocsEntityValidation.ts, packages/cli/src/state/write/input.ts, packages/cli/src/cli/commands/prime/collectEntityOrientation.ts, packages/cli/src/cli/capabilityContext/closeout.ts, related TODO context types and regressions
+  verified: Focused TODO, orientation, prime, migration, mutation-grammar, and state-writer tests passed; full source passed 3,091 tests with 1 skipped; package verification passed 17 tests; typecheck, build, built CLI create/resolve-replay/invalid-UTF-8 smoke, state validation, compact, capability-contract validation, and document capability validation passed. Release metadata remains intentionally unrun-successful because the governed package gitRef is stale and metadata mutation is prohibited.
+  next: Run the independent Audit again; preserve nkguykzeum and gbcpgevezi as nonterminal until Audit PASS, and keep M3 reconciliation out of scope.
+  publication_order: 17

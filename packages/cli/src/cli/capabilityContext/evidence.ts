@@ -76,7 +76,7 @@ export function evidenceHealthState(health: JsonObject): JsonObject {
   };
 }
 
-export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems: Array<Record<string, string>>): JsonObject {
+export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems: JsonObject[]): JsonObject {
   const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
   const exists = fs.existsSync(artifactPath(info, "todo"));
   return {
@@ -340,7 +340,7 @@ export function auditEvidenceContext(
   plan: JsonObject,
   progress: JsonObject,
   health: JsonObject,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   docs: JsonObject,
   profile: JsonObject,
   bundle: JsonObject,

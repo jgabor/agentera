@@ -1,6 +1,7 @@
 import type { SchemaInfo } from "../../appContext.js";
 import { emitStructured } from "../../structured.js";
 import { TODO_SEVERITY_ORDER_KEYS } from "../../todoSeverity.js";
+import { renderTodoPublicRecord } from "../../todoMarkdown.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import YAML from "yaml";
@@ -29,8 +30,8 @@ export function queryTodo(
       ...(openOnly ? { status: "open" } : {}),
     }, { format });
     if (format === "json" || format === "yaml") emitStructured(response, format, output);
-    else for (const entry of response.entries as Array<{ id: string; record: { severity: string; status: string; description: string } }>) {
-      output(`[${entry.record.severity}] ${entry.id} ${entry.record.status}: ${entry.record.description}\n`);
+    else for (const entry of response.entries as Array<{ id: string; record: Record<string, unknown> & { severity: string; status: string } }>) {
+      output(`[${entry.record.severity}] ${entry.id} ${entry.record.status}: ${renderTodoPublicRecord(entry.record)}\n`);
     }
     return 0;
   } catch (error) {

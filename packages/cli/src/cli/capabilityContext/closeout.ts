@@ -39,14 +39,18 @@ export function closeoutVersionPolicy(docs: JsonObject): JsonObject {
   };
 }
 
-export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoItems: Array<Record<string, string>>): JsonObject {
+export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoItems: JsonObject[], selectedTargetVersion: string | null = null): JsonObject {
   const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
   const exists = fs.existsSync(artifactPath(info, "todo"));
+  const blockers = selectedTargetVersion === null
+    ? []
+    : todoItems.filter((item) => item.status === "open" && item.release_blocker === true && item.target_version === selectedTargetVersion);
   return {
     status: exists ? "available" : "unavailable",
     source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
-    open_count: todoItems.length,
-    items: todoItems,
+    selected_target_version: selectedTargetVersion,
+    open_count: blockers.length,
+    items: blockers,
     caveats: exists ? [] : ["TODO state is unavailable in CLI state."],
   };
 }
@@ -154,7 +158,7 @@ export function documentCloseoutContext(
   schemas: Record<string, SchemaInfo>,
   plan: JsonObject,
   progress: JsonObject,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   docs: JsonObject,
   profile: JsonObject,
   bundle: JsonObject,
@@ -165,8 +169,8 @@ export function documentCloseoutContext(
   const capabilityContract = capabilityContext(capability) ?? {};
   const artifactMappings = closeoutArtifactMappings(docs);
   const versionPolicy = closeoutVersionPolicy(docs);
-  const todoBlockers = closeoutTodoBlockers(schemas, todoItems);
   const changelogBoundary = closeoutChangelogBoundary(projectRoot, plan);
+  const todoBlockers = closeoutTodoBlockers(schemas, todoItems, typeof changelogBoundary.selected_target_version === "string" ? changelogBoundary.selected_target_version : null);
   const progressEvidence = progressVerificationSummary(progress);
   const benchmarkEvidence = closeoutBenchmarkEvidence(docs);
   const releaseBoundary = closeoutReleaseBoundary(changelogBoundary, bundle);

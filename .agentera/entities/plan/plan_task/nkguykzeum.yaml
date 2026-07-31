@@ -4,7 +4,7 @@ record:
   name: M2 tail · Define typed TODO records and lifecycle (gbcpgevezi)
   depends_on:
     - mascmjrpug
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN valid typed TODO public fields WHEN created or patched through structured input THEN supplied values change, omissions remain unchanged, and explicit typed clears remove only clearable values.
     - GIVEN a lifecycle operation WHEN invoked THEN it remains a distinct flag-only transition and cannot be expressed as record content.
@@ -12,3 +12,16 @@ record:
     - GIVEN invalid dependency graphs, owned operational fields, retired flags, or lifecycle misuse WHEN submitted THEN rejection occurs before effects.
     - GIVEN valid replay, dry-run, reconciliation, or migration WHEN completed THEN public and Agentera-owned fields retain their assigned authorities.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Criteria 4 and 5 still fail: set-severity replay identity omits requested severity and can falsely acknowledge a changed value; supersede permits a different replacement after an established supersession. Require exact replay identity and deterministic conflict for divergence."
+    provenance:
+      attempt_id: nkguykzeum-audit-2
+      source: Bounded independent re-review ses_049b342c4ffe8f4eTCY7FrgL0O
+      recorded_at: 2026-07-31 06:30
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - oeprigteku
+  superseded_reason: Replacement corrected TODO lifecycle replay conflicts and earned independent PASS.

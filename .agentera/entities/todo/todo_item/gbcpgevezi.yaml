@@ -2,7 +2,7 @@ id: gbcpgevezi
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Define the typed TODO record and lifecycle contract while converting writes to structured input. Require `state todo create --input <path|->` and `state todo update --id ID --input <path|->` with full and patch YAML or JSON from files and stdin. Omitted patch fields preserve state and explicit typed clears remove it; callers never repeat complete readiness merely to retain it. Add `kind`, `target_version`, `title`, `requirements`, `acceptance`, and `release_blocker` separately from severity, and render `[kind:target]` rather than store it in prose. Severity remains immediate impact; release gates use `release_blocker` and `target_version` so stable-cut dependencies need not be critical. Keep `set-severity`, `supersede`, `resolve`, and `reopen` as typed transitions with reason, date, and replacement fields, never Markdown strikethrough. Validate graphs and CLI-owned fields before effects and synchronize schema, explain, help, package projection, exact replay, dry-run, migration, and tests for batch and reconciliation consumers."
   readiness:
     capability: build
@@ -14,3 +14,7 @@ record:
     gate: null
     queue_rank: 70
     order_reason: Convert the TODO payload grammar in parallel with other writer families, then unblock the existing projection-authority fix.
+  lifecycle:
+    operation: resolve
+    reason: Typed TODO records and lifecycle transitions shipped; replacement oeprigteku earned independent PASS.
+    date: 2026-07-31

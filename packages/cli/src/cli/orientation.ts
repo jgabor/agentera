@@ -265,14 +265,14 @@ function checkAuditStaleness(
 
 // ── todo items + issue counts ───────────────────────────────────────
 
-export function loadTodoItems(schemas: Record<string, SchemaInfo>): Array<Record<string, string>> {
+export function loadTodoItems(schemas: Record<string, SchemaInfo>): JsonObject[] {
   const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
   const todoPath = artifactPath(info, "todo");
   if (!fs.existsSync(todoPath)) return [];
   const data = loadArtifact(todoPath);
   const entries = extractEntries(data);
   if (entries.length > 0) {
-    const items: Array<Record<string, string>> = [];
+    const items: JsonObject[] = [];
     for (const entry of entries) {
       if (!isOpenEntry(entry)) continue;
       const text = firstPresent(entry, ["description", "title", "name"], "");
@@ -285,7 +285,7 @@ export function loadTodoItems(schemas: Record<string, SchemaInfo>): Array<Record
     }
     return items;
   }
-  const items: Array<Record<string, string>> = [];
+  const items: JsonObject[] = [];
   let currentSeverity = "";
   const text = fs.readFileSync(todoPath, "utf8");
   for (const line of text.split(/\r\n|\r|\n/)) {
@@ -309,16 +309,16 @@ export function loadTodoItems(schemas: Record<string, SchemaInfo>): Array<Record
       const parsed = parseTodoMarkdownListItem(stripped);
       if (!parsed || isResolvedTodoMarkdownStatus(parsed.status)) continue;
       if (!parsed.description) continue;
-      items.push({ severity: currentSeverity, status: parsed.status, text: parsed.description });
+       items.push({ severity: currentSeverity, status: parsed.status, text: parsed.description });
     }
   }
   return items;
 }
 
-export function issueCounts(todoItems: Array<Record<string, string>>): IssueCounts {
+export function issueCounts(todoItems: JsonObject[]): IssueCounts {
   const counts = { critical: 0, degraded: 0, normal: 0, annoying: 0 };
   for (const item of todoItems) {
-    const severity = item.severity;
+    const severity = String(item.severity ?? "normal");
     if (severity === "critical") counts.critical += 1;
     else if (severity === "degraded" || severity === "warning") counts.degraded += 1;
     else if (severity === "info" || severity === "annoying") counts.annoying += 1;
@@ -781,7 +781,7 @@ export function selectStatusReadiness(
   plan: PlanSummary,
   health: HealthSummary,
   objective: ObjectiveSummary,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   decision: DecisionFollowUp | null,
   savedContext: boolean,
   completeTodoReadiness?: TodoReadinessQueueSelection,
@@ -894,7 +894,7 @@ export function selectStatusNextAction(
   plan: PlanSummary,
   health: HealthSummary,
   objective: ObjectiveSummary,
-  todoItems: Array<Record<string, string>>,
+  todoItems: JsonObject[],
   decision: DecisionFollowUp | null,
   savedContext: boolean,
   completeTodoReadiness?: TodoReadinessQueueSelection,

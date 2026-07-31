@@ -1,7 +1,9 @@
 # Todo Artifact Schema
 #
 # Open issues and tasks maintained by build and audit. Severity-ranked
-# checklist of work to be done, resolved items, and deferred work.
+# checklist of work to be done, resolved items, and deferred work. New writes
+# use the typed record below; the legacy description form remains readable only
+# through the explicit compatibility boundary used by entity migration.
 #
 # Marker-absent projects retain TODO.md as legacy authority. After durable
 # entity cutover, each item is authoritative in one shared-contract entity
@@ -47,13 +49,58 @@ ITEM:
       - "Must be one of: critical, degraded, normal, annoying"
   2:
     id: TI2
-    field: description
+    field: kind
     type: string
     required: true
     description: >-
-      Brief description of the task or issue.
+      Work kind rendered as the public `[kind:target]` marker. It is not
+      severity; severity describes immediate impact.
   3:
     id: TI3
+    field: target_version
+    type: string_or_null
+    required: true
+    clearable: true
+    description: >-
+      Release target used with release_blocker; stable-cut dependencies need
+      not be critical.
+  4:
+    id: TI4
+    field: title
+    type: string
+    required: true
+    description: Short public TODO title, owned by TODO.md.
+  5:
+    id: TI5
+    field: requirements
+    type: string_list
+    required: true
+    clearable: true
+    description: Typed public requirements; an empty list is an explicit clear.
+  6:
+    id: TI6
+    field: acceptance
+    type: string_list
+    required: true
+    clearable: true
+    description: Typed public acceptance criteria; an empty list is an explicit clear.
+  7:
+    id: TI7
+    field: release_blocker
+    type: boolean
+    required: true
+    description: Release-gate state. Do not infer it from severity.
+  8:
+    id: TI8
+    field: description
+    type: string
+    required: false
+    compatibility: legacy_only
+    description: >-
+      Legacy public prose retained for existing entities. New typed records
+      use title and never store the `[kind:target]` marker in prose.
+  9:
+    id: TI9
     field: status
     type: string
     required: true
@@ -61,8 +108,8 @@ ITEM:
       Current status: open or resolved.
     validation:
       - "Must be one of: open, resolved"
-  4:
-    id: TI4
+  10:
+    id: TI10
     field: readiness
     type: mapping
     required: false
@@ -70,6 +117,28 @@ ITEM:
       Reviewer-declared state readiness. Absence means needs-triage and MUST
       NOT be interpreted from description prose. When present, the complete
       nested shape is owned by READINESS below.
+
+PUBLIC_OWNERSHIP:
+  description: >-
+    TODO.md owns public kind, target version, title, requirements, acceptance,
+    release blocker, severity, checkbox status, and within-severity order.
+    Agentera owns readiness, dependencies, gates, evidence, and lifecycle
+    transition metadata. A public disagreement is a conflict, never a silent
+    winner.
+  render: "[kind:target] title"
+  severity: >-
+    Immediate impact only. Release gating is release_blocker plus target_version;
+    a stable-cut dependency does not need critical severity.
+
+LIFECYCLE:
+  description: >-
+    set-severity, supersede, resolve, and reopen are flag-only typed transitions.
+    Each requires a reason and date; supersede additionally requires a distinct
+    existing replacement ID. Lifecycle operations are never accepted as
+    structured record content and never encoded as Markdown strikethrough.
+  clearable_patch_fields: [target_version, requirements, acceptance, readiness]
+  cli_owned_fields: [id, artifact, status, public_order, lifecycle]
+  transition_fields: [reason, date, replacement]
 
 READINESS:
   schema_version: agentera.todoReadiness.v1

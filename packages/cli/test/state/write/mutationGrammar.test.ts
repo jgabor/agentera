@@ -61,14 +61,14 @@ describe("declarative state mutation grammar", () => {
     }
   });
 
-  it("keeps requiredness identical across all 22 runtime, authority, schema, and explain operations", () => {
+  it("keeps requiredness identical across all 25 runtime, authority, schema, and explain operations", () => {
     const root = project();
     const runtime = runtimeOperationSpecs();
     const grammar = loadMutationGrammar();
     const schema = runCli(root, ["schema", "--format", "json"], "", false);
     expect(schema.rc, schema.err).toBe(0);
-    expect(runtime).toHaveLength(22);
-    expect(grammar.operations).toHaveLength(22);
+    expect(runtime).toHaveLength(25);
+    expect(grammar.operations).toHaveLength(25);
 
     const schemaOperations = new Map<string, any>();
     for (const artifact of schema.json.state_writer.artifacts) {
@@ -76,7 +76,7 @@ describe("declarative state mutation grammar", () => {
         schemaOperations.set(`${artifact.artifact}.${operation.verb}`, operation);
       }
     }
-    expect(schemaOperations.size).toBe(22);
+    expect(schemaOperations.size).toBe(25);
 
     const explainAllOperations = new Map<string, any>();
     for (const artifact of [...new Set(runtime.map((operation) => operation.artifact))]) {
@@ -86,7 +86,7 @@ describe("declarative state mutation grammar", () => {
         explainAllOperations.set(`${artifact}.${operation.requested_verb}`, operation);
       }
     }
-    expect(explainAllOperations.size).toBe(22);
+    expect(explainAllOperations.size).toBe(25);
 
     for (const operation of runtime) {
       const key = `${operation.artifact}.${operation.verb}`;

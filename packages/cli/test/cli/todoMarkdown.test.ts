@@ -7,6 +7,9 @@ describe("parseTodoMarkdownListItem", () => {
     expect(parseTodoMarkdownListItem("- [x] [fix] Resolved item")).toEqual({
       status: "resolved",
       description: "[fix] Resolved item",
+      title: "Resolved item",
+      kind: "fix",
+      target_version: null,
     });
   });
 
@@ -14,6 +17,9 @@ describe("parseTodoMarkdownListItem", () => {
     expect(parseTodoMarkdownListItem("- [ ] [fix] Open item")).toEqual({
       status: "open",
       description: "[fix] Open item",
+      title: "Open item",
+      kind: "fix",
+      target_version: null,
     });
   });
 
@@ -21,6 +27,9 @@ describe("parseTodoMarkdownListItem", () => {
     expect(parseTodoMarkdownListItem("- [fix:3.0.0] Type-only item")).toEqual({
       status: "open",
       description: "Type-only item",
+      title: "Type-only item",
+      kind: "fix",
+      target_version: "3.0.0",
     });
   });
 

@@ -100,6 +100,15 @@ function readFlag(
 }
 
 function converted(field: OperationField, raw: string): unknown {
+  if (field.kind === "boolean") {
+    if (raw !== "true" && raw !== "false")
+      invalid({
+        class: "invalid_choice",
+        message: `argument ${field.flag}: expected true or false, got '${raw}'`,
+        valid_values: ["true", "false"],
+      });
+    return raw === "true";
+  }
   if (field.kind === "integer" || field.kind === "integer_list") {
     const number = Number(raw);
     if (!Number.isInteger(number))
@@ -297,7 +306,8 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       syntax: "--input PATH",
       example: exampleFor(artifact, verb),
     });
-  if (spec.inputRoot && Object.keys(values).length && !(["objective", "experiments", "docs"].includes(artifact)))
+  const selectorFields = new Set(spec.fields.filter((field) => spec.selectors.includes(field.flag)).map((field) => field.field));
+  if (spec.inputRoot && Object.keys(values).some((field) => !selectorFields.has(field)))
     invalid({
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
@@ -452,6 +462,6 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
   }
 }
 
-function fsStdin(): string {
-  return process.stdin.isTTY ? "" : fs.readFileSync(0, "utf8");
+function fsStdin(): Buffer {
+  return process.stdin.isTTY ? Buffer.alloc(0) : fs.readFileSync(0);
 }

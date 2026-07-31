@@ -148,8 +148,18 @@ export function buildExplain(
             ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
             : artifact === "experiments"
               ? ["EXPERIMENT"]
+              : artifact === "todo"
+                ? ["TODO_PUBLIC", "TODO_OPERATIONAL"]
               : ["HEADER", "PLAN", "SCOPE", "TASK"],
-    };
+   };
+    if (artifact === "todo") {
+      result.input_schema = {
+        ...(result.input_schema as Record<string, unknown>),
+        typed_fields: ["kind", "target_version", "title", "requirements", "acceptance", "release_blocker", "severity", "readiness"],
+        clearable_patch_fields: ["target_version", "requirements", "acceptance", "readiness"],
+        full_record_required_fields: ["kind", "target_version", "title", "requirements", "acceptance", "release_blocker", "severity"],
+      };
+    }
   }
   if (artifact === "glossary") {
     result.identity = {
@@ -225,15 +235,19 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   if (entityArtifact && artifact === "objective") return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
   if (entityArtifact && artifact === "todo" && verb === "update") return [
     "select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
-    "supplying any readiness flag replaces complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
-    "an update with no readiness flags preserves the current readiness or its needs-triage absence",
+    "the input document is a patch: omitted fields preserve state and only target_version, requirements, acceptance, and readiness accept typed clears",
+    "public fields are TODO.md-owned; readiness, dependencies, gates, and evidence are Agentera-owned",
     ...base,
   ];
-  if (entityArtifact && artifact === "todo" && verb === "resolve") return ["select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable", ...base];
+  if (entityArtifact && artifact === "todo" && ["set-severity", "supersede", "resolve", "reopen"].includes(verb)) return [
+    "select one TODO item with its bare ten-letter --id; lifecycle transitions are flag-only and accept no --input record",
+    "supply a reason and YYYY-MM-DD date; supersede additionally requires a distinct existing replacement ID",
+    ...base,
+  ];
   if (entityArtifact && artifact === "todo") return [
     "a bare ten-letter TODO item ID is assigned by the CLI; status starts open",
-    "supplying any readiness flag declares complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
-    "omit every readiness flag to create a valid needs-triage TODO",
+    "create requires a full typed TODO record; readiness is optional and absent means needs-triage",
+    "the public marker is rendered as [kind:target] and is not stored in title prose",
     ...base,
   ];
   if (entityArtifact && artifact === "docs" && verb === "update") return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];

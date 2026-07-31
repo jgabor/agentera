@@ -1,0 +1,14 @@
+id: uydccmouta
+artifact: progress
+record:
+  timestamp: 2026-07-31 06:39
+  type: fix
+  phase: build
+  what: Corrected TODO lifecycle retry identity so set-severity includes the requested severity and established supersessions cannot be rewritten.
+  context:
+    intent: Resolve only the replacement task's remaining lifecycle replay/conflict defect while preserving all accepted typed TODO behavior and orchestration state.
+    constraints: No commit, push, tag, publish, version change, profile/vision mutation, task completion/supersession, TODO resolution, release gitRef repair, or M3 reconciliation work.
+    scope: packages/cli/src/state/todoDocsEntities.ts and packages/cli/test/state/todoDocsEntities.test.ts atop the preserved uncommitted implementation.
+  verified: Focused lifecycle and prior Audit reproductions passed 253 tests across 8 files; full source passed 3,092 tests with 1 skipped across 224 files; package verification passed 17 tests across 2 files; typecheck and build passed. Built CLI set-severity, supersede, resolve, and reopen each wrote once, replayed identically, rejected a divergent retry with conflict, preserved exact bytes, and matched persisted records (matrix SHA-256 d228704e696a3536aa38867840b007187688d4d803dad4ce7b1678eb09746df9). State validation passed 2,020 entities with 0 issues; compact passed with 0 over-limit/errors; capability-contract passed 3 checks; document capability validation passed; mutation parity passed all 25 source operations and the 6-operation built TODO schema/explain comparison (contract e4e6ca49b089f9d8f48734ba4422e156b2f3ced124bf3a8fccea66d3adc4d837).
+  next: Hand evidence to independent Audit; keep oeprigteku in_progress, nkguykzeum blocked, and gbcpgevezi open until Orchestrate performs closeout after PASS.
+  publication_order: 18
