@@ -4,16 +4,88 @@ import { ArtifactSchemaValidator } from "../../hooks/validateArtifact/index.js";
 import { loadArtifactRegistry, resolveArtifactPath } from "../../registries/artifactRegistry.js";
 import { schemaBudget, projectedFields } from "./fields.js";
 import {
+  loadMutationGrammar,
+} from "./grammar.js";
+import {
   operationSpec,
+  mutationParityMatrix,
   writerOwnedFields,
   verbsForArtifact,
   type WritableArtifact,
   type WriteVerb,
+  type OperationField,
 } from "./operations.js";
 import { reject } from "./errors.js";
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
-  return ["experiments", "glossary"].includes(artifact) ? "publish" : ["objective", "todo", "docs"].includes(artifact) ? "create" : "append";
+  const verb = verbsForArtifact(artifact).find((candidate) => candidate !== "explain");
+  if (!verb) reject({ class: "unsupported_target", message: `artifact "${artifact}" has no public mutation` });
+  return verb as Exclude<WriteVerb, "explain">;
+}
+
+function entityBoundary(artifact: WritableArtifact, verb: string): string {
+  if (artifact === "progress") return "progress_cycle";
+  if (artifact === "health") return "health_audit";
+  if (artifact === "plan") return ["append", "update", "set-status", "supersede", "record-evaluation"].includes(verb) ? "plan_task" : "plan";
+  if (artifact === "objective") return "objective";
+  if (artifact === "experiments") return "experiment";
+  if (artifact === "todo") return "todo_item";
+  if (artifact === "docs") return "documentation_inventory_entry";
+  return verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision";
+}
+
+function exposedFields(
+  artifact: WritableArtifact,
+  verb: string,
+  spec: NonNullable<ReturnType<typeof operationSpec>>,
+  validator: ArtifactSchemaValidator,
+): Record<string, unknown>[] {
+  let source: OperationField[] = projectedFields(spec, validator);
+  return source.map((field) => ({
+    flag: field.flag,
+    field: field.field,
+    required: field.required === true,
+    type: field.kind,
+    ...(field.validValues ? { valid_values: field.validValues } : {}),
+    ...(field.repeatable ? { repeatable: true } : {}),
+    ...(field.description ? { description:
+      artifact === "objective" && field.flag === "--id"
+        ? "Bare ten-letter objective ID returned by objective create or list."
+        : artifact === "experiments" && field.flag === "--objective"
+          ? "Bare ten-letter objective ID owning the experiment."
+          : artifact === "experiments" && field.flag === "--id"
+            ? "Existing bare ten-letter experiment ID for exact immutable replay."
+            : field.description } : {}),
+    ...(field.kind === "date" ? { format: "YYYY-MM-DD" } : {}),
+    ...(field.kind === "datetime" ? { format: "YYYY-MM-DD HH:MM" } : {}),
+    ...(field.flag === "--timestamp" ? { default: "now" } : {}),
+    ...(field.flag === "--date" ? { default: "today" } : {}),
+  }));
+}
+
+function pathFor(artifact: WritableArtifact, verb: string, projectRoot: string): string {
+  const record = loadArtifactRegistry().get(artifact);
+  if (!record) reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
+  const entityArtifact = artifact !== "glossary";
+  const resolved = entityArtifact
+    ? path.join(projectRoot, ".agentera", "entities", artifact, entityBoundary(artifact, verb), "<id>.yaml")
+    : resolveArtifactPath(record, projectRoot, { strictWrite: true });
+  return path.relative(projectRoot, resolved) || resolved;
+}
+
+function inputProjection(spec: NonNullable<ReturnType<typeof operationSpec>>): Record<string, unknown> {
+  return {
+    mode: spec.inputMode,
+    ...(spec.inputRoot ? { root: spec.inputRoot } : {}),
+    sources: spec.inputSources,
+    structured_sources: spec.structuredInputSources,
+    cli_owned_fields: spec.cliOwnedFields,
+    ...(spec.inputMode === "structured" ? {
+      flag: "--input",
+      stdin_value: "-",
+      parser: "yaml_or_json_mapping",
+    } : {}),
+  };
 }
 
 export function buildExplain(
@@ -23,7 +95,9 @@ export function buildExplain(
 ): Record<string, unknown> {
   const verb = (requestedVerb ?? defaultVerb(artifact)) as Exclude<WriteVerb, "explain">;
   const spec = operationSpec(artifact, verb);
-  if (!spec) {
+  const grammar = loadMutationGrammar();
+  const declaration = grammar.operations.find((operation) => operation.artifact === artifact && operation.verb === verb);
+  if (!spec || !declaration) {
     reject({
       class: "invalid_choice",
       message: `verb "${verb}" does not apply to ${artifact}`,
@@ -31,77 +105,50 @@ export function buildExplain(
     });
   }
   const record = loadArtifactRegistry().get(artifact);
-  if (!record)
-    reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
-  const entityArtifact = artifact !== "glossary";
-  const resolved = entityArtifact
-    ? path.join(projectRoot, ".agentera", "entities", artifact, artifact === "progress" ? "progress_cycle" : artifact === "health" ? "health_audit" : artifact === "plan" ? ["append", "update", "set-status", "supersede", "record-evaluation"].includes(verb) ? "plan_task" : "plan" : artifact === "objective" ? "objective" : artifact === "experiments" ? "experiment" : artifact === "todo" ? "todo_item" : artifact === "docs" ? "documentation_inventory_entry" : verb === "append" ? "decision" : verb === "update" ? "decision_satisfaction" : "decision_revision", "<id>.yaml")
-    : resolveArtifactPath(record, projectRoot, { strictWrite: true });
+  if (!record) reject({ class: "unsupported_target", message: `artifact "${artifact}" is not registered` });
   const validator = new ArtifactSchemaValidator();
-  const fields = (entityArtifact && artifact === "plan" && verb === "supersede"
-    ? [{ flag: "--id", field: "id", kind: "string" as const, required: true }, ...projectedFields(spec, validator)]
-    : projectedFields(spec, validator))
-    .filter(() => !(entityArtifact && artifact === "health" && verb === "repair"))
-    .filter((field) => artifact !== "decisions" || !["update", "amend"].includes(verb) || field.flag !== "--number")
-    .filter((field) => !(entityArtifact && artifact === "experiments" && field.flag === "--number"))
-    .map((field) => ({
-    flag: entityArtifact && artifact === "plan" && field.flag === "--task" ? "--id" : field.flag,
-    field: entityArtifact && artifact === "plan" && field.flag === "--task" ? "id" : field.field,
-    required: Boolean(field.required || (artifact === "decisions" && ["update", "amend"].includes(verb) && (field.flag === "--id" || (verb === "amend" && field.flag === "--base-sha256")))),
-    type: entityArtifact && artifact === "plan" && field.flag === "--task" ? "string" : field.kind,
-    ...(field.validValues ? { valid_values: field.validValues } : {}),
-    ...(field.repeatable ? { repeatable: true } : {}),
-    ...(field.description ? { description:
-      entityArtifact && artifact === "objective" && field.flag === "--id"
-        ? "Bare ten-letter objective ID returned by objective create or list."
-        : entityArtifact && artifact === "experiments" && field.flag === "--objective"
-          ? "Bare ten-letter objective ID owning the experiment."
-          : entityArtifact && artifact === "experiments" && field.flag === "--id"
-            ? "Existing bare ten-letter experiment ID for exact immutable replay."
-            : field.description } : {}),
-    ...(field.kind === "date" ? { format: "YYYY-MM-DD" } : {}),
-    ...(field.kind === "datetime" ? { format: "YYYY-MM-DD HH:MM" } : {}),
-    ...(field.flag === "--timestamp" ? { default: "now" } : {}),
-    ...(field.flag === "--date" ? { default: "today" } : {}),
-  }));
   const result: Record<string, unknown> = {
     schemaVersion: "agentera.stateWriteExplain.v1",
     command: `state ${artifact} explain`,
     requested_verb: verb,
     artifact,
-    path: path.relative(projectRoot, resolved) || resolved,
+    path: pathFor(artifact, verb, projectRoot),
     verbs: verbsForArtifact(artifact),
+    contract_digest: grammar.contractDigest,
+    mutation_class: declaration.mutationClass,
+    selectors: declaration.selectors,
+    preconditions: declaration.preconditions,
+    owned_fields: declaration.ownedFields,
+    input: inputProjection(spec),
+    recovery: declaration.recovery,
+    examples: declaration.examples,
+    bounds: declaration.bounds,
     next: {},
     budget: schemaBudget(artifact, validator),
-    fields,
+    fields: exposedFields(artifact, verb, spec, validator),
   };
   const owned = writerOwnedFields(artifact);
   if (owned.length) result.writer_owned_fields = owned;
   if (spec.compacts) {
     result.compaction = `not applicable; each canonical ${artifact} entity is authority and no aggregate projection or numbered archive is written`;
   }
-  if (spec.inputRoot) {
+  if (spec.inputMode === "structured") {
     result.input_schema = {
       flag: "--input",
-      sources: ["file path", "- (stdin)"],
+      sources: spec.inputSources,
       parser: "yaml",
       accepts_json: true,
       root: spec.inputRoot,
-      cli_owned_fields: entityArtifact && artifact === "experiments"
-        ? ["id", "artifact", "objective"]
-        : entityArtifact && artifact === "objective"
-          ? ["id", "artifact"]
-        : entityArtifact && artifact === "health" ? ["id", "artifact", "appended_at"]
-        : entityArtifact && ["docs", "plan"].includes(artifact) ? ["id", "artifact"] : spec.cliOwnedFields ?? [],
+      cli_owned_fields: spec.cliOwnedFields,
       defaulted_fields: artifact === "health" ? { date: "today" } : {},
       groups:
         artifact === "glossary"
           ? ["PROPOSAL", "CONFIRMATION"]
           : artifact === "health"
-          ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
-          : artifact === "experiments"
-            ? ["EXPERIMENT"]
-            : ["HEADER", "PLAN", "SCOPE", "TASK"],
+            ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
+            : artifact === "experiments"
+              ? ["EXPERIMENT"]
+              : ["HEADER", "PLAN", "SCOPE", "TASK"],
     };
   }
   if (artifact === "glossary") {
@@ -114,34 +161,33 @@ export function buildExplain(
     result.producer = [...record.producers].sort();
     result.request_schema_version = "agentera.glossaryPublicationRequest.v1";
     result.document_schema_version = "agentera.projectGlossary.v1";
-    result.request_example = {
-      schema_version: "agentera.glossaryPublicationRequest.v1",
-      proposal: {
-        family: "terminology_drift",
-        concept: "structured value",
-        proposed_canonical_term: "JsonValue",
-        canonical_evidence: [{ source_path: "src/value.ts", line: 1, source_record_sha256: "<lowercase-sha256>" }],
-        variants: [{ term: "Dict", evidence: [{ source_path: "src/dict.ts", line: 1, source_record_sha256: "<lowercase-sha256>" }] }],
-        severity: "warning",
-        confidence: 84,
-        proposal_digest: "<audit-emitted-lowercase-sha256>",
-      },
-      confirmation: {
-        proposal_digest: "<same-audit-emitted-lowercase-sha256>",
-        confirmed_by: "user",
-        confirmed_at: "2026-07-26T14:00:00Z",
-      },
-    };
-    result.recovery = "Rerun audit against current project files, obtain explicit user confirmation for its proposal_digest, and retry with the new request.";
   }
-  result.guidance = decisionsGuidance(artifact, verb, entityArtifact && artifact === "health", entityArtifact);
-  result.example = entityArtifact && artifact === "health" && verb === "repair"
-    ? "agentera check validate state --format json"
-    : exampleFor(artifact, verb);
+  result.guidance = decisionsGuidance(artifact, verb, artifact === "health", true);
+  result.example = exampleFor(artifact, verb);
   return result;
 }
 
-function decisionsGuidance(artifact: WritableArtifact, verb: string, entityHealth = false, entityArtifact = false): string[] {
+export function buildExplainAll(
+  artifact: WritableArtifact,
+  projectRoot: string,
+): Record<string, unknown> {
+  const grammar = loadMutationGrammar();
+  const operations = verbsForArtifact(artifact)
+    .filter((verb): verb is Exclude<WriteVerb, "explain"> => verb !== "explain")
+    .map((verb) => buildExplain(artifact, projectRoot, verb));
+  return {
+    schemaVersion: "agentera.stateWriteExplainAll.v1",
+    command: `state ${artifact} explain --all`,
+    artifact,
+    authority: grammar.authority,
+    contract_digest: grammar.contractDigest,
+    verbs: operations.map((operation) => operation.requested_verb),
+    operations,
+    parity_matrix: mutationParityMatrix([artifact]),
+  };
+}
+
+function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHealth = false, entityArtifact = false): string[] {
   const base = [
     "do not embed commit hashes; evidence belongs in the commit message (Decision 66)",
     "fold the artifact write into the implementation commit per AGENTS.md",
@@ -150,163 +196,82 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, entityHealt
     "build is the only publisher; audit and discuss remain mutation-free",
     "confirmation.confirmed_by must be user and must bind the exact proposal digest and timestamp",
     "the writer revalidates every cited project source line and publishes approval plus entry as one atomic document",
-    "the v1LegacyCruft guard rejects literal confirmed variants; read-only consumer advice is active through agentera report glossary-advice",
-    "the publication operation never performs consumer lookup, precedence, semantic review, profile mutation, or docs-mapping mutation",
-  ];
-  if (entityArtifact && artifact === "plan" && verb === "create")
-    return [
-      "the CLI assigns bare IDs to the plan and each task and publishes one canonical file per entity",
-      ...base,
-    ];
-  if (entityArtifact && artifact === "plan" && verb === "record-evaluation")
-    return [
-      "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
-      "evaluate before completing a task during normal orchestration",
-      "a first PASS on an unevaluated complete replacement is recovery only when an open same-plan superseded predecessor names it in superseded_by",
-      ...base,
-    ];
-  if (entityArtifact && artifact === "plan" && verb === "supersede")
-    return [
-      "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
-      "each --by replacement must be complete with latest persisted PASS",
-      "if a non-PASS replacement is not already referenced by a historical superseded predecessor, reopen it, record PASS, complete it, and retry",
-      "if a referenced historical replacement is unevaluated complete, record its allowed first PASS while it remains complete, then retry",
-      "if a referenced historical replacement has an existing non-PASS evaluation, first-PASS recovery is unavailable; use another complete latest-PASS replacement, or keep or archive the plan without claiming completion as applicable",
-      ...base,
-    ];
-  if (entityArtifact && artifact === "plan" && ["update", "set-status"].includes(verb))
-    return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
-  if (entityArtifact && artifact === "plan" && verb === "append")
-    return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];
-  if (entityArtifact && artifact === "plan")
-    return [
-      "the active plan entity is selected by lifecycle state",
-      ...(verb === "set-plan-status" ? ["open-to-complete requires every superseded_by replacement to be complete with latest persisted PASS; historical unevaluated complete replacements may record their allowed first PASS, then retry"] : []),
-      ...base,
-    ];
-  if (artifact === "plan" && verb === "create")
-    return [
-      "supply sequential task numbers and valid dependencies; previous_plan_archived is assigned by the CLI",
-      ...base,
-    ];
-  if (artifact === "plan")
-    return ["task numbers are assigned by the CLI for append", ...base];
-  if (entityHealth && verb === "repair")
-    return ["canonical health audit entities are immutable; validate malformed or duplicate ownership with agentera check validate state", ...base];
-  if (artifact === "health" && verb === "repair")
-    return ["repair is a destructive projection edit; select an existing duplicate audit and pass --force", ...base];
-  if (entityArtifact && artifact === "experiments")
-    return ["select the owner with its bare ten-letter --objective ID; numeric and composite selectors are unavailable", "omit --id for a new immutable experiment; pass an existing bare --id only for exact replay", ...base];
-  if (artifact === "experiments")
-    return ["pass the intended non-negative --number; the CLI validates and assigns it to the entry", ...base];
-  if (entityArtifact && artifact === "objective" && verb === "update")
-    return ["select one objective with its bare ten-letter --id; numeric and composite selectors are unavailable", "the CLI preserves that ID while replacing the validated objective record", ...base];
-  if (entityArtifact && artifact === "objective")
-    return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
-  if (entityArtifact && artifact === "todo" && verb === "update")
-    return [
-      "select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
-      "supplying any readiness flag replaces complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
-      "an update with no readiness flags preserves the current readiness or its needs-triage absence",
-      ...base,
-    ];
-  if (entityArtifact && artifact === "todo" && verb === "resolve")
-    return ["select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable", ...base];
-  if (entityArtifact && artifact === "todo")
-    return [
-      "a bare ten-letter TODO item ID is assigned by the CLI; status starts open",
-      "supplying any readiness flag declares complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
-      "omit every readiness flag to create a valid needs-triage TODO",
-      ...base,
-    ];
-  if (entityArtifact && artifact === "docs" && verb === "update")
-    return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];
-  if (entityArtifact && artifact === "docs")
-    return ["a bare ten-letter documentation inventory ID is assigned by the CLI; path remains record data", ...base];
-  if (artifact === "decisions" && verb === "update") return [
-    "select one base decision with its bare --id; numeric selectors are unavailable",
-    "update replaces only that decision's authority-owned satisfaction entity after transition validation",
     ...base,
   ];
-  if (artifact === "decisions" && verb === "amend") return [
-    "select one base decision with its bare --id and current --base-sha256",
-    "supply at least one amendable content field; satisfaction remains a separate mutation",
-    "apply publishes one immutable revision entity; identical retries converge and same-base divergence conflicts",
+  if (entityArtifact && artifact === "plan" && verb === "create") return ["the CLI assigns bare IDs to the plan and each task and publishes one canonical file per entity", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "record-evaluation") return [
+    "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
+    "evaluate before completing a task during normal orchestration",
+    "a first PASS on an unevaluated complete replacement is recovery only when an open same-plan superseded predecessor names it in superseded_by",
     ...base,
   ];
-  return [entityArtifact ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "number is assigned by the CLI; do not pass --number", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "supersede") return [
+    "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
+    "each replacement must be complete with latest persisted PASS",
+    "if a non-PASS replacement is not already referenced by a historical superseded predecessor, reopen it, record PASS, complete it, and retry",
+    "if a referenced historical replacement is unevaluated complete, record its allowed first PASS while it remains complete, then retry",
+    "if a referenced historical replacement has an existing non-PASS evaluation, first-PASS recovery is unavailable; use another complete latest-PASS replacement, or keep or archive the plan without claiming completion as applicable",
+    ...base,
+  ];
+  if (entityArtifact && artifact === "plan" && ["update", "set-status"].includes(verb)) return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "append") return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];
+  if (entityArtifact && artifact === "plan") return [
+    "the active plan entity is selected by lifecycle state",
+    ...(verb === "set-plan-status" ? ["open-to-complete requires every superseded_by replacement to be complete with latest persisted PASS; historical unevaluated complete replacements may record their allowed first PASS, then retry"] : []),
+    ...base,
+  ];
+  if (entityArtifact && artifact === "experiments") return ["select the owner with its bare ten-letter --objective ID; numeric and composite selectors are unavailable", "omit --id for a new immutable experiment; pass an existing bare --id only for exact replay", ...base];
+  if (entityArtifact && artifact === "objective" && verb === "update") return ["select one objective with its bare ten-letter --id; numeric selectors are unavailable", "the CLI preserves that ID while replacing the validated objective record", ...base];
+  if (entityArtifact && artifact === "objective") return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
+  if (entityArtifact && artifact === "todo" && verb === "update") return [
+    "select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
+    "supplying any readiness flag replaces complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
+    "an update with no readiness flags preserves the current readiness or its needs-triage absence",
+    ...base,
+  ];
+  if (entityArtifact && artifact === "todo" && verb === "resolve") return ["select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable", ...base];
+  if (entityArtifact && artifact === "todo") return [
+    "a bare ten-letter TODO item ID is assigned by the CLI; status starts open",
+    "supplying any readiness flag declares complete readiness: include --capability, --reason, --queue-rank, and --order-reason; omitted dependencies, blocker, and gate become [], null, and null",
+    "omit every readiness flag to create a valid needs-triage TODO",
+    ...base,
+  ];
+  if (entityArtifact && artifact === "docs" && verb === "update") return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];
+  if (entityArtifact && artifact === "docs") return ["a bare ten-letter documentation inventory ID is assigned by the CLI; path remains record data", ...base];
+  if (artifact === "decisions" && verb === "update") return ["select one base decision with its bare --id; numeric selectors are unavailable", "update replaces only that decision's authority-owned satisfaction entity after transition validation", ...base];
+  if (artifact === "decisions" && verb === "amend") return ["select one base decision with its bare --id and current --base-sha256", "supply at least one amendable content field; satisfaction remains a separate mutation", "apply publishes one immutable revision entity; identical retries converge and same-base divergence conflicts", ...base];
+  return [entityArtifact ? "a bare ten-letter ID is assigned by the CLI; do not pass an identity" : "the writer assigns canonical identity", ...base];
 }
 
 export function exampleFor(artifact: WritableArtifact, verb: string): string {
-  if (artifact === "glossary")
-    return "agentera state glossary publish --input glossary-publication.yaml --format json";
-  if (artifact === "progress")
-    return 'agentera state progress append --type fix --phase build --what "..." --intent "..." --format json';
-  if (artifact === "decisions" && verb === "update")
-    return 'agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."';
-  if (artifact === "decisions" && verb === "amend")
-    return 'agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --choice "..." --dry-run --format json';
-  if (artifact === "decisions")
-    return 'agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm';
-  if (artifact === "health" && verb === "repair") return "agentera check validate state --format json";
-  if (artifact === "health") return "agentera state health append --input audit.yaml --format json";
-  if (artifact === "objective" && verb === "create") return "agentera state objective create --input objective.yaml --format json";
-  if (artifact === "objective" && verb === "update") return "agentera state objective update --id qjtrmnpvka --input objective.yaml --format json";
-  if (artifact === "todo" && verb === "create") return 'agentera state todo create --severity normal --description "..." --capability build --reason "..." --queue-rank 1 --order-reason "..." --format json';
-  if (artifact === "todo" && verb === "resolve") return "agentera state todo resolve --id qjtrmnpvka --format json";
-  if (artifact === "todo" && verb === "update") return 'agentera state todo update --id qjtrmnpvka --capability build --reason "..." --queue-rank 1 --order-reason "..." --format json';
-  if (artifact === "docs" && verb === "create") return "agentera state docs create --input documentation.yaml --format json";
-  if (artifact === "docs" && verb === "update") return "agentera state docs update --id qjtrmnpvka --input documentation.yaml --format json";
-  if (verb === "create") return "agentera state plan create --input plan.yaml --format json";
-  if (verb === "archive") return "agentera state plan archive --dry-run";
-  if (verb === "update") return 'agentera state plan update --id qjtrmnpvka --name "..." --format json';
-  if (verb === "set-status")
-    return "agentera state plan set-status --id qjtrmnpvka --status complete --format json";
-  if (verb === "supersede")
-    return 'agentera state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement tasks cover this work." --format json';
-  if (verb === "set-plan-status")
-    return "agentera state plan set-plan-status --status complete --format json";
-  if (verb === "record-evaluation")
-    return 'agentera state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json';
-  if (verb === "publish")
-    return "agentera state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json";
-  return `agentera state plan ${verb} --name "..."`;
+  const declaration = loadMutationGrammar().operations.find((operation) => operation.artifact === artifact && operation.verb === verb);
+  if (declaration?.examples[0]) return declaration.examples[0];
+  return `agentera state ${artifact} ${verb} --format json`;
 }
 
 export function renderExplainText(explain: Record<string, unknown>): string {
   const lines = [
-    `usage: agentera state ${explain.artifact} ${(explain as { requested_verb?: string }).requested_verb ?? "append"} [flags]`,
+    `usage: agentera state ${explain.artifact} ${(explain as { requested_verb?: string }).requested_verb ?? "explain --all"} [flags]`,
     "",
-    `${explain.artifact} (${explain.path})`,
+    `${explain.artifact} (${explain.path ?? "mutation grammar"})`,
+    `Class: ${String(explain.mutation_class ?? "all")}`,
+    `Contract digest: ${String(explain.contract_digest ?? "unknown")}`,
   ];
-  const fields = Array.isArray(explain.fields)
-    ? (explain.fields as Array<Record<string, unknown>>)
-    : [];
+  const fields = Array.isArray(explain.fields) ? explain.fields as Array<Record<string, unknown>> : [];
   if (fields.length) {
     const required = fields.filter((field) => field.required);
     const optional = fields.filter((field) => !field.required);
-    for (const [heading, entries] of [
-      ["Required", required],
-      ["Optional", optional],
-    ] as const) {
+    for (const [heading, entries] of [["Required", required], ["Optional", optional]] as const) {
       if (!entries.length) continue;
       lines.push("", `${heading}:`);
       for (const field of entries) {
-        const values = Array.isArray(field.valid_values)
-          ? ` one of: ${(field.valid_values as string[]).join(", ")}`
-          : "";
-        lines.push(
-          `  ${String(field.flag).padEnd(24)}${values || String(field.description ?? field.field)}`,
-        );
+        const values = Array.isArray(field.valid_values) ? ` one of: ${(field.valid_values as string[]).join(", ")}` : "";
+        lines.push(`  ${String(field.flag).padEnd(24)}${values || String(field.description ?? field.field)}`);
       }
     }
   }
-  if (explain.input_schema) {
-    lines.push("", "Required:", "  --input PATH             YAML/JSON document; use - for stdin");
-  }
-  if (explain.compaction) lines.push("", `Compaction: ${explain.compaction}`);
-  lines.push("", "Guidance:");
-  for (const guidance of explain.guidance as string[]) lines.push(`  ${guidance}`);
-  lines.push("", "Example:", `  ${explain.example}`);
+  const input = explain.input as Record<string, unknown> | undefined;
+  if (input?.mode === "structured") lines.push("", "Required:", "  --input PATH             YAML/JSON document; use - for stdin");
+  lines.push("", "Recovery:", `  ${String(explain.recovery ?? "Correct the input and retry; no state was changed.")}`, "", "Example:", `  ${String(explain.example ?? "")}`);
   return lines.join("\n") + "\n";
 }

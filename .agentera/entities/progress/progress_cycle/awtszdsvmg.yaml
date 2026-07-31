@@ -1,0 +1,12 @@
+id: awtszdsvmg
+artifact: progress
+record:
+  timestamp: 2026-07-30 23:21
+  type: test
+  phase: build
+  what: Shared mutation grammar and parity foundation
+  context:
+    intent: Record verified implementation evidence for orchestration
+  verified: Built CLI exposes one digest-bound declarative mutation grammar with 22 public verbs across record_payload, simple_transition, and batch_transaction; explain --all, per-verb explain, schema, help, and parity projections agree; health repair and contradictory content flags reject before effects. Full source, package, typecheck, build, state validation, compact, and built-CLI smoke passed. Progress, decisions, plan-task, and TODO payload conversions remain downstream scope.
+  next: Independent Audit reviews generated parity evidence and downstream family exceptions before terminal closeout.
+  publication_order: 13

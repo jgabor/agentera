@@ -4,6 +4,13 @@
 
 ### Changed
 
+- State mutation behavior now comes from one code-owned 22-operation registry,
+  with declarative discovery in `references/artifacts/state-storage-authority.yaml`
+  required to match it before commands run. `state <family> explain --all`,
+  per-verb explain, schema, help, and package projections share a contract digest
+  and parity matrix; selector requiredness preserves plan inference and experiment
+  identity defaults, while retired health repair, contradictory content flags,
+  oversized structured input, and authority drift fail before publication.
 - `agentera prime` now selects Build and Audit work from the complete plan task
   graph, prioritizes in-progress work before dependency-ready pending tasks, and
   keeps status recommendations aligned when the public task list is bounded.

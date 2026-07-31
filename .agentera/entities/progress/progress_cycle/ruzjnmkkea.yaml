@@ -1,0 +1,14 @@
+id: ruzjnmkkea
+artifact: progress
+record:
+  timestamp: 2026-07-31 04:55
+  type: fix
+  phase: build
+  what: Corrected selector requiredness parity for replacement task aiujszrciq without closing lifecycle state.
+  context:
+    intent: Record substantive local-source verification while keeping aiujszrciq pending, htmgqhyasy open, and mascmjrpug blocked for independent Audit.
+    constraints: Do not complete or evaluate aiujszrciq, supersede mascmjrpug, resolve htmgqhyasy, commit, publish, or implement downstream structured-input conversions before independent PASS.
+    scope: packages/cli/src/state/write/explain.ts; packages/cli/src/state/write/runtimeOperations.ts; references/artifacts/state-storage-authority.yaml; packages/cli/test/state/write/mutationGrammar.test.ts
+  verified: "The root cause was selector membership being treated as requiredness in explain even though selector presence and omission policy are independent. Explain now uses only the code-owned field required declaration; decisions.update --id and decisions.amend --id/--base-sha256 are required in the runtime registry and matching parity-only authority, while all seven plan --plan selectors and experiments.publish --id remain optional. Contract digest 1f4be937f1e454715f53f1d19a860c9dca6c98af564dab3a418c082d9d4d9160 covers 22 operations across record_payload 12, simple_transition 7, and batch_transaction 3. Focused mutation grammar passed 1 file/7 tests; focused selector-adjacent regression passed 5 files/132 tests; full source passed 224 files/3086 tests with 1 skipped; package passed 2 files/17 tests; typecheck and build passed. Built local CLI smokes passed plan omission by inferring plan hwevwgxjwx, experiment --id omission by assigning tekzzufpuq, and mandatory decisions.update --id plus decisions.amend --id/--base-sha256 omissions rejected with exit 2, missing_argument, exact syntax/example/default no-state-change recovery, and only state-mode.yaml remaining. Built authority divergence failed closed with exit 1; glossary help remained present. State validation passed entity_count 2016 issue_count 0 before this append; compact passed artifact_count 1 with all error/overflow/change counts 0; capability-contract passed 3 failed 0. Downstream exception assessment: no downstream capability exception or replan is required; progress/decision, plan-task, and TODO structured-input conversions remain explicitly out of scope and unchanged."
+  next: Independent Audit reviews aiujszrciq; Orchestrate alone may record PASS, complete the replacement, supersede mascmjrpug, and resolve eligibility.
+  publication_order: 15

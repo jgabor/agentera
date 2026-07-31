@@ -5,6 +5,7 @@ import { loadYamlMapping } from "../../core/yaml.js";
 export function loadStructuredInput(
   source: string,
   readStdin: () => string,
+  maxBytes?: number,
 ): Record<string, unknown> {
   let text: string;
   if (source === "-") text = readStdin();
@@ -15,6 +16,8 @@ export function loadStructuredInput(
       throw new Error(`input file '${source}' is not readable`);
     }
   }
+  if (maxBytes !== undefined && maxBytes > 0 && Buffer.byteLength(text, "utf8") > maxBytes)
+    throw new Error(`input exceeds the ${maxBytes}-byte UTF-8 limit`);
   try {
     return loadYamlMapping(text);
   } catch (error) {

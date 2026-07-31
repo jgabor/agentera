@@ -3,6 +3,8 @@ artifact: plan
 record:
   name: M3 · Make TODO reconciliation atomic (frpdshynmd)
   depends_on:
+    - qllgiterft
+    - tryphyimhc
     - nkguykzeum
   status: pending
   acceptance:

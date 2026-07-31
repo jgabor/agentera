@@ -2,14 +2,14 @@ id: htmgqhyasy
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Establish one declarative state mutation grammar in `references/artifacts/state-storage-authority.yaml`. Classify every public verb as a record payload, simple transition, or batch transaction; require `--input <path|->` for record payloads; enumerate selectors, preconditions, CLI-owned fields, recovery, examples, and bounds; and retire unsupported `health repair`. For every writable family, make `state <family> explain --all` return every verb and schema once with a contract digest; derive per-verb explain, operations, schema, and help from that projection while TypeScript remains the behavior owner. Add a generated parity matrix and reject record-content flags before effects."
   readiness:
     capability: build
-    reason: Decision imumkmffwh requires one structured-input mutation grammar without letting schema, help, or tests create parallel behavioral authority.
+    reason: Focused replacement task aiujszrciq corrects the remaining selector-requiredness parity defect and must earn independent PASS before superseding blocked task mascmjrpug.
     dependencies:
       []
     blocked: null
     gate: null
     queue_rank: 30
-    order_reason: Land the mutation grammar before parallel family conversions and before prime drops embedded writer contracts.
+    order_reason: Complete the replacement and supersede the blocked mutation-grammar task before dependent M2 writer conversions.

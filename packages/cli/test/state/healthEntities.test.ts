@@ -55,7 +55,7 @@ function audit(date = "2026-07-17", trajectory = "stable"): Record<string, unkno
   };
 }
 
-function request(root: string, verb: "append" | "repair", values: Record<string, unknown>, dryRun = false): StateWriteRequest {
+function request(root: string, verb: "append", values: Record<string, unknown>, dryRun = false): StateWriteRequest {
   const spec = operationSpec("health", verb);
   if (!spec) throw new Error(`health ${verb} spec missing`);
   return {
@@ -63,10 +63,10 @@ function request(root: string, verb: "append" | "repair", values: Record<string,
     spec,
     projectRoot: root,
     dryRun,
-    force: verb === "repair",
-    values: verb === "append" ? {} : values,
+    force: false,
+    values: {},
     callerPayload: structuredClone(values),
-    input: verb === "append" ? values : null,
+    input: values,
   };
 }
 
@@ -149,7 +149,7 @@ describe("health entity authority", () => {
     expect(JSON.stringify(result)).not.toMatch(/stable_id|artifact_id|entry_number|"number"/);
   });
 
-  it("explains entity append and immutable repair without legacy selectors or compaction", () => {
+  it("explains entity append and retires unsupported repair without legacy selectors or compaction", () => {
     const root = project();
     const appendExplain = buildExplain("health", root, "append") as any;
     expect(appendExplain).toMatchObject({
@@ -159,10 +159,7 @@ describe("health entity authority", () => {
       input_schema: { cli_owned_fields: ["id", "artifact", "appended_at"] },
     });
     expect(JSON.stringify(appendExplain)).not.toMatch(/entry_number|stable_id|"number"/);
-    const repairExplain = buildExplain("health", root, "repair") as any;
-    expect(repairExplain.fields).toEqual([]);
-    expect(repairExplain.example).toBe("agentera check validate state --format json");
-    expect(repairExplain.guidance.join(" ")).toMatch(/immutable.*check validate state/i);
+    expect(operationSpec("health", "repair")).toBeNull();
   });
 
   it("gets and lists legacy full audits by bare ID with deterministic date and ID fallback", () => {
@@ -252,13 +249,13 @@ describe("health entity authority", () => {
   it("rejects entity repair and marker-absent repair before effects", () => {
     const root = project(); append(root, "aaaaaaaaaa");
     const before = fs.readFileSync(path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml"), "utf8");
-    expect(() => executeStateWrite(request(root, "repair", { number: 1, keep: "first" }))).toThrow(/immutable.*check validate state/i);
+    expect(() => request(root, "repair" as never, { number: 1, keep: "first" })).toThrow(/health repair spec missing/i);
     expect(fs.readFileSync(path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml"), "utf8")).toBe(before);
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
 
     const legacy = project(false); const target = path.join(legacy, ".agentera/health.yaml"); fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, dumpYamlMapping({ audits: [{ number: 20, ...audit() }], archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"] }));
-    expect(() => executeStateWrite(request(legacy, "repair", { number: 14, keep: "first" }))).toThrow(/durable entity-state marker/);
+    expect(() => request(legacy, "repair" as never, { number: 14, keep: "first" })).toThrow(/health repair spec missing/i);
     expect(fs.readFileSync(target, "utf8")).toBe(dumpYamlMapping({ audits: [{ number: 20, ...audit() }], archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"] }));
   });
 

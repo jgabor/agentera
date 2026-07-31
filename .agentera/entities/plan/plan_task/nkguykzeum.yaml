@@ -3,10 +3,12 @@ artifact: plan
 record:
   name: M2 tail · Define typed TODO records and lifecycle (gbcpgevezi)
   depends_on:
-    - tryphyimhc
+    - mascmjrpug
   status: pending
   acceptance:
-    - GIVEN create or patch input WHEN applied THEN typed fields preserve omissions, explicit clears, and stable identity.
-    - GIVEN invalid graphs, owned fields, old flags, or lifecycle misuse WHEN submitted THEN reject before effects with correction.
-    - GIVEN TODO operations WHEN tested THEN each has pass and rejection cases across inputs, replay, and migration.
+    - GIVEN valid typed TODO public fields WHEN created or patched through structured input THEN supplied values change, omissions remain unchanged, and explicit typed clears remove only clearable values.
+    - GIVEN a lifecycle operation WHEN invoked THEN it remains a distinct flag-only transition and cannot be expressed as record content.
+    - GIVEN TODO.md and Agentera disagree on public values WHEN mutation, reconciliation, or migration is attempted THEN the conflict is reported and no effects occur.
+    - GIVEN invalid dependency graphs, owned operational fields, retired flags, or lifecycle misuse WHEN submitted THEN rejection occurs before effects.
+    - GIVEN valid replay, dry-run, reconciliation, or migration WHEN completed THEN public and Agentera-owned fields retain their assigned authorities.
   plan: frkpjqmpnj

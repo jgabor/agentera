@@ -4,7 +4,6 @@ import {
   isExactArchiveReplay,
   recoverArchivedEntry,
 } from "../archiveReplay.js";
-import { repairHealthDuplicates } from "../healthRepair.js";
 import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./assign.js";
 import { reject } from "./errors.js";
 import { array, findByNumber, mapping, mappingPath } from "./helpers.js";
@@ -141,14 +140,6 @@ export function mutateCandidate(
     };
   }
   if (req.artifact === "health") {
-    if (req.spec.verb === "repair") {
-      if (!req.force) reject({ class: "conflict", message: "health repair requires --force; use --dry-run to preview the edit" });
-      const number = Number(req.values.number);
-      const keep = req.values.keep === "last" ? "last" : "first";
-      const repaired = repairHealthDuplicates(candidate, number, keep);
-      if (repaired.removed === 0) reject({ class: "unsupported_target", message: `health audit ${number} has no duplicate current-history rows to repair` });
-      return { candidate: repaired.candidate, written: { number, removed_rows: repaired.removed, retained: keep }, assigned: { number, removed_rows: repaired.removed }, replay: false };
-    }
     if (req.input && ("audits" in req.input || "archive" in req.input)) {
       reject({
         class: "schema_violation",

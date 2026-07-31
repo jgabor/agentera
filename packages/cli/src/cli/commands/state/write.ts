@@ -11,6 +11,8 @@ import {
 } from "../../../registries/artifactProtocolIds.js";
 import {
   buildExplain,
+  buildExplainAll,
+  assertMutationGrammarParity,
   exampleFor,
   executeStateWrite,
   isWritableArtifact,
@@ -74,6 +76,16 @@ function setNested(target: Record<string, unknown>, field: string, value: unknow
     cursor = cursor[part] as Record<string, unknown>;
   }
   cursor[parts.at(-1) as string] = value;
+}
+
+function hasNested(target: Record<string, unknown>, field: string): boolean {
+  let value: unknown = target;
+  for (const part of field.split(".")) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    if (!(part in value)) return false;
+    value = (value as Record<string, unknown>)[part];
+  }
+  return true;
 }
 
 function readFlag(
@@ -178,13 +190,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     if (token === "--project" && argv[index + 1]) initialProjectRoot = path.resolve(argv[index + 1]);
     else if (token.startsWith("--project=")) initialProjectRoot = path.resolve(token.slice("--project=".length));
   }
-  const entityPlan = artifact === "plan" && verb !== "create";
-  let fields = projectedFields(spec);
-  if (entityPlan) {
-    fields = fields.filter((field) => field.flag !== "--task").map((field) => field.flag === "--depends-on" ? { ...field, kind: "string_list" as const } : field);
-    if (["update", "set-status", "supersede", "record-evaluation"].includes(verb)) fields.unshift({ flag: "--id", field: "id", kind: "string", required: true });
-    fields.unshift({ flag: "--plan", field: "plan", kind: "string" });
-  }
+  const fields = projectedFields(spec);
   const byFlag = new Map(fields.map((field) => [field.flag, field]));
   const values: Record<string, unknown> = {};
   const callerPayload: Record<string, unknown> = {};
@@ -234,7 +240,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       inputSource = parsed.value;
       continue;
     }
-    if (parsed.name === "--number" && verb === "append") {
+    if (artifact === "decisions" && verb === "append" && parsed.name === "--number") {
       invalid({
         class: "unrecognized_argument",
         message: "--number is assigned by the CLI on append and cannot be supplied",
@@ -296,17 +302,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
     });
-  if (artifact === "health" && verb === "repair") {
-    invalid({
-      class: "unsupported_target",
-      message: "canonical health audit entities are immutable and cannot be row-deduplicated",
-      syntax: "agentera check validate state",
-      example: "agentera check validate state --format json",
-      recovery: "Validate malformed envelopes, duplicate IDs, or conflicting ownership and repair the canonical entity files without inventing audit history.",
-    });
-  }
-  const entityExperiments = artifact === "experiments";
-  for (const field of fields.filter((candidate) => candidate.required && !(entityExperiments && candidate.field === "number"))) {
+  for (const field of fields.filter((candidate) => candidate.required)) {
     if (mappingPath(values, field.field) === undefined) {
       invalid({
         class: "missing_argument",
@@ -328,21 +324,15 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   if (artifact === "plan" && verb !== "create") {
     const taskVerb = ["update", "set-status", "supersede", "record-evaluation"].includes(verb);
     const id = mappingPath(values, "id");
-    const task = mappingPath(values, "task");
-    if (task !== undefined) invalid({ class: "unrecognized_argument", message: "numeric task selectors are unavailable in entity mode; use --id ID" });
     if (taskVerb && id === undefined) invalid({ class: "missing_argument", message: `--id is required for plan ${verb} in entity mode` });
     if (force) invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plans; incomplete plans remain canonical history" });
   }
   if (artifact === "plan" && verb === "create" && force)
     invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plan create because multiple open plans coexist" });
-  if (artifact === "experiments" && verb === "publish") {
-    const number = mappingPath(values, "number");
-    if (number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric experiment selectors are unavailable in entity mode; omit --number" });
-  }
   if (
     verb === "update" &&
     artifact === "plan" &&
-    Object.keys(values).every((key) => key === "task")
+    Object.keys(values).every((key) => key === "id" || key === "plan")
   ) {
     invalid({
       class: "missing_argument",
@@ -365,11 +355,18 @@ function explainArgs(argv: string[]): {
   format: "text" | "json";
   project: string;
   verb: string | null;
+  all: boolean;
 } {
   let format: "text" | "json" = "text";
   let project = process.cwd();
   let verb: string | null = null;
+  let all = false;
   for (let i = 1; i < argv.length; ) {
+    if (argv[i] === "--all") {
+      all = true;
+      i += 1;
+      continue;
+    }
     const parsed = readFlag(argv, i);
     if (parsed.value === null || parsed.value.startsWith("--"))
       invalid({ class: "missing_argument", message: `${parsed.name} requires a value` });
@@ -390,7 +387,8 @@ function explainArgs(argv: string[]): {
         message: `unrecognized arguments: ${parsed.name}`,
       });
   }
-  return { format, project, verb };
+  if (all && verb) invalid({ class: "mutually_exclusive", message: "--all cannot be combined with --verb" });
+  return { format, project, verb, all };
 }
 
 export function runStateWrite(artifactRaw: string, argv: string[], io: Io): number {
@@ -399,9 +397,12 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
   const detectedFormat = formatFromArgv(argv);
   try {
     const artifact = artifactOrReject(artifactRaw);
+    assertMutationGrammarParity();
     if (argv[0] === "explain") {
       const args = explainArgs(argv);
-      const explanation = buildExplain(artifact, args.project, args.verb);
+      const explanation = args.all
+        ? buildExplainAll(artifact, args.project)
+        : buildExplain(artifact, args.project, args.verb);
       if (args.format === "json") out(JSON.stringify(explanation, null, 2) + "\n");
       else out(renderExplainText(explanation));
       return 0;
@@ -410,18 +411,19 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
     let input: Record<string, unknown> | null = null;
     if (parsed.inputSource) {
       try {
-        input = loadStructuredInput(parsed.inputSource, io.stdin ?? (() => fsStdin()));
+        input = loadStructuredInput(parsed.inputSource, io.stdin ?? (() => fsStdin()), parsed.spec.inputMaxBytes);
       } catch (error) {
         const message = (error as Error).message;
         invalid({
-          class: message.startsWith("input file") ? "unsupported_target" : "invalid_format",
+          class: message.startsWith("input file") ? "unsupported_target" : message.includes("UTF-8 limit") ? "schema_violation" : "invalid_format",
           message,
           syntax: "--input PATH",
           example: exampleFor(parsed.artifact, parsed.spec.verb),
+          ...(message.includes("UTF-8 limit") ? { violations: [message] } : {}),
         });
       }
       for (const owned of parsed.spec.cliOwnedFields ?? []) {
-        if (owned in input)
+        if (hasNested(input, owned))
           invalid({
             class: "schema_violation",
             message: `${parsed.artifact} ${parsed.spec.verb} assigns ${owned}; remove '${owned}' from the input document`,

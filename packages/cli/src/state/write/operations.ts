@@ -1,48 +1,29 @@
+import crypto from "node:crypto";
+
 import type { JsonObject } from "../../core/jsonValue.js";
-import { loadTodoReadinessContract } from "../../registries/todoReadinessContract.js";
-import { glossaryCaveatContract } from "../../registries/glossaryCaveatContract.js";
+import {
+  canonicalJson,
+  loadMutationGrammar,
+  type MutationOperationDeclaration,
+} from "./grammar.js";
+import {
+  RUNTIME_WRITABLE_ARTIFACTS,
+  RUNTIME_WRITE_VERBS,
+  runtimeOperationSpec,
+  runtimeOperationSpecs,
+  type RuntimeOperationField,
+  type RuntimeOperationSpec,
+  type RuntimeWritableArtifact,
+  type RuntimeWriteVerb,
+} from "./runtimeOperations.js";
 
-export const WRITABLE_ARTIFACTS = ["progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs", "glossary"] as const;
-export type WritableArtifact = (typeof WRITABLE_ARTIFACTS)[number];
-
-export const WRITE_VERBS = [
-  "append",
-  "update",
-  "amend",
-  "set-status",
-  "supersede",
-  "set-plan-status",
-  "record-evaluation",
-  "repair",
-  "archive",
-  "create",
-  "publish",
-  "resolve",
-  "explain",
-] as const;
-export type WriteVerb = (typeof WRITE_VERBS)[number];
-
-export type FieldKind = "string" | "integer" | "string_list" | "integer_list" | "date" | "datetime";
-
-export interface OperationField {
-  flag: string;
-  field: string;
-  kind: FieldKind;
-  required?: boolean;
-  repeatable?: boolean;
-  validValues?: string[];
-  description?: string;
-}
-
-export interface OperationSpec {
-  artifact: WritableArtifact;
-  verb: Exclude<WriteVerb, "explain">;
-  fields: OperationField[];
-  inputRoot?: "one audit entry" | "complete plan document" | "one objective document" | "one experiment entry" | "one documentation inventory entry" | "one glossary publication request";
-  cliOwnedFields?: string[];
-  allowForce?: boolean;
-  compacts?: boolean;
-}
+export const WRITABLE_ARTIFACTS = RUNTIME_WRITABLE_ARTIFACTS;
+export type WritableArtifact = RuntimeWritableArtifact;
+export const WRITE_VERBS = RUNTIME_WRITE_VERBS;
+export type WriteVerb = RuntimeWriteVerb;
+export type FieldKind = RuntimeOperationField["kind"];
+export type OperationField = RuntimeOperationField;
+export type OperationSpec = RuntimeOperationSpec;
 
 export interface StateWriteRequest {
   artifact: WritableArtifact;
@@ -60,324 +41,33 @@ export interface StateWriteEnvelope extends Record<string, unknown> {
   status: "pass";
 }
 
-const todoReadinessFields: OperationField[] = [
-  { flag: "--capability", field: "readiness.capability", kind: "string", description: "Reviewer-approved capability that owns the next action." },
-  { flag: "--reason", field: "readiness.reason", kind: "string", description: "Durable intent explaining why the destination is correct." },
-  { flag: "--dependency", field: "readiness.dependencies", kind: "string_list", repeatable: true, description: "Bare ten-letter canonical TODO prerequisite ID; repeat for each dependency." },
-  { flag: "--blocked-reason", field: "readiness.blocked.reason", kind: "string", description: "Explicit blocker reason; requires --blocked-recovery." },
-  { flag: "--blocked-recovery", field: "readiness.blocked.recovery", kind: "string", description: "Bounded action that clears the declared blocker; requires --blocked-reason." },
-  { flag: "--gate-state", field: "readiness.gate.state", kind: "string", validValues: ["pending", "satisfied"], description: "Declared external or approval gate state." },
-  { flag: "--gate-reason", field: "readiness.gate.reason", kind: "string", description: "Reason for the declared gate." },
-  { flag: "--gate-recovery", field: "readiness.gate.recovery", kind: "string", description: "Bounded action for the declared gate." },
-  { flag: "--queue-rank", field: "readiness.queue_rank", kind: "integer", description: "Reviewer-assigned intent order within severity; lower values run first." },
-  { flag: "--order-reason", field: "readiness.order_reason", kind: "string", description: "Durable reason for the queue rank." },
-];
+let runtimeCache: RuntimeOperationSpec[] | undefined;
 
-const glossaryCaveat = glossaryCaveatContract();
+function codeOwnedSpecs(): RuntimeOperationSpec[] {
+  if (!runtimeCache) runtimeCache = runtimeOperationSpecs();
+  return runtimeCache;
+}
 
-const progressAppend: OperationField[] = [
-  {
-    flag: "--type",
-    field: "type",
-    kind: "string",
-    required: true,
-    validValues: ["feat", "fix", "docs", "refactor", "chore", "test"],
-  },
-  {
-    flag: "--phase",
-    field: "phase",
-    kind: "string",
-    required: true,
-    validValues: ["envision", "deliberate", "plan", "build", "audit"],
-  },
-  { flag: "--what", field: "what", kind: "string", required: true },
-  { flag: "--intent", field: "context.intent", kind: "string", required: true },
-  { flag: "--timestamp", field: "timestamp", kind: "datetime", required: false },
-  { flag: "--glossary-caveat-event", field: "glossary_caveat.event", kind: "string", validValues: glossaryCaveat.events, description: "Build-owned glossary caveat lifecycle event. Other caveat flags are conditionally required; identity is CLI-assigned for current." },
-  { flag: "--glossary-caveat-reason", field: "glossary_caveat.reason", kind: "string", validValues: glossaryCaveat.reasons, description: "Bounded glossary caveat reason; never include a term, meaning, path, anchor, or provenance." },
-  { flag: "--glossary-caveat-ownership-state", field: "glossary_caveat.ownership_state", kind: "string", validValues: glossaryCaveat.ownershipStates, description: "Bounded authority state for the glossary caveat." },
-  { flag: "--glossary-caveat-id", field: "glossary_caveat.caveat_id", kind: "string", description: "Existing opaque caveat identity for resolved or superseded; forbidden for current." },
-  { flag: "--glossary-caveat-transition-id", field: "glossary_caveat.transition_id", kind: "string", description: "Fresh successor caveat identity for superseded; forbidden for current and resolved." },
-  { flag: "--inspiration", field: "inspiration", kind: "string" },
-  { flag: "--discovered", field: "discovered", kind: "string" },
-  { flag: "--verified", field: "verified", kind: "string" },
-  { flag: "--next", field: "next", kind: "string" },
-  { flag: "--constraints", field: "context.constraints", kind: "string" },
-  { flag: "--unknowns", field: "context.unknowns", kind: "string" },
-  { flag: "--scope", field: "context.scope", kind: "string" },
-];
-
-const decisionAppend: OperationField[] = [
-  { flag: "--question", field: "question", kind: "string", required: true },
-  { flag: "--context", field: "context", kind: "string", required: true },
-  { flag: "--alternative-chosen", field: "alternatives.chosen", kind: "string", required: true },
-  {
-    flag: "--alternative-rejected",
-    field: "alternatives.rejected",
-    kind: "string_list",
-    repeatable: true,
-  },
-  { flag: "--choice", field: "choice", kind: "string", required: true },
-  { flag: "--reasoning", field: "reasoning", kind: "string", required: true },
-  {
-    flag: "--confidence",
-    field: "confidence",
-    kind: "string",
-    required: true,
-    validValues: ["firm", "provisional", "exploratory"],
-  },
-  { flag: "--feeds-into", field: "feeds_into", kind: "string" },
-  { flag: "--date", field: "date", kind: "date", required: false },
-];
-
-const decisionUpdate: OperationField[] = [
-  { flag: "--id", field: "id", kind: "string" },
-  {
-    flag: "--satisfaction-state",
-    field: "satisfaction.state",
-    kind: "string",
-    required: true,
-    validValues: ["open", "provisionally_satisfied", "user_confirmed_satisfied"],
-  },
-  { flag: "--satisfaction-evidence", field: "satisfaction.evidence", kind: "string" },
-  { flag: "--confirmed-by", field: "satisfaction.user_confirmation.confirmed_by", kind: "string" },
-  { flag: "--confirmed-at", field: "satisfaction.user_confirmation.confirmed_at", kind: "string" },
-];
-
-/** Current decision amendments publish immutable revision entities by bare ID. */
-const decisionAmend: OperationField[] = [
-  { flag: "--id", field: "id", kind: "string" },
-  { flag: "--base-sha256", field: "base_sha256", kind: "string" },
-  { flag: "--question", field: "question", kind: "string", required: false },
-  { flag: "--context", field: "context", kind: "string", required: false },
-  { flag: "--alternative-chosen", field: "alternatives.chosen", kind: "string", required: false },
-  {
-    flag: "--alternative-rejected",
-    field: "alternatives.rejected",
-    kind: "string_list",
-    repeatable: true,
-    required: false,
-  },
-  { flag: "--choice", field: "choice", kind: "string", required: false },
-  { flag: "--reasoning", field: "reasoning", kind: "string", required: false },
-  {
-    flag: "--confidence",
-    field: "confidence",
-    kind: "string",
-    required: false,
-    validValues: ["firm", "provisional", "exploratory"],
-  },
-  { flag: "--feeds-into", field: "feeds_into", kind: "string", required: false },
-];
-
-const planTaskFields: OperationField[] = [
-  { flag: "--name", field: "name", kind: "string", required: true },
-  { flag: "--depends-on", field: "depends_on", kind: "integer_list", repeatable: true },
-  { flag: "--acceptance", field: "acceptance", kind: "string_list", repeatable: true },
-  {
-    flag: "--status",
-    field: "status",
-    kind: "string",
-    required: false,
-    validValues: ["complete", "in_progress", "pending", "blocked"],
-    description: "Task execution status. Does not change the plan lifecycle.",
-  },
-];
-
-const planEvaluationFields: OperationField[] = [
-  { flag: "--task", field: "task", kind: "integer", required: true },
-  { flag: "--attempt-id", field: "evaluation.attempt_id", kind: "string", required: true },
-  {
-    flag: "--verdict",
-    field: "evaluation.verdict",
-    kind: "string",
-    required: true,
-    validValues: ["pass", "fail"],
-    description: "Evaluator verdict for this idempotent attempt.",
-  },
-  { flag: "--failure-evidence", field: "evaluation.failure_evidence", kind: "string" },
-  {
-    flag: "--provenance",
-    field: "evaluation.provenance",
-    kind: "string",
-    required: true,
-    description: "Stable source reference for the evaluator result.",
-  },
-];
-
-const planSupersedeFields: OperationField[] = [
-  { flag: "--by", field: "superseded_by", kind: "string_list", required: true, repeatable: true, description: "Distinct same-plan replacement task IDs that are complete with latest persisted PASS." },
-  { flag: "--reason", field: "superseded_reason", kind: "string", required: true, description: "Required explanation, at most 500 characters." },
-];
-
-const SPECS: OperationSpec[] = [
-  { artifact: "progress", verb: "append", fields: progressAppend, compacts: true },
-  { artifact: "decisions", verb: "append", fields: decisionAppend, compacts: true },
-  { artifact: "decisions", verb: "update", fields: decisionUpdate },
-  { artifact: "decisions", verb: "amend", fields: decisionAmend },
-  { artifact: "plan", verb: "append", fields: planTaskFields },
-  {
-    artifact: "plan",
-    verb: "update",
-    fields: [
-      { flag: "--task", field: "task", kind: "integer", required: true },
-      ...planTaskFields
-        .filter((field) => field.field !== "status")
-        .map((field) => ({ ...field, required: false })),
-      { flag: "--evidence", field: "evidence", kind: "string" },
-      { flag: "--blocked-reason", field: "blocked_reason", kind: "string" },
-      { flag: "--surprise", field: "surprise", kind: "string" },
-    ],
-  },
-  {
-    artifact: "plan",
-    verb: "set-status",
-    fields: [
-      { flag: "--task", field: "task", kind: "integer", required: true },
-      {
-        flag: "--status",
-        field: "status",
-        kind: "string",
-        required: true,
-        validValues: ["complete", "in_progress", "pending", "blocked"],
-        description: "Task execution status. Does not change the plan lifecycle.",
-      },
-    ],
-  },
-  { artifact: "plan", verb: "supersede", fields: planSupersedeFields },
-  {
-    artifact: "plan",
-    verb: "set-plan-status",
-    fields: [
-      {
-        flag: "--status",
-        field: "status",
-        kind: "string",
-        required: true,
-        validValues: ["open", "complete"],
-        description: "Plan lifecycle status. Positional activity is derived from location.",
-      },
-    ],
-  },
-  { artifact: "plan", verb: "record-evaluation", fields: planEvaluationFields },
-  { artifact: "plan", verb: "archive", fields: [], allowForce: true },
-  {
-    artifact: "plan",
-    verb: "create",
-    fields: [],
-    inputRoot: "complete plan document",
-    cliOwnedFields: ["header.id", "previous_plan_archived"],
-    allowForce: true,
-  },
-  {
-    artifact: "health",
-    verb: "append",
-    fields: [],
-    inputRoot: "one audit entry",
-    cliOwnedFields: ["number"],
-    compacts: true,
-  },
-  {
-    artifact: "health",
-    verb: "repair",
-    fields: [
-      { flag: "--number", field: "number", kind: "integer", required: true },
-      { flag: "--keep", field: "keep", kind: "string", required: false, validValues: ["first", "last"] },
-    ],
-    allowForce: true,
-  },
-  {
-    artifact: "objective",
-    verb: "create",
-    fields: [],
-    inputRoot: "one objective document",
-    cliOwnedFields: ["id", "artifact", "header.id"],
-  },
-  {
-    artifact: "objective",
-    verb: "update",
-    fields: [{ flag: "--id", field: "id", kind: "string", required: true }],
-    inputRoot: "one objective document",
-    cliOwnedFields: ["id", "artifact", "header.id"],
-  },
-  {
-    artifact: "experiments",
-    verb: "publish",
-    fields: [
-      {
-        flag: "--objective",
-        field: "objective",
-        kind: "string",
-        required: true,
-        description: "Stable objective identity owning the experiment.",
-      },
-      {
-        flag: "--number",
-        field: "number",
-        kind: "integer",
-        description: "Non-negative experiment number, including baseline 0.",
-      },
-      { flag: "--id", field: "id", kind: "string", description: "Existing immutable entity ID for exact replay in entity mode." },
-    ],
-    inputRoot: "one experiment entry",
-    cliOwnedFields: ["number"],
-    compacts: true,
-  },
-  {
-    artifact: "todo",
-    verb: "create",
-    fields: [
-      { flag: "--severity", field: "severity", kind: "string", required: true, validValues: ["critical", "degraded", "normal", "annoying"] },
-      { flag: "--description", field: "description", kind: "string", required: true },
-      ...todoReadinessFields,
-    ],
-  },
-  {
-    artifact: "todo",
-    verb: "update",
-    fields: [
-      { flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter TODO item ID returned by create or list." },
-      { flag: "--severity", field: "severity", kind: "string", required: false, validValues: ["critical", "degraded", "normal", "annoying"] },
-      { flag: "--description", field: "description", kind: "string", required: false },
-      ...todoReadinessFields,
-    ],
-  },
-  { artifact: "todo", verb: "resolve", fields: [{ flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter TODO item ID returned by create or list." }] },
-  { artifact: "docs", verb: "create", fields: [], inputRoot: "one documentation inventory entry", cliOwnedFields: ["id", "artifact"] },
-  {
-    artifact: "docs",
-    verb: "update",
-    fields: [{ flag: "--id", field: "id", kind: "string", required: true, description: "Bare ten-letter documentation inventory ID returned by create or list." }],
-    inputRoot: "one documentation inventory entry",
-    cliOwnedFields: ["id", "artifact"],
-  },
-  {
-    artifact: "glossary",
-    verb: "publish",
-    fields: [],
-    inputRoot: "one glossary publication request",
-  },
-];
+/**
+ * Runtime behavior is deliberately code-owned. The authority is loaded only
+ * to prove that its discovery projection still describes these executable
+ * operations; it never supplies parser fields or accepted verbs.
+ */
+export function assertMutationGrammarParity(): void {
+  loadMutationGrammar();
+}
 
 export function operationSpec(artifact: string, verb: string): OperationSpec | null {
-  const spec = SPECS.find((candidate) => candidate.artifact === artifact && candidate.verb === verb) ?? null;
-  if (!spec || artifact !== "todo" || !["create", "update"].includes(verb)) return spec;
-  const allowedDestinations = loadTodoReadinessContract().allowedDestinations;
-  return {
-    ...spec,
-    fields: spec.fields.map((field) => field.flag === "--capability" ? { ...field, validValues: allowedDestinations } : field),
-  };
+  const spec = runtimeOperationSpec(artifact, verb);
+  return spec ? { ...spec, fields: spec.fields.map((field) => ({ ...field })) } : null;
 }
 
 export function verbsForArtifact(artifact: string): WriteVerb[] {
-  if (!WRITABLE_ARTIFACTS.includes(artifact as WritableArtifact)) return [];
-  return [
-    ...SPECS.filter((spec) => spec.artifact === artifact).map((spec) => spec.verb),
-    "explain",
-  ];
+  if (!isWritableArtifact(artifact)) return [];
+  return [...codeOwnedSpecs().filter((spec) => spec.artifact === artifact).map((spec) => spec.verb), "explain"];
 }
 
-export function isWriteVerb(value: string | undefined): boolean {
+export function isWriteVerb(value: string | undefined): value is WriteVerb {
   return Boolean(value && WRITE_VERBS.includes(value as WriteVerb));
 }
 
@@ -386,47 +76,145 @@ export function isWritableArtifact(value: string): value is WritableArtifact {
 }
 
 export function writerOwnedFields(artifact: string): string[] {
-  if (artifact === "progress") return ["id", "artifact", "publication_order"];
-  if (artifact === "health") return ["id", "artifact", "appended_at"];
-  return [];
+  return [...new Set(codeOwnedSpecs().filter((spec) => spec.artifact === artifact).flatMap((spec) => spec.ownedFields))];
 }
 
-export function stateWriterArtifactContract(artifact: string, projectRoot = process.cwd()): JsonObject | null {
-  if (!isWritableArtifact(artifact)) return null;
-  void projectRoot;
-  const verbs = verbsForArtifact(artifact);
-  const mutations = verbs.filter((verb) => verb !== "explain");
-  const owned = writerOwnedFields(artifact);
+function declarationFor(grammar: ReturnType<typeof loadMutationGrammar>, artifact: string, verb: string): MutationOperationDeclaration {
+  const declaration = grammar.operations.find((operation) => operation.artifact === artifact && operation.verb === verb);
+  if (!declaration) throw new Error(`mutation grammar is missing code-owned operation '${artifact}.${verb}'`);
+  return declaration;
+}
+
+function operationProjection(operation: MutationOperationDeclaration): JsonObject {
   return {
-    artifact,
-    mutations,
-    explain_command: `agentera state ${artifact} explain --format json`,
-    explain_by_verb: Object.fromEntries(
-      mutations.map((verb) => [
-        verb,
-        `agentera state ${artifact} explain --verb ${verb} --format json`,
-      ]),
-    ),
-    supports_dry_run: true,
-    ...(owned.length ? { writer_owned_fields: owned } : {}),
+    verb: operation.verb,
+    class: operation.mutationClass,
+    selectors: operation.selectors,
+    preconditions: operation.preconditions,
+    owned_fields: operation.ownedFields,
+    input: {
+      mode: operation.input.mode,
+      ...(operation.input.root ? { root: operation.input.root } : {}),
+      sources: operation.input.sources,
+      structured_sources: operation.input.structuredSources ?? [],
+      cli_owned_fields: operation.input.cliOwnedFields,
+    },
+    recovery: operation.recovery,
+    examples: operation.examples,
+    bounds: operation.bounds as JsonObject,
+    fields: operation.fields.map((field) => ({
+      flag: field.flag,
+      field: field.field,
+      kind: field.kind,
+      required: field.required === true,
+      ...(field.repeatable ? { repeatable: true } : {}),
+      ...(field.validValues ? { valid_values: field.validValues } : {}),
+      ...(field.validValuesSource ? { valid_values_source: field.validValuesSource } : {}),
+      ...(field.description ? { description: field.description } : {}),
+    })),
+    allow_force: operation.allowForce,
+    compacts: operation.compacts,
   };
+}
+
+export function mutationParityMatrix(targets: readonly string[] = WRITABLE_ARTIFACTS): JsonObject {
+  const selected = new Set(targets);
+  const grammar = loadMutationGrammar();
+  const rows = codeOwnedSpecs()
+    .filter((spec) => selected.has(spec.artifact))
+    .map((spec) => {
+      const declaration = declarationFor(grammar, spec.artifact, spec.verb);
+      const operationDigest = cryptoDigest(canonicalJson(operationProjection(declaration)));
+      return {
+        artifact: spec.artifact,
+        verb: spec.verb,
+        class: declaration.mutationClass,
+        contract_digest: grammar.contractDigest,
+        operation_digest: operationDigest,
+        surfaces: {
+          authority: `references/artifacts/state-storage-authority.yaml#mutation_grammar.${spec.artifact}.${spec.verb}`,
+          runtime: `agentera state ${spec.artifact} ${spec.verb}`,
+          explain: `agentera state ${spec.artifact} explain --verb ${spec.verb} --format json`,
+          schema: "agentera schema --format json",
+          help: `agentera state ${spec.artifact} --help`,
+        },
+        success: { command: declaration.examples[0], expected: "pass", evidence: "class-level runtime regression" },
+        rejection: { command: `${declaration.examples[0]} --retired-content-flag`, expected: "fail", before_effects: true, evidence: "generic parser rejection regression" },
+        compare: ["authority", "runtime", "explain", "schema", "help"],
+      };
+    });
+  return {
+    schemaVersion: "agentera.stateMutationParity.v1",
+    contract_digest: grammar.contractDigest,
+    rows,
+    counts: {
+      operations: rows.length,
+      classes: Object.fromEntries(["record_payload", "simple_transition", "batch_transaction"].map((kind) => [kind, rows.filter((row) => row.class === kind).length])),
+    },
+  };
+}
+
+function cryptoDigest(value: string): string {
+  // Kept local to make the parity projection independent from authority bytes.
+  return createSha256(value);
+}
+
+function createSha256(value: string): string {
+  return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+export function stateWriterArtifactContract(
+  artifact: string,
+  mode: "full" | "compact" = "full",
+): JsonObject | null {
+  if (!isWritableArtifact(artifact)) return null;
+  const grammar = loadMutationGrammar();
+  const specs = codeOwnedSpecs().filter((spec) => spec.artifact === artifact);
+  const mutations = specs.map((spec) => spec.verb);
+  const result: JsonObject = {
+    artifact,
+    contract_digest: grammar.contractDigest,
+    mutations,
+    operation_count: specs.length,
+    explain_command: `agentera state ${artifact} explain --format json`,
+    explain_all_command: `agentera state ${artifact} explain --all --format json`,
+    explain_by_verb: Object.fromEntries(mutations.map((verb) => [verb, `agentera state ${artifact} explain --verb ${verb} --format json`])),
+    ...(writerOwnedFields(artifact).length ? { writer_owned_fields: writerOwnedFields(artifact) } : {}),
+  };
+  if (mode === "full") {
+    result.operations = specs.map((spec) => operationProjection(declarationFor(grammar, artifact, spec.verb)));
+    result.parity_matrix = mutationParityMatrix([artifact]);
+  }
+  return result;
 }
 
 export function stateWriterContract(
   targets: readonly string[] = WRITABLE_ARTIFACTS,
+  mode: "full" | "compact" = "full",
 ): JsonObject {
   const uniqueTargets = [...new Set(targets)];
-  const artifacts = uniqueTargets
-    .map((target) => stateWriterArtifactContract(target))
-    .filter((entry): entry is JsonObject => entry !== null);
+  const artifacts = uniqueTargets.map((target) => stateWriterArtifactContract(target, mode)).filter((entry): entry is JsonObject => entry !== null);
+  const grammar = loadMutationGrammar();
+  const fullParity = mutationParityMatrix(uniqueTargets) as Record<string, any>;
+  const parity = mode === "full"
+    ? fullParity
+    : {
+      schemaVersion: fullParity.schemaVersion,
+      contract_digest: fullParity.contract_digest,
+      counts: fullParity.counts,
+      row_count: (fullParity.rows as unknown[]).length,
+      detail: "agentera state <artifact> explain --all --format json",
+    };
   return {
     schemaVersion: "agentera.stateWriterDiscovery.v1",
     namespace: "agentera state",
-    policy:
-      "Use the state writer for supported artifact mutations; do not hand-edit those artifacts during normal capability execution.",
-    authority: "runtime operation registry",
+    authority: grammar.authority,
+    contract_digest: grammar.contractDigest,
+    policy: "Use the state writer for supported artifact mutations; do not hand-edit those artifacts during normal capability execution.",
     discovery_command: "agentera schema --format json",
+    mutation_grammar: `agentera state <artifact> explain --all --format json`,
     artifacts,
-    unsupported_targets: uniqueTargets.filter((target) => stateWriterArtifactContract(target) === null),
+    parity_matrix: parity,
+    unsupported_targets: uniqueTargets.filter((target) => stateWriterArtifactContract(target, mode) === null),
   };
 }

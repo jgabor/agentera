@@ -217,7 +217,7 @@ export function buildOrientationJsonPayload(
       empty_state: "fresh: summaries absent; zero issues",
       capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
        capability_context: capabilityContextPointer(options.capabilityContextRequiredBeforeRendering ?? true),
-      artifact_writes: stateWriterContract(),
+       artifact_writes: stateWriterContract(undefined, "compact"),
     },
   };
 }

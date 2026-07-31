@@ -152,7 +152,7 @@ describe("plan and task entity authority", () => {
     const root = project();
     const input = plan("unicode task pages") as Record<string, any>;
     const unicodeSample = "\u{10400}\u20ac\u2030";
-    const names = Array.from({ length: 12 }, (_, index) => `${index}-${unicodeSample.repeat(500)}`);
+    const names = Array.from({ length: 20 }, (_, index) => `${index}-${unicodeSample.repeat(70)}`);
     input.tasks = names.map((name, index) => ({
       number: index + 1,
       name,

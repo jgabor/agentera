@@ -1,5 +1,5 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
-import { verbsForArtifact } from "../state/write/operations.js";
+import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
 
@@ -144,7 +144,8 @@ export function printStateHelp(sub?: string): string {
       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",
-      "Discover writes: agentera state plan explain --format json",
+       "Discover writes: agentera state plan explain --format json",
+       "All verbs:         agentera state plan explain --all --format json",
     ].join("\n");
   }
   if (sub === "experiments") {
@@ -163,7 +164,8 @@ export function printStateHelp(sub?: string): string {
       "List and publish require one bare objective ID; get requires one bare experiment ID and may verify objective ownership.",
       "Legacy objective/path collisions return a structured ambiguous error.",
       "",
-      "Discover writes: agentera state experiments explain --verb publish --format json",
+       "Discover writes: agentera state experiments explain --verb publish --format json",
+       "All verbs:         agentera state experiments explain --all --format json",
     ].join("\n");
   }
   if (sub === "glossary") {
@@ -176,7 +178,8 @@ export function printStateHelp(sub?: string): string {
       "Confirmed project variants are enforced by the v1LegacyCruft validation guard; profile and docs-mapping mutation remain outside publication.",
       "Audit and discuss remain mutation-free. Discuss, Plan, and Build use read-only glossary advice with project precedence, proven-gap personal fallback, and host review for inferred equivalence.",
       "",
-      "Discover writes: agentera state glossary explain --verb publish --format json",
+       "Discover writes: agentera state glossary explain --verb publish --format json",
+       "All verbs:         agentera state glossary explain --all --format json",
     ].join("\n");
   }
   if (sub === "objective") {
@@ -190,7 +193,8 @@ export function printStateHelp(sub?: string): string {
       "Objective create publishes one independent entity; update replaces that entity through rollback-safe publication.",
       "Bare objective queries infer an active objective only when exactly one exists.",
       "",
-      "Discover writes: agentera state objective explain --format json",
+       "Discover writes: agentera state objective explain --format json",
+       "All verbs:         agentera state objective explain --all --format json",
     ].join("\n");
   }
   if (sub === "todo") {
@@ -207,7 +211,8 @@ export function printStateHelp(sub?: string): string {
       "Readiness flags are discovered with `agentera state todo explain --verb create|update --format json`; ordinary updates preserve readiness absence as needs-triage.",
        "Marker-absent repositories must complete migration before ordinary TODO access.",
       "",
-      "Discover writes: agentera state todo explain --format json",
+       "Discover writes: agentera state todo explain --format json",
+       "All verbs:         agentera state todo explain --all --format json",
     ].join("\n");
   }
   if (sub === "docs") {
@@ -222,7 +227,8 @@ export function printStateHelp(sub?: string): string {
       "Mappings, conventions, coverage, and editorial configuration retain whole-document authority in .agentera/docs.yaml.",
       "Default and list views are bounded by path then ID; exact get returns complete detail.",
       "",
-      "Discover writes: agentera state docs explain --format json",
+        "Discover writes: agentera state docs explain --format json",
+        "All verbs:         agentera state docs explain --all --format json",
     ].join("\n");
   }
   if (sub) {
@@ -235,7 +241,8 @@ export function printStateHelp(sub?: string): string {
       ...(verbs.length
         ? [
             "",
-            `Discover writes: agentera state ${sub} explain --format json`,
+             `Discover writes: agentera state ${sub} explain --format json`,
+             `All verbs:        agentera state ${sub} explain --all --format json`,
             `Per verb:        agentera state ${sub} explain --verb VERB --format json`,
           ]
         : []),
@@ -250,19 +257,13 @@ export function printStateHelp(sub?: string): string {
     "",
     "Routine artifact reads, writes, and advanced artifact query.",
     "Discover typed writes: agentera state <artifact> explain --format json",
+    "Discover all verbs: agentera state <artifact> explain --all --format json",
   ].join("\n");
 }
 
 export function stateCommandNames(): string[] {
   return [
-    "progress",
-    "plan",
-    "health",
-    "docs",
-    "objective",
-    "experiments",
-    "todo",
-    "decisions",
+    ...WRITABLE_ARTIFACTS,
     "migrate",
     "query",
   ];

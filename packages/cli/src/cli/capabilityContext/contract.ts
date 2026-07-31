@@ -211,7 +211,7 @@ export function capabilityContext(capability: string | null): JsonObject | null 
     first_invocation_read: firstInvocationReadMetadata(capability),
     declared_state_needs: needs,
     declared_write_targets: writeTargets,
-    write_contract: stateWriterContract(writeTargets),
+    write_contract: stateWriterContract(writeTargets, "compact"),
     retrieval_contract: stateRetrievalContract(needs),
     artifact_inventory: inventory,
     included_state_families: needs.filter((name) => STARTUP_ENVELOPE_STATE_FAMILIES.has(name)),

@@ -4,9 +4,23 @@ record:
   name: M2 · Establish declarative mutation grammar (htmgqhyasy)
   depends_on:
     - qxdcaimwoe
-  status: pending
+  status: superseded
   acceptance:
-    - GIVEN each mutation WHEN discovered THEN one authority classifies fields, preconditions, recovery, examples, and bounds.
-    - GIVEN explain, schema, help, and runtime WHEN compared THEN contracts match and unsupported flags fail before effects.
-    - GIVEN verb classes WHEN tested THEN each has one pass and one rejection.
+    - GIVEN any public mutation WHEN discovery is queried THEN exactly one class declares its selectors, preconditions, owned fields, recovery, examples, and bounds.
+    - GIVEN retired content flags, owned fields, unsupported health repair, or contradictory metadata WHEN used THEN rejection occurs consistently before effects.
+    - GIVEN each mutation class WHEN parity evidence runs THEN shared discovery agrees and includes one success and one rejection.
+    - GIVEN parity evidence reveals a family exception beyond one Build cycle WHEN reviewed THEN this task remains incomplete until downstream scope is replanned.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Criteria 1 and 3 still fail: explain treats selector membership as requiredness, creating 11 schema/explain mismatches for optional plan selectors, experiments ID, and mandatory decision selectors. Use field.required and align genuinely mandatory selectors in the code-owned registry and declaration."
+    provenance:
+      attempt_id: mascmjrpug-audit-2
+      source: Bounded independent re-review ses_04b16a1bfffexb7EKBSsvzl8X7
+      recorded_at: 2026-07-31 00:18
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - aiujszrciq
+  superseded_reason: Replacement corrected selector requiredness parity and earned independent PASS.

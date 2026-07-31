@@ -6,10 +6,9 @@ import { withEntityWriterLock } from "../entityStorage.js";
 import { appendProgressEntity } from "../progressEntities.js";
 import { requireEntityStateBinding } from "../stateMode.js";
 import { mutateTodoDocsEntity } from "../todoDocsEntities.js";
-import { reject } from "./errors.js";
 import { publishGlossary } from "./glossaryPublication.js";
 import type { StateMutationOptions } from "./mutation.js";
-import type { StateWriteEnvelope, StateWriteRequest } from "./operations.js";
+import { assertMutationGrammarParity, type StateWriteEnvelope, type StateWriteRequest } from "./operations.js";
 
 export type { StateWriteEnvelope, StateWriteRequest } from "./operations.js";
 
@@ -17,6 +16,7 @@ export function executeStateWrite(
   req: StateWriteRequest,
   _options: StateMutationOptions = {},
 ): StateWriteEnvelope {
+  assertMutationGrammarParity();
   const binding = requireEntityStateBinding(req.projectRoot);
   const publicationContext = binding.publicationContext;
   try {
@@ -29,12 +29,6 @@ export function executeStateWrite(
         : amendDecisionEntity(req, { publicationContext }));
     }
     if (req.artifact === "health") {
-      if (req.spec.verb === "repair") {
-        reject({
-          class: "unsupported_target",
-          message: "canonical health audit entities are immutable and cannot be row-deduplicated; run agentera check validate state to diagnose malformed or duplicate ownership before repairing entity files",
-        });
-      }
       return appendHealthEntity(req, { publicationContext });
     }
     if (req.artifact === "plan") return withEntityWriterLock(publicationContext, () => mutatePlanEntities(req, { publicationContext }));

@@ -1,0 +1,23 @@
+id: aiujszrciq
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M2 retry · Correct selector requiredness parity (htmgqhyasy)
+  status: complete
+  depends_on:
+    - qxdcaimwoe
+  acceptance:
+    - GIVEN schema, explain, and runtime mutation discovery WHEN compared THEN every selector requiredness value matches the code-owned field declaration.
+    - GIVEN optional plan or experiment selectors are omitted WHEN valid inference applies THEN execution remains valid, while omitted mandatory decision selectors reject before effects with exact recovery.
+    - GIVEN all 22 operations and three mutation classes WHEN parity and regression evidence run THEN discovery agrees and the previously passing authority, bound, help, and rejection behavior remains green.
+    - GIVEN independent Audit returns PASS WHEN the replacement closes THEN blocked task mascmjrpug is superseded and its dependent M2 tasks become eligible.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: aiujszrciq-audit-1
+      source: Independent Audit ses_049e4d986ffeJEBDKXHb1Z4B0F
+      recorded_at: 2026-07-31 05:05
+      writer_command: agentera state plan record-evaluation

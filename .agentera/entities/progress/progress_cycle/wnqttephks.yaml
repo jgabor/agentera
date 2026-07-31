@@ -1,0 +1,12 @@
+id: wnqttephks
+artifact: progress
+record:
+  timestamp: 2026-07-31 00:12
+  type: fix
+  phase: audit
+  what: Corrected the first Audit failure in the declarative state mutation grammar and recorded nonterminal re-audit evidence.
+  context:
+    intent: Preserve mascmjrpug pending and htmgqhyasy open while logging verified correction evidence.
+  verified: "The first Audit failed; its four accepted findings were corrected: executable mutation acceptance is code-owned by the runtime operation registry while YAML is parity-only discovery; all 22 operations expose truthful selectors, nested owned fields, and truthful file/stdin sources; structured file and stdin input is rejected before parsing or effects when it exceeds the 32768-byte UTF-8 bound; glossary help is present. The deterministic contract digest is f7b21fc0d0d3048ac475ef238e0999a551ddd847e6a33a562c340853e2949d6c. The all-22-operation parity matrix covers record_payload, simple_transition, and batch_transaction; real class evidence passed record_payload progress append and rejected --input, passed simple_transition decisions update and rejected --input, and passed batch_transaction plan create dry-run and rejected malformed YAML. Gates passed exactly: source 224 files, 3084 passed, 1 skipped; package boundary 2 files, 17 passed; typecheck and build passed; compact artifacts 1, over_limit 0, formatting 0, protected_overflow 0, errors 0, changed 0; state validation entity_count 2014 and issue_count 0; capability-contract passed 3 and failed 0. The built local CLI authority-divergence smoke failed closed with status 1 and a mutation grammar parity error, while the built UTF-8-bound smoke rejected with status 2 and schema_violation. Downstream scope assessment: no downstream capability exception or replan is required; direct discovery, projection, help, and regression surfaces were covered and downstream source/package tests passed."
+  next: Independent Audit may re-run the pending task without closing the task or TODO.
+  publication_order: 14

@@ -6,7 +6,8 @@ record:
     - mascmjrpug
   status: pending
   acceptance:
-    - GIVEN progress or decision content WHEN written THEN structured input preserves amendments, dry-run, replay, and publication order.
-    - GIVEN owned fields, stale amendments, or old flags WHEN submitted THEN reject before effects with correction.
-    - GIVEN writer operations WHEN tested THEN each has one pass and one rejection.
+    - GIVEN valid progress or decision record input from a YAML or JSON file or stdin WHEN appended or amended THEN the write preserves dry-run, replay, concurrency, and publication semantics.
+    - GIVEN a satisfaction transition WHEN valid selectors are supplied THEN it remains flag-only and accepts no record content.
+    - GIVEN malformed input, owned fields, stale amendment state, or retired content flags WHEN submitted THEN rejection occurs before effects.
+    - GIVEN discovery and execution WHEN compared THEN accepted inputs, transitions, preconditions, and rejection behavior agree.
   plan: frkpjqmpnj

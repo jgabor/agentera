@@ -2231,6 +2231,440 @@ budgets:
       status, mode, state_presence, a brief source_contract, and the
       byte-budget error with a recovery command; never emit an over-budget
       payload. Diagnostics are measured on stderr separately.
-  validation:
-    authority: this file plus the referenced JSON surface manifest
-    drift_rule: tests fail if manifest IDs or byte values disagree with this contract
+validation:
+  authority: this file plus the referenced JSON surface manifest
+  drift_rule: tests fail if manifest IDs or byte values disagree with this contract
+
+# The mutation grammar is the only declarative inventory of public state writes.
+# Runtime code owns execution; this section owns the vocabulary, shape, bounds,
+# recovery, and projections exposed by discovery.
+mutation_grammar:
+  schema_version: agentera.stateMutationGrammar.v1
+  status: active
+  authority: references/artifacts/state-storage-authority.yaml
+  operation_classes: [record_payload, simple_transition, batch_transaction]
+  contract_scope: public_state_writer_verbs
+  structured_input:
+    parser: yaml_or_json_mapping
+    sources: [file, stdin]
+    flag: --input
+    stdin_value: '-'
+  operations:
+    - artifact: progress
+      verb: append
+      class: record_payload
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid]
+      owned_fields: [id, artifact, publication_order]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact, publication_order]
+      recovery: Run agentera state progress explain --verb append --format json and correct the rejected field; no state was changed.
+      examples: ['agentera state progress append --type fix --phase build --what "..." --intent "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      compacts: true
+      fields:
+        - { flag: --type, field: type, kind: string, required: true, valid_values: [feat, fix, docs, refactor, chore, test] }
+        - { flag: --phase, field: phase, kind: string, required: true, valid_values: [envision, deliberate, plan, build, audit] }
+        - { flag: --what, field: what, kind: string, required: true }
+        - { flag: --intent, field: context.intent, kind: string, required: true }
+        - { flag: --timestamp, field: timestamp, kind: datetime }
+        - { flag: --glossary-caveat-event, field: glossary_caveat.event, kind: string, valid_values_source: glossary_caveat.events }
+        - { flag: --glossary-caveat-reason, field: glossary_caveat.reason, kind: string, valid_values_source: glossary_caveat.reasons }
+        - { flag: --glossary-caveat-ownership-state, field: glossary_caveat.ownership_state, kind: string, valid_values_source: glossary_caveat.ownershipStates }
+        - { flag: --glossary-caveat-id, field: glossary_caveat.caveat_id, kind: string }
+        - { flag: --glossary-caveat-transition-id, field: glossary_caveat.transition_id, kind: string }
+        - { flag: --inspiration, field: inspiration, kind: string }
+        - { flag: --discovered, field: discovered, kind: string }
+        - { flag: --verified, field: verified, kind: string }
+        - { flag: --next, field: next, kind: string }
+        - { flag: --constraints, field: context.constraints, kind: string }
+        - { flag: --unknowns, field: context.unknowns, kind: string }
+        - { flag: --scope, field: context.scope, kind: string }
+
+    - artifact: decisions
+      verb: append
+      class: record_payload
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, exactly_one_chosen_alternative]
+      owned_fields: [id, artifact]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact]
+      recovery: Run agentera state decisions explain --verb append --format json and supply every required field; no state was changed.
+      examples: ['agentera state decisions append --question "..." --context "..." --alternative-chosen "..." --choice "..." --reasoning "..." --confidence firm --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      compacts: true
+      fields:
+        - { flag: --question, field: question, kind: string, required: true }
+        - { flag: --context, field: context, kind: string, required: true }
+        - { flag: --alternative-chosen, field: alternatives.chosen, kind: string, required: true }
+        - { flag: --alternative-rejected, field: alternatives.rejected, kind: string_list, repeatable: true }
+        - { flag: --choice, field: choice, kind: string, required: true }
+        - { flag: --reasoning, field: reasoning, kind: string, required: true }
+        - { flag: --confidence, field: confidence, kind: string, required: true, valid_values: [firm, provisional, exploratory] }
+        - { flag: --feeds-into, field: feeds_into, kind: string }
+        - { flag: --date, field: date, kind: date }
+
+    - artifact: decisions
+      verb: update
+      class: simple_transition
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, satisfaction_state_is_valid]
+      owned_fields: [id, artifact, satisfaction]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Run agentera state decisions explain --verb update --format json, use the returned bare decision ID, and provide a valid satisfaction transition.
+      examples: ['agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --satisfaction-state, field: satisfaction.state, kind: string, required: true, valid_values: [open, provisionally_satisfied, user_confirmed_satisfied] }
+        - { flag: --satisfaction-evidence, field: satisfaction.evidence, kind: string }
+        - { flag: --confirmed-by, field: satisfaction.user_confirmation.confirmed_by, kind: string }
+        - { flag: --confirmed-at, field: satisfaction.user_confirmation.confirmed_at, kind: string }
+
+    - artifact: decisions
+      verb: amend
+      class: record_payload
+      selectors: [--id, --base-sha256]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, base_sha256_matches_current_effective_record]
+      owned_fields: [id, artifact, base_sha256]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact, base_sha256]
+      recovery: Reread the exact decision, copy its current effective SHA-256, and retry with at least one amendable field; no state was changed.
+      examples: ['agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --choice "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --base-sha256, field: base_sha256, kind: string, required: true }
+        - { flag: --question, field: question, kind: string }
+        - { flag: --context, field: context, kind: string }
+        - { flag: --alternative-chosen, field: alternatives.chosen, kind: string }
+        - { flag: --alternative-rejected, field: alternatives.rejected, kind: string_list, repeatable: true }
+        - { flag: --choice, field: choice, kind: string }
+        - { flag: --reasoning, field: reasoning, kind: string }
+        - { flag: --confidence, field: confidence, kind: string, valid_values: [firm, provisional, exploratory] }
+        - { flag: --feeds-into, field: feeds_into, kind: string }
+
+    - artifact: plan
+      verb: append
+      class: record_payload
+      selectors: [--plan]
+      preconditions: [entity_mode_marker_is_valid, selected_plan_is_open, task_dependencies_are_bare_ids_in_same_plan]
+      owned_fields: [id, artifact, plan]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact, plan]
+      recovery: Use agentera state plan explain --verb append --format json, select an open plan, and retry with valid bare task dependencies.
+      examples: ['agentera state plan append --name "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      fields:
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --name, field: name, kind: string, required: true }
+        - { flag: --depends-on, field: depends_on, kind: string_list, repeatable: true }
+        - { flag: --acceptance, field: acceptance, kind: string_list, repeatable: true }
+        - { flag: --status, field: status, kind: string, valid_values: [complete, in_progress, pending, blocked] }
+
+    - artifact: plan
+      verb: update
+      class: record_payload
+      selectors: [--id, --plan]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, selected_plan_is_open, task_dependencies_are_bare_ids_in_same_plan]
+      owned_fields: [id, artifact, plan]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact, plan]
+      recovery: Reread the plan task by its bare ID, use a field from the returned vocabulary, and retry; no state was changed.
+      examples: ['agentera state plan update --id qjtrmnpvka --name "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --name, field: name, kind: string }
+        - { flag: --depends-on, field: depends_on, kind: string_list, repeatable: true }
+        - { flag: --acceptance, field: acceptance, kind: string_list, repeatable: true }
+        - { flag: --evidence, field: evidence, kind: string }
+        - { flag: --blocked-reason, field: blocked_reason, kind: string }
+        - { flag: --surprise, field: surprise, kind: string }
+
+    - artifact: plan
+      verb: set-status
+      class: simple_transition
+      selectors: [--id, --plan]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, task_exists_in_selected_plan]
+      owned_fields: [id, artifact, plan, status]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Reread the task list, copy its bare task ID, and use one of complete, in_progress, pending, or blocked.
+      examples: ['agentera state plan set-status --id qjtrmnpvka --status complete --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --status, field: status, kind: string, required: true, valid_values: [complete, in_progress, pending, blocked] }
+
+    - artifact: plan
+      verb: supersede
+      class: simple_transition
+      selectors: [--id, --plan]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, replacements_are_distinct_same_plan_complete_latest_pass]
+      owned_fields: [id, artifact, plan, superseded_by, superseded_reason]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Complete and evaluate each replacement task with latest PASS evidence, then retry with the returned bare IDs.
+      examples: ['agentera state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task" --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100, max_reason_code_points: 500 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --by, field: superseded_by, kind: string_list, required: true, repeatable: true }
+        - { flag: --reason, field: superseded_reason, kind: string, required: true }
+
+    - artifact: plan
+      verb: set-plan-status
+      class: simple_transition
+      selectors: [--plan]
+      preconditions: [entity_mode_marker_is_valid, selected_plan_is_open_or_complete, completion_requires_complete_tasks_and_latest_pass_replacements]
+      owned_fields: [id, artifact, plan, header.status]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Keep the plan open or resolve every incomplete task and replacement evaluation before retrying completion.
+      examples: ['agentera state plan set-plan-status --status complete --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      fields:
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --status, field: status, kind: string, required: true, valid_values: [open, complete] }
+
+    - artifact: plan
+      verb: record-evaluation
+      class: simple_transition
+      selectors: [--id, --plan]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, attempt_id_is_idempotent, verdict_is_pass_or_fail]
+      owned_fields: [id, artifact, plan, evaluation]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Use the task's bare ID, a stable attempt ID, and evaluator provenance, then retry without changing published evidence.
+      examples: ['agentera state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --attempt-id, field: evaluation.attempt_id, kind: string, required: true }
+        - { flag: --verdict, field: evaluation.verdict, kind: string, required: true, valid_values: [pass, fail] }
+        - { flag: --failure-evidence, field: evaluation.failure_evidence, kind: string }
+        - { flag: --provenance, field: evaluation.provenance, kind: string, required: true }
+
+    - artifact: plan
+      verb: archive
+      class: simple_transition
+      selectors: [--plan]
+      preconditions: [entity_mode_marker_is_valid, selected_plan_is_not_open]
+      owned_fields: [id, artifact, plan, header.status]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Complete or preserve the selected plan, then retry archive with no content flags; no state was changed.
+      examples: ['agentera state plan archive --dry-run --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      allow_force: true
+      fields: [{ flag: --plan, field: plan, kind: string }]
+
+    - artifact: plan
+      verb: create
+      class: batch_transaction
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, input_is_one_complete_plan_document, task_numbers_are_sequential, dependency_graph_is_valid]
+      owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
+      input:
+        mode: structured
+        root: complete plan document
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
+      recovery: Run agentera state plan explain --verb create --format json, remove CLI-owned fields, and correct the first schema or dependency violation.
+      examples: ['agentera state plan create --input plan.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
+      allow_force: true
+      fields: []
+
+    - artifact: health
+      verb: append
+      class: record_payload
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, input_is_one_audit_entry_not_a_whole_artifact]
+      owned_fields: [id, artifact, appended_at]
+      input:
+        mode: structured
+        root: one audit entry
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact, appended_at]
+      recovery: Run agentera check validate state --format json, preserve audit evidence, and retry with one schema-valid audit entry.
+      examples: ['agentera state health append --input audit.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
+      compacts: true
+      fields: []
+
+    - artifact: objective
+      verb: create
+      class: record_payload
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, input_is_one_objective_document]
+      owned_fields: [id, artifact, header.id]
+      input:
+        mode: structured
+        root: one objective document
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact, header.id]
+      recovery: Remove identity fields assigned by the CLI and retry with one schema-valid objective document.
+      examples: ['agentera state objective create --input objective.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
+      fields: []
+
+    - artifact: objective
+      verb: update
+      class: record_payload
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, input_is_one_objective_document]
+      owned_fields: [id, artifact, header.id]
+      input:
+        mode: structured
+        root: one objective document
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact, header.id]
+      recovery: Reread the objective, copy its bare ID to --id, remove CLI-owned fields, and retry.
+      examples: ['agentera state objective update --id qjtrmnpvka --input objective.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
+      fields: [{ flag: --id, field: id, kind: string, required: true }]
+
+    - artifact: experiments
+      verb: publish
+      class: batch_transaction
+      selectors: [--objective, --id]
+      preconditions: [entity_mode_marker_is_valid, owner_is_bare_ten_letters, input_is_one_experiment_entry, archive_and_projection_publication_is_atomic]
+      owned_fields: [id, artifact, objective, archive_identity]
+      input:
+        mode: structured
+        root: one experiment entry
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact, objective]
+      recovery: Use a bare objective ID, omit numeric legacy selectors, and retry the exact input; divergent immutable identities remain untouched.
+      examples: ['agentera state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
+      compacts: true
+      fields:
+        - { flag: --objective, field: objective, kind: string, required: true }
+        - { flag: --id, field: id, kind: string }
+
+    - artifact: todo
+      verb: create
+      class: record_payload
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, severity_is_valid, readiness_is_complete_or_needs_triage]
+      owned_fields: [id, artifact, status, public_order]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact, status, public_order]
+      recovery: Run agentera state todo explain --verb create --format json, provide the valid severity and readiness vocabulary, and retry.
+      examples: ['agentera state todo create --severity normal --description "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+      fields:
+        - { flag: --severity, field: severity, kind: string, required: true, valid_values: [critical, degraded, normal, annoying] }
+        - { flag: --description, field: description, kind: string, required: true }
+        - { flag: --capability, field: readiness.capability, kind: string, valid_values_source: todo_readiness.allowed_destinations }
+        - { flag: --reason, field: readiness.reason, kind: string }
+        - { flag: --dependency, field: readiness.dependencies, kind: string_list, repeatable: true }
+        - { flag: --blocked-reason, field: readiness.blocked.reason, kind: string }
+        - { flag: --blocked-recovery, field: readiness.blocked.recovery, kind: string }
+        - { flag: --gate-state, field: readiness.gate.state, kind: string, valid_values: [pending, satisfied] }
+        - { flag: --gate-reason, field: readiness.gate.reason, kind: string }
+        - { flag: --gate-recovery, field: readiness.gate.recovery, kind: string }
+        - { flag: --queue-rank, field: readiness.queue_rank, kind: integer }
+        - { flag: --order-reason, field: readiness.order_reason, kind: string }
+
+    - artifact: todo
+      verb: update
+      class: record_payload
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, supplied_readiness_is_complete]
+      owned_fields: [id, artifact, status, public_order]
+      input:
+        mode: flags_until_conversion
+        sources: [flags]
+        cli_owned_fields: [id, artifact, status, public_order]
+      recovery: Reread the TODO item, use its bare ID, and provide either no readiness flags or the complete readiness group.
+      examples: ['agentera state todo update --id qjtrmnpvka --description "..." --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --severity, field: severity, kind: string, valid_values: [critical, degraded, normal, annoying] }
+        - { flag: --description, field: description, kind: string }
+        - { flag: --capability, field: readiness.capability, kind: string, valid_values_source: todo_readiness.allowed_destinations }
+        - { flag: --reason, field: readiness.reason, kind: string }
+        - { flag: --dependency, field: readiness.dependencies, kind: string_list, repeatable: true }
+        - { flag: --blocked-reason, field: readiness.blocked.reason, kind: string }
+        - { flag: --blocked-recovery, field: readiness.blocked.recovery, kind: string }
+        - { flag: --gate-state, field: readiness.gate.state, kind: string, valid_values: [pending, satisfied] }
+        - { flag: --gate-reason, field: readiness.gate.reason, kind: string }
+        - { flag: --gate-recovery, field: readiness.gate.recovery, kind: string }
+        - { flag: --queue-rank, field: readiness.queue_rank, kind: integer }
+        - { flag: --order-reason, field: readiness.order_reason, kind: string }
+
+    - artifact: todo
+      verb: resolve
+      class: simple_transition
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, item_is_open]
+      owned_fields: [id, artifact, status]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Use the bare TODO ID returned by state todo list or get; no content flags are accepted.
+      examples: ['agentera state todo resolve --id qjtrmnpvka --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+      fields: [{ flag: --id, field: id, kind: string, required: true }]
+
+    - artifact: docs
+      verb: create
+      class: record_payload
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, input_is_one_documentation_inventory_entry]
+      owned_fields: [id, artifact]
+      input:
+        mode: structured
+        root: one documentation inventory entry
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact]
+      recovery: Remove id and artifact from the input and retry with one schema-valid documentation inventory entry.
+      examples: ['agentera state docs create --input documentation.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
+      fields: []
+
+    - artifact: docs
+      verb: update
+      class: record_payload
+      selectors: [--id]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, input_is_one_documentation_inventory_entry]
+      owned_fields: [id, artifact]
+      input:
+        mode: structured
+        root: one documentation inventory entry
+        sources: [file, stdin]
+        cli_owned_fields: [id, artifact]
+      recovery: Reread the documentation entry, copy its bare ID to --id, remove CLI-owned fields, and retry.
+      examples: ['agentera state docs update --id qjtrmnpvka --input documentation.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
+      fields: [{ flag: --id, field: id, kind: string, required: true }]
+
+    - artifact: glossary
+      verb: publish
+      class: batch_transaction
+      selectors: []
+      preconditions: [input_is_one_glossary_publication_request, cited_source_lines_are_current, confirmation_matches_proposal]
+      owned_fields: [approval_id, glossary_entry_id]
+      input:
+        mode: structured
+        root: one glossary publication request
+        sources: [file, stdin]
+        cli_owned_fields: []
+      recovery: Run agentera state glossary explain --verb publish --format json and correct the bounded request or confirmation.
+      examples: ['agentera state glossary publish --input glossary-publication.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
+      fields: []

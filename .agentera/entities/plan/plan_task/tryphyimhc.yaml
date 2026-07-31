@@ -3,10 +3,11 @@ artifact: plan
 record:
   name: M2 · Convert plan-task writers and identities (auwlbuobdw)
   depends_on:
-    - qllgiterft
+    - mascmjrpug
   status: pending
   acceptance:
-    - GIVEN task content WHEN written THEN structured input and bare identities agree across relationships and plan selection.
-    - GIVEN transition discovery WHEN read THEN each operation exposes only valid selectors and vocabulary.
-    - GIVEN task operations WHEN tested THEN each has one pass and one rejection.
+    - GIVEN valid plan-task input WHEN appended or updated with canonical bare IDs and optional plan selection THEN the intended task write succeeds.
+    - GIVEN a lifecycle transition WHEN inspected or invoked THEN it exposes only valid selectors and plan-level transitions never advertise task selectors.
+    - GIVEN malformed or non-bare identities, owned fields, or retired content flags WHEN submitted THEN rejection occurs before effects.
+    - GIVEN discovery and execution WHEN compared THEN selectors, identity rules, structured inputs, and transitions agree.
   plan: frkpjqmpnj
