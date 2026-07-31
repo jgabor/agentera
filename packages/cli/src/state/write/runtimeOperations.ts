@@ -5,7 +5,7 @@ export const RUNTIME_WRITABLE_ARTIFACTS = [
 ] as const;
 export type RuntimeWritableArtifact = (typeof RUNTIME_WRITABLE_ARTIFACTS)[number];
 
-export type RuntimeFieldKind = "string" | "boolean" | "integer" | "string_list" | "integer_list" | "date" | "datetime";
+export type RuntimeFieldKind = "string" | "boolean" | "integer" | "string_list" | "date" | "datetime";
 
 export interface RuntimeOperationField {
   flag: string;
@@ -62,21 +62,6 @@ const todoReadinessFields: RuntimeOperationField[] = [
   f("--order-reason", "readiness.order_reason", "string", { description: "Durable reason for the queue rank." }),
 ];
 
-const taskContentFields: RuntimeOperationField[] = [
-  f("--name", "name", "string", { required: true }),
-  f("--depends-on", "depends_on", "string_list", { repeatable: true }),
-  f("--acceptance", "acceptance", "string_list", { repeatable: true }),
-  f("--status", "status", "string", { validValues: ["complete", "in_progress", "pending", "blocked"], description: "Task execution status. Does not change the plan lifecycle." }),
-];
-
-const planAppendFields: RuntimeOperationField[] = [f("--plan", "plan", "string"), ...taskContentFields];
-
-const planUpdateFields: RuntimeOperationField[] = [
-  f("--id", "id", "string", { required: true }), f("--plan", "plan", "string"),
-  ...taskContentFields.filter((field) => field.field !== "status").map((field) => ({ ...field, required: false })),
-  f("--evidence", "evidence", "string"), f("--blocked-reason", "blocked_reason", "string"), f("--surprise", "surprise", "string"),
-];
-
 const planEvaluationFields: RuntimeOperationField[] = [
   f("--id", "id", "string", { required: true }), f("--plan", "plan", "string"),
   f("--attempt-id", "evaluation.attempt_id", "string", { required: true }),
@@ -98,8 +83,8 @@ const RUNTIME_OPERATIONS: RuntimeOperationSpec[] = [
   op("decisions", "append", [], { ownedFields: ["id", "artifact"], inputMode: "structured", inputRoot: "one decision record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact"], inputMaxBytes: 32768, compacts: true }),
   op("decisions", "update", [f("--id", "id", "string", { required: true }), f("--satisfaction-state", "satisfaction.state", "string", { required: true, validValues: ["open", "provisionally_satisfied", "user_confirmed_satisfied"] }), f("--satisfaction-evidence", "satisfaction.evidence", "string"), f("--confirmed-by", "satisfaction.user_confirmation.confirmed_by", "string"), f("--confirmed-at", "satisfaction.user_confirmation.confirmed_at", "string")], { selectors: ["--id"], ownedFields: ["id", "artifact", "satisfaction"] }),
   op("decisions", "amend", [f("--id", "id", "string", { required: true }), f("--base-sha256", "base_sha256", "string", { required: true })], { selectors: ["--id", "--base-sha256"], ownedFields: ["id", "artifact", "base_sha256"], inputMode: "structured", inputRoot: "amendable decision content", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "base_sha256"], inputMaxBytes: 32768 }),
-  op("plan", "append", planAppendFields, { selectors: ["--plan"], ownedFields: ["id", "artifact", "plan"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact", "plan"] }),
-  op("plan", "update", planUpdateFields, { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan"], inputMode: "flags_until_conversion", inputSources: ["flags"], cliOwnedFields: ["id", "artifact", "plan"] }),
+  op("plan", "append", [f("--plan", "plan", "string")], { selectors: ["--plan"], ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"], inputMode: "structured", inputRoot: "one plan task record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"], inputMaxBytes: 32768 }),
+  op("plan", "update", [f("--id", "id", "string", { required: true }), f("--plan", "plan", "string")], { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"], inputMode: "structured", inputRoot: "plan task patch", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"], inputMaxBytes: 32768 }),
   op("plan", "set-status", [f("--id", "id", "string", { required: true }), f("--plan", "plan", "string"), f("--status", "status", "string", { required: true, validValues: ["complete", "in_progress", "pending", "blocked"], description: "Task execution status. Does not change the plan lifecycle." })], { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "status"] }),
   op("plan", "supersede", [f("--id", "id", "string", { required: true }), f("--plan", "plan", "string"), f("--by", "superseded_by", "string_list", { required: true, repeatable: true }), f("--reason", "superseded_reason", "string", { required: true })], { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "superseded_by", "superseded_reason"] }),
   op("plan", "set-plan-status", [f("--plan", "plan", "string"), f("--status", "status", "string", { required: true, validValues: ["open", "complete"], description: "Plan lifecycle status. Positional activity is derived from location." })], { selectors: ["--plan"], ownedFields: ["id", "artifact", "plan", "header.status"] }),

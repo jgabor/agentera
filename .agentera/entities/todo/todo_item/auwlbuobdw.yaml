@@ -2,7 +2,7 @@ id: auwlbuobdw
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Make plan task record writes follow the structured-input state grammar and entity identity vocabulary. Require `plan append [--plan PLAN_ID] --input <path|->` and `plan update --id TASK_ID [--plan PLAN_ID] --input <path|->`; keep status, supersession, evaluation, plan-status, and archive operations as flag-only transitions. Discovery currently reports `integer_list` and task numbers while runtime requires ten-letter IDs. Make dependencies, replacements, task selectors, and optional plan selection agree across parsing, schema, explain, help, `SKILL.md`, and regressions; never advertise `set-plan-status --id`."
   readiness:
     capability: build
@@ -14,3 +14,7 @@ record:
     gate: null
     queue_rank: 50
     order_reason: Convert plan tasks in parallel with progress/decision and TODO writers after the shared mutation grammar lands.
+  lifecycle:
+    operation: resolve
+    reason: Structured plan-task records, bare-ID identity, create-local ordinal discovery, replay safety, and transition parity passed independent Audit.
+    date: 2026-07-31

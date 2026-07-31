@@ -1,0 +1,23 @@
+id: qgqlxqhlhd
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M2 retry · Expose plan-create accepted forms (auwlbuobdw)
+  status: complete
+  depends_on:
+    - mascmjrpug
+  acceptance:
+    - GIVEN plan-create dependency discovery WHEN schema or explain is queried THEN accepted integer and canonical numeric-string forms, normalization, uniqueness, and same-document resolution rules are machine-readable.
+    - GIVEN source and packaged CLI discovery WHEN compared THEN PT17 accepted forms and plan-create execution agree without weakening existing-task bare-ID operations.
+    - GIVEN the prior ordinal and plan-task regression matrix WHEN rerun THEN runtime, replay, identity, transitions, and package behavior remain green.
+    - GIVEN independent Audit returns PASS WHEN the replacement closes THEN blocked tasks dlcpoiyfwz and tryphyimhc are superseded and M2 advances to M3.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: qgqlxqhlhd-audit-1
+      source: Independent Audit ses_048aa8071ffedXTR4oqPkVxah3
+      recorded_at: 2026-07-31 10:49
+      writer_command: agentera state plan record-evaluation

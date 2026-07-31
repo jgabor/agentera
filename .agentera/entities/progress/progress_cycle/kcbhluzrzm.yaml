@@ -1,0 +1,16 @@
+id: kcbhluzrzm
+artifact: progress
+record:
+  timestamp: 2026-07-31 10:23
+  type: fix
+  phase: build
+  what: Aligned atomic plan-create dependency validation with PT17 by normalizing positive integer and canonical numeric-string ordinals before bare-ID publication.
+  context:
+    intent: Correct only the accepted dlcpoiyfwz-audit-1 ordinal-form finding while preserving the prior implementation, yrunpydpnp, and persisted evaluation provenance.
+    constraints: Keep dlcpoiyfwz in progress and auwlbuobdw and M2 open; do not complete or supersede tasks, start M3, commit, publish, bump versions, or modify profile or vision.
+    unknowns: Independent Audit confirmation remains pending.
+    scope: Atomic plan-create dependency acquisition and normalization, artifact schema type metadata, source and packed-install behavior tests, and regression verification.
+  discovered: "PT17 prose had advanced beyond executable artifact typing: list[string] rejected numeric scalars before the create-local resolver. An initial focused rerun also exposed an authority mismatch because the generated package still held the prior schema; rebuilding restored source/bundle authority before behavioral evaluation."
+  verified: Accepted depends_on [1] and ["1"] in source and packed-install create paths; normalized both to the same local ordinal string and published only bare ten-letter dependency IDs with task number removed. Rejected zero, negative, fractional, nonnumeric, noncanonical numeric-string, missing, duplicate-normalized, and mixed-unresolved references before effects. Verified append/update still reject integer, numeric-string, and composite dependency aliases. Passed 11 focused plan/schema/validation files with 331 tests, final focused plan/grammar with 57 tests, full source with 224 files and 3,112 passed plus 1 skipped, package verification with 18 tests, typecheck, build, state validation with 2,027 entities and zero issues before this append, compact, capability-contract, plan capability, and plan artifact validation. Source and generated package plan schemas are byte-identical at SHA-256 e131deb334069ac4dbf312b4669ce330441a2762068051d4fdc4924f0d6158ee; writer contract digest remains 7535c8d344b879c184851de1d8a87d3b5480b07c04d71d1063919a44813bab16.
+  next: Independent Audit must re-evaluate dlcpoiyfwz. This worker leaves dlcpoiyfwz in progress with dlcpoiyfwz-audit-1 intact and leaves auwlbuobdw and M2 open.
+  publication_order: 24

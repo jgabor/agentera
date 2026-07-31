@@ -209,7 +209,7 @@ describe("typed state writer on active entity authority", () => {
     expect(created.json?.tasks).toHaveLength(3);
     expect(created.json?.tasks[1].record.depends_on).toEqual([created.json?.tasks[0].id]);
     expect(run(root, ["plan", "set-status", "--id", created.json?.tasks[1].id, "--status", "in_progress", "--format", "json"]).rc).toBe(0);
-    const invalid = run(root, ["plan", "update", "--plan", created.json?.id, "--id", created.json?.tasks[0].id, "--depends-on", created.json?.tasks[2].id, "--format", "json"]);
+    const invalid = run(root, ["plan", "update", "--plan", created.json?.id, "--id", created.json?.tasks[0].id, "--input", "-", "--format", "json"], JSON.stringify({ depends_on: [created.json?.tasks[2].id] }));
     expect(invalid.rc, JSON.stringify(invalid)).toBe(2);
     expect(invalid.json?.error.message).toMatch(/cycle|depends/i);
     expect(validateEntityState(root).valid).toBe(true);

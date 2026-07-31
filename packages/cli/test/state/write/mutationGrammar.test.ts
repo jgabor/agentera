@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../../src/cli/dispatch.js";
-import { dumpYamlMapping } from "../../../src/core/yaml.js";
+import { dumpYamlMapping, loadYamlMapping } from "../../../src/core/yaml.js";
 import { loadMutationGrammar } from "../../../src/state/write/grammar.js";
 import { mutationParityMatrix, stateWriterContract } from "../../../src/state/write/operations.js";
 import { runtimeOperationSpecs } from "../../../src/state/write/runtimeOperations.js";
@@ -59,6 +59,79 @@ describe("declarative state mutation grammar", () => {
       expect(rows.length, kind).toBeGreaterThan(0);
       expect(rows.every((row: any) => row.success.expected === "pass" && row.rejection.before_effects)).toBe(true);
     }
+  });
+
+  it("keeps source and bundled plan schema identity boundaries explicit", () => {
+    const schemaPaths = [path.join(repoRoot, "skills/agentera/schemas/artifacts/plan.yaml")];
+    const bundled = path.join(repoRoot, "packages/cli/.agentera-generated/current/bundle/skills/agentera/schemas/artifacts/plan.yaml");
+    if (fs.existsSync(bundled)) schemaPaths.push(bundled);
+    for (const schemaPath of schemaPaths) {
+      expect(fs.existsSync(schemaPath), schemaPath).toBe(true);
+      const schema = fs.readFileSync(schemaPath, "utf8");
+      expect(schema).toContain("CANONICAL_ENTITY_CONTRACT");
+      expect(schema).toContain("format: bare_ten_letter_id");
+      expect(schema.toLowerCase()).toContain("create-local symbolic task ordinal");
+      expect(schema).toContain("migration_only_noncanonical");
+      expect(schema).toContain("public_selector: forbidden");
+      expect(schema).not.toContain("Stable plan identity assigned by the typed writer at first publication");
+      expect(schema).not.toContain("Must match plan:<lowercase RFC 9562 UUID> when present");
+      const dependencyField = (loadYamlMapping(schema).TASK as any)?.[3];
+      expect(dependencyField.type).toBe("list[integer|string]");
+      expect(dependencyField.accepted_forms).toEqual({
+        atomic_plan_create: ["positive_integer", "canonical_numeric_string"],
+        legacy_migration_only: ["legacy_task_reference_string"],
+      });
+      expect((loadYamlMapping(schema).CANONICAL_ENTITY_CONTRACT as any)?.create_local_symbols).toMatchObject({
+        dependency_accepted_forms: ["positive_integer", "canonical_numeric_string"],
+        dependency_normalization: "canonical_numeric_string_before_resolution",
+      });
+      const dependencyDescription = String(dependencyField.description ?? "").toLowerCase();
+      expect(dependencyDescription).toContain("numeric or numeric-string");
+      expect(dependencyDescription).toContain("create-local symbolic task ordinals");
+      expect(dependencyDescription).toContain("current complete plan create input");
+      expect(dependencyDescription).toContain("within that atomic document");
+      expect(dependencyDescription).toContain("bare ten-letter task envelope ids");
+      expect(dependencyDescription).not.toContain("legacy migration input");
+    }
+  });
+
+  it("projects schema-owned plan-create dependency forms through public schema and explain output", () => {
+    const root = project();
+    const expected = {
+      id: "PT17",
+      group: "TASK",
+      field: "depends_on",
+      path: "tasks[].depends_on",
+      type: "list[integer|string]",
+      required: false,
+      format: null,
+      validation: [
+        "positive_integer_or_canonical_numeric_string",
+        "unique_after_normalization_within_task",
+        "resolves_to_declared_task_ordinal_in_same_atomic_document",
+      ],
+      accepted_forms: {
+        atomic_plan_create: ["positive_integer", "canonical_numeric_string"],
+        legacy_migration_only: ["legacy_task_reference_string"],
+      },
+      normalization: "canonical_numeric_string_before_same_document_resolution",
+      write_operations: ["create"],
+    };
+    const schemaJson = runCli(root, ["schema", "--format", "json"], "", false);
+    const schemaYaml = runCli(root, ["schema", "--format", "yaml"], "", false);
+    expect(schemaJson.rc, schemaJson.err).toBe(0);
+    expect(schemaYaml.rc, schemaYaml.err).toBe(0);
+    for (const payload of [schemaJson.json, loadYamlMapping(schemaYaml.out)]) {
+      const plan = payload.artifact_schemas.find((artifact: any) => artifact.name === "plan");
+      expect(plan.fields.find((field: any) => field.id === "PT17")).toEqual(expected);
+    }
+    const explainJson = run(root, ["plan", "explain", "--verb", "create", "--format", "json"]);
+    const explainAll = run(root, ["plan", "explain", "--all", "--format", "json"]);
+    expect(explainJson.rc, explainJson.err).toBe(0);
+    expect(explainAll.rc, explainAll.err).toBe(0);
+    expect(explainJson.json.input_schema.artifact_schema_fields).toEqual([expected]);
+    expect(explainAll.json.operations.find((operation: any) => operation.requested_verb === "create").input_schema.artifact_schema_fields).toEqual([expected]);
+    expect(Buffer.byteLength(explainJson.out, "utf8")).toBeLessThan(32_768);
   });
 
   it("keeps requiredness identical across all 25 runtime, authority, schema, and explain operations", () => {
@@ -115,7 +188,9 @@ describe("declarative state mutation grammar", () => {
     for (const artifact of schema.json.state_writer.artifacts)
       for (const operation of artifact.operations) schemaOperations.set(`${artifact.artifact}.${operation.verb}`, operation);
 
-    for (const [artifact, verb] of [["progress", "append"], ["decisions", "append"], ["decisions", "amend"]]) {
+    const schemaParityRows = new Map(schema.json.state_writer.parity_matrix.rows.map((row: any) => [`${row.artifact}.${row.verb}`, row]));
+
+    for (const [artifact, verb] of [["progress", "append"], ["decisions", "append"], ["decisions", "amend"], ["plan", "append"], ["plan", "update"]]) {
       const key = `${artifact}.${verb}`;
       const explain = run(root, [artifact, "explain", "--verb", verb, "--format", "json"]);
       const all = run(root, [artifact, "explain", "--all", "--format", "json"]);
@@ -124,13 +199,29 @@ describe("declarative state mutation grammar", () => {
       const operation = schemaOperations.get(key);
       const allOperation = all.json.operations.find((entry: any) => entry.requested_verb === verb);
       const input = explain.json.input_schema;
-      expect(operation.input.schema.fields).toEqual(input.structured_fields);
-      expect(operation.input.schema.semantics).toEqual(input.semantics);
-      expect(operation.input.schema.owned_fields).toEqual(input.owned_fields);
-      expect(operation.input.schema.immutable_fields).toEqual(input.immutable_fields);
-      expect(operation.input.schema.bounds).toEqual(input.bounds);
-      expect(operation.input.schema.examples).toEqual(input.examples);
-      expect(allOperation.input_schema.structured_fields).toEqual(input.structured_fields);
+      expect(operation.input.schema).toEqual({
+        root: input.root,
+        fields: input.structured_fields,
+        semantics: input.semantics,
+        owned_fields: input.owned_fields,
+        immutable_fields: input.immutable_fields,
+        bounds: input.bounds,
+        examples: input.examples,
+      });
+      expect(allOperation).toEqual(explain.json);
+      expect(operation).toMatchObject({
+        verb,
+        class: explain.json.mutation_class,
+        selectors: explain.json.selectors,
+        preconditions: explain.json.preconditions,
+        owned_fields: explain.json.owned_fields,
+        recovery: explain.json.recovery,
+        examples: explain.json.examples,
+        bounds: explain.json.bounds,
+      });
+      const explainParityRow = all.json.parity_matrix.rows.find((row: any) => `${row.artifact}.${row.verb}` === key);
+      expect(explainParityRow).toEqual(schemaParityRows.get(key));
+      expect(explainParityRow.rejection).toMatchObject({ expected: "fail", before_effects: true });
       expect(input.structured_fields.every((entry: any) => typeof entry.path === "string" && typeof entry.type === "string" && typeof entry.required === "boolean" && typeof entry.update === "string")).toBe(true);
     }
   });
@@ -146,7 +237,7 @@ describe("declarative state mutation grammar", () => {
     });
     const createdPlan = run(root, ["plan", "create", "--input", "-", "--format", "json"], planInput);
     expect(createdPlan.rc, createdPlan.err).toBe(0);
-    const appended = run(root, ["plan", "append", "--name", "Inferred plan", "--format", "json"]);
+    const appended = run(root, ["plan", "append", "--input", "-", "--format", "json"], "name: Inferred plan\ndepends_on: []\nacceptance: [\"GIVEN input WHEN selected THEN the inferred plan is used\"]\n");
     expect(appended.rc, appended.err).toBe(0);
     expect(appended.json.record.plan).toBe(createdPlan.json.id);
 

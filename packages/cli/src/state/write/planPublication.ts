@@ -17,7 +17,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-export function validatePlanCreateInput(input: Record<string, unknown>): void {
+function canonicalCreateLocalOrdinal(value: unknown): string | null {
+  if (typeof value === "number")
+    return Number.isSafeInteger(value) && value > 0 ? String(value) : null;
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
+  const ordinal = Number(value);
+  return Number.isSafeInteger(ordinal) ? value : null;
+}
+
+export function normalizeAndValidatePlanCreateInput(input: Record<string, unknown>): void {
   const header = isRecord(input.header) ? input.header : {};
   if (header.id !== undefined) {
     reject({
@@ -46,9 +54,44 @@ export function validatePlanCreateInput(input: Record<string, unknown>): void {
   if (numbers.some((number, index) => number !== expected[index])) {
     reject({
       class: "schema_violation",
-      message: "plan create task numbers must be unique and sequential starting from 1",
-      violations: ["PV1: task numbers must equal 1..N"],
+      message: "plan create task ordinals must be unique and sequential starting from 1 within this atomic input",
+      violations: ["PV1: create-local task ordinals must equal 1..N and are removed before entity publication"],
     });
+  }
+  const declaredOrdinals = new Set(expected.map(String));
+  for (const [taskIndex, task] of tasks.entries()) {
+    if (task.depends_on === undefined) continue;
+    if (!Array.isArray(task.depends_on)) continue;
+    const normalized: string[] = [];
+    const seen = new Set<string>();
+    for (const [dependencyIndex, dependency] of task.depends_on.entries()) {
+      const ordinal = canonicalCreateLocalOrdinal(dependency);
+      const location = `tasks[${taskIndex}].depends_on[${dependencyIndex}]`;
+      if (!ordinal) {
+        reject({
+          class: "schema_violation",
+          message: `${location} must be a positive integer or canonical numeric string create-local ordinal`,
+          violations: ["PV4: zero, negative, fractional, nonnumeric, noncanonical, and unsafe dependency ordinals are invalid"],
+        });
+      }
+      if (seen.has(ordinal)) {
+        reject({
+          class: "schema_violation",
+          message: `${location} duplicates create-local dependency ordinal '${ordinal}'`,
+          violations: ["PV4: each task dependency ordinal must be unique within that task"],
+        });
+      }
+      if (!declaredOrdinals.has(ordinal)) {
+        reject({
+          class: "schema_violation",
+          message: `${location} create-local dependency ordinal '${ordinal}' does not resolve within the atomic plan input`,
+          violations: ["PV4: every dependency must reference a task declared in the same complete create document"],
+        });
+      }
+      seen.add(ordinal);
+      normalized.push(ordinal);
+    }
+    task.depends_on = normalized;
   }
   if (header.status === "complete" && tasks.some((task) => task.status !== "complete")) {
     reject({

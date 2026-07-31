@@ -1,0 +1,16 @@
+id: yrunpydpnp
+artifact: progress
+record:
+  timestamp: 2026-07-31 09:58
+  type: fix
+  phase: build
+  what: Closed the remaining plan discovery gap by making PT17 current atomic-create vocabulary explicit and adding plan append/update to complete structured descriptor parity coverage.
+  context:
+    intent: Resolve only replacement task dlcpoiyfwz discovery and parity defects while preserving the full tryphyimhc implementation and evaluator provenance.
+    constraints: Keep dlcpoiyfwz in progress and tryphyimhc blocked; do not complete or supersede tasks, resolve auwlbuobdw, close M2, start M3, commit, publish, bump versions, or modify profile or vision.
+    unknowns: Independent Audit PASS remains pending and is the only lifecycle closeout authority.
+    scope: Plan schema PT17 and aggregate-create wording, structured descriptor parity tests, built package parity, and regression verification.
+  discovered: The prior implementation passed runtime behavior but its schema still classified current create-local depends_on ordinals as legacy, while the descriptor parity loop covered only progress and decisions; source tests therefore passed without evaluating plan append/update in that matrix.
+  verified: Passed 10 targeted schema/grammar/plan files with 302 tests; full source lane with 224 files and 3,101 passed plus 1 skipped; package lane with 17 tests; typecheck and build; state validation with 2,026 entities and zero issues before this append; compact; capability-contract, plan capability, and plan artifact validation. Source and generated bundle plan schemas are byte-identical at SHA-256 1eb6b5cf52d6e6fb41b383d53c9e17ca08f21f3d729f4003dee961cb38c92e0f. Writer contract digest is 7535c8d344b879c184851de1d8a87d3b5480b07c04d71d1063919a44813bab16; plan append/update operation digests are a2e77fc6ea6e3ce77cb1ae9701dab105a87be0faa032d0769ed995842d522ea5 and 4a2af778d1ce29a4b4412432c98039b82c8dd9f6a1073dbf01be6e043607410d.
+  next: Independent Audit must assess dlcpoiyfwz. This worker leaves dlcpoiyfwz in progress, tryphyimhc blocked with both failed evaluations intact, and auwlbuobdw and M2 open.
+  publication_order: 23

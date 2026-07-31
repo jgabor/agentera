@@ -106,6 +106,7 @@ export function planEvaluationMetadataViolations(value: unknown, prefix: string,
 
 export function planTaskRecordViolations(task: Record<string, unknown>, prefix = "plan task"): string[] {
   const violations: string[] = [];
+  if (typeof task.plan !== "string" || !/^[a-z]{10}$/.test(task.plan)) violations.push(`${prefix}: plan must be a bare ten-letter plan ID`);
   if (typeof task.name !== "string" || !task.name.trim()) violations.push(`${prefix}: name must be a non-empty string`);
   const status = String(task.status);
   if (!["pending", "in_progress", "complete", "blocked", "superseded", "skipped"].includes(status))
@@ -113,6 +114,8 @@ export function planTaskRecordViolations(task: Record<string, unknown>, prefix =
   for (const field of ["depends_on", "acceptance"])
     if (!Array.isArray(task[field]) || !(task[field] as unknown[]).every((value) => typeof value === "string"))
       violations.push(`${prefix}: ${field} must be a string list`);
+  if (Array.isArray(task.depends_on) && (task.depends_on as unknown[]).some((value) => typeof value !== "string" || !/^[a-z]{10}$/.test(value)))
+    violations.push(`${prefix}: depends_on must contain only bare ten-letter task IDs`);
   const hasSupersession = task.superseded_by !== undefined || task.superseded_reason !== undefined;
   if (status !== "superseded" && hasSupersession)
     violations.push(`${prefix}: superseded_by and superseded_reason are only valid when status is superseded`);

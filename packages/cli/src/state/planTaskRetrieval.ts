@@ -10,7 +10,7 @@ import { PLAN_ID } from "./planIdentity.js";
 import { discoverPlanArtifacts, planDocumentParts, type PlanArtifact } from "../cli/planArtifacts.js";
 
 const CURSOR_VERSION = 1;
-const ORDER = "task_number_asc";
+const ORDER = "id_asc";
 const MAX_LIST_BYTES = 32_768;
 
 interface CursorPayload {
@@ -20,15 +20,14 @@ interface CursorPayload {
   order: typeof ORDER;
   snapshot_id: string;
   candidate_count: number;
-  candidate_max: number;
-  after: number;
+  after: string;
 }
 
 interface LoadedPlan {
   artifact: PlanArtifact;
   planId: string;
   compatibility: "complete" | "degraded";
-  tasks: Array<{ number: number; record: JsonObject }>;
+  tasks: Array<{ id: string; number: number; record: JsonObject }>;
   provenancePaths: string[];
 }
 
@@ -62,11 +61,11 @@ function fail(
   details: Partial<StateFailureBody["error"]> = {},
 ): StateRetrievalFailure {
   const syntax = verb === "list"
-    ? "agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
-    : "agentera state plan tasks get [--plan PLAN_ID] --task N --format json";
+    ? "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
+    : "agentera state plan tasks get --id ID --format json";
   const example = verb === "list"
     ? "agentera state plan tasks list --limit 20 --format json"
-    : "agentera state plan tasks get --task 1 --format json";
+    : "agentera state plan tasks get --id qjtrmnpvka --format json";
   return new StateRetrievalFailure(
     {
       schemaVersion: "agentera.stateFailure.v1",
@@ -78,8 +77,8 @@ function fail(
         example,
         recovery: details.recovery ?? "Correct the command using one of the valid forms and retry; no state was changed.",
         valid_values: verb === "list"
-          ? ["list", "--plan PLAN_ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
-          : ["get", "--task N", "--plan PLAN_ID", "--format text|json|yaml"],
+          ? ["list", "[PLAN_ID]", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+          : ["get", "--id ID", "--format text|json|yaml"],
         ...details,
       },
     },
@@ -111,8 +110,8 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
   const parts = planDocumentParts(artifact.data);
   const identity = discovery.identities.find((candidate) => candidate.artifact.path === artifact.path);
   if (!identity) {
-    throw fail(1, "corrupt", "active plan header.id is not a valid plan identity", verb, {
-      recovery: "Repair the persisted active-plan identity before listing or fetching its tasks.",
+    throw fail(1, "corrupt", "legacy active plan header.id is not a valid migration-only identity", verb, {
+      recovery: "Repair the legacy source identity or migrate to canonical bare entity IDs before listing or fetching its tasks.",
       details: { path: artifact.path, plan_id: parts.header.id ?? null },
     });
   }
@@ -131,17 +130,21 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
     });
   }
   const seen = new Set<number>();
+  const taskIds = new Set<string>();
   const tasks = parts.tasks.map((record) => {
     const number = record.number;
     if (!Number.isSafeInteger(number) || Number(number) < 1 || seen.has(Number(number))) {
       throw fail(1, "corrupt", "active plan tasks require unique positive integer numbers", verb, {
-        recovery: "Repair duplicate or invalid task numbers in the active plan, then retry.",
-        details: { path: artifact.path, task_number: number ?? null },
+        recovery: "Repair duplicate or invalid legacy task ordering metadata in the active plan, then retry.",
+        details: { path: artifact.path, source_ordinal: number ?? null },
       });
     }
     seen.add(Number(number));
-    return { number: Number(number), record };
-  }).sort((left, right) => left.number - right.number);
+    const id = legacyTaskId(planId, Number(number));
+    if (taskIds.has(id)) throw fail(1, "corrupt", "active plan tasks resolve to conflicting bare IDs", verb, { recovery: "Repair the active plan task identities, then retry." });
+    taskIds.add(id);
+    return { id, number: Number(number), record };
+  }).sort((left, right) => left.id.localeCompare(right.id));
   return {
     artifact,
     planId,
@@ -149,6 +152,11 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
     tasks,
     provenancePaths: identity.provenancePaths,
   };
+}
+
+function legacyTaskId(planId: string, number: number): string {
+  const bytes = createHash("sha256").update(`agentera.plan-task.v2\0${planId}\0${number}`, "utf8").digest();
+  return Array.from(bytes.subarray(0, 10), (byte) => String.fromCharCode(97 + byte % 26)).join("");
 }
 
 function snapshotId(planId: string, tasks: LoadedPlan["tasks"]): string {
@@ -197,8 +205,7 @@ function parseCursor(token: string, projectRoot: string, selectedPlan?: string):
     parsed.version !== CURSOR_VERSION || parsed.collection !== "plan.tasks" || !PLAN_ID.test(parsed.plan_id) ||
     parsed.order !== ORDER || !/^[0-9a-f]{64}$/.test(parsed.snapshot_id) ||
     !Number.isSafeInteger(parsed.candidate_count) || parsed.candidate_count < 1 ||
-    !Number.isSafeInteger(parsed.candidate_max) || parsed.candidate_max < 1 ||
-    !Number.isSafeInteger(parsed.after) || parsed.after < 1 || parsed.after > parsed.candidate_max
+    typeof parsed.after !== "string" || !/^[a-z]{10}$/.test(parsed.after)
   ) invalid("cursor is bound to a different plan task list or has an invalid payload");
   if (selectedPlan !== undefined && parsed.plan_id !== selectedPlan) {
     invalid("cursor is bound to a different explicit plan selector");
@@ -207,11 +214,12 @@ function parseCursor(token: string, projectRoot: string, selectedPlan?: string):
 }
 
 function taskEntry(plan: LoadedPlan, task: LoadedPlan["tasks"][number]): JsonObject {
-  const get = `agentera state plan tasks get --task ${task.number} --format json`;
+  const get = `agentera state plan tasks get --id ${task.id} --format json`;
+  const record = structuredClone(task.record); delete record.number;
   return {
-    stable_id: `${plan.planId}/task:${task.number}`,
+    id: task.id,
+    artifact: "plan",
     addressable: true,
-    task_number: task.number,
     detail_availability: "full",
     compatibility: plan.compatibility,
     provenance: {
@@ -222,7 +230,7 @@ function taskEntry(plan: LoadedPlan, task: LoadedPlan["tasks"][number]): JsonObj
       ...(plan.provenancePaths.length > 1 ? { mirrored_paths: plan.provenancePaths } : {}),
     },
     retrieval: { get },
-    record: task.record,
+    record,
   };
 }
 
@@ -245,7 +253,7 @@ function baseList(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], pageTask
       storage_ownership: "owning_active_plan_file",
       cursor: "opaque_snapshot_cursor",
     },
-    retrieval: { get: "agentera state plan tasks get --task N --format json" },
+     retrieval: { get: "agentera state plan tasks get --id ID --format json" },
   };
 }
 
@@ -264,8 +272,7 @@ function withPage(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], candidat
       order: ORDER,
       snapshot_id: snapshotId(plan.planId, snapshotTasks),
       candidate_count: snapshotTasks.length,
-      candidate_max: snapshotTasks.at(-1)!.number,
-      after: last.number,
+      after: last.id,
     }, projectRoot);
     response.next_cursor = token;
     response.omitted = true;
@@ -273,7 +280,7 @@ function withPage(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], candidat
     response.omission_reason = reason;
     response.retrieval = {
       continue: `agentera state plan tasks list --cursor ${token} --format json`,
-      get: "agentera state plan tasks get --task N --format json",
+      get: "agentera state plan tasks get --id ID --format json",
     };
   }
   return response;
@@ -297,14 +304,14 @@ export function listPlanTasks(
       details: { cursor_plan_id: parsed.plan_id, current_plan_id: plan.planId },
     });
   }
-  const snapshotTasks = parsed ? plan.tasks.filter((task) => task.number <= parsed.candidate_max) : plan.tasks;
+   const snapshotTasks = plan.tasks;
   if (parsed && (snapshotTasks.length !== parsed.candidate_count || snapshotId(plan.planId, snapshotTasks) !== parsed.snapshot_id)) {
     throw fail(1, "cursor_snapshot_unavailable", "the active plan task snapshot changed and cannot be resumed exactly", "list", {
       recovery: "Start a new task listing without --cursor to establish the current active-plan snapshot.",
       details: { snapshot_id: parsed.snapshot_id, current_snapshot_id: snapshotId(plan.planId, snapshotTasks) },
     });
   }
-  const candidates = snapshotTasks.filter((task) => task.number > (parsed?.after ?? 0));
+   const candidates = snapshotTasks.filter((task) => !parsed || task.id > parsed.after);
   const requested = Math.min(options.limit, candidates.length);
   let response = withPage(plan, snapshotTasks, candidates, requested, projectRoot, "page_limit");
   if (options.format === "json" || options.format === "yaml") {
@@ -317,21 +324,21 @@ export function listPlanTasks(
     }
     if (serializedBytes(response) > MAX_LIST_BYTES || (candidates.length > 0 && response.entries.length === 0)) {
       throw fail(1, "unsupported_state", `one task cannot fit within the ${MAX_LIST_BYTES}-byte ${options.format.toUpperCase()} list budget`, "list", {
-        recovery: "Fetch the task directly with agentera state plan tasks get --task N --format json.",
+       recovery: "Fetch the task directly with agentera state plan tasks get --id ID --format json.",
       });
     }
   }
   return response;
 }
 
-export function getPlanTask(projectRoot: string, activePath: string, taskNumber: number, selectedPlan?: string): JsonObject {
+export function getPlanTask(projectRoot: string, activePath: string, taskId: string, selectedPlan?: string): JsonObject {
   const plan = activePlan(activePath, selectedPlan, "get");
-  const task = plan.tasks.find((candidate) => candidate.number === taskNumber);
+  if (!/^[a-z]{10}$/.test(taskId)) throw fail(2, "invalid_request", `invalid task identity '${taskId}'`, "get", { valid_values: ["bare ten-letter task ID"] });
+  const task = plan.tasks.find((candidate) => candidate.id === taskId);
   if (!task) {
-    throw fail(1, "not_found", `task ${taskNumber} was not found in active plan '${plan.planId}'`, "get", {
-      stable_id: `${plan.planId}/task:${taskNumber}`,
-      entry_number: taskNumber,
-      recovery: "List valid active-plan task numbers with agentera state plan tasks list --format json, then retry.",
+    throw fail(1, "not_found", `task '${taskId}' was not found in active plan '${plan.planId}'`, "get", {
+      id: taskId,
+      recovery: "List valid active-plan task IDs with agentera state plan tasks list --format json, then retry.",
     });
   }
   return {

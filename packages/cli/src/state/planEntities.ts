@@ -14,7 +14,7 @@ import { allocateEntityId, entityExactGetMaxBytes, exactDiscoveredEntityBytes, p
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
-import { validatePlanCreateInput, validatePlanPublicationCandidate } from "./write/planPublication.js";
+import { normalizeAndValidatePlanCreateInput, validatePlanPublicationCandidate } from "./write/planPublication.js";
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { mutatePlanTaskEvaluation, planTaskRecordViolations } from "./write/planEvaluation.js";
@@ -83,6 +83,7 @@ function selectedPlan(entities: DiscoveredEntity[], requested?: string): Discove
 }
 function taskFor(entities: DiscoveredEntity[], id: string, plan?: string): DiscoveredEntity {
   if (!ID.test(id)) throw failure("invalid_request", `task ID '${id}' must be ten lowercase letters`, "Use a bare task ID returned by plan task append or list.", id);
+  if (plan !== undefined && !ID.test(plan)) throw failure("invalid_request", `plan ID '${plan}' must be ten lowercase letters`, "Use a bare plan ID returned by plan create or list.", plan);
   const matches = entities.filter((entity) => entity.boundary === TASK && entity.id === id);
   if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", matches.length ? `task ID '${id}' has conflicting ownership` : `task ID '${id}' was not found`, "Run agentera check validate state, or list tasks and retry with one canonical ID.", id);
   if (plan && matches[0].record?.plan !== plan) throw failure("not_found", `task ID '${id}' does not belong to plan '${plan}'`, "List tasks for the selected plan and retry.", id);
@@ -113,7 +114,7 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
 function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & { publicationContext: EntityPublicationContext }): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const input = structuredClone(req.input ?? {});
-  validatePlanCreateInput(input);
+  normalizeAndValidatePlanCreateInput(input);
   validatePlanPublicationCandidate(dumpYamlMapping(input));
   const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
   const reserved = new Set<string>();
@@ -130,7 +131,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     const dependencies = Array.isArray(record.depends_on) ? record.depends_on : [];
     record.depends_on = dependencies.map((value) => {
       const target = byNumber.get(Number(value));
-      if (!target) reject({ class: "schema_violation", message: `task ${index + 1} dependency '${String(value)}' does not resolve within the created plan` });
+      if (!target) reject({ class: "schema_violation", message: `task ${index + 1} create-local dependency '${String(value)}' does not resolve within the atomic plan input` });
       return target;
     });
     if (!Array.isArray(record.acceptance)) record.acceptance = [];
@@ -187,8 +188,32 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
 }
 
 function taskRecord(req: StateWriteRequest, plan: string): JsonObject {
-  const record: JsonObject = { plan, name: String(req.values.name), status: String(req.values.status ?? "pending"), depends_on: Array.isArray(req.values.depends_on) ? req.values.depends_on : [], acceptance: Array.isArray(req.values.acceptance) ? req.values.acceptance : [] };
+  const input = req.input ?? {};
+  const record: JsonObject = { plan, name: String(input.name), status: "pending", depends_on: structuredClone(input.depends_on) as JsonObject["depends_on"], acceptance: structuredClone(input.acceptance) as JsonObject["acceptance"] };
+  for (const field of ["evidence", "blocked_reason"])
+    if (input[field] !== undefined) record[field] = structuredClone(input[field]) as never;
   return record;
+}
+function logicalTaskContent(record: JsonObject): JsonObject {
+  const content: JsonObject = {
+    name: record.name,
+    depends_on: Array.isArray(record.depends_on) ? structuredClone(record.depends_on) as never : [],
+    acceptance: Array.isArray(record.acceptance) ? structuredClone(record.acceptance) as never : [],
+  };
+  for (const field of ["evidence", "blocked_reason"])
+    if (record[field] !== undefined) content[field] = structuredClone(record[field]) as never;
+  return content;
+}
+function appendReplayOrConflict(entities: DiscoveredEntity[], planId: string, record: JsonObject): DiscoveredEntity | null {
+  const logical = canonicalRecordJson(logicalTaskContent(record));
+  const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === planId);
+  const sameName = tasks.filter((task) => task.record?.name === record.name);
+  if (sameName.length === 0) return null;
+  const identical = sameName.filter((task) => canonicalRecordJson(logicalTaskContent(task.record!)) === logical);
+  if (identical.length === 1 && identical.length === sameName.length) return identical[0];
+  if (identical.length > 1)
+    reject({ class: "conflict", message: `plan '${planId}' contains multiple identical tasks named '${String(record.name)}'; retry cannot choose one existing task` });
+  reject({ class: "conflict", message: `plan task '${String(record.name)}' already exists with different fields; use 'state plan update --id ID --input task-patch.yaml' to modify it` });
 }
 function assertDependencies(root: string, sourceRoot: string, record: JsonObject, taskId?: string): void {
   const entities = all(root, sourceRoot); const dependencies = Array.isArray(record.depends_on) ? record.depends_on : [];
@@ -270,10 +295,13 @@ function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, tas
 export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(req.projectRoot, sourceRoot);
   if (req.spec.verb === "create") return createPlanEntities(req, options);
+  if (req.spec.verb === "set-plan-status" && req.values.id !== undefined) reject({ class: "invalid_request", message: "plan set-plan-status accepts only the --plan selector; --id is a task selector and is not valid for plan lifecycle" });
   const plan = selectedPlan(entities, typeof req.values.plan === "string" ? req.values.plan : undefined);
   if (req.spec.verb === "append") {
     if (!OPEN.has(planStatus(plan))) reject({ class: "conflict", message: `plan '${plan.id}' is ${planStatus(plan)} and cannot accept a new task` });
     const record = taskRecord(req, plan.id!); assertDependencies(req.projectRoot, sourceRoot, record);
+    const replay = appendReplayOrConflict(entities, plan.id!, record);
+    if (replay) return envelope("state plan append", { id: replay.id!, path: replay.path, replay: true }, replay.record!, req.dryRun);
     const id = allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot);
     assertProjectedTask(entities, id, record);
     if (req.dryRun) return envelope("state plan append", { id, path: entityPath(req.projectRoot, sourceRoot, TASK, id), replay: false }, record, true);
@@ -317,17 +345,24 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     return envelope("state plan supersede", result, superseded, false);
   }
   if (req.spec.verb === "update") {
-    const taskFields = ["name", "depends_on", "acceptance", "status", "evidence", "blocked_reason"];
-    if (req.values.surprise !== undefined) {
-      if (taskFields.some((field) => req.values[field] !== undefined)) reject({ class: "conflict", message: "entity mode cannot combine a plan-level surprise with task-field changes in one command; publish them as separate updates" });
-      const planRecord = structuredClone(plan.record!); const current = String(planRecord.surprises ?? "").trim(); const surprise = String(req.values.surprise);
+    const input = req.input ?? {};
+    const taskFields = ["name", "depends_on", "acceptance", "evidence", "blocked_reason"];
+    if (input.surprise !== undefined) {
+      if (taskFields.some((field) => input[field] !== undefined)) reject({ class: "conflict", message: "entity mode cannot combine a plan-level surprise with task-field changes in one command; publish them as separate updates" });
+      const planRecord = structuredClone(plan.record!); const current = String(planRecord.surprises ?? "").trim(); const surprise = String(input.surprise);
       if (!current.split("\n").includes(surprise)) planRecord.surprises = current ? `${current}\n${surprise}` : surprise;
       if (canonicalRecordJson(planRecord) === canonicalRecordJson(plan.record)) return envelope("state plan update", { id: plan.id!, path: plan.path, replay: true }, planRecord, req.dryRun);
       if (req.dryRun) return envelope("state plan update", { id: plan.id!, path: plan.path, replay: false }, planRecord, true);
       const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, expectedBytes: exactDiscoveredEntityBytes(plan), migrationProvenance: plan.migrationProvenance, record: planRecord });
       return envelope("state plan update", result, planRecord, false);
     }
-    for (const field of taskFields) if (req.values[field] !== undefined) record[field] = req.values[field] as never;
+    for (const field of taskFields) if (Object.prototype.hasOwnProperty.call(input, field)) {
+      const value = input[field];
+      if (value === null) {
+        if (field === "depends_on" || field === "acceptance") record[field] = [];
+        else delete record[field];
+      } else record[field] = structuredClone(value) as never;
+    }
     assertDependencies(req.projectRoot, sourceRoot, record, taskId);
   } else if (req.spec.verb === "set-status") record.status = String(req.values.status);
   else if (req.spec.verb === "record-evaluation") {

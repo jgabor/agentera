@@ -1,0 +1,16 @@
+id: aufwenvjlr
+artifact: progress
+record:
+  timestamp: 2026-07-31 09:41
+  type: fix
+  phase: build
+  what: Plan entity writes now converge identical append retries under the writer lock, while canonical bare ten-letter envelope IDs are separated from migration-only composite header.id values.
+  context:
+    intent: Correct tryphyimhc Audit findings without changing the prior failed evaluation or closing the objective.
+    constraints: Preserve .agentera/entities/plan/plan_task/tryphyimhc.yaml and existing nonterminal state; use the built local CLI for post-build mutations and verification; do not commit or publish.
+    unknowns: Independent evaluator confirmation remains pending; pack dry-run reported seven warnings that were not expanded because the dry run passed.
+    scope: packages/cli plan append and plan identity contract, proportional regression tests, schema and authority wording, and evaluator handoff evidence.
+  discovered: Reproduced sequential and concurrent duplicate task publication; the root cause was append matching only at publication time without a lock-scoped logical replay check, alongside schema prose that still described header.id as canonical.
+  verified: Focused replay and schema tests passed; full source tests passed (3101 passed, 1 skipped); package verification passed (17 passed); typecheck, build, compact, capability validation, local built sequential replay, and local built concurrent replay passed.
+  next: Independent evaluator must rerun the Audit acceptance matrix and decide whether the preserved failed evaluation can be superseded.
+  publication_order: 22

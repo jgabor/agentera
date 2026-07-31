@@ -17,6 +17,7 @@ import {
 } from "./operations.js";
 import { reject } from "./errors.js";
 import { structuredInputDescriptor, structuredInputSchemaProjection } from "./input.js";
+import { artifactSchemaFieldsForOperation } from "../../registries/artifactSchemaProjection.js";
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
   const verb = verbsForArtifact(artifact).find((candidate) => candidate !== "explain");
@@ -52,6 +53,10 @@ function exposedFields(
     ...(field.description ? { description:
       artifact === "objective" && field.flag === "--id"
         ? "Bare ten-letter objective ID returned by objective create or list."
+        : artifact === "plan" && field.flag === "--id" && ["update", "set-status", "supersede", "record-evaluation"].includes(verb)
+          ? "Bare ten-letter task ID returned by plan task append or list."
+          : artifact === "plan" && field.flag === "--plan"
+            ? "Bare ten-letter plan ID returned by plan create or list."
         : artifact === "experiments" && field.flag === "--objective"
           ? "Bare ten-letter objective ID owning the experiment."
           : artifact === "experiments" && field.flag === "--id"
@@ -170,12 +175,25 @@ export function buildExplain(
         examples: projection.examples,
       };
     }
+    const artifactSchemaFields = artifactSchemaFieldsForOperation(
+      validator.loadSchema(artifact),
+      verb,
+    );
+    if (artifactSchemaFields.length > 0)
+      result.input_schema = {
+        ...(result.input_schema as Record<string, unknown>),
+        artifact_schema_fields: artifactSchemaFields,
+      };
     if (artifact === "progress" && verb === "append")
       result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["timestamp", "type", "phase", "what", "inspiration", "discovered", "verified", "next", "context", "glossary_caveat"] };
     if (artifact === "decisions" && verb === "append")
       result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["date", "question", "context", "alternatives", "choice", "reasoning", "confidence", "feeds_into"] };
     if (artifact === "decisions" && verb === "amend")
       result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["question", "context", "alternatives", "choice", "reasoning", "confidence", "feeds_into"] };
+    if (artifact === "plan" && verb === "append")
+      result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["name", "depends_on", "acceptance", "evidence", "blocked_reason"] };
+    if (artifact === "plan" && verb === "update")
+      result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["name", "depends_on", "acceptance", "evidence", "blocked_reason", "surprise"], clearable_patch_fields: ["depends_on", "acceptance", "evidence", "blocked_reason"] };
     if (artifact === "todo") {
       result.input_schema = {
         ...(result.input_schema as Record<string, unknown>),
@@ -232,23 +250,24 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
     "the writer revalidates every cited project source line and publishes approval plus entry as one atomic document",
     ...base,
   ];
-  if (entityArtifact && artifact === "plan" && verb === "create") return ["the CLI assigns bare IDs to the plan and each task and publishes one canonical file per entity", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "create") return ["the CLI assigns bare ten-letter envelope IDs to the plan and each task and publishes one canonical file per entity", "task numbers and dependency values in this atomic input are create-local symbolic ordinals; the writer removes them and resolves dependencies to bare task IDs", "legacy composite header.id values are migration-only and never public selectors", ...base];
   if (entityArtifact && artifact === "plan" && verb === "record-evaluation") return [
-    "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
+    "select one task entity with its bare ten-letter --id; numeric and composite selectors are unavailable",
     "evaluate before completing a task during normal orchestration",
     "a first PASS on an unevaluated complete replacement is recovery only when an open same-plan superseded predecessor names it in superseded_by",
     ...base,
   ];
   if (entityArtifact && artifact === "plan" && verb === "supersede") return [
-    "select one task entity with its bare ten-letter --id; ordinal selectors are unavailable",
+    "select one task entity with its bare ten-letter --id; numeric and composite selectors are unavailable",
     "each replacement must be complete with latest persisted PASS",
     "if a non-PASS replacement is not already referenced by a historical superseded predecessor, reopen it, record PASS, complete it, and retry",
     "if a referenced historical replacement is unevaluated complete, record its allowed first PASS while it remains complete, then retry",
     "if a referenced historical replacement has an existing non-PASS evaluation, first-PASS recovery is unavailable; use another complete latest-PASS replacement, or keep or archive the plan without claiming completion as applicable",
     ...base,
   ];
-  if (entityArtifact && artifact === "plan" && ["update", "set-status"].includes(verb)) return ["select one task entity with its bare ten-letter --id; ordinal selectors are unavailable", ...base];
-  if (entityArtifact && artifact === "plan" && verb === "append") return ["the CLI assigns a bare ten-letter ID to the new task entity", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "update") return ["select one task entity with its bare ten-letter --id; supply an omission-preserving YAML/JSON task patch through --input", "task status, supersession, evaluation, and plan lifecycle remain flag-only transitions; surprise remains plan-level content", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "set-status") return ["select one task entity with its bare ten-letter --id; lifecycle status is a flag-only transition", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "append") return ["the CLI assigns a bare ten-letter ID to the new task entity", "supply one complete YAML/JSON task record through --input; dependencies must be bare ten-letter IDs in the selected plan", ...base];
   if (entityArtifact && artifact === "plan") return [
     "the active plan entity is selected by lifecycle state",
     ...(verb === "set-plan-status" ? ["open-to-complete requires every superseded_by replacement to be complete with latest persisted PASS; historical unevaluated complete replacements may record their allowed first PASS, then retry"] : []),

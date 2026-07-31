@@ -22,6 +22,7 @@ import {
 import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
+import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 
 export interface TransitionalTopLevelAlias {
   legacy: string;
@@ -189,51 +190,6 @@ function loadDecision45Contract(): [JsonObject | null, string | null] {
   }
 }
 
-function schemaFieldDescription(entry: JsonObject): JsonObject {
-  return {
-    id: entry.id ?? null,
-    field: entry.field ?? null,
-    type: entry.type ?? "unknown",
-    required: "required" in entry ? entry.required : "unknown",
-    format: entry.format ?? null,
-    validation: entry.validation ?? [],
-  };
-}
-
-const FIELD_SKIP = new Set([
-  "meta",
-  "GROUP_PREFIXES",
-  "BUDGET",
-  "COMPACTION",
-  "VALIDATION",
-  "ARCHIVE",
-  "CONVENTION",
-  "CONVENTIONS",
-]);
-
-function describeSchemaFields(schema: JsonObject): JsonObject[] {
-  const fields: JsonObject[] = [];
-  for (const [groupKey, groupVal] of Object.entries(schema)) {
-    if (
-      FIELD_SKIP.has(groupKey) ||
-      !groupVal ||
-      typeof groupVal !== "object" ||
-      Array.isArray(groupVal)
-    )
-      continue;
-    // cast: groupVal is a parsed artifact schema field group (YAML IO boundary)
-    for (const entry of Object.values(groupVal as JsonObject)) {
-      if (entry && typeof entry === "object" && !Array.isArray(entry) && "field" in entry) {
-        // cast: entry is a parsed field descriptor from the schema (YAML IO boundary)
-        const field = schemaFieldDescription(entry as JsonObject);
-        field.group = groupKey;
-        fields.push(field);
-      }
-    }
-  }
-  return fields;
-}
-
 function commandDescription(
   name: string,
   kind: string,
@@ -379,7 +335,7 @@ function describeArtifactSchemas(
       producer: meta.producer ?? "unknown",
       consumers: meta.consumers ?? "unknown",
       write_interface: writeInterface,
-      fields: describeSchemaFields(schema),
+      fields: describeArtifactSchemaFields(schema),
     });
     if (!hasMeta) {
       gaps.push({

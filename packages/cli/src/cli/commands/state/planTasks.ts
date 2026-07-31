@@ -79,7 +79,7 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: s
     } else if (name === "--cursor") cursor = parsed.value;
     else id = parsed.value;
   }
-  if (verb === "get" && !id) throw failure("entity mode requires --id ID and rejects numeric --task selectors", verb);
+  if (verb === "get" && !id) throw failure("entity mode requires a bare ten-letter --id selector", verb);
   return { format, limit, ...(plan ? { plan } : {}), ...(cursor ? { cursor } : {}), ...(id ? { id } : {}) };
 }
 

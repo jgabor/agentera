@@ -4,10 +4,23 @@ record:
   name: M2 · Convert plan-task writers and identities (auwlbuobdw)
   depends_on:
     - mascmjrpug
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN valid plan-task input WHEN appended or updated with canonical bare IDs and optional plan selection THEN the intended task write succeeds.
     - GIVEN a lifecycle transition WHEN inspected or invoked THEN it exposes only valid selectors and plan-level transitions never advertise task selectors.
     - GIVEN malformed or non-bare identities, owned fields, or retired content flags WHEN submitted THEN rejection occurs before effects.
     - GIVEN discovery and execution WHEN compared THEN selectors, identity rules, structured inputs, and transitions agree.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Criterion 4 remains incomplete: plan schema PT17 still labels current create-local dependency ordinals as legacy migration input, and descriptor parity tests omit plan append/update across schema, per-verb explain, and explain-all."
+    provenance:
+      attempt_id: tryphyimhc-audit-2
+      source: Bounded independent re-review ses_048ff237dffe9oVP3k3yGfNxWh
+      recorded_at: 2026-07-31 09:48
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - qgqlxqhlhd
+  superseded_reason: Replacement completed plan identity discovery parity and earned independent PASS.

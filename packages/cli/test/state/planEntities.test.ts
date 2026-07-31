@@ -20,6 +20,7 @@ import { operationSpec, type StateWriteRequest } from "../../src/state/write/ope
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
 const supersessionWorker = fileURLToPath(new URL("./planSupersessionWorker.mjs", import.meta.url));
+const appendWorker = fileURLToPath(new URL("./planAppendWorker.mjs", import.meta.url));
 
 function project(entity = true): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-plan-entities-")); roots.push(root);
@@ -45,6 +46,16 @@ function create(root: string, title: string, dependency = false): any {
   const input = path.join(root, `${title}.yaml`); fs.writeFileSync(input, dumpYamlMapping(plan(title, dependency)));
   const result = capture(root, ["state", "plan", "create", "--input", input, "--format", "json"]); expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out);
 }
+function taskInput(root: string, record: Record<string, unknown>): string {
+  const input = path.join(root, "task-input.yaml"); fs.writeFileSync(input, dumpYamlMapping(record)); return input;
+}
+function appendTask(root: string, planId: string | undefined, record: Record<string, unknown>): any {
+  const result = capture(root, ["state", "plan", "append", ...(planId ? ["--plan", planId] : []), "--input", taskInput(root, record), "--format", "json"]);
+  expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out);
+}
+function updateTask(root: string, id: string, record: Record<string, unknown>, planId?: string): { rc: number; out: string; err: string } {
+  return capture(root, ["state", "plan", "update", "--id", id, ...(planId ? ["--plan", planId] : []), "--input", taskInput(root, record), "--format", "json"]);
+}
 function complete(root: string, title: string): any {
   const created = create(root, title);
   expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", created.tasks[0].id, "--status", "complete", "--format", "json"]).rc).toBe(0);
@@ -53,8 +64,7 @@ function complete(root: string, title: string): any {
 }
 function persistedReplacement(root: string, title: string): { planId: string; predecessor: string; replacement: string } {
   const created = create(root, title); const predecessor = created.tasks[0].id;
-  const appended = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "Completed replacement", "--format", "json"]);
-  expect(appended.rc, appended.err || appended.out).toBe(0); const replacement = JSON.parse(appended.out).id;
+  const replacement = appendTask(root, created.id, { name: "Completed replacement", depends_on: [], acceptance: [] }).id;
   expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", predecessor, "--status", "blocked", "--format", "json"]).rc).toBe(0);
   expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
   const predecessorPath = path.join(root, `.agentera/entities/plan/plan_task/${predecessor}.yaml`);
@@ -109,6 +119,33 @@ async function concurrentLifecycle(root: string, planId: string, blocked: string
   const deadline = Date.now() + 10_000; while (!ready.every((file) => fs.existsSync(file))) { if (Date.now() > deadline) throw new Error("plan race workers did not become ready"); await new Promise((resolve) => setTimeout(resolve, 10)); }
   fs.writeFileSync(start, "start\n"); await Promise.all(children); return results.map((file) => JSON.parse(fs.readFileSync(file, "utf8")));
 }
+async function concurrentAppend(root: string, planId: string, input: string): Promise<Array<{ rc: number; output: string; error: string }>> {
+  const start = path.join(root, "race-append.start");
+  const ready = ["one", "two"].map((name) => path.join(root, `race-append-${name}.ready`));
+  const results = ["one", "two"].map((name) => path.join(root, `race-append-${name}.json`));
+  const children = ready.map((readyFile, index) => new Promise<void>((resolve, reject) => {
+    const child = spawn(process.execPath, [appendWorker], {
+      cwd: path.resolve(import.meta.dirname, "../.."),
+      env: {
+        ...sourceSubprocessEnv(),
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."),
+        AGENTERA_PLAN_APPEND_ROOT: root,
+        AGENTERA_PLAN_APPEND_PLAN: planId,
+        AGENTERA_PLAN_APPEND_INPUT: input,
+        AGENTERA_PLAN_APPEND_READY: readyFile,
+        AGENTERA_PLAN_APPEND_START: start,
+        AGENTERA_PLAN_APPEND_RESULT: results[index],
+      },
+      stdio: "pipe",
+    });
+    let stderr = ""; child.stderr.setEncoding("utf8"); child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", reject); child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`plan append worker exited ${code}: ${stderr}`)));
+  }));
+  const deadline = Date.now() + 10_000;
+  while (!ready.every((file) => fs.existsSync(file))) { if (Date.now() > deadline) throw new Error("plan append workers did not become ready"); await new Promise((resolve) => setTimeout(resolve, 10)); }
+  fs.writeFileSync(start, "start\n"); await Promise.all(children);
+  return results.map((file) => JSON.parse(fs.readFileSync(file, "utf8")));
+}
 
 function unrelated(root: string): { file: string; bytes: string } {
   const file = path.join(root, ".agentera/unrelated.txt");
@@ -146,6 +183,58 @@ describe("plan and task entity authority", () => {
     expect(created.record.header.id).toBeUndefined(); expect(created.tasks[0].record.number).toBeUndefined();
     expect(fs.existsSync(path.join(root, ".agentera/plan.yaml"))).toBe(false);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it.each([1, "1"])("normalizes atomic-create dependency ordinal %j to a bare task ID", (dependency) => {
+    const root = project();
+    const input = plan(`ordinal-${typeof dependency}`) as Record<string, any>;
+    input.tasks.push({ number: 2, name: "Second", depends_on: [dependency], status: "pending", acceptance: ["The dependency is canonical"] });
+    const source = path.join(root, "plan.yaml"); fs.writeFileSync(source, dumpYamlMapping(input));
+    const result = capture(root, ["state", "plan", "create", "--input", source, "--format", "json"]);
+    expect(result.rc, result.err || result.out).toBe(0);
+    const created = JSON.parse(result.out);
+    expect(created.tasks[1].record.depends_on).toEqual([created.tasks[0].id]);
+    for (const task of created.tasks) {
+      expect(task.id).toMatch(/^[a-z]{10}$/);
+      expect(task.record).not.toHaveProperty("number");
+      expect(task.record.depends_on ?? []).toEqual(expect.arrayContaining((task.record.depends_on ?? []).map(() => expect.stringMatching(/^[a-z]{10}$/))));
+    }
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it.each([
+    ["zero", [0]],
+    ["negative", [-1]],
+    ["fractional", [1.5]],
+    ["nonnumeric", ["one"]],
+    ["noncanonical numeric string", ["01"]],
+    ["missing ordinal", [3]],
+    ["duplicate normalized ordinal", [1, "1"]],
+    ["mixed unresolved ordinals", [1, "3"]],
+  ])("rejects %s atomic-create dependencies before effects", (_label, dependsOn) => {
+    const root = project();
+    const input = plan(`invalid-${_label}`) as Record<string, any>;
+    input.tasks.push({ number: 2, name: "Second", depends_on: dependsOn, status: "pending", acceptance: ["Invalid input is rejected"] });
+    const source = path.join(root, "plan.yaml"); fs.writeFileSync(source, dumpYamlMapping(input));
+    const result = capture(root, ["state", "plan", "create", "--input", source, "--format", "json"]);
+    expect(result.rc).not.toBe(0);
+    expect(JSON.parse(result.out).error.class).toBe("schema_violation");
+    expect(fs.readdirSync(path.join(root, ".agentera"))).toEqual(["state-mode.yaml"]);
+  });
+
+  it("keeps existing-task append and update dependencies bare-ID-only", () => {
+    const root = project(); const created = create(root, "existing-task-identities", true);
+    const before = validateEntityState(root).entityCount;
+    for (const dependency of [1, "1", "plan:123e4567-e89b-42d3-a456-426614174000"]) {
+      const append = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, { name: "Rejected alias", depends_on: [dependency], acceptance: [] }), "--format", "json"]);
+      expect(append.rc).not.toBe(0);
+      expect(JSON.parse(append.out).error.class).toBe("schema_violation");
+      const update = updateTask(root, created.tasks[1].id, { depends_on: [dependency] }, created.id);
+      expect(update.rc).not.toBe(0);
+      expect(JSON.parse(update.out).error.class).toBe("schema_violation");
+      expect(validateEntityState(root).entityCount).toBe(before);
+    }
+    expect(loadYamlMapping(fs.readFileSync(path.join(root, `.agentera/entities/plan/plan_task/${created.tasks[1].id}.yaml`), "utf8"))).toMatchObject({ record: { depends_on: [created.tasks[0].id] } });
   });
 
   it("bounds Unicode task pages and emits executable relationship-bound continuations", () => {
@@ -305,9 +394,9 @@ describe("plan and task entity authority", () => {
 
   it("runs append, update, status, evaluation, lifecycle, and archive by entity selectors", () => {
     const root = project(); const created = create(root, "lifecycle"); const planId = created.id; const first = created.tasks[0].id;
-    let result = capture(root, ["state", "plan", "append", "--plan", planId, "--name", "Added", "--depends-on", first, "--acceptance", "GIVEN first WHEN done THEN added runs", "--format", "json"]); expect(result.rc, result.err).toBe(0); const added = JSON.parse(result.out).id;
-    result = capture(root, ["state", "plan", "update", "--plan", planId, "--id", added, "--name", "Updated", "--format", "json"]); expect(result.rc).toBe(0);
-    result = capture(root, ["state", "plan", "update", "--plan", planId, "--id", added, "--surprise", "Observed in packages/cli/src/state/planEntities.ts", "--format", "json"]); expect(result.rc).toBe(0); expect(JSON.parse(result.out).record.surprises).toContain("planEntities.ts");
+    let result = appendTask(root, planId, { name: "Added", depends_on: [first], acceptance: ["GIVEN first WHEN done THEN added runs"] }); const added = result.id;
+    result = updateTask(root, added, { name: "Updated" }, planId); expect(result.rc).toBe(0);
+    result = updateTask(root, added, { surprise: "Observed in packages/cli/src/state/planEntities.ts" }, planId); expect(result.rc).toBe(0); expect(JSON.parse(result.out).record.surprises).toContain("planEntities.ts");
     result = capture(root, ["state", "plan", "record-evaluation", "--plan", planId, "--id", added, "--attempt-id", "audit-1", "--verdict", "pass", "--provenance", "test", "--format", "json"]); expect(result.rc).toBe(0);
     for (const id of [first, added]) { result = capture(root, ["state", "plan", "set-status", "--plan", planId, "--id", id, "--status", "complete", "--format", "json"]); expect(result.rc).toBe(0); }
     result = capture(root, ["state", "plan", "set-plan-status", "--plan", planId, "--status", "complete", "--format", "json"]); expect(result.rc).toBe(0);
@@ -315,12 +404,52 @@ describe("plan and task entity authority", () => {
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
   });
 
+  it("requires structured task records and rejects retired, owned, and non-bare input before effects", () => {
+    const root = project(); const created = create(root, "structured task input"); const taskId = created.tasks[0].id;
+    const before = entityNames(root);
+    const retired = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "retired", "--format", "json"]);
+    expect(retired.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+    const incomplete = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, { name: "Incomplete", depends_on: [] }), "--format", "json"]);
+    expect(incomplete.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+    const owned = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, { name: "Owned", plan: created.id, depends_on: [], acceptance: [] }), "--format", "json"]);
+    expect(owned.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+    const malformedDependency = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, { name: "Bad dependency", depends_on: ["plan:abcdefghij"], acceptance: [] }), "--format", "json"]);
+    expect(malformedDependency.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+    const invalidUpdate = updateTask(root, taskId, { status: "complete" }, created.id);
+    expect(invalidUpdate.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+    const compositeSelector = capture(root, ["state", "plan", "update", "--id", "plan:abcdefghij", "--plan", created.id, "--input", taskInput(root, { name: "No" }), "--format", "json"]);
+    expect(compositeSelector.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+    const planLifecycleTaskSelector = capture(root, ["state", "plan", "set-plan-status", "--id", created.id, "--status", "complete", "--format", "json"]);
+    expect(planLifecycleTaskSelector.rc).toBe(2); expect(entityNames(root)).toEqual(before);
+  });
+
+  it("converges identical append retries under the writer lock while preserving divergence and dry-run semantics", async () => {
+    const root = project(); const created = create(root, "append replay"); const payload = { name: "Retryable task", depends_on: [created.tasks[0].id], acceptance: ["GIVEN one logical input WHEN retried THEN one entity remains"] };
+    const first = appendTask(root, created.id, payload);
+    const retry = appendTask(root, created.id, payload);
+    expect(retry.id).toBe(first.id); expect(first.operation.idempotent_replay).toBe(false); expect(retry.operation.idempotent_replay).toBe(true);
+    const beforeDry = JSON.parse(capture(root, ["state", "plan", "tasks", "list", created.id, "--format", "json"]).out).counts.total;
+    const dryBefore = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, { name: "Dry-only", depends_on: [], acceptance: [] }), "--dry-run", "--format", "json"]);
+    const afterDry = JSON.parse(capture(root, ["state", "plan", "tasks", "list", created.id, "--format", "json"]).out).counts.total;
+    expect(dryBefore.rc).toBe(0); expect(JSON.parse(dryBefore.out).operation).toMatchObject({ dry_run: true, idempotent_replay: false }); expect(afterDry).toBe(beforeDry);
+    const dryAfter = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, payload), "--dry-run", "--format", "json"]);
+    expect(dryAfter.rc).toBe(0); expect(JSON.parse(dryAfter.out).operation).toMatchObject({ dry_run: true, idempotent_replay: true, }); expect(JSON.parse(dryAfter.out).id).toBe(first.id);
+    const divergent = capture(root, ["state", "plan", "append", "--plan", created.id, "--input", taskInput(root, { ...payload, acceptance: ["different"] }), "--format", "json"]);
+    expect(divergent.rc).not.toBe(0); expect(JSON.parse(divergent.out).error.class).toBe("conflict");
+    const distinct = appendTask(root, created.id, { ...payload, name: "Distinct task" }); expect(distinct.id).not.toBe(first.id);
+
+    const concurrentPlan = create(root, "concurrent append replay");
+    const concurrentInput = taskInput(root, { name: "Concurrent task", depends_on: [concurrentPlan.tasks[0].id], acceptance: ["GIVEN two processes WHEN appending identical input THEN one task is published"] });
+    const receipts = await concurrentAppend(root, concurrentPlan.id, concurrentInput);
+    const parsed = receipts.map(({ output }) => JSON.parse(output));
+    expect(new Set(parsed.map((value) => value.id)).size).toBe(1);
+    expect(parsed.map((value) => value.operation.idempotent_replay).sort()).toEqual([false, true]);
+    expect(JSON.parse(capture(root, ["state", "plan", "tasks", "list", concurrentPlan.id, "--format", "json"]).out).counts.total).toBe(2);
+  });
+
   it("supersedes a blocked task only with completed same-plan replacements and preserves evaluation evidence", () => {
     const root = project(); const created = create(root, "supersession"); const [blocked] = created.tasks.map((task: any) => task.id);
-    const append = (name: string) => {
-      const result = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", name, "--format", "json"]);
-      expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out).id as string;
-    };
+    const append = (name: string) => appendTask(root, created.id, { name, depends_on: [], acceptance: [] }).id as string;
     const firstReplacement = append("First replacement"); const secondReplacement = append("Second replacement");
     const evaluate = (attempt: string, evidence: string) => capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", blocked, "--attempt-id", attempt, "--verdict", "fail", "--provenance", "audit", "--failure-evidence", evidence, "--format", "json"]);
     expect(evaluate("audit-1", "failure one").rc).toBe(0); expect(evaluate("audit-2", "failure two").rc).toBe(0);
@@ -348,7 +477,7 @@ describe("plan and task entity authority", () => {
 
   it("rejects invalid supersession targets without changing the blocked task", () => {
     const root = project(); const created = create(root, "supersession rejection"); const blocked = created.tasks[0].id;
-    const replacement = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "Pending replacement", "--format", "json"]); expect(replacement.rc).toBe(0); const pending = JSON.parse(replacement.out).id;
+     const pending = appendTask(root, created.id, { name: "Pending replacement", depends_on: [], acceptance: [] }).id;
     const otherPlan = create(root, "other plan"); const crossPlan = otherPlan.tasks[0].id;
     expect(capture(root, ["state", "plan", "set-status", "--plan", otherPlan.id, "--id", crossPlan, "--status", "complete", "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
@@ -369,8 +498,7 @@ describe("plan and task entity authority", () => {
   it("rejects complete replacements without a latest persisted PASS and preserves the blocked task", () => {
     for (const verdict of ["unevaluated", "fail"] as const) {
       const root = project(); const created = create(root, `replacement ${verdict}`); const blocked = created.tasks[0].id;
-      const appended = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", `${verdict} replacement`, "--format", "json"]);
-      expect(appended.rc, appended.err || appended.out).toBe(0); const replacement = JSON.parse(appended.out).id;
+      const replacement = appendTask(root, created.id, { name: `${verdict} replacement`, depends_on: [], acceptance: [] }).id;
       expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
       if (verdict === "fail") expect(capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", replacement, "--attempt-id", "replacement-audit-1", "--verdict", "fail", "--provenance", "audit", "--failure-evidence", "still incomplete", "--format", "json"]).rc).toBe(0);
       expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
@@ -390,8 +518,7 @@ describe("plan and task entity authority", () => {
 
   it("repairs an unevaluated historical replacement in place before reusing it for supersession", () => {
     const root = project(); const { planId, replacement } = persistedReplacement(root, "historical replacement reuse");
-    const appended = capture(root, ["state", "plan", "append", "--plan", planId, "--name", "New blocked predecessor", "--format", "json"]);
-    expect(appended.rc, appended.err || appended.out).toBe(0); const blocked = JSON.parse(appended.out).id;
+    const blocked = appendTask(root, planId, { name: "New blocked predecessor", depends_on: [], acceptance: [] }).id;
     expect(capture(root, ["state", "plan", "set-status", "--plan", planId, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
     const supersede = () => capture(root, ["state", "plan", "supersede", "--plan", planId, "--id", blocked, "--by", replacement, "--reason", "Reuse historical replacement evidence.", "--format", "json"]);
 
@@ -422,7 +549,7 @@ describe("plan and task entity authority", () => {
   it("serializes supersession against replacement reopening and plan archival", async () => {
     for (const action of ["reopen", "archive"] as const) {
       const root = project(); const created = create(root, `supersession ${action}`); const blocked = created.tasks[0].id;
-      const appended = capture(root, ["state", "plan", "append", "--plan", created.id, "--name", "Completed replacement", "--format", "json"]); expect(appended.rc).toBe(0); const replacement = JSON.parse(appended.out).id;
+      const replacement = appendTask(root, created.id, { name: "Completed replacement", depends_on: [], acceptance: [] }).id;
       expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
       expect(capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", replacement, "--attempt-id", "replacement-audit-1", "--verdict", "pass", "--provenance", "audit", "--format", "json"]).rc).toBe(0);
       expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
@@ -559,11 +686,11 @@ describe("plan and task entity authority", () => {
 
   it("infers one open plan and reports zero or multiple open plans actionably", () => {
     const root = project(); const first = create(root, "first");
-    expect(capture(root, ["state", "plan", "append", "--name", "Inferred", "--format", "json"]).rc).toBe(0);
+    expect(appendTask(root, undefined, { name: "Inferred", depends_on: [], acceptance: [] }).id).toMatch(/^[a-z]{10}$/);
     const second = create(root, "second");
-    const ambiguous = capture(root, ["state", "plan", "append", "--name", "No owner", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(JSON.parse(ambiguous.out).error.message).toMatch(new RegExp(`${first.id}.*${second.id}|${second.id}.*${first.id}`));
-    expect(capture(root, ["state", "plan", "append", "--plan", second.id, "--name", "Explicit", "--format", "json"]).rc).toBe(0);
-    const empty = project(); const missing = capture(empty, ["state", "plan", "append", "--name", "Missing", "--format", "json"]); expect(missing.rc).toBe(1); expect(JSON.parse(missing.out).error.message).toMatch(/no open plan/i);
+    const ambiguous = capture(root, ["state", "plan", "append", "--input", taskInput(root, { name: "No owner", depends_on: [], acceptance: [] }), "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(JSON.parse(ambiguous.out).error.message).toMatch(new RegExp(`${first.id}.*${second.id}|${second.id}.*${first.id}`));
+    expect(appendTask(root, second.id, { name: "Explicit", depends_on: [], acceptance: [] }).id).toMatch(/^[a-z]{10}$/);
+    const empty = project(); const missing = capture(empty, ["state", "plan", "append", "--input", taskInput(empty, { name: "Missing", depends_on: [], acceptance: [] }), "--format", "json"]); expect(missing.rc).toBe(1); expect(JSON.parse(missing.out).error.message).toMatch(/no open plan/i);
   });
 
   it("keeps one active plan unambiguous beside more than twenty archived plans and exposes archived exact/filter reads", () => {
@@ -592,7 +719,7 @@ describe("plan and task entity authority", () => {
   it("rejects missing, cross-plan, self, and cyclic dependencies without changing the task", () => {
     const root = project(); const left = create(root, "left", true); const right = create(root, "right"); const leftFirst = left.tasks[0].id; const leftSecond = left.tasks[1].id;
     for (const dependency of ["zzzzzzzzzz", right.tasks[0].id, leftSecond]) {
-      const result = capture(root, ["state", "plan", "update", "--plan", left.id, "--id", leftFirst, "--depends-on", dependency, "--format", "json"]); expect(result.rc).not.toBe(0);
+      const result = updateTask(root, leftFirst, { depends_on: [dependency] }, left.id); expect(result.rc).not.toBe(0);
     }
     expect(validateEntityState(root).valid).toBe(true);
   });
@@ -859,7 +986,7 @@ describe("plan and task entity authority", () => {
     const exact = capture(root, ["state", "plan", "get", "--id", first.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(JSON.parse(exact.out).tasks[0].record).toBeTruthy();
     const taskId = JSON.parse(exact.out).tasks[0].id;
     expect(capture(root, ["state", "plan", "tasks", "get", "--id", taskId, "--format", "json"]).rc).toBe(0);
-    capture(root, ["state", "plan", "append", "--plan", first.id, "--name", "Changed snapshot", "--format", "json"]);
+    appendTask(root, first.id, { name: "Changed snapshot", depends_on: [], acceptance: [] });
     const stale = capture(root, ["state", "plan", "list", "--limit", "1", "--cursor", page.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(JSON.parse(stale.out).error.class).toBe("cursor_snapshot_unavailable");
   });
 
@@ -877,9 +1004,9 @@ describe("plan and task entity authority", () => {
   it("lets Git merge different tasks, conflicts on one task, and validates duplicate ownership", () => {
     const root = project(); const created = create(root, "merge"); git(root, "init", "-b", "main"); git(root, "config", "user.name", "Fixture"); git(root, "config", "user.email", "fixture@example.test"); git(root, "add", ".agentera"); git(root, "commit", "-m", "base");
     const left = `${root}-left`, right = `${root}-right`; roots.push(left, right); git(root, "worktree", "add", "-b", "left", left, "main"); git(root, "worktree", "add", "-b", "right", right, "main");
-    capture(left, ["state", "plan", "append", "--plan", created.id, "--name", "Left", "--format", "json"]); capture(right, ["state", "plan", "append", "--plan", created.id, "--name", "Right", "--format", "json"]); git(left, "add", ".agentera/entities"); git(left, "commit", "-m", "left"); git(right, "add", ".agentera/entities"); git(right, "commit", "-m", "right"); git(root, "merge", "--ff-only", "left"); git(root, "merge", "--no-edit", "right"); expect(validateEntityState(root).valid).toBe(true);
+    appendTask(left, created.id, { name: "Left", depends_on: [], acceptance: [] }); appendTask(right, created.id, { name: "Right", depends_on: [], acceptance: [] }); git(left, "add", ".agentera/entities"); git(left, "commit", "-m", "left"); git(right, "add", ".agentera/entities"); git(right, "commit", "-m", "right"); git(root, "merge", "--ff-only", "left"); git(root, "merge", "--no-edit", "right"); expect(validateEntityState(root).valid).toBe(true);
     const taskPath = path.join(root, ".agentera/entities/plan/plan_task", `${created.tasks[0].id}.yaml`); const duplicate = path.join(root, ".agentera/entities/plan/plan", `${created.tasks[0].id}.yaml`); fs.copyFileSync(taskPath, duplicate); expect(validateEntityState(root).valid).toBe(false); fs.unlinkSync(duplicate);
     const conflictRoot = project(); const conflictPlan = create(conflictRoot, "conflict"); git(conflictRoot, "init", "-b", "main"); git(conflictRoot, "config", "user.name", "Fixture"); git(conflictRoot, "config", "user.email", "fixture@example.test"); git(conflictRoot, "add", ".agentera"); git(conflictRoot, "commit", "-m", "base");
-    const a = `${conflictRoot}-a`, b = `${conflictRoot}-b`; roots.push(a, b); git(conflictRoot, "worktree", "add", "-b", "a", a, "main"); git(conflictRoot, "worktree", "add", "-b", "b", b, "main"); capture(a, ["state", "plan", "update", "--plan", conflictPlan.id, "--id", conflictPlan.tasks[0].id, "--name", "A", "--format", "json"]); capture(b, ["state", "plan", "update", "--plan", conflictPlan.id, "--id", conflictPlan.tasks[0].id, "--name", "B", "--format", "json"]); git(a, "add", ".agentera/entities"); git(a, "commit", "-m", "a"); git(b, "add", ".agentera/entities"); git(b, "commit", "-m", "b"); git(conflictRoot, "merge", "--ff-only", "a"); expect(() => git(conflictRoot, "merge", "--no-edit", "b")).toThrow();
+    const a = `${conflictRoot}-a`, b = `${conflictRoot}-b`; roots.push(a, b); git(conflictRoot, "worktree", "add", "-b", "a", a, "main"); git(conflictRoot, "worktree", "add", "-b", "b", b, "main"); expect(updateTask(a, conflictPlan.tasks[0].id, { name: "A" }, conflictPlan.id).rc).toBe(0); expect(updateTask(b, conflictPlan.tasks[0].id, { name: "B" }, conflictPlan.id).rc).toBe(0); git(a, "add", ".agentera/entities"); git(a, "commit", "-m", "a"); git(b, "add", ".agentera/entities"); git(b, "commit", "-m", "b"); git(conflictRoot, "merge", "--ff-only", "a"); expect(() => git(conflictRoot, "merge", "--no-edit", "b")).toThrow();
   });
 });

@@ -398,6 +398,10 @@ entity_target:
         required_fields: [header, what, why, scope]
         required_paths: [header.title, header.created, header.status]
         forbidden_fields: [id, artifact, stable_id, plan_id, tasks, previous_plan_archived]
+        identity: >-
+          The canonical plan identity is the bare ten-letter entity envelope id.
+          A composite header.id belongs only to legacy migration source and is
+          never a public selector.
         field_shapes:
           scope:
             type: mapping
@@ -437,6 +441,9 @@ entity_target:
         required_fields: [plan, name, status, depends_on, acceptance]
         required_paths: []
         forbidden_fields: [id, artifact, number, task_number, stable_id, plan_id]
+        identity: >-
+          The canonical task identity is the bare ten-letter entity envelope id;
+          dependencies and replacements are bare IDs resolved within the same plan.
     - boundary: objective
       artifact: objective
       independently_mutable: true
@@ -1177,17 +1184,15 @@ retrieval:
     omission_unit: whole_entries
   identity:
     plan:
-      canonical_format: 'plan:<lowercase-rfc9562-uuid>'
-      persistence: stored in header.id when a plan is first published
-      transition: the identical ID is copied unchanged into the immutable archive file
-      legacy_format: 'legacy-plan:<sha256>'
+      canonical_format: 'bare ten-letter envelope ID'
+      persistence: stored in the canonical plan envelope id assigned by the typed writer
+      transition: the identical bare ID is retained when the plan moves to archive history
+      legacy_format: 'migration-only header.id plan:<lowercase-rfc9562-uuid> or legacy-plan:<sha256>'
       legacy_derivation: >-
-        SHA-256 over RFC 8785 canonical JSON of the complete plan after the
-        existing read-compatibility normalization of legacy status and task
-        shape. The archive transition computes identity from the same normalized
-        document before publication. Derivation is read-only and never rewrites
-        active or archived bytes; a legacy identity may change while an active
-        legacy plan is edited because no persisted historical identity exists.
+        Migration-only SHA-256 over RFC 8785 canonical JSON of the complete
+        legacy plan after the existing read-compatibility normalization of legacy
+        status and task shape. This identity is read-only provenance, never a
+        canonical entity ID or public selector, and never rewrites source bytes.
       test_vectors:
         - canonical_json: '{"header":{"created":"2026-07-14","status":"open","title":"Plan: Complete bounded retrieval"},"tasks":[]}'
           stable_id: legacy-plan:b6f93d6fc5a0ac3ada017670ac311794ad92800fb436703f8f09e25ddce8b89a
@@ -1201,9 +1206,9 @@ retrieval:
         ambiguous with every candidate provenance path. The CLI never chooses by
         mtime, archive filename, or discovery order.
     task:
-      format: '<plan-id>/task:<positive-integer>'
-      selector: --task N
-      scope: task numbers are unique only inside one plan identity
+      format: 'bare ten-letter entity ID'
+      selector: --id ID
+      scope: task IDs are globally unique across canonical plan-task entities
     objective:
       canonical_format: 'objective:<lowercase-rfc9562-uuid>'
       persistence: stored in header.id and unchanged by title or directory rename
@@ -1271,25 +1276,25 @@ retrieval:
           replacing the projection, as owned by experiment_archival.
   commands:
     plan_tasks:
-      list: agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json
-      get: agentera state plan tasks get [--plan PLAN_ID] --task N --format json
+      list: agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json
+      get: agentera state plan tasks get --id ID --format json
       selectors:
         plan:
           list_required: false
           list_default: active plan resolved once and returned as filters.plan
           get_required: false
-          get_default: active plan resolved once and returned in the response source
-          pattern: '^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$'
+          get_default: task relationship record returns its owning plan ID
+          pattern: '^[a-z]{10}$'
         task:
           get_required: true
-          pattern: '^[1-9][0-9]*$'
+          pattern: '^[a-z]{10}$'
     plans:
       list: agentera state plan list [--limit N] [--cursor TOKEN] --format json
-      get: agentera state plan get --plan PLAN_ID --format json
+      get: agentera state plan get --id ID --format json
       selectors:
         plan:
           get_required: true
-          pattern: '^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$'
+          pattern: '^[a-z]{10}$'
     experiments:
       list: agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json
       get: agentera state experiments get --objective OBJECTIVE_ID --number N --format json
@@ -1368,7 +1373,7 @@ retrieval:
       growth: mutable_while_plan_active_then_immutable_with_archived_plan
       identity: retrieval.identity.task
       storage_ownership: owning_active_plan_file
-      ordering: task_number_asc
+      ordering: id_asc
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
@@ -2329,44 +2334,38 @@ mutation_grammar:
       verb: append
       class: record_payload
       selectors: [--plan]
-      preconditions: [entity_mode_marker_is_valid, selected_plan_is_open, task_dependencies_are_bare_ids_in_same_plan]
-      owned_fields: [id, artifact, plan]
+      preconditions: [entity_mode_marker_is_valid, selected_plan_is_open, input_is_one_complete_plan_task_record, task_dependencies_are_bare_ids_in_same_plan]
+      owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
-        cli_owned_fields: [id, artifact, plan]
-      recovery: Use agentera state plan explain --verb append --format json, select an open plan, and retry with valid bare task dependencies.
-      examples: ['agentera state plan append --name "..." --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
+        mode: structured
+        root: one plan task record
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
+        cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
+      recovery: Use agentera state plan explain --verb append --format json, select an open plan, and supply one complete task record with bare same-plan dependencies.
+      examples: ['agentera state plan append --plan qjtrmnpvka --input task.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields:
-        - { flag: --plan, field: plan, kind: string }
-        - { flag: --name, field: name, kind: string, required: true }
-        - { flag: --depends-on, field: depends_on, kind: string_list, repeatable: true }
-        - { flag: --acceptance, field: acceptance, kind: string_list, repeatable: true }
-        - { flag: --status, field: status, kind: string, valid_values: [complete, in_progress, pending, blocked] }
+         - { flag: --plan, field: plan, kind: string }
 
     - artifact: plan
       verb: update
       class: record_payload
       selectors: [--id, --plan]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, selected_plan_is_open, task_dependencies_are_bare_ids_in_same_plan]
-      owned_fields: [id, artifact, plan]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, selected_plan_is_open, input_is_plan_task_patch, task_dependencies_are_bare_ids_in_same_plan]
+      owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       input:
-        mode: flags_until_conversion
-        sources: [flags]
-        cli_owned_fields: [id, artifact, plan]
-      recovery: Reread the plan task by its bare ID, use a field from the returned vocabulary, and retry; no state was changed.
-      examples: ['agentera state plan update --id qjtrmnpvka --name "..." --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
+        mode: structured
+        root: plan task patch
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
+        cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
+      recovery: Reread the plan task by its bare ID, supply an omission-preserving patch through --input, and retry; no state was changed.
+      examples: ['agentera state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields:
-        - { flag: --id, field: id, kind: string, required: true }
-        - { flag: --plan, field: plan, kind: string }
-        - { flag: --name, field: name, kind: string }
-        - { flag: --depends-on, field: depends_on, kind: string_list, repeatable: true }
-        - { flag: --acceptance, field: acceptance, kind: string_list, repeatable: true }
-        - { flag: --evidence, field: evidence, kind: string }
-        - { flag: --blocked-reason, field: blocked_reason, kind: string }
-        - { flag: --surprise, field: surprise, kind: string }
+         - { flag: --id, field: id, kind: string, required: true }
+         - { flag: --plan, field: plan, kind: string }
 
     - artifact: plan
       verb: set-status
@@ -2448,14 +2447,14 @@ mutation_grammar:
       verb: create
       class: batch_transaction
       selectors: []
-      preconditions: [entity_mode_marker_is_valid, input_is_one_complete_plan_document, task_numbers_are_sequential, dependency_graph_is_valid]
+      preconditions: [entity_mode_marker_is_valid, input_is_one_complete_plan_document, create_local_task_ordinals_are_sequential, dependency_graph_is_valid]
       owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
       input:
         mode: structured
         root: complete plan document
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
-      recovery: Run agentera state plan explain --verb create --format json, remove CLI-owned fields, and correct the first schema or dependency violation.
+      recovery: Run agentera state plan explain --verb create --format json, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and correct the first schema or dependency violation.
       examples: ['agentera state plan create --input plan.yaml --format json']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       allow_force: true

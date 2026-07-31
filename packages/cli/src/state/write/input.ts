@@ -112,10 +112,57 @@ const DECISION_AMEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   examples: ["agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml --format json"],
 };
 
+const PLAN_TASK_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
+  root: "one plan task record",
+  fields: [
+    field("name", "string", "Short task name.", { required: true, update: "replace" }),
+    field("depends_on", "list", "Bare ten-letter task IDs in the same plan; use an empty list for a root task.", { required: true, itemType: "string", update: "replace" }),
+    field("acceptance", "list", "Task acceptance criteria.", { required: true, itemType: "string", update: "replace" }),
+    field("evidence", "string", "Optional task evidence as a string or list of strings.", { required: false, acceptedForms: ["string", "list"], update: "replace" }),
+    field("blocked_reason", "string", "Optional task blocker explanation.", { required: false, update: "replace" }),
+  ],
+  semantics: {
+    mode: "append_record",
+    omitted_fields: "only writer-defaulted status is omitted; plan, id, and artifact are assigned by the writer",
+    identities: "depends_on contains bare ten-letter task IDs and every target must belong to the selected plan",
+    lifecycle: "status, supersession, evaluation, and plan lifecycle are separate flag-only transitions",
+  },
+  ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
+  immutableFields: [],
+  bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
+  examples: ["agentera state plan append --plan qjtrmnpvka --input task.yaml --format json"],
+};
+
+const PLAN_TASK_UPDATE_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
+  root: "plan task patch",
+  fields: [
+    field("name", "string", "Replacement task name.", { required: false, update: "patch" }),
+    field("depends_on", "list", "Replacement list of bare ten-letter task IDs in the same plan; null clears to an empty list.", { required: false, itemType: "string", update: "patch" }),
+    field("acceptance", "list", "Replacement task acceptance criteria; null clears to an empty list.", { required: false, itemType: "string", update: "patch" }),
+    field("evidence", "string", "Replacement task evidence as a string or list of strings; null clears it.", { required: false, acceptedForms: ["string", "list"], update: "patch" }),
+    field("blocked_reason", "string", "Replacement blocker explanation; null clears it.", { required: false, update: "patch" }),
+    field("surprise", "string", "Plan-level surprise; it is not written to the task entity.", { required: false, update: "patch" }),
+  ],
+  semantics: {
+    mode: "patch",
+    omitted_fields: "preserve the effective task record",
+    clearable_fields: ["depends_on", "acceptance", "evidence", "blocked_reason"],
+    surprise: "surprise remains plan-level content and cannot be combined with task-field changes",
+    identities: "depends_on contains bare ten-letter task IDs and every target must belong to the selected plan",
+    lifecycle: "status, supersession, evaluation, and plan lifecycle are separate flag-only transitions",
+  },
+  ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
+  immutableFields: ["status", "superseded_by", "superseded_reason", "evaluation", "plan"],
+  bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
+  examples: ["agentera state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json"],
+};
+
 const STRUCTURED_INPUT_SCHEMAS: Record<string, StructuredInputSchemaDescriptor> = {
   "progress.append": PROGRESS_INPUT_SCHEMA,
   "decisions.append": DECISION_APPEND_INPUT_SCHEMA,
   "decisions.amend": DECISION_AMEND_INPUT_SCHEMA,
+  "plan.append": PLAN_TASK_APPEND_INPUT_SCHEMA,
+  "plan.update": PLAN_TASK_UPDATE_INPUT_SCHEMA,
 };
 
 export function structuredInputDescriptor(artifact: string, verb: string): StructuredInputSchemaDescriptor | null {
@@ -272,15 +319,60 @@ function decisionInputViolations(input: Record<string, unknown>, verb: "append" 
   return violations;
 }
 
+const BARE_ID = /^[a-z]{10}$/;
+
+function stringList(value: unknown, field: string, violations: string[], options: { required: boolean; ids?: boolean }): void {
+  if (value === undefined) {
+    if (options.required) violations.push(`${field} is required`);
+    return;
+  }
+  if (value === null && !options.required) return;
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    violations.push(`${field} must be a list of strings${options.ids ? " containing bare ten-letter IDs" : ""}`);
+    return;
+  }
+  if (options.ids && value.some((entry) => !BARE_ID.test(entry)))
+    violations.push(`${field} must contain only bare ten-letter task IDs`);
+}
+
+function planTaskInputViolations(input: Record<string, unknown>, verb: "append" | "update"): string[] {
+  const schema = structuredInputDescriptor("plan", verb) as StructuredInputSchemaDescriptor;
+  const violations: string[] = [];
+  unknownFields(input, topLevelFields(schema), violations);
+  if (verb === "append") {
+    requiredString(input.name, "name", violations);
+    stringList(input.depends_on, "depends_on", violations, { required: true, ids: true });
+    stringList(input.acceptance, "acceptance", violations, { required: true });
+  } else if (Object.keys(input).length === 0) {
+    violations.push("plan task patch requires at least one content field");
+  }
+  if (input.name !== undefined && (typeof input.name !== "string" || input.name.length === 0))
+    violations.push("name must be a non-empty string when present");
+  stringList(input.depends_on, "depends_on", violations, { required: false, ids: true });
+  stringList(input.acceptance, "acceptance", violations, { required: false });
+  if (input.evidence !== undefined && input.evidence !== null && typeof input.evidence !== "string" && (!Array.isArray(input.evidence) || input.evidence.some((entry) => typeof entry !== "string")))
+    violations.push("evidence must be a string, list of strings, or null when present");
+  if (input.blocked_reason !== undefined && input.blocked_reason !== null && typeof input.blocked_reason !== "string")
+    violations.push("blocked_reason must be a string or null when present");
+  if (verb === "append" && (input.evidence === null || input.blocked_reason === null))
+    violations.push("null clears are available only for plan task updates");
+  if (verb === "update" && input.surprise !== undefined && (typeof input.surprise !== "string" || input.surprise.length === 0))
+    violations.push("surprise must be a non-empty string when present");
+  if (verb === "append" && input.surprise !== undefined) violations.push("surprise is plan-level content and is not accepted when appending a task");
+  return violations;
+}
+
 export function structuredRecordInputViolations(
   artifact: string,
   verb: string,
   input: Record<string, unknown> | null,
 ): string[] {
-  if (!input || (artifact !== "progress" && artifact !== "decisions")) return [];
+  if (!input || (artifact !== "progress" && artifact !== "decisions" && artifact !== "plan")) return [];
   if (artifact === "progress" && verb === "append") return progressInputViolations(input);
   if (artifact === "decisions" && (verb === "append" || verb === "amend"))
     return decisionInputViolations(input, verb);
+  if (artifact === "plan" && (verb === "append" || verb === "update"))
+    return planTaskInputViolations(input, verb);
   return [];
 }
 

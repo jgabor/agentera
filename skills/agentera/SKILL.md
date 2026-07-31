@@ -217,8 +217,10 @@ Common mutations:
 - `npx -y agentera@next state decisions amend --id ID --base-sha256 HASH --input <path|-> --format json`
 - `npx -y agentera@next state decisions update --id ID ... --format json`
 - `npx -y agentera@next state plan create --input plan.yaml --format json`
-- `npx -y agentera@next state plan update|set-status --id ID ... --format json`
-- `npx -y agentera@next state plan set-plan-status --status complete --format json`
+- `npx -y agentera@next state plan append [--plan PLAN_ID] --input task.yaml --format json`
+- `npx -y agentera@next state plan update --id TASK_ID [--plan PLAN_ID] --input task-patch.yaml --format json`
+- `npx -y agentera@next state plan set-status --id TASK_ID --status STATUS --format json`
+- `npx -y agentera@next state plan set-plan-status [--plan PLAN_ID] --status complete --format json`
 - `npx -y agentera@next state plan archive --format json`
 - `npx -y agentera@next state health append --input audit.yaml --format json`
 - `npx -y agentera@next state todo create --input todo.yaml --format json`
@@ -231,6 +233,12 @@ patch: omitted fields remain unchanged and only `target_version`,
 fields remain TODO.md-owned; readiness, dependencies, gates, evidence, and
 lifecycle metadata remain Agentera-owned. Lifecycle verbs are flag-only and do
 not accept record payloads.
+
+Plan create task numbers and dependency values are create-local symbolic
+ordinals inside one atomic input document; the writer removes them before
+publishing bare ten-letter plan and task envelope IDs. A legacy composite
+`header.id` is migration-only and is never a public selector. Post-publication
+task append/update payloads use only mutable task content and bare task IDs.
 
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their

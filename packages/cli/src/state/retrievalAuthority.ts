@@ -48,12 +48,12 @@ const EXPECTED_FAILURES = [
 
 const EXPECTED_COMMANDS = {
   plan_tasks: {
-    list: "agentera state plan tasks list [--plan PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
-    get: "agentera state plan tasks get [--plan PLAN_ID] --task N --format json",
+    list: "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
+    get: "agentera state plan tasks get --id ID --format json",
   },
   plans: {
     list: "agentera state plan list [--limit N] [--cursor TOKEN] --format json",
-    get: "agentera state plan get --plan PLAN_ID --format json",
+    get: "agentera state plan get --id ID --format json",
   },
   experiments: {
     list: "agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json",
@@ -243,20 +243,20 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   for (const field of ["list_default", "get_default"]) requireNonEmpty(planTaskPlanSelector, field, "retrieval.commands.plan_tasks.selectors.plan", errors);
   patternAccepts(
     planTaskPlanSelector.pattern,
-    ["plan:018f6b9a-7c2d-7abc-8def-0123456789ab", `legacy-plan:${"a".repeat(64)}`],
-    ["plan:-", "plan:not-a-uuid", `legacy-plan:${"a".repeat(63)}`],
+    ["abcdefghij", "qjtrmnpvka"],
+    ["plan:-", "plan:not-a-uuid", "1", "abcdefghijk"],
     "retrieval.commands.plan_tasks.selectors.plan",
     errors,
   );
   const taskSelector = mapping(planTaskSelectors.task);
   if (taskSelector.get_required !== true) errors.push("retrieval.commands.plan_tasks.selectors.task.get_required");
-  patternAccepts(taskSelector.pattern, ["1", "42"], ["0", "-1", "01"], "retrieval.commands.plan_tasks.selectors.task", errors);
+  patternAccepts(taskSelector.pattern, ["abcdefghij", "qjtrmnpvka"], ["1", "plan:abcdefghij", "abcdefghi"], "retrieval.commands.plan_tasks.selectors.task", errors);
   const planSelector = mapping(mapping(mapping(commands.plans).selectors).plan);
   if (planSelector.get_required !== true) errors.push("retrieval.commands.plans.selectors.plan.get_required");
   patternAccepts(
     planSelector.pattern,
-    ["plan:018f6b9a-7c2d-7abc-8def-0123456789ab", `legacy-plan:${"a".repeat(64)}`],
-    ["plan:-", "plan:not-a-uuid", `legacy-plan:${"a".repeat(63)}`],
+    ["abcdefghij", "qjtrmnpvka"],
+    ["plan:-", "plan:not-a-uuid", "1", "abcdefghijk"],
     "retrieval.commands.plans.selectors.plan",
     errors,
   );

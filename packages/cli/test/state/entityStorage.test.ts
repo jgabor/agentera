@@ -284,6 +284,7 @@ describe("whole-state entity validation", () => {
     expect(new Set(result.issues.map((issue) => issue.code))).toEqual(new Set([
       "duplicate_id",
       "invalid_artifact",
+      "malformed_entity",
       "unresolved_relation",
       "conflicting_ownership",
     ]));

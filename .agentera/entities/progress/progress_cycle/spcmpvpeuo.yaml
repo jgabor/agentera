@@ -1,0 +1,16 @@
+id: spcmpvpeuo
+artifact: progress
+record:
+  timestamp: 2026-07-31 10:39
+  type: fix
+  phase: build
+  what: Projected schema-owned PT17 accepted forms and validation metadata through public schema and bounded plan-create explain discovery.
+  context:
+    intent: Correct only qgqlxqhlhd public discovery projection while preserving all prior plan-task runtime, replacement, progress, and evaluator state.
+    constraints: Keep qgqlxqhlhd in progress and dlcpoiyfwz and tryphyimhc blocked; do not complete or supersede tasks, resolve auwlbuobdw, close M2, start M3, commit, publish, bump versions, or modify profile or vision.
+    unknowns: Independent Audit PASS remains pending.
+    scope: Shared artifact-schema field projection, bounded operation-tagged plan-create explain metadata, public JSON/YAML schema output, packed-install discovery tests, and regression verification.
+  discovered: The public schema command reconstructed a fixed subset of field properties and dropped accepted_forms, while explain had no schema-owned field projection. The correction shares one generic projection and selects explain fields through schema-owned write_operations rather than a PT17 branch or duplicate descriptor.
+  verified: Public source and packed CLI schema JSON/YAML now expose PT17 path, list[integer|string] type, scoped accepted_forms, normalization, uniqueness, and same-document resolution metadata; plan-create explain JSON exposes the same one-field projection at 3,907 UTF-8 bytes. The schema and explain field projections share SHA-256 0ecbfbe4034709195d853aa272ceb45700d63f6556189d39f39c05386f908c39. Passed 4 focused schema/explain/plan files with 131 tests, full source with 224 files and 3,113 passed plus 1 skipped, packed package verification with 18 tests, typecheck, build, state validation with 2,029 entities and zero issues before this append, compact, capability-contract, plan capability, and plan artifact validation. Source and generated package plan schemas are byte-identical at SHA-256 7bdc6c0f1a6e4c7082d20665df8103d072171dbb0ac6cefe71f7e4d2e8bde9ff; writer contract digest remains 7535c8d344b879c184851de1d8a87d3b5480b07c04d71d1063919a44813bab16. Prior create ordinal acceptance/rejection, bare-ID publication, append/update rejection, replay, identity, transition, and package behavior remained green.
+  next: Independent Audit must evaluate qgqlxqhlhd. This worker leaves qgqlxqhlhd in progress, both predecessors blocked with evaluations intact, and auwlbuobdw and M2 open.
+  publication_order: 25

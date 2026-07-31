@@ -43,6 +43,12 @@
 
 ### Fixed
 
+- Fixed plan task append and update to require bounded YAML/JSON file-or-stdin
+  records and patches with bare ten-letter selectors and relationships. Complete
+  plan create now resolves positive integer or canonical numeric-string ordinals
+  only inside its atomic document, append retries converge under the writer lock,
+  lifecycle transitions remain flag-only, invalid input fails before effects, and
+  schema, explain, help, skills, and packaged discovery expose the same contract.
 - Fixed progress and decision record mutations to require bounded YAML/JSON
   input from a file or stdin, converge exact logical-content retries before ID
   allocation, expose complete structured descriptors, and keep Discuss append,

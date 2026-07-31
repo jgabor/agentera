@@ -1,0 +1,15 @@
+id: usmpeinfvz
+artifact: progress
+record:
+  timestamp: 2026-07-31 09:06
+  type: fix
+  phase: build
+  what: Converted packages/cli/src/state/planEntities.ts append and update to bounded YAML/JSON records with bare ten-letter task IDs.
+  context:
+    intent: Implement only plan-task record writer and identity conversion for tryphyimhc / auwlbuobdw.
+    constraints: Do not commit, mark the task complete, resolve TODO, modify profile or vision, start M3, or alter release metadata.
+    scope: Structured plan task append/update, canonical selectors and dependencies, registry parity, schemas, help, prose, migration-compatible readers, tests, and verification.
+  discovered: The code-owned plan append/update operations still accepted flags, while discovery exposed integer and ordinal task vocabulary; existing task records also carry list-valued evidence that validation must preserve.
+  verified: Verified 224 source test files and 3,099 tests, focused plan/mutation/migration suites with 378 tests, typecheck, build, package verification, state validation, compact, capability contract, and built CLI file/stdin/replay/lifecycle smokes.
+  next: Independent Audit owns lifecycle completion and evaluation; this worker leaves tryphyimhc and auwlbuobdw open.
+  publication_order: 21

@@ -169,6 +169,12 @@ export function validateFieldType(
       violations.push(`${name}: '${fullPath}' must be a list of strings`);
       isValid = false;
     }
+  } else if (expectedType === "list[integer|string]") {
+    if (!Array.isArray(value) || !value.every((x) =>
+      typeof x === "string" || (typeof x === "number" && Number.isInteger(x)))) {
+      violations.push(`${name}: '${fullPath}' must be a list of integers or strings`);
+      isValid = false;
+    }
   } else if (expectedType === "list[map]") {
     if (!Array.isArray(value) || !value.every((x) => isMapping(x))) {
       violations.push(`${name}: '${fullPath}' must be a list of mappings`);

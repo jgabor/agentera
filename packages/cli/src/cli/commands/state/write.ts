@@ -109,7 +109,7 @@ function converted(field: OperationField, raw: string): unknown {
       });
     return raw === "true";
   }
-  if (field.kind === "integer" || field.kind === "integer_list") {
+  if (field.kind === "integer") {
     const number = Number(raw);
     if (!Number.isInteger(number))
       invalid({
@@ -117,7 +117,7 @@ function converted(field: OperationField, raw: string): unknown {
         message: `argument ${field.flag}: invalid int value: '${raw}'`,
         syntax: `${field.flag} N`,
       });
-    return field.kind === "integer" ? number : String(number);
+    return number;
   }
   if (field.kind === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     invalid({
@@ -245,6 +245,8 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       continue;
     }
     if (parsed.name === "--input") {
+      if (inputSource !== null)
+        invalid({ class: "mutually_exclusive", message: "--input may only be supplied once" });
       inputSource = parsed.value;
       continue;
     }
@@ -340,16 +342,6 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   }
   if (artifact === "plan" && verb === "create" && force)
     invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plan create because multiple open plans coexist" });
-  if (
-    verb === "update" &&
-    artifact === "plan" &&
-    Object.keys(values).every((key) => key === "id" || key === "plan")
-  ) {
-    invalid({
-      class: "missing_argument",
-      message: "plan update requires at least one task field or --surprise",
-    });
-  }
   return { artifact, spec, format, projectRoot, dryRun, force, values, callerPayload, inputSource };
 }
 

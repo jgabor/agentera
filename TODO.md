@@ -2,9 +2,9 @@
 
 ## Current execution
 
-- **Current milestone:** M2 · Unify state mutation.
-- **Next plan task:** `tryphyimhc` — Convert plan-task writers and identities.
-- **Associated TODO:** `auwlbuobdw` — Make plan task record writes follow the structured-input state grammar and entity identity vocabulary.
+- **Current milestone:** M3 · Reconcile TODO and canonical reads.
+- **Next plan task:** `xufuibtial` — Make TODO reconciliation atomic.
+- **Associated TODO:** `frpdshynmd` — Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`.
 - **Exact request:** `Proceed with reopening, resume orchestration when unblocked.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task—or the plan reports no selectable task with an exact blocker and recovery.
@@ -21,17 +21,20 @@ Milestone debt is measured in three categories: (1) duplicate authorities, gramm
 
 Exit when execution selection, verification, logging, and closeout agree and measured milestone debt decreases.
 
-### M2 · Unify state mutation — current
+### M2 · Unify state mutation — complete
 
 Exit when one mutation grammar governs the converted writer families and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `auwlbuobdw` **NEXT** Make plan task record writes follow the structured-input state grammar and entity identity vocabulary. Require `plan append [--plan PLAN_ID] --input <path|->` and `plan update --id TASK_ID [--plan PLAN_ID] --input <path|->`; keep status, supersession, evaluation, plan-status, and archive operations as flag-only transitions. Discovery currently reports `integer_list` and task numbers while runtime requires ten-letter IDs. Make dependencies, replacements, task selectors, and optional plan selection agree across parsing, schema, explain, help, `SKILL.md`, and regressions; never advertise `set-plan-status --id`.
+Measured M2 debt reduction: record payload writers for progress, decisions, TODO,
+and plan tasks now share one structured-input grammar and code-owned runtime with
+parity-only declarative authority instead of independent flag grammars; no new
+duplicate authority was introduced.
 
-### M3 · Reconcile TODO and canonical reads
+### M3 · Reconcile TODO and canonical reads — current
 
 Exit when repository-first TODO reconciliation and bounded list/get reads share one verified lifecycle and measured milestone debt decreases.
 
-- [ ] [fix:3.0.0] `frpdshynmd` Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`.
+- [ ] [fix:3.0.0] `frpdshynmd` **NEXT** Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`.
 - [ ] [fix:3.0.0] `yqqqhipecx` Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass.
 - [ ] [fix:3.0.0] `hykqpkcsix` Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation.
 - [ ] [fix:3.0.0] `qmcyjnxskc` Generate artifact-specific `state ... list --help` from the retrieval authority. Help currently omits supported filters and forces source inspection. Show each family's exact filters, summary fields, bounds, formats, and runnable examples; for TODOs include `--severity`, `--status`, `--queue-rank`, `--ids-only`, and `--fields`. Test help, schema, and runtime parity so unsupported selectors fail with the valid vocabulary and one working correction.
@@ -109,6 +112,7 @@ Exit only after explicit approval, publication verification, final synchronizati
 
 ## ✓ Resolved
 
+- [x] [fix:3.0.0] Make plan task record writes follow the structured-input state grammar and canonical entity identity. Resolved 2026-07-31: plan append and update require bounded YAML/JSON file-or-stdin records and patches; task and optional plan selectors, dependencies, and replacements use bare ten-letter IDs, while complete create accepts positive integers or canonical numeric strings only as atomic-document-local ordinals, normalizes and resolves them in that document, and publishes no ordinal fields. Append replay converges under the writer lock for sequential and concurrent retries; lifecycle, supersession, evaluation, plan status, and archive remain separate flag-only transitions; malformed, owned, retired, noncanonical, and unresolved input fails before effects. Public schema, explain, help, skill, and packed output expose matching machine-readable identity and accepted-form metadata. Replacement `qgqlxqhlhd` earned independent PASS and superseded `dlcpoiyfwz` and `tryphyimhc`; 131 focused tests, 3,113 source tests with 1 skipped, 18 package tests, typecheck, build, state validation, compaction, capability/plan/artifact validation, and package-schema hash parity passed.
 - [x] [fix:3.0.0] Convert progress and decision record writes to structured input. Resolved 2026-07-31: progress append, decision append, and decision amend now accept bounded YAML/JSON file-or-stdin records; satisfaction remains flag-only, CLI-owned and retired fields reject before effects, and dry-run, replay, amendment preconditions, publication order, schema, explain, help, skills, package projection, and regressions agree. 258 focused tests across 10 files, 3,098 source tests with 1 skipped, 17 package tests, typecheck, build, state validation, compaction, capability-contract validation, and independent audit passed.
 - [x] [fix:3.0.0] Convert TODO writes to typed records and transitions. Resolved 2026-07-31: typed fields and YAML/JSON file-or-stdin full-create and omission-preserving patch input now support explicit clears; exact lifecycle retries replay while divergent severity, supersession, resolve, and reopen attempts conflict before effects. Mapped `TODO.md` public authority, target-specific release blockers, fatal UTF-8, retired or owned fields, reason bounds, and dependency graphs fail safely. Replacement `oeprigteku` earned independent PASS and superseded `nkguykzeum`; 253 focused tests, 3,092 source tests with 1 skipped, 17 package tests, typecheck, build, state validation, compaction, and contract validation passed.
 - [x] [fix:3.0.0] Establish one shared state mutation grammar. Resolved 2026-07-31: the code-owned runtime registry and parity-only YAML discovery authority now agree on 22 operations across three mutation classes; per-verb explain, `explain --all`, schema, help, and package projections share one digest and parity matrix. Retired health repair, contradictory content flags, oversized structured input, authority drift, and missing mandatory selectors fail before effects, while optional plan and experiment selectors retain inference and default behavior. Replacement task `aiujszrciq` earned independent PASS and superseded blocked predecessor `mascmjrpug`; 7 focused grammar tests, 3,086 source tests with 1 skipped, 17 package tests, state validation, compaction, typecheck, build, and 3 capability-contract checks passed.

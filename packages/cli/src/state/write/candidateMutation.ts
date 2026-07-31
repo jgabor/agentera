@@ -195,7 +195,7 @@ export function mutateCandidate(
         };
       reject({
         class: "conflict",
-        message: `plan task "${req.values.name}" exists with different fields; use 'state plan update --task ${sameName.number}' to modify it`,
+        message: `plan task "${req.values.name}" exists with different fields; use 'state plan update --id ID --input task-patch.yaml' to modify it`,
       });
     }
     const entry: Record<string, unknown> = {

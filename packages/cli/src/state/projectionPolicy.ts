@@ -87,7 +87,7 @@ export function projectionRetrieval(command: string): JsonObject {
     return {
       available: true,
       list: "agentera state plan tasks list --format json",
-      get: "agentera state plan tasks get --task N --format json",
+      get: "agentera state plan tasks get --id ID --format json",
       plans_list: "agentera state plan list --format json",
       plans_get: "agentera state plan get --plan PLAN_ID --format json",
     };

@@ -5,10 +5,16 @@
 # and acceptance criteria, overall acceptance, and surprises.
 #
 # The active authority uses one plan or plan_task entity per writer-owned file.
-# The aggregate model and ordinal fields below are retained only as an exact
-# legacy migration input schema; they are not ordinary post-cutover contracts.
+# The aggregate model below is the complete atomic plan-create input. Its task
+# numbers and numeric/string dependency references are create-local symbols,
+# not persisted identities. Fields explicitly labeled migration-only remain
+# compatibility input and are not ordinary post-cutover entity contracts.
 #
-# ── Field-by-field mapping: v1 PLAN.md → v2 plan.yaml ──
+# ── Legacy migration-input mapping: v1 PLAN.md → v2 plan.yaml ──
+#
+# The ordinal task fields in this mapping are create-local symbolic references.
+# They are valid only inside one atomic `state plan create --input` document and
+# are removed when the writer publishes plan and plan_task entities.
 #
 # v1 Field                              v2 Field               v2 ID
 # ─────────────────────────────────────────────────────────────────────
@@ -26,7 +32,7 @@
 # ## Scope / **Out**: <list>            SCOPE.excluded         PL12
 # ## Scope / **Deferred**: <list>       SCOPE.deferred         PL13
 # ## Design                             PLAN.design            PL14
-# ### Task N: <name>                    TASK.number            PL15
+# ### Task N: <name>                    TASK.number            PL15 (create-local only)
 # (task name from heading)              TASK.name              PL16
 # **Depends on**: <text>                TASK.depends_on        PL17
 # **Status**: <status>                  TASK.status            PL18
@@ -65,7 +71,34 @@ ENTITY_AUTHORITY:
     task_get: agentera state plan tasks get --id ID --format json
   mutation: agentera state plan explain --format json
   direct_file_edits: forbidden
-  legacy_schema_below: migration_input_only
+  aggregate_schema_below: atomic_create_input
+  migration_compatibility: explicitly_labeled_fields_only
+
+CANONICAL_ENTITY_CONTRACT:
+  authority: typed_state_writer
+  envelope_identity:
+    plan:
+      field: id
+      format: bare_ten_letter_id
+      selector: --id ID
+      assignment: writer_assigned_on_create
+    plan_task:
+      field: id
+      format: bare_ten_letter_id
+      selector: --id ID
+      assignment: writer_assigned_on_append
+  create_local_symbols:
+    scope: one_atomic_plan_create_input
+    task_field: number
+    dependency_accepted_forms: [positive_integer, canonical_numeric_string]
+    dependency_normalization: canonical_numeric_string_before_resolution
+    publication: remove_number_and_resolve_dependencies_to_bare_entity_ids
+  migration_compatibility:
+    header_id:
+      format: composite_plan_identity
+      status: migration_only_noncanonical
+      public_selector: forbidden
+    legacy_task_references: convert_to_bare_entity_ids_during_migration
 
 GROUP_PREFIXES:
   BUDGET: PB
@@ -165,11 +198,11 @@ HEADER:
     type: string
     required: false
     description: >-
-      Stable plan identity assigned by the typed writer at first publication and
-      retained unchanged when the plan moves from active to archived history.
-      Legacy plans without this field derive a read-only identity.
+      Migration-only source identity. Canonical plan identity is the bare
+      ten-letter envelope `id` assigned by the typed writer; this source
+      `header.id` is never a public selector.
     validation:
-      - "Must match plan:<lowercase RFC 9562 UUID> when present"
+      - "Composite header.id is accepted only by legacy migration compatibility"
 
 PLAN:
   1:
@@ -324,11 +357,12 @@ TASK:
     type: integer
     required: true
     description: >-
-      Task number within the plan. Sequential, starting from 1.
-      May include a descriptive name (e.g., 'Task 2: Shared Protocol').
+      Create-local symbolic task ordinal within one atomic plan input.
+      Sequential values start at 1, are removed on publication, and are never
+      a canonical entity identity or public selector.
     validation:
-      - "Must be a positive integer"
-      - "Must be unique within the plan"
+      - "Must be a positive integer in the create input"
+      - "Must be unique within that atomic input"
   2:
     id: PT16
     field: name
@@ -342,11 +376,24 @@ TASK:
   3:
     id: PT17
     field: depends_on
-    type: list[string]
+    path: tasks[].depends_on
+    type: list[integer|string]
+    write_operations: [create]
+    accepted_forms:
+      atomic_plan_create: [positive_integer, canonical_numeric_string]
+      legacy_migration_only: [legacy_task_reference_string]
+    normalization: canonical_numeric_string_before_same_document_resolution
     required: false
     description: >-
-      Task dependencies. References task numbers or names that must
-      complete before this task can start. Empty for root tasks.
+      Numeric or numeric-string dependency references are create-local symbolic
+      task ordinals only inside the current complete plan create input. The writer
+      resolves them within that atomic document, removes the ordinal references,
+      and publishes dependencies as bare ten-letter task envelope IDs. Empty for
+      root tasks.
+    validation:
+      - positive_integer_or_canonical_numeric_string
+      - unique_after_normalization_within_task
+      - resolves_to_declared_task_ordinal_in_same_atomic_document
   4:
     id: PT18
     field: status
@@ -403,18 +450,20 @@ VALIDATION:
     rule: unique_entity_ids
     severity: error
     description: >-
-      Task numbers must be unique within a plan and sequential.
+      Create-local task ordinals must be unique within one atomic plan input and
+      sequential; they are not persisted entity identities.
     checks:
-      - "All task numbers are unique"
-      - "Task numbers are sequential starting from 1"
+      - "All create-local task ordinals are unique"
+      - "Create-local task ordinals are sequential starting from 1"
   2:
     id: PV2
     rule: required_fields
     severity: error
     description: >-
-      The plan must have: level, created, status, title, what, why,
-      scope.included, scope.excluded, and at least one task. Each task
-      must have number, name, and status.
+      A complete create input must have: level, created, status, title, what,
+      why, scope.included, scope.excluded, and at least one task. Each task's
+      number is create-local and is removed before identity conversion. Legacy
+      source documents use the separate migration compatibility contract.
     checks:
       - "level is present and is 'light' or 'full'"
       - "created is present and matches YYYY-MM-DD"
@@ -443,10 +492,14 @@ VALIDATION:
     rule: dependency_references
     severity: error
     description: >-
-      Task depends_on references must point to valid task numbers
-      within the same plan.
+      Create-local depends_on references must point to valid task ordinals in
+      the same atomic input before conversion to bare task IDs. Legacy source
+      references use the migration compatibility path, not this public writer
+      vocabulary.
     checks:
-      - "Each dependency references an existing task number"
+      - "Each create-local dependency is a positive integer or canonical numeric string"
+      - "Each normalized dependency references an existing task ordinal"
+      - "Each task's normalized dependency ordinals are unique"
       - "No circular dependency chains"
   5:
     id: PV5
@@ -463,12 +516,18 @@ LIFECYCLE_CONTRACT:
   authority: this schema
   canonical:
     identity:
+      field: id
+      format: bare_ten_letter_id
+      assignment: The typed entity writer assigns the envelope identity at first publication.
+      transition: Active and archived entity positions retain the identical bare identity.
+      legacy: Legacy source header.id is migration-only and never a public selector.
+      collision: Different canonical entities with one identity are ambiguous and never selected by path or time.
+    migration_source_identity:
       field: header.id
-      format: 'plan:<lowercase-rfc9562-uuid>'
-      assignment: The typed create writer assigns identity at first publication.
-      transition: Active and archived positions retain the identical identity.
-      legacy: Missing identity is derived deterministically at read time without rewriting bytes.
-      collision: Different documents with one identity are ambiguous and never selected by path or time.
+      format: 'plan:<lowercase-rfc9562-uuid> or legacy-plan:<sha256>'
+      status: migration_only_noncanonical
+      assignment: Read-only compatibility derivation or retained legacy source value.
+      public_selector: forbidden
     persisted_status:
       field: header.status
       values:

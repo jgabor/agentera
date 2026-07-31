@@ -1,0 +1,26 @@
+id: dlcpoiyfwz
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M2 retry · Align plan identity discovery parity (auwlbuobdw)
+  status: superseded
+  depends_on:
+    - mascmjrpug
+  acceptance:
+    - GIVEN complete plan creation WHEN task dependencies are discovered THEN numeric references are described only as create-local symbolic ordinals removed during atomic publication.
+    - GIVEN canonical plan or task identity WHEN schema, help, explain, and package output are inspected THEN only bare ten-letter envelope IDs are public and composite header.id is migration-only.
+    - GIVEN plan append and update descriptors WHEN parity tests run THEN schema, per-verb explain, explain-all, validation, and execution agree while prior replay and transition behavior remains green.
+    - GIVEN independent Audit returns PASS WHEN the replacement closes THEN blocked task tryphyimhc is superseded and M2 can advance to M3.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Criterion 1 still fails in public discovery: PT17 accepted_forms exists in raw schema but schemaFieldDescription and plan-create explain strip positivity, canonical-string, normalization, uniqueness, and resolution metadata."
+    provenance:
+      attempt_id: dlcpoiyfwz-audit-2
+      source: Bounded independent re-review ses_048cf00b8ffeDWfFtNIhzs9FH2
+      recorded_at: 2026-07-31 10:29
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - qgqlxqhlhd
+  superseded_reason: Replacement exposed schema-owned plan-create accepted forms and earned independent PASS.

@@ -261,6 +261,102 @@ describe("npm distribution boundary", () => {
       .toMatch(`${path.sep}package${path.sep}dist${path.sep}bin${path.sep}agentera.js`);
   });
 
+  it("normalizes only valid atomic-create dependency ordinal forms in the installed package", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const bundledSchemaPath = path.join(fixture.packageRoot, "bundle/skills/agentera/schemas/artifacts/plan.yaml");
+    const sourceSchemaPath = path.join(CHECKOUT_ROOT, "skills/agentera/schemas/artifacts/plan.yaml");
+    expect(fs.readFileSync(bundledSchemaPath)).toEqual(fs.readFileSync(sourceSchemaPath));
+    const dependencyField = YAML.parse(fs.readFileSync(bundledSchemaPath, "utf8")).TASK[3];
+    expect(dependencyField).toMatchObject({
+      type: "list[integer|string]",
+      accepted_forms: {
+        atomic_plan_create: ["positive_integer", "canonical_numeric_string"],
+        legacy_migration_only: ["legacy_task_reference_string"],
+      },
+    });
+    const expectedDiscovery = {
+      id: "PT17",
+      group: "TASK",
+      field: "depends_on",
+      path: "tasks[].depends_on",
+      type: "list[integer|string]",
+      required: false,
+      format: null,
+      validation: [
+        "positive_integer_or_canonical_numeric_string",
+        "unique_after_normalization_within_task",
+        "resolves_to_declared_task_ordinal_in_same_atomic_document",
+      ],
+      accepted_forms: {
+        atomic_plan_create: ["positive_integer", "canonical_numeric_string"],
+        legacy_migration_only: ["legacy_task_reference_string"],
+      },
+      normalization: "canonical_numeric_string_before_same_document_resolution",
+      write_operations: ["create"],
+    };
+    for (const format of ["json", "yaml"] as const) {
+      const schemaResult = run(process.execPath, [bin, "schema", "--format", format], fixture.root, isolatedPackageEnv());
+      expect(schemaResult.status, schemaResult.stderr).toBe(0);
+      const schemaPayload = format === "json" ? JSON.parse(schemaResult.stdout) : YAML.parse(schemaResult.stdout);
+      const planSchema = schemaPayload.artifact_schemas.find((artifact: any) => artifact.name === "plan");
+      expect(planSchema.fields.find((field: any) => field.id === "PT17")).toEqual(expectedDiscovery);
+    }
+    const explainResult = run(process.execPath, [bin, "state", "plan", "explain", "--verb", "create", "--format", "json"], fixture.root, isolatedPackageEnv());
+    expect(explainResult.status, explainResult.stderr).toBe(0);
+    expect(JSON.parse(explainResult.stdout).input_schema.artifact_schema_fields).toEqual([expectedDiscovery]);
+    expect(Buffer.byteLength(explainResult.stdout, "utf8")).toBeLessThan(32_768);
+    const planInput = (title: string, dependsOn: unknown[]) => JSON.stringify({
+      header: { level: "light", created: "2026-07-31", status: "open", title },
+      what: "Verify installed atomic plan creation.",
+      why: "The package must match source ordinal behavior.",
+      scope: { included: ["plan create"], excluded: ["migration"] },
+      tasks: [
+        { number: 1, name: "First", status: "pending", depends_on: [], acceptance: ["First is canonical"] },
+        { number: 2, name: "Second", status: "pending", depends_on: dependsOn, acceptance: ["Second references First"] },
+      ],
+    });
+    const makeProject = (name: string) => {
+      const project = path.join(fixture.root, `plan-create-${name}`);
+      fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+      fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      return project;
+    };
+    const validProjects: string[] = [];
+    for (const [name, dependsOn] of [["integer", [1]], ["numeric-string", ["1"]]] as const) {
+      const project = makeProject(name);
+      validProjects.push(project);
+      const result = run(process.execPath, [bin, "state", "plan", "create", "--input", "-", "--format", "json"], project, isolatedPackageEnv(), planInput(name, [...dependsOn]));
+      expect(result.status, result.stdout + result.stderr).toBe(0);
+      const created = JSON.parse(result.stdout);
+      expect(created.tasks[1].record.depends_on).toEqual([created.tasks[0].id]);
+      expect(created.tasks.every((task: any) => /^[a-z]{10}$/.test(task.id) && task.record.number === undefined)).toBe(true);
+      expect(entityEnvelopes(project).every((entity) => entity.record.number === undefined)).toBe(true);
+    }
+    for (const [name, dependsOn] of [
+      ["zero", [0]], ["negative", [-1]], ["fractional", [1.5]], ["nonnumeric", ["one"]],
+      ["noncanonical", ["01"]], ["missing", [3]], ["duplicate", [1, "1"]], ["mixed-unresolved", [1, "3"]],
+    ] as Array<[string, unknown[]]>) {
+      const project = makeProject(`invalid-${name}`);
+      const result = run(process.execPath, [bin, "state", "plan", "create", "--input", "-", "--format", "json"], project, isolatedPackageEnv(), planInput(name, dependsOn));
+      expect(result.status, `${name} unexpectedly passed: ${result.stdout}`).not.toBe(0);
+      expect(JSON.parse(result.stdout).error.class).toBe("schema_violation");
+      expect(fs.readdirSync(path.join(project, ".agentera"))).toEqual(["state-mode.yaml"]);
+    }
+    const project = validProjects[0];
+    const entities = entityEnvelopes(project);
+    const planEntity = entities.find((entity) => !entity.record.plan)!;
+    const task = entities.find((entity) => entity.record.plan === planEntity.id)!;
+    for (const [verb, args, input] of [
+      ["append", ["--plan", planEntity.id], { name: "Integer alias", depends_on: [1], acceptance: [] }],
+      ["update", ["--plan", planEntity.id, "--id", task.id], { depends_on: [1] }],
+    ] as const) {
+      const result = run(process.execPath, [bin, "state", "plan", verb, ...args, "--input", "-", "--format", "json"], project, isolatedPackageEnv(), JSON.stringify(input));
+      expect(result.status).not.toBe(0);
+      expect(JSON.parse(result.stdout).error.class).toBe("schema_violation");
+    }
+    expect(entityEnvelopes(project)).toEqual(entities);
+  });
+
   it("constructs one self-contained CLI and shared-skill package inventory", () => {
     const files = new Set(fixture.manifest.files.map((entry) => entry.path));
     for (const required of [
