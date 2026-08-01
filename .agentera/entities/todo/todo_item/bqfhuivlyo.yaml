@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[docs:3.0.0] Audit and review ⛶ audit capability instructions from the ground up. Prose lives in..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[docs:3.0.0] Audit and review ⛶ audit capability instructions from the ground up. Prose lives in..."
+      status: resolved
+      order: 58
+      severity: normal

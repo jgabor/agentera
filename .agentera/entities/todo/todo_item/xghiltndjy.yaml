@@ -13,3 +13,11 @@ record:
     gate: null
     queue_rank: 20
     order_reason: Resolve the concrete user-facing handoff friction after publication parsing and before the broader activation-conjunction gate.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep initial status orientation informational until the user expresses execution intent. Render `next_action` and wait for free-form acceptance; do not open a native Proceed/Cancel question merely because the suggestion is state-changing. After explicit acceptance, apply the ordinary confirmation boundary before dispatch. Add host-contract regressions for bare status, explicit build requests, accepted suggestions, cancellation, and autonomous orchestration."
+      severity: degraded
+      status: open
+      order: 2

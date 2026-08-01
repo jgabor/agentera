@@ -4,3 +4,11 @@ record:
   severity: critical
   status: open
   description: "[fix:3.0.0] Make `agentera route request --input - --format json` self-describing after `semantic_required`. Return or reference the exact `agentera.route_receipt.v1` nullable schema, valid outcomes, nullability, compound and span rules, and one runnable stdin example. `agentera route receipt --help` must expose the same contract so hosts never inspect `hybridRouteReceipt.ts` or `hybrid-route-contract.yaml` to proceed."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make `agentera route request --input - --format json` self-describing after `semantic_required`. Return or reference the exact `agentera.route_receipt.v1` nullable schema, valid outcomes, nullability, compound and span rules, and one runnable stdin example. `agentera route receipt --help` must expose the same contract so hosts never inspect `hybridRouteReceipt.ts` or `hybrid-route-contract.yaml` to proceed."
+      severity: critical
+      status: open
+      order: 14

@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] `extractCorpusParity.test.ts` flaked on its 30000ms `testTimeout`; a single `it` ran both the TypeScript and..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] `extractCorpusParity.test.ts` flaked on its 30000ms `testTimeout`; a single `it` ran both the TypeScript and..."
+      status: resolved
+      order: 69
+      severity: normal

@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 5
     order_reason: Prevent new valid-but-unrepairable evaluator state before remaining lower-severity work and stable release; preserve the narrow recovery for already-persisted cases.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

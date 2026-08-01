@@ -1,0 +1,15 @@
+id: rigtlbaiiu
+artifact: progress
+record:
+  timestamp: 2026-08-02 00:18
+  type: fix
+  phase: build
+  what: Bind interrupted TODO create recovery to the original normalized request and assigned ID.
+  context:
+    intent: Address only the accepted hoxdtgwytq-audit-1 interrupted-create replay defect.
+    constraints: Preserve the simplified publication contract, protected staged M1 index, prior progress, predecessor evaluations, and all non-create reconciliation behavior. Keep hoxdtgwytq pending and frpdshynmd open; do not complete, evaluate, supersede, commit, publish, or implement downstream batch composition.
+    scope: Create receipt binding, recovery replay selection, create interruption regressions, authority parity, and proportional verification.
+  discovered: The pending journal bound target bytes but did not identify the canonical create request or original created ID. Recovery therefore completed the original create, re-entered ordinary create allocation, and could publish a duplicate entity and Markdown row.
+  verified: Focused TODO and authority verification passed 51 tests. Create interruption boundaries 0, 1, 2, and 3 each covered exactly the new entity, activation marker, and TODO.md targets; exact retry returned aaaaaaaaaa with idempotent_replay true, zero new targets, no bbbbbbbbbb allocation, one entity, one Markdown row, and no journal or recovery residue. A divergent request at boundary 1 returned a structured conflict with byte-for-byte state unchanged, after which the exact request recovered. A pre-receipt journal also derived and returned its original ID. Full source verification passed 224 files with 3112 tests passed and 1 skipped; typecheck, local build, 2042-entity state validation, compact, capability-contract, 19 package tests, package dry-run, and diff checks passed.
+  next: Request independent retry Audit of hoxdtgwytq. Keep hoxdtgwytq pending with hoxdtgwytq-audit-1 intact, both predecessors blocked, and frpdshynmd open until PASS.
+  publication_order: 34

@@ -517,6 +517,16 @@ entity_target:
         schema_version: agentera.todoReconciliation.v1
         public_fields: [description, severity, status, order]
         transaction_journal: .agentera/.todo-reconciliation/<content-digest>.json
+        create_recovery_receipt:
+          applicability: create_transactions_only
+          created_id: original_writer_assigned_ten_letter_id
+          request_sha256: sha256_of_domain_separated_canonical_normalized_create_record
+          transaction_identity: canonical_create_receipt_and_targets
+          retry: >-
+            Before applying a pending create journal, require the retry's normalized
+            request digest to match. Exact retry recovers and returns the original ID
+            as an idempotent replay without allocation; a different request rejects
+            before target effects and leaves the journal intact.
         activation:
           path: .agentera/todo-reconciliation-activation.json
           schema_version: agentera.todoReconciliationActivation.v1
@@ -557,9 +567,13 @@ entity_target:
           Every TODO mutation compares TODO.md and the entity against the last
           public baseline, imports one-sided Markdown edits, projects one-sided
           entity edits, applies the requested mutation, and publishes all
-          changed targets under one recoverable journal. Divergent edits, duplicate
-          or orphaned IDs, and removal of an unchecked row reject before
-          effects. One bounded activation transaction admits exact legacy state
+          changed targets under one recoverable journal. Interrupted create retry
+          is bound to its canonical normalized request and original created ID;
+          exact retry returns that ID without allocating another entity, while a
+          different request rejects before recovery effects. Missing post-activation
+          baselines, divergent edits, duplicate or orphaned IDs, and removal of an
+          unchecked row reject before effects. One bounded activation
+          transaction admits exact legacy state
           without treating retained unmatched rows as managed. The durable
           journal is the Agentera-visible commit barrier:
           while it exists, TODO reads and startup reject rather than expose mixed

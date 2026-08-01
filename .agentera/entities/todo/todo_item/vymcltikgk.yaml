@@ -4,3 +4,7 @@ record:
   severity: normal
   status: resolved
   description: "[feat:3.0.0] Mobile package publish identity no longer applies. Resolved 2026-07-21: the package was removed."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

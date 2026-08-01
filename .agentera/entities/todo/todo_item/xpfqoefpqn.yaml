@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[docs:3.0.0] Update root README.md for v3. Resolved 2026-07-12: README, CLI README, upgrade guide, web lifecycle..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[docs:3.0.0] Update root README.md for v3. Resolved 2026-07-12: README, CLI README, upgrade guide, web lifecycle..."
+      status: resolved
+      order: 48
+      severity: normal

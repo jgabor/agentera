@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[release:3.0.0] Prepare the final 3.0.0 release surfaces. Resolved 2026-07-12: tracked package and runtime manifests, skill,..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[release:3.0.0] Prepare the final 3.0.0 release surfaces. Resolved 2026-07-12: tracked package and runtime manifests, skill,..."
+      status: resolved
+      order: 49
+      severity: normal

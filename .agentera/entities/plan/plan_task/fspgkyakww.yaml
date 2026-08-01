@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M3 replacement · Complete crash-safe TODO reconciliation (frpdshynmd)
-  status: blocked
+  status: superseded
   depends_on:
     - qllgiterft
     - qgqlxqhlhd
@@ -25,3 +25,6 @@ record:
       recorded_at: 2026-07-31 17:33
       writer_command: agentera state plan record-evaluation
   blocked_reason: "Blocked after two evaluations. Rollback, operational exchange, and activation ambiguity are corrected, but completion requires a user decision: approve fs-native-extensions plus a documented Linux-only mutation contract, or require cross-platform safe publication. Read-only validation and criterion-specific evidence also remain."
+  superseded_by:
+    - hoxdtgwytq
+  superseded_reason: Audited replacement completed the simplified recoverable TODO reconciliation contract.

@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 1
     order_reason: This evidence gap blocks source conjunction and constructed-package verification.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

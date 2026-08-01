@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 1
     order_reason: This is the sole blocker for producer readiness and downstream version metadata.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

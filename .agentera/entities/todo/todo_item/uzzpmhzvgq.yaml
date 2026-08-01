@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] `cliDistributionMajor` defaults to 2 when version is missing. Resolved 2026-07-08: replaced the terminal `return..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] `cliDistributionMajor` defaults to 2 when version is missing. Resolved 2026-07-08: replaced the terminal `return..."
+      status: resolved
+      order: 64
+      severity: normal

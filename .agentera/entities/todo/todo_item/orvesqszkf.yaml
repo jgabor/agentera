@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 10
     order_reason: Repair publication convergence before broader contract-gate work; critical bootstrap and startup fixes remain severity-first.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

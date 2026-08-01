@@ -14,3 +14,11 @@ record:
     gate: null
     queue_rank: 25
     order_reason: Apply the inventory classification to the largest known legacy reference as a separate lane after its retention rules are fixed.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Retire `skills/agentera/references/contract.md` under the retained-reference inventory owned by TODO `ezkdeggmgm`. Classify its 79KB and 1,048 lines against production owners and consumers; delete duplicated and stale v2 sections, migrate only demonstrably current unique contracts into their owning `references/cli/` or artifact authority, remove the remaining capability boilerplate pointers, and delete the file when empty. A test import, bundle inclusion, archived decision, or source comment is not retention evidence."
+      severity: critical
+      status: open
+      order: 6

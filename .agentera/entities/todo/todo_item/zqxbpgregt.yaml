@@ -4,3 +4,7 @@ record:
   severity: critical
   status: resolved
   description: "[fix:3.0.0] Make `agentera prime --context build --format json` ready for explicit no-plan work. It reported `mode: no_plan` but `complete_for_execution_context: false`, then prescribed `agentera state plan --format json`, which failed `not_found`. Represent no open plan as valid `no_plan`, accept user-scoped acceptance, and avoid non-advancing fallback loops."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

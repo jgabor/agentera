@@ -6,7 +6,7 @@ record:
     - qllgiterft
     - qgqlxqhlhd
     - oeprigteku
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN a stable baseline and requested TODO mutation WHEN reconciliation runs THEN Markdown imports, entity projections, and the mutation publish together or none do.
     - GIVEN a stale baseline, divergent public fields, duplicate or missing IDs, or unchecked removal WHEN attempted THEN rejection occurs before effects with one bounded correction.
@@ -24,3 +24,6 @@ record:
       recorded_at: 2026-07-31 14:33
       writer_command: agentera state plan record-evaluation
   blocked_reason: "Blocked after two independent Audit failures. Remaining: public TODO exact replacement can leave the mapped file absent after a hard kill; retained-role concurrent conflict lacks a structured bounded correction. Typed TODO failure logging is also blocked because current managed TODO.md rows lack required ten-letter IDs; direct bypass is prohibited."
+  superseded_by:
+    - hoxdtgwytq
+  superseded_reason: Audited replacement completed the recoverable TODO reconciliation contract.

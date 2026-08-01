@@ -14,3 +14,11 @@ record:
     gate: null
     queue_rank: 80
     order_reason: Implement managed-row reconciliation after TODO frpdshynmd supplies the atomic publication and recovery seam.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass."
+      severity: critical
+      status: open
+      order: 1

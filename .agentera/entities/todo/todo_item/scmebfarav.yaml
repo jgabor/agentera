@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: '~~[fix:3.0.0] Independently audit the bounded-retrieval alias-parity repair. Resolved 2026-07-15: schema, help, prime contexts, and structured runtime output no longer advertise retired `gate`; Build uses `agentera check compact`; canonical and transitional compaction report `command: "check compact"`; retired `gate` returns a structured runnable correction; exhaustive alias parity and independent audit passed while Cycles 814–816 remained immutable.~~'
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: '~~[fix:3.0.0] Independently audit the bounded-retrieval alias-parity repair. Resolved 2026-07-15: schema, help, prime contexts, and structured runtime output no longer advertise retired `gate`; Build uses `agentera check compact`; canonical and transitional compaction report `command: "check compact"`; retired `gate` returns a structured runnable correction; exhaustive alias parity and independent audit passed while Cycles 814–816 remained immutable.~~'
+      status: resolved
+      order: 32
+      severity: normal

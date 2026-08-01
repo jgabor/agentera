@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[docs:3.0.0] Reconcile bundled SKILL.md with the v3 TypeScript CLI. Resolved 2026-07-11: stale TODO — source..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[docs:3.0.0] Reconcile bundled SKILL.md with the v3 TypeScript CLI. Resolved 2026-07-11: stale TODO — source..."
+      status: resolved
+      order: 52
+      severity: normal

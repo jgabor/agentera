@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Doctor and prime health data sources are independent and can disagree. Resolved 2026-06-30: Decision..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Doctor and prime health data sources are independent and can disagree. Resolved 2026-06-30: Decision..."
+      status: resolved
+      order: 73
+      severity: normal

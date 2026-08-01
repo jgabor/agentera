@@ -154,7 +154,13 @@ describe("Decision 94 entity authority", () => {
           schema_version: "agentera.todoReconciliationActivation.v1",
           initial_match: "exact_unique_public_fields_only",
         },
+        create_recovery_receipt: {
+          applicability: "create_transactions_only",
+          transaction_identity: "canonical_create_receipt_and_targets",
+          retry: expect.stringMatching(/normalized.*digest.*Exact retry.*original ID.*without allocation.*different request.*before target effects/s),
+        },
         public_replacement: expect.stringMatching(/standard Node filesystem operations.*complete old or new bytes.*not a global multi-file atomic snapshot.*validation boundary.*rolls back every attempted target/s),
+        semantics: expect.stringMatching(/Interrupted create retry.*original created ID.*without allocating another entity.*Missing post-activation baselines.*reject before effects/s),
         bounds: { managed_items: 256, retained_pre_activation_legacy_rows: 256, transaction_targets: 258, activation_utf8_bytes: 32768 },
       },
       retrieval: { exact: "agentera state todo get --id ID --format json", ordering: "severity_then_status_then_id" },

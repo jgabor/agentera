@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "~~[test:3.0.0] Repair blocked bounded-retrieval Plan Task 4 after two failed evaluations. Resolved 2026-07-15: committed deterministic retrieval evidence serializes to 30,407 YAML bytes with stable SHA-256 `059edafd…de75`, verifies list/get identity, lifecycle, omission, cursor, recovery, and compatibility behavior, and uses only a live `<32768` assertion. Independent audit passed; Cycle 803 remains immutable.~~"
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "~~[test:3.0.0] Repair blocked bounded-retrieval Plan Task 4 after two failed evaluations. Resolved 2026-07-15: committed deterministic retrieval evidence serializes to 30,407 YAML bytes with stable SHA-256 `059edafd…de75`, verifies list/get identity, lifecycle, omission, cursor, recovery, and compatibility behavior, and uses only a live `<32768` assertion. Independent audit passed; Cycle 803 remains immutable.~~"
+      status: resolved
+      order: 34
+      severity: normal

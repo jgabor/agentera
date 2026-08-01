@@ -18,3 +18,11 @@ record:
     gate: null
     queue_rank: 40
     order_reason: Unify reads after focused bounds, help, and TODO reconciliation establish their exact contracts.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map."
+      severity: critical
+      status: open
+      order: 4

@@ -4,3 +4,11 @@ record:
   severity: critical
   status: open
   description: "[fix:3.0.0] Generate artifact-specific `state ... list --help` from the retrieval authority. Help currently omits supported filters and forces source inspection. Show each family's exact filters, summary fields, bounds, formats, and runnable examples; for TODOs include `--severity`, `--status`, `--queue-rank`, `--ids-only`, and `--fields`. Test help, schema, and runtime parity so unsupported selectors fail with the valid vocabulary and one working correction."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Generate artifact-specific `state ... list --help` from the retrieval authority. Help currently omits supported filters and forces source inspection. Show each family's exact filters, summary fields, bounds, formats, and runnable examples; for TODOs include `--severity`, `--status`, `--queue-rank`, `--ids-only`, and `--fields`. Test help, schema, and runtime parity so unsupported selectors fail with the valid vocabulary and one working correction."
+      severity: critical
+      status: open
+      order: 3

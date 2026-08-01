@@ -4,3 +4,7 @@ record:
   severity: degraded
   status: resolved
   description: "[fix:3.0.0] Replace Number-based development prerelease ordering in the package publication transaction. Distinct npm-valid dev identifiers above Number.MAX_SAFE_INTEGER can compare equal, allowing an advanced @next tag to bypass conflict detection and reach publish. Preserve exact semver precedence without precision loss and add both boundary and regression coverage. This blocked Plan kedmyhqqtb Task zcobvxqwmc after two failed evaluations."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

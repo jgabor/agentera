@@ -4,3 +4,7 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Resolved 2026-07-22: Valid v2.7.11 compacted progress, decision, and health summaries now migrate as source-bound immutable degraded entities, preserve inherited confidence during migration, use ordinary immutable readers and startup, report root/dependent diagnostics, and pass the Git-backed lifecycle proof. Read-only KTX preview reports 249 identities and 248 targets because of a pre-existing Decision 25 conflict; KTX was not migrated and its conflict remains owner work."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

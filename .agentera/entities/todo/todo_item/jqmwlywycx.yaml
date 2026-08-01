@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[docs:3.0.0] Backfill the D82 schema-validator rule to status (D79) and vision (D81). Resolved 2026-07-09: scrubbed..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[docs:3.0.0] Backfill the D82 schema-validator rule to status (D79) and vision (D81). Resolved 2026-07-09: scrubbed..."
+      status: resolved
+      order: 63
+      severity: normal

@@ -33,7 +33,7 @@ import { todoReadinessReferenceViolations } from "../registries/todoReadinessCon
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { artifactSchemasDir, loadArtifactRecord, registryModelPath, resolveArtifactPath } from "../registries/artifactRegistry.js";
-import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, type TodoReconciliationBinding, type TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
+import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, todoCreateRequestSha256, type TodoReconciliationBinding, type TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
 import {
   loadTodoReconciliationActivation,
   todoLegacyRowFingerprint,
@@ -456,12 +456,11 @@ function reconcileTodoRecords(
         if (row || current.status === "open") visible.add(id);
         continue;
       }
-      if (!row || !samePublic(publicSnapshot(current), rowSnapshot(row, current), false)) reject({
+      reject({
         class: "conflict",
         message: `TODO '${id}' has no stable reconciliation baseline`,
-        recovery: `Make the managed TODO.md row '${id}' exactly match its canonical public description, severity, and checkbox, then retry once; no state was changed.`,
+        recovery: `Restore TODO '${id}' with its last committed reconciliation baseline, or restore the pre-activation state and remove the activation marker, then retry once; no state was changed.`,
       });
-      records.set(id, current); visible.add(id); continue;
     }
     if (!row) {
       if (prior.present && prior.status === "open") reject({
@@ -502,12 +501,28 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const todoBinding = artifact === "todo" ? todoReconciliationBinding(req.projectRoot, sourceRoot) : null;
     const pending = todoBinding ? inspectTodoReconciliation(pinnedRoot, todoBinding) : [];
     if (req.dryRun && pending.length) reject({ class: "conflict", message: `TODO reconciliation transaction '${pending[0]}' requires recovery before dry-run`, recovery: "Retry the exact TODO mutation without --dry-run once to complete recovery; this dry-run changed no state." });
-    const recovered = todoBinding && !req.dryRun ? recoverTodoReconciliation(context, sourceRoot, todoBinding, () => assertState(pinnedRoot, sourceRoot, sourceBinding)) : [];
+    const createRequest = artifact === "todo" && req.spec.verb === "create" ? mutationRecord(req, undefined) : null;
+    const createRequestSha256 = createRequest ? todoCreateRequestSha256(createRequest) : undefined;
+    const recoveryReceipts = todoBinding && !req.dryRun
+      ? recoverTodoReconciliation(context, sourceRoot, todoBinding, {
+          createRequestSha256,
+          beforeCommit: () => assertState(pinnedRoot, sourceRoot, sourceBinding),
+        })
+      : [];
+    const recovered = recoveryReceipts.map(({ transaction_id }) => transaction_id);
     assertState(pinnedRoot, sourceRoot, sourceBinding);
     context.assertValid();
     const entities = relevant(pinnedRoot, sourceRoot, artifact, undefined, sourceBinding);
     context.assertValid();
     if (artifact === "todo") {
+      const recoveredCreate = recoveryReceipts.find((receipt) => receipt.create);
+      if (recoveredCreate?.create) {
+        const created = selectedById(entities, "todo", recoveredCreate.create.created_id);
+        return {
+          ...envelope("state todo create", { id: created.id!, path: created.path, replay: true }, "todo", created.record!, false),
+          reconciliation: { transaction_id: recoveredCreate.transaction_id, targets: 0, recovered },
+        };
+      }
       const publicFile = todoPublicPath(pinnedRoot, sourceRoot);
       const publicRelative = todoBinding!.publicPath;
       const publicExists = fs.existsSync(publicFile);
@@ -527,7 +542,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
           if (inputViolations.length) reject({ class: "schema_violation", message: "todo create input is invalid", violations: inputViolations, recovery: todoReadinessRecovery(req.spec.verb) });
         }
         id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot);
-        requested = mutationRecord(req, undefined, todoEntities);
+        requested = createRequest!;
         reconciled.records.set(id, requested); reconciled.visible.add(id);
       } else {
         id = String(req.values.id ?? "");
@@ -563,22 +578,26 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
       targets.push({ path: publicRelative, before: publicExists ? markdownBefore : null, after: rendered });
       const changed = targets.some((target) => target.before === null || !target.before.equals(Buffer.from(target.after)));
       if (req.dryRun) return { ...envelope(`state todo ${req.spec.verb}`, { id, path: targetPath(req.projectRoot, sourceRoot, "todo", id), replay: !changed }, "todo", requested, true), reconciliation: { transaction_id: null, targets: targets.length, recovered } };
-      const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, options.interruptAfterTarget, () => {
-        assertState(pinnedRoot, sourceRoot, sourceBinding);
-        const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot);
-        if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({
-          class: "conflict",
-          message: "TODO reconciliation mapping changed during transaction publication",
-          recovery: "Preserve the changed docs mapping and retry the exact TODO mutation after every transaction target is restored; no mapping bytes were overwritten.",
-        });
-        const currentActivation = fs.existsSync(path.join(pinnedRoot, TODO_RECONCILIATION_ACTIVATION_PATH))
-          ? fs.readFileSync(path.join(pinnedRoot, TODO_RECONCILIATION_ACTIVATION_PATH))
-          : null;
-        if (!currentActivation?.equals(Buffer.from(activationBytesAfter))) reject({
-          class: "conflict",
-          message: "TODO reconciliation activation changed during transaction publication",
-          recovery: `Preserve '${TODO_RECONCILIATION_ACTIVATION_PATH}' and retry the exact TODO mutation after every transaction target is restored; no competing activation bytes were overwritten.`,
-        });
+      const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, {
+        ...(req.spec.verb === "create" ? { create: { created_id: id, request_sha256: createRequestSha256! } } : {}),
+        interruptAfterTarget: options.interruptAfterTarget,
+        beforeCommit: () => {
+          assertState(pinnedRoot, sourceRoot, sourceBinding);
+          const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot);
+          if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({
+            class: "conflict",
+            message: "TODO reconciliation mapping changed during transaction publication",
+            recovery: "Preserve the changed docs mapping and retry the exact TODO mutation after every transaction target is restored; no mapping bytes were overwritten.",
+          });
+          const currentActivation = fs.existsSync(path.join(pinnedRoot, TODO_RECONCILIATION_ACTIVATION_PATH))
+            ? fs.readFileSync(path.join(pinnedRoot, TODO_RECONCILIATION_ACTIVATION_PATH))
+            : null;
+          if (!currentActivation?.equals(Buffer.from(activationBytesAfter))) reject({
+            class: "conflict",
+            message: "TODO reconciliation activation changed during transaction publication",
+            recovery: `Preserve '${TODO_RECONCILIATION_ACTIVATION_PATH}' and retry the exact TODO mutation after every transaction target is restored; no competing activation bytes were overwritten.`,
+          });
+        },
       });
       context.assertValid();
       return { ...envelope(`state todo ${req.spec.verb}`, { id, path: targetPath(req.projectRoot, sourceRoot, "todo", id), replay: !changed && recovered.length === 0 }, "todo", requested, false), reconciliation: { transaction_id: transaction.id, targets: transaction.targetCount, recovered } };

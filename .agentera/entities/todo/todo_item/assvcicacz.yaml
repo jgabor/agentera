@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Tune trigger patterns and thresholds so common natural-language inputs route correctly under the scoring..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Tune trigger patterns and thresholds so common natural-language inputs route correctly under the scoring..."
+      status: resolved
+      order: 75
+      severity: normal

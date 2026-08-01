@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Reconcile the canonical OpenCode/shared skill topology. Resolved 2026-07-12: the lifecycle authority makes `~/.agents/skills/agentera` canonical..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Reconcile the canonical OpenCode/shared skill topology. Resolved 2026-07-12: the lifecycle authority makes `~/.agents/skills/agentera` canonical..."
+      status: resolved
+      order: 47
+      severity: normal

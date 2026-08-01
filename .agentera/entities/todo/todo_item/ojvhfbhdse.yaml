@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[feat:3.0.0] Add `statusline` command to show data such as current plan status, health, etc. that can be used by runtimes, similar to `https://github.com/ryoppippi/ccusage`, `https://github.com/avinashbest/cli-status-bar`, and `https://cursor.com/changelog/04-14-26`"
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add `statusline` command to show data such as current plan status, health, etc. that can be used by runtimes, similar to `https://github.com/ryoppippi/ccusage`, `https://github.com/avinashbest/cli-status-bar`, and `https://cursor.com/changelog/04-14-26`"
+      severity: normal
+      status: open
+      order: 8

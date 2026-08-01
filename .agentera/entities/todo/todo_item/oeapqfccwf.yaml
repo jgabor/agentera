@@ -18,3 +18,7 @@ record:
     operation: resolve
     reason: Structured YAML/JSON file-or-stdin inputs now drive progress append, decision append, and decision amend; satisfaction remains flag-only, owned and retired fields reject before effects, and replay, dry-run, amendment preconditions, publication order, schema, explain, help, skills, package projection, and regressions are synchronized. Focused/source/package tests, typecheck, build, state validation, compaction, capability contracts, and independent audit passed.
     date: 2026-07-31
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

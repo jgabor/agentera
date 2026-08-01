@@ -2,8 +2,8 @@ id: frpdshynmd
 artifact: todo
 record:
   severity: critical
-  status: open
-  description: "[fix:3.0.0] Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
+  status: resolved
+  description: "[fix:3.0.0] **NEXT** Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
   readiness:
     capability: build
     reason: Decision kpybrsfywb requires reconciliation and the requested Agentera TODO mutation to publish atomically without depending on broader batch ergonomics.
@@ -14,3 +14,15 @@ record:
     gate: null
     queue_rank: 75
     order_reason: Implement after the typed TODO contract and before repository reconciliation; general batch apply can reuse this primitive later.
+  lifecycle:
+    operation: resolve
+    reason: Audited recoverable reconciliation shipped
+    date: 2026-08-02
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] **NEXT** Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
+      status: resolved
+      order: 76
+      severity: critical

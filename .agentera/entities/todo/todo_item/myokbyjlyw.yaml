@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Provide deterministic plan lifecycle migration. Resolved 2026-07-12: `agentera upgrade --only artifacts --dry-run|--yes` migrates legacy..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Provide deterministic plan lifecycle migration. Resolved 2026-07-12: `agentera upgrade --only artifacts --dry-run|--yes` migrates legacy..."
+      status: resolved
+      order: 45
+      severity: normal

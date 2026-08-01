@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[feat:3.0.0] Add progress cycles tracking to more capabilities, not just `build`."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add progress cycles tracking to more capabilities, not just `build`."
+      severity: normal
+      status: open
+      order: 6

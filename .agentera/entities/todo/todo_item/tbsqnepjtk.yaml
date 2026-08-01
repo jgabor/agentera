@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: ~~[refactor:3.0.0] Superseded 2026-07-25 by TODO rsplcfvosn, which consolidates structured attention into the sole bounded status dashboard contract.~~
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: ~~[refactor:3.0.0] Superseded 2026-07-25 by TODO rsplcfvosn, which consolidates structured attention into the sole bounded status dashboard contract.~~
+      status: resolved
+      order: 15
+      severity: normal

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { entityExactGetMaxBytes } from "./entityStorage.js";
 import {
@@ -36,6 +37,28 @@ export interface TodoReconciliationBinding {
   mappingSha256: string;
 }
 
+export interface TodoReconciliationCreateReceipt {
+  created_id: string;
+  request_sha256: string;
+}
+
+export interface TodoReconciliationRecoveryReceipt {
+  transaction_id: string;
+  target_count: number;
+  create?: TodoReconciliationCreateReceipt;
+}
+
+export interface TodoReconciliationRecoveryOptions {
+  createRequestSha256?: string;
+  beforeCommit?: () => void;
+}
+
+export interface TodoReconciliationPublicationOptions {
+  create?: TodoReconciliationCreateReceipt;
+  interruptAfterTarget?: number;
+  beforeCommit?: () => void;
+}
+
 interface JournalTarget {
   path: string;
   before: string | null;
@@ -47,6 +70,7 @@ interface Journal {
   id: string;
   public_path: string;
   mapping_sha256: string;
+  create?: TodoReconciliationCreateReceipt;
   targets: JournalTarget[];
 }
 
@@ -81,6 +105,13 @@ function exactBase64(value: unknown): value is string {
   try { return encode(decode(value)) === value; } catch { return false; }
 }
 
+export function todoCreateRequestSha256(record: Record<string, unknown>): string {
+  return createHash("sha256")
+    .update("agentera.todoCreateRequest.v1\0")
+    .update(canonicalRecordJson(record))
+    .digest("hex");
+}
+
 function bytesAt(root: string, relative: string): Buffer | null {
   const target = path.join(root, relative);
   return fs.existsSync(target) ? fs.readFileSync(target) : null;
@@ -94,6 +125,23 @@ function validTarget(relative: string, publicPath: string): boolean {
   return relative === publicPath
     || relative === TODO_RECONCILIATION_ACTIVATION_PATH
     || /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(relative);
+}
+
+function createReceiptFromTargets(targets: JournalTarget[]): TodoReconciliationCreateReceipt | undefined {
+  const created = targets.filter((target) => target.before === null && /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(target.path));
+  if (!created.length) return undefined;
+  if (created.length !== 1) invalidJournal("TODO reconciliation journal has multiple immutable TODO entity targets");
+  const target = created[0]!;
+  const createdId = path.posix.basename(target.path, ".yaml");
+  let envelope: Record<string, unknown>;
+  try { envelope = loadYamlMapping(decode(target.after).toString("utf8")); }
+  catch { invalidJournal("TODO reconciliation journal has an invalid created entity envelope"); }
+  if (envelope.id !== createdId || envelope.artifact !== "todo" || !envelope.record || typeof envelope.record !== "object" || Array.isArray(envelope.record)) {
+    invalidJournal("TODO reconciliation journal create target does not match its canonical entity envelope");
+  }
+  const request = structuredClone(envelope.record as Record<string, unknown>);
+  delete request.reconciliation;
+  return { created_id: createdId, request_sha256: todoCreateRequestSha256(request) };
 }
 
 function invalidJournal(message: string): never {
@@ -111,8 +159,11 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   catch { invalidJournal("TODO reconciliation journal is not valid bounded UTF-8 JSON"); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) invalidJournal("TODO reconciliation journal is not a mapping");
   const value = parsed as Partial<Journal>;
+  const expectedKeys = value.create === undefined
+    ? "id,mapping_sha256,public_path,schema_version,targets"
+    : "create,id,mapping_sha256,public_path,schema_version,targets";
   if (
-    Object.keys(value).sort().join(",") !== "id,mapping_sha256,public_path,schema_version,targets"
+    Object.keys(value).sort().join(",") !== expectedKeys
     || value.schema_version !== VERSION
     || typeof value.id !== "string"
     || !/^[a-f0-9]{24}$/.test(value.id)
@@ -123,6 +174,16 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
     || value.targets.length < 1
     || value.targets.length > MAX_TARGETS
   ) invalidJournal("TODO reconciliation journal is malformed");
+  if (value.create !== undefined && (
+    !value.create
+    || typeof value.create !== "object"
+    || Array.isArray(value.create)
+    || Object.keys(value.create).sort().join(",") !== "created_id,request_sha256"
+    || typeof value.create.created_id !== "string"
+    || !/^[a-z]{10}$/.test(value.create.created_id)
+    || typeof value.create.request_sha256 !== "string"
+    || !/^[a-f0-9]{64}$/.test(value.create.request_sha256)
+  )) invalidJournal("TODO reconciliation journal has an invalid create receipt");
   const paths = new Set<string>();
   for (const target of value.targets) {
     if (
@@ -141,11 +202,19 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
     paths.add(target.path);
   }
   const body = value.targets as JournalTarget[];
-  const expectedId = createHash("sha256").update(canonicalRecordJson(body)).digest("hex").slice(0, 24);
+  const inferredCreate = createReceiptFromTargets(body);
+  if (value.create && (
+    !inferredCreate
+    || value.create.created_id !== inferredCreate.created_id
+    || value.create.request_sha256 !== inferredCreate.request_sha256
+  )) invalidJournal("TODO reconciliation create receipt does not match its canonical entity target");
+  const identity = value.create ? { create: value.create, targets: body } : body;
+  const expectedId = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (value.id !== expectedId || (fileName !== undefined && fileName !== `${value.id}.json`)) {
     invalidJournal("TODO reconciliation journal identity does not match its canonical targets");
   }
-  return value as Journal;
+  const create = value.create ?? inferredCreate;
+  return { ...value, ...(create ? { create } : {}) } as Journal;
 }
 
 function targetLimit(target: JournalTarget, sourceRoot: string): number {
@@ -448,29 +517,43 @@ export function inspectTodoReconciliation(root: string, binding: TodoReconciliat
   return names.map((name) => { const journal = parseJournal(fs.readFileSync(path.join(directory, name)), name); assertBinding(journal, binding); return journal.id; });
 }
 
-export function recoverTodoReconciliation(context: EntityPublicationContext, sourceRoot: string, binding: TodoReconciliationBinding, beforeCommit?: () => void): string[] {
+export function recoverTodoReconciliation(
+  context: EntityPublicationContext,
+  sourceRoot: string,
+  binding: TodoReconciliationBinding,
+  options: TodoReconciliationRecoveryOptions = {},
+): TodoReconciliationRecoveryReceipt[] {
   const root = context.pinnedPath();
   const directory = path.join(root, DIRECTORY);
   if (!fs.existsSync(directory)) return [];
   const names = fs.readdirSync(directory).filter((name) => name.endsWith(".json")).sort();
   if (names.length > 1) reject({ class: "conflict", message: "multiple pending TODO reconciliation journals exist", recovery: "Preserve the journals and reconcile them to one transaction before retrying; no state was changed." });
-  const recovered: string[] = [];
+  const recovered: TodoReconciliationRecoveryReceipt[] = [];
   for (const name of names) {
     const relative = `${DIRECTORY}/${name}`;
     const journalBytes = fs.readFileSync(path.join(root, relative));
     const journal = parseJournal(journalBytes, name);
     assertBinding(journal, binding);
+    if (journal.create && options.createRequestSha256 !== journal.create.request_sha256) reject({
+      class: "conflict",
+      message: `pending TODO create for '${journal.create.created_id}' does not match this request`,
+      recovery: `Retry the exact original TODO create input to recover '${journal.create.created_id}'; no transaction target bytes were changed.`,
+    });
     const applied: AppliedTarget[] = [];
     try {
       for (const target of journal.targets) {
         const identity = applyTarget(context, root, target, sourceRoot, journal.public_path);
         if (identity) applied.push({ target, identity });
       }
-      beforeCommit?.();
+      options.beforeCommit?.();
       context.assertValid();
       const journalIdentity = context.replaceExisting(relative, journalBytes, journalBytes.toString("utf8"), MAX_JOURNAL_BYTES).publishedIdentity;
       finishJournal(context, relative, journalIdentity);
-      recovered.push(journal.id);
+      recovered.push({
+        transaction_id: journal.id,
+        target_count: journal.targets.length,
+        ...(journal.create ? { create: journal.create } : {}),
+      });
     } catch (error) {
       const rollbackIssues = applied.length ? rollback(context, applied, sourceRoot, journal.public_path) : [];
       if (rollbackIssues.length) rejectIncompleteRollback(error, rollbackIssues);
@@ -487,14 +570,14 @@ export function publishTodoReconciliation(
   sourceRoot: string,
   binding: TodoReconciliationBinding,
   targets: TodoReconciliationTarget[],
-  interruptAfterTarget?: number,
-  beforeCommit?: () => void,
+  options: TodoReconciliationPublicationOptions = {},
 ): { id: string; targetCount: number } {
   const normalized = targets
     .filter((target) => !same(target.before, Buffer.from(target.after)))
     .sort((left, right) => Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath) || left.path.localeCompare(right.path));
   const body = normalized.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
-  const id = createHash("sha256").update(canonicalRecordJson(body)).digest("hex").slice(0, 24);
+  const identity = options.create ? { create: options.create, targets: body } : body;
+  const id = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (!normalized.length) return { id, targetCount: 0 };
   if (
     body.length > MAX_TARGETS
@@ -516,7 +599,14 @@ export function publishTodoReconciliation(
       recovery: "Map TODO.md to a regular file on the project-state filesystem, then retry the exact mutation; no journal or target bytes were changed.",
     });
   }
-  const journal: Journal = { schema_version: VERSION, id, public_path: binding.publicPath, mapping_sha256: binding.mappingSha256, targets: body };
+  const journal: Journal = {
+    schema_version: VERSION,
+    id,
+    public_path: binding.publicPath,
+    mapping_sha256: binding.mappingSha256,
+    ...(options.create ? { create: options.create } : {}),
+    targets: body,
+  };
   const bytes = `${JSON.stringify(journal)}\n`;
   if (Buffer.byteLength(bytes) > MAX_JOURNAL_BYTES) reject({ class: "schema_violation", message: "TODO reconciliation transaction exceeds its byte bound", recovery: "Reduce the managed TODO working set below the declared transaction bound and retry; no state was changed." });
   const relativeJournal = journalPath(id);
@@ -526,15 +616,15 @@ export function publishTodoReconciliation(
     message: `TODO reconciliation journal '${id}' already exists`,
     recovery: "Retry the exact non-dry-run TODO mutation once so the existing journal is inspected and recovered before another transaction is prepared; no target bytes were changed.",
   });
-  if (interruptAfterTarget === 0) throw new InjectedTodoReconciliationInterruption(0);
+  if (options.interruptAfterTarget === 0) throw new InjectedTodoReconciliationInterruption(0);
   const applied: AppliedTarget[] = [];
   try {
     for (const target of journal.targets) {
       const identity = applyTarget(context, context.pinnedPath(), target, sourceRoot, journal.public_path);
       if (identity) applied.push({ target, identity });
-      if (interruptAfterTarget === applied.length) throw new InjectedTodoReconciliationInterruption(applied.length);
+      if (options.interruptAfterTarget === applied.length) throw new InjectedTodoReconciliationInterruption(applied.length);
     }
-    beforeCommit?.();
+    options.beforeCommit?.();
     context.assertValid();
     finishJournal(context, relativeJournal, journalIdentity);
     return { id, targetCount: normalized.length };

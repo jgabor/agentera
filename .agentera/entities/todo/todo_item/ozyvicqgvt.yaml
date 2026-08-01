@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 1
     order_reason: Fix the last shared identity disagreement before Discuss, Plan, or Build consume glossary advice.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

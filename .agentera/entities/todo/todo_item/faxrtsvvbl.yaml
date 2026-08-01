@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "~~[chore:3.0.0] Superseded 2026-07-28 by TODOs `wwojgufooz` and `nolmwusfat`: the native OpenCode plugin is retired rather than maintained, so its `PROFILERA_PROFILE_DIR` fallback disappears with the whole resource.~~"
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "~~[chore:3.0.0] Superseded 2026-07-28 by TODOs `wwojgufooz` and `nolmwusfat`: the native OpenCode plugin is retired rather than maintained, so its `PROFILERA_PROFILE_DIR` fallback disappears with the whole resource.~~"
+      status: resolved
+      order: 13
+      severity: normal

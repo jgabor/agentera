@@ -18,3 +18,7 @@ record:
     operation: resolve
     reason: Structured plan-task records, bare-ID identity, create-local ordinal discovery, replay safety, and transition parity passed independent Audit.
     date: 2026-07-31
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

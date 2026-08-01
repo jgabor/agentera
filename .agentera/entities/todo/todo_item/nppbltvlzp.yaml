@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "~~[refactor:3.0.0] Replace the full-materialized `corpus.json` dump with tiered extraction. Resolved 2026-07-15: bounded evidence tiers (full-evidence shards + signal tier with evidence anchors) are the only canonical publication output; the monolithic `corpus.json` write is eliminated from the extract CLI. All consumers — usage analytics, report status, prime coverage, startup analysis, and profile synthesis — read from bounded tiers. Profile synthesis reads the signal tier and assesses per-family retention against the contract's `minimum_family_retention=0.5` threshold, resolving planning Unknown 2.~~"
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "~~[refactor:3.0.0] Replace the full-materialized `corpus.json` dump with tiered extraction. Resolved 2026-07-15: bounded evidence tiers (full-evidence shards + signal tier with evidence anchors) are the only canonical publication output; the monolithic `corpus.json` write is eliminated from the extract CLI. All consumers — usage analytics, report status, prime coverage, startup analysis, and profile synthesis — read from bounded tiers. Profile synthesis reads the signal tier and assesses per-family retention against the contract's `minimum_family_retention=0.5` threshold, resolving planning Unknown 2.~~"
+      status: resolved
+      order: 28
+      severity: normal

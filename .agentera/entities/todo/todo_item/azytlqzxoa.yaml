@@ -14,3 +14,7 @@ record:
     gate: null
     queue_rank: 2
     order_reason: Personal synthesis shipped first and remains repository-independent; consumer disambiguation follows both producers.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

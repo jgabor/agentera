@@ -4,3 +4,7 @@ record:
   severity: normal
   status: resolved
   description: "Task bvyxcfnuwl blocked after 2/2 audits: canonical skill identity scans the full Markdown body, so an unrelated skill with frontmatter name: unrelated and a body example containing name: agentera is falsely accepted. Restrict identity matching to YAML frontmatter and add the exact non-mutating regression before replanning."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

@@ -4,3 +4,11 @@ record:
   severity: degraded
   status: resolved
   description: "[fix:3.0.0] Make development and stable package publication one bounded, verified transaction. Load credentials through a temporary restricted npm configuration; report package identity, file count, sizes, integrity, and warnings by default while retaining full manifests behind explicit JSON or verbose output; publish; poll the exact version and expected dist-tag with bounded retries; and run an exact-version bootstrap smoke test before reporting success."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make development and stable package publication one bounded, verified transaction. Load credentials through a temporary restricted npm configuration; report package identity, file count, sizes, integrity, and warnings by default while retaining full manifests behind explicit JSON or verbose output; publish; poll the exact version and expected dist-tag with bounded retries; and run an exact-version bootstrap smoke test before reporting success."
+      status: resolved
+      order: 14
+      severity: degraded

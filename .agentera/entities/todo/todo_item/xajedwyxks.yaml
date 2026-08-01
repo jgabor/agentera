@@ -4,3 +4,7 @@ record:
   severity: degraded
   status: resolved
   description: "[fix:3.0.0] Blocked replacement task jnwgujivkt: the cross-boundary cold-process budget gate now has faithful peak sampling, all 11 entity boundaries, all relationship edges, synchronized authority, actionable upgrade recovery, and 2,529 passing source tests, but startup measures bare prime briefing output instead of the established full prime dashboard. Restore `prime --dashboard --format json`, apply the unchanged `prime_dashboard` limits, rerun five repetitions at both scales and the complete source suite, and add no new metric, framework, task, or compatibility path."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

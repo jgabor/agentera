@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Make plan next-task output dependency-aware. Resolved 2026-07-12: status and typed plan writes now return..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make plan next-task output dependency-aware. Resolved 2026-07-12: status and typed plan writes now return..."
+      status: resolved
+      order: 42
+      severity: normal

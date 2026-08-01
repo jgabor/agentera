@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[refactor:3.0.0] Rename `prose` to `instructions` and use it consistently. Resolved 2026-07-06: folded into the status..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Rename `prose` to `instructions` and use it consistently. Resolved 2026-07-06: folded into the status..."
+      status: resolved
+      order: 67
+      severity: normal

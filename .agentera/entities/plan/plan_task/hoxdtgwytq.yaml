@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M3 replacement tail · Complete recoverable TODO reconciliation (frpdshynmd)
-  status: pending
+  status: complete
   depends_on:
     - wgekelefqq
   acceptance:
@@ -12,3 +12,13 @@ record:
     - GIVEN interruption after any target WHEN exactly retried THEN publication completes or reports conflict without hidden partial success.
     - GIVEN legacy rows before activation WHEN reconciled THEN one bounded path applies; ambiguity rejects unchanged and managed rows require IDs.
     - GIVEN the full matrix and independent Audit PASS WHEN closure runs THEN xufuibtial and fspgkyakww are superseded, frpdshynmd resolves, and downstream M3 is ready.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Exact retry of an interrupted TODO create recovers the original creation and then unconditionally allocates a second ID, producing duplicate entity and Markdown rows with idempotent_replay false; create interruption boundaries are absent from the test matrix.
+    provenance:
+      attempt_id: hoxdtgwytq-audit-2
+      source: Bounded Audit re-review ses_040b226d6ffeWKdL0s1xYxdmlA
+      recorded_at: 2026-08-02 00:23
+      writer_command: agentera state plan record-evaluation

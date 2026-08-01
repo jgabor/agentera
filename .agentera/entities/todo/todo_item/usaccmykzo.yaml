@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "~~[fix:3.0.0] No diagnostic when AGENTERA_HOME is set but its managed script is unavailable. Resolved 2026-07-15: `packages/cli/shim/lib/resolve.mjs` now reports the resolved missing-script path on stderr, preserves repo and uvx fallback precedence, and stays silent when app-home resolution is unset or explicitly excluded.~~"
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "~~[fix:3.0.0] No diagnostic when AGENTERA_HOME is set but its managed script is unavailable. Resolved 2026-07-15: `packages/cli/shim/lib/resolve.mjs` now reports the resolved missing-script path on stderr, preserves repo and uvx fallback precedence, and stays silent when app-home resolution is unset or explicitly excluded.~~"
+      status: resolved
+      order: 29
+      severity: normal

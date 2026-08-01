@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[docs:3.0.0] Audit and review ⎘ optimize capability instructions from the ground up. Resolved 2026-07-10: D86...."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[docs:3.0.0] Audit and review ⎘ optimize capability instructions from the ground up. Resolved 2026-07-10: D86...."
+      status: resolved
+      order: 60
+      severity: normal

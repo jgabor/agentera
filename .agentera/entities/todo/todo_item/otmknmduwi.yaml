@@ -14,3 +14,11 @@ record:
     gate: null
     queue_rank: 95
     order_reason: Remove the alias after the unified prime projection defines its final canonical field set.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Remove the deprecated `issues` alias from every prime JSON projection as part of the aggregation-only startup contract. The resolved 2026-06-27 compatibility item retained the alias with a stderr warning, but a public beta must expose one canonical TODO field and no duplicate output shape. Remove the alias, warning, schema/help references, package projection, fixtures, and compatibility tests; return a structured correction only where an explicit retired field request can occur."
+      severity: critical
+      status: open
+      order: 16

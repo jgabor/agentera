@@ -4,3 +4,11 @@ record:
   severity: critical
   status: open
   description: "[fix:3.0.0] Do not let preserved user-owned collisions block independent legacy cleanup. `agentera upgrade --only cleanup --dry-run` found 12 marker-owned Swedish OpenCode agents ready for removal but marked the phase blocked because `~/.config/opencode/agents/audit.md` lacked Agentera ownership. Report that file as preserved/manual review and allow proven removals to converge."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Do not let preserved user-owned collisions block independent legacy cleanup. `agentera upgrade --only cleanup --dry-run` found 12 marker-owned Swedish OpenCode agents ready for removal but marked the phase blocked because `~/.config/opencode/agents/audit.md` lacked Agentera ownership. Report that file as preserved/manual review and allow proven removals to converge."
+      severity: critical
+      status: open
+      order: 10

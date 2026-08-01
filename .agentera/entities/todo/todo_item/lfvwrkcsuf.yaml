@@ -4,3 +4,7 @@ record:
   severity: critical
   status: resolved
   description: "[fix:3.0.0] Put Build artifact logging before its single commit. `packages/cli/src/capabilities/build/instructions.ts` currently orders Step 7 Commit before Step 8 Log, which writes TODO, progress, and changelog after the commit and contradicts the same-commit rule. Remove stale claims that entity progress assigns numbers or compacts aggregate files, and test served instructions against commit policy."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

@@ -1,0 +1,15 @@
+id: pfyjrwlmxs
+artifact: progress
+record:
+  timestamp: 2026-08-01 23:46
+  type: fix
+  phase: build
+  what: Reject stale post-activation TODO baselines and prove the closure transition preserves unrelated state.
+  context:
+    intent: Make hoxdtgwytq audit-ready by closing the remaining reconciliation correctness gap and verifying the real closure path.
+    constraints: Preserve the protected staged M1 files, completed predecessor evidence, and retry history. Keep hoxdtgwytq pending, xufuibtial and fspgkyakww blocked, and frpdshynmd open until independent Audit PASS. Do not commit, publish, or implement downstream batch composition.
+    scope: TODO reconciliation source, authority, focused regressions, local package gates, and a disposable closure proof.
+  discovered: The prior reconciliation path treated a missing post-activation entity baseline as repairable. That erased the established three-way comparison and could accept stale state instead of rejecting it before effects.
+  verified: Focused TODO and authority tests passed, followed by 224 source files with 3109 tests passed and 1 skipped, typecheck, build, state validation over 2041 entities, compact, capability-contract, 19 package tests, and package dry-run. In a disposable checkout, actual first activation changed only 128 TODO baselines, TODO managed-ID metadata, the activation marker, and the target description/status/lifecycle; all unrelated records and target readiness were unchanged. Exact retry reported idempotent replay with zero targets and an identical 130-file digest. No journal or recovery residue remained.
+  next: Request independent Audit of hoxdtgwytq. Keep hoxdtgwytq pending, both failed predecessor tasks blocked with existing evaluations intact, and frpdshynmd open until the evaluator records PASS.
+  publication_order: 33

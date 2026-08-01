@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Repair blocked archive-storage continuation Plan Task 3. Resolved 2026-07-13: prime now shares code-point-safe truncation..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Repair blocked archive-storage continuation Plan Task 3. Resolved 2026-07-13: prime now shares code-point-safe truncation..."
+      status: resolved
+      order: 39
+      severity: normal

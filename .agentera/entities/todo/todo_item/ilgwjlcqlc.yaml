@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 1
     order_reason: This correctness defect blocks constructed-package parity and development metadata preparation.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

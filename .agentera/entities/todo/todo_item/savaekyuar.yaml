@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[feat:3.0.0] Use git `user.name` and `user.email` for `confirmed_by` fields in `decisions.yaml`"
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Use git `user.name` and `user.email` for `confirmed_by` fields in `decisions.yaml`"
+      severity: normal
+      status: open
+      order: 15

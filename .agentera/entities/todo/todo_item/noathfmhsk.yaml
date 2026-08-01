@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[feat:3.0.0] Treat identity voice and emotional-register nuance as first-class vision attributes or introduce a personality..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Treat identity voice and emotional-register nuance as first-class vision attributes or introduce a personality..."
+      status: resolved
+      order: 53
+      severity: normal

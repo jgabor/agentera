@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[chore:3.0.0] Address pre-existing lint findings surfaced by the `vp lint` migration in `packages/cli`. The toolchain-cutover plan (Task 3) wired `scripts.lint` → `vp lint` and recorded a baseline of 101 warnings / 0 errors over 190 files (exit 0) at `packages/cli/.lint-baseline.txt`; `vp fmt --check src/` reports 151 files would be reformatted. Non-regression is the gate held here — address the findings (unused imports, regex-preference, control-char, etc.) in a separate cleanup pass, not as part of the toolchain migration."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore:3.0.0] Address pre-existing lint findings surfaced by the `vp lint` migration in `packages/cli`. The toolchain-cutover plan (Task 3) wired `scripts.lint` → `vp lint` and recorded a baseline of 101 warnings / 0 errors over 190 files (exit 0) at `packages/cli/.lint-baseline.txt`; `vp fmt --check src/` reports 151 files would be reformatted. Non-regression is the gate held here — address the findings (unused imports, regex-preference, control-char, etc.) in a separate cleanup pass, not as part of the toolchain migration."
+      severity: normal
+      status: open
+      order: 13

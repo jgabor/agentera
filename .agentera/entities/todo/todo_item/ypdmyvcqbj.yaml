@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: ~~[test:3.0.0] Superseded 2026-07-25 by TODO vptlelnadp, which incorporates the representative v2 migration proof into the exact documented bootstrap matrix.~~
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: ~~[test:3.0.0] Superseded 2026-07-25 by TODO vptlelnadp, which incorporates the representative v2 migration proof into the exact documented bootstrap matrix.~~
+      status: resolved
+      order: 17
+      severity: normal

@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[feat:3.0.0] Detect \"You're right\", \"my mistake\", \"You're right to push back\" responses during profiling, to add generalized rules to the profile to correct the model's behavior."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Detect \"You're right\", \"my mistake\", \"You're right to push back\" responses during profiling, to add generalized rules to the profile to correct the model's behavior."
+      severity: normal
+      status: open
+      order: 16

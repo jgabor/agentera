@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 1
     order_reason: Resolved prerequisite and producers; downstream order is owned by open cross-glossary consumer TODO ruzauoaotd.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

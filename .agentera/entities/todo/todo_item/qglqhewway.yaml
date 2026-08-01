@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: '[docs:3.0.0] Investigate how the "Audit" column in `references/cli/capability-instruction-structure.md` is managed or maintained. Resolved 2026-07-11: stale...'
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: '[docs:3.0.0] Investigate how the "Audit" column in `references/cli/capability-instruction-structure.md` is managed or maintained. Resolved 2026-07-11: stale...'
+      status: resolved
+      order: 50
+      severity: normal

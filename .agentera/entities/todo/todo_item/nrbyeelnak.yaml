@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[feat:3.0.0] Add light/normal/full levels to profile. Light incrementally incorporates recent high-signal evidence, normal performs the standard synthesis workflow, and full rebuilds from the available corpus with complete validation. Levels control corpus breadth, synthesis depth, and verification—not output verbosity. Update the startup contract, instructions, schemas, and tests."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add light/normal/full levels to profile. Light incrementally incorporates recent high-signal evidence, normal performs the standard synthesis workflow, and full rebuilds from the available corpus with complete validation. Levels control corpus breadth, synthesis depth, and verification—not output verbosity. Update the startup contract, instructions, schemas, and tests."
+      severity: normal
+      status: open
+      order: 5

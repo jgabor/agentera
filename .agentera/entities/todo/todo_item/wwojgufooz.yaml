@@ -13,3 +13,11 @@ record:
     gate: null
     queue_rank: 12
     order_reason: Build the complete resource inventory early so doctor and independent cleanup fixes can consume one authority in parallel.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Complete `references/adapters/runtime-retired-resources.yaml` and cleanup discovery for every retired Agentera-native surface. Include the OpenCode plugin, `agentera` and `hej` commands, primary and Swedish agents, stale skill links, Codex English and Swedish descriptors, and Agentera plugin, marketplace, skill, hook, and restorer registrations. Declare safe removal order, whole-resource ownership evidence, bounded previews, and preservation of user-owned collisions. Package and runtime acceptance must prove that completed cleanup leaves only the shared skill plus CLI as the permanent integration."
+      severity: critical
+      status: open
+      order: 7

@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[chore:3.0.0] Re-derive `first:` dates and confidence numbers from the current corpus on every profile write, instead of carrying them forward from the prior profile. The adversarial review in `ses_1406cbc95ffeZ8WRcSvUag387G` found 25+ entries where `first:` predated the corpus start (`first:2026-02-08` against a 2026-02-14 corpus) and several where the confidence number reflected a prior rebuild's evidence. The profilera writer must mark inherited entries explicitly (e.g., `first:2026-02-08 inherited:2026-05-30`) and demote confidence to the maximum of \"re-evidenced in current corpus\" and \"carried forward\" rather than silently blending them."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore:3.0.0] Re-derive `first:` dates and confidence numbers from the current corpus on every profile write, instead of carrying them forward from the prior profile. The adversarial review in `ses_1406cbc95ffeZ8WRcSvUag387G` found 25+ entries where `first:` predated the corpus start (`first:2026-02-08` against a 2026-02-14 corpus) and several where the confidence number reflected a prior rebuild's evidence. The profilera writer must mark inherited entries explicitly (e.g., `first:2026-02-08 inherited:2026-05-30`) and demote confidence to the maximum of \"re-evidenced in current corpus\" and \"carried forward\" rather than silently blending them."
+      severity: normal
+      status: open
+      order: 20

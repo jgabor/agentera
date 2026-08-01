@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 1
     order_reason: Repair the blocking contract validator before bounded acquisition or any capability integration proceeds.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

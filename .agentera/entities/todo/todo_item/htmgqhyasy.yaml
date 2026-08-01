@@ -13,3 +13,7 @@ record:
     gate: null
     queue_rank: 30
     order_reason: Complete the replacement and supersede the blocked mutation-grammar task before dependent M2 writer conversions.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: false

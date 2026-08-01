@@ -4,3 +4,11 @@ record:
   severity: normal
   status: open
   description: "[feat:3.0.0] Add light/normal/full levels to audit. Light assesses one named finding or dimension, normal assesses the relevant selected dimensions, and full performs a repository-wide multi-dimensional audit. Levels control inspected scope and evidence depth while preserving finding-confidence and citation requirements. Update the startup contract, instructions, schemas, and tests."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add light/normal/full levels to audit. Light assesses one named finding or dimension, normal assesses the relevant selected dimensions, and full performs a repository-wide multi-dimensional audit. Levels control inspected scope and evidence depth while preserving finding-confidence and citation requirements. Update the startup contract, instructions, schemas, and tests."
+      severity: normal
+      status: open
+      order: 3

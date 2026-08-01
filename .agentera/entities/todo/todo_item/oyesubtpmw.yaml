@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Repair blocked archive-rollout Plan Task 3 after two failed evaluations. Resolved 2026-07-14: removed speculative..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Repair blocked archive-rollout Plan Task 3 after two failed evaluations. Resolved 2026-07-14: removed speculative..."
+      status: resolved
+      order: 36
+      severity: normal

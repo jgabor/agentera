@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[refactor:3.0.0] Separate plan-level and task-level status mutation contracts. Resolved 2026-07-12: `agentera state plan set-status --task`..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Separate plan-level and task-level status mutation contracts. Resolved 2026-07-12: `agentera state plan set-status --task`..."
+      status: resolved
+      order: 44
+      severity: normal

@@ -4,3 +4,11 @@ record:
   severity: normal
   status: resolved
   description: "[fix:3.0.0] Align the plan capability's published YAML format with the typed writer schema. Resolved 2026-07-13:..."
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Align the plan capability's published YAML format with the typed writer schema. Resolved 2026-07-13:..."
+      status: resolved
+      order: 40
+      severity: normal

@@ -17,3 +17,11 @@ record:
       recovery: Obtain explicit stable-cutover approval after TODO odiytubocn passes, then run the documented release transaction.
     queue_rank: 200
     order_reason: Execute last, only after the activation gate proves runtime, reference, and state boundaries are complete.
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] At the explicitly approved stable cutover, promote the TypeScript package to npm `@latest`, update channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation response, and delete the quarantined v2 parsers, migrations, cleanup-only compatibility, native rewrite paths, retired Python, and shim delegation sources identified by TODO `fxddfkldsr`. Remove remaining native runtime hooks and run the clean, v2, partial, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution or delete compatibility before the approval gate and final activation conjunction pass."
+      severity: critical
+      status: open
+      order: 19
