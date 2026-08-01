@@ -1,0 +1,23 @@
+id: aosqovcfoe
+artifact: progress
+record:
+  timestamp: 2026-07-31 15:25
+  type: fix
+  phase: build
+  what: Completed only replacement task fspgkyakww by closing the crash-safety, retained-conflict, and first-activation gaps in TODO reconciliation.
+  context:
+    intent: Make frpdshynmd audit-ready without changing predecessor, replacement, evaluation, supersession, TODO, or commit lifecycle state.
+    constraints: Preserve the four staged M1 files and all inherited M3 refinement; use the rebuilt local CLI; do not commit, publish, tag, push, or implement general batch composition.
+    unknowns: Fresh independent Audit PASS is pending; Decision kpybrsfywb remains provisional; glossary advice and profile grounding were unavailable; release metadata cannot bind an uncommitted tree before the post-Audit commit.
+    scope: Atomic visible TODO replacement, journal and recovery validation, retained-role corrections, bounded legacy activation, process-kill and concurrency tests, authority, and changelog.
+  discovered: The predecessor used the entity no-clobber replacement for public Markdown, which creates an absent-path interval, exposed retained recovery conflicts as engine errors, and rejected this repository before it could publish its first canonical-ID baseline.
+  verified: "Criterion 1: Real SIGKILL before and after the mapped public rename left mapped/WORK.md byte-equal to complete old or new content; entity kills retained the journal barrier, and TODO get, list, and startup projection rejected mixed state. Criterion 2: Malformed journals, stale targets, retained entity roles, and an in-place mapped competitor returned bounded structured conflicts; durable-byte snapshots and canonical competitor bytes were unchanged. Criterion 3: Recovery passed boundaries 0-2 for activated writes and 0-3 for first activation; SIGKILL before and after entity link, activation publication, and public rename converged on exact retry, while unrelated Git merges passed and same-entity merges conflicted. Criterion 4: A pre-activation dry-run was byte-pure, exact unique legacy rows received IDs in the activation transaction, unmatched legacy bytes were fingerprint-retained, and a later ID-less managed row rejected unchanged. The rebuilt CLI previewed this checkout first mutation with 130 bounded targets and no effects. Criterion 5: 109 focused tests and all 224 source files passed (3,128 passed, 1 skipped); typecheck, build, 18 package tests, state validation with 2,034 entities and zero issues, compact, capability-contract validation, scoped lint with zero errors, and diff check passed. release-metadata alone remained lifecycle-gated because gitRef cannot bind uncommitted source before Audit and the post-Audit commit."
+  next: Request fresh independent Audit. Keep fspgkyakww pending, xufuibtial blocked with both FAIL evaluations, frpdshynmd open, and every evaluator and supersession field untouched until PASS.
+  glossary_caveat:
+    event: current
+    reason: authority_unavailable
+    ownership_state: authority_unavailable
+    caveat_id: ehddyffpbn
+    capability: build
+    transition_id: null
+  publication_order: 28

@@ -1,14 +1,15 @@
 id: iddsqjadki
 artifact: plan
 record:
-  name: M3 tail · Enforce canonical list and get reads (qjhjpzowae)
+  name: M3 · Enforce canonical record-family reads (qjhjpzowae)
   depends_on:
     - ztsnvyfcdh
     - ybpdvkidaq
     - nkpclbjyny
   status: pending
   acceptance:
-    - GIVEN any record family WHEN read THEN list and exact get are canonical; bare reads alias or correct.
-    - GIVEN TODO reads WHEN listed THEN identity, order, actionability, filters, drift, and recovery appear without mutation.
-    - GIVEN record families WHEN tested THEN each has one pass and one structured rejection.
+    - GIVEN any record family WHEN read THEN list and exact get are canonical, while a bare read is a strict alias or returns a structured correction.
+    - GIVEN filters, summaries, selected fields, cursors, formats, or recovery WHEN discovered and executed THEN one retrieval authority defines the behavior without a second grammar map.
+    - GIVEN TODO records WHEN listed THEN identity, public order, actionability, queue rank, and reconciliation drift appear without mutation.
+    - GIVEN each record family WHEN runtime behavior is tested THEN it has one success and one structured rejection case.
   plan: frkpjqmpnj

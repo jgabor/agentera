@@ -46,6 +46,23 @@ describe("state mode marker boundary", () => {
     expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
   });
 
+  it("detects entity mode without creating mutation or recovery state", () => {
+    const root = project();
+    marker(root);
+    const write = vi.spyOn(fs, "writeFileSync");
+    const mkdir = vi.spyOn(fs, "mkdirSync");
+    const rename = vi.spyOn(fs, "renameSync");
+    const link = vi.spyOn(fs, "linkSync");
+
+    expect(detectStateMode(root)).toBe("entities");
+    expect(write).not.toHaveBeenCalled();
+    expect(mkdir).not.toHaveBeenCalled();
+    expect(rename).not.toHaveBeenCalled();
+    expect(link).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(root, ".agentera/.entity-recovery"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/.todo-reconciliation"))).toBe(false);
+  });
+
   it("rejects a symlinked project root", () => {
     const realRoot = project();
     const parent = project();

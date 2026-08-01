@@ -2,22 +2,49 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+import { ExactReplacementConflictError, FileReplacementError } from "./exactReplacementRecovery.js";
 import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
-import { reject } from "./write/errors.js";
+import { reject, StateWriteInputError } from "./write/errors.js";
 
-const DIRECTORY_FLAGS = fs.constants.O_RDONLY
-  | (fs.constants.O_DIRECTORY ?? 0)
-  | (fs.constants.O_NOFOLLOW ?? 0);
-const FILE_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
 const RECOVERY_IGNORE_BYTES = "*\n!.gitignore\n";
+export const FILE_REPLACEMENT_RECOVERY_VERSION = "agentera.fileReplacementRecovery.v1";
+export const FILE_REPLACEMENT_METADATA_NAME = "replacement.json";
 
-interface FileIdentity {
+interface PathIdentity {
   dev: bigint;
   ino: bigint;
+  type: bigint;
   size: bigint;
   mtimeNs: bigint;
   ctimeNs: bigint;
   nlink: bigint;
+  mode: bigint;
+}
+
+interface StableFile {
+  absolute: string;
+  identity: PathIdentity;
+  bytes: Buffer;
+}
+
+interface StableDirectory {
+  absolute: string;
+  dev: bigint;
+  ino: bigint;
+  created: boolean;
+}
+
+export interface EntityRecoveryDirectoryIdentity {
+  absolute: string;
+  dev: bigint;
+  ino: bigint;
+}
+
+interface RecoveryAttempt {
+  root: StableDirectory;
+  attempt: StableDirectory;
+  ignore: StableFile;
+  relativePath: string;
 }
 
 export interface PublishedTargetIdentity {
@@ -33,134 +60,245 @@ export interface ExactReplacementResult {
   publishedIdentity: PublishedTargetIdentity;
 }
 
-function samePublished(left: PublishedTargetIdentity, right: PublishedTargetIdentity): boolean {
-  return left.dev === right.dev
-    && left.ino === right.ino
-    && left.type === right.type
-    && left.size === right.size
-    && left.sha256 === right.sha256;
-}
-
 export type ExactRemovalResult = "removed" | "absent" | "identity_mismatch";
 
-interface DirectoryEntry {
-  parentFd: number;
-  name: string;
-  fd: number;
-  created: boolean;
-}
-
-interface RecoveryAttempt {
-  agenteraFd: number;
-  rootFd: number;
-  attemptFd: number;
-  ignoreFd: number;
-  attemptName: string;
-  relativePath: string;
-}
-
-function fdPath(fd: number, name?: string): string {
-  return name ? `/proc/self/fd/${fd}/${name}` : `/proc/self/fd/${fd}`;
-}
-
-function identity(stat: fs.BigIntStats): FileIdentity {
+function identity(stat: fs.BigIntStats): PathIdentity {
   return {
     dev: stat.dev,
     ino: stat.ino,
+    type: stat.mode & BigInt(fs.constants.S_IFMT),
     size: stat.size,
     mtimeNs: stat.mtimeNs,
     ctimeNs: stat.ctimeNs,
     nlink: stat.nlink,
+    mode: stat.mode,
   };
 }
 
-function sameObject(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
-  return left.dev === right.dev && left.ino === right.ino;
-}
-
-function sameIdentity(left: FileIdentity, right: fs.BigIntStats): boolean {
+function sameIdentity(left: PathIdentity, right: PathIdentity): boolean {
   return left.dev === right.dev
     && left.ino === right.ino
+    && left.type === right.type
     && left.size === right.size
     && left.mtimeNs === right.mtimeNs
     && left.ctimeNs === right.ctimeNs
     && left.nlink === right.nlink;
 }
 
-function readDescriptor(fd: number): Buffer {
-  const stat = fs.fstatSync(fd, { bigint: true });
-  if (!stat.isFile() || stat.size > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new Error("state mode marker descriptor is not a readable regular file");
-  }
-  const bytes = Buffer.alloc(Number(stat.size));
-  let offset = 0;
-  while (offset < bytes.length) {
-    const count = fs.readSync(fd, bytes, offset, bytes.length - offset, offset);
-    if (count === 0) break;
-    offset += count;
-  }
-  if (offset !== bytes.length) throw new Error("state mode marker changed while its exact bytes were read");
-  return bytes;
+function sameDirectory(left: StableDirectory, right: fs.BigIntStats): boolean {
+  return right.isDirectory()
+    && !right.isSymbolicLink()
+    && left.dev === right.dev
+    && left.ino === right.ino;
 }
 
-function publishedIdentity(fd: number): PublishedTargetIdentity {
-  const stat = fs.fstatSync(fd, { bigint: true });
-  const bytes = readDescriptor(fd);
+function sha256(bytes: Buffer | string): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function publishedIdentity(file: StableFile): PublishedTargetIdentity {
   return {
-    dev: stat.dev,
-    ino: stat.ino,
-    type: stat.mode & BigInt(fs.constants.S_IFMT),
-    size: stat.size,
-    sha256: createHash("sha256").update(bytes).digest("hex"),
+    dev: file.identity.dev,
+    ino: file.identity.ino,
+    type: file.identity.type,
+    size: file.identity.size,
+    sha256: sha256(file.bytes),
   };
 }
 
-function matchesPublished(fd: number, expected: PublishedTargetIdentity): boolean {
-  const stat = fs.fstatSync(fd, { bigint: true });
-  if (
-    stat.dev !== expected.dev
-    || stat.ino !== expected.ino
-    || (stat.mode & BigInt(fs.constants.S_IFMT)) !== expected.type
-    || stat.size !== expected.size
-  ) return false;
-  return createHash("sha256").update(readDescriptor(fd)).digest("hex") === expected.sha256;
+function matchesPublished(file: StableFile, expected: PublishedTargetIdentity): boolean {
+  const observed = publishedIdentity(file);
+  return observed.dev === expected.dev
+    && observed.ino === expected.ino
+    && observed.type === expected.type
+    && observed.size === expected.size
+    && observed.sha256 === expected.sha256;
 }
 
-function matchesExpected(fd: number, expected: Buffer | PublishedTargetIdentity): boolean {
-  return Buffer.isBuffer(expected) ? readDescriptor(fd).equals(expected) : matchesPublished(fd, expected);
+function matchesExpected(file: StableFile, expected: Buffer | PublishedTargetIdentity): boolean {
+  return Buffer.isBuffer(expected) ? file.bytes.equals(expected) : matchesPublished(file, expected);
 }
 
-function openMatches(parentFd: number, name: string, expectedFd: number, flags: number): boolean {
-  let observed: number | undefined;
+function sameStableFile(left: StableFile, right: StableFile): boolean {
+  return sameIdentity(left.identity, right.identity) && left.bytes.equals(right.bytes);
+}
+
+function readStableFile(absolute: string, label: string): StableFile {
+  let before: fs.BigIntStats;
   try {
-    observed = fs.openSync(fdPath(parentFd, name), flags);
-    return sameObject(
-      fs.fstatSync(observed, { bigint: true }),
-      fs.fstatSync(expectedFd, { bigint: true }),
-    );
-  } catch {
-    return false;
+    before = fs.lstatSync(absolute, { bigint: true });
+  } catch (error) {
+    throw new Error(`${label} is unavailable: ${(error as Error).message}`, { cause: error });
+  }
+  if (!before.isFile() || before.isSymbolicLink()) {
+    throw new Error(`${label} is not a safe regular file`);
+  }
+  let descriptor: number | undefined;
+  try {
+    descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    const opened = fs.fstatSync(descriptor, { bigint: true });
+    if (!opened.isFile() || opened.isSymbolicLink() || opened.dev !== before.dev || opened.ino !== before.ino) {
+      throw new Error(`${label} changed while it was opened`);
+    }
+    const bytes = fs.readFileSync(descriptor);
+    const after = fs.fstatSync(descriptor, { bigint: true });
+    const pathname = fs.lstatSync(absolute, { bigint: true });
+    const openedIdentity = identity(opened);
+    if (
+      !sameIdentity(openedIdentity, identity(after))
+      || !sameIdentity(openedIdentity, identity(pathname))
+      || BigInt(bytes.length) !== opened.size
+    ) throw new Error(`${label} changed while its exact bytes were read`);
+    return { absolute, identity: identity(after), bytes };
   } finally {
-    if (observed !== undefined) fs.closeSync(observed);
+    if (descriptor !== undefined) fs.closeSync(descriptor);
   }
 }
 
-function entryExists(parentFd: number, name: string): boolean {
-  let fd: number | undefined;
-  try { fd = fs.openSync(fdPath(parentFd, name), FILE_FLAGS); return true; }
-  catch (error) { return (error as NodeJS.ErrnoException).code !== "ENOENT"; }
-  finally { if (fd !== undefined) fs.closeSync(fd); }
+function readFileIfPresent(absolute: string, label: string): StableFile | null {
+  try {
+    fs.lstatSync(absolute);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+  return readStableFile(absolute, label);
 }
 
-function pathBytesEqual(parentFd: number, name: string, expected: Buffer): boolean {
-  let fd: number | undefined;
-  try { fd = fs.openSync(fdPath(parentFd, name), FILE_FLAGS); return readDescriptor(fd).equals(expected); }
-  catch { return false; }
-  finally { if (fd !== undefined) fs.closeSync(fd); }
+function readStableDirectory(absolute: string, created = false): StableDirectory {
+  const stat = fs.lstatSync(absolute, { bigint: true });
+  if (!stat.isDirectory() || stat.isSymbolicLink()) {
+    throw new Error(`publication directory '${absolute}' is not a safe real directory`);
+  }
+  return { absolute, dev: stat.dev, ino: stat.ino, created };
 }
 
-function syncDirectory(fd: number): void {
-  fs.fsyncSync(fd);
+function projectLocalPath(root: ValidatedProjectRoot, absolute: string, allowRoot = false): boolean {
+  const resolved = path.resolve(absolute);
+  const relative = path.relative(root.path, resolved);
+  return resolved === absolute
+    && (allowRoot || relative.length > 0)
+    && relative !== ".."
+    && !relative.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(relative);
+}
+
+/** Validate a recovery directory before listing or mutating anything through it. */
+export function validateEntityRecoveryDirectory(
+  root: ValidatedProjectRoot,
+  absolute: string,
+  targetDirectory: string,
+  label: string,
+  expected?: EntityRecoveryDirectoryIdentity,
+): EntityRecoveryDirectoryIdentity {
+  assertValidatedProjectRoot(root);
+  if (!projectLocalPath(root, absolute) || !projectLocalPath(root, targetDirectory, true)) {
+    throw new FileReplacementError(`${label} must be a real project-local directory under the validated project root`);
+  }
+  let directory: StableDirectory;
+  let target: StableDirectory;
+  try {
+    directory = readStableDirectory(absolute);
+    target = readStableDirectory(targetDirectory);
+    if (fs.realpathSync(absolute) !== absolute || fs.realpathSync(targetDirectory) !== targetDirectory) {
+      throw new Error("a directory path traverses a symbolic link");
+    }
+  } catch (error) {
+    throw new FileReplacementError(`${label} must be a real project-local non-symlink directory: ${(error as Error).message}`, error);
+  }
+  if (typeof process.getuid === "function") {
+    const stat = fs.lstatSync(directory.absolute, { bigint: true });
+    if ((stat.mode & 0o022n) !== 0n || stat.uid !== BigInt(process.getuid())) {
+      throw new FileReplacementError(`${label} must be owned by the current user and not group/world-writable`);
+    }
+  }
+  if (directory.dev !== target.dev) {
+    throw new FileReplacementError(`${label} must share the replacement target filesystem`);
+  }
+  if (expected && (
+    directory.absolute !== expected.absolute
+    || directory.dev !== expected.dev
+    || directory.ino !== expected.ino
+  )) {
+    throw new FileReplacementError(`${label} changed after its recovery boundary was validated`);
+  }
+  return { absolute: directory.absolute, dev: directory.dev, ino: directory.ino };
+}
+
+function syncDirectory(absolute: string): void {
+  if (process.platform === "win32") return;
+  let descriptor: number | undefined;
+  try {
+    descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY ?? 0));
+    fs.fsyncSync(descriptor);
+  } catch (error) {
+    if (!["EINVAL", "ENOTSUP", "ENOSYS"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
+function syncDirectoryBestEffort(absolute: string): void {
+  try { syncDirectory(absolute); } catch { /* The canonical rename already linearized. */ }
+}
+
+function safeSegments(relativeTarget: string, label: string): string[] {
+  const segments = relativeTarget.split(/[\\/]/).filter(Boolean);
+  if (
+    segments.length < 1
+    || path.posix.isAbsolute(relativeTarget)
+    || path.win32.isAbsolute(relativeTarget)
+    || relativeTarget.includes("\0")
+    || segments.includes("..")
+    || segments.includes(".")
+  ) reject({
+    class: "unsupported_target",
+    message: `${label} '${relativeTarget}' is outside the validated project path grammar`,
+    recovery: "Use one project-relative path without symbolic, dot, parent, drive, UNC, or absolute segments; no state was changed.",
+  });
+  return segments;
+}
+
+function relativeDisplay(root: string, absolute: string): string {
+  return path.relative(root, absolute).split(path.sep).join("/");
+}
+
+function removeExactFile(file: StableFile): boolean {
+  const current = readFileIfPresent(file.absolute, `attempt-owned file '${file.absolute}'`);
+  if (!current || !sameStableFile(file, current)) return false;
+  fs.unlinkSync(file.absolute);
+  return true;
+}
+
+function createDurableFile(absolute: string, bytes: Buffer | string, mode = 0o600): StableFile {
+  let descriptor: number | undefined;
+  let opened: PathIdentity | undefined;
+  try {
+    descriptor = fs.openSync(
+      absolute,
+      fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0),
+      mode,
+    );
+    opened = identity(fs.fstatSync(descriptor, { bigint: true }));
+    fs.writeFileSync(descriptor, bytes);
+    if (typeof process.getuid === "function") fs.fchmodSync(descriptor, mode);
+    fs.fsyncSync(descriptor);
+  } catch (error) {
+    if (descriptor !== undefined) {
+      try { fs.closeSync(descriptor); } catch { /* Preserve the primary failure. */ }
+      descriptor = undefined;
+    }
+    if (opened) {
+      try {
+        const current = readFileIfPresent(absolute, `failed stage '${absolute}'`);
+        if (current && sameIdentity(opened, current.identity)) fs.unlinkSync(absolute);
+      } catch { /* Preserve changed or partially inspectable attempt state. */ }
+    }
+    throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+  return readStableFile(absolute, `durable stage '${absolute}'`);
 }
 
 function publicationConflict(markerPath: string): never {
@@ -173,663 +311,479 @@ function publicationConflict(markerPath: string): never {
 }
 
 /**
- * Pins one entity write to the root and exact valid marker selected by mode
- * detection. Node cannot combine pathname validation and mutation atomically,
- * so publication uses held directory descriptors, validates before and after
- * every observable boundary, and rolls back only links and empty directories
- * whose descriptor identities still match this attempt. Success linearizes at
- * the final root, marker, directory-chain, and target validation.
+ * Binds mutations to a validated project and exact entity-mode marker. Every
+ * pathname and byte identity is checked at declared boundaries. Publication
+ * linearizes through standard complete-file link or rename operations; a
+ * non-cooperating writer that races after the final successful check is outside
+ * the contract and is not represented as a cross-process compare-and-swap.
  */
 export class EntityPublicationContext {
   readonly projectRoot: string;
   readonly validatedRoot: ValidatedProjectRoot;
   readonly markerPath: string;
 
-  private readonly rootFd: number;
-  private readonly markerParentEntries: DirectoryEntry[];
-  private readonly markerFd: number;
-  private readonly markerIdentity: FileIdentity;
-  private readonly markerBytes: Buffer;
-  private readonly createdDirectories = new Map<string, FileIdentity>();
+  private readonly marker: StableFile;
+  private readonly createdDirectories = new Map<string, StableDirectory>();
   private closed = false;
 
-  private constructor(
-    root: ValidatedProjectRoot,
-    markerPath: string,
-    expectedBytes: Buffer,
-  ) {
+  private constructor(root: ValidatedProjectRoot, markerPath: string, expectedBytes: Buffer) {
     this.projectRoot = root.path;
     this.validatedRoot = root;
     this.markerPath = markerPath;
-    this.markerBytes = Buffer.from(expectedBytes);
-    this.rootFd = fs.openSync(root.path, DIRECTORY_FLAGS);
-    this.markerParentEntries = [];
-    let markerFd: number | undefined;
-    try {
-      const rootStat = fs.fstatSync(this.rootFd, { bigint: true });
-      const rootIdentity = root.identities.at(-1)!;
-      if (rootStat.dev !== rootIdentity.dev || rootStat.ino !== rootIdentity.ino) {
-        throw new Error(`project root '${root.path}' changed while its publication context was opened`);
-      }
-      const segments = markerPath.split("/").filter(Boolean);
-      let parentFd = this.rootFd;
-      for (const name of segments.slice(0, -1)) {
-        const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
-        this.markerParentEntries.push({ parentFd, name, fd, created: false });
-        parentFd = fd;
-      }
-      markerFd = fs.openSync(fdPath(parentFd, segments.at(-1)!), FILE_FLAGS);
-      const before = fs.fstatSync(markerFd, { bigint: true });
-      const bytes = readDescriptor(markerFd);
-      const after = fs.fstatSync(markerFd, { bigint: true });
-      if (!before.isFile() || !sameIdentity(identity(before), after) || !bytes.equals(expectedBytes)) {
-        publicationConflict(markerPath);
-      }
-      this.markerFd = markerFd;
-      this.markerIdentity = identity(after);
-      this.assertValid();
-      markerFd = undefined;
-    } catch (error) {
-      if (markerFd !== undefined) fs.closeSync(markerFd);
-      for (const entry of this.markerParentEntries.reverse()) fs.closeSync(entry.fd);
-      fs.closeSync(this.rootFd);
-      throw error;
-    }
+    const markerAbsolute = path.join(root.path, ...safeSegments(markerPath, "state mode marker"));
+    this.marker = readStableFile(markerAbsolute, `state mode marker '${markerPath}'`);
+    if (!this.marker.bytes.equals(expectedBytes)) publicationConflict(markerPath);
+    this.assertValid();
   }
 
-  static open(
-    root: ValidatedProjectRoot,
-    markerPath: string,
-    expectedBytes: Buffer,
-  ): EntityPublicationContext {
+  static open(root: ValidatedProjectRoot, markerPath: string, expectedBytes: Buffer): EntityPublicationContext {
     return new EntityPublicationContext(root, markerPath, expectedBytes);
   }
 
   pinnedPath(relativePath = ""): string {
     if (this.closed) throw new Error("entity publication context is closed");
-    return relativePath ? path.join(fdPath(this.rootFd), relativePath) : fdPath(this.rootFd);
+    if (!relativePath) return this.projectRoot;
+    return path.join(this.projectRoot, ...safeSegments(relativePath, "entity publication path"));
   }
 
   assertValid(): void {
     if (this.closed) throw new Error("entity publication context is closed");
     assertValidatedProjectRoot(this.validatedRoot);
-    const currentRoot = fs.fstatSync(this.rootFd, { bigint: true });
-    const expectedRoot = this.validatedRoot.identities.at(-1)!;
-    if (currentRoot.dev !== expectedRoot.dev || currentRoot.ino !== expectedRoot.ino) {
-      throw new Error(`project root '${this.projectRoot}' changed after validation; restore the exact real directory and retry`);
-    }
-    for (const entry of this.markerParentEntries) {
-      if (!openMatches(entry.parentFd, entry.name, entry.fd, DIRECTORY_FLAGS)) {
-        publicationConflict(this.markerPath);
-      }
-    }
-    const parentFd = this.markerParentEntries.at(-1)?.fd ?? this.rootFd;
-    const markerName = this.markerPath.split("/").filter(Boolean).at(-1)!;
-    if (
-      !openMatches(parentFd, markerName, this.markerFd, FILE_FLAGS)
-      || !sameIdentity(this.markerIdentity, fs.fstatSync(this.markerFd, { bigint: true }))
-      || !readDescriptor(this.markerFd).equals(this.markerBytes)
-    ) publicationConflict(this.markerPath);
+    let current: StableFile;
+    try { current = readStableFile(this.marker.absolute, `state mode marker '${this.markerPath}'`); }
+    catch { publicationConflict(this.markerPath); }
+    if (!sameStableFile(this.marker, current!)) publicationConflict(this.markerPath);
   }
 
   publishImmutable(relativeTarget: string, bytes: string): PublishedTargetIdentity | null {
-    const normalized = relativeTarget.split(path.sep).join("/");
-    const segments = normalized.split("/").filter(Boolean);
-    if (
-      segments.length < 2
-      || path.isAbsolute(relativeTarget)
-      || segments.includes("..")
-      || segments.includes(".")
-    ) throw new Error(`unsafe entity publication target '${relativeTarget}'`);
-    this.assertValid();
-
-    const directories: DirectoryEntry[] = [];
-    const createdPaths: Array<{ relativePath: string; fd: number }> = [];
-    let stageFd: number | undefined;
-    let stageName: string | undefined;
-    let targetLinked = false;
+    const segments = safeSegments(relativeTarget, "immutable entity target");
+    if (segments.length < 2) throw new Error(`unsafe immutable entity target '${relativeTarget}'`);
+    const directories: StableDirectory[] = [];
+    const target = path.join(this.projectRoot, ...segments);
+    let stage: StableFile | undefined;
+    let published: StableFile | undefined;
+    let publicationOwned = false;
     try {
-      let parentFd = this.rootFd;
-      for (const name of segments.slice(0, -1)) {
-        this.assertBoundary(directories);
-        const entryParentFd = parentFd;
-        let fd: number;
-        let created = false;
-        try {
-          fd = fs.openSync(fdPath(entryParentFd, name), DIRECTORY_FLAGS);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-          this.assertBoundary(directories);
-          fs.mkdirSync(fdPath(entryParentFd, name));
-          created = true;
-          fd = fs.openSync(fdPath(entryParentFd, name), DIRECTORY_FLAGS);
-        }
-        const entry = { parentFd: entryParentFd, name, fd, created };
-        directories.push(entry);
-        if (created) createdPaths.push({ relativePath: segments.slice(0, directories.length).join("/"), fd });
-        parentFd = fd;
-        if (created) syncDirectory(entryParentFd);
-        this.assertBoundary(directories);
-      }
-
-      const directoryFd = directories.at(-1)!.fd;
-      const targetName = segments.at(-1)!;
-      stageName = `.${targetName}.${process.pid}.${randomUUID()}.tmp`;
-      this.assertBoundary(directories);
-      stageFd = fs.openSync(
-        fdPath(directoryFd, stageName),
-        fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0),
-        0o600,
-      );
-      this.assertBoundary(directories, { name: stageName, fd: stageFd });
-      fs.writeFileSync(stageFd, bytes, "utf8");
-      fs.fsyncSync(stageFd);
-      this.assertBoundary(directories, { name: stageName, fd: stageFd });
-
-      try {
-        this.assertBoundary(directories, { name: stageName, fd: stageFd });
-        fs.linkSync(fdPath(directoryFd, stageName), fdPath(directoryFd, targetName));
-        targetLinked = true;
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-        this.removeOwnedFile(directoryFd, stageName, stageFd);
-        stageName = undefined;
-        syncDirectory(directoryFd);
-        this.assertBoundary(directories);
+      directories.push(...this.openDirectories(segments.slice(0, -1), true)!);
+      const directory = directories.at(-1)?.absolute ?? this.projectRoot;
+      const existing = readFileIfPresent(target, `immutable entity target '${relativeTarget}'`);
+      if (existing) {
         this.removeCreatedDirectories(directories);
         return null;
       }
-
-      syncDirectory(directoryFd);
-      this.assertBoundary(
-        directories,
-        { name: stageName, fd: stageFd },
-        { name: targetName, fd: stageFd },
-      );
-      this.removeOwnedFile(directoryFd, stageName, stageFd);
-      stageName = undefined;
-      syncDirectory(directoryFd);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd });
-      for (const createdPath of createdPaths)
-        this.createdDirectories.set(createdPath.relativePath, identity(fs.fstatSync(createdPath.fd, { bigint: true })));
-      return publishedIdentity(stageFd);
+      const stagePath = path.join(directory, `.${segments.at(-1)!}.${process.pid}.${randomUUID()}.tmp`);
+      stage = createDurableFile(stagePath, bytes);
+      this.assertBoundary(directories, undefined, [stage]);
+      if (readFileIfPresent(target, `immutable entity target '${relativeTarget}'`)) {
+        removeExactFile(stage); stage = undefined;
+        this.removeCreatedDirectories(directories);
+        return null;
+      }
+      try { fs.linkSync(stage.absolute, target); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+          removeExactFile(stage); stage = undefined;
+          this.removeCreatedDirectories(directories);
+          return null;
+        }
+        throw new FileReplacementError(`immutable publication for '${relativeTarget}' failed before effects`, error);
+      }
+      syncDirectory(directory);
+      stage = readStableFile(stage.absolute, `immutable publication stage '${relativeTarget}'`);
+      published = readStableFile(target, `published entity '${relativeTarget}'`);
+      if (!published.bytes.equals(Buffer.from(bytes)) || published.identity.ino !== stage.identity.ino || published.identity.dev !== stage.identity.dev) {
+        throw new ExactReplacementConflictError(`immutable entity target '${relativeTarget}' changed at its publication boundary`);
+      }
+      publicationOwned = true;
+      this.assertBoundary(directories, published, [stage]);
+      removeExactFile(stage); stage = undefined;
+      syncDirectory(directory);
+      published = readStableFile(target, `published entity '${relativeTarget}'`);
+      this.assertBoundary(directories, published);
+      for (const entry of directories.filter(({ created }) => created)) {
+        this.createdDirectories.set(relativeDisplay(this.projectRoot, entry.absolute), entry);
+      }
+      return publishedIdentity(published);
     } catch (error) {
-      const directoryFd = directories.at(-1)?.fd;
-      const targetName = segments.at(-1)!;
-      const cleanupFailures: string[] = [];
-      if (directoryFd !== undefined && stageFd !== undefined && targetLinked) {
-        try { this.removeOwnedFile(directoryFd, targetName, stageFd); } catch { cleanupFailures.push("entity"); }
+      if (publicationOwned && published) {
+        if (stage) {
+          try { if (removeExactFile(stage)) stage = undefined; } catch { /* Preserve changed attempt bytes. */ }
+        }
+        if (!stage) {
+          try {
+            const current = readFileIfPresent(target, `failed immutable publication '${relativeTarget}'`);
+            if (current && matchesPublished(current, publishedIdentity(published))) removeExactFile(current);
+          } catch { /* Preserve a changed successor. */ }
+        }
       }
-      if (directoryFd !== undefined && stageFd !== undefined && stageName !== undefined) {
-        try { this.removeOwnedFile(directoryFd, stageName, stageFd); } catch { cleanupFailures.push("stage"); }
+      if (stage) {
+        try { removeExactFile(stage); } catch { /* Preserve changed attempt bytes. */ }
       }
-      if (directoryFd !== undefined) {
-        try { syncDirectory(directoryFd); } catch { cleanupFailures.push("directory sync"); }
-      }
-      try { this.removeCreatedDirectories(directories); } catch { cleanupFailures.push("directory"); }
-      if (cleanupFailures.length > 0) {
-        throw new Error(
-          `entity publication failed and exact rollback could not remove its ${cleanupFailures.join(", ")}; inspect the pinned project state before retrying`,
-          { cause: error },
-        );
-      }
+      this.removeCreatedDirectories(directories);
       throw error;
-    } finally {
-      if (stageFd !== undefined) fs.closeSync(stageFd);
-      for (const entry of directories.reverse()) fs.closeSync(entry.fd);
     }
   }
 
-  publishPreowned(
-    relativeTarget: string,
-    relativeReceipt: string,
-    expected: PublishedTargetIdentity,
-  ): PublishedTargetIdentity {
-    const targetSegments = relativeTarget.split(path.sep).filter(Boolean);
-    const receiptSegments = relativeReceipt.split(path.sep).filter(Boolean);
-    if ([targetSegments, receiptSegments].some((segments) => segments.length < 2 || segments.includes("..") || segments.includes("."))
-      || path.isAbsolute(relativeTarget) || path.isAbsolute(relativeReceipt)) throw new Error("unsafe preowned publication path");
+  publishPreowned(relativeTarget: string, relativeReceipt: string, expected: PublishedTargetIdentity): PublishedTargetIdentity {
+    const targetSegments = safeSegments(relativeTarget, "preowned target");
+    const receiptSegments = safeSegments(relativeReceipt, "preowned receipt");
+    if (targetSegments.length < 2 || receiptSegments.length < 2) throw new Error("unsafe preowned publication path");
     this.assertValid();
-    const receiptDirectories: DirectoryEntry[] = [];
-    const targetDirectories: DirectoryEntry[] = [];
-    const createdPaths: Array<{ relativePath: string; fd: number }> = [];
-    let receiptFd: number | undefined;
-    let targetFd: number | undefined;
-    let linked = false;
+    const receipt = readStableFile(path.join(this.projectRoot, ...receiptSegments), `preowned receipt '${relativeReceipt}'`);
+    if (!matchesPublished(receipt, expected)) throw new Error(`preowned receipt '${relativeReceipt}' changed before publication`);
+    const directories = this.openDirectories(targetSegments.slice(0, -1), true)!;
+    const directory = directories.at(-1)?.absolute ?? this.projectRoot;
+    const target = path.join(directory, targetSegments.at(-1)!);
     try {
-      let receiptParent = this.rootFd;
-      for (const name of receiptSegments.slice(0, -1)) {
-        const fd = fs.openSync(fdPath(receiptParent, name), DIRECTORY_FLAGS);
-        receiptDirectories.push({ parentFd: receiptParent, name, fd, created: false });
-        receiptParent = fd;
+      this.assertBoundary(directories, undefined, [receipt]);
+      if (!readFileIfPresent(target, `preowned target '${relativeTarget}'`)) {
+        try { fs.linkSync(receipt.absolute, target); syncDirectory(directory); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
       }
-      receiptFd = fs.openSync(fdPath(receiptParent, receiptSegments.at(-1)!), FILE_FLAGS);
-      const receiptIdentity = publishedIdentity(receiptFd);
-      if (!samePublished(receiptIdentity, expected)) throw new Error(`migration ownership receipt '${relativeReceipt}' changed`);
-
-      let targetParent = this.rootFd;
-      for (const [index, name] of targetSegments.slice(0, -1).entries()) {
-        this.assertBoundary(targetDirectories);
-        const parentFd = targetParent;
-        let fd: number;
-        let created = false;
-        try { fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); }
-        catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-          fs.mkdirSync(fdPath(parentFd, name)); created = true;
-          fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); syncDirectory(parentFd);
-        }
-        targetDirectories.push({ parentFd, name, fd, created });
-        if (created) createdPaths.push({ relativePath: targetSegments.slice(0, index + 1).join("/"), fd });
-        targetParent = fd;
-      }
-      const targetName = targetSegments.at(-1)!;
-      try {
-        fs.linkSync(fdPath(receiptParent, receiptSegments.at(-1)!), fdPath(targetParent, targetName));
-        linked = true; syncDirectory(targetParent);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-      }
-      targetFd = fs.openSync(fdPath(targetParent, targetName), FILE_FLAGS);
-      const targetIdentity = publishedIdentity(targetFd);
-      if (!sameObject(fs.fstatSync(receiptFd, { bigint: true }), fs.fstatSync(targetFd, { bigint: true })) || !samePublished(targetIdentity, expected)) {
+      const published = readStableFile(target, `preowned target '${relativeTarget}'`);
+      if (!matchesPublished(published, expected) || published.identity.dev !== receipt.identity.dev || published.identity.ino !== receipt.identity.ino) {
         throw new Error(`canonical target '${relativeTarget}' collides with migration ownership receipt; byte-identical replacement inodes are never adopted`);
       }
-      this.assertBoundary(targetDirectories, undefined, { name: targetName, fd: targetFd });
-      for (const createdPath of createdPaths) this.createdDirectories.set(createdPath.relativePath, identity(fs.fstatSync(createdPath.fd, { bigint: true })));
-      return targetIdentity;
+      this.assertBoundary(directories, published, [receipt]);
+      for (const entry of directories.filter(({ created }) => created)) {
+        this.createdDirectories.set(relativeDisplay(this.projectRoot, entry.absolute), entry);
+      }
+      return publishedIdentity(published);
     } catch (error) {
-      const targetParent = targetDirectories.at(-1)?.fd;
-      if (linked && targetParent !== undefined && receiptFd !== undefined) this.removeOwnedFile(targetParent, targetSegments.at(-1)!, receiptFd);
-      this.removeCreatedDirectories(targetDirectories);
+      this.removeCreatedDirectories(directories);
       throw error;
-    } finally {
-      if (targetFd !== undefined) fs.closeSync(targetFd);
-      if (receiptFd !== undefined) fs.closeSync(receiptFd);
-      for (const entry of targetDirectories.reverse()) fs.closeSync(entry.fd);
-      for (const entry of receiptDirectories.reverse()) fs.closeSync(entry.fd);
     }
   }
 
-  removeExact(relativeTarget: string, expected: PublishedTargetIdentity): ExactRemovalResult {
-    const segments = relativeTarget.split(path.sep).filter(Boolean);
-    if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
-      throw new Error(`unsafe entity rollback target '${relativeTarget}'`);
-    const directories: DirectoryEntry[] = [];
-    let targetFd: number | undefined;
-    try {
-      let parentFd = this.rootFd;
-      for (const name of segments.slice(0, -1)) {
-        let fd: number;
-        try { fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return "absent"; throw error; }
-        directories.push({ parentFd, name, fd, created: false });
-        parentFd = fd;
-      }
-      const directoryFd = directories.at(-1)!.fd;
-      const targetName = segments.at(-1)!;
-      try { targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS); }
-      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return "absent"; throw error; }
-      if (!matchesPublished(targetFd, expected)) return "identity_mismatch";
-      const rollbackName = `.${targetName}.${process.pid}.${randomUUID()}.rollback`;
-      fs.renameSync(fdPath(directoryFd, targetName), fdPath(directoryFd, rollbackName));
-      if (openMatches(directoryFd, rollbackName, targetFd, FILE_FLAGS)) {
-        this.removeOwnedFile(directoryFd, rollbackName, targetFd);
-      } else {
-        try {
-          fs.linkSync(fdPath(directoryFd, rollbackName), fdPath(directoryFd, targetName));
-          fs.unlinkSync(fdPath(directoryFd, rollbackName));
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-        }
-        syncDirectory(directoryFd);
-        return "identity_mismatch";
-      }
-      syncDirectory(directoryFd);
-      return "removed";
-    } finally {
-      if (targetFd !== undefined) fs.closeSync(targetFd);
-      for (const entry of directories.reverse()) fs.closeSync(entry.fd);
-      this.removeAttemptDirectories();
-    }
-  }
-
-  private removeAttemptDirectories(): void {
-    const paths = [...this.createdDirectories.keys()].sort((left, right) => right.split("/").length - left.split("/").length);
-    for (const relativePath of paths) {
-      const segments = relativePath.split("/");
-      const descriptors: number[] = [];
-      let targetFd: number | undefined;
-      let parentFd = this.rootFd;
-      try {
-        for (const name of segments.slice(0, -1)) {
-          const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
-          descriptors.push(fd); parentFd = fd;
-        }
-        targetFd = fs.openSync(fdPath(parentFd, segments.at(-1)!), DIRECTORY_FLAGS);
-        const expected = this.createdDirectories.get(relativePath)!;
-        const observed = fs.fstatSync(targetFd, { bigint: true });
-        if (observed.dev !== expected.dev || observed.ino !== expected.ino) {
-          this.createdDirectories.delete(relativePath);
-          continue;
-        }
-        fs.rmdirSync(fdPath(parentFd, segments.at(-1)!));
-        syncDirectory(parentFd);
-        this.createdDirectories.delete(relativePath);
-      } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code ?? "";
-        if (code === "ENOENT") this.createdDirectories.delete(relativePath);
-        else if (!["ENOTEMPTY", "EEXIST"].includes(code)) throw error;
-      } finally {
-        if (targetFd !== undefined) fs.closeSync(targetFd);
-        for (const fd of descriptors.reverse()) fs.closeSync(fd);
-      }
-    }
+  removeExact(relativeTarget: string, expected: PublishedTargetIdentity, verifyContext = true): ExactRemovalResult {
+    const segments = safeSegments(relativeTarget, "exact removal target");
+    const directories = this.openDirectories(segments.slice(0, -1), false, true, verifyContext);
+    if (!directories) return "absent";
+    const directory = directories.at(-1)?.absolute ?? this.projectRoot;
+    const target = path.join(directory, segments.at(-1)!);
+    const current = readFileIfPresent(target, `exact removal target '${relativeTarget}'`);
+    if (!current) return "absent";
+    if (!matchesPublished(current, expected)) return "identity_mismatch";
+    this.assertBoundary(directories, current, [], verifyContext);
+    const confirmed = readStableFile(target, `exact removal target '${relativeTarget}'`);
+    if (!sameStableFile(current, confirmed)) return "identity_mismatch";
+    fs.unlinkSync(target);
+    syncDirectory(directory);
+    this.removeAttemptDirectories();
+    return "removed";
   }
 
   replaceExisting(relativeTarget: string, expectedBytes: Buffer, bytes: string, maxEntityBytes: number): ExactReplacementResult {
     return this.replaceOwned(relativeTarget, expectedBytes, bytes, maxEntityBytes);
   }
 
+  replaceVisible(relativeTarget: string, expectedBytes: Buffer, bytes: string, maxEntityBytes: number): ExactReplacementResult {
+    return this.replaceOwned(relativeTarget, expectedBytes, bytes, maxEntityBytes);
+  }
+
   restoreExact(relativeTarget: string, expected: PublishedTargetIdentity, bytes: string, maxEntityBytes: number): ExactReplacementResult {
-    // Recovery stays bound to the pinned root and exact archived target even when context invalidation caused the primary failure.
     return this.replaceOwned(relativeTarget, expected, bytes, maxEntityBytes, false);
   }
 
-  private replaceOwned(relativeTarget: string, expected: Buffer | PublishedTargetIdentity, bytes: string, maxEntityBytes: number, verifyContext = true): ExactReplacementResult {
-    const segments = relativeTarget.split(path.sep).filter(Boolean);
-    if (segments.length < 2 || path.isAbsolute(relativeTarget) || segments.includes("..") || segments.includes("."))
-      throw new Error(`unsafe entity replacement target '${relativeTarget}'`);
-    const directories: DirectoryEntry[] = [];
-    let targetFd: number | undefined;
-    let stageFd: number | undefined;
-    let backupFd: number | undefined;
-    let stageName: string | undefined;
-    let backupName: string | undefined;
-    let displacedName: string | undefined;
-    let displacedFd: number | undefined;
-    let displacementActive = false;
-    let committedResult: ExactReplacementResult | undefined;
+  restoreVisible(relativeTarget: string, expected: PublishedTargetIdentity, bytes: string, maxEntityBytes: number): ExactReplacementResult {
+    return this.replaceOwned(relativeTarget, expected, bytes, maxEntityBytes, false);
+  }
+
+  close(): void {
+    this.closed = true;
+  }
+
+  private replaceOwned(
+    relativeTarget: string,
+    expected: Buffer | PublishedTargetIdentity,
+    bytes: string,
+    maxEntityBytes: number,
+    verifyContext = true,
+  ): ExactReplacementResult {
+    const segments = safeSegments(relativeTarget, "recoverable replacement target");
+    const directories = this.openDirectories(segments.slice(0, -1), false, false, verifyContext);
+    if (!directories) throw new FileReplacementError(`replacement target '${relativeTarget}' is absent before publication`);
+    const directory = directories.at(-1)?.absolute ?? this.projectRoot;
+    const target = path.join(directory, segments.at(-1)!);
+    const baseline = readStableFile(target, `replacement target '${relativeTarget}'`);
+    if (!matchesExpected(baseline, expected)) {
+      throw new ExactReplacementConflictError(`target '${relativeTarget}' ownership or bytes changed before replacement; the detected change was preserved`);
+    }
+    if (!Number.isSafeInteger(maxEntityBytes) || maxEntityBytes < 1 || baseline.bytes.length > maxEntityBytes) {
+      throw new FileReplacementError(`target '${relativeTarget}' exact ${baseline.bytes.length}-byte baseline exceeds the authority-owned ${maxEntityBytes}-byte recovery limit`);
+    }
+    const after = Buffer.from(bytes);
     let recovery: RecoveryAttempt | undefined;
-    let baselineBytes: Buffer | undefined;
+    let backup: StableFile | undefined;
+    let stage: StableFile | undefined;
+    let metadata: StableFile | undefined;
+    let committed: ExactReplacementResult | undefined;
+    let renameCompleted = false;
     try {
-      let parentFd = this.rootFd;
-      for (const name of segments.slice(0, -1)) {
-        const fd = fs.openSync(fdPath(parentFd, name), DIRECTORY_FLAGS);
-        directories.push({ parentFd, name, fd, created: false });
-        parentFd = fd;
+      recovery = this.createRecoveryAttempt(directory);
+      backup = createDurableFile(path.join(recovery.attempt.absolute, "original.previous"), baseline.bytes);
+      stage = createDurableFile(
+        path.join(recovery.attempt.absolute, "replacement.tmp"),
+        after,
+        Number(baseline.identity.mode & 0o7777n),
+      );
+      metadata = createDurableFile(path.join(recovery.attempt.absolute, FILE_REPLACEMENT_METADATA_NAME), `${JSON.stringify({
+        schema_version: FILE_REPLACEMENT_RECOVERY_VERSION,
+        target_path: segments.join("/"),
+        before_sha256: sha256(baseline.bytes),
+        after_sha256: sha256(after),
+      })}\n`);
+      syncDirectory(recovery.attempt.absolute);
+      this.assertBoundary(directories, baseline, [backup, stage, metadata], verifyContext);
+      const boundaryTarget = readStableFile(target, `replacement target '${relativeTarget}'`);
+      if (!sameStableFile(boundaryTarget, baseline)) {
+        throw new ExactReplacementConflictError(`target '${relativeTarget}' changed at the final validation boundary; the detected change was preserved`);
       }
-      const directoryFd = directories.at(-1)!.fd;
-      const targetName = segments.at(-1)!;
-      targetFd = fs.openSync(fdPath(directoryFd, targetName), FILE_FLAGS);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd }, verifyContext);
-      const previousBytes = readDescriptor(targetFd);
-      baselineBytes = previousBytes;
-      if (!matchesExpected(targetFd, expected))
-        throw new Error(`entity '${relativeTarget}' ownership changed before replacement; preserve both changes and retry explicitly`);
-      if (!Number.isSafeInteger(maxEntityBytes) || maxEntityBytes < 1 || previousBytes.length > maxEntityBytes)
-        throw new Error(`entity '${relativeTarget}' exact ${previousBytes.length}-byte baseline exceeds the authority-owned ${maxEntityBytes}-byte recovery limit`);
-      recovery = this.createRecoveryAttempt(directoryFd);
-      backupName = "original.previous";
-      backupFd = fs.openSync(fdPath(recovery.attemptFd, backupName), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
-      fs.writeFileSync(backupFd, previousBytes); fs.fsyncSync(backupFd);
-      const backupStat = fs.fstatSync(backupFd, { bigint: true });
-      const attemptStat = fs.fstatSync(recovery.attemptFd, { bigint: true });
-      if (!backupStat.isFile() || backupStat.dev !== attemptStat.dev || backupStat.uid !== attemptStat.uid || backupStat.nlink !== 1n || (backupStat.mode & 0o077n) !== 0n || !openMatches(recovery.attemptFd, backupName, backupFd, FILE_FLAGS) || !readDescriptor(backupFd).equals(previousBytes))
-        throw new Error(`entity '${relativeTarget}' exact prior-byte snapshot could not be verified before replacement`);
-      stageName = "replacement.tmp";
-      stageFd = fs.openSync(fdPath(recovery.attemptFd, stageName), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
-      fs.writeFileSync(stageFd, bytes, "utf8");
-      fs.fsyncSync(stageFd);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: targetFd }, verifyContext);
-      if (!openMatches(recovery.attemptFd, stageName, stageFd, FILE_FLAGS) || !openMatches(recovery.attemptFd, backupName, backupFd, FILE_FLAGS) || !readDescriptor(backupFd).equals(previousBytes))
-        throw new Error(`entity '${relativeTarget}' private recovery attempt changed before displacement`);
-      displacedName = "original.displaced";
-      fs.renameSync(fdPath(directoryFd, targetName), fdPath(recovery.attemptFd, displacedName));
-      displacementActive = true;
-      displacedFd = fs.openSync(fdPath(recovery.attemptFd, displacedName), FILE_FLAGS);
-      if (!openMatches(recovery.attemptFd, displacedName, targetFd, FILE_FLAGS) || !matchesExpected(displacedFd, expected))
-        throw new Error(`entity '${relativeTarget}' ownership changed after staging; competing bytes were preserved at the target`);
-      try { fs.linkSync(fdPath(recovery.attemptFd, stageName), fdPath(directoryFd, targetName)); }
-      catch (publishError) {
-        if ((publishError as NodeJS.ErrnoException).code === "EEXIST") throw new Error(`entity '${relativeTarget}' ownership changed during no-clobber publication; competing target bytes were preserved`, { cause: publishError });
-        throw publishError;
+      try { fs.renameSync(stage.absolute, target); renameCompleted = true; }
+      catch (error) {
+        throw new FileReplacementError(`complete-file replacement for '${relativeTarget}' failed before publication${(error as NodeJS.ErrnoException).code ? ` (${(error as NodeJS.ErrnoException).code})` : ""}`, error);
       }
-      if (!this.removeOwnedFile(recovery.attemptFd, stageName, stageFd)) throw new Error(`entity '${relativeTarget}' replacement stage changed before cleanup`);
-      stageName = undefined;
-      syncDirectory(directoryFd);
-      syncDirectory(recovery.attemptFd);
-      this.assertBoundary(directories, undefined, { name: targetName, fd: stageFd }, verifyContext);
-      if (!openMatches(recovery.attemptFd, displacedName, targetFd, FILE_FLAGS) || !matchesExpected(displacedFd, expected))
-        throw new Error(`entity '${relativeTarget}' ownership changed through the publication boundary; competing bytes remain recoverable`);
-      committedResult = { previousBytes: previousBytes.toString("utf8"), publishedIdentity: publishedIdentity(stageFd) };
-      this.cleanupCommittedReplacement(recovery.attemptFd, [[displacedName, targetFd], [backupName, backupFd]]);
-      displacementActive = false;
-      return committedResult;
+      syncDirectory(directory);
+      syncDirectory(recovery.attempt.absolute);
+      const published = readStableFile(target, `published replacement '${relativeTarget}'`);
+      if (!published.bytes.equals(after)) {
+        throw new ExactReplacementConflictError(`target '${relativeTarget}' changed through the publication boundary`);
+      }
+      this.assertBoundary(directories, published, [backup, metadata], verifyContext);
+      committed = { previousBytes: baseline.bytes.toString("utf8"), publishedIdentity: publishedIdentity(published) };
+      this.cleanupCommittedReplacement(recovery.attempt.absolute, [backup, metadata]);
+      backup = undefined;
+      metadata = undefined;
+      stage = undefined;
+      return committed;
     } catch (error) {
-      if (committedResult) return committedResult;
-      const directoryFd = directories.at(-1)?.fd;
-      if (displacementActive && directoryFd !== undefined && targetFd !== undefined && recovery) {
-        throw this.recoverDisplacedReplacement({ directoryFd, recoveryFd: recovery.attemptFd, recoveryPath: recovery.relativePath, relativeTarget, baselineBytes: baselineBytes!, backupFd, stageFd, stageName, backupName, displacedFd, displacedName, retainStage: !verifyContext, primary: error });
+      if (committed) return committed;
+      let current: StableFile | null = null;
+      try { current = readFileIfPresent(target, `replacement target '${relativeTarget}'`); } catch { /* Preserve all recovery evidence. */ }
+      if (!renameCompleted && error instanceof ExactReplacementConflictError) {
+        const retained = this.cleanupAttemptFiles([stage, backup, metadata]);
+        stage = undefined; backup = undefined; metadata = undefined;
+        if (retained.length) {
+          throw new ExactReplacementConflictError(`${error.message}; cleanup retained changed recovery roles`, retained);
+        }
+        throw error;
       }
-      const cleanupFailures: string[] = [];
-      for (const [name, fd, label] of [[stageName, stageFd, "stage"], [backupName, backupFd, "backup"]] as const) if (name && fd !== undefined) {
-        try { if (!recovery || !this.removeOwnedFile(recovery.attemptFd, name, fd)) cleanupFailures.push(`${label} '${recovery ? path.join(recovery.relativePath, name) : name}' changed`); }
-        catch (cleanupError) { cleanupFailures.push(`${label} '${recovery ? path.join(recovery.relativePath, name) : name}': ${(cleanupError as Error).message}`); }
+      if (renameCompleted && current?.bytes.equals(after) && backup) {
+        try {
+          this.assertBoundary(directories, current, [backup], false);
+          fs.renameSync(backup.absolute, target);
+          backup = undefined;
+          syncDirectory(directory);
+          const restored = readStableFile(target, `restored replacement target '${relativeTarget}'`);
+          if (!restored.bytes.equals(baseline.bytes)) throw new Error("restored bytes do not match the exact baseline");
+          if (stage) { try { removeExactFile(stage); } catch { /* Preserve changed stage. */ } stage = undefined; }
+          if (metadata) { try { removeExactFile(metadata); } catch { /* Preserve changed metadata. */ } metadata = undefined; }
+          syncDirectoryBestEffort(recovery?.attempt.absolute ?? directory);
+          throw new FileReplacementError(`${(error as Error).message}; restored exact prior bytes at '${relativeTarget}'`, error);
+        } catch (restoreError) {
+          if (restoreError instanceof FileReplacementError && restoreError.cause === error) throw restoreError;
+        }
       }
-      if (cleanupFailures.length) throw new Error(`${(error as Error).message}; cleanup retained attempt state: ${cleanupFailures.join("; ")}`, { cause: error });
-      throw error;
+      if (!renameCompleted && current && sameStableFile(current, baseline)) {
+        const retained = this.cleanupAttemptFiles([stage, backup, metadata]);
+        stage = undefined; backup = undefined; metadata = undefined;
+        if (retained.length) {
+          throw new ExactReplacementConflictError(`${(error as Error).message}; cleanup retained changed recovery roles`, retained);
+        }
+        if (error instanceof ExactReplacementConflictError || error instanceof FileReplacementError || error instanceof StateWriteInputError) throw error;
+        throw new FileReplacementError(`${(error as Error).message}; target bytes remained unchanged`, error);
+      }
+      const retained = [backup, stage, metadata]
+        .filter((file): file is StableFile => Boolean(file && fs.existsSync(file.absolute)))
+        .map((file) => relativeDisplay(this.projectRoot, file.absolute));
+      throw new ExactReplacementConflictError(
+        `${(error as Error).message}; recoverable publication did not report success and preserved the canonical target plus ${retained.length} bounded recovery role${retained.length === 1 ? "" : "s"}`,
+        retained,
+      );
     } finally {
-      if (displacedFd !== undefined) fs.closeSync(displacedFd);
-      if (backupFd !== undefined) fs.closeSync(backupFd);
-      if (stageFd !== undefined) fs.closeSync(stageFd);
-      if (targetFd !== undefined) fs.closeSync(targetFd);
-      for (const entry of directories.reverse()) fs.closeSync(entry.fd);
       if (recovery) this.closeRecoveryAttempt(recovery);
     }
   }
 
-  private createRecoveryAttempt(targetDirectoryFd: number): RecoveryAttempt {
-    const rootName = ".entity-recovery"; const agenteraFd = fs.openSync(fdPath(this.rootFd, ".agentera"), DIRECTORY_FLAGS);
-    let rootFd: number | undefined; let ignoreFd: number | undefined; let ignoreCreated = false; let attemptFd: number | undefined; let attemptName: string | undefined; let rootCreated = false;
-    try {
-      try { rootFd = fs.openSync(fdPath(agenteraFd, rootName), DIRECTORY_FLAGS); }
+  private openDirectories(segments: string[], create: boolean, missingIsAbsent = false, verifyContext = true): StableDirectory[] | null {
+    const directories: StableDirectory[] = [];
+    let parent = this.projectRoot;
+    for (const segment of segments) {
+      if (verifyContext) this.assertValid();
+      else assertValidatedProjectRoot(this.validatedRoot);
+      const absolute = path.join(parent, segment);
+      let entry: StableDirectory;
+      try { entry = readStableDirectory(absolute); }
       catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`private entity recovery root '.agentera/${rootName}' cannot be opened safely: ${(error as Error).message}`, { cause: error });
-        fs.mkdirSync(fdPath(agenteraFd, rootName), 0o700); rootCreated = true; syncDirectory(agenteraFd);
-        rootFd = fs.openSync(fdPath(agenteraFd, rootName), DIRECTORY_FLAGS);
+        if ((error as NodeJS.ErrnoException).code === "ENOENT" || (error as Error).message.includes("ENOENT")) {
+          if (missingIsAbsent) return null;
+          if (!create) throw error;
+          this.assertBoundary(directories, undefined, [], verifyContext);
+          fs.mkdirSync(absolute, 0o700);
+          syncDirectory(parent);
+          entry = readStableDirectory(absolute, true);
+        } else throw error;
       }
-      const rootStat = fs.fstatSync(rootFd, { bigint: true });
-      if ((rootStat.mode & 0o022n) !== 0n || (typeof process.getuid === "function" && rootStat.uid !== BigInt(process.getuid())))
-        throw new Error(`private entity recovery root '.agentera/${rootName}' must be owned by the current user and not group/world-writable`);
-      if (rootStat.dev !== fs.fstatSync(targetDirectoryFd, { bigint: true }).dev)
-        throw new Error("private entity recovery root must share the canonical entity target filesystem");
-      try { ignoreFd = fs.openSync(fdPath(rootFd, ".gitignore"), FILE_FLAGS); }
-      catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`private entity recovery ignore marker cannot be opened safely: ${(error as Error).message}`, { cause: error });
-        ignoreFd = fs.openSync(fdPath(rootFd, ".gitignore"), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600); ignoreCreated = true;
-        fs.writeFileSync(ignoreFd, RECOVERY_IGNORE_BYTES, "utf8"); fs.fsyncSync(ignoreFd);
-      }
-      const ignoreStat = fs.fstatSync(ignoreFd, { bigint: true });
-      if (!ignoreStat.isFile() || (ignoreStat.mode & 0o022n) !== 0n || (typeof process.getuid === "function" && ignoreStat.uid !== BigInt(process.getuid())) || !readDescriptor(ignoreFd).equals(Buffer.from(RECOVERY_IGNORE_BYTES)))
-        throw new Error("private entity recovery ignore marker must be an owner-controlled regular file with the authoritative rules");
-      syncDirectory(rootFd);
-      for (let attempt = 0; attempt < 8; attempt += 1) {
-        const candidate = `entity-${process.pid}-${randomUUID()}`;
-        try { fs.mkdirSync(fdPath(rootFd, candidate), 0o700); attemptName = candidate; break; }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
-      }
-      if (!attemptName) throw new Error("could not allocate a unique private entity recovery attempt after 8 tries");
-      attemptFd = fs.openSync(fdPath(rootFd, attemptName), DIRECTORY_FLAGS);
-      const attemptStat = fs.fstatSync(attemptFd, { bigint: true });
-      if ((attemptStat.mode & 0o077n) !== 0n || attemptStat.uid !== rootStat.uid || attemptStat.dev !== rootStat.dev)
-        throw new Error("private entity recovery attempt must be owner-only, owner-controlled, and on the recovery-root filesystem");
-      syncDirectory(rootFd);
-      return { agenteraFd, rootFd, attemptFd, ignoreFd, attemptName, relativePath: `.agentera/${rootName}/${attemptName}` };
-    } catch (error) {
-      if (attemptFd !== undefined) fs.closeSync(attemptFd);
-      if (rootFd !== undefined && attemptName) { try { fs.rmdirSync(fdPath(rootFd, attemptName)); } catch { /* preserve unexpected contents */ } }
-      if (rootFd !== undefined && ignoreFd !== undefined && ignoreCreated) { try { this.removeOwnedFile(rootFd, ".gitignore", ignoreFd); } catch { /* preserve changed marker */ } }
-      if (ignoreFd !== undefined) fs.closeSync(ignoreFd);
-      if (rootFd !== undefined) fs.closeSync(rootFd);
-      if (rootCreated) { try { fs.rmdirSync(fdPath(agenteraFd, rootName)); } catch { /* preserve non-empty or changed root */ } }
-      fs.closeSync(agenteraFd); throw error;
+      directories.push(entry);
+      parent = absolute;
     }
-  }
-
-  private closeRecoveryAttempt(recovery: RecoveryAttempt): void {
-    try {
-      if (openMatches(recovery.rootFd, recovery.attemptName, recovery.attemptFd, DIRECTORY_FLAGS)) {
-        try { fs.rmdirSync(fdPath(recovery.rootFd, recovery.attemptName)); syncDirectory(recovery.rootFd); }
-        catch { /* best-effort private cleanup retains non-empty or changed attempt */ }
-      }
-      const remaining = fs.readdirSync(fdPath(recovery.rootFd));
-      if (remaining.length === 1 && remaining[0] === ".gitignore" && openMatches(recovery.rootFd, ".gitignore", recovery.ignoreFd, FILE_FLAGS)) {
-        try { this.removeOwnedFile(recovery.rootFd, ".gitignore", recovery.ignoreFd); syncDirectory(recovery.rootFd); } catch { /* preserve marker on cleanup failure */ }
-      }
-      if (openMatches(recovery.agenteraFd, ".entity-recovery", recovery.rootFd, DIRECTORY_FLAGS)) {
-        try { fs.rmdirSync(fdPath(recovery.agenteraFd, ".entity-recovery")); syncDirectory(recovery.agenteraFd); }
-        catch { /* best-effort private cleanup retains non-empty or changed root */ }
-      }
-    } catch {
-      /* committed or already-recovered state must not be reclassified by private cleanup */
-    } finally {
-      for (const fd of [recovery.attemptFd, recovery.ignoreFd, recovery.rootFd, recovery.agenteraFd]) { try { fs.closeSync(fd); } catch { /* best-effort descriptor close */ } }
-    }
-  }
-
-  private cleanupCommittedReplacement(directoryFd: number, links: Array<[string, number]>): void {
-    for (const [name, fd] of links) {
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        try { this.removeOwnedFile(directoryFd, name, fd); break; }
-        catch { /* committed publication remains authoritative; retry once and otherwise retain recovery link */ }
-      }
-    }
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try { syncDirectory(directoryFd); break; }
-      catch { /* cleanup durability is best-effort after the durable commit boundary */ }
-    }
-  }
-
-  private recoverDisplacedReplacement(state: {
-    directoryFd: number; recoveryFd: number; recoveryPath: string; relativeTarget: string; stageFd?: number;
-    baselineBytes: Buffer; backupFd?: number; stageName?: string; backupName?: string; displacedFd?: number; displacedName?: string; retainStage: boolean; primary: unknown;
-  }): Error {
-    const { directoryFd, recoveryFd, recoveryPath, relativeTarget, baselineBytes, backupFd, stageFd, displacedFd, retainStage, primary } = state;
-    const targetName = path.basename(relativeTarget); const failures: string[] = []; const retained = new Set<string>();
-    let { stageName, backupName, displacedName } = state;
-    const publicPath = (name: string): string => path.join(recoveryPath, name).split(path.sep).join("/");
-    const exactBaseline = (): boolean => Boolean(backupName && backupFd !== undefined && openMatches(recoveryFd, backupName, backupFd, FILE_FLAGS) && readDescriptor(backupFd).equals(baselineBytes));
-    const exactDisplaced = (): boolean => Boolean(displacedName && displacedFd !== undefined && openMatches(recoveryFd, displacedName, displacedFd, FILE_FLAGS));
-    const exactStage = (): boolean => Boolean(stageName && stageFd !== undefined && openMatches(recoveryFd, stageName, stageFd, FILE_FLAGS));
-    const remove = (name: string, fd: number, label: string): boolean => {
-      try { if (this.removeOwnedFile(recoveryFd, name, fd)) return true; failures.push(`${label} '${publicPath(name)}' changed before cleanup`); }
-      catch (error) { failures.push(`${label} '${publicPath(name)}' cleanup failed: ${(error as Error).message}`); }
-      retained.add(publicPath(name)); return false;
-    };
-    const sync = (label: string): boolean => { try { syncDirectory(directoryFd); syncDirectory(recoveryFd); return true; } catch (error) { failures.push(`${label} directory fsync failed: ${(error as Error).message}`); return false; } };
-    const displacedBytes = exactDisplaced() ? readDescriptor(displacedFd!) : undefined;
-    const displacedCompetitor = Boolean(displacedBytes && !displacedBytes.equals(baselineBytes));
-    const source = displacedCompetitor ? displacedName : exactBaseline() ? backupName : exactDisplaced() && displacedBytes?.equals(baselineBytes) ? displacedName : undefined;
-    const sourceFd = source === backupName ? backupFd : source === displacedName ? displacedFd : undefined;
-    if (stageFd !== undefined && openMatches(directoryFd, targetName, stageFd, FILE_FLAGS) && source && sourceFd !== undefined) {
-      try { if (this.removeOwnedFile(directoryFd, targetName, stageFd)) sync("replacement removal"); else failures.push(`published replacement '${relativeTarget}' changed before cleanup`); }
-      catch (error) { failures.push(`published replacement '${relativeTarget}' cleanup failed: ${(error as Error).message}`); }
-    }
-    let restoredBaseline = pathBytesEqual(directoryFd, targetName, baselineBytes);
-    let restoredCompetitor = Boolean(displacedCompetitor && displacedFd !== undefined && openMatches(directoryFd, targetName, displacedFd, FILE_FLAGS));
-    let occupied = !restoredBaseline && !restoredCompetitor && entryExists(directoryFd, targetName);
-    if (!restoredBaseline && !restoredCompetitor && !occupied && source && sourceFd !== undefined) {
-      try { fs.linkSync(fdPath(recoveryFd, source), fdPath(directoryFd, targetName)); }
-      catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "EEXIST") failures.push(`restoration from '${publicPath(source)}' failed: ${(error as Error).message}`);
-      }
-      restoredBaseline = pathBytesEqual(directoryFd, targetName, baselineBytes);
-      restoredCompetitor = Boolean(displacedCompetitor && displacedFd !== undefined && openMatches(directoryFd, targetName, displacedFd, FILE_FLAGS));
-      occupied = !restoredBaseline && !restoredCompetitor && entryExists(directoryFd, targetName);
-    }
-    if (restoredBaseline || restoredCompetitor) {
-      const durable = sync(restoredBaseline ? "exact baseline restoration" : "competitor restoration");
-      if (durable) {
-        if (retainStage && exactStage()) retained.add(publicPath(stageName!));
-        else if (exactStage() && remove(stageName!, stageFd!, "replacement stage")) stageName = undefined;
-        if (restoredCompetitor) {
-          if (exactBaseline()) retained.add(publicPath(backupName!)); else failures.push("exact baseline snapshot is unavailable");
-          if (exactDisplaced() && remove(displacedName!, displacedFd!, "canonicalized competitor duplicate")) displacedName = undefined;
-        } else {
-          if (displacedCompetitor && exactDisplaced()) retained.add(publicPath(displacedName!));
-          else if (exactDisplaced() && remove(displacedName!, displacedFd!, "displaced baseline duplicate")) displacedName = undefined;
-          if (exactBaseline() && remove(backupName!, backupFd!, "baseline snapshot duplicate")) backupName = undefined;
-        }
-        sync("restoration cleanup");
-      }
-      for (const name of [backupName, displacedName, stageName]) if (name && entryExists(recoveryFd, name)) retained.add(publicPath(name));
-      const outcome = restoredCompetitor
-        ? `recovery restored concurrent competitor bytes at '${relativeTarget}' and retained the exact discovered baseline snapshot at ${exactBaseline() ? `'${publicPath(backupName!)}'` : "an unavailable path"}`
-        : `recovery restored byte-verified exact prior bytes at '${relativeTarget}'`;
-      return new Error(`${(primary as Error).message}; ${outcome}${retained.size ? `; retained recovery files: ${[...retained].join(", ")}` : ""}${failures.length ? `; recovery issues: ${failures.join("; ")}` : ""}`, { cause: primary });
-    }
-    if (occupied) {
-      if (exactBaseline()) retained.add(publicPath(backupName!)); else failures.push("exact baseline snapshot is unavailable");
-      if (displacedCompetitor && exactDisplaced()) retained.add(publicPath(displacedName!));
-      if (sync("competing-target retention")) {
-        if (retainStage && exactStage()) retained.add(publicPath(stageName!));
-        else if (exactStage() && remove(stageName!, stageFd!, "replacement stage")) stageName = undefined;
-        if (!displacedCompetitor && exactDisplaced() && remove(displacedName!, displacedFd!, "displaced baseline duplicate")) displacedName = undefined;
-        sync("retention cleanup");
-      }
-      for (const name of [backupName, displacedName, stageName]) if (name && entryExists(recoveryFd, name)) retained.add(publicPath(name));
-      return new Error(`${(primary as Error).message}; recovery preserved the competing canonical target and retained the exact discovered baseline snapshot and any displaced competitor at ${[...retained].join(", ") || "unavailable paths"}; preserve each role and resolve ownership explicitly${failures.length ? `; recovery issues: ${failures.join("; ")}` : ""}`, { cause: primary });
-    }
-    if (exactBaseline()) retained.add(publicPath(backupName!));
-    if (exactDisplaced()) retained.add(publicPath(displacedName!));
-    if (exactStage()) retained.add(publicPath(stageName!));
-    return new Error(`${(primary as Error).message}; recovery could not restore the absent canonical target; retained role-labeled recovery files: ${[...retained].join(", ") || "none"}; restore the exact baseline or competitor explicitly before retrying${failures.length ? `; recovery issues: ${failures.join("; ")}` : ""}`, { cause: primary });
-  }
-
-  close(): void {
-    if (this.closed) return;
-    this.closed = true;
-    fs.closeSync(this.markerFd);
-    for (const entry of this.markerParentEntries.reverse()) fs.closeSync(entry.fd);
-    fs.closeSync(this.rootFd);
+    return directories;
   }
 
   private assertBoundary(
-    directories: DirectoryEntry[],
-    stage?: { name: string; fd: number },
-    target?: { name: string; fd: number },
+    directories: StableDirectory[],
+    target?: StableFile,
+    roles: StableFile[] = [],
     verifyContext = true,
   ): void {
     if (verifyContext) this.assertValid();
-    for (const entry of directories) {
-      if (!openMatches(entry.parentFd, entry.name, entry.fd, DIRECTORY_FLAGS)) {
-        throw new Error(`entity publication directory '${entry.name}' changed during publication`);
+    else assertValidatedProjectRoot(this.validatedRoot);
+    for (const directory of directories) {
+      let current: fs.BigIntStats;
+      try { current = fs.lstatSync(directory.absolute, { bigint: true }); }
+      catch { throw new ExactReplacementConflictError(`publication directory '${relativeDisplay(this.projectRoot, directory.absolute)}' changed at a validation boundary`); }
+      if (!sameDirectory(directory, current)) {
+        throw new ExactReplacementConflictError(`publication directory '${relativeDisplay(this.projectRoot, directory.absolute)}' changed at a validation boundary`);
       }
     }
-    const directoryFd = directories.at(-1)?.fd;
-    if (directoryFd !== undefined && stage && !openMatches(directoryFd, stage.name, stage.fd, FILE_FLAGS)) {
-      throw new Error("entity publication stage changed during publication");
+    if (target) {
+      const current = readFileIfPresent(target.absolute, `publication target '${relativeDisplay(this.projectRoot, target.absolute)}'`);
+      if (!current || !sameStableFile(target, current)) {
+        throw new ExactReplacementConflictError(`publication target '${relativeDisplay(this.projectRoot, target.absolute)}' changed at a validation boundary`);
+      }
     }
-    if (directoryFd !== undefined && target && !openMatches(directoryFd, target.name, target.fd, FILE_FLAGS)) {
-      throw new Error("entity publication target changed during publication");
+    for (const role of roles) {
+      const current = readFileIfPresent(role.absolute, `publication role '${relativeDisplay(this.projectRoot, role.absolute)}'`);
+      if (!current || !sameStableFile(role, current)) {
+        throw new ExactReplacementConflictError(`publication recovery role '${relativeDisplay(this.projectRoot, role.absolute)}' changed at a validation boundary`);
+      }
     }
   }
 
-  private removeOwnedFile(parentFd: number, name: string, expectedFd: number): boolean {
-    if (!openMatches(parentFd, name, expectedFd, FILE_FLAGS)) return false;
-    fs.unlinkSync(fdPath(parentFd, name));
-    return true;
+  private createRecoveryAttempt(targetDirectory: string): RecoveryAttempt {
+    const agentera = readStableDirectory(path.join(this.projectRoot, ".agentera"));
+    const rootPath = path.join(agentera.absolute, ".entity-recovery");
+    let rootCreated = false;
+    let ignoreCreated = false;
+    let root: StableDirectory | undefined;
+    let ignore: StableFile | undefined;
+    let attempt: StableDirectory | undefined;
+    try {
+      try { root = readStableDirectory(rootPath); }
+      catch (error) {
+        if (!(error as Error).message.includes("ENOENT")) {
+          throw new FileReplacementError(`private entity recovery root '.agentera/.entity-recovery' cannot be opened safely: ${(error as Error).message}`, error);
+        }
+        fs.mkdirSync(rootPath, 0o700); rootCreated = true; syncDirectory(agentera.absolute);
+        root = readStableDirectory(rootPath, true);
+      }
+      const trustedRoot = validateEntityRecoveryDirectory(
+        this.validatedRoot,
+        root.absolute,
+        targetDirectory,
+        "private entity recovery root '.agentera/.entity-recovery'",
+        root,
+      );
+      root = { ...trustedRoot, created: rootCreated };
+      const ignorePath = path.join(root.absolute, ".gitignore");
+      const existingIgnore = readFileIfPresent(ignorePath, "private entity recovery ignore marker");
+      if (existingIgnore) ignore = existingIgnore;
+      else { ignore = createDurableFile(ignorePath, RECOVERY_IGNORE_BYTES); ignoreCreated = true; }
+      if (!ignore.bytes.equals(Buffer.from(RECOVERY_IGNORE_BYTES))) {
+        throw new FileReplacementError("private entity recovery ignore marker must contain the authoritative rules");
+      }
+      const ignoreStat = fs.lstatSync(ignore.absolute, { bigint: true });
+      if (typeof process.getuid === "function" && ((ignoreStat.mode & 0o022n) !== 0n || ignoreStat.uid !== BigInt(process.getuid()))) {
+        throw new FileReplacementError("private entity recovery ignore marker must be owner-controlled and not group/world-writable");
+      }
+      syncDirectory(root.absolute);
+      for (let index = 0; index < 8; index += 1) {
+        const attemptPath = path.join(root.absolute, `entity-${process.pid}-${randomUUID()}`);
+        try {
+          fs.mkdirSync(attemptPath, 0o700);
+          const opened = readStableDirectory(attemptPath, true);
+          attempt = opened;
+          const trusted = validateEntityRecoveryDirectory(
+            this.validatedRoot,
+            attemptPath,
+            targetDirectory,
+            `private entity recovery attempt '${relativeDisplay(this.projectRoot, attemptPath)}'`,
+            opened,
+          );
+          attempt = { ...trusted, created: true };
+          break;
+        } catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
+      }
+      if (!attempt) throw new FileReplacementError("could not allocate a unique private entity recovery attempt after 8 tries");
+      syncDirectory(root.absolute);
+      return { root, attempt, ignore, relativePath: relativeDisplay(this.projectRoot, attempt.absolute) };
+    } catch (error) {
+      if (attempt) { try { fs.rmdirSync(attempt.absolute); } catch { /* Preserve unexpected contents. */ } }
+      if (ignore && ignoreCreated) { try { removeExactFile(ignore); } catch { /* Preserve changed marker. */ } }
+      if (root && rootCreated) { try { fs.rmdirSync(root.absolute); } catch { /* Preserve non-empty root. */ } }
+      throw error;
+    }
   }
 
-  private removeCreatedDirectories(directories: DirectoryEntry[]): void {
-    for (const entry of [...directories].reverse()) {
-      if (!entry.created || !openMatches(entry.parentFd, entry.name, entry.fd, DIRECTORY_FLAGS)) continue;
+  private cleanupAttemptFiles(files: Array<StableFile | undefined>): string[] {
+    const retained: string[] = [];
+    for (const file of files) {
+      if (!file) continue;
       try {
-        fs.rmdirSync(fdPath(entry.parentFd, entry.name));
-        syncDirectory(entry.parentFd);
+        if (!removeExactFile(file) && fs.existsSync(file.absolute)) retained.push(relativeDisplay(this.projectRoot, file.absolute));
+      } catch { retained.push(relativeDisplay(this.projectRoot, file.absolute)); }
+    }
+    return retained;
+  }
+
+  private cleanupCommittedReplacement(directory: string, files: StableFile[]): void {
+    this.cleanupAttemptFiles(files);
+    syncDirectoryBestEffort(directory);
+  }
+
+  private closeRecoveryAttempt(recovery: RecoveryAttempt): void {
+    try { fs.rmdirSync(recovery.attempt.absolute); syncDirectoryBestEffort(recovery.root.absolute); }
+    catch { return; }
+    try {
+      const names = fs.readdirSync(recovery.root.absolute);
+      if (names.length === 1 && names[0] === ".gitignore") {
+        removeExactFile(recovery.ignore);
+        syncDirectoryBestEffort(recovery.root.absolute);
+      }
+      if (fs.readdirSync(recovery.root.absolute).length === 0) {
+        fs.rmdirSync(recovery.root.absolute);
+        syncDirectoryBestEffort(path.dirname(recovery.root.absolute));
+      }
+    } catch { /* Preserve non-empty or changed recovery authority. */ }
+  }
+
+  private removeCreatedDirectories(directories: StableDirectory[]): void {
+    for (const directory of [...directories].reverse()) {
+      if (!directory.created) continue;
+      try {
+        const current = fs.lstatSync(directory.absolute, { bigint: true });
+        if (!sameDirectory(directory, current)) continue;
+        fs.rmdirSync(directory.absolute);
+        syncDirectoryBestEffort(path.dirname(directory.absolute));
       } catch (error) {
         if (!["ENOTEMPTY", "EEXIST", "ENOENT"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
+      }
+    }
+  }
+
+  private removeAttemptDirectories(): void {
+    const paths = [...this.createdDirectories].sort((left, right) => right[0].split("/").length - left[0].split("/").length);
+    for (const [relativePath, expected] of paths) {
+      try {
+        const current = fs.lstatSync(expected.absolute, { bigint: true });
+        if (!sameDirectory(expected, current)) { this.createdDirectories.delete(relativePath); continue; }
+        fs.rmdirSync(expected.absolute);
+        syncDirectoryBestEffort(path.dirname(expected.absolute));
+        this.createdDirectories.delete(relativePath);
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code ?? "";
+        if (code === "ENOENT") this.createdDirectories.delete(relativePath);
+        else if (!["ENOTEMPTY", "EEXIST"].includes(code)) throw error;
       }
     }
   }

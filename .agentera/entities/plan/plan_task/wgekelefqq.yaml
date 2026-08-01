@@ -1,0 +1,26 @@
+id: wgekelefqq
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 replacement · Establish portable recoverable publication (frpdshynmd)
+  status: complete
+  depends_on:
+    - qllgiterft
+    - qgqlxqhlhd
+    - oeprigteku
+  acceptance:
+    - GIVEN one public file WHEN replaced THEN readers see complete old or new bytes; no global multi-file snapshot is promised.
+    - GIVEN read-only state WHEN no journal exists THEN it works; a pending journal fails closed.
+    - GIVEN changed bytes at a validation boundary WHEN publishing THEN structured conflict preserves the detected change.
+    - GIVEN interruption between targets WHEN retried THEN recovery converges or names the conflicting target without hidden success.
+    - GIVEN success, conflict, and interruption classes WHEN tested THEN each has pass and failure or recovery proof.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Pending-journal recovery can follow a symlinked .agentera/.entity-recovery root and delete matching external role files before rejecting; authority tests and changelog still describe the abandoned Linux/native publication design, contradicting the portable Node implementation and progress evidence.
+    provenance:
+      attempt_id: wgekelefqq-audit-2
+      source: Bounded Audit re-review ses_040f01b42ffepnZgnEFMj9Wvsh
+      recorded_at: 2026-08-01 23:16
+      writer_command: agentera state plan record-evaluation

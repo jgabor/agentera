@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import YAML from "yaml";
 import { describe, expect, inject, it } from "vitest";
@@ -259,6 +260,14 @@ describe("npm distribution boundary", () => {
     expect(isContained(CHECKOUT_ROOT, fixture.constructionRoot)).toBe(false);
     expect(fs.realpathSync(path.join(fixture.packageRoot, "dist/bin/agentera.js")))
       .toMatch(`${path.sep}package${path.sep}dist${path.sep}bin${path.sep}agentera.js`);
+  });
+
+  it("loads portable publication from the installed package without a native dependency", async () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(fixture.packageRoot, "package.json"), "utf8"));
+    expect(manifest.dependencies).not.toHaveProperty("fs-native-extensions");
+    expect(fs.existsSync(path.join(fixture.packageRoot, "dist/state/visibleFileExchange.js"))).toBe(false);
+    const publication = await import(pathToFileURL(path.join(fixture.packageRoot, "dist/state/entityPublicationContext.js")).href);
+    expect(publication.FILE_REPLACEMENT_RECOVERY_VERSION).toBe("agentera.fileReplacementRecovery.v1");
   });
 
   it("normalizes only valid atomic-create dependency ordinal forms in the installed package", () => {

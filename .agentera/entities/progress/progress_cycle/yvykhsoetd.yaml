@@ -1,0 +1,16 @@
+id: yvykhsoetd
+artifact: progress
+record:
+  timestamp: 2026-07-31 17:22
+  type: fix
+  phase: build
+  what: Corrected retry evidence and host preflight after proving that the descriptor-pinned publication context is Linux-only.
+  context:
+    intent: Make host support match the complete crash-safe publication seam before fresh Audit.
+    constraints: Preserve all prior immutable progress and nonterminal task, TODO, supersession, and evaluation state; do not commit, publish, push, or tag.
+    unknowns: Fresh independent Audit remains pending. macOS and Windows entity mutations are explicitly unsupported before effects until a descriptor-relative native publication implementation exists for those hosts.
+    scope: Descriptor publication support, read-only mode detection, structured unsupported-host correction, authority text, and regression coverage.
+  discovered: "The native dependency provides a macOS exchange primitive, but exchange alone is insufficient: entity publication still uses Linux /proc/self/fd for every pinned directory operation. The prior cycle therefore overstated macOS readiness. The read-only cutover gate also opened a mutation context and misclassified this unsupported host as an invalid marker."
+  verified: The focused publication, authority, and TODO suites pass 82 tests. The full source lane passes 224 files with 3,134 tests passed and 1 skipped; typecheck, build, 19 extracted-package tests, dependency audit, capability-contract validation, root state validation with 2,036 entities and zero issues, compaction, package dry run, lint with zero errors, and diff check pass.
+  next: Request fresh independent Audit of fspgkyakww. Keep fspgkyakww pending, xufuibtial blocked, frpdshynmd open, and fspgkyakww-audit-1 unchanged until an evaluator records PASS.
+  publication_order: 30

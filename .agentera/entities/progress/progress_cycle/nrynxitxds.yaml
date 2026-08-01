@@ -1,0 +1,16 @@
+id: nrynxitxds
+artifact: progress
+record:
+  timestamp: 2026-07-31 14:23
+  type: fix
+  phase: build
+  what: Corrected xufuibtial-audit-1 by making the journal an Agentera read barrier, recovering retained exact-replacement roles after process death, keeping dry-run read-only, requiring managed IDs, and binding recovery to the exact docs mapping.
+  context:
+    intent: Address every accepted xufuibtial-audit-1 finding without changing task, TODO, or evaluator lifecycle state.
+    constraints: Preserve staged M1 files, intentional M3 refinements, xufuibtial-audit-1, and prior immutable progress; do not commit, complete the task, resolve frpdshynmd, or implement general batch composition.
+    unknowns: Independent re-audit PASS remains pending; decision kpybrsfywb remains provisional, profile-derived context remains unavailable, and ordinary tools intentionally see one complete old-or-new TODO.md file while Agentera cross-file reads fail closed during a pending journal.
+    scope: Pending-journal read and dry-run barriers, exact replacement role recovery, managed-row identity validation, exact docs mapping snapshots, startup integration, authority prose, and regression evidence.
+  discovered: A durable journal previously recorded intent but did not isolate Agentera reads, dry-run performed recovery, missing managed IDs were ignored, mapped paths were basename-gated, and exact replacement recovery roles were invisible to transaction replay after a hard kill.
+  verified: Focused TODO, entity-authority, storage-authority, and mutation-grammar verification passes 47 tests. For pending journals, ordinary TODO.md reads remain a complete old-or-new whole file while `state todo get`, `state todo list`, and startup reject with the read barrier; a pending-journal `--dry-run` rejects and a recursive byte snapshot proves no file or journal changed. A real child process receives SIGKILL after exact canonical displacement and before replacement linking, leaving the target absent with `original.previous`, `original.displaced`, and `replacement.tmp`; the read barrier holds, and one identical retry consumes those exact roles, restores the target, completes Markdown, removes the journal, and converges. Managed checkbox rows without IDs reject unchanged inside severity/resolved sections while an ID-less checkbox in an unmanaged Notes section remains untouched. A non-basename `mapped/WORK.md` path publishes successfully, while changing the docs mapping snapshot under a pending journal rejects before effects. Prior one-sided import plus requested mutation, duplicate/orphan/unchecked-removal/divergent conflicts, injected boundary replay, competitor CAS, postvalidation rollback, lifecycle replay, and same-entity Git conflict coverage remain green. Final source verification passes 224 files with 3,119 tests passed and 1 skipped; package verification passes 18 tests; typecheck, build, state validation, compact, explain, and diff-check pass.
+  next: Independent Audit should re-evaluate pending-journal visibility, hard-kill role recovery, managed IDs, dry-run purity, and mapped-path binding. Keep xufuibtial pending, frpdshynmd open, and xufuibtial-audit-1 intact.
+  publication_order: 27

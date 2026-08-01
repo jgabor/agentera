@@ -6,7 +6,8 @@ record:
     - ybpdvkidaq
   status: pending
   acceptance:
-    - GIVEN a record family WHEN help is requested THEN filters, summaries, bounds, examples, and corrections match runtime.
-    - GIVEN unsupported selectors WHEN invoked THEN failure names valid vocabulary and one correction.
-    - GIVEN family help WHEN tested THEN each has one pass and one parity rejection.
+    - GIVEN a record family WHEN list help is requested THEN its filters, summary fields, bounds, formats, and runnable examples match retrieval authority.
+    - GIVEN TODO help WHEN inspected THEN severity, status, queue rank, IDs-only, and field selection are discoverable without source inspection.
+    - GIVEN an unsupported selector WHEN invoked THEN failure names the valid vocabulary and one working correction.
+    - GIVEN source and packaged help WHEN parity runs THEN every family has one success and one mismatch rejection case.
   plan: frkpjqmpnj

@@ -135,14 +135,23 @@ entity_target:
         scope: shared_by_all_entity_families
         binding: validated_project_root_and_exact_cutover_marker_snapshot
         lifetime: mode_detection_through_writer_lock_and_final_publication_validation
+        filesystem_contract:
+          primitives: [node_fs_linkSync, node_fs_renameSync]
+          replacement_visibility: complete_old_or_new_bytes_per_file
+          journal_visibility: pending_journal_blocks_reads
+          global_snapshot: not_promised
+          late_racer: outside_contract_after_final_successful_validation
+          unsupported_result: structured_unsupported_target_before_target_effects
         pathname_race_contract: >-
-          Entity publication is rooted through held directory descriptors. The
-          root and exact valid marker identity and bytes are revalidated before
-          each directory, stage, and immutable-link boundary and after durable
-          publication before success. Because Node cannot make pathname
-          validation and mutation one kernel operation, a detected substitution
-          rolls back only attempt-owned links, stages, and empty directories by
-          pinned identity; final failure retains no attempt-owned entity state.
+          Entity publication uses project-relative standard Node paths. The root,
+          exact valid marker, target, recovery directories, and attempt-owned
+          roles are revalidated at declared boundaries before publication or
+          recovery effects. Immutable creation linearizes through link and
+          replacement linearizes through complete-file rename. A detected
+          boundary change preserves the competitor and returns a structured
+          conflict. The journal is a read barrier and recovery authority, not a
+          global multi-file snapshot; a non-cooperating writer that races after
+          the final successful validation is outside this contract.
         marker_change_after_detection: conflict_without_legacy_fallback
         successor_preservation: never_remove_unmatched_or_unrelated_identity
       allocation: provisional_candidate_until_publication
@@ -495,14 +504,85 @@ entity_target:
       independently_mutable: true
       relationships: []
       implementation: implemented
-      publication: replace_owned_entity
+      publication: reconcile_markdown_under_recoverable_journal
       record:
         required_fields: [severity, status]
         required_paths: []
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number, path, public_order]
       ownership:
-        fields: [kind, target_version, title, requirements, acceptance, release_blocker, severity, status, readiness, lifecycle]
+        fields: [kind, target_version, title, requirements, acceptance, release_blocker, severity, status, readiness, lifecycle, reconciliation]
         cardinality: TODO.md owns public fields; Agentera owns operational fields
+      reconciliation:
+        baseline: record.reconciliation
+        schema_version: agentera.todoReconciliation.v1
+        public_fields: [description, severity, status, order]
+        transaction_journal: .agentera/.todo-reconciliation/<content-digest>.json
+        activation:
+          path: .agentera/todo-reconciliation-activation.json
+          schema_version: agentera.todoReconciliationActivation.v1
+          cardinality: zero_before_activation_then_exactly_one
+          initial_match: exact_unique_public_fields_only
+          retained_legacy_rows: bounded_section_and_exact_line_sha256_identities
+          rule: >-
+            The first reconciliation may assign a canonical ID only when one
+            ID-less pre-activation row exactly matches one otherwise-unclaimed
+            entity public record. It records unmatched pre-existing rows by
+            section-and-line digest as retained unmanaged legacy bytes. The
+            activation record, all entity baselines, and the public document
+            publish in the same journal. After activation, every new checkbox
+            row under a managed severity or resolved heading requires a
+            canonical ten-letter ID; each retained legacy exemption admits at
+            most one exact row occurrence per reconciliation and cannot
+            authorize a changed or duplicate row.
+        managed_row_identity: every_activated_managed_checkbox_row_has_one_ten_letter_id
+        unmanaged_regions: checkbox_rows_outside_managed_headings_remain_ordinary_markdown
+        public_path_binding: exact_docs_mapped_relative_path_plus_docs_yaml_snapshot_sha256
+        pending_visibility: agentera_todo_get_list_startup_and_dry_run_fail_closed_without_recovery_effects
+        hard_crash_recovery: consume_exact_original_previous_replacement_tmp_and_replacement_metadata_before_target_replay
+        public_replacement: >-
+          Stage and fsync complete replacement bytes plus exact prior bytes on the
+          target filesystem, then replace each regular file with standard Node
+          filesystem operations. Each replacement linearizes as one complete-file
+          rename, so readers observe complete old or new bytes. The journal is a
+          read barrier and recovery authority, not a global multi-file atomic
+          snapshot. Publication validates the target and project context at
+          declared boundaries and preserves a change detected at a validation
+          boundary. A non-cooperating writer that races after the final successful
+          validation is outside this contract. Cross-filesystem or operational
+          filesystem rejection rolls back every attempted target before returning
+          one bounded correction. Recovery consumes exact private roles;
+          concurrent bytes remain canonical or retained and produce one structured
+          correction.
+        semantics: >-
+          Every TODO mutation compares TODO.md and the entity against the last
+          public baseline, imports one-sided Markdown edits, projects one-sided
+          entity edits, applies the requested mutation, and publishes all
+          changed targets under one recoverable journal. Divergent edits, duplicate
+          or orphaned IDs, and removal of an unchecked row reject before
+          effects. One bounded activation transaction admits exact legacy state
+          without treating retained unmatched rows as managed. The durable
+          journal is the Agentera-visible commit barrier:
+          while it exists, TODO reads and startup reject rather than expose mixed
+          targets, and dry-run inspects it without recovery effects. Each ordinary
+          file replacement remains whole-file atomic. A non-dry retry repairs a
+          target interrupted before or after replacement from exact retained role
+          files, and recovers the public document from the same portable
+          complete-file roles, then completes the prepared journal before
+          replaying the request. Invalid journals and stale or retained-role
+          conflicts preserve all target and recovery bytes and return one
+          bounded structured correction. Recovery is bound to the exact
+          docs-mapped public path and mapping snapshot; unrelated branch,
+          competitor, or mapping changes are never overwritten.
+          Rollback attempts every applied target even when one target reports a
+          boundary conflict; it retains the pending journal and bounded per-target role
+          evidence for only the targets that could not be restored.
+        bounds:
+          managed_items: 256
+          retained_pre_activation_legacy_rows: 256
+          transaction_targets: 258
+          activation_utf8_bytes: 32768
+          journal_utf8_bytes: 4194304
+          todo_markdown_utf8_bytes: 1048576
       retrieval:
         exact: agentera state todo get --id ID --format json
         list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
@@ -2532,7 +2612,7 @@ mutation_grammar:
       verb: create
       class: record_payload
       selectors: []
-      preconditions: [entity_mode_marker_is_valid, full_typed_record_is_valid, readiness_is_complete_or_needs_triage, dependency_graph_is_valid]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, full_typed_record_is_valid, readiness_is_complete_or_needs_triage, dependency_graph_is_valid]
       owned_fields: [id, artifact, status, public_order, lifecycle]
       input:
         mode: structured
@@ -2549,7 +2629,7 @@ mutation_grammar:
       verb: update
       class: record_payload
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, typed_patch_is_valid, dependency_graph_is_valid, public_authority_matches]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, typed_patch_is_valid, dependency_graph_is_valid]
       owned_fields: [id, artifact, status, public_order, lifecycle]
       input:
         mode: structured
@@ -2566,7 +2646,7 @@ mutation_grammar:
       verb: set-severity
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, severity_is_valid, reason_and_date_are_present, public_authority_matches]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, severity_is_valid, reason_and_date_are_present]
       owned_fields: [id, artifact, severity, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the bare TODO ID, one immediate-impact severity, a reason, and a YYYY-MM-DD date; no record input is accepted.
@@ -2582,7 +2662,7 @@ mutation_grammar:
       verb: supersede
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, replacement_is_distinct_existing_todo, reason_and_date_are_present, public_authority_matches]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, replacement_is_distinct_existing_todo, reason_and_date_are_present]
       owned_fields: [id, artifact, status, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the selected bare TODO ID, an existing distinct replacement ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
@@ -2598,7 +2678,7 @@ mutation_grammar:
       verb: resolve
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, item_is_open, reason_and_date_are_present, public_authority_matches]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, item_is_open, reason_and_date_are_present]
       owned_fields: [id, artifact, status, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the bare TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
@@ -2613,7 +2693,7 @@ mutation_grammar:
       verb: reopen
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, item_is_resolved, reason_and_date_are_present, public_authority_matches]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, item_is_resolved, reason_and_date_are_present]
       owned_fields: [id, artifact, status, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the bare resolved TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.

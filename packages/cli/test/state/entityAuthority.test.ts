@@ -102,6 +102,16 @@ describe("Decision 94 entity authority", () => {
       "writer",
       "git_reference",
     ]);
+    expect(target.storage_boundary.shared_primitives.publication_context.filesystem_contract).toEqual({
+      primitives: ["node_fs_linkSync", "node_fs_renameSync"],
+      replacement_visibility: "complete_old_or_new_bytes_per_file",
+      journal_visibility: "pending_journal_blocks_reads",
+      global_snapshot: "not_promised",
+      late_racer: "outside_contract_after_final_successful_validation",
+      unsupported_result: "structured_unsupported_target_before_target_effects",
+    });
+    expect(target.storage_boundary.shared_primitives.publication_context.pathname_race_contract)
+      .toMatch(/project-relative standard Node paths.*link.*complete-file rename.*structured conflict.*not a global multi-file snapshot.*races after the final successful validation is outside this contract/s);
     expect(target.entities[0]).toMatchObject({
       boundary: "progress_cycle",
       artifact: "progress",
@@ -137,7 +147,16 @@ describe("Decision 94 entity authority", () => {
     expect(target.entities.find((entity: any) => entity.boundary === "todo_item")).toMatchObject({
       artifact: "todo",
       implementation: "implemented",
-      publication: "replace_owned_entity",
+      publication: "reconcile_markdown_under_recoverable_journal",
+      reconciliation: {
+        activation: {
+          path: ".agentera/todo-reconciliation-activation.json",
+          schema_version: "agentera.todoReconciliationActivation.v1",
+          initial_match: "exact_unique_public_fields_only",
+        },
+        public_replacement: expect.stringMatching(/standard Node filesystem operations.*complete old or new bytes.*not a global multi-file atomic snapshot.*validation boundary.*rolls back every attempted target/s),
+        bounds: { managed_items: 256, retained_pre_activation_legacy_rows: 256, transaction_targets: 258, activation_utf8_bytes: 32768 },
+      },
       retrieval: { exact: "agentera state todo get --id ID --format json", ordering: "severity_then_status_then_id" },
     });
     expect(target.entities.find((entity: any) => entity.boundary === "decision")).toMatchObject({

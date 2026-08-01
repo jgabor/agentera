@@ -1,0 +1,14 @@
+id: srdmkolwqc
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 tail · Align consumers and synchronize M3 (qjhjpzowae)
+  status: pending
+  depends_on:
+    - iddsqjadki
+  acceptance:
+    - GIVEN canonical runtime reads WHEN help, schema, startup recovery, served instructions, and package output are inspected THEN they use the same vocabulary and exact-get recovery.
+    - GIVEN focused TODO, limit, and help work WHEN integrated THEN qjhjpzowae closes only if no duplicate grammar or publication path remains.
+    - GIVEN all M3 tasks pass WHEN state synchronizes THEN five TODOs, plan state, public TODO state, progress, and Unreleased changelog agree; drift reopens its source task.
+    - GIVEN version policy WHEN metadata is prepared THEN only an allowed 3.0.0-dev.N+1 package bump occurs, suite metadata stays 3.0.0, and nothing is published, tagged, or pushed.
+    - GIVEN source and package gates WHEN run THEN the rebuilt local CLI passes and downstream M4 and M5 tasks consume this M3 closure dependency.

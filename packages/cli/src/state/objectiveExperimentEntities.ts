@@ -108,7 +108,7 @@ export function mutateObjectiveEntity(req: StateWriteRequest, options: Options =
       const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope("state objective create", { id, path: entityPath(req.projectRoot, sourceRoot, OBJECTIVE_ARTIFACT, OBJECTIVE, id), replay: false }, OBJECTIVE_ARTIFACT, input, true);
       let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
       try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: OBJECTIVE_ARTIFACT, boundary: OBJECTIVE, id, record: input }); published = result; assertValidState(context.pinnedPath(), sourceRoot); context.assertValid(); return envelope("state objective create", result, OBJECTIVE_ARTIFACT, input, false); }
-      catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
+      catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity, false); throw error; }
     }
     const objective = selectObjective(entities, String(req.values.id ?? ""));
     if (canonicalRecordJson(input) === canonicalRecordJson(objective.record)) return envelope("state objective update", { id: objective.id!, path: objective.path, replay: true }, OBJECTIVE_ARTIFACT, input, req.dryRun);
@@ -130,7 +130,7 @@ export function publishExperimentEntity(req: StateWriteRequest, options: Options
     assertBaseline(entities, objective.id!, record); const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope("state experiments publish", { id, path: entityPath(req.projectRoot, sourceRoot, EXPERIMENT_ARTIFACT, EXPERIMENT, id), replay: false }, EXPERIMENT_ARTIFACT, record, true);
     let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
     try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: EXPERIMENT_ARTIFACT, boundary: EXPERIMENT, id, record }); published = result; assertValidState(context.pinnedPath(), sourceRoot); assertBaseline(relevant(context.pinnedPath(), sourceRoot), objective.id!); context.assertValid(); return envelope("state experiments publish", result, EXPERIMENT_ARTIFACT, record, false); }
-    catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
+    catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity, false); throw error; }
   });
 }
 

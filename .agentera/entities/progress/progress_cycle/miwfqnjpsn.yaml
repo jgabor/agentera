@@ -1,0 +1,16 @@
+id: miwfqnjpsn
+artifact: progress
+record:
+  timestamp: 2026-08-01 23:05
+  type: fix
+  phase: build
+  what: Corrected retry 1 audit blockers for portable recoverable publication task wgekelefqq.
+  context:
+    intent: Address only wgekelefqq-audit-1 recovery-boundary and contract-parity findings.
+    constraints: Standard Node only; no native helper, downstream TODO behavior, lifecycle closeout, commit, publication, or staged-index change.
+    unknowns: A non-cooperating writer that races after the final successful validation remains outside the declared contract.
+    scope: Shared recovery-directory trust seam, symlink no-effect regression, and authority/changelog/test parity.
+  discovered: Pending TODO recovery validated neither the .agentera/.entity-recovery root nor each attempt before enumeration and deletion, so a symlink could redirect cleanup outside the project. The top-level storage authority and changelog also retained obsolete Linux descriptor and packaged-native-exchange claims after the portable redesign.
+  verified: "Symlink no-effect: the focused publication/TODO/authority suite passed 56 tests, including genuine pending-journal fixtures for both a symlinked recovery root and a symlinked attempt; each returned structured unsupported_target before deletion, preserved every external role byte and directory, preserved the canonical entity, and retained the journal. Shared trust validation now checks canonical project containment, real non-symlink directories, current-user ownership, non-group/world-writable permissions, target-filesystem identity, and stable directory identity in both recovery creation and pending recovery. Authority/changelog parity: entity authority tests assert standard Node linkSync/renameSync, per-file complete old-or-new visibility, journal read blocking, no global snapshot, and the post-final-validation late-racer caveat; package verification confirms no fs-native-extensions dependency or native exchange module. Preserved gates: full source passed 224 files with 3,107 tests and 1 skip; package verification passed 2 files with 19 tests; typecheck and local build passed; lint reported 0 errors and 149 existing warnings; root state validation passed with 2,040 entities and 0 issues; compact and capability-contract checks passed; pack dry-run created no artifact; git diff check passed."
+  next: Keep wgekelefqq pending for independent retry evaluation. Do not advance hoxdtgwytq or mutate prior evaluation and progress records.
+  publication_order: 32

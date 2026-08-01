@@ -1,0 +1,16 @@
+id: hdzqwgzcoe
+artifact: progress
+record:
+  timestamp: 2026-08-01 22:40
+  type: fix
+  phase: build
+  what: Established portable recoverable per-file publication for revised M3 task wgekelefqq.
+  context:
+    intent: Replace the failed native publication design with the smallest portable recovery seam that satisfies revised task wgekelefqq.
+    constraints: Use standard Node filesystem operations only; promise per-file old-or-new bytes, not a global atomic snapshot or protection from a non-cooperating writer after final validation; preserve staged M1 state and all lifecycle records.
+    unknowns: Residual durability follows host filesystem rename and fsync behavior; Windows skips directory fsync because Node does not provide the same directory-handle contract.
+    scope: Generic entity publication, transaction recovery integration required to exercise it, authority and changelog alignment, and criterion-specific verification only.
+  discovered: The prior approach depended on an unapproved native exchange and stronger descriptor-pinned race guarantees. The revised authority requires standard Node paths, per-file old-or-new replacement, a journal read barrier, and no global multi-file snapshot. Verification initially run from packages/cli inspected empty package-local state; root-scoped reruns corrected that authority mismatch.
+  verified: "Criterion 1: complete-file rename and installed-package tests prove old-or-new per-file bytes with no native dependency. Criterion 2: entity-mode read detection performs no mutation, while interrupted and invalid journals fail reads closed. Criterion 3: pre-publication, staged in-place, mapped-public, immutable-target, and retained-role competitors remain unchanged with structured conflicts. Criterion 4: injected target boundaries plus real SIGKILL before and after rename recover on exact retry or identify the conflicting target. Criterion 5: focused success/conflict/interruption tests passed; the full source lane passed 224 files with 3,106 tests and 1 skip, package verification passed 2 files with 19 tests, typecheck/build passed, lint had 0 errors and 149 existing warnings, root-scoped state validation found 2,039 valid entities with 0 issues, compact and capability-contract validation passed, and pack dry-run completed without creating an artifact."
+  next: Keep wgekelefqq pending for independent evaluation; do not advance dependent task hoxdtgwytq or close frpdshynmd in this cycle.
+  publication_order: 31

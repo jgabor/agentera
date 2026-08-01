@@ -6,7 +6,7 @@ import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listPlanEntities, listPlanTaskEntities } from "../../../state/planEntities.js";
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
-import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
+import { assertTodoReconciliationReadable, listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
 import { summaryCaveat } from "../../../state/summaryEntityRead.js";
@@ -137,6 +137,7 @@ export interface EntityOrientationProjection {
 
 /** Bounded startup projection built only from canonical entity readers. */
 export function collectEntityOrientation(projectRoot: string, sourceRoot: string): EntityOrientationProjection {
+  assertTodoReconciliationReadable(projectRoot, sourceRoot);
   const discovery = discoverEntities(projectRoot, sourceRoot);
   const caveatContract = glossaryCaveatContract(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"));
   const glossaryCaveatProjection = projectCurrentGlossaryCaveats(discovery.entities, caveatContract);

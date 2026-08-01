@@ -11,6 +11,7 @@ import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval
 import {
   allocateEntityId,
   assertEntityDiscoveryOrigin,
+  canonicalEntityEnvelopeBytes,
   canonicalEntityRecordViolations,
   discoverEntities,
   entityExactGetMaxBytes,
@@ -25,19 +26,28 @@ import {
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js";
 import { detectStateModeBinding } from "./stateMode.js";
-import { reject } from "./write/errors.js";
+import { reject, StateWriteInputError } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { TODO_SEVERITIES, TODO_STATUSES, todoDocsRecordViolations, todoInputViolations } from "./todoDocsEntityValidation.js";
 import { todoReadinessReferenceViolations } from "../registries/todoReadinessContract.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { artifactSchemasDir, loadArtifactRecord, registryModelPath, resolveArtifactPath } from "../registries/artifactRegistry.js";
+import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, type TodoReconciliationBinding, type TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
+import {
+  loadTodoReconciliationActivation,
+  todoLegacyRowFingerprint,
+  todoReconciliationActivationBytes,
+  TODO_RECONCILIATION_ACTIVATION_PATH,
+  TODO_RECONCILIATION_ITEM_LIMIT,
+  type TodoReconciliationActivation,
+} from "./todoReconciliationActivation.js";
 
 const ID = /^[a-z]{10}$/;
 const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_id" } as const;
 const DOCS = { artifact: "docs", boundary: "documentation_inventory_entry", order: "path_then_id" } as const;
 
-interface Options { sourceRoot?: string; publicationContext?: EntityPublicationContext; candidate?: () => string }
+interface Options { sourceRoot?: string; publicationContext?: EntityPublicationContext; candidate?: () => string; interruptAfterTarget?: number }
 interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number }
 
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
@@ -98,41 +108,185 @@ function todoPublicPath(root: string, sourceRoot: string): string {
   return resolveArtifactPath(todo, root, { strictWrite: true });
 }
 
-function todoMarkdownRow(root: string, sourceRoot: string, id: string): { severity: string | null; item: ReturnType<typeof parseTodoMarkdownListItem> } | null {
-  const file = todoPublicPath(root, sourceRoot);
-  if (!fs.existsSync(file)) return null;
-  let section = "normal";
-  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
-    const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
-    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : section;
-    const item = parseTodoMarkdownListItem(line.trim());
-    if (item?.id === id) return { severity: markdownSeverity(section), item };
-  }
-  return null;
+function todoReconciliationBinding(root: string, sourceRoot: string): TodoReconciliationBinding {
+  const publicPath = relative(root, todoPublicPath(root, sourceRoot));
+  const docsRecord = loadArtifactRecord("docs", artifactSchemasDir(sourceRoot), registryModelPath(sourceRoot));
+  if (!docsRecord) throw new Error("artifact registry is missing the canonical 'docs' record");
+  const docs = resolveArtifactPath(docsRecord, root, { strictWrite: true });
+  const mapping = fs.existsSync(docs) ? fs.readFileSync(docs) : Buffer.from("<absent>");
+  const mappingSha256 = createHash("sha256").update(publicPath).update("\0").update(mapping).digest("hex");
+  return { publicPath, mappingSha256 };
 }
 
-function assertTodoPublicAgreement(root: string, sourceRoot: string, id: string, current: JsonObject, proposed: JsonObject = current): void {
-  const row = todoMarkdownRow(root, sourceRoot, id);
-  if (!row?.item) return;
-  const expectedStatus = row.item.status;
-  const currentText = renderTodoPublicRecord(current);
-  const proposedText = renderTodoPublicRecord(proposed);
-  const publicText = row.item.public_description ?? row.item.description;
-  const currentSeverityMatches = row.severity === "resolved" || row.severity === null || current.severity === row.severity;
-  const proposedSeverityMatches = row.severity === "resolved" || row.severity === null || proposed.severity === row.severity;
-  const currentTextMatches = current.title !== undefined ? currentText === publicText : currentText === row.item.description || currentText === publicText;
-  const proposedTextMatches = proposed.title !== undefined ? proposedText === publicText : proposedText === row.item.description || proposedText === publicText;
-  const currentMatches = current.status === expectedStatus && currentSeverityMatches && currentTextMatches;
-  const proposedMatches = proposed.status === expectedStatus && proposedSeverityMatches && proposedTextMatches;
-  if (!currentMatches || !proposedMatches) reject({
-    class: "conflict",
-    message: `TODO.md and Agentera disagree on public values for TODO '${id}'`,
-    violations: [
-      ...(!currentMatches ? ["current canonical entity is already divergent from TODO.md"] : []),
-      ...(!proposedMatches ? ["the requested mutation would diverge from TODO.md-owned public values"] : []),
-    ],
-    recovery: "Reconcile the TODO.md row and canonical entity through the repository-first reconciliation contract; no state was changed.",
+export function assertTodoReconciliationReadable(root: string, sourceRoot: string, id?: string): void {
+  const directory = path.join(root, ".agentera/.todo-reconciliation");
+  if (!fs.existsSync(directory) || !fs.readdirSync(directory).some((name) => name.endsWith(".json"))) return;
+  let pending: string[];
+  try { pending = inspectTodoReconciliation(root, todoReconciliationBinding(root, sourceRoot)); }
+  catch (error) {
+    if (error instanceof StateWriteInputError) {
+      throw failure("unsupported_state", "todo", error.body.message, error.body.recovery ?? "Restore the pending TODO reconciliation journal, then retry this read.", id);
+    }
+    throw error;
+  }
+  if (pending.length) throw failure("unsupported_state", "todo", `TODO reconciliation transaction '${pending[0]}' is pending; no mixed TODO state is readable`, "Retry the exact non-dry-run TODO mutation to complete recovery, then repeat this read.", id);
+}
+
+interface TodoPublicSnapshot { present: boolean; description?: string; severity?: string; status?: string; order?: number }
+interface ManagedRow { id: string; line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
+interface LegacyRow { line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
+interface ManagedRowScan { rows: Map<string, ManagedRow>; retainedLegacyRows: string[] }
+type TodoEntityView = Pick<DiscoveredEntity, "boundary" | "id" | "record">;
+const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
+
+function publicSnapshot(record: JsonObject, order?: number): TodoPublicSnapshot {
+  return { present: true, description: renderTodoPublicRecord(record), severity: String(record.severity), status: String(record.status), ...(order === undefined ? {} : { order }) };
+}
+
+function baseline(record: JsonObject): TodoPublicSnapshot | null {
+  const reconciliation = mapping(record.reconciliation) ? record.reconciliation : null;
+  const value = reconciliation?.schema_version === RECONCILIATION_VERSION && mapping(reconciliation.public) ? reconciliation.public : null;
+  if (!value || typeof value.present !== "boolean") return null;
+  return structuredClone(value) as unknown as TodoPublicSnapshot;
+}
+
+function samePublic(left: TodoPublicSnapshot, right: TodoPublicSnapshot, includeOrder = true): boolean {
+  const fields = includeOrder ? ["present", "description", "severity", "status", "order"] : ["present", "description", "severity", "status"];
+  return fields.every((field) => left[field as keyof TodoPublicSnapshot] === right[field as keyof TodoPublicSnapshot]);
+}
+
+function managedRows(
+  markdown: string,
+  activation: TodoReconciliationActivation | null,
+  entities: DiscoveredEntity[],
+): ManagedRowScan {
+  const result = new Map<string, ManagedRow>();
+  const order = new Map<string, number>();
+  const legacy: LegacyRow[] = [];
+  let section: string | null = null;
+  markdown.split(/\r?\n/).forEach((line, index) => {
+    const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
+    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : null;
+    const item = parseTodoMarkdownListItem(line.trim());
+    if (!item) return;
+    const severity = section ? markdownSeverity(section) : null;
+    if (item.id && !severity && section !== "resolved") reject({ class: "conflict", message: `TODO '${item.id}' is outside a managed severity or resolved section`, recovery: `Move '${item.id}' under one declared TODO severity or the resolved section and retry; no state was changed.` });
+    if (!section) return;
+    const key = section === "resolved" ? "resolved" : severity!;
+    const publicOrder = (order.get(key) ?? 0) + 1; order.set(key, publicOrder);
+    const row = { line: index, section: key, sourceLine: line, item, snapshot: { present: true, description: item.public_description ?? item.description, ...(section === "resolved" ? {} : { severity: severity! }), status: item.status, order: publicOrder } };
+    if (!item.id) { legacy.push(row); return; }
+    if (result.has(item.id)) reject({ class: "conflict", message: `TODO.md contains duplicate managed ID '${item.id}'`, recovery: `Keep exactly one managed row with ID '${item.id}' and retry; no state was changed.` });
+    result.set(item.id, { ...row, id: item.id });
   });
+  const retainedLegacyRows: string[] = [];
+  if (activation) {
+    const retained = new Set(activation.retained_legacy_rows);
+    for (const row of legacy) {
+      const fingerprint = todoLegacyRowFingerprint(row.section, row.sourceLine);
+      if (retained.delete(fingerprint)) continue;
+      reject({
+        class: "conflict",
+        message: `managed TODO checkbox row at line ${row.line + 1} has no ten-letter ID after reconciliation activation`,
+        recovery: `Add '[id:abcdefghij]' with the row's canonical ten-letter entity ID at TODO.md line ${row.line + 1}, or move the row outside managed severity and resolved sections, then retry once; no state was changed.`,
+      });
+    }
+  } else {
+    const legacyByFingerprint = new Map<string, LegacyRow[]>();
+    for (const row of legacy) {
+      const fingerprint = todoLegacyRowFingerprint(row.section, row.sourceLine);
+      const duplicates = legacyByFingerprint.get(fingerprint) ?? [];
+      duplicates.push(row);
+      legacyByFingerprint.set(fingerprint, duplicates);
+    }
+    const ambiguous = [...legacyByFingerprint.values()].find((rows) => rows.length > 1);
+    if (ambiguous) reject({
+      class: "conflict",
+      message: `pre-activation TODO contains identical ID-less managed rows at lines ${ambiguous.map((row) => row.line + 1).join(", ")}`,
+      recovery: "Give each identical row its distinct canonical '[id:abcdefghij]' tag or remove the duplicate, then retry once; no state was changed.",
+    });
+    const claimed = new Set(result.keys());
+    for (const row of legacy) {
+      const matches = entities.filter((entity) => {
+        if (entity.boundary !== TODO.boundary || !entity.id || !entity.record || claimed.has(entity.id)) return false;
+        return samePublic(publicSnapshot(entity.record), rowSnapshot({ ...row, id: entity.id }, entity.record), false);
+      });
+      if (matches.length > 1) reject({
+        class: "conflict",
+        message: `pre-activation TODO row at line ${row.line + 1} matches multiple canonical entities`,
+        recovery: `Add one exact '[id:abcdefghij]' tag to TODO.md line ${row.line + 1} and retry once; no state was changed.`,
+      });
+      const matched = matches[0];
+      if (matched?.id) {
+        claimed.add(matched.id);
+        result.set(matched.id, { ...row, id: matched.id });
+        continue;
+      }
+      const fingerprint = todoLegacyRowFingerprint(row.section, row.sourceLine);
+      if (retainedLegacyRows.includes(fingerprint)) reject({
+        class: "conflict",
+        message: `pre-activation TODO contains duplicate unmatched legacy rows at line ${row.line + 1}`,
+        recovery: `Give each duplicate row a distinct canonical '[id:abcdefghij]' tag or move it outside managed sections, then retry once; no state was changed.`,
+      });
+      retainedLegacyRows.push(fingerprint);
+    }
+  }
+  if (result.size > TODO_RECONCILIATION_ITEM_LIMIT || retainedLegacyRows.length > TODO_RECONCILIATION_ITEM_LIMIT) reject({
+    class: "conflict",
+    message: `TODO.md exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-item reconciliation or legacy-activation bound`,
+    recovery: `Compact retained resolved rows until each bounded set has at most ${TODO_RECONCILIATION_ITEM_LIMIT} items, then retry once; no state was changed.`,
+  });
+  return { rows: result, retainedLegacyRows };
+}
+
+function rowSnapshot(row: ManagedRow, record: JsonObject): TodoPublicSnapshot {
+  return { ...row.snapshot, severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity };
+}
+
+function importMarkdown(record: JsonObject, row: ManagedRow): JsonObject {
+  const result = structuredClone(record);
+  const description = row.item.public_description ?? row.item.description;
+  if (result.title !== undefined) {
+    result.kind = row.item.kind ?? result.kind;
+    result.target_version = row.item.target_version ?? null;
+    result.title = row.item.title ?? description;
+  } else result.description = description;
+  if (row.section !== "resolved") result.severity = row.snapshot.severity!;
+  result.status = row.item.status;
+  return result;
+}
+
+function withBaseline(record: JsonObject, value: TodoPublicSnapshot): JsonObject {
+  const publicValue = Object.fromEntries(Object.entries(value).filter(([, field]) => field !== undefined)) as JsonObject;
+  return { ...record, reconciliation: { schema_version: RECONCILIATION_VERSION, public: publicValue } };
+}
+
+function sectionFor(record: JsonObject): string { return record.status === "resolved" ? "resolved" : String(record.severity); }
+function headingFor(section: string): string { return section === "resolved" ? "## ✓ Resolved" : `## → ${section[0]!.toUpperCase()}${section.slice(1)}`; }
+function rowFor(id: string, record: JsonObject): string { return `- [${record.status === "resolved" ? "x" : " "}] [id:${id}] ${renderTodoPublicRecord(record)}`; }
+
+function renderManagedMarkdown(markdown: string, records: Map<string, JsonObject>, existing: Map<string, ManagedRow>): string {
+  const byLine = new Map([...existing.values()].map((row) => [row.line, row]));
+  const retained = new Set<string>();
+  const lines = markdown.split(/\r?\n/).flatMap((line, index) => {
+    const row = byLine.get(index); if (!row) return [line];
+    const record = records.get(row.id);
+    if (!record || sectionFor(record) !== row.section) return [];
+    retained.add(row.id); return [rowFor(row.id, record)];
+  });
+  for (const section of ["critical", "degraded", "normal", "annoying", "resolved"]) {
+    const ids = [...records.entries()].filter(([id, record]) => !retained.has(id) && sectionFor(record) === section).sort(([left], [right]) => {
+      const a = existing.get(left); const b = existing.get(right);
+      return (a?.section === section ? a.snapshot.order! : Number.MAX_SAFE_INTEGER) - (b?.section === section ? b.snapshot.order! : Number.MAX_SAFE_INTEGER) || left.localeCompare(right);
+    }).map(([id]) => id);
+    if (!ids.length) continue;
+    let heading = lines.findIndex((line) => line.trim().toLowerCase() === headingFor(section).toLowerCase());
+    if (heading < 0) { if (lines.at(-1)?.trim()) lines.push(""); lines.push(headingFor(section)); heading = lines.length - 1; }
+    let insert = heading + 1; while (insert < lines.length && !/^##\s+/.test(lines[insert]!.trim())) insert += 1;
+    while (insert > heading + 1 && !lines[insert - 1]!.trim()) insert -= 1;
+    lines.splice(insert, 0, ...ids.map((id) => rowFor(id, records.get(id)!)));
+  }
+  return `${lines.join("\n").replace(/\n*$/, "")}\n`;
 }
 
 function envelope(command: string, entity: { id: string; path: string; replay: boolean }, artifact: "todo" | "docs", record: JsonObject, dryRun: boolean): StateWriteEnvelope {
@@ -149,10 +303,13 @@ function readinessRecord(value: unknown): JsonObject {
     ? value.dependencies.map((dependency) => typeof dependency === "string" ? { artifact: "todo", id: dependency } : dependency)
     : value.dependencies;
   return {
-    ...structuredClone(value),
-    ...(dependencies !== undefined ? { dependencies } : { dependencies: [] }),
-    ...(value.blocked === undefined ? { blocked: null } : {}),
-    ...(value.gate === undefined ? { gate: null } : {}),
+    capability: value.capability,
+    reason: value.reason,
+    dependencies: dependencies ?? [],
+    blocked: value.blocked ?? null,
+    gate: value.gate ?? null,
+    queue_rank: value.queue_rank,
+    order_reason: value.order_reason,
   } as JsonObject;
 }
 
@@ -193,7 +350,7 @@ function applyTodoPatch(current: JsonObject, patch: JsonObject): JsonObject {
   return record;
 }
 
-function transitionRecord(req: StateWriteRequest, current: JsonObject, entities: DiscoveredEntity[]): JsonObject {
+function transitionRecord(req: StateWriteRequest, current: JsonObject, entities: TodoEntityView[]): JsonObject {
   const lifecycle = mapping(req.values.lifecycle) ? req.values.lifecycle : {};
   const operation = req.spec.verb;
   const reason = String(lifecycle.reason ?? "").trim();
@@ -257,7 +414,7 @@ function transitionRecord(req: StateWriteRequest, current: JsonObject, entities:
   return record;
 }
 
-function mutationRecord(req: StateWriteRequest, current: JsonObject | undefined, entities: DiscoveredEntity[] = []): JsonObject {
+function mutationRecord(req: StateWriteRequest, current: JsonObject | undefined, entities: TodoEntityView[] = []): JsonObject {
   if (req.artifact === "docs") return structuredClone(req.input ?? {}) as JsonObject;
   if (current && ["set-severity", "supersede", "resolve", "reopen"].includes(req.spec.verb)) return transitionRecord(req, current, entities);
   const payload = todoPayload(req);
@@ -265,7 +422,7 @@ function mutationRecord(req: StateWriteRequest, current: JsonObject | undefined,
   return applyTodoPatch(current ?? {}, payload);
 }
 
-function assertTodoReferences(id: string, record: JsonObject, entities: DiscoveredEntity[]): void {
+function assertTodoReferences(id: string, record: JsonObject, entities: TodoEntityView[]): void {
   if (record.readiness === undefined) return;
   const todos = entities
     .filter((entity) => entity.boundary === TODO.boundary && entity.id && entity.record && entity.id !== id)
@@ -284,6 +441,50 @@ function todoReadinessRecovery(verb: string): string {
   return `Run agentera state todo explain --verb ${verb} --format json, then provide a complete typed TODO record or patch; readiness must include capability, reason, queue_rank, and order_reason together, and dependencies must use IDs returned by agentera state todo list --format json.`;
 }
 
+function reconcileTodoRecords(
+  entities: DiscoveredEntity[],
+  rows: Map<string, ManagedRow>,
+  activating: boolean,
+): { records: Map<string, JsonObject>; visible: Set<string> } {
+  const records = new Map<string, JsonObject>();
+  const visible = new Set<string>();
+  for (const entity of entities.filter(({ boundary }) => boundary === TODO.boundary)) {
+    const id = entity.id!; const current = entity.record!; const row = rows.get(id); const prior = baseline(current);
+    if (!prior) {
+      if (activating) {
+        records.set(id, row ? importMarkdown(current, row) : current);
+        if (row || current.status === "open") visible.add(id);
+        continue;
+      }
+      if (!row || !samePublic(publicSnapshot(current), rowSnapshot(row, current), false)) reject({
+        class: "conflict",
+        message: `TODO '${id}' has no stable reconciliation baseline`,
+        recovery: `Make the managed TODO.md row '${id}' exactly match its canonical public description, severity, and checkbox, then retry once; no state was changed.`,
+      });
+      records.set(id, current); visible.add(id); continue;
+    }
+    if (!row) {
+      if (prior.present && prior.status === "open") reject({
+        class: "conflict",
+        message: `unchecked TODO '${id}' was removed from TODO.md`,
+        recovery: `Restore the unchecked managed row '${id}' or check it resolved before removing it, then retry once; no state was changed.`,
+      });
+      records.set(id, current); continue;
+    }
+    const markdown = rowSnapshot(row, current); const entityPublic = publicSnapshot(current, prior.order);
+    const markdownChanged = !samePublic(markdown, prior);
+    const entityChanged = !samePublic(entityPublic, prior, false);
+    if (markdownChanged && entityChanged && !samePublic(markdown, entityPublic, false)) reject({
+      class: "conflict",
+      message: `TODO.md and Agentera changed public fields divergently for TODO '${id}'`,
+      recovery: `Choose one public description, severity, and checkbox for '${id}', make both sides agree, then retry once; no state was changed.`,
+    });
+    records.set(id, markdownChanged ? importMarkdown(current, row) : current); visible.add(id);
+  }
+  for (const id of rows.keys()) if (!records.has(id)) reject({ class: "conflict", message: `TODO.md managed ID '${id}' has no canonical entity`, recovery: `Restore the canonical TODO entity for '${id}' or remove the orphaned managed ID, then retry once; no state was changed.` });
+  return { records, visible };
+}
+
 export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   const artifact = req.artifact as "todo" | "docs";
   if (artifact !== "todo" && artifact !== "docs") throw new Error("TODO/docs entity mutation received an unsupported artifact");
@@ -298,31 +499,101 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const pinnedRoot = context.pinnedPath();
     const sourceBinding = { kind: "project", projectRoot: context.validatedRoot } as const;
     context.assertValid();
+    const todoBinding = artifact === "todo" ? todoReconciliationBinding(req.projectRoot, sourceRoot) : null;
+    const pending = todoBinding ? inspectTodoReconciliation(pinnedRoot, todoBinding) : [];
+    if (req.dryRun && pending.length) reject({ class: "conflict", message: `TODO reconciliation transaction '${pending[0]}' requires recovery before dry-run`, recovery: "Retry the exact TODO mutation without --dry-run once to complete recovery; this dry-run changed no state." });
+    const recovered = todoBinding && !req.dryRun ? recoverTodoReconciliation(context, sourceRoot, todoBinding, () => assertState(pinnedRoot, sourceRoot, sourceBinding)) : [];
     assertState(pinnedRoot, sourceRoot, sourceBinding);
     context.assertValid();
     const entities = relevant(pinnedRoot, sourceRoot, artifact, undefined, sourceBinding);
     context.assertValid();
-    if (req.spec.verb === "create") {
-      if (artifact === "todo" && req.input) {
-        const inputViolations = todoInputViolations(req.input as JsonObject, "create");
-        if (inputViolations.length) reject({ class: "schema_violation", message: "todo create input is invalid", violations: inputViolations, recovery: todoReadinessRecovery(req.spec.verb) });
+    if (artifact === "todo") {
+      const publicFile = todoPublicPath(pinnedRoot, sourceRoot);
+      const publicRelative = todoBinding!.publicPath;
+      const publicExists = fs.existsSync(publicFile);
+      const markdownBefore = publicExists ? fs.readFileSync(publicFile) : Buffer.from("");
+      const markdown = markdownBefore.toString("utf8");
+      const todoEntities = entities.filter(({ boundary }) => boundary === TODO.boundary);
+      const loadedActivation = loadTodoReconciliationActivation(pinnedRoot);
+      const activation = loadedActivation?.record ?? null;
+      const activating = activation === null;
+      const scan = managedRows(markdown, activation, todoEntities);
+      const rows = scan.rows;
+      const reconciled = reconcileTodoRecords(todoEntities, rows, activating);
+      let id: string; let requested: JsonObject; let selected: DiscoveredEntity | undefined;
+      if (req.spec.verb === "create") {
+        if (req.input) {
+          const inputViolations = todoInputViolations(req.input as JsonObject, "create");
+          if (inputViolations.length) reject({ class: "schema_violation", message: "todo create input is invalid", violations: inputViolations, recovery: todoReadinessRecovery(req.spec.verb) });
+        }
+        id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot);
+        requested = mutationRecord(req, undefined, todoEntities);
+        reconciled.records.set(id, requested); reconciled.visible.add(id);
+      } else {
+        id = String(req.values.id ?? "");
+        if (!ID.test(id)) reject({ class: "invalid_request", message: `todo ID '${id}' must be ten lowercase letters`, recovery: "Use a bare todo ID returned by create or list; numeric, prefixed, composite, path, and alias identities are invalid." });
+        selected = selectedById(todoEntities, "todo", id);
+        if (req.input && req.spec.verb === "update") {
+          const inputViolations = todoInputViolations(req.input as JsonObject, "update");
+          if (inputViolations.length) reject({ class: "schema_violation", message: "todo update input is invalid", violations: inputViolations, recovery: todoReadinessRecovery(req.spec.verb) });
+        }
+        requested = mutationRecord(req, reconciled.records.get(id)!, todoEntities.map((entity) => ({ ...entity, record: reconciled.records.get(entity.id!)! })));
+        reconciled.records.set(id, requested);
+        if (requested.status === "open" || rows.has(id)) reconciled.visible.add(id);
       }
-      const record = mutationRecord(req, undefined, entities); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations, ...(artifact === "todo" && record.readiness !== undefined ? { recovery: todoReadinessRecovery(req.spec.verb) } : {}) });
-      const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (artifact === "todo" && record.readiness !== undefined) assertTodoReferences(id, record, entities); if (req.dryRun) return envelope(`state ${artifact} create`, { id, path: targetPath(req.projectRoot, sourceRoot, artifact, id), replay: false }, artifact, record, true);
+      const referenceEntities: TodoEntityView[] = [...reconciled.records].map(([todoId, record]) => ({ boundary: TODO.boundary, id: todoId, record }));
+      for (const [todoId, record] of reconciled.records) {
+        const violations = recordViolations("todo", record, sourceRoot);
+        if (violations.length) reject({ class: "schema_violation", message: "todo entity input is invalid", violations, ...(record.readiness !== undefined ? { recovery: todoReadinessRecovery(req.spec.verb) } : {}) });
+        if (record.readiness !== undefined) assertTodoReferences(todoId, record, referenceEntities);
+      }
+      const visibleRecords = new Map([...reconciled.records].filter(([todoId]) => reconciled.visible.has(todoId)));
+      const rendered = renderManagedMarkdown(markdown, visibleRecords, rows);
+      const activationBytesAfter = activation ? loadedActivation!.bytes.toString("utf8") : todoReconciliationActivationBytes(scan.retainedLegacyRows);
+      const activationAfter = activation ?? JSON.parse(activationBytesAfter) as TodoReconciliationActivation;
+      const finalRows = managedRows(rendered, activationAfter, todoEntities).rows;
+      for (const [todoId, record] of reconciled.records) {
+        const row = finalRows.get(todoId);
+        reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false }));
+      }
+      requested = reconciled.records.get(id)!;
+      const targets: TodoReconciliationTarget[] = todoEntities.map((entity) => ({ path: entity.relativePath, before: exactDiscoveredEntityBytes(entity), after: canonicalEntityEnvelopeBytes({ id: entity.id!, artifact: "todo", record: reconciled.records.get(entity.id!)!, migrationProvenance: entity.migrationProvenance ?? undefined }) }));
+      if (!selected) targets.push({ path: relative(req.projectRoot, targetPath(req.projectRoot, sourceRoot, "todo", id)), before: null, after: canonicalEntityEnvelopeBytes({ id, artifact: "todo", record: requested }) });
+      if (activating) targets.push({ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: null, after: activationBytesAfter });
+      targets.push({ path: publicRelative, before: publicExists ? markdownBefore : null, after: rendered });
+      const changed = targets.some((target) => target.before === null || !target.before.equals(Buffer.from(target.after)));
+      if (req.dryRun) return { ...envelope(`state todo ${req.spec.verb}`, { id, path: targetPath(req.projectRoot, sourceRoot, "todo", id), replay: !changed }, "todo", requested, true), reconciliation: { transaction_id: null, targets: targets.length, recovered } };
+      const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, options.interruptAfterTarget, () => {
+        assertState(pinnedRoot, sourceRoot, sourceBinding);
+        const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot);
+        if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({
+          class: "conflict",
+          message: "TODO reconciliation mapping changed during transaction publication",
+          recovery: "Preserve the changed docs mapping and retry the exact TODO mutation after every transaction target is restored; no mapping bytes were overwritten.",
+        });
+        const currentActivation = fs.existsSync(path.join(pinnedRoot, TODO_RECONCILIATION_ACTIVATION_PATH))
+          ? fs.readFileSync(path.join(pinnedRoot, TODO_RECONCILIATION_ACTIVATION_PATH))
+          : null;
+        if (!currentActivation?.equals(Buffer.from(activationBytesAfter))) reject({
+          class: "conflict",
+          message: "TODO reconciliation activation changed during transaction publication",
+          recovery: `Preserve '${TODO_RECONCILIATION_ACTIVATION_PATH}' and retry the exact TODO mutation after every transaction target is restored; no competing activation bytes were overwritten.`,
+        });
+      });
+      context.assertValid();
+      return { ...envelope(`state todo ${req.spec.verb}`, { id, path: targetPath(req.projectRoot, sourceRoot, "todo", id), replay: !changed && recovered.length === 0 }, "todo", requested, false), reconciliation: { transaction_id: transaction.id, targets: transaction.targetCount, recovered } };
+    }
+    if (req.spec.verb === "create") {
+      const record = mutationRecord(req, undefined, entities); const violations = recordViolations("docs", record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: "docs entity input is invalid", violations });
+      const id = allocateEntityId(context.pinnedPath(), options.candidate, sourceRoot); if (req.dryRun) return envelope("state docs create", { id, path: targetPath(req.projectRoot, sourceRoot, "docs", id), replay: false }, "docs", record, true);
       let published: { path: string; publishedIdentity?: PublishedTargetIdentity } | undefined;
-      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, record }); published = result; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope(`state ${artifact} create`, result, artifact, record, false); }
-      catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity); throw error; }
+      try { const result = publishEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact: "docs", boundary: DOCS.boundary, id, record }); published = result; assertState(pinnedRoot, sourceRoot, sourceBinding); context.assertValid(); return envelope("state docs create", result, "docs", record, false); }
+      catch (error) { if (published?.publishedIdentity) context.removeExact(relative(req.projectRoot, published.path), published.publishedIdentity, false); throw error; }
     }
     const id = String(req.values.id ?? "");
     if (!ID.test(id)) reject({ class: "invalid_request", message: `${artifact} ID '${id}' must be ten lowercase letters`, recovery: `Use a bare ${artifact} ID returned by create or list; numeric, prefixed, composite, path, and alias identities are invalid.` });
     const entity = selectedById(entities, artifact, id);
-    if (artifact === "todo" && req.input && ["update"].includes(req.spec.verb)) {
-      const inputViolations = todoInputViolations(req.input as JsonObject, "update");
-      if (inputViolations.length) reject({ class: "schema_violation", message: "todo update input is invalid", violations: inputViolations, recovery: todoReadinessRecovery(req.spec.verb) });
-    }
-    const record = mutationRecord(req, entity.record!, entities); const violations = recordViolations(artifact, record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: `${artifact} entity input is invalid`, violations, ...(artifact === "todo" && record.readiness !== undefined ? { recovery: todoReadinessRecovery(req.spec.verb) } : {}) });
-    if (artifact === "todo" && record.readiness !== undefined) assertTodoReferences(id, record, entities);
-    if (artifact === "todo") assertTodoPublicAgreement(req.projectRoot, sourceRoot, id, entity.record!, record);
+    const record = mutationRecord(req, entity.record!, entities); const violations = recordViolations("docs", record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: "docs entity input is invalid", violations });
     if (canonicalRecordJson(record) === canonicalRecordJson(entity.record)) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: true }, artifact, record, req.dryRun);
     if (req.dryRun) return envelope(`state ${artifact} ${req.spec.verb}`, { id, path: entity.path, replay: false }, artifact, record, true);
     const request = { projectRoot: req.projectRoot, sourceRoot, publicationContext: context, artifact, boundary: definition(artifact).boundary, id, expectedRecord: entity.record!, expectedBytes: exactDiscoveredEntityBytes(entity), migrationProvenance: entity.migrationProvenance, record };
@@ -345,11 +616,13 @@ function sorted(artifact: "todo" | "docs", entities: DiscoveredEntity[]): Discov
 }
 
 export function getTodoDocsEntity(root: string, artifact: "todo" | "docs", id: string, sourceRoot = resolveSourceRoot()): JsonObject {
+  if (artifact === "todo") assertTodoReconciliationReadable(root, sourceRoot, id);
   const entity = selectedById(relevant(root, sourceRoot, artifact), artifact, id); return { schemaVersion: "agentera.stateGet.v1", command: `state ${artifact} get`, status: "ok", entry: entry(root, entity), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entity" } };
 }
 
 export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", limit?: number, cursor?: string, filters: JsonObject = {}, options: { sourceRoot?: string; format?: string; reservedUtf8Bytes?: number; discovery?: EntityDiscoveryResult } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(definition(artifact).boundary, sourceRoot); const take = limit ?? declared.defaultLimit;
+  if (artifact === "todo") assertTodoReconciliationReadable(root, sourceRoot);
   if (!Number.isSafeInteger(take) || take < 1 || take > declared.maximumLimit) throw failure("invalid_request", artifact, `${artifact} list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", undefined, 2);
   const all = relevant(root, sourceRoot, artifact, options.discovery).filter(({ boundary }) => boundary === definition(artifact).boundary); let selected = sorted(artifact, all);
   if (artifact === "todo") selected = selected.filter((entity) => (!filters.severity || entity.record!.severity === filters.severity) && (!filters.status || entity.record!.status === filters.status));

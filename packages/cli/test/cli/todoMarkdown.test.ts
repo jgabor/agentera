@@ -33,6 +33,18 @@ describe("parseTodoMarkdownListItem", () => {
     });
   });
 
+  it("recognizes only leading legacy presentation IDs, not referenced IDs in prose", () => {
+    expect(parseTodoMarkdownListItem("- [ ] [fix:3.0.0] `abcdefghij` Legacy title")).toMatchObject({
+      id: "abcdefghij",
+      public_description: "[fix:3.0.0] Legacy title",
+      title: "Legacy title",
+    });
+    expect(parseTodoMarkdownListItem("- [ ] [fix:3.0.0] Keep follow-up `abcdefghij` open")).toMatchObject({
+      title: "Keep follow-up `abcdefghij` open",
+    });
+    expect(parseTodoMarkdownListItem("- [ ] [fix:3.0.0] Keep follow-up `abcdefghij` open")).not.toHaveProperty("id");
+  });
+
   it("returns null for non-list lines", () => {
     expect(parseTodoMarkdownListItem("not a list")).toBeNull();
   });

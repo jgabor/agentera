@@ -13,6 +13,7 @@ const TODO_INPUT_FIELDS = new Set([
 ]);
 const TODO_CLEARABLE_FIELDS = new Set(["target_version", "requirements", "acceptance", "readiness"]);
 const TODO_LIFECYCLE_REASON_MAX_CODE_POINTS = 500;
+const TODO_RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
 
 function mapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -103,6 +104,19 @@ export function todoDocsRecordViolations(boundary: string, record: JsonObject, s
         )
         : undefined;
       violations.push(...todoReadinessRecordViolations(record.readiness, contract));
+    }
+    if (record.reconciliation !== undefined) {
+      if (!mapping(record.reconciliation) || record.reconciliation.schema_version !== TODO_RECONCILIATION_VERSION || !mapping(record.reconciliation.public)) violations.push("reconciliation must be a canonical TODO public baseline");
+      else {
+        const baseline = record.reconciliation.public;
+        if (typeof baseline.present !== "boolean") violations.push("reconciliation.public.present must be a boolean");
+        if (baseline.present) {
+          if (typeof baseline.description !== "string" || !baseline.description.trim()) violations.push("reconciliation.public.description is required when present");
+          if (!TODO_SEVERITIES.includes(baseline.severity as typeof TODO_SEVERITIES[number])) violations.push(`reconciliation.public.severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
+          if (!TODO_STATUSES.includes(baseline.status as typeof TODO_STATUSES[number])) violations.push(`reconciliation.public.status must be one of: ${TODO_STATUSES.join(", ")}`);
+          if (!Number.isSafeInteger(baseline.order) || Number(baseline.order) < 1) violations.push("reconciliation.public.order must be a positive integer");
+        }
+      }
     }
   }
   if (boundary === "documentation_inventory_entry") {

@@ -1,0 +1,14 @@
+id: hoxdtgwytq
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 replacement tail · Complete recoverable TODO reconciliation (frpdshynmd)
+  status: pending
+  depends_on:
+    - wgekelefqq
+  acceptance:
+    - GIVEN a stable baseline and requested mutation WHEN reconciliation runs THEN imports, projections, and mutation advance under one recoverable journal.
+    - GIVEN stale, divergent, duplicate, missing managed IDs, or unchecked removal WHEN attempted THEN structured rejection occurs before target effects.
+    - GIVEN interruption after any target WHEN exactly retried THEN publication completes or reports conflict without hidden partial success.
+    - GIVEN legacy rows before activation WHEN reconciled THEN one bounded path applies; ambiguity rejects unchanged and managed rows require IDs.
+    - GIVEN the full matrix and independent Audit PASS WHEN closure runs THEN xufuibtial and fspgkyakww are superseded, frpdshynmd resolves, and downstream M3 is ready.

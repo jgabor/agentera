@@ -4,11 +4,23 @@ record:
   name: M3 · Make TODO reconciliation atomic (frpdshynmd)
   depends_on:
     - qllgiterft
-    - tryphyimhc
-    - nkguykzeum
-  status: pending
+    - qgqlxqhlhd
+    - oeprigteku
+  status: blocked
   acceptance:
-    - GIVEN stable state and one-sided edits WHEN mutation runs THEN all reconciled outputs advance together or none do.
-    - GIVEN stale, divergent, duplicate, missing, removal, interrupted, or merged input WHEN attempted THEN no partial effect survives and retry converges.
-    - GIVEN transaction outcomes WHEN tested THEN each has pass, conflict, replay, and recovery cases.
+    - GIVEN a stable baseline and requested TODO mutation WHEN reconciliation runs THEN Markdown imports, entity projections, and the mutation publish together or none do.
+    - GIVEN a stale baseline, divergent public fields, duplicate or missing IDs, or unchecked removal WHEN attempted THEN rejection occurs before effects with one bounded correction.
+    - GIVEN interruption, retry, or branch merge WHEN the transaction resumes THEN deterministic replay converges without partial state.
+    - GIVEN transaction outcomes WHEN tested THEN each boundary has one success and one failure or recovery case.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: A hard kill during mapped public TODO replacement can leave the file absent, contradicting old-or-new publication and leaving that boundary untested; retained-role concurrency conflicts preserve data but return an unstructured exit-1 error without bounded correction.
+    provenance:
+      attempt_id: xufuibtial-audit-2
+      source: Bounded Audit re-review ses_047f933cdffeZbc5fsXaxahU04
+      recorded_at: 2026-07-31 14:33
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Blocked after two independent Audit failures. Remaining: public TODO exact replacement can leave the mapped file absent after a hard kill; retained-role concurrent conflict lacks a structured bounded correction. Typed TODO failure logging is also blocked because current managed TODO.md rows lack required ten-letter IDs; direct bypass is prohibited."

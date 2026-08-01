@@ -1,0 +1,16 @@
+id: zshpbqqgcd
+artifact: progress
+record:
+  timestamp: 2026-07-31 17:06
+  type: fix
+  phase: build
+  what: Corrected the four accepted fspgkyakww Audit findings without changing task, TODO, supersession, or evaluation lifecycle state.
+  context:
+    intent: Make the replacement implementation independently auditable by removing the undeclared GNU tool seam and closing rollback, native-error, and legacy-activation ambiguity gaps.
+    constraints: Preserve the four unrelated staged M1 files and all inherited M3 work; use source, transient source builds, an extracted package, and the rebuilt local CLI; do not commit, publish, push, tag, resolve tasks, or overwrite fspgkyakww-audit-1.
+    unknowns: Fresh independent Audit PASS is still pending. The declared native dependency and kernel exchange were executed on Linux; macOS uses the dependency's renameatx_np implementation, while unsupported hosts or filesystems now reject with a bounded correction.
+    scope: Declared native pathname exchange, exhaustive rollback evidence, structured unsupported-target errors, duplicate pre-activation row rejection, package authority, authority prose, changelog, and regression coverage.
+  discovered: The failed approach invoked PATH-resolved recent GNU mv despite a Node-only package contract, stopped rollback at the first target CAS conflict, leaked operational exchange errors, and could assign one entity ID to the first of two identical legacy rows while exempting the second.
+  verified: Focused final-source suites passed 51 tests, including real SIGKILL before and after native public exchange, atomic competitor preservation, unsupported-host and EIO correction, exhaustive rollback after an injected public CAS conflict, and duplicate matched legacy-row rejection. The final full source lane passed 224 files with 3,133 tests passed and 1 skipped; extracted-package verification passed 2 files and 19 tests, including loading fs-native-extensions@1.5.0 and executing its exchange from the installed package. Typecheck, local build, dependency audit with no known vulnerabilities, state validation with 2,035 entities and zero issues, compact, capability-contract validation, pack dry-run, and git diff check passed. Lint reported zero errors and 150 repository warnings.
+  next: Request a fresh independent Audit of fspgkyakww. Keep fspgkyakww pending, xufuibtial blocked, frpdshynmd open, and fspgkyakww-audit-1 unchanged until an evaluator records PASS.
+  publication_order: 29

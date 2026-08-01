@@ -43,6 +43,16 @@
 
 ### Fixed
 
+- Fixed `agentera state todo` writes to three-way reconcile managed `TODO.md`
+  rows and entity public fields, then publish the Markdown, entity updates, and
+  requested mutation under one recoverable journal. Standard Node link and
+  complete-file rename boundaries preserve complete old-or-new bytes per file;
+  pending journals block reads and dry runs until exact retry recovers them.
+  Detected boundary changes preserve competitors and return structured recovery.
+  The journal does not promise a global multi-file snapshot, and a
+  non-cooperating writer that races after final successful validation remains
+  outside the contract. One bounded activation transaction rejects duplicate
+  ID-less rows before requiring canonical IDs for all newly managed rows.
 - Fixed plan task append and update to require bounded YAML/JSON file-or-stdin
   records and patches with bare ten-letter selectors and relationships. Complete
   plan create now resolves positive integer or canonical numeric-string ordinals
@@ -180,13 +190,11 @@
   deterministic pagination and reject prior-ordering continuations with an
   actionable omit-`--cursor` recovery.
 - Fixed typed entity updates to retain exact source bytes, reject invalid UTF-8,
-  and revalidate descriptor-pinned displaced bytes before no-clobber canonical
-  publication. Post-displacement failures now restore the exact prior target or
-  surface a retained recovery path without clobbering competing bytes, while
-  post-commit cleanup faults retain an independent exact-byte baseline snapshot
-  and attempt-owned links under the private, Git-ignored, same-filesystem
-  `.agentera/.entity-recovery/` namespace instead of invalidating canonical
-  entity discovery or misreporting durable updates as failed.
+  and revalidate target bytes at declared boundaries before portable
+  complete-file replacement. Interrupted updates recover from bounded prior,
+  staged, and metadata roles under the private, Git-ignored, same-filesystem
+  `.agentera/.entity-recovery/` namespace. Detected concurrent bytes remain
+  canonical or retained instead of being overwritten.
 - Fixed `agentera state plan record-evaluation` to recover the first PASS for an
   unevaluated complete replacement named by a same-plan superseded predecessor
   while the plan remains open, without relaxing other terminal or retry guards.
@@ -198,7 +206,7 @@
   evidence-tier schema versions before reading signals, returning corrupt-state
   recovery without candidates.
 - Fixed `agentera state plan create` and `agentera state todo create` rejecting
-  valid migrated decision and progress summaries during descriptor-pinned
+  valid migrated decision and progress summaries during validated
   publication; logical provenance now validates against the real project root,
   and failed plan replacement restores the exact completed predecessor without
   overwriting competing files.

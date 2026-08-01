@@ -3,7 +3,7 @@ artifact: plan
 record:
   name: M4A · Establish retained-reference authority (ezkdeggmgm)
   depends_on:
-    - iddsqjadki
+    - srdmkolwqc
   status: pending
   acceptance:
     - GIVEN each retained reference WHEN validated THEN every current or migration reference names a production owner and runtime or validator consumer, and every runbook names a maintainer and a tracked noninteractive command that passes from its documented location.

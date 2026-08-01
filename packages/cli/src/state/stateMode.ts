@@ -23,6 +23,10 @@ interface StateModeContract {
   mode: string;
 }
 
+type DetectedStateMode =
+  | { mode: "legacy"; root: ValidatedProjectRoot }
+  | { mode: "entities"; root: ValidatedProjectRoot; markerPath: string; markerBytes: Buffer };
+
 function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -78,11 +82,10 @@ function readStableMarker(root: ValidatedProjectRoot, markerPath: string): Buffe
   return snapshot.bytes;
 }
 
-/** Read the authority-owned cutover marker without creating or repairing state. */
-export function detectStateModeBinding(
+function detectValidatedStateMode(
   projectRoot: string,
-  sourceRoot = resolveSourceRoot(),
-): StateModeBinding {
+  sourceRoot: string,
+): DetectedStateMode {
   const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);
   const bytes = readStableMarker(root, declared.markerPath);
@@ -100,17 +103,29 @@ export function detectStateModeBinding(
       `state mode marker '${declared.markerPath}' must declare schemaVersion '${declared.schemaVersion}' and mode '${declared.mode}'; restore the durable migration marker before retrying`,
     );
   }
+  return { mode: "entities", root, markerPath: declared.markerPath, markerBytes: bytes };
+}
+
+/** Read the authority-owned cutover marker without creating or repairing state. */
+export function detectStateModeBinding(
+  projectRoot: string,
+  sourceRoot = resolveSourceRoot(),
+): StateModeBinding {
+  const detected = detectValidatedStateMode(projectRoot, sourceRoot);
+  if (detected.mode === "legacy") return detected;
   return {
     mode: "entities",
-    root,
-    publicationContext: EntityPublicationContext.open(root, declared.markerPath, bytes),
+    root: detected.root,
+    publicationContext: EntityPublicationContext.open(
+      detected.root,
+      detected.markerPath,
+      detected.markerBytes,
+    ),
   };
 }
 
 export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceRoot()): StateMode {
-  const binding = detectStateModeBinding(projectRoot, sourceRoot);
-  if (binding.mode === "entities") binding.publicationContext.close();
-  return binding.mode;
+  return detectValidatedStateMode(projectRoot, sourceRoot).mode;
 }
 
 export function requireEntityStateBinding(

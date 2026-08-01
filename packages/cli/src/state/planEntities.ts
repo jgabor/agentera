@@ -171,7 +171,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     const recoveryFailures: string[] = [];
     for (const item of published.reverse()) {
       try {
-        const removed = options.publicationContext.removeExact(item.relative, item.identity);
+        const removed = options.publicationContext.removeExact(item.relative, item.identity, false);
         if (removed === "identity_mismatch") recoveryFailures.push(`cleanup ownership changed for replacement entity '${item.relative}'`);
       } catch (cleanupError) {
         recoveryFailures.push(`cleanup failed for replacement entity '${item.relative}': ${(cleanupError as Error).message}`);

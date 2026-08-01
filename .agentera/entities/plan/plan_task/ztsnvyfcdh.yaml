@@ -3,10 +3,11 @@ artifact: plan
 record:
   name: M3 · Activate repository-first TODO reconciliation (yqqqhipecx)
   depends_on:
-    - xufuibtial
+    - hoxdtgwytq
   status: pending
   acceptance:
-    - GIVEN managed rows WHEN read THEN stable IDs and public order stay visible while operations remain entity-owned.
-    - GIVEN one-sided or divergent edits WHEN accessed THEN reads report drift and writes use one reconciliation boundary.
-    - GIVEN edit classes WHEN tested THEN each has one pass and one conflict.
+    - GIVEN a managed TODO row WHEN read THEN its stable ID, Markdown-owned public fields and order, and Agentera-owned operational fields retain distinct authority.
+    - GIVEN a one-sided or divergent edit WHEN read THEN drift is reported without mutation, and the next write uses the atomic reconciliation boundary.
+    - GIVEN dependencies or gates WHEN actionability is computed THEN Markdown order cannot override operational constraints.
+    - GIVEN edit and merge classes WHEN tested THEN each has one successful reconciliation and one conflict or validation case.
   plan: frkpjqmpnj

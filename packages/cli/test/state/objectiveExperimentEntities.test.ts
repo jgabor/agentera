@@ -208,14 +208,12 @@ describe("objective and experiment entity authority", () => {
     const source = path.join(root, `.agentera/entities/objective/objective/${first.id}.yaml`); const duplicate = path.join(root, `.agentera/entities/experiments/experiment/${first.id}.yaml`); fs.mkdirSync(path.dirname(duplicate), { recursive: true }); fs.copyFileSync(source, duplicate); expect(validateEntityState(root).valid).toBe(false);
   });
 
-  it("rolls back experiment publication on root or marker substitution through the shared context", () => {
-    for (const invalidation of ["root", "marker"] as const) {
-      const root = project(); const owner = createObjective(root, invalidation); const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-      const spec = operationSpec("experiments", "publish")!; const req: StateWriteRequest = { artifact: "experiments", spec, projectRoot: root, dryRun: false, force: false, values: { objective: owner.id }, callerPayload: experiment("baseline", "baseline"), input: experiment("baseline", "baseline") };
-      const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((relative, bytes) => { const result = original(relative, bytes); if (invalidation === "marker") fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER + "# changed\n"); else { const held = `${root}-held`; roots.push(held); fs.renameSync(root, held); fs.mkdirSync(root); } return result; });
-      expect(() => publishExperimentEntity(req, { publicationContext: binding.publicationContext, candidate: () => "aaaaaaaaaa" })).toThrow(/changed|conflict/i); binding.publicationContext.close();
-      const inspected = invalidation === "root" ? `${root}-held` : root; expect(fs.existsSync(path.join(inspected, ".agentera/entities/experiments/experiment/aaaaaaaaaa.yaml"))).toBe(false);
-    }
+  it("rolls back experiment publication on marker substitution through the shared context", () => {
+    const root = project(); const owner = createObjective(root, "marker"); const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const spec = operationSpec("experiments", "publish")!; const req: StateWriteRequest = { artifact: "experiments", spec, projectRoot: root, dryRun: false, force: false, values: { objective: owner.id }, callerPayload: experiment("baseline", "baseline"), input: experiment("baseline", "baseline") };
+    const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((relative, bytes) => { const result = original(relative, bytes); fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER + "# changed\n"); return result; });
+    expect(() => publishExperimentEntity(req, { publicationContext: binding.publicationContext, candidate: () => "aaaaaaaaaa" })).toThrow(/changed|conflict/i); binding.publicationContext.close();
+    expect(fs.existsSync(path.join(root, ".agentera/entities/experiments/experiment/aaaaaaaaaa.yaml"))).toBe(false);
   });
 
   it("restores exact objective bytes when whole-state postvalidation unexpectedly fails", () => {

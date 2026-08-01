@@ -1,0 +1,16 @@
+id: enzutufhnw
+artifact: progress
+record:
+  timestamp: 2026-07-31 13:51
+  type: fix
+  phase: build
+  what: Made every TODO mutation reconcile managed Markdown rows and entity public fields before publishing all reconciled entities, TODO.md, baselines, and the requested mutation through one recoverable byte-CAS journal.
+  context:
+    intent: Implement only xufuibtial / frpdshynmd and leave task completion and evaluator provenance to independent Audit.
+    constraints: Preserve the staged M1 files and intentional unstaged M3 plan refinement, do not resolve TODOs, commit, publish, alter vision, or implement general batch composition and local symbolic references.
+    unknowns: Independent Audit PASS is pending; decision kpybrsfywb remains provisional, profile-derived context is unavailable, and retry state remains not_recorded with attempt_count 0.
+    scope: TODO three-way baselines, managed Markdown rendering, multi-target CAS journaling and recovery, root-singleton exact replacement, transaction authority, changelog, and proportional source/package tests.
+  discovered: The writer only compared one selected row before replacing one entity, so it could neither import one-sided Markdown edits nor publish Markdown, entity baselines, and the requested mutation as one recoverable unit. Root TODO.md also lacked descriptor-pinned exact replacement support.
+  verified: The focused TODO, authority, storage, and mutation-grammar suites pass 44 tests. Positive coverage imports a human Markdown title with an Agentera-owned readiness patch in one transaction; conflict coverage rejects duplicate and orphaned IDs, unchecked removal, and divergent Markdown/entity edits with unchanged files; fault coverage interrupts before publication and after target boundaries 1 and 2, then proves one retry completes the journal, removes it, and converges Markdown and entity bytes. Existing byte-CAS competitor, root/marker/postvalidation rollback, exact lifecycle replay, and real Git same-entity conflict cases remain green. The final full source lane passes 224 files with 3,116 tests passed and 1 skipped; package verification passes 18 tests. Typecheck, the final package build, local `check validate state` with 2,031 entities and zero issues, local `state todo explain --verb update`, `git diff --check`, and post-build `check compact` all pass.
+  next: Independent Audit should evaluate xufuibtial. Keep xufuibtial pending, frpdshynmd open, and evaluator verdict state untouched until PASS.
+  publication_order: 26

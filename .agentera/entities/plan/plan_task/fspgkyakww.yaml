@@ -1,0 +1,27 @@
+id: fspgkyakww
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 replacement · Complete crash-safe TODO reconciliation (frpdshynmd)
+  status: blocked
+  depends_on:
+    - qllgiterft
+    - qgqlxqhlhd
+    - oeprigteku
+  acceptance:
+    - GIVEN process death WHEN TODO is observed THEN it remains complete old-or-new and Agentera exposes no mixed state.
+    - GIVEN stale, invalid, or retained-role conflict WHEN rejected THEN targets stay unchanged and one structured correction explains recovery.
+    - GIVEN interruption at any target boundary WHEN retried or merged THEN recovery converges without overwriting legitimate concurrent changes.
+    - GIVEN legacy rows before activation WHEN reconciliation starts THEN one bounded activation path applies; managed rows always require canonical IDs.
+    - GIVEN each boundary WHEN tested and audited THEN pass and failure or recovery evidence precede xufuibtial supersession and frpdshynmd closure.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Retry adds an unapproved fs-native-extensions runtime dependency and formalizes Linux-only entity mutations without public package/help approval; read-only state validation still opens the unsupported mutation context and falsely diagnoses valid state; latest progress evidence lists gates without criterion-specific outcomes.
+    provenance:
+      attempt_id: fspgkyakww-audit-2
+      source: Bounded Audit re-review ses_0478dcee3ffeY2csS0q5ykwDMw
+      recorded_at: 2026-07-31 17:33
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Blocked after two evaluations. Rollback, operational exchange, and activation ambiguity are corrected, but completion requires a user decision: approve fs-native-extensions plus a documented Linux-only mutation contract, or require cross-platform safe publication. Read-only validation and criterion-specific evidence also remain."

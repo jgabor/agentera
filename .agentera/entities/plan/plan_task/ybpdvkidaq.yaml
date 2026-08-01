@@ -6,7 +6,8 @@ record:
     - ztsnvyfcdh
   status: pending
   acceptance:
-    - GIVEN N candidates WHEN limit N is requested THEN N summary rows return despite optional-detail pressure.
-    - GIVEN selected fields or continuation WHEN read THEN order, rank, counts, omissions, and exact recovery are deterministic.
-    - GIVEN selectors and byte pressure WHEN tested THEN each has one pass and one degradation.
+    - GIVEN N filtered candidates WHEN limit N is requested THEN N summary rows return even when optional detail exceeds the byte budget.
+    - GIVEN IDs-only, selected fields, or continuation WHEN read THEN order, queue rank, counts, omissions, cursors, and exact-get recovery are deterministic.
+    - GIVEN full detail cannot fit WHEN summaries succeed THEN the outcome reports success with degradation rather than dropping rows.
+    - GIVEN selector and byte-pressure classes WHEN tested THEN each has one success and one bounded degradation or rejection case.
   plan: frkpjqmpnj
