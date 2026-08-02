@@ -64,10 +64,12 @@
   publication envelope with a strict two-minute budget, reconciled timing,
   replay evidence, and first-failure reporting. Source qualification now runs a
   bounded evidence DAG: one generated-overlap execution supplies source,
-  package, build, and overlap proof beside isolated stress, performance, and
-  typecheck owners, followed by concurrent compact and capability-contract
-  readers. Failures preserve the first owner, settle overlap safely, block
-  candidate work, and issue no receipt. Generated-overlap now receives the
+  package, build, and overlap proof beside isolated stress and typecheck owners,
+  followed by a solo performance barrier and concurrent compact and
+  capability-contract readers. The solo phase prevents CPU contention from
+  invalidating machine-sensitive performance evidence. Failures preserve the
+  first owner, settle overlap safely, block candidate work, and issue no
+  receipt. Generated-overlap now receives the
   actual source deadline, reserves bounded cleanup and parent-reconciliation
   time, and removes its generated state after failure. Source receipts now mark
   and validate all nine successful gate outcomes and reject semantic tampering.

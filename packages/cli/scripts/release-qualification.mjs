@@ -262,6 +262,7 @@ function validReceiptDigest(receipt, label) {
 
 const SOURCE_DAG = RELEASE_CONTRACT.qualification.source.dag;
 const SOURCE_BATCH_A = SOURCE_DAG.batchA;
+const SOURCE_PERFORMANCE_BARRIER = SOURCE_DAG.performanceBarrier;
 const SOURCE_BARRIER_B = SOURCE_DAG.barrierB;
 const GENERATED_OVERLAP_ORIGINS = SOURCE_DAG.generatedOverlapOrigins;
 const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !== "generated-overlap");
@@ -269,7 +270,12 @@ const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !==
 function sourceGateMap(gates) {
   const entries = new Map(gates.map((gate) => [gate.name, gate]));
   if (entries.size !== gates.length) throw new Error("source qualification gate names must be unique");
-  const required = [...new Set([...GENERATED_OVERLAP_ORIGINS, ...SOURCE_BATCH_A, ...SOURCE_BARRIER_B])];
+  const required = [...new Set([
+    ...GENERATED_OVERLAP_ORIGINS,
+    ...SOURCE_BATCH_A,
+    ...SOURCE_PERFORMANCE_BARRIER,
+    ...SOURCE_BARRIER_B,
+  ])];
   if (entries.size !== required.length || [...entries.keys()].some((name) => !required.includes(name))) {
     throw new Error("source qualification gate set must contain exactly the nine governed gates");
   }
@@ -530,9 +536,14 @@ function validateSourceGateRecords(records) {
   const gateContracts = new Map(governed.map((gate) => [gate.name, gate]));
   const overlapOrigins = new Set(GENERATED_OVERLAP_ORIGINS);
   const barrierOwners = new Set(SOURCE_BARRIER_B);
+  const performanceOwners = new Set(SOURCE_PERFORMANCE_BARRIER);
   for (const record of records) {
     const expectedOrigin = overlapOrigins.has(record.name) ? "generated-overlap" : record.name;
-    const expectedPhase = barrierOwners.has(record.name) ? "barrier-b" : "batch-a";
+    const expectedPhase = barrierOwners.has(record.name)
+      ? "barrier-b"
+      : performanceOwners.has(record.name)
+        ? "performance-barrier"
+        : "batch-a";
     const expectedExecuted = OVERLAP_PARTICIPANTS.includes(record.name)
       ? "generated-overlap participant"
       : "command";
@@ -639,7 +650,9 @@ export async function runSourceQualificationDag(options = {}) {
   const started = options.startedAt ?? clock();
   const deadlineMs = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
   const cleanupMarginMs = SOURCE_DAG.overlapCleanupMarginMs;
+  const reconciliationMarginMs = SOURCE_DAG.overlapParentReconciliationMarginMs;
   const remaining = () => Math.floor(deadlineMs - (clock() - started));
+  const sourceDeadlineEpochMs = wallClock() + remaining();
   const runConcurrent = options.runConcurrent ?? runConcurrentSourceOwners;
   const common = {
     repo,
@@ -652,35 +665,54 @@ export async function runSourceQualificationDag(options = {}) {
   if (batchTimeout <= cleanupMarginMs) {
     throw sourceProcessFailure("full-qualification", "source qualification has no safe overlap execution window before its cleanup margin", "failed");
   }
-  const overlapDeadlineEpochMs = wallClock() + batchTimeout;
   const batch = await runConcurrent(SOURCE_BATCH_A.map((name) => ({
     name,
     command: gates.get(name).command,
     repo,
-    timeoutMs: name === "generated-overlap" ? batchTimeout - cleanupMarginMs : batchTimeout,
+    timeoutMs: batchTimeout - (name === "generated-overlap" ? cleanupMarginMs : reconciliationMarginMs),
     cancellable: name !== "generated-overlap",
     cooperativeStop: name === "generated-overlap",
     environment: name === "generated-overlap" ? {
-      AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(overlapDeadlineEpochMs),
+      AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs),
       AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(cleanupMarginMs),
     } : undefined,
   })), common);
   const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
   const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
-  const performanceEvidence = performanceObservation(batch.performance, overlap.inventory.performance);
   const readState = options.readGeneratedState ?? generatedState;
-  const beforeBarrier = readState(repo);
-  if (beforeBarrier.generation !== overlap.generation || beforeBarrier.leases.length !== 0) {
+  const afterBatch = readState(repo);
+  if (afterBatch.generation !== overlap.generation || afterBatch.leases.length !== 0) {
     throw sourceProcessFailure("reader-barrier", "generated-overlap did not settle one lease-free generation", "failed");
+  }
+  const performanceStarted = clock();
+  const performanceRemaining = remaining();
+  if (performanceRemaining <= reconciliationMarginMs) {
+    throw sourceProcessFailure("performance", "source qualification has no safe performance execution window before reconciliation", "failed");
+  }
+  const performanceResult = (await runConcurrent(SOURCE_PERFORMANCE_BARRIER.map((name) => ({
+    name,
+    command: gates.get(name).command,
+    repo,
+    timeoutMs: performanceRemaining - reconciliationMarginMs,
+    cancellable: true,
+    environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
+  })), common)).performance;
+  const performanceElapsedMs = Math.max(0, Math.round(clock() - performanceStarted));
+  const performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance);
+  const beforeBarrier = readState(repo);
+  if (beforeBarrier.generation !== afterBatch.generation || beforeBarrier.leases.length !== 0) {
+    throw sourceProcessFailure("performance", "performance barrier changed the settled generation or retained leases", "failed");
   }
   const barrierStarted = clock();
   const barrierTimeout = remaining();
-  if (barrierTimeout <= 0) throw sourceProcessFailure("reader-barrier", "source qualification deadline expired before barrier B", "failed");
+  if (barrierTimeout <= reconciliationMarginMs) {
+    throw sourceProcessFailure("reader-barrier", "source qualification has no safe reader window before reconciliation", "failed");
+  }
   const barrier = await runConcurrent(SOURCE_BARRIER_B.map((name) => ({
     name,
     command: gates.get(name).command,
     repo,
-    timeoutMs: barrierTimeout,
+    timeoutMs: barrierTimeout - reconciliationMarginMs,
     cancellable: true,
   })), common);
   const barrierElapsedMs = Math.max(0, Math.round(clock() - barrierStarted));
@@ -692,7 +724,7 @@ export async function runSourceQualificationDag(options = {}) {
   if (elapsedMs >= deadlineMs) {
     throw sourceProcessFailure("full-qualification", `source qualification exceeded its ${deadlineMs}ms budget`, "failed");
   }
-  const unattributedElapsedMs = elapsedMs - batchElapsedMs - barrierElapsedMs;
+  const unattributedElapsedMs = elapsedMs - batchElapsedMs - performanceElapsedMs - barrierElapsedMs;
   if (unattributedElapsedMs < 0) {
     throw sourceProcessFailure("full-qualification", "source qualification phase timings do not reconcile", "failed");
   }
@@ -742,9 +774,9 @@ export async function runSourceQualificationDag(options = {}) {
     performance: {
       name: "performance",
       origin: "performance",
-      phase: "batch-a",
+      phase: "performance-barrier",
       outcome: "passed",
-      elapsedMs: batch.performance.elapsedMs,
+      elapsedMs: performanceResult.elapsedMs,
       executed: "command",
       reused: false,
       observation: performanceEvidence,
@@ -789,9 +821,10 @@ export async function runSourceQualificationDag(options = {}) {
       overlapParentReconciliationMarginMs: SOURCE_DAG.overlapParentReconciliationMarginMs,
       elapsedMs,
       batchAElapsedMs: batchElapsedMs,
+      performanceElapsedMs,
       barrierBElapsedMs: barrierElapsedMs,
       unattributedElapsedMs,
-      reconciled: batchElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
+      reconciled: batchElapsedMs + performanceElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
       generation: afterBarrier.generation,
       leasesAfterBarrier: afterBarrier.leases.length,
     },

@@ -45,14 +45,14 @@ describe("release qualification benchmark coordinator", () => {
     expect(report.medianElapsedMs).toEqual({ preflight: 8, fullQualification: 150 });
   });
 
-  it("emits the original first failing owner immediately and does not run later owners", async () => {
+  it("emits a solo performance failure immediately and does not run candidate work", async () => {
     const events: unknown[] = [];
     let candidates = 0;
     await expect(runQualificationBenchmark({
       ...phases({ preflight: 1, source: 1, candidate: 1 }),
       runSource: () => {
-        const error = new Error("stress fixture failed");
-        (error as Error & { owner?: string }).owner = "stress";
+        const error = new Error("performance fixture exceeded its remaining deadline");
+        (error as Error & { owner?: string }).owner = "performance";
         throw error;
       },
       runCandidate: () => {
@@ -61,37 +61,49 @@ describe("release qualification benchmark coordinator", () => {
       },
       emit: (event: unknown) => events.push(event),
     })).rejects.toMatchObject({
-      firstFailure: { owner: "stress", phase: "source-qualification", detail: "stress fixture failed" },
+      firstFailure: {
+        owner: "performance",
+        phase: "source-qualification",
+        detail: "performance fixture exceeded its remaining deadline",
+      },
     });
     expect(candidates).toBe(0);
     expect(events.at(-1)).toEqual({
       event: "failed",
       repetition: 1,
-      firstFailure: { owner: "stress", phase: "source-qualification", detail: "stress fixture failed" },
+      firstFailure: {
+        owner: "performance",
+        phase: "source-qualification",
+        detail: "performance fixture exceeded its remaining deadline",
+      },
     });
   });
 
-  it("reconciles concurrent source owner durations to measured DAG wall time", async () => {
+  it("reconciles parallel batch A plus the ordered solo performance barrier", async () => {
     const report = await runQualificationBenchmark({
       runPreflight: () => ({ elapsedMs: 1, owners: [{ name: "preflight", elapsedMs: 1 }] }),
       runSource: () => ({
-        elapsedMs: 50,
-        ownerElapsedMs: 50,
-        owners: ["generated-overlap", "stress", "performance", "typecheck"].map((name) => ({
-          name,
-          elapsedMs: 40,
-        })),
+        elapsedMs: 60,
+        ownerElapsedMs: 60,
+        owners: [
+          { name: "generated-overlap", phase: "batch-a", elapsedMs: 40 },
+          { name: "stress", phase: "batch-a", elapsedMs: 40 },
+          { name: "typecheck", phase: "batch-a", elapsedMs: 40 },
+          { name: "performance", phase: "performance-barrier", elapsedMs: 20 },
+        ],
       }),
       runCandidate: () => ({ elapsedMs: 10, owners: [{ name: "candidate", elapsedMs: 10 }] }),
     });
 
     expect(report.repetitions[0].source).toMatchObject({
-      elapsedMs: 50,
-      ownerDurationTotalMs: 160,
-      ownerElapsedMs: 50,
+      elapsedMs: 60,
+      ownerDurationTotalMs: 140,
+      ownerElapsedMs: 60,
       unattributedElapsedMs: 0,
       reconciled: true,
     });
+    expect(report.repetitions[0].source.owners.find(({ name }) => name === "performance"))
+      .toMatchObject({ phase: "performance-barrier", elapsedMs: 20 });
   });
 
   it("fails closed on a full qualification budget overrun", async () => {

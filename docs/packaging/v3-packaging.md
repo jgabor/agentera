@@ -55,13 +55,17 @@ fails before effects. Review and commit the diff; preparation never infers a
 version, reads the registry, or loads `.env` credentials.
 
 Source qualification runs one evidence DAG. Batch A starts generated-overlap,
-stress, performance, and typecheck together with separate HOME, cache, npm
-configs, and report outputs. Generated-overlap is the only checkout
+stress, and typecheck together with separate HOME, cache, npm configs, and
+report outputs. Generated-overlap is the only checkout
 generated-output writer. It invokes the exact public source, package, and build
 commands once and returns their inventory, pending-test, build, generation, and
 continuous-reader evidence. Source, package, and build are not spawned again.
 After every batch owner passes and overlap settles one lease-free generation,
-compact and capability-contract run together as reader barrier B.
+performance runs alone in fresh isolated state. This ordered barrier provides
+resource isolation for machine-sensitive timing evidence; separate HOME and npm
+state provide output isolation but cannot prevent CPU contention. Performance
+receives the same absolute source deadline. After it passes, compact and
+capability-contract run together as reader barrier B.
 
 The coordinator passes generated-overlap the actual remaining absolute source
 deadline. Overlap stops starting work 10,000 ms before the 300,000 ms envelope,
@@ -80,8 +84,8 @@ verification policy, lockfile, exact toolchain, and gate set. A committed
 version/gitRef-only change can reuse matching evidence; any other input change
 fails closed. On the first owner failure, the coordinator cancels cancellable
 process groups, lets generated-overlap settle without forced termination,
-blocks barrier B, reports every completed/cancelled failure while retaining the
-first observed label, and issues no receipt. The source-plus-candidate deadline
+blocks every later phase, reports every completed/cancelled failure while
+retaining the first observed label, and issues no receipt. The source-plus-candidate deadline
 remains a guard, not performance evidence.
 
 ```bash
@@ -167,7 +171,7 @@ pnpm cli:benchmark:qualification -- --adapter development \
 
 The qualification command runs exactly three cold-cache repetitions, retains
 one candidate per run, reports preflight, every source/candidate owner,
-execution/reuse, concurrent owner-duration totals, reconciled DAG wall time,
+execution/reuse, owner phases and durations, reconciled staged DAG wall time,
 and medians. It emits the first original
 failing owner before it stops. It never receives credentials or mutates npm.
 The separate qualified-publication command above measures the actual approved

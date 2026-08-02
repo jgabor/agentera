@@ -113,16 +113,17 @@
       "overlapEvidenceSchema": "agentera.generatedOverlapEvidence.v1",
       "gateEvidence": "A source receipt contains the exact nine governed gates in contract order. Every gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
       "dag": {
-        "batchA": ["generated-overlap", "stress", "performance", "typecheck"],
+        "batchA": ["generated-overlap", "stress", "typecheck"],
+        "performanceBarrier": ["performance"],
         "generatedOverlapOrigins": ["source", "package", "build", "generated-overlap"],
         "barrierB": ["compact", "capability-contract"],
         "generatedOutputWriter": "generated-overlap",
         "overlapCleanupMarginMs": 10000,
         "overlapParentReconciliationMarginMs": 4000,
-        "failure": "The coordinator passes generated-overlap the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles and cleans its generated state, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; barrier B and receipt issuance remain blocked after any batch failure.",
-        "isolation": "Every batch and barrier child receives a distinct HOME, cache, user config, global config, and report output."
+        "failure": "The coordinator passes generated-overlap and the solo performance barrier the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles and cleans its generated state, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; performance, barrier B, and receipt issuance remain blocked after any batch failure, and barrier B and receipt issuance remain blocked after any performance failure.",
+        "isolation": "Every child receives a distinct HOME, cache, user config, global config, and report output. Batch A provides output isolation. Performance additionally runs alone after batch A settles to provide resource isolation for machine-sensitive evidence."
       },
-      "parallelism": "Batch A runs generated-overlap, stress, performance, and typecheck concurrently. generated-overlap is the sole checkout generated-output writer and sole execution origin for source, package, build, and overlap evidence. After it and all other batch owners pass, compact and capability-contract run concurrently as readers of the settled generation."
+      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap is the sole checkout generated-output writer and sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state. After performance passes, compact and capability-contract run concurrently as readers of the settled generation."
     },
     "candidate": {
       "component": "release-candidate",
@@ -195,7 +196,7 @@
     "fixture": "clean committed checkout and an external empty candidate directory; no tracked or checkout-local generated candidate files.",
     "cacheNetwork": "Preflight uses no registry call. Every qualification DAG child and each smoke use a distinct empty HOME, npm cache, user config, global config, and report output; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
     "repetitions": 3,
-    "statistic": "Qualification reports median wall milliseconds over exactly three cold-cache repetitions. Concurrent owner-duration totals are reported separately and reconcile through measured DAG wall time rather than being summed as sequential time. Qualified publication reports one actual approved transaction because registry mutation is not a benchmark repetition; replays run the same measured envelope and report reused registry phases.",
+    "statistic": "Qualification reports median wall milliseconds over exactly three cold-cache repetitions. Concurrent owner-duration totals are reported separately; only owners in the same parallel phase overlap, while the solo performance barrier contributes ordered wall time. Phase timing reconciles through measured DAG wall time rather than by summing nested owner durations. Qualified publication reports one actual approved transaction because registry mutation is not a benchmark repetition; replays run the same measured envelope and report reused registry phases.",
     "coordinator": "packages/cli/scripts/release-benchmark.mjs has separate qualification and publication commands. qualification runs only preflight and source-plus-candidate qualification and never receives npm credentials. publication runs only the approved stage, independent exact-version L2, and promote commands, measures them with one monotonic deadline, and never runs source qualification.",
     "qualifiedPublication": {
       "command": "node packages/cli/scripts/release-benchmark.mjs publication --adapter ADAPTER --candidate-dir DIR --receipt-file FILE",

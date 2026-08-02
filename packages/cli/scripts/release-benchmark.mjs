@@ -47,6 +47,7 @@ function normalizeOwners(owners) {
     }
     return {
       name: owner.name,
+      ...(typeof owner.phase === "string" ? { phase: owner.phase } : {}),
       elapsedMs: Math.round(owner.elapsedMs),
       executed: owner.executed ?? "ordered",
       reused: Boolean(owner.reused),
@@ -108,6 +109,7 @@ async function runPhase(name, budgetMs, invoke, context) {
 function receiptOwners(receipt, reused) {
   return (receipt.gates ?? []).map((gate) => ({
     name: gate.name,
+    phase: gate.phase,
     elapsedMs: gate.elapsedMs ?? 0,
     executed: reused ? "none" : gate.executed ?? "ordered",
     reused,

@@ -46,12 +46,13 @@ boundary.
 
 Release source qualification uses the policy-owned DAG. One generated-overlap
 process is the sole origin for source, package, build, and overlap evidence. It
-runs beside isolated stress, performance, and typecheck owners. After all four
-batch owners pass and the generated generation settles without leases, compact
-and capability-contract run together as readers. Every child has a separate
-HOME, cache, npm configs, and report. A peer failure cancels only cancellable
-groups; generated-overlap settles without forced termination, and no reader
-barrier or receipt follows a batch failure.
+runs beside isolated stress and typecheck owners. After those three batch owners
+pass and the generated generation settles without leases, performance runs alone
+in fresh state so CPU contention cannot invalidate its machine-sensitive
+evidence. Compact and capability-contract then run together as readers. Every
+child has a separate HOME, cache, npm configs, and report. A peer failure cancels
+only cancellable groups; generated-overlap settles without forced termination,
+and no reader barrier or receipt follows a batch or performance failure.
 
 ## Classification key
 

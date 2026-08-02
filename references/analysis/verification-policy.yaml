@@ -42,7 +42,8 @@ overlap:
 # checkout generated-output writer and the only execution origin for source,
 # package, build, and overlap evidence.
 release_qualification:
-  batch_a: [generated-overlap, stress, performance, typecheck]
+  batch_a: [generated-overlap, stress, typecheck]
+  performance_barrier: [performance]
   generated_overlap_origins: [source, package, build, generated-overlap]
   barrier_b: [compact, capability-contract]
   deadline:
@@ -53,10 +54,13 @@ release_qualification:
       overlap stops new work at the cleanup margin, settles owned children,
       removes its generated state on failure, and returns before the parent margin
   isolation: distinct_home_cache_user_global_config_and_report_per_child
+  resource_isolation: performance_runs_alone_after_batch_a_settles
   failure:
     first_observed_owner: preserved
     cancellable_process_groups: cancel
     generated_overlap: cooperative_stop_settle_and_cleanup_without_parent_force_kill
+    performance_after_batch_failure: forbidden
+    barrier_b_after_performance_failure: forbidden
     barrier_b_after_batch_failure: forbidden
     receipt_after_any_failure: forbidden
   source_generated_access:

@@ -61,6 +61,7 @@ function overlapObservation() {
 function gateRecord(gate: { name: string; command: string[] }) {
   const overlapParticipant = ["source", "package", "build"].includes(gate.name);
   const barrier = ["compact", "capability-contract"].includes(gate.name);
+  const performanceBarrier = gate.name === "performance";
   let observation: any;
   if (["source", "package"].includes(gate.name)) {
     observation = { command: gate.command, files: 1, tests: 1, pending: [] };
@@ -93,7 +94,7 @@ function gateRecord(gate: { name: string; command: string[] }) {
     origin: [...RELEASE_CONTRACT.qualification.source.dag.generatedOverlapOrigins].includes(gate.name)
       ? "generated-overlap"
       : gate.name,
-    phase: barrier ? "barrier-b" : "batch-a",
+    phase: barrier ? "barrier-b" : performanceBarrier ? "performance-barrier" : "batch-a",
     outcome: "passed",
     elapsedMs: 1,
     executed: overlapParticipant ? "generated-overlap participant" : "command",
@@ -199,18 +200,18 @@ describe("release qualification receipts", () => {
     await expect(sourceReceipt(repo, candidateDirectory)).rejects.toThrow("source receipt inputs changed");
   });
 
-  it("does not issue a source receipt when the qualification DAG fails", async () => {
+  it("does not issue a source receipt when the performance barrier fails", async () => {
     const { repo, candidateDirectory } = fixture();
     await expect(issueSourceReceipt({
       repo,
       candidateDirectory,
       gates: GOVERNED_GATES,
       runDag: async () => {
-        const error = new Error("stress failed first") as Error & { owner?: string };
-        error.owner = "stress";
+        const error = new Error("performance exceeded its remaining source deadline") as Error & { owner?: string };
+        error.owner = "performance";
         throw error;
       },
-    })).rejects.toMatchObject({ owner: "stress" });
+    })).rejects.toMatchObject({ owner: "performance" });
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
