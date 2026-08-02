@@ -63,8 +63,18 @@ continuous-reader evidence. Source, package, and build are not spawned again.
 After every batch owner passes and overlap settles one lease-free generation,
 compact and capability-contract run together as reader barrier B.
 
+The coordinator passes generated-overlap the actual remaining absolute source
+deadline. Overlap stops starting work 10,000 ms before the 300,000 ms envelope,
+cancels and settles its owned process groups, and removes its generated surfaces
+on failure. It must return at least 4,000 ms before the envelope so the parent can
+reconcile and stop cancellable peers. The parent may request this cooperative
+stop with `SIGTERM`; it never force-kills the overlap owner during publication.
+
 The content-addressed `source-receipt.json` contains all nine named gates with
-their execution origin, observations, durations, and executed/reused state. It
+their execution origin, `outcome: "passed"`, observations, finite durations, and
+executed/reused state. Validation requires the exact gate order, governed origin
+and phase, successful outcome, execution shape, and gate-relevant observations;
+digest or semantic tampering fails closed. The receipt
 also binds the normalized source tree (package version and gitRef excluded),
 verification policy, lockfile, exact toolchain, and gate set. A committed
 version/gitRef-only change can reuse matching evidence; any other input change

@@ -9,28 +9,49 @@ import { pinGeneratedGeneration, selectGeneratedGeneration } from "./generated-o
 import { validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
-const barrier = path.join(root, "barrier");
-const repoRoot = path.resolve(packageRoot, "../..");
-const policyBytes = fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
-const inventoryResult = spawnSync(process.execPath, ["scripts/verify-lane.mjs", "inventory", "--json"], {
-  cwd: packageRoot,
-  encoding: "utf8",
-});
-if (inventoryResult.status !== 0) throw new Error(`verification inventory failed: ${inventoryResult.stderr || inventoryResult.stdout}`);
-const inventory = JSON.parse(inventoryResult.stdout);
+const scriptPath = fileURLToPath(import.meta.url);
+const defaultPackageRoot = path.resolve(path.dirname(scriptPath), "..");
+const defaultRepoRoot = path.resolve(defaultPackageRoot, "../..");
 const participants = {
   source: ["pnpm", "-C", "packages/cli", "run", "test:source"],
   build: ["pnpm", "-C", "packages/cli", "build"],
   package: ["pnpm", "-C", "packages/cli", "run", "verify:package"],
 };
 
-function start(participant, command) {
-  const started = performance.now();
-  const output = path.join(root, `${participant}.log`);
-  const stream = fs.createWriteStream(output);
-  const stateRoot = path.join(root, `${participant}-npm-state`);
+function overlapFailure(message) {
+  const error = new Error(message);
+  error.owner = "generated-overlap";
+  error.sourceStatus = "failed";
+  return error;
+}
+
+function killGroup(child, signal) {
+  if (!child.pid) return;
+  try {
+    if (process.platform === "win32") child.kill(signal);
+    else process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
+  }
+}
+
+function defaultWithDeadline(promise, deadline, label, now) {
+  const remaining = Math.floor(deadline - now());
+  if (remaining <= 0) return Promise.reject(overlapFailure(`generated-overlap deadline expired before ${label}`));
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(overlapFailure(`generated-overlap deadline expired during ${label}`)), remaining);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now }) {
+  const started = now();
+  const output = path.join(root, `${name}.log`);
+  const stream = fs.createWriteStream(output, { flags: "wx", mode: 0o600 });
+  const stateRoot = path.join(root, `${name}-npm-state`);
   const home = path.join(stateRoot, "home");
   const cache = path.join(stateRoot, "cache");
   const userConfig = path.join(stateRoot, "user.npmrc");
@@ -47,58 +68,82 @@ function start(participant, command) {
       XDG_CONFIG_HOME: path.join(stateRoot, "config"),
       NPM_CONFIG_CACHE: cache,
       AGENTERA_VERIFICATION_BARRIER: barrier,
-      AGENTERA_VERIFICATION_PARTICIPANT: participant,
-      ...(participant === "build" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${participant}.json`) }),
+      AGENTERA_VERIFICATION_PARTICIPANT: name,
+      ...(name === "build" || name === "invocation" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${name}.json`) }),
     },
+    detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  child.stdout.pipe(stream);
+  let closed = false;
+  let forceTimer;
+  let stdout = "";
+  child.stdout.setEncoding("utf8").on("data", (chunk) => {
+    stdout += chunk;
+    stream.write(chunk);
+  });
   child.stderr.pipe(stream);
-  return new Promise((resolve, reject) => {
+  const cancel = () => {
+    if (closed) return;
+    killGroup(child, "SIGTERM");
+    forceTimer ??= setTimeout(() => {
+      if (!closed) killGroup(child, "SIGKILL");
+    }, Math.min(2000, Math.max(1, Math.floor(cleanupMarginMs / 2))));
+  };
+  const promise = new Promise((resolve, reject) => {
     child.on("error", reject);
-    child.on("exit", (code) => {
+    child.on("close", (code, signal) => {
+      closed = true;
+      if (forceTimer) clearTimeout(forceTimer);
       stream.end();
-      if (code === 0) resolve({
-        command,
-        elapsedMs: Math.max(0, Math.round(performance.now() - started)),
-        log: output,
-      });
-      else reject(new Error(`${participant} overlap command failed with exit ${code}; log: ${output}`));
+      if (code === 0) {
+        resolve({
+          command,
+          elapsedMs: Math.max(0, Math.round(now() - started)),
+          log: output,
+          stdout: stdout.trim(),
+        });
+      } else {
+        reject(overlapFailure(`${name} overlap command failed with exit ${code ?? signal ?? "unknown"}; log: ${output}`));
+      }
     });
   });
+  return { name, promise, cancel };
 }
 
-async function waitForReady() {
-  const deadline = Date.now() + 30_000;
-  while (!Object.keys(participants).every((name) => fs.existsSync(path.join(barrier, `${name}.ready`)))) {
-    if (Date.now() >= deadline) throw new Error(`real overlap participants did not become ready under ${barrier}`);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
-}
-
-function ownerResult(owner) {
-  const result = fs.readFileSync(path.join(root, `${owner}.json`));
-  const expectedFiles = inventory.files[owner];
-  const pending = validatePendingTests(owner, result, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
-  return { files: expectedFiles.length, tests: JSON.parse(result.toString("utf8")).numTotalTests, pending };
-}
-
-let running = [];
-let settlement = Promise.resolve([]);
-try {
+function cleanupGeneratedSurfaces(packageRoot) {
   for (const target of [".agentera-generated", "dist", "bundle"]) {
     fs.rmSync(path.join(packageRoot, target), { recursive: true, force: true });
   }
-  running = Object.entries(participants).map(([name, command]) => [name, start(name, command)]);
-  settlement = Promise.allSettled(running.map(async ([name, done]) => [name, await done]));
-  await waitForReady();
-  fs.writeFileSync(path.join(barrier, "release"), "release\n");
+}
+
+function readReleaseContract(repoRoot) {
+  return JSON.parse(fs.readFileSync(path.join(repoRoot, "references/adapters/package-publication.json"), "utf8"));
+}
+
+function readInventory(packageRoot, timeoutMs) {
+  const result = spawnSync(process.execPath, ["scripts/verify-lane.mjs", "inventory", "--json"], {
+    cwd: packageRoot,
+    encoding: "utf8",
+    timeout: Math.max(1, timeoutMs),
+  });
+  if (result.status !== 0) throw overlapFailure(`verification inventory failed: ${result.stderr || result.stdout || result.error?.message}`);
+  return JSON.parse(result.stdout);
+}
+
+async function waitForReady(names, barrier, operationDeadline, now) {
+  while (!names.every((name) => fs.existsSync(path.join(barrier, `${name}.ready`)))) {
+    if (now() >= operationDeadline) throw overlapFailure(`generated-overlap deadline expired while waiting under ${barrier}`);
+    await new Promise((resolve) => setTimeout(resolve, Math.min(20, Math.max(1, operationDeadline - now()))));
+  }
+}
+
+function startReader(packageRoot) {
   let observed = false;
   let identityMismatches = 0;
   let surfaceValidationFailures = 0;
-  const readerGenerations = new Set();
-  let readerError;
-  const monitor = setInterval(() => {
+  let error;
+  const generations = new Set();
+  const timer = setInterval(() => {
     try {
       if (!fs.existsSync(path.join(packageRoot, ".agentera-generated", "current"))) return;
       const pinned = pinGeneratedGeneration(packageRoot);
@@ -114,71 +159,196 @@ try {
           throw new Error(`reader observed an empty generated surface in ${pinned.id}`);
         }
         observed = true;
-        readerGenerations.add(pinned.id);
+        generations.add(pinned.id);
       } finally {
         pinned.release();
       }
-    } catch (error) {
-      readerError ??= error;
+    } catch (readerError) {
+      error ??= readerError;
     }
   }, 10);
-  const settled = await settlement;
-  clearInterval(monitor);
-  const failures = settled.filter(({ status }) => status === "rejected");
-  if (failures.length > 0) throw failures[0].reason;
-  const completed = Object.fromEntries(settled.map(({ value }) => value));
-  if (readerError) throw new Error(`continuous generated reader failed: ${readerError.message}`);
-  if (!observed) throw new Error("continuous generated reader observed no selected generation during full-owner overlap");
-  const source = ownerResult("source");
-  const packageResult = ownerResult("package");
-  if (source.files !== inventory.counts.source || packageResult.files !== inventory.counts.package) {
-    throw new Error(`real overlap owner count mismatch: ${JSON.stringify({ source, package: packageResult, inventory: inventory.counts })}`);
+  return {
+    stop: () => clearInterval(timer),
+    evidence: () => ({ observed, identityMismatches, surfaceValidationFailures, generations: [...generations], error }),
+  };
+}
+
+export async function runGeneratedOverlap(options = {}) {
+  const packageRoot = options.packageRoot ?? defaultPackageRoot;
+  const repoRoot = options.repoRoot ?? defaultRepoRoot;
+  const now = options.now ?? (() => Date.now());
+  const contract = options.contract ?? readReleaseContract(repoRoot);
+  const cleanupMarginMs = contract.qualification.source.dag.overlapCleanupMarginMs;
+  const parentReconciliationMarginMs = contract.qualification.source.dag.overlapParentReconciliationMarginMs;
+  const suppliedMargin = options.environment?.AGENTERA_SOURCE_CLEANUP_MARGIN_MS ?? process.env.AGENTERA_SOURCE_CLEANUP_MARGIN_MS;
+  if (
+    !Number.isInteger(cleanupMarginMs)
+    || cleanupMarginMs <= 0
+    || !Number.isInteger(parentReconciliationMarginMs)
+    || parentReconciliationMarginMs <= 0
+    || parentReconciliationMarginMs >= cleanupMarginMs
+    || (suppliedMargin !== undefined && Number(suppliedMargin) !== cleanupMarginMs)
+  ) {
+    throw overlapFailure("generated-overlap cleanup margin does not match the release contract");
   }
-  const selected = selectGeneratedGeneration(packageRoot);
-  const invocation = await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [path.join(packageRoot, "dist/bin/agentera.js"), "--version"], { cwd: packageRoot });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
-    child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
-    child.on("error", reject);
-    child.on("exit", (code) => code === 0 ? resolve(stdout.trim()) : reject(new Error(`selected CLI failed: ${stderr}`)));
+  const suppliedDeadline = options.environment?.AGENTERA_SOURCE_DEADLINE_EPOCH_MS ?? process.env.AGENTERA_SOURCE_DEADLINE_EPOCH_MS;
+  const overallDeadline = suppliedDeadline === undefined
+    ? now() + contract.benchmark.timeouts.sourceQualificationMs
+    : Number(suppliedDeadline);
+  if (!Number.isFinite(overallDeadline) || overallDeadline - now() <= cleanupMarginMs) {
+    throw overlapFailure("generated-overlap received no safe source qualification deadline");
+  }
+  const operationDeadline = overallDeadline - cleanupMarginMs;
+  const handoffDeadline = overallDeadline - parentReconciliationMarginMs;
+  const ownedSettlementDeadline = operationDeadline
+    + Math.floor((cleanupMarginMs - parentReconciliationMarginMs) / 2);
+  const root = options.workRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
+  const barrier = path.join(root, "barrier");
+  const cleanupGenerated = options.cleanupGenerated ?? (() => cleanupGeneratedSurfaces(packageRoot));
+  const withDeadline = options.withDeadline
+    ?? ((promise, deadline, label) => defaultWithDeadline(promise, deadline, label, now));
+  const start = options.startParticipant
+    ?? ((name, command) => startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now }));
+  const loadInventory = options.loadInventory
+    ?? (() => readInventory(packageRoot, operationDeadline - now()));
+  const ready = options.waitForReady
+    ?? ((names) => waitForReady(names, barrier, operationDeadline, now));
+  const policyBytes = options.policyBytes
+    ?? fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
+  const handles = [];
+  const observations = [];
+  let primaryFailure;
+  let failureResolve;
+  let stopResolve;
+  let reader;
+  let passed = false;
+  const failureSignal = new Promise((resolve) => { failureResolve = resolve; });
+  const stopSignal = new Promise((resolve) => { stopResolve = resolve; });
+  const setPrimaryFailure = (error) => {
+    if (primaryFailure) return;
+    primaryFailure = error?.owner ? error : overlapFailure(error instanceof Error ? error.message : String(error));
+    failureResolve(primaryFailure);
+  };
+  const cancelAll = () => {
+    for (const handle of handles) handle.cancel();
+  };
+  const observe = (handle) => handle.promise.then(
+    (value) => ({ status: "fulfilled", value }),
+    (error) => {
+      setPrimaryFailure(error);
+      cancelAll();
+      return { status: "rejected", reason: error };
+    },
+  );
+  const settlement = () => Promise.all(observations);
+  const awaitWork = (promise, deadline, label) => Promise.race([
+    withDeadline(promise, deadline, label),
+    failureSignal.then((error) => { throw error; }),
+    stopSignal.then((error) => { throw error; }),
+  ]);
+  const onSigterm = () => stopResolve(overlapFailure("generated-overlap received its cooperative deadline stop"));
+  if (options.handleSignals !== false) process.once("SIGTERM", onSigterm);
+  try {
+    cleanupGenerated();
+    if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before inventory");
+    const inventory = loadInventory();
+    for (const [name, command] of Object.entries(participants)) {
+      if (now() >= operationDeadline) throw overlapFailure(`generated-overlap deadline expired before starting ${name}`);
+      const handle = start(name, command);
+      handles.push(handle);
+      observations.push(observe(handle));
+    }
+    await awaitWork(Promise.resolve(ready(Object.keys(participants))), operationDeadline, "participant readiness");
+    if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before releasing participants");
+    fs.writeFileSync(path.join(barrier, "release"), "release\n");
+    reader = options.startReader?.() ?? startReader(packageRoot);
+    const settled = await awaitWork(settlement(), operationDeadline, "source/build/package settlement");
+    const failed = settled.find((entry) => entry.status === "rejected");
+    if (failed) throw primaryFailure ?? failed.reason;
+    const completed = {};
+    for (let index = 0; index < handles.length; index += 1) completed[handles[index].name] = settled[index].value;
+    const readerEvidence = reader.evidence();
+    reader.stop();
+    reader = undefined;
+    if (readerEvidence.error) throw overlapFailure(`continuous generated reader failed: ${readerEvidence.error.message}`);
+    if (!readerEvidence.observed) throw overlapFailure("continuous generated reader observed no selected generation during full-owner overlap");
+    const readOwnerResult = options.readOwnerResult ?? ((owner) => {
+      const bytes = fs.readFileSync(path.join(root, `${owner}.json`));
+      const expectedFiles = inventory.files[owner];
+      const pending = validatePendingTests(owner, bytes, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
+      return { files: expectedFiles.length, tests: JSON.parse(bytes.toString("utf8")).numTotalTests, pending };
+    });
+    if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before reading source evidence");
+    const source = readOwnerResult("source");
+    if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before reading package evidence");
+    const packageResult = readOwnerResult("package");
+    if (source.files !== inventory.counts.source || packageResult.files !== inventory.counts.package) {
+      throw overlapFailure(`real overlap owner count mismatch: ${JSON.stringify({ source, package: packageResult, inventory: inventory.counts })}`);
+    }
+    if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selecting generated output");
+    const selected = (options.selectGeneration ?? (() => selectGeneratedGeneration(packageRoot)))();
+    if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selected CLI invocation");
+    const invocation = start("invocation", [process.execPath, path.join(packageRoot, "dist/bin/agentera.js"), "--version"]);
+    handles.push(invocation);
+    const invocationObservation = observe(invocation);
+    observations.push(invocationObservation);
+    const invocationResult = await awaitWork(invocationObservation, operationDeadline, "selected CLI invocation");
+    if (invocationResult.status === "rejected") throw primaryFailure ?? invocationResult.reason;
+    passed = true;
+    return {
+      schemaVersion: "agentera.generatedOverlapEvidence.v1",
+      status: "pass",
+      inventory: inventory.counts,
+      participants: {
+        source: { ...source, command: completed.source.command, elapsedMs: completed.source.elapsedMs },
+        package: { ...packageResult, command: completed.package.command, elapsedMs: completed.package.elapsedMs },
+        build: { command: completed.build.command, elapsedMs: completed.build.elapsedMs, status: "pass" },
+      },
+      reader: {
+        observed: readerEvidence.observed,
+        all_observations_complete: readerEvidence.identityMismatches === 0 && readerEvidence.surfaceValidationFailures === 0,
+        identity_mismatches: readerEvidence.identityMismatches,
+        surface_validation_failures: readerEvidence.surfaceValidationFailures,
+        generations: readerEvidence.generations,
+      },
+      generation: selected.id,
+      invocation: invocationResult.value.stdout,
+    };
+  } catch (error) {
+    setPrimaryFailure(error);
+    cancelAll();
+    try {
+      await withDeadline(settlement(), ownedSettlementDeadline, "owned process cleanup");
+    } catch (cleanupError) {
+      if (!primaryFailure) setPrimaryFailure(cleanupError);
+    }
+    try {
+      cleanupGenerated();
+    } catch (cleanupError) {
+      primaryFailure.cleanupFailure = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+    }
+    if (now() >= handoffDeadline) primaryFailure.handoffDeadlineExceeded = true;
+    throw primaryFailure;
+  } finally {
+    reader?.stop();
+    if (options.handleSignals !== false) process.removeListener("SIGTERM", onSigterm);
+    if (passed || options.retainFailureArtifacts === false) {
+      try {
+        fs.rmSync(root, { recursive: true, force: true });
+      } catch (cleanupError) {
+        if (passed) throw cleanupError;
+      }
+    }
+  }
+}
+
+async function main() {
+  process.stdout.write(`${JSON.stringify(await runGeneratedOverlap())}\n`);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) {
+  main().catch((error) => {
+    console.error(`verify-generated-overlap: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
   });
-  console.log(JSON.stringify({
-    schemaVersion: "agentera.generatedOverlapEvidence.v1",
-    status: "pass",
-    inventory: inventory.counts,
-    participants: {
-      source: {
-        ...source,
-        command: completed.source.command,
-        elapsedMs: completed.source.elapsedMs,
-      },
-      package: {
-        ...packageResult,
-        command: completed.package.command,
-        elapsedMs: completed.package.elapsedMs,
-      },
-      build: {
-        command: completed.build.command,
-        elapsedMs: completed.build.elapsedMs,
-        status: "pass",
-      },
-    },
-    reader: {
-      observed,
-      all_observations_complete: identityMismatches === 0 && surfaceValidationFailures === 0,
-      identity_mismatches: identityMismatches,
-      surface_validation_failures: surfaceValidationFailures,
-      generations: [...readerGenerations],
-    },
-    generation: selected.id,
-    invocation,
-  }));
-} catch (error) {
-  if (running.length > 0) await settlement;
-  console.error(`verify-generated-overlap: ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-} finally {
-  if (process.exitCode !== 1) fs.rmSync(root, { recursive: true, force: true });
 }

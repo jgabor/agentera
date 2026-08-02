@@ -67,7 +67,10 @@
   package, build, and overlap proof beside isolated stress, performance, and
   typecheck owners, followed by concurrent compact and capability-contract
   readers. Failures preserve the first owner, settle overlap safely, block
-  candidate work, and issue no receipt.
+  candidate work, and issue no receipt. Generated-overlap now receives the
+  actual source deadline, reserves bounded cleanup and parent-reconciliation
+  time, and removes its generated state after failure. Source receipts now mark
+  and validate all nine successful gate outcomes and reject semantic tampering.
 
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action

@@ -18,11 +18,89 @@ import {
   validateCandidateApproval,
   validateCandidateReceipt,
   validateCiAttestation,
+  validateSourceReceipt,
 } from "../../scripts/release-qualification.mjs";
 import { prepareTargetMetadata } from "../../scripts/publication-transaction.mjs";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
 const temporary: string[] = [];
+const GOVERNED_GATES = RELEASE_CONTRACT.qualification.source.gates;
+
+function outputObservation() {
+  return {
+    stdoutSha256: "0".repeat(64),
+    stdoutBytes: 0,
+    stderrSha256: "0".repeat(64),
+    stderrBytes: 0,
+  };
+}
+
+function overlapObservation() {
+  const command = (name: string) => GOVERNED_GATES.find((gate: { name: string }) => gate.name === name)!.command;
+  return {
+    schemaVersion: RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema,
+    status: "pass",
+    inventory: { source: 1, package: 1, stress: 1, performance: 1 },
+    participants: {
+      source: { command: command("source"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
+      package: { command: command("package"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
+      build: { command: command("build"), elapsedMs: 1, status: "pass" },
+    },
+    reader: {
+      observed: true,
+      all_observations_complete: true,
+      identity_mismatches: 0,
+      surface_validation_failures: 0,
+      generations: ["generation-a"],
+    },
+    generation: "generation-a",
+    invocation: "3.0.0-dev.41",
+  };
+}
+
+function gateRecord(gate: { name: string; command: string[] }) {
+  const overlapParticipant = ["source", "package", "build"].includes(gate.name);
+  const barrier = ["compact", "capability-contract"].includes(gate.name);
+  let observation: any;
+  if (["source", "package"].includes(gate.name)) {
+    observation = { command: gate.command, files: 1, tests: 1, pending: [] };
+  } else if (gate.name === "build") {
+    observation = { command: gate.command, status: "pass", generation: "generation-a" };
+  } else if (gate.name === "generated-overlap") {
+    observation = overlapObservation();
+  } else if (gate.name === "performance") {
+    observation = {
+      inventoryFiles: 1,
+      evidence: {
+        schemaVersion: RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema,
+        status: "pass",
+        sha256: "0".repeat(64),
+        bytes: 1,
+        samples: 1,
+        maxima: {},
+        runner: {},
+      },
+    };
+  } else {
+    observation = {
+      ...(gate.name === "stress" ? { inventoryFiles: 1 } : {}),
+      ...(barrier ? { generation: "generation-a" } : {}),
+      ...outputObservation(),
+    };
+  }
+  return {
+    name: gate.name,
+    origin: [...RELEASE_CONTRACT.qualification.source.dag.generatedOverlapOrigins].includes(gate.name)
+      ? "generated-overlap"
+      : gate.name,
+    phase: barrier ? "barrier-b" : "batch-a",
+    outcome: "passed",
+    elapsedMs: 1,
+    executed: overlapParticipant ? "generated-overlap participant" : "command",
+    reused: false,
+    observation,
+  };
+}
 
 function sha512Integrity(bytes: Buffer): string {
   return `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
@@ -74,17 +152,9 @@ async function sourceReceipt(repo: string, candidateDirectory: string) {
   return issueSourceReceipt({
     repo,
     candidateDirectory,
-    gates: [{ name: "source", command: ["test", "source"] }],
-    runDag: async ({ gates }: { gates: Array<{ name: string }> }) => ({
-      gates: gates.map((gate) => ({
-        name: gate.name,
-        origin: gate.name,
-        phase: "test",
-        elapsedMs: 1,
-        executed: "stub",
-        reused: false,
-        observation: {},
-      })),
+    gates: GOVERNED_GATES,
+    runDag: async ({ gates }: { gates: Array<{ name: string; command: string[] }> }) => ({
+      gates: gates.map(gateRecord),
       execution: { strategy: "stub", elapsedMs: 1 },
     }),
   }).then(({ receipt }: { receipt: any }) => receipt);
@@ -109,7 +179,7 @@ describe("release qualification receipts", () => {
     const replay = await issueSourceReceipt({
       repo,
       candidateDirectory,
-      gates: [{ name: "source", command: ["test", "source"] }],
+      gates: GOVERNED_GATES,
       runDag: async () => {
         throw new Error("matching source evidence must not rerun its gates");
       },
@@ -134,7 +204,7 @@ describe("release qualification receipts", () => {
     await expect(issueSourceReceipt({
       repo,
       candidateDirectory,
-      gates: [{ name: "source", command: ["test", "source"] }],
+      gates: GOVERNED_GATES,
       runDag: async () => {
         const error = new Error("stress failed first") as Error & { owner?: string };
         error.owner = "stress";
@@ -146,23 +216,13 @@ describe("release qualification receipts", () => {
 
   it("seals all nine governed DAG gates and execution evidence in one source receipt", async () => {
     const { repo, candidateDirectory } = fixture();
-    const governed = RELEASE_CONTRACT.qualification.source.gates;
+    const governed = GOVERNED_GATES;
     const issued = await issueSourceReceipt({
       repo,
       candidateDirectory,
       gates: governed,
       runDag: async () => ({
-        gates: governed.map((gate: { name: string }) => ({
-          name: gate.name,
-          origin: ["source", "package", "build", "generated-overlap"].includes(gate.name)
-            ? "generated-overlap"
-            : gate.name,
-          phase: ["compact", "capability-contract"].includes(gate.name) ? "barrier-b" : "batch-a",
-          elapsedMs: 1,
-          executed: "stub",
-          reused: false,
-          observation: { status: "pass" },
-        })),
+        gates: governed.map(gateRecord),
         execution: {
           strategy: "parallel-overlap-dag",
           elapsedMs: 2,
@@ -175,6 +235,7 @@ describe("release qualification receipts", () => {
     expect(issued.receipt.gates.map((gate: { name: string }) => gate.name))
       .toEqual(governed.map((gate: { name: string }) => gate.name));
     expect(issued.receipt.gates).toHaveLength(9);
+    expect(issued.receipt.gates.every((gate: { outcome: string }) => gate.outcome === "passed")).toBe(true);
     expect(issued.receipt.execution).toMatchObject({
       strategy: "parallel-overlap-dag",
       generation: "generation-a",
@@ -182,6 +243,40 @@ describe("release qualification receipts", () => {
     });
     expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "source-receipt.json"), "utf8")))
       .toEqual(issued.receipt);
+  });
+
+  it("rejects one-field digest tampering and semantic tampering for every governed gate", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+    const digestTamper = structuredClone(receipt);
+    digestTamper.gates[0].outcome = "failed";
+    expect(() => validateSourceReceipt({ repo, receipt: digestTamper })).toThrow("digest does not match");
+
+    for (let index = 0; index < receipt.gates.length; index += 1) {
+      const semanticTamper = structuredClone(receipt);
+      semanticTamper.gates[index].outcome = "failed";
+      const { receiptSha256: _discarded, ...content } = semanticTamper;
+      semanticTamper.receiptSha256 = sha256(canonicalJson(content));
+      expect(() => validateSourceReceipt({ repo, receipt: semanticTamper }))
+        .toThrow(`source receipt gate '${receipt.gates[index].name}' has invalid execution evidence`);
+    }
+
+    const semanticMutations = [
+      (candidate: any) => candidate.gates.pop(),
+      (candidate: any) => { candidate.gates[0].origin = "source"; },
+      (candidate: any) => { candidate.gates[0].phase = "barrier-b"; },
+      (candidate: any) => { candidate.gates[0].elapsedMs = Number.POSITIVE_INFINITY; },
+      (candidate: any) => { candidate.gates[0].executed = "none"; },
+      (candidate: any) => { candidate.gates[0].reused = true; },
+      (candidate: any) => { candidate.gates[0].observation = {}; },
+    ];
+    for (const mutate of semanticMutations) {
+      const semanticTamper = structuredClone(receipt);
+      mutate(semanticTamper);
+      const { receiptSha256: _discarded, ...content } = semanticTamper;
+      semanticTamper.receiptSha256 = sha256(canonicalJson(content));
+      expect(() => validateSourceReceipt({ repo, receipt: semanticTamper })).toThrow();
+    }
   });
 
   it("probes tool versions in a fresh isolated npm state even when the caller has a token", () => {

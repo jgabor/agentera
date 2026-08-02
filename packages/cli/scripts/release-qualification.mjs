@@ -143,9 +143,17 @@ function sourceGateSet() {
   return RELEASE_CONTRACT.qualification.source.gates;
 }
 
+function governedSourceGates(gates = sourceGateSet()) {
+  const governed = sourceGateSet();
+  if (canonicalJson(gates) !== canonicalJson(governed)) {
+    throw new Error("source qualification must use the exact governed gate set");
+  }
+  return governed;
+}
+
 export function sourceComponentIdentity(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
-  const gateSet = options.gates ?? sourceGateSet();
+  const gateSet = governedSourceGates(options.gates);
   const policyPath = path.join(repo, "references/analysis/verification-policy.yaml");
   const lockPath = path.join(repo, "pnpm-lock.yaml");
   const probeToolVersion = options.probeToolVersion ?? toolVersion;
@@ -292,6 +300,15 @@ function killProcessGroup(child, signal) {
   }
 }
 
+function requestCooperativeStop(child) {
+  if (!child.pid) return;
+  try {
+    child.kill("SIGTERM");
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
+  }
+}
+
 function defaultStartSourceOwner(specification) {
   const started = performance.now();
   const stream = fs.createWriteStream(specification.reportFile, { flags: "wx", mode: 0o600 });
@@ -329,6 +346,7 @@ function defaultStartSourceOwner(specification) {
   const timeout = setTimeout(() => {
     timedOut = true;
     if (specification.cancellable) cancel();
+    else if (specification.cooperativeStop) requestCooperativeStop(child);
   }, Math.max(1, specification.timeoutMs));
   const promise = new Promise((resolve, reject) => {
     child.on("error", (error) => {
@@ -382,7 +400,7 @@ async function runConcurrentSourceOwners(specifications, options = {}) {
   const states = specifications.map((specification) => createState(specification.name));
   const handles = specifications.map((specification, index) => startOwner({
     ...specification,
-    environment: states[index].environment,
+    environment: { ...states[index].environment, ...specification.environment },
     reportFile: path.join(states[index].root, "owner-report.log"),
   }));
   let firstFailure;
@@ -420,20 +438,8 @@ async function runConcurrentSourceOwners(specifications, options = {}) {
   }
 }
 
-function parseOverlapEvidence(result, gates) {
+function validateOverlapEvidence(evidence, gates) {
   const schema = RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema;
-  const records = result.stdout.split("\n").flatMap((line) => {
-    try {
-      const parsed = JSON.parse(line);
-      return parsed?.schemaVersion === schema ? [parsed] : [];
-    } catch {
-      return [];
-    }
-  });
-  if (records.length !== 1) {
-    throw sourceProcessFailure("generated-overlap", "generated-overlap returned invalid JSON evidence", "failed");
-  }
-  const evidence = records[0];
   if (
     evidence.schemaVersion !== schema
     || evidence.status !== "pass"
@@ -472,6 +478,22 @@ function parseOverlapEvidence(result, gates) {
   return evidence;
 }
 
+function parseOverlapEvidence(result, gates) {
+  const schema = RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema;
+  const records = result.stdout.split("\n").flatMap((line) => {
+    try {
+      const parsed = JSON.parse(line);
+      return parsed?.schemaVersion === schema ? [parsed] : [];
+    } catch {
+      return [];
+    }
+  });
+  if (records.length !== 1) {
+    throw sourceProcessFailure("generated-overlap", "generated-overlap returned invalid JSON evidence", "failed");
+  }
+  return validateOverlapEvidence(records[0], gates);
+}
+
 function generatedState(repo) {
   const packageRoot = path.join(repo, "packages/cli");
   const selected = selectGeneratedGeneration(packageRoot);
@@ -489,6 +511,102 @@ function outputObservation(result) {
     stderrSha256: sha256(result.stderr),
     stderrBytes: Buffer.byteLength(result.stderr),
   };
+}
+
+function isOutputObservation(observation) {
+  return /^[0-9a-f]{64}$/.test(observation?.stdoutSha256 ?? "")
+    && Number.isInteger(observation?.stdoutBytes)
+    && observation.stdoutBytes >= 0
+    && /^[0-9a-f]{64}$/.test(observation?.stderrSha256 ?? "")
+    && Number.isInteger(observation?.stderrBytes)
+    && observation.stderrBytes >= 0;
+}
+
+function validateSourceGateRecords(records) {
+  const governed = sourceGateSet();
+  if (!Array.isArray(records) || canonicalJson(records.map((record) => record?.name)) !== canonicalJson(governed.map((gate) => gate.name))) {
+    throw new Error("source receipt gates must contain the exact governed gate set in order");
+  }
+  const gateContracts = new Map(governed.map((gate) => [gate.name, gate]));
+  const overlapOrigins = new Set(GENERATED_OVERLAP_ORIGINS);
+  const barrierOwners = new Set(SOURCE_BARRIER_B);
+  for (const record of records) {
+    const expectedOrigin = overlapOrigins.has(record.name) ? "generated-overlap" : record.name;
+    const expectedPhase = barrierOwners.has(record.name) ? "barrier-b" : "batch-a";
+    const expectedExecuted = OVERLAP_PARTICIPANTS.includes(record.name)
+      ? "generated-overlap participant"
+      : "command";
+    if (
+      record.origin !== expectedOrigin
+      || record.phase !== expectedPhase
+      || record.outcome !== "passed"
+      || !Number.isFinite(record.elapsedMs)
+      || record.elapsedMs < 0
+      || record.executed !== expectedExecuted
+      || record.reused !== false
+      || !record.observation
+      || typeof record.observation !== "object"
+      || Array.isArray(record.observation)
+    ) {
+      throw new Error(`source receipt gate '${record.name}' has invalid execution evidence`);
+    }
+    const observation = record.observation;
+    if (OVERLAP_PARTICIPANTS.includes(record.name)) {
+      if (canonicalJson(observation.command) !== canonicalJson(gateContracts.get(record.name).command)) {
+        throw new Error(`source receipt gate '${record.name}' has the wrong command origin`);
+      }
+      if (record.name === "build") {
+        if (observation.status !== "pass" || typeof observation.generation !== "string" || observation.generation.length === 0) {
+          throw new Error("source receipt build observation is incomplete");
+        }
+      } else if (
+        !Number.isInteger(observation.files)
+        || observation.files < 0
+        || !Number.isInteger(observation.tests)
+        || observation.tests < 0
+        || !Array.isArray(observation.pending)
+      ) {
+        throw new Error(`source receipt gate '${record.name}' inventory observation is incomplete`);
+      }
+    } else if (record.name === "generated-overlap") {
+      validateOverlapEvidence(observation, gateContracts);
+    } else if (record.name === "performance") {
+      if (
+        !Number.isInteger(observation.inventoryFiles)
+        || observation.inventoryFiles < 0
+        || observation.evidence?.schemaVersion !== RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema
+        || observation.evidence?.status !== "pass"
+        || !/^[0-9a-f]{64}$/.test(observation.evidence?.sha256 ?? "")
+        || !Number.isInteger(observation.evidence?.bytes)
+        || observation.evidence.bytes < 0
+        || !Number.isInteger(observation.evidence?.samples)
+        || observation.evidence.samples < 0
+        || !observation.evidence?.maxima
+        || !observation.evidence?.runner
+      ) {
+        throw new Error("source receipt performance observation is incomplete");
+      }
+    } else {
+      if (!isOutputObservation(observation)) {
+        throw new Error(`source receipt gate '${record.name}' output observation is incomplete`);
+      }
+      if (record.name === "stress" && (!Number.isInteger(observation.inventoryFiles) || observation.inventoryFiles < 0)) {
+        throw new Error("source receipt stress inventory observation is incomplete");
+      }
+      if (barrierOwners.has(record.name) && (typeof observation.generation !== "string" || observation.generation.length === 0)) {
+        throw new Error(`source receipt gate '${record.name}' generation observation is incomplete`);
+      }
+    }
+  }
+}
+
+function validateSourceReceiptSemantics(receipt) {
+  if (receipt.schemaVersion !== RECEIPT_SCHEMA) throw new Error("source receipt schema is invalid");
+  if (receipt.kind !== "source") throw new Error("source receipt kind is invalid");
+  validateSourceGateRecords(receipt.gates);
+  if (canonicalJson(receipt.component?.gates) !== canonicalJson(sourceGateSet())) {
+    throw new Error("source receipt component does not bind the governed gate set");
+  }
 }
 
 function performanceObservation(result, inventoryFiles) {
@@ -514,10 +632,13 @@ function performanceObservation(result, inventoryFiles) {
 
 export async function runSourceQualificationDag(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
-  const gates = sourceGateMap(options.gates ?? sourceGateSet());
+  const gateSet = governedSourceGates(options.gates);
+  const gates = sourceGateMap(gateSet);
   const clock = options.clock ?? (() => performance.now());
+  const wallClock = options.wallClock ?? (() => Date.now());
   const started = options.startedAt ?? clock();
   const deadlineMs = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
+  const cleanupMarginMs = SOURCE_DAG.overlapCleanupMarginMs;
   const remaining = () => Math.floor(deadlineMs - (clock() - started));
   const runConcurrent = options.runConcurrent ?? runConcurrentSourceOwners;
   const common = {
@@ -528,13 +649,21 @@ export async function runSourceQualificationDag(options = {}) {
   };
   const batchStarted = clock();
   const batchTimeout = remaining();
-  if (batchTimeout <= 0) throw sourceProcessFailure("full-qualification", "source qualification deadline expired before batch A", "failed");
+  if (batchTimeout <= cleanupMarginMs) {
+    throw sourceProcessFailure("full-qualification", "source qualification has no safe overlap execution window before its cleanup margin", "failed");
+  }
+  const overlapDeadlineEpochMs = wallClock() + batchTimeout;
   const batch = await runConcurrent(SOURCE_BATCH_A.map((name) => ({
     name,
     command: gates.get(name).command,
     repo,
-    timeoutMs: batchTimeout,
+    timeoutMs: name === "generated-overlap" ? batchTimeout - cleanupMarginMs : batchTimeout,
     cancellable: name !== "generated-overlap",
+    cooperativeStop: name === "generated-overlap",
+    environment: name === "generated-overlap" ? {
+      AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(overlapDeadlineEpochMs),
+      AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(cleanupMarginMs),
+    } : undefined,
   })), common);
   const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
   const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
@@ -571,6 +700,7 @@ export async function runSourceQualificationDag(options = {}) {
     name,
     origin: "generated-overlap",
     phase: "batch-a",
+    outcome: "passed",
     elapsedMs: Math.round(overlap.participants[name].elapsedMs),
     executed: "generated-overlap participant",
     reused: false,
@@ -593,6 +723,7 @@ export async function runSourceQualificationDag(options = {}) {
       name: "generated-overlap",
       origin: "generated-overlap",
       phase: "batch-a",
+      outcome: "passed",
       elapsedMs: batch["generated-overlap"].elapsedMs,
       executed: "command",
       reused: false,
@@ -602,6 +733,7 @@ export async function runSourceQualificationDag(options = {}) {
       name: "stress",
       origin: "stress",
       phase: "batch-a",
+      outcome: "passed",
       elapsedMs: batch.stress.elapsedMs,
       executed: "command",
       reused: false,
@@ -611,6 +743,7 @@ export async function runSourceQualificationDag(options = {}) {
       name: "performance",
       origin: "performance",
       phase: "batch-a",
+      outcome: "passed",
       elapsedMs: batch.performance.elapsedMs,
       executed: "command",
       reused: false,
@@ -620,6 +753,7 @@ export async function runSourceQualificationDag(options = {}) {
       name: "typecheck",
       origin: "typecheck",
       phase: "batch-a",
+      outcome: "passed",
       elapsedMs: batch.typecheck.elapsedMs,
       executed: "command",
       reused: false,
@@ -629,6 +763,7 @@ export async function runSourceQualificationDag(options = {}) {
       name: "compact",
       origin: "compact",
       phase: "barrier-b",
+      outcome: "passed",
       elapsedMs: barrier.compact.elapsedMs,
       executed: "command",
       reused: false,
@@ -638,6 +773,7 @@ export async function runSourceQualificationDag(options = {}) {
       name: "capability-contract",
       origin: "capability-contract",
       phase: "barrier-b",
+      outcome: "passed",
       elapsedMs: barrier["capability-contract"].elapsedMs,
       executed: "command",
       reused: false,
@@ -645,10 +781,12 @@ export async function runSourceQualificationDag(options = {}) {
     },
   };
   return {
-    gates: (options.gates ?? sourceGateSet()).map((gate) => entries[gate.name]),
+    gates: gateSet.map((gate) => entries[gate.name]),
     execution: {
       strategy: "parallel-overlap-dag",
       deadlineMs,
+      overlapCleanupMarginMs: cleanupMarginMs,
+      overlapParentReconciliationMarginMs: SOURCE_DAG.overlapParentReconciliationMarginMs,
       elapsedMs,
       batchAElapsedMs: batchElapsedMs,
       barrierBElapsedMs: barrierElapsedMs,
@@ -664,17 +802,19 @@ export async function issueSourceReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const clock = options.clock ?? (() => performance.now());
   const started = clock();
+  const gates = governedSourceGates(options.gates);
   assertCleanCommittedTree(repo);
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo);
   const identity = sourceComponentIdentity({
     repo,
-    gates: options.gates,
+    gates,
     toolchain: options.toolchain,
     probeToolVersion: options.probeToolVersion,
   });
   const file = receiptPath(candidateDirectory, "source-receipt.json");
   if (fs.existsSync(file)) {
     const existing = validReceiptDigest(readJson(file, "source receipt"), "source receipt");
+    validateSourceReceiptSemantics(existing);
     if (existing.component?.sha256 !== identity.sha256) {
       throw new Error("source receipt inputs changed; use a new empty candidate directory and rerun source qualification");
     }
@@ -683,7 +823,7 @@ export async function issueSourceReceipt(options = {}) {
   const qualification = await (options.runDag ?? runSourceQualificationDag)({
     ...options,
     repo,
-    gates: options.gates ?? sourceGateSet(),
+    gates,
     startedAt: started,
   });
   const receipt = {
@@ -693,6 +833,7 @@ export async function issueSourceReceipt(options = {}) {
     gates: qualification.gates,
     execution: qualification.execution,
   };
+  validateSourceGateRecords(receipt.gates);
   receipt.receiptSha256 = receiptDigest(receipt);
   writeImmutableJson(file, receipt, "source receipt");
   return { receipt, reused: false, gates: qualification.gates };
@@ -700,8 +841,8 @@ export async function issueSourceReceipt(options = {}) {
 
 export function validateSourceReceipt(options = {}) {
   const receipt = validReceiptDigest(options.receipt, "source receipt");
-  if (receipt.kind !== "source") throw new Error("source receipt kind is invalid");
-  const identity = sourceComponentIdentity(options);
+  validateSourceReceiptSemantics(receipt);
+  const identity = sourceComponentIdentity({ ...options, gates: sourceGateSet() });
   if (receipt.component?.sha256 !== identity.sha256) {
     throw new Error("source receipt no longer matches current component inputs");
   }

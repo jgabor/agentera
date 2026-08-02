@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -8,6 +9,7 @@ import {
   RELEASE_CONTRACT,
   runSourceQualificationDag,
 } from "../../scripts/release-qualification.mjs";
+import { runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const GATES = RELEASE_CONTRACT.qualification.source.gates;
@@ -73,6 +75,8 @@ describe("source qualification DAG", () => {
     const qualification = await runSourceQualificationDag({
       repo: REPO_ROOT,
       gates: GATES,
+      clock: () => 0,
+      wallClock: () => 1_000,
       createState: (name: string) => ({
         root: `/isolated/${name}`,
         environment: {
@@ -103,6 +107,15 @@ describe("source qualification DAG", () => {
       "compact", "capability-contract",
     ]);
     expect(started.map(({ name }) => name)).not.toEqual(expect.arrayContaining(["source", "package", "build"]));
+    expect(started[0]).toMatchObject({
+      name: "generated-overlap",
+      timeoutMs: 290_000,
+      cooperativeStop: true,
+      environment: {
+        AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000",
+        AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
+      },
+    });
     expect(started.slice(0, 4).every(({ name }) => !["compact", "capability-contract"].includes(name))).toBe(true);
     expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(6);
     expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(6);
@@ -112,6 +125,7 @@ describe("source qualification DAG", () => {
     expect(cleaned).toHaveLength(6);
     expect(stateReads).toBe(2);
     expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.map((entry: any) => entry.name));
+    expect(qualification.gates.every((entry: any) => entry.outcome === "passed")).toBe(true);
     expect(qualification.gates.filter((entry: any) => entry.origin === "generated-overlap").map((entry: any) => entry.name))
       .toEqual(["source", "package", "generated-overlap", "build"]);
     expect(qualification.gates.find((entry: any) => entry.name === "source").observation)
@@ -122,6 +136,8 @@ describe("source qualification DAG", () => {
       .toEqual(["compact", "capability-contract"]);
     expect(qualification.execution).toMatchObject({
       strategy: "parallel-overlap-dag",
+      overlapCleanupMarginMs: 10_000,
+      overlapParentReconciliationMarginMs: 4_000,
       generation: "generation-a",
       leasesAfterBarrier: 0,
     });
@@ -131,21 +147,27 @@ describe("source qualification DAG", () => {
     const started: string[] = [];
     const cancelled: string[] = [];
     let overlapSettled = false;
+    let now = 0;
     const pending = new Map<string, (error: Error) => void>();
+    const stressFailure = Promise.reject(ownerError("stress", "stress failed first"));
+    const overlapTimeout = new Promise((_resolve, reject) => {
+      stressFailure.catch(() => queueMicrotask(() => {
+        now = 291_000;
+        overlapSettled = true;
+        reject(ownerError("generated-overlap", "overlap cooperatively timed out after cleanup"));
+      }));
+    });
     const promiseFor = (name: string) => {
-      if (name === "generated-overlap") {
-        return new Promise((resolve) => setTimeout(() => {
-          overlapSettled = true;
-          resolve(result(name));
-        }, 10));
-      }
-      if (name === "stress") return Promise.reject(ownerError("stress", "stress failed first"));
+      if (name === "generated-overlap") return overlapTimeout;
+      if (name === "stress") return stressFailure;
       return new Promise((_resolve, reject) => pending.set(name, reject));
     };
 
     await expect(runSourceQualificationDag({
       repo: REPO_ROOT,
       gates: GATES,
+      clock: () => now,
+      wallClock: () => 1_000,
       createState: (name: string) => ({ root: `/isolated/${name}`, environment: {}, cleanup: () => undefined }),
       startOwner: (specification: any) => {
         started.push(specification.name);
@@ -167,10 +189,11 @@ describe("source qualification DAG", () => {
       firstFailure: { name: "stress", detail: "stress failed first" },
       failures: expect.arrayContaining([
         expect.objectContaining({ name: "stress", status: "failed" }),
+        expect.objectContaining({ name: "generated-overlap", status: "failed" }),
         expect.objectContaining({ name: "performance", status: "cancelled" }),
         expect.objectContaining({ name: "typecheck", status: "cancelled" }),
       ]),
-      completed: ["generated-overlap"],
+      completed: [],
     });
     expect(overlapSettled).toBe(true);
     expect(cancelled).toEqual(expect.arrayContaining(["performance", "typecheck"]));
@@ -237,6 +260,186 @@ describe("source qualification DAG", () => {
     });
   });
 
+  it("uses a fake deadline to stop starting overlap work and clean owned generated state before handoff", async () => {
+    let now = 1_000;
+    const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-deadline-test-"));
+    fs.mkdirSync(path.join(workRoot, "barrier"));
+    const started: string[] = [];
+    const cleanupAt: number[] = [];
+    let rejected: ((error: Error) => void) | undefined;
+    let cancelled = false;
+    try {
+      await expect(runGeneratedOverlap({
+        contract: RELEASE_CONTRACT,
+        environment: {
+          AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000",
+          AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
+        },
+        now: () => now,
+        workRoot,
+        retainFailureArtifacts: false,
+        handleSignals: false,
+        policyBytes: Buffer.from("policy"),
+        loadInventory: () => ({ counts: {}, files: {} }),
+        cleanupGenerated: () => cleanupAt.push(now),
+        startParticipant: (name: string) => {
+          started.push(name);
+          now = 291_000;
+          return {
+            name,
+            promise: new Promise((_resolve, reject) => { rejected = reject; }),
+            cancel: () => {
+              if (cancelled) return;
+              cancelled = true;
+              now += 100;
+              rejected?.(ownerError("generated-overlap", "source cancelled", "cancelled"));
+            },
+          };
+        },
+        withDeadline: async (promise: Promise<unknown>) => promise,
+      })).rejects.toMatchObject({
+        owner: "generated-overlap",
+        message: "generated-overlap deadline expired before starting build",
+      });
+      expect(started).toEqual(["source"]);
+      expect(cleanupAt).toEqual([1_000, 291_100]);
+      expect(now).toBeLessThan(297_000);
+      expect(fs.existsSync(workRoot)).toBe(false);
+    } finally {
+      fs.rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("bounds blocked overlap settlement, cancels every owned child, and skips later reader evidence", async () => {
+    let now = 1_000;
+    const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-blocked-test-"));
+    fs.mkdirSync(path.join(workRoot, "barrier"));
+    const cancelled: string[] = [];
+    const cleanupAt: number[] = [];
+    const deferred = new Map<string, (error: Error) => void>();
+    let evidenceReads = 0;
+    try {
+      await expect(runGeneratedOverlap({
+        contract: RELEASE_CONTRACT,
+        environment: {
+          AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000",
+          AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
+        },
+        now: () => now,
+        workRoot,
+        retainFailureArtifacts: false,
+        handleSignals: false,
+        policyBytes: Buffer.from("policy"),
+        loadInventory: () => ({ counts: {}, files: {} }),
+        cleanupGenerated: () => cleanupAt.push(now),
+        waitForReady: async () => undefined,
+        startReader: () => ({
+          stop: () => undefined,
+          evidence: () => {
+            evidenceReads += 1;
+            return { observed: true, identityMismatches: 0, surfaceValidationFailures: 0, generations: [] };
+          },
+        }),
+        startParticipant: (name: string) => ({
+          name,
+          promise: new Promise((_resolve, reject) => deferred.set(name, reject)),
+          cancel: () => {
+            if (cancelled.includes(name)) return;
+            cancelled.push(name);
+            now += 100;
+            deferred.get(name)?.(ownerError("generated-overlap", `${name} cancelled`, "cancelled"));
+          },
+        }),
+        withDeadline: async (promise: Promise<unknown>, _deadline: number, label: string) => {
+          if (label === "source/build/package settlement") {
+            now = 291_000;
+            throw ownerError("generated-overlap", "overlap work exceeded its cooperative deadline");
+          }
+          return promise;
+        },
+        readOwnerResult: () => {
+          evidenceReads += 1;
+          throw new Error("late evidence must not run");
+        },
+      })).rejects.toMatchObject({
+        owner: "generated-overlap",
+        message: "overlap work exceeded its cooperative deadline",
+      });
+      expect(cancelled.sort()).toEqual(["build", "package", "source"]);
+      expect(cleanupAt).toEqual([1_000, 291_300]);
+      expect(evidenceReads).toBe(0);
+      expect(now).toBeLessThan(297_000);
+      expect(fs.existsSync(workRoot)).toBe(false);
+    } finally {
+      fs.rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("returns complete overlap evidence through the cooperative runner success path", async () => {
+    let now = 1_000;
+    const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-success-test-"));
+    fs.mkdirSync(path.join(workRoot, "barrier"));
+    const started: string[] = [];
+    const cleanupAt: number[] = [];
+    const inventory = {
+      counts: { source: 1, package: 1, stress: 1, performance: 1 },
+      files: { source: ["source.test.ts"], package: ["package.test.ts"] },
+    };
+    try {
+      const evidence = await runGeneratedOverlap({
+        contract: RELEASE_CONTRACT,
+        environment: {
+          AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000",
+          AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
+        },
+        now: () => now,
+        workRoot,
+        handleSignals: false,
+        policyBytes: Buffer.from("policy"),
+        loadInventory: () => inventory,
+        cleanupGenerated: () => cleanupAt.push(now),
+        waitForReady: async () => undefined,
+        startReader: () => ({
+          stop: () => undefined,
+          evidence: () => ({
+            observed: true,
+            identityMismatches: 0,
+            surfaceValidationFailures: 0,
+            generations: ["generation-a"],
+          }),
+        }),
+        startParticipant: (name: string, command: string[]) => {
+          started.push(name);
+          now += 10;
+          return {
+            name,
+            promise: Promise.resolve({ command, elapsedMs: 10, stdout: name === "invocation" ? "3.0.0-dev.41" : "" }),
+            cancel: () => undefined,
+          };
+        },
+        withDeadline: async (promise: Promise<unknown>) => promise,
+        readOwnerResult: () => ({ files: 1, tests: 1, pending: [] }),
+        selectGeneration: () => ({ id: "generation-a" }),
+      });
+      expect(evidence).toMatchObject({
+        schemaVersion: "agentera.generatedOverlapEvidence.v1",
+        status: "pass",
+        generation: "generation-a",
+        invocation: "3.0.0-dev.41",
+        participants: {
+          source: { command: gate("source").command, elapsedMs: 10 },
+          package: { command: gate("package").command, elapsedMs: 10 },
+          build: { command: gate("build").command, elapsedMs: 10, status: "pass" },
+        },
+      });
+      expect(started).toEqual(["source", "build", "package", "invocation"]);
+      expect(cleanupAt).toEqual([1_000]);
+      expect(fs.existsSync(workRoot)).toBe(false);
+    } finally {
+      fs.rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
   it("locks generated-overlap to the exact public source, build, and package commands", () => {
     const script = fs.readFileSync(path.join(REPO_ROOT, "packages/cli/scripts/verify-generated-overlap.mjs"), "utf8");
     const policy = YAML.parse(fs.readFileSync(
@@ -253,6 +456,10 @@ describe("source qualification DAG", () => {
       batchA: policy.release_qualification.batch_a,
       generatedOverlapOrigins: policy.release_qualification.generated_overlap_origins,
       barrierB: policy.release_qualification.barrier_b,
+      overlapCleanupMarginMs: policy.release_qualification.deadline.generated_overlap_cleanup_margin_ms,
+      overlapParentReconciliationMarginMs: policy.release_qualification.deadline.parent_reconciliation_margin_ms,
     });
+    expect(RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs)
+      .toBe(policy.release_qualification.deadline.total_ms);
   });
 });
