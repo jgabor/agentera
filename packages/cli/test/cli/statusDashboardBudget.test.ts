@@ -219,9 +219,13 @@ describe("status dashboard contract", () => {
       const statusContext = buildStatusContextState(state);
       const brief = statusContext.brief as Record<string, unknown>;
 
-      expect(brief.status, JSON.stringify(brief)).toBe("ok");
+      expect(brief.status, JSON.stringify(brief)).toBe("degraded");
       expect(brief.utf8_bytes).toEqual(expect.any(Number));
-      expect(brief).not.toHaveProperty("error");
+      expect(brief).toMatchObject({
+        attempted_utf8_bytes: expect.any(Number),
+        error: { class: "brief_output_budget" },
+      });
+      expect(brief.attempted_utf8_bytes as number).toBeGreaterThan(PRIME_BRIEF_MAX_UTF8_BYTES);
       expect((statusContext.decision_attention as any).entries).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ id: "aaaaaaaaaa", artifact: "decisions", state: "open" }),
@@ -232,14 +236,20 @@ describe("status dashboard contract", () => {
         expect(STATE_FAMILY_FALLBACK_COMMANDS[family]).toMatch(/^agentera state .+ list --format json$/);
         expect(STATE_FAMILY_FALLBACK_COMMANDS[family]).not.toContain("--limit 20");
       }
-      expect(brief.utf8_bytes as number).toBeGreaterThan(11_500);
       expect(brief.utf8_bytes as number).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+      expect(statusContext).toMatchObject({
+        plan: expect.any(Object),
+        next_action: { capability: "build", object: expect.stringContaining("routing context") },
+      });
       expect(statusContext.todo).toMatchObject({
         critical: 1,
         detail: { total: 33, returned: 20, omitted: 13 },
       });
       expect(statusContext.attention).toHaveLength(6);
-      expect(statusContext.next_action).toMatchObject({ capability: "build", object: boundedText });
+      expect(statusContext.next_action).toMatchObject({
+        capability: "build",
+        object: expect.stringContaining("routing context"),
+      });
       expect((statusContext.source_contract as Record<string, unknown>).empty_state).toBe(
         "fresh: summaries absent; zero issues",
       );
@@ -286,7 +296,10 @@ describe("status dashboard contract", () => {
       });
       expect(emittedState.todo.detail.retrieval.continue).toMatch(/^agentera state todo list/);
       expect(emittedState.attention).toHaveLength(6);
-      expect(emittedState.next_action).toMatchObject({ capability: "build", object: boundedText });
+      expect(emittedState.next_action).toMatchObject({
+        capability: "build",
+        object: expect.stringContaining("routing context"),
+      });
 
       const boundaryState: OrientationState = {
         ...state,

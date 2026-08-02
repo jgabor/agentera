@@ -15,6 +15,7 @@ import {
 import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeRegistry.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
+import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
@@ -834,6 +835,78 @@ describe("npm distribution boundary", () => {
         : packageOnly(shellCommandArgs(entry.retrieval.get));
       expect(exact.entry).toMatchObject({ id: entry.id, artifact: "todo" });
     }
+    expect(projectByteSnapshot(project)).toEqual(before);
+  });
+
+  it("retains executable 21-task routing and mixed history in source and the extracted package", () => {
+    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "prime-routing-evidence-"));
+    const home = fs.mkdtempSync(path.join(fixture.root, "prime-routing-home-"));
+    const seeded = seedPrimeEvidenceProject(project);
+    const before = projectByteSnapshot(project);
+    const env = isolatedPackageEnv({ HOME: home });
+    const invoke = (bin: string, args: string[]) => run(process.execPath, [bin, ...args], project, env);
+    const observed: Record<string, any> = {};
+
+    for (const [label, bin] of [["source", sourceBin], ["package", packagedBin]] as const) {
+      const result = invoke(bin, ["prime", "--format", "json"]);
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      expect(Buffer.byteLength(result.stdout, "utf8")).toBeLessThanOrEqual(12_000);
+      const payload = JSON.parse(result.stdout);
+      expect(payload.brief.status).toMatch(/^(ok|degraded)$/);
+      expect(payload.plan).toMatchObject({
+        id: seeded.planId,
+        total: 21,
+        first_pending: {
+          id: seeded.selectedTaskId,
+          depends_on: [seeded.selectedDependencyId],
+          acceptance: expect.arrayContaining([expect.stringContaining("bounded plan names this task")]),
+          retrieval: {
+            get: `agentera state plan tasks get --id ${seeded.selectedTaskId} --format json`,
+          },
+        },
+      });
+      expect(payload.plan).not.toHaveProperty("tasks");
+      expect(payload.next_action).toMatchObject({
+        id: seeded.selectedTaskId,
+        capability: "orchestrate",
+        eligible: true,
+        retrieval: {
+          exact: `agentera state plan tasks get --id ${seeded.selectedTaskId} --format json`,
+        },
+      });
+      for (const artifact of ["progress", "decisions", "health"]) {
+        expect(payload.history[artifact]).toMatchObject({
+          counts: { total: 2, returned: 0, remaining: 2, full: 1, summary: 1 },
+          caveats: [expect.stringContaining("incomplete historical evidence")],
+          degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },
+          retrieval: {
+            list: `agentera state ${artifact} list --limit 20 --format json`,
+            get: `agentera state ${artifact} get --id ID --format json`,
+          },
+          source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "mixed" },
+        });
+      }
+      expect(payload.decision_attention).toBeNull();
+
+      const selected = invoke(bin, shellCommandArgs(payload.next_action.retrieval.exact));
+      expect(selected.status, selected.stderr || selected.stdout).toBe(0);
+      expect(JSON.parse(selected.stdout).entry).toMatchObject({ id: seeded.selectedTaskId, artifact: "plan" });
+      const decision = invoke(bin, ["state", "decisions", "get", "--id", seeded.fullDecisionId, "--format", "json"]);
+      expect(decision.status, decision.stderr || decision.stdout).toBe(0);
+      expect(JSON.parse(decision.stdout).entry.record).toMatchObject({
+        confidence: "firm",
+        satisfaction: { state: "provisionally_satisfied" },
+      });
+      observed[label] = {
+        plan: payload.plan,
+        next_action: payload.next_action,
+        history: payload.history,
+        decision_attention: payload.decision_attention,
+      };
+    }
+    expect(observed.package).toEqual(observed.source);
     expect(projectByteSnapshot(project)).toEqual(before);
   });
 

@@ -260,6 +260,7 @@ describe("state storage authority", () => {
     expect(authority.budgets.list).toMatchObject({
       max_utf8_bytes: 32768,
       benchmark: {
+        measurement_contract: "entity_target.measurement_contract.sampling",
         small: { entries: 100, max_latency_ms: 5000, max_heap_delta_bytes: 67108864 },
         large: { entries: 1000, max_latency_ms: 15000, max_heap_delta_bytes: 268435456 },
         response_max_utf8_bytes: 32768,

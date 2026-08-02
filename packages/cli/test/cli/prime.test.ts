@@ -22,6 +22,7 @@ import {
   CHANGELOG_MAX_OUTPUT_BYTES,
   CHANGELOG_MAX_SOURCE_PATH_BYTES,
 } from "../../src/state/changelog.js";
+import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -713,6 +714,94 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(context.orchestration_context.task_summaries_omission).toMatchObject({ omitted: true, omitted_count: 12, retrieval: { get: "agentera state plan tasks get --id ID --format json" } });
     const emitted = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(emitted.rc).toBe(0); expect(emitted.out).not.toContain("x".repeat(1_000));
+  });
+
+  it("keeps a 21-task host-real plan executable with canonical mixed-history evidence", () => {
+    fs.rmSync(path.join(tmp, ".agentera"), { recursive: true, force: true });
+    const fixture = seedPrimeEvidenceProject(tmp);
+    const state = collectOrientationState({ env: process.env });
+    const full = buildOrientationJsonPayload(state, "prime") as any;
+
+    expect(full.plan).toMatchObject({
+      total: 21,
+      first_pending: {
+        id: fixture.selectedTaskId,
+        artifact: "plan",
+        depends_on: [fixture.selectedDependencyId],
+        acceptance: [
+          "The bounded plan names this task and its completed dependency.",
+          "The executable next action points to exact task retrieval.",
+        ],
+        retrieval: {
+          get: `agentera state plan tasks get --id ${fixture.selectedTaskId} --format json`,
+        },
+      },
+    });
+    expect(full.next_action).toMatchObject({
+      id: fixture.selectedTaskId,
+      artifact: "plan",
+      eligible: true,
+      retrieval: {
+        exact: `agentera state plan tasks get --id ${fixture.selectedTaskId} --format json`,
+      },
+    });
+
+    const emitted = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
+    expect(emitted.rc, emitted.err || emitted.out).toBe(0);
+    expect(Buffer.byteLength(emitted.out, "utf8")).toBeLessThanOrEqual(12_000);
+    const payload = JSON.parse(emitted.out);
+    expect(payload.brief.status).toMatch(/^(ok|degraded)$/);
+    expect(payload.plan).toMatchObject({
+      id: fixture.planId,
+      total: 21,
+      first_pending: {
+        id: fixture.selectedTaskId,
+        depends_on: [fixture.selectedDependencyId],
+        acceptance: expect.arrayContaining(["The bounded plan names this task and its completed dependency."]),
+      },
+    });
+    expect(payload.plan).not.toHaveProperty("tasks");
+    expect(payload.next_action).toMatchObject({
+      id: fixture.selectedTaskId,
+      capability: "orchestrate",
+      eligible: true,
+      retrieval: { exact: `agentera state plan tasks get --id ${fixture.selectedTaskId} --format json` },
+    });
+    for (const artifact of ["progress", "decisions", "health"]) {
+      expect(payload.history[artifact]).toMatchObject({
+        status: "degraded",
+        compatibility: "mixed",
+        counts: { total: 2, returned: 0, remaining: 2, full: 1, summary: 1 },
+        caveats: [expect.stringContaining("incomplete historical evidence")],
+        degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },
+        retrieval: {
+          list: `agentera state ${artifact} list --limit 20 --format json`,
+          get: `agentera state ${artifact} get --id ID --format json`,
+        },
+        source_contract: {
+          authority: "references/artifacts/state-storage-authority.yaml",
+          detail: "mixed",
+        },
+      });
+    }
+    expect(payload.decision_attention).toBeNull();
+
+    const exact = capture((io) => main([
+      "node",
+      "agentera",
+      "state",
+      "decisions",
+      "get",
+      "--id",
+      fixture.fullDecisionId,
+      "--format",
+      "json",
+    ], io));
+    expect(exact.rc, exact.err || exact.out).toBe(0);
+    expect(JSON.parse(exact.out).entry.record).toMatchObject({
+      confidence: "firm",
+      satisfaction: { state: "provisionally_satisfied" },
+    });
   });
 
   it("reports generic startup-cap task omissions before generic bounding truncates detail", () => {

@@ -476,9 +476,10 @@ default_emission_omission_contract:
   # `--dashboard` (full fidelity, 35000-byte budget), `--fields <name>`, and the
   # `--context` capsule are NOT projected and keep the full payload. The byte
   # gate is deterministic pretty-JSON UTF-8 measurement; an over-budget brief is
-  # rejected in favor of a bounded degraded envelope (status ok, brief.brief
-   # block signals degraded) that keeps command/status/mode/state_presence/a
-   # bounded brief source_contract and the byte-budget error with a recovery command.
+  # rejected in favor of a bounded degraded envelope (status ok, brief.status
+  # signals degraded). Every successful envelope keeps bounded plan selection,
+  # executable next_action, canonical history evidence, profile,
+  # state_presence, source_contract, and the byte-budget recovery.
   brief_omission_contract:
     implemented_by: packages/cli/src/cli/commands/prime/briefOrientation.ts:briefOrientationPayload
     applies_to: default bare prime (no --fields, no --dashboard, no --context)
@@ -525,21 +526,42 @@ default_emission_omission_contract:
       - field: profile.bounded_signals
         reason: profile_signal_detail
         recovery: agentera profile --format json
+    history_projection:
+      count_fields: [total, returned, remaining, full, summary]
+      degraded_fields: [caveats, degraded_history]
+      provenance_fields: [source_contract]
+      recovery_fields: [retrieval.list, retrieval.get]
+      semantics: >-
+        Progress, decisions, and health retain canonical entity-history counts.
+        A degraded or compacted history retains bounded caveats, explicit
+        summary-only counts, source-contract provenance, and exact list/get
+        pointers. It never reconstructs omitted records or infers decision
+        satisfaction; explicit firm, provisional, missing, compacted, and
+        review-needed evidence remains unchanged when present.
     never_collapsed: >-
       state_presence is projected to its finite contract-owned active, available,
       any_active, absence_explained, and absence keys rather than copied verbatim;
       known boolean values and absence reasons remain bounded, so missing versus
       present-but-empty stays behaviorally distinguishable even for adversarial
       caller objects. source_contract is likewise projected to bounded known
-      fields and named recovery pointers. plan.first_pending, progress.latest,
-      health.grade/trajectory, todo counts, next_action.object, and attention
-      are retained as the routing-essential leaves consumers read.
+      fields and named recovery pointers. Every successful normal or degraded
+      envelope keeps plan.first_pending identity, dependencies, acceptance, and
+      exact task get; next_action keeps its executable identity, capability,
+      phase, eligibility, and exact retrieval. Canonical history counts,
+      degraded caveats, and exact history recovery remain bounded consumer
+      evidence. The normal projection also retains bounded progress.latest and
+      health grade/trajectory; the status-specific degraded projection retains
+      bounded TODO counts and attention. Optional plan task catalogs and
+      next-action alternatives compact before selected routing evidence.
     fallback_behavior: >-
       The detailed degraded envelope is byte-gated again after utf8_bytes is
-      settled. If it cannot fit, a compact and then an irreducible finite routing
-      envelope are tried deterministically. If the configured budget cannot hold
-      the irreducible envelope, briefOrientationPayload fails explicitly rather
-      than emitting over-budget stdout.
+      settled. If it cannot fit, the recovery catalog, optional source-contract
+      detail, next-action alternatives, and free text compact proportionally
+      before selected plan, executable next_action, or canonical history
+      evidence. A compact and then irreducible finite routing envelope are tried
+      deterministically. If the configured budget cannot hold that routing
+      evidence, briefOrientationPayload fails explicitly rather than returning
+      exit zero without an executable task or emitting over-budget stdout.
 
 # ---------------------------------------------------------------------------
 # Fixtures used by packages/cli/test/cli/primeCompatibilityBoundary.test.ts.

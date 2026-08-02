@@ -238,7 +238,7 @@ export function buildStatusContextState(
     ),
     {
       budgetBytes: options.budgetBytes ?? PRIME_BRIEF_MAX_UTF8_BYTES,
-      degradedMode: options.degradedMode,
+      degradedMode: options.degradedMode ?? "status_routing",
     },
   );
   // The canonical brief contains compatibility and source metadata useful to

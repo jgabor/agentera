@@ -230,6 +230,81 @@ describe("summary entity ordinary reads", () => {
     } finally { process.chdir(previous); }
   });
 
+  it("keeps canonical full and compacted history evidence in bare prime", () => {
+    const fullRoot = project(); full(fullRoot);
+    const fullPrime = cli(fullRoot, ["prime", "--format", "json"]);
+    expect(fullPrime.rc, fullPrime.err || fullPrime.out).toBe(0);
+    const fullPayload = JSON.parse(fullPrime.out);
+    for (const artifact of ["progress", "decisions", "health"]) {
+      expect(fullPayload.history[artifact]).toMatchObject({
+        status: "ok",
+        compatibility: "current",
+        counts: { total: 1, returned: 0, remaining: 1, full: 1, summary: 0 },
+        retrieval: {
+          list: `agentera state ${artifact} list --limit 20 --format json`,
+          get: `agentera state ${artifact} get --id ID --format json`,
+        },
+        source_contract: {
+          authority: "references/artifacts/state-storage-authority.yaml",
+          detail: "full",
+        },
+      });
+      expect(fullPayload.history[artifact]).not.toHaveProperty("caveats");
+      expect(fullPayload.history[artifact]).not.toHaveProperty("degraded_history");
+    }
+    expect((getDecisionEntity(fullRoot, "bbbbbbbbbb", SOURCE_ROOT) as any).entry.record).toMatchObject({
+      confidence: "firm",
+    });
+
+    const compactedRoot = project();
+    summary(compactedRoot, "progress", "dddddddddd", "retained progress history");
+    summary(compactedRoot, "decisions", "eeeeeeeeee", "retained decision history", {
+      state: "open",
+      review_needed: true,
+      evidence: "requires exact review",
+    });
+    summary(compactedRoot, "health", "ffffffffff", "retained health history");
+    const compactedPrime = cli(compactedRoot, ["prime", "--format", "json"]);
+    expect(compactedPrime.rc, compactedPrime.err || compactedPrime.out).toBe(0);
+    const compactedPayload = JSON.parse(compactedPrime.out);
+    expect(compactedPayload.decision_attention).toBeNull();
+    for (const artifact of ["progress", "decisions", "health"]) {
+      const history = compactedPayload.history[artifact];
+      expect(history).toMatchObject({
+        status: "degraded",
+        compatibility: "degraded",
+        detail_availability: "omitted",
+        counts: { total: 1, returned: 0, remaining: 1, full: 0, summary: 1 },
+        caveats: [expect.stringContaining("incomplete historical evidence")],
+        degraded_history: {
+          summary_count: 1,
+          returned_count: 0,
+          omitted_count: 1,
+          retrieval: {
+            list: `agentera state ${artifact} list --limit 20 --format json`,
+            get: `agentera state ${artifact} get --id ID --format json`,
+          },
+        },
+        retrieval: {
+          list: `agentera state ${artifact} list --limit 20 --format json`,
+          get: `agentera state ${artifact} get --id ID --format json`,
+        },
+        source_contract: {
+          authority: "references/artifacts/state-storage-authority.yaml",
+          detail: "mixed",
+        },
+      });
+      expect(history).not.toHaveProperty("entries");
+      const recovery = cli(compactedRoot, String(history.retrieval.list).split(" ").slice(1));
+      expect(recovery.rc, recovery.err || recovery.out).toBe(0);
+    }
+    expect((getDecisionEntity(compactedRoot, "eeeeeeeeee", SOURCE_ROOT) as any).entry.record.satisfaction).toEqual({
+      state: "open",
+      review_needed: true,
+      evidence: "requires exact review",
+    });
+  });
+
   it("renders bounded summary-only history truthfully in human and bare JSON prime output", () => {
     const root = project();
     summary(root, "progress", "mmmmmmmmmm", "retained progress history");

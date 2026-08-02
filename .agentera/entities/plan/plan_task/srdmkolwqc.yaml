@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M3 tail · Align consumers and synchronize M3 (qjhjpzowae)
-  status: pending
+  status: blocked
   depends_on:
     - iddsqjadki
   acceptance:
@@ -13,12 +13,12 @@ record:
     - GIVEN version policy WHEN metadata is prepared THEN only an allowed 3.0.0-dev.N+1 package bump occurs, suite metadata stays 3.0.0, and nothing is published, tagged, or pushed.
     - GIVEN source and package gates WHEN run THEN the rebuilt local CLI passes and downstream M4 and M5 tasks consume this M3 closure dependency.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Live TODO --ids-only limits 60/100 violate cardinality; a second active retrieval grammar remains in state-storage-authority/retrievalAuthority; status/orchestrate/README/AGENTS/package consumers emit rejected bare or experiment-get commands; resolved TODO/changelog/progress state therefore hides material drift. Reopen ybpdvkidaq plus hykqpkcsix and qjhjpzowae, then correct the owning implementations.
+    last_failure_evidence: The four original integration defects are corrected, but bare prime degraded envelopes omit required plan/next_action under a 12,328-byte attempted projection, and briefHistory maps legacy count names so canonical total/returned/remaining/full/summary become empty while compacted caveats disappear. Preserve executable routing and canonical bounded history evidence. See briefOrientation.ts:193-207,545-565,597-621 and prime-consumer-compatibility.yaml:246-251.
     provenance:
-      attempt_id: srdmkolwqc-audit-1
-      source: Audit ses_03ec44cf4ffe43Z44pmzhs2g2j
-      recorded_at: 2026-08-02 09:18
+      attempt_id: srdmkolwqc-audit-2
+      source: Audit ses_03ec44cf4ffe43Z44pmzhs2g2j bounded re-review
+      recorded_at: 2026-08-02 13:55
       writer_command: agentera state plan record-evaluation

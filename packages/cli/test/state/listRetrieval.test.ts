@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { performance } from "node:perf_hooks";
 
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
@@ -16,6 +15,7 @@ import {
   renderStateListText,
   type StateListResponse,
 } from "../../src/state/listRetrieval.js";
+import { measureColdStateList } from "../helpers/coldCliMeasurement.js";
 
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
@@ -593,7 +593,7 @@ describe("read-only migration fixture state listing", () => {
     });
   });
 
-  it("measures archive enumeration at small and large authority fixtures without an index", () => {
+  it("measures archive enumeration at small and large authority fixtures without an index", async () => {
     const authority = YAML.parse(fs.readFileSync(path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml"), "utf8")) as Record<string, any>;
     const benchmark = authority.budgets.list.benchmark;
     const sizes = [100, 1000];
@@ -601,21 +601,18 @@ describe("read-only migration fixture state listing", () => {
     for (const size of sizes) {
       const root = project();
       for (let number = 1; number <= size; number += 1) writeArchiveFixture(root, number);
-      const beforeHeap = process.memoryUsage().heapUsed;
-      const started = performance.now();
-      const response = boundStateList(listStateEntries(root, "progress", 20, {}, undefined, { sourceRoot }), "json", sourceRoot, root);
-      const latencyMs = performance.now() - started;
-      const heapDeltaBytes = Math.max(0, process.memoryUsage().heapUsed - beforeHeap);
-      const responseBytes = Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8");
-      measurements.push({ entries: size, latencyMs, heapDeltaBytes, responseBytes });
+      const measured = await measureColdStateList({ project: root, repoRoot: sourceRoot });
+      const responseBytes = Buffer.byteLength(measured.stdout, "utf8");
+      measurements.push({ entries: size, latencyMs: measured.elapsedMs, heapDeltaBytes: measured.heapDeltaBytes, responseBytes });
       expect(responseBytes).toBeLessThanOrEqual(benchmark.response_max_utf8_bytes);
     }
+    const diagnostic = JSON.stringify(measurements);
     expect(measurements[0].entries).toBe(benchmark.small.entries);
     expect(measurements[1].entries).toBe(benchmark.large.entries);
-    expect(measurements[0].latencyMs).toBeLessThan(benchmark.small.max_latency_ms);
-    expect(measurements[1].latencyMs).toBeLessThan(benchmark.large.max_latency_ms);
-    expect(measurements[0].heapDeltaBytes).toBeLessThan(benchmark.small.max_heap_delta_bytes);
-    expect(measurements[1].heapDeltaBytes).toBeLessThan(benchmark.large.max_heap_delta_bytes);
+    expect(measurements[0].latencyMs, diagnostic).toBeLessThan(benchmark.small.max_latency_ms);
+    expect(measurements[1].latencyMs, diagnostic).toBeLessThan(benchmark.large.max_latency_ms);
+    expect(measurements[0].heapDeltaBytes, diagnostic).toBeLessThan(benchmark.small.max_heap_delta_bytes);
+    expect(measurements[1].heapDeltaBytes, diagnostic).toBeLessThan(benchmark.large.max_heap_delta_bytes);
     expect(authority.budgets.list.index_decision.decision).toBe("no_index");
     if (process.env.AGENTERA_BENCHMARK_REPORT === "1") process.stdout.write(`state-list benchmark: ${JSON.stringify(measurements)}\n`);
   }, 30_000);

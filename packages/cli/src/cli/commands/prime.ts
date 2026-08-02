@@ -51,7 +51,7 @@ export function finalizeStatusCapabilityContextPayload(
   while (true) {
     context.status_context = buildStatusContextState(state, command, {
       budgetBytes: statusBudget,
-      degradedMode: statusBudget < PRIME_BRIEF_MAX_UTF8_BYTES ? "status_routing" : "minimal",
+      degradedMode: "status_routing",
     });
     if (briefUtf8Bytes(payload) <= PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES) break;
     const statusBytes = briefUtf8Bytes(context.status_context);

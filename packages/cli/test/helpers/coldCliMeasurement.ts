@@ -5,6 +5,7 @@ import { performance } from "node:perf_hooks";
 import { sourceModuleUrl, sourceSubprocessEnv } from "./sourceSubprocess.js";
 
 const CLI_DISPATCH_URL = sourceModuleUrl("cli/dispatch.js");
+const STATE_LIST_URL = sourceModuleUrl("state/listRetrieval.js");
 const FIXTURE_BOUNDARY_MARKER = "__AGENTERA_COLD_CLI_FIXTURE_BOUNDARY__";
 export const EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT = 512;
 
@@ -47,6 +48,22 @@ export function measureColdCli(options: {
   repoRoot: string;
 }): Promise<ColdMeasurement> {
   return measureColdCliOperation(options, "");
+}
+
+export function measureColdStateList(options: {
+  project: string;
+  repoRoot: string;
+}): Promise<ColdMeasurement> {
+  const { project, repoRoot } = options;
+  const runner = `const { boundStateList, listStateEntries } = await import(${JSON.stringify(STATE_LIST_URL)}); await new Promise((resolve) => { const keepAlive = setInterval(() => {}, 1000); globalThis.__agenteraColdCliContinue = () => { clearInterval(keepAlive); resolve(); }; process.stderr.write(${JSON.stringify(`${FIXTURE_BOUNDARY_MARKER}\n`)}); }); const response = boundStateList(listStateEntries(process.cwd(), "progress", 20, {}, undefined, { sourceRoot: ${JSON.stringify(repoRoot)} }), "json", ${JSON.stringify(repoRoot)}, process.cwd()); process.stdout.write(JSON.stringify(response, null, 2) + "\\n");`;
+  return measureColdProcess({
+    runner,
+    cwd: project,
+    env: {
+      ...sourceSubprocessEnv(),
+      AGENTERA_BOOTSTRAP_SOURCE_ROOT: repoRoot,
+    },
+  });
 }
 
 export function measureColdCliWithRetainedAllocation(options: {

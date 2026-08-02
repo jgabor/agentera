@@ -3,9 +3,9 @@
 ## Current execution
 
 - **Current milestone:** M3 · Reconcile TODO and canonical reads.
-- **Next plan task:** `srdmkolwqc` — Align consumers and synchronize M3.
-- **Managed M3 TODO:** Bounded retrieval is reclosed; open `qjhjpzowae` is next for consumer synchronization.
-- **Exact request:** `Proceed with srdmkolwqc for qjhjpzowae; bounded retrieval is reclosed and consumer synchronization is next.`
+- **Next plan task:** `wmxucwhvrw` — Close prime startup evidence.
+- **Managed M3 TODO:** Open `qjhjpzowae` remains the retrieval closeout while the replacement task preserves bounded startup evidence.
+- **Exact request:** `Proceed with wmxucwhvrw for qjhjpzowae; preserve bounded prime routing and history evidence before final development preparation.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task—or the plan reports no selectable task with an exact blocker and recovery.
 

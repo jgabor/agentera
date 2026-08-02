@@ -55,11 +55,22 @@ import type {
 
 const PLAN_FAMILY = entityListFamily("plans");
 const PLAN_TASK_FAMILY = entityListFamily("plan_tasks");
+const OBJECTIVE_FAMILY = entityListFamily("objective");
 const PLAN_LIST_COMMAND = `agentera state ${PLAN_FAMILY.commandTokens.join(" ")} list --format json`;
 
 function planTaskListCommand(planId?: unknown): string {
   const selector = typeof planId === "string" && planId ? ` ${planId}` : "";
   return `agentera state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} list${selector} --limit 100 --format json`;
+}
+
+function planTaskGetCommand(taskId?: unknown): string {
+  const selector = typeof taskId === "string" && taskId ? taskId : "ID";
+  return `agentera state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} get --id ${selector} --format json`;
+}
+
+function objectiveGetCommand(objectiveId?: unknown): string {
+  const selector = typeof objectiveId === "string" && objectiveId ? objectiveId : "ID";
+  return `agentera state ${OBJECTIVE_FAMILY.commandTokens.join(" ")} get --id ${selector} --format json`;
 }
 
 export type {
@@ -463,6 +474,26 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     omission_reason: totalTasks > boundedTasks.length ? taskOmission.omission_reason ?? "startup_detail_capacity" : "none",
     retrieval: taskOmission.retrieval ?? { list: planTaskListCommand(plan.id), restart: planTaskListCommand(plan.id), get: PLAN_TASK_FAMILY.get },
   };
+  const pending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
+    ? plan.first_pending as JsonObject
+    : null;
+  const pendingDependencies = pending ? asList(pending.depends_on).slice(0, 20).map(String) : [];
+  const pendingAcceptance = pending
+    ? asList(pending.acceptance).slice(0, 10).map((item) => truncateCodePoints(String(item), 200, "…"))
+    : [];
+  const firstPending = pending ? {
+    id: pending.id ?? null,
+    artifact: pending.artifact ?? "plan",
+    name: truncateCodePoints(String(pending.name ?? pending.title ?? ""), 256, "…"),
+    status: pending.status ?? "pending",
+    depends_on: pendingDependencies,
+    dependency_count: asList(pending.depends_on).length,
+    omitted_dependency_count: Math.max(0, asList(pending.depends_on).length - pendingDependencies.length),
+    acceptance: pendingAcceptance,
+    acceptance_count: asList(pending.acceptance).length,
+    omitted_acceptance_count: Math.max(0, asList(pending.acceptance).length - pendingAcceptance.length),
+    retrieval: { get: planTaskGetCommand(pending.id) },
+  } : null;
   return {
     id: plan.id ?? null,
     artifact: plan.artifact ?? "plan",
@@ -476,9 +507,7 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     task_status_counts: plan.task_status_counts ?? {},
     task_omission: finalTaskOmission,
     complete_plan: Boolean(plan.complete_plan),
-    first_pending: plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
-      ? { id: plan.first_pending.id ?? null, artifact: plan.first_pending.artifact ?? "plan", name: plan.first_pending.name ?? plan.first_pending.title ?? "", status: plan.first_pending.status ?? "pending" }
-      : null,
+    first_pending: firstPending,
     tasks: boundedTasks,
     task_count: totalTasks,
     omitted_task_count: Math.max(0, totalTasks - boundedTasks.length),
@@ -802,11 +831,19 @@ export function selectStatusReadiness(
   if (pending && typeof pending === "object" && !Array.isArray(pending)) {
     const number = pending.number ?? "?";
     const title = firstPresent(pending, ["name", "title"], "pending task");
+    const id = typeof pending.id === "string" ? pending.id : undefined;
     candidates.push({
       object: `PLAN Task ${number}: ${title}`,
       capability: "orchestrate",
       reason: "first pending plan task",
       phase: "build",
+      ...(id ? {
+        id,
+        artifact: typeof pending.artifact === "string" ? pending.artifact : "plan",
+        outcome: String(pending.status ?? "pending"),
+        eligible: true,
+        retrieval: { exact: planTaskGetCommand(id) },
+      } : {}),
     });
   }
   if (health.degrading) {
@@ -820,11 +857,19 @@ export function selectStatusReadiness(
     });
   }
   if (objective.active) {
+    const id = typeof objective.id === "string" ? objective.id : undefined;
     candidates.push({
       object: `OBJECTIVE: ${objective.metric || objective.title}`,
       capability: "optimize",
       reason: "active non-closed objective",
       phase: "build",
+      ...(id ? {
+        id,
+        artifact: typeof objective.artifact === "string" ? objective.artifact : "objective",
+        outcome: objective.status ?? "active",
+        eligible: true,
+        retrieval: { exact: objectiveGetCommand(id) },
+      } : {}),
     });
   }
   const todoReadiness = completeTodoReadiness ?? evaluateTodoReadinessQueue(todoItems.map((item) => ({

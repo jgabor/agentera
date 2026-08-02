@@ -2409,6 +2409,8 @@ budgets:
   list:
     max_utf8_bytes: 32768
     benchmark:
+      measurement_contract: entity_target.measurement_contract.sampling
+      fixture: numbered progress archive entries measured through one cold source process per scale
       small:
         entries: 100
         max_latency_ms: 5000

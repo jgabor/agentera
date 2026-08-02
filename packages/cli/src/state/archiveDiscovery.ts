@@ -544,12 +544,19 @@ function validateRecordSchema(
   artifact: SupportedArtifact,
   record: JsonObject,
 ): string[] {
+  return recordSchemaValidator(sourceRoot, artifact)(record);
+}
+
+function recordSchemaValidator(
+  sourceRoot: string,
+  artifact: SupportedArtifact,
+): (record: JsonObject) => string[] {
   const validator = new ArtifactSchemaValidator(
     path.join(sourceRoot, "skills", "agentera", "schemas", "artifacts"),
   );
   const schema = validator.loadSchema(artifact.artifactId);
-  if (schema === null) return [`${artifact.artifactId}: schema is unavailable`];
-  return validator.validateYaml(
+  if (schema === null) return () => [`${artifact.artifactId}: schema is unavailable`];
+  return (record) => validator.validateYaml(
     dumpYamlMapping({ [artifact.entryCollection]: [record] }),
     schema,
     artifact.artifactId,
@@ -738,6 +745,7 @@ function scanArtifactDirectory(
   rejected: ArchiveRejection[],
   seenIds: Set<string>,
   retainRecords: boolean,
+  validateRecord: (record: JsonObject) => string[],
 ): void {
   const directoryIssue = pathIssue(projectRoot, directory, "directory");
   if (directoryIssue) {
@@ -832,6 +840,7 @@ function scanArtifactDirectory(
       sourceRoot,
       seenIds,
       retainRecords,
+      validateRecord,
     );
     if ("path" in result && "stableId" in result) entries.push(result);
     else rejected.push(result);
@@ -946,6 +955,7 @@ export function discoverNumberedArchives(
       result.rejected,
       seenIds,
       options.retainRecords !== false,
+      recordSchemaValidator(sourceRoot, artifact),
     );
   }
 

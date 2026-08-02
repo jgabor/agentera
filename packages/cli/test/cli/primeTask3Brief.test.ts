@@ -355,6 +355,189 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(degraded, "degraded keeps mode").toHaveProperty("mode");
     expect(degraded, "degraded keeps state_presence").toHaveProperty("state_presence");
     expect(degraded, "degraded keeps source_contract").toHaveProperty("source_contract");
+    expect(degraded, "degraded keeps plan").toHaveProperty("plan");
+    expect(degraded, "degraded keeps next_action").toHaveProperty("next_action");
+    expect(degraded, "degraded keeps history").toHaveProperty("history");
+  });
+
+  it("trims optional 21-task detail before selected routing and canonical history evidence", () => {
+    const selectedTask = {
+      id: "vvvvvvvvvv",
+      artifact: "plan",
+      name: "Run the dependency-ready host task",
+      status: "pending",
+      depends_on: ["uuuuuuuuuu"],
+      dependency_count: 1,
+      omitted_dependency_count: 0,
+      acceptance: [
+        "Preserve selected task identity and dependency evidence.",
+        "Retain one exact recovery command in every successful envelope.",
+      ],
+      acceptance_count: 2,
+      omitted_acceptance_count: 0,
+      retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+    };
+    const historyEntry = (artifact: string) => ({
+      artifact,
+      status: "degraded",
+      compatibility: "mixed",
+      detail_availability: "omitted",
+      counts: { total: 13, returned: 0, remaining: 13, full: 1, summary: 12 },
+      caveats: [
+        `${artifact} compacted history is incomplete and requires exact review.`,
+        ...(artifact === "decisions" ? [{
+          class: "review_needed",
+          confidence: "firm",
+          satisfaction_state: "provisionally_satisfied",
+          review_needed: true,
+          message: "Use explicit state; never infer satisfaction.",
+        }] : []),
+      ],
+      degraded_history: {
+        summary_count: 12,
+        returned_count: 0,
+        omitted_count: 12,
+        retrieval: {
+          list: `agentera state ${artifact} list --limit 20 --format json`,
+          get: `agentera state ${artifact} get --id ID --format json`,
+        },
+      },
+      retrieval: {
+        list: `agentera state ${artifact} list --limit 20 --format json`,
+        get: `agentera state ${artifact} get --id ID --format json`,
+      },
+      source_contract: {
+        authority: "references/artifacts/state-storage-authority.yaml",
+        detail: "mixed",
+        cursor: "opaque_snapshot_cursor",
+      },
+    });
+    const rawPayload: Record<string, unknown> = {
+      command: "prime",
+      status: "ok",
+      mode: "returning",
+      profile: {
+        status: "valid",
+        validity: { status: "valid" },
+        freshness: { state: "fresh" },
+        path: "/private/profile/path",
+      },
+      state_presence: {
+        active: { plan: true, objective: false },
+        available: { plan: true, docs: true, progress: true, health: true, objective: false },
+        any_active: true,
+        absence_explained: true,
+        absence: {},
+      },
+      plan: {
+        exists: true,
+        id: "zzzzzzzzzz",
+        artifact: "plan",
+        active: true,
+        status: "open",
+        title: "Host-real 21-task fixture",
+        complete: 20,
+        total: 21,
+        complete_plan: false,
+        first_pending: selectedTask,
+        tasks: Array.from({ length: 21 }, (_, index) => ({
+          id: `${String.fromCharCode(97 + index)}aaaaaaaaa`,
+          artifact: "plan",
+          name: `Optional task ${index + 1}: ${"detail ".repeat(60)}`,
+          status: index === 20 ? "pending" : "complete",
+        })),
+        task_count: 21,
+        omitted_task_count: 11,
+        source_contract: { detail_availability: "summary", retrieval: "agentera state plan list --format json" },
+      },
+      next_action: {
+        object: "PLAN Task vvvvvvvvvv: Run the dependency-ready host task",
+        capability: "orchestrate",
+        reason: "first pending plan task",
+        phase: "build",
+        id: "vvvvvvvvvv",
+        artifact: "plan",
+        outcome: "pending",
+        eligible: true,
+        retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+        alternatives: Array.from({ length: 3 }, (_, index) => ({
+          object: `Optional route ${index}: ${"context ".repeat(40)}`,
+          capability: "status",
+          reason: "optional alternative",
+          phase: "audit",
+        })),
+      },
+      history: {
+        progress: historyEntry("progress"),
+        decisions: historyEntry("decisions"),
+        health: historyEntry("health"),
+      },
+      source_contract: {
+        fields: ["plan", "next_action", "history", "state_presence", "source_contract"],
+        render: "decision brief",
+        access: "bounded",
+        empty_state: "explicit",
+        capability_context: {
+          capability: "status",
+          fetch_command: "agentera prime --context status --format json",
+          required_before_rendering: true,
+        },
+        capability_startup: {
+          complete_for_capability_startup: true,
+          raw_artifact_reads_required: false,
+          confidence_caveats: Array.from({ length: 8 }, (_, index) => `Rich caveat ${index}: ${"optional ".repeat(20)}`),
+        },
+      },
+      source: { artifacts_present: true },
+    };
+
+    expect(briefByteGate(rawPayload, PRIME_BRIEF_MAX_UTF8_BYTES).accepted).toBe(false);
+    const normal = briefOrientationPayload(rawPayload);
+    expect((normal.brief as Record<string, unknown>).status).toBe("ok");
+    expect(briefUtf8Bytes(normal)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+
+    const degraded = briefOrientationPayload({
+      ...rawPayload,
+      source: { artifacts_present: true, optional_diagnostic: "x".repeat(8_000) },
+    }, { budgetBytes: 8_000 });
+    expect((degraded.brief as Record<string, unknown>).status).toBe("degraded");
+    expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(8_000);
+
+    for (const payload of [normal, degraded]) {
+      expect(payload.plan).toMatchObject({
+        id: "zzzzzzzzzz",
+        total: 21,
+        first_pending: {
+          id: "vvvvvvvvvv",
+          depends_on: ["uuuuuuuuuu"],
+          acceptance: expect.arrayContaining([expect.stringContaining("Preserve selected task identity")]),
+          retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+        },
+      });
+      expect(payload.plan).not.toHaveProperty("tasks");
+      expect(payload.next_action).toMatchObject({
+        id: "vvvvvvvvvv",
+        capability: "orchestrate",
+        eligible: true,
+        retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+      });
+      expect(payload.history).toMatchObject({
+        progress: { counts: { total: 13, returned: 0, remaining: 13, full: 1, summary: 12 } },
+        decisions: {
+          caveats: expect.arrayContaining([
+            expect.objectContaining({
+              class: "review_needed",
+              confidence: "firm",
+              satisfaction_state: "provisionally_satisfied",
+              review_needed: true,
+            }),
+          ]),
+          source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "mixed" },
+        },
+        health: { degraded_history: { summary_count: 12, omitted_count: 12 } },
+      });
+      expect((payload.profile as Record<string, unknown>)).not.toHaveProperty("path");
+    }
   });
 
   it("integrated bare emission bounds adversarial state_presence and source_contract projections", () => {

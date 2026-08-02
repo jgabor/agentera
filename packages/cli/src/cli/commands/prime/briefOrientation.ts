@@ -91,6 +91,16 @@ const BRIEF_NEXT_ACTION_ALTERNATIVES = 3;
  *  state command. */
 const BRIEF_SCALAR_MAX_CHARS = 200;
 
+type SourceContractProjection = "normal" | "compact" | "irreducible";
+
+function projectionMaxChars(projection: SourceContractProjection): number {
+  return projection === "normal" ? BRIEF_SCALAR_MAX_CHARS : projection === "compact" ? 120 : 80;
+}
+
+function projectionMaxItems(projection: SourceContractProjection): number {
+  return projection === "normal" ? 10 : projection === "compact" ? 6 : 3;
+}
+
 /** Keys owned by the state-presence contract. Unknown keys are caller data, not
  * routing signals, so the brief never copies them into a fallback envelope. */
 const STATE_PRESENCE_ACTIVE_KEYS = ["plan", "objective"] as const;
@@ -168,43 +178,136 @@ function briefStatePresence(value: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): 
   return out;
 }
 
-function briefPlan(plan: unknown): Record<string, unknown> {
+function briefSelectedPlanTask(
+  task: unknown,
+  projection: SourceContractProjection,
+): Record<string, unknown> | null {
+  if (task === null) return null;
+  if (!isObject(task)) return {};
+  const maxChars = projectionMaxChars(projection);
+  const maxItems = projectionMaxItems(projection);
+  const out = pick(task, [
+    "id",
+    "artifact",
+    "status",
+    "dependency_count",
+    "omitted_dependency_count",
+    "acceptance_count",
+    "omitted_acceptance_count",
+  ]);
+  const name = boundedString(task.name ?? task.title, maxChars);
+  if (name !== undefined) out.name = name;
+  const dependencies = boundedStringList(task.depends_on, maxItems, maxChars);
+  if (dependencies !== undefined) out.depends_on = dependencies;
+  const acceptance = boundedStringList(task.acceptance, maxItems, maxChars);
+  if (acceptance !== undefined) out.acceptance = acceptance;
+  if (isObject(task.retrieval)) {
+    out.retrieval = pick(task.retrieval, ["get"]);
+  }
+  return out;
+}
+
+function briefPlan(
+  plan: unknown,
+  projection: SourceContractProjection = "normal",
+): Record<string, unknown> {
   // Keep canonical plan/task identity and the routing-essential summary consumers
-  // read plus the nested source_contract.retrieval pointer. Drop the archive catalog,
-  // diagnostics, and lifecycle_state — each recovers via OMITTED_RICH_STATE.
-  return pick(plan, [
+  // read plus the selected task's dependencies, acceptance, and exact retrieval.
+  // Drop the optional task catalog, archive catalog, diagnostics, and
+  // lifecycle_state — each recovers via OMITTED_RICH_STATE.
+  const out = pick(plan, [
     "exists",
     "id",
     "artifact",
     "active",
     "status",
-    "title",
     "complete",
     "total",
     "complete_plan",
-    "first_pending",
-    "tasks",
     "task_count",
     "omitted_task_count",
-    "source_contract",
   ]);
+  if (isObject(plan)) {
+    const title = boundedString(plan.title, projectionMaxChars(projection));
+    if (title !== undefined) out.title = title;
+    if (isObject(plan.source_contract)) {
+      out.source_contract = pick(plan.source_contract, ["detail_availability", "retrieval", "raw_archive_records"]);
+    }
+  }
+  if (isObject(plan) && "first_pending" in plan) {
+    out.first_pending = briefSelectedPlanTask(plan.first_pending, projection);
+  }
+  return out;
 }
 
-function briefHistory(history: unknown): Record<string, unknown> {
+function briefHistoryRetrieval(value: unknown): Record<string, unknown> {
+  return pick(value, ["list", "get"]);
+}
+
+function briefHistoryCaveats(value: unknown, maxChars: number): unknown[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.slice(0, 4).map((caveat) => {
+    if (typeof caveat === "string") return truncateCodePoints(caveat, maxChars, "…");
+    if (!isObject(caveat)) return {};
+    const out: Record<string, unknown> = {};
+    for (const key of [
+      "class",
+      "kind",
+      "state",
+      "confidence",
+      "satisfaction_state",
+      "message",
+      "reason",
+      "detail_availability",
+      "compatibility",
+      "recovery",
+    ]) {
+      const bounded = boundedString(caveat[key], maxChars);
+      if (bounded !== undefined) out[key] = bounded;
+    }
+    if (typeof caveat.review_needed === "boolean") out.review_needed = caveat.review_needed;
+    return out;
+  });
+}
+
+function briefHistory(
+  history: unknown,
+  projection: SourceContractProjection = "normal",
+): Record<string, unknown> {
   if (!isObject(history)) return {};
   const out: Record<string, unknown> = {};
+  const maxChars = projectionMaxChars(projection);
   for (const [artifactId, entry] of Object.entries(history)) {
-    // Each startup-history artifact keeps its status, the routing-essential
-    // counts (physical/addressable/omitted), and the retrieval pointer. The
-    // full 10-field counts object and entries array are omitted (diagnostic;
-    // Task 4 decides when status needs them) and recover via the named state
-    // command.
+    // Entity startup history owns canonical full/summary counts. Entry detail
+    // remains omitted and recovers through exact list/get commands.
     const entryObj = isObject(entry) ? (entry as Record<string, unknown>) : {};
     const counts = isObject(entryObj.counts) ? entryObj.counts as Record<string, unknown> : {};
-    out[artifactId] = {
-      ...pick(entryObj, ["artifact", "status", "retrieval"]),
-      counts: pick(counts, ["physical", "addressable", "omitted"]),
+    const projected: Record<string, unknown> = {
+      ...pick(entryObj, [
+        "artifact",
+        "status",
+        "compatibility",
+        "detail_availability",
+        "omitted",
+        "omitted_count",
+        "omission_reason",
+      ]),
+      counts: pick(counts, ["total", "returned", "remaining", "full", "summary"]),
+      retrieval: briefHistoryRetrieval(entryObj.retrieval),
     };
+    const caveats = briefHistoryCaveats(entryObj.caveats, maxChars);
+    if (caveats !== undefined) projected.caveats = caveats;
+    if (isObject(entryObj.degraded_history)) {
+      const degraded = pick(entryObj.degraded_history, ["summary_count", "returned_count", "omitted_count"]);
+      degraded.retrieval = briefHistoryRetrieval(entryObj.degraded_history.retrieval);
+      const degradedCaveats = briefHistoryCaveats(entryObj.degraded_history.caveats, maxChars);
+      if (degradedCaveats !== undefined) degraded.caveats = degradedCaveats;
+      projected.degraded_history = degraded;
+    }
+    if (isObject(entryObj.source_contract)) {
+      projected.source_contract = pick(entryObj.source_contract, ["authority", "detail", "cursor"]);
+    }
+    out[artifactId] = projected;
   }
   return out;
 }
@@ -321,13 +424,33 @@ function briefHealth(health: unknown): Record<string, unknown> {
   return pick(health, ["exists", "id", "artifact", "date", "trajectory", "grade", "degraded_history"]);
 }
 
-function briefNextAction(nextAction: unknown): Record<string, unknown> {
+function briefAction(action: unknown, maxChars: number): Record<string, unknown> {
+  if (!isObject(action)) return {};
+  const out = pick(action, ["id", "artifact", "outcome", "eligible"]);
+  for (const key of ["object", "capability", "reason", "phase"] as const) {
+    const bounded = boundedString(action[key], maxChars);
+    if (bounded !== undefined) out[key] = bounded;
+  }
+  if (isObject(action.retrieval)) out.retrieval = pick(action.retrieval, ["exact", "get"]);
+  return out;
+}
+
+function briefNextAction(
+  nextAction: unknown,
+  projection: SourceContractProjection = "normal",
+): Record<string, unknown> {
   if (!isObject(nextAction)) return {};
+  const maxChars = projectionMaxChars(projection);
+  const alternativeLimit = projection === "normal"
+    ? BRIEF_NEXT_ACTION_ALTERNATIVES
+    : projection === "compact"
+      ? 1
+      : 0;
   const alternatives = Array.isArray(nextAction.alternatives)
-    ? (nextAction.alternatives as JsonValue[]).slice(0, BRIEF_NEXT_ACTION_ALTERNATIVES)
+    ? (nextAction.alternatives as JsonValue[]).slice(0, alternativeLimit).map((entry) => briefAction(entry, maxChars))
     : [];
   return {
-    ...pick(nextAction, ["object", "capability", "reason", "phase", "id", "artifact", "outcome", "eligible", "retrieval"]),
+    ...briefAction(nextAction, maxChars),
     alternatives,
   };
 }
@@ -379,8 +502,6 @@ function briefArtifactWrites(writes: unknown, maxChars: number): Record<string, 
   }
   return out;
 }
-
-type SourceContractProjection = "normal" | "compact" | "irreducible";
 
 function briefSourceContract(
   sourceContract: unknown,
@@ -459,9 +580,9 @@ export function briefOrientationPayload(
     return finalPayload;
   }
   // Over-budget brief: reject the projected payload and emit a bounded degraded
-  // envelope (never emit an over-budget payload). The envelope keeps
-  // command/status/mode/state_presence, a brief source_contract, and the
-  // byte-budget error with a recovery command.
+  // envelope (never emit an over-budget payload). The envelope keeps bounded
+  // plan/next-action/history/decision routing evidence, state presence, a brief
+  // source contract, and the byte-budget error with a recovery command.
   return degradedBriefEnvelope(payload, budget, gate.bytes, options.degradedMode ?? "minimal");
 }
 
@@ -543,7 +664,7 @@ function boundedEnvelopeScalar(value: unknown, fallback: string): string {
 }
 
 function degradedBody(payload: Record<string, unknown>, projection: SourceContractProjection): Record<string, unknown> {
-  return {
+  const out: Record<string, unknown> = {
     command: boundedEnvelopeScalar(payload.command, "prime"),
     status: boundedEnvelopeScalar(payload.status, "ok"),
     mode: boundedEnvelopeScalar(payload.mode, "unknown"),
@@ -551,6 +672,12 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
     state_presence: briefStatePresence(payload.state_presence),
     source_contract: briefSourceContract(payload.source_contract, projection),
   };
+  if (isObject(payload.plan)) out.plan = briefPlan(payload.plan, projection);
+  if (isObject(payload.next_action)) out.next_action = briefNextAction(payload.next_action, projection);
+  if (isObject(payload.history)) out.history = briefHistory(payload.history, projection);
+  if (payload.decision_attention === null) out.decision_attention = null;
+  else if (isObject(payload.decision_attention)) out.decision_attention = briefDecisionAttention(payload.decision_attention);
+  return out;
 }
 
 function statusRoutingDegradedBody(
@@ -561,7 +688,6 @@ function statusRoutingDegradedBody(
     ...degradedBody(payload, projection),
     todo: payload.todo,
     attention: briefAttention(payload.attention),
-    next_action: briefNextAction(payload.next_action),
   };
 }
 

@@ -185,9 +185,13 @@ describe("final lifecycle protocol", () => {
     expect(prime.out).toContain("aaaaaaaaaa"); expect(prime.out).toContain('"artifact": "progress"');
     const plan = JSON.parse(prime.out).plan;
     expect(plan).toMatchObject({ id: "dddddddddd", artifact: "plan" });
-    expect(plan.tasks).toEqual([expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" })]);
-    expect(plan.first_pending).toEqual(expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" }));
-    expect(plan.tasks[0]).not.toHaveProperty("number");
+    expect(plan).not.toHaveProperty("tasks");
+    expect(plan.first_pending).toEqual(expect.objectContaining({
+      id: "eeeeeeeeee",
+      artifact: "plan",
+      retrieval: { get: "agentera state plan tasks get --id eeeeeeeeee --format json" },
+    }));
+    expect(plan.first_pending).not.toHaveProperty("number");
     for (const capability of CAPABILITY_NAMES) {
       const result = capture(root, ["prime", "--context", capability, "--format", "json"]);
       expect(result.rc, `${capability}: ${result.out}${result.err}`).toBe(0);
@@ -196,9 +200,13 @@ describe("final lifecycle protocol", () => {
       const context = capabilityContext.context;
       const contextPlan = capability === "status" ? context.status_context.plan : context.plan;
       expect(contextPlan).toMatchObject({ id: "dddddddddd", artifact: "plan" });
-      expect(contextPlan.tasks).toEqual([expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" })]);
       expect(contextPlan.first_pending).toEqual(expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" }));
-      expect(contextPlan.tasks[0]).not.toHaveProperty("number");
+      if (capability === "status") {
+        expect(contextPlan).not.toHaveProperty("tasks");
+      } else {
+        expect(contextPlan.tasks).toEqual([expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" })]);
+        expect(contextPlan.tasks[0]).not.toHaveProperty("number");
+      }
     }
     let hookOut = "", hookErr = "";
     expect(runSessionStart(JSON.stringify({ cwd: root }), { out: (text) => hookOut += text, err: (text) => hookErr += text })).toBe(0);
@@ -221,10 +229,19 @@ describe("final lifecycle protocol", () => {
 
     const result = capture(root, ["prime", "--format", "json"]);
     expect(result.rc, result.out).toBe(0);
-    expect(JSON.parse(result.out)).toMatchObject({
+    const orientation = JSON.parse(result.out);
+    expect(orientation).toMatchObject({
       plan: { id: "zzzzzzzzza", artifact: "plan", first_pending: { id: "zzzzzzzzzb", artifact: "plan" } },
-      objective: { id: "zzzzzzzzzc", artifact: "objective", closed_count: 21 },
+      state_presence: { active: { objective: true } },
     });
+    expect(orientation.next_action.alternatives).toContainEqual(expect.objectContaining({
+      id: "zzzzzzzzzc",
+      artifact: "objective",
+      capability: "optimize",
+      outcome: "active",
+      eligible: true,
+      retrieval: { exact: "agentera state objective get --id zzzzzzzzzc --format json" },
+    }));
   });
 
   it("advertises and executes a dependency-ready task outside the bounded plan projection", () => {
@@ -253,13 +270,23 @@ describe("final lifecycle protocol", () => {
     const orientation = JSON.parse(prime.out);
     expect(orientation.plan).toMatchObject({
       total: 21,
-      first_pending: { id: readyId, artifact: "plan", name: "Ready outside projection" },
+      task_count: 21,
+      first_pending: {
+        id: readyId,
+        artifact: "plan",
+        name: "Ready outside projection",
+        retrieval: { get: `agentera state plan tasks get --id ${readyId} --format json` },
+      },
     });
-    expect(orientation.plan.tasks.length).toBeLessThan(orientation.plan.total);
-    expect(orientation.plan.tasks).not.toContainEqual(expect.objectContaining({ id: readyId }));
+    expect(orientation.plan).not.toHaveProperty("tasks");
     expect(orientation.next_action).toMatchObject({
       object: "PLAN Task ?: Ready outside projection",
       capability: "orchestrate",
+      id: readyId,
+      artifact: "plan",
+      outcome: "pending",
+      eligible: true,
+      retrieval: { exact: `agentera state plan tasks get --id ${readyId} --format json` },
     });
 
     const build = capture(root, ["prime", "--context", "build", "--format", "json"]);

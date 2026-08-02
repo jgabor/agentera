@@ -1,0 +1,16 @@
+id: bypvklhfln
+artifact: progress
+record:
+  timestamp: 2026-08-02 13:27
+  type: fix
+  phase: audit
+  what: Re-established the M3 retrieval release candidate from corrected governed provenance after accepted Audit drift.
+  context:
+    intent: Record post-provenance srdmkolwqc retry evidence only after the corrected commit, development preparation, and canonical release conjunction existed.
+    constraints: Keep srdmkolwqc pending and qjhjpzowae open. Preserve the four staged M1 blobs and historical progress. Do not record an evaluation, complete or resolve lifecycle state, create another commit, publish, tag, push, open a PR, or mutate npm.
+    unknowns: Independent Audit of srdmkolwqc remains outstanding. The legacy in-process source heap assertion is sensitive to shared-worker garbage, but three fresh-process diagnostics and the authoritative five-sample cold-process performance owner passed without a budget change.
+    scope: Corrected retrieval authority and consumers, TODO cardinality and cursor recovery, provenance preparation, source and extracted-package parity, startup bounds, state alignment, and release readiness.
+  discovered: "The previous candidate crossed both seams that matter here: generated or published authority could differ from source until the local build was refreshed, and dev.40 metadata had been prepared before accepted Audit correction and final closeout evidence. The retry rebuilt from source, kept lifecycle nonterminal, consolidated runtime retrieval policy under entity_target.public_retrieval, and committed all correction evidence before preparing metadata. The first release conjunction then exposed only a non-deterministic legacy in-process heap sample; three isolated reruns measured 39.6–49.9 MB below the 64 MB source bound, and the canonical cold-process owner passed all five repetitions."
+  verified: npm @next remained 3.0.0-dev.39. The development preparer ran exactly once after the corrected provenance commit and produced local 3.0.0-dev.40 with package agentera.gitRef equal to HEAD; suite, skill, and registry versions remained 3.0.0. verify:release passed 225 source files with 3,050 passed and 1 skipped assertions, 2 stress assertions, 3 performance files with canonical cold-process evidence, and 24 extracted-package assertions. Typecheck, build, compact, capability-contract 3/3, release-metadata, state validation with 2,064 entities and 0 issues, and pack dry-run with 760 files and no artifact passed. Bare prime emitted 11,838 bytes under 12,000 with required routing semantics. Status, orchestrate, plan, and optimize served no stale bare family read or objective-qualified experiment get; 32 concrete recovery reads executed. TODO reconciliation reported 94 managed, 0 drift, 0 conflicts, one NEXT, and a zero-target idempotent replay. srdmkolwqc remained pending; dnbytwkmiu remained complete; ybpdvkidaq remained superseded; qjhjpzowae remained open. Read-only checks preserved the state digest, left no writer or reconciliation residue, and preserved all four protected staged blobs.
+  next: Run independent Audit for pending srdmkolwqc. Do not evaluate or complete it, resolve qjhjpzowae, create another commit, publish, tag, push, open a PR, or mutate npm in this cycle.
+  publication_order: 52
