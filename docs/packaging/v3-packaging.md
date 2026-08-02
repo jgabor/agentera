@@ -54,20 +54,25 @@ same target is a no-op. A stale, skipped, malformed, or out-of-policy target
 fails before effects. Review and commit the diff; preparation never infers a
 version, reads the registry, or loads `.env` credentials.
 
-Source qualification runs the current source, stress, performance, package,
-generated-overlap, typecheck, build, compact, and capability-contract gates in
-their established sequential order. They share checkout-generated state, so
-parallel execution would not preserve the current policy evidence. It emits a
-content-addressed `source-receipt.json` outside the checkout. The receipt binds
-the normalized source tree (package version and gitRef excluded), verification
-policy, lockfile, exact toolchain, gate set, and individual durations. This
-allows a committed version/gitRef-only change to reuse source evidence, but any
-other input change fails closed.
+Source qualification runs one evidence DAG. Batch A starts generated-overlap,
+stress, performance, and typecheck together with separate HOME, cache, npm
+configs, and report outputs. Generated-overlap is the only checkout
+generated-output writer. It invokes the exact public source, package, and build
+commands once and returns their inventory, pending-test, build, generation, and
+continuous-reader evidence. Source, package, and build are not spawned again.
+After every batch owner passes and overlap settles one lease-free generation,
+compact and capability-contract run together as reader barrier B.
 
-These owners remain sequential. They share checkout-generated output or ordered
-policy barriers, and no owner has a declared isolated output root with
-equivalence evidence. The qualification benchmark measures the observed
-source-plus-candidate envelope; its timeout is a guard, not performance proof.
+The content-addressed `source-receipt.json` contains all nine named gates with
+their execution origin, observations, durations, and executed/reused state. It
+also binds the normalized source tree (package version and gitRef excluded),
+verification policy, lockfile, exact toolchain, and gate set. A committed
+version/gitRef-only change can reuse matching evidence; any other input change
+fails closed. On the first owner failure, the coordinator cancels cancellable
+process groups, lets generated-overlap settle without forced termination,
+blocks barrier B, reports every completed/cancelled failure while retaining the
+first observed label, and issues no receipt. The source-plus-candidate deadline
+remains a guard, not performance evidence.
 
 ```bash
 pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
@@ -152,7 +157,8 @@ pnpm cli:benchmark:qualification -- --adapter development \
 
 The qualification command runs exactly three cold-cache repetitions, retains
 one candidate per run, reports preflight, every source/candidate owner,
-execution/reuse, reconciled totals, and medians. It emits the first original
+execution/reuse, concurrent owner-duration totals, reconciled DAG wall time,
+and medians. It emits the first original
 failing owner before it stops. It never receives credentials or mutates npm.
 The separate qualified-publication command above measures the actual approved
 registry sequence once and enforces a total below two minutes in human and JSON
@@ -168,7 +174,7 @@ independent:
 
 | Owner | Entry point | Owns |
 | ----- | ----------- | ---- |
-| Source | `pnpm -C packages/cli test` (`test:source`) | Every source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory; source never reads checkout `dist/`, `bundle/`, or `.agentera-generated/`. |
+| Source | `pnpm -C packages/cli test` (`test:source`) | Every source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
 | Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
 | Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer and integration check. |
 | Package | `pnpm -C packages/cli run verify:package` | Every package-assigned test against one genuinely packed, extracted, production-installed regular tree constructed independently of checkout output. |
@@ -226,15 +232,15 @@ pnpm -C packages/cli run pack:dry-run
 policy order. These commands construct and inspect packages locally; they do
 not publish, change a dist-tag, create a Git tag, or update a remote branch.
 
-`pnpm -C packages/cli run verify:generated-overlap` starts the complete source,
-build, and package participants from absent checkout output, releases their
-global-setup barrier once
-all are ready, compares the exact source and package file inventories with
-structured Vitest results, and continuously pins and validates selected
-generations until every participant exits. Its JSON result records exact owner file
-and test totals plus whether any actual reader observation had an identity or
-surface-validation mismatch; it does not turn scheduler-dependent observation
-counts into durable evidence.
+`pnpm -C packages/cli run verify:generated-overlap` starts the exact public
+source, build, and package commands from absent checkout output. Each participant
+has isolated npm state and report output. The coordinator releases their
+global-setup barrier once all are ready, compares exact source and package
+inventories and pending assertions with structured Vitest results, and
+continuously pins and validates selected generations until every participant
+exits. Its JSON evidence records commands, durations, owner inventories, build
+status, selected generation, and reader identity/surface results; it does not
+turn scheduler-dependent observation counts into durable evidence.
 
 ## Checkout generation protocol
 

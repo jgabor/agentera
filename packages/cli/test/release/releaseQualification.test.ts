@@ -70,13 +70,24 @@ function fixture(): { repo: string; candidateDirectory: string; sourceCommit: st
   return { repo, candidateDirectory, sourceCommit };
 }
 
-function sourceReceipt(repo: string, candidateDirectory: string) {
+async function sourceReceipt(repo: string, candidateDirectory: string) {
   return issueSourceReceipt({
     repo,
     candidateDirectory,
     gates: [{ name: "source", command: ["test", "source"] }],
-    run: () => "",
-  }).receipt;
+    runDag: async ({ gates }: { gates: Array<{ name: string }> }) => ({
+      gates: gates.map((gate) => ({
+        name: gate.name,
+        origin: gate.name,
+        phase: "test",
+        elapsedMs: 1,
+        executed: "stub",
+        reused: false,
+        observation: {},
+      })),
+      execution: { strategy: "stub", elapsedMs: 1 },
+    }),
+  }).then(({ receipt }: { receipt: any }) => receipt);
 }
 
 afterEach(() => {
@@ -84,9 +95,9 @@ afterEach(() => {
 });
 
 describe("release qualification receipts", () => {
-  it("reuses source evidence after committed version and gitRef-only metadata changes", () => {
+  it("reuses source evidence after committed version and gitRef-only metadata changes", async () => {
     const { repo, candidateDirectory } = fixture();
-    const first = sourceReceipt(repo, candidateDirectory);
+    const first = await sourceReceipt(repo, candidateDirectory);
     const manifestPath = path.join(repo, "packages/cli/package.json");
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     manifest.version = "3.0.0-dev.42";
@@ -95,11 +106,11 @@ describe("release qualification receipts", () => {
     git(repo, "add", "packages/cli/package.json");
     git(repo, "commit", "--quiet", "-m", "prepared metadata");
 
-    const replay = issueSourceReceipt({
+    const replay = await issueSourceReceipt({
       repo,
       candidateDirectory,
       gates: [{ name: "source", command: ["test", "source"] }],
-      run: () => {
+      runDag: async () => {
         throw new Error("matching source evidence must not rerun its gates");
       },
     });
@@ -108,37 +119,69 @@ describe("release qualification receipts", () => {
     expect(replay.receipt.receiptSha256).toBe(first.receiptSha256);
   });
 
-  it("fails closed when an immutable receipt or its source component changes", () => {
+  it("fails closed when an immutable receipt or its source component changes", async () => {
     const { repo, candidateDirectory } = fixture();
-    sourceReceipt(repo, candidateDirectory);
+    await sourceReceipt(repo, candidateDirectory);
     write(repo, "packages/cli/src/release-marker.ts", "export const changed = true;\n");
     git(repo, "add", ".");
     git(repo, "commit", "--quiet", "-m", "source change");
 
-    expect(() => sourceReceipt(repo, candidateDirectory)).toThrow("source receipt inputs changed");
+    await expect(sourceReceipt(repo, candidateDirectory)).rejects.toThrow("source receipt inputs changed");
   });
 
-  it("runs source gates with isolated npm and pnpm configuration", () => {
+  it("does not issue a source receipt when the qualification DAG fails", async () => {
     const { repo, candidateDirectory } = fixture();
-    let environment: NodeJS.ProcessEnv | undefined;
-    issueSourceReceipt({
+    await expect(issueSourceReceipt({
       repo,
       candidateDirectory,
       gates: [{ name: "source", command: ["test", "source"] }],
-      run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
-        environment = options.env;
-        return "";
+      runDag: async () => {
+        const error = new Error("stress failed first") as Error & { owner?: string };
+        error.owner = "stress";
+        throw error;
       },
+    })).rejects.toMatchObject({ owner: "stress" });
+    expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
+  });
+
+  it("seals all nine governed DAG gates and execution evidence in one source receipt", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const governed = RELEASE_CONTRACT.qualification.source.gates;
+    const issued = await issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      gates: governed,
+      runDag: async () => ({
+        gates: governed.map((gate: { name: string }) => ({
+          name: gate.name,
+          origin: ["source", "package", "build", "generated-overlap"].includes(gate.name)
+            ? "generated-overlap"
+            : gate.name,
+          phase: ["compact", "capability-contract"].includes(gate.name) ? "barrier-b" : "batch-a",
+          elapsedMs: 1,
+          executed: "stub",
+          reused: false,
+          observation: { status: "pass" },
+        })),
+        execution: {
+          strategy: "parallel-overlap-dag",
+          elapsedMs: 2,
+          generation: "generation-a",
+          leasesAfterBarrier: 0,
+        },
+      }),
     });
 
-    expect(environment).toMatchObject({
-      NPM_CONFIG_USERCONFIG: expect.any(String),
-      NPM_CONFIG_GLOBALCONFIG: expect.any(String),
-      NPM_CONFIG_CACHE: expect.any(String),
+    expect(issued.receipt.gates.map((gate: { name: string }) => gate.name))
+      .toEqual(governed.map((gate: { name: string }) => gate.name));
+    expect(issued.receipt.gates).toHaveLength(9);
+    expect(issued.receipt.execution).toMatchObject({
+      strategy: "parallel-overlap-dag",
+      generation: "generation-a",
+      leasesAfterBarrier: 0,
     });
-    expect(environment).not.toHaveProperty("NPM_TOKEN");
-    expect(environment).not.toHaveProperty("NODE_AUTH_TOKEN");
-    expect(Object.keys(environment ?? {}).some((key) => /^pnpm/i.test(key))).toBe(false);
+    expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "source-receipt.json"), "utf8")))
+      .toEqual(issued.receipt);
   });
 
   it("probes tool versions in a fresh isolated npm state even when the caller has a token", () => {
@@ -213,9 +256,9 @@ describe("release qualification receipts", () => {
     expect(fs.existsSync(candidateDirectory)).toBe(false);
   });
 
-  it("binds a candidate receipt to the retained immutable artifact bytes", () => {
+  it("binds a candidate receipt to the retained immutable artifact bytes", async () => {
     const { repo, candidateDirectory, sourceCommit } = fixture();
-    const source = sourceReceipt(repo, candidateDirectory);
+    const source = await sourceReceipt(repo, candidateDirectory);
     const artifact = Buffer.from("exact candidate bytes");
     const filename = "agentera-3.0.0-dev.41.tgz";
     fs.writeFileSync(path.join(candidateDirectory, filename), artifact, { mode: 0o444 });

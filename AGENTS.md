@@ -193,7 +193,13 @@ NPM_TOKEN=... pnpm cli:publish:qualified:dev -- --candidate-dir /secure/external
 ```
 
 Source receipts are content-addressed local cache records, not authority to
-mutate npm. Candidate qualification retains one immutable tarball outside the
+mutate npm. Source qualification uses the contract-owned DAG: generated-overlap
+is the sole source/package/build execution origin beside isolated stress,
+performance, and typecheck owners; compact and capability-contract start only
+after that batch settles one lease-free generation. On failure, retry the same
+source command after correcting the first reported owner. Do not run omitted
+owners separately, force-kill overlap, construct a candidate, or infer a receipt.
+Candidate qualification retains one immutable tarball outside the
 checkout and runs a cold-state local smoke before any registry action. Every
 registry mutation requires a separate immutable approval bound to that candidate
 receipt, package, version, integrity, registry, and expected tag. CI also needs

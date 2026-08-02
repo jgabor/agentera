@@ -66,7 +66,11 @@ async function runPhase(name, budgetMs, invoke, context) {
     const result = (await invoke()) ?? {};
     const elapsed = elapsedMs(result.elapsedMs, started, context.clock);
     const owners = normalizeOwners(result.owners);
-    const ownerElapsedMs = owners.reduce((total, owner) => total + owner.elapsedMs, 0);
+    const ownerDurationTotalMs = owners.reduce((total, owner) => total + owner.elapsedMs, 0);
+    const ownerElapsedMs = result.ownerElapsedMs ?? ownerDurationTotalMs;
+    if (!Number.isFinite(ownerElapsedMs) || ownerElapsedMs < 0) {
+      throw benchmarkError(`benchmark phase '${name}' returned invalid reconciled owner time`, name);
+    }
     if (ownerElapsedMs > elapsed) {
       throw benchmarkError(`benchmark phase '${name}' owner durations exceed its phase duration`, name);
     }
@@ -80,6 +84,7 @@ async function runPhase(name, budgetMs, invoke, context) {
       executed: result.executed ?? "ordered",
       reused: Boolean(result.reused),
       owners,
+      ownerDurationTotalMs,
       ownerElapsedMs,
       unattributedElapsedMs: elapsed - ownerElapsedMs,
       reconciled: ownerElapsedMs + (elapsed - ownerElapsedMs) === elapsed,
@@ -569,9 +574,14 @@ async function main() {
       qualificationPreflight({ repo: REPO_ROOT, adapterName, candidateDirectory: candidateDirectory(repetition) });
       return { owners: [{ name: "preflight", elapsedMs: 0, executed: "ordered", reused: false }] };
     },
-    runSource: ({ repetition }) => {
-      const issued = issueSourceReceipt({ candidateDirectory: candidateDirectory(repetition) });
-      return { owners: receiptOwners(issued.receipt, issued.reused), reused: issued.reused, executed: issued.reused ? "none" : "ordered" };
+    runSource: async ({ repetition }) => {
+      const issued = await issueSourceReceipt({ candidateDirectory: candidateDirectory(repetition) });
+      return {
+        ownerElapsedMs: issued.receipt.execution?.elapsedMs,
+        owners: receiptOwners(issued.receipt, issued.reused),
+        reused: issued.reused,
+        executed: issued.reused ? "none" : "parallel DAG",
+      };
     },
     runCandidate: ({ repetition }) => {
       const issued = issueCandidateReceipt({ candidateDirectory: candidateDirectory(repetition), adapterName });

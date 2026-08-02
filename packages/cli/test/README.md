@@ -11,7 +11,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 
 | Layer | Proves | Entry point |
 | ----- | ------ | ----------- |
-| Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; no package construction or checkout generated-output dependency | `pnpm -C packages/cli test` |
+| Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; no checkout generated-output writes. A source test may compare a settled bundled schema when that checkout generation already exists. | `pnpm -C packages/cli test` |
 | Performance owner | Authority-declared production scales and cold-process budgets, including one bounded evidence record | `pnpm -C packages/cli test:performance` |
 | Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface | `pnpm -C packages/cli test:performance:integration` |
 | Package boundary | Focused bundle safety plus one tarball build, generated-surface no-drift checks, authority-derived inventory, extraction, install, and minimum isolated invocation conjunctions | `pnpm -C packages/cli run verify:package` |
@@ -43,6 +43,15 @@ result-file bytes are the only overlap evidence authorities. YAML/JSON parsing
 and structural validation finish before normalization or consumption; direct
 JavaScript objects, including proxies and accessors, are outside this runtime
 boundary.
+
+Release source qualification uses the policy-owned DAG. One generated-overlap
+process is the sole origin for source, package, build, and overlap evidence. It
+runs beside isolated stress, performance, and typecheck owners. After all four
+batch owners pass and the generated generation settles without leases, compact
+and capability-contract run together as readers. Every child has a separate
+HOME, cache, npm configs, and report. A peer failure cancels only cancellable
+groups; generated-overlap settles without forced termination, and no reader
+barrier or receipt follows a batch failure.
 
 ## Classification key
 

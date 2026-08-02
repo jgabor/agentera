@@ -37,6 +37,28 @@ overlap:
     executes_when:
       platform: darwin
 
+# Release source qualification executes this evidence DAG without changing the
+# owner inventories or public commands above. generated-overlap is the only
+# checkout generated-output writer and the only execution origin for source,
+# package, build, and overlap evidence.
+release_qualification:
+  batch_a: [generated-overlap, stress, performance, typecheck]
+  generated_overlap_origins: [source, package, build, generated-overlap]
+  barrier_b: [compact, capability-contract]
+  isolation: distinct_home_cache_user_global_config_and_report_per_child
+  failure:
+    first_observed_owner: preserved
+    cancellable_process_groups: cancel
+    generated_overlap: settle_without_forced_termination
+    barrier_b_after_batch_failure: forbidden
+    receipt_after_any_failure: forbidden
+  source_generated_access:
+    checkout_generated_write: forbidden
+    conditional_read_when_present:
+      - packages/cli/.agentera-generated/current/bundle
+    authority: source tests may compare a settled bundled schema when present;
+      they never construct, publish, replace, or clean checkout generated output
+
 owners:
   source:
     config: packages/cli/vite.config.ts

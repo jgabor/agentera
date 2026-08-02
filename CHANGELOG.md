@@ -62,7 +62,12 @@
   validation use fresh sanitized state. Added a three-run non-mutating
   qualification benchmark plus a content-bound, monotonic stage/L2/promote
   publication envelope with a strict two-minute budget, reconciled timing,
-  replay evidence, and first-failure reporting.
+  replay evidence, and first-failure reporting. Source qualification now runs a
+  bounded evidence DAG: one generated-overlap execution supplies source,
+  package, build, and overlap proof beside isolated stress, performance, and
+  typecheck owners, followed by concurrent compact and capability-contract
+  readers. Failures preserve the first owner, settle overlap safely, block
+  candidate work, and issue no receipt.
 
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action

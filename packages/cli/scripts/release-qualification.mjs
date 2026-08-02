@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -7,6 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
+import { selectGeneratedGeneration } from "./generated-output.mjs";
+import { performanceEvidenceRecords } from "./performance-evidence.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -250,29 +252,418 @@ function validReceiptDigest(receipt, label) {
   return receipt;
 }
 
-function executeGate(gate, dependencies = {}) {
-  const execute = dependencies.run ?? run;
-  const started = performance.now();
-  try {
-    execute(gate.command[0] === "node" ? process.execPath : gate.command[0], gate.command.slice(1), {
-      cwd: dependencies.repo ?? REPO_ROOT,
-      env: dependencies.environment,
-      timeout: dependencies.timeout ?? RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
-    });
-  } catch (error) {
-    if (error && typeof error === "object") error.owner ??= gate.name;
-    throw error;
+const SOURCE_DAG = RELEASE_CONTRACT.qualification.source.dag;
+const SOURCE_BATCH_A = SOURCE_DAG.batchA;
+const SOURCE_BARRIER_B = SOURCE_DAG.barrierB;
+const GENERATED_OVERLAP_ORIGINS = SOURCE_DAG.generatedOverlapOrigins;
+const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !== "generated-overlap");
+
+function sourceGateMap(gates) {
+  const entries = new Map(gates.map((gate) => [gate.name, gate]));
+  if (entries.size !== gates.length) throw new Error("source qualification gate names must be unique");
+  const required = [...new Set([...GENERATED_OVERLAP_ORIGINS, ...SOURCE_BATCH_A, ...SOURCE_BARRIER_B])];
+  if (entries.size !== required.length || [...entries.keys()].some((name) => !required.includes(name))) {
+    throw new Error("source qualification gate set must contain exactly the nine governed gates");
   }
+  for (const name of required) {
+    if (!entries.has(name)) throw new Error(`source qualification gate set is missing ${name}`);
+  }
+  return entries;
+}
+
+function sourceProcessFailure(name, detail, status) {
+  const error = new Error(detail);
+  error.owner = name;
+  error.sourceStatus = status;
+  return error;
+}
+
+function sourceDiagnostic(value) {
+  return String(value).trim().slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
+}
+
+function killProcessGroup(child, signal) {
+  if (!child.pid) return;
+  try {
+    if (process.platform === "win32") child.kill(signal);
+    else process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error?.code !== "ESRCH") throw error;
+  }
+}
+
+function defaultStartSourceOwner(specification) {
+  const started = performance.now();
+  const stream = fs.createWriteStream(specification.reportFile, { flags: "wx", mode: 0o600 });
+  const command = specification.command[0] === "node" ? process.execPath : specification.command[0];
+  const child = spawn(command, specification.command.slice(1), {
+    cwd: specification.repo,
+    env: specification.environment,
+    detached: process.platform !== "win32",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const outputLimit = 1024 * 1024;
+  let stdout = "";
+  let stderr = "";
+  let closed = false;
+  let cancelled = false;
+  let timedOut = false;
+  let forceTimer;
+  const capture = (current, chunk) => `${current}${chunk}`.slice(-outputLimit);
+  child.stdout.setEncoding("utf8").on("data", (chunk) => {
+    stdout = capture(stdout, chunk);
+    stream.write(chunk);
+  });
+  child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    stderr = capture(stderr, chunk);
+    stream.write(chunk);
+  });
+  const cancel = () => {
+    if (closed || !specification.cancellable) return;
+    cancelled = true;
+    killProcessGroup(child, "SIGTERM");
+    forceTimer ??= setTimeout(() => {
+      if (!closed) killProcessGroup(child, "SIGKILL");
+    }, 2000);
+  };
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    if (specification.cancellable) cancel();
+  }, Math.max(1, specification.timeoutMs));
+  const promise = new Promise((resolve, reject) => {
+    child.on("error", (error) => {
+      reject(sourceProcessFailure(specification.name, error.message, cancelled ? "cancelled" : "failed"));
+    });
+    child.on("close", (code, signal) => {
+      closed = true;
+      clearTimeout(timeout);
+      if (forceTimer) clearTimeout(forceTimer);
+      stream.end();
+      const elapsedMs = Math.max(0, Math.round(performance.now() - started));
+      if (timedOut) {
+        reject(sourceProcessFailure(
+          specification.name,
+          `${specification.name} exceeded the source qualification deadline`,
+          "failed",
+        ));
+      } else if (cancelled) {
+        reject(sourceProcessFailure(specification.name, `${specification.name} cancelled after peer failure`, "cancelled"));
+      } else if (code !== 0) {
+        reject(sourceProcessFailure(
+          specification.name,
+          sourceDiagnostic(stderr || stdout || `exit ${code ?? signal ?? "unknown"}`),
+          "failed",
+        ));
+      } else {
+        resolve({ name: specification.name, elapsedMs, stdout, stderr });
+      }
+    });
+  });
+  return { name: specification.name, cancellable: specification.cancellable, promise, cancel };
+}
+
+function normalizedOwnerFailure(handle, error) {
   return {
-    name: gate.name,
-    elapsedMs: Math.max(0, Math.round(performance.now() - started)),
-    executed: "ordered",
-    reused: false,
+    name: error?.owner ?? handle.name,
+    status: error?.sourceStatus ?? "failed",
+    detail: sourceDiagnostic(error instanceof Error ? error.message : error),
   };
 }
 
-export function issueSourceReceipt(options = {}) {
+async function runConcurrentSourceOwners(specifications, options = {}) {
+  const createState = options.createState ?? ((name) => {
+    const state = isolatedNpmState(`agentera-release-${name}-`, {
+      environment: options.environment,
+      ignoreScripts: false,
+    });
+    return { ...state, cleanup: () => fs.rmSync(state.root, { recursive: true, force: true }) };
+  });
+  const startOwner = options.startOwner ?? defaultStartSourceOwner;
+  const states = specifications.map((specification) => createState(specification.name));
+  const handles = specifications.map((specification, index) => startOwner({
+    ...specification,
+    environment: states[index].environment,
+    reportFile: path.join(states[index].root, "owner-report.log"),
+  }));
+  let firstFailure;
+  try {
+    const settled = await Promise.all(handles.map((handle) => handle.promise.then(
+      (value) => ({ status: "passed", value }),
+      (error) => {
+        const failure = normalizedOwnerFailure(handle, error);
+        if (!firstFailure) {
+          firstFailure = failure;
+          for (const peer of handles) {
+            if (peer !== handle && peer.cancellable) peer.cancel();
+          }
+        }
+        return { status: "failed", failure };
+      },
+    )));
+    if (firstFailure) {
+      const failures = settled.filter((entry) => entry.status === "failed").map((entry) => entry.failure);
+      const completed = settled.filter((entry) => entry.status === "passed").map((entry) => entry.value.name);
+      const summary = failures.map((failure) => `${failure.name}:${failure.status}`).join(", ");
+      const error = sourceProcessFailure(
+        firstFailure.name,
+        `${firstFailure.name}: ${firstFailure.detail}; settled failures: ${summary}; completed: ${completed.join(", ") || "none"}`,
+        firstFailure.status,
+      );
+      error.firstFailure = firstFailure;
+      error.failures = failures;
+      error.completed = completed;
+      throw error;
+    }
+    return Object.fromEntries(settled.map((entry) => [entry.value.name, entry.value]));
+  } finally {
+    for (const state of states) state.cleanup?.();
+  }
+}
+
+function parseOverlapEvidence(result, gates) {
+  const schema = RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema;
+  const records = result.stdout.split("\n").flatMap((line) => {
+    try {
+      const parsed = JSON.parse(line);
+      return parsed?.schemaVersion === schema ? [parsed] : [];
+    } catch {
+      return [];
+    }
+  });
+  if (records.length !== 1) {
+    throw sourceProcessFailure("generated-overlap", "generated-overlap returned invalid JSON evidence", "failed");
+  }
+  const evidence = records[0];
+  if (
+    evidence.schemaVersion !== schema
+    || evidence.status !== "pass"
+    || evidence.reader?.observed !== true
+    || evidence.reader?.all_observations_complete !== true
+    || evidence.reader?.identity_mismatches !== 0
+    || evidence.reader?.surface_validation_failures !== 0
+    || typeof evidence.generation !== "string"
+    || !["source", "package", "stress", "performance"].every(
+      (name) => Number.isInteger(evidence.inventory?.[name]) && evidence.inventory[name] >= 0,
+    )
+  ) {
+    throw sourceProcessFailure("generated-overlap", "generated-overlap evidence is incomplete", "failed");
+  }
+  for (const name of OVERLAP_PARTICIPANTS) {
+    const participant = evidence.participants?.[name];
+    if (
+      JSON.stringify(participant?.command) !== JSON.stringify(gates.get(name).command)
+      || !Number.isFinite(participant?.elapsedMs)
+      || participant.elapsedMs < 0
+    ) {
+      throw sourceProcessFailure("generated-overlap", `generated-overlap did not execute the exact ${name} command`, "failed");
+    }
+  }
+  if (
+    evidence.participants.source.files !== evidence.inventory.source
+    || evidence.participants.package.files !== evidence.inventory.package
+    || !Number.isInteger(evidence.participants.source.tests)
+    || !Number.isInteger(evidence.participants.package.tests)
+    || !Array.isArray(evidence.participants.source.pending)
+    || !Array.isArray(evidence.participants.package.pending)
+    || evidence.participants.build.status !== "pass"
+  ) {
+    throw sourceProcessFailure("generated-overlap", "generated-overlap inventory or build evidence does not reconcile", "failed");
+  }
+  return evidence;
+}
+
+function generatedState(repo) {
+  const packageRoot = path.join(repo, "packages/cli");
+  const selected = selectGeneratedGeneration(packageRoot);
+  const leasesRoot = path.join(packageRoot, ".agentera-generated", "leases");
+  return {
+    generation: selected.id,
+    leases: fs.existsSync(leasesRoot) ? fs.readdirSync(leasesRoot).sort() : [],
+  };
+}
+
+function outputObservation(result) {
+  return {
+    stdoutSha256: sha256(result.stdout),
+    stdoutBytes: Buffer.byteLength(result.stdout),
+    stderrSha256: sha256(result.stderr),
+    stderrBytes: Buffer.byteLength(result.stderr),
+  };
+}
+
+function performanceObservation(result, inventoryFiles) {
+  const schema = RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema;
+  const records = performanceEvidenceRecords(result.stdout, schema);
+  if (records.length !== 1 || records[0].status !== "pass") {
+    throw sourceProcessFailure("performance", "performance owner returned no unique passing evidence record", "failed");
+  }
+  const record = records[0];
+  return {
+    inventoryFiles,
+    evidence: {
+      schemaVersion: record.schemaVersion,
+      status: record.status,
+      sha256: sha256(`${JSON.stringify(record)}\n`),
+      bytes: Buffer.byteLength(`${JSON.stringify(record)}\n`),
+      samples: Array.isArray(record.samples) ? record.samples.length : 0,
+      maxima: record.maxima,
+      runner: record.runner,
+    },
+  };
+}
+
+export async function runSourceQualificationDag(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
+  const gates = sourceGateMap(options.gates ?? sourceGateSet());
+  const clock = options.clock ?? (() => performance.now());
+  const started = options.startedAt ?? clock();
+  const deadlineMs = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
+  const remaining = () => Math.floor(deadlineMs - (clock() - started));
+  const runConcurrent = options.runConcurrent ?? runConcurrentSourceOwners;
+  const common = {
+    repo,
+    createState: options.createState,
+    startOwner: options.startOwner,
+    environment: options.environment,
+  };
+  const batchStarted = clock();
+  const batchTimeout = remaining();
+  if (batchTimeout <= 0) throw sourceProcessFailure("full-qualification", "source qualification deadline expired before batch A", "failed");
+  const batch = await runConcurrent(SOURCE_BATCH_A.map((name) => ({
+    name,
+    command: gates.get(name).command,
+    repo,
+    timeoutMs: batchTimeout,
+    cancellable: name !== "generated-overlap",
+  })), common);
+  const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
+  const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
+  const performanceEvidence = performanceObservation(batch.performance, overlap.inventory.performance);
+  const readState = options.readGeneratedState ?? generatedState;
+  const beforeBarrier = readState(repo);
+  if (beforeBarrier.generation !== overlap.generation || beforeBarrier.leases.length !== 0) {
+    throw sourceProcessFailure("reader-barrier", "generated-overlap did not settle one lease-free generation", "failed");
+  }
+  const barrierStarted = clock();
+  const barrierTimeout = remaining();
+  if (barrierTimeout <= 0) throw sourceProcessFailure("reader-barrier", "source qualification deadline expired before barrier B", "failed");
+  const barrier = await runConcurrent(SOURCE_BARRIER_B.map((name) => ({
+    name,
+    command: gates.get(name).command,
+    repo,
+    timeoutMs: barrierTimeout,
+    cancellable: true,
+  })), common);
+  const barrierElapsedMs = Math.max(0, Math.round(clock() - barrierStarted));
+  const afterBarrier = readState(repo);
+  if (afterBarrier.generation !== beforeBarrier.generation || afterBarrier.leases.length !== 0) {
+    throw sourceProcessFailure("reader-barrier", "barrier B changed the selected generation or retained leases", "failed");
+  }
+  const elapsedMs = Math.max(0, Math.round(clock() - started));
+  if (elapsedMs >= deadlineMs) {
+    throw sourceProcessFailure("full-qualification", `source qualification exceeded its ${deadlineMs}ms budget`, "failed");
+  }
+  const unattributedElapsedMs = elapsedMs - batchElapsedMs - barrierElapsedMs;
+  if (unattributedElapsedMs < 0) {
+    throw sourceProcessFailure("full-qualification", "source qualification phase timings do not reconcile", "failed");
+  }
+  const originEntries = Object.fromEntries(OVERLAP_PARTICIPANTS.map((name) => [name, {
+    name,
+    origin: "generated-overlap",
+    phase: "batch-a",
+    elapsedMs: Math.round(overlap.participants[name].elapsedMs),
+    executed: "generated-overlap participant",
+    reused: false,
+    observation: name === "build"
+      ? {
+          command: overlap.participants.build.command,
+          status: overlap.participants.build.status,
+          generation: overlap.generation,
+        }
+      : {
+          command: overlap.participants[name].command,
+          files: overlap.participants[name].files,
+          tests: overlap.participants[name].tests,
+          pending: overlap.participants[name].pending,
+        },
+  }]));
+  const entries = {
+    ...originEntries,
+    "generated-overlap": {
+      name: "generated-overlap",
+      origin: "generated-overlap",
+      phase: "batch-a",
+      elapsedMs: batch["generated-overlap"].elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: overlap,
+    },
+    stress: {
+      name: "stress",
+      origin: "stress",
+      phase: "batch-a",
+      elapsedMs: batch.stress.elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: { inventoryFiles: overlap.inventory.stress, ...outputObservation(batch.stress) },
+    },
+    performance: {
+      name: "performance",
+      origin: "performance",
+      phase: "batch-a",
+      elapsedMs: batch.performance.elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: performanceEvidence,
+    },
+    typecheck: {
+      name: "typecheck",
+      origin: "typecheck",
+      phase: "batch-a",
+      elapsedMs: batch.typecheck.elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: outputObservation(batch.typecheck),
+    },
+    compact: {
+      name: "compact",
+      origin: "compact",
+      phase: "barrier-b",
+      elapsedMs: barrier.compact.elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: { generation: afterBarrier.generation, ...outputObservation(barrier.compact) },
+    },
+    "capability-contract": {
+      name: "capability-contract",
+      origin: "capability-contract",
+      phase: "barrier-b",
+      elapsedMs: barrier["capability-contract"].elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: { generation: afterBarrier.generation, ...outputObservation(barrier["capability-contract"]) },
+    },
+  };
+  return {
+    gates: (options.gates ?? sourceGateSet()).map((gate) => entries[gate.name]),
+    execution: {
+      strategy: "parallel-overlap-dag",
+      deadlineMs,
+      elapsedMs,
+      batchAElapsedMs: batchElapsedMs,
+      barrierBElapsedMs: barrierElapsedMs,
+      unattributedElapsedMs,
+      reconciled: batchElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
+      generation: afterBarrier.generation,
+      leasesAfterBarrier: afterBarrier.leases.length,
+    },
+  };
+}
+
+export async function issueSourceReceipt(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const clock = options.clock ?? (() => performance.now());
+  const started = clock();
   assertCleanCommittedTree(repo);
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo);
   const identity = sourceComponentIdentity({
@@ -289,30 +680,22 @@ export function issueSourceReceipt(options = {}) {
     }
     return { receipt: existing, reused: true, gates: [] };
   }
-  const verificationState = isolatedNpmState("agentera-release-source-", { ignoreScripts: false });
-  try {
-    const started = performance.now();
-    const deadline = started + RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
-    const gates = [];
-    for (const gate of options.gates ?? sourceGateSet()) {
-      const remaining = Math.floor(deadline - performance.now());
-      if (remaining <= 0) {
-        throw new Error(`source qualification exceeded its ${RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs}ms budget before ${gate.name}`);
-      }
-      gates.push(executeGate(gate, { ...options, repo, timeout: remaining, environment: verificationState.environment }));
-    }
-    const receipt = {
-      schemaVersion: RECEIPT_SCHEMA,
-      kind: "source",
-      component: identity,
-      gates,
-    };
-    receipt.receiptSha256 = receiptDigest(receipt);
-    writeImmutableJson(file, receipt, "source receipt");
-    return { receipt, reused: false, gates };
-  } finally {
-    fs.rmSync(verificationState.root, { recursive: true, force: true });
-  }
+  const qualification = await (options.runDag ?? runSourceQualificationDag)({
+    ...options,
+    repo,
+    gates: options.gates ?? sourceGateSet(),
+    startedAt: started,
+  });
+  const receipt = {
+    schemaVersion: RECEIPT_SCHEMA,
+    kind: "source",
+    component: identity,
+    gates: qualification.gates,
+    execution: qualification.execution,
+  };
+  receipt.receiptSha256 = receiptDigest(receipt);
+  writeImmutableJson(file, receipt, "source receipt");
+  return { receipt, reused: false, gates: qualification.gates };
 }
 
 export function validateSourceReceipt(options = {}) {
@@ -935,7 +1318,7 @@ export function validateCiAttestation(options = {}) {
   return attestation;
 }
 
-function runCommand(command, flags) {
+async function runCommand(command, flags) {
   const candidateDirectory = requireArgument(flags, "--candidate-dir");
   const adapterName = flags.get("--adapter") ?? "development";
   const manifest = readManifest(adapterName);
@@ -953,7 +1336,7 @@ function runCommand(command, flags) {
   }), json);
   try {
     const issued = command === "source"
-      ? issueSourceReceipt({ candidateDirectory })
+      ? await issueSourceReceipt({ candidateDirectory })
       : command === "candidate"
           ? issueCandidateReceipt({ candidateDirectory, adapterName })
           : command === "approval"
@@ -999,24 +1382,22 @@ function runCommand(command, flags) {
   }
 }
 
-function main() {
+async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!["source", "candidate", "approval", "attest"].includes(command)) {
     throw new Error("usage: release-qualification.mjs <source|candidate|approval|attest> --candidate-dir DIR [--adapter development|stable] [--json]");
   }
   const valueFlags = ["--candidate-dir", "--adapter"];
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
-  runCommand(command, parseReleaseFlags(rest, {
+  await runCommand(command, parseReleaseFlags(rest, {
     boolean: ["--json", "--verbose"],
     value: valueFlags,
   }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    main();
-  } catch (error) {
+  main().catch((error) => {
     process.stderr.write(`release-qualification: ${redact(error instanceof Error ? error.message : error)}\n`);
     process.exitCode = 1;
-  }
+  });
 }

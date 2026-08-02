@@ -71,6 +71,29 @@ describe("release qualification benchmark coordinator", () => {
     });
   });
 
+  it("reconciles concurrent source owner durations to measured DAG wall time", async () => {
+    const report = await runQualificationBenchmark({
+      runPreflight: () => ({ elapsedMs: 1, owners: [{ name: "preflight", elapsedMs: 1 }] }),
+      runSource: () => ({
+        elapsedMs: 50,
+        ownerElapsedMs: 50,
+        owners: ["generated-overlap", "stress", "performance", "typecheck"].map((name) => ({
+          name,
+          elapsedMs: 40,
+        })),
+      }),
+      runCandidate: () => ({ elapsedMs: 10, owners: [{ name: "candidate", elapsedMs: 10 }] }),
+    });
+
+    expect(report.repetitions[0].source).toMatchObject({
+      elapsedMs: 50,
+      ownerDurationTotalMs: 160,
+      ownerElapsedMs: 50,
+      unattributedElapsedMs: 0,
+      reconciled: true,
+    });
+  });
+
   it("fails closed on a full qualification budget overrun", async () => {
     await expect(runQualificationBenchmark(phases({ preflight: 1, source: 299_999, candidate: 1 }))).rejects.toThrow(
       "full-qualification",

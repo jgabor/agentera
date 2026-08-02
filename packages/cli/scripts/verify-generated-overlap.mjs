@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { pinGeneratedGeneration, selectGeneratedGeneration } from "./generated-output.mjs";
 import { validatePendingTests } from "./overlap-pending.mjs";
+import { npmChildEnvironment } from "./package-construction.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
@@ -20,18 +21,31 @@ const inventoryResult = spawnSync(process.execPath, ["scripts/verify-lane.mjs", 
 if (inventoryResult.status !== 0) throw new Error(`verification inventory failed: ${inventoryResult.stderr || inventoryResult.stdout}`);
 const inventory = JSON.parse(inventoryResult.stdout);
 const participants = {
-  source: ["run", "test:source"],
-  build: ["run", "build"],
-  package: ["run", "verify:package"],
+  source: ["pnpm", "-C", "packages/cli", "run", "test:source"],
+  build: ["pnpm", "-C", "packages/cli", "build"],
+  package: ["pnpm", "-C", "packages/cli", "run", "verify:package"],
 };
 
-function start(participant, args) {
+function start(participant, command) {
+  const started = performance.now();
   const output = path.join(root, `${participant}.log`);
   const stream = fs.createWriteStream(output);
-  const child = spawn("pnpm", args, {
-    cwd: packageRoot,
+  const stateRoot = path.join(root, `${participant}-npm-state`);
+  const home = path.join(stateRoot, "home");
+  const cache = path.join(stateRoot, "cache");
+  const userConfig = path.join(stateRoot, "user.npmrc");
+  const globalConfig = path.join(stateRoot, "global.npmrc");
+  fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(userConfig, "registry=https://registry.npmjs.org/\n", { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(globalConfig, "registry=https://registry.npmjs.org/\n", { mode: 0o600, flag: "wx" });
+  const child = spawn(command[0], command.slice(1), {
+    cwd: repoRoot,
     env: {
-      ...process.env,
+      ...npmChildEnvironment(process.env, userConfig, globalConfig),
+      HOME: home,
+      XDG_CONFIG_HOME: path.join(stateRoot, "config"),
+      NPM_CONFIG_CACHE: cache,
       AGENTERA_VERIFICATION_BARRIER: barrier,
       AGENTERA_VERIFICATION_PARTICIPANT: participant,
       ...(participant === "build" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${participant}.json`) }),
@@ -44,7 +58,11 @@ function start(participant, args) {
     child.on("error", reject);
     child.on("exit", (code) => {
       stream.end();
-      if (code === 0) resolve(output);
+      if (code === 0) resolve({
+        command,
+        elapsedMs: Math.max(0, Math.round(performance.now() - started)),
+        log: output,
+      });
       else reject(new Error(`${participant} overlap command failed with exit ${code}; log: ${output}`));
     });
   });
@@ -65,11 +83,14 @@ function ownerResult(owner) {
   return { files: expectedFiles.length, tests: JSON.parse(result.toString("utf8")).numTotalTests, pending };
 }
 
+let running = [];
+let settlement = Promise.resolve([]);
 try {
   for (const target of [".agentera-generated", "dist", "bundle"]) {
     fs.rmSync(path.join(packageRoot, target), { recursive: true, force: true });
   }
-  const running = Object.entries(participants).map(([name, args]) => [name, start(name, args)]);
+  running = Object.entries(participants).map(([name, command]) => [name, start(name, command)]);
+  settlement = Promise.allSettled(running.map(async ([name, done]) => [name, await done]));
   await waitForReady();
   fs.writeFileSync(path.join(barrier, "release"), "release\n");
   let observed = false;
@@ -101,10 +122,11 @@ try {
       readerError ??= error;
     }
   }, 10);
-  const settled = await Promise.allSettled(running.map(async ([name, done]) => [name, await done]));
+  const settled = await settlement;
   clearInterval(monitor);
   const failures = settled.filter(({ status }) => status === "rejected");
   if (failures.length > 0) throw failures[0].reason;
+  const completed = Object.fromEntries(settled.map(({ value }) => value));
   if (readerError) throw new Error(`continuous generated reader failed: ${readerError.message}`);
   if (!observed) throw new Error("continuous generated reader observed no selected generation during full-owner overlap");
   const source = ownerResult("source");
@@ -123,10 +145,26 @@ try {
     child.on("exit", (code) => code === 0 ? resolve(stdout.trim()) : reject(new Error(`selected CLI failed: ${stderr}`)));
   });
   console.log(JSON.stringify({
+    schemaVersion: "agentera.generatedOverlapEvidence.v1",
     status: "pass",
-    source,
-    package: packageResult,
-    build: "pass",
+    inventory: inventory.counts,
+    participants: {
+      source: {
+        ...source,
+        command: completed.source.command,
+        elapsedMs: completed.source.elapsedMs,
+      },
+      package: {
+        ...packageResult,
+        command: completed.package.command,
+        elapsedMs: completed.package.elapsedMs,
+      },
+      build: {
+        command: completed.build.command,
+        elapsedMs: completed.build.elapsedMs,
+        status: "pass",
+      },
+    },
     reader: {
       observed,
       all_observations_complete: identityMismatches === 0 && surfaceValidationFailures === 0,
@@ -136,8 +174,9 @@ try {
     },
     generation: selected.id,
     invocation,
-  }, null, 2));
+  }));
 } catch (error) {
+  if (running.length > 0) await settlement;
   console.error(`verify-generated-overlap: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 } finally {
