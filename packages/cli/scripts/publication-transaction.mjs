@@ -733,13 +733,60 @@ export async function promoteQualifiedCandidate(adapterName, candidateDirectory,
   }
 }
 
+export function smokeQualifiedCandidate(adapterName, candidateDirectory, options = {}) {
+  const candidate = assertQualifiedApproval(adapterName, candidateDirectory, options);
+  const { manifest, adapter } = candidate;
+  const state = isolatedNpmState("agentera-registry-qualified-smoke-");
+  try {
+    const publicState = isolatedRegistryInspector(manifest, adapter, state.environment)();
+    assertRegistryCompatible(
+      manifest,
+      adapter,
+      candidate.receipt.artifact.integrity,
+      publicState,
+      "exact-version qualification",
+    );
+    if (!publicState.tagged) {
+      const stagingAdapter = candidateAdapter(adapter, candidate.receipt.candidateTag);
+      const staged = isolatedRegistryInspector(manifest, stagingAdapter, state.environment)();
+      assertRegistryCompatible(
+        manifest,
+        stagingAdapter,
+        candidate.receipt.artifact.integrity,
+        staged,
+        "exact-version qualification",
+      );
+      if (!staged.exists || !staged.tagged) {
+        throw publicationError(
+          `exact candidate ${manifest.name}@${manifest.version} is not staged on @${candidate.receipt.candidateTag}`,
+          "exact-version-l2",
+          "Stage the same exact candidate before retrying qualified publication; no rollback was attempted.",
+        );
+      }
+    }
+    const output = smokePublishedCandidate({ manifest, adapter });
+    return [
+      result(
+        adapterName,
+        manifest.version,
+        "exact-version-l2",
+        "passed",
+        "continue to promotion",
+        output,
+      ),
+    ];
+  } finally {
+    fs.rmSync(state.root, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   const [phase, adapterName] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
   const json = process.argv.includes("--json");
   const verbose = process.argv.includes("--verbose");
-  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "stage", "promote"].includes(phase)) {
+  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "stage", "smoke", "promote"].includes(phase)) {
     throw new Error(
-      "usage: publication-transaction.mjs <prepare|stage|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
+      "usage: publication-transaction.mjs <prepare|stage|smoke|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
     );
   }
   if (phase === "prepare") {
@@ -812,13 +859,16 @@ async function main() {
   try {
     const receipts = phase === "stage"
       ? await stageQualifiedCandidate(adapterName, candidateDirectory, { sourceRunId })
-      : await promoteQualifiedCandidate(adapterName, candidateDirectory, { sourceRunId });
+      : phase === "smoke"
+        ? smokeQualifiedCandidate(adapterName, candidateDirectory, { sourceRunId })
+        : await promoteQualifiedCandidate(adapterName, candidateDirectory, { sourceRunId });
     for (const receipt of receipts) emit(receipt, json, verbose);
     emit(
       result(adapterName, manifest.version, phase, "passed", "complete", undefined, {
         elapsedMs: performance.now() - started,
         executed: "candidate transaction",
-        reused: receipts.every((receipt) => receipt.outcome === "replayed" || receipt.outcome === "passed"),
+        reused: phase !== "smoke"
+          && receipts.every((receipt) => receipt.outcome === "replayed" || receipt.outcome === "passed"),
       }),
       json,
       verbose,

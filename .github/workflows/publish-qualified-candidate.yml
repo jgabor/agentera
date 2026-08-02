@@ -22,40 +22,34 @@ permissions:
   contents: read
 
 jobs:
-  publish:
-    name: Stage, verify, and promote approved candidate
+  validate_source:
+    name: Validate qualification provenance before approval
     runs-on: ubuntu-latest
-    environment: npm-publish
+    outputs:
+      head_sha: ${{ steps.run.outputs.head_sha }}
+      metadata_commit: ${{ steps.candidate.outputs.metadata_commit }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Validate contracted qualification run identity
+        id: run
         uses: actions/github-script@v7
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         with:
           script: |
-            const runId = Number(core.getInput("source_run_id", { required: true }));
+            const { pathToFileURL } = require("node:url");
+            const runId = Number(process.env.SOURCE_RUN_ID);
             if (!Number.isSafeInteger(runId) || runId < 1) throw new Error("source_run_id must be a positive GitHub Actions run ID");
             const { data: run } = await github.rest.actions.getWorkflowRun({
               owner: context.repo.owner,
               repo: context.repo.repo,
               run_id: runId,
             });
-            const contract = require(`${process.env.GITHUB_WORKSPACE}/references/adapters/package-publication.json`);
-            const expectedRepository = contract.ci.repository;
-            const expectedName = contract.ci.qualificationWorkflow.name;
-            const expectedPath = contract.ci.qualificationWorkflow.path;
-            if (
-              run.repository?.full_name !== expectedRepository ||
-              run.name !== expectedName ||
-              run.path !== expectedPath ||
-              run.event !== "workflow_dispatch" ||
-              run.conclusion !== "success"
-            ) {
-              throw new Error("source_run_id is not a successful contracted qualify-candidate run in the configured repository");
-            }
-          env:
-            INPUT_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+            const qualification = await import(pathToFileURL(`${process.env.GITHUB_WORKSPACE}/packages/cli/scripts/release-qualification.mjs`).href);
+            const validated = qualification.validateQualificationWorkflowRun(run, runId);
+            core.setOutput("head_sha", validated.headSha);
       - name: Download exact qualification artifact
         uses: actions/download-artifact@v4
         with:
@@ -63,13 +57,39 @@ jobs:
           path: ${{ runner.temp }}/agentera-candidate
           run-id: ${{ inputs.source_run_id }}
           github-token: ${{ github.token }}
-      - name: Check explicit approval binding and source checkout
+      - name: Bind candidate receipt to API-backed run head
+        id: candidate
         env:
           EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
+          SOURCE_HEAD_SHA: ${{ steps.run.outputs.head_sha }}
         run: |
           set -euo pipefail
-          node -e 'const fs=require("fs"); const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/agentera-candidate/candidate-receipt.json")); if (r.receiptSha256 !== process.env.EXPECTED_CANDIDATE_SHA256) throw new Error("candidate receipt digest does not match the explicit workflow approval"); process.stdout.write(r.metadataCommit + "\n")' > "${RUNNER_TEMP}/candidate-commit"
-          git checkout --detach "$(<"${RUNNER_TEMP}/candidate-commit")"
+          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const receipt=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/agentera-candidate/candidate-receipt.json")); const bound=validateCandidateRunBinding(receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA); fs.appendFileSync(process.env.GITHUB_OUTPUT, `metadata_commit=${bound.metadataCommit}\n`);'
+
+  publish:
+    name: Stage, verify, and promote approved candidate
+    needs: validate_source
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.validate_source.outputs.metadata_commit }}
+      - name: Download exact validated qualification artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-candidate-${{ inputs.source_run_id }}
+          path: ${{ runner.temp }}/agentera-candidate
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+      - name: Recheck transferred candidate binding
+        env:
+          EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
+          SOURCE_HEAD_SHA: ${{ needs.validate_source.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const receipt=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/agentera-candidate/candidate-receipt.json")); validateCandidateRunBinding(receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA);'
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -77,21 +97,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Record candidate-bound approval
         run: node packages/cli/scripts/release-qualification.mjs approval --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --approved-by "${{ github.actor }}" --source-run-id "${{ inputs.source_run_id }}"
-      - name: Stage exact candidate without moving its public tag
+      - name: Run bounded qualified publication envelope
+        # The coordinator enforces <120s; this outer guard leaves time to emit its failure receipt.
+        timeout-minutes: 3
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node packages/cli/scripts/publication-transaction.mjs stage "${{ inputs.adapter }}" --approve --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ inputs.source_run_id }}" --json
-      - name: Run exact-version L2 for development
-        if: inputs.adapter == 'development'
-        env:
-          REPO_ROOT: ${{ github.workspace }}
-          AGENTERA_SANDBOX_TIER: L2
-        run: |
-          set -euo pipefail
-          CLI_VERSION=$(node -p "require('./packages/cli/package.json').version")
-          export AGENTERA_NPM_PIN="agentera@${CLI_VERSION}"
-          bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
-      - name: Promote the exact verified candidate
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node packages/cli/scripts/publication-transaction.mjs promote "${{ inputs.adapter }}" --approve --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ inputs.source_run_id }}" --json
+        run: node packages/cli/scripts/release-benchmark.mjs publication --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ inputs.source_run_id }}" --receipt-file "${RUNNER_TEMP}/qualified-publication-receipt.json" --json

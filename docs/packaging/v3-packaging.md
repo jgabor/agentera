@@ -99,36 +99,48 @@ provenance remains deferred.
 
 The CI attestation binds `jgabor/agentera`, the `Qualify release candidate`
 workflow, `.github/workflows/qualify-candidate.yml@refs/heads/feat/v3`, and
-the numeric source run ID. The publication workflow queries that run before it
-downloads an artifact, then approval and each mutation revalidate the same
-attestation. GitHub environment approval (`npm-publish`) remains a separate
-human control.
+the numeric source run ID. The full `refs/heads/...` contract is the branch
+authority. Before artifact download, the publication workflow queries that run
+and compares its repository, head repository, run ID, workflow name/path,
+event, conclusion, and `head_branch`. It then loads the candidate receipt and
+requires `metadataCommit` to equal the API-backed `head_sha`. These checks run
+in a predecessor job before the separate `npm-publish` environment approval.
+The approved job downloads the same immutable run artifact again; approval and
+each registry phase revalidate the same candidate and CI attestation.
 
-Stage and promotion consume the retained bytes; neither runs `npm pack` or
-rebuilds source:
+The qualified-publication coordinator consumes the retained bytes; it does not
+run `npm pack`, rebuild source, or run source qualification:
 
 ```bash
-NPM_TOKEN=... pnpm cli:stage:dev -- --candidate-dir /secure/external/candidate
-# Run the exact-version L2 consumer qualification without moving @next.
-NPM_TOKEN=... pnpm cli:promote:dev -- --candidate-dir /secure/external/candidate
+NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
-Staging first inspects npm without credentials. An absent version uploads the
-approved tarball once to `candidate-<version>`, waits for exact integrity and
-runs an independent cold-state registry smoke. It does not move `next` or
-`latest`. Promotion verifies the staged exact version, then moves the expected
-tag forward only after consumer qualification. Exact matching staged or promoted
-state replays without upload or a token; conflicting integrity, a tag ahead of
-without rollback. A convergence or smoke retry may safely repeat observation,
+The coordinator measures one ordered stage, independent exact-version L2, and
+promote envelope with a monotonic clock. Staging first inspects npm without
+credentials. An absent version uploads the approved tarball once to
+`candidate-<version>`, waits for exact integrity, and runs an isolated registry
+smoke. It does not move `next` or `latest`. The development L2 runs the pinned
+exact-version consumer harness while the public tag is unchanged; the stable
+adapter repeats its isolated exact-version consumer smoke. Promotion verifies
+the staged exact version, moves the expected tag forward, waits for integrity
+and tag convergence, and observes the final exact version. Exact matching
+staged or promoted state replays without upload or backward tag movement. A
+failure or timeout stops later phases and never rolls back; retry the same
+coordinator with the same exact candidate.
 
 Only the npm mutation child receives `NPM_TOKEN`, through a mode-`0600`
 temporary config. Tool-version probes, pack, registry inspection, receipt
 validation, and both smoke paths sanitize npm and pnpm variables and use new
-HOME, cache, and user/global configuration. Phase
-start/end output is one bounded human line or one JSON object with package,
-version, phase, outcome, elapsed time, executed/reused status, and next action.
-The first failure retains its original phase label. Diagnostics redact tokens
-and private absolute paths.
+HOME, cache, and user/global configuration. Transaction phase output remains
+bounded. The coordinator emits one human or JSON timing receipt bound to the
+candidate digest, metadata commit, package, version, artifact hash and
+integrity, and source run ID. It reports measured stage/L2/promote components,
+total and unattributed time, reconciliation, replay state, and whether the
+total is strictly below 120,000 ms. It ignores child or caller elapsed claims.
+The first failure retains its original phase label. Diagnostics and receipts
+omit credentials and private absolute paths.
 
 Run the non-mutating qualification benchmark from an external directory:
 
@@ -138,14 +150,15 @@ pnpm cli:benchmark:qualification -- --adapter development \
   --candidate-root /secure/external/qualification-benchmark --json
 ```
 
-It runs exactly three cold-cache repetitions, retains one candidate per run,
-reports preflight, every source/candidate owner, execution/reuse, reconciled
-totals, and medians. It emits the first original failing owner before it stops.
-It never receives credentials or mutates npm. The contract limits preflight to
-under 30 seconds, the measured source-plus-candidate qualification to under
-five minutes, and a separately recorded approved publication transaction to
-under two minutes. Do not use a timeout or a different cache/network state as
-performance evidence.
+The qualification command runs exactly three cold-cache repetitions, retains
+one candidate per run, reports preflight, every source/candidate owner,
+execution/reuse, reconciled totals, and medians. It emits the first original
+failing owner before it stops. It never receives credentials or mutates npm.
+The separate qualified-publication command above measures the actual approved
+registry sequence once and enforces a total below two minutes in human and JSON
+output. The contract limits preflight to under 30 seconds and measured
+source-plus-candidate qualification to under five minutes. Do not use a timeout
+or a different cache/network state as performance evidence.
 
 ## Generated-output and verification ownership
 

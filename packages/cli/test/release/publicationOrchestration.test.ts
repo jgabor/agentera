@@ -3,6 +3,13 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import {
+  canonicalJson,
+  sha256,
+  validateCandidateRunBinding,
+  validateQualificationWorkflowRun,
+} from "../../scripts/release-qualification.mjs";
+
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8");
 const qualificationYaml = fs.readFileSync(
@@ -31,6 +38,7 @@ describe("candidate publication orchestration", () => {
       "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
       "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
       "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
+      "cli:publish:qualified:dev": "pnpm -C packages/cli run release:publish:qualified",
       "cli:approve:dev": "pnpm -C packages/cli run release:approve",
       "cli:stage:dev": "pnpm -C packages/cli run release:stage",
       "cli:promote:dev": "pnpm -C packages/cli run release:promote",
@@ -46,8 +54,13 @@ describe("candidate publication orchestration", () => {
     );
     expect(developmentPackage.scripts["release:benchmark:qualification"])
       .toContain("release-benchmark.mjs qualification");
+    expect(developmentPackage.scripts["release:publish:qualified"])
+      .toContain("release-benchmark.mjs publication --adapter development");
     expect(stablePackage.scripts["release:stage"]).toContain(
       "publication-transaction.mjs stage stable --approve",
+    );
+    expect(stablePackage.scripts["release:publish:qualified"]).toContain(
+      "release-benchmark.mjs publication --adapter stable",
     );
     expect(developmentPackage.scripts).not.toHaveProperty("publish:dev");
     expect(stablePackage.scripts).not.toHaveProperty("publish:stable");
@@ -73,27 +86,69 @@ describe("candidate publication orchestration", () => {
     expect(qualificationYaml).not.toContain("NPM_TOKEN");
   });
 
-  it("requires explicit candidate digest approval, exact artifact transfer, L2, then forward-only promotion", () => {
+  it("validates API provenance before approval, then runs one bounded forward-only envelope", () => {
     expect(publicationYaml).toContain("environment: npm-publish");
     expect(publicationYaml).toContain("candidate_receipt_sha256");
     expect(publicationYaml).toContain("actions/download-artifact@v4");
     expect(publicationYaml).toContain("actions/github-script@v7");
-    expect(publicationYaml).toContain("references/adapters/package-publication.json");
+    expect(publicationYaml).toContain("packages/cli/scripts/release-qualification.mjs");
     expect(publicationContract.ci.qualificationWorkflow).toEqual({
       name: "Qualify release candidate",
       path: ".github/workflows/qualify-candidate.yml",
       ref: "refs/heads/feat/v3",
     });
-    expect(publicationYaml).toContain("run.conclusion !== \"success\"");
+    expect(publicationContract.ci.publicationRunBinding.beforeArtifactDownload).toContain("run.head_branch");
+    expect(publicationContract.ci.publicationRunBinding.beforeEnvironmentApproval).toContain("run.head_sha");
+    expect(publicationYaml).toContain("validateQualificationWorkflowRun(run, runId)");
+    expect(publicationYaml).toContain("validateCandidateRunBinding");
     expect(publicationYaml).toContain("run-id: ${{ inputs.source_run_id }}");
     expect(publicationYaml).toContain("release-qualification.mjs approval");
     expect(publicationYaml).toContain("--source-run-id");
-    expect(publicationYaml).toContain("publication-transaction.mjs stage");
-    expect(publicationYaml).toContain("AGENTERA_SANDBOX_TIER: L2");
-    expect(publicationYaml).toContain("publication-transaction.mjs promote");
-    expect(publicationYaml.indexOf("publication-transaction.mjs stage"))
-      .toBeLessThan(publicationYaml.indexOf("AGENTERA_SANDBOX_TIER: L2"));
-    expect(publicationYaml.indexOf("AGENTERA_SANDBOX_TIER: L2"))
-      .toBeLessThan(publicationYaml.indexOf("publication-transaction.mjs promote"));
+    expect(publicationYaml).toContain("release-benchmark.mjs publication");
+    expect(publicationYaml).toContain("coordinator enforces <120s");
+    expect(publicationYaml).toContain("timeout-minutes: 3");
+    expect(publicationYaml).toContain("qualified-publication-receipt.json");
+    expect(publicationYaml.indexOf("validateQualificationWorkflowRun(run, runId)"))
+      .toBeLessThan(publicationYaml.indexOf("Download exact qualification artifact"));
+    expect(publicationYaml.indexOf("Bind candidate receipt to API-backed run head"))
+      .toBeLessThan(publicationYaml.indexOf("environment: npm-publish"));
+    expect(publicationYaml.indexOf("release-qualification.mjs approval"))
+      .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
+    expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
+  });
+
+  it("rejects a successful qualification run from the wrong contracted ref", () => {
+    const run = {
+      id: 123,
+      repository: { full_name: "jgabor/agentera" },
+      head_repository: { full_name: "jgabor/agentera" },
+      name: "Qualify release candidate",
+      path: ".github/workflows/qualify-candidate.yml@feat/v3",
+      head_branch: "feat/v3",
+      head_sha: "a".repeat(40),
+      event: "workflow_dispatch",
+      conclusion: "success",
+    };
+
+    expect(validateQualificationWorkflowRun(run, 123)).toMatchObject({
+      headSha: "a".repeat(40),
+      ref: "refs/heads/feat/v3",
+    });
+    expect(() => validateQualificationWorkflowRun({
+      ...run,
+      head_branch: "main",
+    }, 123)).toThrow("configured repository, workflow, and branch");
+  });
+
+  it("rejects a candidate receipt whose metadata commit differs from the API run head", () => {
+    const receipt: Record<string, unknown> = {
+      schemaVersion: "agentera.releaseQualification.v1",
+      kind: "candidate",
+      metadataCommit: "b".repeat(40),
+    };
+    receipt.receiptSha256 = sha256(canonicalJson(receipt));
+
+    expect(() => validateCandidateRunBinding(receipt, receipt.receiptSha256 as string, "c".repeat(40)))
+      .toThrow("API-backed qualification run head SHA");
   });
 });

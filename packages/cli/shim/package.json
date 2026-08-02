@@ -29,6 +29,7 @@
   "scripts": {
     "test": "pnpm -C .. test test/shim/runBackend.test.ts && node --test test/*.test.mjs",
     "release:prepare": "node ../scripts/publication-transaction.mjs prepare stable",
+    "release:publish:qualified": "node ../scripts/release-benchmark.mjs publication --adapter stable",
     "release:stage": "node ../scripts/publication-transaction.mjs stage stable --approve",
     "release:promote": "node ../scripts/publication-transaction.mjs promote stable --approve"
   },

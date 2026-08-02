@@ -189,9 +189,7 @@ pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
 pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
 pnpm cli:approve:dev -- --candidate-dir /secure/external/candidate --approved-by NAME
 pnpm cli:benchmark:qualification -- --adapter development --candidate-root /secure/external/qualification-benchmark --json
-# run exact-version consumer qualification while @next is unchanged
-NPM_TOKEN=... pnpm cli:stage:dev -- --candidate-dir /secure/external/candidate
-NPM_TOKEN=... pnpm cli:promote:dev -- --candidate-dir /secure/external/candidate
+NPM_TOKEN=... pnpm cli:publish:qualified:dev -- --candidate-dir /secure/external/candidate --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
 Source receipts are content-addressed local cache records, not authority to
@@ -207,8 +205,7 @@ The stable shim follows the same candidate flow and remains on `@latest`:
 ```bash
 pnpm cli:prepare:stable -- --target-version X.Y.Z --source-commit COMMIT
 # review and commit packages/cli/shim/package.json
-NPM_TOKEN=... pnpm cli:stage:stable -- --candidate-dir /secure/external/candidate
-NPM_TOKEN=... pnpm cli:promote:stable -- --candidate-dir /secure/external/candidate
+NPM_TOKEN=... pnpm cli:publish:qualified:stable -- --candidate-dir /secure/external/candidate --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
 `references/adapters/package-publication.json` owns both package adapters and

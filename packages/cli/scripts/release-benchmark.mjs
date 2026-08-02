@@ -1,14 +1,20 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { npmChildEnvironment } from "./package-construction.mjs";
 import {
   REPO_ROOT,
   RELEASE_CONTRACT,
+  canonicalJson,
   issueCandidateReceipt,
   issueSourceReceipt,
   qualificationPreflight,
+  sha256,
+  validateCandidateReceipt,
 } from "./release-qualification.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -165,46 +171,6 @@ export async function runQualificationBenchmark(options = {}) {
       },
     });
   }
-  let qualifiedPublication = {
-    budgetMs: RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs,
-    executed: "not-run",
-    reason: "qualification benchmark never invokes npm mutation; record approved publication timing separately",
-  };
-  if (options.qualifiedPublication) {
-    try {
-      const published = options.qualifiedPublication;
-      const owners = normalizeOwners(published.owners);
-      const ownerElapsedMs = owners.reduce((total, owner) => total + owner.elapsedMs, 0);
-      if (!Number.isFinite(published.elapsedMs) || published.elapsedMs < ownerElapsedMs) {
-        throw benchmarkError("qualified publication timing cannot reconcile its owner durations", "qualified-publication");
-      }
-      if (published.elapsedMs >= RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs) {
-        throw benchmarkError(
-          `qualified publication exceeded its ${RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs}ms budget`,
-          "qualified-publication",
-        );
-      }
-      qualifiedPublication = {
-        elapsedMs: Math.round(published.elapsedMs),
-        budgetMs: RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs,
-        executed: published.executed ?? "recorded",
-        reused: Boolean(published.reused),
-        owners,
-        ownerElapsedMs,
-        unattributedElapsedMs: Math.round(published.elapsedMs) - ownerElapsedMs,
-        reconciled: true,
-      };
-    } catch (error) {
-      const firstFailure = {
-        owner: error?.owner ?? "qualified-publication",
-        phase: "qualified-publication",
-        detail: error instanceof Error ? error.message : String(error),
-      };
-      emit({ event: "failed", repetition: null, firstFailure });
-      if (error && typeof error === "object") error.firstFailure ??= firstFailure;
-      throw error;
-    }
-  }
   return {
     schemaVersion: "agentera.releaseBenchmark.v1",
     kind: "qualification-benchmark",
@@ -213,8 +179,306 @@ export async function runQualificationBenchmark(options = {}) {
       preflight: median(runs.map((run) => run.preflight.elapsedMs)),
       fullQualification: median(runs.map((run) => run.qualification.elapsedMs)),
     },
-    qualifiedPublication,
   };
+}
+
+function redactPublicationDiagnostic(value, candidateDirectory) {
+  let text = String(value ?? "");
+  for (const privatePath of [REPO_ROOT, candidateDirectory, os.homedir()].filter(Boolean)) {
+    text = text.replaceAll(privatePath, privatePath === REPO_ROOT ? "<repository>" : "<private>");
+  }
+  return text
+    .replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>")
+    .slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
+}
+
+function parseTransactionResults(stdout) {
+  return String(stdout ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        const value = JSON.parse(line);
+        return value && typeof value === "object" ? [value] : [];
+      } catch {
+        return [];
+      }
+    });
+}
+
+function defaultCommandRunner(specification) {
+  const invocation = spawnSync(specification.command, specification.args, {
+    cwd: specification.cwd,
+    env: specification.env,
+    encoding: "utf8",
+    timeout: Math.max(1, Math.floor(specification.timeoutMs)),
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const results = parseTransactionResults(invocation.stdout);
+  if (invocation.error || invocation.status !== 0) {
+    const failed = results.find((entry) => entry.outcome === "failed");
+    const detail = failed?.detail
+      ?? invocation.error?.message
+      ?? invocation.stderr
+      ?? invocation.stdout
+      ?? `exit ${invocation.status ?? "signal"}`;
+    const error = new Error(String(detail).trim());
+    error.owner = failed?.phase ?? specification.name;
+    throw error;
+  }
+  return { stdout: invocation.stdout, stderr: invocation.stderr };
+}
+
+function transactionArguments(phase, adapterName, candidateDirectory, sourceRunId) {
+  return [
+    path.join(REPO_ROOT, "packages/cli/scripts/publication-transaction.mjs"),
+    phase,
+    adapterName,
+    "--approve",
+    "--candidate-dir",
+    candidateDirectory,
+    ...(sourceRunId ? ["--source-run-id", sourceRunId] : []),
+    "--json",
+  ];
+}
+
+function publicationPhases(adapterName, candidateDirectory, candidate, sourceRunId, environment) {
+  const transaction = (name, phase) => ({
+    name,
+    transactionPhase: phase,
+    command: process.execPath,
+    args: transactionArguments(phase, adapterName, candidateDirectory, sourceRunId),
+    cwd: REPO_ROOT,
+    env: environment,
+  });
+  const exactVersionL2 = adapterName === "development"
+    ? {
+        name: "exact-version-l2",
+        command: "bash",
+        args: [path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"), "happy-path-clean"],
+        cwd: REPO_ROOT,
+        env: {
+          ...npmChildEnvironment(environment),
+          REPO_ROOT,
+          AGENTERA_SANDBOX_TIER: "L2",
+          AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`,
+        },
+      }
+    : {
+        ...transaction("exact-version-l2", "smoke"),
+        name: "exact-version-l2",
+        env: npmChildEnvironment(environment),
+      };
+  return [
+    transaction("stage", "stage"),
+    exactVersionL2,
+    transaction("promote", "promote"),
+  ];
+}
+
+function successfulTransaction(specification, output) {
+  if (!specification.transactionPhase) {
+    return { reused: false, observations: [] };
+  }
+  const results = parseTransactionResults(output.stdout);
+  const completed = [...results].reverse().find(
+    (entry) => entry.phase === specification.transactionPhase && entry.outcome === "passed",
+  );
+  if (!completed) {
+    throw benchmarkError(
+      `qualified publication owner '${specification.name}' returned no successful transaction result`,
+      specification.name,
+    );
+  }
+  return {
+    reused: Boolean(completed.reused),
+    observations: results
+      .filter((entry) => typeof entry.phase === "string" && typeof entry.outcome === "string")
+      .map((entry) => ({ phase: entry.phase, outcome: entry.outcome, reused: Boolean(entry.reused) })),
+  };
+}
+
+function publicationReceipt(candidate, sourceRunId, phases, started, ended, outcome, firstFailure) {
+  const elapsedMs = Math.max(0, Math.floor(ended - started));
+  const ownerElapsedMs = phases.reduce((total, phase) => total + phase.elapsedMs, 0);
+  if (ownerElapsedMs > elapsedMs) {
+    throw benchmarkError("qualified publication component timings exceed total elapsed time", "qualified-publication");
+  }
+  const receipt = {
+    schemaVersion: "agentera.qualifiedPublicationTiming.v1",
+    kind: "qualified-publication-timing",
+    outcome,
+    candidate: {
+      receiptSha256: candidate.receiptSha256,
+      metadataCommit: candidate.metadataCommit,
+      package: candidate.package,
+      version: candidate.version,
+      integrity: candidate.artifact.integrity,
+      artifactSha256: candidate.artifact.sha256,
+      sourceRunId: sourceRunId ?? null,
+    },
+    budgetMs: RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs,
+    elapsedMs,
+    withinBudget: elapsedMs < RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs,
+    executed: "ordered",
+    reused: phases.length === 3
+      && phases.filter((phase) => phase.name !== "exact-version-l2").every((phase) => phase.reused),
+    phases,
+    ownerElapsedMs,
+    unattributedElapsedMs: elapsedMs - ownerElapsedMs,
+    reconciled: ownerElapsedMs + (elapsedMs - ownerElapsedMs) === elapsedMs,
+    noRollback: true,
+    ...(firstFailure ? { firstFailure } : {}),
+  };
+  receipt.receiptSha256 = sha256(canonicalJson(receipt));
+  return receipt;
+}
+
+function assertPublicationCandidate(candidate) {
+  if (
+    typeof candidate?.receiptSha256 !== "string"
+    || !/^[0-9a-f]{64}$/.test(candidate.receiptSha256)
+    || typeof candidate?.metadataCommit !== "string"
+    || !/^[0-9a-f]{40}$/.test(candidate.metadataCommit)
+    || typeof candidate?.package !== "string"
+    || typeof candidate?.version !== "string"
+    || typeof candidate?.artifact?.integrity !== "string"
+    || typeof candidate?.artifact?.sha256 !== "string"
+  ) {
+    throw new Error("qualified publication requires a valid content-bound candidate receipt");
+  }
+  return candidate;
+}
+
+/** Run one approved, content-bound stage/L2/promote publication envelope. */
+export async function runQualifiedPublication(options = {}) {
+  const adapterName = options.adapterName;
+  if (!RELEASE_CONTRACT.packages[adapterName]) {
+    throw new Error("qualified publication requires adapterName development or stable");
+  }
+  if (!options.candidateDirectory) throw new Error("qualified publication requires candidateDirectory");
+  if (options.sourceRunId !== undefined && !/^[1-9]\d{0,19}$/.test(options.sourceRunId)) {
+    throw new Error("qualified publication sourceRunId must be a positive GitHub Actions run ID");
+  }
+  const loaded = options.candidate
+    ?? validateCandidateReceipt({ candidateDirectory: options.candidateDirectory, adapterName });
+  const candidate = assertPublicationCandidate(loaded.receipt ?? loaded);
+  const clock = options.clock ?? (() => performance.now());
+  const commandRunner = options.runCommand ?? defaultCommandRunner;
+  const emit = options.emit ?? (() => {});
+  const environment = options.environment ?? process.env;
+  const specifications = publicationPhases(
+    adapterName,
+    options.candidateDirectory,
+    candidate,
+    options.sourceRunId,
+    environment,
+  );
+  const budgetMs = RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs;
+  const phases = [];
+  let lastClock = clock();
+  const started = lastClock;
+  const now = () => {
+    const value = clock();
+    if (!Number.isFinite(value) || value < lastClock) {
+      throw benchmarkError("qualified publication requires a monotonic clock", "qualified-publication");
+    }
+    lastClock = value;
+    return value;
+  };
+  emit({ event: "started", phase: "qualified-publication", candidateReceiptSha256: candidate.receiptSha256 });
+  try {
+    for (const specification of specifications) {
+      const phaseStarted = now();
+      const remainingMs = budgetMs - (phaseStarted - started);
+      if (remainingMs <= 0) {
+        throw benchmarkError(`qualified publication exceeded its ${budgetMs}ms budget before ${specification.name}`, specification.name);
+      }
+      emit({ event: "started", phase: specification.name });
+      try {
+        const output = await commandRunner({ ...specification, timeoutMs: remainingMs });
+        const phaseEnded = now();
+        const transaction = successfulTransaction(specification, output ?? {});
+        const phase = {
+          name: specification.name,
+          outcome: "passed",
+          elapsedMs: Math.max(0, Math.floor(phaseEnded - phaseStarted)),
+          executed: "command",
+          reused: transaction.reused,
+          observations: transaction.observations,
+        };
+        if (phaseEnded - started >= budgetMs) {
+          phase.outcome = "failed";
+          phases.push(phase);
+          throw benchmarkError(
+            `qualified publication exceeded its ${budgetMs}ms budget during ${specification.name}`,
+            specification.name,
+          );
+        }
+        phases.push(phase);
+        emit({ event: "passed", phase });
+      } catch (error) {
+        if (!phases.some((phase) => phase.name === specification.name)) {
+          const phaseEnded = now();
+          phases.push({
+            name: specification.name,
+            outcome: "failed",
+            elapsedMs: Math.max(0, Math.floor(phaseEnded - phaseStarted)),
+            executed: "command",
+            reused: false,
+            observations: [],
+          });
+        }
+        if (error && typeof error === "object") error.owner ??= specification.name;
+        throw error;
+      }
+    }
+    const ended = now();
+    if (ended - started >= budgetMs) {
+      throw benchmarkError(
+        `qualified publication exceeded its ${budgetMs}ms budget during final reconciliation`,
+        "qualified-publication",
+      );
+    }
+    const receipt = publicationReceipt(candidate, options.sourceRunId, phases, started, ended, "passed");
+    emit({ event: "passed", phase: "qualified-publication", receipt });
+    return receipt;
+  } catch (error) {
+    const ended = now();
+    const firstFailure = {
+      owner: error?.owner ?? "qualified-publication",
+      phase: "qualified-publication",
+      detail: redactPublicationDiagnostic(
+        error instanceof Error ? error.message : String(error),
+        options.candidateDirectory,
+      ),
+    };
+    const receipt = publicationReceipt(candidate, options.sourceRunId, phases, started, ended, "failed", firstFailure);
+    emit({ event: "failed", phase: "qualified-publication", firstFailure, receipt });
+    if (error && typeof error === "object") {
+      error.firstFailure ??= firstFailure;
+      error.publicationReceipt = receipt;
+    }
+    throw error;
+  }
+}
+
+function writePublicationReceipt(file, receipt) {
+  fs.writeFileSync(path.resolve(file), canonicalJson(receipt), {
+    encoding: "utf8",
+    mode: 0o400,
+    flag: "wx",
+  });
+}
+
+export function formatPublicationReceipt(receipt) {
+  const phases = receipt.phases.map((phase) => `${phase.name} ${phase.elapsedMs}ms${phase.reused ? " replayed" : ""}`).join("; ");
+  const bound = receipt.withinBudget ? "<" : ">=";
+  const failure = receipt.firstFailure
+    ? `; first failure ${receipt.firstFailure.owner}: ${receipt.firstFailure.detail}`
+    : "";
+  return `qualified publication ${receipt.outcome}; ${phases}; total ${receipt.elapsedMs}ms ${bound} ${receipt.budgetMs}ms; reconciled ${receipt.reconciled}${failure}; receipt ${receipt.receiptSha256}`;
 }
 
 function parseFlags(values) {
@@ -235,13 +499,53 @@ function parseFlags(values) {
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
-  if (command !== "qualification") {
-    throw new Error("usage: release-benchmark.mjs qualification --adapter development|stable --candidate-root DIR [--json]");
-  }
   const flags = parseFlags(args);
   const adapterName = flags.get("--adapter");
-  const candidateRoot = flags.get("--candidate-root");
   if (!RELEASE_CONTRACT.packages[adapterName]) throw new Error("--adapter must be development or stable");
+  if (command === "publication") {
+    const candidateDirectory = flags.get("--candidate-dir");
+    if (!candidateDirectory) throw new Error("publication requires --candidate-dir");
+    try {
+      const report = await runQualifiedPublication({
+        adapterName,
+        candidateDirectory,
+        sourceRunId: flags.get("--source-run-id"),
+      });
+      if (flags.get("--receipt-file")) writePublicationReceipt(flags.get("--receipt-file"), report);
+      process.stdout.write(`${flags.get("--json") ? JSON.stringify(report) : formatPublicationReceipt(report)}\n`);
+      return;
+    } catch (error) {
+      if (error?.publicationReceipt) {
+        if (flags.get("--receipt-file")) {
+          try {
+            writePublicationReceipt(flags.get("--receipt-file"), error.publicationReceipt);
+          } catch {}
+        }
+        process.stdout.write(`${flags.get("--json") ? JSON.stringify(error.publicationReceipt) : formatPublicationReceipt(error.publicationReceipt)}\n`);
+      }
+      if (error && typeof error === "object" && !error.firstFailure) {
+        let detail = redactPublicationDiagnostic(
+          error instanceof Error ? error.message : String(error),
+          candidateDirectory,
+        );
+        if (flags.get("--receipt-file")) {
+          detail = detail.replaceAll(path.resolve(flags.get("--receipt-file")), "<private>");
+        }
+        error.firstFailure = {
+          owner: error.owner ?? "publication-preflight",
+          phase: "qualified-publication",
+          detail,
+        };
+      }
+      throw error;
+    }
+  }
+  if (command !== "qualification") {
+    throw new Error(
+      "usage: release-benchmark.mjs <qualification --candidate-root DIR|publication --candidate-dir DIR> --adapter development|stable [--json]",
+    );
+  }
+  const candidateRoot = flags.get("--candidate-root");
   if (!candidateRoot) throw new Error("--candidate-root is required");
   const root = path.resolve(candidateRoot);
   if (!fs.statSync(root).isDirectory()) throw new Error("--candidate-root must be an existing external directory");

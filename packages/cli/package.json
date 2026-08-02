@@ -47,6 +47,7 @@
     "release:approve": "node scripts/release-qualification.mjs approval --adapter development",
     "release:attest": "node scripts/release-qualification.mjs attest --adapter development",
     "release:benchmark:qualification": "node scripts/release-benchmark.mjs qualification",
+    "release:publish:qualified": "node scripts/release-benchmark.mjs publication --adapter development",
     "release:stage": "node scripts/publication-transaction.mjs stage development --approve",
     "release:promote": "node scripts/publication-transaction.mjs promote development --approve",
     "verify:targeted": "node scripts/verify-lane.mjs policy targeted",

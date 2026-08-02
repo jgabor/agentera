@@ -5,11 +5,11 @@
     "preparation": "Preparation is pure and registry-independent. It accepts an explicit target version and source commit, changes only package version and agentera.gitRef, and leaves the diff for review and commit.",
     "sourceQualification": "Source qualification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
     "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
-    "publication": "Registry publication consumes the retained candidate bytes. It stages an absent exact version on its candidate tag, runs exact-version checks before promotion, then moves the expected tag forward. It never reconstructs an artifact or rolls a tag back.",
+    "publication": "Registry publication consumes the retained candidate bytes through one measured stage, independent exact-version L2, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source qualification, or rolls a tag back.",
     "approval": "Registry mutation requires an explicit approval bound to the candidate receipt digest, target version, integrity, package, registry, and tag. A branch push is never approval.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
     "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
-    "output": "Every phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. JSON is one object per line; human output carries the same fields. Diagnostics redact credentials and private absolute paths."
+    "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The qualified-publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
   },
   "packages": {
     "development": {
@@ -49,6 +49,21 @@
       "name": "Qualify release candidate",
       "path": ".github/workflows/qualify-candidate.yml",
       "ref": "refs/heads/feat/v3"
+    },
+    "publicationRunBinding": {
+      "beforeArtifactDownload": [
+        "run.id",
+        "run.repository.full_name",
+        "run.head_repository.full_name",
+        "run.name",
+        "run.path",
+        "run.head_branch",
+        "run.head_sha",
+        "run.event",
+        "run.conclusion"
+      ],
+      "refRule": "qualificationWorkflow.ref is a full refs/heads branch ref; run.head_branch must equal its exact branch name",
+      "beforeEnvironmentApproval": "The content-validated candidate receipt metadataCommit must equal the API-backed run.head_sha"
     }
   },
   "qualification": {
@@ -167,8 +182,27 @@
     "fixture": "clean committed checkout and an external empty candidate directory; no tracked or checkout-local generated candidate files.",
     "cacheNetwork": "Preflight uses no registry call. Qualification and each smoke use a new empty HOME, npm cache, user config, and global config; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
     "repetitions": 3,
-    "statistic": "median elapsed milliseconds over exactly three cold-cache repetitions; the executable coordinator records every phase and owner duration, executed/reused state, and reconciled phase totals.",
-    "coordinator": "packages/cli/scripts/release-benchmark.mjs runs preflight and source-plus-candidate qualification only. It never receives npm credentials or invokes registry mutation. It can enforce the qualified-publication bound only for separately recorded approved transaction timing; that transaction is never invoked by the qualification benchmark.",
+    "statistic": "Qualification reports median elapsed milliseconds over exactly three cold-cache repetitions. Qualified publication reports one actual approved transaction because registry mutation is not a benchmark repetition; replays run the same measured envelope and report reused registry phases.",
+    "coordinator": "packages/cli/scripts/release-benchmark.mjs has separate qualification and publication commands. qualification runs only preflight and source-plus-candidate qualification and never receives npm credentials. publication runs only the approved stage, independent exact-version L2, and promote commands, measures them with one monotonic deadline, and never runs source qualification.",
+    "qualifiedPublication": {
+      "command": "node packages/cli/scripts/release-benchmark.mjs publication --adapter ADAPTER --candidate-dir DIR --receipt-file FILE",
+      "sequence": [
+        "stage retained bytes on the candidate tag, wait for exact integrity convergence, and observe an isolated exact-version registry smoke",
+        "run an independent exact-version L2 consumer check while the public tag is unchanged",
+        "promote the expected tag forward, wait for tag and integrity convergence, and observe the final exact-version registry smoke"
+      ],
+      "receiptBindings": [
+        "candidate_receipt_sha256",
+        "metadata_commit",
+        "package",
+        "version",
+        "artifact_sha256",
+        "artifact_integrity",
+        "source_run_id"
+      ],
+      "timing": "The coordinator measures commands with a monotonic clock. Caller-supplied elapsed data is not accepted. Component floors plus unattributed elapsed time must equal the measured total, and total elapsed time must be strictly less than qualifiedPublicationMs.",
+      "failure": "The first child failure label or timeout owner is retained, later phases do not start, and no rollback is attempted. A retry uses the same exact candidate; stage and promote replay matching registry state without upload or backward tag movement."
+    },
     "timeouts": {
       "preflightMs": 30000,
       "sourceQualificationMs": 300000,

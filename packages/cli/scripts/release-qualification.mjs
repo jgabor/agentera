@@ -798,17 +798,80 @@ function validRunId(value) {
   return typeof value === "string" && /^[1-9]\d{0,19}$/.test(value);
 }
 
-function qualificationWorkflowIdentity() {
+export function qualificationWorkflowIdentity() {
   const ci = RELEASE_CONTRACT.ci;
   const workflow = ci?.qualificationWorkflow;
-  if (!ci?.repository || !workflow?.name || !workflow?.path || !workflow?.ref) {
+  if (
+    !ci?.repository
+    || !workflow?.name
+    || !workflow?.path
+    || typeof workflow?.ref !== "string"
+    || !workflow.ref.startsWith("refs/heads/")
+    || workflow.ref.length === "refs/heads/".length
+  ) {
     throw new Error("release publication contract has no qualification workflow identity");
   }
   return {
     repository: ci.repository,
     workflow: workflow.name,
+    workflowPath: workflow.path,
+    ref: workflow.ref,
+    branch: workflow.ref.slice("refs/heads/".length),
     workflowRef: `${ci.repository}/${workflow.path}@${workflow.ref}`,
   };
+}
+
+export function validateQualificationWorkflowRun(run, requestedRunId) {
+  const expected = qualificationWorkflowIdentity();
+  const expectedPaths = new Set([
+    expected.workflowPath,
+    `${expected.workflowPath}@${expected.branch}`,
+  ]);
+  if (
+    !Number.isSafeInteger(requestedRunId)
+    || requestedRunId < 1
+    || run?.id !== requestedRunId
+    || run.repository?.full_name !== expected.repository
+    || run.head_repository?.full_name !== expected.repository
+    || run.name !== expected.workflow
+    || !expectedPaths.has(run.path)
+    || run.head_branch !== expected.branch
+    || run.event !== "workflow_dispatch"
+    || run.conclusion !== "success"
+    || typeof run.head_sha !== "string"
+    || !/^[0-9a-f]{40}$/.test(run.head_sha)
+  ) {
+    throw new Error(
+      "source_run_id is not a successful contracted qualification run at the configured repository, workflow, and branch",
+    );
+  }
+  return {
+    runId: String(requestedRunId),
+    headSha: run.head_sha,
+    ref: expected.ref,
+  };
+}
+
+export function validateCandidateRunBinding(receipt, expectedReceiptSha256, runHeadSha) {
+  validReceiptDigest(receipt, "candidate receipt");
+  if (receipt.kind !== "candidate") {
+    throw new Error("candidate receipt kind is invalid");
+  }
+  if (
+    typeof expectedReceiptSha256 !== "string"
+    || !/^[0-9a-f]{64}$/.test(expectedReceiptSha256)
+    || receipt.receiptSha256 !== expectedReceiptSha256
+  ) {
+    throw new Error("candidate receipt digest does not match the explicit workflow approval");
+  }
+  if (
+    typeof runHeadSha !== "string"
+    || !/^[0-9a-f]{40}$/.test(runHeadSha)
+    || receipt.metadataCommit !== runHeadSha
+  ) {
+    throw new Error("candidate metadata commit does not match the API-backed qualification run head SHA");
+  }
+  return { metadataCommit: receipt.metadataCommit, candidateReceiptSha256: receipt.receiptSha256 };
 }
 
 function assertQualificationWorkflowEnvironment(environment) {
