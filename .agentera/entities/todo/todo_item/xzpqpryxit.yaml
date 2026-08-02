@@ -11,4 +11,4 @@ record:
       description: "[fix:3.0.0] Migrate lifecycle ownership IDs so declared cleanup matches installed records. `agentera upgrade --legacy-cleanup codex.agent-descriptor.status --dry-run` looked up `codex.agent-descriptor.status`, but the journal records the exact file as `codex.agents.status`; the CLI falsely classified `~/.codex/agents/status.toml` as unowned. Add ID alias or migration coverage and exact replay tests for every descriptor."
       severity: critical
       status: open
-      order: 7
+      order: 6

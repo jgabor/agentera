@@ -15,6 +15,7 @@ import { canonicalEntityEnvelope, validateEntityState } from "../../src/state/en
 import { executeStateWrite } from "../../src/state/write/transaction.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { buildExplain } from "../../src/state/write/explain.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 const roots: string[] = [];
 function project(entity = true): string {
@@ -196,6 +197,32 @@ describe("decision entity authority", () => {
     expect(JSON.parse(out).entries[0].id).toBe("aaaaaaaaaa"); out = "";
     expect(runStateGet("decisions", ["--number", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(2);
     expect(JSON.parse(out).error.message).toMatch(/requires --id/);
+  });
+
+  it("preserves and shell-quotes topic filters in executable continuations", () => {
+    const root = project();
+    const topic = "architecture alignment '$HOME'; $(printf injected) $PATH";
+    base(root, "aaaaaaaaaa", topic);
+    base(root, "bbbbbbbbbb", topic);
+    let out = "";
+    expect(runStateList("decisions", ["--topic", topic, "--ids-only", "--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
+    const first = JSON.parse(out);
+    const argv = shellCommandArgs(first.retrieval.continue);
+    expect(argv).toEqual(["state", "decisions", "list", "--topic", topic, "--ids-only", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"]);
+    out = "";
+    expect(runStateList("decisions", argv.slice(3), { out: (text) => { out += text; } }, root)).toBe(0);
+    const second = JSON.parse(out);
+    expect(new Set([first.entries[0].id, second.entries[0].id])).toEqual(new Set(["aaaaaaaaaa", "bbbbbbbbbb"]));
+    expect(second).toMatchObject({ filters: { topic }, counts: { candidate: 2, returned: 1, omitted: 0, continuation: 0 } });
+  });
+
+  it("rejects near-prefix selector flag typos", () => {
+    const root = project(); base(root);
+    for (const typo of ["--fieldsx", "--ids-onlyx"]) {
+      let out = "";
+      expect(runStateList("decisions", [typo, "choice", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(2);
+      expect(JSON.parse(out).error).toMatchObject({ class: "invalid_request", message: `unrecognized argument '${typo}'` });
+    }
   });
 
   it("explains only bare selectors and base hashes for entity mutations", () => {

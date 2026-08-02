@@ -3,7 +3,6 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { canonicalRecordJson, decisionOverlayContract } from "./archiveDiscovery.js";
-import { serializedProjectionBytes } from "./projectionPolicy.js";
 import { requestedSatisfaction, validateTransition } from "./decisionOverlay.js";
 import { decisionRevisionContract } from "./decisionRevision.js";
 import { decisionLegacyCoexistence, knownLegacyConfidenceCaveat } from "./decisionLegacyValidation.js";
@@ -15,6 +14,8 @@ import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.j
 import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEntityRead.js";
 import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./listCursor.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
+import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListSelectorInput } from "./entityListProjection.js";
+import { shellQuoteArgument } from "../core/shell.js";
 import { normalizeDecisionRecordInput } from "./write/input.js";
 import { detectStateModeBinding } from "./stateMode.js";
 
@@ -308,17 +309,20 @@ function decode(token: string, root: string, authorityPath: string): JsonObject 
   try { return decodeListCursor(token, root, authorityPath); }
   catch { throw failure("cursor_invalid", "decisions cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
 }
-export function listDecisionEntities(root: string, limit?: number, topic?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities> } = {}): JsonObject {
+export function listDecisionEntities(root: string, limit?: number, topic?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities>; selector?: EntityListSelectorInput } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw failure("invalid_request", `decisions list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.");
   const all = decisionEntities(root, sourceRoot, options.discovery); let bases = all.filter((entity) => [BASE, SUMMARY].includes(entity.boundary ?? "")).sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
   if (topic) { const needle = topic.toLowerCase(); bases = bases.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
+  const format = options.format ?? "json";
+  const projectionOptions = { artifact: ARTIFACT, boundary: BASE, format, maxUtf8Bytes: declared.maxUtf8Bytes, getCommand: "agentera state decisions get --id ID --format json", syntax: "agentera state decisions list [--limit N] [--cursor TOKEN] [--ids-only|--fields FIELDS] --format json", selector: options.selector };
+  const selector = resolveEntityListSelector(options.selector, bases.map((entity) => listEntry(root, entity, all, sourceRoot)), projectionOptions); const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, bases, all, sourceRoot, topic, declared.entityRoot); let start = 0;
-  if (cursor) { const value = decode(cursor, root, declared.authorityPath); if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null)) throw failure("cursor_snapshot_unavailable", "decisions changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot."); const found = bases.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1; }
-  let selected = bases.slice(start, start + effectiveLimit); let trimmed = false;
-  const response = (): JsonObject => { const remaining = bases.length - start - selected.length; const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, topic: topic ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined; return { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining || bases.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => listEntry(root, entity, all, sourceRoot)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: bases.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next, retrieval: { continue: `agentera state decisions list --limit ${effectiveLimit} --cursor ${next} --format json`, get: "agentera state decisions get --id ID --format json" } } : {}) }; };
-  let result = response(); const bytes = (): number => serializedProjectionBytes(result, options.format === "text" ? "yaml" : options.format ?? "json");
-  while (bytes() > declared.maxUtf8Bytes && selected.length) { selected = selected.slice(0, -1); trimmed = true; result = response(); }
-  if (!selected.length && bases.length > start) throw failure("unsupported_state", `one full decision cannot fit the ${declared.maxUtf8Bytes}-byte list budget`, "Use exact get by ID.");
-  return result;
+  if (cursor) { const value = decode(cursor, root, declared.authorityPath); if (value.selector !== selectorKey) throw failure("cursor_invalid", "decisions cursor selectors do not match this request", "Repeat the original selector, or omit --cursor to restart from the current snapshot."); if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null)) throw failure("cursor_snapshot_unavailable", "decisions state or filters changed after this cursor snapshot", "Repeat the original filters, or omit --cursor to restart from the current snapshot."); const found = bases.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1; }
+  const selected = bases.slice(start, start + effectiveLimit);
+  const remaining = bases.length - start - selected.length; const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, selector: selectorKey, topic: topic ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
+  const selectorFlags = entityListSelectorFlags(selector);
+  const filterFlags = topic ? ` --topic ${shellQuoteArgument(topic)}` : "";
+  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining || bases.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => listEntry(root, entity, all, sourceRoot)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: bases.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" }, retrieval: { get: projectionOptions.getCommand, ...(next ? { continue: `agentera state decisions list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) };
+  return projectEntityList(response, selector, projectionOptions);
 }

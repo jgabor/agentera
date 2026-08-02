@@ -48,15 +48,15 @@ const EXPECTED_FAILURES = [
 
 const EXPECTED_COMMANDS = {
   plan_tasks: {
-    list: "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
+    list: "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json",
     get: "agentera state plan tasks get --id ID --format json",
   },
   plans: {
-    list: "agentera state plan list [--limit N] [--cursor TOKEN] --format json",
+    list: "agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json",
     get: "agentera state plan get --id ID --format json",
   },
   experiments: {
-    list: "agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json",
+    list: "agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json",
     get: "agentera state experiments get --objective OBJECTIVE_ID --number N --format json",
     publish: "agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json",
   },
@@ -177,7 +177,11 @@ export function validateStateRetrievalAuthority(value: Record<string, unknown>):
   if (outputBounds.maximum_limit !== 100) errors.push("retrieval.output_bounds.maximum_limit");
   if (outputBounds.max_serialized_utf8_bytes !== 32_768) errors.push("retrieval.output_bounds.max_serialized_utf8_bytes");
   if (outputBounds.scalar_truncation !== "forbidden") errors.push("retrieval.output_bounds.scalar_truncation");
-  if (outputBounds.omission_unit !== "whole_entries") errors.push("retrieval.output_bounds.omission_unit");
+  if (outputBounds.omission_unit !== "candidates_beyond_the_summary_row_window") errors.push("retrieval.output_bounds.omission_unit");
+  if (outputBounds.optional_detail !== "degrade_before_any_summary_row_omission") errors.push("retrieval.output_bounds.optional_detail");
+  const summaryProjection = mapping(mapping(retrieval.envelope).bounded_summary_projection);
+  if (summaryProjection.cardinality_owner !== "summary_rows_after_filters_and_cursor") errors.push("retrieval.envelope.bounded_summary_projection.cardinality_owner");
+  if (summaryProjection.summary_required_fields === undefined) errors.push("retrieval.envelope.bounded_summary_projection.summary_required_fields");
 
   const identities = mapping(retrieval.identity);
   for (const name of ["plan", "task", "objective", "experiment"]) {

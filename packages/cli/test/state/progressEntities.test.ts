@@ -441,8 +441,8 @@ describe("progress entity authority", () => {
     appendProgressEntity(request(root, "new", "2026-07-17 12:00"), { id: "dddddddddd" });
     expect(() => listProgressEntities(root, 2, {}, first.next_cursor)).toThrow(/source changed/);
 
-    const filtered = listProgressEntities(root, 1, { status: "feat" }) as any;
-    expect(filtered.retrieval.continue).toContain('--status "feat"');
+    const filtered = listProgressEntities(root, 1, { topic: "deliver", status: "feat" }, undefined, { selector: { idsOnly: true } }) as any;
+    expect(filtered.retrieval.continue).toMatch(/^agentera state progress list --topic 'deliver' --status 'feat' --ids-only --limit 1 --cursor \S+ --format json$/);
 
     const authorityPath = path.resolve(import.meta.dirname, "../../../..", "references/artifacts/state-storage-authority.yaml");
     const prior = decodeListCursor(first.next_cursor, root, authorityPath) as any;
@@ -617,11 +617,16 @@ describe("progress entity authority", () => {
     expect(() => listProgressEntities(root, 20)).toThrow(/corrupt/);
   });
 
-  it("refuses scalar truncation when one canonical entry exceeds the list budget", () => {
+  it("degrades oversized optional detail without dropping the summary row", () => {
     const root = project();
     activate(root);
     appendProgressEntity(request(root, "x".repeat(40_000)), { id: "aaaaaaaaaa" });
-    expect(() => listProgressEntities(root, 20)).toThrow(/cannot fit.*list budget/);
+    expect(listProgressEntities(root, 20)).toMatchObject({
+      status: "degraded",
+      entries: [{ id: "aaaaaaaaaa", retrieval: { get: "agentera state progress get --id aaaaaaaaaa --format json" } }],
+      counts: { candidate: 1, returned: 1, omitted: 0 },
+      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 1 },
+    });
     expect((getProgressEntity(root, "aaaaaaaaaa") as any).entry.record.what).toHaveLength(40_000);
   });
 

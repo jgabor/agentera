@@ -1,0 +1,16 @@
+id: bmxcfyifki
+artifact: progress
+record:
+  timestamp: 2026-08-02 03:14
+  type: fix
+  phase: build
+  what: Repaired Audit attempt 1 filtered continuation and strict selector parsing failures for ybpdvkidaq.
+  context:
+    intent: Correct only accepted ybpdvkidaq Audit attempt 1 findings.
+    constraints: No commit, PASS evaluation, task completion, TODO resolution, NEXT movement, version, release, publish, tag, push, dependency, or direct entity edit.
+    scope: Shared POSIX argument quoting, continuation filter/family preservation, exact selector parsing, and focused cross-family regression coverage.
+  inspiration: Persisted evaluation ybpdvkidaq-audit-1 FAIL identified missing decision topics, unsafe health dimensions, and near-prefix selector acceptance.
+  discovered: Continuation builders independently formatted active filters; decisions omitted topic, health emitted dimension without quoting, and generic list parsing used prefix rather than exact-or-equals flag matching.
+  verified: "Audit attempt 1 remains persisted. Executable decision and health continuation tests used topic/dimension value architecture alignment '$HOME'; $(printf injected) $PATH, parsed each generated command through /bin/sh, preserved exact filters and selectors, returned two unique rows with no skip/duplicate, and ended with continuation=0. Structural tests cover progress topic+status, plan status, plan-task plan ID, experiments objective+topic+status, TODO severity+status, and docs topic+status in deterministic order; objective has no active list filter or family identifier. Near-prefix --fieldsx and --ids-onlyx tests reject with invalid_request, and the rebuilt CLI runtime returned exit 2 for --fieldsx. Prior cardinality proof remains: rebuilt local CLI returned 100/100 degraded summaries in 18,519 bytes with omitted=0. Verification: six focused files 192 passed; added experiment filter test 1 passed/13 skipped; full source lane before that test-only addition 225 files, 3133 passed/1 skipped; typecheck/build passed; isolated state validation passed for 104 entities; capability-contract, compact, and git diff --check passed."
+  next: Prime owns the next Audit evaluation and task/TODO lifecycle transitions.
+  publication_order: 40

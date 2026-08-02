@@ -1,7 +1,5 @@
 import path from "node:path";
 
-import YAML from "yaml";
-
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
@@ -21,6 +19,8 @@ import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "./lis
 import { localDate } from "./write/assign.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
+import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListSelectorInput } from "./entityListProjection.js";
+import { shellQuoteArgument } from "../core/shell.js";
 
 const ARTIFACT = "health";
 const BOUNDARY = "health_audit";
@@ -246,33 +246,33 @@ function decode(token: string, root: string, authorityPath: string): JsonObject 
   try { return decodeListCursor(token, root, authorityPath); }
   catch { throw listFailure("cursor_invalid", "health cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
 }
-function serializedBytes(value: JsonObject, format: string): number { return Buffer.byteLength(format === "json" ? `${JSON.stringify(value, null, 2)}\n` : YAML.stringify(value)); }
-
-export function listHealthEntities(root: string, limit?: number, dimension?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities> } = {}): JsonObject {
+export function listHealthEntities(root: string, limit?: number, dimension?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities>; selector?: EntityListSelectorInput } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw listFailure("invalid_request", `health list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", 2);
   const all = healthEntities(root, sourceRoot, options.discovery);
   let filtered = [...all].sort(compareHealthEntities);
   if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
+  const format = options.format ?? "json"; const projectionOptions = { artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: declared.maxUtf8Bytes, getCommand: "agentera state health get --id ID --format json", syntax: "agentera state health list [--limit N] [--cursor TOKEN] [--ids-only|--fields FIELDS] --format json", selector: options.selector };
+  const selector = resolveEntityListSelector(options.selector, filtered.map((entity) => entry(root, entity)), projectionOptions); const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, filtered, dimension, declared.entityRoot); let start = 0;
   if (cursor) {
     const value = decode(cursor, root, declared.authorityPath);
-    if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.dimension !== (dimension ?? null)) throw listFailure("cursor_snapshot_unavailable", "health changed after this cursor snapshot", "Omit --cursor to restart from the current snapshot.");
+    if (value.selector !== selectorKey) throw listFailure("cursor_invalid", "health cursor selectors do not match this request", "Repeat the original selector, or omit --cursor to restart from the current snapshot.");
+    if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.dimension !== (dimension ?? null)) throw listFailure("cursor_snapshot_unavailable", "health state or filters changed after this cursor snapshot", "Repeat the original filters, or omit --cursor to restart from the current snapshot.");
     const found = filtered.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw listFailure("cursor_snapshot_unavailable", "health cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1;
   }
-  let selected = filtered.slice(start, start + effectiveLimit); let trimmed = false;
+  const selected = filtered.slice(start, start + effectiveLimit);
   const response = (): JsonObject => {
     const remaining = filtered.length - start - selected.length;
-    const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, dimension: dimension ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
+    const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, selector: selectorKey, dimension: dimension ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
+    const selectorFlags = entityListSelectorFlags(selector);
     return {
       schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining || filtered.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
       counts: { total: filtered.length, returned: selected.length, remaining }, filters: { dimension: dimension ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: filtered.length },
       source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: filtered.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
-      ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next, retrieval: { continue: `agentera state health list --limit ${effectiveLimit}${dimension ? ` --dimension ${dimension}` : ""} --cursor ${next} --format json`, get: "agentera state health get --id ID --format json" } } : {}),
+      retrieval: { get: projectionOptions.getCommand, ...(next ? { continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next} --format json` } : {}) },
+      ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}),
     };
   };
-  let result = response();
-  while (serializedBytes(result, options.format ?? "json") > declared.maxUtf8Bytes && selected.length) { selected = selected.slice(0, -1); trimmed = true; result = response(); }
-  if (!selected.length && filtered.length > start) throw listFailure("unsupported_state", `one full health entity cannot fit the ${declared.maxUtf8Bytes}-byte list budget`, "Use exact get by ID for the full canonical entity.");
-  return result;
+  return projectEntityList(response(), selector, projectionOptions);
 }

@@ -4,6 +4,7 @@ import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getExperimentEntity, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
+import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -46,16 +47,21 @@ function value(argv: string[], index: number, name: string): { value: string; ne
   return { value: next, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; objective?: string; id?: string; limit: number; cursor?: string } {
+function parse(argv: string[], verb: "list" | "get"): { format: Format; objective?: string; id?: string; limit: number; cursor?: string; selector: EntityListSelectorInput } {
   let format: Format = "text";
   let objective: string | undefined;
   let id: string | undefined;
   let limit = 20;
   let cursor: string | undefined;
+  const selector: EntityListSelectorInput = {};
   const seen = new Set<string>();
   for (let index = 0; index < argv.length;) {
     const token = argv[index]!;
-    const allowed = verb === "list" ? ["--format", "--objective", "--limit", "--cursor"] : ["--format", "--objective", "--id"];
+    if (verb === "list" && token === "--ids-only") {
+      if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
+      selector.idsOnly = true; index += 1; continue;
+    }
+    const allowed = verb === "list" ? ["--format", "--objective", "--limit", "--cursor", "--fields"] : ["--format", "--objective", "--id"];
     const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
     if (!name) throw failure(`unrecognized argument '${token}'`, verb);
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
@@ -70,6 +76,7 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
     } else if (name === "--objective") objective = parsed.value;
     else if (name === "--id") id = parsed.value;
     else if (name === "--cursor") cursor = parsed.value;
+    else if (name === "--fields") selector.fields = parsed.value;
     else {
       if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
       limit = Number(parsed.value);
@@ -77,7 +84,7 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
   }
   if (verb === "list" && !objective) throw failure("--objective is required", verb);
   if (verb === "get" && !id) throw failure("--id is required", verb);
-  return { format, objective, id, limit, cursor };
+  return { format, objective, id, limit, cursor, selector };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
@@ -102,7 +109,7 @@ export function runExperimentRecords(argv: string[], io: Io): number {
   try {
     const args = parse(argv.slice(1), verb);
     const response = verb === "list"
-      ? listExperimentEntities(process.cwd(), args.objective!, args.limit, args.cursor, { format: args.format })
+      ? listExperimentEntities(process.cwd(), args.objective!, args.limit, args.cursor, { format: args.format, selector: args.selector })
       : getExperimentEntity(process.cwd(), args.id!, args.objective);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, output);

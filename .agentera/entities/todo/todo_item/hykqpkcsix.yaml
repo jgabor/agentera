@@ -2,13 +2,17 @@ id: hykqpkcsix
 artifact: todo
 record:
   severity: critical
-  status: open
-  description: "[fix:3.0.0] **NEXT** Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation."
+  status: resolved
+  description: "[fix:3.0.0] Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation."
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] **NEXT** Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation."
+      description: "[fix:3.0.0] Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation."
+      status: resolved
+      order: 78
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Predictable bounded summary retrieval passed independent Audit
+    date: 2026-08-02

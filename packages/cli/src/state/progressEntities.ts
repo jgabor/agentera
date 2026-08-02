@@ -38,6 +38,8 @@ import {
 } from "./progressPublicationOrder.js";
 import { detectStateModeBinding } from "./stateMode.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
+import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListSelectorInput } from "./entityListProjection.js";
+import { shellQuoteArgument } from "../core/shell.js";
 
 const ARTIFACT = "progress";
 const BOUNDARY = "progress_cycle";
@@ -59,6 +61,7 @@ interface ProgressCursor {
   order: string;
   filters: JsonObject;
   snapshot_id: string;
+  selector: string;
   after_key: string;
 }
 
@@ -66,6 +69,7 @@ export interface ProgressEntityListOptions {
   sourceRoot?: string;
   format?: "text" | "json" | "yaml";
   discovery?: ReturnType<typeof discoverEntities>;
+  selector?: EntityListSelectorInput;
 }
 
 export interface AppendProgressEntityOptions {
@@ -494,6 +498,7 @@ function decodeCursor(token: string, projectRoot: string, authorityPath: string)
     payload.order !== ORDER ||
     !mapping(payload.filters) ||
     typeof payload.snapshot_id !== "string" ||
+    typeof payload.selector !== "string" ||
     typeof payload.after_key !== "string"
   ) {
     throw listFailure(
@@ -515,11 +520,6 @@ function values(value: unknown): string[] {
 
 function filtersObject(filters: { topic?: string | null; status?: string | null }): JsonObject {
   return { topic: filters.topic ?? null, status: filters.status ?? null };
-}
-
-function serializedBytes(value: JsonObject, format: "text" | "json" | "yaml"): number {
-  const text = format === "json" ? JSON.stringify(value, null, 2) + "\n" : YAML.stringify(value);
-  return Buffer.byteLength(text, "utf8");
 }
 
 export function getProgressEntity(
@@ -630,6 +630,10 @@ export function listProgressEntities(
     );
   });
   const snapshot = snapshotId(projectRoot, filtered, filterState, contract.entityRoot);
+  const format = options.format ?? "json";
+  const projectionOptions = { artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: contract.maxUtf8Bytes, getCommand: "agentera state progress get --id ID --format json", syntax: "agentera state progress list [--limit N] [--cursor TOKEN] [--ids-only|--fields FIELDS] --format json", selector: options.selector };
+  const selector = resolveEntityListSelector(options.selector, filtered.map((entity) => entry(projectRoot, entity)), projectionOptions);
+  const selectorKey = entityListSelectorKey(selector);
   let afterKey = "";
   if (cursor) {
     const parsed = decodeCursor(cursor, projectRoot, contract.authorityPath);
@@ -638,6 +642,12 @@ export function listProgressEntities(
         "cursor_invalid",
         "progress cursor filters do not match this request",
         "Repeat the original filters or omit --cursor to establish a new snapshot.",
+      );
+    if (parsed.selector !== selectorKey)
+      throw listFailure(
+        "cursor_invalid",
+        "progress cursor selectors do not match this request",
+        "Repeat the original selector or omit --cursor to establish a new snapshot.",
       );
     if (parsed.snapshot_id !== snapshot)
       throw listFailure(
@@ -654,8 +664,7 @@ export function listProgressEntities(
       "progress cursor continuation no longer exists in the canonical snapshot",
       "Omit --cursor to restart from the current canonical entity snapshot.",
     );
-  let selected = filtered.slice(start, start + effectiveLimit);
-  let byteTrimmed = false;
+  const selected = filtered.slice(start, start + effectiveLimit);
   const makeResponse = (): JsonObject => {
     const remaining = filtered.length - start - selected.length;
     const nextCursor =
@@ -667,16 +676,15 @@ export function listProgressEntities(
               order: ORDER,
               filters: filterState,
               snapshot_id: snapshot,
+              selector: selectorKey,
               after_key: sortKey(selected.at(-1)!),
             },
             projectRoot,
             contract.authorityPath,
           )
         : undefined;
-    const filterFlags = [
-      ...(filters.topic ? ["--topic", JSON.stringify(filters.topic)] : []),
-      ...(filters.status ? ["--status", JSON.stringify(filters.status)] : []),
-    ].join(" ");
+    const filterFlags = `${filters.topic ? ` --topic ${shellQuoteArgument(filters.topic)}` : ""}${filters.status ? ` --status ${shellQuoteArgument(filters.status)}` : ""}`;
+    const selectorFlags = entityListSelectorFlags(selector);
     return {
       schemaVersion: "agentera.stateList.v1",
       command: "state progress list",
@@ -705,9 +713,9 @@ export function listProgressEntities(
         ? {
             omitted: true,
             omitted_count: remaining,
-            omission_reason: byteTrimmed ? "serialized_byte_budget" : "page_limit",
+            omission_reason: "page_limit",
             retrieval: {
-              continue: `agentera state progress list --limit ${effectiveLimit}${filterFlags ? ` ${filterFlags}` : ""} --cursor ${nextCursor} --format json`,
+              continue: `agentera state progress list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${nextCursor} --format json`,
               get: "agentera state progress get --id ID --format json",
             },
             next_cursor: nextCursor,
@@ -715,20 +723,7 @@ export function listProgressEntities(
         : {}),
     };
   };
-  const format = options.format ?? "json";
-  let response = makeResponse();
-  while (serializedBytes(response, format) > contract.maxUtf8Bytes && selected.length > 0) {
-    selected = selected.slice(0, -1);
-    byteTrimmed = true;
-    response = makeResponse();
-  }
-  if (selected.length === 0 && filtered.length > start)
-    throw listFailure(
-      "unsupported_state",
-      `one full progress entity cannot fit the ${contract.maxUtf8Bytes}-byte list budget`,
-      "Use exact get by ID for the full canonical entity, or reduce the entity scalar size before retrying.",
-    );
-  return response;
+  return projectEntityList(makeResponse(), selector, projectionOptions);
 }
 
 export function renderProgressEntityListText(response: JsonObject): string {

@@ -244,7 +244,11 @@ describe("lossless projection policy", () => {
     const payload = JSON.parse(output) as Record<string, any>;
     expect(rc).toBe(0);
     expect(Buffer.byteLength(output, "utf8")).toBeLessThanOrEqual(32768);
-    expect(payload.omitted).toBe(true);
-    expect(payload.omitted_count).toBeGreaterThan(0);
+    expect(payload).toMatchObject({
+      status: "degraded",
+      counts: { candidate: 12, returned: 12, omitted: 0, continuation: 0 },
+      projection: { detail: "summary", cardinality: "requested_rows" },
+      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 12 },
+    });
   });
 });

@@ -4,6 +4,7 @@ import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getPlanEntity, listPlanEntities } from "../../../state/planEntities.js";
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
+import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -46,18 +47,23 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string; id?: string; status?: string } {
+function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string; id?: string; status?: string; selector: EntityListSelectorInput } {
   let format: Format = "text";
   let limit = 20;
   let cursor: string | undefined;
   let plan: string | undefined;
   let id: string | undefined;
   let status: string | undefined;
+  const selector: EntityListSelectorInput = {};
   const seen = new Set<string>();
   for (let index = 0; index < argv.length;) {
     const token = argv[index]!;
-    const name = ["--format", "--limit", "--cursor", "--plan", "--id", "--status"].find((flag) => token === flag || token.startsWith(`${flag}=`));
-    if (!name || (verb === "list" && (name === "--plan" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor" || name === "--status"))) {
+    if (verb === "list" && token === "--ids-only") {
+      if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
+      selector.idsOnly = true; index += 1; continue;
+    }
+    const name = ["--format", "--limit", "--cursor", "--plan", "--id", "--status", "--fields"].find((flag) => token === flag || token.startsWith(`${flag}=`));
+    if (!name || (verb === "list" && (name === "--plan" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor" || name === "--status" || name === "--fields"))) {
       throw failure(`unrecognized argument '${token}'`, verb);
     }
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
@@ -73,13 +79,14 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
       if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
       limit = Number(parsed.value);
     } else if (name === "--cursor") cursor = parsed.value;
+    else if (name === "--fields") selector.fields = parsed.value;
     else if (name === "--status") {
       if (!["open", "complete", "archived"].includes(parsed.value)) throw failure(`invalid --status '${parsed.value}'`, verb);
       status = parsed.value;
     } else if (name === "--plan") plan = parsed.value;
     else id = parsed.value;
   }
-  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}), ...(id ? { id } : {}), ...(status ? { status } : {}) };
+  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}), ...(id ? { id } : {}), ...(status ? { status } : {}), selector };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
@@ -105,7 +112,7 @@ export function runPlans(argv: string[], io: Io): number {
     const args = parse(argv.slice(1), verb);
     if (verb === "get" && (!args.id || args.plan)) throw failure("entity mode requires --id ID and does not accept --plan", verb);
     const response = verb === "list"
-      ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format, ...(args.status ? { statuses: [args.status] } : {}) })
+      ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format, selector: args.selector, ...(args.status ? { statuses: [args.status] } : {}) })
       : getPlanEntity(process.cwd(), args.id!);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, output);

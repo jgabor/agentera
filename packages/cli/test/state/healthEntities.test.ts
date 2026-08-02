@@ -18,6 +18,7 @@ import { validateEntityState } from "../../src/state/entityStorage.js";
 import { buildExplain } from "../../src/state/write/explain.js";
 import { executeStateWrite } from "../../src/state/write/transaction.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 const roots: string[] = [];
 
@@ -215,6 +216,28 @@ describe("health entity authority", () => {
     expect(runStateList("health", ["--limit", "1", "--cursor", first.next_cursor, "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
     expect(JSON.parse(out).entries[0].id).toBe("bbbbbbbbbb");
     expect(runStateGet("health", ["--number", "1", "--format", "json"], { out: () => {} }, root)).toBe(2);
+  });
+
+  it("preserves and shell-quotes dimension filters in executable continuations", () => {
+    const root = project();
+    const dimension = "architecture alignment '$HOME'; $(printf injected) $PATH";
+    for (const [id, date] of [["aaaaaaaaaa", "2026-07-17"], ["bbbbbbbbbb", "2026-07-16"]]) {
+      const record = audit(date) as any;
+      record.dimensions_detail[0].summary = dimension;
+      const directory = path.join(root, ".agentera/entities/health/health_audit");
+      fs.mkdirSync(directory, { recursive: true });
+      fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "health", record }));
+    }
+    let out = "";
+    expect(runStateList("health", ["--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
+    const first = JSON.parse(out);
+    const argv = shellCommandArgs(first.retrieval.continue);
+    expect(argv).toEqual(["state", "health", "list", "--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"]);
+    out = "";
+    expect(runStateList("health", argv.slice(3), { out: (text) => { out += text; } }, root)).toBe(0);
+    const second = JSON.parse(out);
+    expect(new Set([first.entries[0].id, second.entries[0].id])).toEqual(new Set(["aaaaaaaaaa", "bbbbbbbbbb"]));
+    expect(second).toMatchObject({ filters: { dimension }, counts: { candidate: 2, returned: 1, omitted: 0, continuation: 0 } });
   });
 
   it("binds cursors to an exact snapshot", () => {

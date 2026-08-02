@@ -15,6 +15,7 @@ import { createPlanEntities } from "../../src/state/planEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
 import { buildExplain } from "../../src/state/write/explain.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -253,20 +254,20 @@ describe("plan and task entity authority", () => {
     let pageCount = 0;
     do {
       expect(command).toMatch(/^agentera state plan tasks list /);
-      const result = capture(root, command.split(" ").slice(1));
+      const result = capture(root, shellCommandArgs(command));
       expect(result.rc, result.err || result.out).toBe(0);
       expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32_768);
       const page = JSON.parse(result.out);
       expect(page.filters.plan).toBe(created.id);
       expect(page.snapshot.id).toEqual(expect.any(String));
       for (const task of page.entries) {
-        expect(task.record.plan).toBe(created.id);
         expect(expectedIds.has(task.id)).toBe(true);
         expect(observed.has(task.id)).toBe(false);
+        expect(task.retrieval.get).toBe(`agentera state plan tasks get --id ${task.id} --format json`);
         observed.add(task.id);
       }
       if (page.omitted) {
-        expect(page.omission_reason).toMatch(/serialized_byte_budget|page_limit/);
+        expect(page.omission_reason).toBe("page_limit");
         expect(page.omitted_count).toBeGreaterThan(0);
         expect(page.next_cursor).toEqual(expect.any(String));
         expect(page.retrieval.get).toBe("agentera state plan tasks get --id ID --format json");
@@ -274,7 +275,8 @@ describe("plan and task entity authority", () => {
       } else command = "";
       pageCount += 1;
     } while (command);
-    expect(pageCount).toBeGreaterThan(1);
+    expect(pageCount).toBe(1);
+    expect(observed.size).toBe(20);
     expect(observed).toEqual(expectedIds);
 
     const exact = capture(root, ["state", "plan", "tasks", "get", "--id", created.tasks[0].id, "--format", "json"]);
@@ -303,9 +305,9 @@ describe("plan and task entity authority", () => {
       const page = JSON.parse(first.out);
       expect(page).toMatchObject({ status: "degraded", filters: { plan: expected.id }, omitted: true, omitted_count: 1 });
       expect(page.entries[0].record.plan).toBe(expected.id);
-      expect(page.retrieval.continue).toMatch(/^agentera state plan tasks list --limit 1 --cursor /);
+        expect(page.retrieval.continue).toMatch(new RegExp(`^agentera state plan tasks list '${expected.id}' --limit 1 --cursor `));
 
-      const continued = capture(root, page.retrieval.continue.split(" ").slice(1));
+      const continued = capture(root, shellCommandArgs(page.retrieval.continue));
       expect(continued.rc, continued.err || continued.out).toBe(0);
       expect(JSON.parse(continued.out)).toMatchObject({
         status: "ok",
@@ -326,15 +328,55 @@ describe("plan and task entity authority", () => {
 
     const changed = capture(root, ["state", "plan", "set-status", "--plan", active.id, "--id", active.tasks[0].id, "--status", "complete", "--format", "json"]);
     expect(changed.rc, changed.err || changed.out).toBe(0);
-    const stale = capture(root, archivedPage.retrieval.continue.split(" ").slice(1));
+    const stale = capture(root, shellCommandArgs(archivedPage.retrieval.continue));
     expect(stale.rc).toBe(1);
     expect(JSON.parse(stale.out).error.class).toBe("cursor_snapshot_unavailable");
 
     const foreign = project();
     create(foreign, "foreign cursor", true);
-    const rejected = capture(foreign, archivedPage.retrieval.continue.split(" ").slice(1));
+    const rejected = capture(foreign, shellCommandArgs(archivedPage.retrieval.continue));
     expect(rejected.rc).toBe(1);
     expect(JSON.parse(rejected.out).error.class).toBe("cursor_invalid");
+  });
+
+  it("binds IDs-only and selected-field continuations without skips or duplicates", () => {
+    const root = project();
+    const created = create(root, "selector pagination", true);
+    const first = capture(root, ["state", "plan", "tasks", "list", "--limit", "1", "--ids-only", "--format", "json"]);
+    expect(first.rc, first.err || first.out).toBe(0);
+    const firstPage = JSON.parse(first.out);
+    expect(firstPage).toMatchObject({
+      projection: { selector: "ids_only", detail: "identity" },
+      counts: { candidate: 2, returned: 1, omitted: 1, continuation: 1 },
+      entries: [{ artifact: "plan", retrieval: { get: expect.stringMatching(/^agentera state plan tasks get --id [a-z]{10} --format json$/) } }],
+    });
+    expect(firstPage.entries[0]).not.toHaveProperty("record");
+    expect(firstPage.retrieval.continue).toContain("--ids-only");
+
+    const second = capture(root, shellCommandArgs(firstPage.retrieval.continue));
+    expect(second.rc, second.err || second.out).toBe(0);
+    const secondPage = JSON.parse(second.out);
+    const observed = [firstPage.entries[0].id, secondPage.entries[0].id];
+    expect(new Set(observed)).toEqual(new Set(created.tasks.map((task: any) => task.id)));
+    expect(secondPage).toMatchObject({ counts: { candidate: 2, returned: 1, omitted: 0, continuation: 0 }, projection: { selector: "ids_only" } });
+
+    const switched = capture(root, ["state", "plan", "tasks", "list", "--limit", "1", "--fields", "status", "--cursor", firstPage.next_cursor, "--format", "json"]);
+    expect(switched.rc).toBe(1);
+    expect(JSON.parse(switched.out).error).toMatchObject({ class: "cursor_invalid", recovery: expect.stringContaining("original selector") });
+
+    const fields = capture(root, ["state", "plan", "tasks", "list", "--fields", "status,name", "--format", "json"]);
+    expect(fields.rc, fields.err || fields.out).toBe(0);
+    const fieldsPage = JSON.parse(fields.out);
+    expect(fieldsPage.entries).toHaveLength(2);
+    expect(fieldsPage.entries[0]).toMatchObject({ id: expect.any(String), artifact: "plan", record: { name: expect.any(String), status: "pending" }, retrieval: { get: expect.any(String) } });
+    expect(fieldsPage.projection.fields).toEqual(["name", "status"]);
+
+    const invalid = capture(root, ["state", "plan", "tasks", "list", "--fields", "not_a_field", "--format", "json"]);
+    expect(invalid.rc).toBe(2);
+    expect(JSON.parse(invalid.out).error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("unsupported record field") });
+    const combined = capture(root, ["state", "plan", "tasks", "list", "--ids-only", "--fields", "status", "--format", "json"]);
+    expect(combined.rc).toBe(2);
+    expect(JSON.parse(combined.out).error.message).toContain("cannot be combined");
   });
 
   it("documents the positional plan selector in task-list diagnostics", () => {
@@ -698,6 +740,8 @@ describe("plan and task entity authority", () => {
     const filtered = capture(root, ["state", "plan", "list", "--status", "archived", "--limit", "100", "--format", "json"]);
     expect(filtered.rc, filtered.err || filtered.out).toBe(0);
     expect(JSON.parse(filtered.out)).toMatchObject({ counts: { total: 21, returned: 21 }, filters: { status: ["archived"] } });
+    const filteredPage = capture(root, ["state", "plan", "list", "--status", "archived", "--ids-only", "--limit", "1", "--format", "json"]);
+    expect(JSON.parse(filteredPage.out).retrieval.continue).toMatch(/^agentera state plan list --status 'archived' --ids-only --limit 1 --cursor \S+ --format json$/);
     const exact = capture(root, ["state", "plan", "get", "--id", archived[0].id, "--format", "json"]);
     expect(exact.rc, exact.err || exact.out).toBe(0);
     expect(JSON.parse(exact.out).entry.record.header.status).toBe("archived");

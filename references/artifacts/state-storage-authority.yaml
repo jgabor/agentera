@@ -73,31 +73,31 @@ entity_target:
     status: final
     commands:
       progress:
-        list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state progress get --id ID --format json
       decisions:
-        list: agentera state decisions list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state decisions get --id ID --format json
       health:
-        list: agentera state health list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state health get --id ID --format json
       plans:
-        list: agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] --format json
+        list: agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state plan get --id ID --format json
       plan_tasks:
-        list: agentera state plan tasks list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state plan tasks list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state plan tasks get --id ID --format json
       objective:
-        list: agentera state objective list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state objective get --id ID --format json
       experiments:
-        list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json
+        list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state experiments get --id ID --format json
       todo:
-        list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state todo list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state todo get --id ID --format json
       docs:
-        list: agentera state docs list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state docs list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state docs get --id ID --format json
     collections:
       - { artifact: progress, identity: id, classification: artifact }
@@ -201,7 +201,7 @@ entity_target:
           privacy: bounded_ordinal_without_time_identity_or_content
       retrieval:
         exact: agentera state progress get --id ID --format json
-        list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: timestamp_desc_then_publication_order_desc_then_id_asc
         semantic_recency: >-
           The first full progress cycle is latest. Timestamp remains the public
@@ -272,7 +272,7 @@ entity_target:
             Current confidence values and ordinary decision writes omit this metadata.
       retrieval:
         exact: agentera state decisions get --id ID --format json
-        list: agentera state decisions list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -363,7 +363,7 @@ entity_target:
               reconstructed chronology.
       retrieval:
         exact: agentera state health get --id ID --format json
-        list: agentera state health list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -431,7 +431,7 @@ entity_target:
               under this source-form rule; no semantic intent is inferred.
       retrieval:
         exact: agentera state plan get --id ID --format json
-        list: agentera state plan list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: created_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -465,7 +465,7 @@ entity_target:
         forbidden_fields: [id, artifact, stable_id, objective_id]
       retrieval:
         exact: agentera state objective get --id ID --format json
-        list: agentera state objective list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: created_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -490,7 +490,7 @@ entity_target:
         forbidden_fields: [id, artifact, number, experiment_number, stable_id, objective_id]
       retrieval:
         exact: agentera state experiments get --id ID --format json
-        list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json
+        list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -616,7 +616,7 @@ entity_target:
           todo_markdown_utf8_bytes: 1048576
       retrieval:
         exact: agentera state todo get --id ID --format json
-        list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state todo list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: severity_then_status_then_markdown_order_then_id
         default_limit: 20
         maximum_limit: 100
@@ -637,7 +637,7 @@ entity_target:
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
       retrieval:
         exact: agentera state docs get --id ID --format json
-        list: agentera state docs list [--limit N] [--cursor TOKEN] --format json
+        list: agentera state docs list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         ordering: path_then_id
         default_limit: 20
         maximum_limit: 100
@@ -809,7 +809,7 @@ entity_target:
             source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
         retrieval:
           exact: agentera state progress get --id ID --format json
-          list: agentera state progress list [--limit N] [--cursor TOKEN] --format json
+          list: agentera state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
           detail_availability: summary
           compatibility: degraded
           caveats: required
@@ -847,7 +847,7 @@ entity_target:
             source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
         retrieval:
           exact: agentera state decisions get --id ID --format json
-          list: agentera state decisions list [--limit N] [--cursor TOKEN] --format json
+          list: agentera state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
           detail_availability: summary
           compatibility: degraded
           caveats: required
@@ -881,7 +881,7 @@ entity_target:
             source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
         retrieval:
           exact: agentera state health get --id ID --format json
-          list: agentera state health list [--limit N] [--cursor TOKEN] --format json
+          list: agentera state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
           detail_availability: summary
           compatibility: degraded
           caveats: required
@@ -1261,6 +1261,54 @@ retrieval:
         timestamped or dated full rows and then by canonical ID ascending.
     counts_required_fields: [total, returned, remaining, omitted]
     status_values: [ok, degraded]
+    bounded_summary_projection:
+      cardinality_owner: summary_rows_after_filters_and_cursor
+      limit_semantics: >-
+        Return exactly min(requested limit, candidates remaining in the bound
+        snapshot) summary rows. Serialized-byte pressure may remove optional
+        full detail from those rows but never removes a summary row.
+      summary_required_fields: [id, artifact, retrieval.get]
+      todo_summary_additional_fields: [queue_rank]
+      queue_rank: >-
+        One-based position in the complete canonically ordered TODO candidate
+        queue before request filters. It is computed from the read snapshot and
+        does not persist, reorder, or add a public field to TODO.md.
+      optional_detail_degradation:
+        status: degraded
+        reason: optional_detail_byte_budget
+        row_omission: forbidden
+        scalar_truncation: forbidden
+        recovery: exact_get_pointer_per_summary_row
+      selectors:
+        ids_only:
+          flag: --ids-only
+          fields: [id, artifact, retrieval.get]
+          todo_additional_fields: [queue_rank]
+        fields:
+          flag: --fields COMMA_SEPARATED_RECORD_PATHS
+          validation: >-
+            Each lowercase dot path must exist in at least one record in the
+            filtered cursor snapshot. Duplicate or malformed paths and paths
+            absent from that snapshot are invalid_request. Paths are sorted
+            before projection and cursor binding; missing values in individual
+            rows remain absent.
+          identity_and_recovery_fields_always_present: true
+          scalar_truncation: forbidden
+        mutual_exclusion: ids_only_and_fields
+      byte_pressure:
+        ids_only_or_selected_fields: reject_without_partial_rows_or_fields
+        summary_rows: reject_without_partial_rows
+      metadata:
+        counts: [candidate, returned, omitted, continuation]
+        continuation: binds_collection_selectors_filters_order_and_snapshot
+        continuation_command: >-
+          Preserve every active family identifier, filter, selector, limit, and
+          cursor in deterministic grammar order. Quote every non-literal string
+          argument with the shared POSIX-shell argument primitive; generated
+          commands must be safe to paste and must not permit expansion or
+          injection through spaces, quotes, dollar signs, semicolons, or other
+          shell metacharacters.
+        exact_get: one_concrete_command_per_returned_row
   cursor:
     vocabulary: opaque_snapshot_cursor
     first_page: omit --cursor
@@ -1292,7 +1340,8 @@ retrieval:
     maximum_limit: 100
     max_serialized_utf8_bytes: 32768
     scalar_truncation: forbidden
-    omission_unit: whole_entries
+    omission_unit: candidates_beyond_the_summary_row_window
+    optional_detail: degrade_before_any_summary_row_omission
   identity:
     plan:
       canonical_format: 'bare ten-letter envelope ID'
@@ -1387,7 +1436,7 @@ retrieval:
           replacing the projection, as owned by experiment_archival.
   commands:
     plan_tasks:
-      list: agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json
+      list: agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
       get: agentera state plan tasks get --id ID --format json
       selectors:
         plan:
@@ -1400,14 +1449,14 @@ retrieval:
           get_required: true
           pattern: '^[a-z]{10}$'
     plans:
-      list: agentera state plan list [--limit N] [--cursor TOKEN] --format json
+      list: agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
       get: agentera state plan get --id ID --format json
       selectors:
         plan:
           get_required: true
           pattern: '^[a-z]{10}$'
     experiments:
-      list: agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] --format json
+      list: agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
       get: agentera state experiments get --objective OBJECTIVE_ID --number N --format json
       publish: agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json
       selectors:
@@ -2057,7 +2106,7 @@ api:
       compose immutable base, ordered revisions, and current satisfaction entities.
     exact_only: direct retrieval resolves one canonical entity ID without scanning unrelated records
   list:
-    command: agentera state <artifact-id> list [--limit N] [--cursor TOKEN] --format json
+    command: agentera state <artifact-id> list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
     examples:
       progress: agentera state progress list --limit 20 --format json
       decisions_next_page: agentera state decisions list --limit 20 --cursor TOKEN --format json

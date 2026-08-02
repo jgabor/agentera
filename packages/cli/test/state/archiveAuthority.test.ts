@@ -25,7 +25,7 @@ function authorityErrors(value: Record<string, any>): string[] {
   if (value.storage?.project_root?.archive_path_template !== ".agentera/archive/<artifact-id>/<entry-number>.yaml") errors.push("archive_path_template");
   if (value.envelope?.schema_version !== "agentera.stateArchiveEntry.v1") errors.push("envelope.schema_version");
   if (value.api?.direct_get?.command !== "agentera state <artifact-id> get --id ID --format json") errors.push("direct_get.command");
-  if (value.api?.list?.command !== "agentera state <artifact-id> list [--limit N] [--cursor TOKEN] --format json") errors.push("list.command");
+  if (value.api?.list?.command !== "agentera state <artifact-id> list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json") errors.push("list.command");
   if (value.api?.list?.maximum_limit < value.api?.list?.minimum_limit) errors.push("list.limit_range");
   if (!String(value.api?.cursor?.append_behavior ?? "").includes("excluded")) errors.push("cursor.append_behavior");
   if (value.compatibility?.classifications?.join(",") !== "complete,degraded,blocked,unsupported") errors.push("compatibility.classifications");

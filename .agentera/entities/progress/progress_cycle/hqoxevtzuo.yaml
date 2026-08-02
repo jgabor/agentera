@@ -1,0 +1,15 @@
+id: hqoxevtzuo
+artifact: progress
+record:
+  timestamp: 2026-08-02 02:47
+  type: fix
+  phase: build
+  what: Made bounded entity-list limits cardinality-stable with explicit summary degradation, selectors, queue rank, recovery, and continuation metadata.
+  context:
+    intent: Implement task ybpdvkidaq under the state-storage authority without lifecycle closeout.
+    constraints: No commit, version/release action, task completion, TODO resolution, NEXT movement, or direct entity edit; preserve four protected staged plan-task blobs.
+    scope: Shared public entity list projection, list parsers, cursor binding, TODO queue rank, authority, and focused regression coverage.
+  discovered: The shared list implementations trimmed full entities until serialized output fit, so --limit 100 could return fewer rows and call the result ordinary pagination success.
+  verified: "AC1/AC3: entityListProjection and CLI fixture probes returned exactly 100 of 100 stable summary rows in 18,519 bytes with status=degraded, optional_detail_byte_budget, omitted=0, and one concrete exact-get pointer per row; IDs-only returned 100 bounded rows. AC2: plan integration proved IDs-only and sorted selected fields, stable counts/order, selector-bound cursor restart guidance, exact-get recovery, and two-page continuation with no skip or duplicate; TODO integration proved queue_rank 1..5 without persisted Markdown ownership. AC4: focused tests proved success for IDs-only and selected fields plus bounded pressure rejection for each, invalid/duplicate/combined selector rejection, and full-detail degradation without row loss. Verification passed: 341 focused tests; complete source lane 225 files, 3130 passed/1 skipped; typecheck; build; isolated check validate state (100 entities); capability-contract validation; compact; git diff --check."
+  next: Prime owns Audit evaluation and task/TODO lifecycle transitions.
+  publication_order: 39

@@ -4,6 +4,7 @@ import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getPlanTaskEntity, listPlanTaskEntities } from "../../../state/planEntities.js";
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
+import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -46,22 +47,27 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
   }, 2);
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: string; limit: number; cursor?: string; id?: string } {
+function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: string; limit: number; cursor?: string; id?: string; selector: EntityListSelectorInput } {
   let format: Format = "text";
   let plan: string | undefined;
   let limit = 20;
   let cursor: string | undefined;
   let id: string | undefined;
+  const selector: EntityListSelectorInput = {};
   const seen = new Set<string>();
   for (let index = 0; index < argv.length;) {
     const token = argv[index];
+    if (verb === "list" && token === "--ids-only") {
+      if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
+      selector.idsOnly = true; index += 1; continue;
+    }
     if (verb === "list" && !token.startsWith("--")) {
       if (plan) throw failure(`unrecognized argument '${token}'`, verb);
       plan = token;
       index += 1;
       continue;
     }
-    const allowed = verb === "list" ? ["--format", "--limit", "--cursor"] : ["--format", "--id"];
+    const allowed = verb === "list" ? ["--format", "--limit", "--cursor", "--fields"] : ["--format", "--id"];
     const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
     if (!name) throw failure(`unrecognized argument '${token}'`, verb);
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
@@ -77,10 +83,11 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: s
       if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
       limit = Number(parsed.value);
     } else if (name === "--cursor") cursor = parsed.value;
+    else if (name === "--fields") selector.fields = parsed.value;
     else id = parsed.value;
   }
   if (verb === "get" && !id) throw failure("entity mode requires a bare ten-letter --id selector", verb);
-  return { format, limit, ...(plan ? { plan } : {}), ...(cursor ? { cursor } : {}), ...(id ? { id } : {}) };
+  return { format, limit, ...(plan ? { plan } : {}), ...(cursor ? { cursor } : {}), ...(id ? { id } : {}), selector };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
@@ -105,7 +112,7 @@ export function runPlanTasks(argv: string[], io: Io): number {
   try {
     const args = parse(argv.slice(1), verb);
     const response = verb === "list"
-      ? listPlanTaskEntities(process.cwd(), args.plan, args.limit, args.cursor, { format: args.format })
+      ? listPlanTaskEntities(process.cwd(), args.plan, args.limit, args.cursor, { format: args.format, selector: args.selector })
       : getPlanTaskEntity(process.cwd(), args.id!);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, output);

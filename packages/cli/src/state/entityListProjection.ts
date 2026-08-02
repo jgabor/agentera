@@ -1,0 +1,193 @@
+import type { JsonObject, JsonValue } from "../core/jsonValue.js";
+import { canonicalRecordJson } from "./archiveDiscovery.js";
+import { StateRetrievalFailure } from "./directRetrieval.js";
+import { serializedProjectionBytes } from "./projectionPolicy.js";
+import { shellQuoteArgument } from "../core/shell.js";
+
+export interface EntityListSelectorInput {
+  idsOnly?: boolean;
+  fields?: string;
+}
+
+export interface EntityListProjectionOptions {
+  artifact: string;
+  boundary: string;
+  format: string;
+  maxUtf8Bytes: number;
+  getCommand: string;
+  syntax: string;
+  selector?: EntityListSelectorInput;
+}
+
+export interface ResolvedEntityListSelector {
+  mode: "default" | "ids_only" | "fields";
+  fields: string[];
+}
+
+function mapping(value: unknown): value is JsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function fail(options: EntityListProjectionOptions, message: string, recovery: string, exitCode: 1 | 2): never {
+  throw new StateRetrievalFailure({
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: exitCode === 2 ? "invalid_request" : "unsupported_state",
+      message,
+      syntax: options.syntax,
+      example: options.syntax.replace(/ \[.*$/, " --limit 20 --format json"),
+      recovery,
+      artifact: options.artifact,
+    },
+  }, exitCode);
+}
+
+function fieldPaths(value: unknown, prefix = ""): string[] {
+  if (!mapping(value)) return [];
+  return Object.entries(value).flatMap(([name, child]) => {
+    const field = prefix ? `${prefix}.${name}` : name;
+    return mapping(child) ? [field, ...fieldPaths(child, field)] : [field];
+  });
+}
+
+function selectedValue(record: JsonObject, field: string): JsonValue | undefined {
+  let value: JsonValue | undefined = record;
+  for (const part of field.split(".")) {
+    if (!mapping(value) || !(part in value)) return undefined;
+    value = value[part];
+  }
+  return value;
+}
+
+function assignSelected(target: JsonObject, field: string, value: JsonValue): void {
+  const parts = field.split(".");
+  let current = target;
+  for (const part of parts.slice(0, -1)) {
+    if (!mapping(current[part])) current[part] = {};
+    current = current[part] as JsonObject;
+  }
+  current[parts.at(-1)!] = structuredClone(value);
+}
+
+export function resolveEntityListSelector(
+  input: EntityListSelectorInput | undefined,
+  entries: JsonObject[],
+  options: EntityListProjectionOptions,
+): ResolvedEntityListSelector {
+  if (input?.idsOnly && input.fields !== undefined) {
+    fail(options, "--ids-only and --fields cannot be combined", "Choose one bounded selector and retry; no state was changed.", 2);
+  }
+  if (input?.idsOnly) return { mode: "ids_only", fields: [] };
+  if (input?.fields === undefined) return { mode: "default", fields: [] };
+  const requested = input.fields.split(",").map((field) => field.trim());
+  if (!requested.length || requested.some((field) => !/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$/.test(field))) {
+    fail(options, "--fields must be a comma-separated list of record field paths", "Use lowercase record paths such as status or header.title; no state was changed.", 2);
+  }
+  if (new Set(requested).size !== requested.length) {
+    fail(options, "--fields contains a duplicate field path", "Remove duplicate field paths and retry; no state was changed.", 2);
+  }
+  const fields = [...requested].sort();
+  const available = [...new Set(entries.flatMap((entry) => fieldPaths(entry.record)))].sort();
+  const unsupported = fields.find((field) => !available.includes(field));
+  if (unsupported) {
+    fail(options, `unsupported record field '${unsupported}' for this filtered ${options.artifact} snapshot; available fields: ${available.join(", ") || "none"}`, "Choose a listed field or change the filters, then restart without --cursor; no state was changed.", 2);
+  }
+  return { mode: "fields", fields };
+}
+
+export function entityListSelectorKey(selector: ResolvedEntityListSelector): string {
+  return canonicalRecordJson({ mode: selector.mode, fields: selector.fields });
+}
+
+export function entityListSelectorFlags(selector: ResolvedEntityListSelector): string {
+  if (selector.mode === "ids_only") return " --ids-only";
+  if (selector.mode === "fields") return ` --fields ${shellQuoteArgument(selector.fields.join(","))}`;
+  return "";
+}
+
+function identityEntry(entry: JsonObject, getCommand: string): JsonObject {
+  const id = String(entry.id);
+  return {
+    id,
+    artifact: String(entry.artifact),
+    ...(Number.isSafeInteger(entry.queue_rank) ? { queue_rank: entry.queue_rank } : {}),
+    retrieval: { get: getCommand.replace("ID", id) },
+  };
+}
+
+function projectEntry(entry: JsonObject, selector: ResolvedEntityListSelector, getCommand: string): JsonObject {
+  const identity = identityEntry(entry, getCommand);
+  if (selector.mode === "ids_only" || selector.mode === "default") return identity;
+  const record: JsonObject = {};
+  for (const field of selector.fields) {
+    const value = mapping(entry.record) ? selectedValue(entry.record, field) : undefined;
+    if (value !== undefined) assignSelected(record, field, value);
+  }
+  return { ...identity, record };
+}
+
+function normalize(
+  response: JsonObject,
+  entries: JsonObject[],
+  selector: ResolvedEntityListSelector,
+  options: EntityListProjectionOptions,
+  detail: string,
+): JsonObject {
+  const counts = mapping(response.counts) ? response.counts : {};
+  const snapshot = mapping(response.snapshot) ? response.snapshot : {};
+  const candidate = Number(snapshot.candidate_count ?? counts.total ?? entries.length);
+  const remaining = Number(counts.remaining ?? 0);
+  const retrieval = mapping(response.retrieval) ? response.retrieval : {};
+  return {
+    ...response,
+    entries,
+    counts: {
+      ...counts,
+      total: candidate,
+      candidate,
+      returned: entries.length,
+      remaining,
+      omitted: remaining,
+      continuation: remaining,
+    },
+    snapshot: { ...snapshot, candidate_count: candidate, has_more: remaining > 0 },
+    retrieval: { ...retrieval, get: options.getCommand },
+    projection: {
+      selector: selector.mode,
+      detail,
+      cardinality: "requested_rows",
+      ...(selector.mode === "fields" ? { fields: selector.fields } : {}),
+    },
+  };
+}
+
+export function projectEntityList(
+  response: JsonObject,
+  selector: ResolvedEntityListSelector,
+  options: EntityListProjectionOptions,
+): JsonObject {
+  const fullEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
+  const selectedEntries = selector.mode === "default"
+    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, options.getCommand).retrieval }))
+    : fullEntries.map((entry) => projectEntry(entry, selector, options.getCommand));
+  const selectedDetail = selector.mode === "default" ? "full" : selector.mode === "fields" ? "selected_fields" : "identity";
+  const selected = normalize(response, selectedEntries, selector, options, selectedDetail);
+  if (serializedProjectionBytes(selected, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return selected;
+
+  if (selector.mode !== "default") {
+    fail(options, `${selector.mode === "fields" ? "selected fields" : "IDs-only rows"} cannot fit the ${options.maxUtf8Bytes}-byte ${options.format} list budget`, "Request fewer rows or fewer fields and retry; no fields or rows were returned partially.", 1);
+  }
+  const summaries = fullEntries.map((entry) => projectEntry(entry, selector, options.getCommand));
+  const degraded = normalize({
+    ...response,
+    status: "degraded",
+    degradation: {
+      reason: "optional_detail_byte_budget",
+      detail_omitted_count: summaries.length,
+      recovery: options.getCommand,
+    },
+  }, summaries, selector, options, "summary");
+  if (serializedProjectionBytes(degraded, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return degraded;
+  fail(options, `the requested summary rows cannot fit the ${options.maxUtf8Bytes}-byte ${options.format} list budget`, "Request fewer rows and retry; no rows were returned partially.", 1);
+}

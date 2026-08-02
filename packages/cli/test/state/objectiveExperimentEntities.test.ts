@@ -6,12 +6,13 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
-import { mutateObjectiveEntity, publishExperimentEntity } from "../../src/state/objectiveExperimentEntities.js";
+import { listCurrentExperimentEntities, mutateObjectiveEntity, publishExperimentEntity } from "../../src/state/objectiveExperimentEntities.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 
 const roots: string[] = [];
@@ -124,6 +125,11 @@ describe("objective and experiment entity authority", () => {
     const root = project(); const owner = createObjective(root, "latency"); const baseline = publish(root, owner.id, experiment("baseline", "baseline", "2026-07-16 09:00")); const candidate = publish(root, owner.id, experiment("candidate", "kept", "2026-07-17 09:00"));
     const exact = capture(root, ["state", "experiments", "get", "--id", baseline.id, "--objective", owner.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(exact.json.entry.record).toEqual(baseline.record); expect(exact.json.entry.provenance.path).toContain(baseline.id);
     const first = capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "1", "--format", "json"]); expect(first.rc).toBe(0); expect(first.json.entries[0].id).toBe(candidate.id); expect(first.json.next_cursor).toBeTruthy(); expect(first.json.retrieval.get).toContain("--id ID");
+    expect(first.json.retrieval.continue).toMatch(new RegExp(`^agentera state experiments list --objective '${owner.id}' --limit 1 --cursor \\S+ --format json$`));
+    const topic = "Cache helps";
+    const filtered = listCurrentExperimentEntities(root, owner.id, 1, undefined, { topic }, { format: "json" }) as any;
+    expect(filtered.counts.candidate).toBe(2);
+    expect(filtered.retrieval.continue).toMatch(new RegExp(`^agentera state experiments --objective '${owner.id}' --topic 'Cache helps' --limit 1 --cursor \\S+ --format json$`));
     expect(capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "101", "--format", "json"]).rc).toBe(2);
     const second = capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "1", "--cursor", first.json.next_cursor, "--format", "json"]); expect(second.rc).toBe(0); expect(second.json.entries[0].id).toBe(baseline.id);
     publish(root, owner.id, experiment("later", "kept", "2026-07-18 09:00"));
@@ -147,19 +153,19 @@ describe("objective and experiment entity authority", () => {
     let pageCount = 0;
     do {
       expect(command).toMatch(new RegExp(`^agentera state experiments list --objective ${owner.id} `));
-      const pageResult = capture(root, command.split(" ").slice(1));
+      const pageResult = capture(root, shellCommandArgs(command));
       expect(pageResult.rc, pageResult.err || pageResult.out).toBe(0);
       expect(Buffer.byteLength(pageResult.out, "utf8")).toBeLessThanOrEqual(32_768);
       const page = pageResult.json;
       expect(page.filters.objective).toBe(owner.id);
       for (const entry of page.entries) {
-        expect(entry.record.objective).toBe(owner.id);
         expect(expectedIds.has(entry.id)).toBe(true);
         expect(observed.has(entry.id)).toBe(false);
+        expect(entry.retrieval.get).toBe(`agentera state experiments get --id ${entry.id} --format json`);
         observed.add(entry.id);
       }
       if (page.omitted) {
-        expect(page.omission_reason).toMatch(/serialized_byte_budget|page_limit/);
+        expect(page.omission_reason).toBe("page_limit");
         expect(page.omitted_count).toBeGreaterThan(0);
         expect(page.next_cursor).toEqual(expect.any(String));
         expect(page.retrieval.get).toBe("agentera state experiments get --id ID --format json");
@@ -167,7 +173,8 @@ describe("objective and experiment entity authority", () => {
       } else command = "";
       pageCount += 1;
     } while (command);
-    expect(pageCount).toBeGreaterThan(1);
+    expect(pageCount).toBe(1);
+    expect(observed.size).toBe(12);
     expect(observed).toEqual(expectedIds);
 
     const exact = capture(root, ["state", "experiments", "get", "--id", published[0].id, "--objective", owner.id, "--format", "json"]);
@@ -177,6 +184,16 @@ describe("objective and experiment entity authority", () => {
       artifact: "experiments",
       record: { objective: owner.id, label: published[0].record.label, hypothesis: published[0].record.hypothesis },
     });
+  });
+
+  it("preserves objective, topic, and status in deterministic filtered continuations", () => {
+    const root = project(); const owner = createObjective(root, "filtered experiments");
+    publish(root, owner.id, experiment("baseline", "baseline", "2026-07-16 09:00"));
+    publish(root, owner.id, experiment("candidate one", "kept", "2026-07-17 09:00"));
+    publish(root, owner.id, experiment("candidate two", "kept", "2026-07-18 09:00"));
+    const page = listCurrentExperimentEntities(root, owner.id, 1, undefined, { topic: "Cache helps", status: "kept" }, { format: "json" }) as any;
+    expect(page).toMatchObject({ filters: { objective: owner.id, topic: "Cache helps", status: "kept" }, counts: { candidate: 2, returned: 1, continuation: 1 } });
+    expect(page.retrieval.continue).toMatch(new RegExp(`^agentera state experiments --objective '${owner.id}' --topic 'Cache helps' --status 'kept' --limit 1 --cursor \\S+ --format json$`));
   });
 
   it("lists objectives and infers only one active objective for the compatibility query", () => {

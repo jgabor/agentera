@@ -10,12 +10,14 @@ import { listObjectiveEntities } from "../../../state/objectiveExperimentEntitie
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import YAML from "yaml";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
 
 interface StateListArgs {
   limit: number;
   cursor?: string;
   format: "text" | "json" | "yaml";
   filters: StateListFilters;
+  selector: EntityListSelectorInput;
 }
 
 const ENTITY_LIST_ARTIFACTS = ["progress", "decisions", "health", "objective", "todo", "docs"];
@@ -81,6 +83,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
   let cursor: string | undefined;
   let format: StateListArgs["format"] = "text";
   const filters: StateListFilters = {};
+  const selector: EntityListSelectorInput = {};
   const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : artifactId === "todo" ? new Set(["--severity", "--status"]) : artifactId === "docs" ? new Set(["--topic", "--status"]) : artifactId === "objective" ? new Set<string>() : new Set(["--dimension"]);
   let limitSupplied = false;
   let cursorSupplied = false;
@@ -88,7 +91,14 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
   const filterSupplied = new Set<string>();
   for (let index = 0; index < argv.length; ) {
     const token = argv[index];
-    const name = token.startsWith("--limit") ? "--limit" : token.startsWith("--cursor") ? "--cursor" : token.startsWith("--format") ? "--format" : [...allowedFilters].find((filter) => token === filter || token.startsWith(`${filter}=`)) ?? null;
+    if (token === "--ids-only") {
+      if (selector.idsOnly) throw failure("invalid_request", artifactId, "--ids-only may only be supplied once");
+      selector.idsOnly = true;
+      index += 1;
+      continue;
+    }
+    const matches = (flag: string): boolean => token === flag || token.startsWith(`${flag}=`);
+    const name = matches("--limit") ? "--limit" : matches("--cursor") ? "--cursor" : matches("--format") ? "--format" : matches("--fields") ? "--fields" : [...allowedFilters].find(matches) ?? null;
     if (!name) throw failure("invalid_request", artifactId, `unrecognized argument '${token}'`);
     let parsed: { value: string; next: number };
     try {
@@ -108,6 +118,9 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
       cursorSupplied = true;
       if (parsed.value.length === 0) throw failure("invalid_request", artifactId, "argument --cursor must be a non-empty opaque token");
       cursor = parsed.value;
+    } else if (name === "--fields") {
+      if (selector.fields !== undefined) throw failure("invalid_request", artifactId, "--fields may only be supplied once");
+      selector.fields = parsed.value;
     } else {
       if (name !== "--format") {
         if (filterSupplied.has(name)) throw failure("invalid_request", artifactId, `${name} may only be supplied once`);
@@ -124,7 +137,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
       format = parsed.value;
     }
   }
-  return { limit, ...(cursor ? { cursor } : {}), format, filters };
+  return { limit, ...(cursor ? { cursor } : {}), format, filters, selector };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
@@ -151,14 +164,14 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
   try {
     const args = parseListArgs(artifactId, argv);
     const response = artifactId === "progress"
-      ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format })
+      ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
       : artifactId === "decisions"
-        ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format })
+        ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
         : artifactId === "health"
-          ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format })
+          ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
           : artifactId === "objective"
-            ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format })
-            : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format });
+            ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
+            : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format, selector: args.selector });
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
     else emitStructured(response, args.format, output);

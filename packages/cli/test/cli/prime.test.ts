@@ -746,7 +746,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(recovery).not.toHaveProperty("continue");
     const invoke = (command: string): any => { let out = ""; let err = ""; const rc = main(["node", "agentera", ...command.split(" ").slice(1)], { out: (text) => { out += text; }, err: (text) => { err += text; } }); expect(rc, err || out).toBe(0); return JSON.parse(out); };
     const reached = new Set<string>(); let page = invoke(recovery.restart);
-    expect(page.omitted).toBe(true); expect(page.entries.length).toBeGreaterThan(20);
+    expect(page).toMatchObject({ status: "degraded", counts: { candidate: 30, returned: 30, omitted: 0 }, projection: { detail: "summary" }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 30 } });
     while (true) {
       for (const entry of page.entries) reached.add(entry.id);
       if (!page.omitted) break;

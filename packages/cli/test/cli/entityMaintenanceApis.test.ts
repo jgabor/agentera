@@ -172,11 +172,11 @@ describe("entity-mode retrieval and maintenance APIs", () => {
   it("bounds exact pretty JSON stdout for decision and plan entity views including envelope overhead", () => {
     const decisions = project();
     for (const [id, date] of [["aaaaaaaaaa", "2026-07-17"], ["bbbbbbbbbb", "2026-07-16"]]) entity(decisions, "decisions", "decision", id, { date, question: "Q", context: "C", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "x".repeat(15_700), confidence: "firm" });
-    const decisionView = capture(decisions, ["state", "decisions", "--limit", "2", "--format", "json"]); expect(decisionView.rc, decisionView.err).toBe(0); expect(Buffer.byteLength(decisionView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(decisionView.json.omitted).toBe(true);
+    const decisionView = capture(decisions, ["state", "decisions", "--limit", "2", "--format", "json"]); expect(decisionView.rc, decisionView.err).toBe(0); expect(Buffer.byteLength(decisionView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(decisionView.json).toMatchObject({ status: "degraded", counts: { returned: 2, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 2 } });
 
     const plans = project(); entity(plans, "plan", "plan", "cccccccccc", { header: { level: "light", created: "2026-07-17", status: "open", title: "Bounded" }, what: "x".repeat(20_000), why: "Y", scope: { included: ["state"], excluded: [] } });
     for (const id of ["dddddddddd", "eeeeeeeeee"]) entity(plans, "plan", "plan_task", id, { plan: "cccccccccc", name: "Task", status: "pending", depends_on: [], acceptance: ["x".repeat(6_000)] });
-    const planView = capture(plans, ["state", "plan", "--limit", "2", "--format", "json"]); expect(planView.rc, planView.err).toBe(0); expect(Buffer.byteLength(planView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(planView.json.omitted).toBe(true); expect(planView.json.plan.id).toBe("cccccccccc");
+    const planView = capture(plans, ["state", "plan", "--limit", "2", "--format", "json"]); expect(planView.rc, planView.err).toBe(0); expect(Buffer.byteLength(planView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(planView.json).toMatchObject({ status: "degraded", counts: { returned: 2, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 2 } }); expect(planView.json.plan.id).toBe("cccccccccc");
   });
 
   it("rejects every legacy selector and reports exact missing IDs", () => {

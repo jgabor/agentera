@@ -713,12 +713,17 @@ describe("TODO item and documentation inventory entity authority", () => {
     const low = todo(root, "normal", "normal"); const high = todo(root, "critical", "critical");
     const firstDoc = doc(root, "Zulu", "z.md"); const secondDoc = doc(root, "Alpha", "a.md");
     const todoPage = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]);
-    expect(todoPage.json).toMatchObject({ status: "degraded", order: "severity_then_status_then_markdown_order_then_id", omitted: true, omitted_count: 1, entries: [{ id: high.id, artifact: "todo", provenance: { storage: "canonical_entity_file" } }] });
+    expect(todoPage.json).toMatchObject({ status: "degraded", order: "severity_then_status_then_markdown_order_then_id", omitted: true, omitted_count: 1, entries: [{ id: high.id, artifact: "todo", queue_rank: 1, provenance: { storage: "canonical_entity_file" } }] });
+    todo(root, "critical second", "critical");
+    const filteredTodo = capture(root, ["state", "todo", "list", "--status", "open", "--severity", "critical", "--ids-only", "--limit", "1", "--format", "json"]);
+    expect(filteredTodo.json.retrieval.continue).toMatch(/^agentera state todo list --severity 'critical' --status 'open' --ids-only --limit 1 --cursor \S+ --format json$/);
     const todoGet = capture(root, ["state", "todo", "get", "--id", low.id, "--format", "json"]); expect(todoGet.json.entry.record.title).toBe("normal");
     const docsList = capture(root, ["state", "docs", "list", "--format", "json"]); expect(docsList.json.entries.map((entry: any) => entry.id)).toEqual([secondDoc.id, firstDoc.id]);
+    const filteredDocs = capture(root, ["state", "docs", "list", "--status", "current", "--topic", ".md", "--ids-only", "--limit", "1", "--format", "json"]);
+    expect(filteredDocs.json.retrieval.continue).toMatch(/^agentera state docs list --topic '\.md' --status 'current' --ids-only --limit 1 --cursor \S+ --format json$/);
     const docsDefault = capture(root, ["state", "docs", "--format", "json"]); expect(docsDefault.json.entries).toHaveLength(2); expect(docsDefault.json.summary.mapping).toHaveLength(1); expect(JSON.stringify(docsDefault.json)).not.toContain("legacy sentinel");
     todo(root, "cursor invalidator"); const stale = capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", todoPage.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
-    const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ omitted: true, omission_reason: "serialized_byte_budget", retrieval: { get: "agentera state todo get --id ID --format json" } }); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
+    const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ status: "degraded", counts: { returned: 6, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 }, retrieval: { get: "agentera state todo get --id ID --format json" } }); expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
     expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
   });
 
