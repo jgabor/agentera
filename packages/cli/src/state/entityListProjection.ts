@@ -109,18 +109,23 @@ export function entityListSelectorFlags(selector: ResolvedEntityListSelector): s
   return "";
 }
 
-function identityEntry(entry: JsonObject, getCommand: string): JsonObject {
+function identityEntry(entry: JsonObject, family: ReturnType<typeof entityListFamily>): JsonObject {
   const id = String(entry.id);
-  return {
-    id,
-    artifact: String(entry.artifact),
-    ...(Number.isSafeInteger(entry.queue_rank) ? { queue_rank: entry.queue_rank } : {}),
-    retrieval: { get: getCommand.replace("ID", id) },
-  };
+  const result: JsonObject = { id, artifact: String(entry.artifact) };
+  for (const field of family.summaryFields) {
+    if (field === "id" || field === "artifact") continue;
+    if (field === "retrieval.get") {
+      result.retrieval = { get: family.get.replace("ID", id) };
+      continue;
+    }
+    const value = selectedValue(entry, field);
+    if (value !== undefined) assignSelected(result, field, value);
+  }
+  return result;
 }
 
-function projectEntry(entry: JsonObject, selector: ResolvedEntityListSelector, getCommand: string): JsonObject {
-  const identity = identityEntry(entry, getCommand);
+function projectEntry(entry: JsonObject, selector: ResolvedEntityListSelector, family: ReturnType<typeof entityListFamily>): JsonObject {
+  const identity = identityEntry(entry, family);
   if (selector.mode === "ids_only" || selector.mode === "default") return identity;
   const record: JsonObject = {};
   for (const field of selector.fields) {
@@ -174,8 +179,8 @@ export function projectEntityList(
   const family = entityListFamily(options.family);
   const fullEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
   const selectedEntries = selector.mode === "default"
-    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, family.get).retrieval }))
-    : fullEntries.map((entry) => projectEntry(entry, selector, family.get));
+    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, family).retrieval }))
+    : fullEntries.map((entry) => projectEntry(entry, selector, family));
   const selectedDetail = selector.mode === "default" ? "full" : selector.mode === "fields" ? "selected_fields" : "identity";
   const selected = normalize(response, selectedEntries, selector, options, selectedDetail);
   if (serializedProjectionBytes(selected, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return selected;
@@ -183,7 +188,7 @@ export function projectEntityList(
   if (selector.mode !== "default") {
     fail(options, `${selector.mode === "fields" ? "selected fields" : "IDs-only rows"} cannot fit the ${options.maxUtf8Bytes}-byte ${options.format} list budget`, "Request fewer rows or fewer fields and retry; no fields or rows were returned partially.", 1);
   }
-  const summaries = fullEntries.map((entry) => projectEntry(entry, selector, family.get));
+  const summaries = fullEntries.map((entry) => projectEntry(entry, selector, family));
   const degraded = normalize({
     ...response,
     status: "degraded",

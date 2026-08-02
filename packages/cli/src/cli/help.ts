@@ -2,7 +2,7 @@ import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
-import { entityListFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
+import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -125,20 +125,34 @@ export function printDoctorHelp(): string {
   ].join("\n");
 }
 
+function recordFamilyReadSection(command: string): string[] {
+  const families = entityListFamilies().filter(({ commandTokens }) => commandTokens[0] === command);
+  if (families.length === 0) return [];
+  return [
+    "Canonical record-family reads:",
+    ...families.flatMap((family) => [
+      `  List: ${family.syntax}`,
+      `  Get:  ${family.get}`,
+      ...(family.commandTokens.length === 1
+        ? [family.bareRead === "alias"
+            ? `  Bare: agentera state ${family.commandTokens.join(" ")} is a strict alias of List.`
+            : `  Bare: rejected with recovery to ${family.bareRecovery}.`]
+        : []),
+      `  Summary fields: ${family.summaryFields.join(", ")}`,
+    ]),
+    "",
+  ];
+}
+
 export function printStateHelp(sub?: string): string {
   const stateCommands = stateCommandNames();
   if (sub === "migrate") return entityMigrateHelp();
   if (sub === "plan") {
     return [
-      "usage: agentera state plan [-h] [--format {text,json,yaml}] [filters]",
-      "       agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
-      "       agentera state plan tasks get --id ID --format json",
-      "       agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] --format json",
-      "       agentera state plan get --id ID --format json",
+      ...recordFamilyReadSection("plan"),
       `       agentera state plan {${verbsForArtifact("plan").join(",")}} [write flags]`,
       "",
       "Plan and task reads use bare canonical IDs from entity list results.",
-      "Plan list is bounded and cursor-paginated; plan get requires --id.",
       "Invalid historical archives remain non-fatal compatibility diagnostics unless selected.",
       "Task list accepts an optional bare plan ID and otherwise defaults to the sole open plan; task get requires --id.",
       "Only the displayed bare-ID selectors are accepted.",
@@ -151,18 +165,14 @@ export function printStateHelp(sub?: string): string {
   }
   if (sub === "experiments") {
     return [
-      "usage: agentera state experiments [-h] [--format {text,json,yaml}] [filters]",
-      "       agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json",
-      "       agentera state experiments get --id ID [--objective ID] --format json",
+      ...recordFamilyReadSection("experiments"),
       "       agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml --format json",
       "       (publish also accepts --dry-run and --format text)",
       "",
       "Publish is the validated mutation authority and atomically writes one schema-valid experiment.",
       "A byte-equivalent identity retry is idempotent; collisions and pre-publication failures preserve current bytes.",
-      "List merges retained projection and immutable archive identities newest-first with bounded opaque snapshot cursors.",
       "Get verifies archive detail first, then reports full, summary-only, or unavailable detail truthfully.",
-      "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
-      "List and publish require one bare objective ID; get requires one bare experiment ID and may verify objective ownership.",
+      "List and publish require one bare objective ID; get requires one bare experiment ID.",
       "Legacy objective/path collisions return a structured ambiguous error.",
       "",
        "Discover writes: agentera state experiments explain --verb publish --format json",
@@ -185,14 +195,12 @@ export function printStateHelp(sub?: string): string {
   }
   if (sub === "objective") {
     return [
-      "usage: agentera state objective [-h] [--format {text,json,yaml}]",
-      "       agentera state objective list [--limit N] [--cursor TOKEN] --format json",
-      "       agentera state objective get --id ID --format json",
+      ...recordFamilyReadSection("objective"),
       "       agentera state objective create --input OBJECTIVE.yaml --format json",
       "       agentera state objective update --id ID --input OBJECTIVE.yaml --format json",
       "",
       "Objective create publishes one independent entity; update replaces that entity through rollback-safe publication.",
-      "Bare objective queries infer an active objective only when exactly one exists.",
+      "Active-objective inference is not a public record-family read.",
       "",
        "Discover writes: agentera state objective explain --format json",
        "All verbs:         agentera state objective explain --all --format json",
@@ -200,9 +208,7 @@ export function printStateHelp(sub?: string): string {
   }
   if (sub === "todo") {
     return [
-      "usage: agentera state todo [-h] [--severity LEVEL] [--status STATUS] [--format {text,json,yaml}]",
-      "       agentera state todo list [--limit N] [--cursor TOKEN] --format json",
-      "       agentera state todo get --id ID --format json",
+      ...recordFamilyReadSection("todo"),
        "       agentera state todo create --input TODO.yaml --format json",
        "       agentera state todo update --id ID --input TODO-PATCH.yaml --format json",
        "       agentera state todo set-severity --id ID --severity LEVEL --reason TEXT --date YYYY-MM-DD --format json",
@@ -210,7 +216,7 @@ export function printStateHelp(sub?: string): string {
        "       agentera state todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD --format json",
       "",
       "Each TODO item is one independently mutable canonical entity. IDs are bare ten-letter project-wide identities.",
-      "Default and list views are bounded in severity/status order; exact get returns complete detail.",
+      "TODO views are bounded in severity/status and Markdown public order; exact get returns complete detail.",
        "Create accepts a full typed YAML/JSON record; update is a patch, so omitted fields preserve state and null/empty-list clears apply only to declared clearable fields.",
        "Readiness is Agentera-owned operational state; public fields are owned by TODO.md and divergent public values fail before effects.",
        "Lifecycle verbs are flag-only typed transitions and cannot be supplied as record content.",
@@ -222,15 +228,13 @@ export function printStateHelp(sub?: string): string {
   }
   if (sub === "docs") {
     return [
-      "usage: agentera state docs [-h] [--topic TOPIC] [--status STATUS] [--format {text,json,yaml}]",
-      "       agentera state docs list [--limit N] [--cursor TOKEN] --format json",
-      "       agentera state docs get --id ID --format json",
+      ...recordFamilyReadSection("docs"),
       "       agentera state docs create --input ENTRY.yaml --format json",
       "       agentera state docs update --id ID --input ENTRY.yaml --format json",
       "",
       "Each documentation inventory entry is one independently mutable canonical entity; path is record data, not identity.",
       "Mappings, conventions, coverage, and editorial configuration retain whole-document authority in .agentera/docs.yaml.",
-      "Default and list views are bounded by path then ID; exact get returns complete detail.",
+      "List views are bounded by path then ID; exact get returns complete detail.",
       "",
         "Discover writes: agentera state docs explain --format json",
         "All verbs:         agentera state docs explain --all --format json",
@@ -238,10 +242,10 @@ export function printStateHelp(sub?: string): string {
   }
   if (sub) {
     const verbs = verbsForArtifact(sub);
+    const readSection = recordFamilyReadSection(sub);
     return [
-      `usage: agentera state ${sub} [-h] [--format {text,json,yaml}] [filters]`,
-      "       agentera state <artifact> get --id ID --format {text,json,yaml}",
-      "       agentera state <artifact> list [--limit N] [--cursor TOKEN] --format {text,json,yaml}",
+      ...readSection,
+      ...(readSection.length === 0 ? [`usage: agentera state ${sub} [operation] [options]`] : []),
       ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
       ...(sub === "progress"
         ? ["       agentera state progress append --input <path|-> --format json"]
@@ -326,12 +330,28 @@ export function printStateListHelp(family: EntityListFamilyHelp): string {
   ].join("\n");
 }
 
-export function stateCommandNames(): string[] {
+export function printStateGetHelp(family: EntityListFamilyHelp): string {
   return [
+    `usage: ${family.get}`,
+    "",
+    `Get one complete canonical ${family.key} record by its exact opaque ID.`,
+    "",
+    "Selectors and formats:",
+    "  --id ID              required bare ten-letter canonical identity",
+    `  --format FORMAT       ${family.formats.join(", ")}`,
+    "",
+    `List identities: ${family.example}`,
+    `Exact get:       ${family.get}`,
+  ].join("\n");
+}
+
+export function stateCommandNames(): string[] {
+  return [...new Set([
+    ...entityListFamilies().map(({ commandTokens }) => commandTokens[0]),
     ...WRITABLE_ARTIFACTS,
     "migrate",
     "query",
-  ];
+  ])];
 }
 
 export function printCheckHelp(sub?: string): string {
@@ -492,8 +512,8 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
     case "doctor":
       return printDoctorHelp();
     case "state": {
-      const family = entityListFamilyForHelpArgs(rest);
-      return family ? printStateListHelp(family) : printStateHelp(sub);
+      const retrieval = entityRetrievalFamilyForHelpArgs(rest);
+      return retrieval ? retrieval.verb === "list" ? printStateListHelp(retrieval.family) : printStateGetHelp(retrieval.family) : printStateHelp(sub);
     }
     case "check":
       return printCheckHelp(sub);

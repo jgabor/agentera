@@ -9,8 +9,8 @@ import { getProgressEntity } from "../../../state/progressEntities.js";
 import { getTodoDocsEntity } from "../../../state/todoDocsEntities.js";
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
-
-const ENTITY_GET_ARTIFACTS = ["progress", "decisions", "health", "objective", "todo", "docs"];
+import { entityListFamily } from "../../../state/entityRetrievalHelp.js";
+import { runtimeGenericEntityListFamily, type EntityListRuntimeFamilyKey } from "../../../state/entityListRuntimeRegistry.js";
 
 function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -28,13 +28,15 @@ function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
 }
 
 function failure(message: string, id?: string, artifact = "progress"): StateRetrievalFailure {
+  const runtime = runtimeGenericEntityListFamily(artifact);
+  const family = runtime ? entityListFamily(runtime.key as EntityListRuntimeFamilyKey) : undefined;
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
     error: {
       class: "invalid_request",
       message,
-      syntax: `agentera state ${artifact} get --id ID --format json`,
+      syntax: family?.get ?? `agentera state ${artifact} get --id ID --format json`,
       example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`,
       recovery: `Use a bare ten-letter ${artifact} ID returned by append or list; no state was changed.`,
       artifact,
@@ -75,7 +77,7 @@ export function runStateGet(
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
   try {
-    if (!ENTITY_GET_ARTIFACTS.includes(artifactId)) throw failure(`unsupported state artifact '${artifactId}'`, undefined, artifactId);
+    if (!runtimeGenericEntityListFamily(artifactId)) throw failure(`unsupported state artifact '${artifactId}'`, undefined, artifactId);
     let id: string | undefined;
     let entityFormat: "text" | "json" | "yaml" = "text";
     let formatSupplied = false;

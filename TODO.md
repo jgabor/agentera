@@ -3,9 +3,9 @@
 ## Current execution
 
 - **Current milestone:** M3 · Reconcile TODO and canonical reads.
-- **Next plan task:** `iddsqjadki` — Enforce canonical record-family reads.
-- **Associated TODO:** `qjhjpzowae` — Make `list` and exact `get` the only record-family read grammar.
-- **Exact request:** `Proceed with reopening, resume orchestration when unblocked.`
+- **Next plan task:** `srdmkolwqc` — Align consumers and synchronize M3.
+- **Managed M3 TODO:** None pending; `qjhjpzowae` is resolved.
+- **Exact request:** `Proceed with srdmkolwqc when the next M3 cycle begins.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task—or the plan reports no selectable task with an exact blocker and recovery.
 
@@ -33,8 +33,6 @@ duplicate authority was introduced.
 ### M3 · Reconcile TODO and canonical reads — current
 
 Exit when repository-first TODO reconciliation and bounded list/get reads share one verified lifecycle and measured milestone debt decreases.
-
-- [ ] [id:qjhjpzowae] [fix:3.0.0] **NEXT** Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map.
 
 ### M4A · Establish reference authority
 
@@ -187,3 +185,4 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [x] [id:yqqqhipecx] [fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass.
 - [x] [id:hykqpkcsix] [fix:3.0.0] Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation.
 - [x] [id:qmcyjnxskc] [fix:3.0.0] Generate artifact-specific `state ... list --help` from the retrieval authority. Help currently omits supported filters and forces source inspection. Show each family's exact filters, summary fields, bounds, formats, and runnable examples; for TODOs include `--severity`, `--status`, `--queue-rank`, `--ids-only`, and `--fields`. Test help, schema, and runtime parity so unsupported selectors fail with the valid vocabulary and one working correction.
+- [x] [id:qjhjpzowae] [fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map.

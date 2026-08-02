@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { runState } from "../../src/cli/dispatch/state.js";
+import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const BUDGET_MANIFEST_PATH = path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml");
@@ -272,14 +273,14 @@ describe("status capability self-contained startup", () => {
       expect(state.source_contract.capability_startup.complete_for_capability_startup).toBe(false);
       expect(state.source_contract.capability_startup.raw_artifact_reads_required).toBe(false);
       expect(capsule.state.missing).toContain("decisions");
-      const decisionsFallback = "agentera state decisions list --limit 20 --format json";
+      const decisionsFallback = STATE_FAMILY_LIST_COMMANDS.decisions;
       expect(capsule.state.fallback_commands).toContain(decisionsFallback);
 
       let fallbackOut = "";
       let fallbackErr = "";
       const fallbackRc = runState(
         "decisions",
-        ["list", "--limit", "20", "--format", "json"],
+        ["list", "--format", "json"],
         { out: (text) => (fallbackOut += text), err: (text) => (fallbackErr += text) },
         "agentera",
       );

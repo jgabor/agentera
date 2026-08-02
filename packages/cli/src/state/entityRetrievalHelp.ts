@@ -3,6 +3,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
   ENTITY_LIST_RUNTIME_FAMILIES,
   ENTITY_LIST_RUNTIME_REGISTRY,
+  runtimeEntityFamilyForHelpArgs,
   runtimeEntityListFamilyForHelpArgs,
   type EntityListRuntimeFamilyKey,
 } from "./entityListRuntimeRegistry.js";
@@ -29,6 +30,8 @@ export interface EntityListFamilyHelp {
   commandTokens: string[];
   syntax: string;
   get: string;
+  bareRead: "alias" | "correction";
+  bareRecovery?: string;
   filters: EntityListFilterHelp[];
   familyIdentifier?: { syntax: string; required: boolean; description: string };
   summaryFields: string[];
@@ -284,7 +287,10 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
     const family = mapping(families[key]);
     const command = mapping(commands[key]);
     exactKeys(command, ["list", "get"], [], `entity_target.public_retrieval.commands.${key}`, errors);
-    exactKeys(family, ["command_tokens", "filters", "example"], ["family_identifier", "summary_fields", "summary_field_notes"], prefix, errors);
+    exactKeys(family, ["command_tokens", "bare_read", "filters", "example"], ["bare_recovery", "family_identifier", "summary_fields", "summary_field_notes"], prefix, errors);
+    if (family.bare_read !== "alias" && family.bare_read !== "correction") errors.push(`${prefix}.bare_read`);
+    if (family.bare_read === "correction" && (typeof family.bare_recovery !== "string" || !family.bare_recovery.startsWith("agentera state "))) errors.push(`${prefix}.bare_recovery`);
+    if (family.bare_read === "alias" && family.bare_recovery !== undefined) errors.push(`${prefix}.bare_recovery.unexpected`);
     if (!sameStrings(family.command_tokens, runtime.commandTokens)) errors.push(`${prefix}.command_tokens`);
     if (!Array.isArray(family.filters)) errors.push(`${prefix}.filters`);
     const rawFilters = Array.isArray(family.filters) ? family.filters : [];
@@ -323,10 +329,19 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
     if (family.summary_field_notes !== undefined && !isMapping(family.summary_field_notes)) errors.push(`${prefix}.summary_field_notes.type`);
     if (key === "todo") {
       if (!isMapping(family.summary_field_notes)) errors.push(`${prefix}.summary_field_notes.required`);
-      exactKeys(notes, ["queue_rank"], [], `${prefix}.summary_field_notes`, errors);
-      const note = requireMapping(notes, "queue_rank", `${prefix}.summary_field_notes`, errors);
-      exactKeys(note, ["description", "ownership", "persisted", "filter"], [], `${prefix}.summary_field_notes.queue_rank`, errors);
-      if (typeof note.description !== "string" || note.description.trim() === "" || note.ownership !== "computed_read_snapshot" || note.persisted !== false || note.filter !== false) errors.push(`${prefix}.summary_field_notes.queue_rank.semantics`);
+      const ownership = {
+        public_order: "markdown_read_projection",
+        readiness: "agentera_operational_projection",
+        actionability: "computed_read_snapshot",
+        queue_rank: "computed_read_snapshot",
+        reconciliation: "computed_read_snapshot",
+      } as const;
+      exactKeys(notes, Object.keys(ownership), [], `${prefix}.summary_field_notes`, errors);
+      for (const [field, owner] of Object.entries(ownership)) {
+        const note = requireMapping(notes, field, `${prefix}.summary_field_notes`, errors);
+        exactKeys(note, ["description", "ownership", "persisted", "filter"], [], `${prefix}.summary_field_notes.${field}`, errors);
+        if (typeof note.description !== "string" || note.description.trim() === "" || note.ownership !== owner || note.persisted !== false || note.filter !== false) errors.push(`${prefix}.summary_field_notes.${field}.semantics`);
+      }
     } else if (Object.keys(notes).length > 0) errors.push(`${prefix}.summary_field_notes.unexpected`);
 
     const projected: EntityListFamilyHelp = {
@@ -334,6 +349,8 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
       commandTokens: strings(family.command_tokens),
       syntax: String(command.list),
       get: String(command.get),
+      bareRead: family.bare_read === "alias" ? "alias" : "correction",
+      ...(typeof family.bare_recovery === "string" ? { bareRecovery: family.bare_recovery } : {}),
       filters: parsedFilters,
       ...(identifier ? { familyIdentifier: { syntax: String(identifier.syntax), required: identifier.required === true, description: String(identifier.description) } } : {}),
       summaryFields,
@@ -384,7 +401,7 @@ export function entityListFamilies(sourceRoot = resolveSourceRoot()): EntityList
     }));
     return {
       key,
-      commandTokens: strings(family.command_tokens), syntax: String(command.list), get: String(command.get),
+      commandTokens: strings(family.command_tokens), syntax: String(command.list), get: String(command.get), bareRead: family.bare_read === "alias" ? "alias" : "correction", ...(typeof family.bare_recovery === "string" ? { bareRecovery: family.bare_recovery } : {}),
       filters: (family.filters as unknown[]).map((raw) => { const filter = mapping(raw); return { flag: String(filter.flag), name: String(filter.name), values: Array.isArray(filter.values) ? strings(filter.values) : String(filter.values) }; }),
       ...(identifier ? { familyIdentifier: { syntax: String(identifier.syntax), required: identifier.required === true, description: String(identifier.description) } } : {}),
       summaryFields: family.summary_fields === undefined ? strings(defaults.summary_fields) : strings(family.summary_fields),
@@ -409,6 +426,11 @@ export function entityListFamily(key: EntityListRuntimeFamilyKey, sourceRoot = r
 export function entityListFamilyForHelpArgs(args: string[], sourceRoot = resolveSourceRoot()): EntityListFamilyHelp | undefined {
   const runtime = runtimeEntityListFamilyForHelpArgs(args);
   return runtime ? entityListFamily(runtime.key as EntityListRuntimeFamilyKey, sourceRoot) : undefined;
+}
+
+export function entityRetrievalFamilyForHelpArgs(args: string[], sourceRoot = resolveSourceRoot()): { family: EntityListFamilyHelp; verb: "list" | "get" } | undefined {
+  const runtime = runtimeEntityFamilyForHelpArgs(args);
+  return runtime ? { family: entityListFamily(runtime.family.key as EntityListRuntimeFamilyKey, sourceRoot), verb: runtime.verb } : undefined;
 }
 
 export function entityListValidValues(family: EntityListFamilyHelp): string[] {

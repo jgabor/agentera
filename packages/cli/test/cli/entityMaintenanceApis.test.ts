@@ -94,9 +94,9 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     const commands = [
       ["state", "progress", "--limit", "1", "--format", "json"],
       ["state", "decisions", "--limit", "1", "--format", "json"],
-      ["state", "health", "--format", "json"],
-      ["state", "plan", "--limit", "1", "--format", "json"],
-      ["state", "experiments", "--format", "json"],
+      ["state", "health", "list", "--format", "json"],
+      ["state", "plan", "list", "--limit", "1", "--format", "json"],
+      ["state", "experiments", "list", "--objective", "gggggggggg", "--format", "json"],
     ];
     for (const args of commands) {
       const result = capture(root, args); expect(result.rc, `${args.join(" ")}: ${result.err || result.out}`).toBe(0);
@@ -128,12 +128,13 @@ describe("entity-mode retrieval and maintenance APIs", () => {
   it("keeps direct singleton-style views and special query operations on entity authority", () => {
     const root = seeded();
     seedLegacySecrets(root);
-    for (const family of ["docs", "objective", "todo"]) {
+    for (const family of ["docs", "objective"]) {
       const result = capture(root, ["state", family, "--format", "json"]);
-      expect(result.rc, `${family}: ${result.err || result.out}`).toBe(0);
-      expect(result.out).toContain(`\"artifact\": \"${family}\"`);
+      expect(result.rc, `${family}: ${result.err || result.out}`).toBe(2);
+      expect(result.json.error).toMatchObject({ class: "invalid_request", recovery: expect.stringContaining(`state ${family} list`) });
       expect(result.out).not.toContain("LEGACY_");
     }
+    const todo = capture(root, ["state", "todo", "--format", "json"]); expect(todo.rc).toBe(0); expect(todo.out).toContain('"artifact": "todo"'); expect(todo.out).not.toContain("LEGACY_");
     const phase = capture(root, ["state", "query", "last-phase", "--format", "json"]);
     expect(phase.rc).toBe(0); expect(phase.json).toMatchObject({ phase: "build", id: "aaaaaaaaaa", artifact: "progress" }); expect(phase.out).not.toContain("LEGACY_");
     const inventory = capture(root, ["state", "query", "--list-artifacts", "--format", "json"]);
@@ -175,8 +176,8 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     const decisionView = capture(decisions, ["state", "decisions", "--limit", "2", "--format", "json"]); expect(decisionView.rc, decisionView.err).toBe(0); expect(Buffer.byteLength(decisionView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(decisionView.json).toMatchObject({ status: "degraded", counts: { returned: 2, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 2 } });
 
     const plans = project(); entity(plans, "plan", "plan", "cccccccccc", { header: { level: "light", created: "2026-07-17", status: "open", title: "Bounded" }, what: "x".repeat(20_000), why: "Y", scope: { included: ["state"], excluded: [] } });
-    for (const id of ["dddddddddd", "eeeeeeeeee"]) entity(plans, "plan", "plan_task", id, { plan: "cccccccccc", name: "Task", status: "pending", depends_on: [], acceptance: ["x".repeat(6_000)] });
-    const planView = capture(plans, ["state", "plan", "--limit", "2", "--format", "json"]); expect(planView.rc, planView.err).toBe(0); expect(Buffer.byteLength(planView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(planView.json).toMatchObject({ status: "degraded", counts: { returned: 2, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 2 } }); expect(planView.json.plan.id).toBe("cccccccccc");
+    for (const id of ["dddddddddd", "eeeeeeeeee"]) entity(plans, "plan", "plan_task", id, { plan: "cccccccccc", name: "Task", status: "pending", depends_on: [], acceptance: ["x".repeat(16_000)] });
+    const planView = capture(plans, ["state", "plan", "tasks", "list", "cccccccccc", "--limit", "2", "--format", "json"]); expect(planView.rc, planView.err).toBe(0); expect(Buffer.byteLength(planView.out, "utf8")).toBeLessThanOrEqual(32_768); expect(planView.json).toMatchObject({ status: "degraded", counts: { returned: 2, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 2 } }); expect(planView.json.filters.plan).toBe("cccccccccc");
   });
 
   it("rejects every legacy selector and reports exact missing IDs", () => {
@@ -190,11 +191,11 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     const missing = capture(root, ["state", "progress", "get", "--id", "zzzzzzzzzz", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.json.error).toMatchObject({ class: "not_found", id: "zzzzzzzzzz", artifact: "progress" });
   });
 
-  it("keeps entity plan-selection recovery on bare IDs and canonical commands", () => {
+  it("corrects bare plan reads to canonical list/get commands", () => {
     const none = project(); entity(none, "plan", "plan", "aaaaaaaaaa", { header: { level: "light", created: "2026-07-17", status: "complete", title: "Done" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
-    const missing = capture(none, ["state", "plan", "--format", "json"]); expect(missing.rc).toBe(1); expect(missing.json.error.recovery).toContain("state plan get --id ID"); expect(missing.json.error.recovery).not.toMatch(/--plan(?:\s|$)/);
+    const missing = capture(none, ["state", "plan", "--format", "json"]); expect(missing.rc).toBe(2); expect(missing.json.error).toMatchObject({ class: "invalid_request", syntax: expect.stringContaining("state plan get --id ID"), recovery: expect.stringContaining("state plan list") });
     const many = seeded(); entity(many, "plan", "plan", "kkkkkkkkkk", { header: { level: "light", created: "2026-07-16", status: "open", title: "Other" }, what: "W", why: "Y", scope: { included: ["state"], excluded: [] } });
-    const ambiguous = capture(many, ["state", "plan", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(ambiguous.json.error.recovery).toContain("state plan get --id ID"); expect(ambiguous.json.error.recovery).not.toMatch(/--plan(?:\s|$)/);
+    const ambiguous = capture(many, ["state", "plan", "--format", "json"]); expect(ambiguous).toEqual(missing);
   });
 
   it("validates complete and empty graphs without mutating files", () => {

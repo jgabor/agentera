@@ -29,7 +29,7 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
       message,
       syntax: list
         ? family.syntax
-        : "agentera state plan get --id ID --format json",
+        : family.get,
       example: list
         ? family.example
         : "agentera state plan get --id qjtrmnpvka --format json",
@@ -49,12 +49,11 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; plan?: string; id?: string; status?: string; selector: EntityListSelectorInput } {
+function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; id?: string; status?: string; selector: EntityListSelectorInput } {
   const family = entityListFamily("plans");
   let format: Format = "text";
   let limit = family.bounds.default;
   let cursor: string | undefined;
-  let plan: string | undefined;
   let id: string | undefined;
   let status: string | undefined;
   const selector: EntityListSelectorInput = {};
@@ -65,8 +64,9 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
       if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
       selector.idsOnly = true; index += 1; continue;
     }
-    const name = ["--format", "--limit", "--cursor", "--plan", "--id", "--status", "--fields"].find((flag) => token === flag || token.startsWith(`${flag}=`));
-    if (!name || (verb === "list" && (name === "--plan" || name === "--id")) || (verb === "get" && (name === "--limit" || name === "--cursor" || name === "--status" || name === "--fields"))) {
+    const allowed = verb === "list" ? ["--format", "--limit", "--cursor", "--status", "--fields"] : ["--format", "--id"];
+    const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
+    if (!name) {
       throw failure(`unrecognized argument '${token}'`, verb);
     }
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
@@ -87,10 +87,9 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
       const validStatuses = family.filters.find(({ name }) => name === "status")?.values;
       if (!Array.isArray(validStatuses) || !validStatuses.includes(parsed.value)) throw failure(`invalid --status '${parsed.value}'`, verb);
       status = parsed.value;
-    } else if (name === "--plan") plan = parsed.value;
-    else id = parsed.value;
+    } else id = parsed.value;
   }
-  return { format, limit, ...(cursor ? { cursor } : {}), ...(plan ? { plan } : {}), ...(id ? { id } : {}), ...(status ? { status } : {}), selector };
+  return { format, limit, ...(cursor ? { cursor } : {}), ...(id ? { id } : {}), ...(status ? { status } : {}), selector };
 }
 
 function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
@@ -114,7 +113,7 @@ export function runPlans(argv: string[], io: Io): number {
   if (verb !== "list" && verb !== "get") return emitFailure(failure(`expected 'list' or 'get', received '${verb ?? "nothing"}'`, "list"), format, io);
   try {
     const args = parse(argv.slice(1), verb);
-    if (verb === "get" && (!args.id || args.plan)) throw failure("entity mode requires --id ID and does not accept --plan", verb);
+    if (verb === "get" && !args.id) throw failure("entity mode requires --id ID", verb);
     const response = verb === "list"
       ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format, selector: args.selector, ...(args.status ? { statuses: [args.status] } : {}) })
       : getPlanEntity(process.cwd(), args.id!);

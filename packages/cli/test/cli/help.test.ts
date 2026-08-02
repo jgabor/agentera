@@ -102,6 +102,17 @@ describe("cli help", () => {
     expect(out).toContain("minimum 1, default 20, maximum 100");
   });
 
+  it("generates truthful artifact read help from authority bare behavior", () => {
+    const progress = printStateHelp("progress");
+    const health = printStateHelp("health");
+    const docs = printStateHelp("docs");
+    expect(progress).toContain("Bare: agentera state progress is a strict alias of List.");
+    expect(health).toContain("Bare: rejected with recovery to agentera state health list");
+    expect(docs).toContain("Bare: rejected with recovery to agentera state docs list");
+    expect(health).not.toContain("usage: agentera state health [-h]");
+    expect(docs).not.toContain("usage: agentera state docs [-h]");
+  });
+
   it("documents only the read-only entity migration diagnostic", () => {
     const backfill = printStateHelp("backfill");
     expect(stateCommandNames()).not.toContain("backfill");

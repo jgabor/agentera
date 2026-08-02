@@ -1,31 +1,38 @@
 import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
+import { entityListFamily } from "../../state/entityRetrievalHelp.js";
+import type { EntityListRuntimeFamilyKey } from "../../state/entityListRuntimeRegistry.js";
 
 export type Env = Record<string, string | undefined>;
 
 export const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
 
+function canonicalListCommand(key: EntityListRuntimeFamilyKey): string {
+  const family = entityListFamily(key);
+  return `agentera state ${family.commandTokens.join(" ")} list --format json`;
+}
+
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
-  plan: "agentera state plan --format json",
-  docs: "agentera state docs --format json",
-  progress: "agentera state progress list --limit 20 --format json",
-  health: "agentera state health list --limit 20 --format json",
-  todo: "agentera state todo --format json",
-  decisions: "agentera state decisions list --limit 20 --format json",
+  plan: canonicalListCommand("plans"),
+  docs: canonicalListCommand("docs"),
+  progress: canonicalListCommand("progress"),
+  health: canonicalListCommand("health"),
+  todo: canonicalListCommand("todo"),
+  decisions: canonicalListCommand("decisions"),
   changelog: "agentera state query changelog --format json",
-  objective: "agentera state objective --format json",
-  experiments: "agentera state experiments list --objective ID --limit 20 --format json",
+  objective: canonicalListCommand("objective"),
+  experiments: entityListFamily("experiments").syntax,
 };
 
 export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {
-  progress: "agentera state progress list --limit 20 --format json",
-  decisions: "agentera state decisions list --limit 20 --format json",
-  health: "agentera state health list --limit 20 --format json",
+  progress: canonicalListCommand("progress"),
+  decisions: canonicalListCommand("decisions"),
+  health: canonicalListCommand("health"),
 };
 
 export const STATE_FAMILY_GET_COMMANDS: Record<string, string> = {
-  progress: "agentera state progress get --id ID --format json",
-  decisions: "agentera state decisions get --id ID --format json",
-  health: "agentera state health get --id ID --format json",
+  progress: entityListFamily("progress").get,
+  decisions: entityListFamily("decisions").get,
+  health: entityListFamily("health").get,
 };
 export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set([
   "plan", "docs", "progress", "health", "todo", "objective", "benchmark_context",

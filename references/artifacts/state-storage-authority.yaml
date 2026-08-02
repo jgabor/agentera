@@ -116,27 +116,35 @@ entity_target:
       families:
         progress:
           command_tokens: [progress]
+          bare_read: alias
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
             - { flag: --status STATUS, name: status, values: free_text }
           example: agentera state progress list --limit 20 --format json
         decisions:
           command_tokens: [decisions]
+          bare_read: alias
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
           example: agentera state decisions list --limit 20 --format json
         health:
           command_tokens: [health]
+          bare_read: correction
+          bare_recovery: agentera state health list --limit 20 --format json
           filters:
             - { flag: --dimension DIMENSION, name: dimension, values: free_text }
           example: agentera state health list --limit 20 --format json
         plans:
           command_tokens: [plan]
+          bare_read: correction
+          bare_recovery: agentera state plan list --status open --limit 20 --format json
           filters:
             - { flag: '--status open|complete|archived', name: status, values: [open, complete, archived] }
           example: agentera state plan list --status open --limit 20 --format json
         plan_tasks:
           command_tokens: [plan, tasks]
+          bare_read: correction
+          bare_recovery: agentera state plan tasks list --limit 20 --format json
           family_identifier:
             syntax: PLAN_ID
             required: false
@@ -145,10 +153,14 @@ entity_target:
           example: agentera state plan tasks list --limit 20 --format json
         objective:
           command_tokens: [objective]
+          bare_read: correction
+          bare_recovery: agentera state objective list --limit 20 --format json
           filters: []
           example: agentera state objective list --limit 20 --format json
         experiments:
           command_tokens: [experiments]
+          bare_read: correction
+          bare_recovery: agentera state objective list --limit 20 --format json
           family_identifier:
             syntax: --objective ID
             required: true
@@ -157,19 +169,42 @@ entity_target:
           example: agentera state experiments list --objective qjtrmnpvka --limit 20 --format json
         todo:
           command_tokens: [todo]
+          bare_read: alias
           filters:
             - { flag: --severity SEVERITY, name: severity, values: free_text }
             - { flag: --status STATUS, name: status, values: free_text }
-          summary_fields: [id, artifact, queue_rank, retrieval.get]
+          summary_fields: [id, artifact, public_order, readiness, actionability, queue_rank, reconciliation, retrieval.get]
           summary_field_notes:
+            public_order:
+              description: Markdown-owned one-based order within the item's public section, or null before reconciliation activation.
+              ownership: markdown_read_projection
+              persisted: false
+              filter: false
+            readiness:
+              description: Public lifecycle state plus whether Agentera readiness declares an explicit blocker.
+              ownership: agentera_operational_projection
+              persisted: false
+              filter: false
+            actionability:
+              description: Read-only TODO readiness outcome and eligibility computed across the complete TODO snapshot.
+              ownership: computed_read_snapshot
+              persisted: false
+              filter: false
             queue_rank:
               description: Computed one-based position in the complete ordered TODO snapshot before filters.
+              ownership: computed_read_snapshot
+              persisted: false
+              filter: false
+            reconciliation:
+              description: Global reconciliation status and item-specific drift state for this read snapshot.
               ownership: computed_read_snapshot
               persisted: false
               filter: false
           example: agentera state todo list --severity critical --ids-only --limit 20 --format json
         docs:
           command_tokens: [docs]
+          bare_read: correction
+          bare_recovery: agentera state docs list --limit 20 --format json
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
             - { flag: --status STATUS, name: status, values: free_text }

@@ -1,5 +1,3 @@
-import { cmdState, StateArgs } from "../commands/state/index.js";
-import { COMMAND_FILTERS } from "../stateQuery.js";
 import { cmdQuery, QueryArgs } from "../commands/query.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
@@ -10,89 +8,60 @@ import { runStateList } from "../commands/state/list.js";
 import { runPlanTasks } from "../commands/state/planTasks.js";
 import { runPlans } from "../commands/state/plans.js";
 import { runExperimentRecords } from "../commands/state/experimentRecords.js";
-import { runtimeEntityListFamilyForStateArgs } from "../../state/entityListRuntimeRegistry.js";
+import { runtimeEntityFamilyForStateCommand } from "../../state/entityListRuntimeRegistry.js";
+import { entityListFamily, entityListValidValues } from "../../state/entityRetrievalHelp.js";
+import { emitStructured } from "../structured.js";
+import { verbsForArtifact } from "../../state/write/operations.js";
 
-export function parseStateArgs(command: string, argv: string[]): StateArgs | { error: string } {
-  const args: StateArgs = {
-    command,
-    topic: null,
-    status: null,
-    dimension: null,
-    severity: null,
-    limit: null,
-    format: "text",
-    fields: null,
-    cursor: null,
-    objective: null,
-  };
-  const allowed = new Set([...(COMMAND_FILTERS[command] ?? []), "format", "fields"]);
-  let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
-  for (; i < argv.length; i++) {
-    const a = argv[i];
-    const named = (flag: string, key: string): boolean => allowed.has(key) && (a === flag || a.startsWith(flag + "="));
-    let v: string | null;
-    if (named("--topic", "topic")) args.topic = value("--topic");
-    else if (named("--status", "status")) args.status = value("--status");
-    else if (named("--dimension", "dimension")) args.dimension = value("--dimension");
-    else if (named("--severity", "severity")) args.severity = value("--severity");
-    else if (named("--cursor", "cursor")) args.cursor = value("--cursor");
-    else if (named("--objective", "objective")) args.objective = value("--objective");
-    else if (named("--limit", "limit")) {
-      v = value("--limit");
-      const n = Number(v);
-      if (!Number.isInteger(n)) return { error: `argument --limit: invalid int value: '${v}'` };
-      args.limit = n;
-    } else if (a === "--format" || a.startsWith("--format=")) {
-      v = value("--format");
-      if (v !== "text" && v !== "json" && v !== "yaml") {
-        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')` };
-      }
-      args.format = v;
-    } else if (a === "--fields" || a.startsWith("--fields=")) args.fields = value("--fields");
-    else return { error: `unrecognized arguments: ${a}` };
-  }
-  return args;
+function canonicalReadCorrection(familyKey: Parameters<typeof entityListFamily>[0], argv: string[], io: Io): number {
+  const family = entityListFamily(familyKey);
+  const recoveryCommand = family.bareRecovery ?? family.example;
+  const format: "text" | "json" | "yaml" = argv.some((token, index) => token === "--format=yaml" || (token === "--format" && argv[index + 1] === "yaml"))
+    ? "yaml"
+    : detectTopLevelFormat(argv);
+  const body = {
+    schemaVersion: "agentera.stateFailure.v1",
+    status: "fail",
+    error: {
+      class: "invalid_request",
+      message: `bare state ${family.commandTokens.join(" ")} is not a canonical record-family read`,
+      syntax: `${family.syntax} | ${family.get}`,
+      valid_values: ["list", "get", ...entityListValidValues(family)],
+      example: recoveryCommand,
+      recovery: `Run \`${recoveryCommand}\`; no state was changed.`,
+      artifact: family.key,
+    },
+  } as const;
+  if (format === "json" || format === "yaml") emitStructured(body, format, io.out ?? ((text) => process.stdout.write(text)));
+  else (io.err ?? ((text) => process.stderr.write(text)))(`Error: ${body.error.message}\nSyntax: ${body.error.syntax}\nExample: ${body.error.example}\nRecovery: ${body.error.recovery}\n`);
+  return 2;
 }
 
 export function runState(command: string, argv: string[], io: Io, prog: string): number {
-  const listFamily = runtimeEntityListFamilyForStateArgs(command, argv);
-  if (listFamily?.parser === "generic") return runStateList(command, argv.slice(1), io);
-  if (listFamily?.parser === "plans") return runPlans(argv, io);
-  if (listFamily?.parser === "plan_tasks") return runPlanTasks(argv.slice(1), io);
-  if (listFamily?.parser === "experiments") return runExperimentRecords(argv, io);
-  if (command === "experiments" && argv[0] === "get") {
-    return runExperimentRecords(argv, io);
+  const runtime = runtimeEntityFamilyForStateCommand(command, argv);
+  if (runtime) {
+    const offset = runtime.commandTokens.length - 1;
+    const familyArgv = argv.slice(offset);
+    const verb = familyArgv[0];
+    if (verb === "list" || verb === "get") {
+      if (runtime.parser === "generic") return verb === "list" ? runStateList(command, familyArgv.slice(1), io) : runStateGet(command, familyArgv.slice(1), io);
+      if (runtime.parser === "plans") return runPlans(familyArgv, io);
+      if (runtime.parser === "plan_tasks") return runPlanTasks(familyArgv, io);
+      return runExperimentRecords(familyArgv, io);
+    }
+    const family = entityListFamily(runtime.key as Parameters<typeof entityListFamily>[0]);
+    const writeVerb = verb !== undefined && verbsForArtifact(command).some((candidate) => candidate === verb);
+    if (writeVerb && runtime.commandTokens.length === 1) return runStateWrite(command, argv, io);
+    if (family.bareRead === "alias") return runStateList(command, familyArgv, io);
+    return canonicalReadCorrection(family.key, familyArgv, io);
   }
-  if (command === "plan" && argv[0] === "tasks") {
-    return runPlanTasks(argv.slice(1), io);
-  }
-  if (command === "plan" && argv[0] === "get") {
-    return runPlans(argv, io);
-  }
-  if (argv[0] === "get") {
-    return runStateGet(command, argv.slice(1), io);
-  }
-  if (argv[0] && !argv[0].startsWith("--")) {
+  if (argv[0] && verbsForArtifact(command).some((candidate) => candidate === argv[0])) {
     return runStateWrite(command, argv, io);
   }
-  const parsed = parseStateArgs(command, argv);
-  if ("error" in parsed) {
-    return emitInvalidInput(io, {
-      format: detectTopLevelFormat(argv),
-      body: classifyParseError(parsed.error),
-    });
-  }
-  try {
-    return cmdState(parsed, io);
-  } catch (exc) {
-    return emitInvalidInput(io, {
-      format: asEnvelopeFormat(parsed.format),
-      body: { class: "unsupported_target", message: (exc as Error).message },
-    });
-  }
+  return emitInvalidInput(io, {
+    format: detectTopLevelFormat(argv),
+    body: { class: "unsupported_target", message: `unsupported state artifact or operation '${command} ${argv[0] ?? ""}'`.trim() },
+  });
 }
 
 export function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {

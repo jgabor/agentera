@@ -11,6 +11,7 @@ import { capabilityContext } from "../../src/cli/capabilityContext/contract.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import { main } from "../../src/cli/dispatch.js";
 import { printStateHelp } from "../../src/cli/help.js";
+import { stateCommandNames } from "../../src/cli/help.js";
 import { entityPublicRetrieval } from "../../src/state/retrievalAuthority.js";
 import { entityListFamilies, entityListValidValues, validateEntityListHelp } from "../../src/state/entityRetrievalHelp.js";
 import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeRegistry.js";
@@ -103,6 +104,22 @@ function seedExecutableExamples(root: string): void {
   }));
 }
 
+function seedAliasRecords(root: string): void {
+  const records = [
+    ["progress", "progress_cycle", "baaaaaaaaa", { timestamp: "2026-08-02 05:00", type: "fix", phase: "build", what: "First alias fixture", context: { intent: "test alias parity" } }],
+    ["progress", "progress_cycle", "caaaaaaaaa", { timestamp: "2026-08-02 04:00", type: "fix", phase: "build", what: "Second alias fixture", context: { intent: "test alias parity" } }],
+    ["decisions", "decision", "daaaaaaaaa", { date: "2026-08-02", question: "First?", context: "Alias parity", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "Canonical parser", confidence: "firm" }],
+    ["decisions", "decision", "eaaaaaaaaa", { date: "2026-08-01", question: "Second?", context: "Alias parity", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "Canonical parser", confidence: "firm" }],
+    ["todo", "todo_item", "faaaaaaaaa", { severity: "critical", status: "open", description: "First TODO alias fixture" }],
+    ["todo", "todo_item", "gaaaaaaaaa", { severity: "normal", status: "open", description: "Second TODO alias fixture" }],
+  ] as const;
+  for (const [artifact, boundary, id, record] of records) {
+    const directory = path.join(root, ".agentera/entities", artifact, boundary);
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({ id, artifact, record }));
+  }
+}
+
 function cutoverProject(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "retrieval-contract-"));
   roots.push(root);
@@ -127,6 +144,20 @@ function capture(root: string, argv: string[]): { rc: number; out: string; err: 
 afterEach(() => { for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
 describe("final entity retrieval public-contract parity", () => {
+  it("keeps an independent exact implementation-completeness sentinel", () => {
+    expect(ENTITY_LIST_RUNTIME_FAMILIES.map(({ key, artifact, boundary }) => [key, artifact, boundary])).toEqual([
+      ["progress", "progress", "progress_cycle"],
+      ["decisions", "decisions", "decision"],
+      ["health", "health", "health_audit"],
+      ["plans", "plan", "plan"],
+      ["plan_tasks", "plan", "plan_task"],
+      ["objective", "objective", "objective"],
+      ["experiments", "experiments", "experiment"],
+      ["todo", "todo", "todo_item"],
+      ["docs", "docs", "documentation_inventory_entry"],
+    ]);
+  });
+
   it("validates and loads every authority-declared list-help family", () => {
     const authority = authorityDocument();
     expect(validateEntityListHelp(authority)).toEqual([]);
@@ -186,6 +217,17 @@ describe("final entity retrieval public-contract parity", () => {
     const sourceRoot = mutatedSourceRoot(authority);
     withSourceRoot(sourceRoot, () => {
       expect(() => buildSchemaPayload("schema")).toThrow(/invalid entity list help authority: .*\.example\.limit/);
+    });
+  });
+
+  it("projects changed authority bare behavior directly into artifact help", () => {
+    const authority = authorityDocument();
+    authority.entity_target.public_retrieval.list_help.families.health.bare_read = "alias";
+    delete authority.entity_target.public_retrieval.list_help.families.health.bare_recovery;
+    const sourceRoot = mutatedSourceRoot(authority);
+    withSourceRoot(sourceRoot, () => {
+      expect(validateEntityListHelp(authority)).toEqual([]);
+      expect(printStateHelp("health")).toContain("Bare: agentera state health is a strict alias of List.");
     });
   });
 
@@ -297,6 +339,75 @@ describe("final entity retrieval public-contract parity", () => {
         example: family.example,
         recovery: `Run \`${family.example}\`; no state was changed.`,
       });
+    }
+  });
+
+  it("makes every supported bare read an exact list alias or an executable canonical correction", () => {
+    const root = cutoverProject();
+    seedExecutableExamples(root);
+    for (const family of entityListFamilies(REPO_ROOT)) {
+      const bare = capture(root, ["state", ...family.commandTokens, "--format", "json"]);
+      if (family.bareRead === "alias") {
+        const explicit = capture(root, ["state", ...family.commandTokens, "list", "--format", "json"]);
+        expect(bare, family.key).toEqual(explicit);
+      } else {
+        expect(bare, family.key).toMatchObject({ rc: 2, err: "" });
+        const correction = JSON.parse(bare.out).error;
+        expect(correction).toMatchObject({ class: "invalid_request", example: family.bareRecovery, recovery: `Run \`${family.bareRecovery}\`; no state was changed.` });
+        expect(capture(root, exampleArgs(family.bareRecovery!)).rc, family.key).toBe(0);
+      }
+    }
+  });
+
+  it("keeps alias families byte-identical across valid and malformed list grammar while preserving writer dispatch", () => {
+    const root = cutoverProject();
+    seedAliasRecords(root);
+    const scenarios: Record<string, string[][]> = {
+      progress: [["--format", "json"], ["extra", "--format", "json"], ["--unknown", "--format", "json"], ["--topic", "alias", "--ids-only", "--format", "json"], ["--fields", "status", "--format", "yaml"], ["--format", "text"]],
+      decisions: [["--format", "json"], ["extra", "--format", "json"], ["--unknown", "--format", "json"], ["--topic", "alias", "--ids-only", "--format", "json"], ["--fields", "confidence", "--format", "yaml"], ["--format", "text"]],
+      todo: [["--format", "json"], ["extra", "--format", "json"], ["--unknown", "--format", "json"], ["--status", "open", "--ids-only", "--format", "json"], ["--fields", "status", "--format", "yaml"], ["--format", "text"]],
+    };
+    for (const key of ["progress", "decisions", "todo"] as const) {
+      const family = entityListFamilies(REPO_ROOT).find((candidate) => candidate.key === key)!;
+      for (const args of scenarios[key]) {
+        const bare = capture(root, ["state", ...family.commandTokens, ...args]);
+        const explicit = capture(root, ["state", ...family.commandTokens, "list", ...args]);
+        expect(bare, `${key}: ${args.join(" ")}`).toEqual(explicit);
+      }
+      const first = capture(root, ["state", ...family.commandTokens, "list", "--limit", "1", "--format", "json"]);
+      const cursor = JSON.parse(first.out).next_cursor;
+      expect(cursor).toEqual(expect.any(String));
+      expect(capture(root, ["state", ...family.commandTokens, "--limit", "1", "--cursor", cursor, "--format", "json"])).toEqual(
+        capture(root, ["state", ...family.commandTokens, "list", "--limit", "1", "--cursor", cursor, "--format", "json"]),
+      );
+      const writer = capture(root, ["state", ...family.commandTokens, "explain", "--format", "json"]);
+      expect(writer.rc, key).toBe(0);
+      expect(JSON.parse(writer.out)).toMatchObject({ schemaVersion: "agentera.stateWriteExplain.v1", artifact: key });
+    }
+    const empty = cutoverProject();
+    for (const key of ["progress", "decisions", "todo"] as const) {
+      const family = entityListFamilies(REPO_ROOT).find((candidate) => candidate.key === key)!;
+      expect(capture(empty, ["state", ...family.commandTokens, "--format", "json"])).toEqual(capture(empty, ["state", ...family.commandTokens, "list", "--format", "json"]));
+    }
+  });
+
+  it("routes and discovers every registry family without a legacy retrieval handler map", () => {
+    const commandRoots = new Set(stateCommandNames());
+    for (const family of ENTITY_LIST_RUNTIME_FAMILIES) expect(commandRoots.has(family.commandTokens[0]), family.key).toBe(true);
+    expect(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/src/cli/commands/state/index.ts"), "utf8")).not.toContain("STATE_COMMAND_HANDLERS");
+    expect(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/src/cli/dispatch/index.ts"), "utf8")).toContain("runtimeEntityFamiliesForCommand(sub)");
+  });
+
+  it("generates exact-get help and structured selector rejection for every authority family", () => {
+    const root = cutoverProject();
+    seedExecutableExamples(root);
+    for (const family of entityListFamilies(REPO_ROOT)) {
+      const help = capture(root, ["state", ...family.commandTokens, "get", "--help"]);
+      expect(help, family.key).toMatchObject({ rc: 0, err: "" });
+      expect(help.out).toContain(`usage: ${family.get}`);
+      const rejected = capture(root, ["state", ...family.commandTokens, "get", "extra", "--format", "json"]);
+      expect(rejected, family.key).toMatchObject({ rc: 2, err: "" });
+      expect(JSON.parse(rejected.out).error).toMatchObject({ class: "invalid_request", syntax: family.get });
     }
   });
 

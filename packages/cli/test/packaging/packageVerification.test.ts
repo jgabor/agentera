@@ -35,12 +35,12 @@ function isolatedPackageEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEn
   return env;
 }
 
-function publicListFamilies(): Array<{ key: string; commandTokens: readonly string[]; syntax: string; example: string }> {
+function publicListFamilies(): Array<{ key: string; commandTokens: readonly string[]; syntax: string; get: string; example: string; bareRead: "alias" | "correction" }> {
   const authority = YAML.parse(fs.readFileSync(path.join(CHECKOUT_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
   const retrieval = authority.entity_target.public_retrieval;
   return ENTITY_LIST_RUNTIME_FAMILIES.map((runtime) => {
-    const family = retrieval.list_help.families[runtime.key] as { command_tokens: string[]; example: string };
-    return { key: runtime.key, commandTokens: runtime.commandTokens, syntax: retrieval.commands[runtime.key].list, example: family.example };
+    const family = retrieval.list_help.families[runtime.key] as { command_tokens: string[]; example: string; bare_read: "alias" | "correction" };
+    return { key: runtime.key, commandTokens: runtime.commandTokens, syntax: retrieval.commands[runtime.key].list, get: retrieval.commands[runtime.key].get, example: family.example, bareRead: family.bare_read };
   });
 }
 
@@ -574,9 +574,65 @@ describe("npm distribution boundary", () => {
         expect(packagedHuman.stderr).toBe(sourceHuman.stderr);
         expect(sourceHuman.stderr).toContain(`Example: ${family.example}`);
         for (const value of correction.valid_values) expect(sourceHuman.stderr).toContain(value);
+
+        const getHelpArgs = ["state", ...family.commandTokens, "get", "--help"];
+        const sourceGetHelp = run(process.execPath, [sourceBin, ...getHelpArgs], project, isolatedPackageEnv());
+        const packagedGetHelp = run(process.execPath, [packagedBin, ...getHelpArgs], project, isolatedPackageEnv());
+        expect(packagedGetHelp.status).toBe(0);
+        expect(packagedGetHelp.stdout).toBe(sourceGetHelp.stdout);
+        expect(sourceGetHelp.stdout).toContain(`usage: ${family.get}`);
+
+        const rejectedGetArgs = ["state", ...family.commandTokens, "get", "extra", "--format", "json"];
+        const sourceRejectedGet = run(process.execPath, [sourceBin, ...rejectedGetArgs], project, isolatedPackageEnv());
+        const packagedRejectedGet = run(process.execPath, [packagedBin, ...rejectedGetArgs], project, isolatedPackageEnv());
+        expect(sourceRejectedGet.status).toBe(2);
+        expect(packagedRejectedGet.stdout).toBe(sourceRejectedGet.stdout);
+        expect(JSON.parse(sourceRejectedGet.stdout).error).toMatchObject({ class: "invalid_request", syntax: family.get });
+
+        const bareArgs = ["state", ...family.commandTokens, "--format", "json"];
+        const sourceBare = run(process.execPath, [sourceBin, ...bareArgs], project, isolatedPackageEnv());
+        const packagedBare = run(process.execPath, [packagedBin, ...bareArgs], project, isolatedPackageEnv());
+        expect(packagedBare.status).toBe(sourceBare.status);
+        expect(packagedBare.stdout).toBe(sourceBare.stdout);
+        if (family.bareRead === "alias") {
+          const explicitArgs = ["state", ...family.commandTokens, "list", "--format", "json"];
+          const sourceExplicit = run(process.execPath, [sourceBin, ...explicitArgs], project, isolatedPackageEnv());
+          expect(sourceBare.stdout).toBe(sourceExplicit.stdout);
+          const malformedBareArgs = ["state", ...family.commandTokens, "extra", "--format", "json"];
+          const malformedListArgs = ["state", ...family.commandTokens, "list", "extra", "--format", "json"];
+          const sourceMalformedBare = run(process.execPath, [sourceBin, ...malformedBareArgs], project, isolatedPackageEnv());
+          const sourceMalformedList = run(process.execPath, [sourceBin, ...malformedListArgs], project, isolatedPackageEnv());
+          const packagedMalformedBare = run(process.execPath, [packagedBin, ...malformedBareArgs], project, isolatedPackageEnv());
+          expect(sourceMalformedBare.status).toBe(2);
+          expect(sourceMalformedBare.stdout).toBe(sourceMalformedList.stdout);
+          expect(packagedMalformedBare.stdout).toBe(sourceMalformedBare.stdout);
+          const writer = run(process.execPath, [packagedBin, "state", ...family.commandTokens, "explain", "--format", "json"], project, isolatedPackageEnv());
+          expect(writer.status, writer.stderr).toBe(0);
+          expect(JSON.parse(writer.stdout)).toMatchObject({ schemaVersion: "agentera.stateWriteExplain.v1", artifact: family.key });
+        } else {
+          expect(sourceBare.status).toBe(2);
+          const bareCorrection = JSON.parse(sourceBare.stdout).error.example.split(" ").slice(1);
+          expect(run(process.execPath, [sourceBin, ...bareCorrection], project, isolatedPackageEnv()).status).toBe(0);
+          expect(run(process.execPath, [packagedBin, ...bareCorrection], project, isolatedPackageEnv()).status).toBe(0);
+        }
       }
     } finally {
       fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when the isolated package authority loses required bare-read recovery", () => {
+    const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/state-storage-authority.yaml");
+    const original = fs.readFileSync(authorityPath);
+    try {
+      const authority = YAML.parse(original.toString("utf8"));
+      delete authority.entity_target.public_retrieval.list_help.families.health.bare_recovery;
+      fs.writeFileSync(authorityPath, YAML.stringify(authority));
+      const result = run(process.execPath, [path.join(fixture.packageRoot, "dist/bin/agentera.js"), "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+      expect(result.status).not.toBe(0);
+      expect(result.stderr + result.stdout).toContain("bare_recovery");
+    } finally {
+      fs.writeFileSync(authorityPath, original);
     }
   });
 

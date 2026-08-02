@@ -311,7 +311,7 @@ describe("retained entity writer contract matrix", () => {
     ["decision satisfaction input", ["decisions", "update", "--id", "aaaaaaaaaa", "--input", "-", "--format", "json"], "mutually_exclusive"],
     ["numeric plan selector", ["plan", "set-status", "--task", "1", "--status", "complete", "--format", "json"], "unrecognized_argument"],
     ["missing decision target", ["decisions", "update", "--satisfaction-state", "open", "--format", "json"], "missing_argument"],
-    ["unknown write verb", ["progress", "archive", "--format", "json"], "invalid_choice"],
+    ["unknown write verb", ["progress", "archive", "--format", "json"], "invalid_request"],
   ])("rejects %s before entity publication", (_label, args, classification) => {
     const root = project();
     const result = run(root, args as string[]);

@@ -740,8 +740,8 @@ describe("plan and task entity authority", () => {
     }
 
     const current = capture(root, ["state", "plan", "--format", "json"]);
-    expect(current.rc, current.err || current.out).toBe(0);
-    expect(JSON.parse(current.out).plan.id).toBe(active.id);
+    expect(current.rc).toBe(2);
+    expect(JSON.parse(current.out).error).toMatchObject({ class: "invalid_request", recovery: expect.stringContaining("state plan list") });
     const filtered = capture(root, ["state", "plan", "list", "--status", "archived", "--limit", "100", "--format", "json"]);
     expect(filtered.rc, filtered.err || filtered.out).toBe(0);
     expect(JSON.parse(filtered.out)).toMatchObject({ counts: { total: 21, returned: 21 }, filters: { status: ["archived"] } });

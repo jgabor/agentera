@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdQuery } from "../../src/cli/commands/query.js";
 import { main } from "../../src/cli/dispatch.js";
+import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 
 let tmp: string;
 beforeEach(() => {
@@ -46,7 +47,7 @@ describe("cli query", () => {
     expect(Array.isArray(payload.names)).toBe(true);
     expect(Array.isArray(payload.artifacts)).toBe(true);
     const progress = payload.artifacts.find((a: { artifact: string }) => a.artifact === "progress");
-    expect(progress.normal_read_command).toBe("agentera state progress list --limit 20 --format json");
+    expect(progress.normal_read_command).toBe(STATE_FAMILY_LIST_COMMANDS.progress);
     const glossary = payload.artifacts.find((a: { artifact: string }) => a.artifact === "glossary");
     expect(glossary).toMatchObject({
       implementation_status: "active",

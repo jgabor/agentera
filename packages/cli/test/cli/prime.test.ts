@@ -16,6 +16,7 @@ import { appendHealthEntity } from "../../src/state/healthEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 import { cmdQuery } from "../../src/cli/commands/query.js";
+import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 import {
   CHANGELOG_MAX_HEADING_BYTES,
   CHANGELOG_MAX_OUTPUT_BYTES,
@@ -501,13 +502,13 @@ describe("cli prime", () => {
       expect(auditAfter.decision_context).toMatchObject({
         status: "caveated",
         summary: { total_entries: 1, returned_entries: 0, omitted_entries: 1, authority: "canonical_entity_files" },
-        caveats: [expect.stringContaining("agentera state decisions list --limit 20 --format json")],
+        caveats: [expect.stringContaining(STATE_FAMILY_LIST_COMMANDS.decisions)],
       });
       expect(auditAfter.decision_review_pressure).toMatchObject({
         status: "degraded",
         summary: { protected_active_decisions: 0, total_decisions: 1, omitted_decisions: 1 },
         stale_protected_decisions: [],
-        source_provenance: { command: "agentera state decisions list --limit 20 --format json" },
+        source_provenance: { command: STATE_FAMILY_LIST_COMMANDS.decisions },
       });
       expect(JSON.stringify(auditAfter)).not.toContain("HOSTILE LEGACY DECISION");
     } finally {

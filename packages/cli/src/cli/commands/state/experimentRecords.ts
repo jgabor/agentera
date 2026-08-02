@@ -29,14 +29,14 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
       message,
       syntax: list
         ? family.syntax
-        : "agentera state experiments get --id ID [--objective ID] --format json",
+        : family.get,
       example: list
         ? family.example
         : "agentera state experiments get --id qjtrmnpvka --format json",
       recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Use bare ten-letter entity IDs and retry; no state was changed.",
       valid_values: list
         ? entityListValidValues(family)
-        : ["get", "--id ID", "--objective ID", "--format text|json|yaml"],
+        : ["get", "--id ID", "--format text|json|yaml"],
     },
   }, 2);
 }
@@ -64,7 +64,7 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
       if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
       selector.idsOnly = true; index += 1; continue;
     }
-    const allowed = verb === "list" ? ["--format", "--objective", "--limit", "--cursor", "--fields"] : ["--format", "--objective", "--id"];
+    const allowed = verb === "list" ? ["--format", "--objective", "--limit", "--cursor", "--fields"] : ["--format", "--id"];
     const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
     if (!name) throw failure(`unrecognized argument '${token}'`, verb);
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);

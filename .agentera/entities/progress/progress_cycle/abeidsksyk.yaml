@@ -1,0 +1,15 @@
+id: abeidsksyk
+artifact: progress
+record:
+  timestamp: 2026-08-02 06:15
+  type: fix
+  phase: build
+  what: Enforced canonical record-family reads for progress/progress_cycle, decisions/decision, health/health_audit, plans/plan, plan_tasks/plan_task, objective/objective, experiments/experiment, todo/todo_item, and docs/documentation_inventory_entry through the authority-validated runtime registry.
+  context:
+    intent: Implement iddsqjadki for qjhjpzowae without lifecycle closeout.
+    constraints: Preserve the four staged M1 plan-task index blobs; do not commit, resolve, evaluate, or move NEXT.
+    scope: Canonical list/get dispatch, generated help and corrections, parser and startup recovery vocabulary, TODO read projections, source/package parity, and regression coverage.
+  discovered: Before the change, progress, decisions, and TODO bare JSON reads already reached list backends through a separate parser; health used a different default limit; plan, objective, experiments, and docs exposed semantically distinct aggregate or singleton behavior; plan tasks had no successful bare read. The authority declares exactly nine implemented retrieval boundaries.
+  verified: "Aliases: progress, decisions, and TODO are byte-equal to explicit list. Corrections: health, plans, plan_tasks, objective, experiments, and docs return structured list/get grammar; every returned recovery command executed. TODO reads expose id, Markdown public_order, open/blocked readiness, actionability, computed queue_rank, and reconciliation status/drift. A JSON/YAML/text/bare/help/error/filter/get read snapshot remained 0da997bcaa7dc36741a772d8ff99abdc29c6dc93afd66dfe22883799f25d5e34 before and after with zero journal, lock, temporary, or recovery residue. Source fixture: 9/9 list successes, 9/9 exact-get successes, 9/9 bare alias/correction successes, 9/9 structured get rejections. Isolated package: 9 source/package families with equal schema/help/list/bare/get rejection behavior; malformed bundled bare recovery failed closed. Criterion 1: authority-driven family runtime matrix and full source suite. Criterion 2: selector/filter/field/cursor/format/recovery tests plus schema/help/package parity. Criterion 3: TODO open, blocked, actionable, drifted, filtered, paginated, and no-mutation tests. Criterion 4: dynamic per-family success/rejection loops. Commands: pnpm -C packages/cli test (225 files, 3166 passed, 1 skipped); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; pnpm -C packages/cli run verify:package (2 files, 21 passed); pnpm -C packages/cli run pack:dry-run (762 files, no artifact); local check validate state (2054 entities, 0 issues); local check validate capability-contract (3 passed); local check compact (pass); pnpm -C packages/cli run lint (0 errors, 151 existing warnings); git diff --check (pass)."
+  next: Leave iddsqjadki and qjhjpzowae open for the independent evaluator; do not commit or change protected staged plan-task blobs.
+  publication_order: 44

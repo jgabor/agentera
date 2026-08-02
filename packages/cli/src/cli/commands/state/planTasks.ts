@@ -37,7 +37,7 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
       message,
       syntax: list
         ? family.syntax
-        : "agentera state plan tasks get --id ID --format json",
+        : family.get,
       example: list
         ? family.example
         : "agentera state plan tasks get --id qjtrmnpvka --format json",

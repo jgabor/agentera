@@ -1,0 +1,15 @@
+id: ldbcwxebwr
+artifact: progress
+record:
+  timestamp: 2026-08-02 07:39
+  type: test
+  phase: build
+  what: Replaced the stale exact near-budget byte assertion for qlgdfyvcsz with the authority-owned 12,000-byte invariant while preserving every content assertion.
+  context:
+    intent: Close the deterministic evidence gate in replacement task qlgdfyvcsz after blocked predecessor iddsqjadki exhausted two Audit evaluations.
+    constraints: Preserve both iddsqjadki FAIL records, keep iddsqjadki blocked and qlgdfyvcsz pending, and do not alter abeidsksyk, wdliwolakg, product source, staged M1 blobs, TODO, NEXT, or release state.
+    scope: Delete one transient exact-count test assertion and append this one typed progress record.
+  discovered: "iddsqjadki-audit-2 observed an 11,976-byte brief in its evaluation checkout: brief.status was ok, no budget error was present, required rich detail and caveats remained, and the owned 12,000-byte cap was satisfied. This checkout measured 11,872 before the edit and passed that exact assertion, confirming that one checkout-specific count was not the contract."
+  verified: The test now requires numeric utf8_bytes greater than 11,500 and at most PRIME_BRIEF_MAX_UTF8_BYTES (12,000), status ok, no error, authority-derived fallback commands, TODO total/returned/omitted detail, six attention items, next action, the empty-state caveat, profile validity/privacy, first-invocation and schema fields, and bounded degraded-envelope behavior. Targeted budget passed 1 file/2 tests. Focused nine-family retrieval, alias/correction, authority routing, and TODO no-mutation coverage passed 4 files/125 tests. Full source passed 225 files/3,171 tests with 1 platform skip after one unrelated heap-measurement retry; typecheck and local build passed; package parity passed 2 files/21 tests; local state validation passed with 2,057 entities and 0 issues; capability contract passed 3/3; compact and git diff --check passed. Product-source diff SHA-256 remained e6a5877b9828dc4b396810989fdb87262453c6b801baf0024c0373f4ac4a8e9c.
+  next: Rerun the targeted budget test and full source suite after this append; leave all lifecycle state unchanged and do not commit.
+  publication_order: 46

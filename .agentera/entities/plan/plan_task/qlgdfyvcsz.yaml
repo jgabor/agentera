@@ -1,0 +1,25 @@
+id: qlgdfyvcsz
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 · Close canonical-read budget gate (qjhjpzowae)
+  status: complete
+  depends_on:
+    - ewkfnxucxq
+    - ybpdvkidaq
+    - ayfhtkeitz
+  acceptance:
+    - GIVEN the near-budget startup fixture WHEN canonical fallback text changes within the owned contract THEN the test enforces at most 12000 bytes and all required detail instead of one transient exact byte count.
+    - GIVEN the complete replacement checkout WHEN verification runs THEN the targeted budget test and full source suite pass without weakening content assertions.
+    - GIVEN the nine canonical record families WHEN regression checks run THEN list/get, alias/correction, authority routing, TODO no-mutation, and package parity remain green.
+    - GIVEN prior failed evidence WHEN progress is appended THEN it states the observed measurement and historical correction without rewriting earlier records.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: qlgdfyvcsz-audit-1
+      source: Audit ses_03efeb6b5ffelO0ZX8mgG0rd92
+      recorded_at: 2026-08-02 07:58
+      writer_command: agentera state plan record-evaluation

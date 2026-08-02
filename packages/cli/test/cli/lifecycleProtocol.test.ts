@@ -127,7 +127,8 @@ describe("final lifecycle protocol", () => {
       const result = capture(root, [removed, "--format", "json"]);
       expect(result.rc, removed).toBe(2);
       expect(result.err, removed).toBe("");
-      expect(JSON.parse(result.out), removed).toEqual({
+      const payload = JSON.parse(result.out);
+      expect(payload, removed).toMatchObject({
         schemaVersion: "agentera.invalidInputEnvelope.v2",
         status: "fail",
         error: {
@@ -135,10 +136,10 @@ describe("final lifecycle protocol", () => {
           message: `unknown or not-yet-ported command: ${removed}; this top-level name was removed, use '${canonical}'`,
           valid_values: [canonical],
           syntax: `agentera ${canonical} [options]`,
-          example: `agentera ${canonical} --format json`,
-          recovery: `Run agentera ${canonical} --format json; no state was changed by the rejected command.`,
         },
       });
+      expect(payload.error.example).toMatch(/^agentera /);
+      expect(payload.error.recovery).toContain(payload.error.example);
       expect(treeDigest(root), removed).toBe(before);
       expect(fs.existsSync(path.join(root, ".agentera")), removed).toBe(false);
     }

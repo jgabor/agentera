@@ -191,7 +191,10 @@ describe("TODO item and documentation inventory entity authority", () => {
     const id = created.json.id;
     expect(created.json.record).toMatchObject({ kind: "fix", target_version: "3.0.0", title: "Typed boundary", requirements: ["Use typed input"], acceptance: ["Preserve omissions"], release_blocker: true, severity: "normal", status: "open" });
     expect(created.json.record).not.toHaveProperty("description");
-    expect(capture(root, ["state", "todo", "--format", "text"]).out).toContain(`[normal] ${id} open: [fix:3.0.0] Typed boundary`);
+    const bareText = capture(root, ["state", "todo", "--format", "text"]);
+    const explicitText = capture(root, ["state", "todo", "list", "--format", "text"]);
+    expect(bareText).toEqual(explicitText);
+    expect(bareText.out).toContain(`id: ${id}`);
 
     const omitted = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "Typed boundary v2" });
     expect(omitted.rc).toBe(0);
@@ -721,7 +724,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const docsList = capture(root, ["state", "docs", "list", "--format", "json"]); expect(docsList.json.entries.map((entry: any) => entry.id)).toEqual([secondDoc.id, firstDoc.id]);
     const filteredDocs = capture(root, ["state", "docs", "list", "--status", "current", "--topic", ".md", "--ids-only", "--limit", "1", "--format", "json"]);
     expect(filteredDocs.json.retrieval.continue).toMatch(/^agentera state docs list --topic '\.md' --status 'current' --ids-only --limit 1 --cursor \S+ --format json$/);
-    const docsDefault = capture(root, ["state", "docs", "--format", "json"]); expect(docsDefault.json.entries).toHaveLength(2); expect(docsDefault.json.summary.mapping).toHaveLength(1); expect(JSON.stringify(docsDefault.json)).not.toContain("legacy sentinel");
+    const docsDefault = capture(root, ["state", "docs", "--format", "json"]); expect(docsDefault.rc).toBe(2); expect(docsDefault.json.error).toMatchObject({ class: "invalid_request", recovery: expect.stringContaining("state docs list") });
     todo(root, "cursor invalidator"); const stale = capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", todoPage.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
     const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ status: "degraded", counts: { returned: 6, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 }, retrieval: { get: "agentera state todo get --id ID --format json" } }); expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
     expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
@@ -857,9 +860,14 @@ describe("TODO item and documentation inventory entity authority", () => {
     fs.writeFileSync(markdown, `# TODO\n\n## → Normal\n- [ ] [id:${second.id}] [task:3.0.0] Second ordered\n- [ ] [id:${first.id}] [task:3.0.0] First ordered\n`);
     const firstEntity = path.join(root, `.agentera/entities/todo/todo_item/${first.id}.yaml`);
     const value = loadYamlMapping(fs.readFileSync(firstEntity, "utf8")); (value.record as any).title = "Entity-only first title"; fs.writeFileSync(firstEntity, dumpYamlMapping(value));
+    const secondEntity = path.join(root, `.agentera/entities/todo/todo_item/${second.id}.yaml`);
+    const secondValue = loadYamlMapping(fs.readFileSync(secondEntity, "utf8")); (secondValue.record as any).readiness = readinessInput({ blocked: { reason: "Decision missing", recovery: "Run agentera discuss" }, capability: "discuss" }); fs.writeFileSync(secondEntity, dumpYamlMapping(secondValue));
 
+    const beforeReads = files(root);
     const read = capture(root, ["state", "todo", "list", "--format", "json"]);
     expect(read.json.entries.map((entry: any) => entry.id)).toEqual([second.id, first.id]);
+    expect(read.json.entries[0]).toMatchObject({ id: second.id, public_order: 1, readiness: { state: "open", blocked: true }, actionability: { outcome: "blocked", eligible: false }, queue_rank: 1, reconciliation: { status: "drift", drifted: true } });
+    expect(read.json.entries[1]).toMatchObject({ id: first.id, public_order: 2, readiness: { state: "open", blocked: false }, actionability: { outcome: "readiness_absent", eligible: false }, queue_rank: 2, reconciliation: { status: "drift", drifted: true } });
     expect(read.json.reconciliation).toMatchObject({
       status: "drift",
       items: expect.arrayContaining([
@@ -867,6 +875,15 @@ describe("TODO item and documentation inventory entity authority", () => {
         expect.objectContaining({ id: second.id, state: "markdown_only", markdown_changed_fields: ["order"] }),
       ]),
     });
+    const bare = capture(root, ["state", "todo", "--format", "json"]); expect(bare).toEqual(read);
+    expect(capture(root, ["state", "todo", "list", "--format", "yaml"]).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "list", "--format", "text"]).rc).toBe(0);
+    const page = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]); expect(page.json.next_cursor).toEqual(expect.any(String));
+    expect(capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", page.json.next_cursor, "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "get", "--id", second.id, "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "list", "--help"]).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "get", "extra", "--format", "json"]).rc).toBe(2);
+    expect(files(root)).toEqual(beforeReads);
     const applied = capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(fs.readFileSync(markdown, "utf8")).toMatch(new RegExp(`id:${second.id}[\\s\\S]*id:${first.id}`));

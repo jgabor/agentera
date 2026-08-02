@@ -123,7 +123,7 @@ describe("objective and experiment entity authority", () => {
 
   it("gets and lists full records in declared temporal order with bounded exact recovery and snapshot cursors", () => {
     const root = project(); const owner = createObjective(root, "latency"); const baseline = publish(root, owner.id, experiment("baseline", "baseline", "2026-07-16 09:00")); const candidate = publish(root, owner.id, experiment("candidate", "kept", "2026-07-17 09:00"));
-    const exact = capture(root, ["state", "experiments", "get", "--id", baseline.id, "--objective", owner.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(exact.json.entry.record).toEqual(baseline.record); expect(exact.json.entry.provenance.path).toContain(baseline.id);
+    const exact = capture(root, ["state", "experiments", "get", "--id", baseline.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(exact.json.entry.record).toEqual(baseline.record); expect(exact.json.entry.provenance.path).toContain(baseline.id);
     const first = capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "1", "--format", "json"]); expect(first.rc).toBe(0); expect(first.json.entries[0].id).toBe(candidate.id); expect(first.json.next_cursor).toBeTruthy(); expect(first.json.retrieval.get).toContain("--id ID");
     expect(first.json.retrieval.continue).toMatch(new RegExp(`^agentera state experiments list --objective '${owner.id}' --limit 1 --cursor \\S+ --format json$`));
     const topic = "Cache helps";
@@ -177,7 +177,7 @@ describe("objective and experiment entity authority", () => {
     expect(observed.size).toBe(12);
     expect(observed).toEqual(expectedIds);
 
-    const exact = capture(root, ["state", "experiments", "get", "--id", published[0].id, "--objective", owner.id, "--format", "json"]);
+    const exact = capture(root, ["state", "experiments", "get", "--id", published[0].id, "--format", "json"]);
     expect(exact.rc, exact.err || exact.out).toBe(0);
     expect(exact.json.entry).toMatchObject({
       id: published[0].id,
@@ -202,8 +202,8 @@ describe("objective and experiment entity authority", () => {
     const page = capture(root, ["state", "objective", "list", "--limit", "1", "--format", "json"]); expect(page.json.entries).toHaveLength(1); expect(page.json.next_cursor).toBeTruthy();
     expect(capture(root, ["state", "objective", "list", "--limit", "101", "--format", "json"]).rc).toBe(2);
     const help = capture(root, ["state", "experiments", "--help"]); expect(help.out).toContain("get --id ID"); expect(help.out).not.toContain("get --objective OBJECTIVE_ID --number");
-    expect(capture(root, ["state", "objective", "--format", "json"]).json.entries[0].id).toBe(first.id);
-    createObjective(root, "second"); const stale = capture(root, ["state", "objective", "list", "--limit", "1", "--cursor", page.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable"); const ambiguous = capture(root, ["state", "objective", "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(ambiguous.json.error.class).toBe("ambiguous"); expect(ambiguous.json.error.recovery).toContain("--id");
+    const bare = capture(root, ["state", "objective", "--format", "json"]); expect(bare.rc).toBe(2); expect(bare.json.error).toMatchObject({ class: "invalid_request", recovery: expect.stringContaining("state objective list") });
+    createObjective(root, "second"); const stale = capture(root, ["state", "objective", "list", "--limit", "1", "--cursor", page.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
   });
 
   it("keeps legacy optimize publication and files unchanged while entity mode rejects legacy selectors and paths", () => {

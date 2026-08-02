@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import statusInstructions from "../../src/capabilities/status/instructions.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 import {
   buildStatusCapabilityContextPayload,
   collectOrientationState,
@@ -215,6 +216,11 @@ describe("status dashboard contract", () => {
 
       expect(brief.status, JSON.stringify(brief)).toBe("ok");
       expect(brief.utf8_bytes).toEqual(expect.any(Number));
+      expect(brief).not.toHaveProperty("error");
+      for (const family of ["plan", "docs", "progress", "health", "todo", "decisions", "objective"]) {
+        expect(STATE_FAMILY_FALLBACK_COMMANDS[family]).toMatch(/^agentera state .+ list --format json$/);
+        expect(STATE_FAMILY_FALLBACK_COMMANDS[family]).not.toContain("--limit 20");
+      }
       expect(brief.utf8_bytes as number).toBeGreaterThan(11_500);
       expect(brief.utf8_bytes as number).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
       expect(statusContext.todo).toMatchObject({

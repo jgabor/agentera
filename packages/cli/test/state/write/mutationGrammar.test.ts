@@ -318,7 +318,7 @@ describe("declarative state mutation grammar", () => {
     expect(health.json.verbs).toEqual(["append"]);
     const repair = run(root, ["health", "repair", "--number", "1", "--force", "--format", "json"]);
     expect(repair.rc).not.toBe(0);
-    expect(repair.json.error.class).toBe("invalid_choice");
+    expect(repair.json.error).toMatchObject({ class: "invalid_request", syntax: expect.stringContaining("state health list") });
     expect(fs.readdirSync(path.join(root, ".agentera"))).toEqual(["state-mode.yaml"]);
   });
 

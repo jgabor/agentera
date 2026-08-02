@@ -2,8 +2,8 @@ id: qjhjpzowae
 artifact: todo
 record:
   severity: critical
-  status: open
-  description: "[fix:3.0.0] **NEXT** Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map."
+  status: resolved
+  description: "[fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map."
   readiness:
     capability: build
     reason: Decision imumkmffwh selects list/get reads, while Decision kpybrsfywb requires TODO reads to report repository drift without mutation.
@@ -22,7 +22,11 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] **NEXT** Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map."
+      description: "[fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map."
+      status: resolved
+      order: 80
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Canonical record-family reads and stable budget evidence passed independent Audit
+    date: 2026-08-02

@@ -1,4 +1,3 @@
-import { isPortedStateCommand } from "../commands/state/index.js";
 import { runEntityMigrate } from "../commands/entityMigrate.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { runRouteEvaluation, runRouteReceipt, runRouteRequest } from "../commands/route.js";
@@ -18,6 +17,8 @@ import {
   runValidate,
 } from "./check.js";
 import { runQuery, runState } from "./state.js";
+import { entityListFamily } from "../../state/entityRetrievalHelp.js";
+import { ENTITY_LIST_RUNTIME_FAMILIES, runtimeEntityFamiliesForCommand, type EntityListRuntimeFamilyKey } from "../../state/entityListRuntimeRegistry.js";
 import { runCapability, runPrime } from "./prime.js";
 import {
   runAppHome,
@@ -33,7 +34,7 @@ import {
 } from "./lifecycle.js";
 import { detectTopLevelFormat, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
-import { isWriteVerb } from "../../state/write/operations.js";
+import { verbsForArtifact } from "../../state/write/operations.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
 import {
   enforceCompletedEntityCutover,
@@ -70,7 +71,14 @@ export function main(argv: string[], io: Io = {}): number {
 
   if (command && REMOVED_TOP_LEVEL_CORRECTIONS[command]) {
     const canonical = REMOVED_TOP_LEVEL_CORRECTIONS[command];
-    const example = `agentera ${canonical} --format json`;
+    const canonicalTokens = canonical.split(" ");
+    const runtimeFamily = canonicalTokens[0] === "state"
+      ? ENTITY_LIST_RUNTIME_FAMILIES.find(({ commandTokens }) => commandTokens.join(" ") === canonicalTokens.slice(1).join(" "))
+      : undefined;
+    const family = runtimeFamily ? entityListFamily(runtimeFamily.key as EntityListRuntimeFamilyKey) : undefined;
+    const example = family
+      ? family.bareRecovery ?? `agentera state ${family.commandTokens.join(" ")} list --limit ${family.bounds.default} --format json`
+      : `agentera ${canonical} --format json`;
     return emitInvalidInput(io, {
       format: detectTopLevelFormat(rest),
       body: {
@@ -200,7 +208,7 @@ export function main(argv: string[], io: Io = {}): number {
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
       if (sub === "migrate" && rest[1] === "entities") return runEntityMigrate(rest.slice(2), io);
-      if (isPortedStateCommand(sub) || isWriteVerb(rest[1]) || rest[1] === "get")
+      if (runtimeEntityFamiliesForCommand(sub).length > 0 || verbsForArtifact(sub).some((verb) => verb === rest[1]))
         return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
       return emitInvalidInput(io, {
         format: "text",

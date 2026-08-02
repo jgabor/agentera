@@ -20,4 +20,4 @@ record:
       description: "[fix:3.0.0] Quarantine every v2 compatibility path beneath `upgrade` before stable cutover. Inventory v2 parsing, migration, cleanup, Python recognition, historical fixtures, shim handoff, and native-runtime rewrite code; normal v3 `prime`, `doctor`, state, help, schema, and package paths must expose no legacy command, schema, output, or native integration. Shared ownership and safe-filesystem primitives may remain reusable only when they expose no legacy public shape. Convert tests that expect v3 native-hook rewrites into removal-or-preservation proofs and provide the exact deletion inventory to the gated stable-cutover TODO."
       severity: critical
       status: open
-      order: 8
+      order: 7
