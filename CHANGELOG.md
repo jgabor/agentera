@@ -4,6 +4,12 @@
 
 ### Changed
 
+- State record families now use canonical bounded `list` and exact `get` reads,
+  with predictable summary counts, selectors, queue ordering, omission metadata,
+  and exact-detail recovery generated from the retrieval authority.
+- TODO state now reconciles repository-first `TODO.md` edits with operational
+  entity state and publishes requested mutations through one recoverable atomic
+  transaction.
 - State mutation behavior now comes from one code-owned 25-operation registry,
   with declarative discovery in `references/artifacts/state-storage-authority.yaml`
   required to match it before commands run. `state <family> explain --all`,
