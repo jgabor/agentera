@@ -243,6 +243,7 @@ function executeGate(gate, dependencies = {}) {
   const started = performance.now();
   execute(gate.command[0] === "node" ? process.execPath : gate.command[0], gate.command.slice(1), {
     cwd: dependencies.repo ?? REPO_ROOT,
+    env: dependencies.environment,
     timeout: dependencies.timeout ?? RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
   });
   return { name: gate.name, elapsedMs: Math.max(0, Math.round(performance.now() - started)) };
@@ -261,25 +262,30 @@ export function issueSourceReceipt(options = {}) {
     }
     return { receipt: existing, reused: true, gates: [] };
   }
-  const started = performance.now();
-  const deadline = started + RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
-  const gates = [];
-  for (const gate of options.gates ?? sourceGateSet()) {
-    const remaining = Math.floor(deadline - performance.now());
-    if (remaining <= 0) {
-      throw new Error(`source qualification exceeded its ${RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs}ms budget before ${gate.name}`);
+  const verificationState = isolatedNpmState("agentera-release-source-", { ignoreScripts: false });
+  try {
+    const started = performance.now();
+    const deadline = started + RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
+    const gates = [];
+    for (const gate of options.gates ?? sourceGateSet()) {
+      const remaining = Math.floor(deadline - performance.now());
+      if (remaining <= 0) {
+        throw new Error(`source qualification exceeded its ${RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs}ms budget before ${gate.name}`);
+      }
+      gates.push(executeGate(gate, { ...options, repo, timeout: remaining, environment: verificationState.environment }));
     }
-    gates.push(executeGate(gate, { ...options, repo, timeout: remaining }));
+    const receipt = {
+      schemaVersion: RECEIPT_SCHEMA,
+      kind: "source",
+      component: identity,
+      gates,
+    };
+    receipt.receiptSha256 = receiptDigest(receipt);
+    writeImmutableJson(file, receipt, "source receipt");
+    return { receipt, reused: false, gates };
+  } finally {
+    fs.rmSync(verificationState.root, { recursive: true, force: true });
   }
-  const receipt = {
-    schemaVersion: RECEIPT_SCHEMA,
-    kind: "source",
-    component: identity,
-    gates,
-  };
-  receipt.receiptSha256 = receiptDigest(receipt);
-  writeImmutableJson(file, receipt, "source receipt");
-  return { receipt, reused: false, gates };
 }
 
 export function validateSourceReceipt(options = {}) {
@@ -335,7 +341,8 @@ function sameConstructionObservation(dry, packed) {
   }
 }
 
-export function isolatedNpmState(prefix = "agentera-release-smoke-") {
+export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {}) {
+  const ignoreScripts = options.ignoreScripts !== false;
   const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const home = path.join(root, "home");
   const cache = path.join(root, "cache");
@@ -343,7 +350,7 @@ export function isolatedNpmState(prefix = "agentera-release-smoke-") {
   const globalNpmrc = path.join(root, "global-npmrc");
   fs.mkdirSync(home, { recursive: true, mode: 0o700 });
   fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(npmrc, "registry=https://registry.npmjs.org/\nignore-scripts=true\n", { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(npmrc, `registry=https://registry.npmjs.org/\n${ignoreScripts ? "ignore-scripts=true\n" : ""}`, { mode: 0o600, flag: "wx" });
   fs.writeFileSync(globalNpmrc, "", { mode: 0o600, flag: "wx" });
   return {
     root,
@@ -355,7 +362,7 @@ export function isolatedNpmState(prefix = "agentera-release-smoke-") {
       NPM_CONFIG_GLOBALCONFIG: globalNpmrc,
       NPM_CONFIG_AUDIT: "false",
       NPM_CONFIG_FUND: "false",
-      NPM_CONFIG_IGNORE_SCRIPTS: "true",
+      ...(ignoreScripts ? { NPM_CONFIG_IGNORE_SCRIPTS: "true" } : {}),
     },
   };
 }
@@ -442,9 +449,9 @@ function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory
       }),
     };
   }
-  const state = isolatedNpmState("agentera-shim-candidate-");
+  const state = isolatedNpmState("agentera-shim-candidate-", { ignoreScripts: false });
   try {
-    execute("pnpm", ["test"], { cwd: packageRoot, timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs });
+    execute("pnpm", ["test"], { cwd: packageRoot, env: state.environment, timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs });
     const dry = firstPackEntry(executeJson("npm", ["pack", "--ignore-scripts", "--dry-run", "--json"], {
       cwd: packageRoot,
       env: state.environment,

@@ -115,6 +115,29 @@ describe("release qualification receipts", () => {
     expect(() => sourceReceipt(repo, candidateDirectory)).toThrow("source receipt inputs changed");
   });
 
+  it("runs source gates with isolated npm and pnpm configuration", () => {
+    const { repo, candidateDirectory } = fixture();
+    let environment: NodeJS.ProcessEnv | undefined;
+    issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      gates: [{ name: "source", command: ["test", "source"] }],
+      run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+        environment = options.env;
+        return "";
+      },
+    });
+
+    expect(environment).toMatchObject({
+      NPM_CONFIG_USERCONFIG: expect.any(String),
+      NPM_CONFIG_GLOBALCONFIG: expect.any(String),
+      NPM_CONFIG_CACHE: expect.any(String),
+    });
+    expect(environment).not.toHaveProperty("NPM_TOKEN");
+    expect(environment).not.toHaveProperty("NODE_AUTH_TOKEN");
+    expect(Object.keys(environment ?? {}).some((key) => /^pnpm/i.test(key))).toBe(false);
+  });
+
   it("rejects a missing candidate directory without creating it", () => {
     const { repo, candidateDirectory } = fixture();
 
