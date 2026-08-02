@@ -1,0 +1,16 @@
+id: hzzknpgmkq
+artifact: progress
+record:
+  timestamp: 2026-08-02 15:16
+  type: fix
+  phase: audit
+  what: Established the bounded prime startup replacement candidate from governed dev.40 provenance.
+  context:
+    intent: Record post-provenance wmxucwhvrw evidence only after the corrected commit, one development preparation, and the canonical release conjunction existed.
+    constraints: Keep wmxucwhvrw pending and qjhjpzowae open until independent Audit. Keep srdmkolwqc blocked, preserve the four staged M1 blobs, and do not commit package metadata or this progress, publish, tag, push, open a PR, or mutate npm.
+    unknowns: Independent Audit of wmxucwhvrw remains outstanding. Local dev.40 metadata is intentionally uncommitted; npm @next remains dev.39.
+    scope: Bounded plan and next-action routing, canonical full and compacted histories, status degradation, retrieval parity, TODO reconciliation, package parity, archive-list measurement, provenance preparation, and release readiness.
+  discovered: "The rejected candidate had both authority and lifecycle mismatches: degraded startup discarded executable routing and read legacy history counts, while dev.40 had been prepared before accepted Audit correction. Broad verification also exposed per-record schema-validator construction behind a real archive-list heap breach. The correction builds and tests source and extracted-package authority, commits evidence before preparation, retains nonterminal lifecycle state, and reuses one validator per artifact scan."
+  verified: The preparer ran once after provenance and changed only package dev.39 to dev.40 plus gitRef to the governed commit; suite metadata stayed 3.0.0 and npm @next stayed dev.39. verify:release passed 225 source files with 3,053 passed and 1 skipped assertions, 2 stress assertions, 3 performance files, and 25 extracted-package assertions. Typecheck, build, compact, capability-contract 3/3, release-metadata, 2,066-entity state validation with 0 issues, and a 760-file artifact-free dry pack passed. Bare prime emitted 11,256 bytes under 12,000 from a 14,112-byte attempt with wmxucwhvrw exact routing and canonical 460/58/51 full-history counts; compacted decision history retained summary counts, caveats, and exact recovery. TODO reconciliation reported 94 managed, 0 drift, 0 conflicts, and a zero-target qjhjpzowae replay. Three normalized archive-list runs measured 27.7–32.2 MB at 100 entries and 58.9–75.1 MB at 1,000 entries. Protected staged blobs remained unchanged.
+  next: Run independent Audit for pending wmxucwhvrw. On PASS, close lifecycle state through the typed writers, resolve qjhjpzowae, and hand the superseded M3 closure to M4/M5; do not publish without explicit approval.
+  publication_order: 53

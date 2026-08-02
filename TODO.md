@@ -2,10 +2,11 @@
 
 ## Current execution
 
-- **Current milestone:** M3 · Reconcile TODO and canonical reads.
-- **Next plan task:** `wmxucwhvrw` — Close prime startup evidence.
-- **Managed M3 TODO:** Open `qjhjpzowae` remains the retrieval closeout while the replacement task preserves bounded startup evidence.
-- **Exact request:** `Proceed with wmxucwhvrw for qjhjpzowae; preserve bounded prime routing and history evidence before final development preparation.`
+- **Current milestone:** M4A retained-reference authority.
+- **Next plan task:** `zshrzmhhvq` — Establish retained-reference authority.
+- **Managed TODO:** Open `ezkdeggmgm` is the sole managed next item.
+- **M3 closeout:** Complete through replacement `wmxucwhvrw`, which supersedes failed `srdmkolwqc`; the full plan remains open.
+- **Exact request:** `Proceed with zshrzmhhvq for ezkdeggmgm; establish retained-reference and runbook authority.`
 
 This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task—or the plan reports no selectable task with an exact blocker and recovery.
 
@@ -38,7 +39,7 @@ Exit when repository-first TODO reconciliation and bounded list/get reads share 
 
 Exit when every retained reference has a production owner and consumer and measured milestone debt decreases.
 
-- [ ] [id:ezkdeggmgm] [fix:3.0.0] Establish retained-reference and runbook authority for all `references/` and `skills/agentera/references/` files. Inventory each file as current, migration-only, runbook, historical, or delete; retain current or migration-only material only with a named production owner and runtime or validator consumer; retain a runbook only with a maintainer and tracked noninteractive command proven from its documented location. Test imports, bundle inclusion, historical decisions, and source comments do not create authority. Delete or relocate unowned material and publish a machine-validated inventory.
+- [ ] [id:ezkdeggmgm] [fix:3.0.0] **NEXT** Establish retained-reference and runbook authority for all `references/` and `skills/agentera/references/` files. Inventory each file as current, migration-only, runbook, historical, or delete; retain current or migration-only material only with a named production owner and runtime or validator consumer; retain a runbook only with a maintainer and tracked noninteractive command proven from its documented location. Test imports, bundle inclusion, historical decisions, and source comments do not create authority. Delete or relocate unowned material and publish a machine-validated inventory.
 - [ ] [id:jwnvbdcadl] [fix:3.0.0] Retire `skills/agentera/references/contract.md` under the retained-reference inventory owned by TODO `ezkdeggmgm`. Classify its 79KB and 1,048 lines against production owners and consumers; delete duplicated and stale v2 sections, migrate only demonstrably current unique contracts into their owning `references/cli/` or artifact authority, remove the remaining capability boilerplate pointers, and delete the file when empty. A test import, bundle inclusion, archived decision, or source comment is not retention evidence.
 
 ### M4B · Retire native runtime surfaces
@@ -185,7 +186,6 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [x] [id:yqqqhipecx] [fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass.
 - [x] [id:qmcyjnxskc] [fix:3.0.0] Generate artifact-specific `state ... list --help` from the retrieval authority. Help currently omits supported filters and forces source inspection. Show each family's exact filters, summary fields, bounds, formats, and runnable examples; for TODOs include `--severity`, `--status`, `--queue-rank`, `--ids-only`, and `--fields`. Test help, schema, and runtime parity so unsupported selectors fail with the valid vocabulary and one working correction.
 - [x] [id:hykqpkcsix] [fix:3.0.0] Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation.
+- [x] [id:qjhjpzowae] [fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map.
 
 ## → Critical
-
-- [ ] [id:qjhjpzowae] [fix:3.0.0] **NEXT** Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map.

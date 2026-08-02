@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M3 tail · Align consumers and synchronize M3 (qjhjpzowae)
-  status: blocked
+  status: superseded
   depends_on:
     - iddsqjadki
   acceptance:
@@ -22,3 +22,6 @@ record:
       source: Audit ses_03ec44cf4ffe43Z44pmzhs2g2j bounded re-review
       recorded_at: 2026-08-02 13:55
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - wmxucwhvrw
+  superseded_reason: Replacement preserves bounded prime routing and canonical history while retaining full M3 synchronization

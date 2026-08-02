@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M3 tail · Close prime startup evidence (qjhjpzowae)
-  status: pending
+  status: complete
   depends_on:
     - dnbytwkmiu
     - ayfhtkeitz
@@ -13,3 +13,13 @@ record:
     - GIVEN full or compacted entity history WHEN bare prime projects it THEN canonical total, returned, remaining, full, and summary counts plus bounded caveats and exact retrieval remain truthful.
     - GIVEN the corrected nine-family runtime and TODO state WHEN source and package consumers run THEN one retrieval authority, 40/60/100 cardinality, cursor recovery, and startup/documented commands remain in parity.
     - GIVEN final development preparation WHEN release gates run THEN only dev.40 and gitRef change, all gates pass, qjh resolves, and M4/M5 consume the superseded M3 closure without publication.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: wmxucwhvrw-audit-1
+      source: Audit ses_03d5f586fffePpFvmVYoG7S5ic
+      recorded_at: 2026-08-02 15:52
+      writer_command: agentera state plan record-evaluation
