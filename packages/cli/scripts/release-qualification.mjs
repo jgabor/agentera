@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
+import { parseReleaseFlags } from "./release-arguments.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(scriptDir, "../../..");
@@ -70,23 +71,6 @@ function requireArgument(argumentsMap, name) {
   const value = argumentsMap.get(name);
   if (!value) throw new Error(`missing required ${name}`);
   return value;
-}
-
-function parseArguments(values) {
-  const flags = new Map();
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index];
-    if (!value.startsWith("--")) throw new Error(`unexpected argument '${value}'`);
-    if (["--json", "--verbose"].includes(value)) {
-      flags.set(value, true);
-      continue;
-    }
-    const next = values[index + 1];
-    if (!next || next.startsWith("--")) throw new Error(`${value} requires a value`);
-    flags.set(value, next);
-    index += 1;
-  }
-  return flags;
 }
 
 function emit(receipt, json) {
@@ -1020,7 +1004,12 @@ function main() {
   if (!["source", "candidate", "approval", "attest"].includes(command)) {
     throw new Error("usage: release-qualification.mjs <source|candidate|approval|attest> --candidate-dir DIR [--adapter development|stable] [--json]");
   }
-  runCommand(command, parseArguments(rest));
+  const valueFlags = ["--candidate-dir", "--adapter"];
+  if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
+  runCommand(command, parseReleaseFlags(rest, {
+    boolean: ["--json", "--verbose"],
+    value: valueFlags,
+  }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

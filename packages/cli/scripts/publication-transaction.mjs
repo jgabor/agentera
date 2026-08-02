@@ -18,6 +18,7 @@ import {
   validateCiAttestation,
   validateAdapterSourceProvenance,
 } from "./release-qualification.mjs";
+import { parseReleaseFlags } from "./release-arguments.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "../../..");
@@ -781,22 +782,26 @@ export function smokeQualifiedCandidate(adapterName, candidateDirectory, options
 }
 
 async function main() {
-  const [phase, adapterName] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
-  const json = process.argv.includes("--json");
-  const verbose = process.argv.includes("--verbose");
+  const [phase, adapterName, ...rest] = process.argv.slice(2);
   if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "stage", "smoke", "promote"].includes(phase)) {
     throw new Error(
       "usage: publication-transaction.mjs <prepare|stage|smoke|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
     );
   }
+  const flags = parseReleaseFlags(rest, {
+    boolean: phase === "prepare"
+      ? ["--check", "--json", "--verbose"]
+      : ["--approve", "--json", "--verbose"],
+    value: phase === "prepare"
+      ? ["--target-version", "--source-commit"]
+      : ["--candidate-dir", "--source-run-id"],
+  });
+  const json = Boolean(flags.get("--json"));
+  const verbose = Boolean(flags.get("--verbose"));
   if (phase === "prepare") {
     const adapter = PACKAGE_ADAPTERS[adapterName];
-    const valueFor = (flag) => {
-      const index = process.argv.indexOf(flag);
-      return index >= 0 ? process.argv[index + 1] : null;
-    };
-    const targetVersion = valueFor("--target-version");
-    const sourceCommit = valueFor("--source-commit");
+    const targetVersion = flags.get("--target-version");
+    const sourceCommit = flags.get("--source-commit");
     if (!targetVersion || !sourceCommit) {
       throw new Error(
         "prepare requires --target-version X.Y.Z[-dev.N] and --source-commit SHA; preparation never infers a target",
@@ -807,7 +812,7 @@ async function main() {
     }
     const prepared = prepareTargetMetadata(adapterName, readManifest(adapter), targetVersion, sourceCommit);
     validatePreparedSourceProvenance(adapterName, prepared.manifest);
-    if (process.argv.includes("--check")) {
+    if (flags.get("--check")) {
       if (prepared.changed) {
         throw new Error("requested target is not prepared; rerun without --check to create the reviewable metadata diff");
       }
@@ -839,14 +844,12 @@ async function main() {
     );
     return;
   }
-  const candidateIndex = process.argv.indexOf("--candidate-dir");
-  const candidateDirectory = candidateIndex >= 0 ? process.argv[candidateIndex + 1] : null;
+  const candidateDirectory = flags.get("--candidate-dir");
   if (!candidateDirectory) throw new Error(`${phase} requires --candidate-dir DIR for the retained exact candidate`);
-  if (!process.argv.includes("--approve")) {
+  if (!flags.get("--approve")) {
     throw new Error(`${phase} requires --approve and an immutable candidate-bound approval receipt`);
   }
-  const sourceRunIndex = process.argv.indexOf("--source-run-id");
-  const sourceRunId = sourceRunIndex >= 0 ? process.argv[sourceRunIndex + 1] : undefined;
+  const sourceRunId = flags.get("--source-run-id");
   const manifest = readManifest(PACKAGE_ADAPTERS[adapterName]);
   const started = performance.now();
   emit(
@@ -884,7 +887,7 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
     const message = redactedDiagnostic(error instanceof Error ? error.message : error);
-    const [phase, adapterName] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
+    const [phase, adapterName] = process.argv.slice(2);
     if (!error.receiptEmitted && PACKAGE_ADAPTERS[adapterName]) {
       let version = "unknown";
       try {

@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment } from "./package-construction.mjs";
+import { parseReleaseFlags } from "./release-arguments.mjs";
 import {
   REPO_ROOT,
   RELEASE_CONTRACT,
@@ -499,25 +500,19 @@ export function formatPublicationReceipt(receipt) {
   return `qualified publication ${receipt.outcome}; ${phases}; total ${receipt.elapsedMs}ms ${bound} ${receipt.budgetMs}ms; reconciled ${receipt.reconciled}${failure}; receipt ${receipt.receiptSha256}`;
 }
 
-function parseFlags(values) {
-  const flags = new Map();
-  for (let index = 0; index < values.length; index += 1) {
-    const flag = values[index];
-    if (flag === "--json") {
-      flags.set(flag, true);
-      continue;
-    }
-    const value = values[index + 1];
-    if (!flag.startsWith("--") || !value || value.startsWith("--")) throw new Error(`invalid argument '${flag}'`);
-    flags.set(flag, value);
-    index += 1;
-  }
-  return flags;
-}
-
 async function main() {
   const [command, ...args] = process.argv.slice(2);
-  const flags = parseFlags(args);
+  if (!["qualification", "publication"].includes(command)) {
+    throw new Error(
+      "usage: release-benchmark.mjs <qualification --candidate-root DIR|publication --candidate-dir DIR> --adapter development|stable [--json]",
+    );
+  }
+  const flags = parseReleaseFlags(args, {
+    boolean: ["--json"],
+    value: command === "qualification"
+      ? ["--adapter", "--candidate-root"]
+      : ["--adapter", "--candidate-dir", "--source-run-id", "--receipt-file"],
+  });
   const adapterName = flags.get("--adapter");
   if (!RELEASE_CONTRACT.packages[adapterName]) throw new Error("--adapter must be development or stable");
   if (command === "publication") {
@@ -557,11 +552,6 @@ async function main() {
       }
       throw error;
     }
-  }
-  if (command !== "qualification") {
-    throw new Error(
-      "usage: release-benchmark.mjs <qualification --candidate-root DIR|publication --candidate-dir DIR> --adapter development|stable [--json]",
-    );
   }
   const candidateRoot = flags.get("--candidate-root");
   if (!candidateRoot) throw new Error("--candidate-root is required");
