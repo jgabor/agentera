@@ -441,6 +441,7 @@ function sameConstructionObservation(dry, packed) {
 
 export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {}) {
   const ignoreScripts = options.ignoreScripts !== false;
+  const registry = "https://registry.npmjs.org/";
   const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const home = path.join(root, "home");
   const cache = path.join(root, "cache");
@@ -448,8 +449,12 @@ export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {
   const globalNpmrc = path.join(root, "global-npmrc");
   fs.mkdirSync(home, { recursive: true, mode: 0o700 });
   fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(npmrc, `registry=https://registry.npmjs.org/\n${ignoreScripts ? "ignore-scripts=true\n" : ""}`, { mode: 0o600, flag: "wx" });
-  fs.writeFileSync(globalNpmrc, "", { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(npmrc, `registry=${registry}\n${ignoreScripts ? "ignore-scripts=true\n" : ""}`, { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(
+    globalNpmrc,
+    options.registryInGlobalConfig ? `registry=${registry}\n` : "",
+    { mode: 0o600, flag: "wx" },
+  );
   return {
     root,
     environment: {

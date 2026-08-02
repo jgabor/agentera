@@ -10,6 +10,7 @@ import {
   REPO_ROOT,
   RELEASE_CONTRACT,
   canonicalJson,
+  isolatedNpmState,
   issueCandidateReceipt,
   issueSourceReceipt,
   qualificationPreflight,
@@ -243,7 +244,14 @@ function transactionArguments(phase, adapterName, candidateDirectory, sourceRunI
   ];
 }
 
-function publicationPhases(adapterName, candidateDirectory, candidate, sourceRunId, environment) {
+function publicationPhases(
+  adapterName,
+  candidateDirectory,
+  candidate,
+  sourceRunId,
+  environment,
+  l2Environment,
+) {
   const transaction = (name, phase) => ({
     name,
     transactionPhase: phase,
@@ -259,7 +267,7 @@ function publicationPhases(adapterName, candidateDirectory, candidate, sourceRun
         args: [path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"), "happy-path-clean"],
         cwd: REPO_ROOT,
         env: {
-          ...npmChildEnvironment(environment),
+          ...l2Environment,
           REPO_ROOT,
           AGENTERA_SANDBOX_TIER: "L2",
           AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`,
@@ -368,12 +376,20 @@ export async function runQualifiedPublication(options = {}) {
   const commandRunner = options.runCommand ?? defaultCommandRunner;
   const emit = options.emit ?? (() => {});
   const environment = options.environment ?? process.env;
+  const l2State = adapterName === "development"
+    ? isolatedNpmState("agentera-qualified-l2-", {
+        environment,
+        ignoreScripts: false,
+        registryInGlobalConfig: true,
+      })
+    : null;
   const specifications = publicationPhases(
     adapterName,
     options.candidateDirectory,
     candidate,
     options.sourceRunId,
     environment,
+    l2State?.environment,
   );
   const budgetMs = RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs;
   const phases = [];
@@ -461,6 +477,8 @@ export async function runQualifiedPublication(options = {}) {
       error.publicationReceipt = receipt;
     }
     throw error;
+  } finally {
+    if (l2State) fs.rmSync(l2State.root, { recursive: true, force: true });
   }
 }
 

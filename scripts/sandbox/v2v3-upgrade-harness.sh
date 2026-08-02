@@ -14,8 +14,8 @@ cleanup() {
 trap cleanup EXIT
 
 export REPO_ROOT
-export npm_config_cache="$SANDBOX/npm-cache"
-mkdir -p "$npm_config_cache"
+export NPM_CONFIG_CACHE="$SANDBOX/npm-cache"
+mkdir -p "$NPM_CONFIG_CACHE"
 
 "$SCRIPT_DIR/seed-v2-fixture.sh" "$SANDBOX" "$SCENARIO" >/dev/null
 
@@ -30,6 +30,12 @@ fi
 PROJECT="$SANDBOX/project"
 
 if [[ "$TIER" == "L2" ]]; then
+  unset NPM_TOKEN NODE_AUTH_TOKEN npm_config_userconfig npm_config_globalconfig npm_config_registry NPM_CONFIG_REGISTRY
+  export NPM_CONFIG_USERCONFIG="$SANDBOX/npm-user.npmrc"
+  export NPM_CONFIG_GLOBALCONFIG="$SANDBOX/npm-global.npmrc"
+  printf 'registry=https://registry.npmjs.org/\n' >"$NPM_CONFIG_USERCONFIG"
+  printf 'registry=https://registry.npmjs.org/\n' >"$NPM_CONFIG_GLOBALCONFIG"
+  chmod 600 "$NPM_CONFIG_USERCONFIG" "$NPM_CONFIG_GLOBALCONFIG"
   PIN="${AGENTERA_NPM_PIN:-agentera@3.0.0-next.0}"
   CLI=(npx -y "$PIN")
 else

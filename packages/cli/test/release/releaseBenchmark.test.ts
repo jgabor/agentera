@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -105,15 +108,38 @@ describe("qualified publication timing coordinator", () => {
     const durations = new Map([["stage", 11], ["exact-version-l2", 23], ["promote", 17]]);
     const calls: string[] = [];
     const tokenVisibility: boolean[] = [];
+    let l2ConfigRoot = "";
     const receipt = await runQualifiedPublication({
       adapterName: "development",
       candidateDirectory: "/retained/candidate",
       candidate,
-      environment: { PATH: process.env.PATH, NPM_TOKEN: "secret" },
+      environment: {
+        PATH: process.env.PATH,
+        NPM_TOKEN: "secret",
+        NODE_AUTH_TOKEN: "secret",
+        NPM_CONFIG_USERCONFIG: "/host/user.npmrc",
+        NPM_CONFIG_GLOBALCONFIG: "/host/global.npmrc",
+        npm_config_registry: "https://host.invalid/",
+      },
       clock: () => now,
       runCommand: (command: { name: string; env: NodeJS.ProcessEnv }) => {
         calls.push(command.name);
         tokenVisibility.push(Boolean(command.env.NPM_TOKEN));
+        if (command.name === "exact-version-l2") {
+          const userConfig = command.env.NPM_CONFIG_USERCONFIG!;
+          const globalConfig = command.env.NPM_CONFIG_GLOBALCONFIG!;
+          l2ConfigRoot = path.dirname(userConfig);
+          expect(path.dirname(globalConfig)).toBe(l2ConfigRoot);
+          expect(command.env.HOME).toBe(path.join(l2ConfigRoot, "home"));
+          expect(command.env.NPM_CONFIG_CACHE).toBe(path.join(l2ConfigRoot, "cache"));
+          expect(command.env.NPM_TOKEN).toBeUndefined();
+          expect(command.env.NODE_AUTH_TOKEN).toBeUndefined();
+          expect(command.env.npm_config_registry).toBeUndefined();
+          expect(fs.readFileSync(userConfig, "utf8")).toBe("registry=https://registry.npmjs.org/\n");
+          expect(fs.readFileSync(globalConfig, "utf8")).toBe("registry=https://registry.npmjs.org/\n");
+          expect(fs.statSync(userConfig).mode & 0o777).toBe(0o600);
+          expect(fs.statSync(globalConfig).mode & 0o777).toBe(0o600);
+        }
         now += durations.get(command.name)!;
         return command.name === "exact-version-l2"
           ? { stdout: "L2 passed", stderr: "" }
@@ -123,6 +149,8 @@ describe("qualified publication timing coordinator", () => {
 
     expect(calls).toEqual(["stage", "exact-version-l2", "promote"]);
     expect(tokenVisibility).toEqual([true, false, true]);
+    expect(l2ConfigRoot).toContain("agentera-qualified-l2-");
+    expect(fs.existsSync(l2ConfigRoot)).toBe(false);
     expect(receipt).toMatchObject({
       outcome: "passed",
       elapsedMs: 51,
