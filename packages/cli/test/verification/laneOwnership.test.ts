@@ -359,7 +359,7 @@ describe("verification lane ownership", () => {
     expect(releaseMetadata).not.toContain("at `prepack` time");
     expect(changelog).not.toContain("bundling app data at pack time via `prepack`");
     expect(shimReadme).toContain("../../../docs/packaging/v3-packaging.md");
-    expect(shimReadme).toContain("pnpm cli:publish:stable");
+    expect(shimReadme).toContain("pnpm cli:stage:stable");
     expect(shimReadme).not.toMatch(/^npm (?:pack|publish)/m);
     expect(contributor).not.toContain("Staging directories encode their owner PID");
     expect(packageJson.scripts["generated:cleanup"]).toBe("node scripts/build-package.mjs --cleanup");

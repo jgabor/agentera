@@ -48,23 +48,26 @@ The shim does not bundle Python, skills, or hooks. Install paths for runtimes re
 
 ## Publishing (maintainers)
 
-This section applies only to the transitional 0.x stable shim. Prepare metadata
-without publishing, review and commit it, then publish from that clean commit:
+This section applies only to the transitional 0.x stable shim. Prepare explicit
+metadata without reading npm, review and commit it, then qualify one retained
+candidate before its separately approved stage and promotion:
 
 ```bash
-pnpm cli:prepare:stable
+pnpm cli:prepare:stable -- --target-version X.Y.Z --source-commit COMMIT
 # review and commit packages/cli/shim/package.json
-pnpm cli:publish:stable
+pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
+node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir /secure/external/candidate
+node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir /secure/external/candidate --approved-by NAME
+NPM_TOKEN=... pnpm cli:stage:stable -- --candidate-dir /secure/external/candidate
+NPM_TOKEN=... pnpm cli:promote:stable -- --candidate-dir /secure/external/candidate
 ```
 
-The shared transaction requires explicit authority and `NPM_TOKEN`, publishes
-directly to `latest`, verifies exact registry integrity and tag convergence,
-and runs `npx -y agentera@<version> --version` from a clean temporary directory.
-Safe retries do not republish matching registry state. Output, retry, and
-recovery behavior is identical to the development adapter: the transaction
-emits bounded phase receipts, exposes the full manifest only through JSON or
-verbose output, and reports a correction that can be retried against the same
-committed version without rollback.
+The shared transaction requires an immutable candidate-bound approval and
+`NPM_TOKEN` only in its npm mutation child. It stages the exact tarball on a
+candidate tag, proves exact registry integrity from a separate empty state, and
+moves `latest` forward only after consumer qualification. Matching state is a
+credential-free replay. Conflicts, changed artifacts, and failed smoke do not
+roll a tag back.
 
 The v3 CLI has a separate isolated package-construction and recovery contract
 in [v3 npm packaging and verification](../../../docs/packaging/v3-packaging.md);

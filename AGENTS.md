@@ -176,38 +176,45 @@ conjunction. The packaging guide owns the complete non-publishing readiness
 sequence and the publication contract owns transaction behavior; do not replace
 either with ad hoc version checks or direct `npm pack`/`npm publish` commands.
 
-Publish only after the release commit is clean and all gates pass. The v3
-development channel publishes `agentera` to npm `@next`; it loads `NPM_TOKEN`
-from `.env` when present. Compare the local package version with the current
-`@next` version, then prepare version and `gitRef` metadata without registry
-mutation. Review and commit that manifest and rerun the checks before
-publishing:
+Prepare, qualify, and publish as separate operations. The full contract and
+benchmark live in [`docs/packaging/v3-packaging.md`](./docs/packaging/v3-packaging.md).
+Preparation needs an explicit next version and source commit. It only changes
+the development package version and `agentera.gitRef`; `--check` is read-only.
+Do not use a push or `.env` file as publication authority:
 
 ```bash
-npm view agentera@next version
-pnpm cli:prepare:dev
+pnpm cli:prepare:dev -- --target-version 3.0.0-dev.N --source-commit COMMIT
 # review and commit packages/cli/package.json
-pnpm cli:publish:dev
+pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
+pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
+pnpm cli:approve:dev -- --candidate-dir /secure/external/candidate --approved-by NAME
+# run exact-version consumer qualification while @next is unchanged
+NPM_TOKEN=... pnpm cli:stage:dev -- --candidate-dir /secure/external/candidate
+NPM_TOKEN=... pnpm cli:promote:dev -- --candidate-dir /secure/external/candidate
 ```
 
-The stable channel remains the transitional shim on npm `@latest`. Prepare its
-patch version and `gitRef` without publishing, review and commit the manifest,
-then publish from that clean commit:
+Source receipts are content-addressed local cache records, not authority to
+mutate npm. Candidate qualification retains one immutable tarball outside the
+checkout and runs a cold-state local smoke before any registry action. Every
+registry mutation requires a separate immutable approval bound to that candidate
+receipt, package, version, integrity, registry, and expected tag. CI also needs
+the transferred artifact and CI attestation. Matching registry state replays
+without a token; credentials are scoped to the mutation child only.
+
+The stable shim follows the same candidate flow and remains on `@latest`:
 
 ```bash
-pnpm cli:prepare:stable
+pnpm cli:prepare:stable -- --target-version X.Y.Z --source-commit COMMIT
 # review and commit packages/cli/shim/package.json
-pnpm cli:publish:stable
+NPM_TOKEN=... pnpm cli:stage:stable -- --candidate-dir /secure/external/candidate
+NPM_TOKEN=... pnpm cli:promote:stable -- --candidate-dir /secure/external/candidate
 ```
 
 `references/adapters/package-publication.json` owns both package adapters and
-the shared repository transaction. Publication never mutates tracked metadata,
-uses no candidate dist-tags, verifies bounded exact-version integrity and tag
-convergence, and runs only the adapter's no-project `--version` smoke. Matching
-registry state is a successful non-publishing replay; conflicts fail with a
-correction. Both publishers use the same bounded phase receipts, JSON/verbose
-manifest modes, retry rule, and no-rollback recovery: correct the reported
-cause and rerun the same committed version.
+the shared repository transaction. It owns candidate tags, the forward-only
+registry state table, source/candidate receipt inputs, isolated smoke, retries,
+and no-rollback recovery. Correct the reported cause and rerun the same exact
+candidate; never reconstruct it or move a tag backward.
 
 Never publish, tag, or push during normal capability execution without the
 user's explicit instruction.

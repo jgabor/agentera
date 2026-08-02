@@ -1,0 +1,71 @@
+name: Publish qualified release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Qualification workflow run that retained the exact candidate
+        required: true
+        type: string
+      candidate_receipt_sha256:
+        description: Exact candidate receipt digest approved for mutation
+        required: true
+        type: string
+      adapter:
+        description: Package adapter
+        required: true
+        type: choice
+        options: [development, stable]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  publish:
+    name: Stage, verify, and promote approved candidate
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download exact qualification artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-candidate-${{ inputs.source_run_id }}
+          path: ${{ runner.temp }}/agentera-candidate
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+      - name: Check explicit approval binding and source checkout
+        env:
+          EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
+        run: |
+          set -euo pipefail
+          node -e 'const fs=require("fs"); const r=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/agentera-candidate/candidate-receipt.json")); if (r.receiptSha256 !== process.env.EXPECTED_CANDIDATE_SHA256) throw new Error("candidate receipt digest does not match the explicit workflow approval"); process.stdout.write(r.metadataCommit + "\n")' > "${RUNNER_TEMP}/candidate-commit"
+          git checkout --detach "$(<"${RUNNER_TEMP}/candidate-commit")"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Record candidate-bound approval
+        run: node packages/cli/scripts/release-qualification.mjs approval --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --approved-by "${{ github.actor }}"
+      - name: Stage exact candidate without moving its public tag
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node packages/cli/scripts/publication-transaction.mjs stage "${{ inputs.adapter }}" --approve --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ inputs.source_run_id }}" --json
+      - name: Run exact-version L2 for development
+        if: inputs.adapter == 'development'
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          AGENTERA_SANDBOX_TIER: L2
+        run: |
+          set -euo pipefail
+          CLI_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          export AGENTERA_NPM_PIN="agentera@${CLI_VERSION}"
+          bash scripts/sandbox/v2v3-upgrade-harness.sh happy-path-clean
+      - name: Promote the exact verified candidate
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node packages/cli/scripts/publication-transaction.mjs promote "${{ inputs.adapter }}" --approve --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ inputs.source_run_id }}" --json

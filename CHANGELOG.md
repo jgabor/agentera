@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Development releases now separate explicit metadata preparation, source and
+  candidate qualification, candidate-bound approval, staged exact-version
+  publication, and forward-only tag promotion. Preparation is registry-free;
+  qualification retains one immutable artifact with content-addressed receipts
+  and cold-state smoke evidence; ordinary CI pushes cannot publish it.
 - State record families now use canonical bounded `list` and exact `get` reads,
   with predictable summary counts, selectors, queue ordering, omission metadata,
   and exact-detail recovery generated from the retrieval authority.

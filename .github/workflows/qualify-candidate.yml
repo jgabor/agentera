@@ -1,0 +1,44 @@
+name: Qualify release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      adapter:
+        description: Package adapter with committed release metadata
+        required: true
+        type: choice
+        options: [development, stable]
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    name: Source and candidate qualification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Qualify committed source
+        run: pnpm cli:qualify:source -- --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
+      - name: Qualify exact development candidate
+        if: inputs.adapter == 'development'
+        run: pnpm cli:qualify:dev -- --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
+      - name: Qualify exact stable candidate
+        if: inputs.adapter == 'stable'
+        run: node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
+      - name: Attest transferred candidate
+        run: node packages/cli/scripts/release-qualification.mjs attest --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
+      - name: Upload immutable candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/agentera-candidate
+          if-no-files-found: error
+          retention-days: 30

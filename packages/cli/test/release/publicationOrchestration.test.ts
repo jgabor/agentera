@@ -5,6 +5,14 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8");
+const qualificationYaml = fs.readFileSync(
+  path.join(REPO_ROOT, ".github/workflows/qualify-candidate.yml"),
+  "utf8",
+);
+const publicationYaml = fs.readFileSync(
+  path.join(REPO_ROOT, ".github/workflows/publish-qualified-candidate.yml"),
+  "utf8",
+);
 const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
 const developmentPackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"),
@@ -13,67 +21,64 @@ const stablePackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/shim/package.json"), "utf8"),
 );
 
-function job(name: string): string {
-  const start = ciYaml.indexOf(`  ${name}:`);
-  expect(start).toBeGreaterThanOrEqual(0);
-  const next = ciYaml.slice(start + 1).match(/\n  [a-zA-Z0-9_-]+:/);
-  return next?.index === undefined ? ciYaml.slice(start) : ciYaml.slice(start, start + 1 + next.index);
-}
-
-describe("publication orchestration", () => {
-  const development = job("publish-next");
-  const stable = job("publish-latest");
-
-  it("routes local and CI development and stable commands through the same adapters", () => {
+describe("candidate publication orchestration", () => {
+  it("routes preparation, qualification, approval, staging, and promotion through explicit scripts", () => {
     expect(rootPackage.scripts).toMatchObject({
       "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
-      "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
-      "cli:publish:dev": "pnpm -C packages/cli run publish:dev",
-      "cli:publish:stable": "pnpm -C packages/cli/shim run publish:stable",
+      "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
+      "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
+      "cli:approve:dev": "pnpm -C packages/cli run release:approve",
+      "cli:stage:dev": "pnpm -C packages/cli run release:stage",
+      "cli:promote:dev": "pnpm -C packages/cli run release:promote",
     });
     expect(developmentPackage.scripts["release:prepare"]).toContain(
       "publication-transaction.mjs prepare development",
     );
-    expect(developmentPackage.scripts["publish:dev"]).toContain(
-      "publication-transaction.mjs publish development --authorize",
+    expect(developmentPackage.scripts["release:stage"]).toContain(
+      "publication-transaction.mjs stage development --approve",
     );
-    expect(stablePackage.scripts["release:prepare"]).toContain(
-      "publication-transaction.mjs prepare stable",
+    expect(developmentPackage.scripts["release:promote"]).toContain(
+      "publication-transaction.mjs promote development --approve",
     );
-    expect(stablePackage.scripts["publish:stable"]).toContain(
-      "publication-transaction.mjs publish stable --authorize",
+    expect(stablePackage.scripts["release:stage"]).toContain(
+      "publication-transaction.mjs stage stable --approve",
     );
-    expect(development).toContain("run: pnpm cli:publish:dev");
-    expect(stable).toContain("run: pnpm cli:publish:stable");
-    expect(ciYaml).not.toContain("publication-transaction.mjs");
+    expect(developmentPackage.scripts).not.toHaveProperty("publish:dev");
+    expect(stablePackage.scripts).not.toHaveProperty("publish:stable");
   });
 
-  it("lets the transaction replay unchanged versions and fail missing mutation credentials", () => {
-    expect(development).not.toContain("version-check");
-    expect(stable).not.toContain("version-check");
-    expect(development).not.toMatch(/NPM_TOKEN.*(?:skip|exit 0)/s);
-    expect(stable).not.toMatch(/NPM_TOKEN.*(?:skip|exit 0)/s);
-    expect(development).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
-    expect(stable).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
-  });
-
-  it("mutates npm only for matching branch pushes after required gates", () => {
-    expect(development).toContain("needs: [cli, sandbox-l1]");
-    expect(development).toContain(
-      "if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'",
-    );
-    expect(stable).toContain("needs: [cli]");
-    expect(stable).toContain(
-      "if: github.event_name == 'push' && github.ref == 'refs/heads/main'",
-    );
+  it("keeps credentials out of package scripts and ordinary CI pushes", () => {
+    expect(JSON.stringify(developmentPackage.scripts)).not.toContain(".env");
+    expect(JSON.stringify(stablePackage.scripts)).not.toContain(".env");
+    expect(ciYaml).not.toContain("NPM_TOKEN");
+    expect(ciYaml).not.toContain("publish-next");
+    expect(ciYaml).not.toContain("publish-latest");
+    expect(ciYaml).not.toContain("npm publish");
     expect(ciYaml).toMatch(/push:\n\s+branches:\n\s+- main\n\s+- feat\/v3/);
-    expect(ciYaml).not.toMatch(/\bnpm publish\b/);
   });
 
-  it("publishes development before bootstrap-owned exact-version L2", () => {
-    const l2 = job("sandbox-l2");
-    expect(development).not.toContain("sandbox-l2");
-    expect(l2).toContain("needs: [publish-next]");
-    expect(l2).toContain("TODO vptlelnadp owns the full exact-version bootstrap matrix");
+  it("retains a candidate and CI attestation before any separate approved mutation run", () => {
+    expect(qualificationYaml).toContain("workflow_dispatch");
+    expect(qualificationYaml).toContain("pnpm cli:qualify:source");
+    expect(qualificationYaml).toContain("pnpm cli:qualify:dev");
+    expect(qualificationYaml).toContain("release-qualification.mjs attest");
+    expect(qualificationYaml).toContain("release-candidate-${{ github.run_id }}");
+    expect(qualificationYaml).toContain("retention-days: 30");
+    expect(qualificationYaml).not.toContain("NPM_TOKEN");
+  });
+
+  it("requires explicit candidate digest approval, exact artifact transfer, L2, then forward-only promotion", () => {
+    expect(publicationYaml).toContain("environment: npm-publish");
+    expect(publicationYaml).toContain("candidate_receipt_sha256");
+    expect(publicationYaml).toContain("actions/download-artifact@v4");
+    expect(publicationYaml).toContain("run-id: ${{ inputs.source_run_id }}");
+    expect(publicationYaml).toContain("release-qualification.mjs approval");
+    expect(publicationYaml).toContain("publication-transaction.mjs stage");
+    expect(publicationYaml).toContain("AGENTERA_SANDBOX_TIER: L2");
+    expect(publicationYaml).toContain("publication-transaction.mjs promote");
+    expect(publicationYaml.indexOf("publication-transaction.mjs stage"))
+      .toBeLessThan(publicationYaml.indexOf("AGENTERA_SANDBOX_TIER: L2"));
+    expect(publicationYaml.indexOf("AGENTERA_SANDBOX_TIER: L2"))
+      .toBeLessThan(publicationYaml.indexOf("publication-transaction.mjs promote"));
   });
 });

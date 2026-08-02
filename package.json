@@ -4,8 +4,13 @@
   "scripts": {
     "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
     "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
-    "cli:publish:dev": "pnpm -C packages/cli run publish:dev",
-    "cli:publish:stable": "pnpm -C packages/cli/shim run publish:stable"
+    "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
+    "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
+    "cli:approve:dev": "pnpm -C packages/cli run release:approve",
+    "cli:stage:dev": "pnpm -C packages/cli run release:stage",
+    "cli:promote:dev": "pnpm -C packages/cli run release:promote",
+    "cli:stage:stable": "pnpm -C packages/cli/shim run release:stage",
+    "cli:promote:stable": "pnpm -C packages/cli/shim run release:promote"
   },
   "packageManager": "pnpm@10.30.3"
 }

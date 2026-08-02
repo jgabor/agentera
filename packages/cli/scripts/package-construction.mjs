@@ -39,13 +39,17 @@ export function normalizeConstruction(packed, options) {
   };
 }
 
-export function npmChildEnvironment(environment, userConfig) {
+export function npmChildEnvironment(environment, userConfig, globalConfig) {
   const sanitized = Object.fromEntries(
     Object.entries(environment).filter(
       ([key]) => !/^(?:npm|pnpm)/i.test(key) && !["NPM_TOKEN", "NODE_AUTH_TOKEN"].includes(key),
     ),
   );
-  return userConfig ? { ...sanitized, NPM_CONFIG_USERCONFIG: userConfig } : sanitized;
+  return {
+    ...sanitized,
+    ...(userConfig ? { NPM_CONFIG_USERCONFIG: userConfig } : {}),
+    ...(globalConfig ? { NPM_CONFIG_GLOBALCONFIG: globalConfig } : {}),
+  };
 }
 
 export function projectConstruction(construction, includeFiles = false) {

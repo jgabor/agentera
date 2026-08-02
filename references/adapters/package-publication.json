@@ -1,18 +1,15 @@
 {
-  "schemaVersion": "agentera.packagePublication.v1",
+  "schemaVersion": "agentera.packagePublication.v2",
   "owner": "repository/package scripts",
   "invariants": {
-    "preparation": "Metadata preparation is non-publishing and leaves version and gitRef changes for review and commit.",
-    "preflight": "Publication requires explicit authority, a clean tree, committed package metadata, an adapter-valid version, and an existing gitRef before registry mutation.",
-    "publication": "Publish directly to the expected tag, then require bounded exact-version integrity and tag convergence.",
-    "access": "Publish the unscoped package with public access.",
-    "retry": "An exact version with matching integrity and expected tag is a successful replay; conflicting integrity or an expected tag already ahead of the committed version fails without mutation.",
-    "smoke": "Run one non-mutating no-project exact-version --version command after convergence; failure is explicit and does not imply rollback.",
-    "construction": "Each adapter returns the exact npm name, version, file count, packed and unpacked sizes, shasum, integrity, expected tag, artifact path, warnings, and complete file manifest before publication.",
-    "credentials": "Only the npm publish child receives credentials, through a mode-0600 temporary user config; inherited npm/pnpm lifecycle settings and token variables are removed from its environment, and the config is deleted when the child exits.",
-    "orchestration": "Root package scripts are the shared local and CI interface. Push-only development and stable jobs run the matching transaction after required gates; replay needs no credentials, mutation without credentials fails, and development publication precedes exact-version L2 bootstrap verification.",
-    "outputModes": "Default construction output omits the per-file list; --json and --verbose retain the complete npm pack manifest.",
-    "output": ["package", "version", "expectedTag", "phase", "outcome", "nextAction"]
+    "preparation": "Preparation is pure and registry-independent. It accepts an explicit target version and source commit, changes only package version and agentera.gitRef, and leaves the diff for review and commit.",
+    "sourceQualification": "Source qualification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
+    "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
+    "publication": "Registry publication consumes the retained candidate bytes. It stages an absent exact version on its candidate tag, runs exact-version checks before promotion, then moves the expected tag forward. It never reconstructs an artifact or rolls a tag back.",
+    "approval": "Registry mutation requires an explicit approval bound to the candidate receipt digest, target version, integrity, package, registry, and tag. A branch push is never approval.",
+    "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
+    "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Pack, install, smoke, and registry reads use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
+    "output": "Every phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. JSON is one object per line; human output carries the same fields. Diagnostics redact credentials and private absolute paths."
   },
   "packages": {
     "development": {
@@ -22,7 +19,8 @@
       "expectedTag": "next",
       "preparation": "incrementDevPrerelease",
       "construction": "isolatedTypeScriptPackage",
-      "smoke": ["npx", "-y", "agentera@{version}", "--version"]
+      "smoke": ["npx", "-y", "agentera@{version}", "--version"],
+      "localSmoke": ["agentera", "--version"]
     },
     "stable": {
       "label": "transitional stable shim",
@@ -31,8 +29,131 @@
       "expectedTag": "latest",
       "preparation": "incrementPatch",
       "construction": "stableShim",
-      "smoke": ["npx", "-y", "agentera@{version}", "--version"]
+      "smoke": ["npx", "-y", "agentera@{version}", "--version"],
+      "localSmoke": ["agentera", "--version"]
     }
+  },
+  "qualification": {
+    "source": {
+      "component": "release-source",
+      "inputs": [
+        "tracked_tree_except_package_version_gitRef",
+        "verification_policy",
+        "lockfile",
+        "node",
+        "npm",
+        "pnpm",
+        "gate_set"
+      ],
+      "gates": [
+        { "name": "source", "command": ["pnpm", "-C", "packages/cli", "run", "test:source"] },
+        { "name": "stress", "command": ["pnpm", "-C", "packages/cli", "run", "test:stress"] },
+        {
+          "name": "performance",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:performance"]
+        },
+        { "name": "package", "command": ["pnpm", "-C", "packages/cli", "run", "verify:package"] },
+        {
+          "name": "generated-overlap",
+          "command": ["pnpm", "-C", "packages/cli", "run", "verify:generated-overlap"]
+        },
+        { "name": "typecheck", "command": ["pnpm", "-C", "packages/cli", "run", "typecheck"] },
+        { "name": "build", "command": ["pnpm", "-C", "packages/cli", "build"] },
+        {
+          "name": "compact",
+          "command": ["node", "packages/cli/dist/bin/agentera.js", "check", "compact"]
+        },
+        {
+          "name": "capability-contract",
+          "command": [
+            "node",
+            "packages/cli/dist/bin/agentera.js",
+            "check",
+            "validate",
+            "capability-contract",
+            "--format",
+            "json"
+          ]
+        }
+      ],
+      "parallelism": "sequential: current owners share checkout-generated output and retain their existing sequential-equivalent policy evidence"
+    },
+    "candidate": {
+      "component": "release-candidate",
+      "inputs": [
+        "source_receipt",
+        "metadata_commit",
+        "target_version",
+        "source_commit",
+        "adapter",
+        "package",
+        "registry",
+        "expected_tag",
+        "artifact_bytes"
+      ],
+      "gates": [
+        "release-metadata",
+        "dry-pack-observation-equivalence",
+        "local-exact-artifact-smoke"
+      ],
+      "artifact": {
+        "receipt": "candidate-receipt.json",
+        "sourceReceipt": "source-receipt.json",
+        "mode": "0444",
+        "mustRemainWithinCandidateDirectory": true
+      }
+    }
+  },
+  "trust": {
+    "local": "A same-principal source receipt is a deterministic cache only. It cannot authorize registry mutation.",
+    "ci": "CI registry mutation requires the transferred exact artifact and receipts, a CI attestation bound to the candidate receipt and source run, and an explicit candidate-bound approval. OIDC provenance is deferred."
+  },
+  "registryStateTable": [
+    {
+      "state": "absent",
+      "exactVersion": "absent",
+      "candidateTag": "absent",
+      "expectedTag": "older-or-absent",
+      "stage": "upload exact artifact once",
+      "promote": "blocked"
+    },
+    {
+      "state": "staged",
+      "exactVersion": "matching integrity",
+      "candidateTag": "target version",
+      "expectedTag": "older",
+      "stage": "replay without upload and run observational smoke",
+      "promote": "move expected tag forward after exact-version qualification"
+    },
+    {
+      "state": "promoted",
+      "exactVersion": "matching integrity",
+      "candidateTag": "target version or retained history",
+      "expectedTag": "target version",
+      "stage": "replay without upload",
+      "promote": "replay without tag mutation"
+    },
+    {
+      "state": "conflict",
+      "exactVersion": "missing, changed, conflicting, or tag ahead",
+      "candidateTag": "any",
+      "expectedTag": "any",
+      "stage": "fail before mutation",
+      "promote": "fail before mutation"
+    }
+  ],
+  "benchmark": {
+    "environment": "Ubuntu runner or clean local Node 22, npm 10, and pnpm 10.30.3; record exact tool versions in receipts.",
+    "fixture": "clean committed checkout and an external empty candidate directory; no tracked or checkout-local generated candidate files.",
+    "cacheNetwork": "Preflight uses no registry call. Qualification and each smoke use a new empty HOME, npm cache, user config, and global config; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
+    "repetitions": 3,
+    "statistic": "median elapsed milliseconds; each phase receipt records every individual duration and the report reconciles phase totals.",
+    "timeouts": {
+      "preflightMs": 30000,
+      "sourceQualificationMs": 300000,
+      "qualifiedPublicationMs": 120000
+    },
+    "failureRule": "The first failing owner is emitted immediately, remains the reported failure label, and cancels later ordered work. No timeout or failure authorizes repair or registry mutation."
   },
   "bounds": {
     "registryAttempts": 6,

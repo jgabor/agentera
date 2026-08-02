@@ -33,61 +33,88 @@ lifecycle scripts disabled. Checkout `prepack` is a guard that rejects direct
 `npm pack`; it does not compile or stage publication output. Construction never
 publishes directly and refuses to overwrite a prior package artifact.
 
-## Publication transaction
+## Preparation, qualification, and publication
 
-Publication is repository orchestration, not an Agentera CLI command. Both npm
-surfaces use `packages/cli/scripts/publication-transaction.mjs`, with adapters
-that keep package-specific behavior explicit:
+Publication is repository orchestration, not an Agentera CLI command. The
+machine-readable authority is
+[`references/adapters/package-publication.json`](../../references/adapters/package-publication.json).
+It defines the development and stable adapters, component inputs, state table,
+benchmark, and failure labels. This guide explains how maintainers use it.
 
-| Adapter | Preparation | Construction | Tag | Exact-version smoke |
-| ------- | ----------- | ------------ | --- | ------------------- |
-| `development` | Increment `X.Y.Z-dev.N`; set `agentera.gitRef` to `HEAD` | Build and pack the isolated TypeScript package | `next` | `npx -y agentera@<version> --version` |
-| `stable` | Increment the shim patch; set `agentera.gitRef` to `HEAD` | Test and pack the transitional shim | `latest` | `npx -y agentera@<version> --version` |
+Preparation is pure. It does not read npm or create a package. Supply both the
+next allowed target version and the immutable source commit:
 
-Preparation is deliberately separate and never reads or mutates npm registry
-state. Run `pnpm cli:prepare:dev` or `pnpm cli:prepare:stable`, review the
-manifest diff, and commit it. Publication then runs from that clean commit with
-`pnpm cli:publish:dev` or `pnpm cli:publish:stable`. The publisher fails before
-registry mutation unless `--authorize` is present internally, the entire tree
-is clean, the selected manifest is committed, and its 40-character `gitRef`
-names an existing commit. The committed version must match its adapter
-(`X.Y.Z-dev.N` for development or `X.Y.Z` for stable), and publication refuses
-to move an expected tag backward from a newer registry version. `NPM_TOKEN` is
-written only to a mode-`0600` temporary npm configuration used by `npm publish`,
-then removed as soon as that child exits. The npm child does not inherit token
-variables or caller-only npm/pnpm lifecycle settings, preventing credentials
-from escaping the restricted configuration and avoiding unrelated npm warnings
-from pnpm's environment.
+```bash
+pnpm cli:prepare:dev -- --target-version 3.0.0-dev.N --source-commit COMMIT
+pnpm cli:prepare:dev -- --target-version 3.0.0-dev.N --source-commit COMMIT --check
+```
 
-The root `pnpm cli:*` package scripts are also the CI publication interface.
-After the required repository gates, pushes to `feat/v3` run
-`pnpm cli:publish:dev` and pushes to `main` run `pnpm cli:publish:stable`.
-Pull requests and other branches never enter a publication job. CI does not
-compare versions or interpret credentials separately: matching registry state
-replays successfully without a token, while a required mutation with no
-`NPM_TOKEN` fails at the transaction's credential boundary. Development
-publication runs before the pinned exact-version L2 sandbox; the separate
-four-state bootstrap work owns expansion of that L2 proof.
+Only `packages/cli/package.json#version` and `agentera.gitRef` can change. The
+same target is a no-op. A stale, skipped, malformed, or out-of-policy target
+fails before effects. Review and commit the diff; preparation never infers a
+version, reads the registry, or loads `.env` credentials.
 
-Each package is published directly to its existing expected tag; there is no
-candidate tag or promotion phase. The transaction polls exact version,
-integrity, and tag convergence with a bounded retry window, then runs only the
-no-project `--version` smoke. The separate four-state bootstrap and migration
-matrix is not inherited here. Repeating the same transaction succeeds without
-mutation when exact integrity and tag already match; an existing version with
-conflicting integrity or tag fails and requires an explicit correction or a new
-prepared version. A post-publication convergence or smoke failure does not move
-the dist-tag backward or trigger rollback: correct the reported cause and retry
-the same committed version. Registry lookup failures other than an explicit
-not-found response are errors, not evidence that a version is unpublished.
+Source qualification runs the current source, stress, performance, package,
+generated-overlap, typecheck, build, compact, and capability-contract gates in
+their established sequential order. They share checkout-generated state, so
+parallel execution would not preserve the current policy evidence. It emits a
+content-addressed `source-receipt.json` outside the checkout. The receipt binds
+the normalized source tree (package version and gitRef excluded), verification
+policy, lockfile, exact toolchain, gate set, and individual durations. This
+allows a committed version/gitRef-only change to reuse source evidence, but any
+other input change fails closed.
 
-Every completed phase emits one bounded human line, or one JSON object when the
-runner receives `--json`, containing `package`, `version`, `expectedTag`,
-`phase`, `outcome`, and `nextAction`. Construction additionally reports the
-exact npm name and version, file count, packed and unpacked sizes, shasum,
-integrity, expected tag, artifact path, and warnings. Default output omits the
-per-file list; `--json` and `--verbose` retain the complete npm pack manifest.
-Failures include a bounded diagnostic and a retry correction.
+```bash
+pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
+pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
+pnpm cli:approve:dev -- --candidate-dir /secure/external/candidate --approved-by NAME
+```
+
+Candidate qualification validates that source receipt, runs release-metadata,
+compares dry-pack and retained-artifact observations, writes one mode-`0444`
+tarball, and runs that exact tarball in a new empty npm home, cache, user config,
+source receipt, metadata and source commits, adapter, target version, registry
+and tag, exact bytes, integrity, construction observation, and smoke result.
+The candidate directory must be outside the checkout. It is retained input, not
+cleanup residue: later stages fail if the receipt, path containment, bytes,
+integrity, permissions, or approval differ.
+
+An approval is an immutable `approval.json` bound to that candidate digest,
+package, version, integrity, registry, and public tag. A branch push is not an
+approval. Local receipts are deterministic cache records only. CI mutation also
+requires the transferred artifact and receipts, a CI attestation from the
+source-qualification run, and the explicit candidate-bound approval. OIDC
+provenance remains deferred.
+
+Stage and promotion consume the retained bytes; neither runs `npm pack` or
+rebuilds source:
+
+```bash
+NPM_TOKEN=... pnpm cli:stage:dev -- --candidate-dir /secure/external/candidate
+# Run the exact-version L2 consumer qualification without moving @next.
+NPM_TOKEN=... pnpm cli:promote:dev -- --candidate-dir /secure/external/candidate
+```
+
+Staging first inspects npm without credentials. An absent version uploads the
+approved tarball once to `candidate-<version>`, waits for exact integrity and
+runs an independent cold-state registry smoke. It does not move `next` or
+`latest`. Promotion verifies the staged exact version, then moves the expected
+tag forward only after consumer qualification. Exact matching staged or promoted
+state replays without upload or a token; conflicting integrity, a tag ahead of
+without rollback. A convergence or smoke retry may safely repeat observation,
+
+Only the npm mutation child receives `NPM_TOKEN`, through a mode-`0600`
+temporary config. Pack, registry inspection, and both smoke paths sanitize npm
+and pnpm variables and use new user/global configuration and caches. Phase
+start/end output is one bounded human line or one JSON object with package,
+version, phase, outcome, elapsed time, executed/reused status, and next action.
+The first failure retains its original phase label. Diagnostics redact tokens
+and private absolute paths.
+
+The benchmark is three cold-cache repetitions with the median duration. The
+contract limits preflight to under 30 seconds, full qualification to under five
+minutes, and qualified publication to under two minutes. Record every phase
+duration; do not claim a target from a different cache or network state.
 
 ## Generated-output and verification ownership
 

@@ -16,6 +16,7 @@ const repoRoot = path.resolve(packageRoot, "../..");
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-construction-"));
 const construction = path.join(temporary, "package");
 const npmrc = path.join(temporary, "npmrc");
+const globalNpmrc = path.join(temporary, "global-npmrc");
 const dryRun = process.argv.includes("--dry-run");
 const json = process.argv.includes("--json");
 const verbose = process.argv.includes("--verbose");
@@ -39,6 +40,7 @@ function npmPack(args, cwd) {
   const result = spawnSync("npm", [...args, "--json"], {
     cwd,
     encoding: "utf8",
+    env: npmChildEnvironment(process.env, npmrc, globalNpmrc),
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error) throw result.error;
@@ -56,6 +58,7 @@ function npmPack(args, cwd) {
 
 try {
   fs.writeFileSync(npmrc, "", { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(globalNpmrc, "", { mode: 0o600, flag: "wx" });
   fs.mkdirSync(construction, { recursive: true });
   for (const file of ["package.json", "README.md"]) {
     fs.copyFileSync(path.join(packageRoot, file), path.join(construction, file));

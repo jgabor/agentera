@@ -9,34 +9,43 @@ import {
   formatConstruction,
   normalizeConstruction,
   npmChildEnvironment,
-  projectConstruction,
 } from "./package-construction.mjs";
+import {
+  isolatedNpmState,
+  smokePublishedCandidate,
+  validateCandidateApproval,
+  validateCandidateReceipt,
+  validateCiAttestation,
+} from "./release-qualification.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "../../..");
 const contractPath = path.join(repoRoot, "references/adapters/package-publication.json");
 export const PUBLICATION_CONTRACT = JSON.parse(fs.readFileSync(contractPath, "utf8"));
 export const PACKAGE_ADAPTERS = PUBLICATION_CONTRACT.packages;
-const REQUIRED_RESULT_FIELDS = PUBLICATION_CONTRACT.invariants.output;
+const REQUIRED_RESULT_FIELDS = ["package", "version", "expectedTag", "phase", "outcome", "nextAction", "executed"];
 
 function incrementVersion(version, preparation) {
   if (preparation === "incrementDevPrerelease") {
     const match = /^(\d+)\.(\d+)\.(\d+)-dev\.(\d+)$/.exec(version);
     if (!match) throw new Error(`development version '${version}' must match X.Y.Z-dev.N`);
-    return `${match[1]}.${match[2]}.${match[3]}-dev.${Number(match[4]) + 1}`;
+    return `${match[1]}.${match[2]}.${match[3]}-dev.${BigInt(match[4]) + 1n}`;
   }
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match) throw new Error(`stable version '${version}' must match X.Y.Z`);
-  return `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
+  return `${match[1]}.${match[2]}.${BigInt(match[3]) + 1n}`;
 }
 
-function result(adapterName, version, phase, outcome, nextAction, detail) {
+function result(adapterName, version, phase, outcome, nextAction, detail, execution = {}) {
   const receipt = {
     package: adapterName,
     version,
     expectedTag: PACKAGE_ADAPTERS[adapterName].expectedTag,
     phase,
     outcome,
+    elapsedMs: execution.elapsedMs ?? 0,
+    executed: execution.executed ?? "ordered",
+    reused: execution.reused ?? false,
     nextAction,
   };
   if (detail)
@@ -44,10 +53,21 @@ function result(adapterName, version, phase, outcome, nextAction, detail) {
   return receipt;
 }
 
+function redactedDiagnostic(value) {
+  return String(value)
+    .replaceAll(repoRoot, "<repository>")
+    .replaceAll(os.homedir(), "<private>")
+    .replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>")
+    .slice(0, PUBLICATION_CONTRACT.bounds.diagnosticCharacters);
+}
+
 export function validateResult(value) {
-  return REQUIRED_RESULT_FIELDS.filter(
+  const missing = REQUIRED_RESULT_FIELDS.filter(
     (field) => typeof value?.[field] !== "string" || value[field].length === 0,
   );
+  if (!Number.isFinite(value?.elapsedMs) || value.elapsedMs < 0) missing.push("elapsedMs");
+  if (typeof value?.reused !== "boolean") missing.push("reused");
+  return missing;
 }
 
 export function prepareMetadata(adapterName, manifest, head) {
@@ -68,6 +88,27 @@ export function prepareMetadata(adapterName, manifest, head) {
       `Review and commit ${adapter.manifestPath}, then run the ${adapterName} publisher with --authorize.`,
     ),
   };
+}
+
+export function prepareTargetMetadata(adapterName, manifest, targetVersion, sourceCommit) {
+  const adapter = PACKAGE_ADAPTERS[adapterName];
+  if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
+  if (!/^[0-9a-f]{40}$/.test(sourceCommit)) {
+    throw new Error("source commit must be a 40-character commit SHA");
+  }
+  if (manifest.version === targetVersion && manifest.agentera?.gitRef === sourceCommit) {
+    return { manifest: structuredClone(manifest), changed: false };
+  }
+  const expected = incrementVersion(manifest.version, adapter.preparation);
+  if (targetVersion !== expected) {
+    throw new Error(
+      `target version '${targetVersion}' is not the next ${adapterName} version '${expected}'; stale, skipped, and out-of-policy targets are rejected`,
+    );
+  }
+  const next = structuredClone(manifest);
+  next.version = targetVersion;
+  next.agentera = { ...next.agentera, gitRef: sourceCommit };
+  return { manifest: next, changed: true };
 }
 
 export function preflightPublication(adapterName, manifest, state) {
@@ -126,7 +167,7 @@ function emit(receipt, json, verbose = false) {
     process.stdout.write(`${JSON.stringify(receipt)}\n`);
   } else {
     process.stdout.write(
-      `${receipt.package}@${receipt.version} ${receipt.expectedTag} ${receipt.phase}: ${receipt.outcome}; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}\n`,
+      `${receipt.package}@${receipt.version} ${receipt.expectedTag} ${receipt.phase}: ${receipt.outcome}; ${receipt.executed}; ${receipt.elapsedMs}ms; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}\n`,
     );
     if (receipt.construction) {
       process.stdout.write(
@@ -417,7 +458,7 @@ export function withNpmCredentials(temporary, callback, environment = process.en
         flag: "wx",
       },
     );
-    return callback(npmChildEnvironment(environment, npmrc));
+    return callback(npmChildEnvironment(environment, npmrc, environment.NPM_CONFIG_GLOBALCONFIG));
   } finally {
     fs.rmSync(npmrc, { force: true });
   }
@@ -535,77 +576,120 @@ export async function executePublication(adapterName, manifest, packed, dependen
   return receipts;
 }
 
-async function publish(adapterName, json, verbose, authorized) {
-  const adapter = PACKAGE_ADAPTERS[adapterName];
-  if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
-  const manifest = readManifest(adapter);
-  let currentPhase = "preflight";
-  let temporary;
+function candidateAdapter(adapter, tag) {
+  return { ...adapter, expectedTag: tag };
+}
+
+function isolatedRegistryInspector(manifest, adapter, environment) {
+  return () => registryState(manifest, adapter, (args) => npmJson(args, { env: environment }));
+}
+
+function candidatePacked(candidate) {
+  return {
+    integrity: candidate.receipt.artifact.integrity,
+    artifact: candidate.artifact,
+  };
+}
+
+function assertQualifiedApproval(adapterName, candidateDirectory, options = {}) {
+  const candidate = validateCandidateReceipt({ candidateDirectory, adapterName });
+  validateCandidateApproval({ candidateDirectory, candidate });
+  if ((options.environment ?? process.env).GITHUB_ACTIONS === "true") {
+    validateCiAttestation({
+      candidateDirectory,
+      candidate,
+      sourceRunId: options.sourceRunId,
+      environment: options.environment,
+    });
+  }
+  return candidate;
+}
+
+export async function stageQualifiedCandidate(adapterName, candidateDirectory, options = {}) {
+  const environment = options.environment ?? process.env;
+  const candidate = assertQualifiedApproval(adapterName, candidateDirectory, options);
+  const { manifest, adapter } = candidate;
+  const state = isolatedNpmState("agentera-registry-stage-");
   try {
-    const preflight = preflightPublication(adapterName, manifest, {
-      authorized,
-      dirty: git(["status", "--porcelain"]).length > 0,
-      metadataCommitted: metadataCommitted(adapter),
-      gitRefExists: gitRefExists(manifest.agentera?.gitRef),
-    });
-    emit(preflight, json, verbose);
-    if (preflight.outcome === "failed") {
-      const error = new Error(preflight.nextAction);
-      error.receiptEmitted = true;
-      throw error;
+    const inspectPublic = isolatedRegistryInspector(manifest, adapter, state.environment);
+    const publicState = inspectPublic();
+    assertRegistryCompatible(manifest, adapter, candidate.receipt.artifact.integrity, publicState, "staging");
+    if (publicState.exists && publicState.tagged) {
+      const output = smokePublishedCandidate({ manifest, adapter });
+      return [
+        result(adapterName, manifest.version, "staging", "replayed", "candidate is already promoted", "matching public tag required no upload"),
+        result(adapterName, manifest.version, "registry-smoke", "passed", "run no additional mutation", output),
+      ];
     }
-
-    temporary = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-${adapterName}-publication-`));
-    currentPhase = "construction";
-    const packed = constructPackage(adapterName, adapter, manifest, temporary);
-    const tarball = packed.artifact;
-    const constructionReceipt = result(
-      adapterName,
-      manifest.version,
-      "construction",
-      "passed",
-      "inspect registry state",
-    );
-    constructionReceipt.construction = projectConstruction(packed, json || verbose);
-    emit(constructionReceipt, json, verbose);
-
-    currentPhase = "publication";
-    await executePublication(adapterName, manifest, packed, {
-      publishPackage: () =>
-        withNpmCredentials(temporary, (env) => {
-          run("npm", ["publish", tarball, "--access", "public", "--tag", adapter.expectedTag], {
+    const stagingAdapter = candidateAdapter(adapter, candidate.receipt.candidateTag);
+    return executePublication(adapterName, manifest, candidatePacked(candidate), {
+      inspectRegistry: isolatedRegistryInspector(manifest, stagingAdapter, state.environment),
+      publishPackage: () => {
+        const credentialsRoot = path.join(state.root, "mutation-credentials");
+        fs.mkdirSync(credentialsRoot, { mode: 0o700 });
+        return withNpmCredentials(credentialsRoot, (childEnvironment) => {
+          run("npm", ["publish", candidate.artifact, "--access", "public", "--tag", candidate.receipt.candidateTag], {
             cwd: repoRoot,
-            env,
+            env: childEnvironment,
           });
-        }),
-      smokePackage: () => {
-        const smoke = adapter.smoke.map((part) => part.replace("{version}", manifest.version));
-        return run(smoke[0], smoke.slice(1), { cwd: temporary });
+        }, { ...environment, NPM_CONFIG_GLOBALCONFIG: state.environment.NPM_CONFIG_GLOBALCONFIG });
       },
-      onReceipt: (receipt) => {
-        currentPhase = receipt.phase;
-        emit(receipt, json);
-      },
+      smokePackage: () => smokePublishedCandidate({ manifest, adapter }),
+      registryAttempts: options.registryAttempts,
+      sleep: options.sleep,
     });
-  } catch (error) {
-    currentPhase = error.publicationPhase ?? currentPhase;
-    if (!error.receiptEmitted) {
-      emit(
-        result(
-          adapterName,
-          manifest.version,
-          currentPhase,
-          "failed",
-          error.nextAction ?? "Correct the reported failure and safely retry the same command.",
-          error.message,
-        ),
-        json,
-      );
-      error.receiptEmitted = true;
-    }
-    throw error;
   } finally {
-    if (temporary) fs.rmSync(temporary, { recursive: true, force: true });
+    fs.rmSync(state.root, { recursive: true, force: true });
+  }
+}
+
+export async function promoteQualifiedCandidate(adapterName, candidateDirectory, options = {}) {
+  const environment = options.environment ?? process.env;
+  const candidate = assertQualifiedApproval(adapterName, candidateDirectory, options);
+  const { manifest, adapter } = candidate;
+  const state = isolatedNpmState("agentera-registry-promote-");
+  try {
+    const inspectPublic = isolatedRegistryInspector(manifest, adapter, state.environment);
+    const publicState = inspectPublic();
+    assertRegistryCompatible(manifest, adapter, candidate.receipt.artifact.integrity, publicState, "promotion");
+    if (publicState.exists && publicState.tagged) {
+      const output = smokePublishedCandidate({ manifest, adapter });
+      return [
+        result(adapterName, manifest.version, "promotion", "replayed", "candidate is already promoted", "matching public tag required no mutation"),
+        result(adapterName, manifest.version, "registry-smoke", "passed", "run no additional mutation", output),
+      ];
+    }
+    const stagingAdapter = candidateAdapter(adapter, candidate.receipt.candidateTag);
+    const staged = isolatedRegistryInspector(manifest, stagingAdapter, state.environment)();
+    assertRegistryCompatible(manifest, stagingAdapter, candidate.receipt.artifact.integrity, staged, "promotion");
+    if (!staged.exists || !staged.tagged) {
+      throw publicationError(
+        `exact candidate ${manifest.name}@${manifest.version} is not staged on @${candidate.receipt.candidateTag}`,
+        "promotion",
+        "Stage and complete exact-version qualification before promoting the public tag; no registry mutation was attempted.",
+      );
+    }
+    const credentialsRoot = path.join(state.root, "mutation-credentials");
+    fs.mkdirSync(credentialsRoot, { mode: 0o700 });
+    withNpmCredentials(credentialsRoot, (childEnvironment) => {
+      run("npm", ["dist-tag", "add", `${manifest.name}@${manifest.version}`, adapter.expectedTag], {
+        cwd: repoRoot,
+        env: childEnvironment,
+      });
+    }, { ...environment, NPM_CONFIG_GLOBALCONFIG: state.environment.NPM_CONFIG_GLOBALCONFIG });
+    await waitForConvergence(manifest, adapter, candidate.receipt.artifact.integrity, {
+      inspectRegistry: inspectPublic,
+      mutationAttempted: true,
+      registryAttempts: options.registryAttempts,
+      sleep: options.sleep,
+    });
+    const output = smokePublishedCandidate({ manifest, adapter });
+    return [
+      result(adapterName, manifest.version, "promotion", "promoted", "run any consumer-owned exact-version checks", "expected tag advanced forward only"),
+      result(adapterName, manifest.version, "registry-smoke", "passed", "complete", output),
+    ];
+  } finally {
+    fs.rmSync(state.root, { recursive: true, force: true });
   }
 }
 
@@ -613,31 +697,102 @@ async function main() {
   const [phase, adapterName] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
   const json = process.argv.includes("--json");
   const verbose = process.argv.includes("--verbose");
-  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "publish"].includes(phase)) {
+  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "stage", "promote"].includes(phase)) {
     throw new Error(
-      "usage: publication-transaction.mjs <prepare|publish> <development|stable> [--authorize] [--json|--verbose]",
+      "usage: publication-transaction.mjs <prepare|stage|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
     );
   }
   if (phase === "prepare") {
     const adapter = PACKAGE_ADAPTERS[adapterName];
-    const prepared = prepareMetadata(
-      adapterName,
-      readManifest(adapter),
-      git(["rev-parse", "HEAD"]),
+    const valueFor = (flag) => {
+      const index = process.argv.indexOf(flag);
+      return index >= 0 ? process.argv[index + 1] : null;
+    };
+    const targetVersion = valueFor("--target-version");
+    const sourceCommit = valueFor("--source-commit");
+    if (!targetVersion || !sourceCommit) {
+      throw new Error(
+        "prepare requires --target-version X.Y.Z[-dev.N] and --source-commit SHA; preparation never infers a target",
+      );
+    }
+    if (!gitRefExists(sourceCommit)) {
+      throw new Error("source commit does not name an existing immutable commit");
+    }
+    const prepared = prepareTargetMetadata(adapterName, readManifest(adapter), targetVersion, sourceCommit);
+    if (process.argv.includes("--check")) {
+      if (prepared.changed) {
+        throw new Error("requested target is not prepared; rerun without --check to create the reviewable metadata diff");
+      }
+      emit(result(adapterName, targetVersion, "preparation", "noop", "target metadata already matches; review or qualify it", undefined, {
+        executed: "none",
+        reused: true,
+      }), json);
+      return;
+    }
+    if (prepared.changed) {
+      fs.writeFileSync(
+        path.join(repoRoot, adapter.manifestPath),
+        `${JSON.stringify(prepared.manifest, null, 2)}\n`,
+      );
+    }
+    emit(
+      result(
+        adapterName,
+        targetVersion,
+        "preparation",
+        prepared.changed ? "prepared" : "noop",
+        prepared.changed
+          ? `Review and commit ${adapter.manifestPath}, then qualify the candidate.`
+          : "target metadata already matches; review or qualify it",
+        undefined,
+        prepared.changed ? undefined : { executed: "none", reused: true },
+      ),
+      json,
     );
-    fs.writeFileSync(
-      path.join(repoRoot, adapter.manifestPath),
-      `${JSON.stringify(prepared.manifest, null, 2)}\n`,
-    );
-    emit(prepared.receipt, json);
     return;
   }
-  await publish(adapterName, json, verbose, process.argv.includes("--authorize"));
+  const candidateIndex = process.argv.indexOf("--candidate-dir");
+  const candidateDirectory = candidateIndex >= 0 ? process.argv[candidateIndex + 1] : null;
+  if (!candidateDirectory) throw new Error(`${phase} requires --candidate-dir DIR for the retained exact candidate`);
+  if (!process.argv.includes("--approve")) {
+    throw new Error(`${phase} requires --approve and an immutable candidate-bound approval receipt`);
+  }
+  const sourceRunIndex = process.argv.indexOf("--source-run-id");
+  const sourceRunId = sourceRunIndex >= 0 ? process.argv[sourceRunIndex + 1] : undefined;
+  const manifest = readManifest(PACKAGE_ADAPTERS[adapterName]);
+  const started = performance.now();
+  emit(
+    result(adapterName, manifest.version, phase, "started", "validate the exact candidate before registry inspection", undefined, {
+      executed: "pending",
+    }),
+    json,
+    verbose,
+  );
+  try {
+    const receipts = phase === "stage"
+      ? await stageQualifiedCandidate(adapterName, candidateDirectory, { sourceRunId })
+      : await promoteQualifiedCandidate(adapterName, candidateDirectory, { sourceRunId });
+    for (const receipt of receipts) emit(receipt, json, verbose);
+    emit(
+      result(adapterName, manifest.version, phase, "passed", "complete", undefined, {
+        elapsedMs: performance.now() - started,
+        executed: "candidate transaction",
+        reused: receipts.every((receipt) => receipt.outcome === "replayed" || receipt.outcome === "passed"),
+      }),
+      json,
+      verbose,
+    );
+  } catch (error) {
+    const publicationFailure = error instanceof Error ? error : new Error(String(error));
+    publicationFailure.publicationPhase ??= phase;
+    publicationFailure.nextAction ??= "Correct the reported failure and retry the same exact candidate.";
+    throw publicationFailure;
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactedDiagnostic(error instanceof Error ? error.message : error);
     const [phase, adapterName] = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
     if (!error.receiptEmitted && PACKAGE_ADAPTERS[adapterName]) {
       let version = "unknown";
@@ -648,9 +803,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         result(
           adapterName,
           version,
-          phase === "prepare" ? "preparation" : "preflight",
+          error.publicationPhase ?? (phase === "prepare" ? "preparation" : phase ?? "preflight"),
           "failed",
-          "Correct the reported failure and retry.",
+          error.nextAction ?? "Correct the reported failure and retry.",
           message,
         ),
         process.argv.includes("--json"),

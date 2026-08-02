@@ -20,6 +20,7 @@ import {
 import {
   formatConstruction,
   normalizeConstruction,
+  npmChildEnvironment,
   projectConstruction,
 } from "../../scripts/package-construction.mjs";
 
@@ -60,6 +61,26 @@ function withTemporaryConstruction<T>(callback: (temporary: string) => T): T {
 }
 
 describe("publication contract", () => {
+  it("isolates npm children from caller tokens and configuration", () => {
+    const environment = npmChildEnvironment({
+      HOME: "/private/home",
+      NPM_TOKEN: "secret",
+      NODE_AUTH_TOKEN: "secret",
+      npm_config_registry: "https://hostile.invalid/",
+      PNPM_HOME: "/private/pnpm",
+    }, "/tmp/user-npmrc", "/tmp/global-npmrc");
+
+    expect(environment).toMatchObject({
+      HOME: "/private/home",
+      NPM_CONFIG_USERCONFIG: "/tmp/user-npmrc",
+      NPM_CONFIG_GLOBALCONFIG: "/tmp/global-npmrc",
+    });
+    expect(environment).not.toHaveProperty("NPM_TOKEN");
+    expect(environment).not.toHaveProperty("NODE_AUTH_TOKEN");
+    expect(environment).not.toHaveProperty("npm_config_registry");
+    expect(environment).not.toHaveProperty("PNPM_HOME");
+  });
+
   it("shares transaction invariants while retaining adapter-specific behavior", () => {
     expect(PACKAGE_ADAPTERS.development).toMatchObject({
       expectedTag: "next",
@@ -163,6 +184,9 @@ describe.each(["development", "stable"] as const)("%s publication adapter", (ada
         expectedTag: adapter.expectedTag,
         phase: "smoke",
         outcome: "passed",
+        elapsedMs: 1,
+        executed: "ordered",
+        reused: false,
         nextAction: "none",
       }),
     ).toEqual([]);
