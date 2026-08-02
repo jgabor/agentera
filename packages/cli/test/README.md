@@ -54,6 +54,13 @@ child has a separate HOME, cache, npm configs, and report. A peer failure cancel
 only cancellable groups; generated-overlap settles without forced termination,
 and no reader barrier or receipt follows a batch or performance failure.
 
+Pre-commit source-policy reuse is explicit. When
+`AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` names an external candidate,
+`release-qualification.mjs source-check` validates its source receipt against
+the current normalized staged and working tracked tree. Success skips only this
+script's source/release test policy. Missing or invalid evidence retains the
+existing policy; an absent variable preserves existing routing.
+
 ## Classification key
 
 | Class | Meaning |

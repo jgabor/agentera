@@ -200,6 +200,13 @@ settles, then compact and capability-contract read the lease-free generation.
 On failure, retry the same
 source command after correcting the first reported owner. Do not run omitted
 owners separately, force-kill overlap, construct a candidate, or infer a receipt.
+For a version/gitRef-only preparation, optionally set
+`AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` to the external candidate directory.
+The pre-commit test hook skips its source/release policy only when the read-only
+`source-check` command validates that receipt against the current normalized
+staged and working tree. Invalid or stale evidence falls back to the broader
+policy. This never skips build, compact, parity, or later candidate and release
+checks.
 Candidate qualification retains one immutable tarball outside the
 checkout and runs a cold-state local smoke before any registry action. Every
 registry mutation requires a separate immutable approval bound to that candidate

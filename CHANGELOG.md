@@ -73,6 +73,9 @@
   actual source deadline, reserves bounded cleanup and parent-reconciliation
   time, and removes its generated state after failure. Source receipts now mark
   and validate all nine successful gate outcomes and reject semantic tampering.
+  The read-only `source-check` command now lets explicitly configured
+  version/gitRef-only pre-commits reuse matching source evidence without
+  skipping build, compact, parity, or later release qualification.
 
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action

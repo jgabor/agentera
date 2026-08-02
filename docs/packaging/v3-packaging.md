@@ -85,8 +85,32 @@ version/gitRef-only change can reuse matching evidence; any other input change
 fails closed. On the first owner failure, the coordinator cancels cancellable
 process groups, lets generated-overlap settle without forced termination,
 blocks every later phase, reports every completed/cancelled failure while
-retaining the first observed label, and issues no receipt. The source-plus-candidate deadline
-remains a guard, not performance evidence.
+retaining the first observed label, and issues no receipt. The
+source-plus-candidate deadline remains a guard, not performance evidence.
+
+A metadata-only preparation can check reusable source evidence without running
+gates or writing repository or candidate state:
+
+```bash
+node packages/cli/scripts/release-qualification.mjs source-check \
+  --candidate-dir /secure/external/candidate --json
+```
+
+The check recomputes the full current staged and working tracked-tree identity
+with the same normalization as qualification: only
+`packages/cli/package.json#version`
+and `agentera.gitRef` are excluded. Any other package field, source, contract,
+policy, lockfile, gate, toolchain, digest, or receipt-semantic change fails.
+Success emits `executed: "none"` and `reused: true` without receipt content or
+private paths.
+
+Set `AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` to that external candidate only
+for a pre-commit that should attempt reuse. A valid check skips only the
+expensive source/release test policy in `scripts/precommit-vitest.sh`. An absent
+variable preserves existing routing; a missing, stale, malformed, or tampered
+receipt falls back to the existing broader policy. Build, compact, parity,
+candidate qualification, release metadata, approval, and publication are never
+skipped.
 
 ```bash
 pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate

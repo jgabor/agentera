@@ -10,13 +10,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..", "..");
 const PRECOMMIT_SCRIPT = path.join(REPO_ROOT, "scripts", "precommit-vitest.sh");
 
-type Route = { mode: "policy" | "targeted"; policy?: string; targets: string[] };
+type Route = { mode: "policy" | "targeted" | "reused"; policy?: string; targets: string[] };
 
-function runPrecommitVitest(...stagedPaths: string[]): Route {
+function runPrecommitVitestWithEnvironment(environment: NodeJS.ProcessEnv, ...stagedPaths: string[]): Route {
   const result = spawnSync("bash", [PRECOMMIT_SCRIPT, ...stagedPaths], {
     cwd: REPO_ROOT,
     env: {
       ...process.env,
+      AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR: "",
+      ...environment,
       PRECOMMIT_VITEST_PRINT_ROUTE: "1",
       PRECOMMIT_VITEST_PRINT_TARGETS: "1",
     },
@@ -28,13 +30,53 @@ function runPrecommitVitest(...stagedPaths: string[]): Route {
   const targets = targetLines.map((line) => line.replace(/^target /, ""));
   if (route.startsWith("run_policy ")) return { mode: "policy", policy: route.slice(11), targets };
   if (route === "run_targeted") return { mode: "targeted", targets };
+  if (route === "reuse_source_receipt") return { mode: "reused", targets };
   throw new Error(`unexpected route: ${result.stdout.trim()}`);
+}
+
+function runPrecommitVitest(...stagedPaths: string[]): Route {
+  return runPrecommitVitestWithEnvironment({}, ...stagedPaths);
 }
 
 function gitOutput(...args: string[]): string {
   const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" });
   expect(result.status, result.stderr).toBe(0);
   return result.stdout.trim();
+}
+
+function runReceiptRoute(candidateDirectory: string, checkStatus: number): { route: Route; calls: string[] } {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "precommit-receipt-route-"));
+  const binDir = path.join(tempDir, "bin");
+  const callsFile = path.join(tempDir, "calls");
+  fs.mkdirSync(binDir);
+  fs.writeFileSync(path.join(binDir, "node"), `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${2:-}" == route ]]; then
+  printf 'release\n'
+  exit 0
+fi
+if [[ "\${2:-}" == source-check ]]; then
+  printf 'source-check\n' >> "$PRECOMMIT_RECEIPT_CALLS"
+  exit "$PRECOMMIT_RECEIPT_STATUS"
+fi
+exit 1
+`);
+  fs.chmodSync(path.join(binDir, "node"), 0o755);
+  try {
+    const route = runPrecommitVitestWithEnvironment({
+      PATH: `${binDir}:${process.env.PATH}`,
+      BASH_ENV: "",
+      AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR: candidateDirectory,
+      PRECOMMIT_RECEIPT_CALLS: callsFile,
+      PRECOMMIT_RECEIPT_STATUS: String(checkStatus),
+    }, "packages/cli/package.json");
+    return {
+      route,
+      calls: fs.existsSync(callsFile) ? fs.readFileSync(callsFile, "utf8").trim().split("\n") : [],
+    };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 function normalizeLocalGitConfig(config: string): string {
@@ -171,6 +213,27 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
   ])("routes lane-defining surface %s conservatively", (surface) => {
     expect(runPrecommitVitest(surface)).toEqual({
       mode: "policy", policy: "release", targets: [],
+    });
+  });
+
+  it("reuses explicitly supplied source evidence only after the read-only check passes", () => {
+    expect(runReceiptRoute("/external/candidate", 0)).toEqual({
+      route: { mode: "reused", targets: [] },
+      calls: ["source-check"],
+    });
+  });
+
+  it("falls back to the release policy when an explicit receipt is missing or invalid", () => {
+    expect(runReceiptRoute("/external/missing", 1)).toEqual({
+      route: { mode: "policy", policy: "release", targets: [] },
+      calls: ["source-check"],
+    });
+  });
+
+  it("preserves release routing and does not check receipts when the opt-in environment is absent", () => {
+    expect(runReceiptRoute("", 0)).toEqual({
+      route: { mode: "policy", policy: "release", targets: [] },
+      calls: [],
     });
   });
 

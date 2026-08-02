@@ -112,6 +112,14 @@
       "performanceEvidenceSchema": "agentera.entityAuthorityPerformanceEvidence.v1",
       "overlapEvidenceSchema": "agentera.generatedOverlapEvidence.v1",
       "gateEvidence": "A source receipt contains the exact nine governed gates in contract order. Every gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
+      "reuseCheck": {
+        "command": "node packages/cli/scripts/release-qualification.mjs source-check --candidate-dir DIR [--json]",
+        "precommitEnvironment": "AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR",
+        "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source qualification.",
+        "effects": "Runs no qualification gate and writes no repository, candidate, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
+        "fallback": "An absent environment variable preserves existing routing. A missing, invalid, ambiguous, or stale receipt never skips tests; pre-commit runs the existing broader policy.",
+        "scope": "Reused source evidence may skip only scripts/precommit-vitest.sh source/release policy execution. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
+      },
       "dag": {
         "batchA": ["generated-overlap", "stress", "typecheck"],
         "performanceBarrier": ["performance"],

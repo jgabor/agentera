@@ -8,10 +8,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   canonicalJson,
+  checkSourceReceipt,
+  formatPhaseResult,
   issueCandidateApproval,
   issueCiAttestation,
   issueSourceReceipt,
   RELEASE_CONTRACT,
+  runSourceReceiptCheckCommand,
   sha256,
   toolVersion,
   validateAdapterSourceProvenance,
@@ -188,6 +191,142 @@ describe("release qualification receipts", () => {
 
     expect(replay.reused).toBe(true);
     expect(replay.receipt.receiptSha256).toBe(first.receiptSha256);
+  });
+
+  it("checks metadata-only staged changes without running gates or writing candidate state", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+    const receiptFile = path.join(candidateDirectory, "source-receipt.json");
+    const before = {
+      bytes: fs.readFileSync(receiptFile),
+      entries: fs.readdirSync(candidateDirectory).sort(),
+      status: git(repo, "status", "--porcelain=v1"),
+      mtimeMs: fs.statSync(receiptFile).mtimeMs,
+    };
+    const manifestPath = path.join(repo, "packages/cli/package.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    manifest.version = "3.0.0-dev.42";
+    manifest.agentera.gitRef = "abcdef0123456789abcdef0123456789abcdef01";
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    git(repo, "add", "packages/cli/package.json");
+    const stagedStatus = git(repo, "status", "--porcelain=v1");
+
+    expect(checkSourceReceipt({ repo, candidateDirectory }).receiptSha256).toBe(receipt.receiptSha256);
+    expect(fs.readFileSync(receiptFile)).toEqual(before.bytes);
+    expect(fs.readdirSync(candidateDirectory).sort()).toEqual(before.entries);
+    expect(fs.statSync(receiptFile).mtimeMs).toBe(before.mtimeMs);
+    expect(git(repo, "status", "--porcelain=v1")).toBe(stagedStatus);
+    expect(before.status).toBe("");
+  });
+
+  it.each([
+    ["source change", (repo: string) => write(repo, "packages/cli/src/source-change.ts", "export const changed = true;\n")],
+    ["non-version package field", (repo: string) => {
+      const file = path.join(repo, "packages/cli/package.json");
+      const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+      manifest.description = "changed source metadata";
+      fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+    }],
+  ])("invalidates source receipt reuse after a staged %s", async (_label, change) => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    change(repo);
+    git(repo, "add", ".");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("source receipt no longer matches current component inputs");
+  });
+
+  it("rejects staged source that differs from a receipt-matching working tree", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const file = path.join(repo, "references/analysis/verification-policy.yaml");
+    const original = fs.readFileSync(file, "utf8");
+    fs.writeFileSync(file, "schemaVersion: staged-change\n");
+    git(repo, "add", "references/analysis/verification-policy.yaml");
+    fs.writeFileSync(file, original);
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("staged and working source inputs differ");
+  });
+
+  it("rejects staged package fields outside normalized metadata when the working file was restored", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const file = path.join(repo, "packages/cli/package.json");
+    const original = fs.readFileSync(file, "utf8");
+    const manifest = JSON.parse(original);
+    manifest.description = "staged source change";
+    fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+    git(repo, "add", "packages/cli/package.json");
+    fs.writeFileSync(file, original);
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("staged and working package inputs differ outside version and agentera.gitRef");
+  });
+
+  it("rejects one-field source receipt tampering in the read-only check", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const file = path.join(candidateDirectory, "source-receipt.json");
+    const receipt = JSON.parse(fs.readFileSync(file, "utf8"));
+    receipt.gates[0].outcome = "failed";
+    fs.chmodSync(file, 0o600);
+    fs.writeFileSync(file, canonicalJson(receipt), { mode: 0o400 });
+    fs.chmodSync(file, 0o400);
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("digest does not match");
+  });
+
+  it("fails closed when the external candidate has no source receipt", () => {
+    const { repo, candidateDirectory } = fixture();
+    fs.mkdirSync(candidateDirectory);
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("source receipt is missing");
+  });
+
+  it("emits a redacted structured fallback when the source receipt check fails", () => {
+    const { repo, candidateDirectory } = fixture();
+    fs.mkdirSync(candidateDirectory);
+    const emitted: any[] = [];
+    expect(() => runSourceReceiptCheckCommand(new Map([
+      ["--candidate-dir", candidateDirectory],
+      ["--json", true],
+    ]), {
+      repo,
+      emit: (record: any) => emitted.push(record),
+    })).toThrow("source receipt is missing");
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      phase: "source-receipt-check",
+      outcome: "failed",
+      executed: "none",
+      reused: false,
+      nextAction: "run the existing broader pre-commit test policy",
+    });
+    expect(JSON.stringify(emitted[0])).not.toContain(candidateDirectory);
+  });
+
+  it("emits bounded structured and human source receipt reuse output without private data", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const emitted: Array<{ result: any; json: boolean }> = [];
+    const result = runSourceReceiptCheckCommand(new Map([
+      ["--candidate-dir", candidateDirectory],
+      ["--json", true],
+    ]), {
+      repo,
+      emit: (record: any, json: boolean) => emitted.push({ result: record, json }),
+    });
+
+    expect(result).toMatchObject({
+      package: "agentera",
+      phase: "source-receipt-check",
+      outcome: "passed",
+      executed: "none",
+      reused: true,
+    });
+    expect(emitted).toEqual([{ result, json: true }]);
+    expect(JSON.stringify(result)).not.toContain(candidateDirectory);
+    expect(JSON.stringify(result)).not.toContain("receiptSha256");
+    expect(formatPhaseResult(result)).toContain("executed:none; reused:true");
+    expect(formatPhaseResult(result)).not.toContain(candidateDirectory);
   });
 
   it("fails closed when an immutable receipt or its source component changes", async () => {

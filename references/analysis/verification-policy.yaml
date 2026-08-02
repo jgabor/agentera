@@ -143,6 +143,12 @@ policies:
 # Pre-commit routing chooses release policy for authority and verification
 # surfaces. All other paths retain the existing targeted source routing.
 conservative_routing:
+  receipt_reuse:
+    environment: AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR
+    command: [node, scripts/release-qualification.mjs, source-check]
+    success: skip_source_or_release_policy_only
+    absent_or_invalid: preserve_existing_policy
+    path_is_authority: false
   exact:
     - .lefthook.yml
     - protocol.yaml

@@ -126,12 +126,28 @@ if [[ -n "$RUN_POLICY" ]]; then
   TARGETS=()
 fi
 
+# This opt-in points only to an external candidate directory. The read-only
+# check recomputes the normalized source identity from the current working tree;
+# the path itself is never authority.
+REUSED_SOURCE_RECEIPT=""
+if [[ "$RUN_POLICY" == release && -n "${AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR:-}" ]]; then
+  if node scripts/release-qualification.mjs source-check \
+    --candidate-dir "$AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR" --json >/dev/null 2>&1; then
+    REUSED_SOURCE_RECEIPT=1
+  else
+    echo "precommit-vitest: source receipt is not reusable; running release policy" >&2
+  fi
+fi
+unset AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR
+
 if [[ -z "$RUN_POLICY" && ${#TARGETS[@]} -eq 0 ]]; then
   for smoke in "${SMOKE[@]}"; do add_target "$smoke"; done
 fi
 
 if [[ -n "${PRECOMMIT_VITEST_PRINT_ROUTE:-}" ]]; then
-  if [[ -n "$RUN_POLICY" ]]; then
+  if [[ -n "$REUSED_SOURCE_RECEIPT" ]]; then
+    echo reuse_source_receipt
+  elif [[ -n "$RUN_POLICY" ]]; then
     echo "run_policy $RUN_POLICY"
   else
     echo run_targeted
@@ -146,6 +162,11 @@ fi
 # nested repositories, so their Git commands must discover those repositories
 # rather than inherit the parent hook's index and worktree.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+
+if [[ -n "$REUSED_SOURCE_RECEIPT" ]]; then
+  echo "precommit-vitest: reused validated source evidence; running no source policy tests"
+  exit 0
+fi
 
 if [[ -n "$RUN_POLICY" ]]; then
   exec node scripts/verify-lane.mjs policy "$RUN_POLICY"

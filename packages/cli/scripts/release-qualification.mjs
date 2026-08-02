@@ -75,14 +75,16 @@ function requireArgument(argumentsMap, name) {
   return value;
 }
 
+export function formatPhaseResult(receipt) {
+  return `${receipt.package}@${receipt.version} ${receipt.phase}: ${receipt.outcome}; executed:${receipt.executed}; reused:${receipt.reused}; ${receipt.elapsedMs}ms; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}`;
+}
+
 function emit(receipt, json) {
   if (json) {
     process.stdout.write(`${JSON.stringify(receipt)}\n`);
     return;
   }
-  process.stdout.write(
-    `${receipt.package}@${receipt.version} ${receipt.phase}: ${receipt.outcome}; ${receipt.executed}; ${receipt.elapsedMs}ms; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}\n`,
-  );
+  process.stdout.write(`${formatPhaseResult(receipt)}\n`);
 }
 
 function phaseResult({ packageName, version, phase, outcome, elapsedMs = 0, executed, reused, nextAction, detail }) {
@@ -106,27 +108,58 @@ function readManifest(adapterName, repo = REPO_ROOT) {
   return JSON.parse(fs.readFileSync(path.join(repo, adapter.manifestPath), "utf8"));
 }
 
-function packageManifestSourceBytes(repo = REPO_ROOT) {
-  const manifest = readManifest("development", repo);
+function packageManifestSourceBytes(repo = REPO_ROOT, bytes) {
+  const manifest = bytes
+    ? JSON.parse(bytes.toString("utf8"))
+    : readManifest("development", repo);
   delete manifest.version;
   if (manifest.agentera) delete manifest.agentera.gitRef;
   return Buffer.from(canonicalJson(manifest));
+}
+
+function stagedSourceBytes(repo, relative) {
+  const invoked = spawnSync("git", ["show", `:${relative}`], {
+    cwd: repo,
+    encoding: null,
+    env: npmChildEnvironment(process.env),
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (invoked.status !== 0) throw new Error("unable to read the staged source tree");
+  return invoked.stdout;
 }
 
 function trackedSourceHash(repo = REPO_ROOT) {
   const raw = run("git", ["ls-files", "-z"], { cwd: repo });
   const digest = createHash("sha256");
   for (const relative of raw.split("\0").filter(Boolean).sort()) {
+    const bytes = fs.readFileSync(path.join(repo, relative));
     digest.update(relative);
     digest.update("\0");
     digest.update(
       relative === "packages/cli/package.json"
-        ? packageManifestSourceBytes(repo)
-        : fs.readFileSync(path.join(repo, relative)),
+        ? packageManifestSourceBytes(repo, bytes)
+        : bytes,
     );
     digest.update("\0");
   }
   return digest.digest("hex");
+}
+
+function assertStagedSourceMatchesWorking(repo) {
+  const diff = spawnSync("git", ["diff", "--quiet", "--", ".", ":(exclude)packages/cli/package.json"], {
+    cwd: repo,
+    env: npmChildEnvironment(process.env),
+  });
+  if (diff.status === 1) throw new Error("staged and working source inputs differ");
+  if (diff.status !== 0) throw new Error("unable to compare staged and working source inputs");
+  if (
+    !packageManifestSourceBytes(repo).equals(
+      packageManifestSourceBytes(repo, stagedSourceBytes(repo, "packages/cli/package.json")),
+    )
+  ) {
+    throw new Error("staged and working package inputs differ outside version and agentera.gitRef");
+  }
 }
 
 export function toolVersion(command, args = ["--version"], repo = REPO_ROOT, options = {}) {
@@ -882,6 +915,24 @@ export function validateSourceReceipt(options = {}) {
   return receipt;
 }
 
+export function checkSourceReceipt(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
+  const file = receiptPath(candidateDirectory, "source-receipt.json");
+  if (!fs.existsSync(file)) throw new Error("source receipt is missing from the external candidate directory");
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink() || path.dirname(fs.realpathSync(file)) !== candidateDirectory) {
+    throw new Error("source receipt must be a regular file inside the external candidate directory");
+  }
+  const receipt = validateSourceReceipt({
+    ...options,
+    repo,
+    receipt: readJson(file, "source receipt"),
+  });
+  assertStagedSourceMatchesWorking(repo);
+  return receipt;
+}
+
 function ensureRegularArtifact(directory, filename) {
   if (path.basename(filename) !== filename) throw new Error("candidate artifact filename must not contain a path");
   const artifact = path.join(directory, filename);
@@ -1556,17 +1607,61 @@ async function runCommand(command, flags) {
   }
 }
 
+export function runSourceReceiptCheckCommand(flags, options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const candidateDirectory = requireArgument(flags, "--candidate-dir");
+  const manifest = readManifest("development", repo);
+  const json = Boolean(flags.get("--json"));
+  const output = options.emit ?? emit;
+  const started = performance.now();
+  try {
+    checkSourceReceipt({
+      repo,
+      candidateDirectory,
+      toolchain: options.toolchain,
+      probeToolVersion: options.probeToolVersion,
+    });
+    const result = phaseResult({
+      packageName: manifest.name,
+      version: manifest.version,
+      phase: "source-receipt-check",
+      outcome: "passed",
+      elapsedMs: performance.now() - started,
+      executed: "none",
+      reused: true,
+      nextAction: "reuse source evidence for the pre-commit test policy only",
+    });
+    output(result, json);
+    return result;
+  } catch (error) {
+    output(phaseResult({
+      packageName: manifest.name,
+      version: manifest.version,
+      phase: "source-receipt-check",
+      outcome: "failed",
+      elapsedMs: performance.now() - started,
+      executed: "none",
+      reused: false,
+      nextAction: "run the existing broader pre-commit test policy",
+      detail: redact(error instanceof Error ? error.message : error, candidateDirectory),
+    }), json);
+    throw error;
+  }
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (!["source", "candidate", "approval", "attest"].includes(command)) {
-    throw new Error("usage: release-qualification.mjs <source|candidate|approval|attest> --candidate-dir DIR [--adapter development|stable] [--json]");
+  if (!["source", "source-check", "candidate", "approval", "attest"].includes(command)) {
+    throw new Error("usage: release-qualification.mjs <source|source-check|candidate|approval|attest> --candidate-dir DIR [--adapter development|stable] [--json]");
   }
-  const valueFlags = ["--candidate-dir", "--adapter"];
+  const valueFlags = command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
-  await runCommand(command, parseReleaseFlags(rest, {
-    boolean: ["--json", "--verbose"],
+  const flags = parseReleaseFlags(rest, {
+    boolean: command === "source-check" ? ["--json"] : ["--json", "--verbose"],
     value: valueFlags,
-  }));
+  });
+  if (command === "source-check") runSourceReceiptCheckCommand(flags);
+  else await runCommand(command, flags);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
