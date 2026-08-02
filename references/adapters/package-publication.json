@@ -4,11 +4,11 @@
   "invariants": {
     "preparation": "Preparation is pure and registry-independent. It accepts an explicit target version and source commit, changes only package version and agentera.gitRef, and leaves the diff for review and commit.",
     "sourceQualification": "Source qualification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
-    "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
+    "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained candidate bytes. It stages an absent exact version on its candidate tag, runs exact-version checks before promotion, then moves the expected tag forward. It never reconstructs an artifact or rolls a tag back.",
     "approval": "Registry mutation requires an explicit approval bound to the candidate receipt digest, target version, integrity, package, registry, and tag. A branch push is never approval.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
-    "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Pack, install, smoke, and registry reads use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
+    "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
     "output": "Every phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. JSON is one object per line; human output carries the same fields. Diagnostics redact credentials and private absolute paths."
   },
   "packages": {
@@ -30,7 +30,25 @@
       "preparation": "incrementPatch",
       "construction": "stableShim",
       "smoke": ["npx", "-y", "agentera@{version}", "--version"],
-      "localSmoke": ["agentera", "--version"]
+      "localSmoke": ["agentera", "--version"],
+      "sourceProvenance": {
+        "rule": "agentera.gitRef must name a commit with exactly the current shim packaged inputs. Only package.json version and agentera.gitRef may differ because preparation owns those fields.",
+        "packagedInputs": [
+          "packages/cli/shim/bin",
+          "packages/cli/shim/lib",
+          "packages/cli/shim/README.md",
+          "packages/cli/shim/LICENSE"
+        ],
+        "permittedManifestDifferences": ["version", "agentera.gitRef"]
+      }
+    }
+  },
+  "ci": {
+    "repository": "jgabor/agentera",
+    "qualificationWorkflow": {
+      "name": "Qualify release candidate",
+      "path": ".github/workflows/qualify-candidate.yml",
+      "ref": "refs/heads/feat/v3"
     }
   },
   "qualification": {
@@ -76,7 +94,7 @@
           ]
         }
       ],
-      "parallelism": "sequential: current owners share checkout-generated output and retain their existing sequential-equivalent policy evidence"
+      "parallelism": "sequential: source, stress, performance, package, generated-overlap, typecheck, build, compact, and capability-contract share checkout-generated output or policy barriers. No owner has a declared isolated output root with equivalence evidence, so source qualification preserves ordered production evidence. The benchmark coordinator measures the whole source-plus-candidate envelope; a timeout is not performance evidence."
     },
     "candidate": {
       "component": "release-candidate",
@@ -89,8 +107,10 @@
         "package",
         "registry",
         "expected_tag",
-        "artifact_bytes"
+        "artifact_bytes",
+        "artifact_mode"
       ],
+      "retainedArtifactMode": "0444",
       "gates": [
         "release-metadata",
         "dry-pack-observation-equivalence",
@@ -147,7 +167,8 @@
     "fixture": "clean committed checkout and an external empty candidate directory; no tracked or checkout-local generated candidate files.",
     "cacheNetwork": "Preflight uses no registry call. Qualification and each smoke use a new empty HOME, npm cache, user config, and global config; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
     "repetitions": 3,
-    "statistic": "median elapsed milliseconds; each phase receipt records every individual duration and the report reconciles phase totals.",
+    "statistic": "median elapsed milliseconds over exactly three cold-cache repetitions; the executable coordinator records every phase and owner duration, executed/reused state, and reconciled phase totals.",
+    "coordinator": "packages/cli/scripts/release-benchmark.mjs runs preflight and source-plus-candidate qualification only. It never receives npm credentials or invokes registry mutation. It can enforce the qualified-publication bound only for separately recorded approved transaction timing; that transaction is never invoked by the qualification benchmark.",
     "timeouts": {
       "preflightMs": 30000,
       "sourceQualificationMs": 300000,

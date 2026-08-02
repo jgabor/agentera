@@ -13,6 +13,7 @@ export const REPO_ROOT = path.resolve(scriptDir, "../../..");
 const CONTRACT_PATH = path.join(REPO_ROOT, "references/adapters/package-publication.json");
 export const RELEASE_CONTRACT = JSON.parse(fs.readFileSync(CONTRACT_PATH, "utf8"));
 const RECEIPT_SCHEMA = "agentera.releaseQualification.v1";
+const ARTIFACT_MODE = Number.parseInt(RELEASE_CONTRACT.qualification.candidate.retainedArtifactMode, 8);
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -38,7 +39,7 @@ function run(command, args, options = {}) {
   const invoked = spawnSync(command, args, {
     cwd: options.cwd ?? REPO_ROOT,
     encoding: "utf8",
-    env: options.env ?? process.env,
+    env: options.env ?? npmChildEnvironment(process.env),
     input: options.input,
     timeout: options.timeout ?? RELEASE_CONTRACT.bounds.commandTimeoutMs,
     stdio: [options.input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
@@ -142,8 +143,14 @@ function trackedSourceHash(repo = REPO_ROOT) {
   return digest.digest("hex");
 }
 
-function toolVersion(command, args = ["--version"], repo = REPO_ROOT) {
-  return run(command, args, { cwd: repo }).split(/\s+/)[0];
+export function toolVersion(command, args = ["--version"], repo = REPO_ROOT, options = {}) {
+  const state = isolatedNpmState("agentera-release-tool-version-", { environment: options.environment });
+  try {
+    return (options.run ?? run)(command, args, { cwd: repo, env: state.environment })
+      .split(/\s+/)[0];
+  } finally {
+    fs.rmSync(state.root, { recursive: true, force: true });
+  }
 }
 
 function sourceGateSet() {
@@ -155,10 +162,11 @@ export function sourceComponentIdentity(options = {}) {
   const gateSet = options.gates ?? sourceGateSet();
   const policyPath = path.join(repo, "references/analysis/verification-policy.yaml");
   const lockPath = path.join(repo, "pnpm-lock.yaml");
+  const probeToolVersion = options.probeToolVersion ?? toolVersion;
   const toolchain = options.toolchain ?? {
-    node: toolVersion(process.execPath, ["--version"], repo),
-    npm: toolVersion("npm", ["--version"], repo),
-    pnpm: toolVersion("pnpm", ["--version"], repo),
+    node: probeToolVersion(process.execPath, ["--version"], repo, { run: options.probeRun, environment: options.environment }),
+    npm: probeToolVersion("npm", ["--version"], repo, { run: options.probeRun, environment: options.environment }),
+    pnpm: probeToolVersion("pnpm", ["--version"], repo, { run: options.probeRun, environment: options.environment }),
   };
   const inputs = {
     component: RELEASE_CONTRACT.qualification.source.component,
@@ -175,6 +183,26 @@ function assertCleanCommittedTree(repo = REPO_ROOT) {
   if (git(["status", "--porcelain"], repo)) {
     throw new Error("source qualification requires a clean committed tree; commit governed source before qualifying");
   }
+}
+
+export function qualificationPreflight(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const candidateDirectory = path.resolve(options.candidateDirectory);
+  const relative = path.relative(repo, candidateDirectory);
+  if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== "..")) {
+    throw new Error("candidate directory must be outside the repository checkout");
+  }
+  if (fs.existsSync(candidateDirectory)) {
+    throw new Error("qualification preflight requires a new empty candidate directory");
+  }
+  const parent = fs.realpathSync(path.dirname(candidateDirectory));
+  const fromRepo = path.relative(repo, parent);
+  if (fromRepo === "" || (!fromRepo.startsWith(`..${path.sep}`) && fromRepo !== "..")) {
+    throw new Error("candidate directory parent resolves inside the repository checkout");
+  }
+  assertCleanCommittedTree(repo);
+  const { manifest, adapter } = candidateManifest(options.adapterName ?? "development", repo);
+  return { candidateDirectory, manifest, adapter };
 }
 
 function assertExternalDirectory(directory, repo = REPO_ROOT, create = true) {
@@ -241,19 +269,34 @@ function validReceiptDigest(receipt, label) {
 function executeGate(gate, dependencies = {}) {
   const execute = dependencies.run ?? run;
   const started = performance.now();
-  execute(gate.command[0] === "node" ? process.execPath : gate.command[0], gate.command.slice(1), {
-    cwd: dependencies.repo ?? REPO_ROOT,
-    env: dependencies.environment,
-    timeout: dependencies.timeout ?? RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
-  });
-  return { name: gate.name, elapsedMs: Math.max(0, Math.round(performance.now() - started)) };
+  try {
+    execute(gate.command[0] === "node" ? process.execPath : gate.command[0], gate.command.slice(1), {
+      cwd: dependencies.repo ?? REPO_ROOT,
+      env: dependencies.environment,
+      timeout: dependencies.timeout ?? RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
+    });
+  } catch (error) {
+    if (error && typeof error === "object") error.owner ??= gate.name;
+    throw error;
+  }
+  return {
+    name: gate.name,
+    elapsedMs: Math.max(0, Math.round(performance.now() - started)),
+    executed: "ordered",
+    reused: false,
+  };
 }
 
 export function issueSourceReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   assertCleanCommittedTree(repo);
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo);
-  const identity = sourceComponentIdentity({ repo, gates: options.gates, toolchain: options.toolchain });
+  const identity = sourceComponentIdentity({
+    repo,
+    gates: options.gates,
+    toolchain: options.toolchain,
+    probeToolVersion: options.probeToolVersion,
+  });
   const file = receiptPath(candidateDirectory, "source-receipt.json");
   if (fs.existsSync(file)) {
     const existing = validReceiptDigest(readJson(file, "source receipt"), "source receipt");
@@ -328,10 +371,65 @@ function candidateManifest(adapterName, repo = REPO_ROOT) {
   if (!/^[0-9a-f]{40}$/.test(manifest.agentera?.gitRef ?? "")) {
     throw new Error("candidate manifest has no immutable 40-character agentera.gitRef");
   }
-  if (spawnSync("git", ["cat-file", "-e", `${manifest.agentera.gitRef}^{commit}`], { cwd: repo }).status !== 0) {
+  if (spawnSync("git", ["cat-file", "-e", `${manifest.agentera.gitRef}^{commit}`], {
+    cwd: repo,
+    env: npmChildEnvironment(process.env),
+  }).status !== 0) {
     throw new Error("candidate manifest agentera.gitRef does not name an existing commit");
   }
+  validateAdapterSourceProvenance({ repo, adapter, manifest });
   return { manifest, adapter };
+}
+
+function normalizedPreparedManifest(manifest) {
+  const normalized = structuredClone(manifest);
+  delete normalized.version;
+  if (normalized.agentera && typeof normalized.agentera === "object") {
+    delete normalized.agentera.gitRef;
+  }
+  return normalized;
+}
+
+export function validateAdapterSourceProvenance(options = {}) {
+  const { repo = REPO_ROOT, adapter, manifest } = options;
+  const provenance = adapter?.sourceProvenance;
+  if (!provenance) return;
+  const gitRef = manifest?.agentera?.gitRef;
+  const label = adapter.manifestPath;
+  const inputs = provenance.packagedInputs;
+  if (!Array.isArray(inputs) || inputs.some((entry) => typeof entry !== "string" || entry.length === 0)) {
+    throw new Error(`${label}: adapter source provenance is missing packaged inputs`);
+  }
+  const diff = spawnSync("git", ["diff", "--quiet", gitRef, "--", ...inputs], {
+    cwd: repo,
+    env: npmChildEnvironment(process.env),
+  });
+  if (diff.status === 1) {
+    throw new Error(
+      `${label}: agentera.gitRef does not match the stable shim packaged inputs; select the last substantive shim-source commit`,
+    );
+  }
+  if (diff.status !== 0) {
+    throw new Error(`${label}: unable to compare agentera.gitRef with stable shim packaged inputs`);
+  }
+  const selected = spawnSync("git", ["show", `${gitRef}:${adapter.manifestPath}`], {
+    cwd: repo,
+    encoding: "utf8",
+    env: npmChildEnvironment(process.env),
+  });
+  try {
+    if (
+      selected.status !== 0
+      || canonicalJson(normalizedPreparedManifest(JSON.parse(selected.stdout)))
+        !== canonicalJson(normalizedPreparedManifest(manifest))
+    ) {
+      throw new Error("mismatch");
+    }
+  } catch {
+    throw new Error(
+      `${label}: package contract differs from agentera.gitRef outside approved version and agentera.gitRef preparation metadata`,
+    );
+  }
 }
 
 function sameConstructionObservation(dry, packed) {
@@ -355,7 +453,7 @@ export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {
   return {
     root,
     environment: {
-      ...npmChildEnvironment(process.env, npmrc),
+      ...npmChildEnvironment(options.environment ?? process.env, npmrc),
       HOME: home,
       XDG_CONFIG_HOME: path.join(root, "config"),
       NPM_CONFIG_CACHE: cache,
@@ -420,9 +518,10 @@ export function smokePublishedCandidate(options = {}) {
   }
 }
 
-function releaseMetadataGate(repo) {
+function releaseMetadataGate(repo, adapterName) {
   run(process.execPath, ["packages/cli/dist/bin/agentera.js", "check", "validate", "release-metadata", "--format", "json"], {
     cwd: repo,
+    env: { ...npmChildEnvironment(process.env), AGENTERA_RELEASE_ADAPTER: adapterName },
     timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
   });
 }
@@ -487,8 +586,29 @@ export function issueCandidateReceipt(options = {}) {
   }
 
   const execute = options.run ?? run;
-  releaseMetadataGate(repo);
-  const { dry, packed } = constructCandidatePackage({ repo, adapter, manifest, candidateDirectory, execute });
+  const metadataStarted = performance.now();
+  try {
+    releaseMetadataGate(repo, options.adapterName);
+  } catch (error) {
+    if (error && typeof error === "object") error.owner ??= "release-metadata";
+    throw error;
+  }
+  const metadataGate = {
+    name: "release-metadata",
+    outcome: "passed",
+    elapsedMs: Math.max(0, Math.round(performance.now() - metadataStarted)),
+    executed: "ordered",
+    reused: false,
+  };
+  const constructionStarted = performance.now();
+  let constructed;
+  try {
+    constructed = constructCandidatePackage({ repo, adapter, manifest, candidateDirectory, execute });
+  } catch (error) {
+    if (error && typeof error === "object") error.owner ??= "dry-pack-observation-equivalence";
+    throw error;
+  }
+  const { dry, packed } = constructed;
   const construction = normalizeConstruction(packed, {
     expectedName: manifest.name,
     expectedVersion: manifest.version,
@@ -508,9 +628,19 @@ export function issueCandidateReceipt(options = {}) {
   if (sha512Integrity(artifactBytes) !== construction.integrity) {
     throw new Error("retained artifact integrity does not match construction receipt");
   }
-  fs.chmodSync(artifactState.artifact, 0o444);
+  fs.chmodSync(artifactState.artifact, ARTIFACT_MODE);
+  const retainedArtifact = ensureRegularArtifact(candidateDirectory, path.basename(construction.artifact));
+  if ((retainedArtifact.stat.mode & 0o777) !== ARTIFACT_MODE) {
+    throw new Error("candidate artifact did not retain the required immutable mode");
+  }
   const smokeStarted = performance.now();
-  const smokeOutput = smokeExactArtifact({ artifact: artifactState.artifact, manifest, adapter, run: options.smokeRun });
+  let smokeOutput;
+  try {
+    smokeOutput = smokeExactArtifact({ artifact: retainedArtifact.artifact, manifest, adapter, run: options.smokeRun });
+  } catch (error) {
+    if (error && typeof error === "object") error.owner ??= "local-exact-artifact-smoke";
+    throw error;
+  }
   const receipt = {
     schemaVersion: RECEIPT_SCHEMA,
     kind: "candidate",
@@ -524,10 +654,11 @@ export function issueCandidateReceipt(options = {}) {
     expectedTag: adapter.expectedTag,
     candidateTag: `candidate-${manifest.version}`,
     artifact: {
-      filename: path.basename(artifactState.artifact),
+      filename: path.basename(retainedArtifact.artifact),
       sha256: sha256(artifactBytes),
       integrity: construction.integrity,
       bytes: artifactBytes.byteLength,
+      mode: ARTIFACT_MODE,
       construction: {
         name: construction.name,
         version: construction.version,
@@ -539,9 +670,22 @@ export function issueCandidateReceipt(options = {}) {
       dryPackEquivalent: true,
     },
     gates: [
-      { name: "release-metadata", outcome: "passed" },
-      { name: "dry-pack-observation-equivalence", outcome: "passed" },
-      { name: "local-exact-artifact-smoke", outcome: "passed", elapsedMs: Math.round(performance.now() - smokeStarted), output: smokeOutput.trim() },
+      metadataGate,
+      {
+        name: "dry-pack-observation-equivalence",
+        outcome: "passed",
+        elapsedMs: Math.max(0, Math.round(performance.now() - constructionStarted)),
+        executed: "ordered",
+        reused: false,
+      },
+      {
+        name: "local-exact-artifact-smoke",
+        outcome: "passed",
+        elapsedMs: Math.max(0, Math.round(performance.now() - smokeStarted)),
+        executed: "ordered",
+        reused: false,
+        output: smokeOutput.trim(),
+      },
     ],
   };
   receipt.receiptSha256 = receiptDigest(receipt);
@@ -586,6 +730,12 @@ export function validateCandidateReceipt(options = {}) {
   ) {
     throw new Error("candidate artifact changed after qualification");
   }
+  if (
+    receipt.artifact.mode !== ARTIFACT_MODE
+    || (artifactState.stat.mode & 0o777) !== receipt.artifact.mode
+  ) {
+    throw new Error("candidate artifact permissions changed after qualification");
+  }
   return { receipt, artifact: artifactState.artifact, manifest, adapter };
 }
 
@@ -595,6 +745,14 @@ export function issueCandidateApproval(options = {}) {
     throw new Error("approval requires a bounded --approved-by principal");
   }
   const candidate = validateCandidateReceipt(options);
+  if ((options.environment ?? process.env).GITHUB_ACTIONS === "true") {
+    validateCiAttestation({
+      ...options,
+      candidate,
+      environment: options.environment,
+      sourceRunId: options.sourceRunId,
+    });
+  }
   const approval = {
     schemaVersion: RECEIPT_SCHEMA,
     kind: "approval",
@@ -636,11 +794,42 @@ export function validateCandidateApproval(options = {}) {
   return approval;
 }
 
+function validRunId(value) {
+  return typeof value === "string" && /^[1-9]\d{0,19}$/.test(value);
+}
+
+function qualificationWorkflowIdentity() {
+  const ci = RELEASE_CONTRACT.ci;
+  const workflow = ci?.qualificationWorkflow;
+  if (!ci?.repository || !workflow?.name || !workflow?.path || !workflow?.ref) {
+    throw new Error("release publication contract has no qualification workflow identity");
+  }
+  return {
+    repository: ci.repository,
+    workflow: workflow.name,
+    workflowRef: `${ci.repository}/${workflow.path}@${workflow.ref}`,
+  };
+}
+
+function assertQualificationWorkflowEnvironment(environment) {
+  const expected = qualificationWorkflowIdentity();
+  if (
+    environment.GITHUB_REPOSITORY !== expected.repository
+    || environment.GITHUB_WORKFLOW !== expected.workflow
+    || environment.GITHUB_WORKFLOW_REF !== expected.workflowRef
+    || !validRunId(environment.GITHUB_RUN_ID)
+  ) {
+    throw new Error("CI attestation must originate from the contracted qualification repository, workflow, workflow ref, and run identity");
+  }
+  return expected;
+}
+
 export function issueCiAttestation(options = {}) {
   const environment = options.environment ?? process.env;
   if (environment.GITHUB_ACTIONS !== "true") {
     throw new Error("CI attestation can only be issued by a GitHub Actions runner");
   }
+  const expected = assertQualificationWorkflowEnvironment(environment);
   const candidate = validateCandidateReceipt(options);
   if (environment.GITHUB_SHA !== candidate.receipt.metadataCommit) {
     throw new Error("CI checkout SHA does not match the candidate metadata commit");
@@ -651,11 +840,12 @@ export function issueCiAttestation(options = {}) {
     candidateReceiptSha256: candidate.receipt.receiptSha256,
     sourceCommit: candidate.receipt.sourceCommit,
     metadataCommit: candidate.receipt.metadataCommit,
-    repository: environment.GITHUB_REPOSITORY,
-    workflow: environment.GITHUB_WORKFLOW,
+    repository: expected.repository,
+    workflow: expected.workflow,
+    workflowRef: expected.workflowRef,
     runId: environment.GITHUB_RUN_ID,
   };
-  if (Object.values(attestation).some((value) => typeof value !== "string" || value.length === 0)) {
+  if (Object.values(attestation).some((value) => typeof value !== "string" || value.length === 0) || !validRunId(attestation.runId)) {
     throw new Error("CI attestation requires repository, workflow, and run identity");
   }
   attestation.receiptSha256 = receiptDigest(attestation);
@@ -668,6 +858,10 @@ export function validateCiAttestation(options = {}) {
   if (environment.GITHUB_ACTIONS !== "true") {
     throw new Error("CI registry mutation requires a GitHub Actions execution context");
   }
+  const expected = qualificationWorkflowIdentity();
+  if (environment.GITHUB_REPOSITORY !== expected.repository || !validRunId(options.sourceRunId)) {
+    throw new Error("CI registry mutation requires the contracted repository and a source qualification run identity");
+  }
   const candidate = options.candidate ?? validateCandidateReceipt(options);
   const attestation = validReceiptDigest(
     options.attestation ?? readJson(receiptPath(options.candidateDirectory, "ci-attestation.json"), "CI attestation"),
@@ -678,8 +872,11 @@ export function validateCiAttestation(options = {}) {
     || attestation.candidateReceiptSha256 !== candidate.receipt.receiptSha256
     || attestation.sourceCommit !== candidate.receipt.sourceCommit
     || attestation.metadataCommit !== candidate.receipt.metadataCommit
-    || attestation.repository !== environment.GITHUB_REPOSITORY
-    || (options.sourceRunId && attestation.runId !== options.sourceRunId)
+    || attestation.repository !== expected.repository
+    || attestation.workflow !== expected.workflow
+    || attestation.workflowRef !== expected.workflowRef
+    || !validRunId(attestation.runId)
+    || attestation.runId !== options.sourceRunId
   ) {
     throw new Error("CI attestation is not bound to this candidate and source run");
   }
@@ -706,9 +903,17 @@ function runCommand(command, flags) {
     const issued = command === "source"
       ? issueSourceReceipt({ candidateDirectory })
       : command === "candidate"
-        ? issueCandidateReceipt({ candidateDirectory, adapterName })
-        : command === "approval"
-          ? { receipt: issueCandidateApproval({ candidateDirectory, adapterName, approvedBy: requireArgument(flags, "--approved-by") }), reused: false }
+          ? issueCandidateReceipt({ candidateDirectory, adapterName })
+          : command === "approval"
+          ? {
+              receipt: issueCandidateApproval({
+                candidateDirectory,
+                adapterName,
+                approvedBy: requireArgument(flags, "--approved-by"),
+                sourceRunId: flags.get("--source-run-id"),
+              }),
+              reused: false,
+            }
           : { receipt: issueCiAttestation({ candidateDirectory, adapterName }), reused: false };
     emit(phaseResult({
       packageName: adapterName,

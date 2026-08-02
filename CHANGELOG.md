@@ -54,6 +54,14 @@
 
 ### Fixed
 
+- Fixed release qualification provenance and isolation. CI approvals now bind
+  the contracted qualification repository, workflow, workflow ref, and run;
+  stable shim releases require packaged-input source provenance; retained
+  artifacts keep and revalidate mode `0444`; and npm/pnpm probes and mutation
+  validation use fresh sanitized state. Added a three-run non-mutating
+  qualification benchmark with owner timing, median, budget, and first-failure
+  reporting.
+
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action
   recovery, and full or compacted history under the 12,000-byte output bound

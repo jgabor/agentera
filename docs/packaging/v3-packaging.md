@@ -64,6 +64,11 @@ policy, lockfile, exact toolchain, gate set, and individual durations. This
 allows a committed version/gitRef-only change to reuse source evidence, but any
 other input change fails closed.
 
+These owners remain sequential. They share checkout-generated output or ordered
+policy barriers, and no owner has a declared isolated output root with
+equivalence evidence. The qualification benchmark measures the observed
+source-plus-candidate envelope; its timeout is a guard, not performance proof.
+
 ```bash
 pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
 pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
@@ -79,12 +84,25 @@ The candidate directory must be outside the checkout. It is retained input, not
 cleanup residue: later stages fail if the receipt, path containment, bytes,
 integrity, permissions, or approval differ.
 
+For the stable shim, `agentera.gitRef` must identify a commit with the same
+`bin/`, `lib/`, `README.md`, and `LICENSE` inputs as the candidate. Its
+`package.json` may differ only in `version` and `agentera.gitRef`, which are
+the explicit preparation fields. An existing but unrelated historical SHA
+fails provenance validation.
+
 An approval is an immutable `approval.json` bound to that candidate digest,
 package, version, integrity, registry, and public tag. A branch push is not an
 approval. Local receipts are deterministic cache records only. CI mutation also
 requires the transferred artifact and receipts, a CI attestation from the
 source-qualification run, and the explicit candidate-bound approval. OIDC
 provenance remains deferred.
+
+The CI attestation binds `jgabor/agentera`, the `Qualify release candidate`
+workflow, `.github/workflows/qualify-candidate.yml@refs/heads/feat/v3`, and
+the numeric source run ID. The publication workflow queries that run before it
+downloads an artifact, then approval and each mutation revalidate the same
+attestation. GitHub environment approval (`npm-publish`) remains a separate
+human control.
 
 Stage and promotion consume the retained bytes; neither runs `npm pack` or
 rebuilds source:
@@ -104,17 +122,30 @@ state replays without upload or a token; conflicting integrity, a tag ahead of
 without rollback. A convergence or smoke retry may safely repeat observation,
 
 Only the npm mutation child receives `NPM_TOKEN`, through a mode-`0600`
-temporary config. Pack, registry inspection, and both smoke paths sanitize npm
-and pnpm variables and use new user/global configuration and caches. Phase
+temporary config. Tool-version probes, pack, registry inspection, receipt
+validation, and both smoke paths sanitize npm and pnpm variables and use new
+HOME, cache, and user/global configuration. Phase
 start/end output is one bounded human line or one JSON object with package,
 version, phase, outcome, elapsed time, executed/reused status, and next action.
 The first failure retains its original phase label. Diagnostics redact tokens
 and private absolute paths.
 
-The benchmark is three cold-cache repetitions with the median duration. The
-contract limits preflight to under 30 seconds, full qualification to under five
-minutes, and qualified publication to under two minutes. Record every phase
-duration; do not claim a target from a different cache or network state.
+Run the non-mutating qualification benchmark from an external directory:
+
+```bash
+mkdir /secure/external/qualification-benchmark
+pnpm cli:benchmark:qualification -- --adapter development \
+  --candidate-root /secure/external/qualification-benchmark --json
+```
+
+It runs exactly three cold-cache repetitions, retains one candidate per run,
+reports preflight, every source/candidate owner, execution/reuse, reconciled
+totals, and medians. It emits the first original failing owner before it stops.
+It never receives credentials or mutates npm. The contract limits preflight to
+under 30 seconds, the measured source-plus-candidate qualification to under
+five minutes, and a separately recorded approved publication transaction to
+under two minutes. Do not use a timeout or a different cache/network state as
+performance evidence.
 
 ## Generated-output and verification ownership
 

@@ -100,6 +100,13 @@ export const RELEASE_PROVENANCE_EXCLUSIONS = [
   "references/adapters/package-surface-characterization.md",
 ] as const;
 
+export const STABLE_SHIM_PROVENANCE_PATHS = [
+  "packages/cli/shim/bin",
+  "packages/cli/shim/lib",
+  "packages/cli/shim/README.md",
+  "packages/cli/shim/LICENSE",
+] as const;
+
 const SEMVER_CORE_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const SEMVER_STRICT_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const PRE_RELEASE_RE = /-(.+)$/;
@@ -182,6 +189,54 @@ function validateGitRefProvenance(root: string, gitRef: string): string[] {
     return [`packages/cli/package.json: unable to read package contract from agentera.gitRef ${JSON.stringify(gitRef)}`];
   }
 
+  return [];
+}
+
+export function validateStableShimGitRefProvenance(root: string, gitRef: string): string[] {
+  const manifestPath = "packages/cli/shim/package.json";
+  const inside = runGit(root, ["rev-parse", "--is-inside-work-tree"]);
+  if (inside.status !== 0 || String(inside.stdout).trim() !== "true") return [];
+  const commit = runGit(root, ["cat-file", "-e", `${gitRef}^{commit}`]);
+  if (commit.status !== 0) {
+    return [`${manifestPath}: agentera.gitRef ${JSON.stringify(gitRef)} is not a commit in the local repository`];
+  }
+  const diff = runGit(root, ["diff", "--quiet", gitRef, "--", ...STABLE_SHIM_PROVENANCE_PATHS]);
+  if (diff.status !== 0) {
+    return [
+      `${manifestPath}: agentera.gitRef ${JSON.stringify(gitRef)} does not match the stable shim packaged inputs; ` +
+        "select the last substantive shim-source commit",
+    ];
+  }
+  const status = runGit(root, [
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+    "--",
+    manifestPath,
+    ...STABLE_SHIM_PROVENANCE_PATHS,
+  ]);
+  if (status.status !== 0 || String(status.stdout).trim() !== "") {
+    return [
+      `${manifestPath}: stable shim packaged inputs have uncommitted or untracked changes outside approved release metadata`,
+    ];
+  }
+  const selected = runGit(root, ["show", `${gitRef}:${manifestPath}`]);
+  const current = readJson(path.join(root, manifestPath));
+  try {
+    const selectedManifest = JSON.parse(String(selected.stdout)) as JsonObject;
+    if (
+      selected.status !== 0 ||
+      current === null ||
+      !isDeepStrictEqual(normalizedPackageMetadata(selectedManifest), normalizedPackageMetadata(current))
+    ) {
+      return [
+        `${manifestPath}: package contract differs from agentera.gitRef ${JSON.stringify(gitRef)} ` +
+          "outside the permitted version and gitRef fields",
+      ];
+    }
+  } catch {
+    return [`${manifestPath}: unable to read package contract from agentera.gitRef ${JSON.stringify(gitRef)}`];
+  }
   return [];
 }
 
@@ -299,7 +354,23 @@ export function readReleaseMetadata(root: string = rootDefault()): ReleaseMetada
  * Validate release-metadata coherence. Returns an empty array when the
  * source-tree version surfaces agree on a single release train.
  */
-export function validateReleaseMetadata(root: string = rootDefault()): string[] {
+export function validateReleaseMetadata(
+  root: string = rootDefault(),
+  adapter: "development" | "stable" = "development",
+): string[] {
+  if (adapter === "stable") {
+    const manifestPath = "packages/cli/shim/package.json";
+    const shim = readJson(path.join(resolvePath(root), manifestPath));
+    if (shim === null) return [`${manifestPath}: missing or unreadable; cannot validate release-metadata`];
+    const agentera = shim.agentera;
+    const gitRef = agentera && typeof agentera === "object" && !Array.isArray(agentera)
+      ? (agentera as JsonObject).gitRef
+      : null;
+    if (typeof gitRef !== "string" || !GIT_REF_HEX_RE.test(gitRef)) {
+      return [`${manifestPath}: agentera.gitRef must be a 40-character hex SHA for stable shim provenance`];
+    }
+    return validateStableShimGitRefProvenance(resolvePath(root), gitRef);
+  }
   const errors: string[] = [];
   const snap = readReleaseMetadata(root);
   const rootLabel = path.basename(resolvePath(root)) || "repo root";
@@ -420,6 +491,7 @@ export function validateReleaseMetadata(root: string = rootDefault()): string[] 
 
 export interface ReleaseMetadataMainOptions {
   root?: string;
+  adapter?: "development" | "stable";
   out?: (line: string) => void;
   err?: (line: string) => void;
 }
@@ -428,7 +500,7 @@ export function releaseMetadataMain(opts: ReleaseMetadataMainOptions = {}): numb
   const root = resolvePath(opts.root ?? rootDefault());
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
   const err = opts.err ?? ((line: string) => process.stderr.write(line + "\n"));
-  const errors = validateReleaseMetadata(root);
+  const errors = validateReleaseMetadata(root, opts.adapter);
   if (errors.length > 0) {
     out("release-metadata validation failed:");
     for (const message of errors) out(`- ${message}`);

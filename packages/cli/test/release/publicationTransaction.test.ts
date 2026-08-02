@@ -23,6 +23,7 @@ import {
   npmChildEnvironment,
   projectConstruction,
 } from "../../scripts/package-construction.mjs";
+import { isolatedNpmState } from "../../scripts/release-qualification.mjs";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -81,6 +82,40 @@ describe("publication contract", () => {
     expect(environment).not.toHaveProperty("PNPM_HOME");
   });
 
+  it("gives a token-bearing mutation child only an isolated mode-0600 config", () => {
+    withTemporaryConstruction((temporary) => {
+      const state = isolatedNpmState("agentera-token-validation-test-");
+      try {
+        const child = withNpmCredentials(
+          temporary,
+          (environment: NodeJS.ProcessEnv) => ({
+            environment,
+            mode: fs.statSync(environment.NPM_CONFIG_USERCONFIG!).mode & 0o777,
+          }),
+          {
+            HOME: "/hostile/home",
+            NPM_TOKEN: "secret",
+            NODE_AUTH_TOKEN: "secret",
+            NPM_CONFIG_CACHE: "/hostile/cache",
+            npm_config_registry: "https://hostile.invalid/",
+          },
+          state.environment,
+        );
+        expect(child.mode).toBe(0o600);
+        expect(child.environment).toMatchObject({
+          HOME: state.environment.HOME,
+          NPM_CONFIG_CACHE: state.environment.NPM_CONFIG_CACHE,
+          NPM_CONFIG_GLOBALCONFIG: state.environment.NPM_CONFIG_GLOBALCONFIG,
+        });
+        expect(child.environment).not.toHaveProperty("NPM_TOKEN");
+        expect(child.environment).not.toHaveProperty("NODE_AUTH_TOKEN");
+        expect(child.environment).not.toHaveProperty("npm_config_registry");
+      } finally {
+        fs.rmSync(state.root, { recursive: true, force: true });
+      }
+    });
+  });
+
   it("shares transaction invariants while retaining adapter-specific behavior", () => {
     expect(PACKAGE_ADAPTERS.development).toMatchObject({
       expectedTag: "next",
@@ -127,6 +162,23 @@ describe("publication contract", () => {
       }),
     ).toThrow("canonical stable tests failed");
     expect(calls).toEqual(["pnpm test"]);
+  });
+
+  it("runs stable construction children in an isolated npm state", () => {
+    const environments: NodeJS.ProcessEnv[] = [];
+    expect(() => constructPackage("stable", PACKAGE_ADAPTERS.stable, manifest("stable"), "/unused", {
+      run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+        environments.push(options.env!);
+        throw new Error("stop after isolated test setup");
+      },
+    })).toThrow("stop after isolated test setup");
+    expect(environments[0]).toMatchObject({
+      HOME: expect.stringContaining("agentera-stable-construction-"),
+      NPM_CONFIG_USERCONFIG: expect.any(String),
+      NPM_CONFIG_GLOBALCONFIG: expect.any(String),
+      NPM_CONFIG_CACHE: expect.any(String),
+    });
+    expect(environments[0]).not.toHaveProperty("NPM_TOKEN");
   });
 });
 

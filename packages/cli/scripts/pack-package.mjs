@@ -15,6 +15,8 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const repoRoot = path.resolve(packageRoot, "../..");
 const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-construction-"));
 const construction = path.join(temporary, "package");
+const home = path.join(temporary, "home");
+const cache = path.join(temporary, "cache");
 const npmrc = path.join(temporary, "npmrc");
 const globalNpmrc = path.join(temporary, "global-npmrc");
 const dryRun = process.argv.includes("--dry-run");
@@ -27,7 +29,7 @@ function run(command, args, cwd) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
-    env: npmChildEnvironment(process.env, npmrc),
+    env: npmEnvironment(),
     stdio: ["ignore", "pipe", "inherit"],
   });
   if (result.error) throw result.error;
@@ -40,7 +42,7 @@ function npmPack(args, cwd) {
   const result = spawnSync("npm", [...args, "--json"], {
     cwd,
     encoding: "utf8",
-    env: npmChildEnvironment(process.env, npmrc, globalNpmrc),
+    env: npmEnvironment(),
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error) throw result.error;
@@ -56,7 +58,20 @@ function npmPack(args, cwd) {
   return { entry, warnings };
 }
 
+function npmEnvironment() {
+  return {
+    ...npmChildEnvironment(process.env, npmrc, globalNpmrc),
+    HOME: home,
+    XDG_CONFIG_HOME: path.join(temporary, "config"),
+    NPM_CONFIG_CACHE: cache,
+    NPM_CONFIG_AUDIT: "false",
+    NPM_CONFIG_FUND: "false",
+  };
+}
+
 try {
+  fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
   fs.writeFileSync(npmrc, "", { mode: 0o600, flag: "wx" });
   fs.writeFileSync(globalNpmrc, "", { mode: 0o600, flag: "wx" });
   fs.mkdirSync(construction, { recursive: true });

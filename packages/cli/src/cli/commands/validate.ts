@@ -88,7 +88,11 @@ function runSelfAudit(): ProcResult {
 
 function runReleaseMetadata(): ProcResult {
   const lines: string[] = [];
-  const rc = releaseMetadataMain({ out: (line) => lines.push(line) });
+  const adapter = process.env.AGENTERA_RELEASE_ADAPTER;
+  const rc = releaseMetadataMain({
+    ...(adapter === "stable" || adapter === "development" ? { adapter } : {}),
+    out: (line) => lines.push(line),
+  });
   return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
 }
 

@@ -9,6 +9,7 @@ import {
   RELEASE_METADATA_ADVISORY_FILES,
   RELEASE_METADATA_AUTHORITY_FILES,
   RELEASE_PROVENANCE_PATHS,
+  STABLE_SHIM_PROVENANCE_PATHS,
   readReleaseMetadata,
   releaseMetadataMain,
   validateReleaseMetadata,
@@ -314,6 +315,39 @@ describe("release-metadata", () => {
     expect(validateReleaseMetadata(tmp)).toContainEqual(
       expect.stringContaining("package contract differs"),
     );
+  });
+
+  it("validates stable shim source provenance independently of development release metadata", () => {
+    writeFile(tmp, "packages/cli/shim/bin/agentera.mjs", "export {};\n");
+    writeFile(tmp, "packages/cli/shim/lib/resolve.mjs", "export {};\n");
+    writeFile(tmp, "packages/cli/shim/README.md", "# shim\n");
+    writeFile(tmp, "packages/cli/shim/LICENSE", "Apache-2.0\n");
+    writeJson(tmp, "packages/cli/shim/package.json", {
+      name: "agentera",
+      version: "0.0.2",
+      agentera: { gitRef: "0123456789abcdef0123456789abcdef01234567" },
+    });
+    const selected = initializeGitFixture(tmp);
+    const shimPath = "packages/cli/shim/package.json";
+    writeJson(tmp, shimPath, {
+      name: "agentera",
+      version: "0.0.3",
+      agentera: { gitRef: selected },
+    });
+    git(tmp, "add", shimPath);
+    git(tmp, "-c", "user.name=Agentera Test", "-c", "user.email=agentera@example.invalid", "-c", "commit.gpgsign=false", "commit", "-qm", "prepared shim metadata");
+
+    expect(validateReleaseMetadata(tmp, "stable")).toEqual([]);
+    writeFile(tmp, "packages/cli/shim/lib/resolve.mjs", "export const changed = true;\n");
+    expect(validateReleaseMetadata(tmp, "stable")).toContainEqual(
+      expect.stringContaining("does not match the stable shim packaged inputs"),
+    );
+    expect(STABLE_SHIM_PROVENANCE_PATHS).toEqual([
+      "packages/cli/shim/bin",
+      "packages/cli/shim/lib",
+      "packages/cli/shim/README.md",
+      "packages/cli/shim/LICENSE",
+    ]);
   });
 
   it("fails when update-channels.yaml development default drifts from registry version", () => {

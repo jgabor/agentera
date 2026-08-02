@@ -11,7 +11,10 @@ import {
   issueCandidateApproval,
   issueCiAttestation,
   issueSourceReceipt,
+  RELEASE_CONTRACT,
   sha256,
+  toolVersion,
+  validateAdapterSourceProvenance,
   validateCandidateApproval,
   validateCandidateReceipt,
   validateCiAttestation,
@@ -138,6 +141,70 @@ describe("release qualification receipts", () => {
     expect(Object.keys(environment ?? {}).some((key) => /^pnpm/i.test(key))).toBe(false);
   });
 
+  it("probes tool versions in a fresh isolated npm state even when the caller has a token", () => {
+    const { repo } = fixture();
+    let environment: NodeJS.ProcessEnv | undefined;
+    expect(toolVersion("npm", ["--version"], repo, {
+      environment: {
+        HOME: "/hostile/home",
+        NPM_TOKEN: "secret",
+        NODE_AUTH_TOKEN: "secret",
+        PNPM_HOME: "/hostile/pnpm",
+      },
+      run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+        environment = options.env;
+        return "10.30.3\n";
+      },
+    })).toBe("10.30.3");
+    expect(environment).toMatchObject({
+      HOME: expect.stringContaining("agentera-release-tool-version-"),
+      NPM_CONFIG_USERCONFIG: expect.any(String),
+      NPM_CONFIG_GLOBALCONFIG: expect.any(String),
+      NPM_CONFIG_CACHE: expect.any(String),
+    });
+    expect(environment).not.toHaveProperty("NPM_TOKEN");
+    expect(environment).not.toHaveProperty("NODE_AUTH_TOKEN");
+    expect(environment).not.toHaveProperty("PNPM_HOME");
+  });
+
+  it("requires stable shim gitRef to identify its current packaged inputs", () => {
+    const { repo } = fixture();
+    write(repo, "packages/cli/shim/bin/agentera.mjs", "export {};\n");
+    write(repo, "packages/cli/shim/lib/resolve.mjs", "export {};\n");
+    write(repo, "packages/cli/shim/README.md", "# Shim\n");
+    write(repo, "packages/cli/shim/LICENSE", "Apache-2.0\n");
+    write(repo, "packages/cli/shim/package.json", JSON.stringify({
+      name: "agentera",
+      version: "0.0.2",
+      agentera: { gitRef: HEAD },
+    }));
+    git(repo, "add", ".");
+    git(repo, "commit", "--quiet", "-m", "shim source");
+    const sourceCommit = git(repo, "rev-parse", "HEAD");
+    const manifestPath = path.join(repo, "packages/cli/shim/package.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    manifest.version = "0.0.3";
+    manifest.agentera.gitRef = sourceCommit;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+    git(repo, "add", manifestPath);
+    git(repo, "commit", "--quiet", "-m", "shim preparation");
+
+    expect(() => validateAdapterSourceProvenance({
+      repo,
+      adapter: RELEASE_CONTRACT.packages.stable,
+      manifest,
+    })).not.toThrow();
+
+    write(repo, "packages/cli/shim/lib/resolve.mjs", "export const changed = true;\n");
+    git(repo, "add", "packages/cli/shim/lib/resolve.mjs");
+    git(repo, "commit", "--quiet", "-m", "unrelated historical gitRef");
+    expect(() => validateAdapterSourceProvenance({
+      repo,
+      adapter: RELEASE_CONTRACT.packages.stable,
+      manifest,
+    })).toThrow("does not match the stable shim packaged inputs");
+  });
+
   it("rejects a missing candidate directory without creating it", () => {
     const { repo, candidateDirectory } = fixture();
 
@@ -169,6 +236,7 @@ describe("release qualification receipts", () => {
         sha256: sha256(artifact),
         integrity: sha512Integrity(artifact),
         bytes: artifact.byteLength,
+        mode: 0o444,
         construction: { name: "agentera", version: "3.0.0-dev.41", fileCount: 1, packedSize: 21, unpackedSize: 21, shasum: "test" },
         dryPackEquivalent: true,
       },
@@ -199,7 +267,8 @@ describe("release qualification receipts", () => {
       GITHUB_ACTIONS: "true",
       GITHUB_SHA: candidate.metadataCommit as string,
       GITHUB_REPOSITORY: "jgabor/agentera",
-      GITHUB_WORKFLOW: "qualify-candidate",
+      GITHUB_WORKFLOW: "Qualify release candidate",
+      GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify-candidate.yml@refs/heads/feat/v3",
       GITHUB_RUN_ID: "123",
     };
     issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
@@ -210,9 +279,45 @@ describe("release qualification receipts", () => {
       sourceRunId: "123",
       environment,
     })).toMatchObject({ candidateReceiptSha256: candidate.receiptSha256 });
+    expect(() => issueCandidateApproval({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      approvedBy: "release-owner",
+      environment,
+      sourceRunId: "456",
+    })).toThrow("CI attestation is not bound");
+
+    const attestation = issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
+    for (const [field, value] of Object.entries({
+      repository: "other/repository",
+      workflow: "Other workflow",
+      workflowRef: "jgabor/agentera/.github/workflows/other.yml@refs/heads/feat/v3",
+      runId: "456",
+    })) {
+      const substituted = { ...attestation, [field]: value };
+      substituted.receiptSha256 = sha256(canonicalJson({
+        ...substituted,
+        receiptSha256: undefined,
+      }));
+      delete substituted.receiptSha256;
+      substituted.receiptSha256 = sha256(canonicalJson(substituted));
+      expect(() => validateCiAttestation({
+        repo,
+        candidateDirectory,
+        candidate: checked,
+        sourceRunId: "123",
+        environment,
+        attestation: substituted,
+      })).toThrow("CI attestation is not bound");
+    }
 
     fs.chmodSync(path.join(candidateDirectory, filename), 0o644);
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, receipt: candidate, adapterName: "development" }))
+      .toThrow("candidate artifact permissions changed after qualification");
+    fs.chmodSync(path.join(candidateDirectory, filename), 0o644);
     fs.appendFileSync(path.join(candidateDirectory, filename), "changed");
+    fs.chmodSync(path.join(candidateDirectory, filename), 0o444);
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, receipt: candidate, adapterName: "development" }))
       .toThrow("candidate artifact changed after qualification");
   });

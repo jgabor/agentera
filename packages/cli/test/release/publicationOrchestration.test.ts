@@ -20,6 +20,9 @@ const developmentPackage = JSON.parse(
 const stablePackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/shim/package.json"), "utf8"),
 );
+const publicationContract = JSON.parse(
+  fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"),
+);
 
 describe("candidate publication orchestration", () => {
   it("routes preparation, qualification, approval, staging, and promotion through explicit scripts", () => {
@@ -27,6 +30,7 @@ describe("candidate publication orchestration", () => {
       "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
       "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
       "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
+      "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
       "cli:approve:dev": "pnpm -C packages/cli run release:approve",
       "cli:stage:dev": "pnpm -C packages/cli run release:stage",
       "cli:promote:dev": "pnpm -C packages/cli run release:promote",
@@ -40,6 +44,8 @@ describe("candidate publication orchestration", () => {
     expect(developmentPackage.scripts["release:promote"]).toContain(
       "publication-transaction.mjs promote development --approve",
     );
+    expect(developmentPackage.scripts["release:benchmark:qualification"])
+      .toContain("release-benchmark.mjs qualification");
     expect(stablePackage.scripts["release:stage"]).toContain(
       "publication-transaction.mjs stage stable --approve",
     );
@@ -71,8 +77,17 @@ describe("candidate publication orchestration", () => {
     expect(publicationYaml).toContain("environment: npm-publish");
     expect(publicationYaml).toContain("candidate_receipt_sha256");
     expect(publicationYaml).toContain("actions/download-artifact@v4");
+    expect(publicationYaml).toContain("actions/github-script@v7");
+    expect(publicationYaml).toContain("references/adapters/package-publication.json");
+    expect(publicationContract.ci.qualificationWorkflow).toEqual({
+      name: "Qualify release candidate",
+      path: ".github/workflows/qualify-candidate.yml",
+      ref: "refs/heads/feat/v3",
+    });
+    expect(publicationYaml).toContain("run.conclusion !== \"success\"");
     expect(publicationYaml).toContain("run-id: ${{ inputs.source_run_id }}");
     expect(publicationYaml).toContain("release-qualification.mjs approval");
+    expect(publicationYaml).toContain("--source-run-id");
     expect(publicationYaml).toContain("publication-transaction.mjs stage");
     expect(publicationYaml).toContain("AGENTERA_SANDBOX_TIER: L2");
     expect(publicationYaml).toContain("publication-transaction.mjs promote");

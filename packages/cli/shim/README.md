@@ -69,6 +69,11 @@ moves `latest` forward only after consumer qualification. Matching state is a
 credential-free replay. Conflicts, changed artifacts, and failed smoke do not
 roll a tag back.
 
+The stable `agentera.gitRef` must point to the last substantive shim-source
+commit: `bin/`, `lib/`, `README.md`, and `LICENSE` must match that commit.
+Preparation may change only the shim package `version` and `agentera.gitRef`.
+An existing older SHA is not sufficient.
+
 The v3 CLI has a separate isolated package-construction and recovery contract
 in [v3 npm packaging and verification](../../../docs/packaging/v3-packaging.md);
 do not apply direct checkout packing to it.

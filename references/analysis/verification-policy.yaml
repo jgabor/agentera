@@ -133,6 +133,7 @@ conservative_routing:
     - packages/cli/scripts/reject-direct-prepack.mjs
     - packages/cli/scripts/publication-transaction.mjs
     - packages/cli/scripts/release-qualification.mjs
+    - packages/cli/scripts/release-benchmark.mjs
     - packages/cli/test/sourceSetup.ts
     - packages/cli/test/helpers/sourceSubprocess.ts
     - references/analysis/verification-policy.yaml

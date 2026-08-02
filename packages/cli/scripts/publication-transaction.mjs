@@ -16,6 +16,7 @@ import {
   validateCandidateApproval,
   validateCandidateReceipt,
   validateCiAttestation,
+  validateAdapterSourceProvenance,
 } from "./release-qualification.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -111,6 +112,12 @@ export function prepareTargetMetadata(adapterName, manifest, targetVersion, sour
   return { manifest: next, changed: true };
 }
 
+export function validatePreparedSourceProvenance(adapterName, manifest) {
+  const adapter = PACKAGE_ADAPTERS[adapterName];
+  if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
+  validateAdapterSourceProvenance({ repo: repoRoot, adapter, manifest });
+}
+
 export function preflightPublication(adapterName, manifest, state) {
   const corrections = [];
   if (!state.authorized) corrections.push("rerun with --authorize");
@@ -139,7 +146,7 @@ function run(command, args, options = {}) {
   const invocation = spawnSync(command, args, {
     cwd: options.cwd ?? repoRoot,
     encoding: "utf8",
-    env: options.env ?? process.env,
+    env: options.env ?? npmChildEnvironment(process.env),
     input: options.input,
     timeout: options.timeout ?? PUBLICATION_CONTRACT.bounds.commandTimeoutMs,
     stdio: [options.input ? "pipe" : "ignore", "pipe", "pipe"],
@@ -184,13 +191,17 @@ function readManifest(adapter) {
 function metadataCommitted(adapter) {
   const tracked = spawnSync("git", ["diff", "--quiet", "HEAD", "--", adapter.manifestPath], {
     cwd: repoRoot,
+    env: npmChildEnvironment(process.env),
   });
   return tracked.status === 0;
 }
 
 function gitRefExists(gitRef) {
   if (!/^[0-9a-f]{40}$/.test(gitRef ?? "")) return false;
-  return spawnSync("git", ["cat-file", "-e", `${gitRef}^{commit}`], { cwd: repoRoot }).status === 0;
+  return spawnSync("git", ["cat-file", "-e", `${gitRef}^{commit}`], {
+    cwd: repoRoot,
+    env: npmChildEnvironment(process.env),
+  }).status === 0;
 }
 
 const NPM_COMMAND_FAILURE = Symbol("npm-command-failure");
@@ -205,40 +216,53 @@ export function parseNpmRegistryJson(output) {
 }
 
 function npmJson(args, options = {}) {
-  let output;
+  const state = options.env ? null : isolatedNpmState("agentera-registry-query-");
   try {
-    output = run("npm", [...args, "--json"], options);
-  } catch (error) {
-    if (error && typeof error === "object") error[NPM_COMMAND_FAILURE] = true;
-    throw error;
+    let output;
+    try {
+      output = run("npm", [...args, "--json"], {
+        ...options,
+        env: options.env ?? state.environment,
+      });
+    } catch (error) {
+      if (error && typeof error === "object") error[NPM_COMMAND_FAILURE] = true;
+      throw error;
+    }
+    return parseNpmRegistryJson(output);
+  } finally {
+    if (state) fs.rmSync(state.root, { recursive: true, force: true });
   }
-  return parseNpmRegistryJson(output);
 }
 
 function npmPack(args, options = {}) {
+  const state = options.env ? null : isolatedNpmState("agentera-registry-pack-");
   const invocation = spawnSync("npm", [...args, "--json"], {
     cwd: options.cwd ?? repoRoot,
     encoding: "utf8",
-    env: options.env ?? process.env,
+    env: options.env ?? state.environment,
     timeout: options.timeout ?? PUBLICATION_CONTRACT.bounds.commandTimeoutMs,
     stdio: ["ignore", "pipe", "pipe"],
   });
-  if (invocation.error) throw invocation.error;
-  if (invocation.status !== 0) {
-    const diagnostic = (
-      invocation.stderr ||
-      invocation.stdout ||
-      `exit ${invocation.status}`
-    ).trim();
-    throw new Error(`npm ${args.join(" ")} failed: ${diagnostic}`);
+  try {
+    if (invocation.error) throw invocation.error;
+    if (invocation.status !== 0) {
+      const diagnostic = (
+        invocation.stderr ||
+        invocation.stdout ||
+        `exit ${invocation.status}`
+      ).trim();
+      throw new Error(`npm ${args.join(" ")} failed: ${diagnostic}`);
+    }
+    return {
+      manifest: invocation.stdout ? JSON.parse(invocation.stdout) : null,
+      warnings: invocation.stderr
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean),
+    };
+  } finally {
+    if (state) fs.rmSync(state.root, { recursive: true, force: true });
   }
-  return {
-    manifest: invocation.stdout ? JSON.parse(invocation.stdout) : null,
-    warnings: invocation.stderr
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean),
-  };
 }
 
 function isRegistryNotFound(error) {
@@ -421,31 +445,32 @@ export function constructPackage(adapterName, adapter, manifest, temporary, depe
       warnings: packed.warnings,
     });
   }
-  execute("pnpm", ["test"], { cwd: path.join(repoRoot, adapter.packagePath) });
-  const npmrc = path.join(temporary, "pack-npmrc");
-  let packed;
+  const state = isolatedNpmState("agentera-stable-construction-", { ignoreScripts: false });
   try {
-    fs.writeFileSync(npmrc, "", { mode: 0o600, flag: "wx" });
-    packed = executeNpmPack(["pack", "--ignore-scripts", "--pack-destination", temporary], {
+    execute("pnpm", ["test"], {
       cwd: path.join(repoRoot, adapter.packagePath),
-      env: npmChildEnvironment(process.env, npmrc),
+      env: state.environment,
+    });
+    const packed = executeNpmPack(["pack", "--ignore-scripts", "--pack-destination", temporary], {
+      cwd: path.join(repoRoot, adapter.packagePath),
+      env: state.environment,
+    });
+    const entry = Array.isArray(packed.manifest)
+      ? packed.manifest[0]
+      : Object.values(packed.manifest)[0];
+    return normalizeConstruction(entry, {
+      expectedName: manifest.name,
+      expectedVersion: manifest.version,
+      expectedTag: adapter.expectedTag,
+      artifact: path.join(temporary, entry.filename),
+      warnings: packed.warnings,
     });
   } finally {
-    fs.rmSync(npmrc, { force: true });
+    fs.rmSync(state.root, { recursive: true, force: true });
   }
-  const entry = Array.isArray(packed.manifest)
-    ? packed.manifest[0]
-    : Object.values(packed.manifest)[0];
-  return normalizeConstruction(entry, {
-    expectedName: manifest.name,
-    expectedVersion: manifest.version,
-    expectedTag: adapter.expectedTag,
-    artifact: path.join(temporary, entry.filename),
-    warnings: packed.warnings,
-  });
 }
 
-export function withNpmCredentials(temporary, callback, environment = process.env) {
+export function withNpmCredentials(temporary, callback, environment = process.env, isolatedEnvironment = environment) {
   const token = environment.NPM_TOKEN;
   if (!token) throw new Error("NPM_TOKEN is absent; export a publish-capable token and retry");
   const npmrc = path.join(temporary, "npmrc");
@@ -458,7 +483,22 @@ export function withNpmCredentials(temporary, callback, environment = process.en
         flag: "wx",
       },
     );
-    return callback(npmChildEnvironment(environment, npmrc, environment.NPM_CONFIG_GLOBALCONFIG));
+    const childEnvironment = npmChildEnvironment(
+      isolatedEnvironment,
+      npmrc,
+      isolatedEnvironment.NPM_CONFIG_GLOBALCONFIG,
+    );
+    for (const key of [
+      "HOME",
+      "XDG_CONFIG_HOME",
+      "NPM_CONFIG_CACHE",
+      "NPM_CONFIG_AUDIT",
+      "NPM_CONFIG_FUND",
+      "NPM_CONFIG_IGNORE_SCRIPTS",
+    ]) {
+      if (isolatedEnvironment[key] !== undefined) childEnvironment[key] = isolatedEnvironment[key];
+    }
+    return callback(childEnvironment);
   } finally {
     fs.rmSync(npmrc, { force: true });
   }
@@ -632,7 +672,7 @@ export async function stageQualifiedCandidate(adapterName, candidateDirectory, o
             cwd: repoRoot,
             env: childEnvironment,
           });
-        }, { ...environment, NPM_CONFIG_GLOBALCONFIG: state.environment.NPM_CONFIG_GLOBALCONFIG });
+        }, environment, state.environment);
       },
       smokePackage: () => smokePublishedCandidate({ manifest, adapter }),
       registryAttempts: options.registryAttempts,
@@ -676,7 +716,7 @@ export async function promoteQualifiedCandidate(adapterName, candidateDirectory,
         cwd: repoRoot,
         env: childEnvironment,
       });
-    }, { ...environment, NPM_CONFIG_GLOBALCONFIG: state.environment.NPM_CONFIG_GLOBALCONFIG });
+    }, environment, state.environment);
     await waitForConvergence(manifest, adapter, candidate.receipt.artifact.integrity, {
       inspectRegistry: inspectPublic,
       mutationAttempted: true,
@@ -719,6 +759,7 @@ async function main() {
       throw new Error("source commit does not name an existing immutable commit");
     }
     const prepared = prepareTargetMetadata(adapterName, readManifest(adapter), targetVersion, sourceCommit);
+    validatePreparedSourceProvenance(adapterName, prepared.manifest);
     if (process.argv.includes("--check")) {
       if (prepared.changed) {
         throw new Error("requested target is not prepared; rerun without --check to create the reviewable metadata diff");
