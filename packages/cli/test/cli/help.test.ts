@@ -93,6 +93,15 @@ describe("cli help", () => {
     expect(experiments).toContain("structured ambiguous error");
   });
 
+  it("routes exact list help to the family-specific authority projection", () => {
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "state", "todo", "list", "--help"], io));
+    expect({ rc, err }).toEqual({ rc: 0, err: "" });
+    expect(out).toContain("Summary fields:");
+    expect(out).toContain("queue_rank");
+    expect(out).toContain("--queue-rank is not a filter");
+    expect(out).toContain("minimum 1, default 20, maximum 100");
+  });
+
   it("documents only the read-only entity migration diagnostic", () => {
     const backfill = printStateHelp("backfill");
     expect(stateCommandNames()).not.toContain("backfill");

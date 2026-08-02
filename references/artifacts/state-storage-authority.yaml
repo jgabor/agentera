@@ -73,19 +73,19 @@ entity_target:
     status: final
     commands:
       progress:
-        list: agentera state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        list: agentera state progress list [--topic TEXT] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state progress get --id ID --format json
       decisions:
-        list: agentera state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        list: agentera state decisions list [--topic TEXT] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state decisions get --id ID --format json
       health:
-        list: agentera state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        list: agentera state health list [--dimension DIMENSION] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state health get --id ID --format json
       plans:
         list: agentera state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state plan get --id ID --format json
       plan_tasks:
-        list: agentera state plan tasks list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        list: agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state plan tasks get --id ID --format json
       objective:
         list: agentera state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
@@ -94,11 +94,86 @@ entity_target:
         list: agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state experiments get --id ID --format json
       todo:
-        list: agentera state todo list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        list: agentera state todo list [--severity SEVERITY] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state todo get --id ID --format json
       docs:
-        list: agentera state docs list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        list: agentera state docs list [--topic TEXT] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
         get: agentera state docs get --id ID --format json
+    list_help:
+      schema_version: agentera.entityListHelp.v1
+      defaults:
+        summary_fields: [id, artifact, retrieval.get]
+        selectors:
+          ids_only:
+            flag: --ids-only
+            description: Return identity, exact-get recovery, and any family-specific summary fields.
+          fields:
+            flag: --fields FIELDS
+            description: Select comma-separated lowercase record paths present in the filtered snapshot; identity and exact-get recovery remain present.
+          mutual_exclusion: true
+        bounds: { minimum: 1, default: 20, maximum: 100, max_utf8_bytes: 32768 }
+        formats: [text, json, yaml]
+      families:
+        progress:
+          command_tokens: [progress]
+          filters:
+            - { flag: --topic TEXT, name: topic, values: free_text }
+            - { flag: --status STATUS, name: status, values: free_text }
+          example: agentera state progress list --limit 20 --format json
+        decisions:
+          command_tokens: [decisions]
+          filters:
+            - { flag: --topic TEXT, name: topic, values: free_text }
+          example: agentera state decisions list --limit 20 --format json
+        health:
+          command_tokens: [health]
+          filters:
+            - { flag: --dimension DIMENSION, name: dimension, values: free_text }
+          example: agentera state health list --limit 20 --format json
+        plans:
+          command_tokens: [plan]
+          filters:
+            - { flag: '--status open|complete|archived', name: status, values: [open, complete, archived] }
+          example: agentera state plan list --status open --limit 20 --format json
+        plan_tasks:
+          command_tokens: [plan, tasks]
+          family_identifier:
+            syntax: PLAN_ID
+            required: false
+            description: Optional bare plan ID; omit it to list tasks from the active plan.
+          filters: []
+          example: agentera state plan tasks list --limit 20 --format json
+        objective:
+          command_tokens: [objective]
+          filters: []
+          example: agentera state objective list --limit 20 --format json
+        experiments:
+          command_tokens: [experiments]
+          family_identifier:
+            syntax: --objective ID
+            required: true
+            description: Required bare objective entity ID.
+          filters: []
+          example: agentera state experiments list --objective qjtrmnpvka --limit 20 --format json
+        todo:
+          command_tokens: [todo]
+          filters:
+            - { flag: --severity SEVERITY, name: severity, values: free_text }
+            - { flag: --status STATUS, name: status, values: free_text }
+          summary_fields: [id, artifact, queue_rank, retrieval.get]
+          summary_field_notes:
+            queue_rank:
+              description: Computed one-based position in the complete ordered TODO snapshot before filters.
+              ownership: computed_read_snapshot
+              persisted: false
+              filter: false
+          example: agentera state todo list --severity critical --ids-only --limit 20 --format json
+        docs:
+          command_tokens: [docs]
+          filters:
+            - { flag: --topic TEXT, name: topic, values: free_text }
+            - { flag: --status STATUS, name: status, values: free_text }
+          example: agentera state docs list --limit 20 --format json
     collections:
       - { artifact: progress, identity: id, classification: artifact }
       - { artifact: decisions, identity: id, classification: artifact }

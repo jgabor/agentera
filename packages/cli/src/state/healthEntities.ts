@@ -252,7 +252,7 @@ export function listHealthEntities(root: string, limit?: number, dimension?: str
   const all = healthEntities(root, sourceRoot, options.discovery);
   let filtered = [...all].sort(compareHealthEntities);
   if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
-  const format = options.format ?? "json"; const projectionOptions = { artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: declared.maxUtf8Bytes, getCommand: "agentera state health get --id ID --format json", syntax: "agentera state health list [--limit N] [--cursor TOKEN] [--ids-only|--fields FIELDS] --format json", selector: options.selector };
+  const format = options.format ?? "json"; const projectionOptions = { family: "health" as const, artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: declared.maxUtf8Bytes, selector: options.selector };
   const selector = resolveEntityListSelector(options.selector, filtered.map((entity) => entry(root, entity)), projectionOptions); const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, filtered, dimension, declared.entityRoot); let start = 0;
   if (cursor) {
@@ -270,7 +270,7 @@ export function listHealthEntities(root: string, limit?: number, dimension?: str
       schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining || filtered.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
       counts: { total: filtered.length, returned: selected.length, remaining }, filters: { dimension: dimension ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: filtered.length },
       source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: filtered.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
-      retrieval: { get: projectionOptions.getCommand, ...(next ? { continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next} --format json` } : {}) },
+      retrieval: { ...(next ? { continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next} --format json` } : {}) },
       ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}),
     };
   };

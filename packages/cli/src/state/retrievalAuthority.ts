@@ -5,6 +5,7 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { entityListAuthorityProjection } from "./entityRetrievalHelp.js";
 
 export const STATE_RETRIEVAL_AUTHORITY_PATH = "references/artifacts/state-storage-authority.yaml";
 export const STATE_RETRIEVAL_SCHEMA_VERSION = "agentera.stateRetrievalAuthority.v1";
@@ -344,9 +345,7 @@ export function stateRetrievalCommands(sourceRoot = resolveSourceRoot()): JsonOb
 
 export function entityPublicRetrieval(sourceRoot = resolveSourceRoot()): JsonObject {
   const authorityPath = path.join(sourceRoot, STATE_RETRIEVAL_AUTHORITY_PATH);
-  const value = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
-  const target = mapping(value.entity_target);
-  const projection = mapping(target.public_retrieval);
+  const projection = entityListAuthorityProjection(sourceRoot);
   if (projection.schema_version !== "agentera.entityPublicRetrieval.v1" || projection.status !== "final") {
     throw new Error(`state storage authority '${authorityPath}' has no final entity public retrieval projection`);
   }

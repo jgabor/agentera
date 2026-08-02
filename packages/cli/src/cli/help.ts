@@ -2,6 +2,7 @@ import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
+import { entityListFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -279,6 +280,52 @@ export function printStateHelp(sub?: string): string {
   ].join("\n");
 }
 
+export function printStateListHelp(family: EntityListFamilyHelp): string {
+  const filterLines = family.filters.length
+    ? family.filters.map(({ flag, values }) => `  ${flag.padEnd(35)} Filter; values: ${Array.isArray(values) ? values.join(", ") : values}`)
+    : ["  (none)"];
+  const identifier = family.familyIdentifier
+    ? [
+        "Family identifier:",
+        `  ${family.familyIdentifier.syntax}${family.familyIdentifier.required ? " (required)" : " (optional)"}`,
+        `  ${family.familyIdentifier.description}`,
+        "",
+      ]
+    : [];
+  const notes = Object.entries(family.summaryFieldNotes).map(([field, note]) =>
+    `  ${field}: ${note.description} Ownership: ${note.ownership}; persisted: ${note.persisted}; ${note.filter ? `--${field.replaceAll("_", "-")} is a filter` : `--${field.replaceAll("_", "-")} is not a filter`}.`,
+  );
+  return [
+    `usage: ${family.syntax}`,
+    "",
+    `List the ${family.key} retrieval family using the authority-owned bounded projection.`,
+    "",
+    ...identifier,
+    "Filters:",
+    ...filterLines,
+    "",
+    "Summary fields:",
+    `  ${family.summaryFields.join(", ")}`,
+    ...notes,
+    "",
+    "Projection selectors:",
+    `  ${family.selectors.idsOnly.flag.padEnd(20)} ${family.selectors.idsOnly.description}`,
+    `  ${family.selectors.fields.flag.padEnd(20)} ${family.selectors.fields.description}`,
+    ...(family.selectors.mutualExclusion ? ["  --ids-only and --fields cannot be combined."] : []),
+    "",
+    "Bounds and formats:",
+    `  limit: minimum ${family.bounds.minimum}, default ${family.bounds.default}, maximum ${family.bounds.maximum}`,
+    `  serialized output: at most ${family.bounds.maxUtf8Bytes} UTF-8 bytes; rows and scalar values are not partially returned`,
+    `  formats: ${family.formats.join(", ")}`,
+    "",
+    "Examples:",
+    `  ${family.example}`,
+    `  ${family.get}`,
+    "",
+    `Unsupported filters, fields, or selectors report this family's valid vocabulary and a correction based on: ${family.example}`,
+  ].join("\n");
+}
+
 export function stateCommandNames(): string[] {
   return [
     ...WRITABLE_ARTIFACTS,
@@ -444,8 +491,10 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printAppHomeHelp();
     case "doctor":
       return printDoctorHelp();
-    case "state":
-      return printStateHelp(sub);
+    case "state": {
+      const family = entityListFamilyForHelpArgs(rest);
+      return family ? printStateListHelp(family) : printStateHelp(sub);
+    }
     case "check":
       return printCheckHelp(sub);
     case "report":

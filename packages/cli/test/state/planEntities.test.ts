@@ -16,6 +16,7 @@ import { detectStateModeBinding } from "../../src/state/stateMode.js";
 import { buildExplain } from "../../src/state/write/explain.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
+import { entityListFamily } from "../../src/state/entityRetrievalHelp.js";
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -373,7 +374,13 @@ describe("plan and task entity authority", () => {
 
     const invalid = capture(root, ["state", "plan", "tasks", "list", "--fields", "not_a_field", "--format", "json"]);
     expect(invalid.rc).toBe(2);
-    expect(JSON.parse(invalid.out).error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("unsupported record field") });
+    expect(JSON.parse(invalid.out).error).toMatchObject({
+      class: "invalid_request",
+      message: expect.stringContaining("unsupported record field"),
+      valid_values: expect.arrayContaining(["name", "status"]),
+      example: entityListFamily("plan_tasks").example,
+      recovery: expect.stringContaining(entityListFamily("plan_tasks").example),
+    });
     const combined = capture(root, ["state", "plan", "tasks", "list", "--ids-only", "--fields", "status", "--format", "json"]);
     expect(combined.rc).toBe(2);
     expect(JSON.parse(combined.out).error.message).toContain("cannot be combined");
@@ -383,10 +390,8 @@ describe("plan and task entity authority", () => {
     const root = project();
     const result = capture(root, ["state", "plan", "tasks", "list", "too", "many", "selectors", "--format", "json"]);
     expect(result.rc).toBe(2);
-    expect(JSON.parse(result.out).error).toMatchObject({
-      syntax: "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json",
-      example: "agentera state plan tasks list abcdefghij --limit 20 --format json",
-    });
+    const family = entityListFamily("plan_tasks");
+    expect(JSON.parse(result.out).error).toMatchObject({ syntax: family.syntax, example: family.example });
     const invalid = capture(root, ["state", "plan", "tasks", "list", "not-a-plan", "--format", "json"]);
     expect(invalid.rc).toBe(2);
     expect(JSON.parse(invalid.out).error).toMatchObject({

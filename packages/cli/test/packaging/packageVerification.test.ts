@@ -12,6 +12,7 @@ import {
   EXPECTED_PRODUCER_READINESS,
   runProducerReadinessWorkflow,
 } from "../helpers/producerReadinessWorkflow.js";
+import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeRegistry.js";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
@@ -32,6 +33,45 @@ function isolatedPackageEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEn
   delete env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete env.AGENTERA_HOME;
   return env;
+}
+
+function publicListFamilies(): Array<{ key: string; commandTokens: readonly string[]; syntax: string; example: string }> {
+  const authority = YAML.parse(fs.readFileSync(path.join(CHECKOUT_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
+  const retrieval = authority.entity_target.public_retrieval;
+  return ENTITY_LIST_RUNTIME_FAMILIES.map((runtime) => {
+    const family = retrieval.list_help.families[runtime.key] as { command_tokens: string[]; example: string };
+    return { key: runtime.key, commandTokens: runtime.commandTokens, syntax: retrieval.commands[runtime.key].list, example: family.example };
+  });
+}
+
+function seedPublicListExamples(project: string): void {
+  const entities = path.join(project, ".agentera/entities");
+  const planDirectory = path.join(entities, "plan/plan");
+  const objectiveDirectory = path.join(entities, "objective/objective");
+  fs.mkdirSync(planDirectory, { recursive: true });
+  fs.mkdirSync(objectiveDirectory, { recursive: true });
+  fs.writeFileSync(path.join(planDirectory, "abcdefghij.yaml"), YAML.stringify({
+    id: "abcdefghij",
+    artifact: "plan",
+    record: {
+      header: { level: "light", created: "2026-08-02", status: "open", title: "Executable retrieval examples" },
+      what: "Exercise every authority-owned list example.",
+      why: "Static corrections must execute against source and packaged runtimes.",
+      scope: { included: ["retrieval examples"], excluded: ["mutations"] },
+    },
+  }));
+  fs.writeFileSync(path.join(objectiveDirectory, "qjtrmnpvka.yaml"), YAML.stringify({
+    id: "qjtrmnpvka",
+    artifact: "objective",
+    record: {
+      header: { title: "Executable retrieval examples", status: "open", created: "2026-08-02" },
+      objective: { description: "Exercise experiment retrieval", why: "The example requires an objective", measurement: "Command exits zero", constraints: [] },
+      metric: { description: "exit status", direction: "minimize", unit: "failures" },
+      baseline: { description: "zero failures" },
+      gates: {},
+      scope: { included: ["retrieval examples"], excluded: ["experiment publication"] },
+    },
+  }));
 }
 
 interface ProgressPrimeObservation {
@@ -466,6 +506,78 @@ describe("npm distribution boundary", () => {
     }
     expect([...files].some((file) => file.startsWith("test/") || file.includes("upgrade/fixtures/")))
       .toBe(false);
+  });
+
+  it("executes source-built and self-contained packaged list help, examples, rejections, and corrections for every authority family", () => {
+    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "retrieval-help-parity-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    seedPublicListExamples(project);
+    try {
+      const families = publicListFamilies();
+      const bundledAuthority = YAML.parse(fs.readFileSync(path.join(fixture.packageRoot, "bundle/references/artifacts/state-storage-authority.yaml"), "utf8"));
+      expect(Object.keys(bundledAuthority.entity_target.public_retrieval.list_help.families).sort()).toEqual(ENTITY_LIST_RUNTIME_FAMILIES.map(({ key }) => key).sort());
+      const sourceSchema = run(process.execPath, [sourceBin, "schema", "--format", "json"], project, isolatedPackageEnv());
+      const packagedSchema = run(process.execPath, [packagedBin, "schema", "--format", "json"], project, isolatedPackageEnv());
+      expect(sourceSchema.status).toBe(0);
+      expect(packagedSchema.status).toBe(0);
+      expect(JSON.parse(packagedSchema.stdout).state_retrieval).toEqual(JSON.parse(sourceSchema.stdout).state_retrieval);
+      expect(JSON.parse(packagedSchema.stdout).state_retrieval.list_help).toEqual(bundledAuthority.entity_target.public_retrieval.list_help);
+      for (const family of families) {
+        const helpArgs = ["state", ...family.commandTokens, "list", "--help"];
+        const sourceHelp = run(process.execPath, [sourceBin, ...helpArgs], project, isolatedPackageEnv());
+        const packagedHelp = run(process.execPath, [packagedBin, ...helpArgs], project, isolatedPackageEnv());
+        expect(sourceHelp.status, sourceHelp.stderr).toBe(0);
+        expect(packagedHelp.status, packagedHelp.stderr).toBe(0);
+        expect(packagedHelp.stdout).toBe(sourceHelp.stdout);
+        expect(sourceHelp.stdout).toContain(`usage: ${family.syntax}`);
+        if (family.key === "todo") {
+          expect(sourceHelp.stdout).toContain("queue_rank");
+          expect(sourceHelp.stdout).toContain("--queue-rank is not a filter");
+        }
+
+        const exampleArgs = family.example.split(" ").slice(1);
+        const sourceExample = run(process.execPath, [sourceBin, ...exampleArgs], project, isolatedPackageEnv());
+        const packagedExample = run(process.execPath, [packagedBin, ...exampleArgs], project, isolatedPackageEnv());
+        expect(sourceExample.status, `${family.key} source example failed:\n${sourceExample.stdout}\n${sourceExample.stderr}`).toBe(0);
+        expect(packagedExample.status, `${family.key} package example failed:\n${packagedExample.stdout}\n${packagedExample.stderr}`).toBe(0);
+        expect(packagedExample.stderr).toBe(sourceExample.stderr);
+        expect(packagedExample.stdout).toBe(sourceExample.stdout);
+
+        const mismatchArgs = ["state", ...family.commandTokens, "list", "--not-a-selector", "--format", "json"];
+        const sourceMismatch = run(process.execPath, [sourceBin, ...mismatchArgs], project, isolatedPackageEnv());
+        const packagedMismatch = run(process.execPath, [packagedBin, ...mismatchArgs], project, isolatedPackageEnv());
+        expect(sourceMismatch.status).toBe(2);
+        expect(packagedMismatch.status).toBe(2);
+        expect(sourceMismatch.stderr).toBe("");
+        expect(packagedMismatch.stderr).toBe("");
+        expect(packagedMismatch.stdout).toBe(sourceMismatch.stdout);
+        const correction = JSON.parse(sourceMismatch.stdout).error;
+        expect(correction).toMatchObject({ syntax: family.syntax, example: family.example });
+        const correctionArgs = correction.example.split(" ").slice(1);
+        const sourceCorrection = run(process.execPath, [sourceBin, ...correctionArgs], project, isolatedPackageEnv());
+        const packagedCorrection = run(process.execPath, [packagedBin, ...correctionArgs], project, isolatedPackageEnv());
+        expect(sourceCorrection.status, `${family.key} source correction failed:\n${sourceCorrection.stdout}\n${sourceCorrection.stderr}`).toBe(0);
+        expect(packagedCorrection.status, `${family.key} package correction failed:\n${packagedCorrection.stdout}\n${packagedCorrection.stderr}`).toBe(0);
+        expect(packagedCorrection.stderr).toBe(sourceCorrection.stderr);
+        expect(packagedCorrection.stdout).toBe(sourceCorrection.stdout);
+
+        const humanArgs = ["state", ...family.commandTokens, "list", "--not-a-selector"];
+        const sourceHuman = run(process.execPath, [sourceBin, ...humanArgs], project, isolatedPackageEnv());
+        const packagedHuman = run(process.execPath, [packagedBin, ...humanArgs], project, isolatedPackageEnv());
+        expect(sourceHuman.status).toBe(2);
+        expect(packagedHuman.status).toBe(2);
+        expect(sourceHuman.stdout).toBe("");
+        expect(packagedHuman.stdout).toBe("");
+        expect(packagedHuman.stderr).toBe(sourceHuman.stderr);
+        expect(sourceHuman.stderr).toContain(`Example: ${family.example}`);
+        for (const value of correction.valid_values) expect(sourceHuman.stderr).toContain(value);
+      }
+    } finally {
+      fs.rmSync(project, { recursive: true, force: true });
+    }
   });
 
   it("runs packaged personal glossary rendering and restart-safe regeneration as new processes", () => {

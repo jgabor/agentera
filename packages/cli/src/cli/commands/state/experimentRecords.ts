@@ -5,6 +5,7 @@ import { getExperimentEntity, listExperimentEntities } from "../../../state/obje
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
 import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
+import { entityListFamily, entityListValidValues } from "../../../state/entityRetrievalHelp.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -19,6 +20,7 @@ function requestedFormat(argv: string[]): Format {
 
 function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
   const list = verb === "list";
+  const family = entityListFamily("experiments");
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
@@ -26,14 +28,14 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
       class: "invalid_request",
       message,
       syntax: list
-        ? "agentera state experiments list --objective ID [--limit N] [--cursor TOKEN] --format json"
+        ? family.syntax
         : "agentera state experiments get --id ID [--objective ID] --format json",
       example: list
-        ? "agentera state experiments list --objective qjtrmnpvka --limit 20 --format json"
+        ? family.example
         : "agentera state experiments get --id qjtrmnpvka --format json",
-      recovery: "Use bare ten-letter entity IDs and retry; no state was changed.",
+      recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Use bare ten-letter entity IDs and retry; no state was changed.",
       valid_values: list
-        ? ["list", "--objective ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        ? entityListValidValues(family)
         : ["get", "--id ID", "--objective ID", "--format text|json|yaml"],
     },
   }, 2);
@@ -48,10 +50,11 @@ function value(argv: string[], index: number, name: string): { value: string; ne
 }
 
 function parse(argv: string[], verb: "list" | "get"): { format: Format; objective?: string; id?: string; limit: number; cursor?: string; selector: EntityListSelectorInput } {
+  const family = entityListFamily("experiments");
   let format: Format = "text";
   let objective: string | undefined;
   let id: string | undefined;
-  let limit = 20;
+  let limit = family.bounds.default;
   let cursor: string | undefined;
   const selector: EntityListSelectorInput = {};
   const seen = new Set<string>();
@@ -71,14 +74,14 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
     catch (error) { throw failure((error as Error).message, verb); }
     index = parsed.next;
     if (name === "--format") {
-      if (!( ["text", "json", "yaml"] as string[]).includes(parsed.value)) throw failure(`invalid --format '${parsed.value}'`, verb);
+      if (!family.formats.includes(parsed.value)) throw failure(`invalid --format '${parsed.value}'`, verb);
       format = parsed.value as Format;
     } else if (name === "--objective") objective = parsed.value;
     else if (name === "--id") id = parsed.value;
     else if (name === "--cursor") cursor = parsed.value;
     else if (name === "--fields") selector.fields = parsed.value;
     else {
-      if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
+      if (!/^[1-9][0-9]*$/.test(parsed.value) || Number(parsed.value) < family.bounds.minimum || Number(parsed.value) > family.bounds.maximum) throw failure(`--limit must be an integer from ${family.bounds.minimum} through ${family.bounds.maximum}`, verb);
       limit = Number(parsed.value);
     }
   }

@@ -11,6 +11,8 @@ import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
 import YAML from "yaml";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
+import { entityListFamilies, entityListValidValues } from "../../../state/entityRetrievalHelp.js";
+import { ENTITY_LIST_RUNTIME_FAMILIES, runtimeGenericEntityListFamily, type EntityListRuntimeFamilyKey } from "../../../state/entityListRuntimeRegistry.js";
 
 interface StateListArgs {
   limit: number;
@@ -19,8 +21,6 @@ interface StateListArgs {
   filters: StateListFilters;
   selector: EntityListSelectorInput;
 }
-
-const ENTITY_LIST_ARTIFACTS = ["progress", "decisions", "health", "objective", "todo", "docs"];
 
 function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
   for (let index = 0; index < argv.length; index += 1) {
@@ -48,6 +48,7 @@ function failure(
   example = `agentera state ${artifactId} list --limit 20 --format json`,
   validValues?: string[],
 ): StateRetrievalFailure {
+  const family = entityListFamilies().find(({ key }) => key === artifactId);
   return new StateRetrievalFailure(
     {
       schemaVersion: "agentera.stateFailure.v1",
@@ -55,11 +56,11 @@ function failure(
       error: {
         class: className,
         message,
-        syntax: syntax(artifactId),
-        example,
-        recovery: "Correct the command using the valid syntax and retry; no state was changed.",
+        syntax: family?.syntax ?? syntax(artifactId),
+        example: family?.example ?? example,
+        recovery: family ? `Run \`${family.example}\`; no state was changed.` : "Correct the command using the valid syntax and retry; no state was changed.",
         artifact_id: artifactId,
-        ...(validValues ? { valid_values: validValues } : {}),
+        ...(validValues ? { valid_values: validValues } : family ? { valid_values: entityListValidValues(family) } : {}),
       },
     },
     2,
@@ -75,16 +76,18 @@ function readValue(argv: string[], index: number, name: string): { value: string
 }
 
 function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
-  const validValues = ENTITY_LIST_ARTIFACTS;
-  if (!validValues.includes(artifactId)) {
+  const runtime = runtimeGenericEntityListFamily(artifactId);
+  if (!runtime) {
+    const validValues = ENTITY_LIST_RUNTIME_FAMILIES.map(({ commandTokens }) => commandTokens.join(" "));
     throw failure("unsupported_artifact", artifactId, `unsupported state artifact '${artifactId}'`, undefined, validValues);
   }
-  let limit = 20;
+  const family = entityListFamilies().find(({ key }) => key === runtime.key as EntityListRuntimeFamilyKey)!;
+  let limit = family.bounds.default;
   let cursor: string | undefined;
   let format: StateListArgs["format"] = "text";
   const filters: StateListFilters = {};
   const selector: EntityListSelectorInput = {};
-  const allowedFilters = artifactId === "progress" ? new Set(["--topic", "--status"]) : artifactId === "decisions" ? new Set(["--topic"]) : artifactId === "todo" ? new Set(["--severity", "--status"]) : artifactId === "docs" ? new Set(["--topic", "--status"]) : artifactId === "objective" ? new Set<string>() : new Set(["--dimension"]);
+  const allowedFilters = new Set(family.filters.map(({ name }) => `--${name}`));
   let limitSupplied = false;
   let cursorSupplied = false;
   let formatSupplied = false;
@@ -110,9 +113,9 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
     if (name === "--limit") {
       if (limitSupplied) throw failure("invalid_request", artifactId, "--limit may only be supplied once");
       limitSupplied = true;
-      if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("invalid_request", artifactId, "argument --limit must be a positive canonical integer from 1 through 100");
+      if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("invalid_request", artifactId, `argument --limit must be a positive canonical integer from ${family.bounds.minimum} through ${family.bounds.maximum}`);
       limit = Number(parsed.value);
-      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw failure("invalid_request", artifactId, "argument --limit must be between 1 and 100", `agentera state ${artifactId} list --limit 20 --format json`);
+      if (!Number.isSafeInteger(limit) || limit < family.bounds.minimum || limit > family.bounds.maximum) throw failure("invalid_request", artifactId, `argument --limit must be between ${family.bounds.minimum} and ${family.bounds.maximum}`);
     } else if (name === "--cursor") {
       if (cursorSupplied) throw failure("invalid_request", artifactId, "--cursor may only be supplied once");
       cursorSupplied = true;
@@ -131,10 +134,10 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
       }
       if (formatSupplied) throw failure("invalid_request", artifactId, "--format may only be supplied once");
       formatSupplied = true;
-      if (parsed.value !== "text" && parsed.value !== "json" && parsed.value !== "yaml") {
-        throw failure("invalid_request", artifactId, `argument --format: invalid choice: '${parsed.value}' (choose from 'text', 'json', 'yaml')`);
+      if (!family.formats.includes(parsed.value)) {
+        throw failure("invalid_request", artifactId, `argument --format: invalid choice: '${parsed.value}' (choose from ${family.formats.map((value) => `'${value}'`).join(", ")})`);
       }
-      format = parsed.value;
+      format = parsed.value as StateListArgs["format"];
     }
   }
   return { limit, ...(cursor ? { cursor } : {}), format, filters, selector };
@@ -145,11 +148,12 @@ function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "ya
   if (format === "json" || format === "yaml") emitStructured(error.body, format, out);
   else {
     const details = error.body.error;
-    out(
+    (io.err ?? ((text: string) => process.stderr.write(text)))(
       [
         `Error: ${details.message}`,
         `Class: ${details.class}`,
         `Syntax: ${details.syntax}`,
+        `Valid values: ${(details.valid_values ?? []).join("; ")}`,
         `Example: ${details.example}`,
         `Recovery: ${details.recovery}`,
       ].join("\n") + "\n",

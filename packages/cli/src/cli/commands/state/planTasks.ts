@@ -5,6 +5,7 @@ import { getPlanTaskEntity, listPlanTaskEntities } from "../../../state/planEnti
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
 import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
+import { entityListFamily, entityListValidValues } from "../../../state/entityRetrievalHelp.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -27,6 +28,7 @@ function readValue(argv: string[], index: number, name: string): { value: string
 
 function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
   const list = verb === "list";
+  const family = entityListFamily("plan_tasks");
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
@@ -34,23 +36,24 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
       class: "invalid_request",
       message,
       syntax: list
-        ? "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
+        ? family.syntax
         : "agentera state plan tasks get --id ID --format json",
       example: list
-        ? "agentera state plan tasks list abcdefghij --limit 20 --format json"
+        ? family.example
         : "agentera state plan tasks get --id qjtrmnpvka --format json",
-      recovery: "Correct the command using one of the valid forms and retry; no state was changed.",
+      recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
-        ? ["list", "PLAN_ID", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
+        ? entityListValidValues(family)
         : ["get", "--id ID", "--format text|json|yaml"],
     },
   }, 2);
 }
 
 function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: string; limit: number; cursor?: string; id?: string; selector: EntityListSelectorInput } {
+  const family = entityListFamily("plan_tasks");
   let format: Format = "text";
   let plan: string | undefined;
-  let limit = 20;
+  let limit = family.bounds.default;
   let cursor: string | undefined;
   let id: string | undefined;
   const selector: EntityListSelectorInput = {};
@@ -77,10 +80,10 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: s
     catch (error) { throw failure((error as Error).message, verb); }
     index = parsed.next;
     if (name === "--format") {
-      if (!( ["text", "json", "yaml"] as string[]).includes(parsed.value)) throw failure(`invalid --format '${parsed.value}'`, verb);
+      if (!family.formats.includes(parsed.value)) throw failure(`invalid --format '${parsed.value}'`, verb);
       format = parsed.value as Format;
     } else if (name === "--limit") {
-      if (!/^[1-9][0-9]*$/.test(parsed.value)) throw failure("--limit must be an integer from 1 through 100", verb);
+      if (!/^[1-9][0-9]*$/.test(parsed.value) || Number(parsed.value) < family.bounds.minimum || Number(parsed.value) > family.bounds.maximum) throw failure(`--limit must be an integer from ${family.bounds.minimum} through ${family.bounds.maximum}`, verb);
       limit = Number(parsed.value);
     } else if (name === "--cursor") cursor = parsed.value;
     else if (name === "--fields") selector.fields = parsed.value;

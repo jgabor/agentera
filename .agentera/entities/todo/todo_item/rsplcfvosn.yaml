@@ -21,4 +21,4 @@ record:
       description: "[fix:3.0.0] Make `agentera prime --context <capability> --format json` one bounded, unambiguous, aggregation-only startup contract. Replace overlapping `included`, `missing`, `missing_state`, and `fallback_only` with one per-family availability projection; stop duplicating writer contracts and copied prose; emit exact detail commands. Prime must not embed operation fields, examples, or payload schemas and may expose only an exact `schema` or `state ... explain` discovery pointer. Keep status at or below 22,500 bytes, deprecate `prime --dashboard`, emit one aggregate `ok`, `degraded`, or `blocked` outcome, require all status layers to agree, and prove healthy startup needs no second dashboard or fallback call."
       severity: critical
       status: open
-      order: 13
+      order: 12

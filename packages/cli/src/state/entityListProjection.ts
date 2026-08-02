@@ -3,6 +3,8 @@ import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure } from "./directRetrieval.js";
 import { serializedProjectionBytes } from "./projectionPolicy.js";
 import { shellQuoteArgument } from "../core/shell.js";
+import { entityListFamily, entityListValidValues } from "./entityRetrievalHelp.js";
+import type { EntityListRuntimeFamilyKey } from "./entityListRuntimeRegistry.js";
 
 export interface EntityListSelectorInput {
   idsOnly?: boolean;
@@ -10,12 +12,11 @@ export interface EntityListSelectorInput {
 }
 
 export interface EntityListProjectionOptions {
+  family: EntityListRuntimeFamilyKey;
   artifact: string;
   boundary: string;
   format: string;
   maxUtf8Bytes: number;
-  getCommand: string;
-  syntax: string;
   selector?: EntityListSelectorInput;
 }
 
@@ -28,17 +29,19 @@ function mapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function fail(options: EntityListProjectionOptions, message: string, recovery: string, exitCode: 1 | 2): never {
+function fail(options: EntityListProjectionOptions, message: string, recovery: string, exitCode: 1 | 2, validValues?: string[]): never {
+  const family = entityListFamily(options.family);
   throw new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
     error: {
       class: exitCode === 2 ? "invalid_request" : "unsupported_state",
       message,
-      syntax: options.syntax,
-      example: options.syntax.replace(/ \[.*$/, " --limit 20 --format json"),
-      recovery,
+      syntax: family.syntax,
+      example: family.example,
+      recovery: exitCode === 2 ? `Run \`${family.example}\`; no state was changed.` : recovery,
       artifact: options.artifact,
+      ...(validValues ? { valid_values: validValues } : exitCode === 2 ? { valid_values: entityListValidValues(family) } : {}),
     },
   }, exitCode);
 }
@@ -91,7 +94,7 @@ export function resolveEntityListSelector(
   const available = [...new Set(entries.flatMap((entry) => fieldPaths(entry.record)))].sort();
   const unsupported = fields.find((field) => !available.includes(field));
   if (unsupported) {
-    fail(options, `unsupported record field '${unsupported}' for this filtered ${options.artifact} snapshot; available fields: ${available.join(", ") || "none"}`, "Choose a listed field or change the filters, then restart without --cursor; no state was changed.", 2);
+    fail(options, `unsupported record field '${unsupported}' for this filtered ${options.artifact} snapshot; available fields: ${available.join(", ") || "none"}`, "Choose a listed field or change the filters, then restart without --cursor; no state was changed.", 2, available);
   }
   return { mode: "fields", fields };
 }
@@ -134,6 +137,7 @@ function normalize(
   options: EntityListProjectionOptions,
   detail: string,
 ): JsonObject {
+  const family = entityListFamily(options.family);
   const counts = mapping(response.counts) ? response.counts : {};
   const snapshot = mapping(response.snapshot) ? response.snapshot : {};
   const candidate = Number(snapshot.candidate_count ?? counts.total ?? entries.length);
@@ -152,7 +156,7 @@ function normalize(
       continuation: remaining,
     },
     snapshot: { ...snapshot, candidate_count: candidate, has_more: remaining > 0 },
-    retrieval: { ...retrieval, get: options.getCommand },
+    retrieval: { ...retrieval, get: family.get },
     projection: {
       selector: selector.mode,
       detail,
@@ -167,10 +171,11 @@ export function projectEntityList(
   selector: ResolvedEntityListSelector,
   options: EntityListProjectionOptions,
 ): JsonObject {
+  const family = entityListFamily(options.family);
   const fullEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
   const selectedEntries = selector.mode === "default"
-    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, options.getCommand).retrieval }))
-    : fullEntries.map((entry) => projectEntry(entry, selector, options.getCommand));
+    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, family.get).retrieval }))
+    : fullEntries.map((entry) => projectEntry(entry, selector, family.get));
   const selectedDetail = selector.mode === "default" ? "full" : selector.mode === "fields" ? "selected_fields" : "identity";
   const selected = normalize(response, selectedEntries, selector, options, selectedDetail);
   if (serializedProjectionBytes(selected, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return selected;
@@ -178,14 +183,14 @@ export function projectEntityList(
   if (selector.mode !== "default") {
     fail(options, `${selector.mode === "fields" ? "selected fields" : "IDs-only rows"} cannot fit the ${options.maxUtf8Bytes}-byte ${options.format} list budget`, "Request fewer rows or fewer fields and retry; no fields or rows were returned partially.", 1);
   }
-  const summaries = fullEntries.map((entry) => projectEntry(entry, selector, options.getCommand));
+  const summaries = fullEntries.map((entry) => projectEntry(entry, selector, family.get));
   const degraded = normalize({
     ...response,
     status: "degraded",
     degradation: {
       reason: "optional_detail_byte_budget",
       detail_omitted_count: summaries.length,
-      recovery: options.getCommand,
+      recovery: family.get,
     },
   }, summaries, selector, options, "summary");
   if (serializedProjectionBytes(degraded, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return degraded;

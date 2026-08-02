@@ -1,0 +1,16 @@
+id: udjdxcomuq
+artifact: progress
+record:
+  timestamp: 2026-08-02 05:04
+  type: fix
+  phase: build
+  what: Closed replacement ayfhtkeitz's executable retrieval-help authority gap after predecessor nkpclbjyny exhausted two failed evaluations.
+  context:
+    intent: Make every accepted list-family help example executable for the same authority revision.
+    constraints: Preserve nkpclbjyny, both FAIL records, all inherited uncommitted work, and the four protected staged M1 blobs; do not commit or change lifecycle state.
+    unknowns: Independent Audit has not evaluated ayfhtkeitz; Prime still owns evaluation and closeout.
+    scope: Typed family-model validation of list examples plus source-built and isolated package execution parity for the nine public list families.
+  discovered: "The implementation logged in yqoowvgugc failed nkpclbjyny-audit-1 because runtime identity, metadata validation, and human stream routing were not fail closed. The repair logged in xserdemcre failed nkpclbjyny-audit-2 because entityRetrievalHelp validated only example prefix and suffix: coherent default/maximum limit 7 metadata still accepted stale --limit 20 examples, and the advertised correction exited 2."
+  verified: Example validation now consumes the existing typed family model for command tokens, positional or flagged IDs, filters and values, selectors, formats, canonical argv form, and bounds without spawning a process. The exact stale mutation produces 9/9 .example.limit violations and schema startup throws. Updating the same bounds and all examples to 7 passes validation and schema; all 9 advertised examples exit 0, limit 8 exits 2 with --limit 1..7, and all 9 returned corrections exit 0. Current-authority package verification proved 9/9 source and 9/9 isolated-package help, example, structured rejection, correction, and human-stream cases, including TODO queue_rank discovery. Focused source tests passed 4 files and 104 tests; full source passed 225 files, 3164 tests with 1 skipped; package boundary passed 2 files and 20 tests. Typecheck, build, package dry-run, 9-family schema, state validation at 2053 entities with 0 issues, capability and capability-contract validation, and compact all passed.
+  next: Prime/Audit may evaluate ayfhtkeitz. Keep nkpclbjyny blocked with both FAIL records; do not supersede it, resolve qmcyjnxskc, move NEXT, commit, or perform lifecycle closeout here.
+  publication_order: 43

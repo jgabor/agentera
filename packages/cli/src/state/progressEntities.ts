@@ -631,7 +631,7 @@ export function listProgressEntities(
   });
   const snapshot = snapshotId(projectRoot, filtered, filterState, contract.entityRoot);
   const format = options.format ?? "json";
-  const projectionOptions = { artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: contract.maxUtf8Bytes, getCommand: "agentera state progress get --id ID --format json", syntax: "agentera state progress list [--limit N] [--cursor TOKEN] [--ids-only|--fields FIELDS] --format json", selector: options.selector };
+  const projectionOptions = { family: "progress" as const, artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: contract.maxUtf8Bytes, selector: options.selector };
   const selector = resolveEntityListSelector(options.selector, filtered.map((entity) => entry(projectRoot, entity)), projectionOptions);
   const selectorKey = entityListSelectorKey(selector);
   let afterKey = "";

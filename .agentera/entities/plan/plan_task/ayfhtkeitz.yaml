@@ -1,0 +1,23 @@
+id: ayfhtkeitz
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 · Close executable retrieval-help authority (qmcyjnxskc)
+  status: complete
+  depends_on:
+    - ybpdvkidaq
+  acceptance:
+    - GIVEN any list-family authority mutation WHEN loaded THEN missing, unknown, malformed, or grammar-incompatible metadata and examples fail closed.
+    - GIVEN coherent bounds and examples WHEN help or an error emits a command THEN the command executes successfully against the same runtime.
+    - GIVEN all nine list families WHEN source and packaged parity runs THEN help, TODO queue-rank discoverability, and one rejection with correction per family match authority.
+    - GIVEN human or structured retrieval failures WHEN invoked THEN streams, vocabulary, corrections, and exit status remain deterministic.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: ayfhtkeitz-audit-1
+      source: Audit ses_03f8f3ab6ffet4AE4pgg4ZK31o
+      recorded_at: 2026-08-02 05:21
+      writer_command: agentera state plan record-evaluation

@@ -31,12 +31,11 @@ function response(rows: JsonObject[], remaining = 0): JsonObject {
 
 function options(selector?: EntityListSelectorInput, maxUtf8Bytes = 32_768): EntityListProjectionOptions {
   return {
+    family: "plan_tasks",
     artifact: "plan",
     boundary: "plan_task",
     format: "json",
     maxUtf8Bytes,
-    getCommand: "agentera state plan tasks get --id ID --format json",
-    syntax: "agentera state plan tasks list [--limit N] [--cursor TOKEN] [--ids-only|--fields FIELDS] --format json",
     selector,
   };
 }

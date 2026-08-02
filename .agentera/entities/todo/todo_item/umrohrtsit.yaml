@@ -21,4 +21,4 @@ record:
       description: "[fix:3.0.0] Make `agentera doctor --format json` diagnose every retired Agentera-native resource. It currently reports `up_to_date` while stale OpenCode and Codex integrations remain. Emit a bounded degraded or action-required signal with exact resource IDs and targeted preview commands, path or fingerprint evidence only, and no resource contents. Use isolated temporary homes for automated acceptance and keep the real stale installation unchanged as final external evidence until repaired CLI cleanup is explicitly approved and succeeds."
       severity: critical
       status: open
-      order: 11
+      order: 10

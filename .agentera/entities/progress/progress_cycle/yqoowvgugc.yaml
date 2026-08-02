@@ -1,0 +1,16 @@
+id: yqoowvgugc
+artifact: progress
+record:
+  timestamp: 2026-08-02 03:55
+  type: feat
+  phase: build
+  what: Generated authority-owned family-specific state list help and deterministic selector corrections for all nine public retrieval families.
+  context:
+    intent: Implement task nkpclbjyny without lifecycle mutation or commit.
+    constraints: State-storage authority remains the single retrieval-help contract; preserve bounded projection and protected staged plan-task blobs.
+    unknowns: No remaining implementation uncertainty; Audit still owns independent evaluation.
+    scope: Task nkpclbjyny / TODO qmcyjnxskc only.
+  discovered: Before the change, `state todo list --help` showed only generic list bounds and omitted severity/status placement, queue_rank, --ids-only, and --fields; `--queue-rank` failed without valid_values or a concrete correction.
+  verified: "Criterion 1: authority-derived focused parity covered 9/9 families; each help output exposed exact filters, summary fields, limit 1/default 20/max 100, 32768-byte bound, text/json/yaml formats, exact get, and runnable list examples. Criterion 2: TODO help exposes --severity, --status, --ids-only, --fields, and computed queue_rank, and states --queue-rank is not a filter. Criterion 3: structured unsupported filter/field/selector errors include deterministic valid_values plus an authority-derived example and recovery command. Criterion 4: package verification ran one successful help case and one mismatch rejection for every family against source-built dist and the isolated self-contained npm package; all 9 outputs matched. Verification: focused affected tests 183/183 then final focused 28/28; full source 225 files, 3138 passed and 1 skipped; package 2 files/20 tests; typecheck and build passed; schema exposed 9 families; state validation passed with 2050 entities and 0 issues; capability-contract 3/3 passed; compact passed; diff checks passed."
+  next: Prime owns Audit evaluation and lifecycle transitions; do not complete task nkpclbjyny or resolve qmcyjnxskc here.
+  publication_order: 41

@@ -1,0 +1,16 @@
+id: xserdemcre
+artifact: progress
+record:
+  timestamp: 2026-08-02 04:33
+  type: fix
+  phase: build
+  what: Corrected nkpclbjyny after persisted Audit 1 failure by closing retrieval-help validation and human error-stream gaps.
+  context:
+    intent: Retry task nkpclbjyny by correcting only the accepted Audit 1 findings.
+    constraints: Keep retrieval authority as help-fact owner, preserve prior progress and FAIL history, protect staged M1 blobs, and make no commit or lifecycle completion.
+    unknowns: No known implementation gap remains; independent Audit has not rerun.
+    scope: Runtime list-family registry, fail-closed list-help validation/consumption, generic error streams, and proportional parity tests.
+  discovered: Audit attempt nkpclbjyny-audit-1 correctly found that the first implementation trusted authority-derived family identity, accepted missing/ghost families and missing TODO queue metadata, allowed bounds/filter/runtime drift, and wrote generic human list failures to stdout.
+  verified: "Audit 1 correction evidence: one typed runtime registry now owns the 9 implemented grammar identities and is consumed by state-list dispatch, exact list-help routing, generic parser selection, and fail-closed authority validation. Seven exact Audit mutation tests reject removed docs, ghost, removed TODO summary fields, removed TODO notes, unknown TODO metadata, removed progress filters, and list-help bound drift; five additional shape tests reject unknown defaults/filter metadata, wrong bound type, wrong TODO note type, and wrong queue-rank ownership semantics. A coherent authority change to limit 7 is accepted and runtime accepts 7 but rejects 8 with --limit 1..7. Generic text failures for all 6 generic families exit 2 with stdout empty and diagnostics/valid vocabulary on stderr; JSON stays on stdout with stderr empty. Focused affected tests passed 211/211; retrieval correction tests passed 21/21. Full source rerun passed 225 files, 3152 passed and 1 skipped after an initial unrelated heap-threshold fluctuation (72,993,744 > 67,108,864) passed alone 24/24. Final package verification passed 2 files/20 tests; its isolated processes proved 9/9 source/package help successes, 9/9 mismatch rejections, runnable corrections, schema parity, and bundled authority use. Typecheck/build passed; schema exposed 9 families and typed TODO queue semantics; state validation passed at 2051 entities/0 issues; capability contract 3/3, compact, and diff checks passed."
+  next: Prime/Audit owns any new evaluation and lifecycle transition; retain nkpclbjyny-audit-1 FAIL provenance and do not complete the task here.
+  publication_order: 42
