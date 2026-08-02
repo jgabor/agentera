@@ -1,0 +1,25 @@
+id: zeyfnbqdov
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Separate project initialization and migration from global legacy-resource cleanup.
+  requirements:
+    - Limit normal upgrade --project planning and application to the selected project unless the operator explicitly selects a declared global cleanup resource.
+    - Do not enumerate stale commands, skills, hooks, or runtime configuration as blockers for unrelated project-state recovery.
+    - Preserve ambiguous global resources and return targeted upgrade --legacy-cleanup RESOURCE_ID --dry-run commands when cleanup is relevant.
+  acceptance:
+    - Project initialization and migration produce the same project result under clean and stale global homes.
+    - Normal project recovery leaves global resource bytes and ownership records unchanged.
+    - Explicit legacy cleanup remains separately previewable, ownership-gated, bounded, and idempotent.
+  release_blocker: true
+  severity: critical
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup."
+      severity: critical
+      status: open
+      order: 18

@@ -189,3 +189,8 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [x] [id:qjhjpzowae] [fix:3.0.0] Make `list` and exact `get` the only record-family read grammar. Cover progress, decisions, health, objective, TODO, docs, plans and tasks, and objective-scoped experiments; remove bare `state <family>` reads with structured corrections or make them strict aliases of the canonical list shape. Generate family filters, bounded summary fields, `--ids-only`, `--fields`, cursors, formats, runnable examples, deterministic omission metadata, and exact `get` recovery from the retrieval authority. TODO reads must expose stable IDs, public order, actionability, `--severity`, `--status`, `--queue-rank`, and reconciliation drift without mutation. Integrate the focused limit and help fixes without another grammar map.
 
 ## → Critical
+
+- [ ] [id:qeqpefwupo] [fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration.
+- [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
+- [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
+- [ ] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.

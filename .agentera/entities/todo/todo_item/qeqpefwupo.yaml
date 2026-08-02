@@ -1,0 +1,26 @@
+id: qeqpefwupo
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Make marker-absent fresh-project startup converge without legacy migration.
+  requirements:
+    - Classify a truly empty project, recognized v2 migration input, partial v3 state, and unknown or corrupt marker-absent state before emitting recovery.
+    - Keep prime --context read-only and return bounded capability instructions plus exact project-state availability before initialization.
+    - Let a first typed create or explicit project-init command preview and atomically establish v3 state for a truly empty project.
+    - Never recommend upgrade --yes unless the same preflight proves the source eligible, and do not inspect or change global runtime resources during fresh initialization.
+  acceptance:
+    - An empty Git project completes prime, plan-create dry-run and apply, then prime and doctor with an operable outcome.
+    - Recognized legacy input uses only its supported forward route, while unknown, partial, and corrupt state fail closed without mutation.
+    - Every machine-returned recovery command passes its own dry-run preflight and fresh initialization leaves global runtime resources unchanged.
+  release_blocker: true
+  severity: critical
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration."
+      severity: critical
+      status: open
+      order: 16

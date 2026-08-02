@@ -1,0 +1,25 @@
+id: yqyodsuqfb
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Make optional profile grounding degrade without blocking self-contained capability requests.
+  requirements:
+    - Return one privacy-safe unavailable or repair-needed grounding result with no profile content when a profile is absent, malformed, ambiguous, unreadable, unsafe, oversized, or invalid UTF-8.
+    - Let Plan, Discuss, and other consumers continue without profile-derived context unless the request explicitly requires profile grounding.
+    - Keep the exact profile repair command as optional follow-up rather than an unrelated prerequisite.
+  acceptance:
+    - An explicit self-contained project plan can be produced while personal profile state is invalid.
+    - A request that explicitly requires profile grounding fails with one bounded correction when grounding is unavailable.
+    - Unavailable grounding reads no private profile content into capability context, diagnostics, logs, or plan state.
+  release_blocker: true
+  severity: critical
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests."
+      severity: critical
+      status: open
+      order: 19
