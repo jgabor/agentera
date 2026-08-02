@@ -67,6 +67,7 @@ const planTaskFamily = entityListFamily("plan_tasks");
 const planTaskListRecovery = `agentera state ${planTaskFamily.commandTokens.join(" ")} list --format json`;
 
 const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
+  { field: "startup.path_diagnostics", reason: "startup_path_diagnostics", recovery: "agentera doctor --format json" },
   { field: "plan.tasks", reason: "plan_task_detail", recovery: planTaskListRecovery },
   { field: "plan.archived_plans", reason: "archive_catalog", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
   { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
@@ -83,6 +84,7 @@ const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
  *  The recommended entry is always kept; overflow alternatives recover via the
  *  state-derived readiness cascade rather than raw artifact access. */
 const BRIEF_NEXT_ACTION_ALTERNATIVES = 3;
+const PATH_DIAGNOSTICS_RECOVERY = "agentera doctor --format json";
 
 /** Code-point cap for routing-essential free-text scalars retained in the brief
  *  (e.g. progress.latest.what/next). Matches the boundStartupValue 200-cp
@@ -351,17 +353,32 @@ function briefProfile(profile: unknown): Record<string, unknown> {
 
 function briefApp(app: unknown): Record<string, unknown> {
   // `app` is required for app/v1/profile safety, but no default-bare consumer
-  // reads its verbose path list (the packaging gate reads app_home). Keep the
-  // safety-essential identity fields; full paths recover via `agentera doctor`.
+  // reads its verbose path list (the packaging gate reads app_home.source).
+  // Keep safety identity; path diagnostics recover through doctor so checkout
+  // depth cannot displace routing or canonical history evidence.
   return pick(app, [
     "status",
     "expectedVersion",
-    "appHome",
-    "skillRoot",
-    "runtimeRoot",
-    "sourceRoot",
     "updateChannel",
   ]);
+}
+
+function briefAppHome(appHome: unknown): Record<string, unknown> {
+  return pick(appHome, ["install_track", "status", "source"]);
+}
+
+function briefSharedSkill(sharedSkill: unknown): Record<string, unknown> {
+  if (!isObject(sharedSkill)) return {};
+  const out = pick(sharedSkill, ["name", "status", "source", "gap"]);
+  const message = boundedString(sharedSkill.message, BRIEF_SCALAR_MAX_CHARS);
+  if (message !== undefined) out.message = message;
+  const details = boundedStringList(sharedSkill.details, 3, BRIEF_SCALAR_MAX_CHARS);
+  if (details !== undefined) out.details = details;
+  return out;
+}
+
+function briefSource(source: unknown): Record<string, unknown> {
+  return pick(source, ["artifacts_present"]);
 }
 
 function briefAttention(attention: unknown): unknown {
@@ -598,6 +615,7 @@ function withBriefMeta(
   const meta: JsonObject = {
     budget_utf8_bytes: budget,
     status,
+    path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
   };
   if (error) meta.error = error;
@@ -623,6 +641,12 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
       case "app":
         out[key] = briefApp(value);
         break;
+      case "app_home":
+        out[key] = briefAppHome(value);
+        break;
+      case "shared_skill":
+        out[key] = briefSharedSkill(value);
+        break;
       case "progress":
         out[key] = briefProgress(value);
         break;
@@ -647,11 +671,13 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
       case "state_presence":
         out[key] = briefStatePresence(value);
         break;
+      case "source":
+        out[key] = briefSource(value);
+        break;
       default:
-        // command, status, app_home, app, mode, health, todo, issues, progress,
-        // attention, decision_attention, the bespoke context
-        // pointers, and conditional v1_migration/docs/objective pass through at
-        // full fidelity (they are either already bounded or routing-essential).
+        // Command/status/mode, bounded ordinary state, shared-skill diagnosis,
+        // bespoke context pointers, and active conditional fields pass through
+        // at full fidelity.
         out[key] = value;
         break;
     }
@@ -668,10 +694,23 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
     command: boundedEnvelopeScalar(payload.command, "prime"),
     status: boundedEnvelopeScalar(payload.status, "ok"),
     mode: boundedEnvelopeScalar(payload.mode, "unknown"),
-    profile: briefProfile(payload.profile),
     state_presence: briefStatePresence(payload.state_presence),
     source_contract: briefSourceContract(payload.source_contract, projection),
   };
+  if ("app_home" in payload) out.app_home = briefAppHome(payload.app_home);
+  if ("app" in payload) out.app = briefApp(payload.app);
+  if ("profile" in payload) out.profile = briefProfile(payload.profile);
+  if ("shared_skill" in payload) out.shared_skill = briefSharedSkill(payload.shared_skill);
+  if ("project_integration" in payload) out.project_integration = briefProjectIntegration(payload.project_integration);
+  if ("health" in payload) out.health = briefHealth(payload.health);
+  if ("todo" in payload) out.todo = payload.todo;
+  if ("issues" in payload) out.issues = payload.issues;
+  if ("progress" in payload) out.progress = briefProgress(payload.progress);
+  if ("attention" in payload) out.attention = briefAttention(payload.attention);
+  if ("source" in payload) out.source = briefSource(payload.source);
+  for (const conditional of ["v1_migration", "docs", "objective"] as const) {
+    if (conditional in payload) out[conditional] = payload[conditional];
+  }
   if (isObject(payload.plan)) out.plan = briefPlan(payload.plan, projection);
   if (isObject(payload.next_action)) out.next_action = briefNextAction(payload.next_action, projection);
   if (isObject(payload.history)) out.history = briefHistory(payload.history, projection);
@@ -730,6 +769,7 @@ function degradedBriefEnvelope(
     budget_utf8_bytes: budget,
     status: "degraded",
     attempted_utf8_bytes: attemptedBytes,
+    path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
     error: {
       class: "brief_output_budget",
@@ -754,6 +794,7 @@ function degradedBriefEnvelope(
     budget_utf8_bytes: budget,
     status: "degraded",
     attempted_utf8_bytes: attemptedBytes,
+    path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     error: {
       class: "brief_output_budget",
       message: "the projected decision brief exceeded the authority byte budget; compact recovery metadata was emitted",
@@ -777,6 +818,7 @@ function degradedBriefEnvelope(
     budget_utf8_bytes: budget,
     status: "degraded",
     attempted_utf8_bytes: attemptedBytes,
+    path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     error: {
       class: "brief_output_budget",
       message: "the configured budget cannot contain the detailed recovery envelope",

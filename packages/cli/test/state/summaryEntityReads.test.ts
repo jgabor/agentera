@@ -320,6 +320,7 @@ describe("summary entity ordinary reads", () => {
     const json = cli(root, ["prime", "--format", "json"]);
     expect(json.rc, json.err).toBe(0);
     const payload = JSON.parse(json.out);
+    expect(Buffer.byteLength(json.out, "utf8")).toBeLessThanOrEqual(12_000);
     expect(payload.progress).toMatchObject({ status: "degraded_history", degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 } });
     expect(payload.health).toMatchObject({ exists: true, degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 } });
     expect(payload.health).not.toHaveProperty("id");

@@ -251,7 +251,10 @@ field_classification:
       recover the current history.
   - field: shared_skill
     status: required
-    rationale: Canonical shared-skill path and read-only diagnosis.
+    rationale: >-
+      Canonical shared-skill status and read-only diagnosis. Bare prime omits
+      the privacy-sensitive absolute path; doctor or an explicit shared_skill
+      field read recovers full path diagnostics.
   - field: decision_attention
     status: conditional
     rationale: Null unless returned decisions require satisfaction review.
@@ -496,6 +499,9 @@ default_emission_omission_contract:
       omitted_when_default). issues ships as the deprecated count-only
       transition projection and excludes canonical todo.detail.
     projected_subdetail:
+      - field: startup.path_diagnostics
+        reason: startup_path_diagnostics
+        recovery: agentera doctor --format json
       - field: plan.tasks
         reason: plan_task_detail
         recovery: agentera state plan tasks list --format json
@@ -549,10 +555,15 @@ default_emission_omission_contract:
       exact task get; next_action keeps its executable identity, capability,
       phase, eligibility, and exact retrieval. Canonical history counts,
       degraded caveats, and exact history recovery remain bounded consumer
-      evidence. The normal projection also retains bounded progress.latest and
-      health grade/trajectory; the status-specific degraded projection retains
-      bounded TODO counts and attention. Optional plan task catalogs and
-      next-action alternatives compact before selected routing evidence.
+      evidence. Every bare-prime projection omits absolute app-home,
+      source-root, shared-skill, schema, and project path diagnostics while
+      retaining app/shared-skill status, stable source identity, truthful
+      presence, and doctor recovery. brief.path_diagnostics_recovery retains
+      that doctor command even when compact or irreducible metadata omits the
+      full recovery catalog. Normal and degraded projections retain bounded progress and
+      health signals; degraded projections also retain bounded TODO counts and
+      attention. Optional startup paths, plan task catalogs, and next-action
+      alternatives compact before selected routing or canonical history evidence.
     fallback_behavior: >-
       The detailed degraded envelope is byte-gated again after utf8_bytes is
       settled. If it cannot fit, the recovery catalog, optional source-contract

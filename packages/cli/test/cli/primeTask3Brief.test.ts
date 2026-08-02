@@ -31,6 +31,7 @@ import {
   PRIME_BRIEF_MAX_UTF8_BYTES,
 } from "../../src/cli/commands/prime/briefOrientation.js";
 import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
+import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -97,6 +98,20 @@ function writeArtifact(name: string, content: string): void {
   const dir = path.join(project, ".agentera");
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, name), content);
+}
+
+function nestedPathAtLeast(base: string, minimumLength: number, label: string): string {
+  let current = path.join(base, label);
+  fs.mkdirSync(current, { recursive: true });
+  let index = 0;
+  while (current.length < minimumLength) {
+    const remaining = minimumLength - current.length - 1;
+    const segment = `${label}-${String(index).padStart(3, "0")}`.padEnd(Math.min(80, Math.max(12, remaining)), "x");
+    current = path.join(current, segment);
+    fs.mkdirSync(current);
+    index += 1;
+  }
+  return current;
 }
 
 function returningFixture(): void {
@@ -360,7 +375,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(degraded, "degraded keeps history").toHaveProperty("history");
   });
 
-  it("trims optional 21-task detail before selected routing and canonical history evidence", () => {
+  it("trims optional 21-task and path diagnostics before selected routing and canonical history evidence", () => {
     const selectedTask = {
       id: "vvvvvvvvvv",
       artifact: "plan",
@@ -472,6 +487,15 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         decisions: historyEntry("decisions"),
         health: historyEntry("health"),
       },
+      progress: {
+        exists: true,
+        status: "degraded_history",
+        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+      },
+      health: {
+        exists: true,
+        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+      },
       source_contract: {
         fields: ["plan", "next_action", "history", "state_presence", "source_contract"],
         render: "decision brief",
@@ -496,14 +520,48 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect((normal.brief as Record<string, unknown>).status).toBe("ok");
     expect(briefUtf8Bytes(normal)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
 
-    const degraded = briefOrientationPayload({
+    const longPath = `/tmp/${"nested/".repeat(350)}project`;
+    const pathPressured = briefOrientationPayload({
       ...rawPayload,
-      source: { artifacts_present: true, optional_diagnostic: "x".repeat(8_000) },
-    }, { budgetBytes: 8_000 });
+      app_home: {
+        install_track: "source",
+        status: "ready",
+        source: "bootstrap_source_root",
+        home: longPath,
+        managed_app_root: longPath,
+        user_data_root: longPath,
+      },
+      app: {
+        status: "ready",
+        expectedVersion: "3.0.0",
+        updateChannel: "development",
+        appHome: longPath,
+        skillRoot: longPath,
+        runtimeRoot: longPath,
+        sourceRoot: longPath,
+      },
+      shared_skill: {
+        name: "canonical_skill",
+        status: "warn",
+        message: "canonical shared Agentera skill is missing or invalid",
+        source: null,
+        path: longPath,
+        gap: "skill_path_drift",
+        details: ["install or repair through the documented setup command"],
+      },
+      source: { schemas_dir: longPath, project: longPath, artifacts_present: true },
+    });
+    expect((pathPressured.brief as Record<string, unknown>).status).toBe("ok");
+    expect(briefUtf8Bytes(pathPressured)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+    expect(pathPressured.app_home).not.toHaveProperty("home");
+    expect(pathPressured.app).not.toHaveProperty("sourceRoot");
+    expect(pathPressured.shared_skill).not.toHaveProperty("path");
+
+    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 8_000 });
     expect((degraded.brief as Record<string, unknown>).status).toBe("degraded");
     expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(8_000);
 
-    for (const payload of [normal, degraded]) {
+    for (const payload of [normal, pathPressured, degraded]) {
       expect(payload.plan).toMatchObject({
         id: "zzzzzzzzzz",
         total: 21,
@@ -536,6 +594,14 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         },
         health: { degraded_history: { summary_count: 12, omitted_count: 12 } },
       });
+      expect(payload.progress).toMatchObject({
+        status: "degraded_history",
+        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+      });
+      expect(payload.health).toMatchObject({
+        exists: true,
+        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+      });
       expect((payload.profile as Record<string, unknown>)).not.toHaveProperty("path");
     }
   });
@@ -565,8 +631,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         },
         attacker_controlled: attackerControlled,
       },
-      // Force the projected body over the configured gate so the integrated
-      // path exercises the degraded envelope rather than only the normal path.
+      // Unknown source diagnostics are not routing evidence and must not
+      // consume the bounded brief budget.
       source: { attacker_controlled: attackerControlled },
     };
     let out = "";
@@ -585,7 +651,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const payload = JSON.parse(out) as Record<string, unknown>;
     const bytes = Buffer.byteLength(out, "utf8");
     const brief = payload.brief as Record<string, unknown>;
-    expect(brief.status).toBe("degraded");
+    expect(brief.status).toBe("ok");
     expect(bytes, "integrated output satisfies its configured gate").toBeLessThanOrEqual(7000);
     expect(brief.utf8_bytes, "integrated utf8_bytes matches stdout").toBe(bytes);
     expect(out).not.toContain(attackerControlled);
@@ -598,6 +664,69 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       fields: ["plan", "state_presence", "source_contract"],
       capability_context: { fetch_command: "agentera prime --context status --format json" },
     });
+  });
+
+  it("keeps real cmdPrime routing and history stable across short, 600-, and 2400-character startup paths", () => {
+    const fixture = seedPrimeEvidenceProject(project);
+    const outputs: Array<{ bytes: number; payload: Record<string, unknown> }> = [];
+
+    for (const minimumLength of [80, 600, 2400]) {
+      const matrixRoot = path.join(tmp, `path-matrix-${minimumLength}`);
+      fs.mkdirSync(matrixRoot);
+      const matrixHome = nestedPathAtLeast(matrixRoot, minimumLength, "home");
+      const matrixSource = nestedPathAtLeast(matrixRoot, minimumLength, "source");
+      fs.cpSync(path.join(REPO_ROOT, "skills"), path.join(matrixSource, "skills"), { recursive: true });
+      fs.cpSync(path.join(REPO_ROOT, "references"), path.join(matrixSource, "references"), { recursive: true });
+      fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(matrixSource, "registry.json"));
+      fs.writeFileSync(path.join(matrixSource, ".agentera-npx-bundle.json"), "{}\n");
+      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = matrixSource;
+
+      const capture = (fields?: string): { out: string; payload: Record<string, unknown> } => {
+        let out = "";
+        let err = "";
+        const rc = cmdPrime(
+          { command: "prime", format: "json", home: matrixHome, installRoot: matrixSource, fields },
+          { out: (text) => (out += text), err: (text) => (err += text) },
+        );
+        expect(rc, err).toBe(0);
+        return { out, payload: JSON.parse(out) as Record<string, unknown> };
+      };
+
+      const sparse = capture("app_home,app,shared_skill").payload;
+      expect(String(getPath(sparse, "app_home.home")).length).toBeGreaterThanOrEqual(minimumLength);
+      expect(String(getPath(sparse, "app.sourceRoot")).length).toBeGreaterThanOrEqual(minimumLength);
+      expect(String(getPath(sparse, "shared_skill.path")).length).toBeGreaterThanOrEqual(minimumLength);
+
+      const bare = capture();
+      expect(bare.payload.app_home).not.toHaveProperty("home");
+      expect(bare.payload.app).not.toHaveProperty("sourceRoot");
+      expect(bare.payload.shared_skill).not.toHaveProperty("path");
+      expect(bare.payload).toMatchObject({
+        plan: { exists: true, id: fixture.planId, first_pending: { id: fixture.selectedTaskId } },
+        next_action: {
+          id: fixture.selectedTaskId,
+          object: expect.any(String),
+          capability: expect.any(String),
+          retrieval: { exact: `agentera state plan tasks get --id ${fixture.selectedTaskId} --format json` },
+        },
+        history: {
+          progress: {
+            counts: { total: expect.any(Number), returned: expect.any(Number), remaining: expect.any(Number), full: expect.any(Number), summary: expect.any(Number) },
+            retrieval: { list: expect.any(String), get: expect.any(String) },
+          },
+          decisions: { retrieval: { list: expect.any(String), get: expect.any(String) } },
+          health: { retrieval: { list: expect.any(String), get: expect.any(String) } },
+        },
+      });
+      expect(["ok", "degraded"]).toContain((bare.payload.brief as Record<string, unknown>).status);
+      expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("agentera doctor --format json");
+      expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+      outputs.push({ bytes: Buffer.byteLength(bare.out, "utf8"), payload: bare.payload });
+    }
+
+    expect(outputs.map(({ bytes }) => bytes)).toEqual([outputs[0]!.bytes, outputs[0]!.bytes, outputs[0]!.bytes]);
+    expect(outputs[1]!.payload).toEqual(outputs[0]!.payload);
+    expect(outputs[2]!.payload).toEqual(outputs[0]!.payload);
   });
 
   it("fails explicitly when a tiny configured budget cannot contain the irreducible envelope", () => {

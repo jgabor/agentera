@@ -1406,17 +1406,30 @@ describe("npm distribution boundary", () => {
     const payload = JSON.parse(primed.stdout) as {
       command: string;
       status: string;
-      app_home: { home: string; source: string };
-      app: { sourceRoot: string };
+      app_home: { source: string };
+      app: { status: string };
     };
     expect(payload).toMatchObject({
       command: "prime",
       status: "ok",
+      app_home: { source: "bundled app" },
+      app: { status: expect.any(String) },
+    });
+    expect(payload.app_home).not.toHaveProperty("home");
+    expect(payload.app).not.toHaveProperty("sourceRoot");
+
+    const sourced = run(process.execPath, [bin, "prime", "--fields", "app_home,app", "--format", "json"], project, env);
+    expect(sourced.status, `package boundary sparse prime failed:\n${sourced.stderr}`).toBe(0);
+    const sourcePayload = JSON.parse(sourced.stdout) as {
+      app_home: { home: string; source: string };
+      app: { sourceRoot: string };
+    };
+    expect(sourcePayload).toMatchObject({
       app_home: { home: expect.any(String), source: "bundled app" },
       app: { sourceRoot: expect.any(String) },
     });
     const bundleRoot = fs.realpathSync(path.join(fixture.packageRoot, "bundle"));
-    for (const reportedSource of [payload.app_home.home, payload.app.sourceRoot]) {
+    for (const reportedSource of [sourcePayload.app_home.home, sourcePayload.app.sourceRoot]) {
       const appSource = fs.realpathSync(reportedSource);
       expect(
         isContained(bundleRoot, appSource),

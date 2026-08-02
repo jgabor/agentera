@@ -159,7 +159,8 @@ describe("cli prime", () => {
     expect(out).not.toContain("Deprecation:");
     expect(payload.app).toBeTruthy();
     expect(payload.app_home.install_track).toBeTruthy();
-    expect(payload.shared_skill.path).toContain(".agents/skills/agentera");
+    expect(payload.shared_skill).toMatchObject({ name: "canonical_skill", status: expect.any(String) });
+    expect(payload.shared_skill.path).toBeUndefined();
     expect(payload).not.toHaveProperty("runtime_lifecycle");
     expect(typeof payload.app.status).toBe("string");
   });

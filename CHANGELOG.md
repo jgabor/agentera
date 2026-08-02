@@ -49,6 +49,11 @@
 
 ### Fixed
 
+- Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
+  routing and history evidence, preserving executable plan selection, next-action
+  recovery, and full or compacted history under the 12,000-byte output bound
+  across checkout path lengths. Omitted path diagnostics remain available through
+  `agentera doctor --format json`.
 - Fixed `agentera state todo` writes to three-way reconcile managed `TODO.md`
   rows and entity public fields, then publish the Markdown, entity updates, and
   requested mutation under one recoverable journal. Standard Node link and
