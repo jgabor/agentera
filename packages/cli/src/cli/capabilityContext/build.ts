@@ -80,15 +80,15 @@ export function buildExecutionContext(
   fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
   if (lifecycle.status === "degraded") {
     stateCaveats.push(...((lifecycle.caveats ?? []) as string[]));
-    fallbackCommands.push("agentera state plan --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   }
   if (mode === "blocked_or_dependency_unready") {
     stateCaveats.push("No dependency-ready pending plan task is available in CLI plan state.");
-    fallbackCommands.push("agentera state plan --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   }
   if (mode === "plan_driven" && acceptance.length === 0) {
     stateCaveats.push("Selected Build task has no acceptance criteria in CLI plan state.");
-    fallbackCommands.push("agentera state plan --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; progress logging context is incomplete.");
@@ -100,11 +100,11 @@ export function buildExecutionContext(
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");
-    fallbackCommands.push("agentera state docs --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.docs);
   }
   if (todoItems.length === 0) {
     stateCaveats.push("todo state has no open entries in prime --context response; absence may mean none open or unavailable.");
-    fallbackCommands.push("agentera state todo --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.todo);
   }
   if (changelogBoundary.status !== "available") {
     stateCaveats.push(...((changelogBoundary.caveats ?? []) as string[]));

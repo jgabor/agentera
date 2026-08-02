@@ -23,6 +23,8 @@ function lines(title: string, items: string[]): string[] {
 
 export function printTopLevelHelp(): string {
   const choices = TOP_LEVEL.join(",");
+  const plans = entityListFamilies().find(({ key }) => key === "plans")!;
+  const planListExample = `agentera state ${plans.commandTokens.join(" ")} list --format json`;
   return [
     `usage: agentera [-h] [--version] {${choices}} ...`,
     "",
@@ -51,7 +53,7 @@ export function printTopLevelHelp(): string {
     "  -h, --help          show this help message and exit",
     "  --version           print the installed Agentera CLI version and exit",
     "",
-    "Examples: agentera prime; agentera state plan --format json; agentera check verify eval skills --dry-run; agentera report refresh --dry-run",
+    `Examples: agentera prime; ${planListExample}; agentera check verify eval skills --dry-run; agentera report refresh --dry-run`,
   ].join("\n");
 }
 

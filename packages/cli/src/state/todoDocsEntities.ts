@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -32,6 +32,8 @@ import { TODO_SEVERITIES, TODO_STATUSES, todoDocsRecordViolations, todoInputViol
 import { todoReadinessReferenceViolations } from "../registries/todoReadinessContract.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListSelectorInput } from "./entityListProjection.js";
+import { decodeListCursor, encodeListCursor } from "./listCursor.js";
+import { entityListFamily } from "./entityRetrievalHelp.js";
 import { shellQuoteArgument } from "../core/shell.js";
 import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessEvaluation } from "../cli/todoReadinessSelection.js";
@@ -69,7 +71,8 @@ function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract 
 }
 
 function failure(kind: StateFailureClass, artifact: string, message: string, recovery: string, id?: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
-  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: `agentera state ${artifact} get --id ID --format json`, example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
+  const family = kind === "cursor_invalid" || kind === "cursor_snapshot_unavailable" ? entityListFamily(artifact as "todo" | "docs") : undefined;
+  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: family?.syntax ?? `agentera state ${artifact} get --id ID --format json`, example: family?.example ?? `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
 }
 
 function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult, sourceBinding?: MigrationSourceBindingContext): DiscoveredEntity[] {
@@ -866,9 +869,7 @@ function todoActionability(entities: DiscoveredEntity[], view: TodoReadView, sou
   return new Map(evaluations.map((value) => [value.id, value]));
 }
 function snapshot(root: string, entities: DiscoveredEntity[], rows?: Map<string, ManagedRow>): string { return createHash("sha256").update(canonicalRecordJson(entities.map((entity) => ({ id: entity.id, boundary: entity.boundary, path: relative(root, entity.path), record: entity.record, ...(entity.id && rows?.has(entity.id) ? { public: rowSnapshot(rows.get(entity.id)!, entity.record!) } : {}) })).sort((a, b) => canonicalRecordJson(a).localeCompare(canonicalRecordJson(b))))).digest("hex"); }
-function secret(root: string, authorityPath: string): Buffer { return createHash("sha256").update(path.resolve(root)).update("\0").update(fs.readFileSync(authorityPath)).digest(); }
-function encode(value: JsonObject, root: string, authorityPath: string): string { const bytes = Buffer.from(canonicalRecordJson(value)); return `${bytes.toString("base64url")}.${createHmac("sha256", secret(root, authorityPath)).update(bytes).digest("base64url")}`; }
-function decode(token: string, root: string, authorityPath: string, artifact: string): JsonObject { try { const [body, signature, extra] = token.split("."); if (!body || !signature || extra) throw new Error(); const bytes = Buffer.from(body, "base64url"); const supplied = Buffer.from(signature, "base64url"); const expected = createHmac("sha256", secret(root, authorityPath)).update(bytes).digest(); if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new Error(); const value = JSON.parse(bytes.toString()); if (!mapping(value)) throw new Error(); return value; } catch { throw failure("cursor_invalid", artifact, `${artifact} cursor is malformed or belongs to another project`, "Copy next_cursor exactly, or omit --cursor to restart."); } }
+function decodeCursor(token: string, root: string, authorityPath: string, artifact: "todo" | "docs", restart: string): JsonObject { try { return decodeListCursor(token, root, authorityPath); } catch { throw failure("cursor_invalid", artifact, `${artifact} cursor is malformed or belongs to another project`, restart); } }
 
 function sorted(artifact: "todo" | "docs", entities: DiscoveredEntity[], rows?: Map<string, ManagedRow>): DiscoveredEntity[] {
   const selected = entities.filter(({ boundary }) => boundary === definition(artifact).boundary);
@@ -905,9 +906,30 @@ export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", li
   const format = options.format ?? "json"; const outputBudget = declared.maxUtf8Bytes - (options.reservedUtf8Bytes ?? 0); if (outputBudget < 1024) throw failure("unsupported_state", artifact, `${artifact} singleton metadata leaves no room for a bounded entity view`, "Reduce the authority-owned singleton metadata within its declared artifact budget.");
   const projectionOptions = { family: artifact, artifact, boundary: definition(artifact).boundary, format, maxUtf8Bytes: outputBudget, selector: options.selector };
   const selector = resolveEntityListSelector(options.selector, selected.map((entity) => entry(root, entity, view?.rows.get(entity.id!), queueRanks.get(entity.id!), actionability.get(entity.id!), view?.drift)), projectionOptions); const selectorKey = entityListSelectorKey(selector);
+  const filterOrder = artifact === "todo" ? ["severity", "status"] : ["topic", "status"]; const filterFlags = filterOrder.flatMap((name) => filters[name] === undefined ? [] : [` --${name} ${shellQuoteArgument(filters[name])}`]).join(""); const selectorFlags = entityListSelectorFlags(selector); const restart = `agentera state ${artifact} list${filterFlags}${selectorFlags} --limit ${take} --format json`;
   const snap = snapshot(root, all, view?.rows); let start = 0;
-  if (cursor) { const value = decode(cursor, root, declared.authorityPath, artifact); if (value.selector !== selectorKey) throw failure("cursor_invalid", artifact, `${artifact} cursor selectors do not match this request`, "Repeat the original selector, or omit --cursor to restart from current state."); if (value.snapshot_id !== snap || value.order !== definition(artifact).order || canonicalRecordJson(value.filters) !== canonicalRecordJson(filters)) throw failure("cursor_snapshot_unavailable", artifact, `${artifact} state or filters changed after this cursor snapshot`, "Repeat the original filters, or omit --cursor to restart from current state."); const found = selected.findIndex(({ id }) => id === value.after); if (found < 0) throw failure("cursor_snapshot_unavailable", artifact, `${artifact} cursor continuation is unavailable`, "Omit --cursor to restart."); start = found + 1; }
+  if (cursor) {
+    const value = decodeCursor(cursor, root, declared.authorityPath, artifact, restart);
+    if (artifact === "todo") {
+      if (value.limit === undefined) throw failure("cursor_invalid", artifact, "todo cursor lacks the required effective limit binding", restart);
+      if (!Number.isSafeInteger(value.limit) || Number(value.limit) < 1 || Number(value.limit) > declared.maximumLimit) throw failure("cursor_invalid", artifact, "todo cursor has an invalid effective limit binding", restart);
+      if (value.limit !== take) throw failure("cursor_invalid", artifact, `todo cursor is bound to --limit ${value.limit}, not --limit ${take}`, restart);
+      if (value.selector !== selectorKey) throw failure("cursor_invalid", artifact, "todo cursor selectors do not match this request", restart);
+      if (value.order !== TODO.order) throw failure("cursor_invalid", artifact, "todo cursor order does not match this request", restart);
+      if (canonicalRecordJson(value.filters) !== canonicalRecordJson(filters)) throw failure("cursor_invalid", artifact, "todo cursor filters do not match this request", restart);
+      if (value.snapshot_id !== snap) throw failure("cursor_snapshot_unavailable", artifact, "todo cursor snapshot is no longer available", restart);
+      const found = selected.findIndex(({ id }) => id === value.after);
+      if (found < 0) throw failure("cursor_snapshot_unavailable", artifact, "todo cursor continuation identity is no longer available", restart);
+      start = found + 1;
+    } else {
+      if (value.selector !== selectorKey) throw failure("cursor_invalid", artifact, `${artifact} cursor selectors do not match this request`, "Repeat the original selector, or omit --cursor to restart from current state.");
+      if (value.snapshot_id !== snap || value.order !== DOCS.order || canonicalRecordJson(value.filters) !== canonicalRecordJson(filters)) throw failure("cursor_snapshot_unavailable", artifact, `${artifact} state or filters changed after this cursor snapshot`, "Repeat the original filters, or omit --cursor to restart from current state.");
+      const found = selected.findIndex(({ id }) => id === value.after);
+      if (found < 0) throw failure("cursor_snapshot_unavailable", artifact, `${artifact} cursor continuation is unavailable`, "Omit --cursor to restart.");
+      start = found + 1;
+    }
+  }
   const page = selected.slice(start, start + take);
-  const response = (): JsonObject => { const remaining = selected.length - start - page.length; const next = remaining && page.length ? encode({ snapshot_id: snap, order: definition(artifact).order, filters, selector: selectorKey, after: page.at(-1)!.id! }, root, declared.authorityPath) : undefined; const filterOrder = artifact === "todo" ? ["severity", "status"] : ["topic", "status"]; const filterFlags = filterOrder.flatMap((name) => filters[name] === undefined ? [] : [` --${name} ${shellQuoteArgument(filters[name])}`]).join(""); const selectorFlags = entityListSelectorFlags(selector); return { schemaVersion: "agentera.stateList.v1", command: `state ${artifact} list`, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity, view?.rows.get(entity.id!), queueRanks.get(entity.id!), actionability.get(entity.id!), view?.drift)), ...(view ? { reconciliation: view.drift } : {}), counts: { total: selected.length, returned: page.length, remaining }, order: definition(artifact).order, filters, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera state ${artifact} list${filterFlags}${selectorFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) }; };
+  const response = (): JsonObject => { const remaining = selected.length - start - page.length; const next = remaining && page.length ? encodeListCursor({ snapshot_id: snap, order: definition(artifact).order, filters, selector: selectorKey, after: page.at(-1)!.id!, ...(artifact === "todo" ? { limit: take } : {}) }, root, declared.authorityPath) : undefined; return { schemaVersion: "agentera.stateList.v1", command: `state ${artifact} list`, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity, view?.rows.get(entity.id!), queueRanks.get(entity.id!), actionability.get(entity.id!), view?.drift)), ...(view ? { reconciliation: view.drift } : {}), counts: { total: selected.length, returned: page.length, remaining }, order: definition(artifact).order, filters, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera state ${artifact} list${filterFlags}${selectorFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) }; };
   return projectEntityList(response(), selector, projectionOptions);
 }

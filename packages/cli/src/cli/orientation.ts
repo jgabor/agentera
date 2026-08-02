@@ -35,6 +35,7 @@ import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./pl
 import { planLifecycleState } from "./planLifecycleState.js";
 import { firstActionablePlanTask } from "./capabilityContext/planState.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { entityListFamily } from "../state/entityRetrievalHelp.js";
 import { scanYamlCollection } from "../state/startupProjection.js";
 import { numberedArchiveContract } from "../state/archiveDiscovery.js";
 import type {
@@ -51,6 +52,15 @@ import type {
   ReadinessHint,
   StatePresenceSummary,
 } from "./contracts/orientationState.js";
+
+const PLAN_FAMILY = entityListFamily("plans");
+const PLAN_TASK_FAMILY = entityListFamily("plan_tasks");
+const PLAN_LIST_COMMAND = `agentera state ${PLAN_FAMILY.commandTokens.join(" ")} list --format json`;
+
+function planTaskListCommand(planId?: unknown): string {
+  const selector = typeof planId === "string" && planId ? ` ${planId}` : "";
+  return `agentera state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} list${selector} --limit 100 --format json`;
+}
 
 export type {
   DecisionFollowUp,
@@ -451,7 +461,7 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     returned_count: boundedTasks.length,
     omitted_count: Math.max(0, totalTasks - boundedTasks.length),
     omission_reason: totalTasks > boundedTasks.length ? taskOmission.omission_reason ?? "startup_detail_capacity" : "none",
-    retrieval: taskOmission.retrieval ?? { list: plan.id ? `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json` : "agentera state plan tasks list --limit 100 --format json", restart: plan.id ? `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json` : "agentera state plan tasks list --limit 100 --format json", get: "agentera state plan tasks get --id ID --format json" },
+    retrieval: taskOmission.retrieval ?? { list: planTaskListCommand(plan.id), restart: planTaskListCommand(plan.id), get: PLAN_TASK_FAMILY.get },
   };
   return {
     id: plan.id ?? null,
@@ -480,7 +490,7 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
     omitted_diagnostic_count: Math.max(0, (plan.diagnostics ?? []).length - diagnostics.length),
     source_contract: {
       detail_availability: totalTasks > boundedTasks.length ? "summary" : "full",
-      retrieval: "agentera state plan --format json",
+      retrieval: PLAN_LIST_COMMAND,
       raw_archive_records: false,
     },
     lifecycle_state: plan.lifecycle_state ?? null,

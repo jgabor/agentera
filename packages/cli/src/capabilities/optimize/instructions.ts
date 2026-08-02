@@ -8,6 +8,7 @@ Objectives, experiments, progress cycles, and decisions use entity authority: ea
 
 ## Workflow phases`)
   .replaceAll("--number N", "--id ID")
+  .replaceAll("agentera state experiments get --objective OBJECTIVE_ID --id ID", "agentera state experiments get --id ID")
   .replaceAll("--task N", "--id ID")
   .replaceAll("`.agentera/progress.yaml`", "the progress entity view")
   .replaceAll("`.agentera/decisions.yaml`", "the decisions entity view");

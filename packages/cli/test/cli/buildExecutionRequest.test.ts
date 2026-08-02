@@ -16,6 +16,7 @@ import {
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 import { planLifecycleState } from "../../src/cli/planLifecycleState.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const BUILD_REQUEST_SOURCE = path.join(REPO_ROOT, "packages/cli/src/cli/commands/prime/buildExecutionRequest.ts");
@@ -188,7 +189,7 @@ describe("Build no-plan execution context", () => {
       artifact_update_requirements: { plan_status_update_required: false },
       source_contract: { complete_for_execution_context: true },
     });
-    expect(context?.fallback_commands).not.toContain("agentera state plan --format json");
+    expect(context?.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   });
 
   it("fails safe without transient input and gives one advancing no-plan recovery", () => {
@@ -203,7 +204,7 @@ describe("Build no-plan execution context", () => {
       source_contract: { complete_for_execution_context: false },
     });
     expect(context?.fallback_commands).toContain("agentera prime --context build --input - --format json");
-    expect(context?.fallback_commands).not.toContain("agentera state plan --format json");
+    expect(context?.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
     expect(context?.state_family_caveats).toContain("Explicit no-plan scope and acceptance are required before Build can execute without a current plan.");
   });
 
@@ -218,9 +219,9 @@ describe("Build no-plan execution context", () => {
     const healthy = buildExecutionContext(...[...base.slice(0, 2), { exists: true, active: false, tasks: [] }, ...base.slice(3)] as Parameters<typeof buildExecutionContext>);
     const degraded = buildExecutionContext(...[...base.slice(0, 2), { exists: true, active: false, tasks: [], diagnostics: [{ category: "invalid", path: "archive" }] }, ...base.slice(3)] as Parameters<typeof buildExecutionContext>);
     expect(healthy).toMatchObject({ mode: "no_plan", source_contract: { complete_for_execution_context: true } });
-    expect(healthy?.fallback_commands).not.toContain("agentera state plan --format json");
+    expect(healthy?.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
     expect(degraded).toMatchObject({ mode: "no_plan", source_contract: { complete_for_execution_context: false } });
-    expect(degraded?.fallback_commands).toContain("agentera state plan --format json");
+    expect(degraded?.fallback_commands).toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   });
 
   it("preserves plan-driven and completed-plan pass and fail-safe completeness", () => {
@@ -311,7 +312,7 @@ describe("prime --context build --input", () => {
       work_selection: { source_provenance: { source_kind: "stdin", persisted: false } },
       artifact_update_requirements: { plan_status_update_required: false },
     });
-    expect(execution.fallback_commands).not.toContain("agentera state plan --format json");
+    expect(execution.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
     expect(fs.readFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "utf8")).toBe(before);
     expect(fs.readdirSync(path.join(tmp, ".agentera"))).toEqual(["state-mode.yaml"]);
   });

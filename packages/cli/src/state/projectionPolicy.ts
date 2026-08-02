@@ -6,6 +6,7 @@ import YAML from "yaml";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
+import { entityListFamily, type EntityListFamilyHelp } from "./entityRetrievalHelp.js";
 
 const AUTHORITY_RELATIVE_PATH = "references/artifacts/state-storage-authority.yaml";
 const AUTHORITY_SCHEMA_VERSION = "agentera.stateStorageAuthority.v1";
@@ -36,6 +37,11 @@ export interface ProjectionOmissionProvenance extends JsonObject {
 }
 
 const NUMBERED_ARTIFACTS = new Set(["progress", "decisions", "health"]);
+
+function canonicalRetrieval(family: EntityListFamilyHelp): JsonObject {
+  const list = `agentera state ${family.commandTokens.join(" ")} list --format json`;
+  return { available: true, command: list, list, get: family.get };
+}
 
 function mapping(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -81,15 +87,17 @@ export function loadProjectionPolicy(sourceRoot: string = resolveSourceRoot()): 
 
 export function projectionRetrieval(command: string): JsonObject {
   if (NUMBERED_ARTIFACTS.has(command)) {
-    return { available: true, command: `agentera state ${command} get --number N --format json` };
+    return canonicalRetrieval(entityListFamily(command as "progress" | "decisions" | "health"));
   }
   if (command === "plan") {
+    const tasks = entityListFamily("plan_tasks");
+    const plans = entityListFamily("plans");
     return {
       available: true,
-      list: "agentera state plan tasks list --format json",
-      get: "agentera state plan tasks get --id ID --format json",
-      plans_list: "agentera state plan list --format json",
-      plans_get: "agentera state plan get --plan PLAN_ID --format json",
+      list: `agentera state ${tasks.commandTokens.join(" ")} list --format json`,
+      get: tasks.get,
+      plans_list: `agentera state ${plans.commandTokens.join(" ")} list --format json`,
+      plans_get: plans.get,
     };
   }
   return {

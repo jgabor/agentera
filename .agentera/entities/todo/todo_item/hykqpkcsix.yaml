@@ -10,9 +10,9 @@ record:
       present: true
       description: "[fix:3.0.0] Make bounded state list limits predictable through explicit summary retrieval. After filtering, `--limit N` must return N summary rows whenever N candidates exist; full-record byte pressure may omit optional detail but never rows. Add bounded `--ids-only` and `--fields` selectors, include stable queue rank in TODO summaries, and always return exact `get --id` pointers plus deterministic candidate, returned, omitted, and continuation metadata. Prove `--limit 100` cannot return 38 full records and report success-with-degradation."
       status: resolved
-      order: 78
+      order: 79
       severity: critical
   lifecycle:
     operation: resolve
-    reason: Predictable bounded summary retrieval passed independent Audit
+    reason: TODO cardinality and cursor-bound continuation passed independent Audit
     date: 2026-08-02

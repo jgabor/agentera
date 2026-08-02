@@ -62,8 +62,8 @@ Read project state through the CLI before reading artifacts directly:
 
 ```bash
 agentera prime                    # Orientation briefing
-agentera state todo                # Active items
-agentera state plan                # Active + archived plan
+agentera state todo list --format json              # Active items
+agentera state plan list --status open --format json # Active plan
 agentera state query --list-artifacts   # Canonical artifact inventory
 ```
 
@@ -89,7 +89,8 @@ identity, cursor, omission, compatibility, archive-ownership, or output-bound
 rules. Inspect it through `agentera schema --format json`. Public reads include
 `agentera state plan list`, active-only `agentera state plan tasks list`, and
 `agentera state experiments list --objective OBJECTIVE_ID`; use their matching
-exact `get` forms for detail.
+exact `get --id ID` forms for detail. Experiment exact get never repeats the
+objective selector.
 
 Use the returned examples and field definitions, and add `--dry-run` when a
 preview is appropriate. Artifacts outside those four families remain governed
@@ -254,7 +255,7 @@ npx -y agentera@next check validate capability <name-or-path>
 npx -y agentera@next check validate capability-contract --format json
 ```
 
-Top-level `agentera validate` remains a migration alias during the namespace rollout; prefer `agentera check validate`. Use `agentera prime` for status and `agentera state todo` or `agentera state docs` for artifact reads; top-level `status`, `todo`, and `docs` are not v3 commands.
+Top-level `agentera validate` remains a migration alias during the namespace rollout; prefer `agentera check validate`. Use `agentera prime` for status and `agentera state todo list` or `agentera state docs list` for artifact reads; top-level `status`, `todo`, and `docs` are not v3 commands.
 
 ## Commits
 

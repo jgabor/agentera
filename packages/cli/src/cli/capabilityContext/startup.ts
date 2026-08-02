@@ -172,7 +172,7 @@ export function genericSlimStartupContext(
       deliberation_context: {
         decisions: decisionsPointer,
         vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
-        objective: fallbackStatePointer("objective", "agentera state objective --format json"),
+        objective: fallbackStatePointer("objective", STATE_FAMILY_FALLBACK_COMMANDS.objective),
         todo: slimTodoState(todoItems),
         docs_mapping: docsState,
         profile: profileState,

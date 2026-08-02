@@ -113,7 +113,7 @@ export function runExperimentRecords(argv: string[], io: Io): number {
     const args = parse(argv.slice(1), verb);
     const response = verb === "list"
       ? listExperimentEntities(process.cwd(), args.objective!, args.limit, args.cursor, { format: args.format, selector: args.selector })
-      : getExperimentEntity(process.cwd(), args.id!, args.objective);
+      : getExperimentEntity(process.cwd(), args.id!);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, output);
     else output(YAML.stringify(response));
@@ -126,7 +126,7 @@ export function runExperimentRecords(argv: string[], io: Io): number {
       error: {
         class: "unsupported_state",
         message: (error as Error).message,
-        syntax: "agentera state experiments {list|get} --objective ID [options]",
+        syntax: "agentera state experiments list --objective ID [options] | agentera state experiments get --id ID [--format text|json|yaml]",
         example: "agentera state experiments list --objective qjtrmnpvka --format json",
         recovery: "Use supported objective-scoped experiment state and retry; no state was changed.",
       },

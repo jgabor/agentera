@@ -166,8 +166,9 @@ describe("lossless projection policy", () => {
     expect(bounded.omitted_count).toBeGreaterThan(0);
     expect(bounded.omission_reason).toBe("projection_byte_budget");
     expect((bounded.retrieval as Record<string, unknown>).command).toBe(
-      "agentera state progress get --number N --format json",
+      "agentera state progress list --format json",
     );
+    expect((bounded.retrieval as Record<string, unknown>).get).toBe("agentera state progress get --id ID --format json");
     const returned = bounded.entries as Array<Record<string, unknown>>;
     expect(returned.every((entry) => typeof entry.detail === "string" && !String(entry.detail).endsWith("..."))).toBe(true);
     expect(returned.map((entry) => entry.number)).toEqual(

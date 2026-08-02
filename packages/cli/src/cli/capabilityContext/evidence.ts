@@ -422,11 +422,11 @@ export function auditEvidenceContext(
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
   const fallbackCommands = uniqueList([
-    "agentera state plan --format json",
-     STATE_FAMILY_FALLBACK_COMMANDS.progress,
-    "agentera state docs --format json",
-     STATE_FAMILY_FALLBACK_COMMANDS.health,
-    "agentera state todo --format json",
+    STATE_FAMILY_FALLBACK_COMMANDS.plan,
+    STATE_FAMILY_FALLBACK_COMMANDS.progress,
+    STATE_FAMILY_FALLBACK_COMMANDS.docs,
+    STATE_FAMILY_FALLBACK_COMMANDS.health,
+    STATE_FAMILY_FALLBACK_COMMANDS.todo,
     "agentera state query --list-artifacts --format json",
     ...((capabilityContract.cli_fallback ?? []) as string[]),
   ]);

@@ -40,6 +40,27 @@ function options(selector?: EntityListSelectorInput, maxUtf8Bytes = 32_768): Ent
   };
 }
 
+function todoEntries(count: number): JsonObject[] {
+  return Array.from({ length: count }, (_, index) => {
+    const id = `${String.fromCharCode(97 + Math.floor(index / 26)).repeat(9)}${String.fromCharCode(97 + index % 26)}`;
+    return {
+      id,
+      artifact: "todo",
+      record: { title: `${index}-${"x".repeat(500)}`, status: "open" },
+      public_order: index + 1,
+      readiness: { state: "open", reason: "r".repeat(400) },
+      actionability: { outcome: "actionable", eligible: true },
+      queue_rank: index + 1,
+      reconciliation: { status: "clean", drifted: false },
+      provenance: { path: `${id}.yaml` },
+    };
+  });
+}
+
+function todoOptions(selector?: EntityListSelectorInput, maxUtf8Bytes = 32_768): EntityListProjectionOptions {
+  return { family: "todo", artifact: "todo", boundary: "todo_item", format: "json", maxUtf8Bytes, selector };
+}
+
 describe("bounded entity list projection", () => {
   it("keeps all 100 summary rows when optional full detail exceeds the byte budget", () => {
     const rows = entries(100, "x".repeat(1_000));
@@ -80,6 +101,36 @@ describe("bounded entity list projection", () => {
     });
     expect(() => projectEntityList(response(rows), ids, options({ idsOnly: true }, 100))).toThrow(/IDs-only rows cannot fit/);
     expect(() => projectEntityList(response(rows), fields, options({ fields: "status,nested.value" }, 100))).toThrow(/selected fields cannot fit/);
+  });
+
+  it("keeps TODO IDs-only minimal and deterministically sheds optional summary fields before rows", () => {
+    const rows = todoEntries(100);
+    const idsConfig = todoOptions({ idsOnly: true });
+    const ids = resolveEntityListSelector(idsConfig.selector, rows, idsConfig);
+    const identity = projectEntityList(response(rows), ids, idsConfig);
+    expect((identity.entries as JsonObject[])).toHaveLength(100);
+    expect((identity.entries as JsonObject[]).every((entry) => (
+      Object.keys(entry).sort().join(",") === "artifact,id,queue_rank,retrieval"
+      && (entry.retrieval as JsonObject).get === `agentera state todo get --id ${entry.id} --format json`
+    ))).toBe(true);
+
+    const defaultConfig = todoOptions();
+    const projected = projectEntityList(response(rows), resolveEntityListSelector(undefined, rows, defaultConfig), defaultConfig);
+    expect(projected).toMatchObject({
+      status: "degraded",
+      counts: { candidate: 100, returned: 100, omitted: 0, continuation: 0 },
+      projection: { selector: "default", detail: "minimum", cardinality: "requested_rows" },
+      degradation: {
+        reason: "optional_detail_byte_budget",
+        detail_omitted_count: 100,
+        omitted_fields: ["actionability", "provenance", "public_order", "readiness", "reconciliation", "record"],
+      },
+    });
+    expect((projected.entries as JsonObject[])).toEqual(identity.entries);
+
+    const selectedConfig = todoOptions({ fields: "title" });
+    const selected = resolveEntityListSelector(selectedConfig.selector, rows, selectedConfig);
+    expect(() => projectEntityList(response(rows), selected, selectedConfig)).toThrow(/selected fields cannot fit/);
   });
 
   it("rejects malformed, duplicate, absent, and combined selectors without partial output", () => {

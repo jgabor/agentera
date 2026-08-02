@@ -213,7 +213,7 @@ field_classification:
     rationale: >-
       Default-only when no docs state. Task 2 omits it from the default bare
       briefing when docs.exists is false (see default_emission_omission_contract);
-      recovery via `agentera state docs`.
+      recovery via `agentera state docs list --format json`.
   - field: progress
     status: required
     rationale: opencode reads progress.latest; status brief references shipped work.
@@ -223,7 +223,8 @@ field_classification:
       Default-only when none active. Task 2 omits it from the default bare
       briefing when objective.active is false (see
       default_emission_omission_contract); status derives "none active" from
-      state_presence.active.objective. Recovery via `agentera state objective`.
+      state_presence.active.objective. Recovery via
+      `agentera state objective list --format json`.
   - field: state_presence
     status: required
     rationale: Owns missing-versus-empty semantics; must not be omitted.
@@ -442,13 +443,13 @@ default_emission_omission_contract:
         the sole v1 signal.
     - field: docs
       omitted_when: docs.exists !== true
-      recovery_command: agentera state docs
+      recovery_command: agentera state docs list --format json
       disambiguated_by: >-
         state_presence.available.docs and state_presence.absence.docs carry the
         missing-vs-empty signal for the docs artifact family.
     - field: objective
       omitted_when: objective.active !== true
-      recovery_command: agentera state objective
+      recovery_command: agentera state objective list --format json
       disambiguated_by: >-
         state_presence.active.objective is false; status derives "none active"
         from state_presence rather than from an emitted default-only objective
@@ -502,10 +503,16 @@ default_emission_omission_contract:
         recovery: agentera state plan list --format json
       - field: plan.diagnostics
         reason: plan_diagnostics
-        recovery: agentera state plan --format json
-      - field: history.{progress,decisions,health}.entries
+        recovery: agentera state plan list --format json
+      - field: history.progress.entries
         reason: startup_history_entries
-        recovery: agentera state <artifact> list --limit 20 --format json
+        recovery: agentera state progress list --format json
+      - field: history.decisions.entries
+        reason: startup_history_entries
+        recovery: agentera state decisions list --format json
+      - field: history.health.entries
+        reason: startup_history_entries
+        recovery: agentera state health list --format json
       - field: project_integration.phases
         reason: phase_blockers
         recovery: agentera doctor --format json

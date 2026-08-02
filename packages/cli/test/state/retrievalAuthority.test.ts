@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,236 +14,74 @@ import {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-type Authority = Record<string, any>;
-type NegativeCase = {
-  rule: string;
-  expected: string;
-  mutate: (value: Authority) => void;
-};
-
-function authority(): Authority {
+function authority(): Record<string, any> {
   return YAML.parse(fs.readFileSync(path.join(REPO_ROOT, STATE_RETRIEVAL_AUTHORITY_PATH), "utf8"));
 }
 
-function removeListValue(value: Authority, path: string[], removed: string): void {
-  let target: Authority = value;
-  for (const segment of path.slice(0, -1)) target = target[segment];
-  const field = path.at(-1)!;
-  target[field] = target[field].filter((item: string) => item !== removed);
-}
+describe("canonical state retrieval authority", () => {
+  it("loads one canonical public projection with unique policy in the same model", () => {
+    const value = authority();
+    expect(validateStateRetrievalAuthority(value)).toEqual([]);
+    expect(value).not.toHaveProperty("retrieval");
+    expect(value.historical_retrieval_evidence).toMatchObject({
+      status: "retired_historical_evidence",
+      runtime_consumption: "forbidden",
+    });
+    expect(value.historical_retrieval_evidence).not.toHaveProperty("commands");
+    expect(value.historical_retrieval_evidence).not.toHaveProperty("identity");
 
-function patternCases(rule: string, selector: (value: Authority) => Authority): NegativeCase[] {
-  return [
-    {
-      rule: `${rule}.pattern-present`,
-      expected: `${rule}.pattern`,
-      mutate: (value) => delete selector(value).pattern,
-    },
-    {
-      rule: `${rule}.pattern-valid-regex`,
-      expected: `${rule}.pattern_invalid`,
-      mutate: (value) => { selector(value).pattern = "["; },
-    },
-    {
-      rule: `${rule}.accepted-examples`,
-      expected: `${rule}.accepted_examples`,
-      mutate: (value) => { selector(value).pattern = "^never$"; },
-    },
-    {
-      rule: `${rule}.rejected-examples`,
-      expected: `${rule}.rejected_examples`,
-      mutate: (value) => { selector(value).pattern = ".*"; },
-    },
-  ];
-}
-
-const envelopeFields = [
-  "schemaVersion",
-  "command",
-  "status",
-  "entries",
-  "counts",
-  "order",
-  "filters",
-  "snapshot",
-  "source",
-  "source_contract",
-];
-const cursorFields = ["vocabulary", "response_field", "binding", "invalid_behavior", "unavailable_behavior"];
-const omissionFields = ["omitted", "omitted_count", "omission_reason", "retrieval"];
-const planIdentityFields = ["canonical_format", "persistence", "transition", "legacy_format", "legacy_derivation", "collision"];
-const objectiveIdentityFields = ["canonical_format", "persistence", "canonical_root", "legacy_root", "legacy_format", "legacy_derivation", "path_compatibility"];
-const collectionFields = ["collection_id", "artifact_id", "growth", "identity", "storage_ownership", "ordering", "bounds", "cursor", "omission", "get"];
-const collectionIds = ["progress.records", "decisions.records", "health.records", "plan.plans", "plan.tasks", "experiments.records", "todo.items", "docs.entries", "changelog.entries"];
-const failureFields = ["class", "message", "syntax", "example", "recovery"];
-const failureClasses = ["invalid_request", "unsupported_artifact", "not_found", "ambiguous", "corrupt", "incomplete", "cursor_invalid", "cursor_snapshot_unavailable", "unsupported_state"];
-
-/**
- * One mutation per validation rule/branch in validateStateRetrievalAuthority.
- * The matrix is intentionally data-driven so adding an enforced rule requires
- * adding its explicit failing contract example here.
- */
-const negativeCases: NegativeCase[] = [
-  { rule: "retrieval schema version", expected: "retrieval.schema_version", mutate: (value) => { value.retrieval.schema_version = "wrong"; } },
-  { rule: "authority boundary", expected: "retrieval.authority_boundary", mutate: (value) => { delete value.retrieval.authority_boundary; } },
-  ...envelopeFields.map((field): NegativeCase => ({
-    rule: `envelope requires ${field}`,
-    expected: `retrieval.envelope.required_fields.${field}`,
-    mutate: (value) => removeListValue(value, ["retrieval", "envelope", "required_fields"], field),
-  })),
-  ...cursorFields.map((field): NegativeCase => ({
-    rule: `cursor requires ${field}`,
-    expected: `retrieval.cursor.${field}`,
-    mutate: (value) => { delete value.retrieval.cursor[field]; },
-  })),
-  ...omissionFields.map((field): NegativeCase => ({
-    rule: `omission requires ${field}`,
-    expected: `retrieval.omission.required_when_any_entry_is_not_returned.${field}`,
-    mutate: (value) => removeListValue(value, ["retrieval", "omission", "required_when_any_entry_is_not_returned"], field),
-  })),
-  { rule: "omission semantics", expected: "retrieval.omission.semantics", mutate: (value) => { value.retrieval.omission.semantics = ""; } },
-  { rule: "output maximum limit", expected: "retrieval.output_bounds.maximum_limit", mutate: (value) => { value.retrieval.output_bounds.maximum_limit = 101; } },
-  { rule: "output byte budget", expected: "retrieval.output_bounds.max_serialized_utf8_bytes", mutate: (value) => { value.retrieval.output_bounds.max_serialized_utf8_bytes = 0; } },
-  { rule: "scalar truncation forbidden", expected: "retrieval.output_bounds.scalar_truncation", mutate: (value) => { value.retrieval.output_bounds.scalar_truncation = "allowed"; } },
-  { rule: "whole-entry omission", expected: "retrieval.output_bounds.omission_unit", mutate: (value) => { value.retrieval.output_bounds.omission_unit = "scalar"; } },
-  ...["plan", "task", "objective", "experiment"].map((identity): NegativeCase => ({
-    rule: `identity section ${identity}`,
-    expected: `retrieval.identity.${identity}`,
-    mutate: (value) => { delete value.retrieval.identity[identity]; },
-  })),
-  ...planIdentityFields.map((field): NegativeCase => ({
-    rule: `plan identity requires ${field}`,
-    expected: `retrieval.identity.plan.${field}`,
-    mutate: (value) => { delete value.retrieval.identity.plan[field]; },
-  })),
-  { rule: "plan identity vectors", expected: "retrieval.identity.plan.test_vectors", mutate: (value) => { value.retrieval.identity.plan.test_vectors = []; } },
-  { rule: "plan vector canonical JSON", expected: "retrieval.identity.plan.test_vectors[0].canonical_json", mutate: (value) => { value.retrieval.identity.plan.test_vectors[0].canonical_json = "{"; } },
-  { rule: "plan vector stable ID", expected: "retrieval.identity.plan.test_vectors[0].stable_id", mutate: (value) => { value.retrieval.identity.plan.test_vectors[0].stable_id = "legacy-plan:wrong"; } },
-  { rule: "plan vector mirrored result", expected: "retrieval.identity.plan.test_vectors[0].identical_result", mutate: (value) => { value.retrieval.identity.plan.test_vectors[0].identical_result = "ambiguous"; } },
-  ...objectiveIdentityFields.map((field): NegativeCase => ({
-    rule: `objective identity requires ${field}`,
-    expected: `retrieval.identity.objective.${field}`,
-    mutate: (value) => { delete value.retrieval.identity.objective[field]; },
-  })),
-  { rule: "objective identity vectors", expected: "retrieval.identity.objective.test_vectors", mutate: (value) => { value.retrieval.identity.objective.test_vectors = []; } },
-  { rule: "objective vector canonical JSON", expected: "retrieval.identity.objective.test_vectors[0].canonical_json", mutate: (value) => { value.retrieval.identity.objective.test_vectors[0].canonical_json = "{"; } },
-  { rule: "objective vector stable ID", expected: "retrieval.identity.objective.test_vectors[0].stable_id", mutate: (value) => { value.retrieval.identity.objective.test_vectors[0].stable_id = "legacy-objective:wrong"; } },
-  { rule: "experiment identity format", expected: "retrieval.identity.experiment.format", mutate: (value) => { value.retrieval.identity.experiment.format = "positive-only"; } },
-  { rule: "experiment zero", expected: "retrieval.identity.experiment.zero", mutate: (value) => { value.retrieval.identity.experiment.zero = "experiment 1 starts the sequence"; } },
-  ...["scope", "collision", "compatibility", "publication_validation"].map((field): NegativeCase => ({
-    rule: `experiment identity requires ${field}`,
-    expected: `retrieval.identity.experiment.${field}`,
-    mutate: (value) => { delete value.retrieval.identity.experiment[field]; },
-  })),
-  { rule: "experiment publication uses typed validation", expected: "retrieval.identity.experiment.publication.authority", mutate: (value) => { value.retrieval.identity.experiment.publication.authority = "documentation_only"; } },
-  { rule: "experiment publication owns implemented archival", expected: "retrieval.identity.experiment.publication.archive_ownership", mutate: (value) => { value.retrieval.identity.experiment.publication.archive_ownership = "numbered_archive"; } },
-  { rule: "experiment archival is implemented", expected: "retrieval.identity.experiment.publication.archive_ownership", mutate: (value) => { value.experiment_archival.status = "planned"; } },
-  { rule: "experiment publication is objective-scoped", expected: "retrieval.identity.experiment.publication.storage_scope", mutate: (value) => { value.retrieval.identity.experiment.publication.storage_scope = "project_archive"; } },
-  { rule: "experiment publication archives before projection", expected: "retrieval.identity.experiment.publication.publication_order", mutate: (value) => { value.retrieval.identity.experiment.publication.publication_order = "projection_before_archive"; } },
-  { rule: "experiment archive declares archive before projection", expected: "retrieval.identity.experiment.publication.publication_order", mutate: (value) => { value.experiment_archival.publication.archive_before_projection = false; } },
-  { rule: "experiment publication preserves projection policy", expected: "retrieval.identity.experiment.publication.projection_policy", mutate: (value) => { value.retrieval.identity.experiment.publication.projection_policy = "unbounded"; } },
-  ...(["plan_tasks", "plans", "experiments"] as const).flatMap((command) => (["list", "get"] as const).map((verb): NegativeCase => ({
-    rule: `${command} ${verb} grammar`,
-    expected: `retrieval.commands.${command}.${verb}`,
-    mutate: (value) => { value.retrieval.commands[command][verb] = "agentera invalid"; },
-  }))),
-  { rule: "experiment publish grammar", expected: "retrieval.commands.experiments.publish", mutate: (value) => { value.retrieval.commands.experiments.publish = "agentera invalid"; } },
-  { rule: "plan-task list selector optional", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.list_required = true; } },
-  { rule: "plan-task get defaults to active plan", expected: "retrieval.commands.plan_tasks.selectors.plan.required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.plan.get_required = true; } },
-  { rule: "plan-task get default is declared", expected: "retrieval.commands.plan_tasks.selectors.plan.get_default", mutate: (value) => { delete value.retrieval.commands.plan_tasks.selectors.plan.get_default; } },
-  ...patternCases("retrieval.commands.plan_tasks.selectors.plan", (value) => value.retrieval.commands.plan_tasks.selectors.plan),
-  { rule: "plan-task get task selector required", expected: "retrieval.commands.plan_tasks.selectors.task.get_required", mutate: (value) => { value.retrieval.commands.plan_tasks.selectors.task.get_required = false; } },
-  ...patternCases("retrieval.commands.plan_tasks.selectors.task", (value) => value.retrieval.commands.plan_tasks.selectors.task),
-  { rule: "plan get selector required", expected: "retrieval.commands.plans.selectors.plan.get_required", mutate: (value) => { value.retrieval.commands.plans.selectors.plan.get_required = false; } },
-  ...patternCases("retrieval.commands.plans.selectors.plan", (value) => value.retrieval.commands.plans.selectors.plan),
-  { rule: "experiment list objective required", expected: "retrieval.commands.experiments.selectors.objective.required", mutate: (value) => { value.retrieval.commands.experiments.selectors.objective.list_required = false; } },
-  { rule: "experiment get objective required", expected: "retrieval.commands.experiments.selectors.objective.required", mutate: (value) => { value.retrieval.commands.experiments.selectors.objective.get_required = false; } },
-  ...patternCases("retrieval.commands.experiments.selectors.objective", (value) => value.retrieval.commands.experiments.selectors.objective),
-  { rule: "experiment get number required", expected: "retrieval.commands.experiments.selectors.number.get_required", mutate: (value) => { value.retrieval.commands.experiments.selectors.number.get_required = false; } },
-  ...patternCases("retrieval.commands.experiments.selectors.number", (value) => value.retrieval.commands.experiments.selectors.number),
-  ...failureFields.map((field): NegativeCase => ({
-    rule: `failure envelope requires ${field}`,
-    expected: `retrieval.failures.required_fields.${field}`,
-    mutate: (value) => removeListValue(value, ["retrieval", "failures", "required_fields"], field),
-  })),
-  ...failureClasses.map((failureClass): NegativeCase => ({
-    rule: `failure class ${failureClass}`,
-    expected: `retrieval.failures.classes.${failureClass}`,
-    mutate: (value) => { delete value.retrieval.failures.classes[failureClass]; },
-  })),
-  ...collectionFields.map((field): NegativeCase => ({
-    rule: `collection classification requires ${field}`,
-    expected: `retrieval.collections[0].${field}`,
-    mutate: (value) => { delete value.retrieval.collections[0][field]; },
-  })),
-  { rule: "collection IDs unique", expected: "retrieval.collections.duplicate_collection_id", mutate: (value) => { value.retrieval.collections.push(structuredClone(value.retrieval.collections[0])); } },
-  ...collectionIds.map((collectionId): NegativeCase => ({
-    rule: `collection classified ${collectionId}`,
-    expected: `retrieval.collections.missing.${collectionId}`,
-    mutate: (value) => { value.retrieval.collections = value.retrieval.collections.filter((item: Authority) => item.collection_id !== collectionId); },
-  })),
-  { rule: "plan gap closure evidence", expected: "retrieval.gap_closure_evidence.plan", mutate: (value) => { value.retrieval.gap_closure_evidence = value.retrieval.gap_closure_evidence.filter((item: Authority) => !item.surface.includes("plan")); } },
-  { rule: "experiment gap closure evidence", expected: "retrieval.gap_closure_evidence.experiments", mutate: (value) => { value.retrieval.gap_closure_evidence = value.retrieval.gap_closure_evidence.filter((item: Authority) => !item.surface.includes("experiments")); } },
-  { rule: "gap closure declared gap", expected: "retrieval.gap_closure_evidence[0].declared_gap", mutate: (value) => { delete value.retrieval.gap_closure_evidence[0].declared_gap; } },
-  { rule: "gap closure evidence", expected: "retrieval.gap_closure_evidence[0].closure", mutate: (value) => { delete value.retrieval.gap_closure_evidence[0].closure; } },
-  { rule: "gap closure outcome", expected: "retrieval.gap_closure_evidence[0].outcome", mutate: (value) => { value.retrieval.gap_closure_evidence[0].outcome = "pending"; } },
-  { rule: "archive diagnostic classification", expected: "retrieval.plan_archive_diagnostics.classification", mutate: (value) => { value.retrieval.plan_archive_diagnostics.classification = "fail_all_reads"; } },
-  { rule: "archive diagnostic smoke behavior", expected: "retrieval.plan_archive_diagnostics.smoke_test_behavior", mutate: (value) => { delete value.retrieval.plan_archive_diagnostics.smoke_test_behavior; } },
-];
-
-describe("state retrieval authority", () => {
-  it("accepts the canonical authority and exposes it through the executable loader", () => {
-    expect(validateStateRetrievalAuthority(authority())).toEqual([]);
     const loaded = loadStateRetrievalAuthority(REPO_ROOT);
     expect(loaded.authority).toBe(STATE_RETRIEVAL_AUTHORITY_PATH);
-    expect(loaded.retrieval.schema_version).toBe("agentera.stateRetrievalAuthority.v1");
+    expect(loaded.retrieval).toEqual(value.entity_target.public_retrieval);
+    expect(loaded.retrieval).toMatchObject({
+      schema_version: "agentera.entityPublicRetrieval.v1",
+      status: "final",
+      policy: {
+        schema_version: "agentera.entityPublicRetrievalPolicy.v1",
+        output_bounds: { maximum_limit: 100, max_serialized_utf8_bytes: 32_768 },
+        failures: { schema_version: "agentera.stateFailure.v1" },
+        archive_policy: {
+          plan: { owner: "canonical_plan_entities_and_immutable_plan_archive_entities" },
+          experiments: { owner: "experiment_archival" },
+        },
+      },
+    });
   });
 
-  it("has one uniquely named negative fixture for every enforced rule", () => {
-    expect(negativeCases).toHaveLength(139);
-    expect(new Set(negativeCases.map(({ rule }) => rule)).size).toBe(negativeCases.length);
-  });
-
-  it.each(negativeCases)("rejects invalid contract: $rule", ({ expected, mutate }) => {
-    const value = structuredClone(authority());
-    mutate(value);
-    expect(validateStateRetrievalAuthority(value)).toContain(expected);
-  });
-
-  it("accepts structured publication and archival declarations with semantic parity", () => {
-    expect(validateExperimentPublicationParity(authority())).toEqual([]);
-  });
-
-  it("rejects a contradictory structured publication scope without matching prose", () => {
+  it.each([
+    ["root duplicate", (value: any) => { value.retrieval = { commands: { plans: { list: "contradiction" } } }; }, "duplicate_active_map"],
+    ["historical commands", (value: any) => { value.historical_retrieval_evidence.commands = { plans: {} }; }, "historical_retrieval_evidence.commands"],
+    ["historical identity", (value: any) => { value.historical_retrieval_evidence.identity = { plan: {} }; }, "historical_retrieval_evidence.identity"],
+    ["plan filters", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.filters = []; }, "plans.filters.runtime_parity"],
+    ["plan command filter", (value: any) => { value.entity_target.public_retrieval.commands.plans.list = "agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json"; }, "plans.list_command"],
+    ["experiment exact get", (value: any) => { value.entity_target.public_retrieval.commands.experiments.get = "agentera state experiments get --objective ID --id ID --format json"; }, "experiments.get_command"],
+    ["composite IDs", (value: any) => { value.entity_target.identity.accepted_pattern = "^plan:[a-z]{10}$"; }, "identity.accepted_pattern"],
+  ])("fails closed when a second map or canonical grammar can contradict %s", (_name, mutate, expected) => {
     const value = authority();
-    value.retrieval.identity.experiment.publication.storage_scope = "project_archive";
-    value.retrieval.identity.experiment.publication.scope_boundary = "Any prose remains irrelevant.";
+    mutate(value);
+    expect(validateStateRetrievalAuthority(value).some((error) => error.includes(expected))).toBe(true);
+  });
 
+  it.each([
+    ["policy schema", (value: any) => { value.entity_target.public_retrieval.policy.schema_version = "wrong"; }, "policy.schema_version"],
+    ["minimum TODO identity", (value: any) => { value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.family_minimum_fields.todo = []; }, "family_minimum_fields.todo"],
+    ["degradation metadata", (value: any) => { value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.optional_detail_degradation.required_metadata = ["reason"]; }, "required_metadata.omitted_fields"],
+    ["row loss", (value: any) => { value.entity_target.public_retrieval.policy.output_bounds.row_omission_under_byte_pressure = "allowed"; }, "row_omission_under_byte_pressure"],
+    ["byte bound", (value: any) => { value.entity_target.public_retrieval.policy.output_bounds.max_serialized_utf8_bytes = 1; }, "max_serialized_utf8_bytes"],
+    ["failure class", (value: any) => { delete value.entity_target.public_retrieval.policy.failures.classes.unsupported_state; }, "failures.classes.unsupported_state"],
+    ["plan archive owner", (value: any) => { delete value.entity_target.public_retrieval.policy.archive_policy.plan.owner; }, "archive_policy.plan.owner"],
+  ])("rejects malformed unique policy: %s", (_name, mutate, expected) => {
+    const value = authority();
+    mutate(value);
+    expect(validateStateRetrievalAuthority(value).some((error) => error.includes(expected))).toBe(true);
+  });
+
+  it("binds experiment archive policy to its owning archive contract without a second command grammar", () => {
+    const value = authority();
+    expect(validateExperimentPublicationParity(value)).toEqual([]);
+    value.entity_target.public_retrieval.policy.archive_policy.experiments.storage_scope = "project_archive";
     expect(validateExperimentPublicationParity(value)).toContain(
-      "retrieval.identity.experiment.publication.storage_scope",
+      "entity_target.public_retrieval.policy.archive_policy.experiments.storage_scope",
     );
-  });
-
-  it("keeps deterministic positive identity vectors and experiment zero", () => {
-    const retrieval = authority().retrieval;
-    const plan = retrieval.identity.plan.test_vectors[0];
-    const objective = retrieval.identity.objective.test_vectors[0];
-    expect(`legacy-plan:${createHash("sha256").update(plan.canonical_json).digest("hex")}`).toBe(plan.stable_id);
-    expect(`legacy-objective:${createHash("sha256").update(objective.canonical_json).digest("hex")}`).toBe(objective.stable_id);
-    const experimentNumber = new RegExp(retrieval.commands.experiments.selectors.number.pattern);
-    expect(["0", "1", "42"].every((value) => experimentNumber.test(value))).toBe(true);
-    expect(["-1", "01", "1.0"].every((value) => !experimentNumber.test(value))).toBe(true);
-  });
-
-  it("accounts for every declared Task 1 plan and experiment gap", () => {
-    const gaps = authority().retrieval.gap_closure_evidence;
-    expect(gaps.map((gap: Authority) => [gap.surface, gap.outcome])).toEqual([
-      ["agentera state plan --format json / plans", "closed"],
-      ["agentera state plan --format json / source.archive_paths", "closed"],
-      ["agentera state plan text / tasks", "closed"],
-      ["agentera state plan --format json / tasks", "closed"],
-      ["legacy agentera state experiments projection", "out_of_scope"],
-    ]);
-    expect(gaps.every((gap: Authority) => typeof gap.declared_gap === "string" && typeof gap.closure === "string")).toBe(true);
   });
 });

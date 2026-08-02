@@ -211,12 +211,23 @@ describe("status dashboard contract", () => {
         },
       };
 
+      const fullPayload = buildOrientationJsonPayload(state);
+      expect((fullPayload.decision_attention as any).entries[0].source).toEqual({
+        path: ".agentera/entities/decisions/decision0.yaml",
+      });
+
       const statusContext = buildStatusContextState(state);
       const brief = statusContext.brief as Record<string, unknown>;
 
       expect(brief.status, JSON.stringify(brief)).toBe("ok");
       expect(brief.utf8_bytes).toEqual(expect.any(Number));
       expect(brief).not.toHaveProperty("error");
+      expect((statusContext.decision_attention as any).entries).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "aaaaaaaaaa", artifact: "decisions", state: "open" }),
+        ]),
+      );
+      expect((statusContext.decision_attention as any).entries[0]).not.toHaveProperty("source");
       for (const family of ["plan", "docs", "progress", "health", "todo", "decisions", "objective"]) {
         expect(STATE_FAMILY_FALLBACK_COMMANDS[family]).toMatch(/^agentera state .+ list --format json$/);
         expect(STATE_FAMILY_FALLBACK_COMMANDS[family]).not.toContain("--limit 20");

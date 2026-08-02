@@ -1,5 +1,7 @@
 import type { JsonObject, JsonValue } from "../../../core/jsonValue.js";
 import { truncateCodePoints } from "../../../core/text.js";
+import { entityListFamily } from "../../../state/entityRetrievalHelp.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js";
 
 /**
  * Bounded default decision brief for the bare `agentera prime --format json`
@@ -61,14 +63,19 @@ interface OmittedRichStateEntry {
 /** Rich-state sub-detail projected out of the default brief, each with a named
  *  authoritative recovery command (AC4). Mirrors brief_omission_contract in
  *  references/cli/prime-consumer-compatibility.yaml. */
+const planTaskFamily = entityListFamily("plan_tasks");
+const planTaskListRecovery = `agentera state ${planTaskFamily.commandTokens.join(" ")} list --format json`;
+
 const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
-  { field: "plan.tasks", reason: "plan_task_detail", recovery: "agentera state plan tasks list --format json" },
-  { field: "plan.archived_plans", reason: "archive_catalog", recovery: "agentera state plan list --format json" },
-  { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: "agentera state plan --format json" },
-  { field: "history.entries", reason: "startup_history_entries", recovery: "agentera state <artifact> list --limit 20 --format json" },
+  { field: "plan.tasks", reason: "plan_task_detail", recovery: planTaskListRecovery },
+  { field: "plan.archived_plans", reason: "archive_catalog", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
+  { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
+  { field: "history.progress.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.progress },
+  { field: "history.decisions.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.decisions },
+  { field: "history.health.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.health },
   { field: "project_integration.phases", reason: "phase_blockers", recovery: "agentera doctor --format json" },
   { field: "source_contract.artifact_writes.artifacts", reason: "writer_contract_detail", recovery: "agentera schema --format json" },
-  { field: "docs.source_contract", reason: "docs_state_families", recovery: "agentera state docs --format json" },
+  { field: "docs.source_contract", reason: "docs_state_families", recovery: STATE_FAMILY_FALLBACK_COMMANDS.docs },
   { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: "agentera profile --format json" },
 ];
 
@@ -265,10 +272,28 @@ function briefAttention(attention: unknown): unknown {
   );
 }
 
+function briefDecisionAttention(attention: unknown): Record<string, unknown> | null {
+  if (attention === null) return null;
+  if (!isObject(attention)) return {};
+  const out = pick(attention, ["type", "count", "states", "max_entries", "bounded"]);
+  const summary = boundedString(attention.attention, BRIEF_SCALAR_MAX_CHARS);
+  if (summary !== undefined) out.attention = summary;
+  out.entries = Array.isArray(attention.entries)
+    ? attention.entries.slice(0, 3).map((entry) => {
+        if (!isObject(entry)) return {};
+        const projected = pick(entry, ["id", "artifact", "state"]);
+        const title = boundedString(entry.title, BRIEF_SCALAR_MAX_CHARS);
+        if (title !== undefined) projected.title = title;
+        return projected;
+      })
+    : [];
+  return out;
+}
+
 function briefDocs(docs: unknown): Record<string, unknown> {
   // No default-bare consumer reads the docs projection detail. Keep the
   // availability signal and mapping count; the verbose source_contract with
-  // state_families recovers via `agentera state docs --format json`.
+  // state_families recovers via the canonical docs list fallback.
   return pick(docs, ["exists", "status", "mapping_entries", "indexed_documents"]);
 }
 
@@ -276,7 +301,7 @@ function briefProgress(progress: unknown): Record<string, unknown> {
   // opencode reads progress.latest.number/what/next; the brief keeps the
   // latest cycle but caps free-text scalars at BRIEF_SCALAR_MAX_CHARS so a
   // pathological value cannot blow the budget. Full detail recovers via
-  // `agentera state progress get --number N --format json`.
+  // `agentera state progress get --id ID --format json`.
   if (!isObject(progress)) return {};
   const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count", "degraded_history"]);
   const latest = progress.latest;
@@ -489,6 +514,9 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
       case "attention":
         out[key] = briefAttention(value);
         break;
+      case "decision_attention":
+        out[key] = briefDecisionAttention(value);
+        break;
       case "docs":
         out[key] = briefDocs(value);
         break;
@@ -582,7 +610,7 @@ function degradedBriefEnvelope(
       message:
         "the projected decision brief exceeded the authority byte budget; a bounded degraded envelope was emitted instead of the over-budget payload",
       recovery:
-        "Run `agentera prime --dashboard --format json` for the full orientation payload, or `agentera state <artifact> --format json` for a specific family.",
+        "Run `agentera prime --dashboard --format json` for the full orientation payload, or `agentera state <artifact> list --format json` for a specific record family.",
     },
   };
   const body = (projection: SourceContractProjection): Record<string, unknown> =>

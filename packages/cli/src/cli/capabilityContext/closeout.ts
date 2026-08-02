@@ -197,9 +197,9 @@ export function documentCloseoutContext(
   else if (profile.stale === true) stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
   stateCaveats = uniqueList(stateCaveats);
   const fallbackCommands = uniqueList([
-    "agentera state todo --format json",
-    "agentera state docs --format json",
-     STATE_FAMILY_FALLBACK_COMMANDS.progress,
+    STATE_FAMILY_FALLBACK_COMMANDS.todo,
+    STATE_FAMILY_FALLBACK_COMMANDS.docs,
+    STATE_FAMILY_FALLBACK_COMMANDS.progress,
     "agentera state query changelog --format json",
     "agentera state query --list-artifacts --format json",
     ...((capabilityContract.cli_fallback ?? []) as string[]),

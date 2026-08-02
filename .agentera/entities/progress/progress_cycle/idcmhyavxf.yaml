@@ -1,0 +1,16 @@
+id: idcmhyavxf
+artifact: progress
+record:
+  timestamp: 2026-08-02 11:21
+  type: fix
+  phase: build
+  what: Bound TODO continuation cursors to the effective normalized limit without changing other family cursor contracts.
+  context:
+    intent: Implement and verify replacement task dnbytwkmiu after ybpdvkidaq exhausted its second failure.
+    constraints: Preserve existing cardinality and srd consumer/authority corrections, moglfdtpde, historical evidence, dev.39, and four staged M1 blobs. Append evidence only; do not change lifecycle or release state.
+    unknowns: Independent evaluation of dnbytwkmiu and later M3 synchronization remain outstanding.
+    scope: TODO cursor effective-limit binding, fail-closed legacy handling, matching continuation, source/package cardinality, exact recovery, and read-only verification.
+  discovered: The signed TODO cursor carried selector, filters, order, snapshot, and after identity but omitted the normalized limit, so a limit-10 cursor advanced under limit 5. TODO/docs also duplicated the established signed list-cursor primitive. The correction reuses listCursor encoding/validation and adds limit only to TODO payloads; no authority or lifecycle mismatch was present.
+  verified: Before correction, live limit 10 followed by limit 5 exited 0 and returned 5 rows. After correction, the same mismatch exits 1 with cursor_invalid, message `todo cursor is bound to --limit 10, not --limit 5`, canonical list syntax, and executable recovery `agentera state todo list --ids-only --limit 5 --format json`; that restart returns the first 5 rows. A matching live limit-10 continuation returns 10 rows with remaining=108. Thirteen matching pages return all 128 unique IDs with queue ranks 1..128; the terminal page returns 8 with remaining/omitted/continuation=0, no next cursor, and exact get succeeds. Signed legacy cursors without limit and malformed cursors fail cursor_invalid with executable limit-10 restart. The live .agentera hash stayed 7ca5f176d719f6c3cf6ad112facd70f16d4f834e75596a7757a1bb0c276eee. Focused source tests passed 57/57. The full source suite passed 3,045 with 1 skipped across 225 files. Extracted-package verification passed 23/23 across 2 files; source and package stdout agree for changed/missing/malformed bindings, matching 120-row pagination, limits 40/60/100, pre-filter ranks, terminal behavior, exact get, degradation, and no mutation. Typecheck, build, state validation (2,062 entities, 0 issues), capability-contract (3/3), compact (0 errors/changes), diff checks, dev.39 manifest preservation, and protected staged blob checks passed.
+  next: Run independent Audit for dnbytwkmiu while keeping it pending; do not evaluate or close srdmkolwqc, resolve TODOs, prepare release metadata, publish, tag, or push.
+  publication_order: 50

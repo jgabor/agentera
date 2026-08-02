@@ -5,7 +5,7 @@ import { capabilityContext } from "./contract.js";
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
 import { expanduser } from "../../core/paths.js";
 import { sourceProvenance, uniqueList } from "./shared.js";
-import type { Env } from "./types.js";
+import { STATE_FAMILY_FALLBACK_COMMANDS, type Env } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export const BENCHMARK_CONTEXT_CMD = "agentera prime --context optimize --format json";
@@ -475,7 +475,7 @@ export function optimizeBenchmarkContext(capability: string | null): JsonObject 
     ...((recommendation.caveats ?? []) as string[]),
     ...((manualRefresh.caveats ?? []) as string[]),
   ]);
-  const fallbackCommands = ["agentera state docs --format json", "agentera state query --list-artifacts --format json"];
+  const fallbackCommands = [STATE_FAMILY_FALLBACK_COMMANDS.docs, "agentera state query --list-artifacts --format json"];
   return {
     capability: "optimize",
     benchmark_source: {

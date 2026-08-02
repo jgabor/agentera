@@ -12,3 +12,13 @@ record:
     - GIVEN all M3 tasks pass WHEN state synchronizes THEN five TODOs, plan state, public TODO state, progress, and Unreleased changelog agree; drift reopens its source task.
     - GIVEN version policy WHEN metadata is prepared THEN only an allowed 3.0.0-dev.N+1 package bump occurs, suite metadata stays 3.0.0, and nothing is published, tagged, or pushed.
     - GIVEN source and package gates WHEN run THEN the rebuilt local CLI passes and downstream M4 and M5 tasks consume this M3 closure dependency.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Live TODO --ids-only limits 60/100 violate cardinality; a second active retrieval grammar remains in state-storage-authority/retrievalAuthority; status/orchestrate/README/AGENTS/package consumers emit rejected bare or experiment-get commands; resolved TODO/changelog/progress state therefore hides material drift. Reopen ybpdvkidaq plus hykqpkcsix and qjhjpzowae, then correct the owning implementations.
+    provenance:
+      attempt_id: srdmkolwqc-audit-1
+      source: Audit ses_03ec44cf4ffe43Z44pmzhs2g2j
+      recorded_at: 2026-08-02 09:18
+      writer_command: agentera state plan record-evaluation

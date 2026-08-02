@@ -67,8 +67,8 @@ Agentera resolves artifact paths through the CLI and `.agentera/docs.yaml`.
 Normal reads use `agentera state`; supported writes use the typed writer.
 
 ```bash
-agentera state todo
-agentera state plan
+agentera state todo list --format json
+agentera state plan list --status open --format json
 agentera state query --list-artifacts
 agentera state progress explain --verb append --format json
 ```
@@ -82,7 +82,7 @@ agentera state plan list --format json
 agentera state plan get --id PLAN_ID --format json
 agentera state plan tasks list --limit 20 --format json
 agentera state experiments list --objective OBJECTIVE_ID --format json
-agentera state experiments get --objective OBJECTIVE_ID --id EXPERIMENT_ID --format json
+agentera state experiments get --id EXPERIMENT_ID --format json
 ```
 
 Plan list/get spans the active plan and immutable plan archives. Plan task

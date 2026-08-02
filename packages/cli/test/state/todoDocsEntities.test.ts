@@ -14,11 +14,16 @@ import { FILE_REPLACEMENT_RECOVERY_VERSION } from "../../src/state/entityPublica
 import { ExactReplacementConflictError } from "../../src/state/exactReplacementRecovery.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
+import { todoReconciliationActivationBytes, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
 import { closeoutTodoBlockers } from "../../src/cli/capabilityContext/closeout.js";
 import { evaluateTodoReadinessQueue } from "../../src/cli/todoReadinessSelection.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
+import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
+import { loadStateStorageAuthority } from "../../src/state/stateStorageAuthority.js";
+import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
 
 const roots: string[] = [];
 const MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -124,6 +129,70 @@ function readinessInput(overrides: Record<string, unknown> = {}): Record<string,
     ...overrides,
   };
   return { capability: values.capability, reason: values.reason, dependencies: values.dependencies, blocked: values.blocked, gate: values.gate, queue_rank: values.queue_rank, order_reason: values.orderReason };
+}
+
+function indexedId(index: number): string {
+  let value = index;
+  return Array.from({ length: 10 }, () => {
+    const character = String.fromCharCode(97 + value % 26);
+    value = Math.floor(value / 26);
+    return character;
+  }).reverse().join("");
+}
+
+function realisticTodoProject(count = 120): { root: string; orderedIds: string[]; criticalOpenIds: string[] } {
+  const root = project();
+  const sections: Record<"critical" | "normal" | "resolved", string[]> = { critical: [], normal: [], resolved: [] };
+  const criticalOpenIds: string[] = [];
+  const criticalResolvedIds: string[] = [];
+  const normalOpenIds: string[] = [];
+  const orders = { critical: 0, normal: 0, resolved: 0 };
+  for (let index = 0; index < count; index += 1) {
+    const id = indexedId(index);
+    const resolved = index >= 100;
+    const severity = index < 70 || resolved ? "critical" : "normal";
+    const section = resolved ? "resolved" : severity;
+    const status = resolved ? "resolved" : "open";
+    const order = ++orders[section];
+    const title = `Synchronize retrieval consumer ${String(index + 1).padStart(3, "0")}: ${"preserve deterministic bounded evidence and exact recovery without mutating project state; ".repeat(5).trim()}`;
+    const publicDescription = `[fix:3.0.0] ${title}`;
+    const record = {
+      kind: "fix",
+      target_version: "3.0.0",
+      title,
+      requirements: ["Retain every selected row", "Expose exact recovery"],
+      acceptance: ["No skipped or duplicated row across continuation"],
+      release_blocker: false,
+      severity,
+      status,
+      readiness: {
+        capability: "build",
+        reason: "The bounded retrieval contract is ready for deterministic verification.",
+        dependencies: [],
+        blocked: null,
+        gate: null,
+        queue_rank: index + 1,
+        order_reason: "Exercise realistic ordered TODO state.",
+      },
+      reconciliation: {
+        schema_version: "agentera.todoReconciliation.v1",
+        public: { present: true, description: publicDescription, severity, status, order },
+      },
+    };
+    const directory = path.join(root, ".agentera/entities/todo/todo_item");
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "todo", record }));
+    sections[section].push(`- [${resolved ? "x" : " "}] [id:${id}] ${publicDescription}`);
+    if (resolved) criticalResolvedIds.push(id);
+    else if (severity === "critical") criticalOpenIds.push(id);
+    else normalOpenIds.push(id);
+  }
+  fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([]));
+  fs.writeFileSync(path.join(root, "TODO.md"), [
+    "# TODO", "", "## ⇶ Critical", ...sections.critical, "", "## → Normal", ...sections.normal,
+    "", "## ✓ Resolved", ...sections.resolved, "",
+  ].join("\n"));
+  return { root, orderedIds: [...criticalOpenIds, ...criticalResolvedIds, ...normalOpenIds], criticalOpenIds };
 }
 
 function doc(root: string, document: string, filePath: string, status = "current"): any {
@@ -728,6 +797,266 @@ describe("TODO item and documentation inventory entity authority", () => {
     todo(root, "cursor invalidator"); const stale = capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", todoPage.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
     const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ status: "degraded", counts: { returned: 6, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 }, retrieval: { get: "agentera state todo get --id ID --format json" } }); expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
     expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
+  });
+
+  it("preserves 40, 60, and 100 realistic TODO rows across byte pressure, filters, and continuation without mutation", () => {
+    const { root, orderedIds, criticalOpenIds } = realisticTodoProject();
+    const before = files(root);
+
+    for (const limit of [40, 60, 100]) {
+      const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", String(limit), "--format", "json"]);
+      expect(result.rc, result.err || result.out).toBe(0);
+      expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(32_768);
+      expect(result.json).toMatchObject({
+        counts: { total: 120, candidate: 120, returned: limit, remaining: 120 - limit, omitted: 120 - limit, continuation: 120 - limit },
+        projection: { selector: "ids_only", detail: "identity", cardinality: "requested_rows" },
+      });
+      expect(result.json.entries).toHaveLength(limit);
+      expect(result.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, limit));
+      expect(result.json.entries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: limit }, (_, index) => index + 1));
+      for (const entry of result.json.entries) {
+        expect(Object.keys(entry).sort()).toEqual(["artifact", "id", "queue_rank", "retrieval"]);
+        expect(entry.retrieval.get).toBe(`agentera state todo get --id ${entry.id} --format json`);
+      }
+    }
+
+    const first = capture(root, ["state", "todo", "list", "--severity", "critical", "--status", "open", "--ids-only", "--limit", "40", "--format", "json"]);
+    expect(first.rc, first.err || first.out).toBe(0);
+    expect(first.json).toMatchObject({ counts: { total: 70, candidate: 70, returned: 40, remaining: 30, omitted: 30, continuation: 30 } });
+    const second = capture(root, shellCommandArgs(first.json.retrieval.continue));
+    expect(second.rc, second.err || second.out).toBe(0);
+    expect(second.json).toMatchObject({ counts: { total: 70, candidate: 70, returned: 30, remaining: 0, omitted: 0, continuation: 0 } });
+    const paged = [...first.json.entries, ...second.json.entries];
+    expect(paged.map((entry: any) => entry.id)).toEqual(criticalOpenIds);
+    expect(new Set(paged.map((entry: any) => entry.id)).size).toBe(70);
+    expect(paged.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 70 }, (_, index) => index + 1));
+
+    const selected = capture(root, ["state", "todo", "list", "--fields", "status,target_version", "--limit", "100", "--format", "json"]);
+    expect(selected.rc, selected.err || selected.out).toBe(0);
+    expect(selected.json.entries).toHaveLength(100);
+    expect(selected.json.projection).toMatchObject({ selector: "fields", fields: ["status", "target_version"], cardinality: "requested_rows" });
+    expect(selected.json.entries.every((entry: any) => entry.record.status && entry.record.target_version === "3.0.0")).toBe(true);
+
+    const degraded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]);
+    expect(degraded.rc, degraded.err || degraded.out).toBe(0);
+    expect(Buffer.byteLength(degraded.out)).toBeLessThanOrEqual(32_768);
+    expect(degraded.json).toMatchObject({
+      status: "degraded",
+      counts: { candidate: 120, returned: 100, omitted: 20, continuation: 20 },
+      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 100, omitted_fields: expect.arrayContaining(["record", "provenance"]) },
+    });
+
+    const rejected = capture(root, ["state", "todo", "list", "--fields", "title", "--limit", "100", "--format", "json"]);
+    expect(rejected.rc).toBe(1);
+    expect(rejected.json).toMatchObject({ status: "fail", error: { class: "unsupported_state", message: expect.stringContaining("selected fields cannot fit") } });
+
+    for (const entry of [first.json.entries[0], second.json.entries.at(-1), degraded.json.entries.at(-1)]) {
+      const exact = capture(root, shellCommandArgs(entry.retrieval.get));
+      expect(exact.rc, exact.err || exact.out).toBe(0);
+      expect(exact.json.entry).toMatchObject({ id: entry.id, artifact: "todo" });
+    }
+    expect(files(root)).toEqual(before);
+  });
+
+  it("binds TODO cursors to normalized limit and preserves exact unfiltered continuation", () => {
+    const { root, orderedIds } = realisticTodoProject();
+    const before = files(root);
+    const cursorFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    expect(cursorFirst.rc, cursorFirst.err || cursorFirst.out).toBe(0);
+    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+    const cursorPayload = decodeListCursor(cursorFirst.json.next_cursor, root, authorityPath);
+    expect(cursorPayload).toMatchObject({
+      limit: 10,
+      order: "severity_then_status_then_markdown_order_then_id",
+      filters: {},
+      selector: expect.any(String),
+      snapshot_id: expect.any(String),
+      after: cursorFirst.json.entries.at(-1).id,
+    });
+
+    const cursorPages = [cursorFirst.json];
+    while (cursorPages.at(-1).retrieval.continue) {
+      const next = capture(root, shellCommandArgs(cursorPages.at(-1).retrieval.continue));
+      expect(next.rc, next.err || next.out).toBe(0);
+      cursorPages.push(next.json);
+    }
+    const cursorEntries = cursorPages.flatMap((page) => page.entries);
+    expect(cursorPages).toHaveLength(12);
+    cursorPages.forEach((page, index) => expect(page.counts).toMatchObject({
+      total: 120,
+      candidate: 120,
+      returned: 10,
+      remaining: 120 - (index + 1) * 10,
+      omitted: 120 - (index + 1) * 10,
+      continuation: 120 - (index + 1) * 10,
+    }));
+    expect(cursorPages.at(-1)).toMatchObject({ status: "ok", counts: { remaining: 0, omitted: 0, continuation: 0 } });
+    expect(cursorPages.at(-1).next_cursor).toBeUndefined();
+    expect(cursorPages.at(-1).retrieval.continue).toBeUndefined();
+    expect(cursorEntries.map((entry: any) => entry.id)).toEqual(orderedIds);
+    expect(cursorEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 120 }, (_, index) => index + 1));
+    expect(new Set(cursorEntries.map((entry: any) => entry.id)).size).toBe(120);
+    const cursorExact = capture(root, shellCommandArgs(cursorEntries.at(-1).retrieval.get));
+    expect(cursorExact.rc, cursorExact.err || cursorExact.out).toBe(0);
+    expect(cursorExact.json.entry).toMatchObject({ id: orderedIds.at(-1), artifact: "todo" });
+
+    expect(files(root)).toEqual(before);
+  });
+
+  it("preserves filtered TODO continuation and pre-filter queue rank", () => {
+    const { root, orderedIds } = realisticTodoProject();
+    const before = files(root);
+    const first = capture(root, ["state", "todo", "list", "--severity", "normal", "--status", "open", "--ids-only", "--limit", "10", "--format", "json"]);
+    expect(first.rc, first.err || first.out).toBe(0);
+    const normalPages = [first.json];
+    while (normalPages.at(-1).retrieval.continue) {
+      const next = capture(root, shellCommandArgs(normalPages.at(-1).retrieval.continue));
+      expect(next.rc, next.err || next.out).toBe(0);
+      normalPages.push(next.json);
+    }
+    const normalEntries = normalPages.flatMap((page) => page.entries);
+    expect(normalPages).toHaveLength(3);
+    expect(normalEntries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(90));
+    expect(normalEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 30 }, (_, index) => index + 91));
+    expect(files(root)).toEqual(before);
+  });
+
+  it("classifies TODO request-binding changes as cursor_invalid with current exact restart", () => {
+    const { root, orderedIds } = realisticTodoProject();
+    const before = files(root);
+    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+    const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
+    const assertInvalid = (args: string[], message: string, recovery: string, expectedIds: string[]): void => {
+      const result = capture(root, args);
+      expect(result.rc).toBe(1);
+      expect(result.json).not.toHaveProperty("entries");
+      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message, recovery });
+      const restarted = capture(root, shellCommandArgs(result.json.error.recovery));
+      expect(restarted.rc, restarted.err || restarted.out).toBe(0);
+      expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(expectedIds);
+    };
+
+    assertInvalid(
+      ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "json"],
+      "todo cursor is bound to --limit 10, not --limit 5",
+      "agentera state todo list --ids-only --limit 5 --format json",
+      orderedIds.slice(0, 5),
+    );
+    assertInvalid(
+      ["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", first.json.next_cursor, "--format", "json"],
+      "todo cursor is bound to --limit 10, not --limit 20",
+      "agentera state todo list --ids-only --limit 20 --format json",
+      orderedIds.slice(0, 20),
+    );
+    assertInvalid(
+      ["state", "todo", "list", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"],
+      "todo cursor selectors do not match this request",
+      "agentera state todo list --limit 10 --format json",
+      orderedIds.slice(0, 10),
+    );
+    assertInvalid(
+      ["state", "todo", "list", "--status", "open", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"],
+      "todo cursor filters do not match this request",
+      "agentera state todo list --status 'open' --ids-only --limit 10 --format json",
+      orderedIds.slice(0, 10),
+    );
+    const changedOrder = structuredClone(payload); changedOrder.order = "changed_order";
+    assertInvalid(
+      ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(changedOrder, root, authorityPath), "--format", "json"],
+      "todo cursor order does not match this request",
+      "agentera state todo list --ids-only --limit 10 --format json",
+      orderedIds.slice(0, 10),
+    );
+
+    const defaultFirst = capture(root, ["state", "todo", "list", "--ids-only", "--format", "json"]);
+    expect(decodeListCursor(defaultFirst.json.next_cursor, root, authorityPath).limit).toBe(20);
+    const explicitDefault = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", defaultFirst.json.next_cursor, "--format", "json"]);
+    expect(explicitDefault.rc, explicitDefault.err || explicitDefault.out).toBe(0);
+    expect(explicitDefault.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20, 40));
+    const explicitFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "20", "--format", "json"]);
+    const omittedDefault = capture(root, ["state", "todo", "list", "--ids-only", "--cursor", explicitFirst.json.next_cursor, "--format", "json"]);
+    expect(omittedDefault.rc, omittedDefault.err || omittedDefault.out).toBe(0);
+    expect(omittedDefault.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20, 40));
+    expect(files(root)).toEqual(before);
+  });
+
+  it("fails closed for malformed, signed legacy, signature, base64, and payload cursors", () => {
+    const { root, orderedIds } = realisticTodoProject();
+    const before = files(root);
+    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+    const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
+    const [body, signature] = String(first.json.next_cursor).split(".");
+    const legacy = structuredClone(payload); delete legacy.limit;
+    const variants = [
+      { label: "malformed", cursor: "not-a-cursor", message: "todo cursor is malformed or belongs to another project" },
+      { label: "signature", cursor: `${body}.${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`, message: "todo cursor is malformed or belongs to another project" },
+      { label: "base64", cursor: `${body}=.${signature}`, message: "todo cursor is malformed or belongs to another project" },
+      { label: "payload", cursor: encodeListCursor([] as any, root, authorityPath), message: "todo cursor is malformed or belongs to another project" },
+      { label: "legacy", cursor: encodeListCursor(legacy, root, authorityPath), message: "todo cursor lacks the required effective limit binding" },
+    ];
+    for (const variant of variants) {
+      const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", variant.cursor, "--format", "json"]);
+      expect(result.rc, variant.label).toBe(1);
+      expect(result.json).not.toHaveProperty("entries");
+      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: variant.message, recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+      const restarted = capture(root, shellCommandArgs(result.json.error.recovery));
+      expect(restarted.rc, restarted.err || restarted.out).toBe(0);
+      expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+    }
+    expect(files(root)).toEqual(before);
+  });
+
+  it("rejects signed invalid TODO limits and preserves YAML and text cursor errors", () => {
+    const { root } = realisticTodoProject();
+    const before = files(root);
+    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+    const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
+    for (const invalidLimit of [0, -1, 1.5, 101, "10", null]) {
+      const invalid = structuredClone(payload); invalid.limit = invalidLimit as any;
+      const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(invalid, root, authorityPath), "--format", "json"]);
+      expect(result.rc, String(invalidLimit)).toBe(1);
+      expect(result.json).not.toHaveProperty("entries");
+      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: "todo cursor has an invalid effective limit binding", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+      expect(capture(root, shellCommandArgs(result.json.error.recovery)).rc).toBe(0);
+    }
+
+    const yaml = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "yaml"]);
+    expect(yaml.rc).toBe(1);
+    expect(loadYamlMapping(yaml.out)).toMatchObject({ status: "fail", error: { class: "cursor_invalid", recovery: "agentera state todo list --ids-only --limit 5 --format json" } });
+    expect(loadYamlMapping(yaml.out)).not.toHaveProperty("entries");
+    const text = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "text"]);
+    expect(text.rc).toBe(1);
+    expect(text.out).toBe("");
+    expect(text.err).toContain("Class: cursor_invalid");
+    expect(text.err).toContain("Recovery: agentera state todo list --ids-only --limit 5 --format json");
+    expect(files(root)).toEqual(before);
+  });
+
+  it("reserves snapshot-unavailable for actual state loss and missing continuation identity", () => {
+    const { root, orderedIds } = realisticTodoProject();
+    const initial = files(root);
+    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+    const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
+    const missingAfter = structuredClone(payload); missingAfter.after = "zzzzzzzzzz";
+    const missing = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(missingAfter, root, authorityPath), "--format", "json"]);
+    expect(missing.rc).toBe(1);
+    expect(missing.json).not.toHaveProperty("entries");
+    expect(missing.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor continuation identity is no longer available", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+    expect(capture(root, shellCommandArgs(missing.json.error.recovery)).json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+    expect(files(root)).toEqual(initial);
+
+    todo(root, "Actual cursor snapshot mutation", "critical");
+    const mutated = files(root);
+    const stale = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"]);
+    expect(stale.rc).toBe(1);
+    expect(stale.json).not.toHaveProperty("entries");
+    expect(stale.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor snapshot is no longer available", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+    expect(capture(root, shellCommandArgs(stale.json.error.recovery)).rc).toBe(0);
+    expect(files(root)).toEqual(mutated);
   });
 
   it("uses static final help and explain with bare IDs", () => {

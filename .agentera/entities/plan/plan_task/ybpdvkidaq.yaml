@@ -4,7 +4,7 @@ record:
   name: M3 · Make bounded summary limits predictable (hykqpkcsix)
   depends_on:
     - ewkfnxucxq
-  status: complete
+  status: superseded
   acceptance:
     - GIVEN N filtered candidates WHEN limit N is requested THEN N summary rows return even when optional detail exceeds the byte budget.
     - GIVEN IDs-only, selected fields, or continuation WHEN read THEN order, queue rank, counts, omissions, cursors, and exact-get recovery are deterministic.
@@ -12,12 +12,15 @@ record:
     - GIVEN selector and byte-pressure classes WHEN tested THEN each has one success and one bounded degradation or rejection case.
   plan: frkpjqmpnj
   evaluation:
-    attempt_count: 2
-    failure_count: 1
-    last_verdict: pass
-    last_failure_evidence: Filtered decision continuations omit --topic and filtered health continuations do not shell-quote --dimension, so valid pages cannot advance deterministically; selector parsing also accepts --fieldsx as --fields. See packages/cli/src/state/decisionEntities.ts:324, packages/cli/src/state/healthEntities.ts:272, and packages/cli/src/cli/commands/state/list.ts:100-122.
+    attempt_count: 3
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: TODO cardinality now passes at 40/60/100, but a cursor created with --limit 10 resumes successfully with --limit 5 even though retrieval authority binds continuation to limit. Encode effective limit and return structured cursor_invalid on mismatch. See packages/cli/src/state/todoDocsEntities.ts:909-911 and state-storage-authority.yaml:285,291.
     provenance:
-      attempt_id: ybpdvkidaq-audit-2
-      source: Audit ses_0400e3da4ffeJT375g86agmeVk bounded re-review
-      recorded_at: 2026-08-02 03:23
+      attempt_id: ybpdvkidaq-audit-3
+      source: Audit ses_03e67c4cbffewdCHwyvmZqIsTi
+      recorded_at: 2026-08-02 10:56
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - dnbytwkmiu
+  superseded_reason: Replacement preserves 100-row cardinality and closes all cursor request bindings

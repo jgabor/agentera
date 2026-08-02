@@ -109,10 +109,14 @@ export function entityListSelectorFlags(selector: ResolvedEntityListSelector): s
   return "";
 }
 
-function identityEntry(entry: JsonObject, family: ReturnType<typeof entityListFamily>): JsonObject {
+function identityEntry(
+  entry: JsonObject,
+  family: ReturnType<typeof entityListFamily>,
+  fields: readonly string[],
+): JsonObject {
   const id = String(entry.id);
   const result: JsonObject = { id, artifact: String(entry.artifact) };
-  for (const field of family.summaryFields) {
+  for (const field of fields) {
     if (field === "id" || field === "artifact") continue;
     if (field === "retrieval.get") {
       result.retrieval = { get: family.get.replace("ID", id) };
@@ -125,7 +129,8 @@ function identityEntry(entry: JsonObject, family: ReturnType<typeof entityListFa
 }
 
 function projectEntry(entry: JsonObject, selector: ResolvedEntityListSelector, family: ReturnType<typeof entityListFamily>): JsonObject {
-  const identity = identityEntry(entry, family);
+  const fields = selector.mode === "default" ? family.summaryFields : family.minimumFields;
+  const identity = identityEntry(entry, family, fields);
   if (selector.mode === "ids_only" || selector.mode === "default") return identity;
   const record: JsonObject = {};
   for (const field of selector.fields) {
@@ -133,6 +138,36 @@ function projectEntry(entry: JsonObject, selector: ResolvedEntityListSelector, f
     if (value !== undefined) assignSelected(record, field, value);
   }
   return { ...identity, record };
+}
+
+function omittedTopLevelFields(fullEntries: JsonObject[], retainedEntries: JsonObject[]): string[] {
+  const omitted = new Set<string>();
+  fullEntries.forEach((entry, index) => {
+    const retained = retainedEntries[index] ?? {};
+    for (const field of Object.keys(entry)) if (!(field in retained)) omitted.add(field);
+  });
+  return [...omitted].sort();
+}
+
+function degradedProjection(
+  response: JsonObject,
+  entries: JsonObject[],
+  selector: ResolvedEntityListSelector,
+  options: EntityListProjectionOptions,
+  family: ReturnType<typeof entityListFamily>,
+  fullEntries: JsonObject[],
+  detail: "summary" | "minimum",
+): JsonObject {
+  return normalize({
+    ...response,
+    status: "degraded",
+    degradation: {
+      reason: "optional_detail_byte_budget",
+      detail_omitted_count: entries.length,
+      omitted_fields: omittedTopLevelFields(fullEntries, entries),
+      recovery: family.get,
+    },
+  }, entries, selector, options, detail);
 }
 
 function normalize(
@@ -179,7 +214,7 @@ export function projectEntityList(
   const family = entityListFamily(options.family);
   const fullEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
   const selectedEntries = selector.mode === "default"
-    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, family).retrieval }))
+    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, family, family.minimumFields).retrieval }))
     : fullEntries.map((entry) => projectEntry(entry, selector, family));
   const selectedDetail = selector.mode === "default" ? "full" : selector.mode === "fields" ? "selected_fields" : "identity";
   const selected = normalize(response, selectedEntries, selector, options, selectedDetail);
@@ -189,15 +224,10 @@ export function projectEntityList(
     fail(options, `${selector.mode === "fields" ? "selected fields" : "IDs-only rows"} cannot fit the ${options.maxUtf8Bytes}-byte ${options.format} list budget`, "Request fewer rows or fewer fields and retry; no fields or rows were returned partially.", 1);
   }
   const summaries = fullEntries.map((entry) => projectEntry(entry, selector, family));
-  const degraded = normalize({
-    ...response,
-    status: "degraded",
-    degradation: {
-      reason: "optional_detail_byte_budget",
-      detail_omitted_count: summaries.length,
-      recovery: family.get,
-    },
-  }, summaries, selector, options, "summary");
+  const degraded = degradedProjection(response, summaries, selector, options, family, fullEntries, "summary");
   if (serializedProjectionBytes(degraded, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return degraded;
+  const minimumEntries = fullEntries.map((entry) => identityEntry(entry, family, family.minimumFields));
+  const minimum = degradedProjection(response, minimumEntries, selector, options, family, fullEntries, "minimum");
+  if (serializedProjectionBytes(minimum, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return minimum;
   fail(options, `the requested summary rows cannot fit the ${options.maxUtf8Bytes}-byte ${options.format} list budget`, "Request fewer rows and retry; no rows were returned partially.", 1);
 }

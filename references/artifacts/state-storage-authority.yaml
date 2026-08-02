@@ -106,7 +106,7 @@ entity_target:
         selectors:
           ids_only:
             flag: --ids-only
-            description: Return identity, exact-get recovery, and any family-specific summary fields.
+            description: Return only canonical minimum identity, exact-get recovery, and required family minimum fields such as TODO queue_rank.
           fields:
             flag: --fields FIELDS
             description: Select comma-separated lowercase record paths present in the filtered snapshot; identity and exact-get recovery remain present.
@@ -219,6 +219,116 @@ entity_target:
       - { artifact: experiments, identity: id, classification: artifact }
       - { artifact: todo, identity: id, classification: artifact }
       - { artifact: docs, identity: id, classification: artifact }
+    policy:
+      schema_version: agentera.entityPublicRetrievalPolicy.v1
+      status: final
+      authority_boundary: >-
+        This canonical public-retrieval model owns list/get envelopes, cursors,
+        selectors, identities, omissions, structured failures, and output bounds.
+        Entity definitions own family ordering and storage. No other active
+        section may declare public retrieval commands, selectors, or identities.
+      envelope:
+        required_fields:
+          - schemaVersion
+          - command
+          - status
+          - entries
+          - counts
+          - filters
+          - snapshot
+          - source
+          - source_contract
+        counts_required_fields: [total, returned, remaining, candidate, omitted, continuation]
+        status_values: [ok, degraded]
+        bounded_summary_projection:
+          cardinality_owner: summary_rows_after_filters_and_cursor
+          limit_semantics: >-
+            Return exactly min(requested limit, candidates remaining in the bound
+            snapshot) rows. Serialized-byte pressure may remove optional detail
+            from those rows but never removes a selected row.
+          minimum_fields: [id, artifact, retrieval.get]
+          family_minimum_fields:
+            todo: [queue_rank]
+          optional_fields_rule: >-
+            Every declared family summary field that is not a minimum field is
+            optional under byte pressure and is removed as one deterministic tier.
+          queue_rank: >-
+            One-based position in the complete canonically ordered TODO queue
+            before request filters. It is computed from the read snapshot and is
+            never persisted or used to reorder TODO.md.
+          optional_detail_degradation:
+            status: degraded
+            reason: optional_detail_byte_budget
+            row_omission: forbidden
+            scalar_truncation: forbidden
+            required_metadata: [reason, detail_omitted_count, omitted_fields, recovery]
+            omitted_fields_order: lexical
+            recovery: concrete_exact_get_pointer_per_returned_row
+          selectors:
+            ids_only:
+              fields: canonical_minimum_fields
+              optional_summary_fields: excluded
+            fields:
+              fields: canonical_minimum_fields_plus_all_requested_record_paths
+              validation: >-
+                Each lowercase dot path must exist in at least one record in the
+                filtered cursor snapshot. Duplicate, malformed, or absent paths
+                are invalid_request. Requested paths are sorted before projection
+                and cursor binding; a missing value in one row remains absent.
+              scalar_truncation: forbidden
+            mutual_exclusion: ids_only_and_fields
+          byte_pressure:
+            ids_only: reject_without_partial_rows_if_minimum_rows_cannot_fit
+            selected_fields: reject_without_partial_rows_or_fields
+            default: degrade_full_to_summary_then_minimum_before_rejection
+          metadata:
+            continuation: binds_family_identifier_filters_selector_limit_order_and_snapshot
+            exact_get: one_concrete_command_per_returned_row
+      cursor:
+        vocabulary: opaque_snapshot_cursor
+        first_page: omit_cursor
+        response_field: next_cursor
+        binding: [collection, family_identifier, selectors, filters, limit, order, snapshot]
+        invalid_behavior: cursor_invalid
+        unavailable_behavior: cursor_snapshot_unavailable
+        caller_rules: [do_not_parse, do_not_construct, do_not_compare_internals]
+      omission:
+        required_when_candidates_remain: [omitted, omitted_count, omission_reason, retrieval]
+        semantics: >-
+          Omission reports only candidates beyond the selected row window.
+          Optional detail degradation is separate and names every omitted field.
+          A response never silently slices rows or truncates scalar values.
+      output_bounds:
+        maximum_limit: 100
+        max_serialized_utf8_bytes: 32768
+        scalar_truncation: forbidden
+        row_omission_under_byte_pressure: forbidden
+        optional_detail: degrade_before_minimum_row_rejection
+      failures:
+        schema_version: agentera.stateFailure.v1
+        required_fields: [class, message, syntax, example, recovery]
+        classes:
+          invalid_request: malformed, duplicate, missing, or incompatible selector
+          unsupported_artifact: collection is not exposed by the canonical grammar
+          not_found: a valid exact identity has no matching record
+          ambiguous: duplicate identity or compatibility state has multiple candidates
+          corrupt: selected state cannot be parsed or validated safely
+          incomplete: selected record exists but required detail is unavailable
+          cursor_invalid: cursor is malformed or bound to different request state
+          cursor_snapshot_unavailable: exact cursor snapshot cannot be resumed
+          unsupported_state: authority cannot return a safe bounded envelope
+        exit_codes: { usage: 2, state_or_compatibility_failure: 1 }
+      archive_policy:
+        plan:
+          owner: canonical_plan_entities_and_immutable_plan_archive_entities
+          diagnostics: selected_candidate_only_blocks_exact_get
+          unselected_diagnostics: degrade_catalog_without_blocking_other_exact_gets
+        experiments:
+          owner: experiment_archival
+          storage_scope: objective_directory
+          publication_order: archive_before_projection
+          projection_policy: uniform_10_40_50
+          missing_detail: never_reconstructed
   identity:
     scope: project_wide_across_all_entity_artifacts
     alphabet: abcdefghijklmnopqrstuvwxyz
@@ -1318,9 +1428,10 @@ scope:
     - objective
     - experiments
 
-retrieval:
-  schema_version: agentera.stateRetrievalAuthority.v1
-  status: plan_task_plan_and_experiment_retrieval_implemented
+historical_retrieval_evidence:
+  schema_version: agentera.stateRetrievalHistory.v1
+  status: retired_historical_evidence
+  runtime_consumption: forbidden
   implementation:
     plan_tasks: implemented
     plans: implemented
@@ -1329,10 +1440,9 @@ retrieval:
     decisions: implemented
     health: implemented
   authority_boundary: >-
-    This group owns public list/get envelopes, cursors, selectors, identities,
-    omissions, and structured retrieval failures. It does not replace storage
-    ownership: canonical entity files remain authoritative after the durable
-    cutover marker; retained v2 aggregates are immutable migration evidence only.
+    This inert group records pre-entity retrieval closure evidence only. It does
+    not own runtime grammar or policy; entity_target.public_retrieval is the sole
+    active public retrieval model.
   envelope:
     schema_version: agentera.stateRetrieval.v1
     required_fields:
@@ -1452,131 +1562,6 @@ retrieval:
     scalar_truncation: forbidden
     omission_unit: candidates_beyond_the_summary_row_window
     optional_detail: degrade_before_any_summary_row_omission
-  identity:
-    plan:
-      canonical_format: 'bare ten-letter envelope ID'
-      persistence: stored in the canonical plan envelope id assigned by the typed writer
-      transition: the identical bare ID is retained when the plan moves to archive history
-      legacy_format: 'migration-only header.id plan:<lowercase-rfc9562-uuid> or legacy-plan:<sha256>'
-      legacy_derivation: >-
-        Migration-only SHA-256 over RFC 8785 canonical JSON of the complete
-        legacy plan after the existing read-compatibility normalization of legacy
-        status and task shape. This identity is read-only provenance, never a
-        canonical entity ID or public selector, and never rewrites source bytes.
-      test_vectors:
-        - canonical_json: '{"header":{"created":"2026-07-14","status":"open","title":"Plan: Complete bounded retrieval"},"tasks":[]}'
-          stable_id: legacy-plan:b6f93d6fc5a0ac3ada017670ac311794ad92800fb436703f8f09e25ddce8b89a
-          mirrored_example_paths: [.agentera/archive/PLAN-copy-a.yaml, .agentera/archive/PLAN-copy-b.yaml]
-          identical_result: mirrored_provenance
-      collision: >-
-        Byte-equivalent normalized legacy plans are one logical identity with
-        every physical path retained as mirrored provenance. Different plan
-        documents carrying the same persisted ID, or a detected digest collision,
-        are unaddressable; list reports compatibility=degraded and get returns
-        ambiguous with every candidate provenance path. The CLI never chooses by
-        mtime, archive filename, or discovery order.
-    task:
-      format: 'bare ten-letter entity ID'
-      selector: --id ID
-      scope: task IDs are globally unique across canonical plan-task entities
-    objective:
-      canonical_format: 'objective:<lowercase-rfc9562-uuid>'
-      persistence: stored in header.id and unchanged by title or directory rename
-      canonical_root: .agentera/optimize/<objective-slug>
-      legacy_root: .agentera/optimera/<objective-slug>
-      legacy_format: 'legacy-objective:<sha256>'
-      legacy_derivation: >-
-        SHA-256 over RFC 8785 canonical JSON of the legacy objective's description,
-        measurement, metric, baseline, gates, constraints, and scope; title,
-        status, closure fields, directory root, and directory slug are excluded.
-        This preserves identity across a title/path-only rename without rewriting
-        history. Editing identity inputs may change a legacy identity and is
-        reported as degraded compatibility.
-      test_vectors:
-        - canonical_json: '{"baseline":{"description":"100 ms"},"constraints":[],"description":"Reduce latency","gates":{},"measurement":"p95","metric":{"direction":"minimize","unit":"ms"},"scope":{"excluded":[],"included":["CLI"]}}'
-          title_variants: [CLI latency, Faster CLI]
-          root_variants: [.agentera/optimize/cli-latency, .agentera/optimera/faster-cli]
-          stable_id: legacy-objective:aa987d92dadce65b8b2d8f54c741a10f5d024d864cb0ef309b4321b4e19e4ceb
-      path_compatibility: >-
-        Read both optimize and optimera roots. Identical records carrying one
-        persisted objective ID are mirrored provenance. Different records with
-        the same persisted or derived ID, or unresolved candidates in both roots,
-        return ambiguous; canonical-root preference must not hide a collision.
-    experiment:
-      format: '<objective-id>/experiment:<non-negative-integer>'
-      scope: experiment numbers are unique only within one objective identity
-      zero: experiment 0 is valid and is normally the baseline
-      collision: duplicate numbers inside one objective are ambiguous and never resolved by array order
-      compatibility: >-
-        Legacy full-detail or 10/40/50 summary entries with a missing or
-        duplicate number remain visible in reads with addressable=false and an
-        explicit compatibility caveat. Reads do not assign a number, choose a
-        duplicate by array order, migrate a root, or rewrite retained bytes.
-      publication_validation: >-
-        Before any publication effect, require one unambiguous objective
-        identity, a non-negative integer number, and no retained full-detail or
-        summary entry with that number. Ambiguous canonical/legacy objective
-        candidates, missing objective identity, and duplicate experiment
-        identity fail validation without changing bytes.
-      publication:
-        command: agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json
-        authority: typed_state_writer
-        archive_ownership: experiment_archival
-        storage_scope: objective_directory
-        publication_order: archive_before_projection
-        projection_policy: uniform_10_40_50
-        input: one schema-valid experiment entry without the CLI-owned number field
-        identity_assignment: the CLI assigns the validated --number to the published entry
-        collision_rule: >-
-          An existing matching identity and byte-equivalent experiment is an
-          idempotent replay; the same identity with different content is a
-          collision and leaves the projection unchanged.
-        transaction: >-
-          Validate objective identity, canonical/legacy ambiguity, experiment
-          identity, existing projection schema, caller input schema, and final
-          projection bytes before atomically replacing experiments.yaml.
-        failure_atomicity: >-
-          Validation, staging, and pre-publication failures preserve both active
-          and one-line archive bytes. An interruption after atomic replacement
-          may report failure after publication; retrying the same command must
-          return the already-published entry without duplication.
-        scope_boundary: >-
-          Publication preserves the existing 10/40/50 projection contract and
-          durably publishes its objective-scoped immutable archive before
-          replacing the projection, as owned by experiment_archival.
-  commands:
-    plan_tasks:
-      list: agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-      get: agentera state plan tasks get --id ID --format json
-      selectors:
-        plan:
-          list_required: false
-          list_default: active plan resolved once and returned as filters.plan
-          get_required: false
-          get_default: task relationship record returns its owning plan ID
-          pattern: '^[a-z]{10}$'
-        task:
-          get_required: true
-          pattern: '^[a-z]{10}$'
-    plans:
-      list: agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-      get: agentera state plan get --id ID --format json
-      selectors:
-        plan:
-          get_required: true
-          pattern: '^[a-z]{10}$'
-    experiments:
-      list: agentera state experiments list --objective OBJECTIVE_ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-      get: agentera state experiments get --objective OBJECTIVE_ID --number N --format json
-      publish: agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json
-      selectors:
-        objective:
-          list_required: true
-          get_required: true
-          pattern: '^(objective:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-objective:[0-9a-f]{64})$'
-        number:
-          get_required: true
-          pattern: '^(0|[1-9][0-9]*)$'
   failures:
     schema_version: agentera.stateFailure.v1
     required_fields: [class, message, syntax, example, recovery]

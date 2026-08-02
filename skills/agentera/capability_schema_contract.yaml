@@ -281,7 +281,7 @@ ROUTE_ALIASES:
   canonical_name_precedence: true
   cli_boundary: >-
     Slash routes and state commands are distinct: `/agentera plan` routes to
-    the plan capability, while `agentera state plan` remains the
+    the plan capability, while `agentera state plan list` remains the
     state-oriented CLI command for reading plan state. Do not add capability or
     alias commands to the CLI.
   primary_aliases:

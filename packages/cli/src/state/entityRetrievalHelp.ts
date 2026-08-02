@@ -35,6 +35,7 @@ export interface EntityListFamilyHelp {
   filters: EntityListFilterHelp[];
   familyIdentifier?: { syntax: string; required: boolean; description: string };
   summaryFields: string[];
+  minimumFields: string[];
   summaryFieldNotes: Record<string, EntityListSummaryFieldNote>;
   selectors: {
     idsOnly: { flag: string; description: string };
@@ -240,8 +241,29 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
   const errors: string[] = [];
   const target = requireMapping(value, "entity_target", "", errors);
   const retrieval = requireMapping(target, "public_retrieval", "entity_target", errors);
+  if (value.retrieval !== undefined) errors.push("entity_target.public_retrieval.duplicate_active_map");
+  const historical = mapping(value.historical_retrieval_evidence);
+  if (
+    Object.keys(historical).length > 0
+    && (historical.status !== "retired_historical_evidence" || historical.runtime_consumption !== "forbidden")
+  ) errors.push("historical_retrieval_evidence.runtime_consumption");
+  for (const forbidden of ["commands", "identity"]) {
+    if (historical[forbidden] !== undefined) errors.push(`historical_retrieval_evidence.${forbidden}`);
+  }
   const commands = requireMapping(retrieval, "commands", "entity_target.public_retrieval", errors);
   const help = requireMapping(retrieval, "list_help", "entity_target.public_retrieval", errors);
+  const policy = requireMapping(retrieval, "policy", "entity_target.public_retrieval", errors);
+  exactKeys(policy, ["schema_version", "status", "authority_boundary", "envelope", "cursor", "omission", "output_bounds", "failures", "archive_policy"], [], "entity_target.public_retrieval.policy", errors);
+  if (policy.schema_version !== "agentera.entityPublicRetrievalPolicy.v1") errors.push("entity_target.public_retrieval.policy.schema_version");
+  if (policy.status !== "final") errors.push("entity_target.public_retrieval.policy.status");
+  if (typeof policy.authority_boundary !== "string" || policy.authority_boundary.trim() === "") errors.push("entity_target.public_retrieval.policy.authority_boundary");
+  const envelope = requireMapping(policy, "envelope", "entity_target.public_retrieval.policy", errors);
+  const projection = requireMapping(envelope, "bounded_summary_projection", "entity_target.public_retrieval.policy.envelope", errors);
+  if (!sameStrings(projection.minimum_fields, ["id", "artifact", "retrieval.get"])) errors.push("entity_target.public_retrieval.policy.envelope.bounded_summary_projection.minimum_fields");
+  const familyMinimumFields = requireMapping(projection, "family_minimum_fields", "entity_target.public_retrieval.policy.envelope.bounded_summary_projection", errors);
+  exactKeys(familyMinimumFields, ["todo"], [], "entity_target.public_retrieval.policy.envelope.bounded_summary_projection.family_minimum_fields", errors);
+  if (!sameStrings(familyMinimumFields.todo, ["queue_rank"])) errors.push("entity_target.public_retrieval.policy.envelope.bounded_summary_projection.family_minimum_fields.todo");
+  if (projection.cardinality_owner !== "summary_rows_after_filters_and_cursor") errors.push("entity_target.public_retrieval.policy.envelope.bounded_summary_projection.cardinality_owner");
   exactKeys(help, ["schema_version", "defaults", "families"], [], "entity_target.public_retrieval.list_help", errors);
   const defaults = requireMapping(help, "defaults", "entity_target.public_retrieval.list_help", errors);
   exactKeys(defaults, ["summary_fields", "selectors", "bounds", "formats"], [], "entity_target.public_retrieval.list_help.defaults", errors);
@@ -272,11 +294,12 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
 
   const api = mapping(value.api);
   const apiList = mapping(api.list);
-  const outputBounds = mapping(mapping(value.retrieval).output_bounds);
+  const outputBounds = mapping(policy.output_bounds);
   if (!sameStrings(api.formats, RUNTIME_FORMATS)) errors.push("api.formats");
   if (bounds.minimum !== apiList.minimum_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.minimum_authority_parity");
   if (bounds.default !== apiList.default_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.default_authority_parity");
   if (bounds.maximum !== apiList.maximum_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.maximum_authority_parity");
+  if (bounds.maximum !== outputBounds.maximum_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.maximum_policy_parity");
   if (bounds.max_utf8_bytes !== outputBounds.max_serialized_utf8_bytes) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.bytes_authority_parity");
 
   const acceptedIdentity = identityPattern(value);
@@ -343,6 +366,11 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
         if (typeof note.description !== "string" || note.description.trim() === "" || note.ownership !== owner || note.persisted !== false || note.filter !== false) errors.push(`${prefix}.summary_field_notes.${field}.semantics`);
       }
     } else if (Object.keys(notes).length > 0) errors.push(`${prefix}.summary_field_notes.unexpected`);
+    const minimumFields = [
+      ...strings(projection.minimum_fields),
+      ...strings(familyMinimumFields[key]),
+    ];
+    if (minimumFields.some((field) => !summaryFields.includes(field))) errors.push(`${prefix}.minimum_fields`);
 
     const projected: EntityListFamilyHelp = {
       key,
@@ -354,6 +382,7 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
       filters: parsedFilters,
       ...(identifier ? { familyIdentifier: { syntax: String(identifier.syntax), required: identifier.required === true, description: String(identifier.description) } } : {}),
       summaryFields,
+      minimumFields,
       summaryFieldNotes: {},
       selectors: {
         idsOnly: { flag: String(mapping(selectors.ids_only).flag), description: String(mapping(selectors.ids_only).description) },
@@ -389,6 +418,9 @@ export function entityListFamilies(sourceRoot = resolveSourceRoot()): EntityList
   const defaults = mapping(help.defaults);
   const defaultSelectors = mapping(defaults.selectors);
   const defaultBounds = mapping(defaults.bounds);
+  const policy = mapping(retrieval.policy);
+  const projection = mapping(mapping(policy.envelope).bounded_summary_projection);
+  const familyMinimumFields = mapping(projection.family_minimum_fields);
   const familyRecords = mapping(help.families);
   const families = ENTITY_LIST_RUNTIME_FAMILIES.map((runtime) => {
     const key = runtime.key as EntityListRuntimeFamilyKey;
@@ -405,6 +437,7 @@ export function entityListFamilies(sourceRoot = resolveSourceRoot()): EntityList
       filters: (family.filters as unknown[]).map((raw) => { const filter = mapping(raw); return { flag: String(filter.flag), name: String(filter.name), values: Array.isArray(filter.values) ? strings(filter.values) : String(filter.values) }; }),
       ...(identifier ? { familyIdentifier: { syntax: String(identifier.syntax), required: identifier.required === true, description: String(identifier.description) } } : {}),
       summaryFields: family.summary_fields === undefined ? strings(defaults.summary_fields) : strings(family.summary_fields),
+      minimumFields: [...strings(projection.minimum_fields), ...strings(familyMinimumFields[key])],
       summaryFieldNotes: notes,
       selectors: {
         idsOnly: { flag: String(mapping(defaultSelectors.ids_only).flag), description: String(mapping(defaultSelectors.ids_only).description) },

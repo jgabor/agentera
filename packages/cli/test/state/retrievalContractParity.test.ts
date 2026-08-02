@@ -26,6 +26,7 @@ function authorityDocument(): any {
 function setListLimit(authority: any, limit: number): void {
   authority.entity_target.public_retrieval.list_help.defaults.bounds.default = limit;
   authority.entity_target.public_retrieval.list_help.defaults.bounds.maximum = limit;
+  authority.entity_target.public_retrieval.policy.output_bounds.maximum_limit = limit;
   authority.api.list.default_limit = limit;
   authority.api.list.maximum_limit = limit;
   const entities = authority.entity_target.entities as any[];
@@ -216,7 +217,7 @@ describe("final entity retrieval public-contract parity", () => {
     expect(errors.filter((error) => error.endsWith(".example.limit"))).toHaveLength(ENTITY_LIST_RUNTIME_FAMILIES.length);
     const sourceRoot = mutatedSourceRoot(authority);
     withSourceRoot(sourceRoot, () => {
-      expect(() => buildSchemaPayload("schema")).toThrow(/invalid entity list help authority: .*\.example\.limit/);
+      expect(() => buildSchemaPayload("schema")).toThrow(/invalid state retrieval authority: .*\.example\.limit/);
     });
   });
 
@@ -282,6 +283,8 @@ describe("final entity retrieval public-contract parity", () => {
     const surfaces = [printStateHelp("plan"), printStateHelp("experiments"), ...Object.values(CAPABILITY_INSTRUCTIONS)].join("\n");
     expect(surfaces).toContain("--id ID");
     expect(surfaces).not.toMatch(/--(?:number|task)\s+[A-Z]/);
+    expect(surfaces).not.toMatch(/agentera state (?:progress|decisions|health|plan|objective|experiments|todo|docs) --format json/);
+    expect(surfaces).not.toMatch(/agentera state experiments get --objective/);
     expect(printStateHelp("plan")).toContain("Only the displayed bare-ID selectors are accepted");
   });
 

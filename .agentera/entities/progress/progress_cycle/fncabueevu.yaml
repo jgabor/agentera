@@ -1,0 +1,16 @@
+id: fncabueevu
+artifact: progress
+record:
+  timestamp: 2026-08-02 11:59
+  type: fix
+  phase: build
+  what: Corrected every TODO cursor failure class and restart after dnbytwkmiu Audit 1.
+  context:
+    intent: Retry dnbytwkmiu after accepted Audit 1 and correct the complete TODO cursor class/restart matrix.
+    constraints: Preserve idcmhyavxf, moglfdtpde, historical evidence, existing srd corrections, dev.39, and four staged M1 blobs. Append one new progress record only; do not change lifecycle, TODO, or release state.
+    unknowns: Independent re-evaluation of dnbytwkmiu and later M3 synchronization remain outstanding.
+    scope: TODO cursor request-binding classification, snapshot-loss classification, exact current restart, structured/text failure behavior, source/package matrices, and read-only verification.
+  discovered: Audit dnbytwkmiu-audit-1 confirmed limit mismatch behavior but found that selector failures retained prose recovery and filter/order mismatches shared cursor_snapshot_unavailable with actual state loss. The retry now validates request bindings separately before snapshot availability and reuses the already-computed shell-safe cursor-free restart in every TODO failure branch.
+  verified: "The exact class matrix now returns cursor_invalid for malformed, signature, base64, payload, legacy no-limit, invalid signed limit (0, -1, 1.5, 101, string, null), smaller/larger limit, selector, filter, and order failures. Actual snapshot mutation and a signed missing-after identity return cursor_snapshot_unavailable. Every JSON branch emits no entries and returns the current request restart with filters, selector, and normalized limit; all tested restarts exit 0. Live examples: limit 10→5 recovers with `agentera state todo list --ids-only --limit 5 --format json` and returns 5; limit 10→20 returns 20; selector restart returns 10; filter restart `agentera state todo list --status 'open' --ids-only --limit 10 --format json` returns 10 of 36; order and missing-after restarts return 10. Matching limit 10 returns 10 with remaining=108. Omitted and explicit default limit 20 resume with identical IDs and counts. JSON/YAML structured failures and text stderr are deterministic. The live read matrix left .agentera at hash 2f23df90f1564ce791b003e33192d5cc795d409e080572cd9a8bb586af83df17. Focused source tests passed 61/61. Full source passed 3,049 with 1 skipped across 225 files. Extracted-package verification passed 24/24 across 2 files, including realistic 120/121-row request-binding, encoding, invalid-limit, default-equivalence, missing-after, actual-snapshot, restart, cardinality 40/60/100, degradation, exact-get, and no-mutation coverage. Typecheck and build passed. State validation passed with 2,063 entities and 0 issues; capability-contract passed 3/3; compact passed with 0 errors/changes; diff, dev.39 manifest, and protected staged blob checks passed."
+  next: Run independent Audit for pending dnbytwkmiu; do not record PASS, complete or supersede tasks, resolve or move TODO, evaluate srdmkolwqc, prepare a release, publish, tag, or push.
+  publication_order: 51

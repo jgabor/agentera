@@ -1,6 +1,9 @@
 import type { JsonObject } from "../core/jsonValue.js";
+import { entityListFamily } from "../state/entityRetrievalHelp.js";
 import { sourceProvenance } from "./capabilityContext/shared.js";
 import { asList } from "./stateQuery.js";
+
+const PLAN_LIST_COMMAND = `agentera state ${entityListFamily("plans").commandTokens.join(" ")} list --format json`;
 
 function diagnosticEntries(value: unknown): JsonObject[] {
   return asList(value).filter(
@@ -27,7 +30,7 @@ export function planLifecycleState(plan: JsonObject): JsonObject {
     diagnostics: degradedDiagnostics,
     current_plan_degraded: currentPlanDegraded,
     execution_eligible: active && !currentPlanDegraded,
-    source_provenance: sourceProvenance("plan", "agentera state plan --format json", "source.diagnostics"),
+    source_provenance: sourceProvenance("plan", PLAN_LIST_COMMAND, "source.diagnostics"),
     caveats:
       status === "degraded"
         ? [

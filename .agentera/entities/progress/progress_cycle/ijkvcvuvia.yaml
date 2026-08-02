@@ -1,0 +1,14 @@
+id: ijkvcvuvia
+artifact: progress
+record:
+  timestamp: 2026-08-02 08:46
+  type: chore
+  phase: build
+  what: Reprepared agentera 3.0.0-dev.40 at governed provenance commit A and passed every pre-Audit gate without lifecycle closeout.
+  context:
+    intent: Record post-provenance release-candidate evidence for task srdmkolwqc before independent Audit.
+    constraints: Keep srdmkolwqc pending; do not evaluate or complete it, change TODO or lifecycle state, create commit B, publish, tag, push, open a PR, or mutate npm.
+    unknowns: The Audit verdict and any later commit B or lifecycle closeout remain outstanding.
+  verified: "Progress vdxneebzes captured the pre-provenance release-metadata failure: governed CHANGELOG.md was newer than package gitRef 850e8ae3fee0a0c119db3d71db4895e2e3f9a66f. Commit A 9cfdb091c955f1d8bacc550349d8beefa76061bc (docs(release): synchronize M3 release provenance) committed CHANGELOG.md and vdxneebzes before candidate preparation. Canonical prepare from committed dev.39 produced agentera 3.0.0-dev.40 with agentera.gitRef=9cfdb091c955f1d8bacc550349d8beefa76061bc; package suiteVersion, skill, and registry remain 3.0.0, and npm @next remains dev.39. Final gates PASS: verify:release (225 source files, 3,171 passed and 1 skipped; stress 1 file and 2 tests; performance 3 files and 3 tests; isolated package 2 files and 21 tests), typecheck, build, compact (0 over-limit, errors, or changes), capability-contract (3/3), release-metadata, and pack dry-run (762 files; no artifact created). State validation PASS (2,059 entities, 0 issues); TODO reconciliation is clean (94 managed, 0 drifted, 0 conflicts) with no writer or reconciliation residue; exact version-surface and git diff checks PASS; protected M1 index blobs are unchanged. Task srdmkolwqc remains pending. No evaluation, completion, TODO or lifecycle closeout, commit B, publication, tag, push, PR, or npm mutation occurred."
+  next: Run independent Audit; preserve this record and the generated package manifest uncommitted for commit B only after Audit.
+  publication_order: 48

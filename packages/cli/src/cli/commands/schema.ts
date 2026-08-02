@@ -19,7 +19,7 @@ import {
   loadNativeResourceCleanupContract,
   nativeResourceCleanupIds,
 } from "../../runtime/nativeResourceCleanup.js";
-import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
@@ -409,7 +409,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     commands: describeCommands(),
     state_writer: stateWriterContract(),
-    state_retrieval: { authority: retrievalAuthority.authority, ...entityPublicRetrieval() },
+    state_retrieval: { authority: retrievalAuthority.authority, ...retrievalAuthority.retrieval },
     entity_migration: entityMigrationAuthorityProjection(),
     integration: {
       authority: "references/cli/agent-ready-state-contract.yaml",

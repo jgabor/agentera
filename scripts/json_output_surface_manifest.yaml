@@ -186,11 +186,12 @@ surfaces:
       byte_budget: 55000
       token_budget: 14000
 - id: state-plan
-  command: agentera state plan
+  command: agentera state plan list
   selector: --format json
   argv:
   - state
   - plan
+  - list
   - --format
   - json
   inventory_classification: change
@@ -201,11 +202,12 @@ surfaces:
   byte_budget: 20000
   token_budget: 4500
 - id: state-progress
-  command: agentera state progress
+  command: agentera state progress list
   selector: --format json
   argv:
   - state
   - progress
+  - list
   - --format
   - json
   inventory_classification: change
@@ -216,11 +218,12 @@ surfaces:
   byte_budget: 14000
   token_budget: 3000
 - id: state-health
-  command: agentera state health
+  command: agentera state health list
   selector: --format json
   argv:
   - state
   - health
+  - list
   - --format
   - json
   inventory_classification: change
@@ -231,11 +234,12 @@ surfaces:
   byte_budget: 28000
   token_budget: 6500
 - id: state-todo
-  command: agentera state todo
+  command: agentera state todo list
   selector: --format json
   argv:
   - state
   - todo
+  - list
   - --format
   - json
   inventory_classification: change
@@ -246,11 +250,12 @@ surfaces:
   byte_budget: 25000
   token_budget: 6500
 - id: state-decisions
-  command: agentera state decisions
+  command: agentera state decisions list
   selector: --format json
   argv:
   - state
   - decisions
+  - list
   - --format
   - json
   inventory_classification: change
@@ -261,11 +266,12 @@ surfaces:
   byte_budget: 140000
   token_budget: 30000
 - id: state-docs
-  command: agentera state docs
+  command: agentera state docs list
   selector: --format json
   argv:
   - state
   - docs
+  - list
   - --format
   - json
   inventory_classification: change
@@ -276,11 +282,12 @@ surfaces:
   byte_budget: 24000
   token_budget: 6500
 - id: state-objective
-  command: agentera state objective
+  command: agentera state objective list
   selector: --format json
   argv:
   - state
   - objective
+  - list
   - --format
   - json
   inventory_classification: change
@@ -291,11 +298,14 @@ surfaces:
   byte_budget: 2000
   token_budget: 500
 - id: state-experiments
-  command: agentera state experiments
-  selector: --format json
+  command: agentera state experiments list
+  selector: --objective qjtrmnpvka --format json
   argv:
   - state
   - experiments
+  - list
+  - --objective
+  - qjtrmnpvka
   - --format
   - json
   inventory_classification: change

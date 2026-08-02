@@ -1,0 +1,16 @@
+id: moglfdtpde
+artifact: progress
+record:
+  timestamp: 2026-08-02 10:26
+  type: fix
+  phase: build
+  what: Restored predictable TODO list cardinality under byte pressure without lifecycle closeout.
+  context:
+    intent: Record verified implementation evidence for reopened task ybpdvkidaq.
+    constraints: Append evidence only. Preserve protected staged plan-task blobs and historical progress, and do not evaluate or complete tasks or perform release lifecycle actions.
+    unknowns: Independent evaluation and M3 synchronization remain outstanding.
+    scope: TODO bounded-list cardinality, selector behavior, continuation, exact recovery, source/package parity, and read-only state verification.
+  discovered: "The initial live CLI failure was an authority mismatch: the generated bundle predated the canonical public-retrieval policy. Rebuilding from the current dev.39 source removed that mismatch; lifecycle state remained pending throughout."
+  verified: Live rebuilt-source TODO IDs-only reads returned 40/60/100 of 128 candidates at 10,279/14,059/21,622 UTF-8 stdout bytes with exact queue_rank and get recovery; full-detail limit 100 returned 100 rows at 21,941 bytes with deterministic optional-detail degradation. Filtered continuation returned two disjoint 10-row pages from 36 open candidates, exact get recovered the selected entity, and the .agentera snapshot hash remained 53c719e057dac61f968ec74723e6190230483776930c0eba0185276d4f1cfcbb. Focused tests passed 194/194; final source suite passed 3,044 with 1 skipped; extracted-package verification passed 23/23, including realistic 120-row source/package parity and no mutation. Typecheck, build, generated-overlap, capability-contract, optimize capability, state validation (2,060 entities, 0 issues), and compact (0 errors, 0 changes) passed.
+  next: Keep ybpdvkidaq pending for independent evaluation; do not close M3, prepare release metadata, publish, tag, or push.
+  publication_order: 49

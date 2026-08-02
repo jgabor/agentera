@@ -18,7 +18,7 @@ import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterContract } from "../../state/write/operations.js";
-import { entityPublicRetrieval, loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 
 function stateRetrievalContract(needs: string[]): JsonObject | null {
   const surfaces = [
@@ -27,7 +27,7 @@ function stateRetrievalContract(needs: string[]): JsonObject | null {
   ];
   if (surfaces.length === 0) return null;
   const loaded = loadStateRetrievalAuthority();
-  const retrieval = entityPublicRetrieval() as Record<string, any>;
+  const retrieval = loaded.retrieval as Record<string, any>;
   const boundaries = [
     ...(needs.includes("plan") ? ["plan", "plan_task"] : []),
     ...(needs.includes("experiments") ? ["experiment"] : []),
@@ -147,7 +147,7 @@ export function planStartupContract(): JsonObject {
       capability_cli_commands_added: true,
       forbidden_examples: [],
       route_boundary:
-        "Use `/agentera plan` for routing, `agentera state plan` for plan state, " +
+        "Use `/agentera plan` for routing, `agentera state plan list` for plan state, " +
         "and `agentera plan` for capability routing guidance only.",
     },
     seam_decision: {

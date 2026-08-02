@@ -1,0 +1,23 @@
+id: dnbytwkmiu
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 · Close TODO cursor-bound cardinality (hykqpkcsix)
+  status: complete
+  depends_on:
+    - ewkfnxucxq
+  acceptance:
+    - GIVEN a TODO cursor WHEN limit, selector, filter, order, or snapshot binding changes THEN continuation rejects deterministically with exact restart guidance.
+    - GIVEN 128 or more TODO candidates WHEN limits 40, 60, or 100 are requested THEN source and packaged reads return the requested rows within the bounded projection contract.
+    - GIVEN matching continuation requests WHEN pages advance THEN counts, queue ranks, and identities have no skips or duplicates and exact get recovers full detail.
+    - GIVEN TODO list, continuation, rejection, help, or get reads WHEN compared before and after THEN no state or recovery residue changes.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Limit binding passes, but selector/filter/order/snapshot mismatches return generic prose rather than exact executable restart; filter/order changes are also misclassified as cursor_snapshot_unavailable instead of cursor_invalid. Use the computed cursor-free restart for every branch and reserve snapshot_unavailable for actual bound-state loss. See packages/cli/src/state/todoDocsEntities.ts:909-913.
+    provenance:
+      attempt_id: dnbytwkmiu-audit-2
+      source: Audit ses_03e3657d1ffeJSC8ucWGvFEwf1 bounded re-review
+      recorded_at: 2026-08-02 12:10
+      writer_command: agentera state plan record-evaluation

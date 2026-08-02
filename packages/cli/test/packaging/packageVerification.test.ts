@@ -13,6 +13,8 @@ import {
   runProducerReadinessWorkflow,
 } from "../helpers/producerReadinessWorkflow.js";
 import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeRegistry.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
+import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
@@ -48,8 +50,10 @@ function seedPublicListExamples(project: string): void {
   const entities = path.join(project, ".agentera/entities");
   const planDirectory = path.join(entities, "plan/plan");
   const objectiveDirectory = path.join(entities, "objective/objective");
+  const experimentDirectory = path.join(entities, "experiments/experiment");
   fs.mkdirSync(planDirectory, { recursive: true });
   fs.mkdirSync(objectiveDirectory, { recursive: true });
+  fs.mkdirSync(experimentDirectory, { recursive: true });
   fs.writeFileSync(path.join(planDirectory, "abcdefghij.yaml"), YAML.stringify({
     id: "abcdefghij",
     artifact: "plan",
@@ -72,6 +76,102 @@ function seedPublicListExamples(project: string): void {
       scope: { included: ["retrieval examples"], excluded: ["experiment publication"] },
     },
   }));
+  fs.writeFileSync(path.join(experimentDirectory, "zzzzzzzzzz.yaml"), YAML.stringify({
+    id: "zzzzzzzzzz",
+    artifact: "experiments",
+    record: {
+      objective: "qjtrmnpvka",
+      date: "2026-08-02 09:00",
+      label: "documentation example",
+      hypothesis: "Canonical examples execute",
+      method: "Run the documented command",
+      change: "None",
+      metric: { primary_value: "0 failures", delta_vs_baseline: "0" },
+      regression: "package verification",
+      status: "baseline",
+      conclusion: "Example remains executable",
+      provenance: { command: "documentation-example", revision: "fixture" },
+    },
+  }));
+}
+
+function realisticTodoId(index: number): string {
+  let value = index;
+  return Array.from({ length: 10 }, () => {
+    const character = String.fromCharCode(97 + value % 26);
+    value = Math.floor(value / 26);
+    return character;
+  }).reverse().join("");
+}
+
+function seedRealisticTodos(project: string, count = 120): { orderedIds: string[]; criticalOpenIds: string[] } {
+  const directory = path.join(project, ".agentera/entities/todo/todo_item");
+  fs.mkdirSync(directory, { recursive: true });
+  const rows: Record<"critical" | "normal" | "resolved", string[]> = { critical: [], normal: [], resolved: [] };
+  const orders = { critical: 0, normal: 0, resolved: 0 };
+  const criticalOpenIds: string[] = [];
+  const criticalResolvedIds: string[] = [];
+  const normalOpenIds: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const id = realisticTodoId(index);
+    const resolved = index >= 100;
+    const severity = index < 70 || resolved ? "critical" : "normal";
+    const section = resolved ? "resolved" : severity;
+    const status = resolved ? "resolved" : "open";
+    const order = ++orders[section];
+    const title = `Package retrieval item ${String(index + 1).padStart(3, "0")}: ${"retain every selected identity and exact recovery under realistic byte pressure; ".repeat(5).trim()}`;
+    const description = `[fix:3.0.0] ${title}`;
+    fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
+      id,
+      artifact: "todo",
+      record: {
+        kind: "fix",
+        target_version: "3.0.0",
+        title,
+        requirements: ["Preserve selected rows"],
+        acceptance: ["Source and package agree"],
+        release_blocker: false,
+        severity,
+        status,
+        readiness: {
+          capability: "build",
+          reason: "Exercise the extracted package against realistic TODO state.",
+          dependencies: [],
+          blocked: null,
+          gate: null,
+          queue_rank: index + 1,
+          order_reason: "Stable package fixture order.",
+        },
+        reconciliation: {
+          schema_version: "agentera.todoReconciliation.v1",
+          public: { present: true, description, severity, status, order },
+        },
+      },
+    }));
+    rows[section].push(`- [${resolved ? "x" : " "}] [id:${id}] ${description}`);
+    if (resolved) criticalResolvedIds.push(id);
+    else if (severity === "critical") criticalOpenIds.push(id);
+    else normalOpenIds.push(id);
+  }
+  fs.writeFileSync(path.join(project, ".agentera/todo-reconciliation-activation.json"), `${JSON.stringify({ schema_version: "agentera.todoReconciliationActivation.v1", retained_legacy_rows: [] })}\n`);
+  fs.writeFileSync(path.join(project, "TODO.md"), [
+    "# TODO", "", "## ⇶ Critical", ...rows.critical, "", "## → Normal", ...rows.normal,
+    "", "## ✓ Resolved", ...rows.resolved, "",
+  ].join("\n"));
+  return { orderedIds: [...criticalOpenIds, ...criticalResolvedIds, ...normalOpenIds], criticalOpenIds };
+}
+
+function projectByteSnapshot(root: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const walk = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const target = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(target);
+      else result[path.relative(root, target)] = createHash("sha256").update(fs.readFileSync(target)).digest("hex");
+    }
+  };
+  walk(root);
+  return result;
 }
 
 interface ProgressPrimeObservation {
@@ -619,6 +719,297 @@ describe("npm distribution boundary", () => {
     } finally {
       fs.rmSync(project, { recursive: true, force: true });
     }
+  });
+
+  it("preserves realistic 100-row TODO cardinality and degradation in source and the extracted package without mutation", () => {
+    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "todo-cardinality-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const { orderedIds, criticalOpenIds } = seedRealisticTodos(project);
+    const before = projectByteSnapshot(project);
+    const env = isolatedPackageEnv();
+    const invoke = (bin: string, args: string[]) => run(process.execPath, [bin, ...args], project, env);
+    const parity = (args: string[], status = 0) => {
+      const source = invoke(sourceBin, args);
+      const packaged = invoke(packagedBin, args);
+      expect(source.status, source.stderr || source.stdout).toBe(status);
+      expect(packaged.status, packaged.stderr || packaged.stdout).toBe(status);
+      expect(packaged.stderr).toBe(source.stderr);
+      expect(packaged.stdout).toBe(source.stdout);
+      return JSON.parse(source.stdout);
+    };
+    const packageOnly = (args: string[], status = 0) => {
+      const packaged = invoke(packagedBin, args);
+      expect(packaged.status, packaged.stderr || packaged.stdout).toBe(status);
+      return JSON.parse(packaged.stdout);
+    };
+
+    for (const limit of [40, 60, 100]) {
+      const result = parity(["state", "todo", "list", "--ids-only", "--limit", String(limit), "--format", "json"]);
+      expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThanOrEqual(32_768);
+      expect(result).toMatchObject({ counts: { candidate: 120, returned: limit, omitted: 120 - limit, continuation: 120 - limit } });
+      expect(result.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, limit));
+      expect(result.entries.every((entry: any) => Object.keys(entry).sort().join(",") === "artifact,id,queue_rank,retrieval")).toBe(true);
+    }
+
+    const cursorFirst = parity(["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const authorityPath = path.join(CHECKOUT_ROOT, "references/artifacts/state-storage-authority.yaml");
+    const cursorPayload = decodeListCursor(cursorFirst.next_cursor, project, authorityPath);
+    expect(cursorPayload.limit).toBe(10);
+
+    const changedLimit = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", cursorFirst.next_cursor, "--format", "json"], 1);
+    expect(changedLimit.error).toMatchObject({
+      class: "cursor_invalid",
+      message: "todo cursor is bound to --limit 10, not --limit 5",
+      recovery: "agentera state todo list --ids-only --limit 5 --format json",
+    });
+    expect(packageOnly(shellCommandArgs(changedLimit.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 5));
+
+    const legacyPayload = structuredClone(cursorPayload);
+    delete legacyPayload.limit;
+    const legacyCursor = encodeListCursor(legacyPayload, project, authorityPath);
+    const legacy = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", legacyCursor, "--format", "json"], 1);
+    expect(legacy.error).toMatchObject({
+      class: "cursor_invalid",
+      message: "todo cursor lacks the required effective limit binding",
+      recovery: "agentera state todo list --ids-only --limit 10 --format json",
+    });
+    expect(packageOnly(shellCommandArgs(legacy.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+
+    const malformed = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", "not-a-cursor", "--format", "json"], 1);
+    expect(malformed.error).toMatchObject({ class: "cursor_invalid", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+    expect(packageOnly(shellCommandArgs(malformed.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+
+    const cursorPages = [cursorFirst];
+    while (cursorPages.at(-1).retrieval.continue) cursorPages.push(packageOnly(shellCommandArgs(cursorPages.at(-1).retrieval.continue)));
+    const cursorEntries = cursorPages.flatMap((page) => page.entries);
+    expect(cursorPages).toHaveLength(12);
+    cursorPages.forEach((page, index) => expect(page.counts).toMatchObject({
+      candidate: 120,
+      returned: 10,
+      remaining: 120 - (index + 1) * 10,
+      omitted: 120 - (index + 1) * 10,
+      continuation: 120 - (index + 1) * 10,
+    }));
+    expect(cursorPages.at(-1)).toMatchObject({ status: "ok", counts: { remaining: 0, omitted: 0, continuation: 0 } });
+    expect(cursorPages.at(-1).next_cursor).toBeUndefined();
+    expect(cursorPages.at(-1).retrieval.continue).toBeUndefined();
+    expect(cursorEntries.map((entry: any) => entry.id)).toEqual(orderedIds);
+    expect(cursorEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 120 }, (_, index) => index + 1));
+    expect(new Set(cursorEntries.map((entry: any) => entry.id)).size).toBe(120);
+    expect(packageOnly(shellCommandArgs(cursorEntries.at(-1).retrieval.get)).entry).toMatchObject({ id: orderedIds.at(-1), artifact: "todo" });
+
+    const normalPages = [packageOnly(["state", "todo", "list", "--severity", "normal", "--status", "open", "--ids-only", "--limit", "10", "--format", "json"])];
+    while (normalPages.at(-1).retrieval.continue) normalPages.push(packageOnly(shellCommandArgs(normalPages.at(-1).retrieval.continue)));
+    const normalEntries = normalPages.flatMap((page) => page.entries);
+    expect(normalPages).toHaveLength(3);
+    expect(normalEntries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(90));
+    expect(normalEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 30 }, (_, index) => index + 91));
+
+    const first = packageOnly(["state", "todo", "list", "--severity", "critical", "--status", "open", "--ids-only", "--limit", "40", "--format", "json"]);
+    const second = packageOnly(shellCommandArgs(first.retrieval.continue));
+    const paged = [...first.entries, ...second.entries];
+    expect(first.counts).toMatchObject({ candidate: 70, returned: 40, omitted: 30, continuation: 30 });
+    expect(second.counts).toMatchObject({ candidate: 70, returned: 30, omitted: 0, continuation: 0 });
+    expect(paged.map((entry: any) => entry.id)).toEqual(criticalOpenIds);
+    expect(new Set(paged.map((entry: any) => entry.id)).size).toBe(70);
+
+    const selected = parity(["state", "todo", "list", "--fields", "status,target_version", "--limit", "100", "--format", "json"]);
+    expect(selected.entries).toHaveLength(100);
+    expect(selected.entries.every((entry: any) => entry.record.status && entry.record.target_version === "3.0.0")).toBe(true);
+
+    const degraded = parity(["state", "todo", "list", "--limit", "100", "--format", "json"]);
+    expect(degraded).toMatchObject({
+      status: "degraded",
+      counts: { candidate: 120, returned: 100, omitted: 20, continuation: 20 },
+      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 100, omitted_fields: expect.arrayContaining(["record", "provenance"]) },
+    });
+    packageOnly(["state", "todo", "list", "--fields", "title", "--limit", "100", "--format", "json"], 1);
+
+    for (const [index, entry] of [first.entries[0], second.entries.at(-1), degraded.entries.at(-1)].entries()) {
+      const exact = index === 0
+        ? parity(shellCommandArgs(entry.retrieval.get))
+        : packageOnly(shellCommandArgs(entry.retrieval.get));
+      expect(exact.entry).toMatchObject({ id: entry.id, artifact: "todo" });
+    }
+    expect(projectByteSnapshot(project)).toEqual(before);
+  });
+
+  it("classifies every extracted-package TODO cursor branch with executable current restart", () => {
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "todo-cursor-branches-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const { orderedIds } = seedRealisticTodos(project);
+    const before = projectByteSnapshot(project);
+    const env = isolatedPackageEnv();
+    const invoke = (args: string[], status = 0) => {
+      const result = run(process.execPath, [packagedBin, ...args], project, env);
+      expect(result.status, result.stderr || result.stdout).toBe(status);
+      return JSON.parse(result.stdout);
+    };
+    const authorityPath = path.join(CHECKOUT_ROOT, "references/artifacts/state-storage-authority.yaml");
+    const first = invoke(["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const payload = decodeListCursor(first.next_cursor, project, authorityPath);
+    const assertFailure = (args: string[], classification: string, message: string, recovery: string, expectedIds = orderedIds.slice(0, 10)): void => {
+      const failure = invoke(args, 1);
+      expect(failure).not.toHaveProperty("entries");
+      expect(failure.error).toMatchObject({ class: classification, message, recovery });
+      expect(invoke(shellCommandArgs(failure.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(expectedIds);
+    };
+
+    assertFailure(
+      ["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", first.next_cursor, "--format", "json"],
+      "cursor_invalid",
+      "todo cursor is bound to --limit 10, not --limit 20",
+      "agentera state todo list --ids-only --limit 20 --format json",
+      orderedIds.slice(0, 20),
+    );
+    assertFailure(
+      ["state", "todo", "list", "--limit", "10", "--cursor", first.next_cursor, "--format", "json"],
+      "cursor_invalid",
+      "todo cursor selectors do not match this request",
+      "agentera state todo list --limit 10 --format json",
+    );
+    assertFailure(
+      ["state", "todo", "list", "--status", "open", "--ids-only", "--limit", "10", "--cursor", first.next_cursor, "--format", "json"],
+      "cursor_invalid",
+      "todo cursor filters do not match this request",
+      "agentera state todo list --status 'open' --ids-only --limit 10 --format json",
+    );
+    const changedOrder = structuredClone(payload); changedOrder.order = "changed_order";
+    assertFailure(
+      ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(changedOrder, project, authorityPath), "--format", "json"],
+      "cursor_invalid",
+      "todo cursor order does not match this request",
+      "agentera state todo list --ids-only --limit 10 --format json",
+    );
+
+    const defaultFirst = invoke(["state", "todo", "list", "--ids-only", "--format", "json"]);
+    expect(decodeListCursor(defaultFirst.next_cursor, project, authorityPath).limit).toBe(20);
+    expect(invoke(["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", defaultFirst.next_cursor, "--format", "json"]).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20, 40));
+    const explicitDefault = invoke(["state", "todo", "list", "--ids-only", "--limit", "20", "--format", "json"]);
+    expect(invoke(["state", "todo", "list", "--ids-only", "--cursor", explicitDefault.next_cursor, "--format", "json"]).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20, 40));
+
+    const [body, signature] = String(first.next_cursor).split(".");
+    const malformedVariants = [
+      `${body}.${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`,
+      `${body}=.${signature}`,
+      encodeListCursor([] as any, project, authorityPath),
+    ];
+    for (const cursor of malformedVariants) assertFailure(
+      ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", cursor, "--format", "json"],
+      "cursor_invalid",
+      "todo cursor is malformed or belongs to another project",
+      "agentera state todo list --ids-only --limit 10 --format json",
+    );
+    for (const invalidLimit of [0, -1, 1.5, 101, "10", null]) {
+      const invalid = structuredClone(payload); invalid.limit = invalidLimit as any;
+      assertFailure(
+        ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(invalid, project, authorityPath), "--format", "json"],
+        "cursor_invalid",
+        "todo cursor has an invalid effective limit binding",
+        "agentera state todo list --ids-only --limit 10 --format json",
+      );
+    }
+    const missingAfter = structuredClone(payload); missingAfter.after = "zzzzzzzzzz";
+    assertFailure(
+      ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(missingAfter, project, authorityPath), "--format", "json"],
+      "cursor_snapshot_unavailable",
+      "todo cursor continuation identity is no longer available",
+      "agentera state todo list --ids-only --limit 10 --format json",
+    );
+    expect(projectByteSnapshot(project)).toEqual(before);
+
+    seedRealisticTodos(project, 121);
+    const mutated = projectByteSnapshot(project);
+    assertFailure(
+      ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", first.next_cursor, "--format", "json"],
+      "cursor_snapshot_unavailable",
+      "todo cursor snapshot is no longer available",
+      "agentera state todo list --ids-only --limit 10 --format json",
+    );
+    expect(projectByteSnapshot(project)).toEqual(mutated);
+  });
+
+  it("executes active documented examples and every concrete startup state recovery in source and the extracted package", () => {
+    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "active-retrieval-consumers-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    seedPublicListExamples(project);
+    const env = isolatedPackageEnv();
+    const invoke = (bin: string, args: string[]) => run(process.execPath, [bin, ...args], project, env);
+    const executeBoth = (command: string): void => {
+      const concrete = command
+        .replaceAll("PLAN_ID", "abcdefghij")
+        .replaceAll("OBJECTIVE_ID", "qjtrmnpvka")
+        .replaceAll("EXPERIMENT_ID", "zzzzzzzzzz");
+      const args = shellCommandArgs(concrete);
+      const source = invoke(sourceBin, args);
+      const packaged = invoke(packagedBin, args);
+      expect(source.status, `${concrete}\n${source.stdout}\n${source.stderr}`).toBe(0);
+      expect(packaged.status, `${concrete}\n${packaged.stdout}\n${packaged.stderr}`).toBe(0);
+    };
+
+    const documented = new Set<string>();
+    for (const relative of ["README.md", "AGENTS.md", "packages/cli/README.md"]) {
+      for (const line of fs.readFileSync(path.join(CHECKOUT_ROOT, relative), "utf8").split(/\r?\n/)) {
+        const command = line.trim().replace(/\s+#.*$/, "");
+        if (/^agentera (?:prime(?:\s|$)|state (?:query(?:\s|$)|(?:progress|decisions|health|plan|objective|experiments|todo|docs) (?:list|get|explain)(?:\s|$)))/.test(command)) documented.add(command);
+      }
+    }
+    expect([...documented]).toEqual(expect.arrayContaining([
+      "agentera state plan list --format json",
+      "agentera state experiments get --id EXPERIMENT_ID --format json",
+    ]));
+    for (const command of documented) executeBoth(command);
+
+    const recoveries = new Set<string>();
+    const isConcreteStateRead = (command: string): boolean => (
+      /^agentera state /.test(command)
+      && !/[<>\[\]]/.test(command)
+      && !/\b(?:ID|TOKEN|N|TEXT|STATUS|DIMENSION|FIELDS|SEVERITY|OBJECTIVE_ID|PLAN_ID)\b/.test(command)
+    );
+    const collect = (value: unknown, key = ""): void => {
+      if (typeof value === "string") {
+        if ((key === "recovery" || key === "retrieval" || key === "list" || key === "get") && isConcreteStateRead(value)) recoveries.add(value);
+        return;
+      }
+      if (Array.isArray(value)) {
+        if (key === "fallback_commands" || key === "cli_fallback") {
+          for (const command of value) if (typeof command === "string" && isConcreteStateRead(command)) recoveries.add(command);
+        } else for (const item of value) collect(item, key);
+        return;
+      }
+      if (value && typeof value === "object") for (const [childKey, child] of Object.entries(value)) collect(child, childKey);
+    };
+    for (const args of [
+      ["prime", "--format", "json"],
+      ["prime", "--context", "status", "--format", "json"],
+      ["prime", "--context", "orchestrate", "--format", "json"],
+      ["prime", "--context", "plan", "--format", "json"],
+      ["prime", "--context", "optimize", "--format", "json"],
+    ]) {
+      for (const bin of [sourceBin, packagedBin]) {
+        const result = invoke(bin, args);
+        expect(result.status, result.stderr || result.stdout).toBe(0);
+        const payload = JSON.parse(result.stdout);
+        collect(payload);
+        const served = String(payload.capability_context?.instructions ?? "");
+        expect(served).not.toMatch(/agentera state (?:progress|decisions|health|plan|objective|experiments|todo|docs) --format json/);
+        expect(served).not.toMatch(/agentera state experiments get --objective/);
+      }
+    }
+    expect([...recoveries]).toEqual(expect.arrayContaining([
+      "agentera state plan list --format json",
+      "agentera state docs list --format json",
+      "agentera state todo list --format json",
+    ]));
+    for (const command of recoveries) executeBoth(command);
   });
 
   it("fails closed when the isolated package authority loses required bare-read recovery", () => {

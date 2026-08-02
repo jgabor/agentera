@@ -90,7 +90,7 @@ function isConditionalFieldPresent(field: string, payload: Record<string, unknow
   // the default state; recover via `agentera upgrade --dry-run`).
   if (field === "v1_migration") return obj.detected === true;
   // docs: present when a docs mapping artifact exists (exists !== true is the
-  // absent state; recover via `agentera state docs`).
+  // absent state; recover via the canonical docs list command).
   if (field === "docs") return obj.exists === true;
   // objective: present when an objective is active (active !== true is the
   // none-active state; state_presence.active.objective disambiguates).

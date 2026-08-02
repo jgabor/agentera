@@ -14,6 +14,7 @@ import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
 import { planTaskIndex } from "../planTaskIndex.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { entityListFamily } from "../../state/entityRetrievalHelp.js";
 
 export function orchestrationContext(
   capability: string | null,
@@ -55,8 +56,12 @@ export function orchestrationContext(
     else dependencyReady.push(orchestrationTaskSummary(task));
   }
   const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
-  const queueRetrieval = plan.id
-    ? { list: `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json`, restart: `agentera state plan tasks list ${String(plan.id)} --limit 100 --format json`, get: "agentera state plan tasks get --id ID --format json" }
+  const planTasks = entityListFamily("plan_tasks");
+  const queueCommand = plan.id
+    ? `agentera state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100 --format json`
+    : null;
+  const queueRetrieval = queueCommand
+    ? { list: queueCommand, restart: queueCommand, get: planTasks.get }
     : null;
   const stateCaveats: string[] = [];
   let fallbackCommands: string[] = [];
@@ -67,11 +72,11 @@ export function orchestrationContext(
   fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
   if (!plan.exists) {
     stateCaveats.push("plan state is unavailable; task queue cannot be complete.");
-    fallbackCommands.push("agentera state plan --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   }
   if (lifecycle.status === "degraded") {
     stateCaveats.push(...((lifecycle.caveats ?? []) as string[]));
-    fallbackCommands.push("agentera state plan --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; latest verification is not summarized here.");
@@ -83,11 +88,11 @@ export function orchestrationContext(
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");
-    fallbackCommands.push("agentera state docs --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.docs);
   }
   if (todoItems.length === 0) {
     stateCaveats.push("todo state has no open entries in prime --context response; absence may mean none open or unavailable.");
-    fallbackCommands.push("agentera state todo --format json");
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.todo);
   }
   if (profile.status !== "valid") {
     stateCaveats.push("profile-derived state is unavailable in prime --context response.");

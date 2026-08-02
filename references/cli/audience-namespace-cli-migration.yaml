@@ -259,7 +259,7 @@ decision_reconciliation:
   decision_45:
     routine_state_aliases: >-
       Routine state names stay stable via top-level aliases during migration. Canonical
-      reads become `agentera state <name>`; envelopes, field selection, and
+      reads become `agentera state <name> list`; envelopes, field selection, and
       source_contract semantics are unchanged.
     slash_route_separation: >-
       Decision 43 slash aliases remain excluded from the CLI command surface. The
@@ -273,10 +273,10 @@ plan_routing_distinction:
       Request-to-capability routing — start or continue Planera planning work. This
       is not a CLI command and does not read `.agentera/plan.yaml` by itself.
   state_read:
-    invocation: agentera state plan
+    invocation: agentera state plan list
     legacy_alias: >-
       Top-level `agentera plan` is capability routing, not a state-read alias;
-      use `agentera state plan` for project state.
+      use `agentera state plan list` for project state.
     surface: CLI routine state read
     meaning: >-
       Read-only access to the active plan artifact summary, tasks, acceptance
@@ -287,11 +287,11 @@ plan_routing_distinction:
     surface: CLI top-level capability routing command
     meaning: >-
       Emits plan capability routing guidance prose/schemas pointers. Does not replace
-      `state plan` reads or `/agentera plan` slash routing. Capability startup JSON
+      `state plan list` reads or `/agentera plan` slash routing. Capability startup JSON
       remains `agentera prime --context plan --format json`.
   agent_guidance: >-
     Use `/agentera plan` when the user wants planning work routed to Planera; use
-    `agentera state plan` when the agent needs plan artifact state; use
+    `agentera state plan list` when the agent needs plan artifact state; use
     `agentera plan` for capability routing guidance; use
     `agentera prime --context plan` for bounded plan startup context.
 migration_phases:

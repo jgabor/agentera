@@ -7,7 +7,7 @@
 #
 # Marker-absent projects retain TODO.md as legacy authority. After durable
 # entity cutover, each item is authoritative in one shared-contract entity
-# file and `agentera state todo` renders the bounded human-facing view.
+# file and `agentera state todo list` renders the bounded human-facing view.
 
 meta:
   name: todo

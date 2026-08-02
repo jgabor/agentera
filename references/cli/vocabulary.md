@@ -173,9 +173,10 @@ Primary route aliases are slash-route vocabulary, not CLI command vocabulary:
 
 Do not teach primary aliases as CLI state commands. v3 orientation is
 `agentera prime` (capability ID `status` via `prime --context status`); routine
-state reads use `agentera state plan`, `state progress`, `state health`,
-`state todo`, `state decisions`, `state docs`, `state objective`,
-`state experiments`, and advanced `state query`. The v2 stable distribution
+record reads use `agentera state plan list`, `state progress list`,
+`state health list`, `state todo list`, `state decisions list`, `state docs list`,
+`state objective list`, objective-scoped `state experiments list`, exact
+`get --id ID`, and advanced `state query`. The v2 stable distribution
 retains `hej` and the rest of the Swedish capability surface per Decision 70.
 
 When capability prose recommends another capability, use the handoff label
