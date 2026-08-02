@@ -95,6 +95,10 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
       ["install", "--ignore-scripts", "--omit=dev", "--no-audit", "--no-fund"],
       extractedPackage,
     );
+    // Package parity executes the freshly constructed output, not checkout dist.
+    // The source construction deliberately has no installed dependencies, so give
+    // it the checkout's already-installed dependency graph after packing it.
+    fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(constructionRoot, "node_modules"), "dir");
     provide("packageFixture", { root, constructionRoot, packageRoot: extractedPackage, manifest });
   } catch (error) {
     fs.rmSync(root, { recursive: true, force: true });

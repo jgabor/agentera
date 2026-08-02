@@ -395,10 +395,13 @@ describe("npm distribution boundary", () => {
   });
 
   it("tests a packed and extracted installation built outside checkout outputs", () => {
+    const constructedBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     expect(isContained(fixture.root, fixture.constructionRoot)).toBe(true);
     expect(isContained(fixture.root, fixture.packageRoot)).toBe(true);
     expect(isContained(fixture.constructionRoot, fixture.packageRoot)).toBe(false);
     expect(isContained(CHECKOUT_ROOT, fixture.constructionRoot)).toBe(false);
+    expect(fs.realpathSync(constructedBin)).toBe(constructedBin);
+    expect(isContained(CHECKOUT_ROOT, constructedBin)).toBe(false);
     expect(fs.realpathSync(path.join(fixture.packageRoot, "dist/bin/agentera.js")))
       .toMatch(`${path.sep}package${path.sep}dist${path.sep}bin${path.sep}agentera.js`);
   });
@@ -610,7 +613,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("executes source-built and self-contained packaged list help, examples, rejections, and corrections for every authority family", () => {
-    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const project = fs.mkdtempSync(path.join(fixture.root, "retrieval-help-parity-"));
     fs.mkdirSync(path.join(project, ".agentera"));
@@ -723,7 +726,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("preserves realistic 100-row TODO cardinality and degradation in source and the extracted package without mutation", () => {
-    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const project = fs.mkdtempSync(path.join(fixture.root, "todo-cardinality-"));
     fs.mkdirSync(path.join(project, ".agentera"));
@@ -839,7 +842,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("retains executable 21-task routing and mixed history in source and the extracted package", () => {
-    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const project = fs.mkdtempSync(path.join(fixture.root, "prime-routing-evidence-"));
     const home = fs.mkdtempSync(path.join(fixture.root, "prime-routing-home-"));
@@ -1008,7 +1011,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("executes active documented examples and every concrete startup state recovery in source and the extracted package", () => {
-    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const project = fs.mkdtempSync(path.join(fixture.root, "active-retrieval-consumers-"));
     fs.mkdirSync(path.join(project, ".agentera"));
@@ -1121,7 +1124,6 @@ describe("npm distribution boundary", () => {
   });
 
   it("matches source and extracted-package producer readiness", { timeout: 120_000 }, async () => {
-    fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(fixture.constructionRoot, "node_modules"), "dir");
     const source = await runProducerReadinessWorkflow(
       path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
       path.join(fixture.root, "producer-source"),
