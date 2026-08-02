@@ -177,13 +177,14 @@ function assertCleanCommittedTree(repo = REPO_ROOT) {
   }
 }
 
-function assertExternalDirectory(directory, repo = REPO_ROOT) {
+function assertExternalDirectory(directory, repo = REPO_ROOT, create = true) {
   const candidate = path.resolve(directory);
   const relative = path.relative(repo, candidate);
   if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== "..")) {
     throw new Error("candidate directory must be outside the repository checkout");
   }
-  fs.mkdirSync(candidate, { recursive: true, mode: 0o700 });
+  if (create) fs.mkdirSync(candidate, { recursive: true, mode: 0o700 });
+  else if (!fs.existsSync(candidate)) throw new Error("candidate directory is missing");
   const resolved = fs.realpathSync(candidate);
   const fromRepo = path.relative(repo, resolved);
   if (fromRepo === "" || (!fromRepo.startsWith(`..${path.sep}`) && fromRepo !== "..")) {
@@ -543,7 +544,7 @@ export function issueCandidateReceipt(options = {}) {
 
 export function validateCandidateReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
-  const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo);
+  const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
   const receipt = validReceiptDigest(
     options.receipt ?? readJson(receiptPath(candidateDirectory, "candidate-receipt.json"), "candidate receipt"),
     "candidate receipt",

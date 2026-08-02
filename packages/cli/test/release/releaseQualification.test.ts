@@ -115,6 +115,14 @@ describe("release qualification receipts", () => {
     expect(() => sourceReceipt(repo, candidateDirectory)).toThrow("source receipt inputs changed");
   });
 
+  it("rejects a missing candidate directory without creating it", () => {
+    const { repo, candidateDirectory } = fixture();
+
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
+      .toThrow("candidate directory is missing");
+    expect(fs.existsSync(candidateDirectory)).toBe(false);
+  });
+
   it("binds a candidate receipt to the retained immutable artifact bytes", () => {
     const { repo, candidateDirectory, sourceCommit } = fixture();
     const source = sourceReceipt(repo, candidateDirectory);
