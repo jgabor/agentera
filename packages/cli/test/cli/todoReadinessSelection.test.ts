@@ -96,6 +96,19 @@ describe("TODO readiness selection", () => {
     expect(evaluateTodoReadinessQueue([lowerRank, critical]).selected?.id).toBe("mmmmmmmmmm");
   });
 
+  it("uses managed Markdown order before queue rank and falls back deterministically for absent entities", () => {
+    const markdownFirst = { ...todo("zzzzzzzzzz", { readiness: readiness({ queue_rank: 9 }) }), projectedOrder: { kind: "managed" as const, markdownOrder: 1 } };
+    const queueFirst = { ...todo("yyyyyyyyyy", { readiness: readiness({ queue_rank: 1 }) }), projectedOrder: { kind: "managed" as const, markdownOrder: 2 } };
+    const absentA = { ...todo("aaaaaaaaaa", { readiness: readiness({ queue_rank: 1 }) }), projectedOrder: { kind: "absent" as const } };
+    const absentB = { ...todo("bbbbbbbbbb", { readiness: readiness({ queue_rank: 1 }) }), projectedOrder: { kind: "absent" as const } };
+
+    expect(evaluateTodoReadinessQueue([queueFirst, markdownFirst]).selected).toMatchObject({ id: "zzzzzzzzzz", projectedOrder: { kind: "managed", markdownOrder: 1 }, queueRank: 9 });
+    expect(evaluateTodoReadinessQueue([absentA, markdownFirst]).selected?.id).toBe("zzzzzzzzzz");
+    expect(evaluateTodoReadinessQueue([absentB, absentA]).selected?.id).toBe("aaaaaaaaaa");
+    expect(evaluateTodoReadinessQueue([{ ...queueFirst, record: { ...queueFirst.record, readiness: readiness({ queue_rank: 9 }) } }, markdownFirst]).selected?.id).toBe("zzzzzzzzzz");
+    expect(() => evaluateTodoReadinessQueue([markdownFirst, todo("cccccccccc")])).toThrow(/projectedOrder for every entity/);
+  });
+
   it("keeps actionable work selected while reporting bounded triage", () => {
     const result = evaluateTodoReadinessQueue([
       todo("aaaaaaaaaa", { readiness: undefined, severity: "critical" }),

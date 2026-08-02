@@ -1,0 +1,14 @@
+id: gcbtiosigr
+artifact: progress
+record:
+  timestamp: 2026-08-02 01:14
+  type: fix
+  phase: build
+  what: Corrected production startup readiness to consume the complete Markdown-projected TODO record set after ztsnvyfcdh-audit-1.
+  context:
+    intent: Address only ztsnvyfcdh-audit-1 production projection defect.
+    constraints: Preserve all prior reconciliation behavior, evaluator lifecycle, protected staged M1 index, and local-dist authority; do not commit or close task/TODO.
+    unknowns: Decision kpybrsfywb remains provisional; glossary authority unavailable; stale TODO summary header is unmanaged Markdown and cannot be changed through the managed-row reconciliation contract.
+    scope: Shared bounded TODO read projection, collectEntityOrientation readiness/counts, production integration regression, authority contract.
+  verified: "Production integration PASS: collectEntityOrientation consumed the shared complete read projection; a Markdown-reopened dependency made its dependent waiting, a Markdown-resolved candidate was resolved and ineligible, a Markdown-critical fallback was selected, counts were critical 1 and normal 2, and all read bytes were unchanged. Focused production/readiness tests passed 63 tests. Full source passed 224 files and 3118 tests with 1 skipped; typecheck, local build, 19 package tests, state validation with 2044 entities and zero issues, compact, capability-contract, verbose package dry-run with zero warnings, and diff checks passed."
+  publication_order: 36

@@ -1,0 +1,15 @@
+id: yhieqlpzmu
+artifact: progress
+record:
+  timestamp: 2026-08-02 02:00
+  type: fix
+  phase: build
+  what: Separated projected startup ordering from legacy duplicate queue-rank conflicts.
+  context:
+    intent: Address only ewkfnxucxq-audit-1 by removing the projected-startup queue-rank contradiction.
+    constraints: Preserve all zts implementation, prior progress, protected staged M1 state, and evaluator lifecycle. Keep ewkfnxucxq pending, ztsnvyfcdh blocked, yqqqhipecx open, and downstream M3 pending; do not commit.
+    scope: Explicit projected-order mode, legacy-mode boundary, readiness schema delegation, three production regressions, and proportional verification.
+  discovered: Projected startup annotated only managed order and still applied the global duplicate queue-rank conflict pass. Equal-ranked managed rows and managed/absent rank collisions therefore became ineligible before projected ordering; readiness schema and state authority described incompatible rules.
+  verified: "Projected startup now supplies one explicit managed-or-absent order annotation for every entity after activation; mixed annotations reject, while marker-absent callers remain wholly nonprojected. Case 1 PASS: two managed normal rows at queue rank 1 selected Markdown order 1, reported normal count 2, and changed no bytes. Case 2 PASS: blocked managed order 1 was excluded; eligible managed order 2 beat an eligible absent entity sharing queue rank 1, reported normal count 3, and changed no bytes. Case 3 PASS: two absent normal entities sharing queue rank 1 selected the lexicographically first ID, reported normal count 2, and changed no bytes. Opposing managed ranks 9/1, dependency/gate/resolved/severity/count, ownership/drift/write/interruption/edit/merge, and marker-absent legacy conflict matrices remained green. The readiness schema now owns explicit nonprojected and projected_startup modes; state authority delegates projected ordering to it, and validator/parity regressions reject old or contradictory fields. Focused parity passed 155 tests; full source passed 224 files with 3126 tests passed and 1 skipped; typecheck, local build, 19 package tests, state validation over 2047 entities with zero issues, compact, capability-contract, standard and verbose package dry-runs, and diff checks passed; verbose pack reported zero warnings."
+  next: Request independent retry Audit of ewkfnxucxq. Do not supersede ztsnvyfcdh, resolve yqqqhipecx, or advance downstream M3 before PASS.
+  publication_order: 38

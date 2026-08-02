@@ -44,7 +44,7 @@ import {
 } from "./todoReconciliationActivation.js";
 
 const ID = /^[a-z]{10}$/;
-const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_id" } as const;
+const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_markdown_order_then_id" } as const;
 const DOCS = { artifact: "docs", boundary: "documentation_inventory_entry", order: "path_then_id" } as const;
 
 interface Options { sourceRoot?: string; publicationContext?: EntityPublicationContext; candidate?: () => string; interruptAfterTarget?: number }
@@ -138,6 +138,22 @@ interface LegacyRow { line: number; section: string; sourceLine: string; snapsho
 interface ManagedRowScan { rows: Map<string, ManagedRow>; retainedLegacyRows: string[] }
 type TodoEntityView = Pick<DiscoveredEntity, "boundary" | "id" | "record">;
 const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
+const TODO_MARKDOWN_MAX_BYTES = 1024 * 1024;
+const TODO_DRIFT_ITEM_LIMIT = 20;
+const PUBLIC_FIELDS = ["description", "severity", "status"] as const;
+
+interface TodoDriftItem {
+  id: string;
+  state: "markdown_only" | "entity_only" | "convergent" | "conflict";
+  markdown_changed_fields: string[];
+  entity_changed_fields: string[];
+  conflicting_fields: string[];
+}
+
+interface TodoReadView {
+  rows: Map<string, ManagedRow>;
+  drift: JsonObject;
+}
 
 function publicSnapshot(record: JsonObject, order?: number): TodoPublicSnapshot {
   return { present: true, description: renderTodoPublicRecord(record), severity: String(record.severity), status: String(record.status), ...(order === undefined ? {} : { order }) };
@@ -153,6 +169,43 @@ function baseline(record: JsonObject): TodoPublicSnapshot | null {
 function samePublic(left: TodoPublicSnapshot, right: TodoPublicSnapshot, includeOrder = true): boolean {
   const fields = includeOrder ? ["present", "description", "severity", "status", "order"] : ["present", "description", "severity", "status"];
   return fields.every((field) => left[field as keyof TodoPublicSnapshot] === right[field as keyof TodoPublicSnapshot]);
+}
+
+function changedPublicFields(
+  current: TodoPublicSnapshot,
+  prior: TodoPublicSnapshot,
+  includeOrder: boolean,
+): string[] {
+  const fields = includeOrder ? ["present", ...PUBLIC_FIELDS, "order"] : ["present", ...PUBLIC_FIELDS];
+  return fields.filter((field) => current[field as keyof TodoPublicSnapshot] !== prior[field as keyof TodoPublicSnapshot]);
+}
+
+function todoAuthority(): JsonObject {
+  return {
+    identity: { owner: "managed_row", field: "id" },
+    public: { owner: "markdown", source: "TODO.md", fields: ["description", "severity", "status", "order"] },
+    operational: { owner: "agentera", source: "canonical_entity_file", fields: ["readiness", "dependencies", "blocked", "gate", "evidence", "lifecycle"] },
+  };
+}
+
+function readTodoMarkdown(target: string): { bytes: Buffer; text: string } {
+  if (!fs.existsSync(target)) return { bytes: Buffer.from(""), text: "" };
+  const stat = fs.lstatSync(target);
+  if (!stat.isFile() || stat.isSymbolicLink()) reject({
+    class: "conflict",
+    message: "managed TODO Markdown must be a regular file",
+    recovery: "Restore the docs-mapped TODO artifact as a regular file within the project and retry; no state was changed.",
+  });
+  if (stat.size > TODO_MARKDOWN_MAX_BYTES) reject({
+    class: "conflict",
+    message: `managed TODO Markdown exceeds the ${TODO_MARKDOWN_MAX_BYTES}-byte reconciliation bound`,
+    recovery: "Compact unmanaged or resolved Markdown content below the declared bound and retry; no state was changed.",
+  });
+  const bytes = fs.readFileSync(target);
+  let text: string;
+  try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+  catch { reject({ class: "conflict", message: "managed TODO Markdown is not valid UTF-8", recovery: "Restore valid UTF-8 TODO Markdown and retry; no state was changed." }); }
+  return { bytes, text: text! };
 }
 
 function managedRows(
@@ -241,6 +294,139 @@ function managedRows(
 
 function rowSnapshot(row: ManagedRow, record: JsonObject): TodoPublicSnapshot {
   return { ...row.snapshot, severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity };
+}
+
+function inspectTodoReadView(
+  root: string,
+  sourceRoot: string,
+  entities: DiscoveredEntity[],
+): TodoReadView {
+  const activation = loadTodoReconciliationActivation(root)?.record ?? null;
+  if (!activation) {
+    return {
+      rows: new Map(),
+      drift: {
+        schema_version: RECONCILIATION_VERSION,
+        status: "inactive",
+        read_effect: "none",
+        authority: todoAuthority(),
+        counts: { managed: 0, drifted: 0, conflicts: 0 },
+        items: [],
+      },
+    };
+  }
+  const markdownPath = todoPublicPath(root, sourceRoot);
+  const markdown = readTodoMarkdown(markdownPath).text;
+  const todoEntities = entities.filter(({ boundary }) => boundary === TODO.boundary);
+  const rows = managedRows(markdown, activation, todoEntities).rows;
+  const items: TodoDriftItem[] = [];
+  const entityIds = new Set<string>();
+  for (const entity of todoEntities) {
+    const id = entity.id!;
+    entityIds.add(id);
+    const current = entity.record!;
+    const prior = baseline(current);
+    const row = rows.get(id);
+    if (!prior) {
+      items.push({ id, state: "conflict", markdown_changed_fields: [], entity_changed_fields: [], conflicting_fields: ["baseline"] });
+      continue;
+    }
+    if (!row) {
+      if (prior.present) {
+        items.push({
+          id,
+          state: prior.status === "open" ? "conflict" : "markdown_only",
+          markdown_changed_fields: ["present"],
+          entity_changed_fields: [],
+          conflicting_fields: prior.status === "open" ? ["present"] : [],
+        });
+      }
+      continue;
+    }
+    const markdownPublic = rowSnapshot(row, current);
+    const entityPublic = publicSnapshot(current, prior.order);
+    const markdownFields = changedPublicFields(markdownPublic, prior, true);
+    const entityFields = changedPublicFields(entityPublic, prior, false);
+    if (!markdownFields.length && !entityFields.length) continue;
+    const conflictingFields = markdownFields.filter((field) =>
+      entityFields.includes(field)
+      && markdownPublic[field as keyof TodoPublicSnapshot] !== entityPublic[field as keyof TodoPublicSnapshot]);
+    items.push({
+      id,
+      state: conflictingFields.length ? "conflict" : markdownFields.length && entityFields.length ? "convergent" : markdownFields.length ? "markdown_only" : "entity_only",
+      markdown_changed_fields: markdownFields,
+      entity_changed_fields: entityFields,
+      conflicting_fields: conflictingFields,
+    });
+  }
+  for (const id of rows.keys()) {
+    if (!entityIds.has(id)) items.push({ id, state: "conflict", markdown_changed_fields: ["identity"], entity_changed_fields: [], conflicting_fields: ["identity"] });
+  }
+  items.sort((left, right) => left.id.localeCompare(right.id));
+  const conflicts = items.filter(({ state }) => state === "conflict").length;
+  const visibleItems = items.slice(0, TODO_DRIFT_ITEM_LIMIT);
+  const omitted = items.length - visibleItems.length;
+  return {
+    rows,
+    drift: {
+      schema_version: RECONCILIATION_VERSION,
+      status: conflicts ? "conflict" : items.length ? "drift" : "clean",
+      read_effect: "none",
+      next_write_boundary: "atomic_reconciliation",
+      authority: todoAuthority(),
+      counts: { managed: rows.size, drifted: items.length, conflicts },
+      items: visibleItems as unknown as JsonObject[],
+      ...(omitted ? { omitted: true, omitted_count: omitted, omission_reason: "item_limit" } : {}),
+    },
+  };
+}
+
+export function inspectTodoReconciliationDrift(
+  root: string,
+  sourceRoot = resolveSourceRoot(),
+  discovery?: EntityDiscoveryResult,
+): JsonObject {
+  assertTodoReconciliationReadable(root, sourceRoot);
+  return inspectTodoReadView(root, sourceRoot, relevant(root, sourceRoot, "todo", discovery)).drift;
+}
+
+export function projectTodoReadEntities(
+  root: string,
+  sourceRoot = resolveSourceRoot(),
+  discovery?: EntityDiscoveryResult,
+): Array<{ id: string; artifact: string; record: JsonObject; projectedOrder?: { kind: "managed"; markdownOrder: number } | { kind: "absent" } }> {
+  assertTodoReconciliationReadable(root, sourceRoot);
+  const entities = relevant(root, sourceRoot, "todo", discovery).filter(({ boundary }) => boundary === TODO.boundary);
+  if (entities.length > TODO_RECONCILIATION_ITEM_LIMIT) throw failure(
+    "unsupported_state",
+    "todo",
+    `complete TODO projection exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-entity startup bound`,
+    "Compact resolved TODO entities within the declared reconciliation bound, then retry this read.",
+  );
+  const view = inspectTodoReadView(root, sourceRoot, entities);
+  const projected = view.drift.status !== "inactive";
+  return sorted("todo", entities, view.rows).map((entity) => {
+    const row = view.rows.get(entity.id!);
+    return {
+      id: entity.id!,
+      artifact: entity.artifact!,
+      record: publicReadRecord(entity.record!, row),
+      ...(projected ? {
+        projectedOrder: row?.snapshot.order === undefined
+          ? { kind: "absent" as const }
+          : { kind: "managed" as const, markdownOrder: row.snapshot.order },
+      } : {}),
+    };
+  });
+}
+
+function publicReadRecord(record: JsonObject, row?: ManagedRow): JsonObject {
+  return row ? importMarkdown(record, row) : record;
+}
+
+function publicReadMetadata(record: JsonObject, row?: ManagedRow): JsonObject {
+  const value = row ? rowSnapshot(row, record) : { present: false };
+  return { ...value, owner: "markdown", source: "TODO.md" } as JsonObject;
 }
 
 function importMarkdown(record: JsonObject, row: ManagedRow): JsonObject {
@@ -471,14 +657,30 @@ function reconcileTodoRecords(
       records.set(id, current); continue;
     }
     const markdown = rowSnapshot(row, current); const entityPublic = publicSnapshot(current, prior.order);
-    const markdownChanged = !samePublic(markdown, prior);
-    const entityChanged = !samePublic(entityPublic, prior, false);
-    if (markdownChanged && entityChanged && !samePublic(markdown, entityPublic, false)) reject({
+    const markdownFields = changedPublicFields(markdown, prior, true);
+    const entityFields = changedPublicFields(entityPublic, prior, false);
+    const conflictingFields = markdownFields.filter((field) =>
+      entityFields.includes(field)
+      && markdown[field as keyof TodoPublicSnapshot] !== entityPublic[field as keyof TodoPublicSnapshot]);
+    if (conflictingFields.length) reject({
       class: "conflict",
-      message: `TODO.md and Agentera changed public fields divergently for TODO '${id}'`,
-      recovery: `Choose one public description, severity, and checkbox for '${id}', make both sides agree, then retry once; no state was changed.`,
+      message: `TODO.md and Agentera changed public fields divergently for TODO '${id}': ${conflictingFields.join(", ")}`,
+      recovery: `Choose one value for each divergent public field of '${id}', make both sides agree, then retry once; no state was changed.`,
     });
-    records.set(id, markdownChanged ? importMarkdown(current, row) : current); visible.add(id);
+    let merged = current;
+    if (markdownFields.some((field) => PUBLIC_FIELDS.includes(field as typeof PUBLIC_FIELDS[number]))) {
+      const imported = importMarkdown(current, row);
+      merged = structuredClone(current);
+      if (markdownFields.includes("description")) {
+        for (const field of ["description", "kind", "target_version", "title"]) {
+          if (imported[field] === undefined) delete merged[field];
+          else merged[field] = structuredClone(imported[field]);
+        }
+      }
+      if (markdownFields.includes("severity")) merged.severity = imported.severity;
+      if (markdownFields.includes("status")) merged.status = imported.status;
+    }
+    records.set(id, merged); visible.add(id);
   }
   for (const id of rows.keys()) if (!records.has(id)) reject({ class: "conflict", message: `TODO.md managed ID '${id}' has no canonical entity`, recovery: `Restore the canonical TODO entity for '${id}' or remove the orphaned managed ID, then retry once; no state was changed.` });
   return { records, visible };
@@ -526,8 +728,9 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
       const publicFile = todoPublicPath(pinnedRoot, sourceRoot);
       const publicRelative = todoBinding!.publicPath;
       const publicExists = fs.existsSync(publicFile);
-      const markdownBefore = publicExists ? fs.readFileSync(publicFile) : Buffer.from("");
-      const markdown = markdownBefore.toString("utf8");
+      const loadedMarkdown = readTodoMarkdown(publicFile);
+      const markdownBefore = loadedMarkdown.bytes;
+      const markdown = loadedMarkdown.text;
       const todoEntities = entities.filter(({ boundary }) => boundary === TODO.boundary);
       const loadedActivation = loadTodoReconciliationActivation(pinnedRoot);
       const activation = loadedActivation?.record ?? null;
@@ -622,34 +825,54 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
   });
 }
 
-function entry(root: string, entity: DiscoveredEntity): JsonObject { return { id: entity.id!, artifact: entity.artifact!, record: entity.record!, provenance: { storage: "canonical_entity_file", path: relative(root, entity.path), immutable: false } }; }
-function snapshot(root: string, entities: DiscoveredEntity[]): string { return createHash("sha256").update(canonicalRecordJson(entities.map((entity) => ({ id: entity.id, boundary: entity.boundary, path: relative(root, entity.path), record: entity.record })).sort((a, b) => canonicalRecordJson(a).localeCompare(canonicalRecordJson(b))))).digest("hex"); }
+function entry(root: string, entity: DiscoveredEntity, row?: ManagedRow): JsonObject {
+  const todo = entity.boundary === TODO.boundary;
+  return {
+    id: entity.id!,
+    artifact: entity.artifact!,
+    record: todo ? publicReadRecord(entity.record!, row) : entity.record!,
+    ...(todo ? { public: publicReadMetadata(entity.record!, row) } : {}),
+    provenance: { storage: "canonical_entity_file", path: relative(root, entity.path), immutable: false },
+  };
+}
+function snapshot(root: string, entities: DiscoveredEntity[], rows?: Map<string, ManagedRow>): string { return createHash("sha256").update(canonicalRecordJson(entities.map((entity) => ({ id: entity.id, boundary: entity.boundary, path: relative(root, entity.path), record: entity.record, ...(entity.id && rows?.has(entity.id) ? { public: rowSnapshot(rows.get(entity.id)!, entity.record!) } : {}) })).sort((a, b) => canonicalRecordJson(a).localeCompare(canonicalRecordJson(b))))).digest("hex"); }
 function secret(root: string, authorityPath: string): Buffer { return createHash("sha256").update(path.resolve(root)).update("\0").update(fs.readFileSync(authorityPath)).digest(); }
 function encode(value: JsonObject, root: string, authorityPath: string): string { const bytes = Buffer.from(canonicalRecordJson(value)); return `${bytes.toString("base64url")}.${createHmac("sha256", secret(root, authorityPath)).update(bytes).digest("base64url")}`; }
 function decode(token: string, root: string, authorityPath: string, artifact: string): JsonObject { try { const [body, signature, extra] = token.split("."); if (!body || !signature || extra) throw new Error(); const bytes = Buffer.from(body, "base64url"); const supplied = Buffer.from(signature, "base64url"); const expected = createHmac("sha256", secret(root, authorityPath)).update(bytes).digest(); if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) throw new Error(); const value = JSON.parse(bytes.toString()); if (!mapping(value)) throw new Error(); return value; } catch { throw failure("cursor_invalid", artifact, `${artifact} cursor is malformed or belongs to another project`, "Copy next_cursor exactly, or omit --cursor to restart."); } }
 
-function sorted(artifact: "todo" | "docs", entities: DiscoveredEntity[]): DiscoveredEntity[] {
+function sorted(artifact: "todo" | "docs", entities: DiscoveredEntity[], rows?: Map<string, ManagedRow>): DiscoveredEntity[] {
   const selected = entities.filter(({ boundary }) => boundary === definition(artifact).boundary);
   if (artifact === "docs") return selected.sort((a, b) => String(a.record!.path).localeCompare(String(b.record!.path)) || a.id!.localeCompare(b.id!));
-  return selected.sort((a, b) => TODO_SEVERITIES.indexOf(a.record!.severity as typeof TODO_SEVERITIES[number]) - TODO_SEVERITIES.indexOf(b.record!.severity as typeof TODO_SEVERITIES[number]) || TODO_STATUSES.indexOf(a.record!.status as typeof TODO_STATUSES[number]) - TODO_STATUSES.indexOf(b.record!.status as typeof TODO_STATUSES[number]) || a.id!.localeCompare(b.id!));
+  return selected.sort((a, b) => {
+    const left = publicReadRecord(a.record!, rows?.get(a.id!)); const right = publicReadRecord(b.record!, rows?.get(b.id!));
+    return TODO_SEVERITIES.indexOf(left.severity as typeof TODO_SEVERITIES[number]) - TODO_SEVERITIES.indexOf(right.severity as typeof TODO_SEVERITIES[number])
+      || TODO_STATUSES.indexOf(left.status as typeof TODO_STATUSES[number]) - TODO_STATUSES.indexOf(right.status as typeof TODO_STATUSES[number])
+      || (rows?.get(a.id!)?.snapshot.order ?? Number.MAX_SAFE_INTEGER) - (rows?.get(b.id!)?.snapshot.order ?? Number.MAX_SAFE_INTEGER)
+      || a.id!.localeCompare(b.id!);
+  });
 }
 
 export function getTodoDocsEntity(root: string, artifact: "todo" | "docs", id: string, sourceRoot = resolveSourceRoot()): JsonObject {
   if (artifact === "todo") assertTodoReconciliationReadable(root, sourceRoot, id);
-  const entity = selectedById(relevant(root, sourceRoot, artifact), artifact, id); return { schemaVersion: "agentera.stateGet.v1", command: `state ${artifact} get`, status: "ok", entry: entry(root, entity), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entity" } };
+  const entities = relevant(root, sourceRoot, artifact);
+  const entity = selectedById(entities, artifact, id);
+  const view = artifact === "todo" ? inspectTodoReadView(root, sourceRoot, entities) : null;
+  return { schemaVersion: "agentera.stateGet.v1", command: `state ${artifact} get`, status: "ok", entry: entry(root, entity, view?.rows.get(id)), ...(view ? { reconciliation: view.drift } : {}), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entity" } };
 }
 
 export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", limit?: number, cursor?: string, filters: JsonObject = {}, options: { sourceRoot?: string; format?: string; reservedUtf8Bytes?: number; discovery?: EntityDiscoveryResult } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(definition(artifact).boundary, sourceRoot); const take = limit ?? declared.defaultLimit;
   if (artifact === "todo") assertTodoReconciliationReadable(root, sourceRoot);
   if (!Number.isSafeInteger(take) || take < 1 || take > declared.maximumLimit) throw failure("invalid_request", artifact, `${artifact} list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", undefined, 2);
-  const all = relevant(root, sourceRoot, artifact, options.discovery).filter(({ boundary }) => boundary === definition(artifact).boundary); let selected = sorted(artifact, all);
-  if (artifact === "todo") selected = selected.filter((entity) => (!filters.severity || entity.record!.severity === filters.severity) && (!filters.status || entity.record!.status === filters.status));
+  const all = relevant(root, sourceRoot, artifact, options.discovery).filter(({ boundary }) => boundary === definition(artifact).boundary);
+  const view = artifact === "todo" ? inspectTodoReadView(root, sourceRoot, all) : null;
+  let selected = sorted(artifact, all, view?.rows);
+  if (artifact === "todo") selected = selected.filter((entity) => { const record = publicReadRecord(entity.record!, view?.rows.get(entity.id!)); return (!filters.severity || record.severity === filters.severity) && (!filters.status || record.status === filters.status); });
   if (artifact === "docs") selected = selected.filter((entity) => (!filters.status || entity.record!.status === filters.status) && (!filters.topic || [entity.record!.document, entity.record!.path, entity.record!.status].some((value) => String(value).toLowerCase().includes(String(filters.topic).toLowerCase()))));
-  const snap = snapshot(root, all); let start = 0;
+  const snap = snapshot(root, all, view?.rows); let start = 0;
   if (cursor) { const value = decode(cursor, root, declared.authorityPath, artifact); if (value.snapshot_id !== snap || value.order !== definition(artifact).order || canonicalRecordJson(value.filters) !== canonicalRecordJson(filters)) throw failure("cursor_snapshot_unavailable", artifact, `${artifact} state changed after this cursor snapshot`, "Omit --cursor to restart from current state."); const found = selected.findIndex(({ id }) => id === value.after); if (found < 0) throw failure("cursor_snapshot_unavailable", artifact, `${artifact} cursor continuation is unavailable`, "Omit --cursor to restart."); start = found + 1; }
   let page = selected.slice(start, start + take); let trimmed = false;
-  const response = (): JsonObject => { const remaining = selected.length - start - page.length; const next = remaining && page.length ? encode({ snapshot_id: snap, order: definition(artifact).order, filters, after: page.at(-1)!.id! }, root, declared.authorityPath) : undefined; const filterFlags = Object.entries(filters).map(([name, value]) => ` --${name} ${shell(value)}`).join(""); return { schemaVersion: "agentera.stateList.v1", command: `state ${artifact} list`, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity)), counts: { total: selected.length, returned: page.length, remaining }, order: definition(artifact).order, filters, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" }, retrieval: { get: `agentera state ${artifact} get --id ID --format json`, ...(next ? { continue: `agentera state ${artifact} list${filterFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next } : {}) }; };
+  const response = (): JsonObject => { const remaining = selected.length - start - page.length; const next = remaining && page.length ? encode({ snapshot_id: snap, order: definition(artifact).order, filters, after: page.at(-1)!.id! }, root, declared.authorityPath) : undefined; const filterFlags = Object.entries(filters).map(([name, value]) => ` --${name} ${shell(value)}`).join(""); return { schemaVersion: "agentera.stateList.v1", command: `state ${artifact} list`, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity, view?.rows.get(entity.id!))), ...(view ? { reconciliation: view.drift } : {}), counts: { total: selected.length, returned: page.length, remaining }, order: definition(artifact).order, filters, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" }, retrieval: { get: `agentera state ${artifact} get --id ID --format json`, ...(next ? { continue: `agentera state ${artifact} list${filterFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: trimmed ? "serialized_byte_budget" : "page_limit", next_cursor: next } : {}) }; };
   const outputBudget = declared.maxUtf8Bytes - (options.reservedUtf8Bytes ?? 0); if (outputBudget < 1024) throw failure("unsupported_state", artifact, `${artifact} singleton metadata leaves no room for a bounded entity view`, "Reduce the authority-owned singleton metadata within its declared artifact budget.");
   let result = response(); const bytes = () => Buffer.byteLength(options.format === "yaml" ? YAML.stringify(result) : `${JSON.stringify(result, null, 2)}\n`); while (bytes() > outputBudget && page.length) { page = page.slice(0, -1); trimmed = true; result = response(); } if (!page.length && selected.length > start) throw failure("unsupported_state", artifact, `one full ${artifact} entity cannot fit the ${declared.maxUtf8Bytes}-byte list budget`, "Use exact get by ID."); return result;
 }

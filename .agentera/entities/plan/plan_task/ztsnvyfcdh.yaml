@@ -4,10 +4,23 @@ record:
   name: M3 · Activate repository-first TODO reconciliation (yqqqhipecx)
   depends_on:
     - hoxdtgwytq
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN a managed TODO row WHEN read THEN its stable ID, Markdown-owned public fields and order, and Agentera-owned operational fields retain distinct authority.
     - GIVEN a one-sided or divergent edit WHEN read THEN drift is reported without mutation, and the next write uses the atomic reconciliation boundary.
     - GIVEN dependencies or gates WHEN actionability is computed THEN Markdown order cannot override operational constraints.
     - GIVEN edit and merge classes WHEN tested THEN each has one successful reconciliation and one conflict or validation case.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Production readiness projects Markdown status/severity but re-sorts same-severity eligible TODOs by entity-owned queue_rank, so a later Markdown row can be selected ahead of the Markdown-first item; integration tests do not oppose Markdown order and queue rank.
+    provenance:
+      attempt_id: ztsnvyfcdh-audit-2
+      source: Bounded Audit re-review ses_040756d26ffe4EuotpXHln1ekY
+      recorded_at: 2026-08-02 01:20
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ewkfnxucxq
+  superseded_reason: Replacement completed repository-first TODO readiness ordering and earned independent PASS.

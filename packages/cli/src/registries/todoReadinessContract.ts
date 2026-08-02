@@ -226,14 +226,53 @@ function validateOrdering(readiness: JsonObject, errors: string[], sourceLabel: 
   if (ordering.primary !== "protocol.yaml#SEVERITY_ISSUE") {
     errors.push(`${sourceLabel}: READINESS.ordering.primary must be protocol.yaml#SEVERITY_ISSUE`);
   }
-  if (ordering.within_severity !== "queue_rank_ascending") {
-    errors.push(`${sourceLabel}: READINESS.ordering.within_severity must be queue_rank_ascending`);
+  for (const legacy of ["within_severity", "duplicate_rank", "prohibited_tiebreakers"]) {
+    if (legacy in ordering) errors.push(`${sourceLabel}: READINESS.ordering.${legacy} must be declared under one ordering mode`);
   }
-  if (ordering.duplicate_rank !== "ordering_conflict") {
-    errors.push(`${sourceLabel}: READINESS.ordering.duplicate_rank must be ordering_conflict`);
+  const modes = ordering.modes;
+  if (!isMapping(modes)) {
+    errors.push(`${sourceLabel}: READINESS.ordering.modes must be a mapping`);
+    return;
   }
-  if (!sameList(ordering.prohibited_tiebreakers, PROHIBITED_TIEBREAKERS)) {
-    errors.push(`${sourceLabel}: READINESS.ordering.prohibited_tiebreakers must equal ${PROHIBITED_TIEBREAKERS.join(", ")}`);
+  if (Object.keys(modes).sort().join(",") !== "nonprojected,projected_startup") {
+    errors.push(`${sourceLabel}: READINESS.ordering.modes must contain only nonprojected and projected_startup`);
+  }
+  const nonprojected = modes.nonprojected;
+  if (!isMapping(nonprojected)) {
+    errors.push(`${sourceLabel}: READINESS.ordering.modes.nonprojected must be a mapping`);
+  } else {
+    if (Object.keys(nonprojected).sort().join(",") !== "duplicate_rank,prohibited_tiebreakers,within_severity") {
+      errors.push(`${sourceLabel}: READINESS.ordering.modes.nonprojected has unsupported fields`);
+    }
+    if (nonprojected.within_severity !== "queue_rank_ascending") {
+      errors.push(`${sourceLabel}: READINESS.ordering.modes.nonprojected.within_severity must be queue_rank_ascending`);
+    }
+    if (nonprojected.duplicate_rank !== "ordering_conflict") {
+      errors.push(`${sourceLabel}: READINESS.ordering.modes.nonprojected.duplicate_rank must be ordering_conflict`);
+    }
+    if (!sameList(nonprojected.prohibited_tiebreakers, PROHIBITED_TIEBREAKERS)) {
+      errors.push(`${sourceLabel}: READINESS.ordering.modes.nonprojected.prohibited_tiebreakers must equal ${PROHIBITED_TIEBREAKERS.join(", ")}`);
+    }
+  }
+  const projected = modes.projected_startup;
+  const projectedRules: Record<string, string | boolean> = {
+    entity_annotation: "required_for_every_entity",
+    eligibility: "before_order",
+    managed_before_absent: true,
+    managed_within_severity: "markdown_order_ascending",
+    managed_duplicate_rank: "ignored",
+    absent_within_severity: "queue_rank_then_id",
+    absent_duplicate_rank: "entity_id_ascending",
+  };
+  if (!isMapping(projected)) {
+    errors.push(`${sourceLabel}: READINESS.ordering.modes.projected_startup must be a mapping`);
+  } else {
+    if (Object.keys(projected).sort().join(",") !== Object.keys(projectedRules).sort().join(",")) {
+      errors.push(`${sourceLabel}: READINESS.ordering.modes.projected_startup has unsupported fields`);
+    }
+    for (const [field, expected] of Object.entries(projectedRules)) {
+      if (projected[field] !== expected) errors.push(`${sourceLabel}: READINESS.ordering.modes.projected_startup.${field} must be ${String(expected)}`);
+    }
   }
 }
 

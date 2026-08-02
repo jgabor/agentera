@@ -1,0 +1,14 @@
+id: rzagfdxqll
+artifact: progress
+record:
+  timestamp: 2026-08-02 00:54
+  type: fix
+  phase: build
+  what: Activated repository-first TODO reconciliation reads and validation without closing evaluator-owned lifecycle state.
+  context:
+    intent: Implement only plan task ztsnvyfcdh for independent Audit.
+    constraints: Do not commit or close task/TODO/evaluation; preserve four staged M1 files and use local dist.
+    unknowns: Decision kpybrsfywb remains provisional; glossary authority was unavailable; vision/profile were absent from startup.
+    scope: TODO managed-row reads, field reconciliation, actionability tests, validate-state drift, authority contract, truthful NEXT marker.
+  verified: "AC1 PASS: exact/list reads expose managed ID, Markdown-owned description/severity/status/order, and unchanged Agentera readiness/gates. AC2 PASS: one-sided and divergent edits report bounded no-effect drift; local writes reconcile through the existing recoverable journal; validate-state flags drift. AC3 PASS: gate/dependency evaluation remains entity-owned and queue-rank constrained despite Markdown list order. AC4 PASS: focused edit/merge pass and conflict cases passed (102 tests); full source passed 224 files, 3117 tests with 1 skipped; typecheck, build, 19 package tests, state, compact, capability-contract, and verbose package dry-run passed."
+  publication_order: 35

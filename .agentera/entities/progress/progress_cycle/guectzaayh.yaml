@@ -1,0 +1,15 @@
+id: guectzaayh
+artifact: progress
+record:
+  timestamp: 2026-08-02 01:32
+  type: fix
+  phase: build
+  what: Made production TODO readiness honor projected Markdown order after operational eligibility.
+  context:
+    intent: Address only ewkfnxucxq by correcting the accepted same-severity readiness selection defect.
+    constraints: Preserve the existing zts ownership, drift, merge, publication, and closeout work; keep ewkfnxucxq pending, ztsnvyfcdh blocked, yqqqhipecx open, downstream M3 pending, and the protected staged M1 index unchanged. Do not commit or alter prior progress.
+    scope: Projected Markdown order propagation, readiness selection fallback, opposing-order production integration, authority parity, and proportional verification.
+  discovered: Production startup consumed the correct bounded Markdown-projected TODO set, but evaluateTodoReadinessQueue re-sorted eligible same-severity rows by entity queue_rank and discarded projected Markdown order.
+  verified: "AC1 PASS: production integration projected two eligible normal rows in Markdown order 1 then 2 with opposing queue ranks 9 then 1; startup selected Markdown order 1 with queue rank 9. AC2 PASS: resolved status, open dependencies, pending gates, blocked state, and readiness evidence remained eligibility filters before order; the original actionability matrix passed. AC3 PASS: one 256-entity-bounded no-effect projection now carries current Markdown status, severity, and order to both startup counts and selection; the opposing case reported normal count 2 and byte-for-byte unchanged project files. Managed rows sort before absent entities; absent fallback remains queue rank then ID. AC4 PREP PASS: the original ownership, one-sided/divergent drift, validation, write reconciliation, interruption, and edit/merge matrix plus the new opposing case passed 90 focused tests. Full source passed 224 files with 3120 tests passed and 1 skipped; typecheck, local build, 19 package tests, state validation over 2046 entities with zero issues, compact, capability-contract, standard and verbose package dry-runs, and diff checks passed; verbose pack reported zero warnings."
+  next: Request independent Audit of ewkfnxucxq. Keep ztsnvyfcdh unsuperseded, yqqqhipecx open, and downstream M3 pending until PASS.
+  publication_order: 37

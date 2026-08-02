@@ -11,4 +11,4 @@ record:
       description: "[fix:3.0.0] Make `agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run --format json` a targeted operation. The status-descriptor preview ran unrelated app, artifact, runtime, and cleanup phases and embedded the full 29KB OpenCode plugin `newText`. Return only the selected resource, bounded configuration actions, hashes or diff summaries, and blockers that affect that resource."
       severity: critical
       status: open
-      order: 9
+      order: 8

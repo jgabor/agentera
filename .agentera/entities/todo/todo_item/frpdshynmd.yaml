@@ -3,7 +3,7 @@ artifact: todo
 record:
   severity: critical
   status: resolved
-  description: "[fix:3.0.0] **NEXT** Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
+  description: "[fix:3.0.0] Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
   readiness:
     capability: build
     reason: Decision kpybrsfywb requires reconciliation and the requested Agentera TODO mutation to publish atomically without depending on broader batch ergonomics.
@@ -22,7 +22,7 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] **NEXT** Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
+      description: "[fix:3.0.0] Add the atomic TODO reconciliation transaction required by Decision `kpybrsfywb`. Bind a stable three-way baseline, one-sided `TODO.md` imports, one-sided entity projections, and the requested TODO mutation into one CAS and idempotent publication; reject stale baselines, divergent public fields, duplicate or missing managed IDs, and removal of unchecked rows before effects. Define crash recovery, deterministic replay, branch-merge conflicts, bounded receipts, and fault-injection tests. Keep general batch composition and local symbolic references in TODO `kbjrvrilzj`."
       status: resolved
       order: 76
       severity: critical

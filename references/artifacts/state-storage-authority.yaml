@@ -512,6 +512,9 @@ entity_target:
       ownership:
         fields: [kind, target_version, title, requirements, acceptance, release_blocker, severity, status, readiness, lifecycle, reconciliation]
         cardinality: TODO.md owns public fields; Agentera owns operational fields
+        identity: managed row and canonical entity share one visible ten-letter id
+        markdown_public_fields: [description, severity, status, order]
+        agentera_operational_fields: [readiness, dependencies, blocked, gate, evidence, lifecycle]
       reconciliation:
         baseline: record.reconciliation
         schema_version: agentera.todoReconciliation.v1
@@ -549,6 +552,9 @@ entity_target:
         public_path_binding: exact_docs_mapped_relative_path_plus_docs_yaml_snapshot_sha256
         pending_visibility: agentera_todo_get_list_startup_and_dry_run_fail_closed_without_recovery_effects
         hard_crash_recovery: consume_exact_original_previous_replacement_tmp_and_replacement_metadata_before_target_replay
+        startup_selection:
+          ordering_authority: skills/agentera/schemas/artifacts/todo.yaml#READINESS.ordering.modes.projected_startup
+          projected_entity_bound: 256
         public_replacement: >-
           Stage and fsync complete replacement bytes plus exact prior bytes on the
           target filesystem, then replace each regular file with standard Node
@@ -564,9 +570,19 @@ entity_target:
           concurrent bytes remain canonical or retained and produce one structured
           correction.
         semantics: >-
-          Every TODO mutation compares TODO.md and the entity against the last
-          public baseline, imports one-sided Markdown edits, projects one-sided
-          entity edits, applies the requested mutation, and publishes all
+          TODO reads project Markdown-owned public fields and order with
+          Agentera-owned operational fields, report bounded field-level drift,
+          and have no reconciliation effects. Startup builds one complete
+          bounded projection through that same read authority; readiness,
+          dependency state, selection, and counts all consume its projected
+          status, severity, and order while retaining operational readiness and
+          gates. Eligibility and severity grouping apply before managed Markdown
+          order. An entity intentionally absent from managed Markdown sorts after
+          managed rows of the same severity by queue rank and then ID.
+          Every TODO mutation compares
+          TODO.md and the entity against the last public baseline, merges
+          one-sided or independent field edits, rejects different edits to the
+          same public field, applies the requested mutation, and publishes all
           changed targets under one recoverable journal. Interrupted create retry
           is bound to its canonical normalized request and original created ID;
           exact retry returns that ID without allocating another entity, while a
@@ -592,6 +608,7 @@ entity_target:
           evidence for only the targets that could not be restored.
         bounds:
           managed_items: 256
+          startup_projected_entities: 256
           retained_pre_activation_legacy_rows: 256
           transaction_targets: 258
           activation_utf8_bytes: 32768
@@ -600,7 +617,7 @@ entity_target:
       retrieval:
         exact: agentera state todo get --id ID --format json
         list: agentera state todo list [--limit N] [--cursor TOKEN] --format json
-        ordering: severity_then_status_then_id
+        ordering: severity_then_status_then_markdown_order_then_id
         default_limit: 20
         maximum_limit: 100
         max_utf8_bytes: 32768

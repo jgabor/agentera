@@ -96,10 +96,20 @@ describe("TODO readiness contract", () => {
     });
     expect(model.ordering).toMatchObject({
       primary: "protocol.yaml#SEVERITY_ISSUE",
-      within_severity: "queue_rank_ascending",
-      duplicate_rank: "ordering_conflict",
+      modes: {
+        nonprojected: { within_severity: "queue_rank_ascending", duplicate_rank: "ordering_conflict" },
+        projected_startup: {
+          entity_annotation: "required_for_every_entity",
+          eligibility: "before_order",
+          managed_before_absent: true,
+          managed_within_severity: "markdown_order_ascending",
+          managed_duplicate_rank: "ignored",
+          absent_within_severity: "queue_rank_then_id",
+          absent_duplicate_rank: "entity_id_ascending",
+        },
+      },
     });
-    expect(model.ordering.prohibited_tiebreakers).toEqual([
+    expect((model.ordering.modes as any).nonprojected.prohibited_tiebreakers).toEqual([
       "entity_id",
       "file_order",
       "filesystem_time",
@@ -108,7 +118,7 @@ describe("TODO readiness contract", () => {
     ]);
   });
 
-  it("passes criterion 5 with every exact outcome and deterministic intent-ordering rule", () => {
+  it("passes criterion 5 with every exact outcome and both deterministic ordering modes", () => {
     const documents = validDocuments();
     expect(validateTodoReadinessContract(
       documents.todo,
@@ -130,8 +140,10 @@ describe("TODO readiness contract", () => {
     });
     expect(documents.todo.READINESS.ordering).toMatchObject({
       primary: "protocol.yaml#SEVERITY_ISSUE",
-      within_severity: "queue_rank_ascending",
-      duplicate_rank: "ordering_conflict",
+      modes: {
+        nonprojected: { within_severity: "queue_rank_ascending", duplicate_rank: "ordering_conflict" },
+        projected_startup: { managed_duplicate_rank: "ignored", absent_duplicate_rank: "entity_id_ascending" },
+      },
     });
   });
 
@@ -174,9 +186,12 @@ describe("TODO readiness contract", () => {
     ["mixed queue recovery is bounded", ({ todo }) => { todo.READINESS.queue_outcomes.mixed_actionable_and_triage.recovery = ""; }, "READINESS.queue_outcomes.mixed_actionable_and_triage.recovery must be a non-empty string"],
     ["all-non-actionable queue recovery is bounded", ({ todo }) => { todo.READINESS.queue_outcomes.all_non_actionable.recovery = ""; }, "READINESS.queue_outcomes.all_non_actionable.recovery must be a non-empty string"],
     ["canonical severity owns primary ordering", ({ todo }) => { todo.READINESS.ordering.primary = "queue_rank"; }, "READINESS.ordering.primary must be protocol.yaml#SEVERITY_ISSUE"],
-    ["severity and intent own ordering", ({ todo }) => { todo.READINESS.ordering.within_severity = "entity_id"; }, "READINESS.ordering.within_severity must be queue_rank_ascending"],
-    ["duplicate ranks require triage", ({ todo }) => { todo.READINESS.ordering.duplicate_rank = "entity_id"; }, "READINESS.ordering.duplicate_rank must be ordering_conflict"],
-    ["fabricated chronology is prohibited", ({ todo }) => { todo.READINESS.ordering.prohibited_tiebreakers.pop(); }, "READINESS.ordering.prohibited_tiebreakers must equal"],
+    ["nonprojected severity and intent own ordering", ({ todo }) => { todo.READINESS.ordering.modes.nonprojected.within_severity = "entity_id"; }, "READINESS.ordering.modes.nonprojected.within_severity must be queue_rank_ascending"],
+    ["nonprojected duplicate ranks require triage", ({ todo }) => { todo.READINESS.ordering.modes.nonprojected.duplicate_rank = "entity_id"; }, "READINESS.ordering.modes.nonprojected.duplicate_rank must be ordering_conflict"],
+    ["nonprojected fabricated chronology is prohibited", ({ todo }) => { todo.READINESS.ordering.modes.nonprojected.prohibited_tiebreakers.pop(); }, "READINESS.ordering.modes.nonprojected.prohibited_tiebreakers must equal"],
+    ["projected managed duplicate ranks remain eligible", ({ todo }) => { todo.READINESS.ordering.modes.projected_startup.managed_duplicate_rank = "ordering_conflict"; }, "READINESS.ordering.modes.projected_startup.managed_duplicate_rank must be ignored"],
+    ["projected absent duplicate ranks use ID fallback", ({ todo }) => { todo.READINESS.ordering.modes.projected_startup.absent_duplicate_rank = "ordering_conflict"; }, "READINESS.ordering.modes.projected_startup.absent_duplicate_rank must be entity_id_ascending"],
+    ["top-level ordering cannot contradict mode authority", ({ todo }) => { todo.READINESS.ordering.duplicate_rank = "ordering_conflict"; }, "READINESS.ordering.duplicate_rank must be declared under one ordering mode"],
   ];
 
   it.each(failingRules)("rejects invalid contract: %s", (_name, mutate, expected) => {

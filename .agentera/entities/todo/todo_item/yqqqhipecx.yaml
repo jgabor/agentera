@@ -2,7 +2,7 @@ id: yqqqhipecx
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass."
   readiness:
     capability: build
@@ -19,6 +19,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Implement the repository-first TODO reconciliation chosen in Decision `kpybrsfywb`. Keep root `TODO.md` editable by humans and ordinary tools, show each managed row its stable ten-letter ID, let Markdown own public fields and within-severity order, and let Agentera own dependencies, readiness, gates, and evidence. Define managed-row syntax, baseline storage, branch-merge behavior, dependency-constrained actionability, read-only drift reporting, and `check validate state` drift checks. Consume the atomic reconcile-and-write transaction in TODO `frpdshynmd` rather than implementing a second publication path. This fulfills the decision only when both items pass."
+      status: resolved
+      order: 77
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Repository-first TODO reconciliation passed independent Audit
+    date: 2026-08-02

@@ -4,10 +4,15 @@ import { loadTodoReadinessContract } from "../registries/todoReadinessContract.j
 import { TODO_SEVERITY_ORDER } from "./todoSeverity.js";
 import { renderTodoPublicRecord } from "./todoMarkdown.js";
 
+export type TodoProjectedStartupOrder =
+  | { kind: "managed"; markdownOrder: number }
+  | { kind: "absent" };
+
 export interface TodoReadinessEntity {
   id: string;
   artifact: string;
   record: Record<string, unknown>;
+  projectedOrder?: TodoProjectedStartupOrder;
 }
 
 export interface TodoReadinessEvaluation {
@@ -25,6 +30,7 @@ export interface TodoReadinessEvaluation {
   phase?: string;
   reason?: string;
   queueRank?: number;
+  projectedOrder?: TodoProjectedStartupOrder;
 }
 
 export interface TodoReadinessQueueSelection {
@@ -36,6 +42,32 @@ export interface TodoReadinessQueueSelection {
 
 function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validProjectedOrder(value: unknown): value is TodoProjectedStartupOrder {
+  if (!mapping(value)) return false;
+  if (value.kind === "absent") return Object.keys(value).length === 1;
+  return value.kind === "managed"
+    && Object.keys(value).sort().join(",") === "kind,markdownOrder"
+    && Number.isSafeInteger(value.markdownOrder)
+    && Number(value.markdownOrder) > 0;
+}
+
+function projectedMode(entities: TodoReadinessEntity[]): boolean {
+  const declared = entities.filter((entity) => Object.hasOwn(entity, "projectedOrder"));
+  if (!declared.length) return false;
+  if (declared.length !== entities.length || declared.some((entity) => !validProjectedOrder(entity.projectedOrder))) {
+    throw new Error("projected TODO readiness requires one valid projectedOrder for every entity");
+  }
+  return true;
+}
+
+function compareProjectedOrder(left: TodoReadinessEvaluation, right: TodoReadinessEvaluation): number {
+  const a = left.projectedOrder!;
+  const b = right.projectedOrder!;
+  if (a.kind !== b.kind) return a.kind === "managed" ? -1 : 1;
+  if (a.kind === "managed" && b.kind === "managed") return a.markdownOrder - b.markdownOrder || left.id.localeCompare(right.id);
+  return (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER) || left.id.localeCompare(right.id);
 }
 
 function dependencies(readiness: Record<string, unknown>): Array<Record<string, unknown>> {
@@ -86,6 +118,7 @@ export function evaluateTodoReadinessQueue(
       path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml"),
     )
     : loadTodoReadinessContract();
+  const projected = projectedMode(entities);
   const byId = new Map(entities.map((entity) => [entity.id, entity]));
 
   const evaluate = (entity: TodoReadinessEntity): TodoReadinessEvaluation => {
@@ -135,25 +168,28 @@ export function evaluateTodoReadinessQueue(
         reason: typeof readiness?.reason === "string" ? readiness.reason : "",
       } : {}),
       ...(queueRank === undefined ? {} : { queueRank }),
+      ...(projected ? { projectedOrder: entity.projectedOrder! } : {}),
     };
   };
 
   const evaluations = entities.map(evaluate);
   const actionable = evaluations.filter((entry) => entry.eligible);
-  const ranks = new Map<string, TodoReadinessEvaluation[]>();
-  for (const entry of actionable) {
-    const key = `${entry.severity}\0${String(entry.queueRank)}`;
-    ranks.set(key, [...(ranks.get(key) ?? []), entry]);
-  }
-  for (const conflicts of ranks.values()) {
-    if (conflicts.length < 2) continue;
-    const authority = contract.outcomes.ordering_conflict;
-    for (const entry of conflicts) {
-      entry.outcome = "ordering_conflict";
-      entry.result = String(authority.result);
-      entry.eligible = false;
-      entry.attention = String(authority.attention);
-      entry.recovery = typeof authority.recovery === "string" ? authority.recovery : null;
+  if (!projected) {
+    const ranks = new Map<string, TodoReadinessEvaluation[]>();
+    for (const entry of actionable) {
+      const key = `${entry.severity}\0${String(entry.queueRank)}`;
+      ranks.set(key, [...(ranks.get(key) ?? []), entry]);
+    }
+    for (const conflicts of ranks.values()) {
+      if (conflicts.length < 2) continue;
+      const authority = contract.outcomes.ordering_conflict;
+      for (const entry of conflicts) {
+        entry.outcome = "ordering_conflict";
+        entry.result = String(authority.result);
+        entry.eligible = false;
+        entry.attention = String(authority.attention);
+        entry.recovery = typeof authority.recovery === "string" ? authority.recovery : null;
+      }
     }
   }
 
@@ -162,7 +198,9 @@ export function evaluateTodoReadinessQueue(
     .sort((left, right) =>
       (TODO_SEVERITY_ORDER[left.severity] ?? TODO_SEVERITY_ORDER.normal)
       - (TODO_SEVERITY_ORDER[right.severity] ?? TODO_SEVERITY_ORDER.normal)
-      || (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER),
+      || (projected
+        ? compareProjectedOrder(left, right)
+        : (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER) || left.id.localeCompare(right.id)),
     )[0] ?? null;
   const triageCount = evaluations.filter((entry) => entry.attention === "item").length;
   const mixedRecovery = contract.queueOutcomes.mixed_actionable_and_triage?.recovery;

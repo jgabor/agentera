@@ -19,6 +19,7 @@ import {
 import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
+import { inspectTodoReconciliationDrift } from "../../state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../state/stateMode.js";
 import { loadEntityCutoverTargetsForMarker } from "../../state/entityCutover.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
@@ -459,9 +460,12 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
   const projectRoot = resolvePath(projectRootInput);
   const result = validateEntityState(projectRoot);
   const issues: JsonObject[] = [...result.issues as unknown as JsonObject[]];
+  let additionalOmittedIssues = 0;
+  let entityMode = false;
   try {
     const binding = detectStateModeBinding(projectRoot);
     if (binding.mode === "entities") {
+      entityMode = true;
       binding.publicationContext.close();
       const markerSnapshot = readProjectFileSnapshot(validateRealProjectRoot(projectRoot), ".agentera/state-mode.yaml");
       if (markerSnapshot.kind !== "file") throw new Error("entity-mode marker became unavailable during maintenance validation");
@@ -478,9 +482,40 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
       }
     }
   } catch (error) {
-    issues.push({ code: "invalid_state_marker_or_manifest", path: ".agentera/state-mode.yaml", message: (error as Error).message, recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check." });
+    if (issues.length < 100) issues.push({ code: "invalid_state_marker_or_manifest", path: ".agentera/state-mode.yaml", message: (error as Error).message, recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check." });
+    else additionalOmittedIssues += 1;
   }
-  const valid = result.valid && issues.length === 0;
+  if (entityMode) {
+    try {
+      const reconciliation = inspectTodoReconciliationDrift(projectRoot);
+      const driftItems = Array.isArray(reconciliation.items) ? reconciliation.items.filter((item): item is JsonObject => item !== null && typeof item === "object" && !Array.isArray(item)) : [];
+      const reconciliationOmitted = Number(reconciliation.omitted_count ?? 0);
+      const available = Math.max(0, 100 - issues.length);
+      for (const item of driftItems.slice(0, available)) {
+        const id = String(item.id ?? "unknown");
+        const state = String(item.state ?? "drift");
+        const fields = [...new Set([
+          ...(Array.isArray(item.markdown_changed_fields) ? item.markdown_changed_fields : []),
+          ...(Array.isArray(item.entity_changed_fields) ? item.entity_changed_fields : []),
+          ...(Array.isArray(item.conflicting_fields) ? item.conflicting_fields : []),
+        ].filter((field): field is string => typeof field === "string"))].sort();
+        issues.push({
+          code: "todo_reconciliation_drift",
+          path: "TODO.md",
+          id,
+          artifact: "todo",
+          message: `managed TODO '${id}' has ${state} reconciliation drift${fields.length ? ` in ${fields.join(", ")}` : ""}`,
+          recovery: "Review the reported authority and run the intended typed TODO mutation once; the writer reconciles one-sided changes atomically and rejects conflicts before effects.",
+        });
+      }
+      additionalOmittedIssues += Math.max(0, driftItems.length - available) + (Number.isSafeInteger(reconciliationOmitted) && reconciliationOmitted > 0 ? reconciliationOmitted : 0);
+    } catch (error) {
+      if (issues.length < 100) issues.push({ code: "invalid_todo_reconciliation", path: "TODO.md", artifact: "todo", message: (error as Error).message, recovery: "Restore valid bounded managed TODO Markdown, activation metadata, and public baselines, then rerun this read-only check." });
+      else additionalOmittedIssues += 1;
+    }
+  }
+  const omittedIssueCount = result.omittedIssueCount + additionalOmittedIssues;
+  const valid = result.valid && issues.length === 0 && omittedIssueCount === 0;
   const payload: JsonObject = {
     command: "check validate state",
     target_family: "state",
@@ -488,8 +523,8 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
     valid,
     project_root: projectRoot,
     entity_count: result.entityCount,
-    issue_count: issues.length + result.omittedIssueCount,
-    omitted_issue_count: result.omittedIssueCount,
+    issue_count: issues.length + omittedIssueCount,
+    omitted_issue_count: omittedIssueCount,
     valid_artifact_values: result.validArtifactValues,
     issues: issues as unknown as JsonValue,
   };

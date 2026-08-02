@@ -6,7 +6,7 @@ import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listPlanEntities, listPlanTaskEntities } from "../../../state/planEntities.js";
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
-import { assertTodoReconciliationReadable, listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
+import { assertTodoReconciliationReadable, listTodoDocsEntities, projectTodoReadEntities } from "../../../state/todoDocsEntities.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
 import { summaryCaveat } from "../../../state/summaryEntityRead.js";
@@ -282,9 +282,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     closed_count: closedObjectiveCount,
   } : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
 
-  const completeTodoEntities = discovery.entities
-    .filter((entry) => entry.boundary === "todo_item" && entry.classification === "valid" && entry.id && entry.artifact && entry.record)
-    .map((entry) => ({ id: entry.id!, artifact: entry.artifact!, record: entry.record! }));
+  const completeTodoEntities = projectTodoReadEntities(projectRoot, sourceRoot, discovery);
   const todoReadiness = evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot);
   const todoItems = todoEntries.map((entry) => {
     const todo = record(entry);
@@ -302,9 +300,9 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     };
   });
   const todoCounts = issueCounts(
-    discovery.entities
-      .filter((entry) => entry.boundary === "todo_item" && entry.record?.status === "open")
-      .map((entry) => ({ severity: String(entry.record?.severity ?? "normal") })),
+    completeTodoEntities
+      .filter((entry) => entry.record.status === "open")
+      .map((entry) => ({ severity: String(entry.record.severity ?? "normal") })),
   );
   const todoListCounts = todoList.counts as JsonObject | undefined;
   const todoDetail: TodoDetailSummary = {

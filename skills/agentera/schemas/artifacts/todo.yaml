@@ -204,8 +204,10 @@ READINESS:
       required: true
       minimum: 1
       description: >-
-        Reviewer-assigned durable intent order among open items of the same
-        severity. Lower values run first; the number is priority, not time.
+        Reviewer-assigned durable intent order for nonprojected queues and for
+        projected entities intentionally absent from managed Markdown. Managed
+        projected rows use Markdown order instead. Lower values run first when
+        queue rank applies; the number is priority, not time.
     order_reason:
       type: string
       required: true
@@ -225,7 +227,8 @@ READINESS:
       - actionable
     description: >-
       Evaluate once in this order against complete entity state. The first
-      matching result is final; bounded output projection happens afterward.
+      matching item result is final; bounded output projection happens afterward.
+      ordering_conflict applies only in nonprojected ordering mode.
   outcomes:
     todo_resolved:
       result: resolved
@@ -293,18 +296,29 @@ READINESS:
       recovery: Emit the first matching contract-owned item recovery; never infer plan or build from prose.
   ordering:
     primary: protocol.yaml#SEVERITY_ISSUE
-    within_severity: queue_rank_ascending
-    duplicate_rank: ordering_conflict
-    prohibited_tiebreakers:
-      - entity_id
-      - file_order
-      - filesystem_time
-      - created_or_modified_time
-      - description_text
+    modes:
+      nonprojected:
+        within_severity: queue_rank_ascending
+        duplicate_rank: ordering_conflict
+        prohibited_tiebreakers:
+          - entity_id
+          - file_order
+          - filesystem_time
+          - created_or_modified_time
+          - description_text
+      projected_startup:
+        entity_annotation: required_for_every_entity
+        eligibility: before_order
+        managed_before_absent: true
+        managed_within_severity: markdown_order_ascending
+        managed_duplicate_rank: ignored
+        absent_within_severity: queue_rank_then_id
+        absent_duplicate_rank: entity_id_ascending
     description: >-
-      Severity remains primary. Equally severe actionable work is ordered only
-      by explicit queue_rank. Duplicate ranks require triage rather than an
-      invented chronology or opaque identity tie-break.
+      Severity remains primary. Nonprojected callers retain reviewed queue-rank
+      conflict behavior. Projected startup declares one order annotation for
+      every entity, filters operationally ineligible items first, then orders
+      managed rows by Markdown and absent rows by queue rank and ID.
 
 CONVENTION:
   1:

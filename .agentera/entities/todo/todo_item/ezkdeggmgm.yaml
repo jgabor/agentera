@@ -20,4 +20,4 @@ record:
       description: "[fix:3.0.0] Establish retained-reference and runbook authority for all `references/` and `skills/agentera/references/` files. Inventory each file as current, migration-only, runbook, historical, or delete; retain current or migration-only material only with a named production owner and runtime or validator consumer; retain a runbook only with a maintainer and tracked noninteractive command proven from its documented location. Test imports, bundle inclusion, historical decisions, and source comments do not create authority. Delete or relocate unowned material and publish a machine-validated inventory."
       severity: critical
       status: open
-      order: 5
+      order: 4

@@ -18,6 +18,7 @@ import { operationSpec, type StateWriteRequest } from "../../src/state/write/ope
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
 import { closeoutTodoBlockers } from "../../src/cli/capabilityContext/closeout.js";
+import { evaluateTodoReadinessQueue } from "../../src/cli/todoReadinessSelection.js";
 
 const roots: string[] = [];
 const MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -92,6 +93,18 @@ function seedTodoEntity(root: string, id: string, title: string, severity = "nor
   return target;
 }
 
+function seedAbsentTodoEntity(root: string, id: string, title: string, queueRank = 1): string {
+  const target = seedTodoEntity(root, id, title);
+  const envelope = loadYamlMapping(fs.readFileSync(target, "utf8"));
+  (envelope.record as any).readiness = readinessInput({ queue_rank: queueRank });
+  (envelope.record as any).reconciliation = {
+    schema_version: "agentera.todoReconciliation.v1",
+    public: { present: false },
+  };
+  fs.writeFileSync(target, dumpYamlMapping(envelope));
+  return target;
+}
+
 function preactivationProject(id = "abcdefghij", title = "Legacy matched row"): { root: string; id: string; entity: string } {
   const root = project();
   const entity = seedTodoEntity(root, id, title);
@@ -103,11 +116,14 @@ function readinessInput(overrides: Record<string, unknown> = {}): Record<string,
   const values = {
     capability: "build",
     reason: "The implementation boundary is ready.",
+    dependencies: [],
+    blocked: null,
+    gate: null,
     queue_rank: 1,
     orderReason: "Highest-value ready work.",
     ...overrides,
   };
-  return { capability: values.capability, reason: values.reason, dependencies: [], blocked: null, gate: null, queue_rank: values.queue_rank, order_reason: values.orderReason };
+  return { capability: values.capability, reason: values.reason, dependencies: values.dependencies, blocked: values.blocked, gate: values.gate, queue_rank: values.queue_rank, order_reason: values.orderReason };
 }
 
 function doc(root: string, document: string, filePath: string, status = "current"): any {
@@ -405,6 +421,103 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect((closeout.items as any[]).map((entry) => entry.id)).toEqual([selected.json.id]);
   });
 
+  it("uses the complete Markdown projection for production startup readiness and counts", () => {
+    const root = project();
+    const dependency = todo(root, "Resolved entity reopened by Markdown");
+    const dependent = todo(root, "Must wait for projected dependency");
+    const resolvedCandidate = todo(root, "Open entity resolved by Markdown");
+    const fallback = todo(root, "Projected critical fallback");
+    expect(capture(root, ["state", "todo", "resolve", "--id", dependency.id, "--reason", "fixture", "--date", "2026-08-02", "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", dependent.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ dependencies: [{ artifact: "todo", id: dependency.id }], queue_rank: 1 }) }).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", resolvedCandidate.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 2 }) }).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", fallback.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 3 }) }).rc).toBe(0);
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Critical\n- [ ] [id:${fallback.id}] [task:3.0.0] Projected critical fallback\n\n## → Normal\n- [ ] [id:${dependent.id}] [task:3.0.0] Must wait for projected dependency\n- [x] [id:${resolvedCandidate.id}] [task:3.0.0] Open entity resolved by Markdown\n\n## ✓ Resolved\n- [ ] [id:${dependency.id}] [task:3.0.0] Resolved entity reopened by Markdown\n`);
+    const before = files(root);
+
+    const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
+
+    expect(projection.todoReadiness.selected).toMatchObject({ id: fallback.id, severity: "critical", result: "actionable" });
+    expect(projection.todoReadiness.evaluations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: dependent.id, result: "waiting", eligible: false }),
+      expect.objectContaining({ id: resolvedCandidate.id, result: "resolved", eligible: false }),
+      expect.objectContaining({ id: dependency.id, result: "needs-triage", eligible: false }),
+    ]));
+    expect(projection.todoCounts).toEqual({ critical: 1, degraded: 0, normal: 2, annoying: 0 });
+    expect(projection.todoItems.map((entry) => entry.id)).not.toContain(resolvedCandidate.id);
+    expect(files(root)).toEqual(before);
+  });
+
+  it("selects the Markdown-first same-severity row despite opposing queue rank", () => {
+    const root = project();
+    const queueFirst = todo(root, "Entity queue first");
+    const markdownFirst = todo(root, "Markdown order first");
+    expect(capture(root, ["state", "todo", "update", "--id", queueFirst.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", markdownFirst.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 9 }) }).rc).toBe(0);
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${markdownFirst.id}] [task:3.0.0] Markdown order first\n- [ ] [id:${queueFirst.id}] [task:3.0.0] Entity queue first\n`);
+    const before = files(root);
+
+    const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
+
+    expect(projection.todoReadiness.selected).toMatchObject({ id: markdownFirst.id, severity: "normal", projectedOrder: { kind: "managed", markdownOrder: 1 }, queueRank: 9, result: "actionable" });
+    expect(projection.todoReadiness.evaluations.map((entry) => entry.id)).toEqual([markdownFirst.id, queueFirst.id]);
+    expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 2, annoying: 0 });
+    expect(files(root)).toEqual(before);
+  });
+
+  it("selects the Markdown-first managed row when same-severity queue ranks are equal", () => {
+    const root = project();
+    const first = todo(root, "Equal rank first");
+    const second = todo(root, "Equal rank second");
+    expect(capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${first.id}] [task:3.0.0] Equal rank first\n- [ ] [id:${second.id}] [task:3.0.0] Equal rank second\n`);
+    const before = files(root);
+
+    const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
+
+    expect(projection.todoReadiness.selected).toMatchObject({ id: first.id, projectedOrder: { kind: "managed", markdownOrder: 1 }, queueRank: 1, result: "actionable" });
+    expect(projection.todoReadiness.evaluations.map((entry) => entry.id)).toEqual([first.id, second.id]);
+    expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 2, annoying: 0 });
+    expect(files(root)).toEqual(before);
+  });
+
+  it("keeps a later managed row eligible when an absent entity shares its queue rank", () => {
+    const root = project();
+    const blocked = todo(root, "Blocked Markdown first");
+    const managed = todo(root, "Eligible managed second");
+    expect(capture(root, ["state", "todo", "update", "--id", blocked.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 9, blocked: { reason: "Fixture blocker.", recovery: "Remove the fixture blocker." } }) }).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", managed.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    const absentId = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"].find((id) => id !== blocked.id && id !== managed.id)!;
+    seedAbsentTodoEntity(root, absentId, "Eligible absent fallback", 1);
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${blocked.id}] [task:3.0.0] Blocked Markdown first\n- [ ] [id:${managed.id}] [task:3.0.0] Eligible managed second\n`);
+    const before = files(root);
+
+    const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
+
+    expect(projection.todoReadiness.selected).toMatchObject({ id: managed.id, projectedOrder: { kind: "managed", markdownOrder: 2 }, queueRank: 1, result: "actionable" });
+    expect(projection.todoReadiness.evaluations.find((entry) => entry.id === blocked.id)).toMatchObject({ projectedOrder: { kind: "managed", markdownOrder: 1 }, result: "blocked", eligible: false });
+    expect(projection.todoReadiness.evaluations.find((entry) => entry.id === absentId)).toMatchObject({ projectedOrder: { kind: "absent" }, queueRank: 1, result: "actionable" });
+    expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 3, annoying: 0 });
+    expect(files(root)).toEqual(before);
+  });
+
+  it("uses ID order for equal-ranked entities absent from managed Markdown", () => {
+    const root = project();
+    const anchor = todo(root, "Resolved activation anchor");
+    expect(capture(root, ["state", "todo", "resolve", "--id", anchor.id, "--reason", "fixture", "--date", "2026-08-02", "--format", "json"]).rc).toBe(0);
+    const absentIds = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"].filter((id) => id !== anchor.id).slice(0, 2).sort();
+    seedAbsentTodoEntity(root, absentIds[1]!, "Absent later ID", 1);
+    seedAbsentTodoEntity(root, absentIds[0]!, "Absent first ID", 1);
+    const before = files(root);
+
+    const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
+
+    expect(projection.todoReadiness.selected).toMatchObject({ id: absentIds[0], projectedOrder: { kind: "absent" }, queueRank: 1, result: "actionable" });
+    expect(projection.todoReadiness.evaluations.filter((entry) => entry.eligible).map((entry) => entry.id)).toEqual(absentIds);
+    expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 2, annoying: 0 });
+    expect(files(root)).toEqual(before);
+  });
+
   it("rejects invalid readiness inputs before publication with a working correction", () => {
     const root = project();
     const before = files(root);
@@ -600,7 +713,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const low = todo(root, "normal", "normal"); const high = todo(root, "critical", "critical");
     const firstDoc = doc(root, "Zulu", "z.md"); const secondDoc = doc(root, "Alpha", "a.md");
     const todoPage = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]);
-    expect(todoPage.json).toMatchObject({ status: "degraded", order: "severity_then_status_then_id", omitted: true, omitted_count: 1, entries: [{ id: high.id, artifact: "todo", provenance: { storage: "canonical_entity_file" } }] });
+    expect(todoPage.json).toMatchObject({ status: "degraded", order: "severity_then_status_then_markdown_order_then_id", omitted: true, omitted_count: 1, entries: [{ id: high.id, artifact: "todo", provenance: { storage: "canonical_entity_file" } }] });
     const todoGet = capture(root, ["state", "todo", "get", "--id", low.id, "--format", "json"]); expect(todoGet.json.entry.record.title).toBe("normal");
     const docsList = capture(root, ["state", "docs", "list", "--format", "json"]); expect(docsList.json.entries.map((entry: any) => entry.id)).toEqual([secondDoc.id, firstDoc.id]);
     const docsDefault = capture(root, ["state", "docs", "--format", "json"]); expect(docsDefault.json.entries).toHaveLength(2); expect(docsDefault.json.summary.mapping).toHaveLength(1); expect(JSON.stringify(docsDefault.json)).not.toContain("legacy sentinel");
@@ -622,6 +735,13 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project(); const item = todo(root, "Original public title");
     const markdown = path.join(root, "TODO.md");
     fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace("Original public title", "Human public title"));
+    const drifted = files(root);
+    const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+    expect(read.json).toMatchObject({
+      entry: { record: { title: "Human public title" }, public: { owner: "markdown", source: "TODO.md" } },
+      reconciliation: { status: "drift", read_effect: "none", next_write_boundary: "atomic_reconciliation", items: [{ id: item.id, state: "markdown_only", markdown_changed_fields: ["description"] }] },
+    });
+    expect(files(root)).toEqual(drifted);
     const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
     expect(result.rc, result.err || result.out).toBe(0);
     expect(result.json).toMatchObject({ record: { title: "Human public title", readiness: { capability: "build" } }, reconciliation: { targets: 1, recovered: [] } });
@@ -635,6 +755,13 @@ describe("TODO item and documentation inventory entity authority", () => {
     const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
     (envelope.record as any).title = "Agentera entity title";
     fs.writeFileSync(entity, dumpYamlMapping(envelope));
+    const drifted = files(root);
+    const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+    expect(read.json).toMatchObject({
+      entry: { record: { title: "Original entity title" }, public: { description: "[task:3.0.0] Original entity title", owner: "markdown" } },
+      reconciliation: { status: "drift", items: [{ id: item.id, state: "entity_only", entity_changed_fields: ["description"] }] },
+    });
+    expect(files(root)).toEqual(drifted);
 
     const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
 
@@ -642,6 +769,131 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(result.json).toMatchObject({ record: { title: "Agentera entity title", readiness: { capability: "build" } }, reconciliation: { targets: 2, recovered: [] } });
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`[id:${item.id}] [task:3.0.0] Agentera entity title`);
     expect(loadYamlMapping(fs.readFileSync(entity, "utf8")).record).toEqual(result.json.record);
+  });
+
+  it("reads Markdown-owned edit classes and order without letting them bypass operational constraints", () => {
+    const root = project();
+    const first = todo(root, "First public row");
+    const second = todo(root, "Second public row");
+    expect(capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 2, gate: { state: "pending", reason: "Approval required.", recovery: "Obtain approval." } }) }).rc).toBe(0);
+    const markdown = path.join(root, "TODO.md");
+    fs.writeFileSync(markdown, `# TODO\n\n## → Critical\n- [ ] [id:${second.id}] [task:3.0.0] Human changed second row\n\n## → Normal\n- [ ] [id:${first.id}] [task:3.0.0] First public row\n`);
+
+    const list = capture(root, ["state", "todo", "list", "--format", "json"]);
+    expect(list.rc, list.err || list.out).toBe(0);
+    expect(list.json).toMatchObject({
+      order: "severity_then_status_then_markdown_order_then_id",
+      reconciliation: { status: "drift", read_effect: "none", authority: { public: { owner: "markdown" }, operational: { owner: "agentera" } } },
+    });
+    expect(list.json.entries.map((entry: any) => entry.id)).toEqual([second.id, first.id]);
+    const selection = evaluateTodoReadinessQueue(list.json.entries.map((entry: any) => ({ id: entry.id, artifact: entry.artifact, record: entry.record })));
+    expect(selection.selected?.id).toBe(first.id);
+    expect(selection.evaluations.find((entry) => entry.id === second.id)).toMatchObject({ result: "gated", eligible: false });
+
+    fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(`- [ ] [id:${second.id}]`, `- [x] [id:${second.id}]`));
+    const beforeReads = files(root);
+    const exact = capture(root, ["state", "todo", "get", "--id", second.id, "--format", "json"]);
+    expect(exact.json.entry).toMatchObject({
+      id: second.id,
+      record: { title: "Human changed second row", severity: "critical", status: "resolved", readiness: { gate: { state: "pending" }, queue_rank: 2 } },
+      public: { description: "[task:3.0.0] Human changed second row", severity: "critical", status: "resolved", order: 1 },
+    });
+    const validation = capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]);
+    expect(validation.rc).toBe(1);
+    expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "todo_reconciliation_drift", artifact: "todo" })]));
+    expect(files(root)).toEqual(beforeReads);
+
+    const reconciled = capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) });
+    expect(reconciled.rc, reconciled.err || reconciled.out).toBe(0);
+    expect(reconciled.json.reconciliation).toMatchObject({ recovered: [], targets: 2 });
+    expect(fs.readFileSync(markdown, "utf8")).toContain(`- [x] [id:${second.id}] [task:3.0.0] Human changed second row`);
+    expect(capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]).rc).toBe(0);
+  });
+
+  it("reports divergent edits and unchecked removal on reads and validation without effects", () => {
+    for (const kind of ["divergent", "removed"] as const) {
+      const root = project(); const item = todo(root, `Read ${kind}`); const markdown = path.join(root, "TODO.md");
+      if (kind === "removed") fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").split("\n").filter((line) => !line.includes(item.id)).join("\n"));
+      else {
+        fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(`Read ${kind}`, "Markdown branch"));
+        const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+        const value = loadYamlMapping(fs.readFileSync(entity, "utf8")); (value.record as any).title = "Entity branch"; fs.writeFileSync(entity, dumpYamlMapping(value));
+      }
+      const before = files(root);
+      const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+      expect(read.rc, read.err || read.out).toBe(0);
+      expect(read.json.reconciliation).toMatchObject({ status: "conflict", read_effect: "none", items: [expect.objectContaining({ id: item.id, state: "conflict" })] });
+      const validation = capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]);
+      expect(validation.rc).toBe(1);
+      expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "todo_reconciliation_drift", id: item.id })]));
+      expect(files(root), kind).toEqual(before);
+    }
+  });
+
+  it("bounds read-only Markdown inspection without exposing rejected bytes", () => {
+    const root = project(); const item = todo(root, "Bounded read"); const markdown = path.join(root, "TODO.md");
+    const privateBytes = `PRIVATE_REJECTED_TODO_BYTES_${"x".repeat(1024 * 1024)}`;
+    fs.writeFileSync(markdown, privateBytes);
+    const before = files(root);
+    const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+    expect(read.rc).toBe(2);
+    expect(read.out + read.err).toContain("1048576-byte reconciliation bound");
+    expect(read.out + read.err).not.toContain("PRIVATE_REJECTED_TODO_BYTES");
+    const validation = capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]);
+    expect(validation.rc).toBe(1);
+    expect(validation.out + validation.err).not.toContain("PRIVATE_REJECTED_TODO_BYTES");
+    expect(files(root)).toEqual(before);
+  });
+
+  it("uses within-severity Markdown order for reads and reconciles independent public fields", () => {
+    const root = project(); const first = todo(root, "First ordered"); const second = todo(root, "Second ordered");
+    const markdown = path.join(root, "TODO.md");
+    fs.writeFileSync(markdown, `# TODO\n\n## → Normal\n- [ ] [id:${second.id}] [task:3.0.0] Second ordered\n- [ ] [id:${first.id}] [task:3.0.0] First ordered\n`);
+    const firstEntity = path.join(root, `.agentera/entities/todo/todo_item/${first.id}.yaml`);
+    const value = loadYamlMapping(fs.readFileSync(firstEntity, "utf8")); (value.record as any).title = "Entity-only first title"; fs.writeFileSync(firstEntity, dumpYamlMapping(value));
+
+    const read = capture(root, ["state", "todo", "list", "--format", "json"]);
+    expect(read.json.entries.map((entry: any) => entry.id)).toEqual([second.id, first.id]);
+    expect(read.json.reconciliation).toMatchObject({
+      status: "drift",
+      items: expect.arrayContaining([
+        expect.objectContaining({ id: first.id, state: "convergent", markdown_changed_fields: ["order"], entity_changed_fields: ["description"], conflicting_fields: [] }),
+        expect.objectContaining({ id: second.id, state: "markdown_only", markdown_changed_fields: ["order"] }),
+      ]),
+    });
+    const applied = capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(fs.readFileSync(markdown, "utf8")).toMatch(new RegExp(`id:${second.id}[\\s\\S]*id:${first.id}`));
+    expect(fs.readFileSync(markdown, "utf8")).toContain("Entity-only first title");
+  });
+
+  it("lets ordinary Git merge independent authorities and reports semantic public conflicts", () => {
+    for (const divergent of [false, true]) {
+      const root = project(); const item = todo(root, divergent ? "Merge conflict base" : "Merge success base");
+      git(root, "init", "-b", "main"); git(root, "config", "user.name", "Fixture"); git(root, "config", "user.email", "fixture@example.test"); git(root, "add", "."); git(root, "commit", "-m", "baseline");
+      git(root, "switch", "-c", "markdown-edit");
+      const markdown = path.join(root, "TODO.md"); fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(divergent ? "Merge conflict base" : "Merge success base", divergent ? "Markdown branch title" : "Markdown-only title"));
+      git(root, "add", "TODO.md"); git(root, "commit", "-m", "edit markdown");
+      git(root, "switch", "main");
+      const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`); const value = loadYamlMapping(fs.readFileSync(entity, "utf8"));
+      if (divergent) (value.record as any).title = "Entity branch title";
+      else (value.record as any).readiness = readinessInput();
+      fs.writeFileSync(entity, dumpYamlMapping(value)); git(root, "add", path.relative(root, entity)); git(root, "commit", "-m", "edit entity");
+      git(root, "merge", "--no-edit", "markdown-edit");
+
+      const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+      expect(read.rc, read.err || read.out).toBe(0);
+      expect(read.json.reconciliation.status).toBe(divergent ? "conflict" : "drift");
+      const beforeWrite = files(root);
+      const write = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+      if (divergent) {
+        expect(write.rc).toBe(2); expect(write.json.error).toMatchObject({ class: "conflict", message: expect.stringContaining("description") }); expect(files(root)).toEqual(beforeWrite);
+      } else {
+        expect(write.rc, write.err || write.out).toBe(0); expect(write.json.record).toMatchObject({ title: "Markdown-only title", readiness: { capability: "build" } });
+        expect(capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]).rc).toBe(0);
+      }
+    }
   });
 
   it("rejects a missing post-activation baseline as stale before target effects", () => {

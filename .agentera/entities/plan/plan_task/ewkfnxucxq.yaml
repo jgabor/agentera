@@ -1,0 +1,23 @@
+id: ewkfnxucxq
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M3 retry · Honor Markdown TODO order in readiness (yqqqhipecx)
+  status: complete
+  depends_on:
+    - hoxdtgwytq
+  acceptance:
+    - GIVEN multiple eligible same-severity TODOs WHEN startup selects next THEN Markdown order wins regardless of queue rank.
+    - GIVEN dependencies, gates, or resolved status WHEN evaluated THEN ineligible rows remain excluded before order applies.
+    - GIVEN projected status, severity, and order WHEN startup counts and selection read THEN one bounded no-effect record set governs both.
+    - GIVEN the original ownership, drift, and merge matrix plus opposing order and rank WHEN tested and audited THEN all pass before ztsnvyfcdh is superseded, yqqqhipecx resolves, and downstream M3 is ready.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Projected startup still applies duplicate queue-rank conflict handling before Markdown order, so equal-ranked managed rows yield no selection and an absent entity can disqualify a managed row; readiness schema and projected startup authority contradict.
+    provenance:
+      attempt_id: ewkfnxucxq-audit-2
+      source: Bounded Audit re-review ses_040527607ffenykgLlCwomPO5T
+      recorded_at: 2026-08-02 02:05
+      writer_command: agentera state plan record-evaluation

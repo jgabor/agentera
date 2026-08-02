@@ -12,6 +12,7 @@ import { planEntityMigration } from "../../src/state/entityMigrationPreview.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
+const TODO_SCHEMA_PATH = path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/todo.yaml");
 
 function loadAuthority(): Record<string, any> {
   return YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
@@ -159,11 +160,25 @@ describe("Decision 94 entity authority", () => {
           transaction_identity: "canonical_create_receipt_and_targets",
           retry: expect.stringMatching(/normalized.*digest.*Exact retry.*original ID.*without allocation.*different request.*before target effects/s),
         },
+        startup_selection: {
+          ordering_authority: "skills/agentera/schemas/artifacts/todo.yaml#READINESS.ordering.modes.projected_startup",
+          projected_entity_bound: 256,
+        },
         public_replacement: expect.stringMatching(/standard Node filesystem operations.*complete old or new bytes.*not a global multi-file atomic snapshot.*validation boundary.*rolls back every attempted target/s),
         semantics: expect.stringMatching(/Interrupted create retry.*original created ID.*without allocating another entity.*Missing post-activation baselines.*reject before effects/s),
         bounds: { managed_items: 256, retained_pre_activation_legacy_rows: 256, transaction_targets: 258, activation_utf8_bytes: 32768 },
       },
-      retrieval: { exact: "agentera state todo get --id ID --format json", ordering: "severity_then_status_then_id" },
+      retrieval: { exact: "agentera state todo get --id ID --format json", ordering: "severity_then_status_then_markdown_order_then_id" },
+    });
+    const todoSchema = YAML.parse(fs.readFileSync(TODO_SCHEMA_PATH, "utf8"));
+    expect(todoSchema.READINESS.ordering.modes.projected_startup).toEqual({
+      entity_annotation: "required_for_every_entity",
+      eligibility: "before_order",
+      managed_before_absent: true,
+      managed_within_severity: "markdown_order_ascending",
+      managed_duplicate_rank: "ignored",
+      absent_within_severity: "queue_rank_then_id",
+      absent_duplicate_rank: "entity_id_ascending",
     });
     expect(target.entities.find((entity: any) => entity.boundary === "decision")).toMatchObject({
       canonical_metadata: {
