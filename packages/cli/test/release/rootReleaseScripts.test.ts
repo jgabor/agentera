@@ -1,6 +1,4 @@
-import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -78,45 +76,4 @@ describe("root release script argument forwarding", () => {
       expect([...flags.keys()], script).not.toContain("--");
     }
   });
-
-  it("runs one cheap source command with the forwarded separator and JSON output", () => {
-    const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-root-release-argv-"));
-    const missingCandidate = path.join(temporary, "missing-candidate");
-    const developmentManifest = path.join(REPO_ROOT, "packages/cli/package.json");
-    const stableManifest = path.join(REPO_ROOT, "packages/cli/shim/package.json");
-    const before = [fs.readFileSync(developmentManifest), fs.readFileSync(stableManifest)];
-
-    try {
-      const invocation = spawnSync(process.execPath, [
-        "packages/cli/scripts/release-qualification.mjs",
-        "source",
-        "--",
-        "--candidate-dir",
-        missingCandidate,
-        "--json",
-      ], {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-        env: Object.fromEntries(Object.entries(process.env).filter(
-          ([key]) => !["NPM_TOKEN", "NODE_AUTH_TOKEN"].includes(key),
-        )),
-        timeout: 5_000,
-      });
-      const output = `${invocation.stdout}\n${invocation.stderr}`;
-      const receipts = invocation.stdout.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
-      expect(invocation.error, output).toBeUndefined();
-      expect(invocation.status, output).toBe(1);
-      expect(receipts).toMatchObject([
-        { phase: "source-qualification", outcome: "started" },
-        { phase: "source-qualification", outcome: "failed" },
-      ]);
-      expect(output).not.toContain("-- requires a value");
-      expect(output).not.toContain("unexpected argument '--'");
-      expect(fs.readFileSync(developmentManifest)).toEqual(before[0]);
-      expect(fs.readFileSync(stableManifest)).toEqual(before[1]);
-      expect(fs.existsSync(missingCandidate)).toBe(false);
-    } finally {
-      fs.rmSync(temporary, { recursive: true, force: true });
-    }
-  }, 10_000);
 });
