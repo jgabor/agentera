@@ -339,6 +339,45 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
     expect(fs.existsSync(path.join(cursorAgents, "custom-agent.md"))).toBe(true);
     expect(fs.existsSync(path.join(opencodeAgents, "agentera.md"))).toBe(true);
   });
+
+  it("applies owned cleanup beside a preserved collision and replays without deleting it", () => {
+    const project = path.join(tmp, "cli-collision");
+    const appHome = path.join(home, "app");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.mkdirSync(appHome, { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const opencodeAgents = path.join(opencodeConfigDir(home, sandboxMigrationEnv(home, REPO_ROOT)), "agents");
+    writeLegacyAgent(opencodeAgents, "hej.md", "<!-- agentera: managed -->\nlegacy\n");
+    seedUnmanagedCapabilityAgent(opencodeAgents, "audit.md");
+
+    let firstOutput = "";
+    const firstCode = cmdUpgrade(
+      { installRoot: appHome, home, project, yes: true, format: "json", channel: "development" },
+      { out: (text) => { firstOutput += text; }, err: () => {} },
+    );
+
+    expect(firstCode).toBe(1);
+    expect(fs.existsSync(path.join(opencodeAgents, "hej.md"))).toBe(false);
+    expect(fs.existsSync(path.join(opencodeAgents, "audit.md"))).toBe(true);
+    const cleanupItems = JSON.parse(firstOutput).phases.find(
+      (phase: { name: string }) => phase.name === "cleanup",
+    )?.items ?? [];
+    expect(cleanupItems.find((item: { source?: string }) => item.source?.endsWith("hej.md"))?.status).toBe("applied");
+    expect(cleanupItems.find((item: { source?: string }) => item.source?.endsWith("audit.md"))?.status).toBe("blocked");
+
+    let replayOutput = "";
+    const replayCode = cmdUpgrade(
+      { installRoot: appHome, home, project, yes: true, format: "json", channel: "development" },
+      { out: (text) => { replayOutput += text; }, err: () => {} },
+    );
+
+    expect(replayCode).toBe(1);
+    expect(fs.existsSync(path.join(opencodeAgents, "audit.md"))).toBe(true);
+    const replayCleanupItems = JSON.parse(replayOutput).phases.find(
+      (phase: { name: string }) => phase.name === "cleanup",
+    )?.items ?? [];
+    expect(replayCleanupItems.find((item: { source?: string }) => item.source?.endsWith("audit.md"))?.status).toBe("blocked");
+  });
 });
 
 describe("applyLegacyAgentCleanupItems safety", () => {

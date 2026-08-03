@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Make Doctor report project operability separately from installation health."
       severity: critical
       status: open
-      order: 13
+      order: 11

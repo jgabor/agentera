@@ -24,6 +24,7 @@ import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./chann
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import { pendingRuntimeMigrationItems } from "./projectIntegration.js";
 import {
+  REMOVE_LEGACY_AGENT_ACTION,
   planLegacyAgentCleanupItems,
   planLegacyCapabilityAgentCleanupItems,
 } from "./legacyAgentCleanup.js";
@@ -306,6 +307,10 @@ function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhas
   };
 }
 
+function isIndependentLegacyAgentCollision(phase: UpgradeOrchestratorPhase, item: MigrationPhaseItem): boolean {
+  return phase.name === "cleanup" && item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "blocked";
+}
+
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   if (args.runtime) {
     throw new Error(
@@ -370,6 +375,43 @@ function buildUpgradePlanUnlocked(
     channel,
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
+  if (args.legacyCleanup) {
+    const lifecycle = runLifecycleUpgrade({
+      home,
+      appHome: installRoot,
+      apply: Boolean(args.yes),
+      resourceCleanup: args.legacyCleanup,
+    });
+    const phases = [lifecyclePhase(lifecycle)];
+    const summary = aggregateSummary(phases);
+    const status = workflowStatus(summary);
+    const commands = buildUpgradeCommands({
+      project,
+      installRoot: crossMajorBoundary ? installRoot : null,
+      channel,
+      legacyCleanup: args.legacyCleanup,
+      cwdDefault: true,
+    });
+
+    return {
+      schemaVersion: UPGRADE_PREVIEW_SCHEMA,
+      mode: args.yes ? "apply" : "plan",
+      status,
+      lifecycleStatus: lifecycleStatusFromWorkflow(status, args.yes ? "apply" : "plan"),
+      channel,
+      install,
+      upgradeOutcome,
+      crossMajorBoundary,
+      project,
+      appHome: installRoot,
+      home,
+      phases,
+      lifecycle,
+      summary,
+      dryRunCommand: summary.pending > 0 ? commands.dryRunCommand : null,
+      applyCommand: summary.pending > 0 ? commands.applyCommand : null,
+    };
+  }
   const phaseFilter = selectedPhases(args.only);
   const migrationCtx = {
     appHome: installRoot,
@@ -391,9 +433,10 @@ function buildUpgradePlanUnlocked(
     && channel.distributionMajor >= 3
     && !args.only
     && !args.legacyCleanup;
-  const pendingCleanup =
-    planLegacyAgentCleanupItems(migrationCtx).some((i) => i.status === "pending") ||
-    planLegacyCapabilityAgentCleanupItems(migrationCtx).some((i) => i.status === "pending");
+  const pendingCleanup = [
+    ...planLegacyAgentCleanupItems(migrationCtx),
+    ...planLegacyCapabilityAgentCleanupItems(migrationCtx),
+  ].some((item) => item.status !== "noop");
   const runMigration =
     crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup;
 
@@ -522,7 +565,7 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
   if (plan.crossMajorBoundary && args.only && args.only.length > 0) {
     return "cross-major v2→v3 apply must run as one full upgrade --yes; --only is preview-only at this boundary";
   }
-  if (isBlockedUpgradeOutcome(plan.upgradeOutcome)) {
+  if (!args.legacyCleanup && isBlockedUpgradeOutcome(plan.upgradeOutcome)) {
     return plan.upgradeOutcome.message ?? "upgrade blocked";
   }
   const appPhases = plan.phases.filter((phase) => phase.name !== "lifecycle");
@@ -530,11 +573,16 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
   const applyBlockingPhases = entityImportPending
     ? appPhases.filter((phase) => ["detect", "artifacts", "entities"].includes(phase.name))
     : appPhases;
-  if (applyBlockingPhases.some((phase) => phase.summary.blocked > 0 || phase.summary.failed > 0)) {
-    return applyBlockingPhases.flatMap((phase) => phase.items).find((item) => item.status === "blocked" || item.status === "failed")?.message
+  const blockingItems = applyBlockingPhases.flatMap((phase) => phase.items.filter((item) =>
+    (item.status === "blocked" || item.status === "failed") && !isIndependentLegacyAgentCollision(phase, item),
+  ));
+  if (blockingItems.length > 0) {
+    return blockingItems[0]?.message
       ?? "upgrade preflight is blocked; no changes were applied";
   }
   if (
+    !args.legacyCleanup
+    &&
     plan.crossMajorBoundary &&
     !shouldIncludeCrossMajorPlanItems(plan.channel, plan.upgradeOutcome)
   ) {

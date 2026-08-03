@@ -1,0 +1,15 @@
+id: oytflyaaxi
+artifact: progress
+record:
+  timestamp: 2026-08-03 15:04
+  type: fix
+  phase: build
+  what: Made native cleanup targeted and collision-independent.
+  context:
+    intent: Make cleanup targeted and collision-independent.
+    constraints: Preserve user-owned collisions and do not mark terminal state or commit before Audit.
+    unknowns: Prime startup omitted decisions, vision, profile, and profile-derived state; the firm decision was retrieved by exact get.
+    scope: Upgrade orchestration, cleanup regression tests, UPGRADE.md, and CHANGELOG.md.
+  verified: "packages/cli/src/upgrade/upgradeOrchestrator.ts now returns only the selected lifecycle phase for explicit cleanup. Rebuilt local dry-run returned lifecycle only with no newText; mixed apply removed hej.md, preserved audit.md, exited 1, and replay exited 0; an unowned Codex descriptor remained action_required and present. Targeted tests: 48 passed. Full source: 3,139 passed, 1 skipped. Package: 25 passed. Typecheck, build, and compact passed."
+  next: Await independent Audit; leave pfredurfew pending and valpzunokj and nxgovfcjss open.
+  publication_order: 56

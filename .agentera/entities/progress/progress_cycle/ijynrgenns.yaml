@@ -1,0 +1,15 @@
+id: ijynrgenns
+artifact: progress
+record:
+  timestamp: 2026-08-03 15:19
+  type: fix
+  phase: build
+  what: Kept blocked legacy cleanup collisions non-successful on replay.
+  context:
+    intent: Make unresolved cleanup collisions remain planned and non-successful on replay.
+    constraints: Preserve user-owned collisions, the prior immutable progress cycle, and all evaluator state; do not commit or write terminal state.
+    unknowns: Prime startup omitted decisions, vision, profile, and profile-derived state; the persisted Audit failure identified the replay gate.
+    scope: Legacy cleanup orchestration, replay regression test, and changelog.
+  verified: "packages/cli/src/upgrade/upgradeOrchestrator.ts now treats every non-noop legacy cleanup item as unresolved. Rebuilt local CLI first apply removed owned hej.md, preserved audit.md, reported it blocked, and exited 1; replay again reported audit.md blocked and exited 1. Explicit resource dry-run still returned lifecycle only with no newText. Targeted tests: 48 passed. Full source: 3,139 passed, 1 skipped. Package: 25 passed. Typecheck, build, and compact passed."
+  next: Await independent Audit; leave pfredurfew pending and valpzunokj and nxgovfcjss open.
+  publication_order: 57

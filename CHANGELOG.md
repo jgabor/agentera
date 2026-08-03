@@ -58,6 +58,10 @@
 
 ### Fixed
 
+- Fixed explicit native-resource cleanup previews to omit unrelated app and
+  project migration work. v2 cleanup now removes independently proven legacy
+  agents beside preserved user-owned agent collisions, which remain manual
+  review and keep the cleanup non-success, including on replay.
 - Fixed native resource cleanup to replay historical Codex descriptor ownership
   IDs, preserve identity collisions and unowned files, and expose the complete
   retired native-resource vocabulary for v2-only upgrade discovery.

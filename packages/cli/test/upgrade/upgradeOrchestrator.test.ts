@@ -465,6 +465,26 @@ describe("buildUpgradePlan", () => {
     }
   });
 
+  it("keeps an explicit native cleanup preview limited to its selected resource", () => {
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "targeted-cleanup-preview"));
+
+    const plan = buildUpgradePlan({
+      installRoot: REPO_ROOT,
+      home,
+      project,
+      channel: "development",
+      legacyCleanup: "claude.agentera-skill-link",
+      dryRun: true,
+    });
+
+    expect(plan.phases.map((phase) => phase.name)).toEqual(["lifecycle"]);
+    expect(plan.summary).toEqual(plan.phases[0]?.summary);
+    expect(plan.lifecycle?.nativeResourceCleanup).toMatchObject({
+      resourceId: "claude.agentera-skill-link",
+    });
+    expect(JSON.stringify(plan)).not.toContain("newText");
+  });
+
   it("renders the selected Codex descriptor resource instead of a Claude-only scope", () => {
     const project = path.join(tmp, "codex-cleanup-preview");
     fs.mkdirSync(project, { recursive: true });

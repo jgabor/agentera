@@ -4,9 +4,19 @@ record:
   name: M4B · Make cleanup targeted and collision-independent (valpzunokj, nxgovfcjss)
   depends_on:
     - cspavuhaus
-  status: pending
+  status: complete
   acceptance:
     - GIVEN one resource WHEN dry-run executes THEN only its bounded actions, summaries, and relevant blockers appear.
     - GIVEN owned resources beside a collision WHEN cleanup runs THEN removals converge while the collision is preserved.
     - GIVEN cleanup outcomes WHEN tested THEN each has pass, collision, and fail-closed cases.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Replay returns exit 0 after owned cleanup while a preserved user-owned collision remains unresolved; blocked cleanup must remain reported and non-successful.
+    provenance:
+      attempt_id: pfredurfew-audit-2
+      source: Independent Audit ses_038453856ffe4CW72R4411gmCg bounded re-review PASS
+      recorded_at: 2026-08-03 15:21
+      writer_command: agentera state plan record-evaluation

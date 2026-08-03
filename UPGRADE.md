@@ -82,7 +82,13 @@ descriptor previews report each shared configuration key as `action_required`
 without adding it to the selected resource's apply work. Agentera has no durable
 key-level ownership proof, so matching values, markers, names, or whole file
 contents never authorize a shared `config.toml` mutation. Preview is read-only;
-approved apply is idempotent and preserves ambiguous or unowned resources.
+approved apply is idempotent and preserves ambiguous or unowned resources. An
+explicit cleanup preview contains only its selected resource's lifecycle plan,
+bounded configuration report, and ownership blockers; it does not include
+app/project migration phases. During v2 cleanup, a preserved user-owned legacy
+agent collision remains manual-review work but does not stop independently
+proven legacy-agent removals. The collision still leaves the cleanup non-success
+until it is resolved outside Agentera.
 
 Historical transcript import is independent of cleanup. Default extraction and
 analytics do not read Claude history. Import requires explicit local consent:

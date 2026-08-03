@@ -2,13 +2,17 @@ id: valpzunokj
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Make `agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run --format json` a targeted operation. The status-descriptor preview ran unrelated app, artifact, runtime, and cleanup phases and embedded the full 29KB OpenCode plugin `newText`. Return only the selected resource, bounded configuration actions, hashes or diff summaries, and blockers that affect that resource."
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make `agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run --format json` a targeted operation. The status-descriptor preview ran unrelated app, artifact, runtime, and cleanup phases and embedded the full 29KB OpenCode plugin `newText`. Return only the selected resource, bounded configuration actions, hashes or diff summaries, and blockers that affect that resource."
+      status: resolved
+      order: 85
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Explicit cleanup preview now returns only the selected lifecycle output and relevant blockers.
+    date: 2026-08-03
