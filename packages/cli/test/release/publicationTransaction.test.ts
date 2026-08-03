@@ -9,11 +9,14 @@ import {
   PACKAGE_ADAPTERS,
   constructPackage,
   executePublication,
+  formatPublicationResult,
   normalizeRegistryField,
   parseNpmRegistryJson,
   prepareMetadata,
   preflightPublication,
+  publicationFailureResult,
   registryState,
+  stageQualifiedCandidate,
   validateResult,
   withNpmCredentials,
 } from "../../scripts/publication-transaction.mjs";
@@ -524,6 +527,75 @@ describe("npm registry response normalization", () => {
       }),
     ).rejects.toThrow(/^npm registry shape error: invalid JSON response$/);
     expect(publishes).toBe(0);
+  });
+});
+
+describe.each([
+  ["development", "3.0.0-dev.42"],
+  ["stable", "2.7.8"],
+] as const)("%s qualified stage public-tag conflict", (adapterName, version) => {
+  it("fails before candidate query, credentials, publish, or candidate-tag effect", async () => {
+    const adapter = PACKAGE_ADAPTERS[adapterName];
+    const committed = { ...manifest(adapterName), version };
+    const candidate = {
+      manifest: committed,
+      adapter,
+      artifact: `/external/agentera-${version}.tgz`,
+      receipt: {
+        candidateTag: `candidate-${version}`,
+        artifact: { integrity: PUBLISHED_INTEGRITY },
+      },
+    };
+    const publicState = Object.freeze({
+      exists: false,
+      integrity: null,
+      expectedTagVersion: version,
+      tagged: true,
+    });
+    let candidateQueries = 0;
+    let publishOrTagEffects = 0;
+    let smokes = 0;
+    let failure: any;
+
+    try {
+      await stageQualifiedCandidate(adapterName, "/external/candidate", {
+        candidate,
+        environment: {},
+        inspectPublic: () => publicState,
+        inspectCandidate: () => {
+          candidateQueries += 1;
+          throw new Error("candidate tag must not be queried");
+        },
+        publishPackage: () => { publishOrTagEffects += 1; },
+        smokePackage: () => { smokes += 1; return version; },
+      });
+    } catch (error) {
+      failure = error;
+    }
+
+    expect(failure).toMatchObject({
+      publicationPhase: "staging",
+      message: `@${adapter.expectedTag} already points to ${version}, but that exact version is absent`,
+      nextAction: expect.stringContaining("without moving the public tag backward; No registry mutation was attempted"),
+    });
+    expect(candidateQueries).toBe(0);
+    expect(publishOrTagEffects).toBe(0);
+    expect(smokes).toBe(0);
+    expect(publicState).toEqual({ exists: false, integrity: null, expectedTagVersion: version, tagged: true });
+
+    const jsonFailure = publicationFailureResult(adapterName, version, "stage", failure);
+    expect(JSON.parse(JSON.stringify(jsonFailure))).toMatchObject({
+      package: adapterName,
+      version,
+      expectedTag: adapter.expectedTag,
+      phase: "staging",
+      outcome: "failed",
+      nextAction: expect.stringContaining("No registry mutation was attempted"),
+    });
+    expect(formatPublicationResult(jsonFailure)).toContain(
+      `${adapter.expectedTag} staging: failed`,
+    );
+    expect(formatPublicationResult(jsonFailure)).not.toContain("NPM_TOKEN");
   });
 });
 

@@ -78,6 +78,8 @@
   skipping build, compact, parity, or later release qualification.
   Candidate qualification timing now closes construction before exact-artifact
   smoke and reconciles non-overlapping gate intervals with explicit overhead.
+  Staging now rejects an absent exact version when the public tag already names
+  that target, before candidate inspection, credentials, or publication.
 
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action

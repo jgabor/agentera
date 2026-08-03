@@ -170,7 +170,11 @@ The coordinator measures one ordered stage, independent exact-version L2, and
 promote envelope with a monotonic clock. Staging first inspects npm without
 credentials. An absent version uploads the approved tarball once to
 `candidate-<version>`, waits for exact integrity, and runs an isolated registry
-smoke. It does not move `next` or `latest`. The development L2 runs the pinned
+smoke only when the public tag is older or absent. If the exact version is
+absent while `next` or `latest` already names that target, staging treats the
+state as a conflict before candidate-tag inspection or credentials: publishing
+would make the public tag effective before exact-version qualification. Staging
+does not move `next` or `latest`. The development L2 runs the pinned
 exact-version consumer harness while the public tag is unchanged; the stable
 adapter repeats its isolated exact-version consumer smoke. Promotion verifies
 the staged exact version, moves the expected tag forward, waits for integrity

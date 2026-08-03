@@ -55,6 +55,21 @@ function result(adapterName, version, phase, outcome, nextAction, detail, execut
   return receipt;
 }
 
+export function formatPublicationResult(receipt) {
+  return `${receipt.package}@${receipt.version} ${receipt.expectedTag} ${receipt.phase}: ${receipt.outcome}; ${receipt.executed}; ${receipt.elapsedMs}ms; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}`;
+}
+
+export function publicationFailureResult(adapterName, version, fallbackPhase, error) {
+  return result(
+    adapterName,
+    version,
+    error.publicationPhase ?? fallbackPhase,
+    "failed",
+    error.nextAction ?? "Correct the reported failure and retry.",
+    redactedDiagnostic(error instanceof Error ? error.message : error),
+  );
+}
+
 function redactedDiagnostic(value) {
   return String(value)
     .replaceAll(repoRoot, "<repository>")
@@ -174,9 +189,7 @@ function emit(receipt, json, verbose = false) {
   if (json) {
     process.stdout.write(`${JSON.stringify(receipt)}\n`);
   } else {
-    process.stdout.write(
-      `${receipt.package}@${receipt.version} ${receipt.expectedTag} ${receipt.phase}: ${receipt.outcome}; ${receipt.executed}; ${receipt.elapsedMs}ms; next: ${receipt.nextAction}${receipt.detail ? `; ${receipt.detail}` : ""}\n`,
-    );
+    process.stdout.write(`${formatPublicationResult(receipt)}\n`);
     if (receipt.construction) {
       process.stdout.write(
         `${formatConstruction(receipt.construction, verbose ? "verbose" : "default")}\n`,
@@ -648,13 +661,21 @@ function assertQualifiedApproval(adapterName, candidateDirectory, options = {}) 
 
 export async function stageQualifiedCandidate(adapterName, candidateDirectory, options = {}) {
   const environment = options.environment ?? process.env;
-  const candidate = assertQualifiedApproval(adapterName, candidateDirectory, options);
+  const candidate = options.candidate ?? assertQualifiedApproval(adapterName, candidateDirectory, options);
   const { manifest, adapter } = candidate;
   const state = isolatedNpmState("agentera-registry-stage-");
   try {
-    const inspectPublic = isolatedRegistryInspector(manifest, adapter, state.environment);
+    const inspectPublic = options.inspectPublic
+      ?? isolatedRegistryInspector(manifest, adapter, state.environment);
     const publicState = inspectPublic();
     assertRegistryCompatible(manifest, adapter, candidate.receipt.artifact.integrity, publicState, "staging");
+    if (!publicState.exists && publicState.expectedTagVersion === manifest.version) {
+      throw publicationError(
+        `@${adapter.expectedTag} already points to ${manifest.version}, but that exact version is absent`,
+        "staging",
+        "Wait for registry consistency or prepare a new version without moving the public tag backward; No registry mutation was attempted.",
+      );
+    }
     if (publicState.exists && publicState.tagged) {
       const output = smokePublishedCandidate({ manifest, adapter });
       return [
@@ -664,8 +685,9 @@ export async function stageQualifiedCandidate(adapterName, candidateDirectory, o
     }
     const stagingAdapter = candidateAdapter(adapter, candidate.receipt.candidateTag);
     return executePublication(adapterName, manifest, candidatePacked(candidate), {
-      inspectRegistry: isolatedRegistryInspector(manifest, stagingAdapter, state.environment),
-      publishPackage: () => {
+      inspectRegistry: options.inspectCandidate
+        ?? isolatedRegistryInspector(manifest, stagingAdapter, state.environment),
+      publishPackage: options.publishPackage ?? (() => {
         const credentialsRoot = path.join(state.root, "mutation-credentials");
         fs.mkdirSync(credentialsRoot, { mode: 0o700 });
         return withNpmCredentials(credentialsRoot, (childEnvironment) => {
@@ -674,8 +696,8 @@ export async function stageQualifiedCandidate(adapterName, candidateDirectory, o
             env: childEnvironment,
           });
         }, environment, state.environment);
-      },
-      smokePackage: () => smokePublishedCandidate({ manifest, adapter }),
+      }),
+      smokePackage: options.smokePackage ?? (() => smokePublishedCandidate({ manifest, adapter })),
       registryAttempts: options.registryAttempts,
       sleep: options.sleep,
     });
@@ -893,17 +915,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       try {
         version = readManifest(PACKAGE_ADAPTERS[adapterName]).version;
       } catch {}
-      emit(
-        result(
-          adapterName,
-          version,
-          error.publicationPhase ?? (phase === "prepare" ? "preparation" : phase ?? "preflight"),
-          "failed",
-          error.nextAction ?? "Correct the reported failure and retry.",
-          message,
-        ),
-        process.argv.includes("--json"),
-      );
+      emit(publicationFailureResult(
+        adapterName,
+        version,
+        phase === "prepare" ? "preparation" : phase ?? "preflight",
+        error,
+      ), process.argv.includes("--json"));
     }
     process.stderr.write(
       `publication-transaction: ${message.slice(0, PUBLICATION_CONTRACT.bounds.diagnosticCharacters)}\n`,
