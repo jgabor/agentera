@@ -4,9 +4,19 @@ record:
   name: M5 · Make route receipts self-describing (atylhmpfrk)
   depends_on:
     - zcprgswrju
-  status: pending
+  status: complete
   acceptance:
     - GIVEN semantic abstention WHEN request output is read THEN it identifies the nullable receipt contract and outcomes.
     - GIVEN receipt help WHEN followed THEN compound, span, nullability, and a stdin round trip need no source inspection.
     - GIVEN receipt outcomes WHEN tested THEN each has one pass and one malformed rejection.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: vlxwhwqxqf-audit-1
+      source: Independent Audit ses_0374fc635ffeYB3TEKwo4MOXtu PASS
+      recorded_at: 2026-08-03 19:40
+      writer_command: agentera state plan record-evaluation

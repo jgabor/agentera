@@ -57,6 +57,13 @@ produces `semantic_required` with both bound digests. It then validates the
 projected CLI receipt with canonical-capability binding and request-bound span
 rules:
 
+Every `semantic_required` response includes a `receipt_contract` with the exact
+`agentera.route_receipt.v1` nullable schema, legal outcomes, outcome nullability,
+compound and `remainder_span` rules, and a current runnable stdin example. The
+same guide appears in `agentera route receipt --help`; a host does not need to
+inspect implementation or contract files to construct its receipt. The example
+uses a fixed public request, never the transient request being classified.
+
 | Receipt | Required result | Startup |
 | --- | --- | --- |
 | `select` | one canonical capability and `none` or `preserve` compound disposition | selected capability only |

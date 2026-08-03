@@ -1,0 +1,15 @@
+id: ohoigfbvmb
+artifact: progress
+record:
+  timestamp: 2026-08-03 19:32
+  type: fix
+  phase: build
+  what: Semantic abstentions now return a self-describing nullable route receipt guide, and receipt help renders the same contract.
+  context:
+    intent: Make the complete host receipt API actionable without source inspection.
+    constraints: Preserve host-owned semantic judgment, do not leak request text, and do not complete the task before independent Audit.
+    scope: M5 task vlxwhwqxqf / TODO atylhmpfrk only.
+  discovered: The receipt schema, outcome nullability, compound disposition, and UTF-8 suffix rule already share the hybrid route contract; projecting those authorities into semantic_required and help fixes the missing discovery seam.
+  verified: "Focused source owner: 57 tests passed. Full source owner: 3,057 passed, 1 skipped. Typecheck, build, and package owner (25 tests) passed. Rebuilt local CLI proved a private semantic request was not echoed, the supplied guide round trip selected, select/clarify/no_match returned their terminal outcomes, and one malformed receipt for each exited 64."
+  next: Await independent Audit before task completion, TODO atylhmpfrk resolution, PASS, or any commit.
+  publication_order: 63

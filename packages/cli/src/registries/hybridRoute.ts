@@ -25,6 +25,7 @@ export type SemanticRequiredRoute = {
   outcome: "semantic_required";
   request_sha256: string;
   semantic_capsule_sha256: string;
+  receipt_contract: RouteReceiptContract;
   semantic_capsule: {
     contract_version: string;
     capabilities: Array<{
@@ -38,6 +39,20 @@ export type SemanticRequiredRoute = {
     }>;
   };
   provenance: Record<string, string>;
+};
+
+export type RouteReceiptContract = {
+  schemaVersion: "agentera.route_receipt_contract.v1";
+  version: "agentera.route_receipt.v1";
+  command: string;
+  stdin_command: string;
+  input_schema: Record<string, unknown>;
+  nullable_schema: Record<string, unknown>;
+  outcomes: string[];
+  outcome_rules: Record<string, unknown>;
+  compound: Record<string, unknown>;
+  remainder_span: Record<string, unknown>;
+  stdin_example: { input: { request: string; receipt: Record<string, unknown> } };
 };
 
 export type RouteResponse = DeterministicRoute | SemanticRequiredRoute;
@@ -77,6 +92,74 @@ function readMapping(root: string, relativePath: string): Record<string, unknown
   } catch (error) {
     throw new HybridRouteRegistryError([`${relativePath} is not readable or valid: ${(error as Error).message}`]);
   }
+}
+
+function contractMapping(value: unknown, field: string): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new HybridRouteRegistryError([`hybrid route contract ${field} must be a mapping`]);
+  }
+  return value as Record<string, unknown>;
+}
+
+function contractString(value: unknown, field: string): string {
+  if (typeof value !== "string" || !value) {
+    throw new HybridRouteRegistryError([`hybrid route contract ${field} must be a non-empty string`]);
+  }
+  return value;
+}
+
+function contractStrings(value: unknown, field: string): string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new HybridRouteRegistryError([`hybrid route contract ${field} must be a string list`]);
+  }
+  return value;
+}
+
+function routeReceiptContract(contract: Record<string, unknown>, semanticCapsuleSha: string): RouteReceiptContract {
+  const protocol = contractMapping(contract.protocol, "protocol");
+  const receipt = contractMapping(protocol.receipt, "protocol.receipt");
+  const cliSeam = contractMapping(receipt.cli_seam, "protocol.receipt.cli_seam");
+  const authority = contractMapping(receipt.validation_authority, "protocol.receipt.validation_authority");
+  const hostOutput = contractMapping(authority.host_output_shape, "protocol.receipt.validation_authority.host_output_shape");
+  const normalization = contractMapping(authority.host_to_cli_normalization, "protocol.receipt.validation_authority.host_to_cli_normalization");
+  const projection = contractMapping(normalization.projection, "protocol.receipt.validation_authority.host_to_cli_normalization.projection");
+  const requestBoundFields = contractMapping(authority.request_bound_fields, "protocol.receipt.validation_authority.request_bound_fields");
+  const discovery = contractMapping(contractMapping(protocol.response, "protocol.response").semantic_required, "protocol.response.semantic_required");
+  const receiptDiscovery = contractMapping(discovery.receipt_contract, "protocol.response.semantic_required.receipt_contract");
+  const example = contractMapping(receiptDiscovery.stdin_example, "protocol.response.semantic_required.receipt_contract.stdin_example");
+  const exampleReceipt = contractMapping(example.receipt, "protocol.response.semantic_required.receipt_contract.stdin_example.receipt");
+  const compound = contractMapping(contractMapping(contract.compound_intent, "compound_intent").semantic, "compound_intent.semantic");
+  const exampleRequest = contractString(example.request, "protocol.response.semantic_required.receipt_contract.stdin_example.request");
+
+  const version = contractString(receipt.version, "protocol.receipt.version");
+  const schemaVersion = contractString(receiptDiscovery.schema_version, "protocol.response.semantic_required.receipt_contract.schema_version");
+  if (version !== "agentera.route_receipt.v1" || schemaVersion !== "agentera.route_receipt_contract.v1") {
+    throw new HybridRouteRegistryError(["hybrid route receipt discovery declares an unsupported version"]);
+  }
+
+  return {
+    schemaVersion: "agentera.route_receipt_contract.v1",
+    version: "agentera.route_receipt.v1",
+    command: contractString(cliSeam.command, "protocol.receipt.cli_seam.command"),
+    stdin_command: contractString(receiptDiscovery.stdin_command, "protocol.response.semantic_required.receipt_contract.stdin_command"),
+    input_schema: contractMapping(receiptDiscovery.input_schema, "protocol.response.semantic_required.receipt_contract.input_schema"),
+    nullable_schema: contractMapping(hostOutput.schema, "protocol.receipt.validation_authority.host_output_shape.schema"),
+    outcomes: contractStrings(receipt.outcomes, "protocol.receipt.outcomes"),
+    outcome_rules: contractMapping(projection.outcome_rules, "protocol.receipt.validation_authority.host_to_cli_normalization.projection.outcome_rules"),
+    compound,
+    remainder_span: contractMapping(requestBoundFields.remainder_span, "protocol.receipt.validation_authority.request_bound_fields.remainder_span"),
+    stdin_example: {
+      input: {
+        request: exampleRequest,
+        receipt: {
+          version,
+          request_sha256: crypto.createHash("sha256").update(exampleRequest, "utf8").digest("hex"),
+          semantic_capsule_sha256: semanticCapsuleSha,
+          ...exampleReceipt,
+        },
+      },
+    },
+  };
 }
 
 function phrasesFrom(root: string, contract: CapabilitySchemaContract): Phrase[] {
@@ -199,6 +282,15 @@ export function semanticCapsuleSha256(capsule: SemanticRequiredRoute["semantic_c
   return crypto.createHash("sha256").update(canonicalRecordJson(capsule), "utf8").digest("hex");
 }
 
+/** Returns the complete receipt guide that semantic abstention exposes to hosts. */
+export function describeRouteReceipt(sourceRoot: string = resolveSourceRoot()): RouteReceiptContract {
+  const response = resolveRouteRequest("make implementation plan", sourceRoot);
+  if (response.outcome !== "semantic_required") {
+    throw new HybridRouteRegistryError(["route receipt example must remain deterministically abstained"]);
+  }
+  return response.receipt_contract;
+}
+
 /** Resolve only the contract's deterministic request phase; semantic selection remains host-owned. */
 export function resolveRouteRequest(request: string, sourceRoot: string = resolveSourceRoot()): RouteResponse {
   if (typeof request !== "string") throw new TypeError("request must be a string");
@@ -236,12 +328,14 @@ export function resolveRouteRequest(request: string, sourceRoot: string = resolv
     throw new HybridRouteRegistryError([`semantic intent authority is invalid: ${(error as Error).message}`]);
   }
   const semantic_capsule = semanticCapsule(triggerModel, contractVersion);
+  const semantic_capsule_sha256 = semanticCapsuleSha256(semantic_capsule);
   return {
     schemaVersion: "agentera.route_response.v1",
     outcome: "semantic_required",
     request_sha256: crypto.createHash("sha256").update(request, "utf8").digest("hex"),
     semantic_capsule,
-    semantic_capsule_sha256: semanticCapsuleSha256(semantic_capsule),
+    semantic_capsule_sha256,
+    receipt_contract: routeReceiptContract(contractRaw, semantic_capsule_sha256),
     provenance: { tier: "deterministic_abstention", contract: contractVersion },
   };
 }

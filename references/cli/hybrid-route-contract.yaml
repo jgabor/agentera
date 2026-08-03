@@ -39,7 +39,7 @@ protocol:
       required_fields: [capability, tier, recognized_span, topic_span, provenance]
       tiers: [bare, direct, phrase]
     semantic_required:
-      required_fields: [request_sha256, semantic_capsule, semantic_capsule_sha256, provenance]
+      required_fields: [request_sha256, semantic_capsule, semantic_capsule_sha256, receipt_contract, provenance]
       semantic_capsule: >-
         The active trigger intent documentation and contract version needed for
         a host judgment. It contains no state-derived next_action and no raw
@@ -59,6 +59,28 @@ protocol:
           The digest binds the bounded classification inputs presented to the
           host, not route diagnostics, state, private raw request duplication,
           or any authority the host did not see.
+      receipt_contract:
+        schema_version: agentera.route_receipt_contract.v1
+        purpose: >-
+          A self-describing semantic-receipt guide returned only with deterministic
+          abstention. It contains the exact nullable receipt schema, legal outcomes,
+          nullability, compound and span rules, and one current stdin round trip.
+        stdin_command: agentera route receipt --input - --format json
+        input_schema:
+          type: object
+          additionalProperties: false
+          required: [request, receipt]
+          properties:
+            request: { type: string }
+            receipt: { $ref: '#/nullable_schema' }
+        stdin_example:
+          request: make implementation plan
+          receipt:
+            outcome: select
+            capability: plan
+            compound: none
+            question: null
+            remainder_span: null
   receipt:
     version: agentera.route_receipt.v1
     required_fields: [version, request_sha256, semantic_capsule_sha256, outcome]

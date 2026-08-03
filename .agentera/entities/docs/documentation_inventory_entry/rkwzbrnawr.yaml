@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Agentera skill dispatcher
   path: skills/agentera/SKILL.md
-  last_updated: 2026-07-18
+  last_updated: 2026-08-03
   status: current

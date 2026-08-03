@@ -91,10 +91,27 @@ describe("route request CLI", () => {
     expect(result.rc).toBe(0);
     expect(result.err).toBe("");
     expect(result.out).not.toContain(privateRequest);
-    expect(JSON.parse(result.out)).toMatchObject({
+    const response = JSON.parse(result.out);
+    expect(response).toMatchObject({
       outcome: "semantic_required",
       request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       semantic_capsule_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      receipt_contract: {
+        schemaVersion: "agentera.route_receipt_contract.v1",
+        version: "agentera.route_receipt.v1",
+        outcomes: ["select", "clarify", "no_match"],
+        nullable_schema: {
+          required: ["version", "request_sha256", "semantic_capsule_sha256", "outcome", "capability", "compound", "question", "remainder_span"],
+        },
+        outcome_rules: expect.objectContaining({ select: expect.any(Object), clarify: expect.any(Object), no_match: expect.any(Object) }),
+        compound: expect.objectContaining({ dispositions: ["none", "preserve"] }),
+        remainder_span: expect.objectContaining({ encoding: "utf8_bytes" }),
+      },
+    });
+    expect(response.receipt_contract.stdin_example.input.request).not.toBe(privateRequest);
+    expect(invokeReceipt(JSON.stringify(response.receipt_contract.stdin_example.input))).toMatchObject({
+      rc: 0,
+      out: expect.stringContaining('"outcome": "selected"'),
     });
   });
 
@@ -134,6 +151,47 @@ describe("route request CLI", () => {
 });
 
 describe("route receipt CLI", () => {
+  it("accepts and rejects one complete nullable receipt for each outcome", () => {
+    const request = "make implementation plan";
+    const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
+    const capsuleDigest = semanticCapsuleDigest(request);
+    const common = {
+      version: "agentera.route_receipt.v1",
+      request_sha256: digest,
+      semantic_capsule_sha256: capsuleDigest,
+    };
+    const cases = [
+      {
+        name: "select",
+        receipt: { ...common, outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
+        malformed: { ...common, outcome: "select", capability: null, compound: "none", question: null, remainder_span: null },
+        result: "selected",
+      },
+      {
+        name: "clarify",
+        receipt: { ...common, outcome: "clarify", capability: null, compound: null, question: "Which primary capability should handle this?", remainder_span: null },
+        malformed: { ...common, outcome: "clarify", capability: null, compound: null, question: null, remainder_span: null },
+        result: "clarification",
+      },
+      {
+        name: "no_match",
+        receipt: { ...common, outcome: "no_match", capability: null, compound: null, question: null, remainder_span: null },
+        malformed: { ...common, outcome: "no_match", capability: null, compound: null, question: "This field is forbidden.", remainder_span: null },
+        result: "status_fallback",
+      },
+    ];
+
+    for (const testCase of cases) {
+      const accepted = invokeReceipt(JSON.stringify({ request, receipt: testCase.receipt }));
+      expect(accepted.rc, testCase.name).toBe(0);
+      expect(JSON.parse(accepted.out), testCase.name).toMatchObject({ outcome: testCase.result });
+
+      const rejected = invokeReceipt(JSON.stringify({ request, receipt: testCase.malformed }));
+      expect(rejected.rc, `${testCase.name} malformed`).toBe(64);
+      expect(JSON.parse(rejected.out), `${testCase.name} malformed`).toMatchObject({ error: { class: "invalid_receipt" } });
+    }
+  });
+
   it("returns selected startup authorization and rejects a malformed receipt without exposing request text", () => {
     const request = "private plan the import 8675309";
     const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");

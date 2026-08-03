@@ -4,6 +4,10 @@
 
 ### Changed
 
+- Semantic route abstentions now return a self-describing nullable receipt guide.
+  `agentera route request --input - --format json` and `agentera route receipt
+  --help` expose the exact `agentera.route_receipt.v1` schema, valid outcomes,
+  nullability, compound and UTF-8 span rules, plus a runnable stdin round trip.
 - Development releases now separate explicit metadata preparation, source and
   candidate qualification, candidate-bound approval, staged exact-version
   publication, and forward-only tag promotion. Preparation is registry-free;

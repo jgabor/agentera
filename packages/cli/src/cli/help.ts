@@ -1,6 +1,7 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
+import { describeRouteReceipt } from "../registries/hybridRoute.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
 
@@ -493,6 +494,9 @@ export function printCapabilityHelp(capability: string): string {
 }
 
 export function printRouteHelp(): string {
+  const receipt = describeRouteReceipt();
+  const example = JSON.stringify(receipt.stdin_example.input);
+  const inspect = (value: unknown): string[] => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`);
   return [
     "usage: agentera route <request|receipt> --input PATH [--format json]",
     "       agentera route evaluate --format json",
@@ -503,7 +507,19 @@ export function printRouteHelp(): string {
     "Evaluate runs the frozen offline conformance corpus without a semantic host; it exits 1 when its report status is fail.",
     "",
     "input document: { version: agentera.route_request.v1, request: <string> }",
-    "receipt input: { request: <string>, receipt: <complete nullable host receipt with request_sha256 and semantic_capsule_sha256> }",
+    "Semantic receipt contract (also returned as receipt_contract after semantic_required):",
+    `  ${receipt.schemaVersion}; receipt version ${receipt.version}; outcomes: ${receipt.outcomes.join(", ")}.`,
+    "  Submit exactly { request: <original string>, receipt: <complete nullable receipt> }; request text stays in stdin or a file.",
+    "  Complete nullable receipt schema:",
+    ...inspect(receipt.nullable_schema),
+    "  Outcome nullability rules:",
+    ...inspect(receipt.outcome_rules),
+    "  Compound rules:",
+    ...inspect(receipt.compound),
+    "  remainder_span rule:",
+    ...inspect(receipt.remainder_span),
+    "  Runnable stdin round trip:",
+    `  printf '%s\\n' '${example}' | ${receipt.stdin_command}`,
     "A receipt result authorizes only its reported startup command; clarify starts none.",
   ].join("\n");
 }

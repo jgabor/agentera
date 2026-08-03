@@ -77,6 +77,7 @@ describe("public runtime vocabulary", () => {
     expect(skill).toContain("The CLI first applies deterministic explicit and curated route tiers.");
     expect(skill).toContain("Only after the shared route contract returns `semantic_required`");
     expect(skill).toContain("complete nullable API receipt");
+    expect(skill).toContain("receipt_contract");
     expect(skill).toContain("semantic_capsule_sha256");
     expect(skill).toContain("only through that returned authorization");
     expect(skill).toMatch(/next_action` is a readiness suggestion for bare\/status\s+orientation after classification; it never classifies or overrides a non-status\s+request/);
@@ -90,6 +91,7 @@ describe("public runtime vocabulary", () => {
     expect(routingModel).toMatch(/Every other request returns\s+`semantic_required`/);
     expect(routingModel).toMatch(/the CLI validates it\s+before capability startup/);
     expect(routingModel).toContain("semantic_capsule_sha256");
+    expect(routingModel).toContain("receipt_contract");
     expect(routingModel).toMatch(/next_action`\s+informs readiness only after classification and cannot override the message\s+intent/);
     expect(routingModel).toContain("route to status for orientation only after no capability matches");
     expect(routingModel).toContain("not semantic generalization or an end-to-end latency commitment");

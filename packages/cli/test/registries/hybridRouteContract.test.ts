@@ -201,8 +201,24 @@ describe("hybrid route contract", () => {
     expect(contract.protocol.response.outcomes).toEqual(["deterministic_selection", "semantic_required"]);
     expect(contract.protocol.receipt.outcomes).toEqual(["select", "clarify", "no_match"]);
     expect(contract.protocol.response.semantic_required.required_fields).toContain("semantic_capsule_sha256");
+    expect(contract.protocol.response.semantic_required.required_fields).toContain("receipt_contract");
     expect(contract.protocol.receipt.required_fields).toContain("semantic_capsule_sha256");
     expect(contract.protocol.response.semantic_required.semantic_capsule_canonicalization.excluded_inputs).toContain("request");
+    const semantic = resolveRouteRequest("make implementation plan", ROOT);
+    expect(semantic.outcome).toBe("semantic_required");
+    if (semantic.outcome !== "semantic_required") return;
+    const authority = contract.protocol.receipt.validation_authority;
+    expect(semantic.receipt_contract).toMatchObject({
+      schemaVersion: contract.protocol.response.semantic_required.receipt_contract.schema_version,
+      version: contract.protocol.receipt.version,
+      stdin_command: contract.protocol.response.semantic_required.receipt_contract.stdin_command,
+      input_schema: contract.protocol.response.semantic_required.receipt_contract.input_schema,
+      nullable_schema: authority.host_output_shape.schema,
+      outcomes: contract.protocol.receipt.outcomes,
+      outcome_rules: authority.host_to_cli_normalization.projection.outcome_rules,
+      compound: contract.compound_intent.semantic,
+      remainder_span: authority.request_bound_fields.remainder_span,
+    });
     expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual([
       "bare",
       "direct",

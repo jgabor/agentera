@@ -93,7 +93,7 @@ hardcoded rules. `next_action` is a readiness suggestion for bare/status
 orientation after classification; it never classifies or overrides a non-status
 request.
 
-The LLM host classifies natural language. Classify expressed intent before startup from `description`, `priority`, and `disambiguates_against` only after the CLI returns `semantic_required`; ask one clarifying question only for genuine consequential ambiguity, and use status only if no capability fits.
+The LLM host classifies natural language. Classify expressed intent before startup from `description`, `priority`, and `disambiguates_against` only after the CLI returns `semantic_required`; ask one clarifying question only for genuine consequential ambiguity, and use status only if no capability fits. Read that response's `receipt_contract` for the exact nullable `agentera.route_receipt.v1` schema, outcomes, nullability, compound and span rules, and runnable stdin example; `npx -y agentera@next route receipt --help` presents the same guide.
 
 The receipt input is `{ request: <original string>, receipt: <complete nullable
 API output> }`; every API field is present and outcome-inapplicable fields are

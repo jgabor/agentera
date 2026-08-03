@@ -2,13 +2,17 @@ id: atylhmpfrk
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Make `agentera route request --input - --format json` self-describing after `semantic_required`. Return or reference the exact `agentera.route_receipt.v1` nullable schema, valid outcomes, nullability, compound and span rules, and one runnable stdin example. `agentera route receipt --help` must expose the same contract so hosts never inspect `hybridRouteReceipt.ts` or `hybrid-route-contract.yaml` to proceed."
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make `agentera route request --input - --format json` self-describing after `semantic_required`. Return or reference the exact `agentera.route_receipt.v1` nullable schema, valid outcomes, nullability, compound and span rules, and one runnable stdin example. `agentera route receipt --help` must expose the same contract so hosts never inspect `hybridRouteReceipt.ts` or `hybrid-route-contract.yaml` to proceed."
+      status: resolved
+      order: 90
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Delivered a self-describing nullable receipt API and runnable stdin help; semantic output remains privacy-safe, and select, clarify, and no_match each have pass and malformed-rejection coverage.
+    date: 2026-08-03

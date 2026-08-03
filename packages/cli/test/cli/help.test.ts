@@ -9,6 +9,7 @@ import {
   printUpgradeHelp,
   wantsHelp,
 } from "../../src/cli/help.js";
+import { describeRouteReceipt } from "../../src/registries/hybridRoute.js";
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;
@@ -69,6 +70,20 @@ describe("cli help", () => {
     expect(out).toContain("agentera route evaluate --format json");
     expect(out).toContain("frozen offline conformance corpus");
     expect(out).toContain("exits 1 when its report status is fail");
+  });
+
+  it("makes the nullable semantic receipt contract and stdin round trip discoverable", () => {
+    const receipt = describeRouteReceipt();
+    const { rc, out } = capture((io) => main(["node", "agentera", "route", "receipt", "--help"], io));
+    const rendered = (value: unknown) => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`).join("\n");
+
+    expect(rc).toBe(0);
+    expect(out).toContain("agentera.route_receipt_contract.v1");
+    expect(out).toContain(rendered(receipt.nullable_schema));
+    expect(out).toContain(rendered(receipt.outcome_rules));
+    expect(out).toContain(rendered(receipt.compound));
+    expect(out).toContain(rendered(receipt.remainder_span));
+    expect(out).toContain(`printf '%s\\n' '${JSON.stringify(receipt.stdin_example.input)}' | ${receipt.stdin_command}`);
   });
 
   it("documents executable plan and plan-task retrieval grammar", () => {
