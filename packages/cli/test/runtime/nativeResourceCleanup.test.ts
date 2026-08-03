@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import {
   LIFECYCLE_LEDGER_SCHEMA,
@@ -12,8 +13,10 @@ import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js"
 import {
   applyNativeResourceCleanup,
   loadNativeResourceCleanupContract,
+  nativeResourceCleanupHistoricalIds,
   nativeResourceCleanupIds,
   previewNativeResourceCleanup,
+  resolveNativeResourceCleanupId,
   validateNativeResourceCleanupContractData,
   validateNativeResourceCleanupContractRoot,
 } from "../../src/runtime/nativeResourceCleanup.js";
@@ -58,6 +61,29 @@ const codexConfigurationIds = [
   "codex.config.features.multi_agent_v2",
 ];
 
+const retiredResourceClasses = [
+  ["claude.skill-link", "legacy_skill_link"],
+  ["codex.agent-descriptor", "capability_descriptor"],
+  ["opencode.plugin", "plugin"],
+  ["opencode.command", "command"],
+  ["legacy.primary-agent", "primary_agent"],
+  ["legacy.capability-agent", "capability_agent"],
+  ["opencode.stale-skill-link", "stale_skill_link"],
+  ["installed.hook", "installed_hook"],
+  ["agentera.registration", "registration"],
+] as const;
+
+const codexDescriptors = [
+  "status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate",
+] as const;
+
+function contractData(): Record<string, unknown> {
+  return YAML.parse(fs.readFileSync(
+    path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"),
+    "utf8",
+  )) as Record<string, unknown>;
+}
+
 function ledgerFor(
   id: string,
   status: "legacy" | "managed",
@@ -96,6 +122,23 @@ describe("native resource cleanup contract", () => {
     expect(source).toContain("OpenCode's native CLI listed /home/jgabor/.agents/skills/agentera/SKILL.md.");
     expect(source).toContain("Copilot's native CLI listed the canonical personal-agents skill; its disabled state is intentional.");
     expect(validateNativeResourceCleanupContractRoot()).toEqual([]);
+  });
+
+  it.each(retiredResourceClasses)("discovers the %s resource vocabulary class", (id, resourceClass) => {
+    const entry = loadNativeResourceCleanupContract().resourceVocabulary.find((item) => item.id === id);
+
+    expect(entry).toMatchObject({ id, resourceClass });
+    expect(entry?.resourceIds.length).toBeGreaterThan(0);
+  });
+
+  it.each(retiredResourceClasses)("fails closed when the %s resource vocabulary class is missing", (id, resourceClass) => {
+    const data = contractData();
+    data.resource_vocabulary = (data.resource_vocabulary as Array<Record<string, unknown>>)
+      .filter((entry) => entry.id !== id);
+
+    expect(validateNativeResourceCleanupContractData(data)).toContain(
+      `resource_vocabulary must retain ${id} as ${resourceClass}`,
+    );
   });
 
   it("rejects marker, value, name, and file equality as ownership proof", () => {
@@ -271,6 +314,30 @@ describe("native resource cleanup ownership", () => {
     expect(fs.existsSync(destination)).toBe(true);
   });
 
+  it("fails closed when canonical and historical identities collide", () => {
+    const resource = resourceCases[1];
+    const destination = resource.destination();
+    resource.install(destination);
+    const canonical = ledgerFor(resource.id, resource.status, destination).records[0]!;
+    const historical = { ...canonical, resourceId: "codex.agents.build" };
+    const ledger: LifecycleOwnershipLedger = {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [canonical, historical],
+    };
+
+    const preview = previewNativeResourceCleanup({ resourceId: resource.id, home, ledger });
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+
+    expect(preview.plan.operations[0]).toMatchObject({
+      state: "ambiguous_ownership",
+      ownership: "ambiguous",
+      action: "action_required",
+    });
+    expect(applied.operations[0]?.status).toBe("action_required");
+    expect(fs.existsSync(destination)).toBe(true);
+  });
+
   it("does not let an unowned Codex descriptor block an independently owned one", () => {
     const unowned = resourceCases[1];
     const owned = { ...resourceCases[1], id: "codex.agent-descriptor.status" };
@@ -293,5 +360,40 @@ describe("native resource cleanup ownership", () => {
     expect(removed.operations[0]?.status).toBe("applied");
     expect(fs.existsSync(unownedDestination)).toBe(true);
     expect(fs.existsSync(ownedDestination)).toBe(false);
+  });
+
+  it.each(codexDescriptors)("replays the historical Codex descriptor identity for %s", (descriptor) => {
+    const destination = path.join(home, ".codex", "agents", `${descriptor}.toml`);
+    resourceCases[1].install(destination);
+    const historicalId = `codex.agents.${descriptor}`;
+    const canonicalId = `codex.agent-descriptor.${descriptor}`;
+    const ledger = ledgerFor(historicalId, "managed", destination);
+
+    expect(nativeResourceCleanupHistoricalIds()).toContain(historicalId);
+    expect(resolveNativeResourceCleanupId(historicalId)?.id).toBe(canonicalId);
+
+    const preview = previewNativeResourceCleanup({ resourceId: historicalId, home, ledger });
+    expect(preview).toMatchObject({ resourceId: canonicalId, ledgerAuthorization: "match_or_absent_noop" });
+    expect(preview.plan.operations[0]).toMatchObject({ id: canonicalId, action: "remove", ownership: "managed" });
+    expect(preview.plan.request.ledger?.records).toEqual([
+      expect.objectContaining({ resourceId: canonicalId, destination }),
+    ]);
+
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+    expect(applied.operations[0]?.status).toBe("applied");
+    expect(applied.ownershipLedger.records).toEqual([]);
+    expect(fs.existsSync(destination)).toBe(false);
+  });
+
+  it.each(codexDescriptors)("preserves an unowned %s descriptor selected by its historical identity", (descriptor) => {
+    const destination = path.join(home, ".codex", "agents", `${descriptor}.toml`);
+    resourceCases[1].install(destination);
+
+    const preview = previewNativeResourceCleanup({ resourceId: `codex.agents.${descriptor}`, home });
+    const applied = applyNativeResourceCleanup(preview, { approved: true });
+
+    expect(preview.plan.operations[0]).toMatchObject({ action: "action_required", ownership: "unowned" });
+    expect(applied.operations[0]?.status).toBe("action_required");
+    expect(fs.existsSync(destination)).toBe(true);
   });
 });

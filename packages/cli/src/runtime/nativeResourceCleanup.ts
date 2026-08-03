@@ -32,6 +32,7 @@ type HostSupportStatus = "supported" | "supported_disabled" | "retired_historica
 
 export interface NativeResourceCleanupDefinition {
   id: string;
+  historicalIds: string[];
   host: string;
   hostSupportStatus: HostSupportStatus;
   kind: NativeResourceKind;
@@ -40,6 +41,14 @@ export interface NativeResourceCleanupDefinition {
   durableProof: string;
   neverTouch: string[];
   safetyNote: string;
+}
+
+export interface NativeResourceVocabularyDefinition {
+  id: string;
+  resourceClass: string;
+  migrationScope: "explicit_cleanup" | "v2_upgrade_only";
+  resourceIds: string[];
+  historicalIds: string[];
 }
 
 interface NativeResourceCleanupConfigurationDefinition {
@@ -58,9 +67,22 @@ export interface NativeResourceCleanupConfigurationUnit {
 
 export interface NativeResourceCleanupContract {
   sourcePath: string;
+  resourceVocabulary: NativeResourceVocabularyDefinition[];
   resources: NativeResourceCleanupDefinition[];
   configuration: NativeResourceCleanupConfigurationDefinition[];
 }
+
+const REQUIRED_RESOURCE_VOCABULARY: Record<string, string> = {
+  "claude.skill-link": "legacy_skill_link",
+  "codex.agent-descriptor": "capability_descriptor",
+  "opencode.plugin": "plugin",
+  "opencode.command": "command",
+  "legacy.primary-agent": "primary_agent",
+  "legacy.capability-agent": "capability_agent",
+  "opencode.stale-skill-link": "stale_skill_link",
+  "installed.hook": "installed_hook",
+  "agentera.registration": "registration",
+};
 
 export interface NativeResourceCleanupPreview {
   schemaVersion: "agentera.nativeResourceCleanupPreview.v1";
@@ -162,6 +184,26 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
     if (!proofByHost.has(host)) errors.push(`accepted_host_evidence must retain ${host} proof`);
   }
 
+  const vocabulary = Array.isArray(value.resource_vocabulary) ? value.resource_vocabulary : [];
+  const vocabularyById = new Map<string, Record<string, unknown>>();
+  for (const entry of vocabulary) {
+    if (!isMapping(entry) || !requiredString(entry, "id")) continue;
+    vocabularyById.set(entry.id as string, entry);
+  }
+  if (vocabulary.length !== Object.keys(REQUIRED_RESOURCE_VOCABULARY).length) {
+    errors.push("resource_vocabulary must declare every retired native resource class");
+  }
+  for (const [id, resourceClass] of Object.entries(REQUIRED_RESOURCE_VOCABULARY)) {
+    const entry = vocabularyById.get(id);
+    if (!entry || entry.resource_class !== resourceClass
+      || !(entry.migration_scope === "explicit_cleanup" || entry.migration_scope === "v2_upgrade_only")
+      || stringList(entry.resource_ids).length === 0
+      || !Array.isArray(entry.historical_ids)
+    ) {
+      errors.push(`resource_vocabulary must retain ${id} as ${resourceClass}`);
+    }
+  }
+
   const resources = Array.isArray(value.resources) ? value.resources : [];
   if (resources.length !== 2) errors.push("resources must declare the Claude link and Codex descriptor class");
   const resourceById = new Map<string, Record<string, unknown>>();
@@ -172,7 +214,7 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   const claude = resourceById.get("claude.agentera-skill-link");
   if (!claude || claude.host !== "claude" || claude.kind !== "symlink" || claude.intent !== "remove"
     || claude.destination !== "{home}/.claude/skills/agentera" || claude.ledger_status !== "legacy"
-    || !requiredString(claude, "durable_proof")) {
+    || claude.vocabulary !== "claude.skill-link" || !requiredString(claude, "durable_proof")) {
     errors.push("Claude cleanup must remain the legacy-ledger Agentera skill symlink removal");
   }
   const codex = resourceById.get("codex.agent-descriptor");
@@ -180,7 +222,9 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   const expectedDescriptors = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
   if (!codex || codex.host !== "codex" || codex.kind !== "file" || codex.intent !== "remove"
     || codex.destination !== "{home}/.codex/agents/{descriptor}.toml" || codex.ledger_status !== "managed"
-    || !requiredString(codex, "durable_proof") || descriptors.join(",") !== expectedDescriptors.join(",")) {
+    || codex.vocabulary !== "codex.agent-descriptor" || !requiredString(codex, "durable_proof")
+    || stringList(codex.historical_ids).join(",") !== "codex.agents.{descriptor}"
+    || descriptors.join(",") !== expectedDescriptors.join(",")) {
     errors.push("Codex descriptors must be independently ledger-owned native files");
   }
 
@@ -214,6 +258,9 @@ function expandResource(
     : [resource.id as string];
   return ids.map((id, index) => ({
     id,
+    historicalIds: stringList(resource.historical_ids).map((historicalId) => descriptorNames.length > 0
+      ? historicalId.replace("{descriptor}", descriptorNames[index]!)
+      : historicalId),
     host: resource.host as string,
     hostSupportStatus,
     kind: resource.kind as NativeResourceKind,
@@ -245,6 +292,13 @@ export function loadNativeResourceCleanupContract(
   ]));
   return {
     sourcePath: contractPath,
+    resourceVocabulary: (data.resource_vocabulary as Record<string, unknown>[]).map((entry) => ({
+      id: entry.id as string,
+      resourceClass: entry.resource_class as string,
+      migrationScope: entry.migration_scope as "explicit_cleanup" | "v2_upgrade_only",
+      resourceIds: stringList(entry.resource_ids),
+      historicalIds: stringList(entry.historical_ids),
+    })),
     resources: (data.resources as Record<string, unknown>[]).flatMap((resource) =>
       expandResource(resource, statuses.get(resource.host as string)!),
     ),
@@ -258,6 +312,20 @@ export function loadNativeResourceCleanupContract(
 
 export function nativeResourceCleanupIds(contract = loadNativeResourceCleanupContract()): string[] {
   return contract.resources.map((resource) => resource.id);
+}
+
+export function nativeResourceCleanupHistoricalIds(contract = loadNativeResourceCleanupContract()): string[] {
+  return contract.resources.flatMap((resource) => resource.historicalIds);
+}
+
+export function resolveNativeResourceCleanupId(
+  resourceId: string,
+  contract = loadNativeResourceCleanupContract(),
+): NativeResourceCleanupDefinition | null {
+  const matches = contract.resources.filter((resource) =>
+    resource.id === resourceId || resource.historicalIds.includes(resourceId),
+  );
+  return matches.length === 1 ? matches[0]! : null;
 }
 
 export function validateNativeResourceCleanupContractRoot(root = resolveSourceRoot()): string[] {
@@ -330,7 +398,20 @@ function configurationUnitsFor(
       key: unit.key,
       status: "action_required",
       reason: "no durable key-level ownership ledger identity and fingerprint",
-    }));
+  }));
+}
+
+function canonicalizeHistoricalOwnershipIds(
+  ledger: LifecycleOwnershipLedger,
+  resource: NativeResourceCleanupDefinition,
+): LifecycleOwnershipLedger {
+  if (resource.historicalIds.length === 0) return ledger;
+  return {
+    ...ledger,
+    records: ledger.records.map((record) => resource.historicalIds.includes(record.resourceId)
+      ? { ...record, resourceId: resource.id }
+      : record),
+  };
 }
 
 export function previewNativeResourceCleanup(opts: {
@@ -340,7 +421,7 @@ export function previewNativeResourceCleanup(opts: {
   contract?: NativeResourceCleanupContract;
 }): NativeResourceCleanupPreview {
   const contract = opts.contract ?? loadNativeResourceCleanupContract();
-  const resource = contract.resources.find((candidate) => candidate.id === opts.resourceId);
+  const resource = resolveNativeResourceCleanupId(opts.resourceId, contract);
   if (!resource) throw new Error(`unknown native Agentera resource cleanup id: ${opts.resourceId}`);
   const operations: LifecycleOperationSpec[] = [{
     id: resource.id,
@@ -351,11 +432,14 @@ export function previewNativeResourceCleanup(opts: {
   }];
   const suppliedLedger = opts.ledger ?? emptyLifecycleOwnershipLedger();
   const errors = validateLifecycleOwnershipLedger(suppliedLedger);
+  const ledger = errors.length === 0
+    ? canonicalizeHistoricalOwnershipIds(suppliedLedger, resource)
+    : emptyLifecycleOwnershipLedger();
   const plan = planLifecycleOperations({
     allowedRoots: [path.resolve(opts.home)],
     operations,
     manifest: createLifecycleOwnershipManifest(operations),
-    ledger: errors.length === 0 ? suppliedLedger : emptyLifecycleOwnershipLedger(),
+    ledger,
   });
   const diagnostics = errors.length > 0
     ? errors.map((error) => `invalid ownership ledger: ${error}`)
@@ -413,6 +497,7 @@ export function applyNativeResourceCleanup(
   const resource = preview.plan.request.operations[0]!;
   const definition: NativeResourceCleanupDefinition = {
     id: preview.resourceId,
+    historicalIds: [],
     host: preview.hostId,
     hostSupportStatus: preview.hostSupportStatus,
     kind: resource.kind,

@@ -45,8 +45,76 @@ hosts:
   - id: claude
     display_name: Claude Code historical migration
     support_status: retired_historical
+resource_vocabulary:
+  - id: claude.skill-link
+    resource_class: legacy_skill_link
+    migration_scope: explicit_cleanup
+    resource_ids:
+      - claude.agentera-skill-link
+    historical_ids: []
+  - id: codex.agent-descriptor
+    resource_class: capability_descriptor
+    migration_scope: explicit_cleanup
+    resource_ids:
+      - codex.agent-descriptor.{english_descriptor}
+      - codex.agent-descriptor.{swedish_descriptor}
+    historical_ids:
+      - codex.agents.{english_descriptor}
+      - codex.agents.{swedish_descriptor}
+  - id: opencode.plugin
+    resource_class: plugin
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - opencode.plugin.agentera
+    historical_ids: []
+  - id: opencode.command
+    resource_class: command
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - opencode.command.agentera
+      - opencode.command.hej
+    historical_ids: []
+  - id: legacy.primary-agent
+    resource_class: primary_agent
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - cursor.agent.agentera
+      - opencode.agent.agentera
+    historical_ids: []
+  - id: legacy.capability-agent
+    resource_class: capability_agent
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - cursor.agent.{english_descriptor}
+      - cursor.agent.{swedish_descriptor}
+      - opencode.agent.{english_descriptor}
+      - opencode.agent.{swedish_descriptor}
+    historical_ids: []
+  - id: opencode.stale-skill-link
+    resource_class: stale_skill_link
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - opencode.skill-link.{name}
+    historical_ids: []
+  - id: installed.hook
+    resource_class: installed_hook
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - agentera.installed-hook.{name}
+    historical_ids: []
+  - id: agentera.registration
+    resource_class: registration
+    migration_scope: v2_upgrade_only
+    resource_ids:
+      - agentera.registration.plugin.{host}
+      - agentera.registration.marketplace.{host}
+      - agentera.registration.skill.{host}
+      - agentera.registration.hook.{host}
+      - agentera.registration.restorer.{host}
+    historical_ids: []
 resources:
   - id: claude.agentera-skill-link
+    vocabulary: claude.skill-link
     host: claude
     kind: symlink
     intent: remove
@@ -65,11 +133,14 @@ resources:
       - "{home}/.claude/credentials"
     safety_note: Only the declared Agentera skill symlink may be removed, and only when a matching legacy ownership ledger still binds its identity and target fingerprint. Transcript, settings, credential, conversation, stats, cache, and ambiguous paths are never cleanup targets.
   - id: codex.agent-descriptor
+    vocabulary: codex.agent-descriptor
     host: codex
     kind: file
     intent: remove
     destination: "{home}/.codex/agents/{descriptor}.toml"
     descriptors: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate]
+    historical_ids:
+      - codex.agents.{descriptor}
     ledger_status: managed
     durable_proof: matching whole-resource ledger identity and fingerprint for each declared descriptor file
     safety_note: Each descriptor is an independently owned file. A managed marker, descriptor name, or matching content never establishes ownership.

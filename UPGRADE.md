@@ -71,14 +71,18 @@ npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --dry-r
 npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --yes
 ```
 
-The contract also inventories retired Codex descriptor files. Each file needs a
-matching whole-resource ledger identity and fingerprint before it can be
-removed. Codex descriptor previews report each shared configuration key as
-`action_required` without adding it to the selected resource's apply work.
-Agentera has no durable key-level ownership proof, so matching values, markers,
-names, or whole file contents never authorize a shared `config.toml` mutation.
-Preview is read-only; approved apply is idempotent and preserves ambiguous or
-unowned resources.
+The retirement contract gives historical plugins, commands, primary and
+capability agents, stale skill links, installed hooks, and registrations one
+vocabulary. It keeps the v2-only inventory separate from the explicit cleanup
+route until cutover approves more cleanup selectors. The current cleanup route
+also recognizes the historical `codex.agents.NAME` descriptor identity as
+`codex.agent-descriptor.NAME`. Each selected file needs a matching
+whole-resource ledger identity and fingerprint before it can be removed. Codex
+descriptor previews report each shared configuration key as `action_required`
+without adding it to the selected resource's apply work. Agentera has no durable
+key-level ownership proof, so matching values, markers, names, or whole file
+contents never authorize a shared `config.toml` mutation. Preview is read-only;
+approved apply is idempotent and preserves ambiguous or unowned resources.
 
 Historical transcript import is independent of cleanup. Default extraction and
 analytics do not read Claude history. Import requires explicit local consent:

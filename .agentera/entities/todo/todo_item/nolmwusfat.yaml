@@ -21,4 +21,4 @@ record:
       description: "[fix:3.0.0] Remove every tracked, generated, migrated, bundled, tested, and installed reference to the retired top-level `agentera hook` command and native hook integration. Upgrade must remove a whole-resource-proven v2 hook or preserve it with bounded manual guidance; it must never rewrite that hook into another native Agentera integration. Remove or replace the doctor hook smoke, convert migration tests from native-hook creation to removal-or-preservation proofs, scan host configuration and package output, and ensure shipped hooks invoke only current CLI commands or are absent."
       severity: critical
       status: open
-      order: 6
+      order: 4

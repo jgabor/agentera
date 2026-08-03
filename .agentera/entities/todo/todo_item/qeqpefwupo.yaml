@@ -23,4 +23,4 @@ record:
       description: "[fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration."
       severity: critical
       status: open
-      order: 14
+      order: 12

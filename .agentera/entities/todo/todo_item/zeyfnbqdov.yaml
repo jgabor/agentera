@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup."
       severity: critical
       status: open
-      order: 16
+      order: 14

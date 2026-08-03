@@ -174,6 +174,14 @@ describe("cli schema", () => {
     expect(payload.integration.native_resource_cleanup).toMatchObject({
       selection: "native_agentera_resource_only",
       resource_ids: expect.arrayContaining(["claude.agentera-skill-link", "codex.agent-descriptor.build"]),
+      historical_resource_ids: expect.arrayContaining(["codex.agents.build"]),
+      retired_resource_vocabulary: expect.arrayContaining([
+        expect.objectContaining({
+          id: "agentera.registration",
+          resource_class: "registration",
+          migration_scope: "v2_upgrade_only",
+        }),
+      ]),
       shared_configuration_without_key_ledger: "action_required",
     });
     expect(payload.integration.historical_import).toMatchObject({

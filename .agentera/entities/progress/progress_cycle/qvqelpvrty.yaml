@@ -1,0 +1,17 @@
+id: qvqelpvrty
+artifact: progress
+record:
+  timestamp: 2026-08-03 14:26
+  type: fix
+  phase: build
+  what: Completed the retired native-resource vocabulary and historical Codex descriptor identity replay.
+  context:
+    intent: Complete cspavuhaus retirement-resource authority and identity migration.
+    constraints: Use the rebuilt local CLI, preserve the four protected staged plan-task files, and leave terminal state for Audit.
+    unknowns: The v2_upgrade_only vocabulary is declarative only; later cleanup and native-hook tasks own any new selector or removal behavior.
+    scope: Retirement vocabulary, historical descriptor ownership replay, regression tests, and upgrade documentation.
+  inspiration: Used the existing lifecycle ownership ledger and explicit cleanup route instead of adding a second cleanup path.
+  discovered: Historical codex.agents descriptor IDs were not canonicalized before ownership replay, so exact owned files could be reported as unowned.
+  verified: references/adapters/runtime-retired-resources.yaml now covers the legacy skill link, Codex descriptors, OpenCode plugin and commands, primary and capability agents, stale skill links, installed hooks, and registrations. nativeResourceCleanup tests cover every vocabulary class and fail-closed omissions; all Codex descriptors replay a matching historical ledger identity, while canonical/historical collisions and unowned descriptors remain action-required. A rebuilt local agentera CLI removed a ledger-owned codex.agents.status, replayed its canonical ID as noop, and preserved an unowned codex.agents.build file.
+  next: Await independent Audit before resolving TODOs, completing the task, or committing.
+  publication_order: 55

@@ -131,5 +131,15 @@ describe("active shared-skill lifecycle contract", () => {
     expect(cleanupPayload.lifecycle).not.toHaveProperty("projection");
     expect(cleanupPayload.lifecycle).not.toHaveProperty("operations");
     expect(cleanupPayload.lifecycle).not.toHaveProperty("userActions");
+
+    const historicalCleanup = capture([
+      "upgrade", "--legacy-cleanup", "codex.agents.status", "--home", home, "--install-root", REPO_ROOT,
+      "--project", project, "--dry-run", "--format", "json",
+    ]);
+    expect(historicalCleanup.rc).toBe(0);
+    expect(JSON.parse(historicalCleanup.out)).toHaveProperty(
+      "lifecycle.nativeResourceCleanup.resourceId",
+      "codex.agent-descriptor.status",
+    );
   });
 });

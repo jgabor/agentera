@@ -16,6 +16,7 @@ import { stateWriterArtifactContract, stateWriterContract } from "../../state/wr
 import { CANONICAL_SHARED_SKILL_PATH } from "../../setup/sharedSkill.js";
 import {
   loadNativeResourceCleanupContract,
+  nativeResourceCleanupHistoricalIds,
   nativeResourceCleanupIds,
 } from "../../runtime/nativeResourceCleanup.js";
 import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
@@ -415,6 +416,14 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         contract: nativeResourceCleanup.sourcePath,
         selection: "native_agentera_resource_only",
         resource_ids: nativeResourceCleanupIds(nativeResourceCleanup),
+        historical_resource_ids: nativeResourceCleanupHistoricalIds(nativeResourceCleanup),
+        retired_resource_vocabulary: nativeResourceCleanup.resourceVocabulary.map((entry): JsonObject => ({
+          id: entry.id,
+          resource_class: entry.resourceClass,
+          migration_scope: entry.migrationScope,
+          resource_ids: entry.resourceIds,
+          historical_ids: entry.historicalIds,
+        })),
         preview: "strictly_read_only",
         apply_requires: "explicit_approval",
         ownership: "matching whole-resource ledger identity and fingerprint",

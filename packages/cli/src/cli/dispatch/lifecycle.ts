@@ -25,7 +25,7 @@ import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, emitDepreca
 import { emitInvalidInput } from "../errors.js";
 import { migrationProject } from "../migrationRequired.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
-import { nativeResourceCleanupIds } from "../../runtime/nativeResourceCleanup.js";
+import { nativeResourceCleanupIds, resolveNativeResourceCleanupId } from "../../runtime/nativeResourceCleanup.js";
 import type { ParsedProjectHookInput } from "../../hooks/projectHookInput.js";
 
 function rejectUnsupportedUpgradeFlag(
@@ -335,7 +335,8 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
       });
     } else if ((v = value("--legacy-cleanup")) !== null) {
       const validValues = nativeResourceCleanupIds();
-      if (!validValues.includes(v)) {
+      const selectedResource = resolveNativeResourceCleanupId(v);
+      if (!selectedResource) {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
           body: {
@@ -345,7 +346,7 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
           },
         });
       }
-      args.legacyCleanup = v;
+      args.legacyCleanup = selectedResource.id;
     } else if ((v = value("--only")) !== null) {
       if (v !== "artifacts" && v !== "runtime" && v !== "cleanup") {
         return emitInvalidInput(io, {

@@ -58,6 +58,9 @@
 
 ### Fixed
 
+- Fixed native resource cleanup to replay historical Codex descriptor ownership
+  IDs, preserve identity collisions and unowned files, and expose the complete
+  retired native-resource vocabulary for v2-only upgrade discovery.
 - Fixed release qualification provenance and isolation. CI approvals now bind
   the contracted qualification repository, workflow, full branch ref, run, and
   API-backed head SHA before environment approval or artifact mutation;

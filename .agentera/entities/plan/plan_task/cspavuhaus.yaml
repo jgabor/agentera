@@ -4,9 +4,19 @@ record:
   name: M4B · Complete retired-resource authority and identity migration (wwojgufooz, xzpqpryxit)
   depends_on:
     - vcxavjxafz
-  status: pending
+  status: complete
   acceptance:
     - GIVEN named native surfaces and historical IDs WHEN discovered THEN one resource vocabulary covers them.
     - GIVEN ownership, historical identity, or collision WHEN previewed THEN replay recognizes owned resources and preserves unowned ones.
     - GIVEN resource classes WHEN tested THEN each has one pass and one fail-closed case.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: cspavuhaus-audit-1
+      source: Independent Audit ses_0386746a9ffep61oV1ni5naebk PASS
+      recorded_at: 2026-08-03 14:35
+      writer_command: agentera state plan record-evaluation

@@ -2,7 +2,7 @@ id: wwojgufooz
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Complete `references/adapters/runtime-retired-resources.yaml` and cleanup discovery for every retired Agentera-native surface. Include the OpenCode plugin, `agentera` and `hej` commands, primary and Swedish agents, stale skill links, Codex English and Swedish descriptors, and Agentera plugin, marketplace, skill, hook, and restorer registrations. Declare safe removal order, whole-resource ownership evidence, bounded previews, and preservation of user-owned collisions. Package and runtime acceptance must prove that completed cleanup leaves only the shared skill plus CLI as the permanent integration."
   readiness:
     capability: build
@@ -18,6 +18,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Complete `references/adapters/runtime-retired-resources.yaml` and cleanup discovery for every retired Agentera-native surface. Include the OpenCode plugin, `agentera` and `hej` commands, primary and Swedish agents, stale skill links, Codex English and Swedish descriptors, and Agentera plugin, marketplace, skill, hook, and restorer registrations. Declare safe removal order, whole-resource ownership evidence, bounded previews, and preservation of user-owned collisions. Package and runtime acceptance must prove that completed cleanup leaves only the shared skill plus CLI as the permanent integration."
+      status: resolved
+      order: 83
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Added the complete retired-resource vocabulary with fail-closed discovery coverage.
+    date: 2026-08-03
