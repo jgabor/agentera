@@ -58,6 +58,11 @@
 
 ### Fixed
 
+- Fixed `agentera doctor --format json` to report bounded, read-only retirement
+  diagnostics for stale native resources. Each candidate now names its exact ID,
+  path-only evidence, and a `doctor --retired-resource ID` preview command;
+  user-owned collisions and unreadable paths remain action-required without
+  leaking contents or mutating runtime state.
 - Fixed v2 hook retirement to remove only whole-resource-proven hooks and to
   preserve ambiguous resources for manual review. Upgrade no longer rewrites
   legacy hooks to a retired `agentera hook` command, which is no longer a

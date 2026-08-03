@@ -212,6 +212,7 @@ describe("repository-native retirement inventory", () => {
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/migrationPublication.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/upgrade/retiredResourceDiagnostics.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/upgradeOrchestrator.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
     ]);
 

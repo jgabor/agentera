@@ -65,9 +65,20 @@ export interface NativeResourceCleanupConfigurationUnit {
   reason: string;
 }
 
+export interface RetiredResourceDiagnosticDefinition {
+  id: string;
+  vocabulary: string;
+  names: string[];
+  destinations: string[];
+  contains: string | null;
+}
+
 export interface NativeResourceCleanupContract {
   sourcePath: string;
   resourceVocabulary: NativeResourceVocabularyDefinition[];
+  diagnosticMaximumResources: number;
+  diagnosticMaximumFileBytes: number;
+  diagnosticResources: RetiredResourceDiagnosticDefinition[];
   resources: NativeResourceCleanupDefinition[];
   configuration: NativeResourceCleanupConfigurationDefinition[];
 }
@@ -133,6 +144,13 @@ function stringList(value: unknown): string[] {
 
 function requiredString(value: Record<string, unknown>, key: string): boolean {
   return typeof value[key] === "string" && value[key].length > 0;
+}
+
+function expandedDiagnosticIds(resource: Record<string, unknown>): string[] {
+  if (typeof resource.id !== "string") return [];
+  const names = stringList(resource.names);
+  if (!resource.id.includes("{name}")) return [resource.id];
+  return names.map((name) => (resource.id as string).replace("{name}", name));
 }
 
 export function validateNativeResourceCleanupContractData(value: unknown): string[] {
@@ -215,6 +233,69 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
     ) {
       errors.push(`resource_vocabulary must retain ${id} as ${resourceClass}`);
     }
+  }
+  const registrationEvidence = stringList(vocabularyById.get("agentera.registration")?.identity_evidence);
+  if (registrationEvidence.length === 0) {
+    errors.push("agentera.registration must retain identity evidence for excluded template labels");
+  }
+  const declaredDiagnosticIds = new Map<string, string>();
+  for (const [vocabularyId, entry] of vocabularyById) {
+    for (const resourceId of stringList(entry.resource_ids)) {
+      if (resourceId.includes("{")) {
+        errors.push(`resource_vocabulary ${vocabularyId} must declare exact resource IDs`);
+        continue;
+      }
+      if (declaredDiagnosticIds.has(resourceId)) {
+        errors.push(`resource_vocabulary must not duplicate ${resourceId}`);
+        continue;
+      }
+      declaredDiagnosticIds.set(resourceId, vocabularyId);
+    }
+  }
+
+  const diagnosticInventory = isMapping(value.diagnostic_inventory) ? value.diagnostic_inventory : null;
+  const maximumResources = diagnosticInventory?.maximum_resources;
+  const maximumFileBytes = diagnosticInventory?.maximum_file_bytes;
+  if (!Number.isInteger(maximumResources) || (maximumResources as number) < 1 || (maximumResources as number) > 256
+    || !Number.isInteger(maximumFileBytes) || (maximumFileBytes as number) < 1 || (maximumFileBytes as number) > 1024 * 1024) {
+    errors.push("diagnostic_inventory must declare bounded maximum_resources and maximum_file_bytes");
+  }
+  const diagnosticResources = Array.isArray(diagnosticInventory?.resources) ? diagnosticInventory.resources : [];
+  const diagnosticIds = new Map<string, string>();
+  for (const resource of diagnosticResources) {
+    if (!isMapping(resource)
+      || !requiredString(resource, "id")
+      || !requiredString(resource, "vocabulary")
+      || !Array.isArray(resource.destinations)
+      || !stringList(resource.destinations).length
+      || (resource.names !== undefined && !Array.isArray(resource.names))
+      || (resource.contains !== undefined && !requiredString(resource, "contains"))) {
+      errors.push("diagnostic_inventory resources must declare bounded resource IDs and paths");
+      continue;
+    }
+    const vocabularyId = resource.vocabulary as string;
+    if (!vocabularyById.has(vocabularyId)) {
+      errors.push(`diagnostic_inventory references unknown vocabulary ${vocabularyId}`);
+    }
+    const template = resource.id as string;
+    const ids = expandedDiagnosticIds(resource);
+    if (template.includes("{") && (template.match(/\{name\}/g)?.length !== 1 || ids.length === 0)) {
+      errors.push(`diagnostic_inventory must expand ${template} with one or more names`);
+    }
+    for (const id of ids) {
+      const declaredVocabulary = declaredDiagnosticIds.get(id);
+      if (declaredVocabulary !== vocabularyId) {
+        errors.push(`diagnostic_inventory ${id} must map to its exact declared vocabulary identity`);
+      }
+      if (diagnosticIds.has(id)) {
+        errors.push(`diagnostic_inventory must not duplicate ${id}`);
+      } else {
+        diagnosticIds.set(id, vocabularyId);
+      }
+    }
+  }
+  for (const id of declaredDiagnosticIds.keys()) {
+    if (!diagnosticIds.has(id)) errors.push(`diagnostic_inventory must define ${id}`);
   }
 
   const resources = Array.isArray(value.resources) ? value.resources : [];
@@ -333,6 +414,15 @@ export function loadNativeResourceCleanupContract(
       resourceIds: stringList(entry.resource_ids),
       historicalIds: stringList(entry.historical_ids),
     })),
+    diagnosticMaximumResources: (data.diagnostic_inventory as Record<string, unknown>).maximum_resources as number,
+    diagnosticMaximumFileBytes: (data.diagnostic_inventory as Record<string, unknown>).maximum_file_bytes as number,
+    diagnosticResources: ((data.diagnostic_inventory as Record<string, unknown>).resources as Record<string, unknown>[]).map((entry) => ({
+      id: entry.id as string,
+      vocabulary: entry.vocabulary as string,
+      names: stringList(entry.names),
+      destinations: stringList(entry.destinations),
+      contains: typeof entry.contains === "string" ? entry.contains : null,
+    })),
     resources: (data.resources as Record<string, unknown>[]).flatMap((resource) =>
       expandResource(resource, statuses.get(resource.host as string)!),
     ),
@@ -346,6 +436,14 @@ export function loadNativeResourceCleanupContract(
 
 export function nativeResourceCleanupIds(contract = loadNativeResourceCleanupContract()): string[] {
   return contract.resources.map((resource) => resource.id);
+}
+
+export function retiredResourceDiagnosticIds(contract = loadNativeResourceCleanupContract()): string[] {
+  return contract.diagnosticResources.flatMap((resource) =>
+    resource.id.includes("{name}")
+      ? resource.names.map((name) => resource.id.replace("{name}", name))
+      : [resource.id],
+  ).sort();
 }
 
 export function nativeResourceCleanupHistoricalIds(contract = loadNativeResourceCleanupContract()): string[] {

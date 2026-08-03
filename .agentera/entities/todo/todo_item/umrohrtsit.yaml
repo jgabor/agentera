@@ -10,7 +10,9 @@ record:
     dependencies:
       - artifact: todo
         id: wwojgufooz
-    blocked: null
+    blocked:
+      reason: Installed-hook preview commands omit explicit non-default install roots and can replay against the wrong root.
+      recovery: Pass the exact non-default install root in every installed-hook preview command.
     gate: null
     queue_rank: 15
     order_reason: Complete resource inventory first, then make doctor report every canonical cleanup target before any real cleanup approval.

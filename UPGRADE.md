@@ -51,6 +51,15 @@ npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 
+`doctor --format json` also reports bounded `retired_resources` candidates. Each
+entry has an exact retired resource ID, a path-only or fingerprint-safe
+observation, and a read-only, ID-scoped preview command. The command repeats
+the ID as `doctor --retired-resource ID --format json`; it does not select
+`upgrade --legacy-cleanup` and cannot remove a resource. Doctor never includes
+resource contents, adopts a name collision as Agentera-owned, or changes a
+diagnosed path. Absent resources report `clean`; present or uninspectable
+candidates require manual ownership review.
+
 Retries re-observe the current app/project state. Completed migration work
 converges to no change; interrupted v2 migration continues through the same full
 apply command.

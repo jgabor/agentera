@@ -145,20 +145,27 @@ function runMatrixRow(row: ParityRow): MatrixResult {
     row.argv[0] === "doctor" && !row.argv.includes("--smoke") && isParityFamilyClosed(familyId);
   const envRestore: Array<[string, string | undefined]> = [];
   let bundleTmp: string | null = null;
+  let homeTmp: string | null = null;
   if (doctorParity) {
     bundleTmp = fs.mkdtempSync(path.join(os.tmpdir(), "doctor-parity-bundle-"));
+    homeTmp = fs.mkdtempSync(path.join(os.tmpdir(), "doctor-parity-home-"));
     seedDoctorParityBundle(bundleTmp);
-    for (const key of ["AGENTERA_BOOTSTRAP_SOURCE_ROOT", "AGENTERA_HOME"]) {
+    for (const key of ["AGENTERA_BOOTSTRAP_SOURCE_ROOT", "AGENTERA_HOME", "HOME", "XDG_DATA_HOME"]) {
       envRestore.push([key, process.env[key]]);
       delete process.env[key];
     }
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundleTmp;
+    process.env.HOME = homeTmp;
+    process.env.XDG_DATA_HOME = path.join(homeTmp, ".local", "share");
   }
   try {
     return runMatrixRowInner(row, doctorParity);
   } finally {
     if (bundleTmp) {
       fs.rmSync(bundleTmp, { recursive: true, force: true });
+    }
+    if (homeTmp) {
+      fs.rmSync(homeTmp, { recursive: true, force: true });
     }
     for (const [key, value] of envRestore) {
       if (value === undefined) delete process.env[key];
@@ -179,6 +186,7 @@ function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult 
     // Shared-skill diagnosis is additive to the legacy app-status envelope.
     const parityPayload = doctorParity ? { ...payload } : payload;
     if (doctorParity) delete parityPayload.shared_skill;
+    if (doctorParity) delete parityPayload.retired_resources;
     normalized = normalizeEnvelope(parityPayload) as Record<string, unknown>;
     const literalPins = {
       ...(row.literalPins ?? {}),

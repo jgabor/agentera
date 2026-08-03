@@ -56,11 +56,31 @@ resource_vocabulary:
     resource_class: capability_descriptor
     migration_scope: explicit_cleanup
     resource_ids:
-      - codex.agent-descriptor.{english_descriptor}
-      - codex.agent-descriptor.{swedish_descriptor}
+      - codex.agent-descriptor.status
+      - codex.agent-descriptor.vision
+      - codex.agent-descriptor.discuss
+      - codex.agent-descriptor.research
+      - codex.agent-descriptor.plan
+      - codex.agent-descriptor.build
+      - codex.agent-descriptor.optimize
+      - codex.agent-descriptor.audit
+      - codex.agent-descriptor.document
+      - codex.agent-descriptor.profile
+      - codex.agent-descriptor.design
+      - codex.agent-descriptor.orchestrate
     historical_ids:
-      - codex.agents.{english_descriptor}
-      - codex.agents.{swedish_descriptor}
+      - codex.agents.status
+      - codex.agents.vision
+      - codex.agents.discuss
+      - codex.agents.research
+      - codex.agents.plan
+      - codex.agents.build
+      - codex.agents.optimize
+      - codex.agents.audit
+      - codex.agents.document
+      - codex.agents.profile
+      - codex.agents.design
+      - codex.agents.orchestrate
   - id: opencode.plugin
     resource_class: plugin
     migration_scope: v2_upgrade_only
@@ -85,33 +105,153 @@ resource_vocabulary:
     resource_class: capability_agent
     migration_scope: v2_upgrade_only
     resource_ids:
-      - cursor.agent.{english_descriptor}
-      - cursor.agent.{swedish_descriptor}
-      - opencode.agent.{english_descriptor}
-      - opencode.agent.{swedish_descriptor}
+      - cursor.agent.audit
+      - cursor.agent.build
+      - cursor.agent.design
+      - cursor.agent.discuss
+      - cursor.agent.document
+      - cursor.agent.optimize
+      - cursor.agent.orchestrate
+      - cursor.agent.plan
+      - cursor.agent.profile
+      - cursor.agent.research
+      - cursor.agent.status
+      - cursor.agent.vision
+      - cursor.agent.dokumentera
+      - cursor.agent.hej
+      - cursor.agent.inspektera
+      - cursor.agent.inspirera
+      - cursor.agent.optimera
+      - cursor.agent.orkestrera
+      - cursor.agent.planera
+      - cursor.agent.profilera
+      - cursor.agent.realisera
+      - cursor.agent.resonera
+      - cursor.agent.visionera
+      - cursor.agent.visualisera
+      - opencode.agent.audit
+      - opencode.agent.build
+      - opencode.agent.design
+      - opencode.agent.discuss
+      - opencode.agent.document
+      - opencode.agent.optimize
+      - opencode.agent.orchestrate
+      - opencode.agent.plan
+      - opencode.agent.profile
+      - opencode.agent.research
+      - opencode.agent.status
+      - opencode.agent.vision
+      - opencode.agent.dokumentera
+      - opencode.agent.hej
+      - opencode.agent.inspektera
+      - opencode.agent.inspirera
+      - opencode.agent.optimera
+      - opencode.agent.orkestrera
+      - opencode.agent.planera
+      - opencode.agent.profilera
+      - opencode.agent.realisera
+      - opencode.agent.resonera
+      - opencode.agent.visionera
+      - opencode.agent.visualisera
     historical_ids: []
   - id: opencode.stale-skill-link
     resource_class: stale_skill_link
     migration_scope: v2_upgrade_only
     resource_ids:
-      - opencode.skill-link.{name}
+      - opencode.skill-link.agentera
+      - opencode.skill-link.status
     historical_ids: []
   - id: installed.hook
     resource_class: installed_hook
     migration_scope: v2_upgrade_only
     resource_ids:
-      - agentera.installed-hook.{name}
+      - agentera.installed-hook.validate_artifact.py
+      - agentera.installed-hook.cursor_session_start.py
+      - agentera.installed-hook.cursor_pre_tool_use.py
+      - agentera.installed-hook.cursor_session_stop.py
+      - agentera.installed-hook.session_start.py
+      - agentera.installed-hook.session_stop.py
+      - agentera.installed-hook.codex-hooks.json
     historical_ids: []
   - id: agentera.registration
     resource_class: registration
     migration_scope: v2_upgrade_only
     resource_ids:
-      - agentera.registration.plugin.{host}
-      - agentera.registration.marketplace.{host}
-      - agentera.registration.skill.{host}
-      - agentera.registration.hook.{host}
-      - agentera.registration.restorer.{host}
+      - agentera.registration.marketplace.cursor
+      - agentera.registration.plugin.codex
+      - agentera.registration.restorer.codex
     historical_ids: []
+    identity_evidence:
+      - "Cursor marketplace registration: {project}/.cursor-plugin/plugin.json"
+      - "Codex plugin registration: [plugins.\"agentera@agentera\"] in {home}/.codex/config.toml"
+      - "Codex restorer registration: AGENTERA_HOME in {home}/.codex/config.toml"
+      - "No independent plugin, marketplace, skill, hook, or restorer file was installed for any other host; those former template labels are not resource identities."
+diagnostic_inventory:
+  maximum_resources: 96
+  maximum_file_bytes: 65536
+  resources:
+    - vocabulary: claude.skill-link
+      id: claude.agentera-skill-link
+      destinations:
+        - "{home}/.claude/skills/agentera"
+    - vocabulary: codex.agent-descriptor
+      id: codex.agent-descriptor.{name}
+      names: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate]
+      destinations:
+        - "{home}/.codex/agents/{name}.toml"
+    - vocabulary: opencode.plugin
+      id: opencode.plugin.agentera
+      destinations:
+        - "{home}/.config/opencode/plugins/agentera.js"
+    - vocabulary: opencode.command
+      id: opencode.command.{name}
+      names: [agentera, hej]
+      destinations:
+        - "{home}/.config/opencode/commands/{name}.md"
+    - vocabulary: legacy.primary-agent
+      id: cursor.agent.agentera
+      destinations:
+        - "{home}/.cursor/agents/agentera.md"
+        - "{project}/.cursor/agents/agentera.md"
+    - vocabulary: legacy.primary-agent
+      id: opencode.agent.agentera
+      destinations:
+        - "{home}/.config/opencode/agents/agentera.md"
+    - vocabulary: legacy.capability-agent
+      id: cursor.agent.{name}
+      names: [audit, build, design, discuss, document, optimize, orchestrate, plan, profile, research, status, vision, dokumentera, hej, inspektera, inspirera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera, visualisera]
+      destinations:
+        - "{home}/.cursor/agents/{name}.md"
+        - "{project}/.cursor/agents/{name}.md"
+    - vocabulary: legacy.capability-agent
+      id: opencode.agent.{name}
+      names: [audit, build, design, discuss, document, optimize, orchestrate, plan, profile, research, status, vision, dokumentera, hej, inspektera, inspirera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera, visualisera]
+      destinations:
+        - "{home}/.config/opencode/agents/{name}.md"
+    - vocabulary: opencode.stale-skill-link
+      id: opencode.skill-link.{name}
+      names: [agentera, status]
+      destinations:
+        - "{home}/.config/opencode/skills/{name}"
+    - vocabulary: installed.hook
+      id: agentera.installed-hook.{name}
+      names: [validate_artifact.py, cursor_session_start.py, cursor_pre_tool_use.py, cursor_session_stop.py, session_start.py, session_stop.py, codex-hooks.json]
+      destinations:
+        - "{install_root}/hooks/{name}"
+    - vocabulary: agentera.registration
+      id: agentera.registration.marketplace.cursor
+      destinations:
+        - "{project}/.cursor-plugin/plugin.json"
+    - vocabulary: agentera.registration
+      id: agentera.registration.plugin.codex
+      destinations:
+        - "{home}/.codex/config.toml"
+      contains: '[plugins."agentera@agentera"]'
+    - vocabulary: agentera.registration
+      id: agentera.registration.restorer.codex
+      destinations:
+        - "{home}/.codex/config.toml"
+      contains: AGENTERA_HOME
 resources:
   - id: claude.agentera-skill-link
     vocabulary: claude.skill-link

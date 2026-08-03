@@ -28,6 +28,8 @@ import {
 } from "../../upgrade/nextMajorDoctor.js";
 import { emitStructured } from "../structured.js";
 import { diagnoseCanonicalSkill } from "../../setup/sharedSkill.js";
+import { diagnoseRetiredResources, type RetiredResourceDiagnosis } from "../../upgrade/retiredResourceDiagnostics.js";
+import { commandText } from "../../upgrade/upgradeCommands.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -56,7 +58,42 @@ function plainStatus(value: string): string {
   return PLAIN_STATUS[value] ?? value.replace(/_/g, " ").replace(/-/g, " ");
 }
 
-export function renderDoctorStatus(status: BundleStatus): string {
+function previewCommand(
+  resource: RetiredResourceDiagnosis["resources"][number],
+  context: { home: string; project: string },
+): string {
+  return commandText([
+    "npx",
+    "-y",
+    "agentera@next",
+    "doctor",
+    "--home",
+    context.home,
+    "--project",
+    context.project,
+    "--retired-resource",
+    resource.id,
+    "--format",
+    "json",
+  ]);
+}
+
+function doctorRetiredResources(
+  diagnosis: RetiredResourceDiagnosis,
+  context: { home: string; project: string },
+): Record<string, unknown> {
+  return {
+    ...diagnosis,
+    resources: diagnosis.resources.map((resource) => ({
+      id: resource.id,
+      status: resource.status,
+      evidence: resource.evidence,
+      preview_command: previewCommand(resource, context),
+    })),
+  };
+}
+
+export function renderDoctorStatus(status: BundleStatus, retiredResources?: Record<string, unknown>): string {
   const actionNoun = appLifecycleActionNoun(String(status.status));
   const lines = [
     "Agentera doctor",
@@ -76,6 +113,15 @@ export function renderDoctorStatus(status: BundleStatus): string {
       }
     }
   }
+  const resources = Array.isArray(retiredResources?.resources) ? retiredResources.resources as Array<Record<string, unknown>> : [];
+  if (resources.length > 0) {
+    lines.push("");
+    lines.push("Retired native resources:");
+    for (const resource of resources) {
+      lines.push(`  - action required: ${String(resource.id)}`);
+      lines.push(`    Preview: ${String(resource.preview_command)}`);
+    }
+  }
   if (status.status === APP_UP_TO_DATE) {
     lines.push("");
     lines.push("No action needed: Agentera app files are up to date.");
@@ -91,6 +137,9 @@ export function renderDoctorStatus(status: BundleStatus): string {
         "  3. Then retry Agentera once a retry command is available.",
       );
     }
+  } else if (resources.length > 0) {
+    lines.push("");
+    lines.push("Next: review each read-only retirement preview before any explicit cleanup.");
   } else {
     lines.push("");
     lines.push(
@@ -106,6 +155,7 @@ export interface DoctorArgs {
   project?: string | null;
   expectedVersion?: string | null;
   expectCommand?: string[] | null;
+  retiredResource?: string | null;
   smoke?: boolean;
   allowLiveModel?: boolean;
   format?: string;
@@ -146,6 +196,23 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
   });
+  const retiredDiagnosis = diagnoseRetiredResources({
+    home,
+    project,
+    installRoot,
+    resourceId: args.retiredResource ?? null,
+  });
+  const retiredResources = doctorRetiredResources(retiredDiagnosis, { home, project });
+  if (retiredDiagnosis.status === "action_required") {
+    status.signals.push({
+      status: APP_MANUAL_REVIEW_NEEDED,
+      kind: "retired_native_resources",
+      message: "retired native resource candidates need ownership review before cleanup",
+      resourceIds: retiredDiagnosis.resources.map((resource) => resource.id),
+      omittedResourceCount: retiredDiagnosis.omittedResourceCount,
+    });
+    if (status.status === APP_UP_TO_DATE) status.status = APP_MANUAL_REVIEW_NEEDED;
+  }
   const sharedSkill = diagnoseCanonicalSkill(home);
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {
@@ -156,6 +223,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   if ((args.format ?? "text") === "json") {
     const payload = doctorParityJsonEnvelope(status);
     payload.shared_skill = sharedSkill;
+    payload.retired_resources = retiredResources;
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
@@ -168,7 +236,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       env: process.env,
     });
     const body =
-      prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines) +
+      prependNextMajorDoctorSection(renderDoctorStatus(status, retiredResources), nextMajorLines) +
       `\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` +
       (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + "\n");

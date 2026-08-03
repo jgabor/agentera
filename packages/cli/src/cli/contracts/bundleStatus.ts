@@ -15,6 +15,8 @@ export interface DoctorSignal {
   managedAppRoot?: string;
   legacyAppRoot?: string;
   appHome?: string;
+  resourceIds?: string[];
+  omittedResourceCount?: number;
 }
 
 /** Npx bundle platform app-home overlay on bundle status. */

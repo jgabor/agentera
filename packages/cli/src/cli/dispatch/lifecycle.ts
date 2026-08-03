@@ -113,6 +113,7 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
     project: null,
     expectedVersion: null,
     expectCommand: [],
+    retiredResource: null,
     smoke: false,
     allowLiveModel: false,
     format: "text",
@@ -130,6 +131,7 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--project")) !== null) args.project = v;
     else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
     else if ((v = value("--expect-command")) !== null) (args.expectCommand as string[]).push(v);
+    else if ((v = value("--retired-resource")) !== null) args.retiredResource = v;
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
         return emitInvalidInput(io, {

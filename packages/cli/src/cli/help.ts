@@ -109,7 +109,7 @@ export function printAppHomeHelp(): string {
 export function printDoctorHelp(): string {
   return [
     "usage: agentera doctor [-h] [--install-root PATH] [--home HOME] [--project PROJECT]",
-    "                       [--expected-version VERSION] [--expect-command CMD]",
+    "                       [--expected-version VERSION] [--expect-command CMD] [--retired-resource ID]",
     "                       [--smoke] [--allow-live-model] [--format {text,json}]",
     "",
     "options:",
@@ -119,11 +119,12 @@ export function printDoctorHelp(): string {
     "  --project PROJECT       Project directory context",
     "  --expected-version VER  Expected app files version",
     "  --expect-command CMD    Required CLI command probe; may be repeated",
+    "  --retired-resource ID   Read-only exact retired-resource diagnostic preview",
     "  --smoke                 Run bounded offline smoke checks (no live model calls by default)",
     "  --allow-live-model      Record permission for future live model smoke probes",
     "  --format {text,json}    Structured output format",
     "",
-    "Reports read-only app, project-state, shared-skill, and CLI evidence.",
+    "Reports read-only app, project-state, shared-skill, and CLI evidence, plus retired-resource diagnostics.",
   ].join("\n");
 }
 

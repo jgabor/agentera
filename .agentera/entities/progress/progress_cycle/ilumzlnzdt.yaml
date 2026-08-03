@@ -1,0 +1,15 @@
+id: ilumzlnzdt
+artifact: progress
+record:
+  timestamp: 2026-08-03 18:07
+  type: fix
+  phase: build
+  what: Doctor now emits an exact read-only doctor --retired-resource ID preview for every observed retired identity instead of a general upgrade preview.
+  context:
+    intent: Correct zcprgswrju audit gaps for exact retirement diagnostics and preview scoping.
+    constraints: No real-installation mutation, no cleanup eligibility expansion, and no content leakage.
+    scope: M4B retry 1 only.
+  discovered: The retirement contract now defines 78 literal resource IDs and rejects omitted, extra, or wrong-vocabulary diagnostic mappings; former generic registration labels are documented as non-resources.
+  verified: 3,047 source tests passed (1 skipped); verify:package, typecheck, build, and check compact passed. Rebuilt isolated CLI checks found all 78 IDs, scoped every preview to its ID, leaked no sentinel, and left every fixture unchanged.
+  next: Await independent Audit; preserve zcprgswrju-audit-1 and do not complete the task or resolve TODO umrohrtsit before its verdict.
+  publication_order: 61

@@ -1,0 +1,15 @@
+id: mwaltscvmr
+artifact: progress
+record:
+  timestamp: 2026-08-03 17:36
+  type: fix
+  phase: build
+  what: Doctor now reads the retirement inventory and reports each observed exact resource ID with path-only evidence and a read-only preview command.
+  context:
+    intent: Diagnose retired Agentera-native resources through doctor.
+    constraints: No real-installation mutation, no content leakage, and no task completion before Audit.
+    scope: M4B tail zcprgswrju only.
+  discovered: Isolated-home coverage proves clean, user-owned, stale, and fail-closed diagnostic cases without content leakage or mutation.
+  verified: 3,045 source tests passed (1 skipped); verify:package, typecheck, build, and check compact passed. A rebuilt local CLI reported codex.agent-descriptor.build and opencode.plugin.agentera fixtures as action_required with no secret content.
+  next: Await independent Audit; do not complete the task or resolve TODO umrohrtsit before its verdict.
+  publication_order: 60

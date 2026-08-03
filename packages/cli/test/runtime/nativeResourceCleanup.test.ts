@@ -121,6 +121,7 @@ describe("native resource cleanup contract", () => {
     expect(source).toContain("Cursor loaded Agentera's specific canonical skill instructions and bootstrap command.");
     expect(source).toContain("OpenCode's native CLI listed /home/jgabor/.agents/skills/agentera/SKILL.md.");
     expect(source).toContain("Copilot's native CLI listed the canonical personal-agents skill; its disabled state is intentional.");
+    expect(source).toContain("those former template labels are not resource identities");
     expect(validateNativeResourceCleanupContractRoot()).toEqual([]);
   });
 
@@ -138,6 +139,27 @@ describe("native resource cleanup contract", () => {
 
     expect(validateNativeResourceCleanupContractData(data)).toContain(
       `resource_vocabulary must retain ${id} as ${resourceClass}`,
+    );
+  });
+
+  it("fails closed when an exact diagnostic identity is omitted or added", () => {
+    const omitted = contractData();
+    const omittedInventory = omitted.diagnostic_inventory as Record<string, unknown>;
+    omittedInventory.resources = (omittedInventory.resources as Array<Record<string, unknown>>)
+      .filter((entry) => entry.id !== "opencode.plugin.agentera");
+    expect(validateNativeResourceCleanupContractData(omitted)).toContain(
+      "diagnostic_inventory must define opencode.plugin.agentera",
+    );
+
+    const extra = contractData();
+    const extraInventory = extra.diagnostic_inventory as Record<string, unknown>;
+    (extraInventory.resources as Array<Record<string, unknown>>).push({
+      vocabulary: "opencode.plugin",
+      id: "opencode.plugin.unowned",
+      destinations: ["{home}/.config/opencode/plugins/unowned.js"],
+    });
+    expect(validateNativeResourceCleanupContractData(extra)).toContain(
+      "diagnostic_inventory opencode.plugin.unowned must map to its exact declared vocabulary identity",
     );
   });
 
